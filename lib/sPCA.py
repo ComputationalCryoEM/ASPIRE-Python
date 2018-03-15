@@ -148,4 +148,4 @@ if __name__ == "__main__":
     #im=numpy.random.rand(4,4)
     #print center(numpy.asarray(im.shape))
     #proj=numpy.random.rand(5,5)
-    choose_support_v6(projs, 0.99)
+    print choose_support_v6(projs, 0.99)
