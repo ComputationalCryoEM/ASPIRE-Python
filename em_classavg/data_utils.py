@@ -17,7 +17,9 @@ def estimate_snr(images, prewhiten=False):
         raise NotImplementedError
 
     if len(images.shape) == 2:
-        images = images[:, :, None]
+        images = images[np.newaxis, :, :]
+
+    images = np.transpose(images, axes=(1, 2, 0))
 
     n = images.shape[2]
 
