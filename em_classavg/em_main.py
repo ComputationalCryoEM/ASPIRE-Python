@@ -158,11 +158,11 @@ class EM:
 
         c = np.sum(c)
 
-        n_prolats = self.converter.direct_get_num_samples()
+        n_prolates = self.converter.direct_get_num_samples()
 
-        W_shifts_marg = np.zeros((n_images, n_prolats)).astype('complex')
+        W_shifts_marg = np.zeros((n_images, n_prolates)).astype('complex')
 
-        c_avg = np.zeros(n_prolats).astype('complex')
+        c_avg = np.zeros(n_prolates).astype('complex')
 
         for shift_x in self.em_params['shifts']:
             for shift_y in self.em_params['shifts']:
@@ -175,7 +175,7 @@ class EM:
                 inds = np.ravel_multi_index(shifts.astype(shift_y), (n_shifts_1d, n_shifts_1d))
 
                 if shift_x == 0 and shift_y == 0:
-                    A_shift = np.eye(n_prolats)
+                    A_shift = np.eye(n_prolates)
                 else:
                     A_shift = self.calc_A_shift(shift_x, shift_y)
 
