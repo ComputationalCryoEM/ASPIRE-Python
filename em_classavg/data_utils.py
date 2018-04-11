@@ -54,3 +54,50 @@ def image_grid(n):
     p = (n - 1.0) / 2.0
     x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
     return x, y
+
+
+def normalize_background(stack):
+    # Normalizes background to mean 0 and std 1.
+    #
+    # stack = normalize_background(stack)
+    #   Estimate the mean and std of each image in the stack using pixels
+    #   outside radius r (=half the image size in pixels), and normalize the image such that the
+    #   background has mean 0 and std 1. Each image in the stack is corrected
+    #   separately.
+    #
+    # Example:
+    # stack2 = normalize_background(stack)
+    n_images = len(stack)
+    m = np.shape(stack)[1]
+    n = np.shape(stack)[2]
+
+    if m != n:
+        ValueError('Images in the stack must be square.')
+
+    r = np.floor(n / 2)
+
+    # Find indices of backgruond pixels in the images
+    ctr = (n + 1) / 2
+
+    xv, yv = np.meshgrid(np.arange(1, n + 1), np.arange(1, n + 1))
+
+    radii_sq = (xv - ctr) ** 2 + (yv - ctr) ** 2
+    background_pixels_mask = (radii_sq > r * r)
+
+    sd_bg = np.zeros(n_images)
+    mean_bg = np.zeros(n_images)
+    for kk in np.arange(n_images):
+        proj = stack[kk]
+        background_pixels = proj[background_pixels_mask]
+
+        # Compute mean and standard deviation of background pixels
+        mm = np.mean(background_pixels)
+        sd = np.std(background_pixels, ddof=1)
+
+        proj = (proj - mm) / sd
+        stack[kk] = proj
+
+        sd_bg[kk] = sd
+        mean_bg[kk] = mm
+
+    return stack, mean_bg, sd_bg
