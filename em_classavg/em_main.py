@@ -267,7 +267,6 @@ def main():
     init_avg_image = data_utils.mat_to_npy('init_avg_image')
 
     c_ims = em.converter.direct_forward(images)
-
     c_avg = em.converter.direct_forward(init_avg_image)
 
     phases = np.exp(-1j * em.em_params['thetas'][:, np.newaxis] *
@@ -279,6 +278,8 @@ def main():
 
     n_iters  = 5  # data_utils.mat_to_npy_vec('nIters')[0]
     log_lik = np.zeros((n_iters, em.n_images))
+
+    im_avg_est_prev = init_avg_image
     for it in range(n_iters):
 
         posteriors, log_lik_per_image = em.e_step(c_avg, c_ims_rot, const_terms, mean_bg_ims, sd_bg_ims)
@@ -290,8 +291,9 @@ def main():
         im_avg_est = em.converter.direct_backward(c_avg)
         im_avg_est = im_avg_est[0]  # TODO: ask Itay to return a 2d array in case one image is supplied
 
-        im_avg_est_prev = im_avg_est  # TODO: implement
         em.plot_images(init_avg_image, im_avg_est_prev, im_avg_est)
+
+        im_avg_est_prev = im_avg_est
 
 
 if __name__ == "__main__":
