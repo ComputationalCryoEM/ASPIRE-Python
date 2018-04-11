@@ -35,15 +35,18 @@ class EM:
         self.sd_bg_ims = sd_bg_ims
 
         self.em_params = dict()
-        em_params_scales = data_utils.mat_to_npy_vec('em_params_scales')
-        self.em_params['scales'] = em_params_scales
-
         self.em_params['thetas'] = data_utils.mat_to_npy_vec('em_params_thetas')  # np.arange(1, 361, ang_jump)
-        self.em_params['max_shift'] = 0  # data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift  #
+        self.em_params['max_shift'] = data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift  #
 
         self.em_params['shift_jump'] = data_utils.mat_to_npy_vec('shift_jump')[0]  # shift_jump  #
         self.em_params['shifts'] = np.arange(-1*self.em_params['max_shift'],
                                              self.em_params['max_shift']+1, self.em_params['shift_jump'])
+
+        self.em_params['n_scales'] = data_utils.mat_to_npy_vec('n_scales')[0]
+        snr_est = EM.est_snr(images)
+        est_scale = np.sqrt(snr_est * np.mean(self.sd_bg_ims) ** 2)
+        self.em_params['scales'] = np.linspace(0.8 * est_scale, 1.2 * est_scale, self.em_params['n_scales'])
+        # em_params_scales = data_utils.mat_to_npy_vec('em_params_scales')
 
         self.trunc_param = data_utils.mat_to_npy_vec('T')[0]
 
@@ -238,6 +241,15 @@ class EM:
         const_terms['c_additive_term'] = np.outer(self.mean_bg_ims / self.sd_bg_ims, const_terms['c_all_ones_im'])
 
         return const_terms
+
+    @staticmethod
+    def est_snr(images):
+
+        snr = data_utils.estimate_snr(images)[0]
+        if snr <= 0:
+            snr = 10 ** -4
+
+        return snr
 
     @staticmethod
     def plot_images(init_avg_image, im_avg_est_prev, im_avg_est):
