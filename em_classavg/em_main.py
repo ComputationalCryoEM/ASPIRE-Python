@@ -7,12 +7,19 @@ from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import
 
 
 class EM:
-    def __init__(self, images, mean_bg_ims, sd_bg_ims): # , est_scale=1, n_scale_ticks=10, ang_jump=1, max_shift=0, shift_jump=1):
-        # self.est_scale = est_scale
-        # self.n_scale_ticks = n_scale_ticks
-        # self.ang_jump = ang_jump
-        # self.max_shift = max_shift
-        # self.shift_jump = shift_jump
+    def __init__(self, images, trunc_param=10, beta=0.5, ang_jump=1, max_shift=5, shift_jump=1, n_scales=10):
+
+        self.trunc_param = trunc_param
+        self.beta = beta
+        self.ang_jump = ang_jump
+
+        self.em_params = dict()
+        self.em_params['n_scales'] = n_scales
+        self.em_params['max_shift'] = max_shift
+        self.em_params['shift_jump'] = shift_jump
+        self.em_params['thetas'] = np.arange(1, 361, self.ang_jump)
+        self.em_params['shifts'] = np.arange(-1 * self.em_params['max_shift'],
+                                             self.em_params['max_shift'] + 1, self.em_params['shift_jump'])
 
         self.im_size = np.shape(images)[-1]
         if np.ndim(images) == 3:
@@ -20,14 +27,11 @@ class EM:
         else:
             self.n_images = 1
 
-        self.mean_bg_ims = mean_bg_ims
-        self.sd_bg_ims = sd_bg_ims
+        images, self.mean_bg_ims, self.sd_bg_ims = data_utils.normalize_background(images)
 
-        self.em_params = dict()
-        self.init_params(images)
-
-        self.trunc_param = data_utils.mat_to_npy_vec('T')[0]
-        self.beta = data_utils.mat_to_npy_vec('beta')[0]
+        snr_est = EM.est_snr(images)
+        est_scale = np.sqrt(snr_est * np.mean(self.sd_bg_ims) ** 2)
+        self.em_params['scales'] = np.linspace(0.8 * est_scale, 1.2 * est_scale, self.em_params['n_scales'])
 
         self.converter = Converter(self.im_size, self.trunc_param, self.beta)
         self.converter.init_direct('full')
@@ -39,23 +43,6 @@ class EM:
                         np.outer(self.em_params['thetas'], self.converter.direct_get_angular_frequency()))
         #  the expansion coefficients of each image for each possible rotation
         self.c_ims_rot = self.c_ims[:, np.newaxis, :] * self.phases[np.newaxis, :]
-
-    def init_params(self, images):
-
-        ang_jump = data_utils.mat_to_npy_vec('ang_jump')[0]
-        self.em_params['thetas'] = np.arange(1, 361, ang_jump)
-        # data_utils.mat_to_npy_vec('em_params_thetas')  #
-        self.em_params['max_shift'] = data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift  #
-
-        self.em_params['shift_jump'] = data_utils.mat_to_npy_vec('shift_jump')[0]  # shift_jump  #
-        self.em_params['shifts'] = np.arange(-1 * self.em_params['max_shift'],
-                                             self.em_params['max_shift'] + 1, self.em_params['shift_jump'])
-
-        self.em_params['n_scales'] = data_utils.mat_to_npy_vec('n_scales')[0]
-        snr_est = EM.est_snr(images)
-        est_scale = np.sqrt(snr_est * np.mean(self.sd_bg_ims) ** 2)
-        self.em_params['scales'] = np.linspace(0.8 * est_scale, 1.2 * est_scale, self.em_params['n_scales'])
-        # em_params_scales = data_utils.mat_to_npy_vec('em_params_scales')
 
     def e_step(self, c_avg):
 
@@ -261,11 +248,23 @@ class EM:
 def main():
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
-    images, mean_bg_ims, sd_bg_ims = data_utils.normalize_background(images)
 
-    em = EM(images, mean_bg_ims, sd_bg_ims)
+    is_use_matlab_params = False
 
-    init_avg_image = data_utils.mat_to_npy('init_avg_image')
+    if is_use_matlab_params:
+        trunc_param = data_utils.mat_to_npy_vec('T')[0]
+        beta = data_utils.mat_to_npy_vec('beta')[0]
+        ang_jump = data_utils.mat_to_npy_vec('ang_jump')[0]
+        max_shift = data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift
+
+        shift_jump = data_utils.mat_to_npy_vec('shift_jump')[0]  # shift_jump
+        n_scales = data_utils.mat_to_npy_vec('n_scales')[0]
+
+        em = EM(images, trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales)
+    else:
+        em = EM(images)
+
+    init_avg_image = data_utils.mat_to_npy('init_avg_image')  # TODO: remove once Itay implements
     c_avg = em.converter.direct_forward(init_avg_image)
 
     n_iters = 5  # data_utils.mat_to_npy_vec('nIters')[0]
