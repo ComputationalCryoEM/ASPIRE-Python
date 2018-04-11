@@ -35,25 +35,12 @@ class EM:
         self.sd_bg_ims = sd_bg_ims
 
         self.em_params = dict()
-        self.em_params['thetas'] = data_utils.mat_to_npy_vec('em_params_thetas')  # np.arange(1, 361, ang_jump)
-        self.em_params['max_shift'] = data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift  #
-
-        self.em_params['shift_jump'] = data_utils.mat_to_npy_vec('shift_jump')[0]  # shift_jump  #
-        self.em_params['shifts'] = np.arange(-1*self.em_params['max_shift'],
-                                             self.em_params['max_shift']+1, self.em_params['shift_jump'])
-
-        self.em_params['n_scales'] = data_utils.mat_to_npy_vec('n_scales')[0]
-        snr_est = EM.est_snr(images)
-        est_scale = np.sqrt(snr_est * np.mean(self.sd_bg_ims) ** 2)
-        self.em_params['scales'] = np.linspace(0.8 * est_scale, 1.2 * est_scale, self.em_params['n_scales'])
-        # em_params_scales = data_utils.mat_to_npy_vec('em_params_scales')
+        self.init_params(images)
 
         self.trunc_param = data_utils.mat_to_npy_vec('T')[0]
-
         self.beta = data_utils.mat_to_npy_vec('beta')[0]
 
         self.converter = Converter(self.im_size, self.trunc_param, self.beta)
-        # init the direct model inside
         self.converter.init_direct('full')
 
         self.c_ims = self.converter.direct_forward(images)
@@ -63,6 +50,23 @@ class EM:
                         np.outer(self.em_params['thetas'], self.converter.direct_get_angular_frequency()))
         #  the expansion coefficients of each image for each possible rotation
         self.c_ims_rot = self.c_ims[:, np.newaxis, :] * self.phases[np.newaxis, :]
+
+    def init_params(self, images):
+
+        ang_jump = data_utils.mat_to_npy_vec('ang_jump')[0]
+        self.em_params['thetas'] = np.arange(1, 361, ang_jump)
+        # data_utils.mat_to_npy_vec('em_params_thetas')  #
+        self.em_params['max_shift'] = data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift  #
+
+        self.em_params['shift_jump'] = data_utils.mat_to_npy_vec('shift_jump')[0]  # shift_jump  #
+        self.em_params['shifts'] = np.arange(-1 * self.em_params['max_shift'],
+                                             self.em_params['max_shift'] + 1, self.em_params['shift_jump'])
+
+        self.em_params['n_scales'] = data_utils.mat_to_npy_vec('n_scales')[0]
+        snr_est = EM.est_snr(images)
+        est_scale = np.sqrt(snr_est * np.mean(self.sd_bg_ims) ** 2)
+        self.em_params['scales'] = np.linspace(0.8 * est_scale, 1.2 * est_scale, self.em_params['n_scales'])
+        # em_params_scales = data_utils.mat_to_npy_vec('em_params_scales')
 
     def e_step(self, c_avg):
 
@@ -233,7 +237,7 @@ class EM:
 
         const_terms = dict()
         im_size = self.im_size
-        # we need the all ones image in order to acommodate for the additive term due to normalization
+        # we need the all-ones-image in order for the additive term due to normalization
         const_terms['c_all_ones_im'] = self.converter.direct_forward(np.ones((im_size, im_size)))
 
         const_terms['anni'] = np.linalg.norm(self.c_ims, axis=1)**2
