@@ -6,17 +6,6 @@ import em_classavg.data_utils as data_utils
 from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
 
 
-def cryo_normalize_background():
-    images = data_utils.mat_to_npy('images')
-    if np.ndim(images) == 3:
-        images = np.transpose(images, axes=(2, 0, 1))
-
-    mean_bg_ims = data_utils.mat_to_npy_vec('mean_bg_ims')
-    sd_bg_ims = data_utils.mat_to_npy_vec('sd_bg_ims')
-
-    return images, mean_bg_ims, sd_bg_ims
-
-
 class EM:
     def __init__(self, images, mean_bg_ims, sd_bg_ims): # , est_scale=1, n_scale_ticks=10, ang_jump=1, max_shift=0, shift_jump=1):
         # self.est_scale = est_scale
@@ -212,7 +201,6 @@ class EM:
         psis = self.converter.direct_get_samples_as_images()
 
         n_psis = len(psis)
-
         A_shift = np.zeros((n_psis, n_psis)).astype('complex')
         non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
         psis_non_neg_shifted = np.roll(np.roll(psis[non_neg_freqs], shift_y, axis=1), shift_x, axis=2)
@@ -271,8 +259,10 @@ class EM:
 
 
 def main():
+    images = data_utils.mat_to_npy('images')
+    images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
+    images, mean_bg_ims, sd_bg_ims = data_utils.normalize_background(images)
 
-    images, mean_bg_ims, sd_bg_ims = cryo_normalize_background()
     em = EM(images, mean_bg_ims, sd_bg_ims)
 
     init_avg_image = data_utils.mat_to_npy('init_avg_image')
