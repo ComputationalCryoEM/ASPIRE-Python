@@ -63,18 +63,13 @@ class EM:
         ann_const_cross_cnn_anns = ann_const + cross_cnn_ann
         const_elms = ann_const_cross_cnn_anns + (self.const_terms['anni'] + self.const_terms['cnn'])[:, np.newaxis]
 
-        n_prolates = self.converter.direct_get_num_samples()
         for shift_x in self.em_params['shifts']:
             for shift_y in self.em_params['shifts']:
 
                 if shift_y < shift_x:
                     continue
 
-                if shift_x == 0 and shift_y == 0:
-                    A_shift = np.eye(n_prolates)
-                else:
-                    A_shift = self.calc_A_shift(shift_x, shift_y)
-
+                A_shift = self.calc_A_shift(shift_x, shift_y)
                 tmp1_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_shift)
                 tmp2_shift = np.conj(c_avg).dot(A_shift)
 
@@ -129,10 +124,6 @@ class EM:
         print('m-step')
         n_images = self.n_images
         n_shifts_1d = len(self.em_params['shifts'])
-        c = posteriors * self.em_params['scales'][:, np.newaxis, np.newaxis] / \
-            self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
-
-        c = np.sum(c)
 
         n_prolates = self.converter.direct_get_num_samples()
 
@@ -149,11 +140,7 @@ class EM:
                 shifts = (np.array([[shift_y, -shift_y], [shift_x, -shift_x]]) + self.em_params['max_shift']) / \
                          self.em_params['shift_jump']
                 inds = np.ravel_multi_index(shifts.astype(shift_y), (n_shifts_1d, n_shifts_1d))
-
-                if shift_x == 0 and shift_y == 0:
-                    A_shift = np.eye(n_prolates)
-                else:
-                    A_shift = self.calc_A_shift(shift_x, shift_y)
+                A_shift = self.calc_A_shift(shift_x, shift_y)
 
                 A_inv_shift = np.conj(np.transpose(A_shift))
 
@@ -180,14 +167,21 @@ class EM:
         #  update the coeffs using with respect to the additive term
         c_avg += np.sum(np.transpose(W_shifts_marg * self.const_terms['c_additive_term']), axis=1)
 
+        c = posteriors * self.em_params['scales'][:, np.newaxis, np.newaxis] / \
+            self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
+        c = np.sum(c)
         c_avg = c_avg/c
+
         return c_avg
 
     def calc_A_shift(self, shift_x, shift_y):
 
         psis = self.converter.direct_get_samples_as_images()
-
         n_psis = len(psis)
+
+        if shift_x == 0 and shift_y == 0:
+            return np.eye(n_psis)
+
         A_shift = np.zeros((n_psis, n_psis)).astype('complex')
         non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
         psis_non_neg_shifted = np.roll(np.roll(psis[non_neg_freqs], shift_y, axis=1), shift_x, axis=2)
