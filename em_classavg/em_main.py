@@ -221,6 +221,33 @@ class EM:
 
         return const_terms
 
+    def compute_opt_latent_vals(self, posteriors):
+
+        n_images = len(posteriors)
+
+        n_shifts_1d = len(self.em_params['shifts'])
+
+        opt_latent = dict()
+        opt_latent['rots'] = np.zeros(n_images)
+        opt_latent['shifts_x'] = np.zeros(n_images)
+        opt_latent['shifts_y'] = np.zeros(n_images)
+        opt_latent['scales'] = np.zeros(n_images)
+        for i in np.arange(n_images):
+            om_i = posteriors[i]
+
+            opt_scale_ind = np.argmax(np.sum(np.sum(om_i, axis=2), axis=1))
+            opt_rot_ind = np.argmax(np.sum(np.sum(om_i, axis=2), axis=0))
+            opt_shift_ind = np.argmax(np.sum(np.sum(om_i, axis=1), axis=0))
+
+            opt_latent['scales'][i] = self.em_params['scales'][opt_scale_ind]
+            opt_latent['rots'][i] = self.em_params['thetas'][opt_rot_ind]
+
+            yy, xx = np.unravel_index(opt_shift_ind, (n_shifts_1d, n_shifts_1d))
+            opt_latent['shifts_x'][i] = self.em_params['shifts'][xx]
+            opt_latent['shifts_y'][i] = self.em_params['shifts'][yy]
+
+        return opt_latent
+
     @staticmethod
     def est_snr(images):
 
@@ -264,7 +291,7 @@ def main():
 
         em = EM(images, trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales)
     else:
-        em = EM(images)
+        em = EM(images, max_shift=0)
 
     init_avg_image = data_utils.mat_to_npy('init_avg_image')  # TODO: remove once Itay implements
     c_avg = em.converter.direct_forward(init_avg_image)
@@ -294,17 +321,23 @@ def main():
 
         if round == 0 and is_remove_outliers:  # maximum two rounds
             inds_sorted = np.argsort(log_lik[round_str][-1])
-            outlier_inds = inds_sorted[:int(outliers_precent_removal / 100 * em.n_images)]
+            outlier_ims_inds = inds_sorted[:int(outliers_precent_removal / 100 * em.n_images)]
 
-            posteriors = np.delete(posteriors, outlier_inds, axis=0)
-            em.c_ims_rot = np.delete(em.c_ims_rot, outlier_inds, axis=0)
-            em.c_ims = np.delete(em.c_ims, outlier_inds, axis=0)
-            em.mean_bg_ims = np.delete(em.mean_bg_ims, outlier_inds, axis=0)
-            em.sd_bg_ims = np.delete(em.sd_bg_ims, outlier_inds, axis=0)
-            em.n_images = em.n_images - len(outlier_inds)
+            posteriors = np.delete(posteriors, outlier_ims_inds, axis=0)
+            em.c_ims_rot = np.delete(em.c_ims_rot, outlier_ims_inds, axis=0)
+            em.c_ims = np.delete(em.c_ims, outlier_ims_inds, axis=0)
+            em.mean_bg_ims = np.delete(em.mean_bg_ims, outlier_ims_inds, axis=0)
+            em.sd_bg_ims = np.delete(em.sd_bg_ims, outlier_ims_inds, axis=0)
+            em.n_images = em.n_images - len(outlier_ims_inds)
             em.const_terms = em.pre_compute_const_terms()
         else:
             break
+
+
+    # find the mode of each latent variable for each image
+    opt_latent = em.compute_opt_latent_vals(posteriors)
+
+    return im_avg_est, log_lik, opt_latent, outlier_ims_inds
 
 
 if __name__ == "__main__":
