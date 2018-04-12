@@ -140,16 +140,20 @@ class EM:
                 shifts = (np.array([[shift_y, -shift_y], [shift_x, -shift_x]]) + self.em_params['max_shift']) / \
                          self.em_params['shift_jump']
                 inds = np.ravel_multi_index(shifts.astype(shift_y), (n_shifts_1d, n_shifts_1d))
-                A_shift = self.calc_A_shift(shift_x, shift_y)
 
+                A_shift = self.calc_A_shift(shift_x, shift_y)
                 A_inv_shift = np.conj(np.transpose(A_shift))
+
+                non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
+                A_shift = A_shift[non_neg_freqs]
+                A_inv_shift = A_inv_shift[non_neg_freqs]
 
                 W = np.zeros((n_images, self.converter.direct_get_num_samples())).astype('complex')
 
                 for i in np.arange(n_images):
                     W[i] = np.sum(np.dot(posteriors[i, ..., inds[0]], self.phases), axis=0)
 
-                c_avg += np.sum(A_shift.dot(np.transpose(W * self.c_ims)), axis=1)
+                c_avg[non_neg_freqs] += np.sum(A_shift.dot(np.transpose(W * self.c_ims)), axis=1)
 
                 W_shifts_marg += W
 
@@ -160,12 +164,14 @@ class EM:
                     for i in np.arange(n_images):
                         W_minus[i] = np.sum(np.dot(posteriors[i, ..., inds[1]], self.phases), axis=0)
 
-                    c_avg += np.sum(A_inv_shift.dot(np.transpose(W_minus * self.c_ims)), axis=1)
+                    c_avg[non_neg_freqs] += np.sum(A_inv_shift.dot(np.transpose(W_minus * self.c_ims)), axis=1)
 
                     W_shifts_marg += W_minus
 
         #  update the coeffs using with respect to the additive term
-        c_avg += np.sum(np.transpose(W_shifts_marg * self.const_terms['c_additive_term']), axis=1)
+        c_avg[non_neg_freqs] += np.sum(np.transpose(W_shifts_marg * self.const_terms['c_additive_term']), axis=1)[non_neg_freqs]
+
+        c_avg[self.converter.direct_get_neg_freq_inds()] = np.conj(c_avg[self.converter.direct_get_pos_freq_inds()])
 
         c = posteriors * self.em_params['scales'][:, np.newaxis, np.newaxis] / \
             self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
@@ -243,7 +249,9 @@ def main():
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
 
-    is_use_matlab_params = False
+    is_remove_outliers = True
+    outliers_precent_removal = 5
+    is_use_matlab_params = True
 
     if is_use_matlab_params:
         trunc_param = data_utils.mat_to_npy_vec('T')[0]
@@ -261,24 +269,42 @@ def main():
     init_avg_image = data_utils.mat_to_npy('init_avg_image')  # TODO: remove once Itay implements
     c_avg = em.converter.direct_forward(init_avg_image)
 
-    n_iters = 5  # data_utils.mat_to_npy_vec('nIters')[0]
-    log_lik = np.zeros((n_iters, em.n_images))
+    n_iters = 3  # data_utils.mat_to_npy_vec('nIters')[0]
 
     im_avg_est_prev = init_avg_image
-    for it in range(n_iters):
-        t = time.time()
-        posteriors, log_lik[it] = em.e_step(c_avg)
-        print('it %d: log likelihood=%.2f' % (it + 1, np.sum(log_lik[it])))
-        print('took %.2f secs' % (time.time() - t))
 
-        t = time.time()
-        c_avg = em.m_step(posteriors)
-        print('took %.2f secs' % (time.time() - t))
+    log_lik = dict()
+    for round in range(2):
+        round_str = str(round)
+        log_lik[round_str] = np.zeros((n_iters, em.n_images))
+        for it in range(n_iters):
+            t = time.time()
+            posteriors, log_lik[round_str][it] = em.e_step(c_avg)
+            print('it %d: log likelihood=%.2f' % (it + 1, np.sum(log_lik[round_str][it])))
+            print('took %.2f secs' % (time.time() - t))
 
-        im_avg_est = em.converter.direct_backward(c_avg)[0]
-        EM.plot_images(init_avg_image, im_avg_est_prev, im_avg_est)
+            t = time.time()
+            c_avg = em.m_step(posteriors)
+            print('took %.2f secs' % (time.time() - t))
 
-        im_avg_est_prev = im_avg_est
+            im_avg_est = em.converter.direct_backward(c_avg)[0]
+            EM.plot_images(init_avg_image, im_avg_est_prev, im_avg_est)
+
+            im_avg_est_prev = im_avg_est
+
+        if round == 0 and is_remove_outliers:  # maximum two rounds
+            inds_sorted = np.argsort(log_lik[round_str][-1])
+            outlier_inds = inds_sorted[:int(outliers_precent_removal / 100 * em.n_images)]
+
+            posteriors = np.delete(posteriors, outlier_inds, axis=0)
+            em.c_ims_rot = np.delete(em.c_ims_rot, outlier_inds, axis=0)
+            em.c_ims = np.delete(em.c_ims, outlier_inds, axis=0)
+            em.mean_bg_ims = np.delete(em.mean_bg_ims, outlier_inds, axis=0)
+            em.sd_bg_ims = np.delete(em.sd_bg_ims, outlier_inds, axis=0)
+            em.n_images = em.n_images - len(outlier_inds)
+            em.const_terms = em.pre_compute_const_terms()
+        else:
+            break
 
 
 if __name__ == "__main__":
