@@ -7,11 +7,14 @@ from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import
 
 
 class EM:
-    def __init__(self, images, trunc_param=10, beta=0.5, ang_jump=1, max_shift=5, shift_jump=1, n_scales=10):
+    def __init__(self, images, trunc_param=10, beta=0.5, ang_jump=1,
+                 max_shift=5, shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
 
         self.trunc_param = trunc_param
         self.beta = beta
         self.ang_jump = ang_jump
+        self.is_remove_outliers = is_remove_outliers
+        self.outliers_precent_removal = outliers_precent_removal
 
         self.em_params = dict()
         self.em_params['n_scales'] = n_scales
@@ -276,8 +279,6 @@ def main():
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
 
-    is_remove_outliers = True
-    outliers_precent_removal = 5
     is_use_matlab_params = True
 
     if is_use_matlab_params:
@@ -289,9 +290,13 @@ def main():
         shift_jump = data_utils.mat_to_npy_vec('shift_jump')[0]  # shift_jump
         n_scales = data_utils.mat_to_npy_vec('n_scales')[0]
 
-        em = EM(images, trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales)
+        is_remove_outliers = data_utils.mat_to_npy_vec('is_remove_outliers')[0]
+        outliers_precent_removal = data_utils.mat_to_npy_vec('outliers_precent_removal')[0]
+
+        em = EM(images, trunc_param, beta, ang_jump, max_shift, shift_jump,
+                n_scales, is_remove_outliers, outliers_precent_removal)
     else:
-        em = EM(images, max_shift=0)
+        em = EM(images)
 
     init_avg_image = data_utils.mat_to_npy('init_avg_image')  # TODO: remove once Itay implements
     c_avg = em.converter.direct_forward(init_avg_image)
@@ -319,9 +324,9 @@ def main():
 
             im_avg_est_prev = im_avg_est
 
-        if round == 0 and is_remove_outliers:  # maximum two rounds
+        if round == 0 and em.is_remove_outliers:  # maximum two rounds
             inds_sorted = np.argsort(log_lik[round_str][-1])
-            outlier_ims_inds = inds_sorted[:int(outliers_precent_removal / 100 * em.n_images)]
+            outlier_ims_inds = inds_sorted[:int(em.outliers_precent_removal / 100 * em.n_images)]
 
             posteriors = np.delete(posteriors, outlier_ims_inds, axis=0)
             em.c_ims_rot = np.delete(em.c_ims_rot, outlier_ims_inds, axis=0)
