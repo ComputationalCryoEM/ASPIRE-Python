@@ -279,7 +279,7 @@ def main():
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
 
-    is_use_matlab_params = True
+    is_use_matlab_params = False
 
     if is_use_matlab_params:
         trunc_param = data_utils.mat_to_npy_vec('T')[0]
