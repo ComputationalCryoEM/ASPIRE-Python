@@ -1,6 +1,6 @@
-from image_denoising.image_denoising.PSWF2D.PSWF2DModel import PSWF2D
+from em_classavg.image_denoising.image_denoising.PSWF2D.PSWF2DModel import PSWF2D
 import numpy as np
-from image_denoising.image_denoising.ConverterModel.DirectModel.DirectModel import DirectModel, DirectModel_Full
+from em_classavg.image_denoising.image_denoising.ConverterModel.DirectModel.DirectModel import DirectModel, DirectModel_Full
 
 
 # from image_denoising.image_denoising.ConverterModel.FastModel.FastModel import FastModel
