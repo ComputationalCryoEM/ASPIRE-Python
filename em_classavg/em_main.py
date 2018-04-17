@@ -296,7 +296,7 @@ def main():
         em = EM(images, trunc_param, beta, ang_jump, max_shift, shift_jump,
                 n_scales, is_remove_outliers, outliers_precent_removal)
     else:
-        em = EM(images)
+        em = EM(images,max_shift=0)
 
     init_avg_image = data_utils.mat_to_npy('init_avg_image')  # TODO: remove once Itay implements
     c_avg = em.converter.direct_forward(init_avg_image)
