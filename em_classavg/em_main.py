@@ -59,7 +59,8 @@ class EM:
 
         n_shifts_1d = len(self.em_params['shifts'])
 
-        posteriors = np.zeros((self.n_images, n_scales, n_rots, n_shifts_2d))
+        posteriors = np.zeros((self.n_images, n_shifts_2d, n_scales, n_rots))
+        # posteriors = np.zeros((self.n_images, n_scales, n_rots, n_shifts_2d))
 
         # compute the terms that do not depend on the shifts
         ann_const = (np.linalg.norm(c_avg) * np.outer(1 / self.sd_bg_ims, self.em_params['scales']))**2
@@ -97,7 +98,7 @@ class EM:
                                      2 * np.real(tmp2_shift.dot(np.transpose(self.c_ims_rot[i])))
 
                     # write down the log likelihood
-                    posteriors[i, ..., inds[0]] = cross_anni_ann - (const_elms[i][:, np.newaxis] + cross_anni_cnn)
+                    posteriors[i, inds[0]] = cross_anni_ann - (const_elms[i][:, np.newaxis] + cross_anni_cnn)
 
                     if shift_y != shift_x:
                         cross_anni_cnn_minus = self.mean_bg_ims[i] / self.sd_bg_ims[i] * \
@@ -108,7 +109,7 @@ class EM:
 
                         # write down the log likelihood
                         #  TODO: avoid elipsis by shifting shift indx to the beginning
-                        posteriors[i, ..., inds[1]] = cross_anni_ann_minus - \
+                        posteriors[i, inds[1]] = cross_anni_ann_minus - \
                                                       (const_elms[i][:, np.newaxis] + cross_anni_cnn_minus)
 
         log_lik_per_image = np.zeros(self.n_images)
@@ -157,7 +158,7 @@ class EM:
                 W = np.zeros((n_images, self.converter.direct_get_num_samples())).astype('complex')
 
                 for i in np.arange(n_images):
-                    W[i] = np.sum(np.dot(posteriors[i, ..., inds[0]], self.phases), axis=0)
+                    W[i] = np.sum(np.dot(posteriors[i, inds[0]], self.phases), axis=0)
 
                 c_avg[non_neg_freqs] += np.sum(A_shift.dot(np.transpose(W * self.c_ims)), axis=1)
 
@@ -168,7 +169,7 @@ class EM:
                     W_minus = np.zeros((n_images, self.converter.direct_get_num_samples())).astype('complex')
 
                     for i in np.arange(n_images):
-                        W_minus[i] = np.sum(np.dot(posteriors[i, ..., inds[1]], self.phases), axis=0)
+                        W_minus[i] = np.sum(np.dot(posteriors[i, inds[1]], self.phases), axis=0)
 
                     c_avg[non_neg_freqs] += np.sum(A_inv_shift.dot(np.transpose(W_minus * self.c_ims)), axis=1)
 
@@ -179,7 +180,7 @@ class EM:
 
         c_avg[self.converter.direct_get_neg_freq_inds()] = np.conj(c_avg[self.converter.direct_get_pos_freq_inds()])
 
-        c = posteriors * self.em_params['scales'][:, np.newaxis, np.newaxis] / \
+        c = posteriors * self.em_params['scales'][:, np.newaxis] / \
             self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
         c = np.sum(c)
         c_avg = c_avg/c
@@ -283,7 +284,7 @@ def main():
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
 
-    is_use_matlab_params = False
+    is_use_matlab_params = True
 
     if is_use_matlab_params:
         trunc_param = data_utils.mat_to_npy_vec('T')[0]
