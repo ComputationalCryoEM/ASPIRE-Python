@@ -1,5 +1,7 @@
 from scipy.io import loadmat
 import numpy as np
+import pyfftw
+from scipy.special import erf
 
 
 def mat_to_npy(file_name):
@@ -101,3 +103,101 @@ def normalize_background(stack):
         mean_bg[kk] = mm
 
     return stack, mean_bg, sd_bg
+
+# TODO:decorator function since 1. Itay's mask function expexts input in matlab style and 2. doesn't support a single image
+def mask_decorator(images, is_stack=False, r=None, rise_time=None):
+
+    do_alter = images.ndim == 2 and is_stack == True
+    if do_alter:
+        images = images[:, :, np.newaxis]
+
+    images_masked = mask(images, is_stack, r, rise_time)
+
+    if do_alter:
+        images_masked = images_masked[:, :, 0]
+
+    return images_masked
+
+
+def mask(images, is_stack=False, r=None, rise_time=None):
+
+    num_dims = images.ndim
+    if num_dims < 2 or num_dims > 3:
+        pass  # raise error
+
+    if is_stack and num_dims == 2:
+        pass  # raise error
+
+    if is_stack:
+        num_dims = 2
+
+    shape = images.shape[:num_dims]
+    if num_dims == 2:
+        if shape[0] != shape[1]:
+            pass  # raise error
+
+    if num_dims == 3:
+        if shape[0] != shape[1] or shape[0] != shape[2] or shape[1] != shape[2]:
+            pass  # raise error
+
+    n = shape[0]
+    if r is None:
+        r = int(np.floor(0.45 * n))
+
+    if rise_time is None:
+        rise_time = int(np.floor(0.05 * n))
+
+    m = fuzzymask(n, num_dims, r, rise_time)
+    out = (images.transpose(2, 0, 1) * m).transpose(1, 2, 0)
+    return out
+
+
+def fuzzymask(n, dims, r0, risetime, origin=None):
+    if isinstance(n, int):
+        n = np.array([n])
+
+    if isinstance(r0, int):
+        r0 = np.array([r0])
+
+    center = (n + 1.0) / 2
+    k = 1.782 / risetime
+
+    if dims == 1:
+        if origin is None:
+            origin = center
+            origin = origin.astype('int')
+        r = np.abs(np.arange(1 - origin[0], n - origin[0] + 1))
+
+    elif dims == 2:
+        if origin is None:
+            origin = np.floor(n / 2) + 1
+            origin = origin.astype('int')
+        if len(n) == 1:
+            x, y = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[0]:n[0] - origin[0] + 1]
+        else:
+            x, y = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[1]:n[1] - origin[1] + 1]
+
+        if len(r0) < 2:
+            r = np.sqrt(np.square(x) + np.square(y))
+        else:
+            r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1]))
+
+    elif dims == 3:
+        if origin is None:
+            origin = center
+            origin = origin.astype('int')
+        if len(n) == 1:
+            x, y, z = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[0]:n[0] - origin[0] + 1]
+        else:
+            x, y, z = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[1]:n[1] - origin[1] + 1, 1 - origin[2]:n[2] - origin[2] + 1]
+
+        if len(r0) < 3:
+            r = np.sqrt(np.square(x) + np.square(y) + np.square(z))
+        else:
+            r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1]) + np.square(z * r0[0] / r0[2]))
+    else:
+        return 0  # raise error
+
+    m = 0.5 * (1 - erf(k * (r - r0[0])))
+
+    return m

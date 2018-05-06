@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import pycuda.gpuarray as gpuarray
+import pycuda.autoinit
+import skcuda.linalg as linalg
 
 import em_classavg.data_utils as data_utils
 from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
@@ -276,6 +279,7 @@ class EM:
 
 
 def main():
+    linalg.init()  # TODO: where to init this?
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
 
@@ -298,10 +302,16 @@ def main():
     else:
         em = EM(images,max_shift=0)
 
-    init_avg_image = data_utils.mat_to_npy('init_avg_image')  # TODO: remove once Itay implements
+    init_avg_image = data_utils.mat_to_npy('init_avg_image')
+
+    init_avg_image = data_utils.mask_decorator(init_avg_image, is_stack=True)
+
     c_avg = em.converter.direct_forward(init_avg_image)
 
     n_iters = 3  # data_utils.mat_to_npy_vec('nIters')[0]
+
+    print("#images=%d\t#iterations=%d\tangualr-jump=%d,\tmax shift=%d,\tshift-jump=%d,\t#scales=%d" %
+          (len(images), n_iters, em.ang_jump, em.em_params['max_shift'],em.em_params['shift_jump'], em.em_params['n_scales']))
 
     im_avg_est_prev = init_avg_image
 
@@ -337,7 +347,6 @@ def main():
             em.const_terms = em.pre_compute_const_terms()
         else:
             break
-
 
     # find the mode of each latent variable for each image
     opt_latent = em.compute_opt_latent_vals(posteriors)
