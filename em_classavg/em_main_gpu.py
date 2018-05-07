@@ -49,6 +49,8 @@ class EM:
 
         self.c_ims = self.converter.direct_forward(images)
         self.const_terms = self.pre_compute_const_terms()
+
+        # TODO: Srangly, removing this ends up with slower workflow even though self.const_terms_gpu is not used
         self.const_terms_gpu = self.pre_compute_const_terms_gpu()
 
         self.phases = np.exp(-1j * 2 * np.pi / 360 *
@@ -57,25 +59,6 @@ class EM:
         self.phases_gpu = gpuarray.to_gpu(self.phases).astype('complex64')  # # TODO: keep only gpu version once done
         #  the expansion coefficients of each image for each possible rotation
         self.c_ims_rot = self.c_ims[:, np.newaxis, :] * self.phases[np.newaxis, :]
-
-
-    # def cache_shifts(self):
-    #
-    #     psis_size = np.shape(self.converter.direct_get_samples_as_images())[2]  # TODO: don't really need them as images, only their size
-    #     n_shifts = len(self.em_params['shifts'])
-    #     eye_shifts_y = np.zeros((n_shifts, psis_size, psis_size))
-    #     eye_shifts_x = np.zeros((n_shifts, psis_size, psis_size))
-    #
-    #     eye = np.eye(psis_size).astype('float32')
-    #
-    #     for shift_idx, shift_val in enumerate(self.em_params['shifts']):
-    #
-    #         eye_shifts_y[shift_idx] = np.roll(eye, shift_val, axis=0)
-    #         eye_shifts_x[shift_idx] = np.roll(eye, shift_val, axis=1)
-    #
-    #     self.eye_shifts_y_gpu = gpuarray.to_gpu(eye_shifts_y).astype('complex64')
-    #     self.eye_shifts_x_gpu = gpuarray.to_gpu(eye_shifts_x).astype('complex64')
-
 
     def e_step(self, c_avg):
 
@@ -313,61 +296,6 @@ class EM:
 
         return A_shift
 
-    def calc_A_shift_gpu_old(self, shift_x, shift_y):
-
-        # start = time.time()
-        psis = self.converter.direct_get_samples_as_images()
-        # print("get samples as images %f" % (time.time() - start))
-        n_psis = len(psis)
-
-        if shift_x == 0 and shift_y == 0:
-            return np.eye(n_psis)
-
-        A_shift = np.zeros((n_psis, n_psis)).astype('complex')
-        non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
-
-        # start = time.time()
-        # zz = np.roll(psis[non_neg_freqs], (shift_x, shift_y), axis=(2, 1))
-        # print("roll_itay %f" % (time.time() - start))
-
-        # start = time.time()
-        psis_non_neg_shifted = np.roll(np.roll(psis[non_neg_freqs], shift_y, axis=1), shift_x, axis=2)
-        # print("roll %f" % (time.time() - start))
-        # mask the shifted psis
-        # start = time.time()
-        psis_non_neg_shifted = self.converter.direct_mask_points_inside_the_circle(psis_non_neg_shifted)
-        # print("mask_points_inside_the_circle %f" % (time.time() - start))
-
-        psis = np.reshape(psis,(n_psis, -1))
-        psis = np.asarray(psis, np.complex64)
-
-        psis_non_neg_shifted = np.reshape(psis_non_neg_shifted, (np.size(non_neg_freqs), -1))
-        psis_non_neg_shifted = np.asarray(psis_non_neg_shifted, np.complex64)
-
-        # start = time.time()
-        psis_gpu = gpuarray.to_gpu(psis)
-        psis_non_neg_shifted_gpu = gpuarray.to_gpu(psis_non_neg_shifted)
-        # print("to_gpu %f" % (time.time() - start))
-
-        # start = time.time()
-        A_shift[:, non_neg_freqs] = linalg.dot(linalg.conj(psis_gpu), psis_non_neg_shifted_gpu, transb='T').get()
-        # print("linalg.dot %f" % (time.time() - start))
-
-        # start = time.time()
-        zero_freq_inds = self.converter.direct_get_zero_freq_inds()
-        pos_freq_inds  = self.converter.direct_get_pos_freq_inds()
-        neg_freq_inds  = self.converter.direct_get_neg_freq_inds()
-        # print("get_inds %f" % (time.time() - start))
-
-        # start = time.time()
-        A_shift[zero_freq_inds[:, np.newaxis], neg_freq_inds] = np.conj(A_shift[zero_freq_inds[:, np.newaxis], pos_freq_inds])
-        A_shift[pos_freq_inds[:, np.newaxis], neg_freq_inds]  = np.conj(A_shift[neg_freq_inds[:, np.newaxis], pos_freq_inds])
-        A_shift[neg_freq_inds[:, np.newaxis], neg_freq_inds]  = np.conj(A_shift[pos_freq_inds[:, np.newaxis], pos_freq_inds])
-        # print("A_shift_conj %f" % (time.time() - start))
-
-        return A_shift
-
-
     def calc_A_shift_gpu(self, shift_x, shift_y):
 
         psis_gpu = self.converter.direct_get_samples_as_images_gpu()
@@ -382,18 +310,12 @@ class EM:
         psis_gpu_non_neg_freqs = psis_gpu[non_neg_freqs]
         psis_non_neg_shifted = circ_shift_kernel.circ_shift(psis_gpu_non_neg_freqs,shift_x, shift_y)
 
-        # start = time.time()
         psis_non_neg_shifted = self.converter.direct_mask_points_inside_the_circle_gpu(psis_non_neg_shifted)
-        # print("mask_points_inside_the_circle %f" % (time.time() - start))
 
         psis_non_neg_shifted = psis_non_neg_shifted.reshape(len(psis_non_neg_shifted), -1)
         psis_gpu = psis_gpu.reshape(n_psis, -1)
-        # start = time.time()
-        # A_shift[:, non_neg_freqs] = linalg.dot(linalg.conj(psis_gpu), psis_non_neg_shifted, transb='T')
         A_shift[non_neg_freqs] =  linalg.dot(psis_non_neg_shifted, psis_gpu, transb='C')
-        # print("psi-psi_shifted mult %f" % (time.time() - start))
 
-        start = time.time()
         zero_freq_inds = self.converter.direct_get_zero_freq_inds_slice()
         pos_freq_inds  = self.converter.direct_get_pos_freq_inds_slice()
         neg_freq_inds  = self.converter.direct_get_neg_freq_inds_slice()
@@ -403,7 +325,6 @@ class EM:
         A_shift[neg_freq_inds, neg_freq_inds] = A_shift[pos_freq_inds, pos_freq_inds]
 
         A_shift[neg_freq_inds] = linalg.conj(A_shift[neg_freq_inds])
-
         # TODO: get rid of the transpose
         # return np.transpose(A_shift).copy()
         return np.transpose(A_shift).get().copy()
@@ -420,7 +341,6 @@ class EM:
         const_terms['c_additive_term'] = np.outer(self.mean_bg_ims / self.sd_bg_ims, const_terms['c_all_ones_im'])
 
         return const_terms
-
 
     def pre_compute_const_terms_gpu(self):
 
