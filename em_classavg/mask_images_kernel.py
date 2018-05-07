@@ -10,7 +10,7 @@ from pycuda.tools import context_dependent_memoize
 def get_mask_kernel():
     mod = SourceModule("""
         #include <pycuda-complex.hpp>
-       __global__ void mask(pycuda::complex<float>* const arr_mask, pycuda::complex<float>* const arr_in, pycuda::complex<float>* arr_out, int width, int height)
+       __global__ void mask(pycuda::complex<float>* const arr_in, pycuda::complex<float>* const arr_mask, pycuda::complex<float>* arr_out, int width, int height)
         {
             int i =  blockIdx.y * blockDim.y + threadIdx.y;
             int j =  blockIdx.x * blockDim.x + threadIdx.x;
@@ -35,15 +35,15 @@ def get_mask_kernel():
     return mod.get_function("mask")
 
 
-def do_mask_gpu(mask, mat_in, mat_out):
+def do_mask_gpu(images, mask):
 
     bdim = (32, 32, 1)
 
-    if mat_in.ndim == 2:
-        height, width = mat_in.shape
+    if images.ndim == 2:
+        height, width = images.shape
         depth = 1
     else:
-        depth, height, width = mat_in.shape
+        depth, height, width = images.shape
 
     mask_height, mask_width = mask.shape
     dx, mx = divmod(width, bdim[0])
@@ -51,8 +51,10 @@ def do_mask_gpu(mask, mat_in, mat_out):
     gdim = ((dx + int(mx > 0)), (dy + int(my > 0)), depth)
 
     mask_kernel = get_mask_kernel()
-    mask_kernel(mask, mat_in, mat_out, np.int32(width), np.int32(height),
-                      block=bdim, grid=gdim)
+    images_masked = gpuarray.empty_like(images)
+    mask_kernel(images, mask, images_masked, np.int32(width), np.int32(height),
+                block=bdim, grid=gdim)
+    return images_masked
 
 
 def main():
@@ -85,7 +87,7 @@ def main():
 
     t = time.time()
     for i in np.arange(n_iters):
-        do_mask_gpu(mask_gpu, images_in_gpu, images_out_gpu)
+        images_out_gpu = do_mask_gpu(images_in_gpu, mask_gpu)
     print('GPU kernel took %.4f secs' % (time.time() - t))
     assert np.allclose(images_out_gpu.get(), images_out_cpu)
 

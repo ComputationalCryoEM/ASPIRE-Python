@@ -63,10 +63,7 @@ class DirectModel:
         return images * self.points_inside_the_circle
 
     def mask_points_inside_the_circle_gpu(self, images):
-
-        images_masked = gpuarray.empty_like(images)
-        mask_images_kernel.do_mask_gpu(self.points_inside_the_circle_gpu, images, images_masked)
-        return images_masked
+        return mask_images_kernel.do_mask_gpu(images, self.points_inside_the_circle_gpu)
 
     def forward(self, images):
         images_shape = images.shape
