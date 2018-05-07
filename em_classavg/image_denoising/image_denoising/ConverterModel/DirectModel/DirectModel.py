@@ -2,6 +2,7 @@ import numpy as np
 import pycuda.gpuarray as gpuarray
 
 import skcuda.linalg as linalg
+import em_classavg.mask_images_kernel as mask_images_kernel
 
 class DirectModel:
     def __init__(self, resolution, truncation, beta, pswf2d, even):
@@ -63,13 +64,8 @@ class DirectModel:
 
     def mask_points_inside_the_circle_gpu(self, images):
 
-        images_masked = gpuarray.zeros_like(images)
-        for i, image in enumerate(images):
-            images_masked[i] = linalg.misc.multiply(image, self.points_inside_the_circle_gpu)
-
-        # for i in len(images):
-        #     images_masked[i] = linalg.misc.multiply(images[i],self.points_inside_the_circle_gpu)
-
+        images_masked = gpuarray.empty_like(images)
+        mask_images_kernel.do_mask_gpu(self.points_inside_the_circle_gpu, images, images_masked)
         return images_masked
 
     def forward(self, images):
