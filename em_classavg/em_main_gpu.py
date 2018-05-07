@@ -7,6 +7,7 @@ from pycuda.compiler import SourceModule
 import pycuda.autoinit
 import skcuda.linalg as linalg
 import skcuda.misc as misc
+from pycuda.tools import context_dependent_memoize
 
 
 import em_classavg.data_utils as data_utils
@@ -17,7 +18,6 @@ class EM:
     def __init__(self, images, trunc_param=10, beta=0.5, ang_jump=1,
                  max_shift=5, shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
 
-        self.circ_shift_gpu_handle = self.init_circ_shift()
         self.trunc_param = trunc_param
         self.beta = beta
         self.ang_jump = ang_jump
@@ -409,7 +409,8 @@ class EM:
         # return np.transpose(A_shift).copy()
         return np.transpose(A_shift).get().copy()
 
-    def init_circ_shift(self):
+    @context_dependent_memoize
+    def get_circ_shift_kernel(self):  # TODO: put get_circ_shift_kernel in library file. not in em
         mod = SourceModule("""
             #include <pycuda-complex.hpp>
            __global__ void circ_shift(pycuda::complex<float>* const arr_in, pycuda::complex<float>* arr_out, int shift_x, int shift_y, int width, int height)
@@ -438,8 +439,8 @@ class EM:
             }
             """)
 
-        circ_shift_gpu_handle = mod.get_function("circ_shift")
-        return circ_shift_gpu_handle
+        circ_shift_gpu_kernel = mod.get_function("circ_shift")
+        return circ_shift_gpu_kernel
 
     def circ_shift(self, mat_in, mat_out, shift_x, shift_y):
 
@@ -449,7 +450,8 @@ class EM:
         dy, my = divmod(height, bdim[1])
         gdim = ((dx + int(mx > 0)), (dy + int(my > 0)), depth)
 
-        self.circ_shift_gpu_handle(mat_in, mat_out, np.int32(shift_x), np.int32(shift_y), np.int32(width), np.int32(height),
+        circ_shift_kernel = self.get_circ_shift_kernel()
+        circ_shift_kernel(mat_in, mat_out, np.int32(shift_x), np.int32(shift_y), np.int32(width), np.int32(height),
                                    block=bdim, grid=gdim)
 
     def pre_compute_const_terms(self):
