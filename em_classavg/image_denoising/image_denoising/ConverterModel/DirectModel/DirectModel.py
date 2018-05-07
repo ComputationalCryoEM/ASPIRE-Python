@@ -1,9 +1,13 @@
 import numpy as np
+import pycuda.gpuarray as gpuarray
 
+import skcuda.linalg as linalg
 
 class DirectModel:
     def __init__(self, resolution, truncation, beta, pswf2d, even):
         # find max alpha for each N
+
+        linalg.init()  # TODO: is this the right place to do init???
         max_ns = []
         a = np.square(float(beta * resolution) / 2)
         m = 0
@@ -51,10 +55,22 @@ class DirectModel:
 
         self.image_height = len(x_1d_grid)
         self.points_inside_the_circle = points_inside_the_circle
+        self.points_inside_the_circle_gpu = gpuarray.to_gpu(self.points_inside_the_circle).astype('complex64')
         self.points_inside_the_circle_vec = points_inside_the_circle.reshape(self.image_height ** 2)
 
     def mask_points_inside_the_circle(self, images):
         return images * self.points_inside_the_circle
+
+    def mask_points_inside_the_circle_gpu(self, images):
+
+        images_masked = gpuarray.zeros_like(images)
+        for i, image in enumerate(images):
+            images_masked[i] = linalg.misc.multiply(image, self.points_inside_the_circle_gpu)
+
+        # for i in len(images):
+        #     images_masked[i] = linalg.misc.multiply(images[i],self.points_inside_the_circle_gpu)
+
+        return images_masked
 
     def forward(self, images):
         images_shape = images.shape
@@ -99,6 +115,23 @@ class DirectModel:
     def get_non_neg_freq_inds(self):
         return np.arange(len(self.angular_frequency))
 
+    def get_non_neg_freq_inds_gpu(self):
+        return slice(0,len(self.angular_frequency))
+        # return np.arange(len(self.angular_frequency))
+
+    def get_zero_freq_inds_slice(self):
+        # TODO: avoid computing this each time. Rather calc once the first and last and have this method just construct the slice
+        tmp = np.nonzero(self.angular_frequency == 0)[0]
+        return slice(tmp[0], tmp[-1] + 1)
+
+    def get_pos_freq_inds_slice(self):
+        # TODO: avoid computing this each time. Rather calc once the first and last and have this method just construct the slice
+        tmp = np.nonzero(self.angular_frequency > 0)[0]
+        return slice(tmp[0], tmp[-1] + 1)
+
+    def get_neg_freq_inds_slice(self):
+        ValueError('no negative frequencies')
+
     def get_zero_freq_inds(self):
         return np.nonzero(self.angular_frequency == 0)[0]
 
@@ -118,6 +151,10 @@ class DirectModel_Full(DirectModel):
         # self.unq_ang_freqs, self.Iunq_ang_freqs = np.unique(self.angular_frequency,return_inverse=True)
 
         self.samples_as_images = self.calc_samples_as_images()
+        self.samples_as_images_gpu = gpuarray.to_gpu(self.samples_as_images) #  TODO: keep either samples gpu or samples cpu. not both
+
+    def get_neg_freq_inds_slice(self):
+        return slice(self.neg_freq_inds[0], self.neg_freq_inds[-1] + 1)
 
     def get_neg_freq_inds(self):
         return self.neg_freq_inds
@@ -157,10 +194,14 @@ class DirectModel_Full(DirectModel):
 
         return self.samples_as_images
 
-    def calc_samples_as_images(self):
+    def get_samples_as_images_gpu(self):
+
+        return self.samples_as_images_gpu
+
+    def calc_samples_as_images_old(self):
 
         self_samples = np.transpose(self.samples)  # TODO: fix once Itay fixes
-        samples = np.zeros((self.image_height, self.image_height, self.get_num_prolates())).astype('complex')
+        samples = np.zeros((self.image_height, self.image_height, self.get_num_prolates())).astype('complex64')
 
         samples_non_neg_freq = samples[self.points_inside_the_circle]
         samples_non_neg_freq[:, self.get_non_neg_freq_inds()] = self.samples
@@ -171,3 +212,21 @@ class DirectModel_Full(DirectModel):
         samples = np.transpose(samples, axes=(2, 0, 1))  # we want the first index to the image number
 
         return samples
+
+
+    def calc_samples_as_images(self):
+
+        self_samples = np.transpose(self.samples)
+        samples = np.zeros((self.get_num_prolates(), self.image_height, self.image_height)).astype('complex64')
+        samples_non_neg = np.zeros((len(self.get_non_neg_freq_inds()), self.image_height, self.image_height)).astype('complex64')
+
+        for counter, sample in enumerate(self_samples):
+            samples_non_neg[counter,self.points_inside_the_circle] = sample
+
+        samples[self.get_non_neg_freq_inds()] = samples_non_neg
+        samples[self.get_neg_freq_inds()] = np.conj(samples[self.get_pos_freq_inds()])
+
+        samples = np.transpose(samples, axes=(0, 2, 1)).copy()  # python is row based but the mask assumes column base
+
+        return samples
+
