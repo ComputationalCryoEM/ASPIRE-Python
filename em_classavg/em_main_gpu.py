@@ -8,7 +8,7 @@ import pycuda.autoinit
 import skcuda.linalg as linalg
 import skcuda.misc as misc
 from pycuda.tools import context_dependent_memoize
-
+import em_classavg.circ_shift_kernel as circ_shift_kernel
 
 import em_classavg.data_utils as data_utils
 from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
@@ -380,8 +380,7 @@ class EM:
         non_neg_freqs = self.converter.direct_get_non_neg_freq_inds_slice()
 
         psis_gpu_non_neg_freqs = psis_gpu[non_neg_freqs]
-        psis_non_neg_shifted = gpuarray.empty_like(psis_gpu_non_neg_freqs)
-        self.circ_shift(psis_gpu_non_neg_freqs, psis_non_neg_shifted,shift_x, shift_y)
+        psis_non_neg_shifted = circ_shift_kernel.circ_shift(psis_gpu_non_neg_freqs,shift_x, shift_y)
 
         # start = time.time()
         psis_non_neg_shifted = self.converter.direct_mask_points_inside_the_circle_gpu(psis_non_neg_shifted)
@@ -408,51 +407,6 @@ class EM:
         # TODO: get rid of the transpose
         # return np.transpose(A_shift).copy()
         return np.transpose(A_shift).get().copy()
-
-    @context_dependent_memoize
-    def get_circ_shift_kernel(self):  # TODO: put get_circ_shift_kernel in library file. not in em
-        mod = SourceModule("""
-            #include <pycuda-complex.hpp>
-           __global__ void circ_shift(pycuda::complex<float>* const arr_in, pycuda::complex<float>* arr_out, int shift_x, int shift_y, int width, int height)
-            {
-                int i =  blockIdx.y * blockDim.y + threadIdx.y;
-                int j =  blockIdx.x * blockDim.x + threadIdx.x;
-                int k =  blockIdx.z * blockDim.z + threadIdx.z;
-
-
-                int stride_x = blockDim.x * gridDim.x;
-                int stride_y = blockDim.y * gridDim.y;
-
-                int i_out, j_out, ind_in, ind_out;          
-                for( ; i < height; i += stride_y){
-                    for( ; j < width; j += stride_x){
-
-                        i_out = (i + shift_y) % height;
-                        j_out = (j + shift_x) % width;
-
-                        ind_in   = k*height*width + i*width + j;
-                        ind_out  = k*height*width + i_out*width + j_out;
-
-                        arr_out[ind_out] = arr_in[ind_in];
-                    }
-                }
-            }
-            """)
-
-        circ_shift_gpu_kernel = mod.get_function("circ_shift")
-        return circ_shift_gpu_kernel
-
-    def circ_shift(self, mat_in, mat_out, shift_x, shift_y):
-
-        bdim = (32, 32, 1)
-        depth, height, width = mat_in.shape
-        dx, mx = divmod(width, bdim[0])
-        dy, my = divmod(height, bdim[1])
-        gdim = ((dx + int(mx > 0)), (dy + int(my > 0)), depth)
-
-        circ_shift_kernel = self.get_circ_shift_kernel()
-        circ_shift_kernel(mat_in, mat_out, np.int32(shift_x), np.int32(shift_y), np.int32(width), np.int32(height),
-                                   block=bdim, grid=gdim)
 
     def pre_compute_const_terms(self):
 
