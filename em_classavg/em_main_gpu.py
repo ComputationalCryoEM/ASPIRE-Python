@@ -48,7 +48,7 @@ class EM:
         self.c_ims = self.converter.direct_forward(images)
         self.const_terms = self.pre_compute_const_terms()
 
-        # TODO: Srangly, removing this ends up with slower workflow even though self.const_terms_gpu is not used
+        # TODO: Strangly, removing this ends up with slower workflow even though self.const_terms_gpu is not used
         self.const_terms_gpu = self.pre_compute_const_terms_gpu()
 
         self.phases = np.exp(-1j * 2 * np.pi / 360 *
@@ -58,6 +58,19 @@ class EM:
         #  the expansion coefficients of each image for each possible rotation
         self.c_ims_rot = self.c_ims[:, np.newaxis, :] * self.phases[np.newaxis, :]
 
+    def ravel_shift_index(self, shift_x, shift_y):
+        n_shifts_1d = len(self.em_params['shifts'])
+        shift = ([shift_y, shift_x] + self.em_params['max_shift']) / self.em_params['shift_jump']
+        return np.ravel_multi_index(shift.astype(int), (n_shifts_1d, n_shifts_1d))
+
+    def calc_e_step_const_elms(self, c_avg):
+        ann_const = (np.linalg.norm(c_avg) * np.outer(1 / self.sd_bg_ims, self.em_params['scales'])) ** 2
+        cross_cnn_ann = np.outer(self.mean_bg_ims / (self.sd_bg_ims ** 2), self.em_params['scales']) * \
+                        2 * np.real(np.vdot(c_avg, self.const_terms['c_all_ones_im']))
+
+        ann_const_cross_cnn_anns = ann_const + cross_cnn_ann
+        return ann_const_cross_cnn_anns + (self.const_terms['anni'] + self.const_terms['cnn'])[:, np.newaxis]
+
     def e_step(self, c_avg):
 
         print('e-step')
@@ -65,57 +78,24 @@ class EM:
         n_rots = len(self.em_params['thetas'])
         n_shifts_2d = len(self.em_params['shifts'])**2
 
-        n_shifts_1d = len(self.em_params['shifts'])
-
         posteriors = np.zeros((self.n_images, n_shifts_2d, n_scales, n_rots))
-
         # compute the terms that do not depend on the shifts
-        ann_const = (np.linalg.norm(c_avg) * np.outer(1 / self.sd_bg_ims, self.em_params['scales']))**2
-        cross_cnn_ann = np.outer(self.mean_bg_ims / (self.sd_bg_ims**2), self.em_params['scales']) * \
-                        2 * np.real(np.vdot(c_avg, self.const_terms['c_all_ones_im']))
-
-        ann_const_cross_cnn_anns = ann_const + cross_cnn_ann
-        const_elms = ann_const_cross_cnn_anns + (self.const_terms['anni'] + self.const_terms['cnn'])[:, np.newaxis]
+        const_elms = self.calc_e_step_const_elms(c_avg)
 
         for shift_x in progressbar.progressbar(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
 
                 if shift_y < shift_x:
                     continue
+
                 A_shift = self.calc_A_shift(shift_x, shift_y)
-                tmp1_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_shift)
-                tmp2_shift = np.conj(c_avg).dot(A_shift)
+                shift_ind = self.ravel_shift_index(shift_x, shift_y)
+                posteriors[:, shift_ind] = self.calc_posteriors_wrt_shift(A_shift, const_elms, c_avg)
 
-                A_inv_shift = np.conj(np.transpose(A_shift))
-                tmp1_inv_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_inv_shift)
-                tmp2_inv_shift = np.conj(c_avg).dot(A_inv_shift)
-
-                shifts = (np.array([[shift_y, -shift_y], [shift_x, -shift_x]]) + self.em_params['max_shift']) / \
-                         self.em_params['shift_jump']
-                inds = np.ravel_multi_index(shifts.astype(shift_y), (n_shifts_1d, n_shifts_1d))
-
-                for i in np.arange(self.n_images):
-
-                    # calculate the two cross terms
-                    cross_anni_cnn = self.mean_bg_ims[i] / self.sd_bg_ims[i] * \
-                                     2 * np.real(tmp1_shift.dot(np.transpose(self.c_ims_rot[i])))
-
-                    cross_anni_ann = self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[i] * \
-                                     2 * np.real(tmp2_shift.dot(np.transpose(self.c_ims_rot[i])))
-
-                    # write down the log likelihood
-                    posteriors[i, inds[0]] = cross_anni_ann - (const_elms[i][:, np.newaxis] + cross_anni_cnn)
-
-                    if shift_y != shift_x:
-                        cross_anni_cnn_minus = self.mean_bg_ims[i] / self.sd_bg_ims[i] * \
-                                         2 * np.real(tmp1_inv_shift.dot(np.transpose(self.c_ims_rot[i])))
-
-                        cross_anni_ann_minus = self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[i] * \
-                                         2 * np.real(tmp2_inv_shift.dot(np.transpose(self.c_ims_rot[i])))
-
-                        # write down the log likelihood
-                        posteriors[i, inds[1]] = cross_anni_ann_minus - \
-                                                      (const_elms[i][:, np.newaxis] + cross_anni_cnn_minus)
+                if shift_y != shift_x:
+                    A_inv_shift = np.conj(np.transpose(A_shift))
+                    shift_minus_ind = self.ravel_shift_index(-shift_x, -shift_y)
+                    posteriors[:, shift_minus_ind] = self.calc_posteriors_wrt_shift(A_inv_shift, const_elms, c_avg)
 
         log_lik_per_image = np.zeros(self.n_images)
         for i in np.arange(self.n_images):
@@ -131,69 +111,64 @@ class EM:
 
         return posteriors, log_lik_per_image
 
+    def calc_posteriors_wrt_shift(self, A_shift, const_elms, c_avg):
+        n_scales = len(self.em_params['scales'])
+        n_rots = len(self.em_params['thetas'])
+        posteriors = np.zeros((self.n_images, n_scales, n_rots))
+        tmp1_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_shift)
+        tmp2_shift = np.conj(c_avg).dot(A_shift)
+        for i in np.arange(self.n_images):
+            # calculate the two cross terms
+            cross_anni_cnn = self.mean_bg_ims[i] / self.sd_bg_ims[i] * \
+                             2 * np.real(tmp1_shift.dot(np.transpose(self.c_ims_rot[i])))
+
+            cross_anni_ann = self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[i] * \
+                             2 * np.real(tmp2_shift.dot(np.transpose(self.c_ims_rot[i])))
+
+            posteriors[i] = cross_anni_ann - (const_elms[i][:, np.newaxis] + cross_anni_cnn)
+        return posteriors
+
+
     def m_step(self, posteriors):
 
         print('m-step')
-
-        # TODO: maybe defer type conversion only to when is needed
         posteriors = gpuarray.to_gpu(posteriors).astype('complex64')  # TODO: keep only gpu version once done
-        n_images = self.n_images
-        n_shifts_1d = len(self.em_params['shifts'])
-
-        n_prolates = self.converter.direct_get_num_samples()
-
-        W_shifts_marg = np.zeros((n_images, n_prolates), np.complex64)
-
-        c_avg = np.zeros(n_prolates, np.complex64)
-
+        W_shifts_marg = np.zeros((self.n_images, self.converter.direct_get_num_samples()), np.complex64)
+        c_avg = np.zeros(self.converter.direct_get_num_samples(), np.complex64)
+        non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
         for shift_x in progressbar.progressbar(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
 
                 if shift_y < shift_x:
                     continue
 
-                shifts = (np.array([[shift_y, -shift_y], [shift_x, -shift_x]]) + self.em_params['max_shift']) / \
-                         self.em_params['shift_jump']
-                inds = np.ravel_multi_index(shifts.astype(shift_y), (n_shifts_1d, n_shifts_1d))
-
                 A_shift = self.calc_A_shift(shift_x, shift_y)
-                A_inv_shift = np.conj(np.transpose(A_shift))
+                A_shift_minus = np.conj(np.transpose(A_shift))
 
-                non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
-                A_shift = A_shift[non_neg_freqs]
-                A_inv_shift = A_inv_shift[non_neg_freqs]
-
-                W = np.zeros((n_images, self.converter.direct_get_num_samples()), np.complex64)
-
-                for i in np.arange(n_images):
-                    W[i] = misc.sum(linalg.dot(posteriors[i, inds[0]], self.phases_gpu), axis=0).get()
-
-                c_avg[non_neg_freqs] += np.sum(A_shift.dot(np.transpose(W * self.c_ims)), axis=1)
-
+                W = self.marginilize_rots_scales(posteriors, shift_x, shift_y)
+                c_avg[non_neg_freqs] += np.sum(A_shift[non_neg_freqs].dot(np.transpose(W * self.c_ims)), axis=1)
                 W_shifts_marg += W
 
                 if shift_y != shift_x:
-
-                    W_minus = np.zeros((n_images, self.converter.direct_get_num_samples())).astype('complex')
-
-                    for i in np.arange(n_images):
-                        W_minus[i] = misc.sum(linalg.dot(posteriors[i, inds[1]], self.phases_gpu), axis=0).get()
-
-                    c_avg[non_neg_freqs] += np.sum(A_inv_shift.dot(np.transpose(W_minus * self.c_ims)), axis=1)
-
+                    W_minus = self.marginilize_rots_scales(posteriors, -shift_x, -shift_y)
+                    c_avg[non_neg_freqs] += np.sum(A_shift_minus[non_neg_freqs].dot(np.transpose(W_minus * self.c_ims)), axis=1)
                     W_shifts_marg += W_minus
 
         #  update the coeffs using with respect to the additive term
         c_avg[non_neg_freqs] += np.sum(np.transpose(W_shifts_marg * self.const_terms['c_additive_term']), axis=1)[non_neg_freqs]
-
+        # take care of the negative freqs
         c_avg[self.converter.direct_get_neg_freq_inds()] = np.conj(c_avg[self.converter.direct_get_pos_freq_inds()])
-
-        c = posteriors.get() * self.em_params['scales'][:, np.newaxis] / \
-            self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
+        c = posteriors.get() * self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
         c = np.sum(c)
         c_avg = c_avg/c
-
         return c_avg
+
+    def marginilize_rots_scales(self, posteriors, shift_x, shift_y):
+        shift_ind = self.ravel_shift_index(shift_x, shift_y)
+        W = np.zeros((self.n_images, self.converter.direct_get_num_samples()), np.complex64)
+        for i in np.arange(self.n_images):
+            W[i] = misc.sum(linalg.dot(posteriors[i, shift_ind], self.phases_gpu), axis=0).get()
+        return W
 
     def calc_A_shift(self, shift_x, shift_y):
 
@@ -339,6 +314,76 @@ class EM:
         plt.imshow(np.real(im_avg_est), cmap='gray')
 
         plt.show()
+
+# def e_step(self, c_avg):
+    #
+    #     print('e-step')
+    #     n_scales = len(self.em_params['scales'])
+    #     n_rots = len(self.em_params['thetas'])
+    #     n_shifts_2d = len(self.em_params['shifts'])**2
+    #
+    #     posteriors = np.zeros((self.n_images, n_shifts_2d, n_scales, n_rots))
+    #
+    #     # compute the terms that do not depend on the shifts
+    #     ann_const = (np.linalg.norm(c_avg) * np.outer(1 / self.sd_bg_ims, self.em_params['scales']))**2
+    #     cross_cnn_ann = np.outer(self.mean_bg_ims / (self.sd_bg_ims**2), self.em_params['scales']) * \
+    #                     2 * np.real(np.vdot(c_avg, self.const_terms['c_all_ones_im']))
+    #
+    #     ann_const_cross_cnn_anns = ann_const + cross_cnn_ann
+    #     const_elms = ann_const_cross_cnn_anns + (self.const_terms['anni'] + self.const_terms['cnn'])[:, np.newaxis]
+    #
+    #     for shift_x in progressbar.progressbar(self.em_params['shifts']):
+    #         for shift_y in self.em_params['shifts']:
+    #
+    #             if shift_y < shift_x:
+    #                 continue
+    #             A_shift = self.calc_A_shift(shift_x, shift_y)
+    #             tmp1_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_shift)
+    #             tmp2_shift = np.conj(c_avg).dot(A_shift)
+    #
+    #             A_inv_shift = np.conj(np.transpose(A_shift))
+    #             tmp1_inv_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_inv_shift)
+    #             tmp2_inv_shift = np.conj(c_avg).dot(A_inv_shift)
+    #
+    #             shift_ind = self.ravel_shift_index(shift_x, shift_y)
+    #             shift_minus_ind = self.ravel_shift_index(-shift_x, -shift_y)
+    #
+    #             for i in np.arange(self.n_images):
+    #
+    #                 # calculate the two cross terms
+    #                 cross_anni_cnn = self.mean_bg_ims[i] / self.sd_bg_ims[i] * \
+    #                                  2 * np.real(tmp1_shift.dot(np.transpose(self.c_ims_rot[i])))
+    #
+    #                 cross_anni_ann = self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[i] * \
+    #                                  2 * np.real(tmp2_shift.dot(np.transpose(self.c_ims_rot[i])))
+    #
+    #                 # write down the log likelihood
+    #                 posteriors[i, shift_ind] = cross_anni_ann - (const_elms[i][:, np.newaxis] + cross_anni_cnn)
+    #
+    #                 if shift_y != shift_x:
+    #                     cross_anni_cnn_minus = self.mean_bg_ims[i] / self.sd_bg_ims[i] * \
+    #                                      2 * np.real(tmp1_inv_shift.dot(np.transpose(self.c_ims_rot[i])))
+    #
+    #                     cross_anni_ann_minus = self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[i] * \
+    #                                      2 * np.real(tmp2_inv_shift.dot(np.transpose(self.c_ims_rot[i])))
+    #
+    #                     # write down the log likelihood
+    #                     posteriors[i, shift_minus_ind] = cross_anni_ann_minus - \
+    #                                                   (const_elms[i][:, np.newaxis] + cross_anni_cnn_minus)
+    #
+    #     log_lik_per_image = np.zeros(self.n_images)
+    #     for i in np.arange(self.n_images):
+    #
+    #         omega_i = posteriors[i]
+    #         max_omega = np.max(omega_i)
+    #
+    #         omega_i = np.exp(omega_i - max_omega)
+    #
+    #         log_lik_per_image[i] = max_omega + np.log(np.sum(omega_i))
+    #
+    #         posteriors[i] = omega_i / np.sum(omega_i)
+    #
+    #     return posteriors, log_lik_per_image
 
 
 def main():
