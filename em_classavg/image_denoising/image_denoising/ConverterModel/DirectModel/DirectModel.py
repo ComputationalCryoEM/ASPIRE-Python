@@ -64,6 +64,14 @@ class DirectModel:
 
         self.points_inside_the_circle_vec = points_inside_the_circle.reshape(self.image_height ** 2)
 
+        self.non_neg_freq_inds = slice(0, len(self.angular_frequency))
+
+        tmp = np.nonzero(self.angular_frequency == 0)[0]
+        self.zero_freq_inds = slice(tmp[0], tmp[-1] + 1)
+
+        tmp = np.nonzero(self.angular_frequency > 0)[0]
+        self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
+
     def get_points_inside_the_circle(self):
         if config.is_use_gpu:
             return self.points_inside_the_circle.get().astype('bool')
@@ -120,33 +128,20 @@ class DirectModel:
         return self.angular_frequency
 
     def get_num_prolates(self):
-        return np.shape(self.samples)[0]  # TODO: fix once Itay gives the samples in the correct way
+        # TODO: fix once Itay gives the samples in the correct way
+        print("get_samples_as_images is not supported.")
+        return -1
 
     def get_non_neg_freq_inds(self):
-        return np.arange(len(self.angular_frequency))
-
-    def get_non_neg_freq_inds_gpu(self):
-        return slice(0,len(self.angular_frequency))
-        # return np.arange(len(self.angular_frequency))
-
-    def get_zero_freq_inds_slice(self):
-        # TODO: avoid computing this each time. Rather calc once the first and last and have this method just construct the slice
-        tmp = np.nonzero(self.angular_frequency == 0)[0]
-        return slice(tmp[0], tmp[-1] + 1)
-
-    def get_pos_freq_inds_slice(self):
-        # TODO: avoid computing this each time. Rather calc once the first and last and have this method just construct the slice
-        tmp = np.nonzero(self.angular_frequency > 0)[0]
-        return slice(tmp[0], tmp[-1] + 1)
-
-    def get_neg_freq_inds_slice(self):
-        ValueError('no negative frequencies')
+        return self.non_neg_freq_inds
 
     def get_zero_freq_inds(self):
-        return np.nonzero(self.angular_frequency == 0)[0]
+        # first = next(x[0] for x in enumerate(self.angular_frequency) if x[1] == 0)
+        # last = next(x[0] for x in enumerate(reversed(self.angular_frequency)) if x[1] == 0)
+        return self.zero_freq_inds
 
     def get_pos_freq_inds(self):
-        return np.nonzero(self.angular_frequency > 0)[0]
+        return self.pos_freq_inds
 
     def get_neg_freq_inds(self):
         ValueError('no negative frequencies')
@@ -157,8 +152,9 @@ class DirectModel_Full(DirectModel):
         super().__init__(resolution, truncation, beta, pswf2d, even)
 
         n_pos_freqs = np.size(np.where(self.angular_frequency > 0))
-        self.neg_freq_inds = np.arange(n_pos_freqs) + len(self.angular_frequency) # we put the negative freqs at the end
+        tmp = np.arange(n_pos_freqs) + len(self.angular_frequency)  # we implicetely put the negative freqs at the end
         # self.unq_ang_freqs, self.Iunq_ang_freqs = np.unique(self.angular_frequency,return_inverse=True)
+        self.neg_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
         # images = data_utils.mat_to_npy('images')
         # PSWF_Nn_p_psis = data_utils.mat_to_npy('PSWF_Nn_p_psis').astype('complex64')
@@ -168,17 +164,14 @@ class DirectModel_Full(DirectModel):
         if config.is_use_gpu:
             self.samples_as_images = gpuarray.to_gpu(self.samples_as_images)
 
-    def get_neg_freq_inds_slice(self):
-        return slice(self.neg_freq_inds[0], self.neg_freq_inds[-1] + 1)
-
     def get_neg_freq_inds(self):
         return self.neg_freq_inds
 
     def get_num_prolates(self):
-        return len(self.get_zero_freq_inds()) + len(self.get_pos_freq_inds()) + len(self.neg_freq_inds)
+        return self.non_neg_freq_inds.stop - self.non_neg_freq_inds.start + self.neg_freq_inds.stop - self.neg_freq_inds.start
 
     def get_angular_frequency(self):
-        return np.concatenate((self.angular_frequency, -self.angular_frequency[self.get_pos_freq_inds()]))
+        return np.concatenate((self.angular_frequency, -self.angular_frequency[self.pos_freq_inds]))
 
     def forward(self, images):
         if np.ndim(images) == 3:
@@ -188,8 +181,8 @@ class DirectModel_Full(DirectModel):
 
         n_images = len(coeffs_non_neg)
         coeffs = np.zeros((n_images, self.get_num_prolates())).astype('complex')
-        coeffs[:, self.get_non_neg_freq_inds()] = coeffs_non_neg
-        coeffs[:, self.neg_freq_inds] = np.conj(coeffs[:, self.get_pos_freq_inds()])
+        coeffs[:, self.non_neg_freq_inds] = coeffs_non_neg
+        coeffs[:, self.neg_freq_inds] = np.conj(coeffs[:, self.pos_freq_inds])
         return coeffs
 
     def backward(self, coefficients):
@@ -214,8 +207,8 @@ class DirectModel_Full(DirectModel):
         self_samples = np.transpose(self.samples)  # TODO: fix once Itay fixes
         samples = np.zeros((self.image_height, self.image_height, self.get_num_prolates())).astype('complex64')
         samples_non_neg_freq = samples[self.get_points_inside_the_circle()]
-        samples_non_neg_freq[:, self.get_non_neg_freq_inds()] = self.samples
-        samples_non_neg_freq[:, self.get_neg_freq_inds()] = np.transpose(np.conj(self_samples[self.get_pos_freq_inds()]))
+        samples_non_neg_freq[:, self.non_neg_freq_inds] = self.samples
+        samples_non_neg_freq[:, self.neg_freq_inds] = np.transpose(np.conj(self_samples[self.pos_freq_inds]))
         samples[self.get_points_inside_the_circle()] = samples_non_neg_freq
 
         samples = np.transpose(samples, axes=(1, 0, 2))  # python is row based but the mask assumes column base
@@ -227,15 +220,14 @@ class DirectModel_Full(DirectModel):
 
         self_samples = np.transpose(self.samples)
         samples = np.zeros((self.get_num_prolates(), self.image_height, self.image_height)).astype('complex64')
-        samples_non_neg = np.zeros((len(self.get_non_neg_freq_inds()), self.image_height, self.image_height)).astype('complex64')
+        samples_non_neg = np.zeros((self.non_neg_freq_inds.stop - self.non_neg_freq_inds.start, self.image_height, self.image_height)).astype('complex64')
 
         for counter, sample in enumerate(self_samples):
             samples_non_neg[counter, self.get_points_inside_the_circle()] = sample
 
-        samples[self.get_non_neg_freq_inds()] = samples_non_neg
-        samples[self.get_neg_freq_inds()] = np.conj(samples[self.get_pos_freq_inds()])
+        samples[self.non_neg_freq_inds] = samples_non_neg
+        samples[self.neg_freq_inds] = np.conj(samples[self.pos_freq_inds])
 
         samples = np.transpose(samples, axes=(0, 2, 1)).copy()  # python is row based but the mask assumes column base
 
         return samples
-

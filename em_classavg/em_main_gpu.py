@@ -49,7 +49,7 @@ class EM:
         self.c_ims = self.converter.direct_forward(images)
         self.const_terms = self.pre_compute_const_terms()
         self.phases = np.exp(-1j * 2 * np.pi / 360 *
-                             np.outer(self.em_params['thetas'], self.converter.direct_get_angular_frequency()))
+                             np.outer(self.em_params['thetas'], self.converter.get_angular_frequency()))
 
         #  the expansion coefficients of each image for each possible rotation
         self.c_ims_rot = self.c_ims[:, np.newaxis, :] * self.phases[np.newaxis, :]
@@ -132,9 +132,9 @@ class EM:
         print('m-step')
         if config.is_use_gpu:
             posteriors = gpuarray.to_gpu(posteriors).astype('complex64')  # TODO: keep only gpu version once done
-        W_shifts_marg = np.zeros((self.n_images, self.converter.direct_get_num_samples()), np.complex64)
-        c_avg = np.zeros(self.converter.direct_get_num_samples(), np.complex64)
-        non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
+        W_shifts_marg = np.zeros((self.n_images, self.converter.get_num_prolates()), np.complex64)
+        c_avg = np.zeros(self.converter.get_num_prolates(), np.complex64)
+        non_neg_freqs = self.converter.get_non_neg_freq_inds()
         for shift_x in progressbar.progressbar(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
 
@@ -156,7 +156,7 @@ class EM:
         #  update the coeffs using with respect to the additive term
         c_avg[non_neg_freqs] += np.sum(np.transpose(W_shifts_marg * self.const_terms['c_additive_term']), axis=1)[non_neg_freqs]
         # take care of the negative freqs
-        c_avg[self.converter.direct_get_neg_freq_inds()] = np.conj(c_avg[self.converter.direct_get_pos_freq_inds()])
+        c_avg[self.converter.get_neg_freq_inds()] = np.conj(c_avg[self.converter.get_pos_freq_inds()])
         if config.is_use_gpu:
             posteriors = posteriors.get()
         c = posteriors * self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
@@ -166,7 +166,7 @@ class EM:
 
     def marginilize_rots_scales(self, posteriors, shift_x, shift_y):
         shift_ind = self.ravel_shift_index(shift_x, shift_y)
-        W = np.zeros((self.n_images, self.converter.direct_get_num_samples()), np.complex64)
+        W = np.zeros((self.n_images, self.converter.get_num_prolates()), np.complex64)
         if config.is_use_gpu:
             for i in np.arange(self.n_images):
                 # TODO: make the assignment work if W is a gpuarray
@@ -185,55 +185,55 @@ class EM:
 
     def __calc_A_shift_cpu(self, shift_x, shift_y):
 
-        psis = self.converter.direct_get_samples_as_images()
+        psis = self.converter.get_prolates_as_images()
         n_psis = len(psis)
 
         if shift_x == 0 and shift_y == 0:
             return np.eye(n_psis)
 
         A_shift = np.zeros((n_psis, n_psis)).astype('complex')
-        non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
+        non_neg_freqs = self.converter.get_non_neg_freq_inds()
         psis_non_neg_shifted = np.roll(np.roll(psis[non_neg_freqs], shift_y, axis=1), shift_x, axis=2)
 
         # mask the shifted psis
-        psis_non_neg_shifted = self.converter.direct_mask_points_inside_the_circle(psis_non_neg_shifted)
+        psis_non_neg_shifted = self.converter.mask_points_inside_the_circle(psis_non_neg_shifted)
 
         # we need the conjugation by design
         A_shift[:, non_neg_freqs] = np.tensordot(np.conj(psis), psis_non_neg_shifted, axes=([1, 2], [1, 2]))
 
-        zero_freq_inds = self.converter.direct_get_zero_freq_inds()
-        pos_freq_inds = self.converter.direct_get_pos_freq_inds()
-        neg_freq_inds = self.converter.direct_get_neg_freq_inds()
+        zero_freq_inds = self.converter.get_zero_freq_inds()
+        pos_freq_inds  = self.converter.get_pos_freq_inds()
+        neg_freq_inds  = self.converter.get_neg_freq_inds()
 
-        A_shift[zero_freq_inds[:, np.newaxis], neg_freq_inds] = np.conj(A_shift[zero_freq_inds[:, np.newaxis], pos_freq_inds])
-        A_shift[pos_freq_inds[:, np.newaxis], neg_freq_inds]  = np.conj(A_shift[neg_freq_inds[:, np.newaxis], pos_freq_inds])
-        A_shift[neg_freq_inds[:, np.newaxis], neg_freq_inds]  = np.conj(A_shift[pos_freq_inds[:, np.newaxis], pos_freq_inds])
+        A_shift[zero_freq_inds, neg_freq_inds] = np.conj(A_shift[zero_freq_inds, pos_freq_inds])
+        A_shift[pos_freq_inds, neg_freq_inds]  = np.conj(A_shift[neg_freq_inds, pos_freq_inds])
+        A_shift[neg_freq_inds, neg_freq_inds]  = np.conj(A_shift[pos_freq_inds, pos_freq_inds])
 
         return A_shift
 
     def __calc_A_shift_gpu(self, shift_x, shift_y):
 
-        psis_gpu = self.converter.direct_get_samples_as_images()  # TODO: need to assert that returns indeed a gpuarray
+        psis_gpu = self.converter.get_prolates_as_images()  # TODO: need to assert that returns indeed a gpuarray
         n_psis = len(psis_gpu)
 
         if shift_x == 0 and shift_y == 0:
             return np.eye(n_psis)
 
         A_shift = gpuarray.zeros((n_psis, n_psis),'complex64')
-        non_neg_freqs = self.converter.direct_get_non_neg_freq_inds_slice()
+        non_neg_freqs = self.converter.get_non_neg_freq_inds()
 
         psis_gpu_non_neg_freqs = psis_gpu[non_neg_freqs]
         psis_non_neg_shifted = circ_shift_kernel.circ_shift(psis_gpu_non_neg_freqs,shift_x, shift_y)
 
-        psis_non_neg_shifted = self.converter.direct_mask_points_inside_the_circle(psis_non_neg_shifted)
+        psis_non_neg_shifted = self.converter.mask_points_inside_the_circle(psis_non_neg_shifted)
 
         psis_non_neg_shifted = psis_non_neg_shifted.reshape(len(psis_non_neg_shifted), -1)
         psis_gpu = psis_gpu.reshape(n_psis, -1)
         A_shift[non_neg_freqs] = linalg.dot(psis_non_neg_shifted, psis_gpu, transb='C')
 
-        zero_freq_inds = self.converter.direct_get_zero_freq_inds_slice()
-        pos_freq_inds  = self.converter.direct_get_pos_freq_inds_slice()
-        neg_freq_inds  = self.converter.direct_get_neg_freq_inds_slice()
+        zero_freq_inds = self.converter.get_zero_freq_inds()
+        pos_freq_inds  = self.converter.get_pos_freq_inds()
+        neg_freq_inds  = self.converter.get_neg_freq_inds()
 
         A_shift[neg_freq_inds, zero_freq_inds] = A_shift[pos_freq_inds, zero_freq_inds]
         A_shift[neg_freq_inds, pos_freq_inds] = A_shift[pos_freq_inds, neg_freq_inds]
