@@ -68,12 +68,6 @@ class Converter:
             return -1
         return self.direct_model.get_samples_as_images()
 
-    def direct_get_samples_as_images_gpu(self):
-        if self.direct_model is None:
-            print("Direct model is not initialized. Use init_direct() to proceed.")
-            return -1
-        return self.direct_model.get_samples_as_images_gpu()
-
     def direct_get_num_samples(self):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
@@ -142,9 +136,3 @@ class Converter:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
         return self.direct_model.mask_points_inside_the_circle(images)
-
-    def direct_mask_points_inside_the_circle_gpu(self, images):
-        if self.direct_model is None:
-            print("Direct model is not initialized. Use init_direct() to proceed.")
-            return -1
-        return self.direct_model.mask_points_inside_the_circle_gpu(images)

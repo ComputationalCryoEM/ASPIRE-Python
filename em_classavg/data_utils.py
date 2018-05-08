@@ -3,6 +3,7 @@ import numpy as np
 import pyfftw
 from scipy.special import erf
 
+np.set_string_function(lambda a: str(a.shape), repr=False)
 
 def mat_to_npy(file_name):
     return loadmat(file_name + '.mat')[file_name]

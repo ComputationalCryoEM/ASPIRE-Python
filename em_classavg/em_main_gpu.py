@@ -7,6 +7,7 @@ import skcuda.misc as misc
 import em_classavg.circ_shift_kernel as circ_shift_kernel
 import progressbar
 
+import em_classavg.config as config
 import em_classavg.data_utils as data_utils
 from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
 
@@ -81,8 +82,7 @@ class EM:
 
                 if shift_y < shift_x:
                     continue
-
-                A_shift = self.calc_A_shift_gpu(shift_x, shift_y)
+                A_shift = self.calc_A_shift(shift_x, shift_y)
                 tmp1_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_shift)
                 tmp2_shift = np.conj(c_avg).dot(A_shift)
 
@@ -156,7 +156,7 @@ class EM:
                          self.em_params['shift_jump']
                 inds = np.ravel_multi_index(shifts.astype(shift_y), (n_shifts_1d, n_shifts_1d))
 
-                A_shift = self.calc_A_shift_gpu(shift_x, shift_y)
+                A_shift = self.calc_A_shift(shift_x, shift_y)
                 A_inv_shift = np.conj(np.transpose(A_shift))
 
                 non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
@@ -165,10 +165,8 @@ class EM:
 
                 W = np.zeros((n_images, self.converter.direct_get_num_samples()), np.complex64)
 
-                # start = time.time()
                 for i in np.arange(n_images):
                     W[i] = misc.sum(linalg.dot(posteriors[i, inds[0]], self.phases_gpu), axis=0).get()
-                # print("W[i] computation%f" % (time.time() - start))
 
                 c_avg[non_neg_freqs] += np.sum(A_shift.dot(np.transpose(W * self.c_ims)), axis=1)
 
@@ -197,72 +195,14 @@ class EM:
 
         return c_avg
 
+    def calc_A_shift(self, shift_x, shift_y):
 
-    def m_step_cpu(self, posteriors):
+        if config.is_use_gpu:
+            return self.__calc_A_shift_gpu(shift_x, shift_y)
+        else:
+            return self.__calc_A_shift_cpu(shift_x, shift_y)
 
-        print('m-step')
-        n_images = self.n_images
-        n_shifts_1d = len(self.em_params['shifts'])
-
-        n_prolates = self.converter.direct_get_num_samples()
-
-        W_shifts_marg = np.zeros((n_images, n_prolates)).astype('complex')
-
-        c_avg = np.zeros(n_prolates).astype('complex')
-
-        for shift_x in self.em_params['shifts']:
-            for shift_y in self.em_params['shifts']:
-
-                if shift_y < shift_x:
-                    continue
-
-                shifts = (np.array([[shift_y, -shift_y], [shift_x, -shift_x]]) + self.em_params['max_shift']) / \
-                         self.em_params['shift_jump']
-                inds = np.ravel_multi_index(shifts.astype(shift_y), (n_shifts_1d, n_shifts_1d))
-
-                A_shift = self.calc_A_shift_gpu(shift_x, shift_y)
-                A_inv_shift = np.conj(np.transpose(A_shift))
-
-                non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
-                A_shift = A_shift[non_neg_freqs]
-                A_inv_shift = A_inv_shift[non_neg_freqs]
-
-                W = np.zeros((n_images, self.converter.direct_get_num_samples())).astype('complex')
-
-                # start = time.time()
-                for i in np.arange(n_images):
-                    W[i] = np.sum(np.dot(posteriors[i, inds[0]], self.phases), axis=0)
-                # print("W[i] computation%f" % (time.time() - start))
-
-                c_avg[non_neg_freqs] += np.sum(A_shift.dot(np.transpose(W * self.c_ims)), axis=1)
-
-                W_shifts_marg += W
-
-                if shift_y != shift_x:
-
-                    W_minus = np.zeros((n_images, self.converter.direct_get_num_samples())).astype('complex')
-
-                    for i in np.arange(n_images):
-                        W_minus[i] = np.sum(np.dot(posteriors[i, inds[1]], self.phases), axis=0)
-
-                    c_avg[non_neg_freqs] += np.sum(A_inv_shift.dot(np.transpose(W_minus * self.c_ims)), axis=1)
-
-                    W_shifts_marg += W_minus
-
-        #  update the coeffs using with respect to the additive term
-        c_avg[non_neg_freqs] += np.sum(np.transpose(W_shifts_marg * self.const_terms['c_additive_term']), axis=1)[non_neg_freqs]
-
-        c_avg[self.converter.direct_get_neg_freq_inds()] = np.conj(c_avg[self.converter.direct_get_pos_freq_inds()])
-
-        c = posteriors * self.em_params['scales'][:, np.newaxis] / \
-            self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
-        c = np.sum(c)
-        c_avg = c_avg/c
-
-        return c_avg
-
-
-    def calc_A_shift_cpu(self, shift_x, shift_y):
+    def __calc_A_shift_cpu(self, shift_x, shift_y):
 
         psis = self.converter.direct_get_samples_as_images()
         n_psis = len(psis)
@@ -290,9 +230,9 @@ class EM:
 
         return A_shift
 
-    def calc_A_shift_gpu(self, shift_x, shift_y):
+    def __calc_A_shift_gpu(self, shift_x, shift_y):
 
-        psis_gpu = self.converter.direct_get_samples_as_images_gpu()
+        psis_gpu = self.converter.direct_get_samples_as_images()  # TODO: need to assert that returns indeed a gpuarray
         n_psis = len(psis_gpu)
 
         if shift_x == 0 and shift_y == 0:
@@ -304,11 +244,11 @@ class EM:
         psis_gpu_non_neg_freqs = psis_gpu[non_neg_freqs]
         psis_non_neg_shifted = circ_shift_kernel.circ_shift(psis_gpu_non_neg_freqs,shift_x, shift_y)
 
-        psis_non_neg_shifted = self.converter.direct_mask_points_inside_the_circle_gpu(psis_non_neg_shifted)
+        psis_non_neg_shifted = self.converter.direct_mask_points_inside_the_circle(psis_non_neg_shifted)
 
         psis_non_neg_shifted = psis_non_neg_shifted.reshape(len(psis_non_neg_shifted), -1)
         psis_gpu = psis_gpu.reshape(n_psis, -1)
-        A_shift[non_neg_freqs] =  linalg.dot(psis_non_neg_shifted, psis_gpu, transb='C')
+        A_shift[non_neg_freqs] = linalg.dot(psis_non_neg_shifted, psis_gpu, transb='C')
 
         zero_freq_inds = self.converter.direct_get_zero_freq_inds_slice()
         pos_freq_inds  = self.converter.direct_get_pos_freq_inds_slice()
