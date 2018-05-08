@@ -3,6 +3,7 @@ import pycuda.gpuarray as gpuarray
 
 import skcuda.linalg as linalg
 import em_classavg.mask_images_kernel as mask_images_kernel
+import em_classavg.config as config
 
 class DirectModel:
     def __init__(self, resolution, truncation, beta, pswf2d, even):
@@ -55,15 +56,31 @@ class DirectModel:
         self.samples_conj_transpose = self.samples.conj().transpose()
 
         self.image_height = len(x_1d_grid)
-        self.points_inside_the_circle = points_inside_the_circle
-        self.points_inside_the_circle_gpu = gpuarray.to_gpu(self.points_inside_the_circle).astype('complex64')
+
+        if config.is_use_gpu:
+            self.points_inside_the_circle = gpuarray.to_gpu(points_inside_the_circle).astype('complex64')
+        else:
+            self.points_inside_the_circle = points_inside_the_circle
+
         self.points_inside_the_circle_vec = points_inside_the_circle.reshape(self.image_height ** 2)
 
+    def get_points_inside_the_circle(self):
+        if config.is_use_gpu:
+            return self.points_inside_the_circle.get().astype('bool')
+        else:
+            return self.points_inside_the_circle
+
     def mask_points_inside_the_circle(self, images):
+        if config.is_use_gpu:
+            return self.__mask_points_inside_the_circle_gpu(images)
+        else:
+            return self.__mask_points_inside_the_circle_cpu(images)
+
+    def __mask_points_inside_the_circle_cpu(self, images):
         return images * self.points_inside_the_circle
 
-    def mask_points_inside_the_circle_gpu(self, images):
-        return mask_images_kernel.do_mask_gpu(images, self.points_inside_the_circle_gpu)
+    def __mask_points_inside_the_circle_gpu(self, images):
+        return mask_images_kernel.do_mask_gpu(images, self.points_inside_the_circle)
 
     def forward(self, images):
         images_shape = images.shape
@@ -91,7 +108,7 @@ class DirectModel:
 
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
-        images[self.points_inside_the_circle, :] = flatten_images
+        images[self.get_points_inside_the_circle(), :] = flatten_images
         images = np.transpose(images, axes=(1, 0, 2))
         return images
 
@@ -148,7 +165,8 @@ class DirectModel_Full(DirectModel):
         # PSWF_Nn_p_psis = np.transpose(PSWF_Nn_p_psis, axes=(2, 0, 1)).copy()  # move to python convention
         # self.samples_as_images = PSWF_Nn_p_psis
         self.samples_as_images = self.calc_samples_as_images()
-        self.samples_as_images_gpu = gpuarray.to_gpu(self.samples_as_images) #  TODO: keep either samples gpu or samples cpu. not both
+        if config.is_use_gpu:
+            self.samples_as_images = gpuarray.to_gpu(self.samples_as_images)
 
     def get_neg_freq_inds_slice(self):
         return slice(self.neg_freq_inds[0], self.neg_freq_inds[-1] + 1)
@@ -191,25 +209,19 @@ class DirectModel_Full(DirectModel):
 
         return self.samples_as_images
 
-    def get_samples_as_images_gpu(self):
-
-        return self.samples_as_images_gpu
-
     def calc_samples_as_images_old(self):
 
         self_samples = np.transpose(self.samples)  # TODO: fix once Itay fixes
         samples = np.zeros((self.image_height, self.image_height, self.get_num_prolates())).astype('complex64')
-
-        samples_non_neg_freq = samples[self.points_inside_the_circle]
+        samples_non_neg_freq = samples[self.get_points_inside_the_circle()]
         samples_non_neg_freq[:, self.get_non_neg_freq_inds()] = self.samples
         samples_non_neg_freq[:, self.get_neg_freq_inds()] = np.transpose(np.conj(self_samples[self.get_pos_freq_inds()]))
-        samples[self.points_inside_the_circle] = samples_non_neg_freq
+        samples[self.get_points_inside_the_circle()] = samples_non_neg_freq
 
         samples = np.transpose(samples, axes=(1, 0, 2))  # python is row based but the mask assumes column base
         samples = np.transpose(samples, axes=(2, 0, 1))  # we want the first index to the image number
 
         return samples
-
 
     def calc_samples_as_images(self):
 
@@ -218,7 +230,7 @@ class DirectModel_Full(DirectModel):
         samples_non_neg = np.zeros((len(self.get_non_neg_freq_inds()), self.image_height, self.image_height)).astype('complex64')
 
         for counter, sample in enumerate(self_samples):
-            samples_non_neg[counter,self.points_inside_the_circle] = sample
+            samples_non_neg[counter, self.get_points_inside_the_circle()] = sample
 
         samples[self.get_non_neg_freq_inds()] = samples_non_neg
         samples[self.get_neg_freq_inds()] = np.conj(samples[self.get_pos_freq_inds()])
