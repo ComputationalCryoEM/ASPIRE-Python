@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import pycuda.gpuarray as gpuarray
+import pycuda.driver
 import skcuda.linalg as linalg
 import skcuda.misc as misc
 import em_classavg.circ_shift_kernel as circ_shift_kernel
@@ -48,11 +49,13 @@ class EM:
         self.c_ims = self.converter.direct_forward(images)
         self.const_terms = self.pre_compute_const_terms()
         self.phases = np.exp(-1j * 2 * np.pi / 360 *
-                        np.outer(self.em_params['thetas'], self.converter.direct_get_angular_frequency()))
+                             np.outer(self.em_params['thetas'], self.converter.direct_get_angular_frequency()))
 
-        self.phases_gpu = gpuarray.to_gpu(self.phases).astype('complex64')  # # TODO: keep only gpu version once done
         #  the expansion coefficients of each image for each possible rotation
         self.c_ims_rot = self.c_ims[:, np.newaxis, :] * self.phases[np.newaxis, :]
+
+        if config.is_use_gpu:
+            self.phases = gpuarray.to_gpu(self.phases).astype('complex64')
 
     def ravel_shift_index(self, shift_x, shift_y):
         n_shifts_1d = len(self.em_params['shifts'])
@@ -124,11 +127,11 @@ class EM:
             posteriors[i] = cross_anni_ann - (const_elms[i][:, np.newaxis] + cross_anni_cnn)
         return posteriors
 
-
     def m_step(self, posteriors):
 
         print('m-step')
-        posteriors = gpuarray.to_gpu(posteriors).astype('complex64')  # TODO: keep only gpu version once done
+        if config.is_use_gpu:
+            posteriors = gpuarray.to_gpu(posteriors).astype('complex64')  # TODO: keep only gpu version once done
         W_shifts_marg = np.zeros((self.n_images, self.converter.direct_get_num_samples()), np.complex64)
         c_avg = np.zeros(self.converter.direct_get_num_samples(), np.complex64)
         non_neg_freqs = self.converter.direct_get_non_neg_freq_inds()
@@ -154,7 +157,9 @@ class EM:
         c_avg[non_neg_freqs] += np.sum(np.transpose(W_shifts_marg * self.const_terms['c_additive_term']), axis=1)[non_neg_freqs]
         # take care of the negative freqs
         c_avg[self.converter.direct_get_neg_freq_inds()] = np.conj(c_avg[self.converter.direct_get_pos_freq_inds()])
-        c = posteriors.get() * self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
+        if config.is_use_gpu:
+            posteriors = posteriors.get()
+        c = posteriors * self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
         c = np.sum(c)
         c_avg = c_avg/c
         return c_avg
@@ -162,8 +167,13 @@ class EM:
     def marginilize_rots_scales(self, posteriors, shift_x, shift_y):
         shift_ind = self.ravel_shift_index(shift_x, shift_y)
         W = np.zeros((self.n_images, self.converter.direct_get_num_samples()), np.complex64)
-        for i in np.arange(self.n_images):
-            W[i] = misc.sum(linalg.dot(posteriors[i, shift_ind], self.phases_gpu), axis=0).get()
+        if config.is_use_gpu:
+            for i in np.arange(self.n_images):
+                # TODO: make the assignment work if W is a gpuarray
+                W[i] = misc.sum(linalg.dot(posteriors[i, shift_ind], self.phases), axis=0).get()
+        else:
+            for i in np.arange(self.n_images):
+                W[i] = np.sum(np.dot(posteriors[i, shift_ind], self.phases), axis=0)
         return W
 
     def calc_A_shift(self, shift_x, shift_y):
