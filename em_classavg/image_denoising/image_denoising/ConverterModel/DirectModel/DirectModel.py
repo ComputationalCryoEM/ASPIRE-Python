@@ -143,6 +143,10 @@ class DirectModel_Full(DirectModel):
         self.neg_freq_inds = np.arange(n_pos_freqs) + len(self.angular_frequency) # we put the negative freqs at the end
         # self.unq_ang_freqs, self.Iunq_ang_freqs = np.unique(self.angular_frequency,return_inverse=True)
 
+        # images = data_utils.mat_to_npy('images')
+        # PSWF_Nn_p_psis = data_utils.mat_to_npy('PSWF_Nn_p_psis').astype('complex64')
+        # PSWF_Nn_p_psis = np.transpose(PSWF_Nn_p_psis, axes=(2, 0, 1)).copy()  # move to python convention
+        # self.samples_as_images = PSWF_Nn_p_psis
         self.samples_as_images = self.calc_samples_as_images()
         self.samples_as_images_gpu = gpuarray.to_gpu(self.samples_as_images) #  TODO: keep either samples gpu or samples cpu. not both
 
