@@ -2,13 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import pycuda.gpuarray as gpuarray
-import pycuda.driver as cuda
-from pycuda.compiler import SourceModule
-import pycuda.autoinit
 import skcuda.linalg as linalg
 import skcuda.misc as misc
-from pycuda.tools import context_dependent_memoize
 import em_classavg.circ_shift_kernel as circ_shift_kernel
+import progressbar
 
 import em_classavg.data_utils as data_utils
 from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
@@ -79,17 +76,14 @@ class EM:
         ann_const_cross_cnn_anns = ann_const + cross_cnn_ann
         const_elms = ann_const_cross_cnn_anns + (self.const_terms['anni'] + self.const_terms['cnn'])[:, np.newaxis]
 
-        for shift_x in self.em_params['shifts']:
+        for shift_x in progressbar.progressbar(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
 
                 if shift_y < shift_x:
                     continue
 
                 A_shift = self.calc_A_shift_gpu(shift_x, shift_y)
-                # # TODO: if possible consider conjugating only once const_terms_gpu['c_all_ones_im']
-                # tmp1_shift = linalg.dot(linalg.conj(self.const_terms_gpu['c_all_ones_im']), A_shift)
                 tmp1_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_shift)
-                # tmp2_shift = linalg.dot(linalg.conj(c_avg),A_shift)
                 tmp2_shift = np.conj(c_avg).dot(A_shift)
 
                 A_inv_shift = np.conj(np.transpose(A_shift))
@@ -152,7 +146,7 @@ class EM:
 
         c_avg = np.zeros(n_prolates, np.complex64)
 
-        for shift_x in self.em_params['shifts']:
+        for shift_x in progressbar.progressbar(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
 
                 if shift_y < shift_x:
