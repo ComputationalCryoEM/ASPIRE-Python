@@ -47,10 +47,6 @@ class EM:
 
         self.c_ims = self.converter.direct_forward(images)
         self.const_terms = self.pre_compute_const_terms()
-
-        # TODO: Strangly, removing this ends up with slower workflow even though self.const_terms_gpu is not used
-        self.const_terms_gpu = self.pre_compute_const_terms_gpu()
-
         self.phases = np.exp(-1j * 2 * np.pi / 360 *
                         np.outer(self.em_params['thetas'], self.converter.direct_get_angular_frequency()))
 
@@ -250,20 +246,6 @@ class EM:
         const_terms['c_additive_term'] = np.outer(self.mean_bg_ims / self.sd_bg_ims, const_terms['c_all_ones_im'])
 
         return const_terms
-
-    def pre_compute_const_terms_gpu(self):
-
-        const_terms_gpu = dict()
-        im_size = self.im_size
-        # we need the all-ones-image in order for the additive term due to normalization
-        const_terms_gpu['c_all_ones_im'] = gpuarray.to_gpu(self.converter.direct_forward(np.ones((im_size, im_size)))).astype('complex64')
-
-        const_terms_gpu['anni'] = gpuarray.to_gpu(np.linalg.norm(self.c_ims, axis=1) ** 2).astype('complex64')
-        const_terms_gpu['cnn'] = gpuarray.to_gpu((self.mean_bg_ims / self.sd_bg_ims * np.linalg.norm(const_terms_gpu['c_all_ones_im'].get())) ** 2).astype('complex64')
-        const_terms_gpu['c_additive_term'] = gpuarray.to_gpu(np.outer(self.mean_bg_ims / self.sd_bg_ims, const_terms_gpu['c_all_ones_im'].get())).astype('complex64')
-
-        return const_terms_gpu
-
 
     def compute_opt_latent_vals(self, posteriors):
 
