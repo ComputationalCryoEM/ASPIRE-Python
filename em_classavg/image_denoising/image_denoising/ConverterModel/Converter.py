@@ -62,76 +62,49 @@ class Converter:
             return -1
         return self.direct_model.backward(coefficients)
 
-    def direct_get_samples_as_images(self):
+    def get_prolates_as_images(self):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
         return self.direct_model.get_samples_as_images()
 
-    def direct_get_num_samples(self):
+    def get_num_prolates(self):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
         return self.direct_model.get_num_prolates()
 
-    def direct_get_angular_frequency(self):
+    def get_angular_frequency(self):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
         return self.direct_model.get_angular_frequency()
 
-    def direct_get_non_neg_freq_inds(self):
+    def get_non_neg_freq_inds(self):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
         return self.direct_model.get_non_neg_freq_inds()
 
-    def direct_get_non_neg_freq_inds_slice(self):
-        if self.direct_model is None:
-            print("Direct model is not initialized. Use init_direct() to proceed.")
-            return -1
-        return self.direct_model.get_non_neg_freq_inds_gpu()
-
-    def direct_get_zero_freq_inds_slice(self):
-        if self.direct_model is None:
-            print("Direct model is not initialized. Use init_direct() to proceed.")
-            return -1
-        return self.direct_model.get_zero_freq_inds_slice()
-
-    def direct_get_pos_freq_inds_slice(self):
-        if self.direct_model is None:
-            print("Direct model is not initialized. Use init_direct() to proceed.")
-            return -1
-        return self.direct_model.get_pos_freq_inds_slice()
-
-    def direct_get_neg_freq_inds_slice(self):
-        if self.direct_model is None:
-            print("Direct model is not initialized. Use init_direct() to proceed.")
-            return -1
-        return self.direct_model.get_neg_freq_inds_slice()
-
-    # TODO: remove and use slice method instead
-    def direct_get_zero_freq_inds(self):
+    def get_zero_freq_inds(self):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
         return self.direct_model.get_zero_freq_inds()
 
-    # TODO: remove and use slice method instead
-    def direct_get_pos_freq_inds(self):
+    def get_pos_freq_inds(self):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
         return self.direct_model.get_pos_freq_inds()
 
-    # TODO: remove and use slice method instead
-    def direct_get_neg_freq_inds(self):
+    def get_neg_freq_inds(self):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
         return self.direct_model.get_neg_freq_inds()
 
-    def direct_mask_points_inside_the_circle(self, images):
+    def mask_points_inside_the_circle(self, images):
         if self.direct_model is None:
             print("Direct model is not initialized. Use init_direct() to proceed.")
             return -1
