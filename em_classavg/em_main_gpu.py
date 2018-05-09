@@ -16,6 +16,7 @@ class EM:
     def __init__(self, images, init_avg_image, trunc_param=10, beta=0.5, ang_jump=1,
                  max_shift=5, shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
 
+        # beta = 0.5
         self.ang_jump = ang_jump
         self.is_remove_outliers = is_remove_outliers
         self.outliers_precent_removal = outliers_precent_removal
@@ -291,7 +292,7 @@ class EM:
         # plt.figure(1)
 
         plt.subplot(131)
-        plt.imshow(init_avg_image, cmap='gray')
+        plt.imshow(np.real(init_avg_image), cmap='gray')
         plt.subplot(132)
         plt.imshow(np.real(im_avg_est_prev), cmap='gray')
         plt.subplot(133)
@@ -299,17 +300,8 @@ class EM:
 
         plt.show()
 
-
-def main():
-    linalg.init()
-    images = data_utils.mat_to_npy('images')
-    images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
-
-    init_avg_image = data_utils.mat_to_npy('init_avg_image')
-
-    is_use_matlab_params = True
-
-    if is_use_matlab_params:
+    @staticmethod
+    def load_matlab_params():
         trunc_param = data_utils.mat_to_npy_vec('T')[0]
         beta = data_utils.mat_to_npy_vec('beta')[0]
         ang_jump = data_utils.mat_to_npy_vec('ang_jump')[0]
@@ -320,62 +312,83 @@ def main():
 
         is_remove_outliers = data_utils.mat_to_npy_vec('is_remove_outliers')[0]
         outliers_precent_removal = data_utils.mat_to_npy_vec('outliers_precent_removal')[0]
+        return trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales, is_remove_outliers, outliers_precent_removal
+
+    def do_em(self):
+
+        const_terms = self.pre_compute_const_terms()
+        phases = np.exp(-1j * 2 * np.pi / 360 *
+                        np.outer(self.em_params['thetas'], self.converter.get_angular_frequency()))
+
+        if config.is_use_gpu:
+            phases = gpuarray.to_gpu(phases).astype('complex64')
+
+        n_iters = 3  # data_utils.mat_to_npy_vec('nIters')[0]
+
+        print("#images=%d\t#iterations=%d\tangualr-jump=%d,\tmax shift=%d,\tshift-jump=%d,\t#scales=%d" %
+              (self.n_images, n_iters, self.ang_jump, self.em_params['max_shift'], self.em_params['shift_jump'],
+               self.em_params['n_scales']))
+
+        init_avg_image = self.converter.direct_backward(self.c_avg)[0]
+        im_avg_est_prev = init_avg_image
+
+        log_lik = dict()
+        for round in range(2):
+            round_str = str(round)
+            log_lik[round_str] = np.zeros((n_iters, self.n_images))
+            for it in range(n_iters):
+                t = time.time()
+                posteriors, log_lik[round_str][it] = self.e_step(phases, const_terms)
+                print('it %d: log likelihood=%.2f' % (it + 1, np.sum(log_lik[round_str][it])))
+                print('took %.2f secs' % (time.time() - t))
+
+                t = time.time()
+                self.m_step(posteriors, phases, const_terms)
+                print('took %.2f secs' % (time.time() - t))
+
+                im_avg_est = self.converter.direct_backward(self.c_avg)[0]
+                EM.plot_images(init_avg_image, im_avg_est_prev, im_avg_est)
+
+                im_avg_est_prev = im_avg_est
+
+            if round == 0 and self.is_remove_outliers:  # maximum two rounds
+                inds_sorted = np.argsort(log_lik[round_str][-1])
+                outlier_ims_inds = inds_sorted[:int(self.outliers_precent_removal / 100 * self.n_images)]
+
+                posteriors = np.delete(posteriors, outlier_ims_inds, axis=0)
+                self.c_ims = np.delete(self.c_ims, outlier_ims_inds, axis=0)
+                self.mean_bg_ims = np.delete(self.mean_bg_ims, outlier_ims_inds, axis=0)
+                self.sd_bg_ims = np.delete(self.sd_bg_ims, outlier_ims_inds, axis=0)
+                self.n_images = self.n_images - len(outlier_ims_inds)
+                const_terms = self.pre_compute_const_terms()
+            else:
+                break
+
+        # find the mode of each latent variable for each image
+        opt_latent = self.compute_opt_latent_vals(posteriors)
+
+        return im_avg_est, log_lik, opt_latent, outlier_ims_inds
+
+
+def main():
+
+    linalg.init()
+    images = data_utils.mat_to_npy('images')
+    images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
+    init_avg_image = data_utils.mat_to_npy('init_avg_image')
+
+    is_use_matlab_params = True
+
+    if is_use_matlab_params:
+        trunc_param, beta, ang_jump, max_shift, shift_jump, \
+        n_scales, is_remove_outliers, outliers_precent_removal = EM.load_matlab_params()
 
         em = EM(images, init_avg_image, trunc_param, beta, ang_jump, max_shift, shift_jump,
                 n_scales, is_remove_outliers, outliers_precent_removal)
     else:
         em = EM(images, init_avg_image, max_shift=3)
 
-    const_terms = em.pre_compute_const_terms()
-    phases = np.exp(-1j * 2 * np.pi / 360 *
-                         np.outer(em.em_params['thetas'], em.converter.get_angular_frequency()))
-
-    if config.is_use_gpu:
-        phases = gpuarray.to_gpu(phases).astype('complex64')
-
-    n_iters = 3  # data_utils.mat_to_npy_vec('nIters')[0]
-
-    print("#images=%d\t#iterations=%d\tangualr-jump=%d,\tmax shift=%d,\tshift-jump=%d,\t#scales=%d" %
-          (len(images), n_iters, em.ang_jump, em.em_params['max_shift'],em.em_params['shift_jump'], em.em_params['n_scales']))
-
-    im_avg_est_prev = init_avg_image
-
-    log_lik = dict()
-    for round in range(2):
-        round_str = str(round)
-        log_lik[round_str] = np.zeros((n_iters, em.n_images))
-        for it in range(n_iters):
-            t = time.time()
-            posteriors, log_lik[round_str][it] = em.e_step(phases, const_terms)
-            print('it %d: log likelihood=%.2f' % (it + 1, np.sum(log_lik[round_str][it])))
-            print('took %.2f secs' % (time.time() - t))
-
-            t = time.time()
-            em.m_step(posteriors, phases, const_terms)
-            print('took %.2f secs' % (time.time() - t))
-
-            im_avg_est = em.converter.direct_backward(em.c_avg)[0]
-            EM.plot_images(init_avg_image, im_avg_est_prev, im_avg_est)
-
-            im_avg_est_prev = im_avg_est
-
-        if round == 0 and em.is_remove_outliers:  # maximum two rounds
-            inds_sorted = np.argsort(log_lik[round_str][-1])
-            outlier_ims_inds = inds_sorted[:int(em.outliers_precent_removal / 100 * em.n_images)]
-
-            posteriors = np.delete(posteriors, outlier_ims_inds, axis=0)
-            em.c_ims = np.delete(em.c_ims, outlier_ims_inds, axis=0)
-            em.mean_bg_ims = np.delete(em.mean_bg_ims, outlier_ims_inds, axis=0)
-            em.sd_bg_ims = np.delete(em.sd_bg_ims, outlier_ims_inds, axis=0)
-            em.n_images = em.n_images - len(outlier_ims_inds)
-            const_terms = em.pre_compute_const_terms()
-        else:
-            break
-
-    # find the mode of each latent variable for each image
-    opt_latent = em.compute_opt_latent_vals(posteriors)
-
-    return im_avg_est, log_lik, opt_latent, outlier_ims_inds
+    em.do_em()
 
 
 if __name__ == "__main__":
