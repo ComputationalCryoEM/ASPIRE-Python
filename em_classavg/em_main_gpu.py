@@ -13,11 +13,9 @@ from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import
 
 
 class EM:
-    def __init__(self, images, trunc_param=10, beta=0.5, ang_jump=1,
+    def __init__(self, images, init_avg_image, trunc_param=10, beta=0.5, ang_jump=1,
                  max_shift=5, shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
 
-        self.trunc_param = trunc_param
-        self.beta = beta
         self.ang_jump = ang_jump
         self.is_remove_outliers = is_remove_outliers
         self.outliers_precent_removal = outliers_precent_removal
@@ -30,55 +28,51 @@ class EM:
         self.em_params['shifts'] = np.arange(-1 * self.em_params['max_shift'],
                                              self.em_params['max_shift'] + 1, self.em_params['shift_jump'])
 
-        self.im_size = np.shape(images)[-1]
-        if np.ndim(images) == 3:
-            self.n_images = len(images)
-        else:
-            self.n_images = 1
-
         images, self.mean_bg_ims, self.sd_bg_ims = data_utils.normalize_background(images)
-
         snr_est = EM.est_snr(images)
         est_scale = np.sqrt(snr_est * np.mean(self.sd_bg_ims) ** 2)
         self.em_params['scales'] = np.linspace(0.8 * est_scale, 1.2 * est_scale, self.em_params['n_scales'])
 
-        self.converter = Converter(self.im_size, self.trunc_param, self.beta)
+        self.n_images = len(images)
+        self.im_size = np.shape(images)[-1]
+        self.converter = Converter(self.im_size, trunc_param, beta)
         self.converter.init_direct('full')
 
         self.c_ims = self.converter.direct_forward(images)
-        self.const_terms = self.pre_compute_const_terms()
-        self.phases = np.exp(-1j * 2 * np.pi / 360 *
-                             np.outer(self.em_params['thetas'], self.converter.get_angular_frequency()))
 
-        #  the expansion coefficients of each image for each possible rotation
-        self.c_ims_rot = self.c_ims[:, np.newaxis, :] * self.phases[np.newaxis, :]
-
-        if config.is_use_gpu:
-            self.phases = gpuarray.to_gpu(self.phases).astype('complex64')
+        init_avg_image = data_utils.mask_decorator(init_avg_image, is_stack=True)
+        self.c_avg = self.converter.direct_forward(init_avg_image).reshape(-1)
 
     def ravel_shift_index(self, shift_x, shift_y):
         n_shifts_1d = len(self.em_params['shifts'])
         shift = ([shift_y, shift_x] + self.em_params['max_shift']) / self.em_params['shift_jump']
         return np.ravel_multi_index(shift.astype(int), (n_shifts_1d, n_shifts_1d))
 
-    def calc_e_step_const_elms(self, c_avg):
-        ann_const = (np.linalg.norm(c_avg) * np.outer(1 / self.sd_bg_ims, self.em_params['scales'])) ** 2
+    def calc_e_step_const_elms(self, const_terms):
+        ann_const = (np.linalg.norm(self.c_avg) * np.outer(1 / self.sd_bg_ims, self.em_params['scales'])) ** 2
         cross_cnn_ann = np.outer(self.mean_bg_ims / (self.sd_bg_ims ** 2), self.em_params['scales']) * \
-                        2 * np.real(np.vdot(c_avg, self.const_terms['c_all_ones_im']))
+                        2 * np.real(np.vdot(self.c_avg, const_terms['c_all_ones_im']))
 
         ann_const_cross_cnn_anns = ann_const + cross_cnn_ann
-        return ann_const_cross_cnn_anns + (self.const_terms['anni'] + self.const_terms['cnn'])[:, np.newaxis]
+        return ann_const_cross_cnn_anns + (const_terms['anni'] + const_terms['cnn'])[:, np.newaxis]
 
-    def e_step(self, c_avg):
+    def e_step(self, phases, const_terms):
 
         print('e-step')
         n_scales = len(self.em_params['scales'])
         n_rots = len(self.em_params['thetas'])
         n_shifts_2d = len(self.em_params['shifts'])**2
 
+        #  the expansion coefficients of each image for each possible rotation
+        # TODO: in principle this could be caclucated once, but it is more readable to have the e-step calc it instead of passing as parameter
+        if config.is_use_gpu:
+            c_ims_rot = self.c_ims[:, np.newaxis, :] * phases.get()[np.newaxis, :]
+        else:
+            c_ims_rot = self.c_ims[:, np.newaxis, :] * phases[np.newaxis, :]
+
         posteriors = np.zeros((self.n_images, n_shifts_2d, n_scales, n_rots))
         # compute the terms that do not depend on the shifts
-        const_elms = self.calc_e_step_const_elms(c_avg)
+        const_elms = self.calc_e_step_const_elms(const_terms)
 
         for shift_x in progressbar.progressbar(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
@@ -88,12 +82,12 @@ class EM:
 
                 A_shift = self.calc_A_shift(shift_x, shift_y)
                 shift_ind = self.ravel_shift_index(shift_x, shift_y)
-                posteriors[:, shift_ind] = self.calc_posteriors_wrt_shift(A_shift, const_elms, c_avg)
+                posteriors[:, shift_ind] = self.calc_posteriors_wrt_shift(A_shift, c_ims_rot, const_elms, const_terms)
 
                 if shift_y != shift_x:
                     A_inv_shift = np.conj(np.transpose(A_shift))
                     shift_minus_ind = self.ravel_shift_index(-shift_x, -shift_y)
-                    posteriors[:, shift_minus_ind] = self.calc_posteriors_wrt_shift(A_inv_shift, const_elms, c_avg)
+                    posteriors[:, shift_minus_ind] = self.calc_posteriors_wrt_shift(A_inv_shift, c_ims_rot, const_elms, const_terms)
 
         log_lik_per_image = np.zeros(self.n_images)
         for i in np.arange(self.n_images):
@@ -109,30 +103,30 @@ class EM:
 
         return posteriors, log_lik_per_image
 
-    def calc_posteriors_wrt_shift(self, A_shift, const_elms, c_avg):
+    def calc_posteriors_wrt_shift(self, A_shift, c_ims_rot, const_elms, const_terms):
         n_scales = len(self.em_params['scales'])
         n_rots = len(self.em_params['thetas'])
         posteriors = np.zeros((self.n_images, n_scales, n_rots))
-        tmp1_shift = np.conj(self.const_terms['c_all_ones_im']).dot(A_shift)
-        tmp2_shift = np.conj(c_avg).dot(A_shift)
+        tmp1_shift = np.conj(const_terms['c_all_ones_im']).dot(A_shift)
+        tmp2_shift = np.conj(self.c_avg).dot(A_shift)
         for i in np.arange(self.n_images):
             # calculate the two cross terms
             cross_anni_cnn = self.mean_bg_ims[i] / self.sd_bg_ims[i] * \
-                             2 * np.real(tmp1_shift.dot(np.transpose(self.c_ims_rot[i])))
+                             2 * np.real(tmp1_shift.dot(np.transpose(c_ims_rot[i])))
 
             cross_anni_ann = self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[i] * \
-                             2 * np.real(tmp2_shift.dot(np.transpose(self.c_ims_rot[i])))
+                             2 * np.real(tmp2_shift.dot(np.transpose(c_ims_rot[i])))
 
             posteriors[i] = cross_anni_ann - (const_elms[i][:, np.newaxis] + cross_anni_cnn)
         return posteriors
 
-    def m_step(self, posteriors):
+    def m_step(self, posteriors, phases, const_terms):
 
         print('m-step')
         if config.is_use_gpu:
             posteriors = gpuarray.to_gpu(posteriors).astype('complex64')
         W_shifts_marg = np.zeros((self.n_images, self.converter.get_num_prolates()), np.complex64)
-        c_avg = np.zeros(self.converter.get_num_prolates(), np.complex64)
+        self.c_avg = np.zeros_like(self.c_avg)
         non_neg_freqs = self.converter.get_non_neg_freq_inds()
         for shift_x in progressbar.progressbar(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
@@ -143,36 +137,35 @@ class EM:
                 A_shift = self.calc_A_shift(shift_x, shift_y)
                 A_shift_minus = np.conj(np.transpose(A_shift))
 
-                W = self.marginilize_rots_scales(posteriors, shift_x, shift_y)
-                c_avg[non_neg_freqs] += np.sum(A_shift[non_neg_freqs].dot(np.transpose(W * self.c_ims)), axis=1)
+                W = self.marginilize_rots_scales(posteriors, phases, shift_x, shift_y)
+                self.c_avg[non_neg_freqs] += np.sum(A_shift[non_neg_freqs].dot(np.transpose(W * self.c_ims)), axis=1)
                 W_shifts_marg += W
 
                 if shift_y != shift_x:
-                    W_minus = self.marginilize_rots_scales(posteriors, -shift_x, -shift_y)
-                    c_avg[non_neg_freqs] += np.sum(A_shift_minus[non_neg_freqs].dot(np.transpose(W_minus * self.c_ims)), axis=1)
+                    W_minus = self.marginilize_rots_scales(posteriors, phases, -shift_x, -shift_y)
+                    self.c_avg[non_neg_freqs] += np.sum(A_shift_minus[non_neg_freqs].dot(np.transpose(W_minus * self.c_ims)), axis=1)
                     W_shifts_marg += W_minus
 
         #  update the coeffs using with respect to the additive term
-        c_avg[non_neg_freqs] += np.sum(np.transpose(W_shifts_marg * self.const_terms['c_additive_term']), axis=1)[non_neg_freqs]
+        self.c_avg[non_neg_freqs] += np.sum(np.transpose(W_shifts_marg * const_terms['c_additive_term']), axis=1)[non_neg_freqs]
         # take care of the negative freqs
-        c_avg[self.converter.get_neg_freq_inds()] = np.conj(c_avg[self.converter.get_pos_freq_inds()])
+        self.c_avg[self.converter.get_neg_freq_inds()] = np.conj(self.c_avg[self.converter.get_pos_freq_inds()])
         if config.is_use_gpu:
             posteriors = posteriors.get()
         c = posteriors * self.em_params['scales'][:, np.newaxis] / self.sd_bg_ims[:, np.newaxis, np.newaxis, np.newaxis]
         c = np.sum(c)
-        c_avg = c_avg/c
-        return c_avg
+        self.c_avg = self.c_avg/c
 
-    def marginilize_rots_scales(self, posteriors, shift_x, shift_y):
+    def marginilize_rots_scales(self, posteriors, phases, shift_x, shift_y):
         shift_ind = self.ravel_shift_index(shift_x, shift_y)
         W = np.zeros((self.n_images, self.converter.get_num_prolates()), np.complex64)
         if config.is_use_gpu:
             for i in np.arange(self.n_images):
                 # TODO: make the assignment work if W is a gpuarray
-                W[i] = misc.sum(linalg.dot(posteriors[i, shift_ind], self.phases), axis=0).get()
+                W[i] = misc.sum(linalg.dot(posteriors[i, shift_ind], phases), axis=0).get()
         else:
             for i in np.arange(self.n_images):
-                W[i] = np.sum(np.dot(posteriors[i, shift_ind], self.phases), axis=0)
+                W[i] = np.sum(np.dot(posteriors[i, shift_ind], phases), axis=0)
         return W
 
     def calc_A_shift(self, shift_x, shift_y):
@@ -308,9 +301,11 @@ class EM:
 
 
 def main():
-    linalg.init()  # TODO: where to init this?
+    linalg.init()
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
+
+    init_avg_image = data_utils.mat_to_npy('init_avg_image')
 
     is_use_matlab_params = True
 
@@ -326,15 +321,17 @@ def main():
         is_remove_outliers = data_utils.mat_to_npy_vec('is_remove_outliers')[0]
         outliers_precent_removal = data_utils.mat_to_npy_vec('outliers_precent_removal')[0]
 
-        em = EM(images, trunc_param, beta, ang_jump, max_shift, shift_jump,
+        em = EM(images, init_avg_image, trunc_param, beta, ang_jump, max_shift, shift_jump,
                 n_scales, is_remove_outliers, outliers_precent_removal)
     else:
-        em = EM(images, max_shift=3)
+        em = EM(images, init_avg_image, max_shift=3)
 
-    init_avg_image = data_utils.mat_to_npy('init_avg_image')
-    init_avg_image = data_utils.mask_decorator(init_avg_image, is_stack=True)
+    const_terms = em.pre_compute_const_terms()
+    phases = np.exp(-1j * 2 * np.pi / 360 *
+                         np.outer(em.em_params['thetas'], em.converter.get_angular_frequency()))
 
-    c_avg = em.converter.direct_forward(init_avg_image)
+    if config.is_use_gpu:
+        phases = gpuarray.to_gpu(phases).astype('complex64')
 
     n_iters = 3  # data_utils.mat_to_npy_vec('nIters')[0]
 
@@ -349,15 +346,15 @@ def main():
         log_lik[round_str] = np.zeros((n_iters, em.n_images))
         for it in range(n_iters):
             t = time.time()
-            posteriors, log_lik[round_str][it] = em.e_step(c_avg)
+            posteriors, log_lik[round_str][it] = em.e_step(phases, const_terms)
             print('it %d: log likelihood=%.2f' % (it + 1, np.sum(log_lik[round_str][it])))
             print('took %.2f secs' % (time.time() - t))
 
             t = time.time()
-            c_avg = em.m_step(posteriors)
+            em.m_step(posteriors, phases, const_terms)
             print('took %.2f secs' % (time.time() - t))
 
-            im_avg_est = em.converter.direct_backward(c_avg)[0]
+            im_avg_est = em.converter.direct_backward(em.c_avg)[0]
             EM.plot_images(init_avg_image, im_avg_est_prev, im_avg_est)
 
             im_avg_est_prev = im_avg_est
@@ -367,12 +364,11 @@ def main():
             outlier_ims_inds = inds_sorted[:int(em.outliers_precent_removal / 100 * em.n_images)]
 
             posteriors = np.delete(posteriors, outlier_ims_inds, axis=0)
-            em.c_ims_rot = np.delete(em.c_ims_rot, outlier_ims_inds, axis=0)
             em.c_ims = np.delete(em.c_ims, outlier_ims_inds, axis=0)
             em.mean_bg_ims = np.delete(em.mean_bg_ims, outlier_ims_inds, axis=0)
             em.sd_bg_ims = np.delete(em.sd_bg_ims, outlier_ims_inds, axis=0)
             em.n_images = em.n_images - len(outlier_ims_inds)
-            em.const_terms = em.pre_compute_const_terms()
+            const_terms = em.pre_compute_const_terms()
         else:
             break
 
