@@ -202,3 +202,121 @@ def fuzzymask(n, dims, r0, risetime, origin=None):
     m = 0.5 * (1 - erf(k * (r - r0[0])))
 
     return m
+
+# TODO: remove once Itay complies with python convention
+def downsample_decorator(images, out_size, is_stack=True):
+
+    if images.ndim == 3 and is_stack == True:
+        images = np.transpose(images, axes=(1, 2, 0))  # move to matlab convention TODO: shouldn't we do copy to preserve contigousy???
+        images_down = downsample(images, out_size, is_stack)
+        return np.transpose(images_down, axes=(2, 0, 1))  # move to python convention TODO: shouldn't we do copy to preserve contigousy???
+    elif images.ndim == 2 and is_stack == True:
+        images = images[:, :, np.newaxis] # add a last axis as in matlab convention TODO: abandon once Itay fixes
+        return downsample(images, out_size, is_stack)
+    else:
+        return downsample(images, out_size, is_stack)
+
+
+def downsample(images, out_size, is_stack=True):
+
+    if not is_stack:
+        images = np.expand_dims(images, 0)
+
+    in_size = np.array(images.shape[:-1])
+    out_size = np.zeros(in_size.shape, dtype='int') + out_size
+    num_dim = len(in_size)
+    down = all(in_size < out_size)
+    up = all(in_size > out_size)
+    if not (down or up):
+        if all(in_size == out_size):
+            return images
+        pass  # raise error
+
+    if num_dim > 3:
+        pass  # raise error
+
+    if num_dim == 1:
+        images = images.swapaxes(0, 1)
+    elif num_dim == 2:
+        images = images.swapaxes(0, 2)
+        images = images.swapaxes(1, 2)
+    else:
+        images = images.swapaxes(0, 3)
+        images = images.swapaxes(1, 3)
+        images = images.swapaxes(2, 3)
+
+    out = np.zeros([images.shape[0]] + out_size.tolist(), dtype='complex128')
+
+    for i, image in enumerate(images):
+        tmp = pyfftw.interfaces.numpy_fft.fftshift(pyfftw.interfaces.numpy_fft.fftn(image))
+        out_tmp = pyfftw.interfaces.numpy_fft.ifftshift(crop(tmp, out_size, False))
+        out[i] = pyfftw.interfaces.numpy_fft.ifftn(out_tmp)
+
+    if num_dim == 1:
+        out = out.swapaxes(0, 1)
+    elif num_dim == 2:
+        out = out.swapaxes(1, 2)
+        out = out.swapaxes(0, 2)
+    else:
+        out = out.swapaxes(2, 3)
+        out = out.swapaxes(1, 3)
+        out = out.swapaxes(0, 3)
+
+    out = out.squeeze() * np.prod(out_size) * 1.0 / np.prod(in_size)
+    return out
+
+
+def crop(images, out_size, is_stack, fillval=0.0):
+    if is_stack:
+        in_size = images.shape[:-1]
+    else:
+        in_size = images.shape
+    num_images = images.shape[-1]
+    num_dim = len(in_size)
+    out_shape = [s for s in out_size] + [num_images]
+    if num_dim == 1:
+        out_x_size = out_size[0]
+        x_size = in_size[0]
+        nx = int(np.floor(x_size * 1.0 / 2) - np.floor(out_x_size * 1.0 / 2))
+        if nx >= 0:
+            nc = images[nx:nx + out_x_size]
+        else:
+            nc = np.zeros(out_shape) + fillval
+            nc[-nx:x_size - nx] = images
+
+    elif num_dim == 2:
+        out_x_size = out_size[0]
+        x_size = in_size[0]
+        nx = int(np.floor(x_size * 1.0 / 2) - np.floor(out_x_size * 1.0 / 2))
+        out_y_size = out_size[1]
+        y_size = in_size[1]
+        ny = int(np.floor(y_size * 1.0 / 2) - np.floor(out_y_size * 1.0 / 2))
+        if nx >= 0 and ny >= 0:
+            nc = images[nx:nx + out_x_size, ny:ny + out_y_size]
+        elif nx < 0 and ny < 0:
+            nc = np.zeros(out_shape) + fillval
+            nc[-nx:x_size - nx, -ny:y_size - ny] = images
+        else:
+            return 0  # raise error
+
+    elif num_dim == e:
+        out_x_size = out_size[0]
+        x_size = in_size[0]
+        nx = int(np.floor(x_size * 1.0 / 2) - np.floor(out_x_size * 1.0 / 2))
+        out_y_size = out_size[1]
+        y_size = in_size[1]
+        ny = int(np.floor(y_size * 1.0 / 2) - np.floor(out_y_size * 1.0 / 2))
+        out_z_size = out_size[2]
+        z_size = in_size[2]
+        nz = int(np.floor(z_size * 1.0 / 2) - np.floor(out_z_size * 1.0 / 2))
+        if nx >= 0 and ny >= 0 and nz >= 0:
+            nc = images[nx:nx + out_x_size, ny:ny + out_y_size, nz:nz + out_z_size]
+        elif nx < 0 and ny < 0 and nz < 0:
+            nc = np.zeros(out_shape) + fillval
+            nc[-nx:x_size - nx, -ny:y_size - ny, -nz:y_size - nz] = images
+        else:
+            return 0  # raise error
+    else:
+        return 0  # raise error
+    return nc
+

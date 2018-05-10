@@ -264,9 +264,9 @@ class EM:
         for i in np.arange(n_images):
             om_i = posteriors[i]
 
-            opt_scale_ind = np.argmax(np.sum(np.sum(om_i, axis=2), axis=1))
-            opt_rot_ind = np.argmax(np.sum(np.sum(om_i, axis=2), axis=0))
-            opt_shift_ind = np.argmax(np.sum(np.sum(om_i, axis=1), axis=0))
+            opt_scale_ind = np.argmax(np.sum(om_i, axis=(0, 2)))
+            opt_rot_ind = np.argmax(np.sum(om_i, axis=(0, 1)))
+            opt_shift_ind = np.argmax(np.sum(om_i, axis=(1, 2)))
 
             opt_latent['scales'][i] = self.em_params['scales'][opt_scale_ind]
             opt_latent['rots'][i] = self.em_params['thetas'][opt_rot_ind]
@@ -300,30 +300,57 @@ class EM:
 
         plt.show()
 
-    @staticmethod
-    def load_matlab_params():
-        trunc_param = data_utils.mat_to_npy_vec('T')[0]
-        beta = data_utils.mat_to_npy_vec('beta')[0]
-        ang_jump = data_utils.mat_to_npy_vec('ang_jump')[0]
-        max_shift = data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift
+    def do_one_pass_orig_images(self, posteriors, images_orig, images):
+        # shift each image according to the mode of shift in the posterior array
+        # marginilize over latent variables which are not shifts, and find the optimal shift per image
+        opt_shift_ind_per_image = np.argmax(posteriors.sum(axis=(2, 3)), axis=1)
 
-        shift_jump = data_utils.mat_to_npy_vec('shift_jump')[0]  # shift_jump
-        n_scales = data_utils.mat_to_npy_vec('n_scales')[0]
+        post_shape = posteriors.shape
+        # construct a posterior array with a single shift. Need to be a 4d array to be able to call m_step
+        posteriors_opt_shift = np.zeros((post_shape[0], 1, post_shape[2], post_shape[3]))
+        for i in np.arange(self.n_images):
+            post_i = posteriors[i, opt_shift_ind_per_image[i]]
+            post_i = post_i / np.sum(post_i)
+            posteriors_opt_shift[i, 0] = post_i
+        # translate the shift ind to a 2d shift index
+        n_shifts_1d = len(self.em_params['shifts'])
+        yys, xxs = np.unravel_index(opt_shift_ind_per_image, (n_shifts_1d, n_shifts_1d))
+        opt_shifts_x = self.em_params['shifts'][xxs]
+        opt_shifts_y = self.em_params['shifts'][yys]
 
-        is_remove_outliers = data_utils.mat_to_npy_vec('is_remove_outliers')[0]
-        outliers_precent_removal = data_utils.mat_to_npy_vec('outliers_precent_removal')[0]
-        return trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales, is_remove_outliers, outliers_precent_removal
+        size_ratio = round(images_orig.shape[-1] / images.shape[-1])
+        opt_shifts_x = size_ratio * opt_shifts_x
+        opt_shifts_y = size_ratio * opt_shifts_y
+
+        # shift each image by the optimal shift just found
+        for i in np.arange(self.n_images):
+            images_orig[i] = np.roll(np.roll(images_orig[i], opt_shifts_y[i], axis=0), opt_shifts_x[i], axis=1)
+
+        # since we shifted the images we need recalculate the expansion coeffs
+        self.c_ims = self.converter.direct_forward(images_orig)
+        # since we shifted each image according to its mode we need not consider shifts anymore. Yay
+        self.em_params['max_shift'] = np.uint8(0)
+        self.em_params['shifts'] = np.arange(-1 * self.em_params['max_shift'], self.em_params['max_shift'] + 1,
+                                             self.em_params['shift_jump'])
+        const_terms = self.pre_compute_const_terms()
+        phases = self.calc_phases()
+        self.m_step(posteriors_opt_shift, phases, const_terms)  # internaly it modifies the membver c_avg
+
+    def calc_phases(self):
+
+        phases = np.exp(-1j * 2 * np.pi / 360 *
+                        np.outer(self.em_params['thetas'], self.converter.get_angular_frequency()))
+        if config.is_use_gpu:
+            phases = gpuarray.to_gpu(phases).astype('complex64')
+
+        return phases
 
     def do_em(self):
 
         const_terms = self.pre_compute_const_terms()
-        phases = np.exp(-1j * 2 * np.pi / 360 *
-                        np.outer(self.em_params['thetas'], self.converter.get_angular_frequency()))
+        phases = self.calc_phases()
 
-        if config.is_use_gpu:
-            phases = gpuarray.to_gpu(phases).astype('complex64')
-
-        n_iters = 3  # data_utils.mat_to_npy_vec('nIters')[0]
+        n_iters = 1  # data_utils.mat_to_npy_vec('nIters')[0]
 
         print("#images=%d\t#iterations=%d\tangualr-jump=%d,\tmax shift=%d,\tshift-jump=%d,\t#scales=%d" %
               (self.n_images, n_iters, self.ang_jump, self.em_params['max_shift'], self.em_params['shift_jump'],
@@ -367,7 +394,21 @@ class EM:
         # find the mode of each latent variable for each image
         opt_latent = self.compute_opt_latent_vals(posteriors)
 
-        return im_avg_est, log_lik, opt_latent, outlier_ims_inds
+        return im_avg_est, log_lik, opt_latent, outlier_ims_inds, posteriors
+
+
+def load_matlab_params():
+    trunc_param = data_utils.mat_to_npy_vec('T')[0]
+    beta = data_utils.mat_to_npy_vec('beta')[0]
+    ang_jump = data_utils.mat_to_npy_vec('ang_jump')[0]
+    max_shift = data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift
+
+    shift_jump = data_utils.mat_to_npy_vec('shift_jump')[0]  # shift_jump
+    n_scales = data_utils.mat_to_npy_vec('n_scales')[0]
+
+    is_remove_outliers = data_utils.mat_to_npy_vec('is_remove_outliers')[0]
+    outliers_precent_removal = data_utils.mat_to_npy_vec('outliers_precent_removal')[0]
+    return trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales, is_remove_outliers, outliers_precent_removal
 
 
 def main():
@@ -376,19 +417,40 @@ def main():
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
     init_avg_image = data_utils.mat_to_npy('init_avg_image')
-
     is_use_matlab_params = True
+
+    image_size = np.shape(images)[-1]
+    is_downsample = image_size > config.max_image_size
+    if is_downsample:
+        images_orig = images
+        init_avg_image_orig = init_avg_image
+        images = np.real(data_utils.downsample_decorator(images, config.max_image_size))  # TODO: Itay to to handle the fact that returns complex
+        init_avg_image = np.real(data_utils.downsample_decorator(init_avg_image, config.max_image_size))
 
     if is_use_matlab_params:
         trunc_param, beta, ang_jump, max_shift, shift_jump, \
-        n_scales, is_remove_outliers, outliers_precent_removal = EM.load_matlab_params()
+        n_scales, is_remove_outliers, outliers_precent_removal = load_matlab_params()
 
         em = EM(images, init_avg_image, trunc_param, beta, ang_jump, max_shift, shift_jump,
                 n_scales, is_remove_outliers, outliers_precent_removal)
     else:
-        em = EM(images, init_avg_image, max_shift=3)
+        em = EM(images, init_avg_image)
 
-    em.do_em()
+    im_avg_est, log_lik, opt_latent, outlier_ims_inds, posteriors = em.do_em()
+
+    if is_downsample:
+        images_orig = np.delete(images_orig, outlier_ims_inds, axis=0)
+        images = np.delete(images, outlier_ims_inds, axis=0)
+        is_remove_outliers = False
+        em_post_process = EM(images_orig, init_avg_image_orig, trunc_param, beta, ang_jump, max_shift, shift_jump,
+                n_scales, is_remove_outliers, outliers_precent_removal)
+        em_post_process.do_one_pass_orig_images(posteriors, images_orig, images)
+        im_avg_est_orig = em_post_process.converter.direct_backward(em_post_process.c_avg)[0]
+        EM.plot_images(init_avg_image_orig, im_avg_est_orig, im_avg_est_orig)
+    else:
+        im_avg_est_orig = im_avg_est
+
+    return im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds
 
 
 if __name__ == "__main__":
