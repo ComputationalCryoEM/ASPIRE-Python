@@ -15,8 +15,6 @@ from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import
 class EM:
     def __init__(self, images, init_avg_image, trunc_param=10, beta=0.5, ang_jump=1,
                  max_shift=5, shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
-
-        # beta = 0.5
         self.ang_jump = ang_jump
         self.is_remove_outliers = is_remove_outliers
         self.outliers_precent_removal = outliers_precent_removal
