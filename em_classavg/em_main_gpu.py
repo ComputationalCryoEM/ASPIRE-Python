@@ -412,12 +412,17 @@ def load_matlab_params():
 
 
 def main():
-
-    linalg.init()
     images = data_utils.mat_to_npy('images')
     images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
     init_avg_image = data_utils.mat_to_npy('init_avg_image')
-    is_use_matlab_params = True
+    trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales, is_remove_outliers, outliers_precent_removal = load_matlab_params()
+    return run(images, init_avg_image,trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales, is_remove_outliers, outliers_precent_removal)
+
+
+def run(images, init_avg_image, trunc_param=10, beta=0.5, ang_jump=1, max_shift=5,
+           shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
+
+    linalg.init()
 
     image_size = np.shape(images)[-1]
     is_downsample = image_size > config.max_image_size
@@ -427,23 +432,16 @@ def main():
         images = np.real(data_utils.downsample_decorator(images, config.max_image_size))  # TODO: Itay to to handle the fact that returns complex
         init_avg_image = np.real(data_utils.downsample_decorator(init_avg_image, config.max_image_size))
 
-    if is_use_matlab_params:
-        trunc_param, beta, ang_jump, max_shift, shift_jump, \
-        n_scales, is_remove_outliers, outliers_precent_removal = load_matlab_params()
-
-        em = EM(images, init_avg_image, trunc_param, beta, ang_jump, max_shift, shift_jump,
+    em = EM(images, init_avg_image, trunc_param, beta, ang_jump, max_shift, shift_jump,
                 n_scales, is_remove_outliers, outliers_precent_removal)
-    else:
-        em = EM(images, init_avg_image)
 
     im_avg_est, log_lik, opt_latent, outlier_ims_inds, posteriors = em.do_em()
 
     if is_downsample:
         images_orig = np.delete(images_orig, outlier_ims_inds, axis=0)
         images = np.delete(images, outlier_ims_inds, axis=0)
-        is_remove_outliers = False
-        em_post_process = EM(images_orig, init_avg_image_orig, trunc_param, beta, ang_jump, max_shift, shift_jump,
-                n_scales, is_remove_outliers, outliers_precent_removal)
+        em_post_process = EM(images_orig, init_avg_image_orig, em.converter.truncation, em.converter.beta, em.ang_jump,
+                             em.em_params['max_shift'], em.em_params['shift_jump'],em.em_params['n_scales'], is_remove_outliers=False)
         em_post_process.do_one_pass_orig_images(posteriors, images_orig, images)
         im_avg_est_orig = em_post_process.converter.direct_backward(em_post_process.c_avg)[0]
         EM.plot_images(init_avg_image_orig, im_avg_est_orig, im_avg_est_orig)
