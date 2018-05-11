@@ -6,7 +6,7 @@ images = data_utils.mat_to_npy('images')
 images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
 init_avg_image = data_utils.mat_to_npy('init_avg_image')
 
-is_load_params_from_mat = True
+is_load_params_from_mat = False
 
 if is_load_params_from_mat:
     trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales, \

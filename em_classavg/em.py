@@ -13,7 +13,7 @@ from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import
 
 
 class EM:
-    def __init__(self, images, init_avg_image, trunc_param=10, beta=0.5, ang_jump=1,
+    def __init__(self, images, init_avg_image, trunc_param=10, beta=np.float64(1.0), ang_jump=1,
                  max_shift=5, shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
         self.ang_jump = ang_jump
         self.is_remove_outliers = is_remove_outliers
@@ -44,7 +44,7 @@ class EM:
 
     def ravel_shift_index(self, shift_x, shift_y):
         n_shifts_1d = len(self.em_params['shifts'])
-        shift = ([shift_y, shift_x] + self.em_params['max_shift']) / self.em_params['shift_jump']
+        shift = (np.array([shift_y, shift_x]) + self.em_params['max_shift']) / self.em_params['shift_jump']
         return np.ravel_multi_index(shift.astype(int), (n_shifts_1d, n_shifts_1d))
 
     def calc_e_step_const_elms(self, const_terms):
@@ -396,8 +396,9 @@ class EM:
 
 
 def load_matlab_params():
+    print("loading matlab params")
     trunc_param = data_utils.mat_to_npy_vec('T')[0]
-    beta = data_utils.mat_to_npy_vec('beta')[0]
+    beta = np.float64(data_utils.mat_to_npy_vec('beta')[0])
     ang_jump = data_utils.mat_to_npy_vec('ang_jump')[0]
     max_shift = data_utils.mat_to_npy_vec('max_shift')[0]  # max_shift
 
@@ -417,7 +418,7 @@ def main():
     return run(images, init_avg_image,trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales, is_remove_outliers, outliers_precent_removal)
 
 
-def run(images, init_avg_image, trunc_param=10, beta=0.5, ang_jump=1, max_shift=5,
+def run(images, init_avg_image, trunc_param=10, beta=np.float64(1.0), ang_jump=1, max_shift=5,
            shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
 
     linalg.init()
