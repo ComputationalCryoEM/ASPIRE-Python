@@ -13,34 +13,37 @@ from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import
 
 
 class EM:
-    def __init__(self, images, init_avg_image, trunc_param=10, beta=np.float64(1.0), ang_jump=1,
+    def __init__(self, images, init_avg_image, n_iters=2, trunc_param=10, beta=np.float64(1.0), ang_jump=1,
                  max_shift=5, shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
-        self.ang_jump = ang_jump
-        self.is_remove_outliers = is_remove_outliers
-        self.outliers_precent_removal = outliers_precent_removal
-
-        self.em_params = dict()
-        self.em_params['n_scales'] = n_scales
-        self.em_params['max_shift'] = max_shift
-        self.em_params['shift_jump'] = shift_jump
-        self.em_params['thetas'] = np.arange(1, 361, self.ang_jump)
-        self.em_params['shifts'] = np.arange(-1 * self.em_params['max_shift'],
-                                             self.em_params['max_shift'] + 1, self.em_params['shift_jump'])
-
-        images, self.mean_bg_ims, self.sd_bg_ims = data_utils.normalize_background(images)
-        snr_est = EM.est_snr(images)
-        est_scale = np.sqrt(snr_est * np.mean(self.sd_bg_ims) ** 2)
-        self.em_params['scales'] = np.linspace(0.8 * est_scale, 1.2 * est_scale, self.em_params['n_scales'])
 
         self.n_images = len(images)
         self.im_size = np.shape(images)[-1]
         self.converter = Converter(self.im_size, trunc_param, beta)
         self.converter.init_direct('full')
 
+        images, self.mean_bg_ims, self.sd_bg_ims = data_utils.normalize_background(images)
         self.c_ims = self.converter.direct_forward(images)
 
         init_avg_image = data_utils.mask_decorator(init_avg_image, is_stack=True)
         self.c_avg = self.converter.direct_forward(init_avg_image).reshape(-1)
+
+        self.n_iters = n_iters
+        self.ang_jump = ang_jump
+
+        snr_est = EM.est_snr(images)
+        est_scale = np.sqrt(snr_est * np.mean(self.sd_bg_ims) ** 2)
+
+        self.em_params = dict()
+        self.em_params['n_scales'] = n_scales
+        self.em_params['scales'] = np.linspace(0.8 * est_scale, 1.2 * est_scale, self.em_params['n_scales'])
+        self.em_params['max_shift'] = max_shift
+        self.em_params['shift_jump'] = shift_jump
+        self.em_params['thetas'] = np.arange(1, 361, self.ang_jump)
+        self.em_params['shifts'] = np.arange(-1 * self.em_params['max_shift'],
+                                             self.em_params['max_shift'] + 1, self.em_params['shift_jump'])
+
+        self.is_remove_outliers = is_remove_outliers
+        self.outliers_precent_removal = outliers_precent_removal
 
     def ravel_shift_index(self, shift_x, shift_y):
         n_shifts_1d = len(self.em_params['shifts'])
@@ -348,10 +351,8 @@ class EM:
         const_terms = self.pre_compute_const_terms()
         phases = self.calc_phases()
 
-        n_iters = 1  # data_utils.mat_to_npy_vec('nIters')[0]
-
         print("#images=%d\t#iterations=%d\tangualr-jump=%d,\tmax shift=%d,\tshift-jump=%d,\t#scales=%d" %
-              (self.n_images, n_iters, self.ang_jump, self.em_params['max_shift'], self.em_params['shift_jump'],
+              (self.n_images, self.n_iters, self.ang_jump, self.em_params['max_shift'], self.em_params['shift_jump'],
                self.em_params['n_scales']))
 
         init_avg_image = self.converter.direct_backward(self.c_avg)[0]
@@ -360,8 +361,8 @@ class EM:
         log_lik = dict()
         for round in range(2):
             round_str = str(round)
-            log_lik[round_str] = np.zeros((n_iters, self.n_images))
-            for it in range(n_iters):
+            log_lik[round_str] = np.zeros((self.n_iters, self.n_images))
+            for it in range(self.n_iters):
                 t = time.time()
                 posteriors, log_lik[round_str][it] = self.e_step(phases, const_terms)
                 print('it %d: log likelihood=%.2f' % (it + 1, np.sum(log_lik[round_str][it])))
@@ -418,7 +419,7 @@ def main():
     return run(images, init_avg_image,trunc_param, beta, ang_jump, max_shift, shift_jump, n_scales, is_remove_outliers, outliers_precent_removal)
 
 
-def run(images, init_avg_image, trunc_param=10, beta=np.float64(1.0), ang_jump=1, max_shift=5,
+def run(images, init_avg_image, n_iters=2, trunc_param=10, beta=np.float64(1.0), ang_jump=1, max_shift=5,
            shift_jump=1, n_scales=10, is_remove_outliers=True, outliers_precent_removal=5):
 
     linalg.init()
@@ -431,7 +432,7 @@ def run(images, init_avg_image, trunc_param=10, beta=np.float64(1.0), ang_jump=1
         images = np.real(data_utils.downsample_decorator(images, config.max_image_size))  # TODO: Itay to to handle the fact that returns complex
         init_avg_image = np.real(data_utils.downsample_decorator(init_avg_image, config.max_image_size))
 
-    em = EM(images, init_avg_image, trunc_param, beta, ang_jump, max_shift, shift_jump,
+    em = EM(images, init_avg_image, n_iters, trunc_param, beta, ang_jump, max_shift, shift_jump,
                 n_scales, is_remove_outliers, outliers_precent_removal)
 
     im_avg_est, log_lik, opt_latent, outlier_ims_inds, posteriors = em.do_em()
@@ -439,7 +440,7 @@ def run(images, init_avg_image, trunc_param=10, beta=np.float64(1.0), ang_jump=1
     if is_downsample:
         images_orig = np.delete(images_orig, outlier_ims_inds, axis=0)
         images = np.delete(images, outlier_ims_inds, axis=0)
-        em_post_process = EM(images_orig, init_avg_image_orig, em.converter.truncation, em.converter.beta, em.ang_jump,
+        em_post_process = EM(images_orig, init_avg_image_orig, em.n_iters, em.converter.truncation, em.converter.beta, em.ang_jump,
                              em.em_params['max_shift'], em.em_params['shift_jump'],em.em_params['n_scales'], is_remove_outliers=False)
         em_post_process.do_one_pass_orig_images(posteriors, images_orig, images)
         im_avg_est_orig = em_post_process.converter.direct_backward(em_post_process.c_avg)[0]
