@@ -2,9 +2,18 @@ import numpy as np
 import em_classavg.data_utils as data_utils
 import em_classavg.em as em
 
-images = data_utils.mat_to_npy('images')
+is_load_large_images = True
+
+if is_load_large_images:
+    images_large = data_utils.mat_to_npy('images_large')
+    init_avg_image_large = data_utils.mat_to_npy('init_avg_image_large')
+    images = images_large
+    init_avg_image = init_avg_image_large
+else:
+    images = data_utils.mat_to_npy('images')
+    init_avg_image = data_utils.mat_to_npy('init_avg_image')
+
 images = np.transpose(images, axes=(2, 0, 1))  # move to python convention
-init_avg_image = data_utils.mat_to_npy('init_avg_image')
 
 im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds = em.run(images, init_avg_image)
 
