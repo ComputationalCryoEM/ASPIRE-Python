@@ -180,7 +180,7 @@ class DirectModel_Full(DirectModel):
         coeffs_non_neg = np.transpose(coeffs_non_neg)  # TODO: we want the data to be in rows
 
         n_images = len(coeffs_non_neg)
-        coeffs = np.zeros((n_images, self.get_num_prolates())).astype('complex')
+        coeffs = np.zeros((n_images, self.get_num_prolates())).astype('complex64')
         coeffs[:, self.non_neg_freq_inds] = coeffs_non_neg
         coeffs[:, self.neg_freq_inds] = np.conj(coeffs[:, self.pos_freq_inds])
         return coeffs
