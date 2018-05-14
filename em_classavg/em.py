@@ -5,6 +5,7 @@ import pycuda.gpuarray as gpuarray
 import skcuda.linalg as linalg
 import skcuda.misc as misc
 import em_classavg.circ_shift_kernel as circ_shift_kernel
+import em_classavg.slice_assign_kernel as slice_assign_kernel
 import progressbar
 
 import em_classavg.config as config
@@ -162,9 +163,11 @@ class EM:
         shift_ind = self.ravel_shift_index(shift_x, shift_y)
         W = np.zeros((self.n_images, self.converter.get_num_prolates()), np.complex64)
         if config.is_use_gpu:
+            W_gpu = gpuarray.zeros(W.shape, dtype='complex64')
             for i in np.arange(self.n_images):
-                # TODO: make the assignment work if W is a gpuarray
-                W[i] = misc.sum(linalg.dot(posteriors[i, shift_ind], phases), axis=0).get()
+                Wi = misc.sum(linalg.dot(posteriors[i, shift_ind], phases), axis=0).reshape((1,-1))
+                slice_assign_kernel.slice_assign_1d(W_gpu, Wi, i)
+            W = W_gpu.get()
         else:
             for i in np.arange(self.n_images):
                 W[i] = np.sum(np.dot(posteriors[i, shift_ind], phases), axis=0)
