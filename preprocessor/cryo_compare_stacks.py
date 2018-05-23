@@ -9,7 +9,7 @@ import sys
 from console_progressbar import ProgressBar
 from os.path import basename
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
@@ -91,6 +91,7 @@ def compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='Compare relative error between 2 mrcfile stacks',
                                      formatter_class=argparse.RawTextHelpFormatter)
 
@@ -101,6 +102,7 @@ if __name__ == '__main__':
                                                           "1: show progress-bar\n"
                                                           "2: print relative err every 1k images\n"
                                                           "3: print relative err for each image")
+
     parser.add_argument("--max-err", type=float, help="raise an error if relative error is "
                                                       "bigger than max-err")
     args = parser.parse_args()
@@ -108,4 +110,4 @@ if __name__ == '__main__':
     err = compare_mrc_files(args.mrcfile1, args.mrcfile2, verbose=args.verbose,
                             max_err=args.max_err)
 
-    print('relative err: ', err)
+    logger.info('relative err: {}'.format(err))
