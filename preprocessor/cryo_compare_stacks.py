@@ -1,4 +1,4 @@
-# converted from MATLAB func "cryo_compare_stacks"
+# converted from MATLAB func "cryo_compare_stacks.m"
 
 import argparse
 import logging
@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
+def cryo_compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
     """ Compare two MRC stacks stored in the files mrcname1 and mrcname2 image by image.
         Return the relative error between the stacks.
 
@@ -104,7 +104,7 @@ if __name__ == '__main__':
                                                       "bigger than max-err")
     args = parser.parse_args()
 
-    err = compare_mrc_files(args.mrcfile1, args.mrcfile2, verbose=args.verbose,
-                            max_err=args.max_err)
+    err = cryo_compare_mrc_files(args.mrcfile1, args.mrcfile2, verbose=args.verbose,
+                                 max_err=args.max_err)
 
     logger.info('relative err: {err}')
