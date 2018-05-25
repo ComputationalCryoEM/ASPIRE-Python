@@ -42,12 +42,9 @@ def compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
     dimension_map = {0: 'x', 1: 'y', 2: 'z'}
     for dimension in range(3):
         if mrc1.data.shape[dimension] != mrc2.data.shape[dimension]:
-            raise Exception('{} dimension in both stacks is not compatible: {} has {} pixels, '
-                            '{} has {} pixels'.format(dimension_map[dimension],
-                                                      mrcname1,
-                                                      mrc1.data.shape[dimension],
-                                                      mrcname2,
-                                                      mrc2.data.shape[dimension]))
+            raise Exception(f'{dimension_map[dimension]} dimension in both stacks is not '
+                            f'compatible: {mrcname1} has {mrc1.data.shape[dimension]} pixels, '
+                            f'{mrcname2} has {mrc2.data.shape[dimension]} pixels')
 
     num_of_images = mrc1.data.shape[2]
     if num_of_images == 0:
@@ -67,7 +64,7 @@ def compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
 
         # if we already reached a relatively big error, we can stop here
         if max_err and relative_err > max_err:
-            raise Exception('Stacks comparison failed! error is too big. {}'.format(relative_err))
+            raise Exception(f'Stacks comparison failed! error is too big. {relative_err}')
 
         if verbose == 0:
             continue
@@ -76,16 +73,16 @@ def compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
             pb.print_progress_bar((i + 1) / num_of_images * 100)
 
         elif verbose == 2 and (i+1) % 10 == 0:
-            logger.info('Finished comparing {}/{} projections. Relative error so far: {}'
-                        .format(i+1, num_of_images, relative_err))
+            logger.info(f'Finished comparing {i+1}/{num_of_images} projections. '
+                        f'Relative error so far: {relative_err}')
 
         elif verbose == 3:
-            logger.info('Difference between projections {}({})< >{}({}): {}'
-                        .format(basename(mrcname1), i+1, basename(mrcname2), i+1, err))
+            logger.info(f'Difference between projections {basename(mrcname1)}({i+1})< '
+                        f'>{basename(mrcname2)}({i+1}): {err}')
 
     if verbose == 2:
-        logger.info('Finished comparing {}/{} projections. Relative error: {}'
-                    .format(num_of_images, num_of_images, relative_err))
+        logger.info(f'Finished comparing {num_of_images}/{num_of_images} projections. '
+                    f'Relative error: {relative_err}')
 
     return relative_err
 
@@ -110,4 +107,4 @@ if __name__ == '__main__':
     err = compare_mrc_files(args.mrcfile1, args.mrcfile2, verbose=args.verbose,
                             max_err=args.max_err)
 
-    logger.info('relative err: {}'.format(err))
+    logger.info('relative err: {err}')
