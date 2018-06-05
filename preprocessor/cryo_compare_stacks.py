@@ -107,4 +107,4 @@ if __name__ == '__main__':
     err = cryo_compare_mrc_files(args.mrcfile1, args.mrcfile2, verbose=args.verbose,
                                  max_err=args.max_err)
 
-    logger.info('relative err: {err}')
+    logger.info(f'relative err: {err}')
