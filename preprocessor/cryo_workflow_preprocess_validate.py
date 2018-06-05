@@ -8,7 +8,7 @@ import logging
 import sys
 
 from xmltodict import parse
-from preprocessor_config import necessary_fields
+from preprocessor_config import necessary_workflow_fields
 
 
 logger = logging.getLogger(__name__)
@@ -24,13 +24,14 @@ def cryo_workflow_preprocess_validate(workflow_xml_file):
         sys.exit(1)
 
     # validate all necessary entries are in the file
-    for field in necessary_fields:
-        for sub_field in necessary_fields[field]:
+    for field in necessary_workflow_fields:
+        for sub_field in necessary_workflow_fields[field]:
             try:
-                tree_dict[field][sub_field]
+                tree_dict['workflow'][field][sub_field]
             except KeyError:
                 logger.error("A necessary value is missing from workflow file!\n"
-                             f"workflow file: {workflow_xml_file}\nfield: <{field}><{sub_field}>")
+                             f"workflow file: {workflow_xml_file}\nmissing field: "
+                             f"<workflow:{field}:{sub_field}>")
                 sys.exit(2)
 
 
