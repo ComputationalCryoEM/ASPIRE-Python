@@ -3,7 +3,7 @@ import math
 import numpy
 
 
-def cryo_crop_stack(mat, n, is_stack=False, fill_value=0):
+def cryo_crop(mat, n, is_stack=False, fill_value=0):
     """
         Reduce the size of the 1d array, square or cube m by cropping (or
         increase the size by padding with fill_value, by default zero) to a final
