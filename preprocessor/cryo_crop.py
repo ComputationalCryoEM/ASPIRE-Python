@@ -27,7 +27,7 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
     if num_dimensions == 2 and 1 in mat.shape:
         num_dimensions = 1
 
-    if num_dimensions == 1:
+    if num_dimensions == 1:  # mat is a vector
         mat = numpy.reshape(mat, [mat.size, 1])  # force a column vector
         ns = math.floor(mat.size / 2) - math.floor(n / 2)  # shift term for scaling down
         if ns >= 0:  # cropping
@@ -37,7 +37,7 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
             result_mat = fill_value * numpy.ones([n, 1])
             result_mat[-ns: mat.size - ns] = mat
 
-    elif num_dimensions == 2:
+    elif num_dimensions == 2:  # mat is 2D image
         nx, ny = mat.shape
         nsx = math.floor(nx / 2) - math.floor(n / 2)  # shift term for scaling down
         nsy = math.floor(ny / 2) - math.floor(n / 2)
@@ -49,7 +49,7 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
             result_mat = fill_value * numpy.ones([n, n])
             result_mat[-nsx: nx - nsx, -nsy: ny - nsy] = mat
 
-    elif num_dimensions == 3:  # m is 3D
+    elif num_dimensions == 3:  # mat is 3D or a stack
         raise Exception(f'not implemented yet!')
 
     else:
