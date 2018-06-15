@@ -1,6 +1,8 @@
-# converted from MATLAB func "cryo_crop.m"
+# converted (and adjusted) from MATLAB func "cryo_crop.m"
 import math
 import numpy
+
+from preprocessor.exceptions import DimensionsError
 
 
 def cryo_crop(mat, n, is_stack=False, fill_value=0):
@@ -49,10 +51,22 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
             result_mat = fill_value * numpy.ones([n, n])
             result_mat[-nsx: nx - nsx, -nsy: ny - nsy] = mat
 
-    elif num_dimensions == 3:  # mat is 3D or a stack
-        raise Exception(f'not implemented yet!')
+    elif num_dimensions == 3:  # mat is 3D or a stack of 2D images
+
+        if is_stack:
+            # break down the stack and treat each image as an individual image
+            # then return the cropped stack
+            result_mat = numpy.zeros([mat.shape[0], n, n])
+            for img in range(mat.shape[0]):
+                result_mat[img, :, :] = cryo_crop(mat[img, :, :], n)
+
+            return result_mat
+
+        else:  # this is a 3D structure
+            raise NotImplemented('cropping for 3D structure has not been implemented yet!')
 
     else:
-        raise Exception(f"Can't crop! number of dimensions is too big! ({num_dimensions}).")
+        raise DimensionsError("cropping failed! number of dimensions is too big! "
+                              f"({num_dimensions} while max is 3).")
 
     return result_mat
