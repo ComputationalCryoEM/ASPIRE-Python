@@ -84,8 +84,6 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
 
             elif numpy.all(ns < 0):  # pad
                 result_mat = fill_value * numpy.ones([n, n, n])
-                # import IPython
-                # IPython.embed()
                 result_mat[-ns[0]: from_shape[0] - ns[0],
                            -ns[1]: from_shape[2] - ns[1],
                            -ns[2]: from_shape[2] - ns[2]] = mat
