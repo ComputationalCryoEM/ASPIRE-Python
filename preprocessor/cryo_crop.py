@@ -26,6 +26,11 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
     """
 
     num_dimensions = len(mat.shape)
+
+    if num_dimensions not in [1, 2, 3]:
+        raise DimensionsError("cropping/padding failed! number of dimensions is too big!"
+                              f" ({num_dimensions} while max is 3).")
+
     if num_dimensions == 2 and 1 in mat.shape:
         num_dimensions = 1
 
@@ -33,11 +38,12 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
         mat = numpy.reshape(mat, [mat.size, 1])  # force a column vector
         ns = math.floor(mat.size / 2) - math.floor(n / 2)  # shift term for scaling down
         if ns >= 0:  # cropping
-            result_mat = mat[ns: ns + n]
+            return mat[ns: ns + n]
 
         else:  # padding
             result_mat = fill_value * numpy.ones([n, 1])
             result_mat[-ns: mat.size - ns] = mat
+            return result_mat
 
     elif num_dimensions == 2:  # mat is 2D image
         nx, ny = mat.shape
@@ -45,13 +51,14 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
         nsy = math.floor(ny / 2) - math.floor(n / 2)
 
         if nsx >= 0:  # cropping
-            result_mat = mat[nsx: nsx + n, nsy: nsy + n]
+            return mat[nsx: nsx + n, nsy: nsy + n]
 
         else:  # padding
             result_mat = fill_value * numpy.ones([n, n])
             result_mat[-nsx: nx - nsx, -nsy: ny - nsy] = mat
+            return result_mat
 
-    elif num_dimensions == 3:  # mat is 3D or a stack of 2D images
+    else:  # mat is 3D or a stack of 2D images
 
         if is_stack:
             # break down the stack and treat each image as an individual image
@@ -63,10 +70,27 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
             return result_mat
 
         else:  # this is a 3D structure
-            raise NotImplemented('cropping for 3D structure has not been implemented yet!')
+            # crop/pad mat into a new smaller/bigger cell - 'destination cell'
+            from_shape = numpy.array(mat.shape)
+            to_shape = numpy.array((n, n, n))
 
-    else:
-        raise DimensionsError("cropping failed! number of dimensions is too big! "
-                              f"({num_dimensions} while max is 3).")
+            ns = numpy.floor(from_shape / 2) - numpy.floor(to_shape / 2)
+            ns, to_shape = ns.astype(int), to_shape.astype(int)  # can't slice later with float
 
-    return result_mat
+            if numpy.all(ns >= 0):  # crop
+                return mat[ns[0]: ns[0]+to_shape[0],
+                           ns[1]: ns[1]+to_shape[1],
+                           ns[2]: ns[2]+to_shape[2]]
+
+            elif numpy.all(ns < 0):  # pad
+                result_mat = fill_value * numpy.ones([n, n, n])
+                # import IPython
+                # IPython.embed()
+                result_mat[-ns[0]: from_shape[0] - ns[0],
+                           -ns[1]: from_shape[2] - ns[1],
+                           -ns[2]: from_shape[2] - ns[2]] = mat
+
+                return result_mat
+
+            else:
+                raise DimensionsError("Can't crop and pad simultaneously!")
