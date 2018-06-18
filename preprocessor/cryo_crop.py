@@ -7,22 +7,34 @@ from preprocessor.exceptions import DimensionsError
 
 def cryo_crop(mat, n, is_stack=False, fill_value=0):
     """
-        Reduce the size of the 1d array, square or cube m by cropping (or
+        Reduce the size of a vector, square or cube 'mat' by cropping (or
         increase the size by padding with fill_value, by default zero) to a final
-        size of [n, n] or [n, n, n]. This is the analogue of down-sample, but
+        size of n, (n x n), or (n x n x n) respectively. This is the analogue of down-sample, but
         it doesn't change magnification.
 
-        If m is 2-dimensional and n is a vector, m is cropped to n=[nx ny].
+        If mat is 2-dimensional and n is a vector, m is cropped to n=[nx ny].
 
-        The function handles odd and even-sized arrays correctly  The center of
+        The function handles odd and even-sized arrays correctly. The center of
         an odd array is taken to be at (n+1)/2, and an even array is n/2+1.
 
-        If the flag isstack = 1 then a 3D array m is treated as a stack of 2D
-        images, and each image is cropped to n x n.
+        If flag is_stack is set to True, then a 3D array 'mat' is treated as a stack of 2D
+        images, and each image is cropped to (n x n).
 
         For 2D images, the input image doesn't have to be square.
-        The result is double if fillval is double; by default the result is
-        single.​
+
+        * The original MATLAB function supported cropping to non-square matrices.
+          As real-world uses will always crop to square (n, n), we don't support it with Python.
+
+
+        Args:
+            mat (numpy.array): Vector, 2D array, stack of 2D arrays or a 3D array
+            n (int): Size of desired cropped vector, side of 2D array or side of 3D array
+            is_stack (bool): Set to True in order to handle a 3D mat as a stack of 2D
+            fill_value (:obj:`int`, optional): Padding value. Defaults to 0.
+
+        Returns:
+            numpy.array: Cropped or padded mat to size of n, (n x n) or (n x n x n)
+
     """
 
     num_dimensions = len(mat.shape)
