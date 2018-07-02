@@ -5,6 +5,7 @@ from scipy.special import erf
 
 np.set_string_function(lambda a: str(a.shape), repr=False)
 
+
 def mat_to_npy(file_name):
     return loadmat(file_name + '.mat')[file_name]
 
@@ -104,6 +105,7 @@ def normalize_background(stack):
         mean_bg[kk] = mm
 
     return stack, mean_bg, sd_bg
+
 
 # TODO:decorator function since 1. Itay's mask function expexts input in matlab style and 2. doesn't support a single image
 def mask_decorator(images, is_stack=False, r=None, rise_time=None):
