@@ -432,8 +432,8 @@ def run(images, init_avg_image, n_iters=2, trunc_param=10, beta=np.float64(1.0),
     if is_downsample:
         images_orig = images
         init_avg_image_orig = init_avg_image
-        images = np.real(data_utils.downsample_decorator(images, config.max_image_size))  # TODO: Itay to to handle the fact that returns complex
-        init_avg_image = np.real(data_utils.downsample_decorator(init_avg_image, config.max_image_size))
+        images = np.real(data_utils.downsample_decorator(images, config.max_image_size)).astype(init_avg_image.dtype)  # TODO: Itay to to handle the fact that returns complex
+        init_avg_image = np.real(data_utils.downsample_decorator(init_avg_image, config.max_image_size)).astype(images.dtype)
 
     em = EM(images, init_avg_image, n_iters, trunc_param, beta, ang_jump, max_shift, shift_jump,
                 n_scales, is_remove_outliers, outliers_precent_removal)
