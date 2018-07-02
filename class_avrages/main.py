@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.polynomial.legendre import leggauss
 import scipy.special as sp
-from class_avrages.classes import *
 from class_avrages.data_utils import *
 import scipy.sparse as sps
 import scipy.sparse.linalg as spsl
@@ -80,6 +79,20 @@ class Basis:
         self.angular_freqs = angular_freqs
         self.radian_freqs = radian_freqs
         self.n_theta = n_theta
+
+
+class SamplePoints:
+    def __init__(self, x, w):
+        self.x = x
+        self.w = w
+
+
+class FastRotatePrecomp:
+    def __init__(self, phi, mx, my, mult90):
+        self.phi = phi
+        self.mx = mx
+        self.my = my
+        self.mult90 = mult90
 
 
 def run():
@@ -1312,12 +1325,6 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
         print('classes refl difference = {}'.format(dif[1]))
         print('rot difference = {}'.format(dif[2]))
         print('corr difference = {}\n'.format(dif[3]))
-
-
-def load_spca(dir_path, matlab=False):
-    spca_data = init_empty_spca_data()
-    spca_data.load(dir_path, matlab)
-    return spca_data
 
 
 run()
