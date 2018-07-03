@@ -189,6 +189,7 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
     refl_j = np.ones((k + 1), dtype='int')
     index = np.zeros((k + 1), dtype='int')
     for j in range(len(list_recon)):
+        print('starting image {}'.format(j))
         angle_j[1:] = angle[list_recon[j], :k]
         refl_j[1:] = refl[list_recon[j], :k]
         index[1:] = class_vdm[list_recon[j], :k]
@@ -519,8 +520,8 @@ def vdm_lp(h1, num_eig):
     t = np.ceil(np.log(delta) / np.log(np.min(np.abs(d1))))
     v4 = np.array([np.power(d1, t)] * len(v4)) * v4
     v3 = np.array([np.power(d2[1:], t)] * len(v3)) * v3
-    tmp_list = np.zeros((num_eig * (num_eig + 1) / 2, 2), dtype='int')
-    c = np.zeros(num_eig * (num_eig + 1) / 2, dtype='int')
+    tmp_list = np.zeros((num_eig * (num_eig + 1) // 2, 2), dtype='int')
+    c = np.zeros(num_eig * (num_eig + 1) // 2, dtype='int')
     count = 0
     for i in range(num_eig):
         for j in range(i, num_eig):
