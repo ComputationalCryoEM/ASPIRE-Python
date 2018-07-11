@@ -1,14 +1,20 @@
 """ Down/up sample projections.
     converted from MATLAB module/function "cryo_compare_stacks.m".
+
+TODO open questions:
+1) Do we use compute_fx
+2) Do we use scale up?
+3) Do we need a progress bar?
 """
 import numpy
-from numpy.fft import fftshift, fftn, ifftn, ifftshift
+from numpy.fft import fft, fftshift, ifft, ifftshift, fft2, ifft2
 
 from preprocessor.cryo_crop import cryo_crop
 from preprocessor.exceptions import DimensionsError
+from helpers.helpers import f_flatten
 
 
-def cryo_downsample(img, szout, comopute_fx=False, stack=False, mask=None):
+def cryo_downsample(img, szout, compute_fx=False, stack=False, mask=None):
     """ Use Fourier methods to change the sample interval and/or aspect ratio
         of any dimensions of the input image 'img'. If the optional argument
         stack is set to True, then the last dimension of 'img' is interpreted as the index of each
@@ -37,48 +43,38 @@ def cryo_downsample(img, szout, comopute_fx=False, stack=False, mask=None):
         raise DimensionsError('Dimensions incompatible! mask '
                               f'shape={mask.shape}, img shape={img.shape}.')
 
-    # TODO ask Yoel if this is necessary in Numpy
-    # if isinstance(img, int):
-    #     img = numpy.single(img)
-    #     img = img - numpy.mean(img[:])
-
     ndim = sum([True for i in img.shape if i > 1])  # number of non-singleton dimensions
-
     if ndim not in [1, 2, 3]:
         raise DimensionsError(f"Can't downsample image with {ndim} dimensions!")
 
-    nim = 1
-    if stack:
-        nim = img.shape[0]  # Z axis is the stack size
-        ndim -= 1  # 3D turns into a stack of 2D images
-
-    size_img = img.shape[: ndim + 1]
-
     # force into array
     if isinstance(szout, int):
-        szout = numpy.array([[szout]])  # shape now is (1, 1)
+        szout = numpy.array([[szout]])  # shape now is (szout, szout)
 
-    szout = numpy.resize(szout.T, szout.size).conjugate()  # force a *row* vector of size ndim
+    szout = f_flatten(szout).conjugate()  # force a *row* vector of size ndim
 
-    if szout.size < ndim:
-        szout = szout[0] * numpy.ones(ndim)
+    # todo is this needed? so far for 1, 2 and a stack of 2 dimensions this isn't needed
+    # if szout.size < ndim:
+    #     szout = szout[0] * numpy.ones(ndim)
 
     if ndim == 1:
         # force input to be a column vector in the 1d case
-        # we transpose to align with Matlab ( "img=img(:)" )
-            img = numpy.resize(img.T, img.size)  # TODO should we conjugate like before?
+        img = f_flatten(img)
 
     copy = False
     if numpy.all(szout == img.shape):  # no change in shape
-        if not comopute_fx:
+        out = img
+        if not compute_fx:
             return img
 
         copy = True
 
-    if numpy.all(szout <= img.shape):  # scale down
+    szin = img[0, :, :].shape if stack else img.shape
+
+    if numpy.all(szout <= szin):  # scale down
         down = True
 
-    elif numpy.all(img.shape < szout):  # scale up
+    elif numpy.all(szin < szout):  # scale up
         down = False
 
     else:  # make sure we don't scale down and up at the same time
@@ -87,52 +83,54 @@ def cryo_downsample(img, szout, comopute_fx=False, stack=False, mask=None):
     # scaling down: crop mask to be the size of output
     mask = cryo_crop(mask, szout) if mask else 1
 
-    # todo remove print after review
-    print(f'mask.shape:{mask.shape if mask!=1 else 1}')
-
-    if not copy:
-        # translated from Matlab "if ~isa(img, 'double')"
-        # TODO ask Yoel about the type condition (double/single)
-        out = numpy.zeros([szout, nim])
-
     # TODO progress bar for long operations?
 
     if ndim == 3:
         if down:  # scale down
-            for i in range(nim):
-                # TODO verify with Yoel why originally it was img(:, :, :, i)?
-                # TODO is this necessarily a stack? (3D is always a stack?)
-                x = numpy.fft.fftshift(numpy.fft.fftn(img[:, :, i]))
-                fx = cryo_crop(x, szout) * mask
-                if copy:
-                    out[:, :, :, i] = numpy.fft.ifftn(numpy.fft.ifftshift(fx))\
-                                      * (numpy.prod(szout) / numpy.prod(img.shape))
+            if stack:
+                num_images = img.shape[0]
+                out = numpy.zeros([num_images, szout[0], szout[0]])
+                for i in range(num_images):
+                    # IPython.embed()
+                    out[i, :, :] = cryo_downsample(img[i, :, :], szout.item())
 
-        else:  # scale up
-            ...
-            raise NotImplemented()
+            else:  # real 3D
+                # x = numpy.fft.fftshift(numpy.fft.fftn(img[:, :, i]))
+                # fx = cryo_crop(x, szout) * mask
+                # if copy:
+                #     out[:, :, :, i] = numpy.fft.ifftn(numpy.fft.ifftshift(fx))\
+                #                       * (numpy.prod(szout) / numpy.prod(img.shape))
+                raise NotImplementedError("scaling up currently isn't supported!")
+
+        else:  # up-sample (scale up)
+            raise NotImplementedError("scaling up currently isn't supported!")
 
     elif ndim == 2:
         if down:
-            for i in range(nim):
-                fx = cryo_crop(fftshift(fftn(img[i, :, :])), szout) * mask
-                if not copy:
-                    out[i, :, :] = (ifftn(ifftshift(fx))
-                                    * (numpy.prod(szout) / numpy.prod(img.shape)))
-        else:
-            ...
+            x = fftshift(fft2(img))
+            fx = cryo_crop(x, int(szout[0])) * mask
+            out = ifft2(ifftshift(fx)) * (numpy.prod(szout)**2 / numpy.prod(img.shape))
+
+        else:  # up-sample
+            raise NotImplementedError("scaling up currently isn't supported!")
 
     elif ndim == 1:
         if down:
-            ...
-        else:
-            ...
+            fx = cryo_crop(fftshift(fft(img)), szout[0]) * mask
+            if not copy:
+                out = ifft(ifftshift(fx), axis=0) * (numpy.prod(szout) / numpy.prod(img.shape[:ndim]))
+
+        else:  # up-sample
+            raise NotImplementedError("scaling up currently isn't supported!")
 
     else:
-        raise DimensionsError(f"not sure how to handle ndim of size {ndim}!")
-
-    if comopute_fx:
-        numpy.fft.ifftshift(fx)
+        raise DimensionsError(f"Unknown data structure! number of dimensions: {ndim}.")
 
     if numpy.all(numpy.isreal(img)):
-        return numpy.real(out)
+        out = numpy.real(out)
+
+    if compute_fx:
+        fx = numpy.fft.ifftshift(fx)
+        return out, fx
+
+    return out

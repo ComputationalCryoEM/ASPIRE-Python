@@ -62,10 +62,10 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
         nsx = math.floor(nx / 2) - math.floor(n / 2)  # shift term for scaling down
         nsy = math.floor(ny / 2) - math.floor(n / 2)
 
-        if nsx > 0 and nsy > 0:  # cropping
-            return mat[nsx: nsx + n, nsy: nsy + n]
+        if nsx >= 0 and nsy >= 0:  # cropping
+            return mat[nsx: nsx + int(n), nsy: nsy + int(n)]
 
-        elif nsx <= 0 and nsy <= 0:  # padding
+        elif nsx < 0 and nsy < 0:  # padding
             result_mat = fill_value * numpy.ones([n, n])
             result_mat[-nsx: nx - nsx, -nsy: ny - nsy] = mat
             return result_mat
