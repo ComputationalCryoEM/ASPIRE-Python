@@ -76,7 +76,7 @@ def cryo_downsample(img, side, compute_fx=False, stack=False, mask=None):
     else:  # make sure we don't scale down and up at the same time
         raise DimensionsIncompatible("Can't scale up and down at the same time!")
 
-    # adjsut mask to be the size of desired output
+    # adjust mask to be the size of desired output
     mask = cryo_crop(mask, side) if mask else 1
 
     if ndim == 3 and not stack:  # return a 3D object scaled from the input 3D cube
