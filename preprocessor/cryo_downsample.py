@@ -79,22 +79,26 @@ def cryo_downsample(img, side, compute_fx=False, stack=False, mask=None):
     # adjsut mask to be the size of desired output
     mask = cryo_crop(mask, side) if mask else 1
 
-    if ndim == 3:
+    if ndim == 3 and not stack:  # return a 3D object scaled from the input 3D cube
         if down:  # scale down
-            if stack:
-                num_images = img.shape[0]
-                out = numpy.zeros([num_images, side, side])
-                for i in range(num_images):
-                    out[i, :, :] = cryo_downsample(img[i, :, :], side)
-
-            else:  # real 3D
-                fx = cryo_crop(fftshift(fftn(img)), side) * mask
-                out = ifftn(ifftshift(fx)) * (numpy.prod(szout) / numpy.prod(szin))
+            fx = cryo_crop(fftshift(fftn(img)), side) * mask
+            out = ifftn(ifftshift(fx)) * (numpy.prod(szout) / numpy.prod(szin))
 
         else:  # up-sample (scale up)
             raise NotImplementedError("scaling up currently isn't supported!")
 
-    elif ndim == 2:
+    elif ndim == 3 and stack:  # return a stack of 2D images where each one of them is downsampled
+        if down:
+            num_images = img.shape[0]
+            out = numpy.zeros([num_images, side, side])
+            for i in range(num_images):
+                fx = cryo_crop(fftshift(fft2(img[i, :, :])), side) * mask
+                out[i, :, :] = ifft2(ifftshift(fx)) * (numpy.prod(szout) / numpy.prod(szin))
+
+        else:  # up-sample
+            raise NotImplementedError("scaling up currently isn't supported!")
+
+    elif ndim == 2:  # return a 2D image scaled from the original image
         if down:
             fx = cryo_crop(fftshift(fft2(img)), side) * mask
             out = ifft2(ifftshift(fx)) * (numpy.prod(szout) / numpy.prod(szin))
@@ -102,7 +106,7 @@ def cryo_downsample(img, side, compute_fx=False, stack=False, mask=None):
         else:  # up-sample
             raise NotImplementedError("scaling up currently isn't supported!")
 
-    elif ndim == 1:
+    elif ndim == 1:  # return a vector scaled from the original vector
         if down:
             fx = cryo_crop(fftshift(fft(img)), side) * mask
             out = ifft(ifftshift(fx), axis=0) * (numpy.prod(szout) / numpy.prod(szin))
