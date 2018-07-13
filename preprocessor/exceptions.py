@@ -2,5 +2,5 @@ class AspireException(Exception):
     pass
 
 
-class DimensionsError(AspireException):
+class DimensionsIncompatible(AspireException):
     pass

@@ -2,7 +2,7 @@
 import math
 import numpy
 
-from preprocessor.exceptions import DimensionsError
+from preprocessor.exceptions import DimensionsIncompatible
 
 
 def cryo_crop(mat, n, is_stack=False, fill_value=0):
@@ -40,7 +40,7 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
     num_dimensions = len(mat.shape)
 
     if num_dimensions not in [1, 2, 3]:
-        raise DimensionsError("cropping/padding failed! number of dimensions is too big!"
+        raise DimensionsIncompatible("cropping/padding failed! number of dimensions is too big!"
                               f" ({num_dimensions} while max is 3).")
 
     if num_dimensions == 2 and 1 in mat.shape:
@@ -71,7 +71,7 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
             return result_mat
 
         else:
-            raise DimensionsError("Can't crop and pad simultaneously!")
+            raise DimensionsIncompatible("Can't crop and pad simultaneously!")
 
     else:  # mat is 3D or a stack of 2D images
 
@@ -106,4 +106,4 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
                 return result_mat
 
             else:
-                raise DimensionsError("Can't crop and pad simultaneously!")
+                raise DimensionsIncompatible("Can't crop and pad simultaneously!")
