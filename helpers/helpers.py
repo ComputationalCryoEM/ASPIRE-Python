@@ -9,8 +9,6 @@ class TupleCompare(object):
 
     @classmethod
     def validate_same_length(cls, a, b):
-        print(a)
-        print(b)
         if len(a) != len(b):
             raise DimensionsIncompatible("Can't compare tuples of different length")
 
@@ -32,6 +30,7 @@ class TupleCompare(object):
 
     @classmethod
     def eq(cls, a, b):
+        cls.validate_same_length(a, b)
         return all([i == j for i, j in zip(a, b)])
 
 
