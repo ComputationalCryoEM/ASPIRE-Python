@@ -5,14 +5,14 @@ import numpy
 from preprocessor.exceptions import DimensionsIncompatible
 
 
-def cryo_crop(mat, n, is_stack=False, fill_value=0):
+def cryo_crop(mat, n, stack=False, fill_value=0):
     """
         Reduce the size of a vector, square or cube 'mat' by cropping (or
         increase the size by padding with fill_value, by default zero) to a final
         size of n, (n x n), or (n x n x n) respectively. This is the analogue of down-sample, but
         it doesn't change magnification.
 
-        If mat is 2-dimensional and n is a vector, m is cropped to n=[nx ny].
+        If mat is 2-dimensional and n is a vector, m is cropped to n=[mat_x mat_y].
 
         The function handles odd and even-sized arrays correctly. The center of
         an odd array is taken to be at (n+1)/2, and an even array is n/2+1.
@@ -29,7 +29,7 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
         Args:
             mat (numpy.array): Vector, 2D array, stack of 2D arrays or a 3D array
             n (int): Size of desired cropped vector, side of 2D array or side of 3D array
-            is_stack (bool): Set to True in order to handle a 3D mat as a stack of 2D
+            stack (bool): Set to True in order to handle a 3D mat as a stack of 2D
             fill_value (:obj:`int`, optional): Padding value. Defaults to 0.
 
         Returns:
@@ -41,7 +41,7 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
 
     if num_dimensions not in [1, 2, 3]:
         raise DimensionsIncompatible("cropping/padding failed! number of dimensions is too big!"
-                              f" ({num_dimensions} while max is 3).")
+                                     f" ({num_dimensions} while max is 3).")
 
     if num_dimensions == 2 and 1 in mat.shape:
         num_dimensions = 1
@@ -53,21 +53,29 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
             return mat[ns: ns + n]
 
         else:  # padding
-            result_mat = fill_value * numpy.ones([n, 1])
+            result_mat = fill_value * numpy.ones([n, 1], dtype=complex)
             result_mat[-ns: mat.size - ns] = mat
             return result_mat
 
     elif num_dimensions == 2:  # mat is 2D image
-        nx, ny = mat.shape
-        nsx = math.floor(nx / 2) - math.floor(n / 2)  # shift term for scaling down
-        nsy = math.floor(ny / 2) - math.floor(n / 2)
+        mat_x, mat_y = mat.shape
+        # start_x = math.floor(mat_x / 2) - math.floor(n / 2)  # shift term for scaling down
+        start_x = mat_x / 2 - n / 2  # shift term for scaling down
+        # start_y = math.floor(mat_y / 2) - math.floor(n / 2)
+        start_y = mat_y / 2 - n / 2
 
-        if nsx >= 0 and nsy >= 0:  # cropping
-            return mat[nsx: nsx + int(n), nsy: nsy + int(n)]
+        if start_x >= 0 and start_y >= 0:  # cropping
+            start_x, start_y = math.floor(start_x), math.floor(start_y)
+            print(f'cryo_crop:cropping from {mat.shape} to {n}..')
+            import IPython
+            IPython.embed()
+            return mat[start_x: start_x + int(n), start_y: start_y + int(n)]
 
-        elif nsx < 0 and nsy < 0:  # padding
-            result_mat = fill_value * numpy.ones([n, n])
-            result_mat[-nsx: nx - nsx, -nsy: ny - nsy] = mat
+        elif start_x < 0 and start_y < 0:  # padding
+            print('cryo_crop:padding..')
+            start_x, start_y = math.floor(start_x), math.floor(start_y)
+            result_mat = fill_value * numpy.ones([n, n], dtype=complex)
+            result_mat[-start_x: mat_x - start_x, -start_y: mat_y - start_y] = mat
             return result_mat
 
         else:
@@ -75,7 +83,7 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
 
     else:  # mat is 3D or a stack of 2D images
 
-        if is_stack:
+        if stack:
             # break down the stack and treat each image as an individual image
             # then return the cropped stack
             result_mat = numpy.zeros([mat.shape[0], n, n])
@@ -97,8 +105,8 @@ def cryo_crop(mat, n, is_stack=False, fill_value=0):
                            ns[1]: ns[1]+to_shape[1],
                            ns[2]: ns[2]+to_shape[2]]
 
-            elif numpy.all(ns < 0):  # pad
-                result_mat = fill_value * numpy.ones([n, n, n])
+            elif numpy.all(ns <= 0):  # pad
+                result_mat = fill_value * numpy.ones([n, n, n], dtype=complex)
                 result_mat[-ns[0]: from_shape[0] - ns[0],
                            -ns[1]: from_shape[2] - ns[1],
                            -ns[2]: from_shape[2] - ns[2]] = mat
