@@ -7,8 +7,7 @@ import scipy.sparse.linalg as spsl
 import scipy.linalg as scl
 import scipy.optimize as optim
 from pyfftw.interfaces import numpy_fft
-import em_classavg.em as em
-import pyfftw
+import mrcfile
 
 
 np.random.seed(1137)
@@ -97,10 +96,16 @@ class FastRotatePrecomp:
 
 def run():
 
+    a = np.load('averagas.npy')
+    with mrcfile.new('tmp.mrc') as mrc:
+        mrc.set_data(a.astype('float32'))
+
     # Configuration
     n_nbor = 100
     is_rand = False
-    images = np.load('images.npy')
+    from class_avrages.data_utils import mat_to_npy
+    images = mat_to_npy('noisy_projs')[:, :, :1000]
+    # images = np.load('images.npy')
 
     # Estimate snr
     snr, var_s, var_n = estimate_snr(images)
@@ -125,7 +130,9 @@ def run():
     shifts, corr, unsorted_averages_fname, norm_variance = align_main(images, angle, class_vdm, class_vdm_refl,
                                                                       spca_data, nn_avg, 15, list_recon, 'my_tmpdir',
                                                                       use_em)
-
+    # with mrcfile.new('tmp.mrc') as mrc:
+    #     mrc.set_data(unsorted_averages_fname.astype('float32'))
+    np.save('averagas', unsorted_averages_fname)
     return class_vdm, class_vdm_refl, angle
 
 
@@ -232,8 +239,8 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
         output[j] = np.real(icfft2(tmp_alloc2))
         shifts[j] = -shifts_list[ind, 0] - 1j * shifts_list[ind, 1]
 
-        if use_em:
-            im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds = em.run(images, output[j])
+        # if use_em:
+        #     im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds = em.run(images, output[j])
 
     output = output.swapaxes(1, 2)
     output = output.swapaxes(0, 2)
