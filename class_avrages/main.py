@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from numpy.polynomial.legendre import leggauss
 import scipy.special as sp
@@ -7,8 +8,9 @@ import scipy.sparse.linalg as spsl
 import scipy.linalg as scl
 import scipy.optimize as optim
 from pyfftw.interfaces import numpy_fft
+import pyfftw
 import mrcfile
-
+import finufftpy
 
 np.random.seed(1137)
 
@@ -34,6 +36,7 @@ class SpcaData:
         self.fn0 = fn0
 
     def save(self, obj_dir):
+        os.mkdir(obj_dir)
         np.save(obj_dir + '/eigval.npy', self.eigval)
         np.save(obj_dir + '/freqs.npy', self.freqs)
         np.save(obj_dir + '/radial_freqs.npy', self.radial_freqs)
@@ -95,16 +98,15 @@ class FastRotatePrecomp:
 
 
 def run():
-
-    a = np.load('averagas.npy')
+    a = np.load('clean_projs.npy')
     with mrcfile.new('tmp.mrc') as mrc:
-        mrc.set_data(a.astype('float32'))
+        mrc.set_data(a.transpose((2, 0, 1)).astype('float32'))
 
     # Configuration
     n_nbor = 100
     is_rand = False
     from class_avrages.data_utils import mat_to_npy
-    images = mat_to_npy('noisy_projs')[:, :, :1000]
+    images = mat_to_npy('noisy_projs')
     # images = np.load('images.npy')
 
     # Estimate snr
@@ -113,6 +115,9 @@ def run():
     # spca data
     print('start spca data')
     spca_data = compute_spca(images, var_n)
+    # spca_data.save('spca_data')
+    # spca_data = SpcaData(0, 0, 0, 0, 0, 0, 0, 0, 0)
+    # spca_data.load('spca_data')
 
     # initial classification fd update
     print('start initial classification')
@@ -123,6 +128,10 @@ def run():
     class_vdm, class_vdm_refl, angle = vdm(classes, np.ones(classes.shape), rot, class_refl, 50, False, 50)
 
     # align main
+    # images = np.load('feed_align_main/images.npy')
+    # angle = np.load('feed_align_main/angle.npy')
+    # class_vdm = np.load('feed_align_main/class_vdm.npy')
+    # class_vdm_refl = np.load('feed_align_main/class_vdm_refl.npy')
     nn_avg = 50
     list_recon = np.arange(images.shape[2])
     use_em = True
@@ -132,7 +141,7 @@ def run():
                                                                       use_em)
     # with mrcfile.new('tmp.mrc') as mrc:
     #     mrc.set_data(unsorted_averages_fname.astype('float32'))
-    np.save('averagas', unsorted_averages_fname)
+    np.save('clean_projs', unsorted_averages_fname)
     return class_vdm, class_vdm_refl, angle
 
 
@@ -150,7 +159,9 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
     corr = np.zeros((len(list_recon), k + 1), dtype='complex128')
     norm_variance = np.zeros(len(list_recon))
 
-    omega_x, omega_y = np.mgrid[-round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1, -round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1]
+    m = np.fix(resolution * 1.0 / 2)
+    omega_x, omega_y = np.mgrid[-m:m + 1, -m:m + 1]
+    # omega_x, omega_y = np.mgrid[-round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1, -round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1]
     omega_x = -2 * np.pi * omega_x / resolution
     omega_y = -2 * np.pi * omega_y / resolution
     omega_x = omega_x.flatten('F')
@@ -183,7 +194,6 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
     images = np.zeros((k + 1, resolution, resolution), dtype=data.dtype)
     images2 = np.zeros((k + 1, resolution, resolution), dtype='complex128')
     tmp_alloc = np.zeros((resolution, resolution), dtype='complex128')
-    tmp_alloc_for_rotate = np.zeros((resolution, resolution), dtype='complex128')
     tmp_alloc2 = np.zeros((resolution, resolution), dtype='complex128')
     pf_images = np.zeros((resolution * resolution, k + 1), dtype='complex128')
     pf2 = np.zeros(phase.shape, dtype='complex128')
@@ -191,6 +201,7 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
     var = np.zeros(resolution * resolution, dtype='float64')
     mean = np.zeros(resolution * resolution, dtype='complex128')
     pf_images_shift = np.zeros((resolution * resolution, k + 1), dtype='complex128')
+    tmps, plans = get_fast_rotate_vars(resolution)
 
     angle_j = np.zeros((k + 1), dtype='int')
     refl_j = np.ones((k + 1), dtype='int')
@@ -210,11 +221,11 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
 
         for i in range(k + 1):
             if angle_j[i] != 0:
-                fast_rotate_image(images[i], angle_j[i], tmp_alloc_for_rotate, m[angle_j[i] - 1])
+                fast_rotate_image(images[i], angle_j[i], tmps, plans, m[angle_j[i] - 1])
 
         # shouldn't it be list_recon[j] instead of j?
-        tmp = np.dot(eig_im[:, freqs == 0], coeff[freqs == 0, j]) + \
-            2 * np.real(np.dot(eig_im[:, freqs != 0], coeff[freqs != 0, j])) + mean_im
+        tmp = np.dot(eig_im[:, freqs == 0], coeff[freqs == 0, j]) + 2 * np.real(
+            np.dot(eig_im[:, freqs != 0], coeff[freqs != 0, j])) + mean_im
 
         tmp_alloc[n - r:n + r, n - r:n + r] = np.reshape(tmp, (2 * r, 2 * r), 'F')
 
@@ -290,7 +301,8 @@ def fast_rotate_precomp(szx, szy, phi):
         uy = u * (y + 1 - cy + sy)
         mx[r, y] = np.exp(alpha2 * uy)
         mx[r_t, y] = np.conj(mx[1: cx - 2 * sx, y])
-    return FastRotatePrecomp(phi, mx, my, mult90)
+    # because I am using real fft I take only part of mx and my
+    return FastRotatePrecomp(phi, mx[:szx // 2 + 1].copy(), my[:, :szy // 2 + 1].copy(), mult90)
 
 
 def adjust_rotate(phi):
@@ -345,7 +357,16 @@ def fast_rotate(input, phi, m=None):
     return 0
 
 
-def fast_rotate_image(image, phi, tmp, m=None):
+def fast_rotate_image(image, phi, tmps=None, plans=None, m=None):
+    """
+    Could make it faster without the flag 'FFTW_UNALIGNED' if I could make
+    :param image:
+    :param phi:
+    :param tmps:
+    :param plans:
+    :param m:
+    :return:
+    """
     szx, szy = image.shape
 
     if m is None:
@@ -356,26 +377,61 @@ def fast_rotate_image(image, phi, tmp, m=None):
 
     image[:] = np.rot90(image, m.mult90)
 
+    if tmps is None:
+        const_size0 = image.shape[0] // 2 + 1
+        const_size1 = image.shape[1] // 2 + 1
+        tmp1 = np.empty((len(image), const_size1), dtype='complex128')
+        tmp2 = np.empty((const_size0, len(image)), dtype='complex128')
+    else:
+        tmp1 = tmps[0]
+        tmp2 = tmps[1]
+    if plans is None:
+        tmp01 = pyfftw.empty_aligned(tmp1.shape, tmp1.dtype)
+        tmp02 = pyfftw.empty_aligned(tmp2.shape, tmp1.dtype)
+        tmp03 = pyfftw.empty_aligned(image.shape, image.dtype)
+        plans = [pyfftw.FFTW(tmp03, tmp01), pyfftw.FFTW(tmp01, tmp03, direction='FFTW_BACKWARD'),
+                 pyfftw.FFTW(tmp03, tmp02, axes=(0,)), pyfftw.FFTW(tmp02, tmp03, axes=(0,), direction='FFTW_BACKWARD')]
+
     # first pass
-    tmp[:] = numpy_fft.fft(image, axis=1, overwrite_input=True)
-    tmp *= my
-    image[:] = np.real(numpy_fft.ifft(tmp, axis=1))
+    plan = plans[0]
+    plan(image, tmp1)
+    tmp1 *= my
+    plan = plans[1]
+    plan(tmp1, image)
 
     # second pass
-    tmp[:] = numpy_fft.fft(image, axis=0, overwrite_input=True)
-    tmp *= mx
-    image[:] = np.real(numpy_fft.ifft(tmp, axis=0))
+    plan = plans[2]
+    plan(image, tmp2)
+    tmp2 *= mx
+    plan = plans[3]
+    plan(tmp2, image)
 
     # first pass
-    tmp[:] = numpy_fft.fft(image, axis=1, overwrite_input=True)
-    tmp *= my
-    image[:] = np.real(numpy_fft.ifft(tmp, axis=1))
+    plan = plans[0]
+    plan(image, tmp1)
+    tmp1 *= my
+    plan = plans[1]
+    plan(tmp1, image)
+
+
+def get_fast_rotate_vars(resolution):
+    tmp1 = np.empty((resolution, resolution // 2 + 1), dtype='complex128')
+    tmp2 = np.empty((resolution // 2 + 1, resolution), dtype='complex128')
+    tmps = tmp1, tmp2
+    tmp01 = pyfftw.empty_aligned(tmp1.shape, tmp1.dtype)
+    tmp02 = pyfftw.empty_aligned(tmp2.shape, tmp1.dtype)
+    tmp03 = pyfftw.empty_aligned((resolution, resolution), 'float64')
+    flags = ('FFTW_MEASURE', 'FFTW_UNALIGNED')
+    plans = [pyfftw.FFTW(tmp03, tmp01, flags=flags), pyfftw.FFTW(tmp01, tmp03, direction='FFTW_BACKWARD', flags=flags),
+             pyfftw.FFTW(tmp03, tmp02, axes=(0,), flags=flags),
+             pyfftw.FFTW(tmp02, tmp03, axes=(0,), direction='FFTW_BACKWARD', flags=flags)]
+    return tmps, plans
 
 
 def vdm(classes, corr, rot, class_refl, k, flag, n_nbor):
     n = classes.shape[0]
 
-    x, ah, rows, cols =\
+    x, ah, rows, cols = \
         sort_list_weights_wrefl(classes[:, :k], np.sqrt(2 - 2 * np.real(corr[:, :k])), rot[:, :k], class_refl[:, :k])
     if flag:
         # TODO bug here, with memory allocation for a_ub, same for matlab, can try use sparse!
@@ -385,7 +441,7 @@ def vdm(classes, corr, rot, class_refl, k, flag, n_nbor):
 
     w2 = w * ah
     w_bigger = w > 0.001
-    h2 = sps.csr_matrix((w2[w_bigger], (rows[w_bigger], cols[w_bigger])), shape=(2 * n, 2*n))
+    h2 = sps.csr_matrix((w2[w_bigger], (rows[w_bigger], cols[w_bigger])), shape=(2 * n, 2 * n))
     h2 += np.conj(h2.T)
 
     r_vdm_lp, _, vv_lp = vdm_lp(h2, 24)
@@ -393,7 +449,7 @@ def vdm(classes, corr, rot, class_refl, k, flag, n_nbor):
     if n <= 1e4:
         range_n = np.arange(n)
         corr_vdm = r_vdm_lp[:n].dot(np.conj(r_vdm_lp.T))
-        corr_vdm = np.real(corr_vdm - sps.csr_matrix((np.ones(n), (range_n, range_n)), shape=(n, 2*n)))
+        corr_vdm = np.real(corr_vdm - sps.csr_matrix((np.ones(n), (range_n, range_n)), shape=(n, 2 * n)))
         class_vdm = np.argsort(-corr_vdm, axis=1)
         class_vdm = class_vdm[:n, :n_nbor]
 
@@ -587,14 +643,14 @@ def cart2rad(n):
     # XXX This is a name for this function.
     n = np.floor(n)
     x, y = image_grid(n)
-    r = np.sqrt(np.square(x)+np.square(y))
+    r = np.sqrt(np.square(x) + np.square(y))
     return r
 
 
 def image_grid(n):
     # Return the coordinates of Cartesian points in an NxN grid centered around the origin.
     # The origin of the grid is always in the center, for both odd and even N.
-    p = (n-1.0)/2.0
+    p = (n - 1.0) / 2.0
     x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
     return x, y
 
@@ -627,7 +683,7 @@ def initial_classification_fd_update(spca_data, n_nbor, is_rand):
         # could use einsum
         corr = np.real(np.dot(np.conjugate(coeff_b[:, :n_im]).T, concat_coeff))
         range_arr = np.arange(n_im)
-        corr = corr - sps.csr_matrix((np.ones(n_im), (range_arr, range_arr)), shape=(n_im, 2*n_im))
+        corr = corr - sps.csr_matrix((np.ones(n_im), (range_arr, range_arr)), shape=(n_im, 2 * n_im))
         classes = np.argsort(-corr, axis=1)
         classes = classes[:, :n_nbor].A
 
@@ -749,8 +805,8 @@ def bispec_operator_1(freqs):
     return o1, o2
 
 
+# slow function
 def rot_align(m, coeff, pairs):
-
     n_theta = 360.0
     p = pairs.shape[0]
     c = np.zeros((m + 1, p), dtype='complex128')
@@ -771,8 +827,8 @@ def rot_align(m, coeff, pairs):
 
     m_list_ang = m_list * np.pi / 180
     m_list_ang_1j = 1j * m_list_ang
-    c_for_f_prime_1 = np.einsum('i, ij -> ji', m_list_ang, c[1:])
-    c_for_f_prime_2 = np.einsum('i, ji -> ji', m_list_ang, c_for_f_prime_1)
+    c_for_f_prime_1 = np.einsum('i, ij -> ji', m_list_ang, c[1:]).copy()
+    c_for_f_prime_2 = np.einsum('i, ji -> ji', m_list_ang, c_for_f_prime_1).copy()
 
     diff = np.absolute(x_new - x_old)
     while np.max(diff) > precision:
@@ -780,11 +836,9 @@ def rot_align(m, coeff, pairs):
         indices = np.where(diff > precision)[0]
         x_old1 = x_new[indices]
         tmp = np.exp(np.outer(m_list_ang_1j, x_old1))
-        # f_prime1 = -np.imag(np.einsum('ji, ij -> j', c_for_f_prime_1[indices], tmp))
-        # f_prime2 = -np.real(np.einsum('ji, ij -> j', c_for_f_prime_2[indices], tmp))
-        # might have an idea to make this much faster, can first compute whats needed and only then take the indices.
+
         delta = np.imag(np.einsum('ji, ij -> j', c_for_f_prime_1[indices], tmp)) / \
-            np.real(np.einsum('ji, ij -> j', c_for_f_prime_2[indices], tmp))
+                np.real(np.einsum('ji, ij -> j', c_for_f_prime_2[indices], tmp))
         delta_bigger10 = np.where(np.abs(delta) > 10)[0]
         tmp_random = np.random.rand(len(delta))
         tmp_random = tmp_random[delta_bigger10]
@@ -1088,26 +1142,77 @@ def cryo_pft_nfft(projections, precomp):
     n_r = precomp.n_r
     num_projections = projections.shape[2]
     x = -2 * np.pi * freqs.T
-
+    x = x.copy()
     # using nufft
-    # pf = np.zeros((m, num_projections), dtype='complex128')
-    # nufft_obj = py_nufft.factory('nufft')
-    # for i in range(num_projections):
-    #     # TODO use bigger epsilon
-    #     pf[:, i] = nufft_obj.forward2d(projections[:, :, i].T, x, iflag=-1, eps=1e-15)[0]
+    # import time
+    # tic = time.time()
+    pf = np.empty((x.shape[1], num_projections), dtype='complex128', order='F')
+    finufftpy.nufft2d2many(x[0], x[1], pf, -1, 1e-15, projections)
+    # toc = time.time()
+    # print('nufft time: {}'.format(toc - tic))
 
     # using nudft around 5x slower didn't ret to optimize
-    grid_x, grid_y = image_grid(projections.shape[1])
-    pts = np.array([grid_y.flatten('F'), grid_x.flatten('F')])
-    if projections.shape[1] % 2 == 0:
-        pts -= 0.5
-
-    # maybe can do it with less memory by splitting the exponent to several parts
-    pf = np.dot(np.exp(-1j * np.dot(x.T, pts)),
-                projections.reshape((projections.shape[0] * projections.shape[0]), num_projections, order='F'))
+    # grid_x, grid_y = image_grid(projections.shape[1])
+    # pts = np.array([grid_y.flatten('F'), grid_x.flatten('F')])
+    # if projections.shape[1] % 2 == 0:
+    #     pts -= 0.5
+    #
+    # # maybe can do it with less memory by splitting the exponent to several parts
+    # pf = np.dot(np.exp(-1j * np.dot(x.T, pts)),
+    #             projections.reshape((projections.shape[0] * projections.shape[0]), num_projections, order='F'))
+    # tac = time.time()
+    # print('nudft time: {}'.format(tac - toc))
+    # print('error: {}'.format(np.max(np.abs(a - pf)/np.abs(pf))))
     pf = pf.reshape((n_r, n_theta, num_projections), order='F')
 
     return pf
+
+
+def test(im, freqs):
+    nj = freqs.shape[1]
+
+    xj = np.random.rand(nj) * 2 * np.pi - np.pi
+    yj = np.random.rand(nj) * 2 * np.pi - np.pi
+
+    cj = np.zeros([nj], dtype=np.complex128)
+    finufftpy.nufft2d2(xj, yj, cj, -1, 1e-15, im)
+
+    ref = nudft2(im, np.array([xj, yj]))
+    print(np.linalg.norm(cj - ref) / np.linalg.norm(ref))
+
+
+def test2(im, freqs):
+    nj = freqs.shape[1]
+
+    if not (np.all(-np.pi <= freqs) and np.all(freqs < np.pi)):
+        print('bad frequencies')
+
+    xj = freqs[0].copy()
+    yj = freqs[1].copy()
+
+    cj = np.empty([nj], dtype=np.complex128)
+    finufftpy.nufft2d2(xj, yj, cj, -1, 1e-15, im)
+
+    ref = nudft2(im, np.array([xj, yj]))
+    print(np.linalg.norm(cj - ref) / np.linalg.norm(ref))
+
+
+def nudft2(im, freqs):
+    grid_x, grid_y = image_grid(im.shape[0])
+    pts = np.array([grid_y.flatten('F'), grid_x.flatten('F')])
+    if im.shape[0] % 2 == 0:
+        pts -= 0.5
+
+    # maybe can do it with less memory by splitting the exponent to several parts
+    pf = np.dot(np.exp(-1j * np.dot(freqs.T, pts)), im.flatten('F'))
+    return pf
+
+
+def nufft2(im, freqs):
+    freqs = np.mod(freqs + np.pi, 2 * np.pi) - np.pi
+    out = np.empty(freqs.shape[1], dtype='complex128')
+    finufftpy.nufft2d2(freqs[0], freqs[1], out, -1, 1e-15, im)
+    return out
 
 
 def spca_whole(coeff, var_hat):
@@ -1182,8 +1287,8 @@ def ift_fb(support_size, bandlimit):
         f_r_base = c_sqrt_pi_2 * np.power(-1j, i) * sp.jv(i, computation1)
         f_theta = np.exp(1j * i * theta)
 
-        tmp[inside_circle, :] = np.outer(f_r_base * f_theta, np.power(-1, np.arange(1, len(bessel_k) + 1)) * bessel_k)\
-            / np.subtract.outer(computation2, np.square(bessel_k))
+        tmp[inside_circle, :] = np.outer(f_r_base * f_theta, np.power(-1, np.arange(1, len(bessel_k) + 1)) * bessel_k) \
+                                / np.subtract.outer(computation2, np.square(bessel_k))
 
         fn.append(np.transpose(tmp, axes=(1, 0, 2)))
 
