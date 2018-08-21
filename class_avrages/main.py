@@ -98,9 +98,9 @@ class FastRotatePrecomp:
 
 
 def run():
-    a = np.load('clean_projs.npy')
-    with mrcfile.new('tmp.mrc') as mrc:
-        mrc.set_data(a.transpose((2, 0, 1)).astype('float32'))
+    # a = np.load('clean_projs.npy')
+    # with mrcfile.new('tmp.mrc') as mrc:
+    #     mrc.set_data(a.transpose((2, 0, 1)).astype('float32'))
 
     # Configuration
     n_nbor = 100
@@ -206,6 +206,13 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
     angle_j = np.zeros((k + 1), dtype='int')
     refl_j = np.ones((k + 1), dtype='int')
     index = np.zeros((k + 1), dtype='int')
+    import time
+    rotate_time = 0
+    mult_time = 0
+    cfft_time = 0
+    multiply_time = 0
+    dot_time = 0
+    rest_time = 0
     for j in range(len(list_recon)):
         print('starting image {}'.format(j))
         angle_j[1:] = angle[list_recon[j], :k]
@@ -219,24 +226,37 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
             else:
                 images[i] = data[index[i]]
 
+        tic0 = time.time()
+        # 2610 sec for 9000 images, 1021 for matlab
         for i in range(k + 1):
             if angle_j[i] != 0:
                 fast_rotate_image(images[i], angle_j[i], tmps, plans, m[angle_j[i] - 1])
+        tic1 = time.time()
 
         # shouldn't it be list_recon[j] instead of j?
+        # 190 sec for 9000 images, 103 for matlab
         tmp = np.dot(eig_im[:, freqs == 0], coeff[freqs == 0, j]) + 2 * np.real(
             np.dot(eig_im[:, freqs != 0], coeff[freqs != 0, j])) + mean_im
+        tic2 = time.time()
 
+        # 1170 sec for 9000 images, 375 for matlab
         tmp_alloc[n - r:n + r, n - r:n + r] = np.reshape(tmp, (2 * r, 2 * r), 'F')
 
         pf1 = cfft2(tmp_alloc).flatten('F')
         for i in range(k + 1):
             images2[i] = cfft2(images[i])
+        tic3 = time.time()
 
+        # 651 sec for 9000 images, 261 for matlab
         pf_images[:] = images2.reshape((k + 1, resolution * resolution), order='F').T
         np.multiply(phase, np.conj(pf1), out=pf2)
-        np.dot(pf2, pf_images, out=c)
+        tic4 = time.time()
 
+        # 313 sec for 9000 images, 233 for matlab
+        np.dot(pf2, pf_images, out=c)
+        tic5 = time.time()
+
+        # 307 sec for 9000 images, 100 for matlab
         ind = np.lexsort((np.angle(c), np.abs(c)), axis=0)[-1]
         ind_for_c = ind, np.arange(len(ind))
         corr[j] = c[ind_for_c]
@@ -249,9 +269,24 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
 
         output[j] = np.real(icfft2(tmp_alloc2))
         shifts[j] = -shifts_list[ind, 0] - 1j * shifts_list[ind, 1]
+        tic6 = time.time()
+
+        rotate_time += tic1 - tic0
+        mult_time += tic2 - tic1
+        cfft_time += tic3 - tic2
+        multiply_time += tic4 - tic3
+        dot_time += tic5 - tic4
+        rest_time += tic6 - tic5
 
         # if use_em:
         #     im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds = em.run(images, output[j])
+
+    print('rotate time: {}'.format(rotate_time))
+    print('mult time: {}'.format(mult_time))
+    print('cfft time: {}'.format(cfft_time))
+    print('multiply time: {}'.format(multiply_time))
+    print('dot time: {}'.format(dot_time))
+    print('rest time: {}'.format(rest_time))
 
     output = output.swapaxes(1, 2)
     output = output.swapaxes(0, 2)
