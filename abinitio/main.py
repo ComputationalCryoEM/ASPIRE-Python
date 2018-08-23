@@ -82,9 +82,19 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
 
     k = sz[0] // 2
 
+    # why 10
     d, v = sps.linalg.eigs(s, 10)
     d = np.real(d)
-    v = np.real(v)
+    sort_idx = np.argsort(-d)
+
+    if verbose:
+        print('Top eigenvalues:')
+        print(d[sort_idx])
+
+    # matlab here is weird
+    v = fix_signs(np.real(v[:, sort_idx[:3]]))
+    v1 = v[:2*k:2]
+    v2 = v[1:2*k:2]
     return 0
 
 
@@ -541,6 +551,16 @@ def fuzzy_mask(n, dims, r0, rise_time, origin=None):
     return m
 
 
-pass
+def fix_signs(u):
+    """
+    makes the matrix coloumn sign be by the biggest value
+    :param u: matrix
+    :return: matrix
+    """
+    b = np.argmax(np.absolute(u), axis=0)
+    b = np.array([np.linalg.norm(u[b[k], k]) / u[b[k], k] for k in range(len(b))])
+    u = u * b
+    return u
+
 
 run()
