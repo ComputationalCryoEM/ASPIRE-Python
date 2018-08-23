@@ -93,8 +93,51 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
 
     # matlab here is weird
     v = fix_signs(np.real(v[:, sort_idx[:3]]))
-    v1 = v[:2*k:2]
-    v2 = v[1:2*k:2]
+    v1 = v[:2*k:2].T.copy()
+    v2 = v[1:2*k:2].T.copy()
+
+
+    # why not something like this
+    # equations = np.zeros((3*k, 6))
+    # counter = 0
+    # for i in range(3):
+    #     for j in range(3):
+    #         if 3 * i + j in [0, 1, 2, 4, 5, 8]:
+    #             equations[0::3, counter] = v1[i] * v1[j]
+    #             equations[1::3, counter] = v2[i] * v2[j]
+    #             equations[2::3, counter] = v1[i] * v2[j]
+    #             counter += 1
+
+    equations = np.zeros((3*k, 9))
+    for i in range(3):
+        for j in range(3):
+            equations[0::3, 3*i+j] = v1[i] * v1[j]
+            equations[1::3, 3*i+j] = v2[i] * v2[j]
+            equations[2::3, 3*i+j] = v1[i] * v2[j]
+    truncated_equations = equations[:, [0, 1, 2, 4, 5, 8]]
+
+    b = np.ones(3 * k)
+    b[2::3] = 0
+
+    ata_vec = np.linalg.lstsq(truncated_equations, b)[0]
+    ata = np.zeros((3, 3))
+    ata[0, 0] = ata_vec[0]
+    ata[0, 1] = ata_vec[1]
+    ata[0, 2] = ata_vec[2]
+    ata[1, 0] = ata_vec[1]
+    ata[1, 1] = ata_vec[3]
+    ata[1, 2] = ata_vec[4]
+    ata[2, 0] = ata_vec[2]
+    ata[2, 1] = ata_vec[4]
+    ata[2, 2] = ata_vec[5]
+
+    # need to check if this is upper or lower triangular matrix somehow
+    a = np.linalg.cholesky(ata).T
+
+    rotations = np.zeros((3, 3, k))
+    r1 = np.dot(a, v1)
+    r2 = np.dot(a, v2)
+    r3 = np.cross(r1, r2, 0)
     return 0
 
 
