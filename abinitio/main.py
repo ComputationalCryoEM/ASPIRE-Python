@@ -137,7 +137,7 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
     rotations = np.zeros((3, 3, k))
     r1 = np.dot(a, v1)
     r2 = np.dot(a, v2)
-    r3 = np.cross(r1, r2, 0)
+    r3 = np.cross(r1, r2)
     return 0
 
 
