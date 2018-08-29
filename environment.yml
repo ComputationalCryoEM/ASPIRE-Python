@@ -13,7 +13,7 @@ dependencies:
   - pyfftw=0.10.4
   - pip=18.0
   - pip
+  - pybind11
   - pip:
     - mrcfile
-    - pybind11
     - git+https://github.com/flatironinstitute/finufft.git
