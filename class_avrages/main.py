@@ -12,6 +12,7 @@ import pyfftw
 import mrcfile
 import finufftpy
 
+
 np.random.seed(1137)
 
 
@@ -105,11 +106,10 @@ def run(input_images, output_images, n_nbor=100, nn_avg=50):
     # Configuration
     suffix = input_images.split('.')[-1]
     if suffix == 'mat':
-        from class_avrages.data_utils import mat_to_npy
         images = mat_to_npy('noisy_projs')
     elif suffix == 'npy':
         images = np.load(input_images)
-    elif suffix == 'mrc':
+    elif suffix == 'mrc' or suffix == 'mrcs':
         images = mrcfile.open(input_images).data
     else:
         raise ValueError('input_images must be mat/npy/mrc format')
@@ -145,8 +145,7 @@ def run(input_images, output_images, n_nbor=100, nn_avg=50):
     shifts, corr, unsorted_averages_fname, norm_variance = align_main(images, angle, class_vdm, class_vdm_refl,
                                                                       spca_data, nn_avg, 15, list_recon, 'my_tmpdir',
                                                                       use_em)
-    if output_images[-4:] != '.mrc':
-        output_images += '.mrc'
+
     with mrcfile.new(output_images) as mrc:
         mrc.set_data(unsorted_averages_fname.astype('float32'))
 
