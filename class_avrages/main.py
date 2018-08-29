@@ -97,19 +97,25 @@ class FastRotatePrecomp:
         self.mult90 = mult90
 
 
-def run():
+def run(input_images, output_images, n_nbor=100, nn_avg=50):
     # a = np.load('clean_projs.npy')
     # with mrcfile.new('tmp.mrc') as mrc:
     #     mrc.set_data(a.transpose((2, 0, 1)).astype('float32'))
 
     # Configuration
-    n_nbor = 100
-    is_rand = False
-    from class_avrages.data_utils import mat_to_npy
-    images = mat_to_npy('noisy_projs')
-    # images = np.load('images.npy')
+    suffix = input_images.split('.')[-1]
+    if suffix == 'mat':
+        from class_avrages.data_utils import mat_to_npy
+        images = mat_to_npy('noisy_projs')
+    elif suffix == 'npy':
+        images = np.load(input_images)
+    elif suffix == 'mrc':
+        images = mrcfile.open(input_images).data
+    else:
+        raise ValueError('input_images must be mat/npy/mrc format')
 
     # Estimate snr
+    print('start estimating snr')
     snr, var_s, var_n = estimate_snr(images)
 
     # spca data
@@ -120,6 +126,7 @@ def run():
     # spca_data.load('spca_data')
 
     # initial classification fd update
+    is_rand = False
     print('start initial classification')
     classes, class_refl, rot, corr, _ = initial_classification_fd_update(spca_data, n_nbor, is_rand)
 
@@ -132,17 +139,16 @@ def run():
     # angle = np.load('feed_align_main/angle.npy')
     # class_vdm = np.load('feed_align_main/class_vdm.npy')
     # class_vdm_refl = np.load('feed_align_main/class_vdm_refl.npy')
-    nn_avg = 50
     list_recon = np.arange(images.shape[2])
     use_em = True
     print('start align main')
     shifts, corr, unsorted_averages_fname, norm_variance = align_main(images, angle, class_vdm, class_vdm_refl,
                                                                       spca_data, nn_avg, 15, list_recon, 'my_tmpdir',
                                                                       use_em)
-    # with mrcfile.new('tmp.mrc') as mrc:
-    #     mrc.set_data(unsorted_averages_fname.astype('float32'))
-    np.save('clean_projs', unsorted_averages_fname)
-    return class_vdm, class_vdm_refl, angle
+    if output_images[-4:] != '.mrc':
+        output_images += '.mrc'
+    with mrcfile.new(output_images) as mrc:
+        mrc.set_data(unsorted_averages_fname.astype('float32'))
 
 
 def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_recon, tmpdir, use_em):
@@ -1473,6 +1479,3 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
         print('classes refl difference = {}'.format(dif[1]))
         print('rot difference = {}'.format(dif[2]))
         print('corr difference = {}\n'.format(dif[3]))
-
-
-run()
