@@ -49,7 +49,8 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
     projs = projs.transpose((1, 2, 0)).copy()
 
     # compute polar fourier transform
-    pf, _ = cryo_pft(projs, n_r, n_theta)
+    # pf, _ = cryo_pft(projs, n_r, n_theta)
+    pf = np.load('pf.npy')
 
     # find common lines from projections
     # clstack, _, _, _, _ = cryo_clmatrix_cpu(pf, num_projs, 1, max_shift, shift_step)
@@ -60,12 +61,69 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
     elif alg == 2:
         # s = cryo_syncmatrix_vote(clstack, n_theta)
         s = np.load('s.npy')
-        rotations = cryo_sync_rotations(s)
+        # rotations = cryo_sync_rotations(s)
+        rotations = np.load('rotations.npy')
     elif alg == 3:
         raise NotImplementedError
     else:
         raise ValueError('alg can only be 1, 2 or 3')
+
+    est_shifts, _ = cryo_estimate_shifts(pf, rotations, max_shift, shift_step, 10000, [], 0)
     return 0
+
+
+def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=10000, shifts_2d_ref=None, verbose=0):
+    if memory_factor < 0 or (memory_factor > 1 and memory_factor < 100):
+        raise ValueError('subsamplingfactor must be between 0 and 1 or larger than 100')
+
+    n_theta = pf.shape[1] // 2
+    n_projs = pf.shape[2]
+    pf = np.concatenate((np.flip(pf[1:, n_theta:], 0), pf[:, :n_theta]), 0).copy()
+
+    n_equations_total = int(np.ceil(n_projs * (n_projs - 1) / 2))
+    memory_total = n_equations_total * 2 * n_projs * 8
+
+    if memory_factor <= 1:
+        n_equations = int(np.ceil(n_projs * (n_projs - 1) * memory_factor / 2))
+    else:
+        subsampling_factor = (memory_factor * 10 ** 6) / memory_total
+        if subsampling_factor < 1:
+            n_equations = int(np.ceil(n_projs * (n_projs - 1) * subsampling_factor / 2))
+        else:
+            n_equations = n_equations_total
+
+    if n_equations < n_projs:
+        Warning('Too few equations. Increase memory_factor. Setting n_equations to n_projs')
+        n_equations = n_projs
+
+    if n_equations < 2 * n_projs:
+        Warning('Number of equations is small. Consider increase memory_factor.')
+
+    shift_i = np.zeros(4 * n_equations)
+    shift_j = np.zeros(4 * n_equations)
+    shift_eq = np.zeros(4 * n_equations)
+    shift_b = np.zeros(n_equations)
+
+    n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
+    r_max = (pf.shape[0] - 1) // 2
+    rk = np.arange(-r_max, r_max + 1)
+    rk2 = rk[:r_max]
+    shift_phases = np.exp(
+        np.outer(-2 * np.pi * 1j * rk2 / (2 * r_max + 1), np.arange(-max_shift, -max_shift + n_shifts * shift_step)))
+
+    h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
+
+    d_theta = np.pi / n_theta
+
+    idx_i = []
+    idx_j = []
+    for i in range(n_projs):
+        tmp_j = range(i + 1, n_projs)
+        idx_i.extend([i] * len(tmp_j))
+        idx_j.extend(tmp_j)
+    idx_i = np.array(idx_i, dtype='int')
+    idx_j = np.array(idx_j, dtype='int')
+    return 0, 0
 
 
 def cryo_sync_rotations(s, rots_ref=None, verbose=0):
@@ -91,7 +149,6 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
         print('Top eigenvalues:')
         print(d[sort_idx])
 
-    # matlab here is weird
     v = fix_signs(np.real(v[:, sort_idx[:3]]))
     v1 = v[:2*k:2].T.copy()
     v2 = v[1:2*k:2].T.copy()
@@ -134,11 +191,36 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
     # need to check if this is upper or lower triangular matrix somehow
     a = np.linalg.cholesky(ata).T
 
-    rotations = np.zeros((3, 3, k))
     r1 = np.dot(a, v1)
     r2 = np.dot(a, v2)
-    r3 = np.cross(r1, r2)
-    return 0
+    r3 = np.cross(r1, r2, axis=0)
+
+    rotations = np.empty((k, 3, 3))
+    rotations[:, :, 0] = r1.T
+    rotations[:, :, 1] = r2.T
+    rotations[:, :, 2] = r3.T
+    u, _, v = np.linalg.svd(rotations)
+    np.einsum('ijk, ikl -> ijl', u, v, out=rotations)
+    rotations = rotations.transpose((1, 2, 0)).copy()
+
+    # make sure that we got rotations
+    # for i in range(k):
+    #     r = rotations[:, :, i]
+    #     err = np.linalg.norm(np.dot(r, r.T) - np.eye(3))
+    #     if err > tol:
+    #         Warning('Trnaformation {} is not orthogonal'.format(i))
+    #
+    #     err = np.abs(np.linalg.det(r) - 1)
+    #     if err > tol:
+    #         Warning('Determinant of {} is not 1'.format(i))
+    #
+    #     u, _, v = np.linalg.svd(r)
+    #     rotations[:, :, i] = np.dot(u, v)
+
+    if ref:
+        raise NotImplementedError
+
+    return rotations
 
 
 def cryo_syncmatrix_vote(clmatrix, l, rots_ref=0, is_perturbed=0):
@@ -286,7 +368,7 @@ def cryo_vote_ij(clmatrix, l, i, j, k, rots_ref, is_perturbed):
         cos_phi2 = (c3[good_idx] - c1[good_idx] * c2[good_idx]) / (np.sin(theta1[good_idx]) * np.sin(theta2[good_idx]))
         check_idx = np.where(np.abs(cos_phi2) > 1)[0]
         if np.any(np.abs(cos_phi2) - 1 > 1e-12):
-            raise Warning('GCAR:numericalProblem')
+            Warning('GCAR:numericalProblem')
         elif len(check_idx) == 0:
             cos_phi2[check_idx] = np.sign(cos_phi2[check_idx])
 
@@ -503,7 +585,7 @@ def cryo_ray_normalize(pf):
         for j in range(n_theta):
             nr = np.linalg.norm(p[:, j])
             if nr < 1e-3:
-                raise Warning('Ray norm is close to zero.')
+                Warning('Ray norm is close to zero.')
             p[:, j] /= nr
         return p
 
