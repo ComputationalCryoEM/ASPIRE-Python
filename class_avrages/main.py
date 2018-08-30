@@ -106,7 +106,7 @@ def run(input_images, output_images, n_nbor=100, nn_avg=50):
     # Configuration
     suffix = input_images.split('.')[-1]
     if suffix == 'mat':
-        images = mat_to_npy('noisy_projs')
+        images = mat_to_npy(input_images)
     elif suffix == 'npy':
         images = np.load(input_images)
     elif suffix == 'mrc' or suffix == 'mrcs':
@@ -145,9 +145,12 @@ def run(input_images, output_images, n_nbor=100, nn_avg=50):
     shifts, corr, unsorted_averages_fname, norm_variance = align_main(images, angle, class_vdm, class_vdm_refl,
                                                                       spca_data, nn_avg, 15, list_recon, 'my_tmpdir',
                                                                       use_em)
+    # with mrcfile.new(output_images) as mrc:
+    #     mrc.set_data(unsorted_averages_fname.astype('float32'))
 
-    with mrcfile.new(output_images) as mrc:
-        mrc.set_data(unsorted_averages_fname.astype('float32'))
+    out_mat = {'shifts': shifts, 'corr': corr, 'clean_images': unsorted_averages_fname, 'norm_variance': norm_variance}
+    from scipy.io import savemat
+    savemat(output_images, out_mat)
 
 
 def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_recon, tmpdir, use_em):
