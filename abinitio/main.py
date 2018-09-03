@@ -9,6 +9,7 @@ import scipy.linalg as scl
 import scipy.optimize as optim
 from pyfftw.interfaces import numpy_fft
 import pyfftw
+from pyfftw.interfaces import numpy_fft
 import mrcfile
 import finufftpy
 import time
@@ -84,6 +85,7 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
         mask_radius = int(round(mask_radius))
 
     # mask projections
+    #3 in matlab we ignore masked_projs completely through the code
     m = fuzzy_mask(resolution, 2, mask_radius, 2)
     projs = projs.transpose((2, 0, 1))
     projs *= m
@@ -117,7 +119,7 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
     params = fill_struct()
     params.rot_matrices = rotations
     params.ctf = np.ones((n, n))
-    params.ctf_idx = np.ones(projs.shape[2])
+    params.ctf_idx = np.array([True] * projs.shape[2])
     params.shifts = est_shifts
     params.ampl = np.ones(projs.shape[2])
 
@@ -127,6 +129,8 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
 
 
 def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
+    im = mat_to_npy('projs')  #3 needs to be deleted after I fix the maked projs
+
     resolution = im.shape[1]
     n = im.shape[2]
 
@@ -140,22 +144,122 @@ def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
 
     kernel_f = cryo_mean_kernel_f(resolution, params, mean_est_opt)
 
+    precond_kernel_f = []
+    if mean_est_opt.preconditioner == 'circulant':
+        precond_kernel_f = 1 / circularize_kernel_f(kernel_f)
+    elif mean_est_opt.preconditioner != 'none':
+        raise ValueError('Invalid preconditioner type')
+
+    def identity(x):
+        return x
+
+    mean_est_opt.preconditioner = identity
+    im_bp = cryo_mean_backproject(im, params, mean_est_opt)
     return 0, 0
 
 
+def cryo_mean_backproject(im, params, mean_est_opt=None):
+    mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'half_pixel': False, 'batch_size': 0})
+    if im.shape[0] != im.shape[1] or im.shape[0] == 1 or len(im.shape) != 3:
+        raise ValueError('im must be 3 dimensional LxLxn where L > 1')
+
+    resolution = im.shape[1]
+    n = im.shape[2]
+
+    check_imaging_params(params, resolution, n)
+    # TODO debug, might be a problem with the first 2 lines
+    if mean_est_opt.batch_size != 0:
+        batch_size = mean_est_opt.batch_size
+        mean_est_opt.batch_size = 0
+
+        batch_ct = np.ceil(n / batch_size)
+        im_bp = np.zeros([2 * resolution] * 3, dtype=mean_est_opt.precision)
+
+        for batch in range(batch_ct):
+            start = batch_size * batch
+            end = min((batch_size + 1) * batch, n)
+
+            batch_params = subset_params(params, np.arange(start, end))
+            batch_im = im[:, :, start:end]
+            batch_im_bp = cryo_mean_kernel_f(batch_im, batch_params, mean_est_opt)
+            im_bp += (end - start) / n * batch_im_bp
+
+        return im_bp
+
+    if mean_est_opt.precision == 'float32' or mean_est_opt.precision == 'single':
+        im = im.astype('float32')
+
+    im = im * params.ampl
+    im = im_translate(im, -params.shifts)
+    im = im_filter(im, params.ctf[:, :, params.ctf_idx])
+    im = im_backproject(im, params.rot_matrices, mean_est_opt.half_pixel)
+    im /= n
+    return im
+
+
+def im_backproject(im, rot_matrices, half_pixel=False):
+    return 0
+
+
+def im_filter(im, filter_f):
+    return 0
+
+
+def im_translate(im, shifts):
+    return 0
+
+
+def circularize_kernel_f(kernel_f):
+    n_dims = len(kernel_f.shape)
+    kernel = np.fft.fftshift(np.fft.ifftn(kernel_f), axes=np.arange(n_dims))
+    for dim in range(n_dims):
+        kernel = circularize_kernel_1d(kernel, dim)
+    kernel = np.fft.fftn(np.fft.ifftshift(kernel, axes=np.arange(n_dims)))
+    return kernel
+
+
+def circularize_kernel_1d(kernel, dim):
+    sz = kernel.shape
+    if dim >= len(sz):
+        raise ValueError('dim exceeds kernal dimensions')
+
+    n = sz[dim] // 2
+    s = fill_struct()
+    s.type = '()'
+    s.subs = [':', ':', ':']
+
+    mult = np.arange(n) / n
+    if dim == 0:
+        kernel_circ = np.einsum('i, ijk -> ijk', mult, kernel[:n])
+    elif dim == 1:
+        kernel_circ = np.einsum('j, ijk -> ijk', mult, kernel[:, :n])
+    else:
+        kernel_circ = np.einsum('k, ijk -> ijk', mult, kernel[:, :, :n])
+
+    mult = np.arange(n, 0, -1) / n
+    if dim == 0:
+        kernel_circ += np.einsum('i, ijk -> ijk', mult, kernel[n:])
+    elif dim == 1:
+        kernel_circ += np.einsum('j, ijk -> ijk', mult, kernel[:, n:])
+    else:
+        kernel_circ += np.einsum('k, ijk -> ijk', mult, kernel[:, :, n:])
+
+    kernel_circ = np.fft.fftshift(kernel_circ, dim)
+    return kernel_circ
+
+
 def cryo_mean_kernel_f(resolution, params, mean_est_opt=None):
-    mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'half_pixel': False, 'batch_size': []})
+    mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'half_pixel': False, 'batch_size': 0})
     n = params.rot_matrices.shape[2]
 
     # TODO debug, might be a problem with the first 2 lines
-    if len(mean_est_opt.batch_size) != 0:
-        batch_size = int(mean_est_opt.batch_size)
-        mean_est_opt.batch_size = []
+    if mean_est_opt.batch_size != 0:
+        batch_size = mean_est_opt.batch_size
+        mean_est_opt.batch_size = 0
 
         batch_ct = np.ceil(n / batch_size)
         mean_kernel_f = np.zeros([2 * resolution] * 3, dtype=mean_est_opt.precision)
 
-        # TODO debug
         for batch in range(batch_ct):
             start = batch_size * batch
             end = min((batch_size + 1) * batch, n)
@@ -167,13 +271,49 @@ def cryo_mean_kernel_f(resolution, params, mean_est_opt=None):
         return mean_kernel_f
 
     pts_rot = rotated_grids(resolution, params.rot_matrices, mean_est_opt.half_pixel)
+    tmp = np.square(np.abs(params.ctf.flatten('F')))
+    filt = np.empty((tmp.shape[0], params.ampl.shape[0]), dtype=mean_est_opt.precision)
+    np.outer(tmp, np.square(params.ampl), out=filt)
 
-    return 0
+    if resolution % 2 == 0 and not mean_est_opt.half_pixel:
+        pts_rot = pts_rot[:, 1:, 1:]
+        filt = filt[1:, 1:]
+
+    # Reshape inputs into appropriate sizes and apply adjoint NUFFT
+    pts_rot = pts_rot.reshape((3, -1), order='F')
+    filt = filt.flatten('F')
+    mean_kernel = anufft3(filt, pts_rot, [2 * resolution] * 3)
+    mean_kernel /= n * resolution ** 2
+
+    # Ensure symmetric kernel
+    mean_kernel[0] = 0
+    mean_kernel[:, 0] = 0
+    mean_kernel[:, :, 0] = 0
+
+    mean_kernel = mean_kernel.copy()
+    # Take the Fourier transform since this is what we want to use when convolving
+    mean_kernel = np.fft.ifftshift(mean_kernel)
+    mean_kernel = np.fft.fftn(mean_kernel)
+    mean_kernel = np.fft.fftshift(mean_kernel)
+    mean_kernel = np.real(mean_kernel)
+    return mean_kernel
 
 
 def rotated_grids(resolution, rot_matrices, half_pixel=False):
+    mesh2d = mesh_2d(resolution)
 
-    return 0
+    if resolution % 2 == 0 and half_pixel:
+        mesh2d.x += 1 / resolution
+        mesh2d.y += 1 / resolution
+
+    num_pts = resolution ** 2
+    num_rots = rot_matrices.shape[2]
+
+    pts = np.pi * np.stack((mesh2d.x.flatten('F'), mesh2d.y.flatten('F'), np.zeros(num_pts)))
+    pts_rot = np.einsum('ilk, lj -> ijk', rot_matrices, pts)
+
+    pts_rot = pts_rot.reshape((3, resolution, resolution, num_rots), order='F')
+    return pts_rot
 
 
 def subset_params(params, ind):
@@ -924,7 +1064,7 @@ def fill_struct(s=None, att_vals=None, overwrite=None):
     if hasattr(s, key) and key in overwrite:
         pass
     else:
-        setattr(s, key, att_vals)
+        setattr(s, key, att_vals[key])
     :param s:
     :param att_vals:
     :param overwrite
@@ -946,13 +1086,52 @@ def fill_struct(s=None, att_vals=None, overwrite=None):
         if hasattr(s, key) and key in overwrite:
             pass
         else:
-            setattr(s, key, att_vals)
+            setattr(s, key, att_vals[key])
 
     return s
 
 
-def mesh_2d(resolution, inclusive):
-    return 0
+def mesh_2d(resolution, inclusive=False):
+    if inclusive:
+        cons = (resolution - 1) / 2
+        grid = np.arange(-cons, cons + 1) / cons
+    else:
+        cons = resolution / 2
+        grid = np.ceil(np.arange(-cons, cons)) / cons
+
+    mesh = fill_struct()
+    mesh.y, mesh.x = np.meshgrid(grid, grid)  # reversed from matlab
+    mesh.phi, mesh.r, _ = cart2pol(mesh.x, mesh.y)
+    return mesh
+
+
+def cart2pol(x, y, z=None):
+    th = np.arctan2(y, x)
+    r = np.hypot(x, y)
+    return th, r, z
+
+
+def anufft3(vol_f, fourier_pts, sz):
+    if len(sz) != 3:
+        raise ValueError('sz must be 3')
+    if len(fourier_pts.shape) != 2:
+        raise ValueError('fourier_pts must be 2D with shape 3x_')
+    if fourier_pts.shape[0] != 3:
+        raise ValueError('fourier_pts must be 2D with shape 3x_')
+    if not fourier_pts.flags.c_contiguous:
+        fourier_pts = fourier_pts.copy()
+    if not vol_f.flags.c_contiguous:
+        vol_f = vol_f.copy()
+
+    x = fourier_pts[0]
+    y = fourier_pts[1]
+    z = fourier_pts[2]
+    isign = 1
+    eps = 1e-15
+    ms, mt, mu = sz
+    f = np.empty(sz, dtype='complex128', order='F')
+    finufftpy.nufft3d1(x, y, z, vol_f, isign, eps, ms, mt, mu, f)
+    return f.copy()
 
 
 run()
