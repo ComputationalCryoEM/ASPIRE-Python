@@ -14,12 +14,53 @@ import finufftpy
 import time
 
 np.random.seed(1137)
+# type of comments:
+# - regular comment
+#1 - can't understand
+#2 - optimization
+#3 - possible bug
+
+
+class Object:
+    pass
+
+
+class DiracBasis:
+    def __init__(self, sz, mask=None):
+        if mask is None:
+            mask = np.ones(sz)
+
+        self.type = 0  # need to define a constant for it
+
+        self.sz = sz
+        self.mask = mask
+        #3 - why matlab define it as sum
+        self.count = mask.size
+
+    def evaluate(self, x):
+        if x.shape[0] != self.count:
+            raise ValueError('First dimension of input must be of size basis.count')
+
+        return x
+
+    def expand(self, x):
+        if len(x.shape) < len(self.sz) or x.shape[:len(self.sz)] != self.sz:
+            raise ValueError('First {} dimension of input must be of size basis.count'.format(len(self.sz)))
+
+        return x
+
+    def evaluate_t(self, x):
+        return self.expand(x)
+
+    def expand_t(self, x):
+        return self.expand(x)
 
 
 def run():
     algo = 2
     projs = mat_to_npy('projs')
     vol = cryo_abinitio_c1_worker(algo, projs)
+    return vol
 
 
 def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=None, verbose=None, n_theta=360, n_r=0.5, max_shift=0.15, shift_step=1):
@@ -33,7 +74,7 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
     if projs.shape[1] != projs.shape[0]:
         raise ValueError('input images must be squares')
 
-    # why 0.45
+    #1 why 0.45
     mask_radius = resolution * 0.45
     # mask_radius is ?.5
     if mask_radius * 2 == int(mask_radius * 2):
@@ -68,7 +109,38 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
     else:
         raise ValueError('alg can only be 1, 2 or 3')
 
-    est_shifts, _ = cryo_estimate_shifts(pf, rotations, max_shift, shift_step, 10000, [], 0)
+    # est_shifts, _ = cryo_estimate_shifts(pf, rotations, max_shift, shift_step)
+    est_shifts = np.load('est_shifts.npy')
+    # reconstruct downsampled volume with no CTF correction
+    n = projs.shape[1]
+
+    params = fill_struct()
+    params.rot_matrices = rotations
+    params.ctf = np.ones((n, n))
+    params.ctf_idx = np.ones(projs.shape[2])
+    params.shifts = est_shifts
+    params.ampl = np.ones(projs.shape[2])
+
+    basis = DiracBasis((n, n, n))
+    v1, _ = cryo_estimate_mean(projs, params, basis)
+    return 0
+
+
+def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
+    resolution = im.shape[1]
+    n = im.shape[2]
+
+    if basis is None:
+        basis = DiracBasis((resolution, resolution, resolution))
+
+    mean_est_opt = fill_struct(mean_est_opt, {'precision': 'double', 'preconditioner': 'circulant'})
+
+    kernel_f = cryo_mean_kernel_f(resolution, params, mean_est_opt)
+
+    return 0, 0
+
+
+def cryo_mean_kernel_f(resolution, params, mean_est_opt):
     return 0
 
 
@@ -99,9 +171,9 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
     if n_equations < 2 * n_projs:
         Warning('Number of equations is small. Consider increase memory_factor.')
 
-    shift_i = np.zeros(4 * n_equations)
-    shift_j = np.zeros(4 * n_equations)
-    shift_eq = np.zeros(4 * n_equations)
+    shift_i = np.zeros(4 * n_equations + n_equations)
+    shift_j = np.zeros(4 * n_equations + n_equations)
+    shift_eq = np.zeros(4 * n_equations + n_equations)
     shift_b = np.zeros(n_equations)
 
     n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
@@ -123,7 +195,109 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
         idx_j.extend(tmp_j)
     idx_i = np.array(idx_i, dtype='int')
     idx_j = np.array(idx_j, dtype='int')
-    return 0, 0
+    #1 - can't align with matlab, and anyway can't understand that memory thing
+    # rp = np.random.choice(np.arange(len(idx_j)), size=n_equations, replace=False)
+    rp = mat_to_npy_vec('rp') - 1
+    # might be able to vectorize this
+    for shift_eq_idx in range(n_equations):
+        i = idx_i[rp[shift_eq_idx]]
+        j = idx_j[rp[shift_eq_idx]]
+
+        r_i = rotations[:, :, i]
+        r_j = rotations[:, :, j]
+        c_ij, c_ji = common_line_r(r_i.T, r_j.T, 2 * n_theta)
+
+        if c_ij >= n_theta:
+            c_ij -= n_theta
+            c_ji -= n_theta
+        if c_ji < 0:
+            c_ji += 2 * n_theta
+
+        c_ij = int(c_ij)
+        c_ji = int(c_ji)
+        is_pf_j_flipped = 0
+        if c_ji < n_theta:
+            pf_j = pf[:, c_ji, j]
+        else:
+            pf_j = pf[:, c_ji - n_theta, j]
+            is_pf_j_flipped = 1
+        pf_i = pf[:, c_ij, i]
+
+        #2 - this is pretty bad
+        pf_i *= h
+        pf_i[r_max - 1:r_max + 2] = 0
+        pf_i /= np.linalg.norm(pf_i)
+        pf_i = pf_i[:r_max]
+
+        pf_j *= h
+        pf_j[r_max - 1:r_max + 2] = 0
+        pf_j /= np.linalg.norm(pf_j)
+        pf_j = pf_j[:r_max]
+
+        pf_i_flipped = np.conj(pf_i)
+        pf_i_stack = np.einsum('i, ij -> ij', pf_i, shift_phases)
+        pf_i_flipped_stack = np.einsum('i, ij -> ij', pf_i_flipped, shift_phases)
+
+        c1 = 2 * np.real(np.dot(np.conj(pf_i_stack.T), pf_j))
+        c2 = 2 * np.real(np.dot(np.conj(pf_i_flipped_stack.T), pf_j))
+
+        sidx1 = np.argmax(c1)
+        sidx2 = np.argmax(c2)
+
+        if c1[sidx1] > c2[sidx2]:
+            dx = -max_shift + sidx1 * shift_step
+        else:
+            dx = -max_shift + sidx2 * shift_step
+
+        idx = np.arange(4 * shift_eq_idx, 4 * shift_eq_idx + 4)
+        shift_alpha = c_ij * d_theta
+        shift_beta = c_ji * d_theta
+        shift_i[idx] = shift_eq_idx
+        shift_j[idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
+        shift_b[shift_eq_idx] = dx
+
+        #3 - bug somewhere, can't figure out where
+        if not is_pf_j_flipped:
+            shift_eq[idx] = [np.sin(shift_alpha), np.cos(shift_alpha), -np.sin(shift_beta), -np.cos(shift_beta)]
+        else:
+            shift_beta -= np.pi
+            shift_eq[idx] = [-np.sin(shift_alpha), -np.cos(shift_alpha), -np.sin(shift_beta), -np.cos(shift_beta)]
+
+    t = 4 * n_equations
+    shift_eq[:t] = mat_to_npy_vec('shift_eq')
+    shift_eq[t: t + n_equations] = shift_b
+    shift_i[t: t + n_equations] = np.arange(n_equations)
+    shift_j[t: t + n_equations] = 2 * n_projs
+    tmp = np.where(shift_eq != 0)[0]
+    shift_eq = shift_eq[tmp]
+    shift_i = shift_i[tmp]
+    shift_j = shift_j[tmp]
+    shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)), shape=(n_equations, 2 * n_projs + 1))
+
+    est_shifts = np.linalg.lstsq(shift_equations[:, :-1].todense(), shift_b)[0]
+    est_shifts = est_shifts.reshape((2, n_projs), order='F').T
+
+    if shifts_2d_ref is not None:
+        raise NotImplementedError
+
+    if verbose != 0:
+        raise NotImplementedError
+
+    return est_shifts, shift_equations
+
+
+def common_line_r(r1, r2, l):
+    #1 - why matlab defines PI?
+    ut = np.dot(r2, r1.T)
+    alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
+    alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
+
+    l_ij = alpha_ij * l / (2 * np.pi)
+    l_ji = alpha_ji * l / (2 * np.pi)
+
+    l_ij = np.mod(np.round(l_ij), l)
+    l_ji = np.mod(np.round(l_ji), l)
+    return l_ij, l_ji
 
 
 def cryo_sync_rotations(s, rots_ref=None, verbose=0):
@@ -140,7 +314,7 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
 
     k = sz[0] // 2
 
-    # why 10
+    #1 - why 10
     d, v = sps.linalg.eigs(s, 10)
     d = np.real(d)
     sort_idx = np.argsort(-d)
@@ -154,7 +328,7 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
     v2 = v[1:2*k:2].T.copy()
 
 
-    # why not something like this
+    #2 - why not something like this
     # equations = np.zeros((3*k, 6))
     # counter = 0
     # for i in range(3):
@@ -188,7 +362,7 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
     ata[2, 1] = ata_vec[4]
     ata[2, 2] = ata_vec[5]
 
-    # need to check if this is upper or lower triangular matrix somehow
+    #3 - need to check if this is upper or lower triangular matrix somehow
     a = np.linalg.cholesky(ata).T
 
     r1 = np.dot(a, v1)
@@ -235,7 +409,7 @@ def cryo_syncmatrix_vote(clmatrix, l, rots_ref=0, is_perturbed=0):
 
     for i in range(k - 1):
         stmp = np.zeros((2, 2, k))
-        # why not using only one loop
+        #2 - why not using only one loop
         for j in range(i + 1, k):
             stmp[:, :, j] = cryo_syncmatrix_ij_vote(clmatrix, i, j, np.arange(k), l, rots_ref, is_perturbed)
 
@@ -299,7 +473,7 @@ def rotratio_eulerangle_vec(cl, i, j, good_k, n_theta):
     idx2 = idx2[good_idx]
     idx3 = idx3[good_idx]
     c_alpha = (a - b * c) / np.sqrt(1 - np.square(b)) / np.sqrt(1 - np.square(c))
-    # why not c_alpha = (a - b * c) / (np.sqrt(1 - np.square(b) * 1 - np.square(c))
+    #2 - why not c_alpha = (a - b * c) / (np.sqrt(1 - np.square(b) * 1 - np.square(c))
 
     ind1 = np.logical_or(idx3 > n_theta / 2 + tol, np.logical_and(idx3 < -tol, idx3 > -n_theta / 2))
     ind2 = np.logical_or(idx2 > n_theta / 2 + tol, np.logical_and(idx2 < -tol, idx2 > -n_theta / 2))
@@ -384,7 +558,7 @@ def cryo_vote_ij(clmatrix, l, i, j, k, rots_ref, is_perturbed):
 
     good_k = []
     peakh = -1
-    alpha = -1  # why not alpha = []
+    alpha = -1  #1 - alpha is a list so I think alpha = [] is more appropriate
 
     if idx > 0:
         angles = np.arccos(phis[:, 0]) * 180 / np.pi
@@ -411,7 +585,7 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
         raise ValueError('n_theta must be even')
     n_theta = n_theta // 2
 
-    # why??
+    #1 #2 - maybe it's possible to save some computation with not doing this
     pf = np.concatenate((np.flip(pf[1:, n_theta:], 0), pf[:, :n_theta]), 0).copy()
 
     found_ref_clmatrix = 0
@@ -453,12 +627,12 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
     rk = np.arange(-r_max, r_max + 1)
     h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * np.square(r_max / 4)))
 
-    pf3 = np.zeros(pf.shape, dtype=pf.dtype)
+    pf3 = np.empty(pf.shape, dtype=pf.dtype)
     np.einsum('ijk, i -> ijk', pf, h, out=pf3)
     pf3[r_max - 1:r_max + 2] = 0
     pf3 /= np.linalg.norm(pf3, axis=0)
 
-    # short for this code
+    #2 - short for this code
     # pf3 = np.zeros(pf.shape, dtype=pf.dtype)
     # h = np.tile(h, (n_theta, 1)).T.copy()
     # for i in range(n_projs):
@@ -472,7 +646,7 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
     for i in range(n_projs):
         n2 = min(n_projs - i, nk)
 
-        # i think this is a bug, we want to sort only after we cut.
+        #3 - I think this is a bug, we want to sort only after we cut.
         subset_k2 = np.sort(np.random.permutation(n_projs - i - 1) + i + 1)
         subset_k2 = subset_k2[:n2]
 
@@ -537,8 +711,6 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
             shift_beta = clstack[j, i] * dtheta
             shift_i[idx] = shift_equation_idx
             shift_j[idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
-            if shift_equation_idx == 4950:
-                print(1)
             shift_b[shift_equation_idx] = shifts_1d[i, j]
 
             # Compute the coefficients of the current equation.
@@ -558,6 +730,7 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
     if verbose_detailed_debugging and found_ref_clmatrix:
         raise NotImplementedError
 
+    #1 - this whole part I can't understand
     tmp = np.where(corrstack != 0)
     corrstack[tmp] = 1 - corrstack[tmp]
     l = 4 * shift_equation_idx
@@ -597,6 +770,7 @@ def cryo_ray_normalize(pf):
     return pf
 
 
+# utils
 def cryo_pft(p, n_r, n_theta):
     """
     Compute the polar Fourier transform of projections with resolution n_r in the radial direction
@@ -619,6 +793,7 @@ def cryo_pft(p, n_r, n_theta):
         freqs[1, i * n_r: (i + 1) * n_r] = np.arange(n_r) * np.cos(i * dtheta)
 
     freqs *= omega0
+    # finufftpy require it to be aligned in fortran order
     pf = np.empty((n_r * n_theta // 2, n_projs), dtype='complex128', order='F')
     finufftpy.nufft2d2many(freqs[0], freqs[1], pf, 1, 1e-15, p)
     pf = pf.reshape((n_r, n_theta // 2, n_projs), order='F')
@@ -686,6 +861,41 @@ def fix_signs(u):
     b = np.array([np.linalg.norm(u[b[k], k]) / u[b[k], k] for k in range(len(b))])
     u = u * b
     return u
+
+
+def fill_struct(s=None, att_vals=None, overwrite=None):
+    """
+    Fill object with attributes in a dictionary.
+    If a struct is not given a new object will be created and filled.
+    If the given struct has a field in att_vals, the original field will stay, unless specified otherwise in overwrite.
+    att_vals is a dictionary with string keys, and for each key:
+    if hasattr(s, key) and key in overwrite:
+        pass
+    else:
+        setattr(s, key, att_vals)
+    :param s:
+    :param att_vals:
+    :param overwrite
+    :return:
+    """
+    if s is None:
+        s = Object()
+
+    if att_vals is None:
+        return s
+
+    if overwrite is None or not overwrite:
+        overwrite = []
+    if overwrite is True:
+        overwrite = list(att_vals.keys())
+
+    for key in att_vals.keys():
+        if hasattr(s, key) and key in overwrite:
+            pass
+        else:
+            setattr(s, key, att_vals)
+
+    return s
 
 
 run()
