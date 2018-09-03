@@ -189,15 +189,35 @@ def cryo_mean_backproject(im, params, mean_est_opt=None):
     if mean_est_opt.precision == 'float32' or mean_est_opt.precision == 'single':
         im = im.astype('float32')
 
+    filter_f = np.einsum('ij, k -> ijk', params.ctf, np.ones(np.count_nonzero(params.ctf_idx)))
     im = im * params.ampl
     im = im_translate(im, -params.shifts)
-    im = im_filter(im, params.ctf[:, :, params.ctf_idx])
+    im = im_filter(im, filter_f)
     im = im_backproject(im, params.rot_matrices, mean_est_opt.half_pixel)
     im /= n
     return im
 
 
 def im_backproject(im, rot_matrices, half_pixel=False):
+    resolution = im.shape[1]
+    n = im.shape[2]
+    if im.shape[0] != resolution:
+        raise ValueError('im must be squared - LxLxN')
+    if rot_matrices.shape[2] != n:
+        raise ValueError('The number of rotation matrices must match the number of images')
+
+    pts_rot = rotated_grids(resolution, rot_matrices, half_pixel)
+    pts_rot = pts_rot.reshape((3, -1), order='F')
+
+    #1 in matlab there are 2 ifs
+    if resolution % 2 == 0 and half_pixel:
+        grid = np.arange(-resolution / 2, resolution / 2)
+        y, x = np.meshgrid(grid, grid)
+        phase = 2 * np.pi * (x + y) / (2 * resolution)
+        im = np.einsum('ijk, ij -> ijk', im, phase)
+
+    im = im.transpose((1, 0, 2))
+    im_f = cfft2(im) / resolution ** 2
     return 0
 
 
@@ -210,8 +230,10 @@ def im_filter(im, filter_f):
     if im.shape[:2] != filter_f.shape[:2]:
         raise ValueError('The size of the images and filters must match')
 
-    im_f =
-    return 0
+    im_f = cfft2(im)
+    im_filtered_f = im_f * filter_f
+    im_filtered = np.real(icfft2(im_filtered_f))
+    return im_filtered
 
 
 def im_translate(im, shifts):
@@ -1166,5 +1188,28 @@ def anufft3(vol_f, fourier_pts, sz):
     finufftpy.nufft3d1(x, y, z, vol_f, isign, eps, ms, mt, mu, f)
     return f.copy()
 
+
+def cfft2(x):
+    if len(x.shape) == 2:
+        return np.fft.fftshift(np.transpose(np.fft.fft2(np.transpose(np.fft.ifftshift(x)))))
+    elif len(x.shape) == 3:
+        y = np.fft.ifftshift(x, (0, 1))
+        y = np.fft.fft2(y)
+        y = np.fft.fftshift(y, (0, 1))
+        return y
+    else:
+        raise ValueError("x must be 2D or 3D")
+
+
+def icfft2(x):
+    if len(x.shape) == 2:
+        return np.fft.fftshift(np.transpose(np.fft.ifft2(np.transpose(np.fft.ifftshift(x)))))
+    elif len(x.shape) == 3:
+        y = np.fft.ifftshift(x, (0, 1))
+        y = np.fft.ifft2(y, (0, 1))
+        y = np.fft.fftshift(y, (0, 1))
+        return y
+    else:
+        raise ValueError("x must be 2D or 3D")
 
 run()
