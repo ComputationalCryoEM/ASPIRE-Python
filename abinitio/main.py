@@ -202,11 +202,44 @@ def im_backproject(im, rot_matrices, half_pixel=False):
 
 
 def im_filter(im, filter_f):
+    n_im = im.shape[2]
+    n_filter = filter_f.shape[2]
+
+    if n_filter != 1 and n_filter != n_im:
+        raise ValueError('The number of filters must be 1 or match the number of images')
+    if im.shape[:2] != filter_f.shape[:2]:
+        raise ValueError('The size of the images and filters must match')
+
+    im_f =
     return 0
 
 
 def im_translate(im, shifts):
-    return 0
+    n_im = im.shape[2]
+    n_shifts = shifts.shape[1]
+
+    if shifts.shape[0] != 2:
+        raise ValueError('Input `shifts` must be of size 2-by-n')
+
+    if n_shifts != 1 and n_shifts != n_im:
+        raise ValueError('The number of shifts must be 1 or match the number of images')
+
+    if im.shape[0] != im.shape[1]:
+        raise ValueError('Images must be square')
+
+    shifts = mat_to_npy('b')
+    resolution = im.shape[1]
+    grid = np.fft.ifftshift(np.ceil(np.arange(-resolution / 2, resolution / 2)))
+    om_y, om_x = np.meshgrid(grid, grid)
+    phase_shifts = np.einsum('ij, k -> ijk', om_x, shifts[0]) + np.einsum('ij, k -> ijk', om_y, shifts[1])
+    phase_shifts /= resolution
+
+    #2 can do this faster using real fft
+    mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
+    im_f = np.fft.fft2(im, axes=(0, 1))
+    im_translated_f = im_f * mult_f
+    im_translated = np.real(np.fft.ifft2(im_translated_f, axes=(0, 1)))
+    return im_translated
 
 
 def circularize_kernel_f(kernel_f):
@@ -462,7 +495,7 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
     shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)), shape=(n_equations, 2 * n_projs + 1))
 
     est_shifts = np.linalg.lstsq(shift_equations[:, :-1].todense(), shift_b)[0]
-    est_shifts = est_shifts.reshape((2, n_projs), order='F').T
+    est_shifts = est_shifts.reshape((2, n_projs), order='F')  ###### maybe .T
 
     if shifts_2d_ref is not None:
         raise NotImplementedError
