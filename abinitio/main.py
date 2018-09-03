@@ -133,15 +133,62 @@ def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
     if basis is None:
         basis = DiracBasis((resolution, resolution, resolution))
 
-    mean_est_opt = fill_struct(mean_est_opt, {'precision': 'double', 'preconditioner': 'circulant'})
+    mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'preconditioner': 'circulant'})
+
+    if not check_imaging_params(params, resolution, n):
+        raise ValueError('bad Params')
 
     kernel_f = cryo_mean_kernel_f(resolution, params, mean_est_opt)
 
     return 0, 0
 
 
-def cryo_mean_kernel_f(resolution, params, mean_est_opt):
+def cryo_mean_kernel_f(resolution, params, mean_est_opt=None):
+    mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'half_pixel': False, 'batch_size': []})
+    n = params.rot_matrices.shape[2]
+
+    # TODO debug, might be a problem with the first 2 lines
+    if len(mean_est_opt.batch_size) != 0:
+        batch_size = int(mean_est_opt.batch_size)
+        mean_est_opt.batch_size = []
+
+        batch_ct = np.ceil(n / batch_size)
+        mean_kernel_f = np.zeros([2 * resolution] * 3, dtype=mean_est_opt.precision)
+
+        # TODO debug
+        for batch in range(batch_ct):
+            start = batch_size * batch
+            end = min((batch_size + 1) * batch, n)
+
+            batch_params = subset_params(params, np.arange(start, end))
+            batch_kernel_f = cryo_mean_kernel_f(resolution, batch_params, mean_est_opt)
+            mean_kernel_f += (end - start) / n * batch_kernel_f
+
+        return mean_kernel_f
+
+    pts_rot = rotated_grids(resolution, params.rot_matrices, mean_est_opt.half_pixel)
+
     return 0
+
+
+def rotated_grids(resolution, rot_matrices, half_pixel=False):
+
+    return 0
+
+
+def subset_params(params, ind):
+    if not check_imaging_params(params):
+        raise ValueError('bad Params')
+
+    # TODO check input
+    batch_params = fill_struct()
+
+    params.rot_matrices = params.rot_matrices[:, :, ind]
+    params.ctf_idx = params.ctf_idx[:, ind]
+    params.ampl = params.ampl[:, ind]
+    params.shifts = params.shifts[:, ind]
+
+    return batch_params
 
 
 def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=10000, shifts_2d_ref=None, verbose=0):
@@ -771,6 +818,11 @@ def cryo_ray_normalize(pf):
 
 
 # utils
+def check_imaging_params(params, resolution=None, n=None):
+    # TODO
+    return True
+
+
 def cryo_pft(p, n_r, n_theta):
     """
     Compute the polar Fourier transform of projections with resolution n_r in the radial direction
@@ -878,6 +930,7 @@ def fill_struct(s=None, att_vals=None, overwrite=None):
     :param overwrite
     :return:
     """
+    # TODO should consider making copy option - i.e that the input won't change
     if s is None:
         s = Object()
 
@@ -896,6 +949,10 @@ def fill_struct(s=None, att_vals=None, overwrite=None):
             setattr(s, key, att_vals)
 
     return s
+
+
+def mesh_2d(resolution, inclusive):
+    return 0
 
 
 run()
