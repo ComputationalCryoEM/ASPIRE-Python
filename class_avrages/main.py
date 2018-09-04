@@ -111,6 +111,7 @@ def run(input_images, output_images, n_nbor=100, nn_avg=50):
         images = np.load(input_images)
     elif suffix == 'mrc' or suffix == 'mrcs':
         images = mrcfile.open(input_images).data
+        images = images.transpose((2, 1, 0)).copy()
     else:
         raise ValueError('input_images must be mat/npy/mrc format')
 
@@ -123,7 +124,7 @@ def run(input_images, output_images, n_nbor=100, nn_avg=50):
     spca_data = compute_spca(images, var_n)
     # spca_data.save('spca_data')
     # spca_data = SpcaData(0, 0, 0, 0, 0, 0, 0, 0, 0)
-    # spca_data.load('spca_data')
+    # spca_data.load('mat_spca_data', True)
 
     # initial classification fd update
     is_rand = False
@@ -145,12 +146,12 @@ def run(input_images, output_images, n_nbor=100, nn_avg=50):
     shifts, corr, unsorted_averages_fname, norm_variance = align_main(images, angle, class_vdm, class_vdm_refl,
                                                                       spca_data, nn_avg, 15, list_recon, 'my_tmpdir',
                                                                       use_em)
-    # with mrcfile.new(output_images) as mrc:
-    #     mrc.set_data(unsorted_averages_fname.astype('float32'))
+    with mrcfile.new(output_images) as mrc:
+        mrc.set_data(unsorted_averages_fname.astype('float32'))
 
-    out_mat = {'shifts': shifts, 'corr': corr, 'clean_images': unsorted_averages_fname, 'norm_variance': norm_variance}
-    from scipy.io import savemat
-    savemat(output_images, out_mat)
+    # out_mat = {'shifts': shifts, 'corr': corr, 'clean_images': unsorted_averages_fname, 'norm_variance': norm_variance}
+    # from scipy.io import savemat
+    # savemat(output_images, out_mat)
 
 
 def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_recon, tmpdir, use_em):
@@ -199,7 +200,7 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
     output = np.zeros(data.shape)
 
     # pre allocating stuff
-    images = np.zeros((k + 1, resolution, resolution), dtype=data.dtype)
+    images = np.zeros((k + 1, resolution, resolution), dtype='float64')
     images2 = np.zeros((k + 1, resolution, resolution), dtype='complex128')
     tmp_alloc = np.zeros((resolution, resolution), dtype='complex128')
     tmp_alloc2 = np.zeros((resolution, resolution), dtype='complex128')
@@ -465,9 +466,9 @@ def get_fast_rotate_vars(resolution):
     tmp02 = pyfftw.empty_aligned(tmp2.shape, tmp1.dtype)
     tmp03 = pyfftw.empty_aligned((resolution, resolution), 'float64')
     flags = ('FFTW_MEASURE', 'FFTW_UNALIGNED')
-    plans = [pyfftw.FFTW(tmp03, tmp01, flags=flags), pyfftw.FFTW(tmp01, tmp03, direction='FFTW_BACKWARD', flags=flags),
-             pyfftw.FFTW(tmp03, tmp02, axes=(0,), flags=flags),
-             pyfftw.FFTW(tmp02, tmp03, axes=(0,), direction='FFTW_BACKWARD', flags=flags)]
+    plans = [pyfftw.FFTW(tmp03, tmp01, flags=('FFTW_MEASURE', 'FFTW_UNALIGNED')), pyfftw.FFTW(tmp01, tmp03, direction='FFTW_BACKWARD', flags=('FFTW_MEASURE', 'FFTW_UNALIGNED')),
+             pyfftw.FFTW(tmp03, tmp02, axes=(0,), flags=('FFTW_MEASURE', 'FFTW_UNALIGNED')),
+             pyfftw.FFTW(tmp02, tmp03, axes=(0,), direction='FFTW_BACKWARD', flags=('FFTW_MEASURE', 'FFTW_UNALIGNED'))]
     return tmps, plans
 
 
@@ -814,8 +815,19 @@ def bispec_2drot_large(coeff, freqs, eigval):
 def bispec_operator_1(freqs):
     max_freq = np.max(freqs)
     count = 0
-    full_list = np.zeros((100000, 3), dtype='int')
-    # can probably do it faster if needed
+    for i in range(2, max_freq):
+        for j in range(1, min(i, max_freq - i + 1)):
+            k = i + j
+            id1 = np.where(freqs == i)[0]
+            id2 = np.where(freqs == j)[0]
+            id3 = np.where(freqs == k)[0]
+            nd1 = len(id1)
+            nd2 = len(id2)
+            nd3 = len(id3)
+            count += nd1 * nd2 * nd3
+
+    full_list = np.zeros((count, 3), dtype='int')
+    count = 0
     for i in range(2, max_freq):
         for j in range(1, min(i, max_freq - i + 1)):
             k = i + j
@@ -836,7 +848,6 @@ def bispec_operator_1(freqs):
                 full_list[count: count + nd, 2] = tmp2
                 count += nd
 
-    full_list = full_list[:count]
     val = np.ones(full_list.shape)
     val[:, 2] = -1
     n_col = count
@@ -848,7 +859,7 @@ def bispec_operator_1(freqs):
     return o1, o2
 
 
-# slow function
+# very slow function compared to matlab
 def rot_align(m, coeff, pairs):
     n_theta = 360.0
     p = pairs.shape[0]
@@ -1095,7 +1106,7 @@ def bessel_ns_radial(bandlimit, support_size, x):
     angular_freqs = bessel[:, 0]
     max_ang_freq = int(np.max(angular_freqs))
     n_theta = int(np.ceil(16 * bandlimit * support_size))
-    if not n_theta % 2:
+    if n_theta % 2 == 1:
         n_theta += 1
 
     radian_freqs = bessel[:, 1]
@@ -1159,7 +1170,7 @@ def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
     pos_k = np.concatenate(pos_k, axis=2)
 
     for i in range(max_angular_freqs + 1):
-        coeff_pos_k.append(np.einsum('ki, k, kj -> ij', phi_ns[i], w, pos_k[:, i, :]))
+        coeff_pos_k.append(np.einsum('ki, k, kj -> ij', phi_ns[i], w, pos_k[:, i]))
 
     return coeff_pos_k
 
@@ -1481,3 +1492,6 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
         print('classes refl difference = {}'.format(dif[1]))
         print('rot difference = {}'.format(dif[2]))
         print('corr difference = {}\n'.format(dif[3]))
+
+
+# run('projections.mrcs', 'projections_denoised.mrcs')
