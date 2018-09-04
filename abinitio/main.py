@@ -35,8 +35,9 @@ class DiracBasis:
 
         self.sz = sz
         self.mask = mask
-        #3 - why matlab define it as sum
+        #3 - why matlab define it as sum - mask is 1 or 0
         self.count = mask.size
+        self.sz_prod = np.prod(sz)
 
     def evaluate(self, x):
         if x.shape[0] != self.count:
@@ -48,7 +49,34 @@ class DiracBasis:
         if len(x.shape) < len(self.sz) or x.shape[:len(self.sz)] != self.sz:
             raise ValueError('First {} dimension of input must be of size basis.count'.format(len(self.sz)))
 
-        return x
+        # roll_flag = False
+        # if len(x.shape) > 2:
+        #     sz_roll = x.shape[2:]
+        #     roll_flag = True
+        #
+        # if len(x.shape) == len(self.sz):
+        #     x = x.flatten('F')
+        # else:
+        #     new_shape = [self.sz_prod]
+        #     new_shape.extend(x.shape[len(self.sz):])
+        #     x = x.reshape(new_shape, order='F')
+        #
+        # x = x[self.mask]
+        # if roll_flag:
+        #     new_shape = [self.sz]
+        #     new_shape.extend(sz_roll)
+        #     x = x.reshape(new_shape, order='F')
+        # short for the matlab code
+        if len(self.sz) == 1:
+            idx = 'i'
+        elif len(self.sz) == 2:
+            idx = 'ij'
+        elif len(self.sz) == 3:
+            idx = 'ijk'
+        else:
+            raise ValueError('Does not support dimension > 3')
+
+        return np.einsum('{}..., {} -> {}...'.format(idx, idx, idx), x, self.mask)
 
     def evaluate_t(self, x):
         return self.expand(x)
@@ -155,8 +183,43 @@ def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
 
     mean_est_opt.preconditioner = identity
     im_bp = cryo_mean_backproject(im, params, mean_est_opt)
+
+    mean_est, cg_info = cryo_conj_grad_mean(kernel_f, im_bp, basis, precond_kernel_f, mean_est_opt)
     return 0, 0
 
+
+def cryo_conj_grad_mean(kernel_f, im_bp, basis, precond_kernel_f=None, mean_est_opt=None):
+    if precond_kernel_f is None:
+        precond_kernel_f = []
+    mean_est_opt = fill_struct()
+    resolution = im_bp.shape[0]
+    if len(im_bp.shape) != 3 or im_bp.shape[1] != resolution or im_bp.shape[2] != resolution:
+        raise ValueError('im_bp must be as array of size LxLxL')
+
+    #3 did not check is_basis
+    def fun(vol_basis):
+        return apply_mean_kernel(vol_basis, kernel_f, basis)
+
+    #3 precond_fun and fun are the same
+    if len(kernel_f) == 0:
+        def precond_fun(vol_basis):
+            return apply_mean_kernel(vol_basis, precond_kernel_f, basis)
+
+        mean_est_opt.preconditioner = precond_fun
+
+    im_bp_basis = basis.evaluate_t(im_bp)
+    return 0, 0
+
+
+def apply_mean_kernel(vol_basis, kernel_f, basis):
+    vol = basis.evaluate(vol_basis)
+    # vol = cryo_conv_vol(vol, kernel_f)
+    vol_basis = basis.evaluate_t(vol)
+    return vol_basis
+
+
+def cryo_conv_vol():
+    return 0
 
 def cryo_mean_backproject(im, params, mean_est_opt=None):
     mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'half_pixel': False, 'batch_size': 0})
@@ -209,16 +272,30 @@ def im_backproject(im, rot_matrices, half_pixel=False):
     pts_rot = rotated_grids(resolution, rot_matrices, half_pixel)
     pts_rot = pts_rot.reshape((3, -1), order='F')
 
-    #1 in matlab there are 2 ifs
     if resolution % 2 == 0 and half_pixel:
         grid = np.arange(-resolution / 2, resolution / 2)
         y, x = np.meshgrid(grid, grid)
-        phase = 2 * np.pi * (x + y) / (2 * resolution)
-        im = np.einsum('ijk, ij -> ijk', im, phase)
+        phase_shift = 2 * np.pi * (x + y) / (2 * resolution)
+        im = np.einsum('ijk, ij -> ijk', im, np.exp(1j * phase_shift))
 
     im = im.transpose((1, 0, 2))
     im_f = cfft2(im) / resolution ** 2
-    return 0
+
+    if resolution % 2 == 0:
+        if half_pixel:
+            grid = np.arange(-resolution / 2, resolution / 2)
+            y, x = np.meshgrid(grid, grid)
+            phase_shift = 2 * np.pi * (x + y) / (2 * resolution)
+            phase_shift += - np.reshape(pts_rot.sum(0), (resolution, resolution, n)) / 2
+            im_f = np.einsum('ijk, ij -> ijk', im_f, np.exp(1j * phase_shift))
+        else:
+            im_f[0] = 0
+            im_f[:, 0] = 0
+
+    im_f = im_f.flatten('F')
+    vol = anufft3(im_f, pts_rot, [resolution] * 3)
+    vol = vol.real
+    return vol
 
 
 def im_filter(im, filter_f):
@@ -498,7 +575,7 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
         shift_j[idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
         shift_b[shift_eq_idx] = dx
 
-        #3 - bug somewhere, can't figure out where
+        # check with compare cl
         if not is_pf_j_flipped:
             shift_eq[idx] = [np.sin(shift_alpha), np.cos(shift_alpha), -np.sin(shift_beta), -np.cos(shift_beta)]
         else:
@@ -604,7 +681,7 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
     ata[2, 1] = ata_vec[4]
     ata[2, 2] = ata_vec[5]
 
-    #3 - need to check if this is upper or lower triangular matrix somehow
+    # numpy returns lower, matlab upper
     a = np.linalg.cholesky(ata).T
 
     r1 = np.dot(a, v1)
@@ -800,7 +877,7 @@ def cryo_vote_ij(clmatrix, l, i, j, k, rots_ref, is_perturbed):
 
     good_k = []
     peakh = -1
-    alpha = -1  #1 - alpha is a list so I think alpha = [] is more appropriate
+    alpha = []
 
     if idx > 0:
         angles = np.arccos(phis[:, 0]) * 180 / np.pi
@@ -889,6 +966,7 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
         n2 = min(n_projs - i, nk)
 
         #3 - I think this is a bug, we want to sort only after we cut.
+        #3 this is really a bug
         subset_k2 = np.sort(np.random.permutation(n_projs - i - 1) + i + 1)
         subset_k2 = subset_k2[:n2]
 
@@ -1194,7 +1272,9 @@ def cfft2(x):
         return np.fft.fftshift(np.transpose(np.fft.fft2(np.transpose(np.fft.ifftshift(x)))))
     elif len(x.shape) == 3:
         y = np.fft.ifftshift(x, (0, 1))
+        y = np.transpose(y, (2, 0, 1))
         y = np.fft.fft2(y)
+        y = np.transpose(y, (1, 2, 0))
         y = np.fft.fftshift(y, (0, 1))
         return y
     else:
@@ -1206,10 +1286,41 @@ def icfft2(x):
         return np.fft.fftshift(np.transpose(np.fft.ifft2(np.transpose(np.fft.ifftshift(x)))))
     elif len(x.shape) == 3:
         y = np.fft.ifftshift(x, (0, 1))
-        y = np.fft.ifft2(y, (0, 1))
+        y = np.transpose(y, (2, 0, 1))
+        y = np.fft.ifft2(y)
+        y = np.transpose(y, (1, 2, 0))
         y = np.fft.fftshift(y, (0, 1))
         return y
     else:
         raise ValueError("x must be 2D or 3D")
+
+
+# def cfft2(x):
+#     if len(x.shape) == 2:
+#         return np.fft.fftshift(np.transpose(np.fft.fft2(np.transpose(np.fft.ifftshift(x)))))
+#     elif len(x.shape) == 3:
+#         y = np.fft.ifftshift(x, (1, 2))
+#         y = np.transpose(y, (0, 2, 1))
+#         y = np.fft.fft2(y)
+#         y = np.transpose(y, (0, 2, 1))
+#         y = np.fft.fftshift(y, (1, 2))
+#         return y
+#     else:
+#         raise ValueError("x must be 2D or 3D")
+#
+#
+# def icfft2(x):
+#     if len(x.shape) == 2:
+#         return np.fft.fftshift(np.transpose(np.fft.ifft2(np.transpose(np.fft.ifftshift(x)))))
+#     elif len(x.shape) == 3:
+#         y = np.fft.ifftshift(x, (1, 2))
+#         y = np.transpose(y, (0, 2, 1))
+#         y = np.fft.ifft2(y)
+#         y = np.transpose(y, (0, 2, 1))
+#         y = np.fft.fftshift(y, (1, 2))
+#         return y
+#     else:
+#         raise ValueError("x must be 2D or 3D")
+
 
 run()
