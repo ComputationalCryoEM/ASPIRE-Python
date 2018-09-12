@@ -147,7 +147,7 @@ def run(input_images, output_images, n_nbor=100, nn_avg=50):
                                                                       spca_data, nn_avg, 15, list_recon, 'my_tmpdir',
                                                                       use_em)
     with mrcfile.new(output_images) as mrc:
-        mrc.set_data(unsorted_averages_fname.astype('float32'))
+        mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
 
     # out_mat = {'shifts': shifts, 'corr': corr, 'clean_images': unsorted_averages_fname, 'norm_variance': norm_variance}
     # from scipy.io import savemat
@@ -290,12 +290,12 @@ def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_reco
         # if use_em:
         #     im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds = em.run(images, output[j])
 
-    print('rotate time: {}'.format(rotate_time))
-    print('mult time: {}'.format(mult_time))
-    print('cfft time: {}'.format(cfft_time))
-    print('multiply time: {}'.format(multiply_time))
-    print('dot time: {}'.format(dot_time))
-    print('rest time: {}'.format(rest_time))
+    # print('rotate time: {}'.format(rotate_time))
+    # print('mult time: {}'.format(mult_time))
+    # print('cfft time: {}'.format(cfft_time))
+    # print('multiply time: {}'.format(multiply_time))
+    # print('dot time: {}'.format(dot_time))
+    # print('rest time: {}'.format(rest_time))
 
     output = output.swapaxes(1, 2)
     output = output.swapaxes(0, 2)
@@ -1494,4 +1494,4 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
         print('corr difference = {}\n'.format(dif[3]))
 
 
-# run('projections.mrcs', 'projections_denoised.mrcs')
+run('projections.mrcs', 'projections_denoised.mrcs')
