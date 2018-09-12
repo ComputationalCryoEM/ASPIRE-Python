@@ -1492,6 +1492,3 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
         print('classes refl difference = {}'.format(dif[1]))
         print('rot difference = {}'.format(dif[2]))
         print('corr difference = {}\n'.format(dif[3]))
-
-
-run('projections.mrcs', 'projections_denoised.mrcs')
