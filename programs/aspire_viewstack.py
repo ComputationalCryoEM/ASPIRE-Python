@@ -1,5 +1,3 @@
-#!/opt/anaconda2/bin/python
-
 import argparse
 import matplotlib.pyplot as plt
 import mrcfile

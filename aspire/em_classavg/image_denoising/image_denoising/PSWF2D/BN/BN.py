@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.linalg import eigh_tridiagonal
-from em_classavg.image_denoising.image_denoising.PSWF2D.BN.BN_init_utils import generate_bn_mat
+from aspire.em_classavg.image_denoising.image_denoising.PSWF2D.BN.BN_init_utils import generate_bn_mat
 
 
 class BN:

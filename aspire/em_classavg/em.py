@@ -4,13 +4,13 @@ import time
 import pycuda.gpuarray as gpuarray
 import skcuda.linalg as linalg
 import skcuda.misc as misc
-import em_classavg.circ_shift_kernel as circ_shift_kernel
-import em_classavg.slice_assign_kernel as slice_assign_kernel
+import aspire.em_classavg.circ_shift_kernel as circ_shift_kernel
+import aspire.em_classavg.slice_assign_kernel as slice_assign_kernel
 import progressbar
 
-import em_classavg.config as config
-import em_classavg.data_utils as data_utils
-from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
+import aspire.em_classavg.config as config
+import aspire.em_classavg.data_utils as data_utils
+from aspire.em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
 
 
 class EM:
@@ -220,7 +220,7 @@ class EM:
         non_neg_freqs = self.converter.get_non_neg_freq_inds()
 
         psis_gpu_non_neg_freqs = psis_gpu[non_neg_freqs]
-        psis_non_neg_shifted = circ_shift_kernel.circ_shift(psis_gpu_non_neg_freqs,shift_x, shift_y)
+        psis_non_neg_shifted = circ_shift_kernel.circ_shift(psis_gpu_non_neg_freqs, shift_x, shift_y)
 
         psis_non_neg_shifted = self.converter.mask_points_inside_the_circle(psis_non_neg_shifted)
 
@@ -433,7 +433,8 @@ def run(images, init_avg_image, n_iters=2, trunc_param=10, beta=np.float64(1.0),
         images_orig = images
         init_avg_image_orig = init_avg_image
         images = np.real(data_utils.downsample_decorator(images, config.max_image_size)).astype(init_avg_image.dtype)  # TODO: Itay to to handle the fact that returns complex
-        init_avg_image = np.real(data_utils.downsample_decorator(init_avg_image, config.max_image_size)).astype(images.dtype)
+        init_avg_image = np.real(
+            data_utils.downsample_decorator(init_avg_image, config.max_image_size)).astype(images.dtype)
 
     em = EM(images, init_avg_image, n_iters, trunc_param, beta, ang_jump, max_shift, shift_jump,
                 n_scales, is_remove_outliers, outliers_precent_removal)
