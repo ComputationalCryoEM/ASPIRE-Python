@@ -2,7 +2,7 @@ import numpy as np
 import os
 from numpy.polynomial.legendre import leggauss
 import scipy.special as sp
-from class_avrages.data_utils import mat_to_npy, mat_to_npy_vec
+from aspire.class_avrages import mat_to_npy, mat_to_npy_vec
 from lib.nufft_cims import py_nufft
 
 

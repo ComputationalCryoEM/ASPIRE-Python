@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+scipy = "*"
+pyfftw = "*"
+pip = "*"
+finufftpy = {editable = true, git = "https://github.com/flatironinstitute/finufft.git"}
+"pybind11" = "*"
+finufft = {ref = "f4721b7da5b611c1130a9e925fc945fee18c5b45", git = "https://github.com/flatironinstitute/finufft.git"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"

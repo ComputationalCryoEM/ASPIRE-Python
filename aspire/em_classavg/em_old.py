@@ -1,12 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-import pycuda.gpuarray as gpuarray
-import pycuda.autoinit
 import skcuda.linalg as linalg
 
-import em_classavg.data_utils as data_utils
-from em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
+import aspire.em_classavg.data_utils as data_utils
+from aspire.em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
 
 
 class EM:

@@ -1,6 +1,6 @@
 import numpy as np
-import em_classavg.data_utils as data_utils
-import em_classavg.em as em
+import aspire.em_classavg.data_utils as data_utils
+import aspire.em_classavg.em as em
 
 is_load_large_images = True
 

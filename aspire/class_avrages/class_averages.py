@@ -1,17 +1,20 @@
-import os
-import numpy as np
-from numpy.polynomial.legendre import leggauss
-import scipy.special as sp
-from class_avrages.data_utils import *
-import scipy.sparse as sps
-import scipy.sparse.linalg as spsl
-import scipy.linalg as scl
-import scipy.optimize as optim
-from pyfftw.interfaces import numpy_fft
 import pyfftw
 import mrcfile
 import finufftpy
 
+import scipy.special as sp
+import numpy as np
+import scipy.sparse as sps
+import scipy.sparse.linalg as spsl
+import scipy.linalg as scl
+import scipy.optimize as optim
+
+from numpy.polynomial.legendre import leggauss
+
+from aspire.class_avrages.config import ClassAverageConfig
+from aspire.class_avrages.helpers import image_grid
+from aspire.helpers import cart2rad
+from aspire.utils import get_file_type
 
 np.random.seed(1137)
 
@@ -96,212 +99,6 @@ class FastRotatePrecomp:
         self.mx = mx
         self.my = my
         self.mult90 = mult90
-
-
-def run(input_images, output_images, n_nbor=100, nn_avg=50):
-    # a = np.load('clean_projs.npy')
-    # with mrcfile.new('tmp.mrc') as mrc:
-    #     mrc.set_data(a.transpose((2, 0, 1)).astype('float32'))
-
-    # Configuration
-    suffix = input_images.split('.')[-1]
-    if suffix == 'mat':
-        images = mat_to_npy(input_images)
-    elif suffix == 'npy':
-        images = np.load(input_images)
-    elif suffix == 'mrc' or suffix == 'mrcs':
-        images = mrcfile.open(input_images).data
-        images = images.transpose((2, 1, 0)).copy()
-    else:
-        raise ValueError('input_images must be mat/npy/mrc format')
-
-    # Estimate snr
-    print('start estimating snr')
-    snr, var_s, var_n = estimate_snr(images)
-
-    # spca data
-    print('start spca data')
-    spca_data = compute_spca(images, var_n)
-    # spca_data.save('spca_data')
-    # spca_data = SpcaData(0, 0, 0, 0, 0, 0, 0, 0, 0)
-    # spca_data.load('mat_spca_data', True)
-
-    # initial classification fd update
-    is_rand = False
-    print('start initial classification')
-    classes, class_refl, rot, corr, _ = initial_classification_fd_update(spca_data, n_nbor, is_rand)
-
-    # VDM
-    print('start vdm')
-    class_vdm, class_vdm_refl, angle = vdm(classes, np.ones(classes.shape), rot, class_refl, 50, False, 50)
-
-    # align main
-    # images = np.load('feed_align_main/images.npy')
-    # angle = np.load('feed_align_main/angle.npy')
-    # class_vdm = np.load('feed_align_main/class_vdm.npy')
-    # class_vdm_refl = np.load('feed_align_main/class_vdm_refl.npy')
-    list_recon = np.arange(images.shape[2])
-    use_em = True
-    print('start align main')
-    shifts, corr, unsorted_averages_fname, norm_variance = align_main(images, angle, class_vdm, class_vdm_refl,
-                                                                      spca_data, nn_avg, 15, list_recon, 'my_tmpdir',
-                                                                      use_em)
-    with mrcfile.new(output_images) as mrc:
-        mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
-
-    # out_mat = {'shifts': shifts, 'corr': corr, 'clean_images': unsorted_averages_fname, 'norm_variance': norm_variance}
-    # from scipy.io import savemat
-    # savemat(output_images, out_mat)
-
-
-def align_main(data, angle, class_vdm, refl, spca_data, k, max_shifts, list_recon, tmpdir, use_em):
-    data = data.swapaxes(0, 2)
-    data = data.swapaxes(1, 2)
-    data = np.ascontiguousarray(data)
-    resolution = data.shape[1]
-
-    if class_vdm.shape[1] < k:
-        # raise error
-        pass
-
-    shifts = np.zeros((len(list_recon), k + 1), dtype='complex128')
-    corr = np.zeros((len(list_recon), k + 1), dtype='complex128')
-    norm_variance = np.zeros(len(list_recon))
-
-    m = np.fix(resolution * 1.0 / 2)
-    omega_x, omega_y = np.mgrid[-m:m + 1, -m:m + 1]
-    # omega_x, omega_y = np.mgrid[-round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1, -round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1]
-    omega_x = -2 * np.pi * omega_x / resolution
-    omega_y = -2 * np.pi * omega_y / resolution
-    omega_x = omega_x.flatten('F')
-    omega_y = omega_y.flatten('F')
-    a = np.arange(-max_shifts, max_shifts + 1)
-    num = len(a)
-    a1 = np.tile(a, num)
-    a2 = np.repeat(a, num)
-    shifts_list = np.column_stack((a1, a2))
-
-    phase = np.ascontiguousarray(np.conj(np.exp(1j * (np.outer(omega_x, a1) + np.outer(omega_y, a2))).T))
-
-    angle = np.round(-angle).astype('int')
-    angle[angle < 0] += 360
-
-    angle[angle == 360] = 0
-    m = []
-    for i in range(1, 360):
-        m.append(fast_rotate_precomp(resolution, resolution, i))
-
-    n = resolution // 2
-    r = spca_data.r
-    coeff = spca_data.coeff
-    eig_im = spca_data.eig_im
-    freqs = spca_data.freqs
-    mean_im = np.dot(spca_data.fn0, spca_data.mean)
-    output = np.zeros(data.shape)
-
-    # pre allocating stuff
-    images = np.zeros((k + 1, resolution, resolution), dtype='float64')
-    images2 = np.zeros((k + 1, resolution, resolution), dtype='complex128')
-    tmp_alloc = np.zeros((resolution, resolution), dtype='complex128')
-    tmp_alloc2 = np.zeros((resolution, resolution), dtype='complex128')
-    pf_images = np.zeros((resolution * resolution, k + 1), dtype='complex128')
-    pf2 = np.zeros(phase.shape, dtype='complex128')
-    c = np.zeros((phase.shape[0], k + 1), dtype='complex128')
-    var = np.zeros(resolution * resolution, dtype='float64')
-    mean = np.zeros(resolution * resolution, dtype='complex128')
-    pf_images_shift = np.zeros((resolution * resolution, k + 1), dtype='complex128')
-    tmps, plans = get_fast_rotate_vars(resolution)
-
-    angle_j = np.zeros((k + 1), dtype='int')
-    refl_j = np.ones((k + 1), dtype='int')
-    index = np.zeros((k + 1), dtype='int')
-    import time
-    rotate_time = 0
-    mult_time = 0
-    cfft_time = 0
-    multiply_time = 0
-    dot_time = 0
-    rest_time = 0
-    for j in range(len(list_recon)):
-        print('starting image {}'.format(j))
-        angle_j[1:] = angle[list_recon[j], :k]
-        refl_j[1:] = refl[list_recon[j], :k]
-        index[1:] = class_vdm[list_recon[j], :k]
-        index[0] = list_recon[j]
-
-        for i in range(k + 1):
-            if refl_j[i] == 2:
-                images[i] = np.flipud(data[index[i]])
-            else:
-                images[i] = data[index[i]]
-
-        tic0 = time.time()
-        # 2610 sec for 9000 images, 1021 for matlab
-        for i in range(k + 1):
-            if angle_j[i] != 0:
-                fast_rotate_image(images[i], angle_j[i], tmps, plans, m[angle_j[i] - 1])
-        tic1 = time.time()
-
-        # shouldn't it be list_recon[j] instead of j?
-        # 190 sec for 9000 images, 103 for matlab
-        tmp = np.dot(eig_im[:, freqs == 0], coeff[freqs == 0, j]) + 2 * np.real(
-            np.dot(eig_im[:, freqs != 0], coeff[freqs != 0, j])) + mean_im
-        tic2 = time.time()
-
-        # 1170 sec for 9000 images, 375 for matlab
-        tmp_alloc[n - r:n + r, n - r:n + r] = np.reshape(tmp, (2 * r, 2 * r), 'F')
-
-        pf1 = cfft2(tmp_alloc).flatten('F')
-        for i in range(k + 1):
-            images2[i] = cfft2(images[i])
-        tic3 = time.time()
-
-        # 651 sec for 9000 images, 261 for matlab
-        pf_images[:] = images2.reshape((k + 1, resolution * resolution), order='F').T
-        np.multiply(phase, np.conj(pf1), out=pf2)
-        tic4 = time.time()
-
-        # 313 sec for 9000 images, 233 for matlab
-        np.dot(pf2, pf_images, out=c)
-        tic5 = time.time()
-
-        # 307 sec for 9000 images, 100 for matlab
-        ind = np.lexsort((np.angle(c), np.abs(c)), axis=0)[-1]
-        ind_for_c = ind, np.arange(len(ind))
-        corr[j] = c[ind_for_c]
-
-        np.multiply(pf_images, phase[ind].T, out=pf_images_shift)
-        np.var(pf_images_shift, 1, ddof=1, out=var)
-        norm_variance[j] = np.linalg.norm(var)
-        np.mean(pf_images_shift, axis=1, out=mean)
-        tmp_alloc2[:] = np.reshape(mean, (resolution, resolution), 'F')
-
-        output[j] = np.real(icfft2(tmp_alloc2))
-        shifts[j] = -shifts_list[ind, 0] - 1j * shifts_list[ind, 1]
-        tic6 = time.time()
-
-        rotate_time += tic1 - tic0
-        mult_time += tic2 - tic1
-        cfft_time += tic3 - tic2
-        multiply_time += tic4 - tic3
-        dot_time += tic5 - tic4
-        rest_time += tic6 - tic5
-
-        # if use_em:
-        #     im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds = em.run(images, output[j])
-
-    # print('rotate time: {}'.format(rotate_time))
-    # print('mult time: {}'.format(mult_time))
-    # print('cfft time: {}'.format(cfft_time))
-    # print('multiply time: {}'.format(multiply_time))
-    # print('dot time: {}'.format(dot_time))
-    # print('rest time: {}'.format(rest_time))
-
-    output = output.swapaxes(1, 2)
-    output = output.swapaxes(0, 2)
-    output = np.ascontiguousarray(output)
-
-    return shifts, corr, output, norm_variance
 
 
 def fast_rotate_precomp(szx, szy, phi):
@@ -472,58 +269,6 @@ def get_fast_rotate_vars(resolution):
     return tmps, plans
 
 
-def vdm(classes, corr, rot, class_refl, k, flag, n_nbor):
-    n = classes.shape[0]
-
-    x, ah, rows, cols = \
-        sort_list_weights_wrefl(classes[:, :k], np.sqrt(2 - 2 * np.real(corr[:, :k])), rot[:, :k], class_refl[:, :k])
-    if flag:
-        # TODO bug here, with memory allocation for a_ub, same for matlab, can try use sparse!
-        w = script_find_graph_weights_v3(x, np.stack((rows, cols), axis=1), 2 * n, 5)
-    else:
-        w = np.ones(len(x))
-
-    w2 = w * ah
-    w_bigger = w > 0.001
-    h2 = sps.csr_matrix((w2[w_bigger], (rows[w_bigger], cols[w_bigger])), shape=(2 * n, 2 * n))
-    h2 += np.conj(h2.T)
-
-    r_vdm_lp, _, vv_lp = vdm_lp(h2, 24)
-
-    if n <= 1e4:
-        range_n = np.arange(n)
-        corr_vdm = r_vdm_lp[:n].dot(np.conj(r_vdm_lp.T))
-        corr_vdm = np.real(corr_vdm - sps.csr_matrix((np.ones(n), (range_n, range_n)), shape=(n, 2 * n)))
-        class_vdm = np.argsort(-corr_vdm, axis=1)
-        class_vdm = class_vdm[:n, :n_nbor]
-
-    else:
-        n_max = 5000
-        i_max = int(np.ceil(1.0 * n / n_max))
-        class_vdm = np.zeros((n, n_nbor), dtype='int')
-        for i in range(i_max):
-            start = i * n_max
-            end = min((i + 1) * n_max, n)
-            corr_vdm = r_vdm_lp[start:end].dot(np.conjugate(r_vdm_lp.T))
-            corr_vdm = np.real(corr_vdm)
-            tmp = np.argsort(-corr_vdm, axis=1)
-            class_vdm[start:end] = tmp[:, 1:n_nbor + 1]
-
-    class_vdm = np.array(class_vdm)
-    class_vdm_refl = np.ceil((class_vdm + 1.) / n).astype('int')
-    class_vdm_le_n = class_vdm >= n
-    class_vdm[class_vdm_le_n] = class_vdm[class_vdm_le_n] - n
-    class_vdm = class_vdm.astype('int')
-    flatten_classes = class_vdm.flatten(order='F')
-    flatten_classes_refl = class_vdm_refl.flatten(order='F') - 1
-    tmp_list = np.column_stack((np.tile(np.arange(n), n_nbor), flatten_classes + flatten_classes_refl * n))
-    angle = vdm_angle_v2(vv_lp[:, :10], tmp_list)
-
-    angle = angle.reshape((n, n_nbor), order='F')
-
-    return class_vdm, class_vdm_refl, angle
-
-
 def sort_list_weights_wrefl(classes, corr, rot, refl):
     n_theta = 360
     n, n_nbor = classes.shape
@@ -655,127 +400,8 @@ def vdm_angle_v2(v, t):
     return angle
 
 
-def estimate_snr(images, prewhiten=False):
-    # TODO might have a bug here, error is larger then it should be
-    # Prewhiten the image if needed.
-    if prewhiten:
-        raise NotImplementedError
-
-    if len(images.shape) == 2:
-        images = images[:, :, None]
-
-    n = images.shape[2]
-
-    p = images.shape[1]
-    radius_of_mask = np.floor(p / 2.0) - 1.0
-
-    r = cart2rad(p)
-    points_inside_circle = r < radius_of_mask
-    num_signal_points = np.count_nonzero(points_inside_circle)
-    num_noise_points = p * p - num_signal_points
-
-    var_n = np.sum(np.var(images[~points_inside_circle], axis=0)) * num_noise_points / (num_noise_points * n - 1)
-    var_s = np.sum(np.var(images[points_inside_circle], axis=0)) * num_signal_points / (num_signal_points * n - 1)
-    var_s -= var_n
-    snr = var_s / var_n
-
-    return snr, var_s, var_n
-
-
-def cart2rad(n):
-    # Compute the radii corresponding of the points of a cartesian grid of size NxN points
-    # XXX This is a name for this function.
-    n = np.floor(n)
-    x, y = image_grid(n)
-    r = np.sqrt(np.square(x) + np.square(y))
-    return r
-
-
-def image_grid(n):
-    # Return the coordinates of Cartesian points in an NxN grid centered around the origin.
-    # The origin of the grid is always in the center, for both odd and even N.
-    p = (n - 1.0) / 2.0
-    x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
-    return x, y
-
-
 def icfft(x, axis=0):
     return np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(x, axis), axis=axis), axis)
-
-
-def initial_classification_fd_update(spca_data, n_nbor, is_rand):
-    # TODO might have a bug here, with less than 10,000 images the error is very large, with more its 0
-    # unpacking spca_data
-    coeff = spca_data.coeff
-    freqs = spca_data.freqs
-    eigval = spca_data.eigval
-
-    n_im = coeff.shape[1]
-    coeff[freqs == 0] /= np.sqrt(2)
-    # could possibly do it faster
-    for i in range(n_im):
-        coeff[:, i] /= np.linalg.norm(coeff[:, i])
-
-    coeff[freqs == 0] *= np.sqrt(2)
-    coeff_b, coeff_b_r, _ = bispec_2drot_large(coeff, freqs, eigval)
-
-    concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=1)
-    del coeff_b_r
-
-    # TODO check if there is a better implementation to NN, use transpose coeff_b might be faster
-    if n_im <= 10000:
-        # could use einsum
-        corr = np.real(np.dot(np.conjugate(coeff_b[:, :n_im]).T, concat_coeff))
-        range_arr = np.arange(n_im)
-        corr = corr - sps.csr_matrix((np.ones(n_im), (range_arr, range_arr)), shape=(n_im, 2 * n_im))
-        classes = np.argsort(-corr, axis=1)
-        classes = classes[:, :n_nbor].A
-
-    else:
-        if not is_rand:
-            batch_size = 2000
-            num_batches = int(np.ceil(1.0 * n_im / batch_size))
-            classes = np.zeros((n_im, n_nbor), dtype='int')
-            for i in range(num_batches):
-                start = i * batch_size
-                finish = min((i + 1) * batch_size, n_im)
-                corr = np.real(np.dot(np.conjugate(coeff_b[:, start: finish]).T, concat_coeff))
-                classes[start: finish] = np.argsort(-corr, axis=1)[:, 1: n_nbor + 1]
-        else:
-            # TODO implement random nn
-            print('random nearest neighbors not implemented yet using regular one instead')
-            batch_size = 2000
-            num_batches = int(np.ceil(n_im / batch_size))
-            classes = np.zeros((n_im, n_nbor), dtype='int')
-            for i in range(num_batches):
-                start = i * batch_size
-                finish = min((i + 1) * batch_size, n_im)
-                corr = np.real(np.dot(np.conjugate(coeff_b[:, start: finish]).T, concat_coeff))
-                classes[start: finish] = np.argsort(-corr, axis=1)[:, 1: n_nbor + 1]
-
-    del coeff_b, concat_coeff
-    max_freq = np.max(freqs)
-    cell_coeff = []
-    for i in range(max_freq + 1):
-        cell_coeff.append(np.concatenate((coeff[freqs == i], np.conjugate(coeff[freqs == i])), axis=1))
-
-    # maybe pairs should also be transposed
-    pairs = np.stack((classes.flatten('F'), np.tile(np.arange(n_im), n_nbor)), axis=1)
-    corr, rot = rot_align(max_freq, cell_coeff, pairs)
-
-    rot = rot.reshape((n_im, n_nbor), order='F')
-    classes = classes.reshape((n_im, n_nbor), order='F')  # this should already be in that shape
-    corr = corr.reshape((n_im, n_nbor), order='F')
-    id_corr = np.argsort(-corr, axis=1)
-    for i in range(n_im):
-        corr[i] = corr[i, id_corr[i]]
-        classes[i] = classes[i, id_corr[i]]
-        rot[i] = rot[i, id_corr[i]]
-
-    class_refl = np.ceil((classes + 1.0) / n_im).astype('int')
-    classes[classes >= n_im] = classes[classes >= n_im] - n_im
-    rot[class_refl == 2] = np.mod(rot[class_refl == 2] + 180, 360)
-    return classes, class_refl, rot, corr, 0
 
 
 def bispec_2drot_large(coeff, freqs, eigval):
@@ -958,150 +584,8 @@ def lgwt(n, a, b):
     return SamplePoints(x, w)
 
 
-def choose_support_v6(proj_ctf_noisy, energy_threshold):
-    # Determine sizes of the compact support in both real and Fourier space.
-    # OUTPUTS:
-    # c_limit: Size of support in Fourier space
-    # R_limit: Size of support in real space
-    # We scale the images in real space by L, so that the noise variance in
-    # both real and Fourier domains is the same.
-    # Based on code by Tejal from Oct 2015
-
-    L = proj_ctf_noisy.data.shape[1]
-    N = int(np.floor(L / 2))
-    P = proj_ctf_noisy.data.shape[0]
-    x, y = np.meshgrid(np.arange(-N, N + 1), np.arange(-N, N + 1))
-    r = np.sqrt(np.square(x) + np.square(y))
-    r_flat = r.flatten()
-    r_max = N
-
-    img_f = proj_ctf_noisy.data.astype(np.float64)
-    img = (icfft2(img_f)) * L
-    mean_data = np.mean(img, axis=0)  # Remove mean from the data
-    img = img - mean_data
-
-    # Compute the variance of the noise in two different way. See below for the reason.
-    img_corner = np.reshape(img, (P, L * L))
-    img_corner = img_corner[:, r_flat > r_max]
-    img_corner = img_corner.flatten()
-    var_img = np.var(img_corner, ddof=1)
-
-    imgf_corner = np.reshape(img_f, (P, L * L))
-    imgf_corner = imgf_corner[:, r_flat > r_max]
-    imgf_corner = imgf_corner.flatten()
-    var_imgf = np.var(imgf_corner, ddof=1)
-
-    noise_var = np.min([var_img, var_imgf])  # Note, theoretical img_f and
-    # img should give the same variance but there is a small difference,
-    # choose the smaller one so that you don't get a negative variance or power
-    # spectrum in 46,47
-
-    variance_map = np.var(img, axis=0, ddof=1)
-    variance_map = variance_map.transpose()
-
-    # Mean 2D variance radial function
-    radial_var = np.zeros(N)
-    for i in range(N):
-        radial_var[i] = np.mean(variance_map[np.logical_and(r >= i, r < i + 1)])
-
-    img_ps = np.square(np.abs(img_f))
-    pspec = np.mean(img_ps, 0)
-    pspec = pspec.transpose()
-    radial_pspec = np.zeros(N)
-
-    # Compute the radial power spectrum
-    for i in range(N):
-        radial_pspec[i] = np.mean(pspec[np.logical_and(r >= i, r < i + 1)])
-
-    # Subtract the noise variance
-    radial_pspec = radial_pspec - noise_var
-    radial_var = radial_var - noise_var
-
-    # compute the cumulative variance and power spectrum.
-    c = np.linspace(0, 0.5, N)
-    R = np.arange(0, N)
-    cum_pspec = np.zeros(N)
-    cum_var = np.zeros(N)
-
-    for i in range(N):
-        cum_pspec[i] = np.sum(np.multiply(radial_pspec[0:i + 1], c[0:i + 1]))
-        cum_var[i] = np.sum(np.multiply(radial_var[0:i + 1], R[0:i + 1]))
-
-    cum_pspec = cum_pspec / cum_pspec[-1]
-    cum_var = cum_var / cum_var[-1]
-
-    cidx = np.where(cum_pspec > energy_threshold)
-    c_limit = c[cidx[0][0] - 1] * L
-    Ridx = np.where(cum_var > energy_threshold)
-    R_limit = R[Ridx[0][0] - 1]
-
-    return c_limit, R_limit
-
-
-def compute_spca(images, noise_v_r, adaptive_support=False):
-    num_images = images.shape[2]
-    resolution = images.shape[0]
-
-    if adaptive_support:
-        # TODO debug this
-        energy_thresh = 0.99
-        # Estimate bandlimit and compact support size
-        [bandlimit, support_size] = choose_support_v6(cfft2(images), energy_thresh)
-        bandlimit = bandlimit * (0.5 / np.floor(resolution / 2.0))  # Rescaling between 0 and 0.5
-    else:
-        bandlimit = 0.5
-        support_size = int(np.floor(resolution / 2.0))
-
-    n_r = int(np.ceil(4 * bandlimit * support_size))
-    basis, sample_points = precompute_fb(n_r, support_size, bandlimit)
-    _, coeff, mean_coeff, spca_coeff, u, d = jobscript_ffbspca(images, support_size, noise_v_r, basis, sample_points)
-
-    ang_freqs = []
-    rad_freqs = []
-    vec_d = []
-    for i in range(len(d)):
-        if len(d[i]) != 0:
-            ang_freqs.extend(np.ones(len(d[i]), dtype='int') * i)
-            rad_freqs.extend(np.arange(len(d[i])) + 1)
-            vec_d.extend(d[i])
-
-    ang_freqs = np.array(ang_freqs)
-    rad_freqs = np.array(rad_freqs)
-    d = np.array(vec_d)
-    k = min(len(d), 400)  # keep the top 400 components
-    sorted_indices = np.argsort(-d)
-    sorted_indices = sorted_indices[:k]
-    d = d[sorted_indices]
-    ang_freqs = ang_freqs[sorted_indices]
-    rad_freqs = rad_freqs[sorted_indices]
-
-    s_coeff = np.zeros((len(d), num_images), dtype='complex128')
-    for i in range(len(d)):
-        s_coeff[i] = spca_coeff[ang_freqs[i]][rad_freqs[i] - 1]
-
-    fn = ift_fb(support_size, bandlimit)
-
-    eig_im = np.zeros((np.square(2 * support_size), len(d)), dtype='complex128')
-    # might be able to do this faster
-    for i in range(len(d)):
-        tmp = fn[ang_freqs[i]]
-        tmp = tmp.reshape((int(np.square(2 * support_size)), tmp.shape[2]), order='F')
-        eig_im[:, i] = np.dot(tmp, u[ang_freqs[i]][:, rad_freqs[i] - 1])
-
-    fn0 = fn[0].reshape((int(np.square(2 * support_size)), fn[0].shape[2]), order='F')
-
-    spca_data = SpcaData(d, ang_freqs, rad_freqs, s_coeff, mean_coeff, bandlimit, support_size, eig_im, fn0)
-    return spca_data
-
-
-def precompute_fb(n_r, support_size, bandlimit):
-    sample_points = lgwt(n_r, 0, bandlimit)
-    basis = bessel_ns_radial(bandlimit, support_size, sample_points.x)
-    return basis, sample_points
-
-
 def bessel_ns_radial(bandlimit, support_size, x):
-    bessel = np.load('bessel.npy')
+    bessel = np.load(ClassAverageConfig.bessel_file)
     bessel = bessel[bessel[:, 3] <= 2 * np.pi * bandlimit * support_size, :]
     angular_freqs = bessel[:, 0]
     max_ang_freq = int(np.max(angular_freqs))
@@ -1125,15 +609,6 @@ def bessel_ns_radial(bandlimit, support_size, x):
         phi[i] = phi_ns[:, angular_freqs == i]
 
     return Basis(phi, angular_freqs, radian_freqs, n_theta)
-
-
-def jobscript_ffbspca(images, support_size, noise_var, basis, sample_points, num_threads=10):
-    split_images = np.array_split(images, num_threads, axis=2)
-    del images
-
-    coeff = fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads)
-    u, d, spca_coeff, mean_coeff = spca_whole(coeff, noise_var)
-    return 0, coeff, mean_coeff, spca_coeff, u, d
 
 
 def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
@@ -1324,7 +799,7 @@ def ift_fb(support_size, bandlimit):
     theta = theta[inside_circle]
     r = r[inside_circle]
 
-    bessel = np.load('bessel.npy')
+    bessel = np.load(ClassAverageConfig.bessel_file)
     bessel = bessel[bessel[:, 3] <= 2 * np.pi * bandlimit * support_size, :]
     k_max = int(np.max(bessel[:, 0]))
     fn = []
@@ -1494,4 +969,523 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
         print('corr difference = {}\n'.format(dif[3]))
 
 
-# run('projections.mrcs', 'projections_denoised.mrcs')
+class ClassAverages:
+
+    @classmethod
+    def run(cls, input_images, output_images, n_nbor=100, nn_avg=50):
+
+        # convert images to numpy based on their type
+        file_type = get_file_type(input_images)
+        if file_type == '.mat':
+            images = mat_to_npy(input_images)
+        elif file_type == '.npy':
+            images = np.load(input_images)
+        elif file_type == '.mrc' or file_type == '.mrcs':
+            images = mrcfile.open(input_images).data
+            images = images.transpose((2, 1, 0)).copy()
+        else:
+            raise ValueError('input_images must be mat/npy/mrc/mrcs format')
+
+        # Estimate snr
+        print('start estimating snr')
+        snr, var_s, var_n = cls.estimate_snr(images)
+
+        # spca data
+        print('start spca data')
+        spca_data = cls.compute_spca(images, var_n)
+
+        # initial classification fd update
+        is_rand = False
+        print('start initial classification')
+        classes, class_refl, rot, corr, _ = cls.initial_classification_fd_update(spca_data, n_nbor,
+                                                                                 is_rand)
+
+        # VDM
+        print('start vdm')
+        class_vdm, class_vdm_refl, angle = cls.vdm(classes, np.ones(classes.shape), rot,
+                                                   class_refl, 50, False, 50)
+
+        # align main
+        list_recon = np.arange(images.shape[2])
+        use_em = True
+        print('start align main')
+        shifts, corr, unsorted_averages_fname, norm_variance = cls.align_main(images, angle, class_vdm,
+                                                                          class_vdm_refl,
+                                                                          spca_data, nn_avg, 15,
+                                                                          list_recon, 'my_tmpdir',
+                                                                          use_em)
+        with mrcfile.new(output_images) as mrc:
+            mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
+
+    @classmethod
+    def estimate_snr(cls, images, prewhiten=False):
+        # TODO might have a bug here, error is larger than it should be
+
+        # Prewhiten the image if needed.
+        if prewhiten:
+            raise NotImplementedError
+
+        if len(images.shape) == 2:
+            images = images[:, :, None]
+
+        n = images.shape[2]
+
+        p = images.shape[1]
+        radius_of_mask = np.floor(p / 2.0) - 1.0
+
+        r = cart2rad(p)
+        points_inside_circle = r < radius_of_mask
+        num_signal_points = np.count_nonzero(points_inside_circle)
+        num_noise_points = p * p - num_signal_points
+
+        var_n = np.sum(np.var(images[~points_inside_circle], axis=0)) * num_noise_points / (
+                    num_noise_points * n - 1)
+        var_s = np.sum(np.var(images[points_inside_circle], axis=0)) * num_signal_points / (
+                    num_signal_points * n - 1)
+
+        var_s -= var_n
+        snr = var_s / var_n
+
+        return snr, var_s, var_n
+
+    @classmethod
+    def compute_spca(cls, images, noise_v_r, adaptive_support=False):
+        num_images = images.shape[2]
+        resolution = images.shape[0]
+
+        if adaptive_support:
+            # TODO debug this
+            energy_thresh = 0.99
+
+            # Estimate bandlimit and compact support size
+            [bandlimit, support_size] = cls.choose_support_v6(cfft2(images), energy_thresh)
+            # Rescale between 0 and 0.5
+            bandlimit = bandlimit * 0.5 / np.floor(resolution / 2.0)
+
+        else:
+            bandlimit = 0.5
+            support_size = int(np.floor(resolution / 2.0))
+
+        n_r = int(np.ceil(4 * bandlimit * support_size))
+        basis, sample_points = cls.precompute_fb(n_r, support_size, bandlimit)
+        _, coeff, mean_coeff, spca_coeff, u, d = cls.jobscript_ffbspca(images, support_size,
+                                                                       noise_v_r,
+                                                                       basis, sample_points)
+
+        ang_freqs = []
+        rad_freqs = []
+        vec_d = []
+        for i in range(len(d)):
+            if len(d[i]) != 0:
+                ang_freqs.extend(np.ones(len(d[i]), dtype='int') * i)
+                rad_freqs.extend(np.arange(len(d[i])) + 1)
+                vec_d.extend(d[i])
+
+        ang_freqs = np.array(ang_freqs)
+        rad_freqs = np.array(rad_freqs)
+        d = np.array(vec_d)
+        k = min(len(d), 400)  # keep the top 400 components
+        sorted_indices = np.argsort(-d)
+        sorted_indices = sorted_indices[:k]
+        d = d[sorted_indices]
+        ang_freqs = ang_freqs[sorted_indices]
+        rad_freqs = rad_freqs[sorted_indices]
+
+        s_coeff = np.zeros((len(d), num_images), dtype='complex128')
+        for i in range(len(d)):
+            s_coeff[i] = spca_coeff[ang_freqs[i]][rad_freqs[i] - 1]
+
+        fn = ift_fb(support_size, bandlimit)
+
+        eig_im = np.zeros((np.square(2 * support_size), len(d)), dtype='complex128')
+
+        # TODO it might be possible to do this faster
+        for i in range(len(d)):
+            tmp = fn[ang_freqs[i]]
+            tmp = tmp.reshape((int(np.square(2 * support_size)), tmp.shape[2]), order='F')
+            eig_im[:, i] = np.dot(tmp, u[ang_freqs[i]][:, rad_freqs[i] - 1])
+
+        fn0 = fn[0].reshape((int(np.square(2 * support_size)), fn[0].shape[2]), order='F')
+
+        spca_data = SpcaData(d, ang_freqs, rad_freqs, s_coeff, mean_coeff, bandlimit, support_size,
+                             eig_im, fn0)
+        return spca_data
+
+    @classmethod
+    def initial_classification_fd_update(cls, spca_data, n_nbor, is_rand):
+        # TODO might have a bug here, with less than 10,000 images the error is very large, with more its 0
+        # unpacking spca_data
+        coeff = spca_data.coeff
+        freqs = spca_data.freqs
+        eigval = spca_data.eigval
+
+        n_im = coeff.shape[1]
+        coeff[freqs == 0] /= np.sqrt(2)
+        # could possibly do it faster
+        for i in range(n_im):
+            coeff[:, i] /= np.linalg.norm(coeff[:, i])
+
+        coeff[freqs == 0] *= np.sqrt(2)
+        coeff_b, coeff_b_r, _ = bispec_2drot_large(coeff, freqs, eigval)
+
+        concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=1)
+        del coeff_b_r
+
+        # TODO check if there is a better implementation to NN, use transpose coeff_b might be faster
+        if n_im <= 10000:
+            # could use einsum
+            corr = np.real(np.dot(np.conjugate(coeff_b[:, :n_im]).T, concat_coeff))
+            range_arr = np.arange(n_im)
+            corr = corr - sps.csr_matrix((np.ones(n_im), (range_arr, range_arr)),
+                                         shape=(n_im, 2 * n_im))
+            classes = np.argsort(-corr, axis=1)
+            classes = classes[:, :n_nbor].A
+
+        else:
+            if not is_rand:
+                batch_size = 2000
+                num_batches = int(np.ceil(1.0 * n_im / batch_size))
+                classes = np.zeros((n_im, n_nbor), dtype='int')
+                for i in range(num_batches):
+                    start = i * batch_size
+                    finish = min((i + 1) * batch_size, n_im)
+                    corr = np.real(np.dot(np.conjugate(coeff_b[:, start: finish]).T, concat_coeff))
+                    classes[start: finish] = np.argsort(-corr, axis=1)[:, 1: n_nbor + 1]
+            else:
+                # TODO implement random nn
+                print('random nearest neighbors not implemented yet using regular one instead')
+                batch_size = 2000
+                num_batches = int(np.ceil(n_im / batch_size))
+                classes = np.zeros((n_im, n_nbor), dtype='int')
+                for i in range(num_batches):
+                    start = i * batch_size
+                    finish = min((i + 1) * batch_size, n_im)
+                    corr = np.real(np.dot(np.conjugate(coeff_b[:, start: finish]).T, concat_coeff))
+                    classes[start: finish] = np.argsort(-corr, axis=1)[:, 1: n_nbor + 1]
+
+        del coeff_b, concat_coeff
+        max_freq = np.max(freqs)
+        cell_coeff = []
+        for i in range(max_freq + 1):
+            cell_coeff.append(
+                np.concatenate((coeff[freqs == i], np.conjugate(coeff[freqs == i])), axis=1))
+
+        # maybe pairs should also be transposed
+        pairs = np.stack((classes.flatten('F'), np.tile(np.arange(n_im), n_nbor)), axis=1)
+        corr, rot = rot_align(max_freq, cell_coeff, pairs)
+
+        rot = rot.reshape((n_im, n_nbor), order='F')
+        classes = classes.reshape((n_im, n_nbor), order='F')  # this should already be in that shape
+        corr = corr.reshape((n_im, n_nbor), order='F')
+        id_corr = np.argsort(-corr, axis=1)
+        for i in range(n_im):
+            corr[i] = corr[i, id_corr[i]]
+            classes[i] = classes[i, id_corr[i]]
+            rot[i] = rot[i, id_corr[i]]
+
+        class_refl = np.ceil((classes + 1.0) / n_im).astype('int')
+        classes[classes >= n_im] = classes[classes >= n_im] - n_im
+        rot[class_refl == 2] = np.mod(rot[class_refl == 2] + 180, 360)
+        return classes, class_refl, rot, corr, 0
+
+    @classmethod
+    def vdm(cls, classes, corr, rot, class_refl, k, flag, n_nbor):
+        n = classes.shape[0]
+
+        x, ah, rows, cols = \
+            sort_list_weights_wrefl(classes[:, :k], np.sqrt(2 - 2 * np.real(corr[:, :k])),
+                                    rot[:, :k], class_refl[:, :k])
+        if flag:
+            # TODO bug here, with memory allocation for a_ub, same for matlab, can try use sparse!
+            w = script_find_graph_weights_v3(x, np.stack((rows, cols), axis=1), 2 * n, 5)
+        else:
+            w = np.ones(len(x))
+
+        w2 = w * ah
+        w_bigger = w > 0.001
+        h2 = sps.csr_matrix((w2[w_bigger], (rows[w_bigger], cols[w_bigger])), shape=(2 * n, 2 * n))
+        h2 += np.conj(h2.T)
+
+        r_vdm_lp, _, vv_lp = vdm_lp(h2, 24)
+
+        if n <= 1e4:
+            range_n = np.arange(n)
+            corr_vdm = r_vdm_lp[:n].dot(np.conj(r_vdm_lp.T))
+            corr_vdm = np.real(
+                corr_vdm - sps.csr_matrix((np.ones(n), (range_n, range_n)), shape=(n, 2 * n)))
+            class_vdm = np.argsort(-corr_vdm, axis=1)
+            class_vdm = class_vdm[:n, :n_nbor]
+
+        else:
+            n_max = 5000
+            i_max = int(np.ceil(1.0 * n / n_max))
+            class_vdm = np.zeros((n, n_nbor), dtype='int')
+            for i in range(i_max):
+                start = i * n_max
+                end = min((i + 1) * n_max, n)
+                corr_vdm = r_vdm_lp[start:end].dot(np.conjugate(r_vdm_lp.T))
+                corr_vdm = np.real(corr_vdm)
+                tmp = np.argsort(-corr_vdm, axis=1)
+                class_vdm[start:end] = tmp[:, 1:n_nbor + 1]
+
+        class_vdm = np.array(class_vdm)
+        class_vdm_refl = np.ceil((class_vdm + 1.) / n).astype('int')
+        class_vdm_le_n = class_vdm >= n
+        class_vdm[class_vdm_le_n] = class_vdm[class_vdm_le_n] - n
+        class_vdm = class_vdm.astype('int')
+        flatten_classes = class_vdm.flatten(order='F')
+        flatten_classes_refl = class_vdm_refl.flatten(order='F') - 1
+        tmp_list = np.column_stack(
+            (np.tile(np.arange(n), n_nbor), flatten_classes + flatten_classes_refl * n))
+        angle = vdm_angle_v2(vv_lp[:, :10], tmp_list)
+
+        angle = angle.reshape((n, n_nbor), order='F')
+
+        return class_vdm, class_vdm_refl, angle
+
+    @classmethod
+    def align_main(cls, data, angle, class_vdm, refl, spca_data, k, max_shifts, list_recon, tmpdir,
+                   use_em):
+        data = data.swapaxes(0, 2)
+        data = data.swapaxes(1, 2)
+        data = np.ascontiguousarray(data)
+        resolution = data.shape[1]
+
+        if class_vdm.shape[1] < k:
+            # raise error
+            pass
+
+        shifts = np.zeros((len(list_recon), k + 1), dtype='complex128')
+        corr = np.zeros((len(list_recon), k + 1), dtype='complex128')
+        norm_variance = np.zeros(len(list_recon))
+
+        m = np.fix(resolution * 1.0 / 2)
+        omega_x, omega_y = np.mgrid[-m:m + 1, -m:m + 1]
+        # omega_x, omega_y = np.mgrid[-round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1, -round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1]
+        omega_x = -2 * np.pi * omega_x / resolution
+        omega_y = -2 * np.pi * omega_y / resolution
+        omega_x = omega_x.flatten('F')
+        omega_y = omega_y.flatten('F')
+        a = np.arange(-max_shifts, max_shifts + 1)
+        num = len(a)
+        a1 = np.tile(a, num)
+        a2 = np.repeat(a, num)
+        shifts_list = np.column_stack((a1, a2))
+
+        phase = np.ascontiguousarray(
+            np.conj(np.exp(1j * (np.outer(omega_x, a1) + np.outer(omega_y, a2))).T))
+
+        angle = np.round(-angle).astype('int')
+        angle[angle < 0] += 360
+
+        angle[angle == 360] = 0
+        m = []
+        for i in range(1, 360):
+            m.append(fast_rotate_precomp(resolution, resolution, i))
+
+        n = resolution // 2
+        r = spca_data.r
+        coeff = spca_data.coeff
+        eig_im = spca_data.eig_im
+        freqs = spca_data.freqs
+        mean_im = np.dot(spca_data.fn0, spca_data.mean)
+        output = np.zeros(data.shape)
+
+        # pre allocating stuff
+        images = np.zeros((k + 1, resolution, resolution), dtype='float64')
+        images2 = np.zeros((k + 1, resolution, resolution), dtype='complex128')
+        tmp_alloc = np.zeros((resolution, resolution), dtype='complex128')
+        tmp_alloc2 = np.zeros((resolution, resolution), dtype='complex128')
+        pf_images = np.zeros((resolution * resolution, k + 1), dtype='complex128')
+        pf2 = np.zeros(phase.shape, dtype='complex128')
+        c = np.zeros((phase.shape[0], k + 1), dtype='complex128')
+        var = np.zeros(resolution * resolution, dtype='float64')
+        mean = np.zeros(resolution * resolution, dtype='complex128')
+        pf_images_shift = np.zeros((resolution * resolution, k + 1), dtype='complex128')
+        tmps, plans = get_fast_rotate_vars(resolution)
+
+        angle_j = np.zeros((k + 1), dtype='int')
+        refl_j = np.ones((k + 1), dtype='int')
+        index = np.zeros((k + 1), dtype='int')
+        import time
+        rotate_time = 0
+        mult_time = 0
+        cfft_time = 0
+        multiply_time = 0
+        dot_time = 0
+        rest_time = 0
+        for j in range(len(list_recon)):
+            print('starting image {}'.format(j))
+            angle_j[1:] = angle[list_recon[j], :k]
+            refl_j[1:] = refl[list_recon[j], :k]
+            index[1:] = class_vdm[list_recon[j], :k]
+            index[0] = list_recon[j]
+
+            for i in range(k + 1):
+                if refl_j[i] == 2:
+                    images[i] = np.flipud(data[index[i]])
+                else:
+                    images[i] = data[index[i]]
+
+            tic0 = time.time()
+            # 2610 sec for 9000 images, 1021 for matlab
+            for i in range(k + 1):
+                if angle_j[i] != 0:
+                    fast_rotate_image(images[i], angle_j[i], tmps, plans, m[angle_j[i] - 1])
+            tic1 = time.time()
+
+            # shouldn't it be list_recon[j] instead of j?
+            # 190 sec for 9000 images, 103 for matlab
+            tmp = np.dot(eig_im[:, freqs == 0], coeff[freqs == 0, j]) + 2 * np.real(
+                np.dot(eig_im[:, freqs != 0], coeff[freqs != 0, j])) + mean_im
+            tic2 = time.time()
+
+            # 1170 sec for 9000 images, 375 for matlab
+            tmp_alloc[n - r:n + r, n - r:n + r] = np.reshape(tmp, (2 * r, 2 * r), 'F')
+
+            pf1 = cfft2(tmp_alloc).flatten('F')
+            for i in range(k + 1):
+                images2[i] = cfft2(images[i])
+            tic3 = time.time()
+
+            # 651 sec for 9000 images, 261 for matlab
+            pf_images[:] = images2.reshape((k + 1, resolution * resolution), order='F').T
+            np.multiply(phase, np.conj(pf1), out=pf2)
+            tic4 = time.time()
+
+            # 313 sec for 9000 images, 233 for matlab
+            np.dot(pf2, pf_images, out=c)
+            tic5 = time.time()
+
+            # 307 sec for 9000 images, 100 for matlab
+            ind = np.lexsort((np.angle(c), np.abs(c)), axis=0)[-1]
+            ind_for_c = ind, np.arange(len(ind))
+            corr[j] = c[ind_for_c]
+
+            np.multiply(pf_images, phase[ind].T, out=pf_images_shift)
+            np.var(pf_images_shift, 1, ddof=1, out=var)
+            norm_variance[j] = np.linalg.norm(var)
+            np.mean(pf_images_shift, axis=1, out=mean)
+            tmp_alloc2[:] = np.reshape(mean, (resolution, resolution), 'F')
+
+            output[j] = np.real(icfft2(tmp_alloc2))
+            shifts[j] = -shifts_list[ind, 0] - 1j * shifts_list[ind, 1]
+            tic6 = time.time()
+
+            rotate_time += tic1 - tic0
+            mult_time += tic2 - tic1
+            cfft_time += tic3 - tic2
+            multiply_time += tic4 - tic3
+            dot_time += tic5 - tic4
+            rest_time += tic6 - tic5
+
+            # if use_em:
+            #     im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds = em.run(images, output[j])
+
+        # print('rotate time: {}'.format(rotate_time))
+        # print('mult time: {}'.format(mult_time))
+        # print('cfft time: {}'.format(cfft_time))
+        # print('multiply time: {}'.format(multiply_time))
+        # print('dot time: {}'.format(dot_time))
+        # print('rest time: {}'.format(rest_time))
+
+        output = output.swapaxes(1, 2)
+        output = output.swapaxes(0, 2)
+        output = np.ascontiguousarray(output)
+
+        return shifts, corr, output, norm_variance
+
+    @classmethod
+    def choose_support_v6(cls, proj_ctf_noisy, energy_threshold):
+        # Determine sizes of the compact support in both real and Fourier space.
+        # OUTPUTS:
+        # c_limit: Size of support in Fourier space
+        # R_limit: Size of support in real space
+        # We scale the images in real space by L, so that the noise variance in
+        # both real and Fourier domains is the same.
+        # Based on code by Tejal from Oct 2015
+
+        L = proj_ctf_noisy.data.shape[1]
+        N = int(np.floor(L / 2))
+        P = proj_ctf_noisy.data.shape[0]
+        x, y = np.meshgrid(np.arange(-N, N + 1), np.arange(-N, N + 1))
+        r = np.sqrt(np.square(x) + np.square(y))
+        r_flat = r.flatten()
+        r_max = N
+
+        img_f = proj_ctf_noisy.data.astype(np.float64)
+        img = (icfft2(img_f)) * L
+        mean_data = np.mean(img, axis=0)  # Remove mean from the data
+        img = img - mean_data
+
+        # Compute the variance of the noise in two different way. See below for the reason.
+        img_corner = np.reshape(img, (P, L * L))
+        img_corner = img_corner[:, r_flat > r_max]
+        img_corner = img_corner.flatten()
+        var_img = np.var(img_corner, ddof=1)
+
+        imgf_corner = np.reshape(img_f, (P, L * L))
+        imgf_corner = imgf_corner[:, r_flat > r_max]
+        imgf_corner = imgf_corner.flatten()
+        var_imgf = np.var(imgf_corner, ddof=1)
+
+        noise_var = np.min([var_img, var_imgf])  # Note, theoretical img_f and
+        # img should give the same variance but there is a small difference,
+        # choose the smaller one so that you don't get a negative variance or power
+        # spectrum in 46,47
+
+        variance_map = np.var(img, axis=0, ddof=1)
+        variance_map = variance_map.transpose()
+
+        # Mean 2D variance radial function
+        radial_var = np.zeros(N)
+        for i in range(N):
+            radial_var[i] = np.mean(variance_map[np.logical_and(r >= i, r < i + 1)])
+
+        img_ps = np.square(np.abs(img_f))
+        pspec = np.mean(img_ps, 0)
+        pspec = pspec.transpose()
+        radial_pspec = np.zeros(N)
+
+        # Compute the radial power spectrum
+        for i in range(N):
+            radial_pspec[i] = np.mean(pspec[np.logical_and(r >= i, r < i + 1)])
+
+        # Subtract the noise variance
+        radial_pspec = radial_pspec - noise_var
+        radial_var = radial_var - noise_var
+
+        # compute the cumulative variance and power spectrum.
+        c = np.linspace(0, 0.5, N)
+        R = np.arange(0, N)
+        cum_pspec = np.zeros(N)
+        cum_var = np.zeros(N)
+
+        for i in range(N):
+            cum_pspec[i] = np.sum(np.multiply(radial_pspec[0:i + 1], c[0:i + 1]))
+            cum_var[i] = np.sum(np.multiply(radial_var[0:i + 1], R[0:i + 1]))
+
+        cum_pspec = cum_pspec / cum_pspec[-1]
+        cum_var = cum_var / cum_var[-1]
+
+        cidx = np.where(cum_pspec > energy_threshold)
+        c_limit = c[cidx[0][0] - 1] * L
+        Ridx = np.where(cum_var > energy_threshold)
+        R_limit = R[Ridx[0][0] - 1]
+
+        return c_limit, R_limit
+
+    @classmethod
+    def precompute_fb(cls, n_r, support_size, bandlimit):
+        sample_points = lgwt(n_r, 0, bandlimit)
+        basis = bessel_ns_radial(bandlimit, support_size, sample_points.x)
+        return basis, sample_points
+
+    @classmethod
+    def jobscript_ffbspca(cls, images, support_size, noise_var, basis, sample_points, num_threads=10):
+        split_images = np.array_split(images, num_threads, axis=2)
+        del images
+
+        coeff = fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads)
+        u, d, spca_coeff, mean_coeff = spca_whole(coeff, noise_var)
+        return 0, coeff, mean_coeff, spca_coeff, u, d
