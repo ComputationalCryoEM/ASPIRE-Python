@@ -37,34 +37,37 @@ if __name__ == "__main__":
     # configure parser for preprocessor
     preprocessor_parser = subparsers.add_parser('preprocess',
                                                 help='preprocess stack before classifying')
-
     preprocessor_parser.set_defaults(func=parser.preprocess)
 
     # configure parser for classifier
     classifier_parser = subparsers.add_parser('classify', help='average classifier')
     classifier_parser.set_defaults(func=parser.classify)
 
-    classifier_parser.add_argument("-i", "--instack", required=True,
-                                   help="Filename of MRCS stack. Images should be prewhitened.")
+    required_args = classifier_parser.add_argument_group('required arguments')
+    required_args.add_argument("-i", "--instack", required=True,
+                               help="Filename of MRCS stack. Images should be prewhitened.")
 
     classifier_parser.add_argument("-o", "--outstack", required=False, default='classified.mrcs',
-                                   help="Output stack filename of MRCS stack.")
+                                   help=("Output stack filename of MRCS stack. "
+                                         "default is 'classified.mrcs'"))
 
     classifier_parser.add_argument("--avg_nn", type=int,
-                                   help="Number of images to average into each class.",
+                                   help="Number of images to average into each class. (default=50)",
                                    default=50)
 
     classifier_parser.add_argument("--classification_nn", type=int,
                                    help=("Number of nearest neighbors to find for each "
-                                         "image during initial classification."),
+                                         "image during initial classification. (default=100)"),
                                    default=100)
 
     classifier_parser.add_argument("--K_VDM_in", type=int,
-                                   help="Number of nearest neighbors for building VDM graph.",
+                                   help=("Number of nearest neighbors for building VDM graph."
+                                         "(default=20"),
                                    default=20)
 
     classifier_parser.add_argument("--K_VDM_out", type=int,
-                                   help="Number of nearest neighbors to return for each image.",
+                                   help=("Number of nearest neighbors to return for each image."
+                                         "(default=200)"),
                                    default=200)
 
     parser.route_subcommand()
