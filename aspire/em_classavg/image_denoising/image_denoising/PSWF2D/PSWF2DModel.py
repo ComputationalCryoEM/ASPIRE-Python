@@ -1,4 +1,4 @@
-from em_classavg.image_denoising.image_denoising.PSWF2D.PSWF2D_utils import init_pswf_2d, t_radial_part_mat
+from aspire.em_classavg.image_denoising.image_denoising.PSWF2D.PSWF2D_utils import init_pswf_2d, t_radial_part_mat
 import numpy as np
 
 

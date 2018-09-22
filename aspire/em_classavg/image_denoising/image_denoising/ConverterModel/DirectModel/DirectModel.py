@@ -2,8 +2,8 @@ import numpy as np
 import pycuda.gpuarray as gpuarray
 
 import skcuda.linalg as linalg
-import em_classavg.mask_images_kernel as mask_images_kernel
-import em_classavg.config as config
+import aspire.em_classavg.mask_images_kernel as mask_images_kernel
+import aspire.em_classavg.config as config
 
 class DirectModel:
     def __init__(self, resolution, truncation, beta, pswf2d, even):
