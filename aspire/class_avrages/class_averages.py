@@ -1,3 +1,5 @@
+import os
+
 import pyfftw
 import mrcfile
 import finufftpy
@@ -12,6 +14,7 @@ import scipy.optimize as optim
 from numpy.polynomial.legendre import leggauss
 
 from aspire.class_avrages.config import ClassAverageConfig
+from aspire.class_avrages.data_utils import mat_to_npy
 from aspire.class_avrages.helpers import image_grid
 from aspire.helpers import cart2rad
 from aspire.utils import get_file_type
@@ -973,6 +976,11 @@ class ClassAverages:
 
     @classmethod
     def run(cls, input_images, output_images, n_nbor=100, nn_avg=50):
+
+        # check if output file already exists
+        if os.path.exists(output_images):
+            raise Exception(f'outstack already exists! ({output_images}) '
+                            'please remove or use flag -o for a different outstack.')
 
         # convert images to numpy based on their type
         file_type = get_file_type(input_images)
