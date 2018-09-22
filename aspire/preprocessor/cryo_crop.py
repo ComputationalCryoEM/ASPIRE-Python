@@ -2,7 +2,7 @@
 import math
 import numpy
 
-from preprocessor.exceptions import DimensionsError
+from aspire.preprocessor import DimensionsError
 
 
 def cryo_crop(mat, n, is_stack=False, fill_value=0):
