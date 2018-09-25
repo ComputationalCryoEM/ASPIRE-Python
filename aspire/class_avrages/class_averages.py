@@ -17,7 +17,9 @@ from aspire.class_avrages.config import ClassAverageConfig
 from aspire.class_avrages.data_utils import mat_to_npy
 from aspire.class_avrages.helpers import image_grid
 from aspire.helpers import cart2rad
+from aspire.logger import logger
 from aspire.utils import get_file_type
+
 
 np.random.seed(1137)
 
@@ -145,6 +147,7 @@ def fast_rotate_precomp(szx, szy, phi):
         uy = u * (y + 1 - cy + sy)
         mx[r, y] = np.exp(alpha2 * uy)
         mx[r_t, y] = np.conj(mx[1: cx - 2 * sx, y])
+
     # because I am using real fft I take only part of mx and my
     return FastRotatePrecomp(phi, mx[:szx // 2 + 1].copy(), my[:, :szy // 2 + 1].copy(), mult90)
 
@@ -178,8 +181,8 @@ def adjust_rotate(phi):
     return phi2, mult90
 
 
-# TODO
-def fast_rotate(input, phi, m=None):
+# def fast_rotate(input, phi, m=None):
+    """ TODO """
     # t = input.shape
     # if len(t) == 2:
     #     szx, szy = t
@@ -198,7 +201,7 @@ def fast_rotate(input, phi, m=None):
     # mx = m.mx
     # my = m.my
     # output = np.zeros(input.shape, dtype=input.dtype)
-    return 0
+    # return 0
 
 
 def fast_rotate_image(image, phi, tmps=None, plans=None, m=None):
@@ -266,9 +269,11 @@ def get_fast_rotate_vars(resolution):
     tmp02 = pyfftw.empty_aligned(tmp2.shape, tmp1.dtype)
     tmp03 = pyfftw.empty_aligned((resolution, resolution), 'float64')
     flags = ('FFTW_MEASURE', 'FFTW_UNALIGNED')
-    plans = [pyfftw.FFTW(tmp03, tmp01, flags=('FFTW_MEASURE', 'FFTW_UNALIGNED')), pyfftw.FFTW(tmp01, tmp03, direction='FFTW_BACKWARD', flags=('FFTW_MEASURE', 'FFTW_UNALIGNED')),
-             pyfftw.FFTW(tmp03, tmp02, axes=(0,), flags=('FFTW_MEASURE', 'FFTW_UNALIGNED')),
-             pyfftw.FFTW(tmp02, tmp03, axes=(0,), direction='FFTW_BACKWARD', flags=('FFTW_MEASURE', 'FFTW_UNALIGNED'))]
+    plans = [pyfftw.FFTW(tmp03, tmp01, flags=flags),
+             pyfftw.FFTW(tmp01, tmp03, direction='FFTW_BACKWARD', flags=flags),
+             pyfftw.FFTW(tmp03, tmp02, axes=(0,), flags=flags),
+             pyfftw.FFTW(tmp02, tmp03, axes=(0,), direction='FFTW_BACKWARD', flags=flags)]
+
     return tmps, plans
 
 
@@ -336,11 +341,14 @@ def script_find_graph_weights_v3(x, c, n, k):
     b_ub = np.concatenate((np.ones(t), np.zeros(t)), axis=0)
     b_eq = k * np.ones(n)
     a_ub = np.concatenate((np.eye(t), -np.eye(t)), axis=0)
+
+    # TODO Itay
     # data = np.concatenate((np.ones(t), -np.ones(t)), axis=0)
     # row_ind = np.arange(2 * t)
     # col_ind = np.concatenate((np.arange(t), np.arange(t)), axis=0)
     # a_ub = sps.csr_matrix((data, (row_ind, col_ind)), (2 * t, t))
     # doesnt work with sparse matrix :(
+
     ans = optim.linprog(x, a_ub, b_ub, a_eq, b_eq)
     return ans.x
 
@@ -356,7 +364,7 @@ def vdm_lp(h1, num_eig):
     d2, vv2 = spsl.eigs(h, k=num_eig + 1)
     vv1 = fix_signs(vv1)
     vv2 = fix_signs(vv2)
-    # problem here!!!! the signs doesnt match matlab
+    # problem here!!!! the signs doesnt match matlab  # TODO Itay
     v4 = vv1
     v3 = vv2[:, 1:]
 
@@ -681,8 +689,8 @@ def cryo_pft_nfft(projections, precomp):
     pf = np.empty((x.shape[1], num_projections), dtype='complex128', order='F')
     finufftpy.nufft2d2many(x[0], x[1], pf, -1, 1e-15, projections)
     # toc = time.time()
-    # print('nufft time: {}'.format(toc - tic))
 
+    # TODO Itay
     # using nudft around 5x slower didn't ret to optimize
     # grid_x, grid_y = image_grid(projections.shape[1])
     # pts = np.array([grid_y.flatten('F'), grid_x.flatten('F')])
@@ -691,10 +699,8 @@ def cryo_pft_nfft(projections, precomp):
     #
     # # maybe can do it with less memory by splitting the exponent to several parts
     # pf = np.dot(np.exp(-1j * np.dot(x.T, pts)),
-    #             projections.reshape((projections.shape[0] * projections.shape[0]), num_projections, order='F'))
-    # tac = time.time()
-    # print('nudft time: {}'.format(tac - toc))
-    # print('error: {}'.format(np.max(np.abs(a - pf)/np.abs(pf))))
+    #           projections.reshape((projections.shape[0] * projections.shape[0]), num_projections,
+    #                                 order='F'))
     pf = pf.reshape((n_r, n_theta, num_projections), order='F')
 
     return pf
@@ -710,14 +716,15 @@ def test(im, freqs):
     finufftpy.nufft2d2(xj, yj, cj, -1, 1e-15, im)
 
     ref = nudft2(im, np.array([xj, yj]))
-    print(np.linalg.norm(cj - ref) / np.linalg.norm(ref))
+    logger.info(np.linalg.norm(cj - ref) / np.linalg.norm(ref))
 
 
 def test2(im, freqs):
     nj = freqs.shape[1]
 
     if not (np.all(-np.pi <= freqs) and np.all(freqs < np.pi)):
-        print('bad frequencies')
+        logger.error('bad frequencies')
+        # TODO Itay, should we quit here?
 
     xj = freqs[0].copy()
     yj = freqs[1].copy()
@@ -726,7 +733,7 @@ def test2(im, freqs):
     finufftpy.nufft2d2(xj, yj, cj, -1, 1e-15, im)
 
     ref = nudft2(im, np.array([xj, yj]))
-    print(np.linalg.norm(cj - ref) / np.linalg.norm(ref))
+    logger.info(np.linalg.norm(cj - ref) / np.linalg.norm(ref))
 
 
 def nudft2(im, freqs):
@@ -876,7 +883,7 @@ def pca_y(x, k, num_iters=2):
 
 
 def comp(a, b):
-    print(max_dif(a, b))
+    logger.info(max_dif(a, b))
 
 
 def max_dif(a, b):
@@ -884,7 +891,7 @@ def max_dif(a, b):
 
 
 def comp_sparse(a, b):
-    print(spsl.norm(a - b) / spsl.norm(a))
+    logger.info(spsl.norm(a - b) / spsl.norm(a))
 
 
 def max_dif_matrices_sign_invariant(a, b):
@@ -901,8 +908,6 @@ def fix_signs(u):
     :return: matrix
     """
     b = np.argmax(np.absolute(u), axis=0)
-    # eps = 1e-13
-    # b = [np.where((np.absolute(u[b[i], i]) - eps) <= np.absolute(u[:, i]))[0][0] for i in range(len(b))]
     b = np.array([np.linalg.norm(u[b[k], k]) / u[b[k], k] for k in range(len(b))])
     u = u * b
     return u
@@ -926,15 +931,15 @@ def comp_array_of_npy(a, b):
 
 
 def spca_data_compare(a, b):
-    print('eigval difference = {}'.format(max_dif(a.eigval, b.eigval)))
-    print('freqs difference = {}'.format(max_dif(a.freqs, b.freqs)))
-    print('radial_freqs difference = {}'.format(max_dif(a.radial_freqs, b.radial_freqs)))
-    print('coeff difference = {}'.format(max_dif(a.coeff, b.coeff)))
-    print('mean difference = {}'.format(max_dif(a.mean, b.mean)))
-    print('c difference = {}'.format(a.c - b.c))
-    print('r difference = {}'.format(a.r - b.r))
-    print('eig_im difference = {}'.format(max_dif(a.eig_im.T, b.eig_im.T)))
-    print('fn0 difference = {}\n'.format(max_dif(a.fn0, b.fn0)))
+    logger.info('eigval difference = {}'.format(max_dif(a.eigval, b.eigval)))
+    logger.info('freqs difference = {}'.format(max_dif(a.freqs, b.freqs)))
+    logger.info('radial_freqs difference = {}'.format(max_dif(a.radial_freqs, b.radial_freqs)))
+    logger.info('coeff difference = {}'.format(max_dif(a.coeff, b.coeff)))
+    logger.info('mean difference = {}'.format(max_dif(a.mean, b.mean)))
+    logger.info('c difference = {}'.format(a.c - b.c))
+    logger.info('r difference = {}'.format(a.r - b.r))
+    logger.info('eig_im difference = {}'.format(max_dif(a.eig_im.T, b.eig_im.T)))
+    logger.info('fn0 difference = {}\n'.format(max_dif(a.fn0, b.fn0)))
 
 
 def compare_relative_to_classes(a1, b1, a2, b2):
@@ -959,17 +964,17 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
     # comparing vdm
     if d1 is None:
         dif = compare_relative_to_classes(a1, [b1, c1], a2 - 1, [b2, c2])
-        print('classes vdm difference = {}'.format(dif[0]))
-        print('classes refl vdm difference = {}'.format(dif[1]))
-        print('angle vdm difference = {}\n'.format(dif[2]))
+        logger.info('classes vdm difference = {}'.format(dif[0]))
+        logger.info('classes refl vdm difference = {}'.format(dif[1]))
+        logger.info('angle vdm difference = {}\n'.format(dif[2]))
 
     # comparing initial classses classification
     else:
         dif = compare_relative_to_classes(a1, [b1, c1, d1], a2 - 1, [b2, c2, d2])
-        print('classes difference = {}'.format(dif[0]))
-        print('classes refl difference = {}'.format(dif[1]))
-        print('rot difference = {}'.format(dif[2]))
-        print('corr difference = {}\n'.format(dif[3]))
+        logger.info('classes difference = {}'.format(dif[0]))
+        logger.info('classes refl difference = {}'.format(dif[1]))
+        logger.info('rot difference = {}'.format(dif[2]))
+        logger.info('corr difference = {}\n'.format(dif[3]))
 
 
 class ClassAverages:
@@ -995,28 +1000,28 @@ class ClassAverages:
             raise ValueError('input_images must be mat/npy/mrc/mrcs format')
 
         # Estimate snr
-        print('start estimating snr')
+        logger.info('start estimating snr')
         snr, var_s, var_n = cls.estimate_snr(images)
 
         # spca data
-        print('start spca data')
+        logger.info('start spca data')
         spca_data = cls.compute_spca(images, var_n)
 
         # initial classification fd update
         is_rand = False
-        print('start initial classification')
+        logger.info('start initial classification')
         classes, class_refl, rot, corr, _ = cls.initial_classification_fd_update(spca_data, n_nbor,
                                                                                  is_rand)
 
         # VDM
-        print('start vdm')
+        logger.info('start vdm')
         class_vdm, class_vdm_refl, angle = cls.vdm(classes, np.ones(classes.shape), rot,
                                                    class_refl, 50, False, 50)
 
         # align main
         list_recon = np.arange(images.shape[2])
         use_em = True
-        print('start align main')
+        logger.info('start align main')
         shifts, corr, unsorted_averages_fname, norm_variance = cls.align_main(images, angle, class_vdm,
                                                                           class_vdm_refl,
                                                                           spca_data, nn_avg, 15,
@@ -1027,7 +1032,7 @@ class ClassAverages:
 
     @classmethod
     def estimate_snr(cls, images, prewhiten=False):
-        # TODO might have a bug here, error is larger than it should be
+        # TODO we might have a bug here, error is larger than it should be
 
         # Prewhiten the image if needed.
         if prewhiten:
@@ -1161,7 +1166,9 @@ class ClassAverages:
                     classes[start: finish] = np.argsort(-corr, axis=1)[:, 1: n_nbor + 1]
             else:
                 # TODO implement random nn
-                print('random nearest neighbors not implemented yet using regular one instead')
+                logger.warning('random nearest neighbors not implemented yet '
+                               'using regular one instead')
+
                 batch_size = 2000
                 num_batches = int(np.ceil(n_im / batch_size))
                 classes = np.zeros((n_im, n_nbor), dtype='int')
@@ -1269,7 +1276,6 @@ class ClassAverages:
 
         m = np.fix(resolution * 1.0 / 2)
         omega_x, omega_y = np.mgrid[-m:m + 1, -m:m + 1]
-        # omega_x, omega_y = np.mgrid[-round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1, -round(resolution * 1.0 / 2):round(resolution * 1.0 / 2)+1]
         omega_x = -2 * np.pi * omega_x / resolution
         omega_y = -2 * np.pi * omega_y / resolution
         omega_x = omega_x.flatten('F')
@@ -1323,7 +1329,7 @@ class ClassAverages:
         dot_time = 0
         rest_time = 0
         for j in range(len(list_recon)):
-            print('starting image {}'.format(j))
+            logger.info(f'starting image {j}')
             angle_j[1:] = angle[list_recon[j], :k]
             refl_j[1:] = refl[list_recon[j], :k]
             index[1:] = class_vdm[list_recon[j], :k]
@@ -1387,16 +1393,6 @@ class ClassAverages:
             dot_time += tic5 - tic4
             rest_time += tic6 - tic5
 
-            # if use_em:
-            #     im_avg_est, im_avg_est_orig, log_lik, opt_latent, outlier_ims_inds = em.run(images, output[j])
-
-        # print('rotate time: {}'.format(rotate_time))
-        # print('mult time: {}'.format(mult_time))
-        # print('cfft time: {}'.format(cfft_time))
-        # print('multiply time: {}'.format(multiply_time))
-        # print('dot time: {}'.format(dot_time))
-        # print('rest time: {}'.format(rest_time))
-
         output = output.swapaxes(1, 2)
         output = output.swapaxes(0, 2)
         output = np.ascontiguousarray(output)
@@ -1405,13 +1401,18 @@ class ClassAverages:
 
     @classmethod
     def choose_support_v6(cls, proj_ctf_noisy, energy_threshold):
-        # Determine sizes of the compact support in both real and Fourier space.
-        # OUTPUTS:
-        # c_limit: Size of support in Fourier space
-        # R_limit: Size of support in real space
-        # We scale the images in real space by L, so that the noise variance in
-        # both real and Fourier domains is the same.
-        # Based on code by Tejal from Oct 2015
+        """
+        Determine sizes of the compact support in both real and Fourier space.
+
+        :param proj_ctf_noisy:
+        :param energy_threshold:
+        :return: (c_limit, R_limit):
+            c_limit: Size of support in Fourier space
+            R_limit: Size of support in real space
+
+        We scale the images in real space by L, so that the noise variance in
+        both real and Fourier domains is the same.
+        """
 
         L = proj_ctf_noisy.data.shape[1]
         N = int(np.floor(L / 2))
