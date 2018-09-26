@@ -14,12 +14,11 @@ import scipy.optimize as optim
 from numpy.polynomial.legendre import leggauss
 
 from aspire.class_avrages.config import ClassAverageConfig
-from aspire.class_avrages.data_utils import mat_to_npy
+from aspire.class_avrages.data_utils import mat_to_npy, mat_to_npy_vec
 from aspire.class_avrages.helpers import image_grid
 from aspire.helpers import cart2rad
 from aspire.logger import logger
 from aspire.utils import get_file_type
-
 
 np.random.seed(1137)
 
@@ -181,29 +180,6 @@ def adjust_rotate(phi):
     return phi2, mult90
 
 
-# def fast_rotate(input, phi, m=None):
-    """ TODO """
-    # t = input.shape
-    # if len(t) == 2:
-    #     szx, szy = t
-    #     num_images = 1
-    # elif len(t) == 3:
-    #     szx, szy, num_images = t
-    #
-    # else:
-    #     # raise error
-    #     return 0
-    #
-    #
-    # if m is None:
-    #     m = fastrotateprecomp(szx, szy, phi)
-    #
-    # mx = m.mx
-    # my = m.my
-    # output = np.zeros(input.shape, dtype=input.dtype)
-    # return 0
-
-
 def fast_rotate_image(image, phi, tmps=None, plans=None, m=None):
     """
     Could make it faster without the flag 'FFTW_UNALIGNED' if I could make
@@ -341,19 +317,21 @@ def script_find_graph_weights_v3(x, c, n, k):
     b_ub = np.concatenate((np.ones(t), np.zeros(t)), axis=0)
     b_eq = k * np.ones(n)
     a_ub = np.concatenate((np.eye(t), -np.eye(t)), axis=0)
-
-    # TODO Itay
-    # data = np.concatenate((np.ones(t), -np.ones(t)), axis=0)
-    # row_ind = np.arange(2 * t)
-    # col_ind = np.concatenate((np.arange(t), np.arange(t)), axis=0)
-    # a_ub = sps.csr_matrix((data, (row_ind, col_ind)), (2 * t, t))
-    # doesnt work with sparse matrix :(
-
     ans = optim.linprog(x, a_ub, b_ub, a_eq, b_eq)
+
     return ans.x
 
 
 def vdm_lp(h1, num_eig):
+    """
+
+    :param h1:
+    :param num_eig:
+    :return:
+
+    (This version of VDM still doesn't work on MATLAB)
+    """
+
     h = np.abs(h1)
     m = h.shape[0]
     c = np.array(h.sum(axis=1)).reshape(m)
@@ -364,7 +342,7 @@ def vdm_lp(h1, num_eig):
     d2, vv2 = spsl.eigs(h, k=num_eig + 1)
     vv1 = fix_signs(vv1)
     vv2 = fix_signs(vv2)
-    # problem here!!!! the signs doesnt match matlab  # TODO Itay
+
     v4 = vv1
     v3 = vv2[:, 1:]
 
