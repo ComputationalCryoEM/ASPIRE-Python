@@ -9,7 +9,6 @@ import scipy.linalg as scl
 import scipy.optimize as optim
 from pyfftw.interfaces import numpy_fft
 import pyfftw
-from pyfftw.interfaces import numpy_fft
 import mrcfile
 import finufftpy
 import time
@@ -27,6 +26,7 @@ class Object:
 
 
 class DiracBasis:
+    #3 for now doesn't work with mask, probably there is no need for it too.
     def __init__(self, sz, mask=None):
         if mask is None:
             mask = np.ones(sz)
@@ -35,48 +35,20 @@ class DiracBasis:
 
         self.sz = sz
         self.mask = mask
-        #3 - why matlab define it as sum - mask is 1 or 0
         self.count = mask.size
-        self.sz_prod = np.prod(sz)
+        self.sz_prod = np.count_nonzero(sz)
 
     def evaluate(self, x):
         if x.shape[0] != self.count:
             raise ValueError('First dimension of input must be of size basis.count')
 
-        return x
+        return x.reshape(self.sz, order='F').copy()
 
     def expand(self, x):
         if len(x.shape) < len(self.sz) or x.shape[:len(self.sz)] != self.sz:
             raise ValueError('First {} dimension of input must be of size basis.count'.format(len(self.sz)))
 
-        # roll_flag = False
-        # if len(x.shape) > 2:
-        #     sz_roll = x.shape[2:]
-        #     roll_flag = True
-        #
-        # if len(x.shape) == len(self.sz):
-        #     x = x.flatten('F')
-        # else:
-        #     new_shape = [self.sz_prod]
-        #     new_shape.extend(x.shape[len(self.sz):])
-        #     x = x.reshape(new_shape, order='F')
-        #
-        # x = x[self.mask]
-        # if roll_flag:
-        #     new_shape = [self.sz]
-        #     new_shape.extend(sz_roll)
-        #     x = x.reshape(new_shape, order='F')
-        # short for the matlab code
-        if len(self.sz) == 1:
-            idx = 'i'
-        elif len(self.sz) == 2:
-            idx = 'ij'
-        elif len(self.sz) == 3:
-            idx = 'ijk'
-        else:
-            raise ValueError('Does not support dimension > 3')
-
-        return np.einsum('{}..., {} -> {}...'.format(idx, idx, idx), x, self.mask)
+        return x.flatten('F').copy()
 
     def evaluate_t(self, x):
         return self.expand(x)
@@ -115,12 +87,12 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
     # mask projections
     #3 in matlab we ignore masked_projs completely through the code
     m = fuzzy_mask(resolution, 2, mask_radius, 2)
-    projs = projs.transpose((2, 0, 1))
-    projs *= m
-    projs = projs.transpose((1, 2, 0)).copy()
+    masked_projs = projs.transpose((2, 0, 1))
+    masked_projs *= m
+    masked_projs = masked_projs.transpose((1, 2, 0)).copy()
 
     # compute polar fourier transform
-    # pf, _ = cryo_pft(projs, n_r, n_theta)
+    # pf, _ = cryo_pft(masked_projs, n_r, n_theta)
     pf = np.load('pf.npy')
 
     # find common lines from projections
@@ -153,7 +125,10 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
 
     basis = DiracBasis((n, n, n))
     v1, _ = cryo_estimate_mean(projs, params, basis)
-    return 0
+    ii1 = np.linalg.norm(v1.imag) / np.linalg.norm(v1)
+    print('Relative norm of imaginary components = {}'.format(ii1))
+    v1 = v1.real
+    return v1
 
 
 def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
@@ -185,13 +160,11 @@ def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
     im_bp = cryo_mean_backproject(im, params, mean_est_opt)
 
     mean_est, cg_info = cryo_conj_grad_mean(kernel_f, im_bp, basis, precond_kernel_f, mean_est_opt)
-    return 0, 0
+    return mean_est, cg_info
 
 
 def cryo_conj_grad_mean(kernel_f, im_bp, basis, precond_kernel_f=None, mean_est_opt=None):
-    if precond_kernel_f is None:
-        precond_kernel_f = []
-    mean_est_opt = fill_struct()
+    mean_est_opt = fill_struct(mean_est_opt)
     resolution = im_bp.shape[0]
     if len(im_bp.shape) != 3 or im_bp.shape[1] != resolution or im_bp.shape[2] != resolution:
         raise ValueError('im_bp must be as array of size LxLxL')
@@ -201,25 +174,142 @@ def cryo_conj_grad_mean(kernel_f, im_bp, basis, precond_kernel_f=None, mean_est_
         return apply_mean_kernel(vol_basis, kernel_f, basis)
 
     #3 precond_fun and fun are the same
-    if len(kernel_f) == 0:
+    if precond_kernel_f is not None:
         def precond_fun(vol_basis):
             return apply_mean_kernel(vol_basis, precond_kernel_f, basis)
 
         mean_est_opt.preconditioner = precond_fun
 
     im_bp_basis = basis.evaluate_t(im_bp)
-    return 0, 0
+    mean_est_basis, _, cg_info = conj_grad(fun, im_bp_basis, mean_est_opt)
+    mean_est = basis.evaluate(mean_est_basis)
+    return mean_est, cg_info
+
+
+def conj_grad(a_fun, b, cg_opt=None, init=None):
+
+    def identity(input_x):
+        return input_x
+
+    cg_opt = fill_struct(cg_opt, {'max_iter': 50, 'verbose': 0, 'iter_callback': [], 'preconditioner': identity,
+                                  'rel_tolerance': 1e-15, 'store_iterates': False})
+    init = fill_struct(init, {'x': None, 'p': None})
+    if init.x is None:
+        x = np.zeros(b.shape)
+    else:
+        x = init.x
+
+    b_norm = np.linalg.norm(b)
+    r = b.copy()
+    s = cg_opt.preconditioner(r)
+
+    if np.any(x != 0):
+        if cg_opt.verbose:
+            print('[CG] Calculating initial residual')
+        a_x = a_fun(x)
+        r = r-a_x
+        s = cg_opt.preconditioner(r)
+    else:
+        a_x = np.zeros(x.shape)
+
+    obj = np.real(np.sum(x.conj() * a_x, 0) - 2 * np.real(np.sum(np.conj(b * x), 0)))
+
+    if init.p is None:
+        p = s
+    else:
+        p = init.p
+
+    info = fill_struct(att_vals={'iter': [-1], 'res': [np.linalg.norm(r)], 'obj': [obj]})
+    if cg_opt.store_iterates:
+        info = fill_struct(info, att_vals={'x': [x], 'r': [r], 'p': [p]})
+
+    if cg_opt.verbose:
+        print('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]), np.sum(info.obj[0])))
+
+    if b_norm == 0:
+        print('b_norm == 0')
+        return
+
+    i = 0
+    for i in range(0, cg_opt.max_iter):
+        if cg_opt.verbose:
+            print('[CG] Applying matrix & preconditioner')
+
+        a_p = a_fun(p)
+        old_gamma = np.real(np.sum(s.conj() * r))
+
+        alpha = old_gamma / np.real(np.sum(p.conj() * a_p))
+        x += alpha * p
+        a_x += alpha * a_p
+
+        r -= alpha * a_p
+        s = cg_opt.preconditioner(r)
+        new_gamma = np.real(np.sum(r.conj() * s))
+        beta = new_gamma / old_gamma
+        p *= beta
+        p += s
+
+        obj = np.real(np.sum(x.conj() * a_x, 0) - 2 * np.real(np.sum(np.conj(b * x), 0)))
+        res = np.linalg.norm(r)
+        info.iter.append(i)
+        info.res.append(res)
+        info.obj.append(obj)
+        if cg_opt.store_iterates:
+            info.x.append(x)
+            info.r.append(r)
+            info.p.append(p)
+
+        if cg_opt.verbose:
+            print('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]), np.sum(info.obj[0])))
+
+        if np.all(res < b_norm * cg_opt.rel_tolerance):
+            break
+
+    # if i == cg_opt.max_iter - 1:
+    #     raise Warning('Conjugate gradient reached maximum number of iterations!')
+    return x, obj, info
 
 
 def apply_mean_kernel(vol_basis, kernel_f, basis):
     vol = basis.evaluate(vol_basis)
-    # vol = cryo_conv_vol(vol, kernel_f)
+    vol = cryo_conv_vol(vol, kernel_f)
     vol_basis = basis.evaluate_t(vol)
     return vol_basis
 
 
-def cryo_conv_vol():
-    return 0
+def cryo_conv_vol(x, kernel_f):
+    n = x.shape[0]
+    n_ker = kernel_f.shape[0]
+
+    if np.any(np.array(x.shape) != n):
+        raise ValueError('Volume in `x` must be cubic')
+
+    if np.any(np.array(kernel_f.shape) != n_ker):
+        raise ValueError('Convolution kernel in `kernel_f` must be cubic')
+
+    is_singleton = len(x.shape) == 3
+
+    shifted_kernel_f = np.fft.ifftshift(np.fft.ifftshift(np.fft.ifftshift(kernel_f, 0), 1), 2)
+
+    if is_singleton:
+        x = numpy_fft.fftn(x, [n_ker] * 3)
+    else:
+        x = numpy_fft.fft(x, n=n_ker, axis=0)
+        x = numpy_fft.fft(x, n=n_ker, axis=1)
+        x = numpy_fft.fft(x, n=n_ker, axis=2)
+
+    x *= shifted_kernel_f
+
+    if is_singleton:
+        x = numpy_fft.ifftn(x, [n] * 3)
+    else:
+        x = numpy_fft.ifft(x, axis=0)
+        x = numpy_fft.ifft(x, axis=1)
+        x = numpy_fft.ifft(x, axis=2)
+
+    x = x.real
+    return x
+
 
 def cryo_mean_backproject(im, params, mean_est_opt=None):
     mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'half_pixel': False, 'batch_size': 0})
@@ -356,9 +446,6 @@ def circularize_kernel_1d(kernel, dim):
         raise ValueError('dim exceeds kernal dimensions')
 
     n = sz[dim] // 2
-    s = fill_struct()
-    s.type = '()'
-    s.subs = [':', ':', ':']
 
     mult = np.arange(n) / n
     if dim == 0:
@@ -1216,8 +1303,8 @@ def fill_struct(s=None, att_vals=None, overwrite=None):
         overwrite = list(att_vals.keys())
 
     for key in att_vals.keys():
-        if hasattr(s, key) and key in overwrite:
-            pass
+        if hasattr(s, key) and key not in overwrite:
+            continue
         else:
             setattr(s, key, att_vals[key])
 
