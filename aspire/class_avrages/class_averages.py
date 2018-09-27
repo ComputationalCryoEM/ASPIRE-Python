@@ -16,9 +16,10 @@ from numpy.polynomial.legendre import leggauss
 from aspire.class_avrages.config import ClassAverageConfig
 from aspire.class_avrages.data_utils import mat_to_npy, mat_to_npy_vec
 from aspire.class_avrages.helpers import image_grid
-from aspire.helpers import cart2rad
+from aspire.utils import estimate_snr
 from aspire.logger import logger
-from aspire.utils import get_file_type
+from aspire.helpers import get_file_type
+
 
 np.random.seed(1137)
 
@@ -962,8 +963,8 @@ class ClassAverages:
 
         # check if output file already exists
         if os.path.exists(output_images):
-            raise Exception(f'outstack already exists! ({output_images}) '
-                            'please remove or use flag -o for a different outstack.')
+            raise Exception('outstack already exists! ({}) please remove or use flag -o '
+                            'for a different outstack.'.format(output_images))
 
         # convert images to numpy based on their type
         file_type = get_file_type(input_images)
@@ -977,29 +978,27 @@ class ClassAverages:
         else:
             raise ValueError('input_images must be mat/npy/mrc/mrcs format')
 
-        # Estimate snr
-        logger.info('start estimating snr')
-        snr, var_s, var_n = cls.estimate_snr(images)
+        # estimate snr
+        logger.info('estimating snr..')
+        snr, var_s, var_n = estimate_snr(images)
 
         # spca data
-        logger.info('start spca data')
+        logger.info('calculating spca data..')
         spca_data = cls.compute_spca(images, var_n)
 
         # initial classification fd update
-        is_rand = False
-        logger.info('start initial classification')
-        classes, class_refl, rot, corr, _ = cls.initial_classification_fd_update(spca_data, n_nbor,
-                                                                                 is_rand)
+        logger.info('running initial classification..')
+        classes, class_refl, rot, corr, _ = cls.initial_classification_fd_update(spca_data, n_nbor)
 
         # VDM
-        logger.info('start vdm')
+        logger.info('calculating vdm..')
         class_vdm, class_vdm_refl, angle = cls.vdm(classes, np.ones(classes.shape), rot,
                                                    class_refl, 50, False, 50)
 
         # align main
         list_recon = np.arange(images.shape[2])
         use_em = True
-        logger.info('start align main')
+        logger.info('aligning main..')
         shifts, corr, unsorted_averages_fname, norm_variance = cls.align_main(images, angle, class_vdm,
                                                                           class_vdm_refl,
                                                                           spca_data, nn_avg, 15,
@@ -1007,37 +1006,6 @@ class ClassAverages:
                                                                           use_em)
         with mrcfile.new(output_images) as mrc:
             mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
-
-    @classmethod
-    def estimate_snr(cls, images, prewhiten=False):
-        # TODO we might have a bug here, error is larger than it should be
-
-        # Prewhiten the image if needed.
-        if prewhiten:
-            raise NotImplementedError
-
-        if len(images.shape) == 2:
-            images = images[:, :, None]
-
-        n = images.shape[2]
-
-        p = images.shape[1]
-        radius_of_mask = np.floor(p / 2.0) - 1.0
-
-        r = cart2rad(p)
-        points_inside_circle = r < radius_of_mask
-        num_signal_points = np.count_nonzero(points_inside_circle)
-        num_noise_points = p * p - num_signal_points
-
-        var_n = np.sum(np.var(images[~points_inside_circle], axis=0)) * num_noise_points / (
-                    num_noise_points * n - 1)
-        var_s = np.sum(np.var(images[points_inside_circle], axis=0)) * num_signal_points / (
-                    num_signal_points * n - 1)
-
-        var_s -= var_n
-        snr = var_s / var_n
-
-        return snr, var_s, var_n
 
     @classmethod
     def compute_spca(cls, images, noise_v_r, adaptive_support=False):
@@ -1103,7 +1071,7 @@ class ClassAverages:
         return spca_data
 
     @classmethod
-    def initial_classification_fd_update(cls, spca_data, n_nbor, is_rand):
+    def initial_classification_fd_update(cls, spca_data, n_nbor, is_rand=False):
         # TODO might have a bug here, with less than 10,000 images the error is very large, with more its 0
         # unpacking spca_data
         coeff = spca_data.coeff
@@ -1307,7 +1275,7 @@ class ClassAverages:
         dot_time = 0
         rest_time = 0
         for j in range(len(list_recon)):
-            logger.info(f'starting image {j}')
+            logger.info('starting image {}'.format(j))
             angle_j[1:] = angle[list_recon[j], :k]
             refl_j[1:] = refl[list_recon[j], :k]
             index[1:] = class_vdm[list_recon[j], :k]
