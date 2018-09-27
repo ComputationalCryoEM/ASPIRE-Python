@@ -15,34 +15,6 @@ def mat_to_npy_vec(file_name):
     return a.reshape(a.shape[0] * a.shape[1])
 
 
-def estimate_snr(images, prewhiten=False):
-    # Prewhiten the image if needed.
-    if prewhiten:
-        raise NotImplementedError
-
-    if len(images.shape) == 2:
-        images = images[np.newaxis, :, :]
-
-    images = np.transpose(images, axes=(1, 2, 0))
-
-    n = images.shape[2]
-
-    # Compute radius outside which the pixels are noise
-    p = images.shape[1]
-    radius_of_mask = np.floor(p / 2.0) - 1.0
-
-    # Compute indices of noise samples
-    r = cart2rad(p)
-    points_inside_circle = r < radius_of_mask
-    num_noise_points = p * p - np.count_nonzero(points_inside_circle)
-
-    var_n = np.sum(np.var(images[~points_inside_circle], axis=0)) * num_noise_points / (num_noise_points * n - 1)
-    var_s = np.sum(np.var(images, axis=(0, 1))) * p * p / (images.size - 1) - var_n
-    snr = var_s / var_n
-
-    return float(snr), float(var_s), float(var_n)
-
-
 def cart2rad(n):
     # Compute the radii corresponding of the points of a cartesian grid of size NxN points
     # XXX This is a name for this function.
