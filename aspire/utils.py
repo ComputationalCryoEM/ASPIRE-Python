@@ -1,17 +1,21 @@
+"""
+This module contains utility functions that we often use in various modules.
+Unlike helper functions, these functions have to do solely with algorithmic computations.
+
+TODO move cfft, icfft, lgwt, pca_y here
+"""
+
 import numpy as np
 
 from aspire.helpers import cart2rad
 
 
-def estimate_snr(images, prewhiten=False):
+def estimate_snr(images):
     """
     Estimate signal-noise-ratio for a stack of projections.
 
     TODO test error size, we might have a bug here. it might be too large.
     """
-
-    if prewhiten:
-        raise NotImplementedError
 
     if len(images.shape) == 2:
         images = images[:, :, None]
