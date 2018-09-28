@@ -15,14 +15,17 @@ def estimate_snr(images):
     Estimate signal-noise-ratio for a stack of projections.
 
     TODO test error size, we might have a bug here. it might be too large.
+
+    :arg images: stack of projections (between 1 and N projections)
+
     """
 
-    if len(images.shape) == 2:
+    if len(images.shape) == 2:  # in case of a single projection
         images = images[:, :, None]
 
-    n = images.shape[2]
-
     p = images.shape[1]
+    n = images.shape[2]  # TODO test for single projection. This would most-prob fail
+
     radius_of_mask = np.floor(p / 2.0) - 1.0
 
     r = cart2rad(p)
@@ -30,12 +33,14 @@ def estimate_snr(images):
     num_signal_points = np.count_nonzero(points_inside_circle)
     num_noise_points = p * p - num_signal_points
 
-    var_n = np.sum(np.var(images[~points_inside_circle], axis=0)) * num_noise_points / (
+    noise = np.sum(np.var(images[~points_inside_circle], axis=0)) * num_noise_points / (
                 num_noise_points * n - 1)
-    var_s = np.sum(np.var(images[points_inside_circle], axis=0)) * num_signal_points / (
+
+    signal = np.sum(np.var(images[points_inside_circle], axis=0)) * num_signal_points / (
                 num_signal_points * n - 1)
 
-    var_s -= var_n
-    snr = var_s / var_n
+    signal -= noise
 
-    return snr, var_s, var_n
+    snr = signal / noise
+
+    return snr, signal, noise
