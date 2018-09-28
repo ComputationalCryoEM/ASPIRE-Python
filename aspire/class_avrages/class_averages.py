@@ -980,11 +980,11 @@ class ClassAverages:
 
         # estimate snr
         logger.info('estimating snr..')
-        snr, var_s, var_n = estimate_snr(images)
+        snr, signal, noise = estimate_snr(images)
 
         # spca data
         logger.info('calculating spca data..')
-        spca_data = cls.compute_spca(images, var_n)
+        spca_data = cls.compute_spca(images, noise)
 
         # initial classification fd update
         logger.info('running initial classification..')
@@ -999,11 +999,14 @@ class ClassAverages:
         list_recon = np.arange(images.shape[2])
         use_em = True
         logger.info('aligning main..')
-        shifts, corr, unsorted_averages_fname, norm_variance = cls.align_main(images, angle, class_vdm,
-                                                                          class_vdm_refl,
-                                                                          spca_data, nn_avg, 15,
-                                                                          list_recon, 'my_tmpdir',
-                                                                          use_em)
+        shifts, corr, unsorted_averages_fname, norm_variance = cls.align_main(images, angle,
+                                                                              class_vdm,
+                                                                              class_vdm_refl,
+                                                                              spca_data, nn_avg, 15,
+                                                                              list_recon,
+                                                                              'my_tmpdir',
+                                                                              use_em)
+
         with mrcfile.new(output_images) as mrc:
             mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
 
