@@ -16,9 +16,9 @@ from numpy.polynomial.legendre import leggauss
 from aspire.class_avrages.config import ClassAverageConfig
 from aspire.class_avrages.data_utils import mat_to_npy, mat_to_npy_vec
 from aspire.class_avrages.helpers import image_grid
-from aspire.utils import estimate_snr
+from aspire.utils.utils import estimate_snr
 from aspire.logger import logger
-from aspire.helpers import get_file_type
+from aspire.utils.helpers import get_file_type
 
 
 np.random.seed(1137)
