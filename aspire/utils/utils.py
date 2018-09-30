@@ -7,17 +7,16 @@ TODO move cfft, icfft, lgwt, pca_y here
 
 import numpy as np
 
-from aspire.helpers import cart2rad
+from aspire.utils.helpers import cart2rad
 
 
 def estimate_snr(images):
     """
     Estimate signal-noise-ratio for a stack of projections.
 
-    TODO test error size, we might have a bug here. it might be too large.
-
     :arg images: stack of projections (between 1 and N projections)
 
+    TODO test error size, we might have a bug here. it might be too large.
     """
 
     if len(images.shape) == 2:  # in case of a single projection
