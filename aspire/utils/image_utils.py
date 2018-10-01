@@ -1,55 +1,6 @@
 import numpy as np
 import pyfftw
-from scipy.special import erf
-
-
-def downsample(images, out_size, is_stack=True):
-
-    if not is_stack:
-        images = np.expand_dims(images, 0)
-
-    in_size = np.array(images.shape[:-1])
-    out_size = np.zeros(in_size.shape, dtype='int') + out_size
-    num_dim = len(in_size)
-    down = all(in_size < out_size)
-    up = all(in_size > out_size)
-    if not (down or up):
-        if all(in_size == out_size):
-            return images
-        pass  # raise error
-
-    if num_dim > 3:
-        pass  # raise error
-
-    if num_dim == 1:
-        images = images.swapaxes(0, 1)
-    elif num_dim == 2:
-        images = images.swapaxes(0, 2)
-        images = images.swapaxes(1, 2)
-    else:
-        images = images.swapaxes(0, 3)
-        images = images.swapaxes(1, 3)
-        images = images.swapaxes(2, 3)
-
-    out = np.zeros([images.shape[0]] + out_size.tolist(), dtype='complex128')
-
-    for i, image in enumerate(images):
-        tmp = pyfftw.interfaces.numpy_fft.fftshift(pyfftw.interfaces.numpy_fft.fftn(image))
-        out_tmp = pyfftw.interfaces.numpy_fft.ifftshift(crop(tmp, out_size, False))
-        out[i] = pyfftw.interfaces.numpy_fft.ifftn(out_tmp)
-
-    if num_dim == 1:
-        out = out.swapaxes(0, 1)
-    elif num_dim == 2:
-        out = out.swapaxes(1, 2)
-        out = out.swapaxes(0, 2)
-    else:
-        out = out.swapaxes(2, 3)
-        out = out.swapaxes(1, 3)
-        out = out.swapaxes(0, 3)
-
-    out = out.squeeze() * np.prod(out_size) * 1.0 / np.prod(in_size)
-    return out
+from scipy.special._ufuncs import erf
 
 
 def crop(images, out_size, is_stack, fillval=0.0):
@@ -85,7 +36,7 @@ def crop(images, out_size, is_stack, fillval=0.0):
         else:
             return 0  # raise error
 
-    elif num_dim == e:
+    elif num_dim == np.e:
         out_x_size = out_size[0]
         x_size = in_size[0]
         nx = int(np.floor(x_size * 1.0 / 2) - np.floor(out_x_size * 1.0 / 2))
@@ -190,4 +141,50 @@ def fuzzymask(n, dims, r0, rise_time, origin=None):
     return m
 
 
-pass
+def downsample(images, out_size, is_stack=True):
+
+    if not is_stack:
+        images = np.expand_dims(images, 0)
+
+    in_size = np.array(images.shape[:-1])
+    out_size = np.zeros(in_size.shape, dtype='int') + out_size
+    num_dim = len(in_size)
+    down = all(in_size < out_size)
+    up = all(in_size > out_size)
+    if not (down or up):
+        if all(in_size == out_size):
+            return images
+        pass  # raise error
+
+    if num_dim > 3:
+        pass  # raise error
+
+    if num_dim == 1:
+        images = images.swapaxes(0, 1)
+    elif num_dim == 2:
+        images = images.swapaxes(0, 2)
+        images = images.swapaxes(1, 2)
+    else:
+        images = images.swapaxes(0, 3)
+        images = images.swapaxes(1, 3)
+        images = images.swapaxes(2, 3)
+
+    out = np.zeros([images.shape[0]] + out_size.tolist(), dtype='complex128')
+
+    for i, image in enumerate(images):
+        tmp = pyfftw.interfaces.numpy_fft.fftshift(pyfftw.interfaces.numpy_fft.fftn(image))
+        out_tmp = pyfftw.interfaces.numpy_fft.ifftshift(crop(tmp, out_size, False))
+        out[i] = pyfftw.interfaces.numpy_fft.ifftn(out_tmp)
+
+    if num_dim == 1:
+        out = out.swapaxes(0, 1)
+    elif num_dim == 2:
+        out = out.swapaxes(1, 2)
+        out = out.swapaxes(0, 2)
+    else:
+        out = out.swapaxes(2, 3)
+        out = out.swapaxes(1, 3)
+        out = out.swapaxes(0, 3)
+
+    out = out.squeeze() * np.prod(out_size) * 1.0 / np.prod(in_size)
+    return out
