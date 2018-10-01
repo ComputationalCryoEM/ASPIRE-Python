@@ -2,8 +2,6 @@ import os
 
 import numpy as np
 
-from aspire.class_avrages.helpers import image_grid
-
 
 def cart2rad(n):
     """ Compute the radii corresponding to the points of a cartesian grid of size NxN points
@@ -21,3 +19,10 @@ def get_file_type(file_path):
 
     return os.path.splitext(file_path)[1]
 
+
+def image_grid(n):
+    # Return the coordinates of Cartesian points in an NxN grid centered around the origin.
+    # The origin of the grid is always in the center, for both odd and even N.
+    p = (n - 1.0) / 2.0
+    x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
+    return x, y
