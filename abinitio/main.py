@@ -85,34 +85,30 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
         mask_radius = int(round(mask_radius))
 
     # mask projections
-    #3 in matlab we ignore masked_projs completely through the code
     m = fuzzy_mask(resolution, 2, mask_radius, 2)
-    masked_projs = projs.transpose((2, 0, 1))
+    masked_projs = projs.copy()
+    masked_projs = masked_projs.transpose((2, 0, 1))
     masked_projs *= m
     masked_projs = masked_projs.transpose((1, 2, 0)).copy()
 
     # compute polar fourier transform
-    # pf, _ = cryo_pft(masked_projs, n_r, n_theta)
-    pf = np.load('pf.npy')
+    pf, _ = cryo_pft(masked_projs, n_r, n_theta)
 
     # find common lines from projections
-    # clstack, _, _, _, _ = cryo_clmatrix_cpu(pf, num_projs, 1, max_shift, shift_step)
-    clstack = np.load('clstack.npy')
+    clstack, _, _, _, _ = cryo_clmatrix_cpu(pf, num_projs, 1, max_shift, shift_step)
 
     if alg == 1:
         raise NotImplementedError
     elif alg == 2:
-        # s = cryo_syncmatrix_vote(clstack, n_theta)
-        s = np.load('s.npy')
-        # rotations = cryo_sync_rotations(s)
-        rotations = np.load('rotations.npy')
+        s = cryo_syncmatrix_vote(clstack, n_theta)
+        rotations = cryo_sync_rotations(s)
     elif alg == 3:
         raise NotImplementedError
     else:
         raise ValueError('alg can only be 1, 2 or 3')
 
-    # est_shifts, _ = cryo_estimate_shifts(pf, rotations, max_shift, shift_step)
-    est_shifts = np.load('est_shifts.npy')
+    est_shifts, _ = cryo_estimate_shifts(pf, rotations, max_shift, shift_step)
+
     # reconstruct downsampled volume with no CTF correction
     n = projs.shape[1]
 
@@ -132,8 +128,14 @@ def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=No
 
 
 def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
-    im = mat_to_npy('projs')  #3 needs to be deleted after I fix the maked projs
-
+    """
+    1e-5 error from matlab
+    :param im:
+    :param params:
+    :param basis:
+    :param mean_est_opt:
+    :return:
+    """
     resolution = im.shape[1]
     n = im.shape[2]
 
@@ -219,7 +221,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     else:
         p = init.p
 
-    info = fill_struct(att_vals={'iter': [-1], 'res': [np.linalg.norm(r)], 'obj': [obj]})
+    info = fill_struct(att_vals={'iter': [0], 'res': [np.linalg.norm(r)], 'obj': [obj]})
     if cg_opt.store_iterates:
         info = fill_struct(info, att_vals={'x': [x], 'r': [r], 'p': [p]})
 
@@ -231,7 +233,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         return
 
     i = 0
-    for i in range(0, cg_opt.max_iter):
+    for i in range(1, cg_opt.max_iter):
         if cg_opt.verbose:
             print('[CG] Applying matrix & preconditioner')
 
@@ -301,7 +303,8 @@ def cryo_conv_vol(x, kernel_f):
     x *= shifted_kernel_f
 
     if is_singleton:
-        x = numpy_fft.ifftn(x, [n] * 3)
+        x = numpy_fft.ifftn(x)
+        x = x[:n, :n, :n]
     else:
         x = numpy_fft.ifft(x, axis=0)
         x = numpy_fft.ifft(x, axis=1)
@@ -312,6 +315,13 @@ def cryo_conv_vol(x, kernel_f):
 
 
 def cryo_mean_backproject(im, params, mean_est_opt=None):
+    """
+    1e-7 error from matlab
+    :param im:
+    :param params:
+    :param mean_est_opt:
+    :return:
+    """
     mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'half_pixel': False, 'batch_size': 0})
     if im.shape[0] != im.shape[1] or im.shape[0] == 1 or len(im.shape) != 3:
         raise ValueError('im must be 3 dimensional LxLxn where L > 1')
@@ -416,7 +426,6 @@ def im_translate(im, shifts):
     if im.shape[0] != im.shape[1]:
         raise ValueError('Images must be square')
 
-    shifts = mat_to_npy('b')
     resolution = im.shape[1]
     grid = np.fft.ifftshift(np.ceil(np.arange(-resolution / 2, resolution / 2)))
     om_y, om_x = np.meshgrid(grid, grid)
@@ -432,11 +441,12 @@ def im_translate(im, shifts):
 
 
 def circularize_kernel_f(kernel_f):
-    n_dims = len(kernel_f.shape)
-    kernel = np.fft.fftshift(np.fft.ifftn(kernel_f), axes=np.arange(n_dims))
-    for dim in range(n_dims):
+    kernel = mdim_fftshift(np.fft.ifftn(mdim_ifftshift(kernel_f)))
+
+    for dim in range(len(kernel_f.shape)):
         kernel = circularize_kernel_1d(kernel, dim)
-    kernel = np.fft.fftn(np.fft.ifftshift(kernel, axes=np.arange(n_dims)))
+
+    kernel = mdim_fftshift(np.fft.fftn(mdim_ifftshift(kernel)))
     return kernel
 
 
@@ -468,6 +478,13 @@ def circularize_kernel_1d(kernel, dim):
 
 
 def cryo_mean_kernel_f(resolution, params, mean_est_opt=None):
+    """
+    8e-14 error from matlab
+    :param resolution:
+    :param params:
+    :param mean_est_opt:
+    :return:
+    """
     mean_est_opt = fill_struct(mean_est_opt, {'precision': 'float64', 'half_pixel': False, 'batch_size': 0})
     n = params.rot_matrices.shape[2]
 
@@ -601,9 +618,8 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
         idx_j.extend(tmp_j)
     idx_i = np.array(idx_i, dtype='int')
     idx_j = np.array(idx_j, dtype='int')
-    #1 - can't align with matlab, and anyway can't understand that memory thing
-    # rp = np.random.choice(np.arange(len(idx_j)), size=n_equations, replace=False)
-    rp = mat_to_npy_vec('rp') - 1
+    rp = np.random.choice(np.arange(len(idx_j)), size=n_equations, replace=False)
+
     # might be able to vectorize this
     for shift_eq_idx in range(n_equations):
         i = idx_i[rp[shift_eq_idx]]
@@ -670,7 +686,6 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
             shift_eq[idx] = [-np.sin(shift_alpha), -np.cos(shift_alpha), -np.sin(shift_beta), -np.cos(shift_beta)]
 
     t = 4 * n_equations
-    shift_eq[:t] = mat_to_npy_vec('shift_eq')
     shift_eq[t: t + n_equations] = shift_b
     shift_i[t: t + n_equations] = np.arange(n_equations)
     shift_j[t: t + n_equations] = 2 * n_projs
@@ -681,7 +696,7 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
     shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)), shape=(n_equations, 2 * n_projs + 1))
 
     est_shifts = np.linalg.lstsq(shift_equations[:, :-1].todense(), shift_b)[0]
-    est_shifts = est_shifts.reshape((2, n_projs), order='F')  ###### maybe .T
+    est_shifts = est_shifts.reshape((2, n_projs), order='F')
 
     if shifts_2d_ref is not None:
         raise NotImplementedError
@@ -707,6 +722,13 @@ def common_line_r(r1, r2, l):
 
 
 def cryo_sync_rotations(s, rots_ref=None, verbose=0):
+    """
+    3e-14 err from matlab
+    :param s:
+    :param rots_ref:
+    :param verbose:
+    :return:
+    """
     tol = 1e-14
     ref = 0 if rots_ref is None else 1
 
@@ -803,7 +825,15 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
     return rotations
 
 
-def cryo_syncmatrix_vote(clmatrix, l, rots_ref=0, is_perturbed=0):
+def cryo_syncmatrix_vote(clmatrix, l, rots_ref=None, is_perturbed=0):
+    """
+    3e-16 error from matlab
+    :param clmatrix:
+    :param l:
+    :param rots_ref:
+    :param is_perturbed:
+    :return:
+    """
     sz = clmatrix.shape
     if len(sz) != 2:
         raise ValueError('clmatrix must be a square matrix')
@@ -834,7 +864,7 @@ def cryo_syncmatrix_ij_vote(clmatrix, i, j, k, l, rots_ref=None, is_perturbed=No
 
     rs, good_rotations = rotratio_eulerangle_vec(clmatrix, i, j, good_k, l)
 
-    if ref == 1:
+    if rots_ref is not None:
         reflection_mat = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         raise NotImplementedError
 
@@ -847,7 +877,7 @@ def cryo_syncmatrix_ij_vote(clmatrix, i, j, k, l, rots_ref=None, is_perturbed=No
             pass
     else:
         rk = np.zeros((3, 3))
-        if ref == 1:
+        if rots_ref is not None:
             raise NotImplementedError
 
     r22 = rk[:2, :2]
@@ -978,7 +1008,7 @@ def cryo_vote_ij(clmatrix, l, i, j, k, rots_ref, is_perturbed):
         good_k = phis[idx, 1]
         alpha = phis[idx, 0]
 
-        if not np.isscalar(rots_ref):
+        if rots_ref is not None:
             raise NotImplementedError
     return good_k.astype('int'), peakh, alpha
 
@@ -1037,16 +1067,6 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
     np.einsum('ijk, i -> ijk', pf, h, out=pf3)
     pf3[r_max - 1:r_max + 2] = 0
     pf3 /= np.linalg.norm(pf3, axis=0)
-
-    #2 - short for this code
-    # pf3 = np.zeros(pf.shape, dtype=pf.dtype)
-    # h = np.tile(h, (n_theta, 1)).T.copy()
-    # for i in range(n_projs):
-    #     proj = pf[:, :, i]
-    #     proj *= h
-    #     proj[r_max - 1:r_max + 2] = 0
-    #     proj = cryo_ray_normalize(proj)
-    #     pf3[:, :, i] = proj
 
     rk2 = rk[:r_max]
     for i in range(n_projs):
@@ -1380,6 +1400,26 @@ def icfft2(x):
         return y
     else:
         raise ValueError("x must be 2D or 3D")
+
+
+def mdim_ifftshift(x, dims=None):
+    if dims is None:
+        dims = np.arange(len(x.shape))
+
+    x = np.fft.ifftshift(x, dims)
+    return x
+
+
+def mdim_fftshift(x, dims=None):
+    if dims is None:
+        dims = np.arange(len(x.shape))
+
+    x = np.fft.fftshift(x, dims)
+    return x
+
+
+def comp(a, b):
+    return np.linalg.norm(a - b) / np.linalg.norm(a)
 
 
 # def cfft2(x):
