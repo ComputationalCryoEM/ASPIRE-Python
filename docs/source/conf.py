@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 project = 'ASPIRE-Python'
 copyright = '2018, Yoel Shkolnisky, Amit Zinger, Itay Sason, Joakim Anden, Robbie Brook'
-author = 'Yoel Shkolnisky, Amit Zinger, Itay Sason, Joakim Andén, Robbie Brook'
+author = 'Yoel Shkolnisky, Amit Zinger, Itay Sason, Joakim Anden, Robbie Brook'
 
 # The short X.Y version
 version = '0.1'
