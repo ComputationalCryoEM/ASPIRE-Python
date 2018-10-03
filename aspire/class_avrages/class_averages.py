@@ -1,5 +1,4 @@
 import os
-
 import pyfftw
 import mrcfile
 import finufftpy
@@ -18,6 +17,7 @@ from aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec
 from aspire.utils.utils import estimate_snr
 from aspire.logger import logger
 from aspire.utils.helpers import get_file_type, image_grid
+
 
 np.random.seed(1137)
 
@@ -555,12 +555,12 @@ def icfft2(x):
 
 def lgwt(n, a, b):
     """
-    get leggauss points in interval [a, b]
+    Get leggauss points in interval [a, b]
+
     :param n: number of points
     :param a: interval starting point
     :param b: interval end point
-    :return: SamplePoints.x: sample points
-             SamplePoints.w: weights
+    :returns SamplePoints(x, w): sample points, weight
     """
 
     x1, w = leggauss(n)
