@@ -59,8 +59,13 @@ class DiracBasis:
 
 def run():
     algo = 2
-    projs = mat_to_npy('projs')
+    # projs = mat_to_npy('projs')
+    projs = mat_to_npy('clean_no_shifts')
+    # projs = mat_to_npy('clean_with_shifts')
+    # projs = mat_to_npy('noisy_snr_05_no_shifts')
+    # projs = mat_to_npy('noisy_snr_05_with_shifts')
     vol = cryo_abinitio_c1_worker(algo, projs)
+    np.save('vol', vol)
     return vol
 
 
@@ -1072,10 +1077,10 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
     for i in range(n_projs):
         n2 = min(n_projs - i, nk)
 
-        #3 - I think this is a bug, we want to sort only after we cut.
-        #3 this is really a bug
-        subset_k2 = np.sort(np.random.permutation(n_projs - i - 1) + i + 1)
-        subset_k2 = subset_k2[:n2]
+        if n_projs - i - 1 == 0:
+            subset_k2 = []
+        else:
+            subset_k2 = np.sort(np.random.choice(n_projs - i - 1, n2 - 1, replace=False) + i + 1)
 
         proj1 = pf3[:, :, i]
         p1 = proj1[:r_max].T
