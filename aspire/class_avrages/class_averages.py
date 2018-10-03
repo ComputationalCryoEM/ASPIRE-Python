@@ -104,7 +104,15 @@ class FastRotatePrecomp:
         self.mult90 = mult90
 
 
+#### Rotate image should be util
 def fast_rotate_precomp(szx, szy, phi):
+    """
+    Should also return the plans
+    :param szx:
+    :param szy:
+    :param phi:
+    :return:
+    """
     phi, mult90 = adjust_rotate(phi)
 
     phi = np.pi * phi / 180
@@ -250,6 +258,7 @@ def get_fast_rotate_vars(resolution):
              pyfftw.FFTW(tmp02, tmp03, axes=(0,), direction='FFTW_BACKWARD', flags=flags)]
 
     return tmps, plans
+#### Rotate image should be util
 
 
 def sort_list_weights_wrefl(classes, corr, rot, refl):
@@ -388,8 +397,81 @@ def vdm_angle_v2(v, t):
     return angle
 
 
+#### Shold be Utils
 def icfft(x, axis=0):
+    """
+    Can be optimized using a flag for real fft
+    :param x:
+    :param axis:
+    :return:
+    """
     return np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(x, axis), axis=axis), axis)
+
+
+def cfft2(x):
+    if len(x.shape) == 2:
+        return np.fft.fftshift(np.transpose(np.fft.fft2(np.transpose(np.fft.ifftshift(x)))))
+    elif len(x.shape) == 3:
+        y = np.fft.ifftshift(x, (1, 2))
+        y = np.transpose(y, (0, 2, 1))
+        y = np.fft.fft2(y)
+        y = np.transpose(y, (0, 2, 1))
+        y = np.fft.fftshift(y, (1, 2))
+        return y
+    else:
+        raise ValueError("x must be 2D or 3D")
+
+
+def icfft2(x):
+    if len(x.shape) == 2:
+        return np.fft.fftshift(np.transpose(np.fft.ifft2(np.transpose(np.fft.ifftshift(x)))))
+    elif len(x.shape) == 3:
+        y = np.fft.ifftshift(x, (1, 2))
+        y = np.transpose(y, (0, 2, 1))
+        y = np.fft.ifft2(y)
+        y = np.transpose(y, (0, 2, 1))
+        y = np.fft.fftshift(y, (1, 2))
+        return y
+    else:
+        raise ValueError("x must be 2D or 3D")
+
+
+def nudft2(im, freqs):
+    grid_x, grid_y = image_grid(im.shape[0])
+    pts = np.array([grid_y.flatten('F'), grid_x.flatten('F')])
+    if im.shape[0] % 2 == 0:
+        pts -= 0.5
+
+    # maybe can do it with less memory by splitting the exponent to several parts
+    pf = np.dot(np.exp(-1j * np.dot(freqs.T, pts)), im.flatten('F'))
+    return pf
+
+
+def nufft2(im, freqs):
+    freqs = np.mod(freqs + np.pi, 2 * np.pi) - np.pi
+    out = np.empty(freqs.shape[1], dtype='complex128')
+    finufftpy.nufft2d2(freqs[0], freqs[1], out, -1, 1e-15, im)
+    return out
+
+
+def lgwt(n, a, b):
+    """
+    get leggauss points in interval [a, b]
+    :param n: number of points
+    :param a: interval starting point
+    :param b: interval end point
+    :return: SamplePoints.x: sample points
+             SamplePoints.w: weights
+    """
+
+    x1, w = leggauss(n)
+    m = (b - a) / 2
+    c = (a + b) / 2
+    x = m * x1 + c
+    w = m * w
+    x = np.flipud(x)
+    return SamplePoints(x, w)
+#### Shold be Utils
 
 
 def bispec_2drot_large(coeff, freqs, eigval):
@@ -473,8 +555,14 @@ def bispec_operator_1(freqs):
     return o1, o2
 
 
-# very slow function compared to matlab
 def rot_align(m, coeff, pairs):
+    """
+    Very slow function compared to matlab
+    :param m:
+    :param coeff:
+    :param pairs:
+    :return:
+    """
     n_theta = 360.0
     p = pairs.shape[0]
     c = np.zeros((m + 1, p), dtype='complex128')
@@ -523,53 +611,6 @@ def rot_align(m, coeff, pairs):
     corr = (np.real(c[0]) + 2 * np.sum(np.real(c[1:]), axis=0)) / 2
 
     return corr, rot
-
-
-def cfft2(x):
-    if len(x.shape) == 2:
-        return np.fft.fftshift(np.transpose(np.fft.fft2(np.transpose(np.fft.ifftshift(x)))))
-    elif len(x.shape) == 3:
-        y = np.fft.ifftshift(x, (1, 2))
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.fft2(y)
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.fftshift(y, (1, 2))
-        return y
-    else:
-        raise ValueError("x must be 2D or 3D")
-
-
-def icfft2(x):
-    if len(x.shape) == 2:
-        return np.fft.fftshift(np.transpose(np.fft.ifft2(np.transpose(np.fft.ifftshift(x)))))
-    elif len(x.shape) == 3:
-        y = np.fft.ifftshift(x, (1, 2))
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.ifft2(y)
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.fftshift(y, (1, 2))
-        return y
-    else:
-        raise ValueError("x must be 2D or 3D")
-
-
-def lgwt(n, a, b):
-    """
-    get leggauss points in interval [a, b]
-    :param n: number of points
-    :param a: interval starting point
-    :param b: interval end point
-    :return: SamplePoints.x: sample points
-             SamplePoints.w: weights
-    """
-
-    x1, w = leggauss(n)
-    m = (b - a) / 2
-    c = (a + b) / 2
-    x = m * x1 + c
-    w = m * w
-    x = np.flipud(x)
-    return SamplePoints(x, w)
 
 
 def bessel_ns_radial(bandlimit, support_size, x):
@@ -681,54 +722,6 @@ def cryo_pft_nfft(projections, precomp):
     pf = pf.reshape((n_r, n_theta, num_projections), order='F')
 
     return pf
-
-
-def test(im, freqs):
-    nj = freqs.shape[1]
-
-    xj = np.random.rand(nj) * 2 * np.pi - np.pi
-    yj = np.random.rand(nj) * 2 * np.pi - np.pi
-
-    cj = np.zeros([nj], dtype=np.complex128)
-    finufftpy.nufft2d2(xj, yj, cj, -1, 1e-15, im)
-
-    ref = nudft2(im, np.array([xj, yj]))
-    logger.info(np.linalg.norm(cj - ref) / np.linalg.norm(ref))
-
-
-def test2(im, freqs):
-    nj = freqs.shape[1]
-
-    if not (np.all(-np.pi <= freqs) and np.all(freqs < np.pi)):
-        logger.error('bad frequencies')
-        # TODO Itay, should we quit here?
-
-    xj = freqs[0].copy()
-    yj = freqs[1].copy()
-
-    cj = np.empty([nj], dtype=np.complex128)
-    finufftpy.nufft2d2(xj, yj, cj, -1, 1e-15, im)
-
-    ref = nudft2(im, np.array([xj, yj]))
-    logger.info(np.linalg.norm(cj - ref) / np.linalg.norm(ref))
-
-
-def nudft2(im, freqs):
-    grid_x, grid_y = image_grid(im.shape[0])
-    pts = np.array([grid_y.flatten('F'), grid_x.flatten('F')])
-    if im.shape[0] % 2 == 0:
-        pts -= 0.5
-
-    # maybe can do it with less memory by splitting the exponent to several parts
-    pf = np.dot(np.exp(-1j * np.dot(freqs.T, pts)), im.flatten('F'))
-    return pf
-
-
-def nufft2(im, freqs):
-    freqs = np.mod(freqs + np.pi, 2 * np.pi) - np.pi
-    out = np.empty(freqs.shape[1], dtype='complex128')
-    finufftpy.nufft2d2(freqs[0], freqs[1], out, -1, 1e-15, im)
-    return out
 
 
 def spca_whole(coeff, var_hat):
@@ -859,25 +852,6 @@ def pca_y(x, k, num_iters=2):
     return u, s, v
 
 
-def comp(a, b):
-    logger.info(max_dif(a, b))
-
-
-def max_dif(a, b):
-    return np.linalg.norm(a - b) / np.linalg.norm(a)
-
-
-def comp_sparse(a, b):
-    logger.info(spsl.norm(a - b) / spsl.norm(a))
-
-
-def max_dif_matrices_sign_invariant(a, b):
-    curr_max = 0
-    for i in range(a.shape[0]):
-        curr_max = max(curr_max, min(max_dif(a[i], b[i]), max_dif(a[i], -b[i])))
-    return curr_max
-
-
 def fix_signs(u):
     """
     makes the matrix coloumn sign be by the biggest value
@@ -896,6 +870,26 @@ def fix_svd(u, v):
     u = u.dot(b)
     v = b.dot(v)
     return u, v
+
+
+#### Auxiliary functions
+def comp(a, b):
+    logger.info(max_dif(a, b))
+
+
+def max_dif(a, b):
+    return np.linalg.norm(a - b) / np.linalg.norm(a)
+
+
+def comp_sparse(a, b):
+    logger.info(spsl.norm(a - b) / spsl.norm(a))
+
+
+def max_dif_matrices_sign_invariant(a, b):
+    curr_max = 0
+    for i in range(a.shape[0]):
+        curr_max = max(curr_max, min(max_dif(a[i], b[i]), max_dif(a[i], -b[i])))
+    return curr_max
 
 
 def comp_array_of_npy(a, b):
@@ -952,7 +946,7 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
         logger.info('classes refl difference = {}'.format(dif[1]))
         logger.info('rot difference = {}'.format(dif[2]))
         logger.info('corr difference = {}\n'.format(dif[3]))
-
+#### Auxiliary functions
 
 class ClassAverages:
 
