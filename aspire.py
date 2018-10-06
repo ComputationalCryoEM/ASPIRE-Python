@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import time
 
 from aspire.class_averaging.averaging import ClassAverages
+from aspire.logger import logger
+from aspire.preprocessor.cryo_compare_stacks import cryo_compare_mrc_files
 
 
 class AspireCommandParser(argparse.ArgumentParser):
@@ -16,7 +19,11 @@ class AspireCommandParser(argparse.ArgumentParser):
             return
 
         # route input args to subcommand
+        t0_process = time.process_time()
+        t0_wall = time.time()
         args.func(args)
+        logger.debug("Finished in process time: {} sec".format(time.process_time() - t0_process))
+        logger.debug("Finished in wall time: {} sec".format(time.time() - t0_wall))
 
     @staticmethod
     def classify(subcommand_args):
@@ -25,6 +32,16 @@ class AspireCommandParser(argparse.ArgumentParser):
     @staticmethod
     def preprocess(subcommand_args):
         raise NotImplementedError("preprocessor isn't support yet. Stay tuned!")
+
+    @staticmethod
+    def compare_stacks(subcommand_args):
+        logger.info("calculating relative err..")
+        relative_err = cryo_compare_mrc_files(subcommand_args.mrcfile1,
+                                              subcommand_args.mrcfile2,
+                                              verbose=subcommand_args.verbose,
+                                              max_err=subcommand_args.max_err)
+
+        logger.info("relative err: {}".format(relative_err))
 
 
 if __name__ == "__main__":
@@ -70,4 +87,23 @@ if __name__ == "__main__":
                                          "(default=200)"),
                                    default=200)
 
+    # configure parser for compare-stacks
+    compare_stacks_parser = subparsers.add_parser('compare-stacks',
+                                                  help='Compare relative error between 2 stacks')
+    compare_stacks_parser.set_defaults(func=parser.compare_stacks)
+
+    compare_stacks_parser.add_argument("mrcfile1", help="first mrc file to compare")
+    compare_stacks_parser.add_argument("mrcfile2", help="second mrc file to compare")
+    compare_stacks_parser.add_argument("-v", "--verbose", type=int,
+                                       help="increase output verbosity.\n"
+                                            "0: silent\n"
+                                            "1: show progress-bar\n"
+                                            "2: print relative err every 100 images\n"
+                                            "3: print relative err for each image")
+
+    compare_stacks_parser.add_argument("--max-err", type=float,
+                                       help="raise an error if relative error is "
+                                            "bigger than max-err")
+
+    # parse input args and route them to the appropriate commands
     parser.route_subcommand()
