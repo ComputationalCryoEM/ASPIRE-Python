@@ -2,7 +2,7 @@
 
 import argparse
 
-from aspire.class_averaging.class_averages import ClassAverages
+from aspire.class_averaging.averaging import ClassAverages
 
 
 class AspireCommandParser(argparse.ArgumentParser):
