@@ -1,18 +1,9 @@
-# converted from MATLAB func "cryo_globalphaseflip.m"
-import argparse
-import logging
-import sys
-
-import mrcfile
 from numpy import meshgrid, zeros, mean
 from numpy.ma import sqrt
-
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler(sys.stdout))
-logger.setLevel(logging.INFO)
+from aspire.logger import logger
 
 
-def cryo_global_phase_flip(stack):
+def cryo_global_phase_flip_mrc_stack(stack):
     """ Apply global phase flip to an image stack if needed.
 
     Check if all images in a stack should be globally phase flipped so that
@@ -24,15 +15,15 @@ def cryo_global_phase_flip(stack):
     Examples:
         >> import mrcfile
         >> stack = mrcfile.open('stack.mrcs')
-        >> stack = cryo_global_phase_flip(stack)
+        >> stack = cryo_global_phase_flip_mrc_stack(stack)
 
     :param stack: stack of images to phaseflip if needed
-    :return: stack which might be phaseflipped when needed
+    :return stack: stack which might be phaseflipped when needed
     """
 
     if not len(stack.shape) in [2, 3]:
         raise Exception('illegal stack size/shape! stack should be either 2 or 3 dimensional. '
-                        f'(stack shape:{stack.shape})')
+                        '(stack shape:{})'.format(stack.shape))
 
     num_of_images = stack.shape[2] if len(stack.shape) == 3 else 1
 
@@ -67,25 +58,3 @@ def cryo_global_phase_flip(stack):
             return -stack
 
     return stack
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Apply global phase flip to an image stack in mrc',
-                                     formatter_class=argparse.RawTextHelpFormatter)
-
-    parser.add_argument("mrcfile", help="mrc file containing the stack to flip")
-    args = parser.parse_args()
-
-    mrc_file_handle = mrcfile.open(args.mrcfile)
-    stack = cryo_global_phase_flip(mrc_file_handle.data)
-
-    if stack[0].all() == mrc_file_handle.data[0].all():
-        print('stack was not phaseflipped.')
-        sys.exit()
-
-    input_file_prefix, input_file_suffix = args.mrcfile.rsplit(".", maxsplit=1)
-    output_file_name = f'{input_file_prefix}_phaseflipped.{input_file_suffix}'
-
-    mrcfile.new(output_file_name, stack)
-
-    logger.info(f"stack is flipped and saved as ({output_file_name}).")

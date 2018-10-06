@@ -6,6 +6,7 @@ import time
 from aspire.class_averaging.averaging import ClassAverages
 from aspire.logger import logger
 from aspire.preprocessor.cryo_compare_stacks import cryo_compare_mrc_files
+from aspire.utils.mrc_utils import cryo_global_phase_flip_mrc_file
 
 
 class AspireCommandParser(argparse.ArgumentParser):
@@ -42,6 +43,11 @@ class AspireCommandParser(argparse.ArgumentParser):
                                               max_err=subcommand_args.max_err)
 
         logger.info("relative err: {}".format(relative_err))
+
+    @staticmethod
+    def global_phaseflip(subcommand_args):
+        logger.info("calculating global phaseflip..")
+        cryo_global_phase_flip_mrc_file(subcommand_args.mrcfile, subcommand_args.o)
 
 
 if __name__ == "__main__":
@@ -104,6 +110,19 @@ if __name__ == "__main__":
     compare_stacks_parser.add_argument("--max-err", type=float,
                                        help="raise an error if relative error is "
                                             "bigger than max-err")
+
+    # configure parser for phaseflip
+    global_phaseflip_parser = subparsers.add_parser('phaseflip',
+                                                    help=('Apply global phase flip to '
+                                                          'an image stack in mrc'))
+
+    global_phaseflip_parser.set_defaults(func=parser.global_phaseflip)
+
+    global_phaseflip_parser.add_argument("-o",
+                                         help="file name to save the flipped stack in")
+
+    global_phaseflip_parser.add_argument("mrcfile",
+                                         help="mrc file containing the stack to flip")
 
     # parse input args and route them to the appropriate commands
     parser.route_subcommand()
