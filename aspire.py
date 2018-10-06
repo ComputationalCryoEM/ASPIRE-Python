@@ -5,7 +5,7 @@ import time
 
 from aspire.class_averaging.averaging import ClassAverages
 from aspire.logger import logger
-from aspire.preprocessor.cryo_compare_stacks import cryo_compare_mrc_files
+from aspire.utils.compare_stacks import cryo_compare_mrc_files
 from aspire.utils.mrc_utils import cryo_global_phase_flip_mrc_file
 
 
