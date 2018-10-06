@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 def cryo_workflow_preprocess_validate(workflow_xml_file):
     try:
-       with open(workflow_xml_file, 'r') as xml_file_handler:
-           tree_dict = parse(xml_file_handler.read())
+        with open(workflow_xml_file, 'r') as xml_file_handler:
+            tree_dict = parse(xml_file_handler.read())
 
     except FileNotFoundError:
         logger.error(f'workflow file "{workflow_xml_file}" does not exist!')
