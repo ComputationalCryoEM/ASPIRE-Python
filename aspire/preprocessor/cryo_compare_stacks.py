@@ -1,14 +1,9 @@
-import logging
 import mrcfile
 import numpy as np
-import sys
 
+from aspire.logger import logger
 from console_progressbar import ProgressBar
 from os.path import basename
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cryo_compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
@@ -60,7 +55,8 @@ def cryo_compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
         relative_err = accumulated_err / (i+1)
 
         # if we already reached a relatively big error, we can stop here
-        if max_err and relative_err > max_err:
+        # we can't ask "if max_err" as max_err is so small and treated as 0 (False)
+        if max_err is not None and relative_err > max_err:
             raise Exception(f'Stacks comparison failed! error is too big. {relative_err}')
 
         if verbose == 0:
