@@ -1,0 +1,25 @@
+-i https://pypi.org/simple
+-e git+https://github.com/flatironinstitute/finufft.git@529c006de4ff5dc8b26d4cf73109a5533f1456fd#egg=finufftpy
+backcall==0.1.0
+console-progressbar==1.1.1
+decorator==4.3.0
+git+https://github.com/flatironinstitute/finufft.git@f4721b7da5b611c1130a9e925fc945fee18c5b45#egg=finufft
+ipython-genutils==0.2.0
+ipython==6.5.0
+jedi==0.12.1
+mrcfile==1.0.4
+numpy==1.15.1
+parso==0.3.1
+pexpect==4.6.0; sys_platform != "win32"
+pickleshare==0.7.4
+prompt-toolkit==1.0.15
+ptyprocess==0.6.0
+pybind11==2.2.4
+pyfftw==0.10.4
+pygments==2.2.0
+scipy==1.1.0
+simplegeneric==0.8.1
+six==1.11.0
+traitlets==4.3.2
+wcwidth==0.1.7
+xmltodict==0.11.0

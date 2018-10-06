@@ -1,0 +1,19 @@
+name: 'aspire-env'
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - make
+  - gcc
+  - wheel
+  - python=3.6
+  - numpy=1.15
+  - scipy=1.1.0
+  - fftw=3.3.7
+  - pyfftw=0.10.4
+  - pip=18.0
+  - pip
+  - pybind11
+  - pip:
+    - mrcfile
+    - git+https://github.com/flatironinstitute/finufft.git
