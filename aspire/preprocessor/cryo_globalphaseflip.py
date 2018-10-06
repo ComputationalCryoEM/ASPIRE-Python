@@ -1,6 +1,6 @@
 from numpy import meshgrid, zeros, mean
 from numpy.ma import sqrt
-from aspire.logger import logger
+from aspire.common.logger import logger
 
 
 def cryo_global_phase_flip_mrc_stack(stack):

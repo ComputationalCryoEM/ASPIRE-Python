@@ -1,7 +1,7 @@
 import os
 import mrcfile
 
-from aspire.logger import logger
+from aspire.common.logger import logger
 from aspire.preprocessor import cryo_global_phase_flip_mrc_stack
 
 

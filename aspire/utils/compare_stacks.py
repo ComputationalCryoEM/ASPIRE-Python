@@ -1,7 +1,7 @@
 import mrcfile
 import numpy as np
 
-from aspire.logger import logger
+from aspire.common.logger import logger
 from console_progressbar import ProgressBar
 from os.path import basename
 

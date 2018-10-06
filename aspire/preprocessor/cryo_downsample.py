@@ -5,9 +5,9 @@
 import numpy
 from numpy.fft import fft, fftshift, ifft, ifftshift, fft2, ifft2, fftn, ifftn
 
-from preprocessor.cryo_crop import cryo_crop
-from preprocessor.exceptions import DimensionsIncompatible
-from helpers.helpers import f_flatten, TupleCompare
+from aspire.preprocessor.cryo_crop import cryo_crop
+from aspire.common.exceptions import DimensionsIncompatible
+from aspire.utils.helpers import TupleCompare, f_flatten
 
 
 def cryo_downsample(img, side, compute_fx=False, stack=False, mask=None):
