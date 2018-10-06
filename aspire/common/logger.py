@@ -4,7 +4,7 @@ import logging
 
 from logging.handlers import RotatingFileHandler
 
-from aspire.config import AspireConfig
+from aspire.common.config import AspireConfig
 
 
 formatter = logging.Formatter('%(asctime)s %(name)-7s %(levelname)-7s %(message)s')

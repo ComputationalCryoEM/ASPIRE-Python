@@ -1,7 +1,7 @@
 import math
 import numpy
 
-from aspire.preprocessor.exceptions import DimensionsIncompatible
+from aspire.common.exceptions import DimensionsIncompatible
 
 
 def cryo_crop(mat, n, stack=False, fill_value=0):
