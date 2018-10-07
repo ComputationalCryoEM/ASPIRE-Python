@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-
+import os
+import sys
 import click
 import mrcfile
-
-from functools import update_wrapper
 
 
 from aspire.class_averaging.averaging import ClassAverages
@@ -13,63 +12,40 @@ from aspire.utils.compare_stacks import cryo_compare_mrc_files
 from aspire.utils.mrc_utils import cryo_global_phase_flip_mrc_file
 
 
-@click.group(chain=True)
-def cli():
+class PipedObj:
+    def __init__(self, mrc_file, debug, verbose):
+        self.stack = mrcfile.open(mrc_file).data
+        self.debug = debug
+        self.verbose = verbose
+
+
+pass_obj = click.make_pass_decorator(PipedObj, ensure=True)
+
+
+@click.group(chain=False)
+def cli1():
     pass
 
 
-@cli.resultcallback()
-def process_commands(processors):
-    """ This result callback is invoked with an iterable of all the chained
-        subcommands.  As in this example each subcommand returns a function
-        we can chain them together to feed one into the other, similar to how
-        a pipe on unix works.
-    """
-    # Start with an empty iterable.
-    stream = ()
-
-    # Pipe it through all stream processors.
-    for click_processor in processors:
-        stream = click_processor(stream)
-
-    # Evaluate the stream and throw away the items.
-    for _ in stream:
-        pass
+@click.group(chain=True)
+@click.option('--debug/--no-debug', default=False)
+@click.option('-v', default=0)
+@click.argument('input_mrc')
+@click.pass_context
+def cli2(ctx, input_mrc, debug, v):
+    logger.setLevel(debug)
+    ctx.obj = PipedObj(input_mrc, debug, v)
 
 
-def processor(f):
-    """Helper decorator to rewrite a function so that it returns another
-    function from it.
-    """
-    def new_func(*args, **kwargs):
-        def wrapped_processor(stream):
-            return f(stream, *args, **kwargs)
-        return wrapped_processor
-    return update_wrapper(new_func, f)
-
-
-def generator(f):
-    """Similar to the :func:`processor` but passes through old values
-    unchanged and does not pass through the values as parameter.
-    """
-    @processor
-    def new_func(stream, *args, **kwargs):
-        for item in stream:
-            yield item
-        for item in f(*args, **kwargs):
-            yield item
-    return update_wrapper(new_func, f)
-
-
-@click.command()
+@cli1.command('preprocess')
 @click.argument('mrcfile')
-def preprocess(mrcfile):
+def preprocess_mrc(mrcfile):
     # TODO add preprocessor flow
     logger.info('preprocessing {}..'.format(mrcfile))
     raise NotImplementedError("Preprocessor isn't support yet. Stay tuned!")
 
 
-@click.command()
+@cli1.command()
 @click.argument('filename', type=click.Path(exists=True))
 @click.option('-o', default='classified.mrc', type=click.Path(exists=False),
               help='output file name')
@@ -88,7 +64,7 @@ def classify(filename, o, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
     ClassAverages.run(filename, o, n_nbor=classification_nn, nn_avg=avg_nn)
 
 
-@click.command()
+@cli1.command()
 @click.argument('mrcfile1', type=click.Path(exists=True))
 @click.argument('mrcfile2', type=click.Path(exists=True))
 @click.option('-v', default=0, help='verbosity (0-None 1-progress bar 2-each 100 3-each projection')
@@ -100,7 +76,7 @@ def compare_stacks(mrcfile1, mrcfile2, v, max_error):
     logger.info("relative err: {}".format(relative_err))
 
 
-@cli.command()
+@cli1.command()
 @click.argument('mrcfile', type=click.Path(exists=True))
 @click.option('-o', type=click.Path(exists=False), help='output file name')
 def phaseflip_mrc(filename, o=None):
@@ -109,52 +85,38 @@ def phaseflip_mrc(filename, o=None):
     cryo_global_phase_flip_mrc_file(filename, o)
 
 
-@cli.command('mrcopen')
-@click.argument('filename', type=click.Path(exists=True))
-@generator
-def mrc_open_cmd(filename):
-    """ Loads one or multiple images for processing.  The input parameter
-        can be specified multiple times to load more than one image.
-    """
-    logger.info("opening {}".format(filename))
-    yield mrcfile.open(filename).data
-
-
-@cli.command("phaseflip")
-@processor
-def chained_phaseflip(stacks):
+@cli2.command("phaseflip")
+@pass_obj
+def phaseflip_stack(ctx_obj):
     """ Apply global phase-flip to an MRC stack """
-    logger.info("calculating global phaseflip..")
-    for stack in stacks:
-        yield cryo_global_phase_flip_mrc_stack(stack)
+    logger.debug("calculating global phaseflip..")
+    ctx_obj.stack = cryo_global_phase_flip_mrc_stack(ctx_obj.stack)
 
 
-@cli.command("save")
-@click.option('-o', type=click.Path(exists=False), default='output.mrc',
-              help='output file name')
-@processor
-def chained_phaseflip(stacks, o=None):
-    """ Apply global phase-flip to an MRC stack
+@cli2.command("save")
+@click.option('-o', type=click.Path(exists=False), default='output.mrc', help='output file name')
+@pass_obj
+def chained_save_stack(ctx_obj, o):
+    """ Save MRC stack to output file """
+    if os.path.exists(o):  # TODO move this check before anything starts running
+        logger.error("output file {} already exists! "
+                     "please rename/delete or use flag -o with different output name")
+        sys.exit(1)
 
-        TODO support multiple stacks
-    """
     logger.info("saving stack {}..".format(o))
-    yield mrcfile.new(o, stacks.__next__())
-
-    try:
-        stacks.__next__()
-        raise NotImplementedError('aspire currently supports saving only 1 stack at a time!')
-    except StopIteration:
-        pass
+    mrcfile.new(o, ctx_obj.stack)
 
 
-cli.add_command(classify)
-cli.add_command(preprocess)
-cli.add_command(compare_stacks)
-cli.add_command(phaseflip_mrc)
-cli.add_command(chained_phaseflip)
-cli.add_command(mrc_open_cmd)
+cli1.add_command(classify)
+cli1.add_command(preprocess_mrc)
+cli1.add_command(compare_stacks)
+cli1.add_command(phaseflip_mrc)
 
+cli2.add_command(phaseflip_stack)
+cli2.add_command(chained_save_stack)
+
+
+# cli = click.CommandCollection(sources=[cli1, cli2])
 
 if __name__ == "__main__":
-    cli()
+    cli2()
