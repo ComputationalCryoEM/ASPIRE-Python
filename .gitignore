@@ -47,24 +47,8 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
 # Sphinx documentation
-docs/_build/
+docs/build/
 
 # PyBuilder
 target/
@@ -103,5 +87,12 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# pycharm
+# pycharm configuration files
 .idea/*
+
+# mrc/s files should not be included in src files
+*.mrc
+*.mrcs
+
+# all logs
+*.log
