@@ -54,7 +54,8 @@ def cryo_global_phase_flip_mrc_stack(stack):
     noise_mean = mean(noise_mean)
 
     if signal_mean < noise_mean:
-            logger.info('phaseflipping stack..')
+            logger.info('phase-flipping stack..')
             return -stack
 
+    logger.info('no need to phase-flip stack.')
     return stack
