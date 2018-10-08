@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 import os
 import sys
 import click
@@ -7,46 +8,27 @@ import mrcfile
 
 from aspire.class_averaging.averaging import ClassAverages
 from aspire.common.logger import logger
+from aspire.common.config import AspireConfig
 from aspire.preprocessor import cryo_global_phase_flip_mrc_stack
 from aspire.utils.compare_stacks import cryo_compare_mrc_files
 from aspire.utils.mrc_utils import cryo_global_phase_flip_mrc_file
 
 
-class PipedObj:
-    def __init__(self, mrc_file, debug, verbose):
-        self.stack = mrcfile.open(mrc_file).data
-        self.debug = debug
-        self.verbose = verbose
-
-
-pass_obj = click.make_pass_decorator(PipedObj, ensure=True)
-
-
 @click.group(chain=False)
-def cli1():
-    pass
+@click.option('--debug/--no-debug', default=False, help="Default is --no-debug.")
+@click.option('-v', '--verbosity', default=0, help='Verbosity level (0-3).')
+def simple_cli(debug, verbosity):
+    """ Aspire tool accepts one command at a time, executes it and terminates\t
+        \n To see usage of a command, simply type 'command --help'\t
+        \n e.g. python3 aspire.py classify --help
+    """
+    AspireConfig.verbosity = verbosity
+    if debug:
+        logger.setLevel(logging.DEBUG)
 
 
-@click.group(chain=True)
-@click.option('--debug/--no-debug', default=False)
-@click.option('-v', default=0)
-@click.argument('input_mrc')
-@click.pass_context
-def cli2(ctx, input_mrc, debug, v):
-    logger.setLevel(debug)
-    ctx.obj = PipedObj(input_mrc, debug, v)
-
-
-@cli1.command('preprocess')
-@click.argument('mrcfile')
-def preprocess_mrc(mrcfile):
-    # TODO add preprocessor flow
-    logger.info('preprocessing {}..'.format(mrcfile))
-    raise NotImplementedError("Preprocessor isn't support yet. Stay tuned!")
-
-
-@cli1.command()
-@click.argument('filename', type=click.Path(exists=True))
+@simple_cli.command()
+@click.argument('mrc_file', type=click.Path(exists=True))
 @click.option('-o', default='classified.mrc', type=click.Path(exists=False),
               help='output file name')
 @click.option("--avg_nn", default=50,
@@ -58,34 +40,72 @@ def preprocess_mrc(mrcfile):
               help="Number of nearest neighbors for building VDM graph. (default=20")
 @click.option("--k_vdm_out", default=200,
               help="Number of nearest neighbors to return for each image. (default=200)")
-def classify(filename, o, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
+def classify(mrc_file, o, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
+    """ Classification-Averaging command
+    """
     # TODO route optional args to the algoritm
-    logger.info('classifying..')
-    ClassAverages.run(filename, o, n_nbor=classification_nn, nn_avg=avg_nn)
+    logger.info('class-averaging..')
+    ClassAverages.run(mrc_file, o, n_nbor=classification_nn, nn_avg=avg_nn)
 
 
-@cli1.command()
+@simple_cli.command()
 @click.argument('mrcfile1', type=click.Path(exists=True))
 @click.argument('mrcfile2', type=click.Path(exists=True))
-@click.option('-v', default=0, help='verbosity (0-None 1-progress bar 2-each 100 3-each projection')
-@click.option('--max-error', default=None,
+@click.option('--max-error', default=None, type=float,
               help='if given, raise an error once the err is bigger than given value')
-def compare_stacks(mrcfile1, mrcfile2, v, max_error):
-    logger.info("calculating relative err..")
-    relative_err = cryo_compare_mrc_files(mrcfile1, mrcfile2, verbose=v, max_err=max_error)
+def compare_stacks(mrcfile1, mrcfile2, max_error):
+    """ Calculate the relative error between 2 mrc stacks """
+    logger.info("calculating relative err between '{}' and '{}'..".format(mrcfile1, mrcfile2))
+    relative_err = cryo_compare_mrc_files(mrcfile1, mrcfile2,
+                                          verbose=AspireConfig.verbosity, max_err=max_error)
     logger.info("relative err: {}".format(relative_err))
 
 
-@cli1.command()
-@click.argument('mrcfile', type=click.Path(exists=True))
-@click.option('-o', type=click.Path(exists=False), help='output file name')
-def phaseflip_mrc(filename, o=None):
+@simple_cli.command('phaseflip')
+@click.argument('mrc_file', type=click.Path(exists=True))
+@click.option('-o', '--output', type=click.Path(exists=False), default='phaseflipped.mrc',
+              help="output file name (default 'phaseflipped.mrc')")
+def phaseflip_mrc(mrc_file, output):
     """ Apply global phase-flip to an MRC file """
     logger.info("calculating global phaseflip..")
-    cryo_global_phase_flip_mrc_file(filename, o)
+    cryo_global_phase_flip_mrc_file(mrc_file, output)
 
 
-@cli2.command("phaseflip")
+simple_cli.add_command(classify)
+simple_cli.add_command(compare_stacks)
+simple_cli.add_command(phaseflip_mrc)
+
+
+###################################################################
+# The following is the foundation for creating a piped aspire cli
+###################################################################
+class PipedObj:
+    """ This object will be passed between piped commands and be
+        used for saving intermediate results and settings.
+    """
+
+    def __init__(self, mrc_file, debug, verbosity):
+        self.stack = mrcfile.open(mrc_file).data
+        self.debug = debug
+        AspireConfig.verbosity = verbosity
+
+
+pass_obj = click.make_pass_decorator(PipedObj, ensure=True)
+
+
+@click.group(chain=True)
+@click.option('--debug/--no-debug', default=False, help="Default is --no-debug.")
+@click.option('-v', '--verbosity', default=0, help='Verbosity level (0-3).')
+@click.argument('input_mrc')
+@click.pass_context
+def piped_cli(ctx, input_mrc, debug, verbosity):
+    """ Piped cli accepts multiple commands, executes one by one and passes on
+        the intermediate results on, between the commands. """
+    logger.setLevel(debug)
+    ctx.obj = PipedObj(input_mrc, debug, verbosity)  # control log/verbosity per command
+
+
+@piped_cli.command("phaseflip")
 @pass_obj
 def phaseflip_stack(ctx_obj):
     """ Apply global phase-flip to an MRC stack """
@@ -93,7 +113,7 @@ def phaseflip_stack(ctx_obj):
     ctx_obj.stack = cryo_global_phase_flip_mrc_stack(ctx_obj.stack)
 
 
-@cli2.command("save")
+@piped_cli.command("save")
 @click.option('-o', type=click.Path(exists=False), default='output.mrc', help='output file name')
 @pass_obj
 def chained_save_stack(ctx_obj, o):
@@ -107,16 +127,10 @@ def chained_save_stack(ctx_obj, o):
     mrcfile.new(o, ctx_obj.stack)
 
 
-cli1.add_command(classify)
-cli1.add_command(preprocess_mrc)
-cli1.add_command(compare_stacks)
-cli1.add_command(phaseflip_mrc)
+piped_cli.add_command(phaseflip_stack)
+piped_cli.add_command(chained_save_stack)
 
-cli2.add_command(phaseflip_stack)
-cli2.add_command(chained_save_stack)
-
-
-# cli = click.CommandCollection(sources=[cli1, cli2])
 
 if __name__ == "__main__":
-    cli2()
+    simple_cli()
+    # piped_cli
