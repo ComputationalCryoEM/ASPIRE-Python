@@ -14,7 +14,6 @@ def cryo_global_phase_flip_mrc_file(input_mrc_file, output_mrc_file=None):
         input_file_suffix = '.' + split[1] if len(split) == 2 else ''
         output_mrc_file = '{}_phaseflipped{}'.format(input_file_prefix,
                                                      input_file_suffix)
-    print(output_mrc_file)
     if os.path.exists(output_mrc_file):
         logger.error("output file '{}' already exists!".format(output_mrc_file))
         return
@@ -26,4 +25,5 @@ def cryo_global_phase_flip_mrc_file(input_mrc_file, output_mrc_file=None):
         mrcfile.new(output_mrc_file, out_stack)
         logger.info("stack is flipped and saved as {}".format(output_mrc_file))
 
-    logger.info('stack was not phaseflipped.')
+    logger.info('no need to phaseflip stack.')
+    logger.debug('not saving new mrc file.')
