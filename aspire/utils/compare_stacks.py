@@ -1,6 +1,7 @@
 import mrcfile
 import numpy as np
 
+from aspire.common.exceptions import ErrorTooBig, WrongInput
 from aspire.common.logger import logger
 from console_progressbar import ProgressBar
 from os.path import basename
@@ -25,7 +26,7 @@ def cryo_compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
         try:
             max_err = np.longdouble(max_err)
         except (TypeError, ValueError):
-            raise Exception("max_err must be either a float or an integer!")
+            raise WrongInput("max_err must be either a float or an integer!")
 
     stack1 = mrcfile.open(mrcname1)
     stack2 = mrcfile.open(mrcname2)
@@ -57,7 +58,7 @@ def cryo_compare_mrc_files(mrcname1, mrcname2, verbose=0, max_err=None):
         # if we already reached a relatively big error, we can stop here
         # we can't ask "if max_err" as max_err is so small and treated as 0 (False)
         if max_err is not None and relative_err > max_err:
-            raise Exception(f'Stacks comparison failed! error is too big. {relative_err}')
+            raise ErrorTooBig('Stacks comparison failed! error is too big: {}'.format(relative_err))
 
         if verbose == 0:
             continue
