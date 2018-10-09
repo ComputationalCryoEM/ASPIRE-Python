@@ -22,8 +22,8 @@ import setuptools
 #     ],
 # )
 
-print('installing libfftw3-dev..')
-os.system('apt install libfftw3-dev')
+#print('installing libfftw3-dev..')
+#os.system('apt install libfftw3-dev')
 
 def install(package):
     if hasattr(pip, 'main'):
