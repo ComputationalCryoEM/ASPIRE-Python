@@ -1,4 +1,4 @@
-CONDA_MISSING_ERR_MSG="You're running outside conda environment! please run 'conda create -f environment.yml' first, then activate it with 'conda activate aspire'."
+CONDA_MISSING_ERR_MSG="You're running outside conda environment! please run 'conda create -f environment.yml' first, then activate it with 'source activate aspire'."
 
 set -e
 
@@ -13,7 +13,7 @@ fi
 
 
 # make sure conda virtualenv is activated
-python -V 2>/dev/null || (echo $CONDA_MISSING_ERR_MSG ; exit)
+python -V >/dev/null 2>&1 || (echo $CONDA_MISSING_ERR_MSG ; exit)
 
 # make sure we're running within virutalenv
 if [[ `which python` != *"envs/aspire/bin/python"* ]]; then
@@ -26,6 +26,7 @@ cwd=`pwd`
 cd $finufft_dir
 
 # clean whatever finufftpy did so far
+make clean
 git clean -fd
 
 # re/build finufft lib
