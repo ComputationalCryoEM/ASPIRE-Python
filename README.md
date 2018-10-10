@@ -7,8 +7,8 @@ Conda for **Python3** (either
 or 
 [Miniconda](https://conda.io/miniconda.html), click on the right distribution to view Conda's installation instructions)
 
-- gcc: sudo apt install gcc
-- g++: sudo apt install g++
+- gcc: sudo apt install --upgrade gcc
+- g++: sudo apt install --upgrade g++
 - fftw3: sudo apt install libfftw3-bin  libfftw3-dev
 
 These commands were tested on Ubuntu 16.04. On other Linux distro's, use the substitute command for 'apt install' (yum, apt-get, etc.)
@@ -40,6 +40,9 @@ It is important to note that at each command level you should supply the flags/o
 E.g. you want to run Aspire in debug mode and with maximum verbosity:
 python aspire.py --debug -v crop demmo.mrc 42 (crop stack in demmo.mrc file to projections of 42x42 px squares)
 If you place the '-v' or '--debug' in the end of the line, Aspire would assume these are flags for crop command (which aren't clear and Aspire won't run).
+
+###### Common errors:
+- ModuleNotFoundError: No module named 'click' :  You're outside Conda's environment! Run 'source activate aspire' (or create a new env if you skipped the previous step 'Creating Conda environment'.
 
 
 
