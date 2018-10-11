@@ -1,5 +1,4 @@
-<div style="text-align:center"><img src="http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg" /></div>
-
+![alt ](http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg)
 
 ASPIRE-Python
 =============
