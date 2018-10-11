@@ -1,6 +1,9 @@
-# ASPIRE-Python
+ASPIRE-Python
+=============
 
-## Installation
+Installation
+------------
+
 #### Requirements (Linux)
 Conda for **Python3** (either 
 [Anaconda](https://www.anaconda.com/download/#linux)
@@ -11,7 +14,7 @@ or
 - g++: `sudo apt install --upgrade g++`
 - fftw3: `sudo apt install libfftw3-bin  libfftw3-dev`
 
-These commands were tested on Ubuntu 16.04. On other Linux distro's, use the substitute command for 'apt install' (yum, apt-get, etc.)
+These commands were tested on Ubuntu 16TLS. For other Linux distros please use the substitute command for 'apt install' (yum, apt-get, brew, etc.)
 
 #### Creating Conda environment
 Run `conda env create -f environment.yml`
@@ -26,24 +29,41 @@ Depending on your Conda distribution, in some cases you should run: `conda activ
 To deactivate the environment run: `source deactivate` (or `conda deactivate`, respectively)
 
 #### Installing finufftpy
-As you're in the root directory (under ASPIRE-Python, so you can `ls` and see _aspire.py_)
-run `./install.sh`
+For using certain commands, such as *classify*, you'll need to compile and install Finufftpy:  
+Make sure you're in the root directory (under ASPIRE-Python, so you see _aspire.py_ when running `ls`)  
+Run `./install.sh`
 
 Assuming no errors, you can now use the Aspire tool.
+###### common errors
+If you skipped any of the previous steps, the script will complain about the missing part and terminate.
+You can run this script as many times as you want.
 
 ## Usage
-Aspire is command-line-interface (CLI) which allows you to run atomic actions on stack of CRYO projections (MRC files).
-The Pythonic version will simply be run with: python aspire.py
-As you run that, you'll get a usage help message, showing you the various available commands.
+Aspire is a command-line-interface (CLI) application allowing you to run atomic actions on stack of CRYO projections (MRC files).
+To invoke the tool simply run: `python aspire.py`.  
+You'll see a help message showing you the various available commands.
 
-It is important to note that at each command level you should supply the flags/options of that level, not more, not less.
-E.g. you want to run Aspire in debug mode and with maximum verbosity:
-`python aspire.py --debug -v crop demmo.mrc 42` (crop stack in demmo.mrc file to projections of 42x42 px squares)
+#### Arguments, options and flags
+Arguments are mandatory inputs. When running 'compare' command, you must provide 2 MRC files to compoare.  
+Options are, like their name suggests, optional inputs. For example, _aspire.py_ accepts option '-v 2' for setting verbosity level to 2. All options have a default value set for them.  
+Flags are optional values which tells Aspire to activate/deactivate certain behaviour. A good example would be '_--debug_'. All flags also have a default value pre-set for them, '--no-debug' in case of the 'debug' flag.  
 
-If you place the '-v' or '--debug' in the end of the line, Aspire would assume these are flags for crop command (which aren't clear and Aspire won't run).
+Aspire CLI is built in layers. A layer is basically a command which can be followed by another command.
+The most basic command is `aspire.py` itself, the base layer. It accepts its own flags such as '_--help_', '_--debug_' or '_-v N_'. Each of these optional flags will be directed into the root layer.
+
+Then we can call Aspire with a consequtive subcommand such as '_compare_', and provide another layer of arguments, options and flags. In case of '_compare_' these can be '_compare MRC1 MRC2 --max-error=0.123_'.  
+
+It is important to note that each command has to followed by its own options/arguments of that specific level, not more, not less.
+
+##### Examples
+1. If you want to view the help message for each command, please place '--help' **after** the command:  
+`python aspire.py compare --help`.  
+`python aspire.py --help compare` will only present the help message for the highest layer.
+
+2. Crop a stack of projections of an mrc file to squares of 42x42 px, in debug mode and with maximum verbosity:  
+`python aspire.py --debug -v 3 crop demmo.mrc 42`
+
+3. If you place the '-v' or '--debug' in the end of the line, Aspire would assume these are flags for crop command (which aren't clear and Aspire won't run). For `python aspire.py compare --debug` you'll get a message '_Error: no such option: --debug_'
 
 ###### Common errors:
 - `ModuleNotFoundError: No module named 'click'` -  You're outside Conda's environment! Run 'source activate aspire' (or create a new env if you skipped the previous step 'Creating Conda environment'.
-
-
-
