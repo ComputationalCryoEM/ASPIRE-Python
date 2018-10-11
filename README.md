@@ -1,3 +1,5 @@
+![alt ](http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg)
+
 ASPIRE-Python
 =============
 
