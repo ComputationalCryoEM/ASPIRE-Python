@@ -8,6 +8,9 @@ from aspire.preprocessor.cryo_crop import cryo_crop
 
 
 # TODO impolement decorator
+from aspire.preprocessor.cryo_downsample import cryo_downsample
+
+
 def mrc_validator():
     pass
 
@@ -49,10 +52,10 @@ def crop_mrc_file(input_mrc_file, size, output_mrc_file=None, fill_value=None):
         input_file_prefix = split[0]
         # take care of stack files without suffix such as .mrc
         input_file_suffix = '.' + split[1] if len(split) == 2 else ''
-        output_mrc_file = '{}_phaseflipped{}'.format(input_file_prefix,
-                                                     input_file_suffix)
+        output_mrc_file = f'{input_file_prefix}_cropped{input_file_suffix}'
+
     if os.path.exists(output_mrc_file):
-        logger.error("output file '{}' already exists!".format(output_mrc_file))
+        logger.error(f"output file '{output_mrc_file}' already exists!")
         return
 
     in_stack = mrcfile.open(input_mrc_file).data
@@ -60,11 +63,38 @@ def crop_mrc_file(input_mrc_file, size, output_mrc_file=None, fill_value=None):
     out_stack = cryo_crop(in_stack, size, stack=True, fill_value=fill_value)
 
     action = 'cropped' if in_stack.shape[2] > size else 'padded'
-    logger.info("{} stack from size {} to size {}. saving to {}..".format(action,
-                                                                          in_stack.shape,
-                                                                          out_stack.shape,
-                                                                          output_mrc_file))
+    logger.info(f"{action} stack from size {in_stack.shape} to size {out_stack.shape}."
+                f" saving to {output_mrc_file}..")
 
     with mrcfile.new(output_mrc_file) as mrc:
         mrc.set_data(out_stack)
-    logger.debug("saved to {}".format(output_mrc_file))
+    logger.debug(f"saved to {output_mrc_file}")
+
+
+def downsample_mrc_file(input_mrc_file, side, output_mrc_file=None, mask=None):
+    if output_mrc_file is None:
+        split = input_mrc_file.rsplit(".", maxsplit=1)
+        input_file_prefix = split[0]
+        # take care of stack files without suffix such as .mrc
+        input_file_suffix = '.' + split[1] if len(split) == 2 else ''
+        output_mrc_file = f'{input_file_prefix}_downsampled{input_file_suffix}'
+
+    if os.path.exists(output_mrc_file):
+        logger.error(f"output file '{output_mrc_file}' already exists!")
+        return
+
+    if mask:
+        if os.path.exists(mask):
+            mask = mrcfile.open(mask).data
+        else:
+            logger.error(f"mask file {mask} doesn't exist!")
+            return
+
+    in_stack = mrcfile.open(input_mrc_file).data
+    # TODO route input arg compute_fx from CLI to cryo_downsample
+    out_stack = cryo_downsample(in_stack, side, compute_fx=False, stack=True, mask=mask)
+    logger.info(f"downsampled stack to size {side}x{side}. saving to {output_mrc_file}..")
+
+    with mrcfile.new(output_mrc_file) as mrc:
+        mrc.set_data(out_stack)
+    logger.debug(f"saved to {output_mrc_file}")

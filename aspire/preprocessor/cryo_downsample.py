@@ -96,4 +96,4 @@ def cryo_downsample(img, side, compute_fx=False, stack=False, mask=None):
         fx = numpy.fft.ifftshift(fx)
         return out, fx
 
-    return out
+    return out.astype('float32')
