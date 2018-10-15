@@ -3,6 +3,7 @@ channels:
   - defaults
   - conda-forge
 dependencies:
+  - gcc_linux-64
   - make
   - wheel
   - python=3.6
