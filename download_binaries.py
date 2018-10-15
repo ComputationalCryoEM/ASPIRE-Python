@@ -10,6 +10,7 @@ binary_files = [
     '/images_large.mat',
     '/init_avg_image.mat',
     '/init_avg_image_large.mat',
+    '/cleanrib.mat',
 ]
 
 dest_folder = 'binaries'
