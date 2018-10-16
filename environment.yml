@@ -17,7 +17,6 @@ dependencies:
   - click
   - pip:
     - mrcfile
-    #- -e git+https://github.com/flatironinstitute/finufft.git#egg=finufft
     - console_progressbar
     - ipython
     - Sphinx==1.8.1
