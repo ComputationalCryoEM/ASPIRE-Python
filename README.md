@@ -44,7 +44,7 @@ To download them simply run `make download`
 You can choose to firstly not download binaries and then Aspire would ask you to do so before running any commnad which needs them.
 
 
-Assuming no errors, you can now use the Aspire tool in its minimalistic version.
+Assuming no errors, you can now use Aspire tool.
 
 ## Usage
 Aspire is a command-line-interface (CLI) application allowing you to run atomic actions on stack of CRYO projections (MRC files).
