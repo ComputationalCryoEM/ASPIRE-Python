@@ -12,12 +12,6 @@ Conda for **Python3** (either
 or 
 [Miniconda](https://conda.io/miniconda.html), click on the right distribution to view Conda's installation instructions)
 
-- gcc: `sudo apt install --upgrade gcc`
-- g++: `sudo apt install --upgrade g++`
-- fftw3: `sudo apt install libfftw3-bin  libfftw3-dev`
-
-These commands were tested on Ubuntu 16TLS. For other Linux distros please use the substitute command for 'apt install' (yum, apt-get, brew, etc.)
-
 #### Creating Conda environment
 Run `conda env create -f environment.yml`
 
@@ -25,20 +19,32 @@ Run `conda env create -f environment.yml`
 - `"Prefix already exists .../envs/aspire"` - please delete the directory shown and rerun.
 
 #### Activating Conda environment
-Run: `source activate aspire`
+Run: `source activate aspire`  
 Depending on your Conda distribution, in some cases you should run: `conda activate aspire`
 
 To deactivate the environment run: `source deactivate` (or `conda deactivate`, respectively)
 
-#### Installing finufftpy
-For using certain commands, such as *classify*, you'll need to compile and install Finufftpy:  
+#### Installing finufftpy (optional)
+For using certain commands, such as *classify*, you'll need to compile and install *finufftpy*:  
 Make sure you're in the root directory (under ASPIRE-Python, so you see _aspire.py_ when running `ls`)  
-Run `./install.sh`
+Run `make finufftpy`  
+You might need to install some prerequisites, follow the instructions.
 
-Assuming no errors, you can now use the Aspire tool.
 ###### common errors
 If you skipped any of the previous steps, the script will complain about the missing part and terminate.
-You can run this script as many times as you want.
+If you encounter problems during compilation process, please upgrade the following Linux packages:
+- gcc: `sudo apt install --upgrade  gcc  g++`
+- fftw3: `sudo apt install  libfftw3-bin  libfftw3-dev`
+
+These commands were tested on Ubuntu 16TLS. For other Linux distros please use the substitute command for 'apt install' (yum, apt-get, brew, etc.)
+
+#### Downloading data files (optional)
+For some commands, you'll need to have certain binary files available for Aspire.  
+To download them simply run `make download`  
+You can choose to firstly not download binaries and then Aspire would ask you to do so before running any commnad which needs them.
+
+
+Assuming no errors, you can now use the Aspire tool in its minimalistic version.
 
 ## Usage
 Aspire is a command-line-interface (CLI) application allowing you to run atomic actions on stack of CRYO projections (MRC files).
