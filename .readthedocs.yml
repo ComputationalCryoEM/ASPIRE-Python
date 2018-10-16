@@ -1,5 +1,2 @@
-build:
-  image: stable
-
 conda:
   file: environment.yml
