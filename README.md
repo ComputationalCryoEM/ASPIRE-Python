@@ -2,6 +2,8 @@
 
 ASPIRE-Python
 =============
+[![Documentation Status](https://readthedocs.org/projects/aspire-python/badge/?version=latest)](https://aspire-python.readthedocs.io/en/latest/?badge=latest)
+
 
 Installation
 ------------
@@ -34,7 +36,7 @@ You might need to install some prerequisites, follow the instructions.
 If you skipped any of the previous steps, the script will complain about the missing part and terminate.
 If you encounter problems during compilation process, please upgrade the following Linux packages:
 - gcc: `sudo apt install --upgrade  gcc  g++`
-- fftw3: `sudo apt install  libfftw3-bin  libfftw3-dev`
+- fftw3: `sudo apt install --upgrade  libfftw3-bin  libfftw3-dev`
 
 These commands were tested on Ubuntu 16TLS. For other Linux distros please use the substitute command for 'apt install' (yum, apt-get, brew, etc.)
 
