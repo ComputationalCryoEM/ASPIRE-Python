@@ -14,6 +14,8 @@
 #
 import os
 import sys
+from unittest.mock import MagicMock
+
 sys.path.insert(0, os.path.abspath('../..'))
 # sys.setrecursionlimit(1500)
 
@@ -21,7 +23,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'ASPIRE-Python'
-copyright = '2018, Yoel Shkolnisky, Amit Zinger, Itay Sason, Joakim Andén, Robbie Brook'
+copyright = '2018, Princeton University'
 author = 'Yoel Shkolnisky, Amit Zinger, Itay Sason, Joakim Andén, Robbie Brook'
 
 # The short X.Y version
@@ -194,3 +196,14 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+
+# added for mocking finufftpy
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+
+MOCK_MODULES = ['finufftpy', 'pyfftw']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
