@@ -20,7 +20,7 @@ Preprocessor
 
 Class Averaging
 ===============
-.. automodule:: aspire.class_avrages.class_averages
+.. automodule:: aspire.class_averaging.averaging
    :members:
 
 
