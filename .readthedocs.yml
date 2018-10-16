@@ -1,9 +1,5 @@
 build:
-  image: latest
+  image: stable
 
 conda:
   file: environment.yml
-
-python:
-    version: 3.6
-    use_system_site_packages: true
