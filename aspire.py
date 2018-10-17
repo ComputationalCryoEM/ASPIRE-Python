@@ -7,7 +7,7 @@ import mrcfile
 
 from aspire.common.logger import logger
 from aspire.common.config import AspireConfig, CropStackConfig
-from aspire.preprocessor import global_phase_flip_mrc_stack
+from aspire.preprocessor import global_phaseflip_stack
 from aspire.utils.compare_stacks import cryo_compare_mrc_files
 from aspire.utils.helpers import requires_binaries, requires_finufftpy, yellow
 from aspire.utils.mrc_utils import global_phase_flip_mrc_file, crop_mrc_file, downsample_mrc_file
@@ -144,7 +144,7 @@ def piped_cli(ctx, input_mrc, debug, verbosity):
 def phaseflip_stack(ctx_obj):
     """ Apply global phase-flip to an MRC stack """
     logger.debug("calculating global phaseflip..")
-    ctx_obj.stack = global_phase_flip_mrc_stack(ctx_obj.stack)
+    ctx_obj.stack = global_phaseflip_stack(ctx_obj.stack)
 
 
 @piped_cli.command("save")
