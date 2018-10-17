@@ -10,7 +10,7 @@ from aspire.common.exceptions import DimensionsIncompatible
 from aspire.utils.helpers import TupleCompare, f_flatten
 
 
-def cryo_downsample(img, side, compute_fx=False, stack=False, mask=None):
+def downsample(img, side, compute_fx=False, stack=False, mask=None):
     """ Use Fourier methods to change the sample interval and/or aspect ratio
         of any dimensions of the input image 'img'. If the optional argument
         stack is set to True, then the *first* dimension of 'img' is interpreted as the index of each
@@ -23,7 +23,7 @@ def cryo_downsample(img, side, compute_fx=False, stack=False, mask=None):
         be the same as the output image size. For example for downsampling an
         n0 x n0 image with a 0.9 x nyquist filter, do the following:
             msk = fuzzymask(n,2,.45*n,.05*n)
-            out = cryo_downsample(img, n, 0, msk)
+            out = downsample(img, n, 0, msk)
             The size of the mask must be the size of output. The optional fx output
             argument is the padded or cropped, masked, FT of in, with zero
             frequency at the origin.

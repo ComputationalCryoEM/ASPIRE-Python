@@ -8,7 +8,7 @@ from aspire.preprocessor.crop import crop
 
 
 # TODO impolement decorator
-from aspire.preprocessor.downsample import cryo_downsample
+from aspire.preprocessor.downsample import downsample
 
 
 def mrc_validator():
@@ -91,8 +91,8 @@ def downsample_mrc_file(input_mrc_file, side, output_mrc_file=None, mask=None):
             return
 
     in_stack = mrcfile.open(input_mrc_file).data
-    # TODO route input arg compute_fx from CLI to cryo_downsample
-    out_stack = cryo_downsample(in_stack, side, compute_fx=False, stack=True, mask=mask)
+    # TODO route input arg compute_fx from CLI to downsample
+    out_stack = downsample(in_stack, side, compute_fx=False, stack=True, mask=mask)
     logger.info(f"downsampled stack to size {side}x{side}. saving to {output_mrc_file}..")
 
     with mrcfile.new(output_mrc_file) as mrc:
