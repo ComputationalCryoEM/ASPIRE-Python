@@ -4,7 +4,7 @@ import mrcfile
 from aspire.common.config import CropStackConfig
 from aspire.common.logger import logger
 from aspire.preprocessor import cryo_global_phase_flip_mrc_stack
-from aspire.preprocessor.crop import cryo_crop
+from aspire.preprocessor.crop import crop
 
 
 # TODO impolement decorator
@@ -60,7 +60,7 @@ def crop_mrc_file(input_mrc_file, size, output_mrc_file=None, fill_value=None):
 
     in_stack = mrcfile.open(input_mrc_file).data
     fill_value = fill_value or CropStackConfig.fill_value
-    out_stack = cryo_crop(in_stack, size, stack=True, fill_value=fill_value)
+    out_stack = crop(in_stack, size, stack=True, fill_value=fill_value)
 
     action = 'cropped' if in_stack.shape[2] > size else 'padded'
     logger.info(f"{action} stack from size {in_stack.shape} to size {out_stack.shape}."

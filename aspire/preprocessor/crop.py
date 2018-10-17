@@ -5,7 +5,7 @@ from aspire.common.logger import logger
 from aspire.common.exceptions import DimensionsIncompatible
 
 
-def cryo_crop(mat, n, stack=False, fill_value=0):
+def crop(mat, n, stack=False, fill_value=0):
     """
         Reduce the size of a vector, square or cube 'mat' by cropping (or
         increase the size by padding with fill_value, by default zero) to a final
@@ -66,11 +66,11 @@ def cryo_crop(mat, n, stack=False, fill_value=0):
 
         if start_x >= 0 and start_y >= 0:  # cropping
             start_x, start_y = math.floor(start_x), math.floor(start_y)
-            logger.debug(f'cryo_crop:cropping from {mat.shape} to {n}..')
+            logger.debug(f'crop:cropping from {mat.shape} to {n}..')
             return mat[start_x: start_x + int(n), start_y: start_y + int(n)].astype('float32')
 
         elif start_x < 0 and start_y < 0:  # padding
-            logger.debug('cryo_crop:padding..')
+            logger.debug('crop:padding..')
             start_x, start_y = math.floor(start_x), math.floor(start_y)
             result_mat = fill_value * numpy.ones([n, n], dtype=complex)
             result_mat[-start_x: mat_x - start_x, -start_y: mat_y - start_y] = mat
@@ -87,7 +87,7 @@ def cryo_crop(mat, n, stack=False, fill_value=0):
             result_mat = numpy.zeros([mat.shape[0], n, n], dtype='float32')
             for img in range(mat.shape[0]):
                 # TODO iterate instead of using recursion. this is too memoery-expensive
-                result_mat[img, :, :] = cryo_crop(mat[img, :, :], n)
+                result_mat[img, :, :] = crop(mat[img, :, :], n)
 
             return result_mat.astype('float32')
 

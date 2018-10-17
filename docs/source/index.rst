@@ -14,7 +14,7 @@ Welcome to ASPIRE-Python's documentation!
 
 Preprocessor
 ============
-.. automodule:: aspire.preprocessor
+.. automodule:: aspire.preprocessor.crop
    :members:
 
 
