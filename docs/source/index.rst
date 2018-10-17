@@ -17,6 +17,21 @@ Preprocessor
 .. automodule:: aspire.preprocessor.crop
    :members:
 
+.. automodule:: aspire.preprocessor.downsample
+   :members:
+
+.. automodule:: aspire.preprocessor.globalphaseflip
+   :members:
+
+
+Utils
+============
+.. automodule:: aspire.utils.compare_stacks
+   :members:
+
+.. automodule:: aspire.utils.helpers
+   :members:
+
 
 Class Averaging
 ===============
