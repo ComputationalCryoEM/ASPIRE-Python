@@ -3,7 +3,7 @@ from numpy.ma import sqrt
 from aspire.common.logger import logger
 
 
-def cryo_global_phase_flip_mrc_stack(stack):
+def global_phase_flip_mrc_stack(stack):
     """ Apply global phase flip to an image stack if needed.
 
     Check if all images in a stack should be globally phase flipped so that
@@ -15,7 +15,7 @@ def cryo_global_phase_flip_mrc_stack(stack):
     Examples:
         >> import mrcfile
         >> stack = mrcfile.open('stack.mrcs')
-        >> stack = cryo_global_phase_flip_mrc_stack(stack)
+        >> stack = global_phase_flip_mrc_stack(stack)
 
     :param stack: stack of images to phaseflip if needed
     :return stack: stack which might be phaseflipped when needed

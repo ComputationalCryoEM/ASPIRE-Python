@@ -3,7 +3,7 @@ import mrcfile
 
 from aspire.common.config import CropStackConfig
 from aspire.common.logger import logger
-from aspire.preprocessor import cryo_global_phase_flip_mrc_stack
+from aspire.preprocessor import global_phase_flip_mrc_stack
 from aspire.preprocessor.crop import crop
 
 
@@ -35,7 +35,7 @@ def global_phase_flip_mrc_file(input_mrc_file, output_mrc_file=None):
         return
     
     in_stack = mrcfile.open(input_mrc_file).data
-    out_stack = cryo_global_phase_flip_mrc_stack(in_stack)
+    out_stack = global_phase_flip_mrc_stack(in_stack)
     if out_stack[0].all() == ~in_stack[0].all():
         with mrcfile.new(output_mrc_file) as mrc:
             mrc.set_data(out_stack)
