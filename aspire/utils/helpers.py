@@ -1,6 +1,12 @@
+import functools
 import os
+import sys
 
 import numpy as np
+
+from aspire.common.config import AspireConfig
+from aspire.common.exceptions import DimensionsIncompatible
+from aspire.common.logger import logger
 
 
 def cart2rad(n):
@@ -67,3 +73,50 @@ def f_flatten(mat):
     """
 
     return mat.flatten('F')
+
+
+def yellow(s):
+    yellow_color = '\033[1;33m'
+    no_color = '\033[0m'
+    return f"{yellow_color}{s}{no_color}"
+
+
+def requires_binaries(*filenames):
+
+    def decorator(func):
+
+        missing_binaries = set()
+        for fn in filenames:
+            if not os.path.exists(f'./binaries/{fn}'):
+                missing_binaries.add(fn)
+
+        if missing_binaries:
+            for fn in missing_binaries:
+                logger.error(f"Binary file {yellow(fn)} is required!")
+
+            logger.error(f"Please run \'{yellow('make data')}\' and try again.")
+            sys.exit(1)
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return wrapper
+    return decorator
+
+
+def requires_finufftpy(func):
+
+    try:
+        import finufftpy
+
+    except ImportError:
+        logger.error("Python package finufftpy is not installed! "
+                     f"Please run \'{yellow('make finufftpy')}\'.")
+        sys.exit(1)
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper

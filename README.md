@@ -42,7 +42,7 @@ These commands were tested on Ubuntu 16TLS. For other Linux distros please use t
 
 #### Downloading data files (optional)
 For some commands, you'll need to have certain binary files available for Aspire.  
-To download them simply run `make download`  
+To download them simply run `make data`  
 You can choose to firstly not download binaries and then Aspire would ask you to do so before running any commnad which needs them.
 
 

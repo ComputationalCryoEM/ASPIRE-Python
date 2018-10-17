@@ -9,14 +9,8 @@ from aspire.common.logger import logger
 from aspire.common.config import AspireConfig, CropStackConfig
 from aspire.preprocessor import cryo_global_phase_flip_mrc_stack
 from aspire.utils.compare_stacks import cryo_compare_mrc_files
+from aspire.utils.helpers import requires_binaries, requires_finufftpy, yellow
 from aspire.utils.mrc_utils import global_phase_flip_mrc_file, crop_mrc_file, downsample_mrc_file
-
-try:
-    from aspire.class_averaging.averaging import ClassAverages
-    finufftpy_imported = True
-except ImportError:
-    finufftpy_imported = False
-    logger.warning("Couldn't import finufftwpy! Some commands will fail!")
 
 
 @click.group(chain=False)
@@ -34,7 +28,7 @@ def simple_cli(debug, verbosity):
 
 @simple_cli.command('classify')
 @click.argument('mrc_file', type=click.Path(exists=True))
-@click.option('-o', default='classified.mrc', type=click.Path(exists=False),
+@click.option('-o', '--output', default='classified.mrc', type=click.Path(exists=False),
               help='output file name')
 @click.option("--avg_nn", default=50,
               help="Number of images to average into each class. (default=50)")
@@ -45,16 +39,14 @@ def simple_cli(debug, verbosity):
               help="Number of nearest neighbors for building VDM graph. (default=20")
 @click.option("--k_vdm_out", default=200,
               help="Number of nearest neighbors to return for each image. (default=200)")
-def classify(mrc_file, o, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
-    """ Classification-Averaging command
-    """
+@requires_finufftpy
+def classify(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
+    """ Classification-Averaging command """
     # TODO route optional args to the algoritm
-    if not finufftpy_imported:
-        logger.error("Couldn't import finufftpy! terminating.. (try to run ./install.sh)")
-        return
-
+    from aspire.class_averaging.averaging import ClassAverages
     logger.info('class-averaging..')
-    ClassAverages.run(mrc_file, o, n_nbor=classification_nn, nn_avg=avg_nn)
+    ClassAverages.run(mrc_file, output, n_nbor=classification_nn, nn_avg=avg_nn)
+    logger.info(f"saved to {yellow(output)}.")
 
 
 @simple_cli.command('compare')

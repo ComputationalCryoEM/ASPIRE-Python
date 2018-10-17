@@ -16,8 +16,7 @@ from aspire.class_averaging.config import ClassAverageConfig
 from aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec
 from aspire.utils.utils import estimate_snr
 from aspire.common.logger import logger
-from aspire.utils.helpers import get_file_type, image_grid
-
+from aspire.utils.helpers import get_file_type, image_grid, yellow
 
 np.random.seed(1137)
 
@@ -961,8 +960,8 @@ class ClassAverages:
 
         # check if output file already exists
         if os.path.exists(output_images):
-            raise Exception('outstack already exists! ({}) please remove or use flag -o '
-                            'for a different outstack.'.format(output_images))
+            raise Exception(f'outstack already exists! ({yellow(output_images)}) '
+                            'please remove or use flag -o for a different outstack.')
 
         # convert images to numpy based on their type
         file_type = get_file_type(input_images)
