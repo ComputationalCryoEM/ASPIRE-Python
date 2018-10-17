@@ -5,7 +5,7 @@
 import numpy
 from numpy.fft import fft, fftshift, ifft, ifftshift, fft2, ifft2, fftn, ifftn
 
-from aspire.preprocessor.cryo_crop import cryo_crop
+from aspire.preprocessor.crop import cryo_crop
 from aspire.common.exceptions import DimensionsIncompatible
 from aspire.utils.helpers import TupleCompare, f_flatten
 

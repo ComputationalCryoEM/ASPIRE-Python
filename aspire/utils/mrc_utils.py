@@ -4,11 +4,11 @@ import mrcfile
 from aspire.common.config import CropStackConfig
 from aspire.common.logger import logger
 from aspire.preprocessor import cryo_global_phase_flip_mrc_stack
-from aspire.preprocessor.cryo_crop import cryo_crop
+from aspire.preprocessor.crop import cryo_crop
 
 
 # TODO impolement decorator
-from aspire.preprocessor.cryo_downsample import cryo_downsample
+from aspire.preprocessor.downsample import cryo_downsample
 
 
 def mrc_validator():
