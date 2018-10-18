@@ -2,6 +2,7 @@
 
 ASPIRE-Python
 =============
+[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
 [![Documentation Status](https://readthedocs.org/projects/aspire-python/badge/?version=latest)](https://aspire-python.readthedocs.io/en/latest/?badge=latest)
 
 
