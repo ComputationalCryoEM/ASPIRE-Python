@@ -22,11 +22,11 @@ def downsample(img, side, compute_fx=False, stack=False, mask=None):
         zero-centered Fourier mask for the re-sampling. The size of mask should
         be the same as the output image size. For example for downsampling an
         n0 x n0 image with a 0.9 x nyquist filter, do the following:
-            msk = fuzzymask(n,2,.45*n,.05*n)
-            out = downsample(img, n, 0, msk)
-            The size of the mask must be the size of output. The optional fx output
-            argument is the padded or cropped, masked, FT of in, with zero
-            frequency at the origin.
+        msk = fuzzymask(n,2,.45*n,.05*n)
+        out = downsample(img, n, 0, msk)
+        The size of the mask must be the size of output. The optional fx output
+        argument is the padded or cropped, masked, FT of in, with zero
+        frequency at the origin.
     """
 
     try:
