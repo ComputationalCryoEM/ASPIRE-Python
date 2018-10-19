@@ -17,17 +17,16 @@ import sys
 from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.abspath('../..'))
-# sys.setrecursionlimit(1500)
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'ASPIRE-Python'
-copyright = '2018, Princeton University'
 author = 'Yoel Shkolnisky, Amit Zinger, Itay Sason, Joakim Andén, Robbie Brook'
+copyright = f'2018, Princeton University - {author}'
 
 # The short X.Y version
-version = '0.1'
+version = 'latest'
 # The full version, including alpha/beta/rc tags
 release = ''
 
@@ -61,6 +60,7 @@ templates_path = ['_templates']
 #
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
+
 
 # The master toctree document.
 master_doc = 'index'
