@@ -8,6 +8,9 @@
     </p>
 
 
+ASPIRE-Python
+-------------
+
 |Python 3.6| |Documentation Status|
 
 .. |Python 3.6| image:: https://img.shields.io/badge/python-3.6-blue.svg
@@ -15,8 +18,6 @@
 .. |Documentation Status| image:: https://readthedocs.org/projects/aspire-python/badge/?version=latest
    :target: https://aspire-python.readthedocs.io/en/latest/?badge=latest
 
-ASPIRE-Python
--------------
 
 .. The following marker is for Sphinx documentation. Please don't remove any marker
    without being 100% sure you know what you're doing
