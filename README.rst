@@ -1,8 +1,12 @@
+.. This is README.rst which shows on the Github repo
+   We use the same file for the documentation by importing parts of it (see markers)
+
 .. raw:: html
 
     <p align="center">
         <img src="http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg"/>
     </p>
+
 
 ASPIRE-Python
 =============
