@@ -4,7 +4,7 @@ Content
 =======
 .. toctree::
     :caption: Installation
-    :maxdepth: 2
+    :maxdepth: 1
 
     install.rst
 
@@ -13,6 +13,6 @@ Quick start
 ===========
 .. toctree::
     :caption: Usage
-    :maxdepth: 2
+    :maxdepth: 1
 
     usage.rst

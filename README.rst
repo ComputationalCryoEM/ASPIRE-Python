@@ -1,8 +1,18 @@
+.. raw:: html
+
+    <p align="center">
+        <img src="http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg"/>
+    </p>
+
 ASPIRE-Python
 =============
 
 |Python 3.6| |Documentation Status|
 
+.. |Python 3.6| image:: https://img.shields.io/badge/python-3.6-blue.svg
+   :target: https://www.python.org/downloads/release/python-360/
+.. |Documentation Status| image:: https://readthedocs.org/projects/aspire-python/badge/?version=latest
+   :target: https://aspire-python.readthedocs.io/en/latest/?badge=latest
 
 Installation
 ------------
@@ -160,8 +170,3 @@ Basic Examples
    if you skipped the previous step 'Creating Conda environment'.
 
 .. marker-usage-end
-
-.. |Python 3.6| image:: https://img.shields.io/badge/python-3.6-blue.svg
-:target: https://www.python.org/downloads/release/python-360/
-.. |Documentation Status| image:: https://readthedocs.org/projects/aspire-python/badge/?version=latest
-:target: https://aspire-python.readthedocs.io/en/latest/?badge=latest
