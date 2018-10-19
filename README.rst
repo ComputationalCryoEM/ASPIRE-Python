@@ -7,6 +7,8 @@
         <img src="http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg"/>
     </p>
 
+ASPIRE-Python
+-------------
 
 |Python 3.6| |Documentation Status|
 
@@ -15,8 +17,6 @@
 .. |Documentation Status| image:: https://readthedocs.org/projects/aspire-python/badge/?version=latest
    :target: https://aspire-python.readthedocs.io/en/latest/?badge=latest
 
-ASPIRE-Python
-------------
 
 .. The following marker is for Sphinx documentation. Please don't remove any marker
    without being 100% sure you know what you're doing
