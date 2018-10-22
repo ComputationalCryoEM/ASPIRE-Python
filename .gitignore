@@ -97,6 +97,7 @@ venv.bak/
 *.mrc
 *.mrcs
 *.mat
+*.npy
 
 # all logs
 *.log
