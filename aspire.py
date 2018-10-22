@@ -8,8 +8,8 @@ import mrcfile
 from aspire.common.logger import logger
 from aspire.common.config import AspireConfig, CropStackConfig
 from aspire.preprocessor import global_phaseflip_stack
-from aspire.utils.compare_stacks import cryo_compare_mrc_files
-from aspire.utils.helpers import requires_binaries, requires_finufftpy, yellow
+from aspire.utils.compare_stacks import compare_stack_files
+from aspire.utils.helpers import requires_finufftpy, yellow
 from aspire.utils.mrc_utils import global_phase_flip_mrc_file, crop_mrc_file, downsample_mrc_file
 
 
@@ -50,16 +50,18 @@ def classify(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
 
 
 @simple_cli.command('compare')
-@click.argument('mrcfile1', type=click.Path(exists=True))
-@click.argument('mrcfile2', type=click.Path(exists=True))
+@click.argument('stack_file_1', type=click.Path(exists=True))
+@click.argument('stack_file_2', type=click.Path(exists=True))
 @click.option('--max-error', default=None, type=float,
               help='if given, raise an error once the err is bigger than given value')
-def compare_mrc_files(mrcfile1, mrcfile2, max_error):
-    """ Calculate the relative error between 2 mrc stacks """
-    logger.info("calculating relative err between '{}' and '{}'..".format(mrcfile1, mrcfile2))
-    relative_err = cryo_compare_mrc_files(mrcfile1, mrcfile2,
-                                          verbose=AspireConfig.verbosity, max_err=max_error)
-    logger.info("relative err: {}".format(relative_err))
+def compare_stack_files_cmd(stack_file_1, stack_file_2, max_error):
+    """ Calculate the relative error between 2 stack files.
+        Stack files can be in MRC/MRCS, NPY or MAT formats.
+    """
+    logger.info(f"calculating relative err between '{stack_file_1}' and '{stack_file_2}'..")
+    relative_err = compare_stack_files(stack_file_1, stack_file_2,
+                                       verbose=AspireConfig.verbosity, max_error=max_error)
+    logger.info(f"relative err: {relative_err}")
 
 
 @simple_cli.command('phaseflip')
@@ -105,7 +107,7 @@ def downsample_mrc(mrc_file, side, output, mask):
 
 
 simple_cli.add_command(classify)
-simple_cli.add_command(compare_mrc_files)
+simple_cli.add_command(compare_stack_files_cmd)
 simple_cli.add_command(phaseflip_mrc)
 simple_cli.add_command(downsample_mrc)
 

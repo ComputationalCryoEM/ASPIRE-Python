@@ -4,7 +4,6 @@ import sys
 
 import numpy as np
 
-from aspire.common.config import AspireConfig
 from aspire.common.exceptions import DimensionsIncompatible
 from aspire.common.logger import logger
 

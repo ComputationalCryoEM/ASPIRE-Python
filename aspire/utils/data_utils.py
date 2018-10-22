@@ -4,7 +4,7 @@ import numpy as np
 
 from scipy.io import loadmat, savemat
 
-from aspire.common.exceptions import DimensionsIncompatible
+from aspire.common.exceptions import WrongInput, UnknownFormat, DimensionsIncompatible
 
 
 def accepts(*types):
@@ -90,3 +90,37 @@ def mat_to_npy_vec(file_name, dir_path=None):
 
 def npy_to_mat(file_name, var_name, var):
     savemat(file_name, {var_name: var})
+
+
+def load_stack_from_file(filepath):
+    """ Load projection-stack from file. Try different formats.
+        Supported formats are MRC/MRCS/MAT/NPY. """
+
+    # try MRC/MRCS
+    try:
+        return mrcfile.open(filepath).data
+    except ValueError:
+        pass
+
+    # try NPY format
+    try:
+        stack = np.load(filepath)
+        if not isinstance(stack, np.ndarray):
+            raise WrongInput(f"File {filepath} doesn't contain a stack!")
+
+    except OSError:
+        pass
+
+    # try MAT format
+    try:
+        content = loadmat(filepath)
+        # filter actual data
+        data = [content[key] for key in content.keys() if key == key.strip('_')]
+        if len(data) == 1 and hasattr(data[0], 'shape'):
+            return data[0]
+        raise WrongInput(f"MAT file {filepath} doesn't contain a stack!")
+
+    except ValueError:
+        pass
+
+    raise UnknownFormat(f"Couldn't determine stack format! {filepath}!")

@@ -12,3 +12,7 @@ class DimensionsIncompatible(AspireException):
 
 class ErrorTooBig(AspireException):
     pass
+
+
+class UnknownFormat(AspireException):
+    pass
