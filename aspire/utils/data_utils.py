@@ -2,7 +2,7 @@ import os
 import mrcfile
 import numpy as np
 
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 
 from aspire.common.exceptions import DimensionsIncompatible
 
@@ -86,3 +86,7 @@ def mat_to_npy(file_name, dir_path=None):
 def mat_to_npy_vec(file_name, dir_path=None):
     a = mat_to_npy(file_name, dir_path)
     return a.reshape(a.shape[0] * a.shape[1])
+
+
+def npy_to_mat(file_name, var_name, var):
+    savemat(file_name, {var_name: var})
