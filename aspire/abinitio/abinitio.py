@@ -1,5 +1,6 @@
 import time
 import finufftpy
+import mrcfile
 
 import numpy as np
 import scipy.special as sp
@@ -8,6 +9,7 @@ import scipy.sparse.linalg as spsl
 
 from pyfftw.interfaces import numpy_fft
 
+from aspire.utils.data_utils import load_stack_from_file
 
 np.random.seed(1137)
 
@@ -44,12 +46,16 @@ class DiracBasis:
         return self.expand(x)
 
 
-def run(filepath, output_vol_path):
+def run(filepath, output_filepath):
     algo = 2
-    stack = np.load(filepath)
-    vol = cryo_abinitio_c1_worker(algo, stack)
-    np.save(output_vol_path, vol)
-    return vol
+
+    stack = load_stack_from_file(filepath)
+    output_stack = cryo_abinitio_c1_worker(algo, stack)
+
+    with mrcfile.new(output_filepath) as mrc_fh:
+        mrc_fh.set_data(output_stack.astype('float32'))
+
+    return output_stack
 
 
 def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=None, verbose=None, n_theta=360, n_r=0.5, max_shift=0.15, shift_step=1):
@@ -1560,6 +1566,3 @@ def mdim_fftshift(x, dims=None):
 
 def comp(a, b):
     return np.linalg.norm(a - b) / np.linalg.norm(a)
-
-
-run('input.npy', 'output')

@@ -19,7 +19,7 @@ from aspire.utils.mrc_utils import global_phase_flip_mrc_file, crop_mrc_file, do
 def simple_cli(debug, verbosity):
     """ Aspire tool accepts one command at a time, executes it and terminates\t
         \n To see usage of a command, simply type 'command --help'\t
-        \n e.g. python3 aspire.py classify --help
+        \n e.g. python aspire.py classify --help
     """
     AspireConfig.verbosity = verbosity
     if debug:
@@ -46,6 +46,27 @@ def classify(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
     from aspire.class_averaging.averaging import ClassAverages
     logger.info('class-averaging..')
     ClassAverages.run(mrc_file, output, n_nbor=classification_nn, nn_avg=avg_nn)
+    logger.info(f"saved to {yellow(output)}.")
+
+
+@simple_cli.command('abinitio')
+@click.argument('stack_file', type=click.Path(exists=True))
+@click.option('-o', '--output', type=click.Path(exists=False), default='abinitio.mrc',
+              help='output file name')
+@requires_finufftpy
+def abinitio_cmd(stack_file, output):
+    """ Abinitio algorithm command. Abinitio accepts a file containig projections stack
+        such as MRC/MRCS/NPY/MAT and saves the output to OUTPUT (default abinitio.mrc) """
+    from aspire.abinitio.abinitio import run
+    logger.info(f'running abinitio on stack file {stack_file}..')
+
+    # todo fix click.Path for "output" option
+    if os.path.exists(output):
+        logger.error(f"file {yellow(output)} already exsits! remove first "
+                     "or use another name with '-o NAME'")
+        return
+
+    run(stack_file, output)
     logger.info(f"saved to {yellow(output)}.")
 
 
