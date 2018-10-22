@@ -1,9 +1,9 @@
 import numpy as np
 
-from aspire.common.exceptions import ErrorTooBig, WrongInput, DimensionsIncompatible
-from aspire.common.logger import logger
 from console_progressbar import ProgressBar
 
+from aspire.common.exceptions import ErrorTooBig, WrongInput, DimensionsIncompatible
+from aspire.common.logger import logger
 from aspire.utils.data_utils import accepts, load_stack_from_file
 
 

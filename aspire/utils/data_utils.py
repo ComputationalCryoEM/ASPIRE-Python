@@ -105,11 +105,11 @@ def load_stack_from_file(filepath):
     # try NPY format
     try:
         stack = np.load(filepath)
-        if not isinstance(stack, np.ndarray):
-            raise WrongInput(f"File {filepath} doesn't contain a stack!")
-
-    except OSError:
-        pass
+        if isinstance(stack, np.ndarray):
+            return stack
+        raise WrongInput(f"File {filepath} doesn't contain a stack!")
+    except OSError as e:
+        print(e)
 
     # try MAT format
     try:
@@ -119,7 +119,6 @@ def load_stack_from_file(filepath):
         if len(data) == 1 and hasattr(data[0], 'shape'):
             return data[0]
         raise WrongInput(f"MAT file {filepath} doesn't contain a stack!")
-
     except ValueError:
         pass
 
