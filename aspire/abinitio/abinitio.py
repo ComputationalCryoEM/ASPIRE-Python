@@ -12,10 +12,6 @@ from pyfftw.interfaces import numpy_fft
 np.random.seed(1137)
 
 
-class Object:
-    pass
-
-
 class DiracBasis:
     # for now doesn't work with mask, probably there is no need for it too.
     def __init__(self, sz, mask=None):
@@ -48,10 +44,10 @@ class DiracBasis:
         return self.expand(x)
 
 
-def run(input_path, output_vol_path):
+def run(filepath, output_vol_path):
     algo = 2
-    projs = np.load(input_path)
-    vol = cryo_abinitio_c1_worker(algo, projs)
+    stack = np.load(filepath)
+    vol = cryo_abinitio_c1_worker(algo, stack)
     np.save(output_vol_path, vol)
     return vol
 
@@ -1436,7 +1432,7 @@ def fix_signs(u):
     return u
 
 
-def fill_struct(s=None, att_vals=None, overwrite=None):
+def fill_struct(obj=None, att_vals=None, overwrite=None):
     """
     Fill object with attributes in a dictionary.
     If a struct is not given a new object will be created and filled.
@@ -1446,17 +1442,20 @@ def fill_struct(s=None, att_vals=None, overwrite=None):
         pass
     else:
         setattr(s, key, att_vals[key])
-    :param s:
+    :param obj:
     :param att_vals:
     :param overwrite
     :return:
     """
     # TODO should consider making copy option - i.e that the input won't change
-    if s is None:
-        s = Object()
+    if obj is None:
+        class DisposableObject:
+            pass
+
+        obj = DisposableObject()
 
     if att_vals is None:
-        return s
+        return obj
 
     if overwrite is None or not overwrite:
         overwrite = []
@@ -1464,12 +1463,12 @@ def fill_struct(s=None, att_vals=None, overwrite=None):
         overwrite = list(att_vals.keys())
 
     for key in att_vals.keys():
-        if hasattr(s, key) and key not in overwrite:
+        if hasattr(obj, key) and key not in overwrite:
             continue
         else:
-            setattr(s, key, att_vals[key])
+            setattr(obj, key, att_vals[key])
 
-    return s
+    return obj
 
 
 def mesh_2d(resolution, inclusive=False):
