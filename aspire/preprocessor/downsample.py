@@ -1,7 +1,3 @@
-""" Down/up sample projections.
-    converted (and adjusted) from MATLAB module/function "cryo_compare_stacks.m".
-"""
-
 import numpy
 from numpy.fft import fft, fftshift, ifft, ifftshift, fft2, ifft2, fftn, ifftn
 
@@ -13,8 +9,8 @@ from aspire.utils.helpers import TupleCompare, f_flatten
 def downsample(img, side, compute_fx=False, stack=False, mask=None):
     """ Use Fourier methods to change the sample interval and/or aspect ratio
         of any dimensions of the input image 'img'. If the optional argument
-        stack is set to True, then the *first* dimension of 'img' is interpreted as the index of each
-        image in the stack. The size argument side is an integer, the size of the
+        stack is set to True, then the *first* dimension of 'img' is interpreted as the index of
+        each image in the stack. The size argument side is an integer, the size of the
         output images.  Let the size of a stack
         of 2D images 'img' be n1 x n1 x k.  The size of the output will be side x side x k.
 
