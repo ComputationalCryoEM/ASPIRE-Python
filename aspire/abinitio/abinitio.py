@@ -1,4 +1,7 @@
+import math
 import time
+
+import IPython
 import finufftpy
 import mrcfile
 
@@ -9,7 +12,10 @@ import scipy.sparse.linalg as spsl
 
 from pyfftw.interfaces import numpy_fft
 
-from aspire.utils.data_utils import load_stack_from_file
+from aspire.common.config import AbinitioConfig
+from aspire.common.exceptions import DimensionsIncompatible, WrongInput
+from aspire.common.logger import logger
+from aspire.utils.data_utils import load_stack_from_file, validate_square_projections
 
 np.random.seed(1137)
 
@@ -46,77 +52,66 @@ class DiracBasis:
         return self.expand(x)
 
 
-def run(filepath, output_filepath):
-    algo = 2
+class Abinitio:
+    """ Abinitio class contains all functions related to Abinitio algorithm. """
 
-    stack = load_stack_from_file(filepath)
-    output_stack = cryo_abinitio_c1_worker(algo, stack)
+    @classmethod
+    def cryo_abinitio_c1_worker(cls, stack):
 
-    with mrcfile.new(output_filepath) as mrc_fh:
-        mrc_fh.set_data(output_stack.astype('float32'))
+        validate_square_projections(stack)
 
-    return output_stack
+        resolution = stack.shape[1]
+        num_projections = stack.shape[2]
 
+        n_r = math.ceil(AbinitioConfig.n_r * resolution)
+        max_shift = math.ceil(AbinitioConfig.max_shift * resolution)
 
-def cryo_abinitio_c1_worker(alg, projs, outvol=None, outparams=None, showfigs=None, verbose=None, n_theta=360, n_r=0.5, max_shift=0.15, shift_step=1):
-    num_projs = projs.shape[2]
-    resolution = projs.shape[1]
-    n_r *= resolution
-    max_shift *= resolution
-    n_r = int(np.ceil(n_r))
-    max_shift = int(np.ceil(max_shift))
+        mask_radius = resolution * 0.45
+        # mask_radius is of the form xxx.5
+        if mask_radius * 2 == int(mask_radius * 2):
+            mask_radius = math.ceil(mask_radius)
+        # mask is not of the form xxx.5
+        else:
+            mask_radius = int(round(mask_radius))
 
-    if projs.shape[1] != projs.shape[0]:
-        raise ValueError('input images must be squares')
+        # mask projections
+        m = fuzzy_mask(resolution, mask_radius)
+        masked_projs = stack.copy()
+        masked_projs = masked_projs.transpose((2, 0, 1))
+        masked_projs *= m
+        masked_projs = masked_projs.transpose((1, 2, 0)).copy()
 
-    mask_radius = resolution * 0.45
-    # mask_radius is ?.5
-    if mask_radius * 2 == int(mask_radius * 2):
-        mask_radius = int(np.ceil(mask_radius))
-    # mask is not ?.5
-    else:
-        mask_radius = int(round(mask_radius))
+        # compute polar fourier transform
+        pf, _ = cryo_pft(masked_projs, n_r, AbinitioConfig.n_theta)
 
-    # mask projections
-    m = fuzzy_mask(resolution, 2, mask_radius, 2)
-    masked_projs = projs.copy()
-    masked_projs = masked_projs.transpose((2, 0, 1))
-    masked_projs *= m
-    masked_projs = masked_projs.transpose((1, 2, 0)).copy()
+        # find common lines from projections
+        clstack, _, _, _, _ = cryo_clmatrix_cpu(pf, num_projections, 1,
+                                                max_shift, AbinitioConfig.shift_step)
 
-    # compute polar fourier transform
-    pf, _ = cryo_pft(masked_projs, n_r, n_theta)
+        if AbinitioConfig.algo == 2:
+            s = cryo_syncmatrix_vote(clstack, AbinitioConfig.n_theta)
+            rotations = cryo_sync_rotations(s)
+        else:
+            raise NotImplementedError('AbinitioConfig.algo currently support only "2"!')
 
-    # find common lines from projections
-    clstack, _, _, _, _ = cryo_clmatrix_cpu(pf, num_projs, 1, max_shift, shift_step)
-    if alg == 1:
-        raise NotImplementedError
-    elif alg == 2:
-        s = cryo_syncmatrix_vote(clstack, n_theta)
-        rotations = cryo_sync_rotations(s)
-    elif alg == 3:
-        raise NotImplementedError
-    else:
-        raise ValueError('alg can only be 1, 2 or 3')
+        est_shifts, _ = cryo_estimate_shifts(pf, rotations, max_shift, AbinitioConfig.shift_step)
 
-    est_shifts, _ = cryo_estimate_shifts(pf, rotations, max_shift, shift_step)
+        # reconstruct downsampled volume with no CTF correction
+        n = stack.shape[1]
 
-    # reconstruct downsampled volume with no CTF correction
-    n = projs.shape[1]
+        params = fill_struct()
+        params.rot_matrices = rotations
+        params.ctf = np.ones((n, n))
+        params.ctf_idx = np.array([True] * stack.shape[2])
+        params.shifts = est_shifts
+        params.ampl = np.ones(stack.shape[2])
 
-    params = fill_struct()
-    params.rot_matrices = rotations
-    params.ctf = np.ones((n, n))
-    params.ctf_idx = np.array([True] * projs.shape[2])
-    params.shifts = est_shifts
-    params.ampl = np.ones(projs.shape[2])
-
-    basis = DiracBasis((n, n, n))
-    v1, _ = cryo_estimate_mean(projs, params, basis)
-    ii1 = np.linalg.norm(v1.imag) / np.linalg.norm(v1)
-    print('Relative norm of imaginary components = {}'.format(ii1))
-    v1 = v1.real
-    return v1
+        basis = DiracBasis((n, n, n))
+        v1, _ = cryo_estimate_mean(stack, params, basis)
+        ii1 = np.linalg.norm(v1.imag) / np.linalg.norm(v1)
+        logger.info(f'Relative norm of imaginary components = {ii1}')
+        v1 = v1.real
+        return v1
 
 
 def cryo_estimate_mean(im, params, basis=None, mean_est_opt=None):
@@ -1376,23 +1371,16 @@ def cryo_pft(p, n_r, n_theta):
     return pf, freqs
 
 
-def fuzzy_mask(n, dims, r0, rise_time, origin=None):
+def fuzzy_mask(n, r0, origin=None):
     if isinstance(n, int):
         n = np.array([n])
 
     if isinstance(r0, int):
         r0 = np.array([r0])
 
-    center = (n + 1.0) / 2
-    k = 1.782 / rise_time
+    k = 1.782 / AbinitioConfig.rise_time  # move constant to config
 
-    if dims == 1:
-        if origin is None:
-            origin = center
-            origin = origin.astype('int')
-        r = np.abs(np.arange(1 - origin[0], n - origin[0] + 1))
-
-    elif dims == 2:
+    if AbinitioConfig.fuzzy_mask_dims == 2:
         if origin is None:
             origin = np.floor(n / 2) + 1
             origin = origin.astype('int')
@@ -1406,21 +1394,8 @@ def fuzzy_mask(n, dims, r0, rise_time, origin=None):
         else:
             r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1]))
 
-    elif dims == 3:
-        if origin is None:
-            origin = center
-            origin = origin.astype('int')
-        if len(n) == 1:
-            x, y, z = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[0]:n[0] - origin[0] + 1]
-        else:
-            x, y, z = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[1]:n[1] - origin[1] + 1, 1 - origin[2]:n[2] - origin[2] + 1]
-
-        if len(r0) < 3:
-            r = np.sqrt(np.square(x) + np.square(y) + np.square(z))
-        else:
-            r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1]) + np.square(z * r0[0] / r0[2]))
     else:
-        return 0  # raise error
+        raise WrongInput(f"only 2D is allowed!")
 
     m = 0.5 * (1 - sp.erf(k * (r - r0[0])))
     return m

@@ -123,3 +123,13 @@ def load_stack_from_file(filepath):
         pass
 
     raise UnknownFormat(f"Couldn't determine stack format! {filepath}!")
+
+
+def validate_square_projections(stack):
+    if stack.ndim not in [2, 3]:
+        raise WrongInput(f"Input isn't a projection-stack! {stack.shape}")
+
+    x, y = (0, 1) if stack.ndim == 2 or np.isfortran(stack) else (1, 2)
+    if stack.shape[x] != stack.shape[y]:
+        raise DimensionsIncompatible("projections must me square!"
+                                     f" (x={stack.shape[x]}, y={stack.shape[y]})")

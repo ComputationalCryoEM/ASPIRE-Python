@@ -9,6 +9,7 @@ from aspire.common.logger import logger
 from aspire.common.config import AspireConfig, CropStackConfig
 from aspire.preprocessor import global_phaseflip_stack
 from aspire.utils.compare_stacks import compare_stack_files
+from aspire.utils.data_utils import load_stack_from_file
 from aspire.utils.helpers import requires_finufftpy, yellow
 from aspire.utils.mrc_utils import global_phase_flip_mrc_file, crop_mrc_file, downsample_mrc_file
 
@@ -57,7 +58,7 @@ def classify(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
 def abinitio_cmd(stack_file, output):
     """ Abinitio algorithm command. Abinitio accepts a file containig projections stack
         such as MRC/MRCS/NPY/MAT and saves the output to OUTPUT (default abinitio.mrc) """
-    from aspire.abinitio.abinitio import run
+    from aspire.abinitio import Abinitio
     logger.info(f'running abinitio on stack file {stack_file}..')
 
     # todo fix click.Path for "output" option
@@ -66,7 +67,12 @@ def abinitio_cmd(stack_file, output):
                      "or use another name with '-o NAME'")
         return
 
-    run(stack_file, output)
+    stack = load_stack_from_file(stack_file)
+    output_stack = Abinitio.cryo_abinitio_c1_worker(stack)
+
+    with mrcfile.new(output) as mrc_fh:
+        mrc_fh.set_data(output_stack.astype('float32'))
+
     logger.info(f"saved to {yellow(output)}.")
 
 
