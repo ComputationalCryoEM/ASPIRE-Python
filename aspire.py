@@ -7,7 +7,7 @@ import mrcfile
 
 from aspire.common.logger import logger
 from aspire.common.config import AspireConfig, CropStackConfig
-from aspire.preprocessor import global_phaseflip_stack
+from aspire.preprocessor import PreProcessor
 from aspire.utils.compare_stacks import compare_stack_files
 from aspire.utils.data_utils import load_stack_from_file
 from aspire.utils.helpers import requires_finufftpy, yellow
@@ -107,7 +107,7 @@ def phaseflip_mrc(mrc_file, output):
 @click.option('--fill-value', type=float, default=CropStackConfig.fill_value)
 @click.option('-o', '--output', type=click.Path(exists=False), default='cropped.mrc',
               help="output file name (default 'cropped.mrc')")
-def phaseflip_mrc(mrc_file, size, output, fill_value):
+def crop_mrc(mrc_file, size, output, fill_value):
     """ Crop projections in stack to squares of 'size x size' px.
         Then save the cropped stack into a new MRC file.
         In case size is bigger than original stack, padding will apply.
@@ -136,6 +136,7 @@ def downsample_mrc(mrc_file, side, output, mask):
 simple_cli.add_command(classify)
 simple_cli.add_command(compare_stack_files_cmd)
 simple_cli.add_command(phaseflip_mrc)
+simple_cli.add_command(crop_mrc)
 simple_cli.add_command(downsample_mrc)
 
 
@@ -173,7 +174,7 @@ def piped_cli(ctx, input_mrc, debug, verbosity):
 def phaseflip_stack(ctx_obj):
     """ Apply global phase-flip to an MRC stack """
     logger.debug("calculating global phaseflip..")
-    ctx_obj.stack = global_phaseflip_stack(ctx_obj.stack)
+    ctx_obj.stack = PreProcessor.global_phaseflip_stack(ctx_obj.stack)
 
 
 @piped_cli.command("save")
@@ -192,8 +193,9 @@ def chained_save_stack(ctx_obj, o):
 
 piped_cli.add_command(phaseflip_stack)
 piped_cli.add_command(chained_save_stack)
+...
 
 
 if __name__ == "__main__":
     simple_cli()
-    # piped_cli
+    # piped_cli  # todo

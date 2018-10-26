@@ -6,7 +6,7 @@ class AspireConfig:
 
 
 class ClassAveragesConfig(AspireConfig):
-    pass
+    bessel_file = "./aspire/class_averaging/bessel.npy"
 
 
 class AbinitioConfig(AspireConfig):
@@ -25,3 +25,22 @@ class PreProcessorConfig(AspireConfig):
 
 class CropStackConfig(AspireConfig):
     fill_value = 0
+
+
+necessary_workflow_fields = {'info': ['working_dir',
+                                      'logfile',
+                                      'rawdata'
+                                      ],
+
+                             'preprocess': ['phaseflip',
+                                            'nprojs',
+                                            'do_crop',
+                                            'croppeddim',
+                                            'do_downsample',
+                                            'downsampleddim',
+                                            'do_normalize',
+                                            'do_prewhiten',
+                                            'split',
+                                            'numgroups'
+                                            ]
+                             }

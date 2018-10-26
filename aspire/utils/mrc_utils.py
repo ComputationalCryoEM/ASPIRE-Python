@@ -3,12 +3,10 @@ import mrcfile
 
 from aspire.common.config import CropStackConfig
 from aspire.common.logger import logger
-from aspire.preprocessor import global_phaseflip_stack
-from aspire.preprocessor.crop import crop
-
+from aspire.preprocessor import PreProcessor
 
 # TODO impolement decorator
-from aspire.preprocessor.downsample import downsample
+from aspire.utils.helpers import yellow
 
 
 def mrc_validator():
@@ -35,7 +33,7 @@ def global_phase_flip_mrc_file(input_mrc_file, output_mrc_file=None):
         return
     
     in_stack = mrcfile.open(input_mrc_file).data
-    out_stack = global_phaseflip_stack(in_stack)
+    out_stack = PreProcessor.global_phaseflip_stack(in_stack)
     if out_stack[0].all() == ~in_stack[0].all():
         with mrcfile.new(output_mrc_file) as mrc:
             mrc.set_data(out_stack)
@@ -55,12 +53,12 @@ def crop_mrc_file(input_mrc_file, size, output_mrc_file=None, fill_value=None):
         output_mrc_file = f'{input_file_prefix}_cropped{input_file_suffix}'
 
     if os.path.exists(output_mrc_file):
-        logger.error(f"output file '{output_mrc_file}' already exists!")
+        logger.error(f"output file '{yellow(output_mrc_file)}' already exists!")
         return
 
     in_stack = mrcfile.open(input_mrc_file).data
     fill_value = fill_value or CropStackConfig.fill_value
-    out_stack = crop(in_stack, size, stack=True, fill_value=fill_value)
+    out_stack = PreProcessor.crop(in_stack, size, stack=True, fill_value=fill_value)
 
     action = 'cropped' if in_stack.shape[2] > size else 'padded'
     logger.info(f"{action} stack from size {in_stack.shape} to size {out_stack.shape}."
@@ -92,7 +90,7 @@ def downsample_mrc_file(input_mrc_file, side, output_mrc_file=None, mask=None):
 
     in_stack = mrcfile.open(input_mrc_file).data
     # TODO route input arg compute_fx from CLI to downsample
-    out_stack = downsample(in_stack, side, compute_fx=False, stack=True, mask=mask)
+    out_stack = PreProcessor.downsample(in_stack, side, compute_fx=False, stack=True, mask=mask)
     logger.info(f"downsampled stack to size {side}x{side}. saving to {output_mrc_file}..")
 
     with mrcfile.new(output_mrc_file) as mrc:
