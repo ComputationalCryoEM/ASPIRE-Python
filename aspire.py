@@ -41,7 +41,7 @@ def simple_cli(debug, verbosity):
 @click.option("--k_vdm_out", default=200,
               help="Number of nearest neighbors to return for each image. (default=200)")
 @requires_finufftpy
-def classify(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
+def classify_cmd(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
     """ Classification-Averaging command """
     # TODO route optional args to the algoritm
     from aspire.class_averaging.averaging import ClassAverages
@@ -81,7 +81,7 @@ def abinitio_cmd(stack_file, output):
 @click.argument('stack_file_2', type=click.Path(exists=True))
 @click.option('--max-error', default=None, type=float,
               help='if given, raise an error once the err is bigger than given value')
-def compare_stack_files_cmd(stack_file_1, stack_file_2, max_error):
+def compare_cmd(stack_file_1, stack_file_2, max_error):
     """ Calculate the relative error between 2 stack files.
         Stack files can be in MRC/MRCS, NPY or MAT formats.
     """
@@ -95,7 +95,7 @@ def compare_stack_files_cmd(stack_file_1, stack_file_2, max_error):
 @click.argument('mrc_file', type=click.Path(exists=True))
 @click.option('-o', '--output', type=click.Path(exists=False), default='phaseflipped.mrc',
               help="output file name (default 'phaseflipped.mrc')")
-def phaseflip_mrc(mrc_file, output):
+def phaseflip_cmd(mrc_file, output):
     """ Apply global phase-flip to an MRC file """
     logger.info("calculating global phaseflip..")
     global_phase_flip_mrc_file(mrc_file, output)
@@ -107,7 +107,7 @@ def phaseflip_mrc(mrc_file, output):
 @click.option('--fill-value', type=float, default=CropStackConfig.fill_value)
 @click.option('-o', '--output', type=click.Path(exists=False), default='cropped.mrc',
               help="output file name (default 'cropped.mrc')")
-def crop_mrc(mrc_file, size, output, fill_value):
+def crop_cmd(mrc_file, size, output, fill_value):
     """ Crop projections in stack to squares of 'size x size' px.
         Then save the cropped stack into a new MRC file.
         In case size is bigger than original stack, padding will apply.
@@ -122,7 +122,7 @@ def crop_mrc(mrc_file, size, output, fill_value):
 @click.option('--mask', default=None)
 @click.option('-o', '--output', type=click.Path(exists=False), default='downsampled.mrc',
               help="output file name (default 'downsampled.mrc')")
-def downsample_mrc(mrc_file, side, output, mask):
+def downsample_cmd(mrc_file, side, output, mask):
     """ Use Fourier methods to change the sample interval and/or aspect ratio
         of any dimensions of the input projections-stack to the output of SIZE x SIZE.
         If the optional mask argument is given, this is used as the
@@ -131,13 +131,6 @@ def downsample_mrc(mrc_file, side, output, mask):
     """
     logger.info(f"downsampling stack {mrc_file} to size {side}x{side} px..")
     downsample_mrc_file(mrc_file, side, output_mrc_file=output, mask=mask)
-
-
-simple_cli.add_command(classify)
-simple_cli.add_command(compare_stack_files_cmd)
-simple_cli.add_command(phaseflip_mrc)
-simple_cli.add_command(crop_mrc)
-simple_cli.add_command(downsample_mrc)
 
 
 ###################################################################
