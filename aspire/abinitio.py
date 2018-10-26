@@ -1,9 +1,7 @@
 import math
 import time
 
-import IPython
 import finufftpy
-import mrcfile
 
 import numpy as np
 import scipy.special as sp
@@ -13,9 +11,9 @@ import scipy.sparse.linalg as spsl
 from pyfftw.interfaces import numpy_fft
 
 from aspire.common.config import AbinitioConfig
-from aspire.common.exceptions import DimensionsIncompatible, WrongInput
+from aspire.common.exceptions import WrongInput
 from aspire.common.logger import logger
-from aspire.utils.data_utils import load_stack_from_file, validate_square_projections
+from aspire.utils.data_utils import validate_square_projections
 
 np.random.seed(1137)
 
