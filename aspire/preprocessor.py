@@ -12,7 +12,8 @@ from aspire.common.config import PreProcessorConfig
 from aspire.common.exceptions import DimensionsIncompatible
 from aspire.common.logger import logger
 from aspire.utils.data_utils import load_stack_from_file
-from aspire.utils.helpers import flatten, TupleCompare, set_output_name, yellow
+from aspire.utils.helpers import TupleCompare, set_output_name, yellow
+from aspire.utils.array_utils import flatten
 
 
 class PreProcessor:

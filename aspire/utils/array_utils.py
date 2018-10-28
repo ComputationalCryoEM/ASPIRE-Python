@@ -188,3 +188,67 @@ def downsample(images, out_size, is_stack=True):
 
     out = out.squeeze() * np.prod(out_size) * 1.0 / np.prod(in_size)
     return out
+
+
+def flatten(array):
+    """ Accept an array and return a flattened vector using Fortran convention.
+
+        This func mimics MATLAB's behavior:
+        array = array(:)
+
+    """
+
+    return array.flatten('F')
+
+
+def estimate_snr(images):
+    """
+    Estimate signal-noise-ratio for a stack of projections.
+
+    :arg images: stack of projections (between 1 and N projections)
+
+    TODO test error size, we might have a bug here. it might be too large.
+    """
+
+    if len(images.shape) == 2:  # in case of a single projection
+        images = images[:, :, None]
+
+    p = images.shape[1]
+    n = images.shape[2]  # TODO test for single projection. This would most-prob fail
+
+    radius_of_mask = np.floor(p / 2.0) - 1.0
+
+    r = cart2rad(p)
+    points_inside_circle = r < radius_of_mask
+    num_signal_points = np.count_nonzero(points_inside_circle)
+    num_noise_points = p * p - num_signal_points
+
+    noise = np.sum(np.var(images[~points_inside_circle], axis=0)) * num_noise_points / (
+                num_noise_points * n - 1)
+
+    signal = np.sum(np.var(images[points_inside_circle], axis=0)) * num_signal_points / (
+                num_signal_points * n - 1)
+
+    signal -= noise
+
+    snr = signal / noise
+
+    return snr, signal, noise
+
+
+def cart2rad(n):
+    """ Compute the radii corresponding to the points of a cartesian grid of size NxN points
+        XXX This is a name for this function. """
+
+    n = np.floor(n)
+    x, y = image_grid(n)
+    r = np.sqrt(np.square(x) + np.square(y))
+    return r
+
+
+def image_grid(n):
+    # Return the coordinates of Cartesian points in an NxN grid centered around the origin.
+    # The origin of the grid is always in the center, for both odd and even N.
+    p = (n - 1.0) / 2.0
+    x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
+    return x, y

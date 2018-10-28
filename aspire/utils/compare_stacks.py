@@ -2,6 +2,7 @@ import numpy as np
 
 from console_progressbar import ProgressBar
 
+from aspire.common.config import AspireConfig
 from aspire.common.exceptions import ErrorTooBig, WrongInput, DimensionsIncompatible
 from aspire.common.logger import logger
 from aspire.utils.data_utils import load_stack_from_file
@@ -9,7 +10,7 @@ from aspire.utils.helpers import accepts
 
 
 @accepts(np.ndarray, np.ndarray, int, float)
-def compare_stacks(stack1, stack2, verbose=0, max_error=None):
+def compare_stacks(stack1, stack2, verbose=None, max_error=None):
     """ Calculate the difference between two projection-stacks.
         Return the relative error between them.
 
@@ -29,6 +30,9 @@ def compare_stacks(stack1, stack2, verbose=0, max_error=None):
             max_error = np.longdouble(max_error)
         except (TypeError, ValueError):
             raise WrongInput("max_error must be either a float or an integer!")
+
+    if verbose is None:
+        verbose = AspireConfig.verbosity
 
     # check the dimensions of the stack are compatible
     if stack1.shape != stack2.shape:
@@ -76,7 +80,7 @@ def compare_stacks(stack1, stack2, verbose=0, max_error=None):
     return relative_err
 
 
-def compare_stack_files(file1, file2, verbose=0, max_error=None):
+def compare_stack_files(file1, file2, verbose=None, max_error=None):
     """ Wrapper for func compare_stacks. """
 
     stack1 = load_stack_from_file(file1)

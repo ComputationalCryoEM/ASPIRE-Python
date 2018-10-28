@@ -2,20 +2,8 @@ import functools
 import os
 import sys
 
-import numpy as np
-
 from aspire.common.exceptions import DimensionsIncompatible
 from aspire.common.logger import logger
-
-
-def cart2rad(n):
-    """ Compute the radii corresponding to the points of a cartesian grid of size NxN points
-        XXX This is a name for this function. """
-
-    n = np.floor(n)
-    x, y = image_grid(n)
-    r = np.sqrt(np.square(x) + np.square(y))
-    return r
 
 
 def get_file_type(file_path):
@@ -23,14 +11,6 @@ def get_file_type(file_path):
         raise FileNotFoundError(file_path)
 
     return os.path.splitext(file_path)[1]
-
-
-def image_grid(n):
-    # Return the coordinates of Cartesian points in an NxN grid centered around the origin.
-    # The origin of the grid is always in the center, for both odd and even N.
-    p = (n - 1.0) / 2.0
-    x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
-    return x, y
 
 
 class TupleCompare(object):
@@ -61,17 +41,6 @@ class TupleCompare(object):
     def eq(cls, a, b):
         cls.validate_same_length(a, b)
         return all([i == j for i, j in zip(a, b)])
-
-
-def flatten(array):
-    """ Accept an array and return a flattened vector using Fortran convention.
-
-        This func mimics MATLAB's behavior:
-        array = array(:)
-
-    """
-
-    return array.flatten('F')
 
 
 def yellow(s):
@@ -121,9 +90,10 @@ def set_output_name(input_name, suffix):
 
 
 def accepts(*types):
-    """ These types should match their respective positional args in the decorated function.
+    """ Decorator matching func args and their respective
+        positional args in the decorated function.
 
-        Example:
+        # Example:
         @accepts(int, str)
         def test_int_func(x, y):
             return x == int(y)

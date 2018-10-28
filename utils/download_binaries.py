@@ -38,4 +38,4 @@ for bf in binary_files:
 
     print(f"{yellow(os.path.basename(bf))} is saved to 'binaries'.")
 
-print('done.')
+print('done.\n  $ ls ./binaries')
