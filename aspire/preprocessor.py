@@ -9,11 +9,12 @@ from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
 from numpy.ma import sqrt
 
 from aspire.common.config import PreProcessorConfig
-from aspire.common.exceptions import DimensionsIncompatible
+from aspire.common.exceptions import DimensionsIncompatible, WrongInput
 from aspire.common.logger import logger
-from aspire.utils.data_utils import load_stack_from_file
+from aspire.utils.data_utils import load_stack_from_file, validate_square_projections
 from aspire.utils.helpers import TupleCompare, set_output_name, yellow
 from aspire.utils.array_utils import flatten
+from aspire.utils.parse_star import read_star
 
 
 class PreProcessor:
@@ -445,3 +446,76 @@ class PreProcessor:
     #             p2[i, :, :] = pp2[k - l: k + l - 1, k - l: k + l - 1]
     #
     #     return numpy.real(p2)
+
+    @classmethod
+    def phaseflip_star_file(cls, star_file, pixel_size=None):
+        """ todo add verbosity """
+        star = read_star(star_file)
+        num_projections = len(star.data)  # TODO verify (star.data was originally "CTFdata.data")
+        projs_init = False  # has the stack been initialized already
+
+        last_processed_stack = None
+        for idx in range(num_projections):
+            # Get the identification string of the next image to process.
+            # This is composed from the index of the image within an image stack,
+            #  followed by '@' and followed by the filename of the MRC stack.
+            image_id = star.data[idx].rlnImageName
+            image_parts = image_id.split('@')
+            image_idx = int(image_parts[0])
+            stack_name = image_parts[1]
+
+            # Read the image stack from the disk, if different from the current one.
+            # TODO can we revert this condition to positive? what they're equal?
+            if stack_name != last_processed_stack:
+                stack = load_stack_from_file(stack_name)
+                last_processed_stack = stack_name
+
+            if image_idx > stack.shape[2]:
+                raise DimensionsIncompatible(f'projection {image_idx} in '
+                                             f'stack {stack_name} does not exist')
+
+            proj = stack.get_image(image_idx)
+            # Convert to double to eliminate small numerical
+            # roundoff errors when comparing the current function to
+            # cryo_phaseflip_outofcore. This line is only required to get
+            # perfectly zero error when comparing the functions.
+            # im = double(im)
+            validate_square_projections(proj)
+            side = proj[1]
+
+            if not projs_init:  # TODO why not initialize before loop (maybe b/c of huge stacks?)
+                # projections was "PFprojs" originally
+                projections = numpy.zeros((side, side, num_projections), dtype='float32')
+                projs_init = True
+
+            # todo refactor this blown line
+            def cryo_parse_Relion_CTF_struct(*args):
+                raise NotImplementedError
+            voltage, DefocusU, DefocusV, DefocusAngle, Cs, tmppixA, A = cryo_parse_Relion_CTF_struct(stack.data[idx])
+
+            if pixel_size is None:
+                if tmppixA != -1:  # tmppixA~=-1
+                    pixel_size = tmppixA
+
+                else:
+                    raise WrongInput("Pixel size not provided and does not appear in STAR file")
+
+            def cryo_CTF_Relion(*args):
+                raise NotImplementedError
+            # todo what does 'h' stand for?
+            h = cryo_CTF_Relion(side, voltage, DefocusU, DefocusV, DefocusAngle, Cs, pixel_size, A)
+            imhat = fftshift(fft2(proj))
+            pfim = ifft2(ifftshift(imhat * numpy.sign(h)))
+
+            if side % 2 == 1:
+                # This test is only vali for odd n
+                # images are single precision
+                imaginery_comp = numpy.norm(numpy.imag(pfim[:])) / numpy.norm(pfim[:])
+                if imaginery_comp > 5.0e-7:
+                    logger.warning(f"Large imaginary components in image {image_idx}"
+                                   f" in stack {stack_name} = {imaginery_comp}")
+
+            pfim = numpy.real(pfim)
+            projections[:, :, idx] = pfim.astype('float32')
+
+        return projections
