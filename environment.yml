@@ -15,6 +15,7 @@ dependencies:
   - pip=18.0
   - pybind11
   - click
+  - matplotlib
   - pip:
     - mrcfile
     - console_progressbar

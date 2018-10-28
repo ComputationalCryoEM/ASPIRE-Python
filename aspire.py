@@ -5,6 +5,7 @@ import sys
 import click
 import mrcfile
 
+
 try:
     import finufftpy
 except ImportError:
@@ -17,6 +18,7 @@ from aspire.preprocessor import PreProcessor
 from aspire.utils.compare_stacks import compare_stack_files
 from aspire.utils.data_utils import load_stack_from_file
 from aspire.utils.helpers import yellow, requires_binaries
+from aspire.utils.viewstack import view_stack
 
 
 @click.group(chain=False)
@@ -132,6 +134,19 @@ def downsample_cmd(stack_file, side, output, mask):
     """
     logger.info(f"downsampling stack {stack_file} to size {side}x{side} px..")
     PreProcessor.downsample_stack_file(stack_file, side, output_stack_file=output, mask_file=mask)
+
+
+@simple_cli.command('viewstack')
+@click.argument('stack_file', type=click.Path(exists=True))
+@click.option('--numslices', type=int, default=16)
+@click.option('--startslice', type=int, default=1)
+@click.option('--nrows', type=int, default=4)
+@click.option('--ncols', type=int, default=4)
+def viewstack_cmd(stack_file, numslices, startslice, nrows, ncols):
+    """ Plot projections in stack file. """
+    logger.info(f"viewing stack {stack_file}..")
+    stack = load_stack_from_file(stack_file)
+    view_stack(stack, numslices=numslices, startslice=startslice, nrows=nrows, ncols=ncols)
 
 
 ###################################################################
