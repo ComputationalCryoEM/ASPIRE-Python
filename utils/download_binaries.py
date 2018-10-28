@@ -1,6 +1,6 @@
-import requests
 import os
 import sys
+import requests
 sys.path.insert(0, '.')  # allow calling from within subdirectory
 
 from aspire.utils.helpers import yellow
@@ -10,11 +10,12 @@ from aspire.common.config import AspireConfig
 base_url = 'https://s3.amazonaws.com/aspire-python/data'
 
 binary_files = [
+    '/bessel.npy',
     '/images.mat',
     '/images_large.mat',
     '/init_avg_image.mat',
     '/init_avg_image_large.mat',
-    '/cleanrib.mat',
+    '/init_avg_image_large.mat',
 ]
 
 

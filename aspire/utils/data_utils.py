@@ -44,9 +44,8 @@ def fortran_to_c(stack):
     """ Convert Fortran-indexed 3D array to C indexed array. """
 
     if stack.ndim == 3 and np.isfortran(stack):
-        print('swapping..')
         return stack.swapaxes(0, 2)
-    print('not swapping')
+
     return stack
 
 

@@ -5,12 +5,18 @@ import sys
 import click
 import mrcfile
 
+try:
+    import finufftpy
+except ImportError:
+    print(f"Can't import finufftpy! Please run 'make finufftpy' and try again.")
+
+from aspire.abinitio import Abinitio
 from aspire.common.logger import logger
 from aspire.common.config import AspireConfig, PreProcessorConfig
 from aspire.preprocessor import PreProcessor
 from aspire.utils.compare_stacks import compare_stack_files
 from aspire.utils.data_utils import load_stack_from_file
-from aspire.utils.helpers import requires_finufftpy, yellow
+from aspire.utils.helpers import yellow, requires_binaries
 
 
 @click.group(chain=False)
@@ -39,11 +45,11 @@ def simple_cli(debug, verbosity):
               help="Number of nearest neighbors for building VDM graph. (default=20")
 @click.option("--k_vdm_out", default=200,
               help="Number of nearest neighbors to return for each image. (default=200)")
-@requires_finufftpy
+@requires_binaries('bessel.npy')
 def classify_cmd(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
     """ Classification-Averaging command """
     # TODO route optional args to the algoritm
-    from aspire.class_averaging.averaging import ClassAverages
+    from aspire.class_averaging import ClassAverages
     logger.info('class-averaging..')
     ClassAverages.run(mrc_file, output, n_nbor=classification_nn, nn_avg=avg_nn)
     logger.info(f"saved to {yellow(output)}.")
@@ -53,11 +59,9 @@ def classify_cmd(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_ou
 @click.argument('stack_file', type=click.Path(exists=True))
 @click.option('-o', '--output', type=click.Path(exists=False), default='abinitio.mrc',
               help='output file name')
-@requires_finufftpy
 def abinitio_cmd(stack_file, output):
     """ Abinitio algorithm command. Abinitio accepts a file containig projections stack
         such as MRC/MRCS/NPY/MAT and saves the output to OUTPUT (default abinitio.mrc) """
-    from aspire.abinitio import Abinitio
     logger.info(f'running abinitio on stack file {stack_file}..')
 
     # todo fix click.Path for "output" option

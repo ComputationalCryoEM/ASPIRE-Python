@@ -6,7 +6,7 @@ class AspireConfig:
 
 
 class ClassAveragesConfig(AspireConfig):
-    bessel_file = "./aspire/class_averaging/bessel.npy"
+    bessel_file = "./binaries/bessel.npy"
 
 
 class AbinitioConfig(AspireConfig):
