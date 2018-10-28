@@ -2,10 +2,12 @@ from warnings import warn
 from collections import namedtuple
 from itertools import tee, zip_longest, starmap
 
+
 def pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return zip_longest(a, b, fillvalue='')
+
 
 def read_star(filename):
     f = open(filename, 'r')
@@ -48,6 +50,7 @@ def read_star(filename):
 
     return blocks
 
+
 def read_loop(fpair):
     labels = read_star_list(fpair)
     values = read_star_data(fpair, len(labels))
@@ -57,6 +60,7 @@ def read_loop(fpair):
     star_loop = list(starmap(star_loop_tuple, values))
 
     return star_loop
+
 
 def read_star_list(fpair):
     labels = []
@@ -90,6 +94,7 @@ def read_star_list(fpair):
 
     return star_list_tuple(*values)
 
+
 def read_star_data(fpair, num_fields):
     values = []
 
@@ -113,6 +118,7 @@ def read_star_data(fpair, num_fields):
         values.append(line_values)
 
     return values
+
 
 def auto_cast(value):
     try:
