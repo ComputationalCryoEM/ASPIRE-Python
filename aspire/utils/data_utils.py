@@ -5,31 +5,7 @@ import numpy as np
 from scipy.io import loadmat, savemat
 
 from aspire.common.exceptions import WrongInput, UnknownFormat, DimensionsIncompatible
-
-
-def accepts(*types):
-    """ These types should match their respective positional args in the decorated function.
-
-        Example:
-        @accepts(int, str)
-        def test_int_func(x, y):
-            return x == int(y)
-
-    """
-    def check_accepts(f):
-
-        assert len(types) == f.__code__.co_argcount
-
-        def new_f(*args, **kwds):
-            for (a, t) in zip(args, types):
-                assert isinstance(a, t), f"arg {a} does not match type {t}"
-
-            return f(*args, **kwds)
-
-        new_f.func_name = f.__name__
-
-        return new_f
-    return check_accepts
+from aspire.utils.helpers import accepts
 
 
 @accepts(np.ndarray)

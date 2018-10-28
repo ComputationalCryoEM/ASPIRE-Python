@@ -12,7 +12,7 @@ from aspire.common.config import PreProcessorConfig
 from aspire.common.exceptions import DimensionsIncompatible
 from aspire.common.logger import logger
 from aspire.utils.data_utils import load_stack_from_file
-from aspire.utils.helpers import f_flatten, TupleCompare, set_output_name, yellow
+from aspire.utils.helpers import flatten, TupleCompare, set_output_name, yellow
 
 
 class PreProcessor:
@@ -202,7 +202,7 @@ class PreProcessor:
 
         if ndim == 1:
             # force input img into row vector with the shape (1, img.size)
-            img = numpy.asmatrix(f_flatten(img))
+            img = numpy.asmatrix(flatten(img))
 
         # check sizes of input and output
         szin = img[0, :, :].shape if stack else img.shape
@@ -387,12 +387,12 @@ class PreProcessor:
     #     # The whitening filter is the sqrt of of the power spectrum of the noise.
     #     # Also, normalized the enetgy of the filter to one.
     #     filter = numpy.sqrt(noise_response)
-    #     filter = filter / norm(f_flatten(filter))
+    #     filter = filter / norm(flatten(filter))
     #
     #     # The power spectrum of the noise must be positive, and then, the values
     #     # in filter are all real. If they are not, this means that noise_response
     #     # had negative values so abort.
-    #     assert (norm(numpy.imag(f_flatten(filter))) < 10 * delta * filter.shape[0])  # Allow loosing one digit
+    #     assert (norm(numpy.imag(flatten(filter))) < 10 * delta * filter.shape[0])  # Allow loosing one digit
     #     filter = numpy.real(filter)  # Get rid of tiny imaginary components, if any.
     #
     #     # The filter should be cicularly symmetric. In particular, it is up-down
@@ -413,7 +413,7 @@ class PreProcessor:
     #     else:
     #         noise_idx = find(filter > 100 * delta)
     #
-    #     noise_idx = f_flatten(noise_idx)
+    #     noise_idx = flatten(noise_idx)
     #     fnz = [x for x in noise_idx if x != 0]
     #
     #     # Pad the input projections

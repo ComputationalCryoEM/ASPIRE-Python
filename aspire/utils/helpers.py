@@ -63,15 +63,15 @@ class TupleCompare(object):
         return all([i == j for i, j in zip(a, b)])
 
 
-def f_flatten(mat):
-    """ Accept a matrix and return a flattened vector.
+def flatten(array):
+    """ Accept an array and return a flattened vector using Fortran convention.
 
         This func mimics MATLAB's behavior:
-        mat = mat(:)
+        array = array(:)
 
     """
 
-    return mat.flatten('F')
+    return array.flatten('F')
 
 
 def yellow(s):
@@ -81,7 +81,15 @@ def yellow(s):
 
 
 def requires_binaries(*filenames):
+    """ Decorator checking existing of binary files in directory 'binaries'.
+        It prints an error and exits in case they don't.
 
+        E.g.
+        requires_binaries('mask1.npy', 'mask2.npy')
+        def masking_stack_file(mrc_file):
+            # do something with binary files mask1.npy and mask2.npy knowing they're there
+
+    """
     def decorator(func):
 
         missing_binaries = set()
@@ -104,26 +112,34 @@ def requires_binaries(*filenames):
     return decorator
 
 
-def requires_finufftpy(func):
-
-    try:
-        import finufftpy
-
-    except ImportError:
-        logger.error("Python package finufftpy is not installed! "
-                     f"Please run \'{yellow('make finufftpy')}\'.")
-        sys.exit(1)
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
 def set_output_name(input_name, suffix):
 
     split = input_name.rsplit(".", maxsplit=1)
     input_file_prefix = split[0]
     file_ending = '.' + split[1] if len(split) == 2 else ''
     return f'{input_file_prefix}_{suffix}{file_ending}'
+
+
+def accepts(*types):
+    """ These types should match their respective positional args in the decorated function.
+
+        Example:
+        @accepts(int, str)
+        def test_int_func(x, y):
+            return x == int(y)
+
+    """
+    def check_accepts(f):
+
+        assert len(types) == f.__code__.co_argcount
+
+        def new_f(*args, **kwds):
+            for (a, t) in zip(args, types):
+                assert isinstance(a, t), f"arg {a} does not match type {t}"
+
+            return f(*args, **kwds)
+
+        new_f.func_name = f.__name__
+
+        return new_f
+    return check_accepts
