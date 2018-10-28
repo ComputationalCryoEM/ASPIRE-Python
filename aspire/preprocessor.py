@@ -1,20 +1,24 @@
 import math
+import os
 
+import mrcfile
 import numpy
 from numpy import meshgrid, mean
 from numpy.core.multiarray import zeros
 from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
 from numpy.ma import sqrt
 
+from aspire.common.config import PreProcessorConfig
 from aspire.common.exceptions import DimensionsIncompatible
 from aspire.common.logger import logger
-from aspire.utils.helpers import f_flatten, TupleCompare
+from aspire.utils.data_utils import load_stack_from_file
+from aspire.utils.helpers import f_flatten, TupleCompare, set_output_name, yellow
 
 
 class PreProcessor:
 
     @staticmethod
-    def crop(mat, n, stack=False, fill_value=0):
+    def crop(mat, n, stack=False, fill_value=None):
         """
             Reduce the size of a vector, square or cube 'mat' by cropping (or
             increase the size by padding with fill_value, by default zero) to a final
@@ -44,6 +48,8 @@ class PreProcessor:
             Returns:
                 numpy.array: Cropped or padded mat to size of n, (n x n) or (n x n x n)
 
+            TODO: change name to 'resize'? crop/pad is confusing b/c either you save different
+            TODO:   output names or you stick to a misleading name like cropped.mrc for padded stack
         """
 
         num_dimensions = len(mat.shape)
@@ -54,6 +60,9 @@ class PreProcessor:
 
         if num_dimensions == 2 and 1 in mat.shape:
             num_dimensions = 1
+
+        if fill_value is None:
+            fill_value = PreProcessorConfig.crop_stack_fill_value
 
         if num_dimensions == 1:  # mat is a vector
             mat = numpy.reshape(mat, [mat.size, 1])  # force a column vector
@@ -123,6 +132,31 @@ class PreProcessor:
 
                 else:
                     raise DimensionsIncompatible("Can't crop and pad simultaneously!")
+
+    @classmethod
+    def crop_stack(cls, array, size, fill_value=None):
+        return cls.crop(array, size, stack=True, fill_value=fill_value)
+
+    @classmethod
+    def crop_stack_file(cls, stack_file, size, output_stack_file=None, fill_value=None):
+
+        if output_stack_file is None:
+            output_stack_file = set_output_name(stack_file, 'cropped')
+
+        if os.path.exists(output_stack_file):
+            raise FileExistsError(f"output file '{yellow(output_stack_file)}' already exists!")
+
+        stack = load_stack_from_file(stack_file)
+        fill_value = fill_value or PreProcessorConfig.crop_stack_fill_value
+        cropped_stack = cls.crop_stack(stack, size, fill_value=fill_value)
+
+        action = 'cropped' if size < stack.shape[1] else 'padded'
+        logger.info(f"{action} stack from size {stack.shape} to size {cropped_stack.shape}."
+                    f" saving to {yellow(output_stack_file)}..")
+
+        with mrcfile.new(output_stack_file) as mrc:
+            mrc.set_data(cropped_stack)
+        logger.debug(f"saved to {output_stack_file}")
 
     @classmethod
     def downsample(cls, img, side, compute_fx=False, stack=False, mask=None):
@@ -213,8 +247,33 @@ class PreProcessor:
 
         return out.astype('float32')
 
+    @classmethod
+    def downsample_stack_file(cls, stack_file, side, output_stack_file=None, mask_file=None):
+
+        if output_stack_file is None:
+            output_stack_file = set_output_name(stack_file, 'downsampled')
+
+        if os.path.exists(output_stack_file):
+            raise FileExistsError(f"output file '{yellow(output_stack_file)}' already exists!")
+
+        if mask_file:
+            if not os.path.exists(mask_file):
+                logger.error(f"mask file {yellow(mask_file)} doesn't exist!")
+            mask = load_stack_from_file(mask_file)
+        else:
+            mask = None
+
+        stack = load_stack_from_file(stack_file)
+        downsampled_stack = cls.downsample(stack, side, compute_fx=False, stack=True, mask=mask)
+        logger.info(f"downsampled stack from size {stack.shape} to {downsampled_stack.shape}."
+                    f" saving to {yellow(output_stack_file)}..")
+
+        with mrcfile.new(output_stack_file) as mrc_fh:
+            mrc_fh.set_data(downsampled_stack)
+        logger.debug(f"saved to {output_stack_file}")
+
     @staticmethod
-    def global_phaseflip_stack(stack):
+    def phaseflip_stack(stack):
         """ Apply global phase flip to an image stack if needed.
 
         Check if all images in a stack should be globally phase flipped so that
@@ -226,7 +285,7 @@ class PreProcessor:
         Examples:
             >> import mrcfile
             >> stack = mrcfile.open('stack.mrcs')
-            >> stack = global_phaseflip_stack(stack)
+            >> stack = phaseflip_stack(stack)
 
         :param stack: stack of images to phaseflip if needed
         :return stack: stack which might be phaseflipped when needed
@@ -271,6 +330,26 @@ class PreProcessor:
         logger.info('no need to phase-flip stack.')
         return stack
 
+    @classmethod
+    def phaseflip_stack_file(cls, stack_file, output_stack_file=None):
+
+        if output_stack_file is None:
+            output_stack_file = set_output_name(stack_file, 'phaseflipped')
+
+        if os.path.exists(output_stack_file):
+            raise FileExistsError(f"output file '{yellow(output_stack_file)}' already exists!")
+
+        in_stack = load_stack_from_file(stack_file)
+        out_stack = cls.phaseflip_stack(in_stack)
+
+        # check if stack was flipped
+        if (out_stack[0] == in_stack[0]).all():
+            logger.info('not saving new mrc file.')
+
+        else:
+            with mrcfile.new(output_stack_file) as mrc:
+                mrc.set_data(out_stack)
+            logger.info(f"stack is flipped and saved as {yellow(output_stack_file)}")
 
     # def prewhiten(stack, noise_response, rel_threshold=None):
     #   from numpy.core.defchararray import find

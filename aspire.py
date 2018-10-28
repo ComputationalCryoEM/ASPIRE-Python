@@ -6,12 +6,11 @@ import click
 import mrcfile
 
 from aspire.common.logger import logger
-from aspire.common.config import AspireConfig, CropStackConfig
+from aspire.common.config import AspireConfig, PreProcessorConfig
 from aspire.preprocessor import PreProcessor
 from aspire.utils.compare_stacks import compare_stack_files
 from aspire.utils.data_utils import load_stack_from_file
 from aspire.utils.helpers import requires_finufftpy, yellow
-from aspire.utils.mrc_utils import global_phase_flip_mrc_file, crop_mrc_file, downsample_mrc_file
 
 
 @click.group(chain=False)
@@ -92,45 +91,43 @@ def compare_cmd(stack_file_1, stack_file_2, max_error):
 
 
 @simple_cli.command('phaseflip')
-@click.argument('mrc_file', type=click.Path(exists=True))
-@click.option('-o', '--output', type=click.Path(exists=False), default='phaseflipped.mrc',
-              help="output file name (default 'phaseflipped.mrc')")
-def phaseflip_cmd(mrc_file, output):
-    """ Apply global phase-flip to an MRC file """
+@click.option('-o', '--output',
+              help="output mrc file name (default adds '_phaseflipped' to input name)")
+@click.argument('stack_file', type=click.Path(exists=True))
+def phaseflip_cmd(stack_file, output):
+    """ Apply global phase-flip to a stack file """
     logger.info("calculating global phaseflip..")
-    global_phase_flip_mrc_file(mrc_file, output)
+    PreProcessor.phaseflip_stack_file(stack_file, output_stack_file=output)
 
 
 @simple_cli.command('crop')
-@click.argument('mrc_file', type=click.Path(exists=True))
+@click.argument('stack_file', type=click.Path(exists=True))
 @click.argument('size', type=int)
-@click.option('--fill-value', type=float, default=CropStackConfig.fill_value)
-@click.option('-o', '--output', type=click.Path(exists=False), default='cropped.mrc',
-              help="output file name (default 'cropped.mrc')")
-def crop_cmd(mrc_file, size, output, fill_value):
+@click.option('--fill-value', type=float, default=PreProcessorConfig.crop_stack_fill_value)
+@click.option('-o', '--output', help="output file name (default adds '_cropped' to input name)")
+def crop_cmd(stack_file, size, output, fill_value):
     """ Crop projections in stack to squares of 'size x size' px.
         Then save the cropped stack into a new MRC file.
         In case size is bigger than original stack, padding will apply.
         When padding, `--fill-value=VAL` will be used for the padded values. """
-    logger.info("cropping stack {} to squre of size {}..".format(mrc_file, size))
-    crop_mrc_file(mrc_file, size, output_mrc_file=output, fill_value=fill_value)
+    logger.info(f"resizing projections in {stack_file} to {size}x{size}..")
+    PreProcessor.crop_stack_file(stack_file, size, output_stack_file=output, fill_value=fill_value)
 
 
 @simple_cli.command('downsample')
-@click.argument('mrc_file', type=click.Path(exists=True))
+@click.argument('stack_file', type=click.Path(exists=True))
 @click.argument('side', type=int)
 @click.option('--mask', default=None)
-@click.option('-o', '--output', type=click.Path(exists=False), default='downsampled.mrc',
-              help="output file name (default 'downsampled.mrc')")
-def downsample_cmd(mrc_file, side, output, mask):
+@click.option('-o', '--output', help="output file name (default adds '_downsampled' to input name)")
+def downsample_cmd(stack_file, side, output, mask):
     """ Use Fourier methods to change the sample interval and/or aspect ratio
         of any dimensions of the input projections-stack to the output of SIZE x SIZE.
         If the optional mask argument is given, this is used as the
         zero-centered Fourier mask for the re-sampling. The size of mask should
         be the same as the output image size.
     """
-    logger.info(f"downsampling stack {mrc_file} to size {side}x{side} px..")
-    downsample_mrc_file(mrc_file, side, output_mrc_file=output, mask=mask)
+    logger.info(f"downsampling stack {stack_file} to size {side}x{side} px..")
+    PreProcessor.downsample_stack_file(stack_file, side, output_stack_file=output, mask_file=mask)
 
 
 ###################################################################
@@ -167,7 +164,7 @@ def piped_cli(ctx, input_mrc, debug, verbosity):
 def phaseflip_stack(ctx_obj):
     """ Apply global phase-flip to an MRC stack """
     logger.debug("calculating global phaseflip..")
-    ctx_obj.stack = PreProcessor.global_phaseflip_stack(ctx_obj.stack)
+    ctx_obj.stack = PreProcessor.phaseflip_stack(ctx_obj.stack)
 
 
 @piped_cli.command("save")

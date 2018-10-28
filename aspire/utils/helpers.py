@@ -119,3 +119,11 @@ def requires_finufftpy(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def set_output_name(input_name, suffix):
+
+    split = input_name.rsplit(".", maxsplit=1)
+    input_file_prefix = split[0]
+    file_ending = '.' + split[1] if len(split) == 2 else ''
+    return f'{input_file_prefix}_{suffix}{file_ending}'

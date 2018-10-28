@@ -20,11 +20,7 @@ class AbinitioConfig(AspireConfig):
 
 
 class PreProcessorConfig(AspireConfig):
-    pass
-
-
-class CropStackConfig(AspireConfig):
-    fill_value = 0
+    crop_stack_fill_value = 0
 
 
 necessary_workflow_fields = {'info': ['working_dir',

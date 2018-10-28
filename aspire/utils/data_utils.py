@@ -44,8 +44,9 @@ def fortran_to_c(stack):
     """ Convert Fortran-indexed 3D array to C indexed array. """
 
     if stack.ndim == 3 and np.isfortran(stack):
+        print('swapping..')
         return stack.swapaxes(0, 2)
-
+    print('not swapping')
     return stack
 
 
@@ -98,7 +99,7 @@ def load_stack_from_file(filepath):
 
     # try MRC/MRCS
     try:
-        return mrcfile.open(filepath).data
+        return fortran_to_c(mrcfile.open(filepath).data)
     except ValueError:
         pass
 
@@ -106,7 +107,7 @@ def load_stack_from_file(filepath):
     try:
         stack = np.load(filepath)
         if isinstance(stack, np.ndarray):
-            return stack
+            return fortran_to_c(stack)
         raise WrongInput(f"File {filepath} doesn't contain a stack!")
     except OSError as e:
         print(e)
@@ -117,7 +118,7 @@ def load_stack_from_file(filepath):
         # filter actual data
         data = [content[key] for key in content.keys() if key == key.strip('_')]
         if len(data) == 1 and hasattr(data[0], 'shape'):
-            return data[0]
+            return fortran_to_c(data[0])
         raise WrongInput(f"MAT file {filepath} doesn't contain a stack!")
     except ValueError:
         pass
