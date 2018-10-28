@@ -1,8 +1,0 @@
-Click==7.0
-console-progressbar==1.1.1
-finufftpy==1.0
-mrcfile==1.0.4
-numpy==1.15.1
-pybind11==2.2.4
-pyFFTW==0.10.4
-scipy==1.1.0
