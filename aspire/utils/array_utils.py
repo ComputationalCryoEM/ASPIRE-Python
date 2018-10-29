@@ -1,3 +1,9 @@
+"""
+This module contains functions useful for common tasks such as crop/mask/downsample etc.
+It is different from the functions in PreProcessor as they allow you to crop/downsample to a
+non square size. PreProcessor.crop accepts size as int and here it's accepted as (X,Y) tuple.
+TODO reduced this file by refactoring it and moving crop/downsample capabilities to PreProcessor.
+"""
 import numpy as np
 import pyfftw
 from scipy.special._ufuncs import erf

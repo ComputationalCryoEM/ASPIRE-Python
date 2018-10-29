@@ -17,22 +17,14 @@ def validate_3d_array(stack):
 
 @accepts(np.ndarray)
 def fortran_to_c(stack):
-    """ Convert Fortran-indexed 3D array to C indexed array. """
-
-    if stack.ndim == 3 and np.isfortran(stack):
-        return stack.swapaxes(0, 2)
-
-    return stack
+    """ Convert Fortran-contiguous array to C-contiguous array. """
+    return stack.T if stack.flags.f_contiguous else stack
 
 
 @accepts(np.ndarray)
 def c_to_fortran(stack):
     """ Convert Fortran-indexed 3D array to C indexed array. """
-
-    if stack.ndim == 3 and not np.isfortran(stack):
-        return stack.swapaxes(0, 2)
-
-    return stack
+    return stack.T if not stack.flags.f_contiguous else stack
 
 
 @accepts(str)
