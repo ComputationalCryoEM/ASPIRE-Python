@@ -2,7 +2,8 @@ import math
 import os
 
 import mrcfile
-import numpy
+import numpy as np
+from box import Box
 from numpy import meshgrid, mean
 from numpy.core.multiarray import zeros
 from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
@@ -11,9 +12,9 @@ from numpy.ma import sqrt
 from aspire.common.config import PreProcessorConfig
 from aspire.common.exceptions import DimensionsIncompatible, WrongInput
 from aspire.common.logger import logger
-from aspire.utils.data_utils import load_stack_from_file, validate_square_projections
+from aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr
 from aspire.utils.helpers import TupleCompare, set_output_name, yellow
-from aspire.utils.array_utils import flatten
+from aspire.utils.array_utils import flatten, radius_norm
 from aspire.utils.parse_star import read_star
 
 
@@ -67,13 +68,13 @@ class PreProcessor:
             fill_value = PreProcessorConfig.crop_stack_fill_value
 
         if num_dimensions == 1:  # mat is a vector
-            mat = numpy.reshape(mat, [mat.size, 1])  # force a column vector
+            mat = np.reshape(mat, [mat.size, 1])  # force a column vector
             ns = math.floor(mat.size / 2) - math.floor(n / 2)  # shift term for scaling down
             if ns >= 0:  # cropping
                 return mat[ns: ns + n].astype('float32')
 
             else:  # padding
-                result_mat = fill_value * numpy.ones([n, 1], dtype=complex)
+                result_mat = fill_value * np.ones([n, 1], dtype=complex)
                 result_mat[-ns: mat.size - ns] = mat
                 return result_mat.astype('float32')
 
@@ -92,7 +93,7 @@ class PreProcessor:
             elif start_x < 0 and start_y < 0:  # padding
                 logger.debug('crop:padding..')
                 start_x, start_y = math.floor(start_x), math.floor(start_y)
-                result_mat = fill_value * numpy.ones([n, n], dtype=complex)
+                result_mat = fill_value * np.ones([n, n], dtype=complex)
                 result_mat[-start_x: mat_x - start_x, -start_y: mat_y - start_y] = mat
                 return result_mat.astype('float32')
 
@@ -104,7 +105,7 @@ class PreProcessor:
             if stack:
                 # break down the stack and treat each image as an individual image
                 # then return the cropped stack
-                result_mat = numpy.zeros([mat.shape[0], n, n], dtype='float32')
+                result_mat = np.zeros([mat.shape[0], n, n], dtype='float32')
                 for img in range(mat.shape[0]):
                     # TODO iterate instead of using recursion. this is too memoery-expensive
                     result_mat[img, :, :] = PreProcessor.crop(mat[img, :, :], n)
@@ -113,19 +114,19 @@ class PreProcessor:
 
             else:  # this is a 3D structure
                 # crop/pad mat into a new smaller/bigger cell - 'destination cell'
-                from_shape = numpy.array(mat.shape)
-                to_shape = numpy.array((n, n, n))
+                from_shape = np.array(mat.shape)
+                to_shape = np.array((n, n, n))
 
-                ns = numpy.floor(from_shape / 2) - numpy.floor(to_shape / 2)
+                ns = np.floor(from_shape / 2) - np.floor(to_shape / 2)
                 ns, to_shape = ns.astype(int), to_shape.astype(int)  # can't slice later with float
 
-                if numpy.all(ns >= 0):  # crop
+                if np.all(ns >= 0):  # crop
                     return mat[ns[0]: ns[0]+to_shape[0],
                                ns[1]: ns[1]+to_shape[1],
                                ns[2]: ns[2]+to_shape[2]]
 
-                elif numpy.all(ns <= 0):  # pad
-                    result_mat = fill_value * numpy.ones([n, n, n], dtype=complex)
+                elif np.all(ns <= 0):  # pad
+                    result_mat = fill_value * np.ones([n, n, n], dtype=complex)
                     result_mat[-ns[0]: from_shape[0] - ns[0],
                                -ns[1]: from_shape[2] - ns[1],
                                -ns[2]: from_shape[2] - ns[2]] = mat
@@ -200,11 +201,11 @@ class PreProcessor:
         elif ndim == 2 or ndim == 3 and stack:
             szout = (side, side)  # this is the shape of the final mat
         else:  # ndim == 3 and not stack
-            szout = numpy.array([side, side, side])  # this is the shape of the final cube
+            szout = np.array([side, side, side])  # this is the shape of the final cube
 
         if ndim == 1:
             # force input img into row vector with the shape (1, img.size)
-            img = numpy.asmatrix(flatten(img))
+            img = np.asmatrix(flatten(img))
 
         # check sizes of input and output
         szin = img[0, :, :].shape if stack else img.shape
@@ -220,31 +221,31 @@ class PreProcessor:
             # return a vector scaled from the original vector
             x = fftshift(fft(img))
             fx = cls.crop(x, side) * mask
-            out = ifft(ifftshift(fx), axis=0) * (numpy.prod(szout) / numpy.prod(szin))
+            out = ifft(ifftshift(fx), axis=0) * (np.prod(szout) / np.prod(szin))
 
         elif ndim == 2:
             # return a 2D image scaled from the original image
             fx = cls.crop(fftshift(fft2(img)), side) * mask
-            out = ifft2(ifftshift(fx)) * (numpy.prod(szout) / numpy.prod(szin))
+            out = ifft2(ifftshift(fx)) * (np.prod(szout) / np.prod(szin))
 
         elif ndim == 3 and stack:
             # return a stack of 2D images where each one of them is downsampled
             num_images = img.shape[0]
-            out = numpy.zeros([num_images, side, side], dtype=complex)
+            out = np.zeros([num_images, side, side], dtype=complex)
             for i in range(num_images):
                 fx = cls.crop(fftshift(fft2(img[i, :, :])), side) * mask
-                out[i, :, :] = ifft2(ifftshift(fx)) * (numpy.prod(szout) / numpy.prod(szin))
+                out[i, :, :] = ifft2(ifftshift(fx)) * (np.prod(szout) / np.prod(szin))
 
         else:  # ndim == 3 and not stack
             # return a 3D object scaled from the input 3D cube
             fx = cls.crop(fftshift(fftn(img)), side) * mask
-            out = ifftn(ifftshift(fx)) * (numpy.prod(szout) / numpy.prod(szin))
+            out = ifftn(ifftshift(fx)) * (np.prod(szout) / np.prod(szin))
 
-        if numpy.all(numpy.isreal(img)):
-            out = numpy.real(out)
+        if np.all(np.isreal(img)):
+            out = np.real(out)
 
         if compute_fx:
-            fx = numpy.fft.ifftshift(fx)
+            fx = np.fft.ifftshift(fx)
             return out, fx
 
         return out.astype('float32')
@@ -275,7 +276,7 @@ class PreProcessor:
         logger.debug(f"saved to {output_stack_file}")
 
     @staticmethod
-    def phaseflip_stack(stack):
+    def global_phaseflip_stack(stack):
         """ Apply global phase flip to an image stack if needed.
 
         Check if all images in a stack should be globally phase flipped so that
@@ -287,7 +288,7 @@ class PreProcessor:
         Examples:
             >> import mrcfile
             >> stack = mrcfile.open('stack.mrcs')
-            >> stack = phaseflip_stack(stack)
+            >> stack = global_phaseflip_stack(stack)
 
         :param stack: stack of images to phaseflip if needed
         :return stack: stack which might be phaseflipped when needed
@@ -333,16 +334,16 @@ class PreProcessor:
         return stack
 
     @classmethod
-    def phaseflip_stack_file(cls, stack_file, output_stack_file=None):
+    def global_phaseflip_stack_file(cls, stack_file, output_stack_file=None):
 
         if output_stack_file is None:
-            output_stack_file = set_output_name(stack_file, 'phaseflipped')
+            output_stack_file = set_output_name(stack_file, 'g-pf')
 
         if os.path.exists(output_stack_file):
             raise FileExistsError(f"output file '{yellow(output_stack_file)}' already exists!")
 
         in_stack = load_stack_from_file(stack_file)
-        out_stack = cls.phaseflip_stack(in_stack)
+        out_stack = cls.global_phaseflip_stack(in_stack)
 
         # check if stack was flipped
         if (out_stack[0] == in_stack[0]).all():
@@ -354,7 +355,7 @@ class PreProcessor:
             logger.info(f"stack is flipped and saved as {yellow(output_stack_file)}")
 
     # def prewhiten(stack, noise_response, rel_threshold=None):
-    #   from numpy.core.defchararray import find
+    #   from np.core.defchararray import find
     #   """
     #     Pre-whiten a stack of projections using the power spectrum of the noise.
     #
@@ -376,7 +377,7 @@ class PreProcessor:
     #     :return: Pre-whitened stack of images.
     #     """
     #
-    #     delta = numpy.finfo(float).eps
+    #     delta = np.finfo(float).eps
     #     num_images = stack.shape[0]
     #     img_side = stack.shape[1]
     #     l = math.floor(img_side / 2)
@@ -388,23 +389,23 @@ class PreProcessor:
     #
     #     # The whitening filter is the sqrt of of the power spectrum of the noise.
     #     # Also, normalized the enetgy of the filter to one.
-    #     filter = numpy.sqrt(noise_response)
+    #     filter = np.sqrt(noise_response)
     #     filter = filter / norm(flatten(filter))
     #
     #     # The power spectrum of the noise must be positive, and then, the values
     #     # in filter are all real. If they are not, this means that noise_response
     #     # had negative values so abort.
-    #     assert (norm(numpy.imag(flatten(filter))) < 10 * delta * filter.shape[0])  # Allow loosing one digit
-    #     filter = numpy.real(filter)  # Get rid of tiny imaginary components, if any.
+    #     assert (norm(np.imag(flatten(filter))) < 10 * delta * filter.shape[0])  # Allow loosing one digit
+    #     filter = np.real(filter)  # Get rid of tiny imaginary components, if any.
     #
     #     # The filter should be cicularly symmetric. In particular, it is up-down
     #     # and left-right symmetric.
-    #     assert (norm(filter - numpy.flipud(filter)) < 10 * delta)
-    #     assert (norm(filter - numpy.fliplr(filter)) < 10 * delta)
+    #     assert (norm(filter - np.flipud(filter)) < 10 * delta)
+    #     assert (norm(filter - np.fliplr(filter)) < 10 * delta)
     #
     #     # Get rid of any tiny asymmetries in the filter.
-    #     filter = (filter + numpy.flipud(filter)) / 2
-    #     filter = (filter + numpy.fliplr(filter)) / 2
+    #     filter = (filter + np.flipud(filter)) / 2
+    #     filter = (filter + np.fliplr(filter)) / 2
     #
     #     # The filter may have very small values or even zeros. We don't want to
     #     # process these so make a list of all large entries
@@ -419,20 +420,20 @@ class PreProcessor:
     #     fnz = [x for x in noise_idx if x != 0]
     #
     #     # Pad the input projections
-    #     pp = numpy.zeros(K)
-    #     p2 = numpy.zeros(img_side, img_side, num_images)
+    #     pp = np.zeros(K)
+    #     p2 = np.zeros(img_side, img_side, num_images)
     #
     #     for i in range(num_images):
     #
     #         # Zero pad the image to double the size
-    #         if numpy.mod(img_side, 2) == 1:  # Odd-sized image
+    #         if np.mod(img_side, 2) == 1:  # Odd-sized image
     #             pp[k - l: k + l, k - l: k + l] = stack[i, :, :]
     #         else:
     #             pp[k - l: k + l - 1, k - l: k + l - 1] = stack[i:, :, :]
     #
     #
     #         #fp = cfft2(pp)
-    #         p = numpy.zeros(fp.shape)
+    #         p = np.zeros(fp.shape)
     #
     #         # Divide the image by the whitening filter, but onlyin places where the filter is
     #         # large. In frequnecies where the filter is tiny  we cannot pre-whiten so we just put zero.
@@ -440,18 +441,22 @@ class PreProcessor:
     #         pp2 = icfft2(p)  # pp2 for padded p2
     #         assert (norm(imag(pp2(:))) / norm(pp2(:)) < 1.0e-13)  # The resulting image should be real.
     #
-    #         if numpy.mod(img_side, 2) == 1:
+    #         if np.mod(img_side, 2) == 1:
     #             p2[i, :, :] = pp2[k - l: k + l, k - l: k + l]
     #         else:
     #             p2[i, :, :] = pp2[k - l: k + l - 1, k - l: k + l - 1]
     #
-    #     return numpy.real(p2)
+    #     return np.real(p2)
 
     @classmethod
     def phaseflip_star_file(cls, star_file, pixel_size=None):
-        """ todo add verbosity """
-        star = read_star(star_file)
-        num_projections = len(star.data)  # TODO verify (star.data was originally "CTFdata.data")
+        """
+            todo add verbosity
+        """
+        # star is a list of star lines describing projections
+        star_records = read_star(star_file)['__root__']
+
+        num_projections = len(star_records)
         projs_init = False  # has the stack been initialized already
 
         last_processed_stack = None
@@ -459,63 +464,123 @@ class PreProcessor:
             # Get the identification string of the next image to process.
             # This is composed from the index of the image within an image stack,
             #  followed by '@' and followed by the filename of the MRC stack.
-            image_id = star.data[idx].rlnImageName
+            image_id = star_records[idx].rlnImageName
             image_parts = image_id.split('@')
-            image_idx = int(image_parts[0])
+            image_idx = int(image_parts[0]) - 1
             stack_name = image_parts[1]
 
             # Read the image stack from the disk, if different from the current one.
             # TODO can we revert this condition to positive? what they're equal?
             if stack_name != last_processed_stack:
-                stack = load_stack_from_file(stack_name)
+                mrc_path = os.path.join(os.path.dirname(star_file), stack_name)
+                stack = load_stack_from_file(mrc_path)
+                logger.info(f"flipping stack in {yellow(os.path.basename(mrc_path))}"
+                            f" - {stack.shape}")
                 last_processed_stack = stack_name
 
             if image_idx > stack.shape[2]:
                 raise DimensionsIncompatible(f'projection {image_idx} in '
                                              f'stack {stack_name} does not exist')
 
-            proj = stack.get_image(image_idx)
-            # Convert to double to eliminate small numerical
-            # roundoff errors when comparing the current function to
-            # cryo_phaseflip_outofcore. This line is only required to get
-            # perfectly zero error when comparing the functions.
-            # im = double(im)
+            proj = stack[image_idx]
             validate_square_projections(proj)
-            side = proj[1]
+            side = proj.shape[1]
 
             if not projs_init:  # TODO why not initialize before loop (maybe b/c of huge stacks?)
                 # projections was "PFprojs" originally
-                projections = numpy.zeros((side, side, num_projections), dtype='float32')
+                projections = np.zeros((num_projections, side, side), dtype='float32')
                 projs_init = True
 
-            # todo refactor this blown line
-            def cryo_parse_Relion_CTF_struct(*args):
-                raise NotImplementedError
-            voltage, DefocusU, DefocusV, DefocusAngle, Cs, tmppixA, A = cryo_parse_Relion_CTF_struct(stack.data[idx])
+            star_record_data = Box(cryo_parse_Relion_CTF_struct(star_records[idx]))
 
             if pixel_size is None:
-                if tmppixA != -1:  # tmppixA~=-1
-                    pixel_size = tmppixA
+                if star_record_data.tmppixA != -1:
+                    pixel_size = star_record_data.tmppixA
 
                 else:
                     raise WrongInput("Pixel size not provided and does not appear in STAR file")
 
-            def cryo_CTF_Relion(*args):
-                raise NotImplementedError
-            # todo what does 'h' stand for?
-            h = cryo_CTF_Relion(side, voltage, DefocusU, DefocusV, DefocusAngle, Cs, pixel_size, A)
+            h = cryo_CTF_Relion(side, star_record_data)
             imhat = fftshift(fft2(proj))
-            pfim = ifft2(ifftshift(imhat * numpy.sign(h)))
+            pfim = ifft2(ifftshift(imhat * np.sign(h)))
 
             if side % 2 == 1:
                 # This test is only vali for odd n
                 # images are single precision
-                imaginery_comp = numpy.norm(numpy.imag(pfim[:])) / numpy.norm(pfim[:])
+                imaginery_comp = np.norm(np.imag(pfim[:])) / np.norm(pfim[:])
                 if imaginery_comp > 5.0e-7:
                     logger.warning(f"Large imaginary components in image {image_idx}"
                                    f" in stack {stack_name} = {imaginery_comp}")
 
-            pfim = numpy.real(pfim)
-            projections[:, :, idx] = pfim.astype('float32')
+            pfim = np.real(pfim)
+            projections[idx, :, :] = pfim.astype('float32')
 
         return projections
+
+
+def cryo_parse_Relion_CTF_struct(star_record):
+    voltage = star_record.rlnVoltage
+    DefocusU = star_record.rlnDefocusU/10  # Relion uses Angstrom. Convert to nm
+
+    if hasattr(star_record, 'rlnDefocusV'):
+        DefocusV = star_record.rlnDefocusV/10  # Relion uses Angstrom. Convert to nm
+    else:
+        DefocusV = DefocusU
+
+    if hasattr(star_record, 'rlnDefocusAngle'):
+        DefocusAngle = star_record.rlnDefocusAngle * math.pi/180  # convert to radians
+    else:
+        DefocusAngle = 0
+
+    spherical_aberration = star_record.rlnSphericalAberration  # in mm, no conversion is needed
+    pixel_size = None
+
+    if hasattr(star_record, 'rlnDetectorPixelSize'):
+        pixel_size = star_record.rlnDetectorPixelSize  # in Microns
+        mag = star_record.rlnMagnification
+        pixel_size = pixel_size * 10**4 / mag  # in Angstrem
+    elif hasattr(star_record, 'pixA'):
+        pixel_size = star_record.pixA
+
+    return {
+        'amplitude_contrast': star_record.rlnAmplitudeContrast,
+        'voltage': voltage,
+        'DefocusU': DefocusU,
+        'DefocusV': DefocusV,
+        'DefocusAngle': DefocusAngle,
+        'spherical_aberration': spherical_aberration,
+        'tmppixA': pixel_size,
+        'pixel_size': pixel_size,
+        }
+
+
+def cryo_CTF_Relion(square_side, star_record):
+    """
+        Compute the contrast transfer function corresponding an n x n image with
+        the sampling interval DetectorPixelSize.
+
+    """
+    #  wavelength in nm
+    wave_length = 1.22639 / math.sqrt(star_record.voltage * 1000 + 0.97845 * star_record.voltage**2)
+
+    # Divide by 10 to make pixel size in nm. BW is the bandwidth of
+    #  the signal corresponding to the given pixel size
+    bw = 1 / (star_record.pixel_size / 10)
+
+    s, theta = radius_norm(square_side, origin=fctr(square_side))
+
+    # RadiusNorm returns radii such that when multiplied by the
+    #  bandwidth of the signal, we get the correct radial frequnecies
+    #  corresponding to each pixel in our nxn grid.
+    s = s * bw
+
+    DFavg = (star_record.DefocusU + star_record.DefocusV) / 2
+    DFdiff = (star_record.DefocusU - star_record.DefocusV)
+    df = DFavg + DFdiff * np.cos(2 * (theta - star_record.DefocusAngle)) / 2
+    k2 = math.pi * wave_length * df
+    # 10**6 converts spherical_aberration from mm to nm
+    k4 = math.pi / 2*10**6 * star_record.spherical_aberration * wave_length**3
+    chi = k4 * s**4 - k2 * s**2
+
+    return (sqrt(1 - star_record.amplitude_contrast ** 2) * np.sin(chi)
+            - star_record.amplitude_contrast * np.cos(chi))

@@ -101,3 +101,13 @@ def validate_square_projections(stack):
     if stack.shape[x] != stack.shape[y]:
         raise DimensionsIncompatible("projections must me square!"
                                      f" (x={stack.shape[x]}, y={stack.shape[y]})")
+
+
+def fctr(n):
+    """ Center of an FFT-shifted image. We use this center
+        coordinate for all rotations and centering operations. """
+
+    if isinstance(n, int):
+        n = np.array([n, n])
+
+    return np.ceil((n + 1) / 2)

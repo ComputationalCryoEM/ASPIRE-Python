@@ -22,3 +22,4 @@ dependencies:
     - ipython
     - Sphinx==1.8.1
     - sphinx-rtd-theme
+    - python-box

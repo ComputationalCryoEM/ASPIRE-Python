@@ -96,14 +96,47 @@ def compare_cmd(stack_file_1, stack_file_2, max_error):
     logger.info(f"relative err: {relative_err}")
 
 
-@simple_cli.command('phaseflip')
+@simple_cli.command('global_phaseflip')
 @click.option('-o', '--output',
-              help="output mrc file name (default adds '_phaseflipped' to input name)")
+              help="output mrc file name (default adds '_g-pf' to input name)")
 @click.argument('stack_file', type=click.Path(exists=True))
-def phaseflip_cmd(stack_file, output):
+def global_phaseflip_cmd(stack_file, output):
     """ Apply global phase-flip to a stack file """
-    logger.info("calculating global phaseflip..")
-    PreProcessor.phaseflip_stack_file(stack_file, output_stack_file=output)
+    logger.info("calculating global-phaseflip..")
+    PreProcessor.global_phaseflip_stack_file(stack_file, output_stack_file=output)
+
+
+@simple_cli.command('phaseflip')
+@click.option('-o', '--output', help=("output mrc file name (default "
+                                      "adds '_phaseflipped' to input name)"))
+@click.argument('star_file', type=click.Path(exists=True))
+def star_phaseflip_cmd(star_file, output=None):
+    """ Apply phase-flip to projections in multiple mrc files having a
+        STAR file pointing at them.
+        After phaseflipping them, they will all be saved in 1 MRC file.
+        Default output will add '_phaseflipped.mrc' to star file basename
+
+        Example:
+        ./aspire.py phaseflip ../my_projections/set.star -o set.mrc
+    """
+
+    if not star_file.endswith('.star'):
+        logger.error("input file name doesn't end with '.star'!")
+
+    if output is None:
+        # convert 'path/to/foo.star' -> 'foo_phaseflipped.mrc'
+        output = '_phaseflipped.mrc'.join(star_file.rsplit('.star', 1))
+        output = os.path.basename(output)
+
+    if os.path.exists(output):
+        raise FileExistsError(f"output file {yellow(output)} already exists! "
+                              "Use flag '-o my_output' or remove file.")
+    logger.info("phaseflipping projections..")
+    stack = PreProcessor.phaseflip_star_file(star_file)
+    with mrcfile.new(output) as fh:
+        fh.set_data(stack.astype('float32'))
+
+    logger.info(f"saved {yellow(output)}.")
 
 
 @simple_cli.command('crop')
@@ -178,12 +211,12 @@ def piped_cli(ctx, input_mrc, debug, verbosity):
     ctx.obj = PipedObj(input_mrc, debug, verbosity)  # control log/verbosity per command
 
 
-@piped_cli.command("phaseflip")
+@piped_cli.command("global_phaseflip")
 @pass_obj
-def phaseflip_stack(ctx_obj):
+def global_phaseflip_stack(ctx_obj):
     """ Apply global phase-flip to an MRC stack """
     logger.debug("calculating global phaseflip..")
-    ctx_obj.stack = PreProcessor.phaseflip_stack(ctx_obj.stack)
+    ctx_obj.stack = PreProcessor.global_phaseflip_stack(ctx_obj.stack)
 
 
 @piped_cli.command("save")
