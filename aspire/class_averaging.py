@@ -578,7 +578,7 @@ def cryo_smart_select_subset(classes, size_output, priority=None, to_image=None)
         selected = cryo_select_subset(classes, size_output, priority, to_image, i)
         if len(selected) == size_output:
             return selected
-
+    return cryo_select_subset(classes, size_output, priority, to_image)
 
 def cfft2(x):
     if len(x.shape) == 2:
