@@ -543,9 +543,9 @@ def cryo_select_subset(classes, size_output, priority=None, to_image=None, n_ski
 
     if n_skip is None:
         n_skip = min(to_image // size_output, num_neighbors)
-    else:
-        if n_skip > min(to_image // size_output, num_neighbors):
-            n_skip = min(to_image // size_output, num_neighbors)
+    # else:
+    #     if n_skip > min(to_image // size_output, num_neighbors):
+    #         n_skip = min(to_image // size_output, num_neighbors)
 
     if priority is None:
         priority = np.arange(num_images)
@@ -562,6 +562,22 @@ def cryo_select_subset(classes, size_output, priority=None, to_image=None, n_ski
             mask[classes[priority[curr_image_idx], :n_skip]] = 1
             curr_image_idx += 1
     return np.array(selected, dtype='int')[:min(size_output, len(selected))]
+
+
+def cryo_smart_select_subset(classes, size_output, priority=None, to_image=None):
+    num_images = classes.shape[0]
+    num_neighbors = classes.shape[1]
+    if to_image is None:
+        to_image = num_images
+
+    if priority is None:
+        priority = np.arange(num_images)
+
+    n_skip = min(to_image // size_output, num_neighbors)
+    for i in range(num_neighbors, n_skip - 1, -1):
+        selected = cryo_select_subset(classes, size_output, priority, to_image, i)
+        if len(selected) == size_output:
+            return selected
 
 
 def cfft2(x):
@@ -1056,7 +1072,12 @@ class ClassAverages:
         logger.info('picking images for align_main')
         contrast = cryo_image_contrast(images)
         contrast_priority = contrast.argsort()
-        indices = cryo_select_subset(class_vdm, 5000, contrast_priority, min(len(contrast), 20000))
+        size_output = 5000
+        to_image = min(len(contrast), 20000)
+        num_neighbors = class_vdm.shape[1]
+        # n_skip = min(to_image // size_output, num_neighbors)
+        # indices = cryo_select_subset(class_vdm, size_output, contrast_priority, to_image, n_skip)
+        indices = cryo_smart_select_subset(class_vdm, size_output, contrast_priority, to_image)
 
         with mrcfile.new(output_images) as mrc:
             mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
