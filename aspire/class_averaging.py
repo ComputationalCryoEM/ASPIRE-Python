@@ -524,6 +524,46 @@ def rot_align(m, coeff, pairs):
     return corr, rot
 
 
+def cryo_image_contrast(projs, r=None):
+    n = projs.shape[0]
+    if r is None:
+        r = n // 2
+
+    indices = np.where(cart2rad(n) <= r)
+    contrast = np.std(projs[indices], axis=0, ddof=1)
+
+    return contrast
+
+
+def cryo_select_subset(classes, size_output, priority=None, to_image=None, n_skip=None):
+    num_images = classes.shape[0]
+    num_neighbors = classes.shape[1]
+    if to_image is None:
+        to_image = num_images
+
+    if n_skip is None:
+        n_skip = min(to_image // size_output, num_neighbors)
+    else:
+        if n_skip > min(to_image // size_output, num_neighbors):
+            n_skip = min(to_image // size_output, num_neighbors)
+
+    if priority is None:
+        priority = np.arange(num_images)
+
+    mask = np.zeros(num_images, dtype='int')
+    selected = []
+    curr_image_idx = 0
+
+    while len(selected) <= size_output and curr_image_idx < to_image:
+        while curr_image_idx < to_image and mask[priority[curr_image_idx]] == 1:
+            curr_image_idx += 1
+        if curr_image_idx < to_image:
+            selected.append(priority[curr_image_idx])
+            mask[classes[priority[curr_image_idx], :n_skip]] = 1
+            curr_image_idx += 1
+    return np.array(selected, dtype='int')[:min(size_output, len(selected))]
+
+
 def cfft2(x):
     if len(x.shape) == 2:
         return np.fft.fftshift(np.transpose(np.fft.fft2(np.transpose(np.fft.ifftshift(x)))))
@@ -953,6 +993,14 @@ def initial_class_comp(a1, a2, b1, b2, c1, c2, d1=None, d2=None):
         logger.info('corr difference = {}\n'.format(dif[3]))
 
 
+def cart2rad(n):
+    n = int(np.floor(n))
+    p = (n - 1) / 2
+    x, y = np.meshgrid(np.arange(-p, p + 1), np.arange(-p, p + 1))
+    center_polar_samples = np.sqrt(np.square(x) + np.square(y))
+    return center_polar_samples
+
+
 class ClassAverages:
 
     @classmethod
@@ -1004,8 +1052,17 @@ class ClassAverages:
                                                                               'my_tmpdir',
                                                                               use_em)
 
+        # picking images for abinitio
+        logger.info('picking images for align_main')
+        contrast = cryo_image_contrast(images)
+        contrast_priority = contrast.argsort()
+        indices = cryo_select_subset(class_vdm, 5000, contrast_priority, min(len(contrast), 20000))
+
         with mrcfile.new(output_images) as mrc:
             mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
+
+        with mrcfile.new(output_images + 'subset') as mrc:
+            mrc.set_data(unsorted_averages_fname[:, :, indices].transpose((2, 1, 0)).astype('float32'))
 
     @classmethod
     def compute_spca(cls, images, noise_v_r, adaptive_support=False):
@@ -1294,10 +1351,9 @@ class ClassAverages:
                     fast_rotate_image(images[i], angle_j[i], tmps, plans, m[angle_j[i] - 1])
             tic1 = time.time()
 
-            # shouldn't it be list_recon[j] instead of j?
             # 190 sec for 9000 images, 103 for matlab
-            tmp = np.dot(eig_im[:, freqs == 0], coeff[freqs == 0, j]) + 2 * np.real(
-                np.dot(eig_im[:, freqs != 0], coeff[freqs != 0, j])) + mean_im
+            tmp = np.dot(eig_im[:, freqs == 0], coeff[freqs == 0, list_recon[j]]) + 2 * np.real(
+                np.dot(eig_im[:, freqs != 0], coeff[freqs != 0, list_recon[j]])) + mean_im
             tic2 = time.time()
 
             # 1170 sec for 9000 images, 375 for matlab
