@@ -578,7 +578,7 @@ def cryo_smart_select_subset(classes, size_output, priority=None, to_image=None)
         selected = cryo_select_subset(classes, size_output, priority, to_image, i)
         if len(selected) == size_output:
             return selected
-
+    return cryo_select_subset(classes, size_output, priority, to_image)
 
 def cfft2(x):
     if len(x.shape) == 2:
@@ -1072,7 +1072,8 @@ class ClassAverages:
         logger.info('picking images for align_main')
         contrast = cryo_image_contrast(images)
         contrast_priority = contrast.argsort()
-        size_output = 5000
+        # num images for abinitio
+        size_output = 1000
         to_image = min(len(contrast), 20000)
         num_neighbors = class_vdm.shape[1]
         # n_skip = min(to_image // size_output, num_neighbors)
