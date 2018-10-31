@@ -5,6 +5,7 @@ import numpy as np
 from scipy.io import loadmat, savemat
 
 from aspire.common.exceptions import WrongInput, UnknownFormat, DimensionsIncompatible
+from aspire.common.logger import logger
 from aspire.utils.helpers import accepts
 
 
@@ -18,6 +19,8 @@ def validate_3d_array(stack):
 @accepts(np.ndarray)
 def fortran_to_c(stack):
     """ Convert Fortran-contiguous array to C-contiguous array. """
+    if stack.flags.f_contiguous:
+        logger.debug(f"loading F-contiguous stack")
     return stack.T if stack.flags.f_contiguous else stack
 
 
@@ -60,13 +63,16 @@ def npy_to_mat(file_name, var_name, var):
     savemat(file_name, {var_name: var})
 
 
-def load_stack_from_file(filepath):
+def load_stack_from_file(filepath, return_type=None):
     """ Load projection-stack from file. Try different formats.
         Supported formats are MRC/MRCS/MAT/NPY. """
 
     # try MRC/MRCS
     try:
-        return fortran_to_c(mrcfile.open(filepath).data)
+        stack = fortran_to_c(mrcfile.open(filepath).data)
+        if return_type:
+            return stack, 'mrc'
+        return stack
     except ValueError:
         pass
 
@@ -74,7 +80,10 @@ def load_stack_from_file(filepath):
     try:
         stack = np.load(filepath)
         if isinstance(stack, np.ndarray):
-            return fortran_to_c(stack)
+            stack = fortran_to_c(stack)
+            if return_type:
+                return stack, 'npy'
+            return stack
         raise WrongInput(f"File {filepath} doesn't contain a stack!")
     except OSError as e:
         print(e)
@@ -85,7 +94,10 @@ def load_stack_from_file(filepath):
         # filter actual data
         data = [content[key] for key in content.keys() if key == key.strip('_')]
         if len(data) == 1 and hasattr(data[0], 'shape'):
-            return fortran_to_c(data[0])
+            stack = fortran_to_c(data[0])
+            if return_type:
+                return stack, 'mat'
+            return stack
         raise WrongInput(f"MAT file {filepath} doesn't contain a stack!")
     except ValueError:
         pass

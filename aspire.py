@@ -14,10 +14,11 @@ except ImportError:
 from aspire.abinitio import Abinitio
 from aspire.common.logger import logger
 from aspire.common.config import AspireConfig, PreProcessorConfig
+from aspire.class_averaging import ClassAverages
 from aspire.preprocessor import PreProcessor
 from aspire.utils.compare_stacks import compare_stack_files
 from aspire.utils.data_utils import load_stack_from_file
-from aspire.utils.helpers import yellow, requires_binaries
+from aspire.utils.helpers import yellow, requires_binaries, set_output_name
 from aspire.utils.viewstack import view_stack
 
 
@@ -35,26 +36,50 @@ def simple_cli(debug, verbosity):
 
 
 @simple_cli.command('classify')
-@click.argument('mrc_file', type=click.Path(exists=True))
-@click.option('-o', '--output', default='classified.mrc', type=click.Path(exists=False),
+@click.argument('stack_file', type=click.Path(exists=True))
+@click.option('-o', '--output', type=click.Path(exists=False),
               help='output file name')
 @click.option("--avg_nn", default=50,
               help="Number of images to average into each class. (default=50)")
 @click.option("--classification_nn", default=100,
               help=("Number of nearest neighbors to find for each "
                     "image during initial classification. (default=100)"))
-@click.option("--k_vdm_in", default=20,
-              help="Number of nearest neighbors for building VDM graph. (default=20")
-@click.option("--k_vdm_out", default=200,
-              help="Number of nearest neighbors to return for each image. (default=200)")
 @requires_binaries('bessel.npy')
-def classify_cmd(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_out):
-    """ Classification-Averaging command """
-    # TODO route optional args to the algoritm
-    from aspire.class_averaging import ClassAverages
-    logger.info('class-averaging..')
-    ClassAverages.run(mrc_file, output, n_nbor=classification_nn, nn_avg=avg_nn)
+def classify_cmd(stack_file, output, avg_nn, classification_nn):
+    """ ############################                \n
+          Classification-Averaging                \n
+        ############################                \n
+
+        This command accepts a stack file and calculates the
+        classification averaging algorithm.         \n
+
+        When it's done, it saves 2 files:          \n
+            1) The full classified stack \n
+            2) A subset of the classified stack (for faster calculations)
+
+        Example:                                    \n
+            input - stack.mrc                          \n
+            output1 - stack_classified.mrc (or use flag -o to override)
+            output2 - stack_classified_subset.mrc
+    """
+    if output is None:
+        output = set_output_name(stack_file, 'classified')
+
+    if os.path.exists(output):
+        logger.error(f"output file {yellow(output)} already exsits! "
+                     f"remove first or use another name with '-o NAME' flag")
+        return
+
+    subset_output_name = set_output_name(output, 'subset')
+    if os.path.exists(subset_output_name):
+        logger.error(f"subset file {yellow(subset_output_name)} already exsits! "
+                     f"remove first or use another name with '-o NAME' flag")
+        return
+
+    logger.info(f'class-averaging {stack_file}..')
+    ClassAverages.run(stack_file, output, n_nbor=classification_nn, nn_avg=avg_nn)
     logger.info(f"saved to {yellow(output)}.")
+    logger.info(f"saved to {yellow(subset_output_name)}.")
 
 
 @simple_cli.command('abinitio')
@@ -62,11 +87,15 @@ def classify_cmd(mrc_file, output, avg_nn, classification_nn, k_vdm_in, k_vdm_ou
 @click.option('-o', '--output', type=click.Path(exists=False), default='abinitio.mrc',
               help='output file name')
 def abinitio_cmd(stack_file, output):
-    """ Abinitio algorithm command. Abinitio accepts a file containig projections stack
+    """
+        ############################                \n
+                  Abinitio                          \n
+        ############################                \n
+
+        Abinitio algorithm command. Abinitio accepts a file containig projections stack
         such as MRC/MRCS/NPY/MAT and saves the output to OUTPUT (default abinitio.mrc) """
     logger.info(f'running abinitio on stack file {stack_file}..')
 
-    # todo fix click.Path for "output" option
     if os.path.exists(output):
         logger.error(f"file {yellow(output)} already exsits! remove first "
                      "or use another name with '-o NAME'")
@@ -87,7 +116,12 @@ def abinitio_cmd(stack_file, output):
 @click.option('--max-error', default=None, type=float,
               help='if given, raise an error once the err is bigger than given value')
 def compare_cmd(stack_file_1, stack_file_2, max_error):
-    """ Calculate the relative error between 2 stack files.
+    """
+        ############################                \n
+              Compare stacks                        \n
+        ############################                \n
+
+        Calculate the relative error between 2 stack files.
         Stack files can be in MRC/MRCS, NPY or MAT formats.
     """
     logger.info(f"calculating relative err between '{stack_file_1}' and '{stack_file_2}'..")
@@ -96,12 +130,31 @@ def compare_cmd(stack_file_1, stack_file_2, max_error):
     logger.info(f"relative err: {relative_err}")
 
 
+@simple_cli.command('inspect')
+@click.argument('stack_file', type=click.Path(exists=True))
+def inspect_cmd(stack_file):
+    """
+        ############################                \n
+                Inspect Stack                       \n
+        ############################                \n
+
+        Print info about projections in stack file.
+    """
+    stack, stack_type = load_stack_from_file(stack_file, return_type=True)
+    logger.info(f"stack shape: {yellow(stack.shape)}, stack type: {yellow(stack_type)}")
+
+
 @simple_cli.command('global_phaseflip')
 @click.option('-o', '--output',
               help="output mrc file name (default adds '_g-pf' to input name)")
 @click.argument('stack_file', type=click.Path(exists=True))
 def global_phaseflip_cmd(stack_file, output):
-    """ Apply global phase-flip to a stack file """
+    """
+        ############################                \n
+              Global Phaseflip                      \n
+        ############################                \n
+
+        Apply global phase-flip to a stack file """
     logger.info("calculating global-phaseflip..")
     PreProcessor.global_phaseflip_stack_file(stack_file, output_stack_file=output)
 
@@ -111,13 +164,20 @@ def global_phaseflip_cmd(stack_file, output):
                                       "adds '_phaseflipped' to input name)"))
 @click.argument('star_file', type=click.Path(exists=True))
 def star_phaseflip_cmd(star_file, output=None):
-    """ Apply phase-flip to projections in multiple mrc files having a
+    """
+        ############################                \n
+            Phaseflip (STAR file)                   \n
+        ############################                \n
+
+        Apply phase-flip to projections in multiple mrc files having a
         STAR file pointing at them.
         After phaseflipping them, they will all be saved in 1 MRC file.
         Default output will add '_phaseflipped.mrc' to star file basename
 
         Example:
-        ./aspire.py phaseflip ../my_projections/set.star -o set.mrc
+        ./aspire.py phaseflip ../my_projections/set.star    \n
+        will produce file set_phaseflipped.mrc
+
     """
 
     if not star_file.endswith('.star'):
@@ -145,7 +205,12 @@ def star_phaseflip_cmd(star_file, output=None):
 @click.option('--fill-value', type=float, default=PreProcessorConfig.crop_stack_fill_value)
 @click.option('-o', '--output', help="output file name (default adds '_cropped' to input name)")
 def crop_cmd(stack_file, size, output, fill_value):
-    """ Crop projections in stack to squares of 'size x size' px.
+    """
+        ############################                \n
+                  Crop Stack                        \n
+        ############################                \n
+
+        Crop projections in stack to squares of 'size x size' px.
         Then save the cropped stack into a new MRC file.
         In case size is bigger than original stack, padding will apply.
         When padding, `--fill-value=VAL` will be used for the padded values. """
@@ -159,7 +224,12 @@ def crop_cmd(stack_file, size, output, fill_value):
 @click.option('--mask', default=None)
 @click.option('-o', '--output', help="output file name (default adds '_downsampled' to input name)")
 def downsample_cmd(stack_file, side, output, mask):
-    """ Use Fourier methods to change the sample interval and/or aspect ratio
+    """
+        ############################                \n
+                  Abinitio                          \n
+        ############################                \n
+
+        Use Fourier methods to change the sample interval and/or aspect ratio
         of any dimensions of the input projections-stack to the output of SIZE x SIZE.
         If the optional mask argument is given, this is used as the
         zero-centered Fourier mask for the re-sampling. The size of mask should
@@ -173,10 +243,16 @@ def downsample_cmd(stack_file, side, output, mask):
 @click.argument('stack_file', type=click.Path(exists=True))
 @click.option('--numslices', type=int, default=16)
 @click.option('--startslice', type=int, default=1)
-@click.option('--nrows', type=int, default=4)
-@click.option('--ncols', type=int, default=4)
+@click.option('--nrows', type=int, default=4, help="number of rows")
+@click.option('--ncols', type=int, default=4, help="number of columns")
 def viewstack_cmd(stack_file, numslices, startslice, nrows, ncols):
-    """ Plot projections in stack file. """
+    """
+        ############################                \n
+                View Stack                          \n
+        ############################                \n
+
+        Plot projections using GUI.
+    """
     logger.info(f"viewing stack {stack_file}..")
     stack = load_stack_from_file(stack_file)
     view_stack(stack, numslices=numslices, startslice=startslice, nrows=nrows, ncols=ncols)
@@ -233,11 +309,8 @@ def chained_save_stack(ctx_obj, o):
     mrcfile.new(o, ctx_obj.stack)
 
 
-piped_cli.add_command(phaseflip_stack)
-piped_cli.add_command(chained_save_stack)
-...
-
-
 if __name__ == "__main__":
     simple_cli()
-    # piped_cli  # todo
+
+    # todo this should allow users to funnel a stack into a pipeline of commands
+    # piped_cli

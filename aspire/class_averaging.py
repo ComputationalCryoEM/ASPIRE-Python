@@ -16,7 +16,7 @@ from aspire.common.config import ClassAveragesConfig
 from aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec
 from aspire.utils.array_utils import estimate_snr, image_grid
 from aspire.common.logger import logger
-from aspire.utils.helpers import get_file_type, yellow
+from aspire.utils.helpers import get_file_type, yellow, set_output_name
 
 np.random.seed(1137)
 
@@ -1075,7 +1075,8 @@ class ClassAverages:
         # num images for abinitio
         size_output = 1000
         to_image = min(len(contrast), 20000)
-        num_neighbors = class_vdm.shape[1]
+
+        # num_neighbors = class_vdm.shape[1]
         # n_skip = min(to_image // size_output, num_neighbors)
         # indices = cryo_select_subset(class_vdm, size_output, contrast_priority, to_image, n_skip)
         indices = cryo_smart_select_subset(class_vdm, size_output, contrast_priority, to_image)
@@ -1083,7 +1084,8 @@ class ClassAverages:
         with mrcfile.new(output_images) as mrc:
             mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
 
-        with mrcfile.new(output_images + 'subset') as mrc:
+        subset_projs_name = set_output_name(output_images, 'subset')
+        with mrcfile.new(subset_projs_name) as mrc:
             mrc.set_data(unsorted_averages_fname[:, :, indices].transpose((2, 1, 0)).astype('float32'))
 
     @classmethod
