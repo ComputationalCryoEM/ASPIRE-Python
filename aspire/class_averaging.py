@@ -1072,7 +1072,8 @@ class ClassAverages:
         logger.info('picking images for align_main')
         contrast = cryo_image_contrast(images)
         contrast_priority = contrast.argsort()
-        size_output = 5000
+        # num images for abinitio
+        size_output = 1000
         to_image = min(len(contrast), 20000)
         num_neighbors = class_vdm.shape[1]
         # n_skip = min(to_image // size_output, num_neighbors)
