@@ -1,3 +1,9 @@
+"""
+This module contains functions useful for common tasks such as crop/mask/downsample etc.
+It is different from the functions in PreProcessor as they allow you to crop/downsample to a
+non square size. PreProcessor.crop accepts size as int and here it's accepted as (X,Y) tuple.
+TODO reduced this file by refactoring it and moving crop/downsample capabilities to PreProcessor.
+"""
 import numpy as np
 import pyfftw
 from scipy.special._ufuncs import erf
@@ -252,3 +258,35 @@ def image_grid(n):
     p = (n - 1.0) / 2.0
     x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
     return x, y
+
+
+def radius_norm(n: int, origin=None):
+    """
+        Create an n(1) x n(2) array where the value at (x,y) is the distance from the
+        origin, normalized such that a distance equal to the width or height of
+        the array = 1.  This is the appropriate function to define frequencies
+        for the fft of a rectangular image.
+
+        For a square array of size n (or [n n]) the following is true:
+        RadiusNorm(n) = Radius(n)/n.
+        The org argument is optional, in which case the FFT center is used.
+
+        Theta is the angle in radians.
+
+        (Transalted from Matlab RadiusNorm.m)
+    """
+
+    if isinstance(n, int):
+        n = np.array([n, n])
+
+    if origin is None:
+        origin = np.ceil((n + 1) / 2)
+
+    a, b = origin[0], origin[1]
+    x, y = np.meshgrid(np.arange(1-a, n[0]-a+1)/n[0],
+                       np.arange(1-b, n[1]-b+1)/n[1])  # zero at x,y
+    radius = np.sqrt(x ** 2 + y ** 2)
+
+    theta = np.arctan2(y, x)
+
+    return radius, theta
