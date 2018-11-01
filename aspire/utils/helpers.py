@@ -83,6 +83,7 @@ def requires_binaries(*filenames):
 
 def set_output_name(input_name, suffix):
 
+    input_name = os.path.basename(input_name)
     split = input_name.rsplit(".", maxsplit=1)
     input_file_prefix = split[0]
     file_ending = '.' + split[1] if len(split) == 2 else ''

@@ -14,11 +14,9 @@ from numpy.polynomial.legendre import leggauss
 
 from aspire.common.config import ClassAveragesConfig
 from aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec
-from aspire.utils.array_utils import estimate_snr, image_grid
+from aspire.utils.array_utils import estimate_snr, image_grid, cfft2, icfft2
 from aspire.common.logger import logger
 from aspire.utils.helpers import get_file_type, yellow, set_output_name
-
-np.random.seed(1137)
 
 
 class Precomp:
@@ -579,33 +577,6 @@ def cryo_smart_select_subset(classes, size_output, priority=None, to_image=None)
         if len(selected) == size_output:
             return selected
     return cryo_select_subset(classes, size_output, priority, to_image)
-
-def cfft2(x):
-    if len(x.shape) == 2:
-        return np.fft.fftshift(np.transpose(np.fft.fft2(np.transpose(np.fft.ifftshift(x)))))
-    elif len(x.shape) == 3:
-        y = np.fft.ifftshift(x, (1, 2))
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.fft2(y)
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.fftshift(y, (1, 2))
-        return y
-    else:
-        raise ValueError("x must be 2D or 3D")
-
-
-def icfft2(x):
-    if len(x.shape) == 2:
-        return np.fft.fftshift(np.transpose(np.fft.ifft2(np.transpose(np.fft.ifftshift(x)))))
-    elif len(x.shape) == 3:
-        y = np.fft.ifftshift(x, (1, 2))
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.ifft2(y)
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.fftshift(y, (1, 2))
-        return y
-    else:
-        raise ValueError("x must be 2D or 3D")
 
 
 def lgwt(n, a, b):

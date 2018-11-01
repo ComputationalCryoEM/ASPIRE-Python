@@ -4,12 +4,13 @@ import os
 import sys
 import click
 import mrcfile
-
+import numpy as np
 
 try:
     import finufftpy
 except ImportError:
     print(f"Can't import finufftpy! Please run 'make finufftpy' and try again.")
+    sys.exit(2)
 
 from aspire.abinitio import Abinitio
 from aspire.common.logger import logger
@@ -22,6 +23,7 @@ from aspire.utils.helpers import yellow, requires_binaries, set_output_name
 from aspire.utils.viewstack import view_stack
 
 
+np.random.seed(1137)
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
@@ -173,8 +175,8 @@ def inspect_cmd(stack_file):
 
         Print info about projections in stack file.
     """
-    stack, stack_type = load_stack_from_file(stack_file, return_type=True)
-    logger.info(f"stack shape: {yellow(stack.shape)}, stack type: {yellow(stack_type)}")
+    stack, stack_type = load_stack_from_file(stack_file, return_format=True)
+    logger.info(f"stack shape: {yellow(stack.shape)}, stack format: {yellow(stack_type)}")
 
 
 @simple_cli.command('global_phaseflip', short_help='Global-phaseflip stack file')
@@ -231,6 +233,38 @@ def star_phaseflip_cmd(star_file, output=None):
     with mrcfile.new(output) as fh:
         fh.set_data(stack.astype('float32'))
 
+    logger.info(f"saved {yellow(output)}.")
+
+
+@simple_cli.command('prewhitten', short_help='Prewhitten projections in stack')
+@click.option('-o', '--output', help=("output mrc file name (default "
+                                      "adds '_prewhitten' to input name)"))
+@click.argument('stack_file', type=click.Path(exists=True))
+def star_phaseflip_cmd(stack_file, output=None):
+    """ \b
+        ############################
+            Prewhitten Stack
+        ############################
+
+        Prewhitten projections in stack file.
+
+        \b
+        Example:
+        $ python aspire.py prewhitten projections.mrc
+        will produce file projections_prewhitten.mrc
+
+    """
+
+    if output is None:
+        output = set_output_name(stack_file, 'prewhitten')
+
+    if os.path.exists(output):
+        logger.error(f"output file {yellow(output)} already exsits! "
+                     f"remove first or use another name with '-o NAME' flag")
+        return
+
+    logger.info("phaseflipping projections..")
+    PreProcessor.prewhiten_stack_file(stack_file, output=output)
     logger.info(f"saved {yellow(output)}.")
 
 

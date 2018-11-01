@@ -1,6 +1,5 @@
 import math
 import time
-
 import finufftpy
 
 import numpy as np
@@ -14,8 +13,6 @@ from aspire.common.config import AbinitioConfig
 from aspire.common.exceptions import WrongInput
 from aspire.common.logger import logger
 from aspire.utils.data_utils import validate_square_projections
-
-np.random.seed(1137)
 
 
 class DiracBasis:

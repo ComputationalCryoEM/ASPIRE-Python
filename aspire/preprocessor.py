@@ -14,7 +14,8 @@ from aspire.common.exceptions import DimensionsIncompatible, WrongInput
 from aspire.common.logger import logger
 from aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr
 from aspire.utils.helpers import TupleCompare, set_output_name, yellow
-from aspire.utils.array_utils import flatten, radius_norm
+from aspire.utils.array_utils import flatten, radius_norm, cryo_noise_estimation, fast_cfft2, \
+    fast_icfft2
 from aspire.utils.parse_star import read_star
 
 
@@ -354,99 +355,94 @@ class PreProcessor:
                 mrc.set_data(out_stack)
             logger.info(f"stack is flipped and saved as {yellow(output_stack_file)}")
 
-    # def prewhiten(stack, noise_response, rel_threshold=None):
-    #   from np.core.defchararray import find
-    #   """
-    #     Pre-whiten a stack of projections using the power spectrum of the noise.
-    #
-    #
-    #     :param stack: stack of images/projections
-    #     :param noise_response: 2d image with the power spectrum of the noise. If all
-    #                            images are to be whitened with respect to the same power spectrum,
-    #                            this is a single image. If each image is to be whitened with respect
-    #                            to a different power spectrum, this is a three-dimensional array with
-    #                            the same number of 2d slices as the stack of images.
-    #
-    #     :param rel_threshold: The relative threshold used to determine which frequencies
-    #                           to whiten and which to set to zero. If empty (the default)
-    #                           all filter values less than 100*eps(class(proj)) are
-    #                           zeroed out, while otherwise, all filter values less than
-    #                           threshold times the maximum filter value for each filter
-    #                           is set to zero.
-    #
-    #     :return: Pre-whitened stack of images.
-    #     """
-    #
-    #     delta = np.finfo(float).eps
-    #     num_images = stack.shape[0]
-    #     img_side = stack.shape[1]
-    #     l = math.floor(img_side / 2)
-    #     K = noise_response.shape[1]
-    #     k = math.ceil(K / 2)
-    #
-    #     if noise_response.shape[0] not in [1, num_images]:
-    #         raise DimensionsIncompatible('The number of filters must be either 1 or same as number of images!')
-    #
-    #     # The whitening filter is the sqrt of of the power spectrum of the noise.
-    #     # Also, normalized the enetgy of the filter to one.
-    #     filter = np.sqrt(noise_response)
-    #     filter = filter / norm(flatten(filter))
-    #
-    #     # The power spectrum of the noise must be positive, and then, the values
-    #     # in filter are all real. If they are not, this means that noise_response
-    #     # had negative values so abort.
-    #     assert (norm(np.imag(flatten(filter))) < 10 * delta * filter.shape[0])  # Allow loosing one digit
-    #     filter = np.real(filter)  # Get rid of tiny imaginary components, if any.
-    #
-    #     # The filter should be cicularly symmetric. In particular, it is up-down
-    #     # and left-right symmetric.
-    #     assert (norm(filter - np.flipud(filter)) < 10 * delta)
-    #     assert (norm(filter - np.fliplr(filter)) < 10 * delta)
-    #
-    #     # Get rid of any tiny asymmetries in the filter.
-    #     filter = (filter + np.flipud(filter)) / 2
-    #     filter = (filter + np.fliplr(filter)) / 2
-    #
-    #     # The filter may have very small values or even zeros. We don't want to
-    #     # process these so make a list of all large entries
-    #     if rel_threshold:
-    #         # from MATLAB:
-    #         # nzidx = find(bsxfun( @ gt, filter, rel_threshold * max(max(filter, [], 1), [], 2)));
-    #         raise NotImplementedError('You can use default threshold by omitting re_threshold from kw/args.')
-    #     else:
-    #         noise_idx = find(filter > 100 * delta)
-    #
-    #     noise_idx = flatten(noise_idx)
-    #     fnz = [x for x in noise_idx if x != 0]
-    #
-    #     # Pad the input projections
-    #     pp = np.zeros(K)
-    #     p2 = np.zeros(img_side, img_side, num_images)
-    #
-    #     for i in range(num_images):
-    #
-    #         # Zero pad the image to double the size
-    #         if np.mod(img_side, 2) == 1:  # Odd-sized image
-    #             pp[k - l: k + l, k - l: k + l] = stack[i, :, :]
-    #         else:
-    #             pp[k - l: k + l - 1, k - l: k + l - 1] = stack[i:, :, :]
-    #
-    #
-    #         #fp = cfft2(pp)
-    #         p = np.zeros(fp.shape)
-    #
-    #         # Divide the image by the whitening filter, but onlyin places where the filter is
-    #         # large. In frequnecies where the filter is tiny  we cannot pre-whiten so we just put zero.
-    #         p(nzidx) = bsxfun( @ times, fp(nzidx), 1. / fnz)
-    #         pp2 = icfft2(p)  # pp2 for padded p2
-    #         assert (norm(imag(pp2(:))) / norm(pp2(:)) < 1.0e-13)  # The resulting image should be real.
-    #
-    #         if np.mod(img_side, 2) == 1:
-    #             p2[i, :, :] = pp2[k - l: k + l, k - l: k + l]
-    #         else:
-    #             p2[i, :, :] = pp2[k - l: k + l - 1, k - l: k + l - 1]
-    #
-    #     return np.real(p2)
+    @classmethod
+    def prewhiten_stack_file(cls, stack_file, output=None):
+        if output is None:
+            output = "prewhitten.mrc"
+
+        if os.path.exists(output):
+            raise FileExistsError(f"output file '{yellow(output)}' already exists!")
+
+        stack = load_stack_from_file(stack_file)
+
+        # TODO adjust to same unified index
+        # the following line accepts stack.T instead of stack b/c the func is
+        # designed to accept F-contiguous array
+        prewhitten_stack = cls.prewhiten_stack(stack.T)
+
+        with mrcfile.new(output) as fh:
+            fh.set_data(prewhitten_stack.astype('float32'))
+
+    @classmethod
+    def prewhiten_stack(cls, stack):
+        noise_response, _, _ = cryo_noise_estimation(stack)
+        output_images, _, _ = cls.cryo_prewhiten(stack, noise_response)
+        return output_images
+
+    @classmethod
+    def cryo_prewhiten(cls, proj, noise_response, rel_threshold=None):
+        """
+        Pre-whiten a stack of projections using the power spectrum of the noise.
+
+
+        :param proj: stack of images/projections
+        :param noise_response: 2d image with the power spectrum of the noise. If all
+                               images are to be whitened with respect to the same power spectrum,
+                               this is a single image. If each image is to be whitened with respect
+                               to a different power spectrum, this is a three-dimensional array with
+                               the same number of 2d slices as the stack of images.
+
+        :param rel_threshold: The relative threshold used to determine which frequencies
+                              to whiten and which to set to zero. If empty (the default)
+                              all filter values less than 100*eps(class(proj)) are
+                              zeroed out, while otherwise, all filter values less than
+                              threshold times the maximum filter value for each filter
+                              is set to zero.
+
+        :return: Pre-whitened stack of images.
+        """
+
+        delta = np.finfo(proj.dtype).resolution
+
+        resolution, _, num_images = proj.shape
+        l = resolution // 2
+        k = int(np.ceil(noise_response.shape[0] / 2))
+
+        filter_var = np.sqrt(noise_response)
+        filter_var /= np.linalg.norm(filter_var)
+
+        filter_var = (filter_var + np.flipud(filter_var)) / 2
+        filter_var = (filter_var + np.fliplr(filter_var)) / 2
+
+        if rel_threshold is None:
+            nzidx = np.where(filter_var > 100 * delta)
+        else:
+            raise NotImplementedError('not implemented for rel_threshold != None')
+
+        start_idx = k - l - 1
+        end_idx = k + l
+        if resolution % 2 == 0:
+            end_idx -= 1
+
+        fnz = filter_var[nzidx]
+        one_over_fnz = 1 / fnz
+        one_over_fnz_as_mat = np.ones((noise_response.shape[0], noise_response.shape[0]))
+        one_over_fnz_as_mat[nzidx] *= one_over_fnz
+        pp = np.zeros((noise_response.shape[0], noise_response.shape[0]))
+        p2 = np.zeros((num_images, resolution, resolution), dtype='complex128')
+        proj = proj.transpose((2, 0, 1)).copy()
+
+        for i in range(num_images):
+            pp[start_idx:end_idx, start_idx:end_idx] = proj[i]
+
+            fp = fast_cfft2(pp)
+            fp *= one_over_fnz_as_mat
+            pp2 = fast_icfft2(fp)
+
+            p2[i] = pp2[start_idx:end_idx, start_idx:end_idx]
+
+        proj = p2.real.transpose((1, 2, 0)).copy()
+        return proj, filter_var, nzidx
 
     @classmethod
     def phaseflip_star_file(cls, star_file, pixel_size=None):

@@ -39,7 +39,7 @@ def compare_stacks(stack1, stack2, verbose=None, max_error=None):
         raise DimensionsIncompatible("Can't compare stacks of different sizes!"
                                      f" {stack1.shape} != {stack2.shape}")
 
-    num_of_images = stack1.shape[2]
+    num_of_images = stack1.shape[0]
     if num_of_images == 0:
         logger.warning('stacks are empty!')
 
@@ -51,7 +51,7 @@ def compare_stacks(stack1, stack2, verbose=None, max_error=None):
     accumulated_err = 0
     for i in range(num_of_images):
 
-        err = np.linalg.norm(stack1[i] - stack2[i])
+        err = np.linalg.norm(stack1[i] - stack2[i])/np.linalg.norm(stack1[i])
         accumulated_err += err
         relative_err = accumulated_err / (i+1)
 
