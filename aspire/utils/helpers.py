@@ -1,6 +1,7 @@
 import functools
 import os
 import sys
+from logging import warning
 
 from aspire.common.exceptions import DimensionsIncompatible
 from aspire.common.logger import logger
@@ -43,10 +44,30 @@ class TupleCompare(object):
         return all([i == j for i, j in zip(a, b)])
 
 
+def colorize(s, color):
+    # avoid colorizing on Win/iOS
+    if not sys.platform.startswith('linux'):
+        return s
+
+    class Color:
+        YELLOW = '\033[1;33m'
+        RED = '\033[91m'
+        NO_COLOR = '\033[0m'
+
+    color = color.upper()
+    if not hasattr(Color, color):
+        warning(f"Unknown color! ({color})")
+        return s
+
+    return f"{getattr(Color, color)}{s}{Color.NO_COLOR}"
+
+
 def yellow(s):
-    yellow_color = '\033[1;33m'
-    no_color = '\033[0m'
-    return f"{yellow_color}{s}{no_color}"
+    return colorize(s, 'YELLOW')
+
+
+def red(s):
+    return colorize(s, 'RED')
 
 
 def requires_binaries(*filenames):

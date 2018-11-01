@@ -19,7 +19,7 @@ from aspire.class_averaging import ClassAverages
 from aspire.preprocessor import PreProcessor
 from aspire.utils.compare_stacks import compare_stack_files
 from aspire.utils.data_utils import load_stack_from_file
-from aspire.utils.helpers import yellow, requires_binaries, set_output_name
+from aspire.utils.helpers import yellow, requires_binaries, set_output_name, red
 from aspire.utils.viewstack import view_stack
 
 
@@ -175,8 +175,12 @@ def inspect_cmd(stack_file):
 
         Print info about projections in stack file.
     """
-    stack, stack_type = load_stack_from_file(stack_file, return_format=True)
-    logger.info(f"stack shape: {yellow(stack.shape)}, stack format: {yellow(stack_type)}")
+    # load stack but don't convert to C-contiguous indexing
+    stack, stack_type = load_stack_from_file(stack_file, c_contiguous=False, return_format=True)
+    contiguous = red("F-Contiguous") if stack.flags.f_contiguous else "C-Contiguous"
+    logger.info(f"\nStack shape: {yellow(stack.shape)}"
+                f"\nStack format: {yellow(stack_type)}"
+                f"\nContiguous type: {contiguous}")
 
 
 @simple_cli.command('global_phaseflip', short_help='Global-phaseflip stack file')

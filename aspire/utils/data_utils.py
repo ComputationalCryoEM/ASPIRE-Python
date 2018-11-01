@@ -63,13 +63,15 @@ def npy_to_mat(file_name, var_name, var):
     savemat(file_name, {var_name: var})
 
 
-def load_stack_from_file(filepath, return_format=None):
+def load_stack_from_file(filepath, c_contiguous=True, return_format=None):
     """ Load projection-stack from file. Try different formats.
         Supported formats are MRC/MRCS/MAT/NPY. """
 
     # try MRC/MRCS
     try:
-        stack = fortran_to_c(mrcfile.open(filepath).data)
+        stack = mrcfile.open(filepath).data
+        if c_contiguous:
+            stack = fortran_to_c(stack)
         if return_format:
             return stack, 'mrc'
         return stack
@@ -79,12 +81,16 @@ def load_stack_from_file(filepath, return_format=None):
     # try NPY format
     try:
         stack = np.load(filepath)
-        if isinstance(stack, np.ndarray):
+        if not isinstance(stack, np.ndarray):
+            raise WrongInput(f"File {filepath} doesn't contain a stack!")
+
+        if c_contiguous:
             stack = fortran_to_c(stack)
-            if return_format:
-                return stack, 'npy'
-            return stack
-        raise WrongInput(f"File {filepath} doesn't contain a stack!")
+
+        if return_format:
+            return stack, 'npy'
+        return stack
+
     except OSError:
         pass
 
@@ -94,7 +100,11 @@ def load_stack_from_file(filepath, return_format=None):
         # filter actual data
         data = [content[key] for key in content.keys() if key == key.strip('_')]
         if len(data) == 1 and hasattr(data[0], 'shape'):
-            stack = fortran_to_c(data[0])
+            stack = data[0]
+
+            if c_contiguous:
+                stack = fortran_to_c(stack)
+
             if return_format:
                 return stack, 'mat'
             return stack

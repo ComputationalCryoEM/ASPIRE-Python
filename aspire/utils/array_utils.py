@@ -293,21 +293,6 @@ def radius_norm(n: int, origin=None):
     return radius, theta
 
 
-def cryo_noise_estimation(projections, radius_of_mask=None):
-    p = projections.shape[0]
-
-    if radius_of_mask is None:
-        radius_of_mask = p // 2 - 1
-
-    center_polar_samples = cart2rad(p)
-    noise_idx = np.where(center_polar_samples >= radius_of_mask)
-
-    power_spectrum, r, r2, x = cryo_epsds(projections, noise_idx, p // 3)
-    power_spectrum = np.real(power_spectrum)
-
-    return power_spectrum, r, r2
-
-
 def cryo_epsds(imstack, samples_idx, max_d, verbose=None):
     p = imstack.shape[0]
     if max_d >= p:

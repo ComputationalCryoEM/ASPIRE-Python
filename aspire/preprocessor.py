@@ -1,8 +1,8 @@
 import math
 import os
-
 import mrcfile
 import numpy as np
+
 from box import Box
 from numpy import meshgrid, mean
 from numpy.core.multiarray import zeros
@@ -14,9 +14,14 @@ from aspire.common.exceptions import DimensionsIncompatible, WrongInput
 from aspire.common.logger import logger
 from aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr
 from aspire.utils.helpers import TupleCompare, set_output_name, yellow
-from aspire.utils.array_utils import flatten, radius_norm, cryo_noise_estimation, fast_cfft2, \
-    fast_icfft2
 from aspire.utils.parse_star import read_star
+
+from aspire.utils.array_utils import (flatten,
+                                      radius_norm,
+                                      fast_cfft2,
+                                      fast_icfft2,
+                                      cart2rad,
+                                      cryo_epsds)
 
 
 class PreProcessor:
@@ -371,11 +376,26 @@ class PreProcessor:
         prewhitten_stack = cls.prewhiten_stack(stack.T)
 
         with mrcfile.new(output) as fh:
-            fh.set_data(prewhitten_stack.astype('float32'))
+            fh.set_data(prewhitten_stack.T.astype('float32'))
+
+    @staticmethod
+    def cryo_noise_estimation(projections, radius_of_mask=None):
+        p = projections.shape[0]
+
+        if radius_of_mask is None:
+            radius_of_mask = p // 2 - 1
+
+        center_polar_samples = cart2rad(p)
+        noise_idx = np.where(center_polar_samples >= radius_of_mask)
+
+        power_spectrum, r, r2, x = cryo_epsds(projections, noise_idx, p // 3)
+        power_spectrum = np.real(power_spectrum)
+
+        return power_spectrum, r, r2
 
     @classmethod
     def prewhiten_stack(cls, stack):
-        noise_response, _, _ = cryo_noise_estimation(stack)
+        noise_response, _, _ = cls.cryo_noise_estimation(stack)
         output_images, _, _ = cls.cryo_prewhiten(stack, noise_response)
         return output_images
 
