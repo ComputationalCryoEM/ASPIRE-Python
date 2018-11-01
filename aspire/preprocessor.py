@@ -12,7 +12,8 @@ from numpy.ma import sqrt
 from aspire.common.config import PreProcessorConfig
 from aspire.common.exceptions import DimensionsIncompatible, WrongInput
 from aspire.common.logger import logger
-from aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr
+from aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr, \
+    c_to_fortran, fortran_to_c
 from aspire.utils.helpers import TupleCompare, set_output_name, yellow
 from aspire.utils.parse_star import read_star
 
@@ -370,13 +371,11 @@ class PreProcessor:
 
         stack = load_stack_from_file(stack_file)
 
-        # TODO adjust to same unified index
-        # the following line accepts stack.T instead of stack b/c the func is
-        # designed to accept F-contiguous array
-        prewhitten_stack = cls.prewhiten_stack(stack.T)
+        # TODO adjust to same unified F/C contiguous
+        prewhitten_stack = c_to_fortran(cls.prewhiten_stack(stack.T))
 
         with mrcfile.new(output) as fh:
-            fh.set_data(prewhitten_stack.T.astype('float32'))
+            fh.set_data(fortran_to_c(prewhitten_stack).astype('float32'))
 
     @staticmethod
     def cryo_noise_estimation(projections, radius_of_mask=None):

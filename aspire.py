@@ -267,9 +267,9 @@ def star_phaseflip_cmd(stack_file, output=None):
                      f"remove first or use another name with '-o NAME' flag")
         return
 
-    logger.info("phaseflipping projections..")
+    logger.info("prewhittening projections..")
     PreProcessor.prewhiten_stack_file(stack_file, output=output)
-    logger.info(f"saved {yellow(output)}.")
+    logger.info(f"saved to {yellow(output)}.")
 
 
 @simple_cli.command('downsample', short_help='Downsample projections in stack')

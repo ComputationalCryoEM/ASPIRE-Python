@@ -356,7 +356,6 @@ def cryo_epsdr(vol, samples_idx, max_d, verbose):
     x = np.sqrt(dsquare)
 
     dist_map = np.zeros(dists.shape)
-    print('range 0 is ', range(max_d + 1))
     for i in range(max_d + 1):
         for j in range(max_d + 1):
             d = i ** 2 + j ** 2
@@ -376,11 +375,9 @@ def cryo_epsdr(vol, samples_idx, max_d, verbose):
     ftmp = np.fft.fft2(tmp)
     c = np.fft.ifft2(ftmp * np.conj(ftmp))
     c = c[:max_d+1, :max_d+1]
-    c = np.round(c).astype('int')
+    c = np.round(c.real).astype('int')
 
     r = np.zeros(len(corrs))
-
-    print('Processing projections')
 
     # optimized version
     vol = vol.transpose((2, 0, 1)).copy()
@@ -404,7 +401,7 @@ def cryo_epsdr(vol, samples_idx, max_d, verbose):
 
     for curr_dist in zip(valid_dists[0], valid_dists[1]):
         dmidx = dist_map[curr_dist]
-        corrs[dmidx] += sum_s[curr_dist]
+        corrs[dmidx] += sum_s[curr_dist].real
         corr_count[dmidx] += sum_c[curr_dist]
 
     idx = np.where(corr_count != 0)[0]
