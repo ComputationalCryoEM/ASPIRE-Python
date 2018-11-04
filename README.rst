@@ -1,5 +1,4 @@
 .. This is README.rst which shows on the Github repo
-   We use the same file for the documentation by importing parts of it (see markers)
 
 .. raw:: html
 
@@ -17,12 +16,6 @@ ASPIRE-Python
    :target: https://www.python.org/downloads/release/python-360/
 .. |Documentation Status| image:: https://readthedocs.org/projects/aspire-python/badge/?version=latest
    :target: https://aspire-python.readthedocs.io/en/latest/?badge=latest
-
-
-.. The following marker is for Sphinx documentation. Please don't remove any marker
-   without being 100% sure you know what you're doing
-
-.. marker-install-start
 
 
 Requirements (Linux)
@@ -103,12 +96,10 @@ To download them simply Run::
 
 Assuming no errors, you can now use Aspire tool.
 
-.. marker-install-end
 
 
 Usage
 -----
-.. marker-usage-start
 
 Invoking Aspire CLI tool
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -170,5 +161,3 @@ Basic Examples
    Please `activate conda's env <installing.html#activating-conda-environment>`__
    (or `create conda's env <installing.html#creating-conda-environment>`__
    if you skipped the previous step 'Creating Conda environment'.
-
-.. marker-usage-end
