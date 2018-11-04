@@ -17,6 +17,12 @@ ASPIRE-Python
 .. |Documentation Status| image:: https://readthedocs.org/projects/aspire-python/badge/?version=latest
    :target: https://aspire-python.readthedocs.io/en/latest/?badge=latest
 
+Installation
+------------
+
+Check out our `ReadTheDocs page <https://aspire-python.readthedocs.io/en/latest/install.html>`__
+for a more detailed step-by-step installation process, common errors and how to solve them.
+If you still encounter troubles setting up things, please write directly to devs.aspire@gmail.com.
 
 Requirements (Linux)
 ^^^^^^^^^^^^^^^^^^^^
@@ -28,19 +34,16 @@ Conda for **Python3**, either
 `Miniconda <https://conda.io/miniconda.html>`__, click on the right
 distribution to view Conda's installation instructions.
 
-.. note::
-   If you're not sure which distribution is right for you, go with `Miniconda <https://conda.io/miniconda.html>`__
+If you're not sure which distribution is right for you, go with `Miniconda <https://conda.io/miniconda.html>`__
 
 
 2. Linux packages
 """""""""""""""""
 
-In order to install Python package ``Finufftpy`` you need to preinstall these. Run::
+In order to install Python package ``Finufftpy`` you need to have these installed. Run::
 
    sudo apt install -y --upgrade gcc g++ libfftw3-bin libfftw3-dev
 
-This command was tested on Ubuntu 16TLS.
-For other Linux distros please use the substitute command for ``apt`` (yum, apt-get, brew, etc.)
 
 Conda environment
 ^^^^^^^^^^^^^^^^^
@@ -51,14 +54,6 @@ Run::
 
    conda env create -f environment.yml
 
-**Common errors:**
-
-
-- ``"Prefix already exists .../envs/aspire"``
-   - Please delete the directory shown and try again.
-
-- ``"Can't process without a name"``
-   - You're not in the right folder. Please run under root folder of ASPIRE-Python.
 
 Activating ASPIRE environment
 """""""""""""""""""""""""""""
@@ -66,18 +61,6 @@ Activating ASPIRE environment
 Run::
 
    source activate aspire
-
-.. attention::
-
-   When you're done working with ASPIRE. It is highly recommended that you **deactivate** ASPIRE environment::
-
-      source deactivate
-
-.. note::
-   Depending on your Conda distribution, in some cases you should run::
-
-      conda activate aspire  # for activation
-      conda deactivate # for deactivation
 
 
 Installing finufftpy
@@ -89,7 +72,7 @@ Assuming all Linux packages from `Requirements <#linux-packages>`__ are installe
 
 Downloading data files
 ^^^^^^^^^^^^^^^^^^^^^^
-For some commands, you'll need to have certain binary files available for Aspire.
+For certain commands, you'll need to have some binary files available for Aspire.
 To download them simply Run::
 
    make data
@@ -97,9 +80,10 @@ To download them simply Run::
 Assuming no errors, you can now use Aspire tool.
 
 
-
 Usage
 -----
+
+For the complete documentation, list of available commands, common errors and more, please check out our `ReadTheDocs page <https://aspire-python.readthedocs.io/en/latest/usage.html>`__
 
 Invoking Aspire CLI tool
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -134,9 +118,6 @@ provide another layer of arguments, options and flags. In case of ``compare`` th
 
    $ python aspire.py -v 2 --debug compare  a.mrc  b.mrc --max-error=0.123
 
-.. note::
-   It is important to note that each command has to be followed by its own
-   options/arguments/flags of that specific level, not more, not less.
 
 Basic Examples
 ^^^^^^^^^^^^^^
@@ -151,13 +132,3 @@ Basic Examples
    in debug mode and with maximum verbosity::
 
       python aspire.py --debug -v 3 crop demmo.mrc 42
-
-
-**Common errors:**
-
--  ``ModuleNotFoundError: No module named 'click'``
-
-   You're outside Conda's environment!
-   Please `activate conda's env <installing.html#activating-conda-environment>`__
-   (or `create conda's env <installing.html#creating-conda-environment>`__
-   if you skipped the previous step 'Creating Conda environment'.
