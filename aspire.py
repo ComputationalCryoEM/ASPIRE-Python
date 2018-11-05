@@ -50,7 +50,7 @@ def simple_cli(debug, verbosity):
 
 @simple_cli.command('abinitio', short_help='Abinitio algorithm')
 @click.argument('stack_file', type=click.Path(exists=True))
-@click.option('-o', '--output', type=click.Path(exists=False), help='output file name')
+@click.option('-o', '--output', help='output file name')
 def abinitio_cmd(stack_file, output):
     """\b
         ############################
@@ -60,7 +60,9 @@ def abinitio_cmd(stack_file, output):
         Abinitio accepts a stack file, calculates Abinitio algorithm on it and saves
         the results into output file (default adds '_abinitio' to stack name)
     """
-    logger.info(f'running abinitio on stack file {stack_file}..')
+
+    if output is None:
+        output = set_output_name(stack_file, 'abinitio')
 
     if os.path.exists(output):
         logger.error(f"file {yellow(output)} already exsits! remove first "
@@ -68,6 +70,8 @@ def abinitio_cmd(stack_file, output):
         return
 
     stack = load_stack_from_file(stack_file)
+
+    logger.info(f'running abinitio on stack file {stack_file}..')
     output_stack = Abinitio.cryo_abinitio_c1_worker(stack)
 
     with mrcfile.new(output) as mrc_fh:
@@ -223,6 +227,7 @@ def star_phaseflip_cmd(star_file, output=None):
 
     if not star_file.endswith('.star'):
         logger.error("input file name doesn't end with '.star'!")
+        return
 
     if output is None:
         # convert 'path/to/foo.star' -> 'foo_phaseflipped.mrc'
@@ -230,8 +235,10 @@ def star_phaseflip_cmd(star_file, output=None):
         output = os.path.basename(output)
 
     if os.path.exists(output):
-        raise FileExistsError(f"output file {yellow(output)} already exists! "
-                              "Use flag '-o my_output' or remove file.")
+        logger.error(f"output file {yellow(output)} already exists! "
+                     "Use flag '-o OUTPUT' or remove file.")
+        return
+
     logger.info("phaseflipping projections..")
     stack = PreProcessor.phaseflip_star_file(star_file)
     with mrcfile.new(output) as fh:

@@ -12,7 +12,7 @@ from pyfftw.interfaces import numpy_fft
 from aspire.common.config import AbinitioConfig
 from aspire.common.exceptions import WrongInput
 from aspire.common.logger import logger
-from aspire.utils.data_utils import validate_square_projections
+from aspire.utils.data_utils import validate_square_projections, c_to_fortran
 
 
 class DiracBasis:
@@ -53,6 +53,7 @@ class Abinitio:
     @classmethod
     def cryo_abinitio_c1_worker(cls, stack):
 
+        stack = c_to_fortran(stack)
         validate_square_projections(stack)
 
         resolution = stack.shape[1]
