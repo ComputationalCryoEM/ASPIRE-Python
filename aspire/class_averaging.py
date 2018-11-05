@@ -9,11 +9,12 @@ import scipy.sparse as sps
 import scipy.sparse.linalg as spsl
 import scipy.linalg as scl
 import scipy.optimize as optim
+from console_progressbar import ProgressBar
 
 from numpy.polynomial.legendre import leggauss
 
 from aspire.common.config import ClassAveragesConfig
-from aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec
+from aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec, load_stack_from_file, c_to_fortran
 from aspire.utils.array_utils import estimate_snr, image_grid, cfft2, icfft2
 from aspire.common.logger import logger
 from aspire.utils.helpers import get_file_type, yellow, set_output_name
@@ -612,7 +613,11 @@ def bessel_ns_radial(bandlimit, support_size, x):
     phi_ns = np.zeros((len(x), len(angular_freqs)))
     phi = {}
 
-    for i in range(len(angular_freqs)):
+    pb = ProgressBar(total=100, prefix='bessel_ns_radial', suffix='completed',
+                     decimals=0, length=100, fill='%')
+    angular_freqs_length = len(angular_freqs)
+    for i in range(angular_freqs_length):
+        pb.print_progress_bar((i + 1) / angular_freqs_length * 100)
         r0 = x * r_ns[i] / bandlimit
         f = sp.jv(angular_freqs[i], r0)
         # probably the square and the sqrt not needed
@@ -647,7 +652,10 @@ def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
     coeff_pos_k = []
     pos_k = []
 
+    pb = ProgressBar(total=100, prefix='fbcoeff_nfft', suffix='completed',
+                     decimals=0, length=100, fill='%')
     for i in range(num_threads):
+        pb.print_progress_bar((i + 1) / num_threads * 100)
         curr_images = split_images[i]
         start_pixel = orig - support_size
         end_pixel = orig + support_size
@@ -658,7 +666,10 @@ def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
 
     pos_k = np.concatenate(pos_k, axis=2)
 
+    pb = ProgressBar(total=100, prefix='appending', suffix='completed',
+                     decimals=0, length=100, fill='%')
     for i in range(max_angular_freqs + 1):
+        pb.print_progress_bar((i + 1) / (max_angular_freqs + 1) * 100)
         coeff_pos_k.append(np.einsum('ki, k, kj -> ij', phi_ns[i], w, pos_k[:, i]))
 
     return coeff_pos_k
@@ -693,7 +704,7 @@ def cryo_pft_nfft(projections, precomp):
     finufftpy.nufft2d2many(x[0], x[1], pf, -1, 1e-15, projections)
     # toc = time.time()
 
-    # TODO Itay
+    # TODO is it a reference we want to keep?
     # using nudft around 5x slower didn't ret to optimize
     # grid_x, grid_y = image_grid(projections.shape[1])
     # pts = np.array([grid_y.flatten('F'), grid_x.flatten('F')])
@@ -766,7 +777,10 @@ def spca_whole(coeff, var_hat):
     mean_coeff = np.mean(coeff[0], axis=1)
     lr = len(coeff)
 
+    pb = ProgressBar(total=100, prefix='spca_whole', suffix='completed',
+                     decimals=0, length=100, fill='%')
     for i in range(max_ang_freq + 1):
+        pb.print_progress_bar((i + 1) / (max_ang_freq + 1) * 100)
         tmp = coeff[i]
         if i == 0:
             tmp = (tmp.T - mean_coeff).T
@@ -999,16 +1013,10 @@ class ClassAverages:
                             'please remove or use flag -o for a different outstack.')
 
         # convert images to numpy based on their type
-        file_type = get_file_type(input_images)
-        if file_type == '.mat':
-            images = mat_to_npy(input_images)
-        elif file_type == '.npy':
-            images = np.load(input_images)
-        elif file_type == '.mrc' or file_type == '.mrcs':
-            images = mrcfile.open(input_images).data
-            images = images.transpose((2, 1, 0)).copy()
-        else:
-            raise ValueError('input_images must be mat/npy/mrc/mrcs format')
+        images = load_stack_from_file(input_images, c_contiguous=False)
+
+        # TODO adjust all funcitons to work in the same indexing
+        images = c_to_fortran(images)
 
         # estimate snr
         logger.info('estimating snr..')
@@ -1086,7 +1094,10 @@ class ClassAverages:
         ang_freqs = []
         rad_freqs = []
         vec_d = []
+        pb = ProgressBar(total=100, prefix='compute_spca(1/2)', suffix='completed',
+                         decimals=0, length=100, fill='%')
         for i in range(len(d)):
+            pb.print_progress_bar((i + 1) / len(d) * 100)
             if len(d[i]) != 0:
                 ang_freqs.extend(np.ones(len(d[i]), dtype='int') * i)
                 rad_freqs.extend(np.arange(len(d[i])) + 1)
@@ -1103,7 +1114,11 @@ class ClassAverages:
         rad_freqs = rad_freqs[sorted_indices]
 
         s_coeff = np.zeros((len(d), num_images), dtype='complex128')
+        pb = ProgressBar(total=100, prefix='spca_coeff', suffix='completed',
+                         decimals=0, length=100, fill='%')
+
         for i in range(len(d)):
+            pb.print_progress_bar((i + 1) / len(d) * 100)
             s_coeff[i] = spca_coeff[ang_freqs[i]][rad_freqs[i] - 1]
 
         fn = ift_fb(support_size, bandlimit)
@@ -1111,10 +1126,24 @@ class ClassAverages:
         eig_im = np.zeros((np.square(2 * support_size), len(d)), dtype='complex128')
 
         # TODO it might be possible to do this faster
-        for i in range(len(d)):
-            tmp = fn[ang_freqs[i]]
-            tmp = tmp.reshape((int(np.square(2 * support_size)), tmp.shape[2]), order='F')
-            eig_im[:, i] = np.dot(tmp, u[ang_freqs[i]][:, rad_freqs[i] - 1])
+        pb = ProgressBar(total=100, prefix='compute_spca(2/2)', suffix='completed',
+                         decimals=0, length=100, fill='%')
+
+        err = False
+        try:
+            for i in range(len(d)):
+                pb.print_progress_bar((i + 1) / len(d) * 100)
+                tmp = fn[ang_freqs[i]]
+                tmp = tmp.reshape((int(np.square(2 * support_size)), tmp.shape[2]), order='F')
+                eig_im[:, i] = np.dot(tmp, u[ang_freqs[i]][:, rad_freqs[i] - 1])
+        except Exception as e:
+            import IPython
+            IPython.embed()
+            err = True
+
+        if not err:
+            import IPython
+            IPython.embed()
 
         fn0 = fn[0].reshape((int(np.square(2 * support_size)), fn[0].shape[2]), order='F')
 
