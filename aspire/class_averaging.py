@@ -17,7 +17,7 @@ from aspire.common.config import ClassAveragesConfig
 from aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec, load_stack_from_file, c_to_fortran
 from aspire.utils.array_utils import estimate_snr, image_grid, cfft2, icfft2
 from aspire.common.logger import logger
-from aspire.utils.helpers import get_file_type, yellow, set_output_name
+from aspire.utils.helpers import yellow, set_output_name
 
 
 class Precomp:
@@ -1129,21 +1129,11 @@ class ClassAverages:
         pb = ProgressBar(total=100, prefix='compute_spca(2/2)', suffix='completed',
                          decimals=0, length=100, fill='%')
 
-        err = False
-        try:
-            for i in range(len(d)):
-                pb.print_progress_bar((i + 1) / len(d) * 100)
-                tmp = fn[ang_freqs[i]]
-                tmp = tmp.reshape((int(np.square(2 * support_size)), tmp.shape[2]), order='F')
-                eig_im[:, i] = np.dot(tmp, u[ang_freqs[i]][:, rad_freqs[i] - 1])
-        except Exception as e:
-            import IPython
-            IPython.embed()
-            err = True
-
-        if not err:
-            import IPython
-            IPython.embed()
+        for i in range(len(d)):
+            pb.print_progress_bar((i + 1) / len(d) * 100)
+            tmp = fn[ang_freqs[i]]
+            tmp = tmp.reshape((int(np.square(2 * support_size)), tmp.shape[2]), order='F')
+            eig_im[:, i] = np.dot(tmp, u[ang_freqs[i]][:, rad_freqs[i] - 1])
 
         fn0 = fn[0].reshape((int(np.square(2 * support_size)), fn[0].shape[2]), order='F')
 
