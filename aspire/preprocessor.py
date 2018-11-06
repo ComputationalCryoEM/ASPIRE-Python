@@ -1,15 +1,17 @@
 import math
 import os
+
 import mrcfile
 import numpy as np
 
 from box import Box
+from console_progressbar import ProgressBar
 from numpy import meshgrid, mean
 from numpy.core.multiarray import zeros
 from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
 from numpy.ma import sqrt
 
-from aspire.common.config import PreProcessorConfig
+from aspire.common.config import PreProcessorConfig, AspireConfig
 from aspire.common.exceptions import DimensionsIncompatible, WrongInput
 from aspire.common.logger import logger
 from aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr, \
@@ -531,6 +533,62 @@ class PreProcessor:
             projections[idx, :, :] = pfim.astype('float32')
 
         return projections
+
+    @classmethod
+    def normalize_background(cls, stack, radius=None):
+        """
+            Normalize background to mean 0 and std 1.
+            Estimate the mean and std of each image in the stack using pixels
+            outside radius r (pixels), and normalize the image such that the
+            background has mean 0 and std 1. Each image in the stack is corrected
+            separately.
+
+            :param radius: radius for normalization (default is half the side of image)
+
+            Example:
+            normalized_stack = cryo_normalize_background(stack,55);
+        """
+        validate_square_projections(stack)
+        num_images = stack.shape[0]  # assuming C-contiguous array
+        side = stack.shape[1]
+
+        if radius is None:
+            radius = np.floor(side/2)
+
+        # find indices of backgruond pixels in the images
+        ctr = (side + 1) / 2
+        x_axis, y_axis = np.meshgrid(range(1, side+1), range(1, side+1))
+        radiisq = (x_axis.flatten() - ctr) ** 2 + (y_axis.flatten() - ctr) ** 2
+        background_pixels_idx = radiisq > radius * radius
+
+        if AspireConfig.verbosity == 1:
+            pb = ProgressBar(total=100, prefix='normalizing background', suffix='completed',
+                             decimals=0, length=100, fill='%')
+
+        else:
+            pb = None
+
+        normalized_stack = np.ones(stack.shape)
+        for i in range(num_images):
+            if pb:
+                pb.print_progress_bar((i + 1) / num_images * 100)
+
+            proj = stack[i, :, :]
+            background_pixels = proj.flatten() * background_pixels_idx
+            background_pixels = background_pixels[background_pixels != 0]
+
+            # compute mean and standard deviation of background pixels
+            proj_mean = np.mean(background_pixels)
+            std = np.std(background_pixels, ddof=1)
+
+            # normalize the projections
+            if std < 1.0e-5:
+                logger.warning(f'Variance of background of image {i} is too small (std={std}). '
+                               'Cannot normalize!')
+
+            normalized_stack[i, :, :] = (proj - proj_mean) / std
+
+        return normalized_stack
 
 
 def cryo_parse_Relion_CTF_struct(star_record):
