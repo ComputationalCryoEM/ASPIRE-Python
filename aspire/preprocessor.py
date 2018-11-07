@@ -366,7 +366,7 @@ class PreProcessor:
     @classmethod
     def prewhiten_stack_file(cls, stack_file, output=None):
         if output is None:
-            output = "prewhitten.mrc"
+            output = "prewhitened.mrc"
 
         if os.path.exists(output):
             raise FileExistsError(f"output file '{yellow(output)}' already exists!")
@@ -374,10 +374,10 @@ class PreProcessor:
         stack = load_stack_from_file(stack_file)
 
         # TODO adjust to same unified F/C contiguous
-        prewhitten_stack = c_to_fortran(cls.prewhiten_stack(stack.T))
+        prewhitten_stack = cls.prewhiten_stack(c_to_fortran(stack))
 
         with mrcfile.new(output) as fh:
-            fh.set_data(fortran_to_c(prewhitten_stack).astype('float32'))
+            fh.set_data(prewhitten_stack.astype('float32'))
 
     @staticmethod
     def cryo_noise_estimation(projections, radius_of_mask=None):
@@ -453,6 +453,8 @@ class PreProcessor:
         p2 = np.zeros((num_images, resolution, resolution), dtype='complex128')
         proj = proj.transpose((2, 0, 1)).copy()
 
+        pb = ProgressBar(total=100, prefix='whitening', suffix='completed',
+                         decimals=0, length=100, fill='%')
         for i in range(num_images):
             pp[start_idx:end_idx, start_idx:end_idx] = proj[i]
 
@@ -461,8 +463,10 @@ class PreProcessor:
             pp2 = fast_icfft2(fp)
 
             p2[i] = pp2[start_idx:end_idx, start_idx:end_idx]
+            if AspireConfig.verbosity == 1:
+                pb.print_progress_bar((i + 1) / num_images * 100)
 
-        proj = p2.real.transpose((1, 2, 0)).copy()
+        # proj = p2.real.transpose((1, 2, 0)).copy()
         return proj, filter_var, nzidx
 
     @classmethod
