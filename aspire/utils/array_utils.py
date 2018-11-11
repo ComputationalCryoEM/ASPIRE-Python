@@ -502,6 +502,7 @@ def fast_cfft2(x):
 def fast_icfft2(x):
     if len(x.shape) == 2:
         return fftshift(np.transpose(ifft2(np.transpose(ifftshift(x)))))
+
     elif len(x.shape) == 3:
         y = ifftshift(x, (1, 2))
         y = np.transpose(y, (0, 2, 1))
@@ -509,5 +510,6 @@ def fast_icfft2(x):
         y = np.transpose(y, (0, 2, 1))
         y = fftshift(y, (1, 2))
         return y
+
     else:
         raise ValueError("x must be 2D or 3D")

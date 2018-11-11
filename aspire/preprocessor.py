@@ -375,9 +375,8 @@ class PreProcessor:
 
         # TODO adjust to same unified F/C contiguous
         prewhitten_stack = cls.prewhiten_stack(c_to_fortran(stack))
-
         with mrcfile.new(output) as fh:
-            fh.set_data(prewhitten_stack.astype('float32'))
+            fh.set_data(np.transpose(prewhitten_stack, (2,1,0)).astype('float32'))
 
     @staticmethod
     def cryo_noise_estimation(projections, radius_of_mask=None):
@@ -423,7 +422,7 @@ class PreProcessor:
         :return: Pre-whitened stack of images.
         """
 
-        delta = np.finfo(proj.dtype).resolution
+        delta = np.finfo(proj.dtype).eps
 
         resolution, _, num_images = proj.shape
         l = resolution // 2
@@ -447,14 +446,17 @@ class PreProcessor:
 
         fnz = filter_var[nzidx]
         one_over_fnz = 1 / fnz
-        one_over_fnz_as_mat = np.ones((noise_response.shape[0], noise_response.shape[0]))
-        one_over_fnz_as_mat[nzidx] *= one_over_fnz
+
+        # matrix with 1/fnz in nzidx, 0 elsewhere
+        one_over_fnz_as_mat = np.zeros((noise_response.shape[0], noise_response.shape[0]))
+        one_over_fnz_as_mat[nzidx] += one_over_fnz
         pp = np.zeros((noise_response.shape[0], noise_response.shape[0]))
         p2 = np.zeros((num_images, resolution, resolution), dtype='complex128')
         proj = proj.transpose((2, 0, 1)).copy()
 
         pb = ProgressBar(total=100, prefix='whitening', suffix='completed',
                          decimals=0, length=100, fill='%')
+
         for i in range(num_images):
             pp[start_idx:end_idx, start_idx:end_idx] = proj[i]
 
@@ -466,7 +468,7 @@ class PreProcessor:
             if AspireConfig.verbosity == 1:
                 pb.print_progress_bar((i + 1) / num_images * 100)
 
-        # proj = p2.real.transpose((1, 2, 0)).copy()
+        proj = p2.real.transpose((1, 2, 0)).copy()
         return proj, filter_var, nzidx
 
     @classmethod
