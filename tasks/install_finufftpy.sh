@@ -1,9 +1,9 @@
 CONDA_MISSING_ERR_MSG="You're running outside conda environment! please run 'conda env create -f environment.yml' first, then activate it with 'source activate aspire'."
 
 # make sure you're in the right directory
-if [[ "$(basename `pwd`)" != 'ASPIRE-Python' ]]
+if [ ! -f 'environment.yml' ] ||  ! grep -q aspire ./environment.yml
 then
-  echo "Please run this script under ASPIRE-Python root directory!"
+  echo "Can't find 'environment.yml' for Aspire! Change directory to project's root dir."
   exit 1
 fi
 

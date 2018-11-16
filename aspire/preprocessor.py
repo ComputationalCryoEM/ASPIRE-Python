@@ -468,6 +468,7 @@ class PreProcessor:
             if AspireConfig.verbosity == 1:
                 pb.print_progress_bar((i + 1) / num_images * 100)
 
+        # change back to x,y,z convention
         proj = p2.real.transpose((1, 2, 0)).copy()
         return proj, filter_var, nzidx
 
