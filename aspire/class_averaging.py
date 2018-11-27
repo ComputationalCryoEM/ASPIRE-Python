@@ -657,9 +657,10 @@ def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
     for i in range(num_threads):
         pb.print_progress_bar((i + 1) / num_threads * 100)
         curr_images = split_images[i]
-        start_pixel = orig - support_size
-        end_pixel = orig + support_size
-        curr_images = curr_images[start_pixel:end_pixel, start_pixel:end_pixel, :]
+        # start_pixel = orig - support_size
+        # end_pixel = orig + support_size
+        # print(start_pixel, end_pixel, curr_images.shape)
+        # curr_images = curr_images[start_pixel:end_pixel, start_pixel:end_pixel, :]
         tmp = cryo_pft_nfft(curr_images, precomp)
         pf_f = scale * np.fft.fft(tmp, axis=1)
         pos_k.append(pf_f[:, :max_angular_freqs + 1, :])
@@ -1031,17 +1032,17 @@ class ClassAverages:
         classes, class_refl, rot, corr, _ = cls.initial_classification_fd_update(spca_data, n_nbor)
 
         # VDM
-        logger.info('calculating vdm..')
-        class_vdm, class_vdm_refl, angle = cls.vdm(classes, np.ones(classes.shape), rot,
-                                                   class_refl, 50, False, 50)
+        logger.info('skipping vdm..')
+        # class_vdm, class_vdm_refl, angle = cls.vdm(classes, np.ones(classes.shape), rot,
+        #                                            class_refl, 50, False, 50)
 
         # align main
         list_recon = np.arange(images.shape[2])
         use_em = True
         logger.info('aligning main..')
-        shifts, corr, unsorted_averages_fname, norm_variance = cls.align_main(images, angle,
-                                                                              class_vdm,
-                                                                              class_vdm_refl,
+        shifts, corr, unsorted_averages_fname, norm_variance = cls.align_main(images, rot,
+                                                                              classes,
+                                                                              class_refl,
                                                                               spca_data, nn_avg, 15,
                                                                               list_recon,
                                                                               'my_tmpdir',
@@ -1058,7 +1059,7 @@ class ClassAverages:
         # num_neighbors = class_vdm.shape[1]
         # n_skip = min(to_image // size_output, num_neighbors)
         # indices = cryo_select_subset(class_vdm, size_output, contrast_priority, to_image, n_skip)
-        indices = cryo_smart_select_subset(class_vdm, size_output, contrast_priority, to_image)
+        indices = cryo_smart_select_subset(classes, size_output, contrast_priority, to_image)
 
         with mrcfile.new(output_images) as mrc:
             mrc.set_data(unsorted_averages_fname.transpose((2, 1, 0)).astype('float32'))
