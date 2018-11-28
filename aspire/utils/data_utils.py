@@ -133,3 +133,29 @@ def fctr(n):
         n = np.array([n, n])
 
     return np.ceil((n + 1) / 2)
+
+
+def cfftn(x):
+    """
+    Aliased n-dimensional FFT of the image x.
+    The FFT is computed using O((n^d)logn) operations, where d is the dimension of the image.
+
+    :param x:   The image whose FFT should be computed. Can be of odd or even length in each dimension.
+
+    :return:    The aliased n-D FFT of the image x.
+
+    """
+    return np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(x)))
+
+
+def icfftn(x):
+    """
+    Aliased n-dimensional Inverse FFT of the array x.
+    The inverse FFT is computed using O((n^d)logn) operations,
+    where d is the dimension of the image.
+    :param x:   The frequency image whose inverse FFT should be computed.
+                Can be of odd or even length in each dimension.
+    :return:    The aliased n-dimensional inverse FFT of the array x.
+
+    """
+    return np.fft.fftshift(np.fft.ifftn(np.fft.ifftshift(x)))
