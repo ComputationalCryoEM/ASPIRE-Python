@@ -291,7 +291,7 @@ def radius_norm(n: int, origin=None):
                        np.arange(1-b, n[1]-b+1)/n[1])  # zero at x,y
     radius = np.sqrt(x ** 2 + y ** 2)
 
-    theta = np.arctan2(y, x)
+    theta = np.arctan2(x, y)
 
     return radius, theta
 
