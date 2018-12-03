@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import finufftpy
+from aspire.common.logger import logger
 from numpy.random import rand
 from scipy.special import erfinv
 from aspire.utils.data_utils import cfftn, icfftn, mat_to_npy, mat_to_npy_vec
@@ -53,12 +54,14 @@ def cryo_gen_projections(n, k, snr, max_shift=0, shift_step=0, ref_shifts=None, 
     if rots_ref is not None:
         rots = rots_ref
     else:
+        logger.info('For reproducible results, call initstate before calling cryo_gen_projections ')
         rots = rand_rots(k)
     shifts = None
     if ref_shifts is not None:
         shifts = ref_shifts
 
-    volref = pickle.load(open('cleanrib.p', 'rb'))
+    volref = pickle.load(open('aspire/projections_simulation/cleanrib.p', 'rb'))
+    logger.info('Generating clean projections')
     projections = cryo_project(volref, rots, n, precision)
 
     # Swap dimensions for compitability with old gen_projections.
@@ -66,13 +69,14 @@ def cryo_gen_projections(n, k, snr, max_shift=0, shift_step=0, ref_shifts=None, 
 
     # Add shifts
     if shifts is not None:
-        # Adding user-provided shifts to projections
+        logger.info('Adding user-provided shifts to projections')
         [projections, shifts] = cryo_addshifts(projections, shifts)
     else:
-        # Adding randomly-generated shifts to projections
+        logger.info('Adding randomly-generated shifts to projections')
         [projections, shifts] = cryo_addshifts(projections, None, max_shift, shift_step)
 
     # Add noise
+    logger.info('Adding noise to projections')
     [noisy_projections, noise, i, sigma] = cryo_addnoise(projections, snr, 'gaussian')
 
     return [projections, noisy_projections, shifts, rots]
@@ -115,7 +119,6 @@ def cryo_project(volume, rot, n=None, precision='single', batch_size=100):
          p=cryo_project(vol,rot);
          imagesc(p);
 
-     Yoel Shkolnisky, February 2018.
     """
 
     if precision == 'single':
@@ -139,9 +142,10 @@ def cryo_project(volume, rot, n=None, precision='single', batch_size=100):
     else:
         n_range = np.arange(-n / 2 + 1 / 2, n / 2 - 1 / 2 + 1)
 
-    [i, j] = np.meshgrid(n_range, n_range)
-    i = i.ravel()
-    j = j.ravel()
+    # both meshgrid and flatten are reversed comparing to matlab so the result is the same
+    [x, y] = np.meshgrid(n_range, n_range)
+    x = x.flatten()
+    y = y.flatten()
 
     rn = np.size(n_range)
     nv = np.size(volume, 1)
@@ -153,7 +157,7 @@ def cryo_project(volume, rot, n=None, precision='single', batch_size=100):
         padded_volume = np.zeros((rn, rn, rn), dtype=dtype)
         padded_volume[dn:dn + nv, dn:dn + nv, dn:dn + nv] = fv
         volume = icfftn(padded_volume)
-        assert (np.linalg.norm(np.imag(volume.flatten(order='F'))) / np.linalg.norm(volume.flatten(order='F')) < 1.0e-5)
+        assert (np.linalg.norm(volume.imag) / np.linalg.norm(volume) < 1.0e-5)
         nv = rn
     k = np.size(rot, 2)
     batch_size = min(batch_size, k)
@@ -168,11 +172,11 @@ def cryo_project(volume, rot, n=None, precision='single', batch_size=100):
         # So compute the actual_batch_size.
         actual_batch_size = min(batch_size, k - batch * batch_size)
         # Sampling points in Fourier domain for all images of the current batch.
-        p = np.zeros((np.size(i) * actual_batch_size, 3))
+        p = np.zeros((np.size(x) * actual_batch_size, 3))
         startidx = (batch) * batch_size
 
-        for ind in range(0, actual_batch_size):
-            r = rot[:, :, startidx + ind]
+        for i in range(0, actual_batch_size):
+            r = rot[:, :, startidx + i]
             rt = r.T
             # n_x, n_y, n_z are the image of the unit vectors in the x, y, z
             # directions under the inverse rotation
@@ -180,35 +184,36 @@ def cryo_project(volume, rot, n=None, precision='single', batch_size=100):
             n_y = rt[:, 1]
             # n_z = rt[:, 2] #not used - just for completeness
 
-            p[ind * np.size(i): (ind + 1) * np.size(i), :] = (i * np.array([n_x]).T + j * np.array([n_y]).T).T
+            p[i * np.size(x): (i + 1) * np.size(x), :] = (x * np.array([n_x]).T + y * np.array([n_y]).T).T
 
         p = -2 * np.pi * p / nv
 
         # NUFFT all images in the current batch
         # projection_fourier = nufft3(volume, -p.T, nufft_opt)
         projection_fourier = nufft3(volume, -p.T)
-        projection_fourier = projection_fourier.reshape((np.size(i), actual_batch_size), order='F')
-        p = p.reshape([np.size(i), actual_batch_size, 3], order='F')
+        projection_fourier = projection_fourier.reshape((np.size(x), actual_batch_size), order='F')
+        p = p.reshape([np.size(x), actual_batch_size, 3], order='F')
 
         if np.mod(n, 2) == 0:
             projection_fourier = projection_fourier * np.exp(1j * p.sum(axis=2) / 2)
-            i_rep = np.tile(i, (actual_batch_size, 1)).T
-            j_rep = np.tile(j, (actual_batch_size, 1)).T
+            i_rep = np.tile(x, (actual_batch_size, 1)).T
+            j_rep = np.tile(y, (actual_batch_size, 1)).T
             projection_fourier = projection_fourier * np.exp(2 * np.pi * 1j * (i_rep + j_rep - 1) / (2 * n))
 
         projections_temp = np.zeros((n, n, batch_size), dtype=dtype)
-        for ind in range(0, actual_batch_size):
-            temp = (projection_fourier[:, ind]).reshape((n, n), order='F')
+        for i in range(0, actual_batch_size):
+            temp = (projection_fourier[:, i]).reshape((n, n), order='F')
             temp = numpy_fft.ifftshift(temp)
             projection = numpy_fft.fftshift(numpy_fft.ifft2(temp))
 
             if np.mod(n, 2) == 0:
-                projection = projection * np.exp(2 * np.pi * 1j * (i + j) / (2 * n)).reshape((n, n), order='F')
+                projection = projection * np.exp(2 * np.pi * 1j * (x + y) / (2 * n)).reshape((n, n), order='F')
 
-            if np.linalg.norm(projection.flatten(order='F').imag) / np.linalg.norm(projection.flatten(order='F')) > imagtol:
+            if np.linalg.norm(projection.flatten(order='F').imag) / np.linalg.norm(
+                    projection.flatten(order='F')) > imagtol:
                 raise Exception('GCAR:imaginaryComponents', 'projection has imaginary components');
             projection = projection.real
-            projections_temp[:, :, ind] = projection
+            projections_temp[:, :, i] = projection
 
         projection_batches[:, :, :, batch] = projections_temp
 
@@ -345,12 +350,12 @@ def cryo_addshifts(projections, shifts=None, max_shift=0, shift_step=0):
     else:
         # Note that in the case of an even image, the center is not at the middle.
         # This can be easily fixed by switching to the appropriate FFT routines.
-        range_x = np.arange(-nx/2, nx/2)
+        range_x = np.arange(-nx / 2, nx / 2)
 
     if np.mod(ny, 2) == 1:
         range_y = np.arange(-(ny - 1) / 2, ((ny - 1) / 2) + 1)
     else:
-        range_y = np.arange(-ny/2, ny/2)
+        range_y = np.arange(-ny / 2, ny / 2)
 
     [omega_x, omega_y] = np.meshgrid(range_x, range_y)
 
@@ -414,11 +419,10 @@ def cryo_addnoise(projections, snr, noise_type, seed=None):
     i1 = np.ones(np.shape(i))
     i = 1 / np.sqrt((1 + i ** 2))
     i = 0 * i1 + 1 * i  # TODO: ask yoel
-    i = i / np.linalg.norm(i.flatten(order='F'))
+    i = i / np.linalg.norm(i)
     noise_response = np.sqrt(i)
 
     for j in range(0, k):
-        np.random.seed(1137)
         gn = randn2(2 * p + 1, 2 * p + 1).T
         if noise_type == 'gaussian':
             cn = gn
@@ -426,8 +430,8 @@ def cryo_addnoise(projections, snr, noise_type, seed=None):
             cn = np.real(icfft2(cfft2(gn) * noise_response))
 
         cn = cn[lowidx:highidx, lowidx: highidx]
-        cn = cn / np.std(cn.flatten(order='F'))
-        cn = cn * sigma
+        t = sigma / np.std(cn)
+        cn *= t
         noisy_projections[:, :, j] = projections[:, :, j] + cn
         noise[:, :, j] = cn
 
@@ -437,6 +441,6 @@ def cryo_addnoise(projections, snr, noise_type, seed=None):
 def cart2rad(n):
     n = np.math.floor(n)
     p = (n - 1) / 2
-    [x, y] = np.meshgrid(np.arange(-p, p+1), np.arange(-p, p+1))
+    [x, y] = np.meshgrid(np.arange(-p, p + 1), np.arange(-p, p + 1))
     return np.sqrt(x ** 2 + y ** 2)
 
