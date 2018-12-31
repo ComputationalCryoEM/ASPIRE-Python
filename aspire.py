@@ -279,6 +279,42 @@ def star_phaseflip_cmd(stack_file, output=None):
     logger.info(f"saved to {yellow(output)}.")
 
 
+@simple_cli.command('normalize', short_help='Normalize background')
+@click.option('-o', '--output', help=("output mrc file name (default "
+                                      "adds '_normalized' to input name)"))
+@click.argument('stack_file', type=click.Path(exists=True))
+def normalize_cmd(stack_file, output=None):
+    """ \b
+        ############################
+            Normalize Stack
+        ############################
+
+        Normalize stack of projections.
+
+        \b
+        Example:
+        $ python aspire.py normalize projections.mrc
+        will produce file projections_normalized.mrc
+
+    """
+
+    if output is None:
+        output = set_output_name(stack_file, 'normalized')
+
+    if os.path.exists(output):
+        logger.error(f"output file {yellow(output)} already exsits! "
+                     f"remove first or use another name with '-o NAME' flag")
+        return
+
+    logger.info("normalizing projections..")
+    stack = load_stack_from_file(stack_file, c_contiguous=True)
+    normalized_stack = PreProcessor.normalize_background(stack.astype('float64'))
+    with mrcfile.new(output) as fh:
+        fh.set_data(normalized_stack.astype('float32'))
+
+    logger.info(f"saved to {yellow(output)}.")
+
+
 @simple_cli.command('downsample', short_help='Downsample projections in stack')
 @click.argument('stack_file', type=click.Path(exists=True))
 @click.argument('side', type=int)

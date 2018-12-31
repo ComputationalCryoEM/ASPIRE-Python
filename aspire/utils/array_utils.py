@@ -6,8 +6,11 @@ TODO reduced this file by refactoring it and moving crop/downsample capabilities
 """
 import numpy as np
 import pyfftw
+from console_progressbar import ProgressBar
 from numpy.fft import fftshift, ifftshift
 from pyfftw.interfaces.numpy_fft import fft2, ifft2
+
+from aspire.common.logger import logger
 
 
 def crop(images, out_size, is_stack, fillval=0.0):
@@ -288,7 +291,7 @@ def radius_norm(n: int, origin=None):
                        np.arange(1-b, n[1]-b+1)/n[1])  # zero at x,y
     radius = np.sqrt(x ** 2 + y ** 2)
 
-    theta = np.arctan2(y, x)
+    theta = np.arctan2(x, y)
 
     return radius, theta
 
@@ -309,14 +312,14 @@ def cryo_epsds(imstack, samples_idx, max_d, verbose=None):
             if d <= max_d ** 2:
                 idx, _ = bsearch(dsquare, d*(1-1e-13), d*(1+1e-13))
                 if idx is None:
-                    raise Warning('something went wrong in bsearch')
+                    logger.warning('something went wrong in bsearch')
                 r2[i+p-1, j+p-1] = r[idx-1]
 
     w = gwindow(p, max_d)
     p2 = cfft2(r2 * w)
     err = np.linalg.norm(p2.imag) / np.linalg.norm(p2)
     if err > 1e-12:
-        raise Warning('Large imaginary components in P2 = {}'.format(err))
+        logger.warning('Large imaginary components in P2 = {}'.format(err))
 
     p2 = p2.real
 
@@ -332,7 +335,7 @@ def cryo_epsds(imstack, samples_idx, max_d, verbose=None):
         max_neg_err = np.max(np.abs(p2[neg_idx]))
         if max_neg_err > 1e-2:
             neg_norm = np.linalg.norm(p2[neg_idx])
-            raise Warning('Power specrtum P2 has negative values with energy {}'.format(neg_norm))
+            logger.warning('Power specrtum P2 has negative values with energy {}'.format(neg_norm))
         p2[neg_idx] = 0
     return p2, r, r2, x
 
@@ -362,7 +365,7 @@ def cryo_epsdr(vol, samples_idx, max_d, verbose):
             if d <= max_d ** 2:
                 idx, _ = bsearch(dsquare, d - 1e-13, d + 1e-13)
                 if idx is None:
-                    raise Warning('something went wrong in bsearch')
+                    logger.warning('something went wrong in bsearch')
                 dist_map[i, j] = idx
 
     dist_map = dist_map.astype('int') - 1
@@ -499,6 +502,7 @@ def fast_cfft2(x):
 def fast_icfft2(x):
     if len(x.shape) == 2:
         return fftshift(np.transpose(ifft2(np.transpose(ifftshift(x)))))
+
     elif len(x.shape) == 3:
         y = ifftshift(x, (1, 2))
         y = np.transpose(y, (0, 2, 1))
@@ -506,5 +510,6 @@ def fast_icfft2(x):
         y = np.transpose(y, (0, 2, 1))
         y = fftshift(y, (1, 2))
         return y
+
     else:
         raise ValueError("x must be 2D or 3D")
