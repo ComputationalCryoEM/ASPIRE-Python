@@ -77,7 +77,7 @@ def cryo_gen_projections(n, k, snr, max_shift=0, shift_step=0, ref_shifts=None, 
 
     # Add noise
     logger.info('Adding noise to projections')
-    [noisy_projections, noise, i, sigma] = cryo_addnoise(projections, snr, 'gaussian')
+    [noisy_projections, _, _, _] = cryo_addnoise(projections, snr, 'gaussian')
 
     return [projections, noisy_projections, shifts, rots]
 
@@ -418,7 +418,7 @@ def cryo_addnoise(projections, snr, noise_type, seed=None):
     i = cart2rad(2 * p + 1)
     i1 = np.ones(np.shape(i))
     i = 1 / np.sqrt((1 + i ** 2))
-    i = 0 * i1 + 1 * i  # TODO: ask yoel
+    i = 0 * i1 + 1 * i  # need to be removed
     i = i / np.linalg.norm(i)
     noise_response = np.sqrt(i)
 
