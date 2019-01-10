@@ -18,7 +18,7 @@ from aspire.common.config import AspireConfig, PreProcessorConfig
 from aspire.class_averaging import ClassAverages
 from aspire.preprocessor import PreProcessor
 from aspire.utils.compare_stacks import compare_stack_files
-from aspire.utils.data_utils import load_stack_from_file
+from aspire.utils.data_utils import load_stack_from_file, c_to_fortran, read_mrc_like_matlab
 from aspire.utils.helpers import yellow, requires_binaries, set_output_name, red
 from aspire.utils.viewstack import view_stack
 
@@ -69,8 +69,7 @@ def abinitio_cmd(stack_file, output):
                      "or use another name with '-o NAME'")
         return
 
-    stack = load_stack_from_file(stack_file)
-
+    stack = read_mrc_like_matlab(stack_file)
     logger.info(f'running abinitio on stack file {stack_file}..')
     output_stack = Abinitio.cryo_abinitio_c1_worker(stack)
 
@@ -241,6 +240,8 @@ def star_phaseflip_cmd(star_file, output=None):
 
     logger.info("phaseflipping projections..")
     stack = PreProcessor.phaseflip_star_file(star_file)
+
+    stack = stack.transpose(0, 2, 1)
     with mrcfile.new(output) as fh:
         fh.set_data(stack.astype('float32'))
 
@@ -307,8 +308,9 @@ def normalize_cmd(stack_file, output=None):
         return
 
     logger.info("normalizing projections..")
-    stack = load_stack_from_file(stack_file, c_contiguous=True)
+    stack = read_mrc_like_matlab(stack_file)
     normalized_stack = PreProcessor.normalize_background(stack.astype('float64'))
+    normalized_stack = c_to_fortran(normalized_stack).astype('single')
     with mrcfile.new(output) as fh:
         fh.set_data(normalized_stack.astype('float32'))
 

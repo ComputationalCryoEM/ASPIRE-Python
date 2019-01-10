@@ -7,8 +7,7 @@ def crop2(x, out_shape):  # [30, 20, 50]
     out_shape = np.array(out_shape)
     x_shape = np.array(x.shape)
     out_shape[np.where(out_shape < 0)] = x_shape[np.where(out_shape < 0)]
-    odds = (x_shape - out_shape) % 2 == 1
-    low = (x_shape - out_shape + odds) // 2
+    low = x_shape // 2 - out_shape // 2
     high = low + out_shape
 
     if x.ndim is 1:

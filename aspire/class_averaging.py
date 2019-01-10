@@ -130,7 +130,7 @@ def fast_rotate_precomp(szx, szy, phi):
     for x in range(szx):
         ux = u * (x + 1 - cx + sx)
         my[r, x] = np.exp(alpha1 * ux)
-        my[r_t, x] = np.conj(my[1: cy - 2 * sy, x])
+        my[r_t, x] = np.conj(my[1: int(cy - 2 * sy), x])
 
     my = my.T
 
@@ -142,7 +142,7 @@ def fast_rotate_precomp(szx, szy, phi):
     for y in range(szy):
         uy = u * (y + 1 - cy + sy)
         mx[r, y] = np.exp(alpha2 * uy)
-        mx[r_t, y] = np.conj(mx[1: cx - 2 * sx, y])
+        mx[r_t, y] = np.conj(mx[1: int(cx - 2 * sx), y])
 
     # because I am using real fft I take only part of mx and my
     return FastRotatePrecomp(phi, mx[:szx // 2 + 1].copy(), my[:, :szy // 2 + 1].copy(), mult90)
@@ -632,7 +632,7 @@ def bessel_ns_radial(bandlimit, support_size, x):
 
 def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
     image_size = split_images[0].shape[0]
-    orig = int(np.floor(image_size / 2))
+    orig = image_size // 2
     new_image_size = int(2 * support_size)
 
     # unpacking input
@@ -657,10 +657,10 @@ def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
     for i in range(num_threads):
         pb.print_progress_bar((i + 1) / num_threads * 100)
         curr_images = split_images[i]
-        # start_pixel = orig - support_size
-        # end_pixel = orig + support_size
-        # print(start_pixel, end_pixel, curr_images.shape)
-        # curr_images = curr_images[start_pixel:end_pixel, start_pixel:end_pixel, :]
+        # should be fine without cutting to even size
+        start_pixel = orig - support_size
+        end_pixel = orig + support_size
+        curr_images = curr_images[start_pixel:end_pixel, start_pixel:end_pixel, :]
         tmp = cryo_pft_nfft(curr_images, precomp)
         pf_f = scale * np.fft.fft(tmp, axis=1)
         pos_k.append(pf_f[:, :max_angular_freqs + 1, :])
@@ -677,12 +677,15 @@ def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
 
 
 def pft_freqs(x, n_theta):
+
+    if n_theta % 2:
+        raise NotImplementedError('n_theta must be even')
     n_r = len(x)
     d_theta = 2 * np.pi / n_theta
 
     # sampling points in the fourier domain
-    freqs = np.zeros((n_r * n_theta, 2))
-    for i in range(n_theta):
+    freqs = np.zeros((n_r * n_theta // 2, 2))
+    for i in range(n_theta // 2):
         freqs[i * n_r:(i + 1) * n_r, 0] = x * np.sin(i * d_theta)
         freqs[i * n_r:(i + 1) * n_r, 1] = x * np.cos(i * d_theta)
 
@@ -691,33 +694,17 @@ def pft_freqs(x, n_theta):
 
 def cryo_pft_nfft(projections, precomp):
     freqs = precomp.freqs
-    m = len(freqs)
 
     n_theta = precomp.n_theta
     n_r = precomp.n_r
     num_projections = projections.shape[2]
     x = -2 * np.pi * freqs.T
     x = x.copy()
-    # using nufft
-    # import time
-    # tic = time.time()
     pf = np.empty((x.shape[1], num_projections), dtype='complex128', order='F')
     finufftpy.nufft2d2many(x[0], x[1], pf, -1, 1e-15, projections)
-    # toc = time.time()
+    pf = pf.reshape((n_r, n_theta // 2, num_projections), order='F')
 
-    # TODO is it a reference we want to keep?
-    # using nudft around 5x slower didn't ret to optimize
-    # grid_x, grid_y = image_grid(projections.shape[1])
-    # pts = np.array([grid_y.flatten('F'), grid_x.flatten('F')])
-    # if projections.shape[1] % 2 == 0:
-    #     pts -= 0.5
-    #
-    # # maybe can do it with less memory by splitting the exponent to several parts
-    # pf = np.dot(np.exp(-1j * np.dot(x.T, pts)),
-    #           projections.reshape((projections.shape[0] * projections.shape[0]), num_projections,
-    #                                 order='F'))
-    pf = pf.reshape((n_r, n_theta, num_projections), order='F')
-
+    pf = np.concatenate((pf, np.conj(pf)), 1)
     return pf
 
 
@@ -776,13 +763,13 @@ def spca_whole(coeff, var_hat):
     d = []
     spca_coeff = []
     mean_coeff = np.mean(coeff[0], axis=1)
-    lr = len(coeff)
 
     pb = ProgressBar(total=100, prefix='spca_whole', suffix='completed',
                      decimals=0, length=100, fill='%')
     for i in range(max_ang_freq + 1):
         pb.print_progress_bar((i + 1) / (max_ang_freq + 1) * 100)
         tmp = coeff[i]
+        lr = tmp.shape[0]
         if i == 0:
             tmp = (tmp.T - mean_coeff).T
             lambda_var = float(lr) / n_p
@@ -809,6 +796,10 @@ def spca_whole(coeff, var_hat):
                 snr = (np.square(snr_i) - lambda_var) / (snr_i + lambda_var)
                 weight = 1 / (1 + 1 / snr)
                 spca_coeff.append(np.einsum('i, ji, jk -> ik', weight, curr_u, tmp))
+            else:
+                d.append([])
+                u.append([])
+                spca_coeff.append([])
 
         else:
             u.append(curr_u)
@@ -1019,6 +1010,10 @@ class ClassAverages:
         # TODO adjust all funcitons to work in the same indexing
         images = c_to_fortran(images)
 
+        resolution = images.shape[1]
+        if resolution % 2 == 0:
+            raise NotImplementedError('Images are of even size, please crop to size {}'.format(resolution-1))
+
         # estimate snr
         logger.info('estimating snr..')
         snr, signal, noise = estimate_snr(images)
@@ -1030,6 +1025,16 @@ class ClassAverages:
         # initial classification fd update
         logger.info('running initial classification..')
         classes, class_refl, rot, corr, _ = cls.initial_classification_fd_update(spca_data, n_nbor)
+        # np.save('classes', classes)
+        # np.save('class_refl', class_refl)
+        # np.save('rot', rot)
+        # classes = np.load('classes.npy')
+        # class_refl = np.load('class_refl.npy')
+        # rot = np.load('rot.npy')
+
+        # classes = mat_to_npy('classes', '../..') - 1
+        # class_refl = mat_to_npy('class_refl', '../..')
+        # rot = mat_to_npy('rot', '../..')
 
         # VDM
         logger.info('skipping vdm..')
@@ -1058,7 +1063,7 @@ class ClassAverages:
 
         # num_neighbors = class_vdm.shape[1]
         # n_skip = min(to_image // size_output, num_neighbors)
-        # indices = cryo_select_subset(class_vdm, size_output, contrast_priority, to_image, n_skip)
+        # indices = cryo_select_subset(classes, size_output, contrast_priority, to_image)
         indices = cryo_smart_select_subset(classes, size_output, contrast_priority, to_image)
 
         with mrcfile.new(output_images) as mrc:
@@ -1321,7 +1326,7 @@ class ClassAverages:
         eig_im = spca_data.eig_im
         freqs = spca_data.freqs
         mean_im = np.dot(spca_data.fn0, spca_data.mean)
-        output = np.zeros(data.shape)
+        output = np.zeros((len(list_recon), resolution, resolution))
 
         # pre allocating stuff
         images = np.zeros((k + 1, resolution, resolution), dtype='float64')

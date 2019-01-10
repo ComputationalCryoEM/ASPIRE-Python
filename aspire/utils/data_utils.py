@@ -35,7 +35,7 @@ def read_mrc_like_matlab(mrc_file):
     """ Read MRC stack and make sure stack is 'Fortran indexed' before returning it. """
     mrc_stack = mrcfile.open(mrc_file).data
     fortran_indexed_stack = c_to_fortran(mrc_stack)
-    return fortran_indexed_stack
+    return fortran_indexed_stack.copy()
 
 
 @accepts(str, np.ndarray)

@@ -15,10 +15,11 @@ from aspire.common.config import PreProcessorConfig, AspireConfig
 from aspire.common.exceptions import DimensionsIncompatible, WrongInput
 from aspire.common.logger import logger
 from aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr, \
-    c_to_fortran, fortran_to_c
+    c_to_fortran, fortran_to_c, read_mrc_like_matlab
 from aspire.utils.helpers import TupleCompare, set_output_name, yellow
 from aspire.utils.parse_star import read_star
 
+from aspire.utils.array_utils2 import crop2, downsample2
 from aspire.utils.array_utils import (flatten,
                                       radius_norm,
                                       fast_cfft2,
@@ -275,11 +276,12 @@ class PreProcessor:
         else:
             mask = None
 
-        stack = load_stack_from_file(stack_file)
-        downsampled_stack = cls.downsample(stack, side, compute_fx=False, stack=True, mask=mask)
+        stack = read_mrc_like_matlab(stack_file)
+        [downsampled_stack, _] = downsample2(stack, [side, side, -1])
+        # downsampled_stack = cls.downsample(stack, side, compute_fx=False, stack=True, mask=mask)
         logger.info(f"downsampled stack from size {stack.shape} to {downsampled_stack.shape}."
                     f" saving to {yellow(output_stack_file)}..")
-
+        downsampled_stack = c_to_fortran(downsampled_stack).astype('single')
         with mrcfile.new(output_stack_file) as mrc_fh:
             mrc_fh.set_data(downsampled_stack)
         logger.debug(f"saved to {output_stack_file}")
@@ -371,12 +373,12 @@ class PreProcessor:
         if os.path.exists(output):
             raise FileExistsError(f"output file '{yellow(output)}' already exists!")
 
-        stack = load_stack_from_file(stack_file)
-
+        stack = read_mrc_like_matlab(stack_file)
         # TODO adjust to same unified F/C contiguous
-        prewhitten_stack = cls.prewhiten_stack(c_to_fortran(stack))
+        prewhitten_stack = cls.prewhiten_stack(stack)
+        print(prewhitten_stack.shape)
         with mrcfile.new(output) as fh:
-            fh.set_data(np.transpose(prewhitten_stack, (2,1,0)).astype('float32'))
+            fh.set_data(np.transpose(prewhitten_stack, (2, 1, 0)).astype('float32'))
 
     @staticmethod
     def cryo_noise_estimation(projections, radius_of_mask=None):
@@ -484,6 +486,7 @@ class PreProcessor:
         projs_init = False  # has the stack been initialized already
 
         last_processed_stack = None
+
         for idx in range(num_projections):
             # Get the identification string of the next image to process.
             # This is composed from the index of the image within an image stack,
@@ -496,17 +499,17 @@ class PreProcessor:
             # Read the image stack from the disk, if different from the current one.
             # TODO can we revert this condition to positive? what they're equal?
             if stack_name != last_processed_stack:
-                mrc_path = os.path.join(os.path.dirname(star_file), stack_name)
+                mrc_path = os.path.join(os.path.dirname(star_file), 'data', stack_name)
                 stack = load_stack_from_file(mrc_path)
-                logger.info(f"flipping stack in {yellow(os.path.basename(mrc_path))}"
-                            f" - {stack.shape}")
+                logger.info('flipping stack in {} - {} - total {}%'.format(yellow(os.path.basename(mrc_path)),
+                                                                           stack.shape, 100.0 * idx / num_projections))
                 last_processed_stack = stack_name
 
             if image_idx > stack.shape[2]:
                 raise DimensionsIncompatible(f'projection {image_idx} in '
                                              f'stack {stack_name} does not exist')
 
-            proj = stack[image_idx]
+            proj = stack[image_idx].transpose()
             validate_square_projections(proj)
             side = proj.shape[1]
 
@@ -533,8 +536,8 @@ class PreProcessor:
                 # images are single precision
                 imaginery_comp = np.norm(np.imag(pfim[:])) / np.norm(pfim[:])
                 if imaginery_comp > 5.0e-7:
-                    logger.warning(f"Large imaginary components in image {image_idx}"
-                                   f" in stack {stack_name} = {imaginery_comp}")
+                    logger.warning('Large imaginary components in image {} in stack {} = {}'.format(
+                        image_idx, stack_name, imaginery_comp))
 
             pfim = np.real(pfim)
             projections[idx, :, :] = pfim.astype('float32')
@@ -555,9 +558,11 @@ class PreProcessor:
             Example:
             normalized_stack = cryo_normalize_background(stack,55);
         """
-        validate_square_projections(stack)
-        num_images = stack.shape[0]  # assuming C-contiguous array
-        side = stack.shape[1]
+        if np.size(stack, 0) != np.size(stack, 1):
+            raise DimensionsIncompatible('projections must me square')
+
+        num_images = stack.shape[2] if len(stack.shape) > 2 else 1
+        side = stack.shape[0]
 
         if radius is None:
             radius = np.floor(side/2)
@@ -575,12 +580,12 @@ class PreProcessor:
         else:
             pb = None
 
-        normalized_stack = np.ones(stack.shape)
+        normalized_stack = np.empty(stack.shape)
         for i in range(num_images):
             if pb:
                 pb.print_progress_bar((i + 1) / num_images * 100)
 
-            proj = stack[i, :, :]
+            proj = stack[:, :, i]
             background_pixels = proj.flatten() * background_pixels_idx
             background_pixels = background_pixels[background_pixels != 0]
 
@@ -593,7 +598,7 @@ class PreProcessor:
                 logger.warning(f'Variance of background of image {i} is too small (std={std}). '
                                'Cannot normalize!')
 
-            normalized_stack[i, :, :] = (proj - proj_mean) / std
+            normalized_stack[:, :, i] = (proj - proj_mean) / std
 
         return normalized_stack
 
