@@ -791,6 +791,40 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
 
     return rotations
 
+def cryo_syncmatrix_vote_3n(clmatrix, n_theta, rots_ref=None, is_perturbed=0):
+    """
+    3e-16 error from matlab
+    :param clmatrix:
+    :param n_theta:
+    :param rots_ref:
+    :param is_perturbed:
+    :return:
+    """
+    sz = clmatrix.shape
+    if len(sz) != 2:
+        raise ValueError('clmatrix must be a square matrix')
+    if sz[0] != sz[1]:
+        raise ValueError('clmatrix must be a square matrix')
+
+    n = sz[0]
+    # s = np.eye(3 * n)
+
+    Rijs = np.zeros((sp.comb(n, 2).astype(int), 3, 3))
+    counter = 0
+    for i in range(n):
+        stmp = np.zeros((3, 3, n))
+        for j in range(i + 1, n):
+            stmp[:, :, j] = cryo_syncmatrix_ij_vote_3n(clmatrix, i, j, np.arange(n), n_theta, rots_ref, is_perturbed)
+
+        for j in range(i + 1, n):
+            Rijs[counter] = stmp[:, :, j]
+            counter += 1
+            # s[3*i:3*(i+1), 3*j:3*(j+1)] = Rij
+            # s[3*j:3*(j+1), 3*i:3*(i+1)] = Rij.T
+    return Rijs
+    # return s
+
+
 
 def cryo_syncmatrix_vote(clmatrix, l, rots_ref=None, is_perturbed=0):
     """
@@ -848,6 +882,27 @@ def cryo_syncmatrix_ij_vote(clmatrix, i, j, k, l, rots_ref=None, is_perturbed=No
 
     r22 = rk[:2, :2]
     return r22
+
+
+def cryo_syncmatrix_ij_vote_3n(clmatrix, i, j, k, l, rots_ref=None, is_perturbed=None):
+    tol = 1e-12
+    ref = 0 if rots_ref is None else 1
+
+    good_k, _, _ = cryo_vote_ij(clmatrix, l, i, j, k, rots_ref, is_perturbed)
+
+    rs, good_rotations = rotratio_eulerangle_vec(clmatrix, i, j, good_k, l)
+
+    if rots_ref is not None:
+        reflection_mat = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        raise NotImplementedError
+
+    if len(good_rotations) > 0:
+        rk = np.mean(rs, 2)
+    else:
+        rk = np.zeros((3, 3))
+        if rots_ref is not None:
+            raise NotImplementedError
+    return rk
 
 
 def rotratio_eulerangle_vec(cl, i, j, good_k, n_theta):
@@ -975,7 +1030,7 @@ def cryo_vote_ij(clmatrix, l, i, j, k, rots_ref, is_perturbed):
 
         if rots_ref is not None:
             raise NotImplementedError
-    return good_k.astype('int'), peakh, alpha
+    return np.array(good_k, dtype=np.int32), peakh, alpha
 
 
 def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_filter_radius=0, ref_clmatrix=0, ref_shifts_2d=0):
@@ -1130,22 +1185,23 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
                 shift_eq[idx] = [-np.sin(shift_alpha), -np.cos(shift_alpha), -np.sin(shift_beta), -np.cos(shift_beta)]
 
             shift_equations_map[i, j] = shift_equation_idx
-            print(i, j, shift_equation_idx, toc - tic)
+            # print(i, j, shift_equation_idx, toc - tic)
             shift_equation_idx += 1
 
 
-    tmp = np.where(corrstack != 0)
-    corrstack[tmp] = 1 - corrstack[tmp]
-    l = 4 * shift_equation_idx
-    shift_eq[l: l + shift_equation_idx] = shift_b
-    shift_i[l: l + shift_equation_idx] = np.arange(shift_equation_idx)
-    shift_j[l: l + shift_equation_idx] = 2 * n_projs
-    tmp = np.where(shift_eq != 0)[0]
-    shift_eq = shift_eq[tmp]
-    shift_i = shift_i[tmp]
-    shift_j = shift_j[tmp]
-    l += shift_equation_idx
-    shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)), shape=(shift_equation_idx, 2 * n_projs + 1))
+    # tmp = np.where(corrstack != 0)
+    # corrstack[tmp] = 1 - corrstack[tmp]
+    # l = 4 * shift_equation_idx
+    # shift_eq[l: l + shift_equation_idx] = shift_b
+    # shift_i[l: l + shift_equation_idx] = np.arange(shift_equation_idx)
+    # shift_j[l: l + shift_equation_idx] = 2 * n_projs
+    # tmp = np.where(shift_eq != 0)[0]
+    # shift_eq = shift_eq[tmp]
+    # shift_i = shift_i[tmp]
+    # shift_j = shift_j[tmp]
+    # l += shift_equation_idx
+    # shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)), shape=(shift_equation_idx, 2 * n_projs + 1))
+    shift_equations = 0
 
     return clstack, corrstack, shift_equations, shift_equations_map, clstack_mask
 
@@ -1537,3 +1593,8 @@ def mdim_fftshift(x, dims=None):
 
 def comp(a, b):
     return np.linalg.norm(a - b) / np.linalg.norm(a)
+
+
+def cryo_clmatrix_cpu_pystyle(npf, n_images, param, max_shift, shift_step):
+    npf = np.transpose(npf, axes=(2, 1, 0))
+    return cryo_clmatrix_cpu(npf, n_images, param, max_shift, shift_step)
