@@ -10,14 +10,25 @@ from Cn.handedness_sync import handedness_sync
 
 
 def main():
+    dict_mat_file_names = {
+        'projections': ['projs', 'projs_shifted'],
+        'symmetry': ['n_symm', 'n_symm_shifted'],
+        'rotation matrices gt': ['rots_gt', 'rots_gt_shifted']
+    }
 
-    projs = utils.mat_to_npy('projs')
-    AbinitioSymmConfig.n_symm = 4  # TODO: this should come from matlab. not hard-coded
-    rots_gt = utils.mat_to_npy('rots_gt')
+    sim_type = 1 if AbinitioSymmConfig.is_load_shifted_projs else 0
+    projs = utils.mat_to_npy(dict_mat_file_names['projections'][sim_type])
+    AbinitioSymmConfig.n_symm = utils.mat_to_npy_vec(dict_mat_file_names['symmetry'][sim_type])[0]
+    rots_gt = utils.mat_to_npy(dict_mat_file_names['rotation matrices gt'][sim_type])
     rots_gt = np.transpose(rots_gt, axes=(2, 0, 1))
 
-    # plt.imshow(projs[0], cmap='gray')
-    # plt.show()
+    if AbinitioSymmConfig.is_load_shifted_projs:
+        AbinitioSymmConfig.max_shift = utils.mat_to_npy_vec('max_shift')[0]
+        AbinitioSymmConfig.shift_step = utils.mat_to_npy_vec('shift_step')[0]
+    else:
+        AbinitioSymmConfig.max_shift = 0
+        AbinitioSymmConfig.shift_step = 1
+
     npf, _ = abinitio.cryo_pft(projs, AbinitioSymmConfig.n_r, AbinitioSymmConfig.n_theta)
     npf = np.transpose(npf, axes=(2, 1, 0))
     if AbinitioSymmConfig.n_symm in [3, 4]:
@@ -27,7 +38,8 @@ def main():
     viis, vijs, sign_J = handedness_sync(viis, vijs, rots_gt)
     vis = estimate_third_rows(vijs, viis, rots_gt)
     rots = estimate_rots_from_third_rows(AbinitioSymmConfig.n_symm, npf, vis, rots_gt)
-    mse = utils.check_rotations_error(rots, AbinitioSymmConfig.n_symm, rots_gt)
+    mse, rots_aligned = utils.check_rotations_error(rots, AbinitioSymmConfig.n_symm, rots_gt)
+    err_in_degrees = utils.check_degrees_error(rots_aligned, AbinitioSymmConfig.n_symm, AbinitioSymmConfig.n_theta, rots_gt)
 
     print("mse=" + str(mse))
 

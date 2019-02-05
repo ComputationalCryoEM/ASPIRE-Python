@@ -2,23 +2,32 @@ import Cn.utils as utils
 from Cn.config_symm import AbinitioSymmConfig
 import numpy as np
 import scipy
+from tqdm import tqdm
 
 
 def estimate_rots_from_third_rows(n_symm, npf, vis, rots_gt):
 
-    if AbinitioSymmConfig.is_use_gt:
-        assert rots_gt is not None
-        Ris, _ = estimate_inplane_rots_angles_gt(n_symm, vis, rots_gt)
-    else:
-        Ris, _ = estimate_inplane_rots_angles(n_symm, npf, vis, AbinitioSymmConfig.n_theta,
-                                              AbinitioSymmConfig.inplane_rot_res_deg, AbinitioSymmConfig.max_shift,
-                                              AbinitioSymmConfig.shift_step)
-        return Ris
+    # vis = np.array([rot_gt[-1] for rot_gt in rots_gt])
+    Ris, _ = estimate_inplane_rots_angles(n_symm, npf, vis)
+    return Ris
+    # if AbinitioSymmConfig.is_use_gt:
+    #     assert rots_gt is not None
+    #     Ris, _ = estimate_inplane_rots_angles_gt(n_symm, vis, rots_gt)
+    # else:
+    #     Ris, _ = estimate_inplane_rots_angles(n_symm, npf, vis)
+    #     return Ris
 
 
-def estimate_inplane_rots_angles(n_symm, npf, vis, n_theta, inplane_rot_res_deg, max_shift, shift_step):
+def estimate_inplane_rots_angles(n_symm, npf, vis):
 
     assert len(vis) == len(npf)
+
+    n_theta = AbinitioSymmConfig.n_theta
+    inplane_rot_res_deg = AbinitioSymmConfig.inplane_rot_res_deg
+    # max_shift = AbinitioSymmConfig.max_shift
+    max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)
+    shift_step = AbinitioSymmConfig.shift_step
+    n_r = AbinitioSymmConfig.n_r
     n_images = len(vis)
 
     #  Step 1: construct all rotation matrices Ri_tildes whose third row is equal to the corresponding third rows vis
@@ -39,42 +48,56 @@ def estimate_inplane_rots_angles(n_symm, npf, vis, n_theta, inplane_rot_res_deg,
     max_idx_corrs = np.zeros(m_choose_2)
     counter = 0
     H = np.zeros((n_images, n_images), dtype=complex)
-    for i in range(n_images):
-        npf_i = npf[i]
-        # normalize each ray to have norm equal to 1
-        npf_i = np.array([ray / np.linalg.norm(ray) for ray in npf_i])
-        for j in range(i+1, n_images):
-            npf_j = npf[j]
+
+    shift_phases = utils.calc_shift_phases(n_r, max_shift_1d, shift_step)
+    n_shifts = len(shift_phases)
+    with tqdm(total=n_images) as pbar:
+        for i in range(n_images):
+            npf_i = npf[i]
+            npf_i_shifted = np.array([npf_i * shift_phase for shift_phase in shift_phases])
             # normalize each ray to have norm equal to 1
-            npf_j = np.array([ray / np.linalg.norm(ray) for ray in npf_j])
+            npf_i_shifted = np.array([ray / np.linalg.norm(ray) for ray in npf_i_shifted])
+            for j in range(i+1, n_images):
+                npf_j = npf[j]
+                # normalize each ray to have norm equal to 1
+                npf_j = np.array([ray / np.linalg.norm(ray) for ray in npf_j])
 
-            Ri_tilde = Ri_tildes[i]
-            Rj_tilde = Ri_tildes[j]
+                Ri_tilde = Ri_tildes[i]
+                Rj_tilde = Ri_tildes[j]
 
-            Us = np.array([np.linalg.multi_dot([Ri_tilde.T, R_theta_ij, Rj_tilde]) for R_theta_ij in R_theta_ijs])
-            c1s = np.array([[-U[1, 2],  U[0, 2]] for U in Us])
-            c2s = np.array([[ U[2, 1], -U[2, 0]] for U in Us])
+                Us = np.array([np.linalg.multi_dot([Ri_tilde.T, R_theta_ij, Rj_tilde]) for R_theta_ij in R_theta_ijs])
+                c1s = np.array([[-U[1, 2],  U[0, 2]] for U in Us])
+                c2s = np.array([[ U[2, 1], -U[2, 0]] for U in Us])
 
-            c1s = utils.clAngles2Ind__(c1s, n_theta)
-            c2s = utils.clAngles2Ind__(c2s, n_theta)
+                c1s = utils.clAngles2Ind__(c1s, n_theta)
+                c2s = utils.clAngles2Ind__(c2s, n_theta)
 
-            corrs = np.array([np.dot(npf_i[c1], np.conj(npf_j[c2])) for c1, c2 in zip(c1s, c2s)])
+                corrs = np.array([np.dot(npf_i[c1], np.conj(npf_j[c2]))
+                                  for npf_i in npf_i_shifted for c1, c2 in zip(c1s, c2s)])
 
-            assert np.mod(n_theta_ijs, n_symm) == 0
-            corrs = corrs.reshape((n_symm, n_theta_ijs//n_symm))
+                assert np.mod(n_theta_ijs, n_symm) == 0
+                corrs = corrs.reshape((n_shifts, n_symm, n_theta_ijs//n_symm))
 
-            # now take the mean score over all groups of n pairs of lines, and find the group tha attains the maximum
-            corrs = np.mean(np.real(corrs), axis=0)
-            max_idx_corr = np.argmax(corrs)
-            max_corr = corrs[max_idx_corr]
+                if n_shifts > 1:
+                    corrs = np.max(np.real(corrs), axis=0)
+                else:
+                    corrs = np.squeeze(corrs, axis=0)
 
-            max_corrs[counter] = max_corr  # this is only for stats
-            max_idx_corrs[counter] = max_idx_corr  # this is only for stats
+                # take the mean score over all groups of n pairs of lines, and find the group that attains the maximum
+                corrs = np.mean(np.real(corrs), axis=0)
+                max_idx_corr = np.argmax(corrs)
+                max_corr = corrs[max_idx_corr]
 
-            theta_ij = inplane_rot_res_deg*max_idx_corr*np.pi/180
+                max_corrs[counter] = max_corr  # this is only for stats
+                max_idx_corrs[counter] = max_idx_corr  # this is only for stats
 
-            H[i, j] = np.cos(n_symm * theta_ij) - 1j * np.sin(n_symm * theta_ij)
-            counter += 1
+                theta_ij = inplane_rot_res_deg*max_idx_corr*np.pi/180
+
+                H[i, j] = np.cos(n_symm * theta_ij) - 1j * np.sin(n_symm * theta_ij)
+                counter += 1
+            # update the bar
+            if np.mod(i, 10) == 0:
+                pbar.update(10)
 
     H = H + np.conj(H).T
     H = H + np.eye(n_images)  # put 1 on diagonal since : exp^(i*0) = 1

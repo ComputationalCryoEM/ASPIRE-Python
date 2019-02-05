@@ -1,6 +1,7 @@
 class AbinitioSymmConfig:
 
     is_use_gt = False
+    is_load_shifted_projs = False  # only relevant when loading simulated projs
     n_theta = 360
     n_r = 45
     max_shift = 0

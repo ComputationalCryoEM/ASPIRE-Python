@@ -1185,7 +1185,7 @@ def cryo_clmatrix_cpu(pf, nk=None, verbose=1, max_shift=15, shift_step=1, map_fi
                 shift_eq[idx] = [-np.sin(shift_alpha), -np.cos(shift_alpha), -np.sin(shift_beta), -np.cos(shift_beta)]
 
             shift_equations_map[i, j] = shift_equation_idx
-            # print(i, j, shift_equation_idx, toc - tic)
+            print(i, j, shift_equation_idx, toc - tic)
             shift_equation_idx += 1
 
 
@@ -1595,6 +1595,135 @@ def comp(a, b):
     return np.linalg.norm(a - b) / np.linalg.norm(a)
 
 
-def cryo_clmatrix_cpu_pystyle(npf, n_images, param, max_shift, shift_step):
+def cryo_clmatrix_cpu_fast2(pf, nk=None, max_shift=15, shift_step=1):
+    n_projs = pf.shape[2]
+    n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
+    n_theta = pf.shape[1]
+    if nk is None:
+        nk = n_projs
+    if n_theta % 2 == 1:
+        raise ValueError('n_theta must be even')
+    n_theta = n_theta // 2
+
+    pf = np.concatenate((np.flip(pf[1:, n_theta:], 0), pf[:, :n_theta]), 0).copy()
+
+    # Allocate variables
+    clstack = np.zeros((n_projs, n_projs)) - 1
+    corrstack = np.zeros((n_projs, n_projs))
+    clstack_mask = np.zeros((n_projs, n_projs))
+
+    # Allocate variables used for shift estimation
+    shifts_1d = np.zeros((n_projs, n_projs))
+    shift_i = np.zeros(4 * n_projs * nk)
+    shift_j = np.zeros(4 * n_projs * nk)
+    shift_eq = np.zeros(4 * n_projs * nk)
+    shift_equations_map = np.zeros((n_projs, n_projs))
+    shift_equation_idx = 0
+    shift_b = np.zeros(n_projs * (n_projs - 1) // 2)
+    dtheta = np.pi / n_theta
+
+    # search for common lines between pairs of projections
+    r_max = int((pf.shape[0] - 1) / 2)
+    rk = np.arange(-r_max, r_max + 1)
+    h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * np.square(r_max / 4)))
+
+    pf3 = np.empty(pf.shape, dtype=pf.dtype)
+    np.einsum('ijk, i -> ijk', pf, h, out=pf3)
+    pf3[r_max - 1:r_max + 2] = 0
+    pf3 /= np.linalg.norm(pf3, axis=0)
+    pf3 = pf3[:r_max]
+
+    pf3 = pf3.transpose((2, 0, 1)).copy()
+    pf3_transposed_real = np.real(pf3.transpose((0, 2, 1))).copy()
+    pf3_transposed_imag = np.imag(pf3.transpose((0, 2, 1))).copy()
+    rk2 = rk[:r_max]
+
+    all_shift_phases = np.zeros((n_shifts, r_max), 'complex128')
+    shifts = np.array([-max_shift + i * shift_step for i in range(n_shifts)], dtype='int')
+    for i in range(n_shifts):
+        shift = shifts[i]
+        all_shift_phases[i] = np.exp(-2 * np.pi * 1j * rk2 * shift / (2 * r_max + 1))
+
+    stack_p2_shifted_flipped = np.zeros((r_max, n_shifts * n_theta), pf3.dtype)
+
+    # pre-allocation
+    part1_stack = np.zeros((n_theta, n_shifts * n_theta))
+    part2_stack = np.zeros((n_theta, n_shifts * n_theta))
+    part2_stack_abs = np.zeros((n_theta, n_shifts * n_theta))
+    c_max = np.zeros((n_theta, n_shifts * n_theta))
+    for j in range(n_projs - 1, 0, -1):
+        p2_flipped = np.conj(pf3[j])
+        for k in range(n_shifts):
+            curr_p2_shifted_flipped = (all_shift_phases[k] * p2_flipped.T).T
+            stack_p2_shifted_flipped[:, k * n_theta:(k + 1) * n_theta] = curr_p2_shifted_flipped
+
+        stack_p2_shifted_flipped_real = np.real(stack_p2_shifted_flipped)
+        stack_p2_shifted_flipped_imag = np.imag(stack_p2_shifted_flipped)
+        for i in range(j):
+            p1_real = pf3_transposed_real[i]
+            p1_imag = pf3_transposed_imag[i]
+
+            tic = time.time()
+
+            np.dot(p1_real, stack_p2_shifted_flipped_real, out=part1_stack)
+            np.dot(p1_imag, stack_p2_shifted_flipped_imag, out=part2_stack)
+
+            np.absolute(part2_stack, out=part2_stack_abs)
+            np.add(part1_stack, part2_stack_abs, out=c_max)
+
+            sidx = np.argmax(c_max)
+            cl1, shift_idx, cl2 = np.unravel_index(sidx, (n_theta, n_shifts, n_theta))
+            tmp_idx = shift_idx * n_theta + cl2
+            sval = c_max[cl1, tmp_idx]
+            if part2_stack[cl1, tmp_idx] > 0:
+                cl2_addition = n_theta
+            else:
+                cl2_addition = 0
+            clstack[i, j] = cl1
+            clstack[j, i] = cl2 + cl2_addition
+            corrstack[i, j] = 2 * sval
+            shifts_1d[i, j] = -max_shift + shift_idx * shift_step
+
+            toc = time.time()
+            print(i, j, toc - tic)
+
+    for i in range(n_projs):
+        for j in range(i + 1, n_projs):
+
+            idx = np.arange(4 * shift_equation_idx, 4 * shift_equation_idx + 4)
+            shift_alpha = clstack[i, j] * dtheta
+            shift_beta = clstack[j, i] * dtheta
+            shift_i[idx] = shift_equation_idx
+            shift_j[idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
+            shift_b[shift_equation_idx] = shifts_1d[i, j]
+
+            # Compute the coefficients of the current equation.
+            if shift_beta < np.pi:
+                shift_eq[idx] = [np.sin(shift_alpha), np.cos(shift_alpha), -np.sin(shift_beta), -np.cos(shift_beta)]
+            else:
+                shift_beta -= np.pi
+                shift_eq[idx] = [-np.sin(shift_alpha), -np.cos(shift_alpha), -np.sin(shift_beta), -np.cos(shift_beta)]
+
+            shift_equations_map[i, j] = shift_equation_idx
+            shift_equation_idx += 1
+
+    tmp = np.where(corrstack != 0)
+    corrstack[tmp] = 1 - corrstack[tmp]
+    l = 4 * shift_equation_idx
+    shift_eq[l: l + shift_equation_idx] = shift_b
+    shift_i[l: l + shift_equation_idx] = np.arange(shift_equation_idx)
+    shift_j[l: l + shift_equation_idx] = 2 * n_projs
+    tmp = np.where(shift_eq != 0)[0]
+    shift_eq = shift_eq[tmp]
+    shift_i = shift_i[tmp]
+    shift_j = shift_j[tmp]
+    l += shift_equation_idx
+    shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)), shape=(shift_equation_idx, 2 * n_projs + 1))
+
+    return clstack, corrstack, shift_equations, shift_equations_map, clstack_mask
+
+
+def cryo_clmatrix_cpu_pystyle(npf, n_images, param, max_shift_1d, shift_step):
     npf = np.transpose(npf, axes=(2, 1, 0))
-    return cryo_clmatrix_cpu(npf, n_images, param, max_shift, shift_step)
+    return cryo_clmatrix_cpu_fast2(npf)
+    # return cryo_clmatrix_cpu(npf, n_images, param, max_shift_1d, shift_step)

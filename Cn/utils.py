@@ -14,7 +14,7 @@ J = np.diag([1, 1, -1])
 seed = 12345  # to reproduce results
 
 
-def find_scl(n_symm, npf, n_theta, rots_gt=None):
+def find_scl(n_symm, npf, n_theta, n_r, max_shift, shift_step, rots_gt=None):
     # the angle between self-common-lines is [60, 180] (for C3) and [90,180] (for C4) but since antipodal
     # lines are perfectly correlated we mustn't test angles too close to 180 degrees apart
     if n_theta % 2 == 1:
@@ -31,29 +31,42 @@ def find_scl(n_symm, npf, n_theta, rots_gt=None):
     n_images = len(npf)
     sclmatrix = np.zeros((n_images, 2))
     corrs_stats = np.zeros(n_images)
-    X, Y = np.meshgrid(range(n_theta//2), range(n_theta))
+    shifts_stats = np.zeros(n_images)
+    X, Y = np.meshgrid(range(n_theta), range(n_theta//2))
     diff = Y - X
     unsigned_angle_diff = np.arccos(np.cos(diff*2*np.pi/n_theta))
 
     good_diffs = np.logical_and(min_angle_diff < unsigned_angle_diff, unsigned_angle_diff < max_angle_diff)
 
+    shift_phases = calc_shift_phases(n_r, max_shift, shift_step)
+    n_shifts = len(shift_phases)
     for i in range(n_images):
         npf_i = npf[i]
+
+        # generate all shifted versions of the images
+        npf_i_half = npf_i[:n_theta // 2]
+
+        npf_i_half_shifted = np.array([npf_i_half*shift_phase for shift_phase in shift_phases]) # shape is (n_shifts, n_theta/2, n_r)
+        npf_i_half_shifted = np.reshape(npf_i_half_shifted, (-1, n_r))  # shape is (n_theta/2 * n_shifts, n_r)
+
         # ignoring dc-term.
         # TODO: not sure this is beneficial nor does it have real significance
         npf_i[:, 0] = 0
+        npf_i_half_shifted[:, 0] = 0
 
         # normalize each ray to have norm equal to 1
         npf_i = np.array([ray/np.linalg.norm(ray) for ray in npf_i])
+        npf_i_half_shifted = np.array([ray / np.linalg.norm(ray) for ray in npf_i_half_shifted])
 
-        corr = np.dot(npf_i, npf_i[:n_theta//2].T)  # no conjugation as the scl (as defined) are conjugate-equal, not equal
-        corr = corr * good_diffs
-
-        scl1, scl2 = np.unravel_index(np.argmax(np.real(corr)), corr.shape)
+        corrs = np.dot(npf_i_half_shifted, npf_i.T)  # no conjugation as the scl are conjugate-equal, not equal
+        corrs = np.reshape(corrs, (n_shifts, n_theta//2, n_theta))
+        corrs = np.array([corr*good_diffs for corr in corrs])  # mask with allowed combinations
+        shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
         sclmatrix[i] = [scl1, scl2]
-        corrs_stats[i] = np.real(corr[(scl1, scl2)])
+        corrs_stats[i] = np.real(corrs[(shift, scl1, scl2)])
+        shifts_stats[i] = shift
 
-    return sclmatrix, corrs_stats
+    return sclmatrix, corrs_stats, shifts_stats
 
 
 def generate_g(n_symm):
@@ -226,8 +239,45 @@ def check_rotations_error(rots, n_symm, rots_gt):
         
     diff = np.array([np.linalg.norm(rot-rot_gt, 'fro') for rot, rot_gt in zip(rots_alligned, rots_gt)])
     mse = np.sum(diff**2)/n_images
-    return mse 
-#    rots_alligned, sign_g_Ri
+    return mse, rots_alligned
+        # , sign_g_Ri
+
+
+def check_degrees_error(rots, n_symm, n_theta, rots_gt):
+
+    assert len(rots) == len(rots_gt)
+    n_images = len(rots)
+    d_theta = 2*np.pi/n_theta
+    g = generate_g(n_symm)
+
+    g_s = np.array([np.linalg.matrix_power(g, s) for s in range(n_symm)])
+
+    err_in_degrees = np.zeros(n_theta*n_images)
+    # mean_err_per_rot = np.zeros(n_images)
+
+    for k, rot_gt in enumerate(rots_gt):
+        rays_gt = np.array([np.cos(j*d_theta)*rot_gt[:, 0] + np.sin(j*d_theta)*rot_gt[:, 1] for j in range(n_theta)])
+
+        c_err_in_degrees = np.zeros((n_symm, n_theta))
+        for s in range(n_symm):
+            rot_k = np.dot(g_s[s], rots[k])
+            rays_rot_k = np.array([np.cos(j*d_theta)*rot_k[:, 0] + np.sin(j*d_theta)*rot_k[:, 1] for j in range(n_theta)])
+
+            cos_angle = np.sum(rays_gt * rays_rot_k, axis=1)
+            cos_angle[cos_angle > 1] = 1
+            cos_angle[cos_angle < -1] = -1
+            err = np.arccos(cos_angle)
+            c_err_in_degrees[s] = err*180/np.pi
+        opt_s = np.argmin(np.mean(c_err_in_degrees, axis=1))
+        err_in_degrees[k*n_theta: (k+1)*n_theta] = c_err_in_degrees[opt_s]
+
+    print('median error in degrees: %e' % np.median(err_in_degrees))
+    print('mean error in degrees: %e' % np.mean(err_in_degrees))
+    print('std error in degrees: %e' % np.std(err_in_degrees))
+    print('min error in degrees: %e' % np.min(err_in_degrees))
+    print('max error in degrees: %e' % np.max(err_in_degrees))
+
+    return err_in_degrees
 
 
 def J_conjugate(rots):
@@ -385,8 +435,8 @@ def cl_detection_rate_single(n_symm, clmatrix, rots_gt, n_theta, angle_tol_err_d
         for j in range(i+1, n_images):
             diffs_cij = clmatrix_diff_angle[:, i, j]
             diffs_cji = clmatrix_diff_angle[:, j, i]
-            diffs0 = np.arccos(abs(np.cos(diffs_cij))) + np.arccos(abs(np.cos(diffs_cji)))
-            diffs1 = np.arccos(abs(np.cos(diffs_cij + np.pi))) + np.arccos(abs(np.cos(diffs_cji + np.pi)))
+            diffs0 = np.arccos((np.cos(diffs_cij))) + np.arccos((np.cos(diffs_cji)))
+            diffs1 = np.arccos((np.cos(diffs_cij + np.pi))) + np.arccos((np.cos(diffs_cji + np.pi)))
             min_idx0 = np.argmin(diffs0)
             min_idx1 = np.argmin(diffs1)
             min_diffs0 = diffs0[min_idx0]
@@ -404,7 +454,7 @@ def cl_detection_rate_single(n_symm, clmatrix, rots_gt, n_theta, angle_tol_err_d
                 clmatrix_correct[j, i] = 1
             k += 1
     hist_hand, _ = np.histogram(hand_idx, np.arange(3))
-    print("hist local handedness=" + str(hist_hand))
+    print("hist cls handedness=" + str(hist_hand))
     hist_cl, _ = np.histogram(cl_idx, np.arange(n_symm+1))
     print("hist cls=" + str(hist_cl))
     detec_rate = n_correct / m_choose_2
@@ -446,14 +496,15 @@ def estimate_relative_rots_gt(n_symm, n_theta, rots_gt):
     return Rijs
 
 
-def find_single_cl_gt(n_symm, n_theta, rots_gt):
+# def find_single_cl_gt(n_symm, n_theta, rots_gt):
+#     print('estimating common-lines using GT')
+#     clmatrix_gt = find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=True)
+#     select_id = np.random.randint(n_symm, size=clmatrix_gt.shape[1:])
+#     select_id = (select_id + select_id.T)//2
+#     return select_id.choose(clmatrix_gt)
 
-    clmatrix_gt = find_cl_gt(n_symm, n_theta, rots_gt)
-    select_id = np.random.randint(n_symm, size=clmatrix_gt.shape[1:])
-    return clmatrix_gt[select_id, range(clmatrix_gt.shape[1]), range(clmatrix_gt.shape[2])]
 
-
-def find_cl_gt(n_symm, n_theta, rots_gt, single_cl=False):
+def find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, single_cl=False):
 
     n_images = len(rots_gt)
     g = generate_g(n_symm)
@@ -462,35 +513,26 @@ def find_cl_gt(n_symm, n_theta, rots_gt, single_cl=False):
     for s in np.arange(n_symm):
         gs[s] = np.linalg.matrix_power(g, s)
 
-    if single_cl:
-        clmatrix_gt = np.zeros((n_images, n_images))
-        for i in np.arange(n_images):
-            for j in np.arange(i + 1, n_images):
-                Ri = rots_gt[i]
-                Rj = rots_gt[j]
-                s = np.random.randint(n_symm)
+    clmatrix_gt = np.zeros((n_symm, n_images, n_images))
+    for i in np.arange(n_images):
+        for j in np.arange(i + 1, n_images):
+            Ri = rots_gt[i]
+            Rj = rots_gt[j]
+            if is_simulate_J and np.random.rand() > 0.5:
+                Ri, Rj = J_conjugate(Ri), J_conjugate(Rj)
+            for s in np.arange(n_symm):
                 U = np.dot(np.dot(Ri.T, gs[s]), Rj)
-                c1 = [-U[1, 2], U[0, 2]]
-                c2 = [U[2, 1], -U[2, 0]]
-                # TODO: simulate J using antipodal line
-                clmatrix_gt[i, j] = clAngles2Ind(c1, n_theta)
-                clmatrix_gt[j, i] = clAngles2Ind(c2, n_theta)
-        return clmatrix_gt.astype(int)
-    else:
-        clmatrix_gt = np.zeros((n_symm, n_images, n_images))
-        for i in np.arange(n_images):
-            for j in np.arange(i + 1, n_images):
-                Ri = rots_gt[i]
-                Rj = rots_gt[j]
-                for s in np.arange(n_symm):
-                    U = np.dot(np.dot(Ri.T, gs[s]), Rj)
-                    c1 = [-U[1, 2], U[0, 2]]
-                    c2 = [U[2, 1], -U[2, 0]]
-
-                    # TODO: simulate J using antipodal line
-                    clmatrix_gt[s, i, j] = clAngles2Ind(c1, n_theta)
-                    clmatrix_gt[s, j, i] = clAngles2Ind(c2, n_theta)
-        return clmatrix_gt.astype(int)
+                c1 = np.array([-U[1, 2], U[0, 2]])
+                c2 = np.array([U[2, 1], -U[2, 0]])
+                clmatrix_gt[s, i, j] = clAngles2Ind__(c1[np.newaxis, :], n_theta)
+                clmatrix_gt[s, j, i] = clAngles2Ind__(c2[np.newaxis, :], n_theta)
+    if single_cl:
+        select_id = np.random.randint(n_symm, size=clmatrix_gt.shape[1:])
+        # an ackward yet quick way to make sure that either
+        # both cij and cji are j-conjugated or both are not
+        select_id = (select_id + select_id.T) // 2
+        clmatrix_gt = select_id.choose(clmatrix_gt)
+    return clmatrix_gt.astype(int)
 
 
 def detection_rate_self_relative_rots(Riis, n_symm, rots_gt):
@@ -553,9 +595,9 @@ def detection_rate_relative_rots(Rijs, n_symm, rots_gt):
     return mse, hist
 
 
-def find_scl_gt(n_symm, n_theta, rots_gt):
+def find_scl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, is_simulate_transpose=False):
     assert n_symm == 3 or n_symm == 4, "supports only C3 or C4"
-
+    print('estimating self common-lines using GT')
     n_images = len(rots_gt)
 
     sclmatrix_gt = np.zeros((n_images, 2))
@@ -565,20 +607,18 @@ def find_scl_gt(n_symm, n_theta, rots_gt):
     for i in np.arange(n_images):
         Ri = rots_gt[i]
 
+        if is_simulate_J and np.random.rand() > 0.5:
+            Ri = J_conjugate(Ri)
+
         U1 = np.dot(np.dot(Ri.T, g), Ri)
-        c1 = np.array([-U1[1, 2], U1[0, 2]])
         U2 = np.dot(np.dot(Ri.T, g_pow_n_one), Ri)
+        if is_simulate_transpose and np.random.rand() > 0.5:
+            U1, U2 = U1.T, U2.T
+        c1 = np.array([-U1[1, 2], U1[0, 2]])
         c2 = np.array([-U2[1, 2], U2[0, 2]])
 
-        # simulate Rii^T
-        if np.random.rand() > 0.5:
-            c1, c2 = c2, c1
-        # simulate J using antipodal line
-        if np.random.rand() > 0.5:
-            c1, c2 = -1 * c1, -1 * c2
-
-        sclmatrix_gt[i, 0] = clAngles2Ind(c1, n_theta)
-        sclmatrix_gt[i, 1] = clAngles2Ind(c2, n_theta)
+        sclmatrix_gt[i, 0] = clAngles2Ind__(c1[np.newaxis, ], n_theta)
+        sclmatrix_gt[i, 1] = clAngles2Ind__(c2[np.newaxis, ], n_theta)
 
     return sclmatrix_gt.astype(int)
 
@@ -587,8 +627,7 @@ def clAngles2Ind(clAngles, n_theta):
     theta = math.atan2(clAngles[1], clAngles[0])
 
     theta = np.mod(theta, 2*np.pi)  # Shift from [-pi,pi] to [0,2*pi).
-    # TODO: add here np.mod as well
-    idx = round(theta/(2*np.pi)*n_theta)  # linear scale from [0,2*pi) to [0,n_theta).
+    idx = np.mod(np.round(theta/(2*np.pi)*n_theta), n_theta).astype(int)  # linear scale from [0,2*pi) to [0,n_theta).
 
     return idx
 
@@ -613,6 +652,7 @@ def detection_rate_gammas(gammas, n_symm, rots_gt, angle_deg_tol_err=10):
     return n_correct_idxs / n_images * 100
     # TODO: add offending rots
 
+
 def mat_to_npy(file_name):
     return loadmat(file_name + '.mat')[file_name]
 
@@ -620,6 +660,18 @@ def mat_to_npy(file_name):
 def mat_to_npy_vec(file_name):
     a = mat_to_npy(file_name)
     return a.reshape(a.shape[0] * a.shape[1])
+
+
+def calc_shift_phases(n_r, max_shift, shift_step):
+    n_shifts = int(np.ceil(2*max_shift/shift_step + 1))
+    shift_phases = np.zeros((n_shifts, n_r), 'complex128')
+    shifts = np.array([-max_shift + i*shift_step for i in range(n_shifts)], dtype='int')
+    rs = np.arange(n_r)  # r_s should correspond to the real (underlying) frequency
+    for i in range(n_shifts):
+        shift = shifts[i]
+        shift_phases[i] = np.exp(-2*np.pi*1j*rs*shift/(2*n_r-1))  # TODO: 2*n_r+1 or 2*n_r-1  ?
+
+    return shift_phases
 
 
 if __name__ == "__main__":

@@ -6,20 +6,27 @@ from Cn.config_symm import AbinitioSymmConfig
 
 
 def estimate_relative_viewing_directions_c3_c4(n_symm, npf, n_theta, rots_gt=None):
-
     if AbinitioSymmConfig.is_use_gt:
         assert rots_gt is not None
-        clmatrix = utils.find_cl_gt(n_symm, n_theta, rots_gt, single_cl=True)
-        sclmatrix = utils.find_scl_gt(n_symm, n_theta, rots_gt)
-        Rijs = utils.estimate_relative_rots_gt(n_symm, n_theta, rots_gt)
+        clmatrix = utils.find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=True, single_cl=True)
+        # clmatrix = utils.find_single_cl_gt(n_symm, n_theta, rots_gt)
+        sclmatrix = utils.find_scl_gt(n_symm, n_theta, rots_gt,is_simulate_J=True, is_simulate_transpose=True)
     else:
         n_images = len(npf)
+        max_shift_1d = np.ceil(2*np.sqrt(2)*AbinitioSymmConfig.max_shift)
+        n_r = AbinitioSymmConfig.n_r
+        shift_step = AbinitioSymmConfig.shift_step
+        print('estimating common-lines')
         clmatrix, *_ = abinitio.cryo_clmatrix_cpu_pystyle(npf, n_images, 0,
-                                                          AbinitioSymmConfig.max_shift, AbinitioSymmConfig.shift_step)
-        Rijs = abinitio.cryo_syncmatrix_vote_3n(clmatrix, n_theta)
-        sclmatrix, _ = utils.find_scl(n_symm, npf, n_theta, rots_gt)
+                                                          max_shift_1d, AbinitioSymmConfig.shift_step)
+        print('estimating self common-lines')
+        sclmatrix, *_ = utils.find_scl(n_symm, npf, n_theta, n_r, max_shift_1d, shift_step, rots_gt)
 
+    print('estimating relative orientations')
+    Rijs = abinitio.cryo_syncmatrix_vote_3n(clmatrix, n_theta)
+    print('estimating self relative orientations')
     Riis = estimate_self_relative_rots(n_symm, sclmatrix, n_theta, rots_gt)
+    print('local handedness')
     viis, vijs = local_handedness_sync(n_symm, Riis, Rijs, rots_gt)
     if rots_gt is not None:
         utils.cl_detection_rate_single(n_symm, clmatrix, rots_gt, n_theta, AbinitioSymmConfig.angle_tol_err_deg)
