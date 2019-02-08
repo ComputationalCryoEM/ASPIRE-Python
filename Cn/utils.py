@@ -9,6 +9,7 @@ from scipy.stats import special_ortho_group
 import numpy as np
 import scipy
 import math
+import pickle
 
 J = np.diag([1, 1, -1])
 seed = 12345  # to reproduce results
@@ -50,7 +51,6 @@ def find_scl(n_symm, npf, n_theta, n_r, max_shift, shift_step, rots_gt=None):
         npf_i_half_shifted = np.reshape(npf_i_half_shifted, (-1, n_r))  # shape is (n_theta/2 * n_shifts, n_r)
 
         # ignoring dc-term.
-        # TODO: not sure this is beneficial nor does it have real significance
         npf_i[:, 0] = 0
         npf_i_half_shifted[:, 0] = 0
 
@@ -194,19 +194,19 @@ def check_rotations_error(rots, n_symm, rots_gt):
 
     sign_g_Ri = g_sync(rots, n_symm, rots_gt)
     
-    rots_gt_stack = np.zeros((3*n_images, 3))
-    rots_stack_1 = np.zeros((3*n_images, 3))
-    rots_stack_2 = np.zeros((3*n_images, 3))
+    rots_stack = np.zeros((3*n_images, 3))
+    rots_gt_stack_1 = np.zeros((3*n_images, 3))
+    rots_gt_stack_2 = np.zeros((3*n_images, 3))
     for i, (rot, rot_gt) in enumerate(zip(rots, rots_gt)):
         rot_gt_i = np.dot(np.linalg.matrix_power(g, sign_g_Ri[i]), rot_gt)
-        rots_gt_stack[3*i:3*i+3] = rot_gt_i.T
-        rots_stack_1[3*i:3*i+3] = rot.T
-        rots_stack_2[3*i:3*i+3] = J_conjugate(rot).T    
+        rots_stack[3*i:3*i+3] = rot.T
+        rots_gt_stack_1[3*i:3*i+3] = rot_gt_i.T
+        rots_gt_stack_2[3*i:3*i+3] = J_conjugate(rot_gt_i).T
     
     # Compute the two possible orthogonal matrices which register the
     # true rotations to the estimated 
-    O1 = np.dot(rots_stack_1.T, rots_gt_stack)/n_images
-    O2 = np.dot(rots_stack_2.T, rots_gt_stack)/n_images
+    O1 = np.dot(rots_stack.T, rots_gt_stack_1)/n_images
+    O2 = np.dot(rots_stack.T, rots_gt_stack_2)/n_images
     
     # We are registering one set of rotations (the estimated ones) to
     # another set of rotations (the true ones). Thus, the transformation
@@ -228,19 +228,19 @@ def check_rotations_error(rots, n_symm, rots_gt):
         print("detected J cojugation")
     
     O = (np.dot(u, vh)).T
-    
-    if flag == 2:
-        rots = np.array([J_conjugate(rot) for rot in rots])
+
     
     rots_alligned = np.zeros_like(rots)
     for i, rot in enumerate(rots):
         g_s = np.linalg.matrix_power(g, sign_g_Ri[i])
         rots_alligned[i] = np.linalg.multi_dot([g_s.T, O, rot])
-        
+
+    if flag == 2:
+        rots_alligned = np.array([J_conjugate(rot) for rot in rots_alligned])
+
     diff = np.array([np.linalg.norm(rot-rot_gt, 'fro') for rot, rot_gt in zip(rots_alligned, rots_gt)])
     mse = np.sum(diff**2)/n_images
-    return mse, rots_alligned
-        # , sign_g_Ri
+    return mse, rots_alligned, sign_g_Ri
 
 
 def check_degrees_error(rots, n_symm, n_theta, rots_gt):
@@ -294,6 +294,20 @@ def test_check_rotations_error(n_images, n_symm, iters=1):
         print("tests failed")
 
 
+def foo(n_images, n_symm):
+
+    g = generate_g(n_symm)
+    rots_gt = generate_rots(n_images)
+    print("test 6: rots[i] = g^{s_{i}}*rots_gt[i]")
+    rots = rots_gt.copy()
+    s_is = np.random.choice(n_symm, n_images, replace=True)
+    rots = [np.dot(np.linalg.matrix_power(g, si), rot) for si, rot in zip(s_is, rots)]
+    mse, rots_aligned = check_rotations_error(rots, n_symm, rots_gt)
+    check_degrees_error(rots_aligned, n_symm, 360, rots_gt)
+    print("mse=" + str(mse))
+    return rots_gt, rots, s_is
+
+
 def do_test_check_rotations_error(n_images, n_symm):
     
     mses = np.zeros(8)
@@ -303,20 +317,20 @@ def do_test_check_rotations_error(n_images, n_symm):
 
     print("test 1: rots==rots_gt")
     rots = rots_gt.copy()
-    mses[0] = check_rotations_error(rots, n_symm, rots_gt)
+    mses[0],*_ = check_rotations_error(rots, n_symm, rots_gt)
     print("mse=" + str(mses[0]))
 
     print("test 2: O*rots==rots_gt")
     rots = rots_gt.copy()
     O = generate_rots(n_images=1)
     rots = np.array([np.dot(O, rot) for rot in rots])
-    mses[1] = check_rotations_error(rots, n_symm, rots_gt)
+    mses[1],*_ = check_rotations_error(rots, n_symm, rots_gt)
     print("mse=" + str(mses[1]))
 
     print("test 3: rots==J*rots_gt*J")
     rots = rots_gt.copy()
     rots = J_conjugate(rots)
-    mses[2] = check_rotations_error(rots, n_symm, rots_gt)
+    mses[2],*_ = check_rotations_error(rots, n_symm, rots_gt)
     print("mse=" + str(mses[2]))
 
     print("test 4: rots==J*O*rots_gt*J")
@@ -324,20 +338,20 @@ def do_test_check_rotations_error(n_images, n_symm):
     O = generate_rots(n_images=1)
     rots = np.array([np.dot(O, rot) for rot in rots])
     rots = J_conjugate(rots)
-    mses[3] = check_rotations_error(rots, n_symm, rots_gt)
+    mses[3],*_ = check_rotations_error(rots, n_symm, rots_gt)
     print("mse=" + str(mses[3]))
 
     print("test 5: rots[i] = g*rots_gt[i]")
     rots = rots_gt.copy()
     rots = [np.dot(g, rot) for rot in rots]
-    mses[4] = check_rotations_error(rots, n_symm, rots_gt)
+    mses[4],*_ = check_rotations_error(rots, n_symm, rots_gt)
     print("mse=" + str(mses[4]))
 
     print("test 6: rots[i] = g^{s_{i}}*rots_gt[i]")
     rots = rots_gt.copy()
     s_is = np.random.choice(n_symm, n_images, replace=True)
     rots = [np.dot(np.linalg.matrix_power(g, si), rot) for si, rot in zip(s_is, rots)]
-    mses[5] = check_rotations_error(rots, n_symm, rots_gt)
+    mses[5],*_ = check_rotations_error(rots, n_symm, rots_gt)
     print("mse=" + str(mses[5]))
     
     print("test 7: rots[i] = J*g^{s_{i}}*rots_gt[i]*J")
@@ -345,7 +359,7 @@ def do_test_check_rotations_error(n_images, n_symm):
     s_is = np.random.choice(n_symm, n_images, replace=True)
     rots = np.array([np.dot(np.linalg.matrix_power(g, si), rot) for si, rot in zip(s_is, rots)])
     rots = J_conjugate(rots)
-    mses[6] = check_rotations_error(rots, n_symm, rots_gt)
+    mses[6],*_ = check_rotations_error(rots, n_symm, rots_gt)
     print("mse=" + str(mses[6]))
 
     print("test 8: rots[i] = J*O*g^{s_{i}}*rots_gt[i]*J")
@@ -355,7 +369,7 @@ def do_test_check_rotations_error(n_images, n_symm):
     O = generate_rots(n_images=1)
     rots = np.array([np.dot(O, rot) for rot in rots])
     rots = J_conjugate(rots)
-    mses[7] = check_rotations_error(rots, n_symm, rots_gt)
+    mses[7],*_ = check_rotations_error(rots, n_symm, rots_gt)
     print("mse=" + str(mses[7]))
 
     return np.all(mses < 1e-25)
@@ -674,8 +688,96 @@ def calc_shift_phases(n_r, max_shift, shift_step):
     return shift_phases
 
 
+def detection_rate_viis(viis, n_symm, rots_gt):
+    assert len(rots_gt) == len(viis)
+
+    n_images = len(rots_gt)
+    viis_gt = np.array([np.outer(rot_gt[2], rot_gt[2]) for rot_gt in rots_gt])
+
+    min_idx = np.zeros(n_images, dtype=int)
+    errs = np.zeros(n_images)
+    diffs = np.zeros(2)
+    for i, (vii_gt, vii) in enumerate(zip(viis_gt, viis)):
+        diffs[0] = np.linalg.norm(vii - vii_gt, 'fro')
+        diffs[1] = np.linalg.norm(J_conjugate(vii) - vii_gt, 'fro')
+        min_idx[i] = np.argmin(diffs)
+        errs[i] = diffs[min_idx[i]]
+    mse = np.mean(errs ** 2)
+    hist, _ = np.histogram(min_idx, np.arange(3))
+    print("MSE of viis=%f, n_symm = %d" % (mse, n_symm))
+    print("hist=" + str(hist))
+    return mse, hist
+
+
+def detection_rate_vijs(vijs, n_symm, rots_gt):
+    n_images = len(rots_gt)
+    assert scipy.special.comb(n_images, 2) == len(vijs)
+    n_choose_2 = scipy.special.comb(n_images, 2).astype(int)
+    vijs_gt = np.zeros((n_choose_2, 3, 3))
+
+    c = 0
+    for i in np.arange(n_images):
+        for j in np.arange(i + 1, n_images):
+            vi = rots_gt[i, 2]
+            vj = rots_gt[j, 2]
+            vijs_gt[c] = np.outer(vi, vj)
+            c = c + 1
+
+    min_idx = np.zeros(n_choose_2, dtype=int)
+    errs = np.zeros(n_choose_2)
+    diffs = np.zeros(2)
+    for i, (vij_gt, vij) in enumerate(zip(vijs_gt, vijs)):
+        diffs[0] = np.linalg.norm(vij - vij_gt, 'fro')
+        diffs[1] = np.linalg.norm(J_conjugate(vij) - vij_gt, 'fro')
+        min_idx[i] = np.argmin(diffs)
+        errs[i] = diffs[min_idx[i]]
+    mse = np.mean(errs ** 2)
+    hist, _ = np.histogram(min_idx, np.arange(3))
+    print("MSE of vijs=%f, n_symm = %d" % (mse, n_symm))
+    print("hist=" + str(hist))
+    return mse, hist
+
+
+
 if __name__ == "__main__":
-    n_symm = 4
-    n_images = 100
-    # test_complete_third_row_to_rot()
-    test_check_rotations_error(n_images, n_symm, iters=4)
+    n_symm = 3
+
+    file_Name = "testfile"
+    fileObject = open(file_Name, 'rb')
+    # load the object from the file into var b
+    rots_gt_arr, rots_arr, si_s = pickle.load(fileObject)
+
+    fileObject.close()
+
+    rots_gt = rots_gt_arr[0]
+    rots = rots_arr[0]
+    sis = si_s[0].astype(int)
+
+    # g = generate_g(n_symm)
+    # rots = [np.dot(np.linalg.matrix_power(g, n_symm-si), rot) for si, rot in zip(sis, rots)]
+
+    mse, rots_aligned, sign_g_Ri = check_rotations_error(rots, n_symm, rots_gt)
+    check_degrees_error(rots_aligned, n_symm, 360, rots_gt)
+    print("mse=" + str(mse))
+
+    # n_images = 100
+    # # test_complete_third_row_to_rot()
+    # rots_gt_arr = np.zeros((5,n_images,3,3))
+    # rots_arr = np.zeros((5,n_images,3,3))
+    # si_s = np.zeros((5, n_images))
+    # for i in range(5):
+    #     rots_gt_arr[i], rots_arr[i], si_s[i]  = foo(n_images, n_symm)
+    #
+    # file_Name = "testfile"
+    #
+    # # open the file for writing
+    # fileObject = open(file_Name, 'wb')
+    #
+    # # this writes the object a to the
+    # # file named 'testfile'
+    # pickle.dump((rots_gt_arr, rots_arr, si_s), fileObject)
+    #
+    # # here we close the fileObject
+    # fileObject.close()
+
+    # test_check_rotations_error(n_images, n_symm, iters=3)

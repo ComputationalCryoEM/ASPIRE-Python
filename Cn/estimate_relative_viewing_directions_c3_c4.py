@@ -33,8 +33,8 @@ def estimate_relative_viewing_directions_c3_c4(n_symm, npf, n_theta, rots_gt=Non
         utils.scl_detection_rate(n_symm, sclmatrix, rots_gt, n_theta, AbinitioSymmConfig.angle_tol_err_deg)
         utils.detection_rate_self_relative_rots(Riis, n_symm, rots_gt)
         utils.detection_rate_relative_rots(Rijs, n_symm, rots_gt)
-        detection_rate_viis(viis, n_symm, rots_gt)
-        detection_rate_vijs(vijs, n_symm, rots_gt)
+        utils.detection_rate_viis(viis, n_symm, rots_gt)
+        utils.detection_rate_vijs(vijs, n_symm, rots_gt)
     return viis, vijs
 
 
@@ -217,56 +217,6 @@ def test_estimate_self_relative_rots(n_symm, n_theta, rots_gt):
 def test_estimate_relative_rots(n_symm, n_theta, rots_gt):
     Rijs = utils.estimate_relative_rots(n_symm, n_theta, rots_gt)
     utils.detection_rate_relative_rots(Rijs, n_symm, rots_gt)
-
-
-def detection_rate_viis(viis, n_symm, rots_gt):
-    assert len(rots_gt) == len(viis)
-
-    n_images = len(rots_gt)
-    viis_gt = np.array([np.outer(rot_gt[2], rot_gt[2]) for rot_gt in rots_gt])
-
-    min_idx = np.zeros(n_images, dtype=int)
-    errs = np.zeros(n_images)
-    diffs = np.zeros(2)
-    for i, (vii_gt, vii) in enumerate(zip(viis_gt, viis)):
-        diffs[0] = np.linalg.norm(vii - vii_gt, 'fro')
-        diffs[1] = np.linalg.norm(utils.J_conjugate(vii) - vii_gt, 'fro')
-        min_idx[i] = np.argmin(diffs)
-        errs[i] = diffs[min_idx[i]]
-    mse = np.mean(errs ** 2)
-    hist, _ = np.histogram(min_idx, np.arange(3))
-    print("MSE of viis=%f, n_symm = %d" % (mse, n_symm))
-    print("hist=" + str(hist))
-    return mse, hist
-
-
-def detection_rate_vijs(vijs, n_symm, rots_gt):
-    n_images = len(rots_gt)
-    assert scipy.special.comb(n_images, 2) == len(vijs)
-    n_choose_2 = scipy.special.comb(n_images, 2).astype(int)
-    vijs_gt = np.zeros((n_choose_2, 3, 3))
-
-    c = 0
-    for i in np.arange(n_images):
-        for j in np.arange(i + 1, n_images):
-            vi = rots_gt[i, 2]
-            vj = rots_gt[j, 2]
-            vijs_gt[c] = np.outer(vi, vj)
-            c = c + 1
-
-    min_idx = np.zeros(n_choose_2, dtype=int)
-    errs = np.zeros(n_choose_2)
-    diffs = np.zeros(2)
-    for i, (vij_gt, vij) in enumerate(zip(vijs_gt, vijs)):
-        diffs[0] = np.linalg.norm(vij - vij_gt, 'fro')
-        diffs[1] = np.linalg.norm(utils.J_conjugate(vij) - vij_gt, 'fro')
-        min_idx[i] = np.argmin(diffs)
-        errs[i] = diffs[min_idx[i]]
-    mse = np.mean(errs ** 2)
-    hist, _ = np.histogram(min_idx, np.arange(3))
-    print("MSE of vijs=%f, n_symm = %d" % (mse, n_symm))
-    print("hist=" + str(hist))
-    return mse, hist
 
 
 if __name__ == "__main__":
