@@ -11,63 +11,6 @@ import scipy
 import math
 import pickle
 
-J = np.diag([1, 1, -1])
-seed = 12345  # to reproduce results
-
-
-def find_scl(n_symm, npf, n_theta, n_r, max_shift, shift_step, rots_gt=None):
-    # the angle between self-common-lines is [60, 180] (for C3) and [90,180] (for C4) but since antipodal
-    # lines are perfectly correlated we mustn't test angles too close to 180 degrees apart
-    if n_theta % 2 == 1:
-        raise ValueError('n_theta must be even')
-    if n_symm not in [3, 4]:
-        raise ValueError('n_symm must be either 3 or 4')
-    if n_symm == 3:
-        min_angle_diff = 60*np.pi/180  # TODO: extract these angles as params
-        max_angle_diff = 165*np.pi/180
-    else:  # i.e., n_symm == 4
-        min_angle_diff = 90*np.pi/180
-        max_angle_diff = 160*np.pi/180
-
-    n_images = len(npf)
-    sclmatrix = np.zeros((n_images, 2))
-    corrs_stats = np.zeros(n_images)
-    shifts_stats = np.zeros(n_images)
-    X, Y = np.meshgrid(range(n_theta), range(n_theta//2))
-    diff = Y - X
-    unsigned_angle_diff = np.arccos(np.cos(diff*2*np.pi/n_theta))
-
-    good_diffs = np.logical_and(min_angle_diff < unsigned_angle_diff, unsigned_angle_diff < max_angle_diff)
-
-    shift_phases = calc_shift_phases(n_r, max_shift, shift_step)
-    n_shifts = len(shift_phases)
-    for i in range(n_images):
-        npf_i = npf[i]
-
-        # generate all shifted versions of the images
-        npf_i_half = npf_i[:n_theta // 2]
-
-        npf_i_half_shifted = np.array([npf_i_half*shift_phase for shift_phase in shift_phases]) # shape is (n_shifts, n_theta/2, n_r)
-        npf_i_half_shifted = np.reshape(npf_i_half_shifted, (-1, n_r))  # shape is (n_theta/2 * n_shifts, n_r)
-
-        # ignoring dc-term.
-        npf_i[:, 0] = 0
-        npf_i_half_shifted[:, 0] = 0
-
-        # normalize each ray to have norm equal to 1
-        npf_i = np.array([ray/np.linalg.norm(ray) for ray in npf_i])
-        npf_i_half_shifted = np.array([ray / np.linalg.norm(ray) for ray in npf_i_half_shifted])
-
-        corrs = np.dot(npf_i_half_shifted, npf_i.T)  # no conjugation as the scl are conjugate-equal, not equal
-        corrs = np.reshape(corrs, (n_shifts, n_theta//2, n_theta))
-        corrs = np.array([corr*good_diffs for corr in corrs])  # mask with allowed combinations
-        shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
-        sclmatrix[i] = [scl1, scl2]
-        corrs_stats[i] = np.real(corrs[(shift, scl1, scl2)])
-        shifts_stats[i] = shift
-
-    return sclmatrix, corrs_stats, shifts_stats
-
 
 def generate_g(n_symm):
     #    a rotation of 360/n_symm degrees about the z-axis
@@ -228,8 +171,6 @@ def check_rotations_error(rots, n_symm, rots_gt):
         print("detected J cojugation")
     
     O = (np.dot(u, vh)).T
-
-    
     rots_alligned = np.zeros_like(rots)
     for i, rot in enumerate(rots):
         g_s = np.linalg.matrix_power(g, sign_g_Ri[i])
@@ -271,16 +212,11 @@ def check_degrees_error(rots, n_symm, n_theta, rots_gt):
         opt_s = np.argmin(np.mean(c_err_in_degrees, axis=1))
         err_in_degrees[k*n_theta: (k+1)*n_theta] = c_err_in_degrees[opt_s]
 
-    print('median error in degrees: %e' % np.median(err_in_degrees))
-    print('mean error in degrees: %e' % np.mean(err_in_degrees))
-    print('std error in degrees: %e' % np.std(err_in_degrees))
-    print('min error in degrees: %e' % np.min(err_in_degrees))
-    print('max error in degrees: %e' % np.max(err_in_degrees))
-
     return err_in_degrees
 
 
 def J_conjugate(rots):
+    J = np.diag([1, 1, -1])
     if rots.ndim == 2:
         return np.linalg.multi_dot([J, rots, J])
     else:

@@ -1,12 +1,12 @@
 import numpy as np
 import scipy
 import Cn.utils as utils
-import sys
 from tqdm import tqdm
 from scipy.sparse.linalg import eigs
 
 
-def handedness_sync(viis, vijs, rots_gt=None):
+def handedness_sync(viis, vijs):
+    print('handedness synchronization')
     n_images = len(viis)
     m_choose_2 = len(vijs)
 

@@ -1723,7 +1723,9 @@ def cryo_clmatrix_cpu_fast2(pf, nk=None, max_shift=15, shift_step=1):
     return clstack, corrstack, shift_equations, shift_equations_map, clstack_mask
 
 
-def cryo_clmatrix_cpu_pystyle(npf, n_images, param, max_shift_1d, shift_step):
+def cryo_clmatrix_cpu_pystyle(npf, max_shift, shift_step):
+    n_images = len(npf)
+    max_shift_1d = np.ceil(2 * np.sqrt(2) * max_shift)
     npf = np.transpose(npf, axes=(2, 1, 0))
-    return cryo_clmatrix_cpu_fast2(npf)
+    return cryo_clmatrix_cpu_fast2(npf, n_images, max_shift_1d, shift_step)
     # return cryo_clmatrix_cpu(npf, n_images, param, max_shift_1d, shift_step)

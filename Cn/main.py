@@ -3,10 +3,9 @@ import Cn.utils as utils
 import aspire.abinitio as abinitio
 from Cn.config_symm import AbinitioSymmConfig
 
+from Cn.estimate_relative_viewing_directions import estimate_relative_viewing_directions
 from Cn.estimate_third_rows import estimate_third_rows
 from Cn.estimate_rots_from_third_rows import estimate_rots_from_third_rows
-from Cn.estimate_relative_viewing_directions_c3_c4 import estimate_relative_viewing_directions_c3_c4
-from Cn.estimate_relative_viewing_directions_cn import estimate_relative_viewing_directions_cn
 from Cn.handedness_sync import handedness_sync
 
 
@@ -30,24 +29,26 @@ def main():
         AbinitioSymmConfig.max_shift = 0
         AbinitioSymmConfig.shift_step = 1
 
-    npf, _ = abinitio.cryo_pft(projs, AbinitioSymmConfig.n_r, AbinitioSymmConfig.n_theta)
+    n_r = AbinitioSymmConfig.n_r
+    n_theta = AbinitioSymmConfig.n_theta
+    n_symm = AbinitioSymmConfig.n_symm
+    cache_file_name = AbinitioSymmConfig.cache_file_name
+    npf, _ = abinitio.cryo_pft(projs, n_r, n_theta)
     npf = np.transpose(npf, axes=(2, 1, 0))
-    # if AbinitioSymmConfig.n_symm in [3, 4]:
-    if AbinitioSymmConfig.n_symm == 3:
-        viis, vijs = estimate_relative_viewing_directions_c3_c4(AbinitioSymmConfig.n_symm, npf, AbinitioSymmConfig.n_theta, rots_gt)
-    else:
-        print('Estimating relative viewing directions for n>4')
-        viis, vijs = estimate_relative_viewing_directions_cn(AbinitioSymmConfig.n_symm, npf, rots_gt)
-
-    viis, vijs, sign_J = handedness_sync(viis, vijs, rots_gt)
+    viis, vijs = estimate_relative_viewing_directions(npf, cache_file_name, rots_gt)
+    viis, vijs, sign_J = handedness_sync(viis, vijs)
     vis = estimate_third_rows(vijs, viis, rots_gt)
-    rots = estimate_rots_from_third_rows(AbinitioSymmConfig.n_symm, npf, vis, rots_gt)
-    mse, rots_aligned, _ = utils.check_rotations_error(rots, AbinitioSymmConfig.n_symm, rots_gt)
-    err_in_degrees = utils.check_degrees_error(rots_aligned, AbinitioSymmConfig.n_symm, AbinitioSymmConfig.n_theta, rots_gt)
+    rots, _ = estimate_rots_from_third_rows(npf, vis)
+    mse, rots_aligned, _ = utils.check_rotations_error(rots, n_symm, rots_gt)
+    err_in_degrees = utils.check_degrees_error(rots_aligned, n_symm, n_theta, rots_gt)
 
+    print('median error in degrees: %e' % np.median(err_in_degrees))
+    print('mean error in degrees: %e' % np.mean(err_in_degrees))
+    print('std error in degrees: %e' % np.std(err_in_degrees))
+    print('min error in degrees: %e' % np.min(err_in_degrees))
+    print('max error in degrees: %e' % np.max(err_in_degrees))
     print("mse=" + str(mse))
 
 
 if __name__ == "__main__":
     main()
-

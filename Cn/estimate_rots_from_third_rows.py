@@ -5,26 +5,11 @@ import scipy
 from tqdm import tqdm
 
 
-def estimate_rots_from_third_rows(n_symm, npf, vis, rots_gt):
-
-    # vis = np.array([rot_gt[-1] for rot_gt in rots_gt])
-    Ris, _ = estimate_inplane_rots_angles(n_symm, npf, vis)
-    return Ris
-    # if AbinitioSymmConfig.is_use_gt:
-    #     assert rots_gt is not None
-    #     Ris, _ = estimate_inplane_rots_angles_gt(n_symm, vis, rots_gt)
-    # else:
-    #     Ris, _ = estimate_inplane_rots_angles(n_symm, npf, vis)
-    #     return Ris
-
-
-def estimate_inplane_rots_angles(n_symm, npf, vis):
-
+def estimate_rots_from_third_rows(npf, vis):
     assert len(vis) == len(npf)
-
+    n_symm = AbinitioSymmConfig.n_symm
     n_theta = AbinitioSymmConfig.n_theta
     inplane_rot_res_deg = AbinitioSymmConfig.inplane_rot_res_deg
-    # max_shift = AbinitioSymmConfig.max_shift
     max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)
     shift_step = AbinitioSymmConfig.shift_step
     n_r = AbinitioSymmConfig.n_r
@@ -167,27 +152,6 @@ def estimate_inplane_rots_angles_gt(n_symm, vis, rots_gt):
     return Ris, R_thetas
 
 
-# def test_estimate_inplane_rot_angles(n_symm, n_images=100):
-#
-#     assert n_symm > 2, "this method only supports n_symm > 2"
-#
-#     rots_tilde = utils.generate_rots(n_images)
-#     thetas_gt = 2*np.pi*np.random.random(n_images)
-#
-#     rots_gt = np.zeros((n_images, 3, 3))
-#     for i in np.arange(n_images):
-#         c = np.cos(thetas_gt[i])
-#         s = np.sin(thetas_gt[i])
-#         rot_theta_gt = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-#         rots_gt[i] = np.dot(rot_theta_gt, rots_tilde[i])
-#
-#     thetas = np.array([np.mod(theta_gt, 2*np.pi/n_symm) for theta_gt in thetas_gt])
-#     rots_out = theta_sync(n_symm, rots_tilde, thetas)
-#
-#     mse = utils.check_rotations_error(rots_out, n_symm, rots_gt)
-#     print("mse=" + str(mse))
-
-    
 if __name__ == "__main__":
     n_images = 100
     n_symm = 4
