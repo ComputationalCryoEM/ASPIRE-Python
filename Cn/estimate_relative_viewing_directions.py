@@ -14,7 +14,7 @@ def estimate_relative_viewing_directions(npf, cache_file_name=None, rots_gt=None
         viis, vijs = estimate_relative_viewing_directions_c3_c4(npf, rots_gt)
     else:
         print('Estimating relative viewing directions for n>4')
-        viis, vijs = estimate_relative_viewing_directions_cn(npf, cache_file_name)
+        viis, vijs = estimate_relative_viewing_directions_cn(npf, cache_file_name, rots_gt)
     if rots_gt is not None:
         utils.detection_rate_viis(viis, AbinitioSymmConfig.n_symm, rots_gt)
         utils.detection_rate_vijs(vijs, AbinitioSymmConfig.n_symm, rots_gt)
@@ -191,7 +191,7 @@ def find_scl(npf):
         # generate all shifted versions of the images
         npf_i_half = npf_i[:n_theta // 2]
 
-        npf_i_half_shifted = np.array([npf_i_half*shift_phase for shift_phase in shift_phases]) # shape is (n_shifts, n_theta/2, n_r)
+        npf_i_half_shifted = np.array([npf_i_half*shift_phase for shift_phase in shift_phases])  # shape is (n_shifts, n_theta/2, n_r)
         npf_i_half_shifted = np.reshape(npf_i_half_shifted, (-1, n_r))  # shape is (n_theta/2 * n_shifts, n_r)
 
         # ignoring dc-term.
@@ -213,7 +213,7 @@ def find_scl(npf):
     return sclmatrix, corrs_stats, shifts_stats
 
 
-def estimate_relative_viewing_directions_cn(npf, cache_file_name=None):
+def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=None):
 
     n_symm = AbinitioSymmConfig.n_symm
     if cache_file_name is None:
@@ -221,36 +221,55 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None):
         n_points_sphere = 1000
         n_theta = 360
         inplane_rot_res = 1
-        cache_file_name, *_ = create_cache(base_dir, n_points_sphere, n_theta, inplane_rot_res, None)
+        cache_file_name, *_ = create_cache(base_dir, n_points_sphere, n_theta, inplane_rot_res, rots_gt)
     print('loading line indexes cache %s.\n Please be patient...' % cache_file_name)
     cijs_inds, Ris_tilde, R_theta_ijs, n_theta = read_cache(cache_file_name)
     AbinitioSymmConfig.n_theta = n_theta
+    n_r = AbinitioSymmConfig.n_r
     if n_theta != npf.shape[1]:
         raise ValueError('n_theta = %d for cache, while n_theta=%d for npf are not equal. '
                          'Either create a new cache or a new npf' % (n_theta, len(npf)))
     print('done loading indexes cache')
     n_images = len(npf)
     n_cands = len(Ris_tilde)
+    max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)  # TODO extract this and put in ASC
+    shift_phases = utils.calc_shift_phases(AbinitioSymmConfig.n_r, max_shift_1d, AbinitioSymmConfig.shift_step)
+    n_shifts = len(shift_phases)
     # Step 1: pre-calculate the likelihood with respect to the self common-lines
     # note: cannot pre-compute the scls inds in cache since these depend on the symmetry class
     scls_inds = compute_scls_inds(Ris_tilde, n_symm, n_theta)
     scores_self_corrs = np.zeros((n_images, n_cands))
-    for i, npf_i in enumerate(npf):
+    for i in range(n_images):
+        npf_i = npf[i]
+        # generate all shifted versions of the images
+        npf_i_half = npf_i[:n_theta // 2]
+
+        npf_i_half_shifted = np.array([npf_i_half * shift_phase for shift_phase in shift_phases])  # shape is (n_shifts, n_theta/2, n_r)
+        npf_i_half_shifted = np.reshape(npf_i_half_shifted, (-1, n_r))  # shape is (n_theta/2 * n_shifts, n_r)
+
         # ignoring dc-term.
         npf_i[:, 0] = 0
+        npf_i_half_shifted[:, 0] = 0
+
         # normalize each ray to have norm equal to 1
         npf_i = np.array([ray / np.linalg.norm(ray) for ray in npf_i])
+        npf_i_half_shifted = np.array([ray / np.linalg.norm(ray) for ray in npf_i_half_shifted])
+
         # TODO: there is no conjugation here because when building scl_inds we impliceteley picked
         #  the antipodal line. Contrast this with the c3_c4 algorithm. Suggestion: since in c3_c3 we
         #  utilize the upfront known angles between scls fix here rather than there
-        corrs_i = np.dot(npf_i[:n_theta//2, :], np.conj(npf_i).T)
+        corrs = np.dot(npf_i_half_shifted, np.conj(npf_i).T)
+        corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
 
-        corrs_i_cands = np.array([corrs_i[scls_inds_cand[:, 0], scls_inds_cand[:, 1]] for scls_inds_cand in scls_inds])
-        scores_self_corrs[i] = np.mean(np.real(corrs_i_cands), axis=1)
+        # corrs_i = np.dot(npf_i[:n_theta//2, :], np.conj(npf_i).T)
 
+        corrs_cands = np.array([np.max(np.real(corrs[:, scls_inds_cand[:, 0], scls_inds_cand[:, 1]]), axis=0)
+                                         for scls_inds_cand in scls_inds])
+        scores_self_corrs[i] = np.mean(np.real(corrs_cands), axis=1)
+
+    # removing candidates that are equator images
     cii_equators_inds = np.array([ind for (ind, Ri_tilde) in enumerate(Ris_tilde)
                                   if abs(np.arccos(Ri_tilde[2, 2]) - np.pi/2) < 10*np.pi/180])
-
     scores_self_corrs[:, cii_equators_inds] = 0
 
     # Step 2: likelihood wrt to pairwise images
@@ -264,19 +283,27 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None):
     c = 0
     e1 = [1, 0, 0]
     min_ii_norm = min_jj_norm = float('inf')
-    # with tqdm(total=n_images) as pbar:
     for i in range(n_images):
+        # generate all shifted versions of the images
+        npf_i_half = npf[i, :n_theta // 2]
+
+        npf_i_half_shifted = np.array([npf_i_half * shift_phase for shift_phase in shift_phases])  # shape is (n_shifts, n_theta/2, n_r)
+        npf_i_half_shifted = np.reshape(npf_i_half_shifted, (-1, n_r))  # shape is (n_shifts * n_theta/2, n_r)
+        # ignoring dc-term.
+        npf_i_half_shifted[:, 0] = 0
+        # normalize each ray to have norm equal to 1
+        npf_i_half_shifted = np.array([ray / np.linalg.norm(ray) for ray in npf_i_half_shifted])
+
         for j in range(i+1, n_images):
             print(str(i), str(j))
-            npf_i = npf[i]
             npf_j = npf[j]
-            npf_i[:, 0] = 0
             npf_j[:, 0] = 0
             # normalize each ray to have norm equal to 1
-            npf_i = np.array([ray / np.linalg.norm(ray) for ray in npf_i])
-            # normalize each ray to have norm equal to 1
             npf_j = np.array([ray / np.linalg.norm(ray) for ray in npf_j])
-            corrs_ij = np.dot(npf_i[:n_theta // 2, :], np.conj(npf_j).T)
+
+            corrs_ij = np.dot(npf_i_half_shifted, np.conj(npf_j).T)
+            # max out the shifts (recall each line may have its own shift)
+            corrs_ij = np.max(np.reshape(np.real(corrs_ij), (n_shifts, n_theta//2, n_theta)), axis=0)
             corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
             corrs = np.reshape(corrs, (-1, n_symm, n_theta_ijs//n_symm))
             corrs = np.mean(corrs, axis=1)  # mean over all n_sym cls
