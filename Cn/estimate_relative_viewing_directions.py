@@ -232,6 +232,7 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
     print('done loading indexes cache')
     n_images = len(npf)
     n_cands = len(Ris_tilde)
+    n_theta_ijs = len(R_theta_ijs)
     max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)  # TODO extract this and put in ASC
     shift_phases = utils.calc_shift_phases(AbinitioSymmConfig.n_r, max_shift_1d, AbinitioSymmConfig.shift_step)
     n_shifts = len(shift_phases)
@@ -260,9 +261,6 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
         #  utilize the upfront known angles between scls fix here rather than there
         corrs = np.dot(npf_i_half_shifted, np.conj(npf_i).T)
         corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
-
-        # corrs_i = np.dot(npf_i[:n_theta//2, :], np.conj(npf_i).T)
-
         corrs_cands = np.array([np.max(np.real(corrs[:, scls_inds_cand[:, 0], scls_inds_cand[:, 1]]), axis=0)
                                          for scls_inds_cand in scls_inds])
         scores_self_corrs[i] = np.mean(np.real(corrs_cands), axis=1)
@@ -271,6 +269,12 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
     cii_equators_inds = np.array([ind for (ind, Ri_tilde) in enumerate(Ris_tilde)
                                   if abs(np.arccos(Ri_tilde[2, 2]) - np.pi/2) < 10*np.pi/180])
     scores_self_corrs[:, cii_equators_inds] = 0
+
+    n_theta_ijs_to_keep = (n_theta_ijs//n_symm)*n_symm
+    if n_theta_ijs_to_keep < n_theta_ijs:
+        cijs_inds = np.delete(cijs_inds, slice(n_theta_ijs_to_keep, cijs_inds.shape[2]), 2)
+        R_theta_ijs = np.delete(R_theta_ijs, slice(n_theta_ijs_to_keep, R_theta_ijs.shape[0]), 0)
+        print('number of inplane rotation angles must be divisible by n_symm')
 
     # Step 2: likelihood wrt to pairwise images
     print('computing pairwise likelihood')
