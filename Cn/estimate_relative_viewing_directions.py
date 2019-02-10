@@ -8,6 +8,13 @@ from tqdm import tqdm
 from Cn.config_symm import AbinitioSymmConfig
 
 
+def estimate_relative_rotations_c2(npf, rots_gt=None):
+    n_images = len(npf)
+    Rijs = utils.estimate_all_relative_rots_gt(2, rots_gt)
+    Rijs = local_handedness_sync_c2(Rijs, n_images)
+    return Rijs
+
+
 def estimate_relative_viewing_directions(npf, cache_file_name=None, rots_gt=None):
     if AbinitioSymmConfig.n_symm in [3, 4]:
         print('Estimating relative viewing directions for n<=4')
@@ -46,7 +53,7 @@ def estimate_relative_viewing_directions_c3_c4(npf, rots_gt=None):
         utils.detection_rate_self_relative_rots(Riis, n_symm, rots_gt)
         utils.detection_rate_relative_rots(Rijs, n_symm, rots_gt)
     print('local handedness')
-    viis, vijs = local_handedness_sync(Riis, Rijs)
+    viis, vijs = local_handedness_sync_c3_c4(Riis, Rijs)
     return viis, vijs
 
 
@@ -84,9 +91,41 @@ def estimate_self_relative_rots(sclmatrix, rots_gt):
     return Riis
 
 
-def local_handedness_sync(Riis, Rijs):
+def local_handedness_sync_c2(Rijs, n_images):
+
+    m_choose_2 = scipy.special.comb(n_images, 2).astype(int)
+    assert len(Rijs) == m_choose_2
+    e1 = [1, 0, 0]
+    min_idxs = np.zeros((m_choose_2, 3, 3))
+    c = 0
+    for ij in range(len(Rijs)):
+        Rij = Rijs[ij, 0]
+        Rij_g = Rijs[ij, 1]
+        Rij_g_J = utils.J_conjugate(Rij_g)
+
+        opt_0 = (Rij + Rij_g)/2
+        opt_1 = (Rij + Rij_g_J)/2
+
+        _, svals_0, _ = np.linalg.svd(opt_0)
+        _, svals_1, _ = np.linalg.svd(opt_1)
+
+        score_rank1_0 = np.linalg.norm(svals_0 - e1, 2)
+        score_rank1_1 = np.linalg.norm(svals_1 - e1, 2)
+
+        if score_rank1_1 < score_rank1_0:
+            Rijs[ij, 1] = Rij_g_J
+            min_idxs[c] = 1
+        else:
+            min_idxs[c] = 0
+        c += 1
+    hist, _ = np.histogram(min_idxs, np.arange(3))
+    print("hist local handedness=" + str(hist))
+    return Rijs
+
+
+def local_handedness_sync_c3_c4(Riis, Rijs):
     n_symm = AbinitioSymmConfig.n_symm
-    assert n_symm == 3 or n_symm == 4
+    assert n_symm in [3, 4]
 
     n_images = len(Riis)
     assert scipy.special.comb(n_images, 2) == len(Rijs)
@@ -103,8 +142,8 @@ def local_handedness_sync(Riis, Rijs):
     scores_rank1 = np.zeros(8)
     min_idxs = np.zeros((m_choose_2, 3, 3))
     c = 0
-    for i in np.arange(n_images):
-        for j in np.arange(i + 1, n_images):
+    for i in range(n_images):
+        for j in range(i + 1, n_images):
             Rii = Riis[i]
             Rjj = Riis[j]
             Rij = Rijs[c]

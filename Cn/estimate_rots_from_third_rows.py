@@ -5,7 +5,60 @@ import scipy
 from tqdm import tqdm
 
 
+def estimate_rots_from_third_rows_c2(vis, Rijs):
+    print('estimating in-plane rotation angles')
+    n_images = len(vis)
+    m_choose_2 = scipy.special.comb(n_images, 2).astype(int)
+    assert len(Rijs) == m_choose_2
+    #  Step 1: construct all rotation matrices Ri_tildes whose third row is equal to the corresponding third rows vis
+    Ri_tildes = np.array([utils.complete_third_row_to_rot(vi) for vi in vis])
+    H = np.zeros((n_images, n_images), dtype=complex)
+    c = 0
+    for i in range(n_images):
+        for j in range(i+1, n_images):
+            Ri_tilde = Ri_tildes[i]
+            Rj_tilde = Ri_tildes[j]
+            Rij = Rijs[c, 0]
+            Rij_g = Rijs[c, 1]
+
+            Uij = np.linalg.multi_dot([Ri_tilde, Rij, Rj_tilde.T])  # U_ij is x-y-plane rotation
+            u, _, vh = np.linalg.svd(Uij[:-1, :-1])
+            Uij = np.dot(u, vh)
+
+            Uij_g = np.linalg.multi_dot([Ri_tilde, Rij_g, Rj_tilde.T])  # U_ij is x-y-plane rotation
+            u_g, _, vh_g = np.linalg.svd(Uij_g[:-1, :-1])
+            Uij_g = np.dot(u_g, vh_g)
+
+            U = (np.dot(Uij, Uij) + np.dot(Uij_g, Uij_g)) / 2
+            u, _, vh = np.linalg.svd(U)
+            U = np.dot(u, vh)
+            H[i, j] = U[0, 0] - 1j * U[1, 0]
+            c += 1
+
+    H = H + np.conj(H).T
+    H = H + np.eye(n_images)  # put 1 on diagonal since : exp^(i*0) = 1
+
+    eig_vals, eig_vecs = scipy.linalg.eigh(H, eigvals=(n_images - 5, n_images - 1))
+
+    print("H top 5 eigenvalues are " + str(eig_vals))
+    evect1 = eig_vecs[:, -1]
+
+    R_thetas = np.zeros((n_images, 3, 3))
+    for i in np.arange(n_images):
+        zi = evect1[i]
+        zi = zi / np.abs(zi)  # rescale so it lies on unit circle
+        c = np.real(zi ** (1 / 2))  # we have twice the required angle
+        s = np.imag(zi ** (1 / 2))
+        R_thetas[i] = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+
+    Ris = np.zeros((n_images, 3, 3))
+    for i, (R_theta, Ri_tilde) in enumerate(zip(R_thetas, Ri_tildes)):
+        Ris[i] = np.dot(R_theta, Ri_tilde)
+    return Ris, R_thetas
+
+
 def estimate_rots_from_third_rows(npf, vis):
+    print('estimating in-plane rotation angles')
     assert len(vis) == len(npf)
     n_symm = AbinitioSymmConfig.n_symm
     n_theta = AbinitioSymmConfig.n_theta
@@ -90,7 +143,6 @@ def estimate_rots_from_third_rows(npf, vis):
     eig_vals, eig_vecs = scipy.linalg.eigh(H, eigvals=(n_images - 5, n_images - 1))
 
     print("H top 5 eigenvalues are " + str(eig_vals))
-    # H is rank-1 whose eigenvector is given by (exp^{-2pi theta_1},...,exp^{-2pi theta_n})
     evect1 = eig_vecs[:, -1]
 
     R_thetas = np.zeros((n_images, 3, 3))
@@ -99,7 +151,8 @@ def estimate_rots_from_third_rows(npf, vis):
         zi = zi / np.abs(zi)  # rescale so it lies on unit circle
         c = np.real(zi ** (1 / n_symm))
         s = np.imag(zi ** (1 / n_symm))
-        # TODO: fix the bug in matlab! the angles retrieved from the eigenvector are known up to an arbitrary angle.
+        # TODO: fix the bug in matlab (both c2 and cn)! the angles retrieved from the eigenvector
+        #  are known up to an arbitrary angle.
         #  Thus, we need the eigenvector to be exp(i*(theta_i+theta)) and not exp(i*(-theta_i+theta))
         R_thetas[i] = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
 

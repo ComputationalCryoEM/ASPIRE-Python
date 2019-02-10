@@ -446,6 +446,21 @@ def estimate_relative_rots_gt(n_symm, n_theta, rots_gt):
     return Rijs
 
 
+def estimate_all_relative_rots_gt(n_symm, rots_gt):
+    n_images = len(rots_gt)
+    Rijs = np.zeros((scipy.special.comb(n_images, 2).astype(int), n_symm, 3, 3))
+    g = generate_g(n_symm)
+    gs_s = np.array([np.linalg.matrix_power(g, s) for s in range(n_symm)])
+    c = 0
+    for i in range(n_images):
+        for j in range(i + 1, n_images):
+            Ri = rots_gt[i]
+            Rj = rots_gt[j]
+            Rijs[c] = np.array([np.linalg.multi_dot([Ri.T, gs, Rj]) for gs in gs_s])
+            c += 1
+    return Rijs
+
+
 # def find_single_cl_gt(n_symm, n_theta, rots_gt):
 #     print('estimating common-lines using GT')
 #     clmatrix_gt = find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=True)

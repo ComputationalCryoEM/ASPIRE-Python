@@ -3,9 +3,9 @@ import Cn.utils as utils
 import aspire.abinitio as abinitio
 from Cn.config_symm import AbinitioSymmConfig
 
-from Cn.estimate_relative_viewing_directions import estimate_relative_viewing_directions
+from Cn.estimate_relative_viewing_directions import estimate_relative_viewing_directions, estimate_relative_rotations_c2
 from Cn.estimate_third_rows import estimate_third_rows
-from Cn.estimate_rots_from_third_rows import estimate_rots_from_third_rows
+from Cn.estimate_rots_from_third_rows import estimate_rots_from_third_rows, estimate_rots_from_third_rows_c2
 from Cn.handedness_sync import handedness_sync
 
 
@@ -35,10 +35,23 @@ def main():
     cache_file_name = AbinitioSymmConfig.cache_file_name
     npf, _ = abinitio.cryo_pft(projs, n_r, n_theta)
     npf = np.transpose(npf, axes=(2, 1, 0))
-    viis, vijs = estimate_relative_viewing_directions(npf, cache_file_name, rots_gt)
-    viis, vijs, sign_J = handedness_sync(viis, vijs)
-    vis = estimate_third_rows(vijs, viis, rots_gt)
-    rots, _ = estimate_rots_from_third_rows(npf, vis)
+    if n_symm == 2:
+        Rijs = estimate_relative_rotations_c2(npf, rots_gt)
+        vijs = np.mean(Rijs, axis=1)
+        viis = np.zeros((len(npf), 3, 3))
+        _, _, signs_J = handedness_sync(viis, vijs)
+        for ij, sign_j in enumerate(signs_J):
+            if sign_j == 1:
+                Rijs[ij, 0] = utils.J_conjugate(Rijs[ij, 0])
+                Rijs[ij, 1] = utils.J_conjugate(Rijs[ij, 1])
+        vijs = np.mean(Rijs, axis=1)
+        vis = estimate_third_rows(vijs, viis, rots_gt)
+        rots, _ = estimate_rots_from_third_rows_c2(vis, Rijs)
+    else:
+        viis, vijs = estimate_relative_viewing_directions(npf, cache_file_name, rots_gt)
+        viis, vijs, sign_J = handedness_sync(viis, vijs)
+        vis = estimate_third_rows(vijs, viis, rots_gt)
+        rots, _ = estimate_rots_from_third_rows(npf, vis)
     mse, rots_aligned, _ = utils.check_rotations_error(rots, n_symm, rots_gt)
     err_in_degrees = utils.check_degrees_error(rots_aligned, n_symm, n_theta, rots_gt)
 
