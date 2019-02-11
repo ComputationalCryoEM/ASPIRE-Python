@@ -8,9 +8,21 @@ from tqdm import tqdm
 from Cn.config_symm import AbinitioSymmConfig
 
 
+def find_cls_c2(n_theta, rots_gt):
+    # TODO: implement
+    print('returning gt cls for c2')
+    return utils.find_cl_gt(2, n_theta, rots_gt, is_simulate_J=False, single_cl=False)
+
+
+def voting_c2(clmatrix, n_theta, rots_gt):
+    # TODO: implement and move to abinitio module
+    return utils.estimate_all_relative_rots_gt(2, rots_gt)
+
+
 def estimate_relative_rotations_c2(npf, rots_gt=None):
     n_images = len(npf)
-    Rijs = utils.estimate_all_relative_rots_gt(2, rots_gt)
+    clmatrix = find_cls_c2(AbinitioSymmConfig.n_theta, rots_gt)
+    Rijs = voting_c2(clmatrix, AbinitioSymmConfig.n_theta, rots_gt)
     Rijs = local_handedness_sync_c2(Rijs, n_images)
     return Rijs
 
@@ -33,7 +45,7 @@ def estimate_relative_viewing_directions_c3_c4(npf, rots_gt=None):
     n_theta = AbinitioSymmConfig.n_theta
     max_shift = AbinitioSymmConfig.max_shift
     shift_step = AbinitioSymmConfig.shift_step
-    if AbinitioSymmConfig.is_use_gt:
+    if AbinitioSymmConfig.is_calc_using_gt:
         assert rots_gt is not None
         clmatrix = utils.find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=True, single_cl=True)
         sclmatrix = utils.find_scl_gt(n_symm, n_theta, rots_gt, is_simulate_J=True, is_simulate_transpose=True)
@@ -224,7 +236,7 @@ def find_scl(npf):
 
     shift_phases = utils.calc_shift_phases(n_r, max_shift_1d, shift_step)
     n_shifts = len(shift_phases)
-    for i in range(n_images):
+    for i in tqdm(range(n_images)):
         npf_i = npf[i]
 
         # generate all shifted versions of the images

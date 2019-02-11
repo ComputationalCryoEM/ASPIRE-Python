@@ -1,66 +1,42 @@
 import numpy as np
-import Cn.utils as utils
-import aspire.abinitio as abinitio
-from Cn.config_symm import AbinitioSymmConfig
+from Cn.abinitio_cn import abinitio_c2, abinitio_cn
+from scipy.io import loadmat
 
-from Cn.estimate_relative_viewing_directions import estimate_relative_viewing_directions, estimate_relative_rotations_c2
-from Cn.estimate_third_rows import estimate_third_rows
-from Cn.estimate_rots_from_third_rows import estimate_rots_from_third_rows, estimate_rots_from_third_rows_c2
-from Cn.handedness_sync import handedness_sync
+# This script illustrates the basic ab initio reconstruction functionality of
+# the ASPIRE toolbox on Cn symmetric simulated data.
+
+
+def mat_to_npy(file_name):
+    return loadmat(file_name + '.mat')[file_name]
+
+
+def mat_to_npy_vec(file_name):
+    a = mat_to_npy(file_name)
+    return a.reshape(a.shape[0] * a.shape[1])
 
 
 def main():
-    dict_mat_file_names = {
-        'projections': ['projs', 'projs_shifted'],
-        'symmetry': ['n_symm', 'n_symm_shifted'],
-        'rotation matrices gt': ['rots_gt', 'rots_gt_shifted']
-    }
-
-    sim_type = 1 if AbinitioSymmConfig.is_load_shifted_projs else 0
-    projs = utils.mat_to_npy(dict_mat_file_names['projections'][sim_type])
-    AbinitioSymmConfig.n_symm = utils.mat_to_npy_vec(dict_mat_file_names['symmetry'][sim_type])[0]
-    rots_gt = utils.mat_to_npy(dict_mat_file_names['rotation matrices gt'][sim_type])
+    print('loading mat files')
+    projs = mat_to_npy('projs')
+    rots_gt = mat_to_npy('rots_gt')
+    n_symm = mat_to_npy_vec('n_symm')[0]
+    max_shift = mat_to_npy_vec('max_shift')[0]
+    shift_step = mat_to_npy_vec('shift_step')[0]
+    inplane_rot_res_deg = mat_to_npy_vec('inplane_rot_res')[0]
+    n_r = 45
+    n_theta = 360
     rots_gt = np.transpose(rots_gt, axes=(2, 0, 1))
-
-    if AbinitioSymmConfig.is_load_shifted_projs:
-        AbinitioSymmConfig.max_shift = utils.mat_to_npy_vec('max_shift')[0]
-        AbinitioSymmConfig.shift_step = utils.mat_to_npy_vec('shift_step')[0]
-    else:
-        AbinitioSymmConfig.max_shift = 0
-        AbinitioSymmConfig.shift_step = 1
-
-    n_r = AbinitioSymmConfig.n_r
-    n_theta = AbinitioSymmConfig.n_theta
-    n_symm = AbinitioSymmConfig.n_symm
-    cache_file_name = AbinitioSymmConfig.cache_file_name
-    npf, _ = abinitio.cryo_pft(projs, n_r, n_theta)
-    npf = np.transpose(npf, axes=(2, 1, 0))
     if n_symm == 2:
-        Rijs = estimate_relative_rotations_c2(npf, rots_gt)
-        vijs = np.mean(Rijs, axis=1)
-        viis = np.zeros((len(npf), 3, 3))
-        _, _, signs_J = handedness_sync(viis, vijs)
-        for ij, sign_j in enumerate(signs_J):
-            if sign_j == 1:
-                Rijs[ij, 0] = utils.J_conjugate(Rijs[ij, 0])
-                Rijs[ij, 1] = utils.J_conjugate(Rijs[ij, 1])
-        vijs = np.mean(Rijs, axis=1)
-        vis = estimate_third_rows(vijs, viis, rots_gt)
-        rots, _ = estimate_rots_from_third_rows_c2(vis, Rijs)
+        rots = abinitio_c2(projs, n_r, n_theta, max_shift, shift_step, rots_gt)
+    elif n_symm in [3, 4]:
+        # cache file is not needed so supply None
+        rots = abinitio_cn(n_symm, projs, n_r, n_theta, max_shift, shift_step, inplane_rot_res_deg, None, rots_gt)
     else:
-        viis, vijs = estimate_relative_viewing_directions(npf, cache_file_name, rots_gt)
-        viis, vijs, sign_J = handedness_sync(viis, vijs)
-        vis = estimate_third_rows(vijs, viis, rots_gt)
-        rots, _ = estimate_rots_from_third_rows(npf, vis)
-    mse, rots_aligned, _ = utils.check_rotations_error(rots, n_symm, rots_gt)
-    err_in_degrees = utils.check_degrees_error(rots_aligned, n_symm, n_theta, rots_gt)
-
-    print('median error in degrees: %e' % np.median(err_in_degrees))
-    print('mean error in degrees: %e' % np.mean(err_in_degrees))
-    print('std error in degrees: %e' % np.std(err_in_degrees))
-    print('min error in degrees: %e' % np.min(err_in_degrees))
-    print('max error in degrees: %e' % np.max(err_in_degrees))
-    print("mse=" + str(mse))
+        # cache_file_name = 'cn_cache_points200_ntheta360_res1_tmp_gt.pckl'
+        # cache_file_name = 'cn_cache_points500_ntheta360_res1_gt.pckl'  # assign None if wish to create a new one
+        cache_file_name = 'cn_cache_points1000_ntheta360_res1.pckl'  # assign None if wish to create a new one
+        rots = abinitio_cn(n_symm, projs, n_r, n_theta, max_shift, shift_step, inplane_rot_res_deg, cache_file_name, rots_gt)
+    return rots
 
 
 if __name__ == "__main__":

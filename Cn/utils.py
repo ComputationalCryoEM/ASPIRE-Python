@@ -4,7 +4,6 @@ Created on Mon Jan 14 17:48:04 2019
 
 @author: Gabi
 """
-from scipy.io import loadmat
 from scipy.stats import special_ortho_group
 import numpy as np
 import scipy
@@ -474,18 +473,15 @@ def find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, single_cl=False):
     n_images = len(rots_gt)
     g = generate_g(n_symm)
     # precalc all g^s
-    gs = np.zeros((n_symm, 3, 3))
-    for s in np.arange(n_symm):
-        gs[s] = np.linalg.matrix_power(g, s)
-
+    gs = np.array([np.linalg.matrix_power(g, s) for s in range(n_symm)])
     clmatrix_gt = np.zeros((n_symm, n_images, n_images))
-    for i in np.arange(n_images):
-        for j in np.arange(i + 1, n_images):
+    for i in range(n_images):
+        for j in range(i+1, n_images):
             Ri = rots_gt[i]
             Rj = rots_gt[j]
-            if is_simulate_J and np.random.rand() > 0.5:
+            if is_simulate_J and np.random.rand() > 0.5:  # TODO: simulate J per s not per i,j
                 Ri, Rj = J_conjugate(Ri), J_conjugate(Rj)
-            for s in np.arange(n_symm):
+            for s in range(n_symm):
                 U = np.dot(np.dot(Ri.T, gs[s]), Rj)
                 c1 = np.array([-U[1, 2], U[0, 2]])
                 c2 = np.array([U[2, 1], -U[2, 0]])
@@ -616,15 +612,6 @@ def detection_rate_gammas(gammas, n_symm, rots_gt, angle_deg_tol_err=10):
     n_correct_idxs = np.count_nonzero(np.abs(gammas_gt - gammas) < angle_tol_err)
     return n_correct_idxs / n_images * 100
     # TODO: add offending rots
-
-
-def mat_to_npy(file_name):
-    return loadmat(file_name + '.mat')[file_name]
-
-
-def mat_to_npy_vec(file_name):
-    a = mat_to_npy(file_name)
-    return a.reshape(a.shape[0] * a.shape[1])
 
 
 def calc_shift_phases(n_r, max_shift, shift_step):
