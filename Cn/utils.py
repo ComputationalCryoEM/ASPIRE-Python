@@ -9,6 +9,51 @@ import numpy as np
 import scipy
 import math
 import pickle
+import sys
+import scipy.io
+import os
+
+
+def mat_to_npy(file_name):
+    return scipy.io.loadmat(file_name + '.mat')[file_name]
+
+
+def mat_to_npy_vec(file_name):
+    a = mat_to_npy(file_name)
+    return a.reshape(a.shape[0] * a.shape[1])
+
+
+def npy_to_matlab(name, output_folder):
+    files = (os.listdir(output_folder))
+    path = os.path.join(os.getcwd(), output_folder)
+    npyFiles = []
+    matStructure = {}
+
+    for f in files:
+        extension = os.path.splitext(f)[1]
+        if extension == '.npy':
+            npyFiles.append(f)
+    if not npyFiles:
+        print
+        "Error: There are no .npy files in %s folder" % (output_folder)
+        sys.exit(0)
+
+    for f in npyFiles:
+        currentFile = os.path.join(path, f)
+        variable = os.path.splitext(f)[0]
+
+        # MATLAB only loads variables that start with normal characters
+        variable = variable.lstrip('0123456789.-_ ')
+        try:
+            values = np.load(currentFile)
+        except IOError:
+            print
+            "Error: can\'t find file or read data"
+        else:
+            matStructure[variable] = values
+    filename = name + '.mat'
+    if matStructure:
+        scipy.io.savemat(filename, matStructure)
 
 
 def generate_g(n_symm):

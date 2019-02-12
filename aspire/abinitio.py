@@ -619,11 +619,11 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
         c_ji = int(c_ji)
         is_pf_j_flipped = 0
         if c_ji < n_theta:
-            pf_j = pf[:, c_ji, j]
+            pf_j = pf[:, c_ji, j].copy()
         else:
-            pf_j = pf[:, c_ji - n_theta, j]
+            pf_j = pf[:, c_ji - n_theta, j].copy()
             is_pf_j_flipped = 1
-        pf_i = pf[:, c_ij, i]
+        pf_i = pf[:, c_ij, i].copy()
 
         pf_i *= h
         pf_i[r_max - 1:r_max + 2] = 0
@@ -689,7 +689,7 @@ def cryo_estimate_shifts(pf, rotations, max_shift, shift_step=1, memory_factor=1
 def common_line_r(r1, r2, l):
     ut = np.dot(r2, r1.T)
     alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
-    alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
+    alpha_ji = np.arctan2(-ut[0, 2], ut[1, 2]) + np.pi
 
     l_ij = alpha_ij * l / (2 * np.pi)
     l_ji = alpha_ji * l / (2 * np.pi)
@@ -790,6 +790,7 @@ def cryo_sync_rotations(s, rots_ref=None, verbose=0):
     #     raise NotImplementedError
 
     return rotations
+
 
 def cryo_syncmatrix_vote_3n(clmatrix, n_theta, rots_ref=None, is_perturbed=0):
     """
@@ -1729,3 +1730,12 @@ def cryo_clmatrix_cpu_pystyle(npf, max_shift, shift_step):
     npf = np.transpose(npf, axes=(2, 1, 0))
     return cryo_clmatrix_cpu_fast2(npf, n_images, max_shift_1d, shift_step)
     # return cryo_clmatrix_cpu(npf, n_images, param, max_shift_1d, shift_step)
+
+
+def cryo_pft_pystyle(projs, n_r, n_theta):
+    projs = np.transpose(projs, axes=(1, 2, 0))
+    npf, freqs = cryo_pft(projs, n_r, n_theta)
+    npf = np.transpose(npf, axes=(2, 1, 0))
+    return npf, freqs
+
+

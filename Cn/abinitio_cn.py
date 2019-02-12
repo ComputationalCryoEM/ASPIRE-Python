@@ -6,16 +6,17 @@ from Cn.estimate_third_rows import estimate_third_rows
 from Cn.estimate_rots_from_third_rows import estimate_rots_from_third_rows, estimate_rots_from_third_rows_c2
 from Cn.handedness_sync import handedness_sync
 from Cn.config_symm import AbinitioSymmConfig
+from Cn.reconstruct_cn import reconstruct_cn
 
 
 def abinitio_c2(projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, rots_gt=None):
+    AbinitioSymmConfig.n_symm = 2
     AbinitioSymmConfig.n_r = n_r
     AbinitioSymmConfig.n_theta = n_theta
     AbinitioSymmConfig.max_shift = max_shift
     AbinitioSymmConfig.shift_step = shift_step
     print('running nufft on projections')
-    npf, _ = abinitio.cryo_pft(projs, n_r, n_theta)
-    npf = np.transpose(npf, axes=(2, 1, 0))
+    npf, _ = abinitio.cryo_pft_pystyle(projs, n_r, n_theta)
     print('running abinitio c2')
     Rijs = estimate_relative_rotations_c2(npf, rots_gt)
     vijs = np.mean(Rijs, axis=1)
@@ -28,16 +29,17 @@ def abinitio_c2(projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, rots_gt=
     vijs = np.mean(Rijs, axis=1)
     vis = estimate_third_rows(vijs, viis, rots_gt)
     rots, _ = estimate_rots_from_third_rows_c2(vis, Rijs)
+    vol = reconstruct_cn(projs, rots)
     if rots_gt is not None:
-        mse, rots_aligned, _ = utils.check_rotations_error(rots, 2, rots_gt)
-        err_in_degrees = utils.check_degrees_error(rots_aligned, 2, n_theta, rots_gt)
+        mse, rots_aligned, _ = utils.check_rotations_error(rots, AbinitioSymmConfig.n_symm, rots_gt)
+        err_in_degrees = utils.check_degrees_error(rots_aligned, AbinitioSymmConfig.n_symm, n_theta, rots_gt)
         print('median error in degrees: %e' % np.median(err_in_degrees))
         print('mean error in degrees: %e' % np.mean(err_in_degrees))
         print('std error in degrees: %e' % np.std(err_in_degrees))
         print('min error in degrees: %e' % np.min(err_in_degrees))
         print('max error in degrees: %e' % np.max(err_in_degrees))
         print("mse=" + str(mse))
-    return rots
+    return rots, vol
 
 
 def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, inplane_rot_res_deg=1, cache_file_name=None, rots_gt=None):
@@ -50,13 +52,14 @@ def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, 
     AbinitioSymmConfig.cache_file_name = cache_file_name
 
     print('running nufft on projections')
-    npf, _ = abinitio.cryo_pft(projs, n_r, n_theta)
-    npf = np.transpose(npf, axes=(2, 1, 0))
+    npf, _ = abinitio.cryo_pft_pystyle(projs, n_r, n_theta)
     print('running abinitio c' + str(n_symm))
     viis, vijs = estimate_relative_viewing_directions(npf, cache_file_name, rots_gt)
     viis, vijs, sign_J = handedness_sync(viis, vijs)
     vis = estimate_third_rows(vijs, viis, rots_gt)
     rots, _ = estimate_rots_from_third_rows(npf, vis)
+
+    vol = reconstruct_cn(projs, rots)
     if rots_gt is not None:
         mse, rots_aligned, _ = utils.check_rotations_error(rots, n_symm, rots_gt)
         err_in_degrees = utils.check_degrees_error(rots_aligned, n_symm, n_theta, rots_gt)
@@ -66,4 +69,4 @@ def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, 
         print('min error in degrees: %e' % np.min(err_in_degrees))
         print('max error in degrees: %e' % np.max(err_in_degrees))
         print("mse=" + str(mse))
-    return rots
+    return rots, vol
