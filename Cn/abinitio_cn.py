@@ -70,3 +70,10 @@ def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, 
         print('max error in degrees: %e' % np.max(err_in_degrees))
         print("mse=" + str(mse))
     return rots, vol
+
+
+if __name__ == "__main__":
+    averages_nn50_group1 = utils.mat_to_npy('averages_nn50_group1')
+    averages_nn50_group1 = np.transpose(averages_nn50_group1, axes=(2, 0, 1))
+    n_symm = 4
+    abinitio_cn(n_symm, averages_nn50_group1)
