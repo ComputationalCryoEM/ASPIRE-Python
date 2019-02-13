@@ -28,6 +28,14 @@ def estimate_relative_rotations_c2(npf, rots_gt=None):
 
 
 def estimate_relative_viewing_directions(npf, cache_file_name=None, rots_gt=None):
+    """
+    etimate the relative viewing directions
+    :param npf: an n_theta-by-n_r array of the projection images in fourier space
+    :param cache_file_name: a full path to the cache file name (only used for cn, n>4). Optional
+    :param rots_gt: a mx3x3 array of ground truth rotation matrices
+    :return: a mx3x3 array of outer products of all third rows of rotation with itself,
+    and an m_choose_2x3x3 array of all pairwise outer products of third rows
+    """
     if AbinitioSymmConfig.n_symm in [3, 4]:
         print('Estimating relative viewing directions for n<=4')
         viis, vijs = estimate_relative_viewing_directions_c3_c4(npf, rots_gt)
@@ -97,14 +105,20 @@ def estimate_self_relative_rots(sclmatrix, rots_gt):
 
     # calculate the remaining euler angles
     aa = sclmatrix[:, 0] * 2 * np.pi / n_theta
-    bb = sclmatrix[:, 1] * 2 * np.pi / n_theta + np.pi  # TODO: get rid of the addition of pi by fixing ang_to_orth
+    bb = sclmatrix[:, 1] * 2 * np.pi / n_theta + np.pi
 
     Riis = utils.ang_to_orth(-bb, gammas, aa)
     return Riis
 
 
 def local_handedness_sync_c2(Rijs, n_images):
-
+    """
+    assuming underlying is C2, manipulate each pair of estimates of relative rotations RiRj and RigRj, i<j so that
+    either both are J-conjugated or none of them are J-conjugated
+    :param Rijs: an m_choose_2x2x3x3 array of estimates of relative rotations (each pair of images induce two 3x3 estimates)
+    :param n_images: the number of images m
+    :return: the input estimates so that for every pair i<j either both estimates are J-conjugated or none of them are J-conjugated
+    """
     m_choose_2 = scipy.special.comb(n_images, 2).astype(int)
     assert len(Rijs) == m_choose_2
     e1 = [1, 0, 0]
@@ -120,7 +134,7 @@ def local_handedness_sync_c2(Rijs, n_images):
 
         _, svals_0, _ = np.linalg.svd(opt_0)
         _, svals_1, _ = np.linalg.svd(opt_1)
-
+        # see which is more close to be rank-1
         score_rank1_0 = np.linalg.norm(svals_0 - e1, 2)
         score_rank1_1 = np.linalg.norm(svals_1 - e1, 2)
 
@@ -136,6 +150,14 @@ def local_handedness_sync_c2(Rijs, n_images):
 
 
 def local_handedness_sync_c3_c4(Riis, Rijs):
+    """
+    Assuming underlying is either C3 or C4, manipulate each pair of estimates of relative rotations RiRj and RigRj, i<j so that
+    either both are J-conjugated or none of them are J-conjugated
+    :param Rijs: an m_choose_2x2x3x3 array of estimates of relative rotations (each pair of images induce two 3x3 estimates)
+    :param Rijs: an m_choose_2x2x3x3 array of estimates of relative rotations (each pair of images induce two 3x3 estimates)
+    :param n_images: the number of images m
+    :return: the input estimates so that for every pair i<j either both estimates are J-conjugated or none of them are J-conjugated
+    """
     n_symm = AbinitioSymmConfig.n_symm
     assert n_symm in [3, 4]
 
@@ -206,6 +228,12 @@ def local_handedness_sync_c3_c4(Riis, Rijs):
 
 
 def find_scl(npf):
+    """
+    find the single pair of self-common-line in each image assuming that underlying is either C3 or C4
+    :param npf: an m-times-n_theta-times-n_r array holding the m images in Fourier space
+    :return: a mx2 array holding the coordinates of the single pair of common-lines
+    in each image (for C4 the other pair of self common-line in each image consists of collinear lines and is not detected)
+    """
     # the angle between self-common-lines is [60, 180] (for C3) and [90,180] (for C4) but since antipodal
     # lines are perfectly correlated we mustn't test angles too close to 180 degrees apart
     n_symm = AbinitioSymmConfig.n_symm
@@ -267,9 +295,10 @@ def find_scl(npf):
 def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=None):
 
     n_symm = AbinitioSymmConfig.n_symm
+    assert n_symm > 4  # for C3 and C4 it is bettwe to use estimate_relative_viewing_directions_c3_c4
     if cache_file_name is None:
         base_dir = "."
-        n_points_sphere = 1000
+        n_points_sphere = 1000  # found empirically that this suffices
         n_theta = 360
         inplane_rot_res = 1
         cache_file_name, *_ = create_cache(base_dir, n_points_sphere, n_theta, inplane_rot_res, rots_gt)
@@ -284,7 +313,7 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
     n_images = len(npf)
     n_cands = len(Ris_tilde)
     n_theta_ijs = len(R_theta_ijs)
-    max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)  # TODO extract this and put in ASC
+    max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)
     shift_phases = utils.calc_shift_phases(AbinitioSymmConfig.n_r, max_shift_1d, AbinitioSymmConfig.shift_step)
     n_shifts = len(shift_phases)
     # Step 1: pre-calculate the likelihood with respect to the self common-lines
@@ -321,6 +350,7 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
                                   if abs(np.arccos(Ri_tilde[2, 2]) - np.pi/2) < 10*np.pi/180])
     scores_self_corrs[:, cii_equators_inds] = 0
 
+    # make sure that n_theta_ijs is divisible by n_symm, and if not simply disregard the trailing angles so that it does
     n_theta_ijs_to_keep = (n_theta_ijs//n_symm)*n_symm
     if n_theta_ijs_to_keep < n_theta_ijs:
         cijs_inds = np.delete(cijs_inds, slice(n_theta_ijs_to_keep, cijs_inds.shape[2]), 2)
@@ -357,31 +387,33 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
             npf_j = np.array([ray / np.linalg.norm(ray) for ray in npf_j])
 
             corrs_ij = np.dot(npf_i_half_shifted, np.conj(npf_j).T)
-            # max out the shifts (recall each line may have its own shift)
+            # max out the shifts (recall each line in each image may have its own shift)
             corrs_ij = np.max(np.reshape(np.real(corrs_ij), (n_shifts, n_theta//2, n_theta)), axis=0)
+            # TODO: optimize the following . as we next take the mean over all n common-lines
+            #  of each rotation candidate do this on the fly
             corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
             corrs = np.reshape(corrs, (-1, n_symm, n_theta_ijs//n_symm))
-            corrs = np.mean(corrs, axis=1)  # mean over all n_sym cls
+            corrs = np.mean(corrs, axis=1)  # take the mean over all n_sym cls
             corrs = np.reshape(corrs, (n_points_sphere, n_points_sphere, n_theta_ijs//n_symm))
             #  the self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles) so max them out
             opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
             corrs = np.max(corrs, axis=-1)
             # maximum likelihood while taking into consideration both cls and scls
             corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
-
+            # extract the optimal candidates
             opt_sphere_i, opt_sphere_j = np.unravel_index(np.argmax(corrs), corrs.shape)
             opt_theta_ij = opt_theta_ij_ind_per_sphere_points[opt_sphere_i, opt_sphere_j]
 
             opt_Ri_tilde = Ris_tilde[opt_sphere_i]
             opt_Rj_tilde = Ris_tilde[opt_sphere_j]
             opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
-
+            # compute the estimate of vi*vi.T as given by j
             vii_j = np.mean(np.array([np.linalg.multi_dot([opt_Ri_tilde.T, gs, opt_Ri_tilde])
                                       for gs in gs_s]), axis=0)
             _, svals, _ = np.linalg.svd(vii_j)
             if np.linalg.norm(svals - e1, 2) < min_ii_norm:
                 viis[i] = vii_j
-
+            # compute the estimate of vj*vj.T as given by i
             vjj_i = np.mean(np.array([np.linalg.multi_dot([opt_Rj_tilde.T, gs, opt_Rj_tilde])
                                       for gs in gs_s]), axis=0)
             _, svals, _ = np.linalg.svd(vjj_i)
@@ -394,16 +426,23 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
     return viis, vijs
 
 
-def compute_scls_inds(Ris_tilde, n_symm, n_theta):
-
+def compute_scls_inds(Ri_cands, n_symm, n_theta):
+    """
+    compute the self-common-lines indeces induces by candidate rotations
+    :param Ri_cands: an array of size n_candsx3x3 of candidate rotations
+    :param n_symm: symmetry order
+    :param n_theta: angular resolution
+    :return: an n_cands-by-(n_symm-1)//2-by-2 array holding the coordinates of the (n_symm-1)//2
+    non-collinear pairs of self-common-lines for each candidate rotation
+    """
     n_selfcl_pairs = (n_symm-1)//2
-    n_cands = len(Ris_tilde)
+    n_cands = len(Ri_cands)
     scls_inds = np.zeros((n_cands, n_selfcl_pairs, 2), dtype=np.uint16)
     g = utils.generate_g(n_symm)
     gs_s = np.array([np.linalg.matrix_power(g, s) for s in range(1, n_selfcl_pairs+1)])
 
     for i_cand in range(n_cands):
-        Ri_tilde = Ris_tilde[i_cand]
+        Ri_tilde = Ri_cands[i_cand]
         Riigs = np.array([np.linalg.multi_dot([Ri_tilde.T, gs, Ri_tilde]) for gs in gs_s])
 
         c1s = np.array([[-Riig[1, 2],  Riig[0, 2]] for Riig in Riigs])

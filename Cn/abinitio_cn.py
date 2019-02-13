@@ -10,11 +10,23 @@ from Cn.reconstruct_cn import reconstruct_cn
 
 
 def abinitio_c2(projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, rots_gt=None):
+    """
+    main function for cryo abinitio from projection images of molecules with C2 symmetry
+    :param projs: an m-by-n_pixels-by-n_pixels array of projection images (m is the number of images)
+    :param n_r: radial resolution
+    :param n_theta: angular resolution
+    :param max_shift: maximum 2d shift step to check in each image
+    :param shift_step: shift step
+    :param rots_gt: an mx3x3 array of the m ground-truth rotation matrices that correspond to the m input projections
+    :return: estimated mx3x3 array of rotations that correspond to the m input projections and a 3-d volume
+    """
     AbinitioSymmConfig.n_symm = 2
     AbinitioSymmConfig.n_r = n_r
     AbinitioSymmConfig.n_theta = n_theta
     AbinitioSymmConfig.max_shift = max_shift
     AbinitioSymmConfig.shift_step = shift_step
+
+    # TODO: apply masking and guassian filtering
     print('running nufft on projections')
     npf, _ = abinitio.cryo_pft_pystyle(projs, n_r, n_theta)
     print('running abinitio c2')
@@ -43,6 +55,20 @@ def abinitio_c2(projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, rots_gt=
 
 
 def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, inplane_rot_res_deg=1, cache_file_name=None, rots_gt=None):
+    """
+    main function for cryo abinitio from projection images of molecules with Cn symmetry where n > 2
+    :param n_symm: the symmetry order of the underlying molecule (>2)
+    :param projs: an m-by-n_pixels-by-n_pixels array of projection images (m is the number of images)
+    :param n_r: radial resolution
+    :param n_theta: angular resolution
+    :param max_shift: maximum 2d shift step to check in each image
+    :param shift_step: shift step
+    :param inplane_rot_res_deg:
+    :param cache_file_name: a fullpath to the cache file holding all candidate rotations.
+    Only used for Cn, n>4 (created on the fly if not supplied)
+    :param rots_gt: an mx3x3 array of the m ground-truth rotation matrices that correspond to the m input projections
+    :return: estimated mx3x3 array of rotations that correspond to the m input projections and a 3-d volume
+    """
     AbinitioSymmConfig.n_symm = n_symm
     AbinitioSymmConfig.n_r = n_r
     AbinitioSymmConfig.n_theta = n_theta
@@ -51,6 +77,8 @@ def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, 
     AbinitioSymmConfig.inplane_rot_res_deg = inplane_rot_res_deg
     AbinitioSymmConfig.cache_file_name = cache_file_name
 
+    assert n_symm > 2
+    # TODO: apply masking and guassian filtering
     print('running nufft on projections')
     npf, _ = abinitio.cryo_pft_pystyle(projs, n_r, n_theta)
     print('running abinitio c' + str(n_symm))

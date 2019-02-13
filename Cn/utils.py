@@ -68,7 +68,6 @@ def generate_g(n_symm):
 
 def generate_rots(n_images=100, is_J_conj_random=False):
     """ generates n_images rotation matrices. """
-    # TODO: handle random_state
     rots = special_ortho_group.rvs(dim=3, size=n_images)
     
     if is_J_conj_random:
@@ -123,8 +122,8 @@ def g_sync(rots, n_symm, rots_gt):
 
     A_g = np.zeros((n_images, n_images), dtype=complex)
     
-    for i in np.arange(n_images):
-        for j in np.arange(i+1, n_images):
+    for i in range(n_images):
+        for j in range(i+1, n_images):
             Ri = rots[i]
             Rj = rots[j]
             Rij = np.dot(Ri.T, Rj)
@@ -133,7 +132,7 @@ def g_sync(rots, n_symm, rots_gt):
             Rj_gt = rots_gt[j]
             
             diffs = np.zeros(n_symm)
-            for s in np.arange(n_symm):
+            for s in range(n_symm):
                 g_s = np.linalg.matrix_power(g, s)
                 Rij_gt = np.linalg.multi_dot([Ri_gt.T, g_s, Rj_gt])
                 diffs[s] = min([np.linalg.norm(Rij-Rij_gt, 'fro'),
@@ -156,7 +155,7 @@ def g_sync(rots, n_symm, rots_gt):
     angles = np.exp(1j*2*np.pi/n_symm*np.arange(n_symm))
     sign_g_Ri = np.zeros(n_images)
     
-    for ii in np.arange(n_images):
+    for ii in range(n_images):
         zi = evect1[ii]
         zi = zi/np.abs(zi)  # rescale so it lies on unit circle
         # Since a ccw and a cw closest are just as good, 
@@ -260,6 +259,7 @@ def check_degrees_error(rots, n_symm, n_theta, rots_gt):
 
 
 def J_conjugate(rots):
+    """ J vonjugate an array of rotation matrices"""
     J = np.diag([1, 1, -1])
     if rots.ndim == 2:
         return np.linalg.multi_dot([J, rots, J])
@@ -268,7 +268,7 @@ def J_conjugate(rots):
 
 
 def test_check_rotations_error(n_images, n_symm, iters=1):
-    if np.all(np.array([do_test_check_rotations_error(n_images, n_symm) for _ in np.arange(iters)])):
+    if np.all(np.array([do_test_check_rotations_error(n_images, n_symm) for _ in range(iters)])):
         print("all tests passed")
     else:
         print("tests failed")
@@ -378,7 +378,15 @@ def ang_to_orth(ang1, ang2, ang3):
 
 
 def scl_detection_rate(n_symm, sclmatrix, rots_gt, n_theta, angle_tol_err_deg=5):
-
+    """
+    find the detection rate of self common-lines
+    :param n_symm: the symmetry order (>=2)
+    :param sclmatrix: an array of size n_images-by-(n_symm-1)//2 holding the indeces of scls
+    :param rots_gt: an n_images-by-3-by-3 array of ground-truth rotations
+    :param n_theta: resolution
+    :param angle_tol_err_deg:
+    :return: dettection rate
+    """
     sclmatrix_gt = find_scl_gt(n_symm, n_theta, rots_gt)
     n_images = len(rots_gt)
     assert sclmatrix.ndim == 2
@@ -406,7 +414,15 @@ def scl_detection_rate(n_symm, sclmatrix, rots_gt, n_theta, angle_tol_err_deg=5)
 
 
 def cl_detection_rate_single(n_symm, clmatrix, rots_gt, n_theta, angle_tol_err_deg=5):
-
+    """
+    returns the detection rate of a single pair of common-lines per image pair
+    :param n_symm: the symmetry order (>=2)
+    :param clmatrix: an mxm array holding one of the common-line indeces between every pair of images
+    :param rots_gt: an mx3x3 array of ground-truth rotation matrices
+    :param n_theta: resolution paramter
+    :param angle_tol_err_deg:
+    :return:
+    """
     clmatrices_gt = find_cl_gt(n_symm, n_theta, rots_gt)
 
     n_images = len(rots_gt)
@@ -466,18 +482,14 @@ def test_find_cl_gt(n_symm, n_theta=360, n_images=100, rots_gt=None):
     assert clmatrix_gt.shape[0] == n_symm and clmatrix_gt.shape[1] == n_images and clmatrix_gt.shape[2] == n_images
     assert np.max(clmatrix_gt) <= n_theta and np.min(clmatrix_gt) >= 0
 
-    # sclmatrix_gt = find_scl_gt(n_symm, n_theta, rots_gt)
-    # assert sclmatrix_gt.shape[0] == n_images and sclmatrix_gt.shape[1] == 2
-    # print(sclmatrix_gt)
-
 
 def estimate_relative_rots_gt(n_symm, n_theta, rots_gt):
     n_images = len(rots_gt)
     Rijs = np.zeros((scipy.special.comb(n_images, 2).astype(int), 3, 3))
     g = generate_g(n_symm)
     c = 0
-    for i in np.arange(n_images):
-        for j in np.arange(i + 1, n_images):
+    for i in range(n_images):
+        for j in range(i + 1, n_images):
             Ri = rots_gt[i]
             Rj = rots_gt[j]
             s_ij = np.random.randint(n_symm)
@@ -503,14 +515,6 @@ def estimate_all_relative_rots_gt(n_symm, rots_gt):
             Rijs[c] = np.array([np.linalg.multi_dot([Ri.T, gs, Rj]) for gs in gs_s])
             c += 1
     return Rijs
-
-
-# def find_single_cl_gt(n_symm, n_theta, rots_gt):
-#     print('estimating common-lines using GT')
-#     clmatrix_gt = find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=True)
-#     select_id = np.random.randint(n_symm, size=clmatrix_gt.shape[1:])
-#     select_id = (select_id + select_id.T)//2
-#     return select_id.choose(clmatrix_gt)
 
 
 def find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, single_cl=False):
@@ -542,6 +546,13 @@ def find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, single_cl=False):
 
 
 def detection_rate_self_relative_rots(Riis, n_symm, rots_gt):
+    """
+    calculates the detection rate of self-relative rotations Ri'g^sRi
+    :param Riis: an mx3x3 array of self relative rotations (i.e., one self relative rotation per image)
+    :param n_symm: the symmetry order (?=2)
+    :param rots_gt: an mx3x3 array of ground-truth rotation amtrices
+    :return: detection rate
+    """
     assert len(rots_gt) == len(Riis)
     n_images = len(rots_gt)
 
@@ -629,13 +640,13 @@ def find_scl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, is_simulate_trans
     return sclmatrix_gt.astype(int)
 
 
-def clAngles2Ind(clAngles, n_theta):
-    theta = math.atan2(clAngles[1], clAngles[0])
-
-    theta = np.mod(theta, 2*np.pi)  # Shift from [-pi,pi] to [0,2*pi).
-    idx = np.mod(np.round(theta/(2*np.pi)*n_theta), n_theta).astype(int)  # linear scale from [0,2*pi) to [0,n_theta).
-
-    return idx
+# def clAngles2Ind(clAngles, n_theta):
+#     theta = math.atan2(clAngles[1], clAngles[0])
+#
+#     theta = np.mod(theta, 2*np.pi)  # Shift from [-pi,pi] to [0,2*pi).
+#     idx = np.mod(np.round(theta/(2*np.pi)*n_theta), n_theta).astype(int)  # linear scale from [0,2*pi) to [0,n_theta).
+#
+#     return idx
 
 
 def clAngles2Ind__(clAngles, n_theta):
@@ -645,7 +656,16 @@ def clAngles2Ind__(clAngles, n_theta):
 
 
 def detection_rate_gammas(gammas, n_symm, rots_gt, angle_deg_tol_err=10):
+    """
+    calculates the dtetection rate of angles between planes Pi and gPi for C3 or C4
+    :param gammas: an array of length m, where the i-th entry holds the persumed angle between Pi and gPi
+    :param n_symm: the symmetry order (either 3 or 4)
+    :param rots_gt: an mx3x3 array holding the ground truth rotation matrices
+    :param angle_deg_tol_err:
+    :return: detection rate of input gammas
+    """
     assert len(gammas) == len(rots_gt)
+    assert n_symm in [3, 4]
     n_images = len(gammas)
     gammas_gt = np.zeros_like(gammas)
     g = generate_g(n_symm)
@@ -656,10 +676,16 @@ def detection_rate_gammas(gammas, n_symm, rots_gt, angle_deg_tol_err=10):
 
     n_correct_idxs = np.count_nonzero(np.abs(gammas_gt - gammas) < angle_tol_err)
     return n_correct_idxs / n_images * 100
-    # TODO: add offending rots
 
 
 def calc_shift_phases(n_r, max_shift, shift_step):
+    """
+    calculates the shift phases in Fourier space
+    :param n_r: radial resolution
+    :param max_shift: the maximum shift to consider
+    :param shift_step:
+    :return: an n_theta-by-n_r array of shift phases
+    """
     n_shifts = int(np.ceil(2*max_shift/shift_step + 1))
     shift_phases = np.zeros((n_shifts, n_r), 'complex128')
     shifts = np.array([-max_shift + i*shift_step for i in range(n_shifts)], dtype='int')
@@ -672,6 +698,13 @@ def calc_shift_phases(n_r, max_shift, shift_step):
 
 
 def detection_rate_viis(viis, n_symm, rots_gt):
+    """
+    calculates the detection rate of the outer-products between each third row of the rotations with itself
+    :param viis: an mx3x3 array holding the m outer products
+    :param n_symm: symmetry order (>=2)
+    :param rots_gt: an mx3x3 array holding the ground-truth rotation matrices
+    :return: detection rate
+    """
     assert len(rots_gt) == len(viis)
 
     n_images = len(rots_gt)
@@ -693,14 +726,21 @@ def detection_rate_viis(viis, n_symm, rots_gt):
 
 
 def detection_rate_vijs(vijs, n_symm, rots_gt):
+    """
+    calculates the detection rate of all pairwise outer-products between each third row of the rotations
+    :param vijs: an m_choose_2-by-3-by-3 array of all pairwise outoer products
+    :param n_symm: symmetry order (>=2)
+    :param rots_gt: an mx3x3 array of ground-truth rotations
+    :return: detection rate
+    """
     n_images = len(rots_gt)
     assert scipy.special.comb(n_images, 2) == len(vijs)
     n_choose_2 = scipy.special.comb(n_images, 2).astype(int)
     vijs_gt = np.zeros((n_choose_2, 3, 3))
 
     c = 0
-    for i in np.arange(n_images):
-        for j in np.arange(i + 1, n_images):
+    for i in range(n_images):
+        for j in range(i + 1, n_images):
             vi = rots_gt[i, 2]
             vj = rots_gt[j, 2]
             vijs_gt[c] = np.outer(vi, vj)
@@ -719,7 +759,6 @@ def detection_rate_vijs(vijs, n_symm, rots_gt):
     print("MSE of vijs=%f, n_symm = %d" % (mse, n_symm))
     print("hist=" + str(hist))
     return mse, hist
-
 
 
 if __name__ == "__main__":

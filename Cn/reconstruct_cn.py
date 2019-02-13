@@ -7,13 +7,23 @@ import Cn.utils as utils
 
 
 def reconstruct_cn(projs, rotations):
+    """
+    Reconstructs a volume given projections and corresponding rotation matrices assuming the underlying is Cn.
+    Essentially, this is the same reconstruction code as for C1,
+    only that each rotation and each projection is duplicated n times
+    :param projs: an array of m projection images
+    :param rotations: an array of mx3x3 of rotation matrices where the i-th 3x3
+    matrix is in the orbit of the rotations that corresponds to the i-th input projection image
+    :return:
+    """
     output_folder = AbinitioSymmConfig.output_folder
     vol = do_reconstruct_cn(projs, rotations)
     vol = make_vol_cn(vol)
+    # Since WriteMRC is not implemented yet in python, we save the output vol as an npy file.
     np.save(os.path.join(output_folder, "vol.npy"), vol)
+    # call a utility method to transform npy file to mat files
     utils.npy_to_matlab(os.path.join(output_folder, "python_output"), output_folder)
-    # TODO: Since WriteMRC is not implemented yet in python, we save the output vol as an npy file.
-    #  Then, we use the following matlab script to write the file in an mrc format so that it can be rendered using chimera
+    # TODO: Use the following matlab script to write the file in an mrc format so that it can be rendered using chimera
     #  path_folder = '/a/home/cc/math/gabipragier/ASPIRE-Python/Cn/output/';
     #  python_output = load(fullfile(path_folder, 'python_output.mat'));
     #  vol = python_output.vol;

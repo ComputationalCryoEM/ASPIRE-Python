@@ -6,6 +6,12 @@ from tqdm import tqdm
 
 
 def estimate_rots_from_third_rows_c2(vis, Rijs):
+    """
+    estimate the rotation matrices given the third row of each rotation matrix and the relative orientations
+    :param vis: an mx3 array holding the third row of each of the unknown m rotation matrices
+    :param Rijs: an mchoose2x2x3x3 array where the ij-th entry holds the two 3x3 estimates of RiRj and RigRj
+    :return: an mx3x3 array of estimated rotation matrices
+    """
     print('estimating in-plane rotation angles')
     n_images = len(vis)
     m_choose_2 = scipy.special.comb(n_images, 2).astype(int)
@@ -58,6 +64,12 @@ def estimate_rots_from_third_rows_c2(vis, Rijs):
 
 
 def estimate_rots_from_third_rows(npf, vis):
+    """
+    estimate the rotation matrices given the tird row of each rotation matrix and the Fourier-transformed images
+    :param npf: an array of size m-by-n_theta-by-n_r consisting of the m images in fourier space
+    :param vis: an mx3 array where the i-th row is the estimate for the third row of the i-th (unknown) rotation matrix
+    :return: an mx3x3 array, holding the m estimated 3x3 rotation matrices
+    """
     print('estimating in-plane rotation angles')
     assert len(vis) == len(npf)
     n_symm = AbinitioSymmConfig.n_symm
@@ -66,6 +78,7 @@ def estimate_rots_from_third_rows(npf, vis):
     max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)
     shift_step = AbinitioSymmConfig.shift_step
     n_r = AbinitioSymmConfig.n_r
+    assert n_symm > 2
     n_images = len(vis)
 
     #  Step 1: construct all rotation matrices Ri_tildes whose third row is equal to the corresponding third rows vis
@@ -116,7 +129,7 @@ def estimate_rots_from_third_rows(npf, vis):
                 assert np.mod(n_theta_ijs, n_symm) == 0
                 corrs = corrs.reshape((n_shifts, n_symm, n_theta_ijs//n_symm))
 
-                if n_shifts > 1:
+                if n_shifts > 1:  # each line may have a different shift so max the shifts out
                     corrs = np.max(np.real(corrs), axis=0)
                 else:
                     corrs = np.squeeze(corrs, axis=0)

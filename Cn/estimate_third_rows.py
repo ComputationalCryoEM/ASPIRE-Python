@@ -12,17 +12,15 @@ import scipy
 
 
 def estimate_third_rows(vijs, viis, rots_gt=None):
-    """ Find the third row of each rotation matrix.
-    Input parameters:
-        vijs       A 3x3xnchoose2 array where each 3x3 slice holds the
+    """
+    Find an estimate for the third row for each rotation matrix.
+    :param vijs: An mchoose2x3x3 array where each 3x3 slice holds the
                    third rows outer product of the corresponding pair of matrices.
-        viis       A 3x3xn array where the i-th 3x3 slice holds the outer 
+    :param viis: An mx3x3 array where the i-th 3x3 slice holds the outer
                    product of the third row of Ri with itself
-     Output parameters:
-         vis       A 3xnImages matrix whose i-th column equals the 
-                   transpose of the third row of the rotation matrix Ri."""
-
-    # TODO: handle is_conjugate_with_vii
+    :param rots_gt: an array of size mx3x3 holding the m ground-truth rotation matrices
+    :return: an array of size mx3 where the i-th row holds the estimate for the third row of th i-th rotation matrix
+    """
     n_images = len(viis)
     assert comb(n_images, 2).astype(int) == len(vijs), "size not compatible"
 
@@ -31,14 +29,14 @@ def estimate_third_rows(vijs, viis, rots_gt=None):
     V = np.zeros((3 * n_images, 3 * n_images))
 
     k = 0
-    for i in np.arange(n_images):
-        for j in np.arange(i + 1, n_images):
+    for i in range(n_images):
+        for j in range(i + 1, n_images):
             V[3 * i:3 * (i + 1), 3 * j:3 * (j + 1)] = vijs[k]
             k += 1
 
     V = V + V.T  # since vij^{T} = vji
 
-    for i in np.arange(n_images):
+    for i in range(n_images):
         V[3 * i:3 * (i + 1), 3 * i:3 * (i + 1)] = viis[i]
 
     # calc the top 5 eigs
@@ -83,11 +81,12 @@ def estimate_third_rows(vijs, viis, rots_gt=None):
         # min_diff = np.argmin(diffs)
 
         if min_mse == 1 or min_mse == 3:
-            # TODO: This is a hack. Getting the negated third rows (due to the factorization of V), means that
+            # This is a hack. Getting the negated third rows (due to the factorization of V), means that
             # depending on te impl of complete_third_row_to_rot, we are paying O_x (an in-plane rotation of 180
             # degrees about the x-axis), or O_y (an in-plane rotation of 180 degrees about the y-axis) As a result
             # our estimated Ri are such that Ri = g^{s_i}*O_x*Ri_gt and currently g_sync does not handle this. Once
-            # g_sync is fixed, this hack can be removed
+            # g_sync is fixed, this hack can be removed. Note, however, that this is
+            # of pure "academic interest": after all reconstruction works perfect even though g_sync is buggy
             print("third rows found with minus sign, negating all third rows")
             vis = -1 * vis
         # diff = diffs[min_diff]

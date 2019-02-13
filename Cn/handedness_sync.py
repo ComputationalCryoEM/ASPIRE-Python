@@ -6,6 +6,15 @@ from scipy.sparse.linalg import eigs
 
 
 def handedness_sync(viis, vijs):
+    """
+
+    :param viis: an array of size mx3x3. The i-th 3x3 array id the outer product
+    of the third row of the i-th rotation with itself. Each outer product may be J-conjugated
+    :param vijs: an array of size mchoose2x3x3 where the ij-th array holds the outer product between
+    the third row of the underlying i-th rotation matrix and the third row of the underlying j-th rotation matrix.
+    Each outer product may be J-conjugated
+    :return: the input arrays where either all outer products are J-conjugated or none are at all
+    """
     print('handedness synchronization')
     n_images = len(viis)
     m_choose_2 = len(vijs)
@@ -20,9 +29,9 @@ def handedness_sync(viis, vijs):
 
     ii = 0
     with tqdm(total=n_images) as pbar:
-        for i in np.arange(n_images):
-            for j in np.arange(i + 1, n_images):
-                for k in np.arange(j + 1, n_images):
+        for i in range(n_images):
+            for j in range(i + 1, n_images):
+                for k in range(j + 1, n_images):
                     ind_ij = uppertri_ijtoind(i, j, n_images)
                     ind_ik = uppertri_ijtoind(i, k, n_images)
                     ind_jk = uppertri_ijtoind(j, k, n_images)
@@ -75,15 +84,15 @@ def handedness_sync(viis, vijs):
     # print(tic3 - tic2)
 
     sign_J = [1 if x > 0 else -1 for x in evect]
-    for i in np.arange(len(vijs)):
+    for i in range(len(vijs)):
         if evect[i] < 0:
             vijs[i] = utils.J_conjugate(vijs[i])
 
     # step 2: viis J-sync
-    for i in np.arange(n_images):
+    for i in range(n_images):
         vii = viis[i]
         total_J_conj = 0
-        for j in np.arange(n_images):
+        for j in range(n_images):
             if j < i:
                 vij = vijs[uppertri_ijtoind(j, i, n_images)]
             elif j == i:
@@ -153,7 +162,7 @@ def test_handedness_sync(n_images=100):
 
     vijs = np.zeros((scipy.special.comb(n_images, 2).astype(int), 3, 3))
     k = 0
-    for i in np.arange(n_images):
+    for i in range(n_images):
         for j in np.arange(i + 1, n_images):
             vijs[k] = np.outer(vis_gt[i], vis_gt[j])
             k += 1
