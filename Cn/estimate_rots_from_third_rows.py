@@ -63,7 +63,7 @@ def estimate_rots_from_third_rows_c2(vis, Rijs):
     return Ris, R_thetas
 
 
-def estimate_rots_from_third_rows(npf, vis):
+def estimate_rots_from_third_rows(n_symm, npf, vis):
     """
     estimate the rotation matrices given the tird row of each rotation matrix and the Fourier-transformed images
     :param npf: an array of size m-by-n_theta-by-n_r consisting of the m images in fourier space
@@ -72,7 +72,6 @@ def estimate_rots_from_third_rows(npf, vis):
     """
     print('estimating in-plane rotation angles')
     assert len(vis) == len(npf)
-    n_symm = AbinitioSymmConfig.n_symm
     n_theta = AbinitioSymmConfig.n_theta
     inplane_rot_res_deg = AbinitioSymmConfig.inplane_rot_res_deg
     max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)

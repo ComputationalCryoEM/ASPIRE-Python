@@ -27,7 +27,7 @@ def estimate_relative_rotations_c2(npf, rots_gt=None):
     return Rijs
 
 
-def estimate_relative_viewing_directions(npf, cache_file_name=None, rots_gt=None):
+def estimate_relative_viewing_directions(n_symm, npf, cache_file_name=None, rots_gt=None):
     """
     etimate the relative viewing directions
     :param npf: an n_theta-by-n_r array of the projection images in fourier space
@@ -36,19 +36,19 @@ def estimate_relative_viewing_directions(npf, cache_file_name=None, rots_gt=None
     :return: a mx3x3 array of outer products of all third rows of rotation with itself,
     and an m_choose_2x3x3 array of all pairwise outer products of third rows
     """
-    if AbinitioSymmConfig.n_symm in [3, 4]:
+    if n_symm in [3, 4]:
         print('Estimating relative viewing directions for n<=4')
-        viis, vijs = estimate_relative_viewing_directions_c3_c4(npf, rots_gt)
+        viis, vijs = estimate_relative_viewing_directions_c3_c4(n_symm, npf, rots_gt)
     else:
         print('Estimating relative viewing directions for n>4')
-        viis, vijs = estimate_relative_viewing_directions_cn(npf, cache_file_name, rots_gt)
+        viis, vijs = estimate_relative_viewing_directions_cn(n_symm, npf, cache_file_name, rots_gt)
     if rots_gt is not None:
-        utils.detection_rate_viis(viis, AbinitioSymmConfig.n_symm, rots_gt)
-        utils.detection_rate_vijs(vijs, AbinitioSymmConfig.n_symm, rots_gt)
+        utils.detection_rate_viis(viis, n_symm, rots_gt)
+        utils.detection_rate_vijs(vijs, n_symm, rots_gt)
     return viis, vijs
 
 
-def estimate_relative_viewing_directions_c3_c4(npf, rots_gt=None):
+def estimate_relative_viewing_directions_c3_c4(n_symm, npf, rots_gt=None):
     """
     estimate the relative viewing direction vi'vj, i<j, and vi'vi where vi is the third row of the i-th rotation matrix
     :param npf: an mxn_thetaxn_r array holding the m projection images in fourier space
@@ -56,7 +56,6 @@ def estimate_relative_viewing_directions_c3_c4(npf, rots_gt=None):
     :return: an mchoose2-times-3-times-3 array of all pairwise outer products of rotation third rows and an
     m-times-3-times-3 array where the i-th 3x3 array is the outer product of vi with itself
     """
-    n_symm = AbinitioSymmConfig.n_symm
     n_theta = AbinitioSymmConfig.n_theta
     max_shift = AbinitioSymmConfig.max_shift
     shift_step = AbinitioSymmConfig.shift_step
@@ -68,23 +67,23 @@ def estimate_relative_viewing_directions_c3_c4(npf, rots_gt=None):
         print('estimating common-lines')
         clmatrix, *_ = abinitio.cryo_clmatrix_cpu_pystyle(npf, max_shift, shift_step)
         print('estimating self common-lines')
-        sclmatrix, *_ = find_scl(npf)
+        sclmatrix, *_ = find_scl(n_symm, npf)
 
     print('estimating relative orientations')
     Rijs = abinitio.cryo_syncmatrix_vote_3n(clmatrix, n_theta)
     print('estimating self relative orientations')
-    Riis = estimate_self_relative_rots(sclmatrix, rots_gt)
+    Riis = estimate_self_relative_rots(n_symm, sclmatrix, rots_gt)
     if rots_gt is not None:
         utils.cl_detection_rate_single(n_symm, clmatrix, rots_gt, n_theta, AbinitioSymmConfig.angle_tol_err_deg)
         utils.scl_detection_rate(n_symm, sclmatrix, rots_gt, n_theta, AbinitioSymmConfig.angle_tol_err_deg)
         utils.detection_rate_self_relative_rots(Riis, n_symm, rots_gt)
         utils.detection_rate_relative_rots(Rijs, n_symm, rots_gt)
     print('local handedness')
-    viis, vijs = local_handedness_sync_c3_c4(Riis, Rijs)
+    viis, vijs = local_handedness_sync_c3_c4(n_symm, Riis, Rijs)
     return viis, vijs
 
 
-def estimate_self_relative_rots(sclmatrix, rots_gt):
+def estimate_self_relative_rots(n_symm, sclmatrix, rots_gt):
     """
     computes estimates for the self relative rotations Rii for every rotation matrix Ri
     :param sclmatrix: an mx2 array, where the i-th row holds the indeces that correspond
@@ -93,7 +92,6 @@ def estimate_self_relative_rots(sclmatrix, rots_gt):
     :return: an mx3x3 array where the i-th array denoted by Rii satidfies Rii = RigRi or Rii = Rig**(n_symm-1)Ri
     and where each Rii migt be J-conjugated independently of other estimates
     """
-    n_symm = AbinitioSymmConfig.n_symm
     n_theta = AbinitioSymmConfig.n_theta
     assert n_symm == 3 or n_symm == 4, "supports only C3 or C4"
 
@@ -164,7 +162,7 @@ def local_handedness_sync_c2(Rijs, n_images):
     return Rijs
 
 
-def local_handedness_sync_c3_c4(Riis, Rijs):
+def local_handedness_sync_c3_c4(n_symm, Riis, Rijs):
     """
     Assuming underlying is either C3 or C4, manipulate each pair of estimates of relative rotations RiRj and RigRj, i<j so that
     either both are J-conjugated or none of them are J-conjugated
@@ -173,7 +171,6 @@ def local_handedness_sync_c3_c4(Riis, Rijs):
     :param n_images: the number of images m
     :return: the input estimates so that for every pair i<j either both estimates are J-conjugated or none of them are J-conjugated
     """
-    n_symm = AbinitioSymmConfig.n_symm
     assert n_symm in [3, 4]
 
     n_images = len(Riis)
@@ -242,7 +239,7 @@ def local_handedness_sync_c3_c4(Riis, Rijs):
     return viis, vijs
 
 
-def find_scl(npf):
+def find_scl(n_symm, npf):
     """
     find the single pair of self-common-line in each image assuming that underlying is either C3 or C4
     :param npf: an m-times-n_theta-times-n_r array holding the m images in Fourier space
@@ -251,7 +248,6 @@ def find_scl(npf):
     """
     # the angle between self-common-lines is [60, 180] (for C3) and [90,180] (for C4) but since antipodal
     # lines are perfectly correlated we mustn't test angles too close to 180 degrees apart
-    n_symm = AbinitioSymmConfig.n_symm
     n_theta = AbinitioSymmConfig.n_theta
     n_r = AbinitioSymmConfig.n_r
     max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)
@@ -307,9 +303,7 @@ def find_scl(npf):
     return sclmatrix, corrs_stats, shifts_stats
 
 
-def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=None):
-
-    n_symm = AbinitioSymmConfig.n_symm
+def estimate_relative_viewing_directions_cn(n_symm, npf, cache_file_name=None, rots_gt=None):
     assert n_symm > 4  # for C3 and C4 it is better to use estimate_relative_viewing_directions_c3_c4
     if cache_file_name is None:
         base_dir = "."
@@ -436,9 +430,8 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
     return viis, vijs
 
 
-def estimate_relative_viewing_directions_cn__(npf, cache_file_name=None, rots_gt=None):
+def estimate_relative_viewing_directions_cn__(n_symm, npf, cache_file_name=None, rots_gt=None):
 
-    n_symm = AbinitioSymmConfig.n_symm
     assert n_symm > 4  # for C3 and C4 it is bettwe to use estimate_relative_viewing_directions_c3_c4
     if cache_file_name is None:
         base_dir = "."

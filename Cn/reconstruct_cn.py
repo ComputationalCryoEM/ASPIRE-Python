@@ -6,7 +6,7 @@ from Cn.config_symm import AbinitioSymmConfig
 import Cn.utils as utils
 
 
-def reconstruct_cn(projs, rotations):
+def reconstruct_cn(n_symm, projs, rotations):
     """
     Reconstructs a volume given projections and corresponding rotation matrices assuming the underlying is Cn.
     Essentially, this is the same reconstruction code as for C1,
@@ -17,7 +17,7 @@ def reconstruct_cn(projs, rotations):
     :return:
     """
     output_folder = AbinitioSymmConfig.output_folder
-    vol = do_reconstruct_cn(projs, rotations)
+    vol = do_reconstruct_cn(n_symm, projs, rotations)
     vol = make_vol_cn(vol)
     # Since WriteMRC is not implemented yet in python, we save the output vol as an npy file.
     np.save(os.path.join(output_folder, "vol.npy"), vol)
@@ -31,10 +31,9 @@ def reconstruct_cn(projs, rotations):
     #  WriteMRC(vol, 1, recon_mrc_fname);
 
 
-def do_reconstruct_cn(projs, rotations):
+def do_reconstruct_cn(n_symm, projs, rotations):
     n_images = len(projs)
     assert len(rotations) == n_images
-    n_symm = AbinitioSymmConfig.n_symm
     n_r = AbinitioSymmConfig.n_r
     n_theta = AbinitioSymmConfig.n_theta
 
