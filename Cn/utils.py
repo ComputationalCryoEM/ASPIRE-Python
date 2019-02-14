@@ -7,11 +7,12 @@ Created on Mon Jan 14 17:48:04 2019
 from scipy.stats import special_ortho_group
 import numpy as np
 import scipy
-import math
 import pickle
 import sys
 import scipy.io
 import os
+import math
+import aspire.abinitio as abinitio
 
 
 def mat_to_npy(file_name):
@@ -803,3 +804,22 @@ if __name__ == "__main__":
     # fileObject.close()
 
     # test_check_rotations_error(n_images, n_symm, iters=3)
+
+
+def mask_projs(projs):
+    resolution = projs.shape[1]
+    mask_radius = resolution * 0.45
+    # mask_radius is of the form xxx.5
+    if mask_radius * 2 == int(mask_radius * 2):
+        mask_radius = math.ceil(mask_radius)
+    # mask is not of the form xxx.5
+    else:
+        mask_radius = int(round(mask_radius))
+
+    # mask projections
+    m = abinitio.fuzzy_mask(resolution, mask_radius)
+    masked_projs = projs.copy()
+    # masked_projs = masked_projs.transpose((2, 0, 1))
+    masked_projs *= m
+    # masked_projs = masked_projs.transpose((1, 2, 0)).copy()
+    return masked_projs

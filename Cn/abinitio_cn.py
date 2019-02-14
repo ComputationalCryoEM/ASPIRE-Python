@@ -24,9 +24,10 @@ def abinitio_c2(projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, rots_gt=
     AbinitioSymmConfig.n_theta = n_theta
     AbinitioSymmConfig.max_shift = max_shift
     AbinitioSymmConfig.shift_step = shift_step
-    # TODO: apply masking and guassian filtering
+    masked_projs = utils.mask_projs(projs)
+    # TODO: apply guassian filtering
     print('running nufft on projections')
-    npf, _ = abinitio.cryo_pft_pystyle(projs, n_r, n_theta)
+    npf, _ = abinitio.cryo_pft_pystyle(masked_projs, n_r, n_theta)
     print('running abinitio c2')
     Rijs = estimate_relative_rotations_c2(npf, rots_gt)
     vijs = np.mean(Rijs, axis=1)
@@ -75,9 +76,10 @@ def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, 
     AbinitioSymmConfig.cache_file_name = cache_file_name
 
     assert n_symm > 2
-    # TODO: apply masking and guassian filtering
+    masked_projs = utils.mask_projs(projs)
+    # TODO: apply guassian filtering
     print('running nufft on projections')
-    npf, _ = abinitio.cryo_pft_pystyle(projs, n_r, n_theta)
+    npf, _ = abinitio.cryo_pft_pystyle(masked_projs, n_r, n_theta)
     print('running abinitio c' + str(n_symm))
     viis, vijs = estimate_relative_viewing_directions(n_symm, npf, cache_file_name, rots_gt)
     viis, vijs, sign_J = handedness_sync(viis, vijs)
