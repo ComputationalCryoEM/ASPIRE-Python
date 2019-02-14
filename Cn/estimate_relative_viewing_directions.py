@@ -49,6 +49,13 @@ def estimate_relative_viewing_directions(npf, cache_file_name=None, rots_gt=None
 
 
 def estimate_relative_viewing_directions_c3_c4(npf, rots_gt=None):
+    """
+    estimate the relative viewing direction vi'vj, i<j, and vi'vi where vi is the third row of the i-th rotation matrix
+    :param npf: an mxn_thetaxn_r array holding the m projection images in fourier space
+    :param rots_gt: a mx3x3 array holding the m ground-truth rotation matrices
+    :return: an mchoose2-times-3-times-3 array of all pairwise outer products of rotation third rows and an
+    m-times-3-times-3 array where the i-th 3x3 array is the outer product of vi with itself
+    """
     n_symm = AbinitioSymmConfig.n_symm
     n_theta = AbinitioSymmConfig.n_theta
     max_shift = AbinitioSymmConfig.max_shift
@@ -78,6 +85,14 @@ def estimate_relative_viewing_directions_c3_c4(npf, rots_gt=None):
 
 
 def estimate_self_relative_rots(sclmatrix, rots_gt):
+    """
+    computes estimates for the self relative rotations Rii for every rotation matrix Ri
+    :param sclmatrix: an mx2 array, where the i-th row holds the indeces that correspond
+    to the coordinates of the single, non-collinear pair of self common-lines in image Pi
+    :param rots_gt: an mx3x3 array holding the ground truth rotation matrices
+    :return: an mx3x3 array where the i-th array denoted by Rii satidfies Rii = RigRi or Rii = Rig**(n_symm-1)Ri
+    and where each Rii migt be J-conjugated independently of other estimates
+    """
     n_symm = AbinitioSymmConfig.n_symm
     n_theta = AbinitioSymmConfig.n_theta
     assert n_symm == 3 or n_symm == 4, "supports only C3 or C4"
@@ -295,10 +310,10 @@ def find_scl(npf):
 def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=None):
 
     n_symm = AbinitioSymmConfig.n_symm
-    assert n_symm > 4  # for C3 and C4 it is bettwe to use estimate_relative_viewing_directions_c3_c4
+    assert n_symm > 4  # for C3 and C4 it is better to use estimate_relative_viewing_directions_c3_c4
     if cache_file_name is None:
         base_dir = "."
-        n_points_sphere = 1000  # found empirically that this suffices
+        n_points_sphere = 500  # found empirically that this suffices
         n_theta = 360
         inplane_rot_res = 1
         cache_file_name, *_ = create_cache(base_dir, n_points_sphere, n_theta, inplane_rot_res, rots_gt)
@@ -336,9 +351,135 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
         npf_i = np.array([ray / np.linalg.norm(ray) for ray in npf_i])
         npf_i_half_shifted = np.array([ray / np.linalg.norm(ray) for ray in npf_i_half_shifted])
 
-        # TODO: there is no conjugation here because when building scl_inds we impliceteley picked
-        #  the antipodal line. Contrast this with the c3_c4 algorithm. Suggestion: since in c3_c3 we
-        #  utilize the upfront known angles between scls fix here rather than there
+        corrs = np.dot(npf_i_half_shifted, np.conj(npf_i).T)
+        corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
+        corrs_cands = np.array([np.max(np.real(corrs[:, scls_inds_cand[:, 0], scls_inds_cand[:, 1]]), axis=0)
+                                         for scls_inds_cand in scls_inds])
+        scores_self_corrs[i] = np.mean(np.real(corrs_cands), axis=1)
+
+    # removing candidates that are equator images
+    cii_equators_inds = np.array([ind for (ind, Ri_tilde) in enumerate(Ris_tilde)
+                                  if abs(np.arccos(Ri_tilde[2, 2]) - np.pi/2) < 10*np.pi/180])
+    scores_self_corrs[:, cii_equators_inds] = 0
+
+    # make sure that n_theta_ijs is divisible by n_symm, and if not simply disregard the trailing angles so that it does
+    n_theta_ijs_to_keep = (n_theta_ijs//n_symm)*n_symm
+    if n_theta_ijs_to_keep < n_theta_ijs:
+        cijs_inds = np.delete(cijs_inds, slice(n_theta_ijs_to_keep, cijs_inds.shape[2]), 2)
+        R_theta_ijs = np.delete(R_theta_ijs, slice(n_theta_ijs_to_keep, R_theta_ijs.shape[0]), 0)
+        print('number of inplane rotation angles must be divisible by n_symm')
+
+    # Step 2: likelihood wrt to pairwise images
+    print('computing pairwise likelihood')
+    m_choose_2 = scipy.special.comb(n_images, 2).astype(int)
+    vijs = np.zeros((m_choose_2, 3, 3))
+    viis = np.zeros((n_images, 3, 3))
+    g = utils.generate_g(n_symm)
+    gs_s = np.array([np.linalg.matrix_power(g, s) for s in range(n_symm)])
+    n_points_sphere, n_points_sphere, n_theta_ijs, _ = cijs_inds.shape
+    c = 0
+    e1 = [1, 0, 0]
+    min_ii_norm = min_jj_norm = float('inf')
+    for i in tqdm(range(n_images)):
+        # generate all shifted versions of the images
+        npf_i_half = npf[i, :n_theta // 2]
+
+        npf_i_half_shifted = np.array([npf_i_half * shift_phase for shift_phase in shift_phases])  # shape is (n_shifts, n_theta/2, n_r)
+        npf_i_half_shifted = np.reshape(npf_i_half_shifted, (-1, n_r))  # shape is (n_shifts * n_theta/2, n_r)
+        # ignoring dc-term.
+        npf_i_half_shifted[:, 0] = 0
+        # normalize each ray to have norm equal to 1
+        npf_i_half_shifted = np.array([ray / np.linalg.norm(ray) for ray in npf_i_half_shifted])
+
+        for j in range(i+1, n_images):
+            # print(str(i), str(j))
+            npf_j = npf[j]
+            npf_j[:, 0] = 0
+            # normalize each ray to have norm equal to 1
+            npf_j = np.array([ray / np.linalg.norm(ray) for ray in npf_j])
+
+            corrs_ij = np.dot(npf_i_half_shifted, np.conj(npf_j).T)
+            # max out the shifts (recall each line in each image may have its own shift)
+            corrs_ij = np.max(np.reshape(np.real(corrs_ij), (n_shifts, n_theta//2, n_theta)), axis=0)
+            corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
+            corrs = np.reshape(corrs, (-1, n_symm, n_theta_ijs//n_symm))
+            corrs = np.mean(corrs, axis=1)  # take the mean over all n_sym cls
+            corrs = np.reshape(corrs, (n_points_sphere, n_points_sphere, n_theta_ijs//n_symm))
+            #  the self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles) so max them out
+            opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
+            corrs = np.max(corrs, axis=-1)
+            # maximum likelihood while taking into consideration both cls and scls
+            corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
+            # extract the optimal candidates
+            opt_sphere_i, opt_sphere_j = np.unravel_index(np.argmax(corrs), corrs.shape)
+            opt_theta_ij = opt_theta_ij_ind_per_sphere_points[opt_sphere_i, opt_sphere_j]
+
+            opt_Ri_tilde = Ris_tilde[opt_sphere_i]
+            opt_Rj_tilde = Ris_tilde[opt_sphere_j]
+            opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
+            # compute the estimate of vi*vi.T as given by j
+            vii_j = np.mean(np.array([np.linalg.multi_dot([opt_Ri_tilde.T, gs, opt_Ri_tilde])
+                                      for gs in gs_s]), axis=0)
+            _, svals, _ = np.linalg.svd(vii_j)
+            if np.linalg.norm(svals - e1, 2) < min_ii_norm:
+                viis[i] = vii_j
+            # compute the estimate of vj*vj.T as given by i
+            vjj_i = np.mean(np.array([np.linalg.multi_dot([opt_Rj_tilde.T, gs, opt_Rj_tilde])
+                                      for gs in gs_s]), axis=0)
+            _, svals, _ = np.linalg.svd(vjj_i)
+            if np.linalg.norm(svals - e1, 2) < min_jj_norm:
+                viis[j] = vjj_i
+
+            vijs[c] = np.mean(np.array([np.linalg.multi_dot([opt_Ri_tilde.T, gs, opt_R_theta_ij, opt_Rj_tilde])
+                                    for gs in gs_s]), axis=0)
+            c += 1
+    return viis, vijs
+
+
+def estimate_relative_viewing_directions_cn__(npf, cache_file_name=None, rots_gt=None):
+
+    n_symm = AbinitioSymmConfig.n_symm
+    assert n_symm > 4  # for C3 and C4 it is bettwe to use estimate_relative_viewing_directions_c3_c4
+    if cache_file_name is None:
+        base_dir = "."
+        n_points_sphere = 500  # found empirically that this suffices
+        n_theta = 360
+        inplane_rot_res = 1
+        cache_file_name, *_ = create_cache(base_dir, n_points_sphere, n_theta, inplane_rot_res, rots_gt)
+    print('loading line indexes cache %s.\n Please be patient...' % cache_file_name)
+    cijs_inds, Ris_tilde, R_theta_ijs, n_theta = read_cache(cache_file_name)
+    AbinitioSymmConfig.n_theta = n_theta
+    n_r = AbinitioSymmConfig.n_r
+    if n_theta != npf.shape[1]:
+        raise ValueError('n_theta = %d for cache, while n_theta=%d for npf are not equal. '
+                         'Either create a new cache or a new npf' % (n_theta, len(npf)))
+    print('done loading indexes cache')
+    n_images = len(npf)
+    n_cands = len(Ris_tilde)
+    n_theta_ijs = len(R_theta_ijs)
+    max_shift_1d = np.ceil(2 * np.sqrt(2) * AbinitioSymmConfig.max_shift)
+    shift_phases = utils.calc_shift_phases(AbinitioSymmConfig.n_r, max_shift_1d, AbinitioSymmConfig.shift_step)
+    n_shifts = len(shift_phases)
+    # Step 1: pre-calculate the likelihood with respect to the self common-lines
+    # note: cannot pre-compute the scls inds in cache since these depend on the symmetry class
+    scls_inds = compute_scls_inds(Ris_tilde, n_symm, n_theta)
+    scores_self_corrs = np.zeros((n_images, n_cands))
+    for i in range(n_images):
+        npf_i = npf[i]
+        # generate all shifted versions of the images
+        npf_i_half = npf_i[:n_theta // 2]
+
+        npf_i_half_shifted = np.array([npf_i_half * shift_phase for shift_phase in shift_phases])  # shape is (n_shifts, n_theta/2, n_r)
+        npf_i_half_shifted = np.reshape(npf_i_half_shifted, (-1, n_r))  # shape is (n_theta/2 * n_shifts, n_r)
+
+        # ignoring dc-term.
+        npf_i[:, 0] = 0
+        npf_i_half_shifted[:, 0] = 0
+
+        # normalize each ray to have norm equal to 1
+        npf_i = np.array([ray / np.linalg.norm(ray) for ray in npf_i])
+        npf_i_half_shifted = np.array([ray / np.linalg.norm(ray) for ray in npf_i_half_shifted])
+
         corrs = np.dot(npf_i_half_shifted, np.conj(npf_i).T)
         corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
         corrs_cands = np.array([np.max(np.real(corrs[:, scls_inds_cand[:, 0], scls_inds_cand[:, 1]]), axis=0)
@@ -389,15 +530,25 @@ def estimate_relative_viewing_directions_cn(npf, cache_file_name=None, rots_gt=N
             corrs_ij = np.dot(npf_i_half_shifted, np.conj(npf_j).T)
             # max out the shifts (recall each line in each image may have its own shift)
             corrs_ij = np.max(np.reshape(np.real(corrs_ij), (n_shifts, n_theta//2, n_theta)), axis=0)
-            # TODO: optimize the following . as we next take the mean over all n common-lines
-            #  of each rotation candidate do this on the fly
-            corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
-            corrs = np.reshape(corrs, (-1, n_symm, n_theta_ijs//n_symm))
-            corrs = np.mean(corrs, axis=1)  # take the mean over all n_sym cls
-            corrs = np.reshape(corrs, (n_points_sphere, n_points_sphere, n_theta_ijs//n_symm))
-            #  the self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles) so max them out
-            opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
-            corrs = np.max(corrs, axis=-1)
+            assert cijs_inds.shape[0] == cijs_inds.shape[1]
+            n_points_sphere = cijs_inds.shape[0]
+            opt_theta_ij_ind_per_sphere_points = np.zeros((n_points_sphere, n_points_sphere))
+            corrs = np.zeros((n_points_sphere, n_points_sphere))
+            for i_x, x in enumerate(np.reshape(cijs_inds, (-1, n_theta_ijs, 2))):
+                ind_1, ind_2 = np.unravel_index(i_x, (n_points_sphere, n_points_sphere))
+                corrs_sphere = np.zeros(n_theta_ijs // n_symm)
+                # for each of the n_theta_ijs//n_symm in-plane rotation angles,
+                # we need to take the average over corresponding n_symm pairs of common-lines, and take
+                # the maximum over all these in-plane rotation angles
+                for y in np.reshape(x, (n_symm, n_theta_ijs//n_symm, 2)):
+                    corrs_sphere += corrs_ij[y[:, 0], y[:, 1]]
+                corrs_sphere /= n_symm
+                # find which of the in-plane rotation angles achived the maximum score
+                max_corr_sphere, max_corr_sphere_ind = np.max(np.real(corrs_sphere)), np.argmax(np.real(corrs_sphere))
+                corrs[ind_1, ind_2] = max_corr_sphere
+                opt_theta_ij_ind_per_sphere_points[ind_1, ind_2] = max_corr_sphere_ind
+
+            opt_theta_ij_ind_per_sphere_points = opt_theta_ij_ind_per_sphere_points.astype('int')
             # maximum likelihood while taking into consideration both cls and scls
             corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
             # extract the optimal candidates
@@ -442,14 +593,14 @@ def compute_scls_inds(Ri_cands, n_symm, n_theta):
     gs_s = np.array([np.linalg.matrix_power(g, s) for s in range(1, n_selfcl_pairs+1)])
 
     for i_cand in range(n_cands):
-        Ri_tilde = Ri_cands[i_cand]
-        Riigs = np.array([np.linalg.multi_dot([Ri_tilde.T, gs, Ri_tilde]) for gs in gs_s])
+        Ri_cand = Ri_cands[i_cand]
+        Riigs = np.array([np.linalg.multi_dot([Ri_cand.T, gs, Ri_cand]) for gs in gs_s])
 
         c1s = np.array([[-Riig[1, 2],  Riig[0, 2]] for Riig in Riigs])
         c2s = np.array([[ Riig[2, 1], -Riig[2, 0]] for Riig in Riigs])
 
-        c1s_inds = utils.clAngles2Ind__(c1s, n_theta)
-        c2s_inds = utils.clAngles2Ind__(c2s, n_theta)
+        c1s_inds = utils.clAngles2Ind(c1s, n_theta)
+        c2s_inds = utils.clAngles2Ind(c2s, n_theta)
 
         inds = np.where(c1s_inds >= (n_theta//2))
         c1s_inds[inds] -= (n_theta//2)
@@ -461,7 +612,7 @@ def compute_scls_inds(Ri_cands, n_symm, n_theta):
     return scls_inds
 
 
-def create_cache(base_dir, n_points_sphere=1000, n_theta=360, inplane_rot_res_deg=1, rots_gt=None):
+def create_cache(base_dir, n_points_sphere=500, n_theta=360, inplane_rot_res_deg=1, rots_gt=None):
     print('creating cache')
     Ris_tilde, R_theta_ijs = generate_cand_rots(n_points_sphere, inplane_rot_res_deg, rots_gt)
     cijs_inds = compute_cls_inds(Ris_tilde, R_theta_ijs, n_theta)
@@ -510,15 +661,15 @@ def compute_cls_inds(Ris_tilde, R_theta_ijs, n_theta):
     with tqdm(total=n_points_sphere) as pbar:
         for i in range(n_points_sphere):
             for j in range(n_points_sphere):
-                print(str(i), str(j))
+                # print(str(i), str(j))
                 R_cands = np.array([np.linalg.multi_dot([Ris_tilde[i].T, R_theta_ij, Ris_tilde[j]])
                                     for R_theta_ij in R_theta_ijs])
 
                 c1s = np.array([(-R_cand[1, 2], R_cand[0, 2]) for R_cand in R_cands])
                 c2s = np.array([(R_cand[2, 1], -R_cand[2, 0]) for R_cand in R_cands])
 
-                c1s = utils.clAngles2Ind__(c1s, n_theta)
-                c2s = utils.clAngles2Ind__(c2s, n_theta)
+                c1s = utils.clAngles2Ind(c1s, n_theta)
+                c2s = utils.clAngles2Ind(c2s, n_theta)
 
                 inds = np.where(c1s >= n_theta // 2)
                 c1s[inds] -= n_theta // 2
@@ -534,11 +685,10 @@ def compute_cls_inds(Ris_tilde, R_theta_ijs, n_theta):
 
 
 def read_cache(cache_mat_full_file_name):
-    f = open(cache_mat_full_file_name, 'rb')
-    cijs_inds, Ris_tilde, R_theta_ijs, n_theta = pickle.load(f)
-    f.close()
-    print('Cache file has been successfully loaded!')
-    return cijs_inds, Ris_tilde, R_theta_ijs, n_theta
+    with open(cache_mat_full_file_name, 'rb') as f:
+        cijs_inds, Ris_tilde, R_theta_ijs, n_theta = pickle.load(f)
+        print('Cache file has been successfully loaded!')
+        return cijs_inds, Ris_tilde, R_theta_ijs, n_theta
 
 
 def test_local_handedness_sync(n_symm, n_images=100):

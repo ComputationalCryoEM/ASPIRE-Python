@@ -534,8 +534,8 @@ def find_cl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, single_cl=False):
                 U = np.dot(np.dot(Ri.T, gs[s]), Rj)
                 c1 = np.array([-U[1, 2], U[0, 2]])
                 c2 = np.array([U[2, 1], -U[2, 0]])
-                clmatrix_gt[s, i, j] = clAngles2Ind__(c1[np.newaxis, :], n_theta)
-                clmatrix_gt[s, j, i] = clAngles2Ind__(c2[np.newaxis, :], n_theta)
+                clmatrix_gt[s, i, j] = clAngles2Ind(c1[np.newaxis, :], n_theta)
+                clmatrix_gt[s, j, i] = clAngles2Ind(c2[np.newaxis, :], n_theta)
     if single_cl:
         select_id = np.random.randint(n_symm, size=clmatrix_gt.shape[1:])
         # an ackward yet quick way to make sure that either
@@ -634,8 +634,8 @@ def find_scl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, is_simulate_trans
         c1 = np.array([-U1[1, 2], U1[0, 2]])
         c2 = np.array([-U2[1, 2], U2[0, 2]])
 
-        sclmatrix_gt[i, 0] = clAngles2Ind__(c1[np.newaxis, ], n_theta)
-        sclmatrix_gt[i, 1] = clAngles2Ind__(c2[np.newaxis, ], n_theta)
+        sclmatrix_gt[i, 0] = clAngles2Ind(c1[np.newaxis,], n_theta)
+        sclmatrix_gt[i, 1] = clAngles2Ind(c2[np.newaxis,], n_theta)
 
     return sclmatrix_gt.astype(int)
 
@@ -649,7 +649,7 @@ def find_scl_gt(n_symm, n_theta, rots_gt, is_simulate_J=False, is_simulate_trans
 #     return idx
 
 
-def clAngles2Ind__(clAngles, n_theta):
+def clAngles2Ind(clAngles, n_theta):
     thetas = np.arctan2(clAngles[:, 1], clAngles[:, 0])
     thetas = np.mod(thetas, 2*np.pi)  # Shift from [-pi,pi] to [0,2*pi).
     return np.mod(np.round(thetas/(2*np.pi)*n_theta), n_theta).astype(int)  # linear scale from [0,2*pi) to [0,n_theta).

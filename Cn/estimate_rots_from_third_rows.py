@@ -120,8 +120,8 @@ def estimate_rots_from_third_rows(npf, vis):
                 c1s = np.array([[-U[1, 2],  U[0, 2]] for U in Us])
                 c2s = np.array([[ U[2, 1], -U[2, 0]] for U in Us])
 
-                c1s = utils.clAngles2Ind__(c1s, n_theta)
-                c2s = utils.clAngles2Ind__(c2s, n_theta)
+                c1s = utils.clAngles2Ind(c1s, n_theta)
+                c2s = utils.clAngles2Ind(c2s, n_theta)
 
                 corrs = np.array([np.dot(npf_i[c1], np.conj(npf_j[c2]))
                                   for npf_i in npf_i_shifted for c1, c2 in zip(c1s, c2s)])
