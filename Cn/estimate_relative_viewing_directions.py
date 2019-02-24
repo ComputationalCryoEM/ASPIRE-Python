@@ -739,8 +739,9 @@ def test_local_handedness_sync(n_symm, n_images=100):
     print("mse_vijs=" + str(mse_vijs))
 
 
-def test_estimate_self_relative_rots(n_symm, n_theta, rots_gt):
-    Riis = estimate_self_relative_rots(n_symm, n_theta, rots_gt)
+def test_estimate_self_relative_rots(n_symm, npf, rots_gt):
+    sclmatrix, *_ = find_scl(n_symm, npf)
+    Riis = estimate_self_relative_rots(n_symm, sclmatrix, rots_gt)
     utils.detection_rate_self_relative_rots(Riis, n_symm, rots_gt)
 
 
@@ -750,8 +751,26 @@ def test_estimate_relative_rots(n_symm, n_theta, rots_gt):
 
 
 if __name__ == "__main__":
-    rots_gt = utils.generate_rots(n_images=100, is_J_conj_random=True)
-    test_estimate_self_relative_rots(n_symm=3, rots_gt=rots_gt, n_theta=360)
-    test_estimate_relative_rots(n_symm=3, rots_gt=rots_gt, n_theta=360)
+    projs = utils.mat_to_npy('projs')
+    rots_gt = utils.mat_to_npy('rots_gt')
+    n_symm = utils.mat_to_npy_vec('n_symm')[0]
+    AbinitioSymmConfig.max_shift = utils.mat_to_npy_vec('max_shift')[0]
+    AbinitioSymmConfig.shift_step = utils.mat_to_npy_vec('shift_step')[0]
+    AbinitioSymmConfig.n_r = 45
+    AbinitioSymmConfig.n_theta = 360
+    AbinitioSymmConfig.inplane_rot_res_deg = 1
+    # transpose to get python style arrays
+    projs = np.transpose(projs, axes=(2, 0, 1))
+    rots_gt = np.transpose(rots_gt, axes=(2, 0, 1))
+    npf, _ = abinitio.cryo_pft_pystyle(projs, AbinitioSymmConfig.n_r, AbinitioSymmConfig.n_theta)
+    test_estimate_self_relative_rots(n_symm, npf, rots_gt)
+
+    # TODO: once generating projection of a symmetric molecule is supported we can use a more
+    #  straight-forward test along the following lines
+    # rots_gt = utils.generate_rots(n_images=100, is_J_conj_random=True)
+    # projs = generate_cn_images(n_symm)
+    # npf, _ = abinitio.cryo_pft_pystyle(projs, AbinitioSymmConfig.n_r, AbinitioSymmConfig.n_theta)
+    # test_estimate_self_relative_rots(n_symm=4, npf, rots_gt=rots_gt)
+    # test_estimate_relative_rots(n_symm=4, rots_gt=rots_gt, n_theta=360)
     # test_local_handedness_sync(n_symm=3, n_images = 100)
     # test_local_handedness_sync(n_symm=4, n_images = 100)

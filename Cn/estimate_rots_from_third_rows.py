@@ -216,8 +216,3 @@ def estimate_inplane_rots_angles_gt(n_symm, vis, rots_gt):
 
     return Ris, R_thetas
 
-
-if __name__ == "__main__":
-    n_images = 100
-    n_symm = 4
-    # test_estimate_inplane_rot_angles(n_symm, n_images)

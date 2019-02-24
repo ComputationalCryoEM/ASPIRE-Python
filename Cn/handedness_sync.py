@@ -170,9 +170,11 @@ def test_handedness_sync(n_images=100):
     viis = [np.outer(vi_gt, vi_gt) for vi_gt in vis_gt]
 
     # test 1: all same class
+    print('test 1: sanity - all estimates belong to the same J-class')
     _, _, sign_J = handedness_sync(viis, vijs)
     assert np.all(sign_J == np.ones_like(sign_J)) or np.all(-1 * sign_J == np.ones_like(sign_J))
-
+    print('test 1 passed')
+    print('test 2: randomly choosing the J-class of each estimate')
     sign_J_gt = np.random.rand(scipy.special.comb(n_images, 2).astype(int)) > 0.5
     vijs = np.array([utils.J_conjugate(vijs[i]) if sign_J_gt[i] else vijs[i] for i in np.arange(len(sign_J_gt))])
     sign_J_gt = np.array([1 if s else -1 for s in sign_J_gt])
@@ -181,7 +183,7 @@ def test_handedness_sync(n_images=100):
     assert np.all([s == ss for (s, ss) in zip(sign_J, sign_J_gt)]) \
            or np.all([s == -1 * ss for (s, ss) in zip(sign_J, sign_J_gt)])
 
-    print("all tests passed")
+    print('test 2 passed')
 
 
 if __name__ == "__main__":

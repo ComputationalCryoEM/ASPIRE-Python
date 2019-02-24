@@ -15,6 +15,7 @@ shift_step = utils.mat_to_npy_vec('shift_step')[0]
 inplane_rot_res_deg = utils.mat_to_npy_vec('inplane_rot_res')[0]
 n_r = 45
 n_theta = 360
+print("n_symm=" + str(n_symm))
 
 # transpose to get python style arrays
 projs = np.transpose(projs, axes=(2, 0, 1))

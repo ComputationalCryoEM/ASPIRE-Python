@@ -86,7 +86,6 @@ def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, 
     vis = estimate_third_rows(vijs, viis, rots_gt)
     rots, _ = estimate_rots_from_third_rows(n_symm, npf, vis)
 
-    vol = reconstruct_cn(n_symm, projs, rots)
     if rots_gt is not None:
         mse, rots_aligned, _ = utils.check_rotations_error(rots, n_symm, rots_gt)
         err_in_degrees = utils.check_degrees_error(rots_aligned, n_symm, n_theta, rots_gt)
@@ -96,6 +95,8 @@ def abinitio_cn(n_symm, projs, n_r=45, n_theta=360, max_shift=15, shift_step=1, 
         print('min error in degrees: %e' % np.min(err_in_degrees))
         print('max error in degrees: %e' % np.max(err_in_degrees))
         print("mse=" + str(mse))
+
+    vol = reconstruct_cn(n_symm, projs, rots)
     return rots, vol
 
 
@@ -104,3 +105,4 @@ if __name__ == "__main__":
     averages_nn50_group1 = np.transpose(averages_nn50_group1, axes=(2, 0, 1))
     n_symm = 4
     abinitio_cn(n_symm, averages_nn50_group1)
+

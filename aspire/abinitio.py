@@ -1725,6 +1725,13 @@ def cryo_clmatrix_cpu_fast2(pf, nk=None, max_shift=15, shift_step=1):
 
 
 def cryo_clmatrix_cpu_pystyle(npf, max_shift, shift_step):
+    """
+    A wrapper function for cryo_clmatrix_cpu which expects and returns arrays in python style (i.e. image index is the first)
+    :param npf: an m-by-n_theta-by-nr array of Fourier transformed projection images
+    :param max_shift: the maximum 2d shift to apply
+    :param shift_step:
+    :return:
+    """
     n_images = len(npf)
     max_shift_1d = np.ceil(2 * np.sqrt(2) * max_shift)
     npf = np.transpose(npf, axes=(2, 1, 0))
@@ -1733,6 +1740,13 @@ def cryo_clmatrix_cpu_pystyle(npf, max_shift, shift_step):
 
 
 def cryo_pft_pystyle(projs, n_r, n_theta):
+    """
+    A wrapper function for cryo_pft which expects and returns arrays in python style (i.e. image index is the first)
+    :param projs: an array size m-by-npixelsx-by-npixels of m images
+    :param n_r: the required radial resolution
+    :param n_theta: the required angular resoulution
+    :return: an m-by-n_theta-by-nr array of Fourier transformed projection images
+    """
     projs = np.transpose(projs, axes=(1, 2, 0))
     npf, freqs = cryo_pft(projs, n_r, n_theta)
     npf = np.transpose(npf, axes=(2, 1, 0))
