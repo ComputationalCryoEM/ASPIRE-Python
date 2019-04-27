@@ -7,7 +7,7 @@ from aspire.utils.helpers import yellow
 from aspire.common.config import AspireConfig
 
 
-base_url = 'https://s3.amazonaws.com/aspire-python/data'
+base_url = 'https://storage.googleapis.com/aspire-python'
 
 binary_files = [
     '/bessel.npy',
