@@ -1,0 +1,28 @@
+image:
+  - Previous Visual Studio 2017
+
+environment:
+  matrix:
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_ARCH: "64"
+      MINICONDA: C:\Miniconda36-x64
+
+platform: x64
+  
+init:
+  - "ECHO %PYTHON_VERSION% %MINICONDA%"
+
+install:
+  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda env create -n test-environment python=%PYTHON_VERSION% -f environment.yml"
+  - activate test-environment
+  - python setup.py install
+  
+# Not a .NET project, we build in the install step instead
+build: false
+
+test_script:
+  - pytest tests
