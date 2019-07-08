@@ -90,12 +90,6 @@ venv.bak/
 # pycharm configuration files
 .idea/*
 
-# mrc/s files should not be included in src files
-*.mrc
-*.mrcs
-*.mat
-*.npy
-
 # all logs
 *.log
 
