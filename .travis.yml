@@ -1,0 +1,38 @@
+sudo: required
+dist: precise
+language: python
+python:
+  - "3.6"
+install:
+  - sudo apt-get update
+  # We do this conditionally because it saves us some downloading if the
+  # version is the same.
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+  - conda env create -n test-environment -f environment.yml
+  - source activate test-environment
+  
+  # Install pynfft and dependent packages manually so we have a redundant nfft library for unit testing purposes
+  - conda install fftw=3.3.8
+  - conda install -c conda-forge nfft=3.4.1
+  # pyNFFT is broken as of 4/18 and does not play well with nfft 3.4.1 + fftw 3.3.8
+  # Install from custom location
+  - export CONDA_ENV_LOC=`conda info | grep "active env location" | awk '{print $5}'`
+  - CFLAGS=-I$CONDA_ENV_LOC/include LDFLAGS=-L$CONDA_ENV_LOC/lib pip install git+https://github.com/vineetbansal/pyNFFT.git
+  - python setup.py install
+  
+script: py.test --cov=aspyre tests
+
+after_success:
+  - coveralls
