@@ -12,15 +12,15 @@ except ImportError:
     print(f"Can't import finufftpy! Please run 'make finufftpy' and try again.")
     sys.exit(2)
 
-from aspire.abinitio import Abinitio
-from aspire.common.logger import logger
-from aspire.common.config import AspireConfig, PreProcessorConfig
-from aspire.class_averaging import ClassAverages
-from aspire.preprocessor import PreProcessor
-from aspire.utils.compare_stacks import compare_stack_files
-from aspire.utils.data_utils import load_stack_from_file
-from aspire.utils.helpers import yellow, requires_binaries, set_output_name, red
-from aspire.utils.viewstack import view_stack
+from aspyre.aspire.abinitio import Abinitio
+from aspyre.aspire.common.logger import logger
+from aspyre.aspire.common.config import AspireConfig, PreProcessorConfig
+from aspyre.aspire.class_averaging import ClassAverages
+from aspyre.aspire.preprocessor import PreProcessor
+from aspyre.aspire.utils.compare_stacks import compare_stack_files
+from aspyre.aspire.utils.data_utils import load_stack_from_file
+from aspyre.aspire.utils.helpers import yellow, requires_binaries, set_output_name, red
+from aspyre.aspire.utils.viewstack import view_stack
 
 
 np.random.seed(1137)
