@@ -38,6 +38,32 @@ class Picker:
         self.original_im = None  # populated in read_mrc()
         self.im = self.read_mrc()
 
+        self._initialize_model()
+
+    def _initialize_model(self):
+        """
+        Initialize a classifier model for the Picker object base on configuration values.
+        """
+
+        logger.info(f'Classifier model desired = {config.apple.model}')
+        if config.apple.model == 'gaussian_mixture':
+            from sklearn.mixture import GaussianMixture
+            self.model = GaussianMixture(n_components=2)
+        elif config.apple.model == 'gaussian_naive_bayes':
+            from sklearn.naive_bayes import GaussianNB
+            self.model = GaussianNB()
+        elif config.apple.model == 'xgboost':
+            import xgboost as xgb
+            self.model = xgb.XGBClassifier(objective='binary:hinge', learning_rate=0.1,
+                                           max_depth=6, n_estimators=10, method='gpu_hist')
+        elif config.apple.model == 'thunder_svm':
+            import thundersvm
+            self.model = thundersvm.SVC(kernel=config.apple.svm.kernel, gamma=config.apple.svm.gamma)
+        else:
+            logger.info('Using SVM Classifier')
+            self.model = svm.SVC(C=1, kernel=config.apple.svm_kernel, gamma=config.apple.svm_gamma,
+                                 class_weight='balanced')
+
     def read_mrc(self):
         """Gets and preprocesses micrograph.
 
@@ -160,8 +186,8 @@ class Picker:
         scaler = preprocessing.StandardScaler()
         scaler.fit(x)
         x = scaler.transform(x)
-        classify = svm.SVC(C=1, kernel=config.apple.svm_kernel, gamma=config.apple.svm_gamma, class_weight='balanced')
-        classify.fit(x, y)
+        classifier = self.model
+        classifier.fit(x, y)
 
         mean_all, std_all = PickerHelper.moments(micro_img, self.query_size)
         mean_all = xp.asnumpy(mean_all)
@@ -179,7 +205,7 @@ class Picker:
         cls_input = scaler.transform(cls_input)
 
         # compute classification for all possible windows in micrograph
-        segmentation = classify.predict(cls_input)
+        segmentation = classifier.predict(cls_input)
 
         _segmentation_shape = int(np.sqrt(segmentation.shape[0]))
         segmentation = np.reshape(segmentation, (_segmentation_shape, _segmentation_shape), 'F')
