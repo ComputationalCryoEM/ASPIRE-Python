@@ -93,5 +93,3 @@ venv.bak/
 # all logs
 *.log
 
-# binary files
-binaries/
