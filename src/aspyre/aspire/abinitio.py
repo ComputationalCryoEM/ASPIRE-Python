@@ -9,10 +9,10 @@ import scipy.sparse.linalg as spsl
 
 from pyfftw.interfaces import numpy_fft
 
-from aspire.common.config import AbinitioConfig
-from aspire.common.exceptions import WrongInput
-from aspire.common.logger import logger
-from aspire.utils.data_utils import validate_square_projections, c_to_fortran
+from aspyre.aspire.common.config import AbinitioConfig
+from aspyre.aspire.common.exceptions import WrongInput
+from aspyre.aspire.common.logger import logger
+from aspyre.aspire.utils.data_utils import validate_square_projections, c_to_fortran
 
 
 class DiracBasis:

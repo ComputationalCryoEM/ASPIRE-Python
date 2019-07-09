@@ -1,10 +1,9 @@
 import os
 import sys
 import requests
-sys.path.insert(0, '.')  # allow calling from within subdirectory
 
-from aspire.utils.helpers import yellow
-from aspire.common.config import AspireConfig
+from aspyre.aspire.utils.helpers import yellow
+from aspyre.aspire.common.config import AspireConfig
 
 
 base_url = 'https://storage.googleapis.com/aspire-python'

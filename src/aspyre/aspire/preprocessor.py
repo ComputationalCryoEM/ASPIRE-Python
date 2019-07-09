@@ -11,15 +11,15 @@ from numpy.core.multiarray import zeros
 from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
 from numpy.ma import sqrt
 
-from aspire.common.config import PreProcessorConfig, AspireConfig
-from aspire.common.exceptions import DimensionsIncompatible, WrongInput
-from aspire.common.logger import logger
-from aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr, \
+from aspyre.aspire.common.config import PreProcessorConfig, AspireConfig
+from aspyre.aspire.common.exceptions import DimensionsIncompatible, WrongInput
+from aspyre.aspire.common.logger import logger
+from aspyre.aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr, \
     c_to_fortran, fortran_to_c
-from aspire.utils.helpers import TupleCompare, set_output_name, yellow
-from aspire.utils.parse_star import read_star
+from aspyre.aspire.utils.helpers import TupleCompare, set_output_name, yellow
+from aspyre.aspire.utils.parse_star import read_star
 
-from aspire.utils.array_utils import (flatten,
+from aspyre.aspire.utils.array_utils import (flatten,
                                       radius_norm,
                                       fast_cfft2,
                                       fast_icfft2,

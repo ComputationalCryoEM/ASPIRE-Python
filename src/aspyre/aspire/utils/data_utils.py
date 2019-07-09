@@ -4,9 +4,9 @@ import numpy as np
 
 from scipy.io import loadmat, savemat
 
-from aspire.common.exceptions import WrongInput, UnknownFormat, DimensionsIncompatible
-from aspire.common.logger import logger
-from aspire.utils.helpers import accepts
+from aspyre.aspire.common.exceptions import WrongInput, UnknownFormat, DimensionsIncompatible
+from aspyre.aspire.common.logger import logger
+from aspyre.aspire.utils.helpers import accepts
 
 
 @accepts(np.ndarray)

@@ -3,8 +3,8 @@ import os
 import sys
 from logging import warning
 
-from aspire.common.exceptions import DimensionsIncompatible
-from aspire.common.logger import logger
+from aspyre.aspire.common.exceptions import DimensionsIncompatible
+from aspyre.aspire.common.logger import logger
 
 
 def get_file_type(file_path):

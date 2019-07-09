@@ -2,11 +2,11 @@ import numpy as np
 
 from console_progressbar import ProgressBar
 
-from aspire.common.config import AspireConfig
-from aspire.common.exceptions import ErrorTooBig, WrongInput, DimensionsIncompatible
-from aspire.common.logger import logger
-from aspire.utils.data_utils import load_stack_from_file
-from aspire.utils.helpers import accepts
+from aspyre.aspire.common.config import AspireConfig
+from aspyre.aspire.common.exceptions import ErrorTooBig, WrongInput, DimensionsIncompatible
+from aspyre.aspire.common.logger import logger
+from aspyre.aspire.utils.data_utils import load_stack_from_file
+from aspyre.aspire.utils.helpers import accepts
 
 
 @accepts(np.ndarray, np.ndarray, int, float)

@@ -10,7 +10,7 @@ from console_progressbar import ProgressBar
 from numpy.fft import fftshift, ifftshift
 from pyfftw.interfaces.numpy_fft import fft2, ifft2
 
-from aspire.common.logger import logger
+from aspyre.aspire.common.logger import logger
 
 
 def crop(images, out_size, is_stack, fillval=0.0):

@@ -13,11 +13,11 @@ from console_progressbar import ProgressBar
 
 from numpy.polynomial.legendre import leggauss
 
-from aspire.common.config import ClassAveragesConfig
-from aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec, load_stack_from_file, c_to_fortran
-from aspire.utils.array_utils import estimate_snr, image_grid, cfft2, icfft2
-from aspire.common.logger import logger
-from aspire.utils.helpers import yellow, set_output_name
+from aspyre.aspire.common.config import ClassAveragesConfig
+from aspyre.aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec, load_stack_from_file, c_to_fortran
+from aspyre.aspire.utils.array_utils import estimate_snr, image_grid, cfft2, icfft2
+from aspyre.aspire.common.logger import logger
+from aspyre.aspire.utils.helpers import yellow, set_output_name
 
 
 class Precomp:

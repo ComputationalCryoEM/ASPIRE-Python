@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from aspire.common.logger import logger
+from aspyre.aspire.common.logger import logger
 
 
 def view_stack(stack, numslices=16, startslice=1, nrows=4, ncols=4):
