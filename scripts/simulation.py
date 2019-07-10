@@ -5,7 +5,7 @@ from aspyre.utils.config import ConfigArgumentParser
 from aspyre.source import SourceFilter
 from aspyre.source.simulation import Simulation
 from aspyre.basis.fb_3d import FBBasis3D
-from aspyre.imaging.filters import RadialCTFFilter
+from aspyre.utils.filters import RadialCTFFilter
 from aspyre.estimation.noise import WhiteNoiseEstimator
 from aspyre.estimation.mean import MeanEstimator
 from aspyre.estimation.covar import CovarianceEstimator

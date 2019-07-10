@@ -37,6 +37,17 @@ def cart2sph(x, y, z):
     return az, el, r
 
 
+def grid_1d(n):
+    grid = np.ceil(np.arange(-n/2, n/2)) / (n/2)
+    x = np.meshgrid(grid)
+    r = x
+
+    return {
+        'x': x,
+        'r': r
+    }
+
+
 def grid_2d(n):
     grid_1d = np.ceil(np.arange(-n/2, n/2)) / (n/2)
     x, y = np.meshgrid(grid_1d, grid_1d, indexing='ij')

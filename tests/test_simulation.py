@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from aspyre.source import SourceFilter
 from aspyre.source.simulation import Simulation
-from aspyre.imaging.filters import RadialCTFFilter
+from aspyre.utils.filters import RadialCTFFilter
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

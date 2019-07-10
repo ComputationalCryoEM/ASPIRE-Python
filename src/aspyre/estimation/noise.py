@@ -3,7 +3,7 @@ import numpy as np
 
 from aspyre.utils.math import grid_2d
 from aspyre.utils.fft import centered_fft2
-from aspyre.imaging.filters import ScalarFilter, ArrayFilter
+from aspyre.utils.filters import ScalarFilter, ArrayFilter
 
 logger = logging.getLogger(__name__)
 
