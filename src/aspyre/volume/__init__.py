@@ -1,7 +1,7 @@
 import numpy as np
 
 from aspyre.utils import ensure
-from aspyre.utils.math import grid_2d
+from aspyre.utils.coor_trans import grid_2d
 from aspyre.utils.fft import centered_ifft2, centered_fft2
 from aspyre.utils.matlab_compat import m_reshape, m_flatten
 from aspyre.nfft import Plan

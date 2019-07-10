@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 
-from aspyre.utils.math import grid_2d
+from aspyre.utils.coor_trans import grid_2d
 from aspyre.utils.fft import centered_fft2
 from aspyre.utils.filters import ScalarFilter, ArrayFilter
 
