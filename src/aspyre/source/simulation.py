@@ -2,8 +2,8 @@ import numpy as np
 from scipy.linalg import qr, eigh
 
 from aspyre.source import ImageSource
-from aspyre.imaging import im_translate
-from aspyre.imaging.threed import vol_project
+from aspyre.image import im_translate
+from aspyre.volume import vol_project
 from aspyre.utils import ensure
 from aspyre.utils.matlab_compat import Random, m_reshape
 from aspyre.utils.math import grid_3d, angles_to_rots

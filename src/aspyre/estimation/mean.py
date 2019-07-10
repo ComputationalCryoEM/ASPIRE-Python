@@ -2,7 +2,7 @@ import logging
 import numpy as np
 from scipy.fftpack import fft2
 
-from aspyre.imaging.threed import rotated_grids
+from aspyre.volume import rotated_grids
 from aspyre.nfft import anufft3
 from aspyre.utils.fft import mdim_ifftshift
 from aspyre.utils.matlab_compat import m_reshape, m_flatten

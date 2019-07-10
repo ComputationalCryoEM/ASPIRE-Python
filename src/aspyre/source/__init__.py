@@ -1,9 +1,9 @@
 import logging
 import numpy as np
 
-from aspyre.imaging import im_filter, im_translate
-from aspyre.imaging.threed import im_backproject, vol_project
-from aspyre.imaging.filters import IdentityFilter, ScalarFilter
+from aspyre.image import im_filter, im_translate
+from aspyre.volume import im_backproject, vol_project
+from aspyre.utils.filters import IdentityFilter, ScalarFilter
 from aspyre.estimation.noise import WhiteNoiseEstimator
 from aspyre.utils import ensure
 from aspyre.utils.math import grid_2d
@@ -227,7 +227,7 @@ class ImageSource:
 
     def vol_forward(self, vol, start, num):
         """
-        Apply forward imaging model to volume
+        Apply forward image model to volume
         :param vol: A volume of size L-by-L-by-L.
         :param start: Start index of image to consider
         :param num: No. of images to consider

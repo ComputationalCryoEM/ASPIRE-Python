@@ -2,7 +2,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspyre.source.star import Starfile
-from aspyre.imaging.filters import ScalarFilter
+from aspyre.utils.filters import ScalarFilter
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

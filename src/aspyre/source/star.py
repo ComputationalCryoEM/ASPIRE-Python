@@ -11,10 +11,10 @@ from multiprocessing import cpu_count
 from aspyre import config
 from aspyre.source import SourceFilter
 from aspyre.source.micrograph import Micrograph
-from aspyre.imaging.filters import CTFFilter
+from aspyre.utils.filters import CTFFilter
 from aspyre.utils import ensure
 from aspyre.utils.math import angles_to_rots
-from aspyre.imaging import im_downsample
+from aspyre.image import im_downsample
 
 logger = logging.getLogger(__name__)
 

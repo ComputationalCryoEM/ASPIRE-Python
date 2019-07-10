@@ -8,7 +8,7 @@ from tqdm import tqdm
 from functools import partial
 
 from aspyre import config
-from aspyre.imaging.threed import rotated_grids
+from aspyre.volume import rotated_grids
 from aspyre.nfft import anufft3
 from aspyre.utils.fft import mdim_ifftshift
 from aspyre.utils import ensure

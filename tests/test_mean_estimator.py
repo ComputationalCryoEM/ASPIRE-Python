@@ -4,7 +4,7 @@ from unittest import TestCase
 from aspyre.source import SourceFilter
 from aspyre.source.simulation import Simulation
 from aspyre.basis.fb_3d import FBBasis3D
-from aspyre.imaging.filters import RadialCTFFilter
+from aspyre.utils.filters import RadialCTFFilter
 from aspyre.estimation.mean import MeanEstimator
 
 import os.path
