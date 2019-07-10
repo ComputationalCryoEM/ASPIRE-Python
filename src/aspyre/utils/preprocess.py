@@ -2,7 +2,7 @@ import numpy as np
 
 from scipy.interpolate import RegularGridInterpolator
 from aspyre.utils import ensure
-from aspyre.utils.math import grid_1d, grid_2d, grid_3d
+from aspyre.utils.coor_trans import grid_1d, grid_2d, grid_3d
 from aspyre.utils.fft import centered_fft1, centered_ifft1, centered_fft2, centered_ifft2, centered_fft3, centered_ifft3
 
 

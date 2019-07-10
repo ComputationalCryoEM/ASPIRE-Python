@@ -10,7 +10,7 @@ from numpy import pi, log, exp, diff
 from scipy.special import jv, lpmv
 
 from aspyre.utils import ensure
-from aspyre.utils.math import grid_2d, grid_3d
+from aspyre.utils.coor_trans import grid_2d, grid_3d
 
 
 logger = logging.getLogger(__name__)

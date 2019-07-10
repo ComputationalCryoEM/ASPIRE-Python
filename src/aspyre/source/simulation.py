@@ -6,7 +6,7 @@ from aspyre.image import im_translate
 from aspyre.volume import vol_project
 from aspyre.utils import ensure
 from aspyre.utils.matlab_compat import Random, m_reshape
-from aspyre.utils.math import grid_3d, angles_to_rots
+from aspyre.utils.coor_trans import grid_3d, angles_to_rots
 from aspyre.utils.matlab_compat import rand, randi, randn
 from aspyre.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
 

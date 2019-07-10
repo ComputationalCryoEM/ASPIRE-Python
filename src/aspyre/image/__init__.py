@@ -3,7 +3,7 @@ from scipy.fftpack import ifftshift, ifft2, fft2
 from scipy.interpolate import RegularGridInterpolator
 
 from aspyre.utils import ensure
-from aspyre.utils.math import grid_2d
+from aspyre.utils.coor_trans import grid_2d
 from aspyre.utils.fft import centered_fft2, centered_ifft2
 from aspyre.utils.matrix import roll_dim, unroll_dim
 
