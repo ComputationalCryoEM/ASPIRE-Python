@@ -1,13 +1,13 @@
 
 # Coding Guidelines
 
-This document contains the coding guidelines for the ASPIRE Python Project.
+This document contains the coding guidelines for the ASPIRE Python project.
 
 ## Coding Style
 
 In order to keep the code consistent, please read and follow [PEP 8 Style Guide for Python Code](https://www.python.org/dev/peps/pep-0008)
 and [PEP 257 Docstring Conventions](https://www.python.org/dev/peps/pep-0257/) guidelines. [This webpage](https://realpython.com/documenting-python-code/) is a good guide for documenting Python Code. 
-For automatic checking of style problems, [Pycharm] from Jet Brains (https://www.jetbrains.com/pycharm/) 
+For automatic checking of style problems, [Pycharm from Jet Brains](https://www.jetbrains.com/pycharm/) 
 is a good candidate which has the professional version for academic users with free license fee. 
 
 
