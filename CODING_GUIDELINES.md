@@ -6,7 +6,7 @@ This document contains the coding guidelines for the ASPIRE Python project.
 ## Coding Style
 
 In order to keep the code consistent, please read and follow [PEP 8 Style Guide for Python Code](https://www.python.org/dev/peps/pep-0008)
-and [PEP 257 Docstring Conventions](https://www.python.org/dev/peps/pep-0257/) guidelines. [This webpage](https://realpython.com/documenting-python-code/) is a good guide for documenting Python Code. 
+and [PEP 257 Docstring Conventions](https://www.python.org/dev/peps/pep-0257/) guidelines. [This webpage](https://realpython.com/documenting-python-code/) is a good guide for documenting Python code. 
 For automatic checking of style problems, [Pycharm from Jet Brains](https://www.jetbrains.com/pycharm/) 
 is a good candidate which has the professional version for academic users with free license fee. 
 
@@ -21,7 +21,7 @@ For beginners in scientific computing, some general guides are suggested in Greg
 
 ## Source Code Control
 
-As an open source software, we using Git and GitHub for our source code control. 
+As an open source software, we use Git and GitHub for our source code control. 
 The following links are useful tutorials. 
 1. Git tutorials from [Atalassian](https://www.atlassian.com/git/tutorials) and [Git-SCM](https://git-scm.com/docs/gittutorial)
 2. GitHub guides from [GitHub](https://guides.github.com/) 
