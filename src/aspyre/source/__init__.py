@@ -5,6 +5,7 @@ from aspyre.image import im_filter, im_translate
 from aspyre.volume import im_backproject, vol_project
 from aspyre.utils.filters import IdentityFilter, ScalarFilter
 from aspyre.estimation.noise import WhiteNoiseEstimator
+from aspyre.image import ImageStack
 from aspyre.utils import ensure
 from aspyre.utils.coor_trans import grid_2d
 from aspyre.utils.matlab_compat import m_reshape, randn, randi
@@ -114,15 +115,14 @@ class ImageSource:
         :param num: number of images to return
         :return: A 3d volume of images of size L x L x n
 
-        TODO: _images should return and instance of the Image class going forward
         """
-        raise NotImplementedError('Subclasses should implement this!')
+        raise NotImplementedError('Subclasses should implement this and return an ImageStack.')
 
     def cache(self, im=None):
         logger.info('Caching source images')
         if im is None:
             im = self.images()
-        self._im = im
+        self._im = ImageStack(im)
 
     def images(self, start=0, num=None, apply_noise=False):
         if self._im is not None:
@@ -193,7 +193,7 @@ class ImageSource:
         logger.debug("Getting all images")
         images = self.images()
         logger.debug("Applying whitening filter to all images and caching")
-        whitened_images = whiten_source_filter(images)
+        whitened_images = whiten_source_filter(images[:, :, :])
         self.cache(whitened_images)
 
         # Modify this Source's SourceFilter

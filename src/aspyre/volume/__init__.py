@@ -7,7 +7,7 @@ from aspyre.utils.matlab_compat import m_reshape, m_flatten
 from aspyre.nfft import Plan
 
 
-class Volume(np.ndarray):
+class VolumeStack:
     """
     stack of volumes
     """
@@ -21,20 +21,20 @@ class Volume(np.ndarray):
         raise NotImplementedError
 
 
-class CartesianVolume(Volume):
+class CartesianVolumeStack(VolumeStack):
     def expand(self, basis):
-        return BasisVolume(basis)
+        return BasisVolumeStack(basis)
 
 
-class BasisVolume(Volume):
+class BasisVolumeStack(VolumeStack):
     def __init__(self, basis):
         self.basis = basis
 
     def evaluate(self):
-        return CartesianVolume()
+        return CartesianVolumeStack()
 
 
-class FBBasisVolume(BasisVolume):
+class FBBasisVolumeStack(BasisVolumeStack):
     pass
 
 

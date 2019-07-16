@@ -88,3 +88,36 @@ def im_filter(im, filt, *args, **kwargs):
     im = roll_dim(im, sz_roll)
 
     return im
+
+
+class ImageStack:
+    def __init__(self, data):
+        ensure(data.ndim == 3, 'Initialize the image stack using a 3d ndarray.')
+        self._data = data
+        self.shape = self._data.shape
+
+    def __getitem__(self, item):
+        return self._data[item]
+
+    def shift(self):
+        raise NotImplementedError
+
+    def rotate(self):
+        raise NotImplementedError
+
+
+class CartesianImageStack(ImageStack):
+    def expand(self, basis):
+        return BasisImageStack(basis)
+
+
+class BasisImageStack(ImageStack):
+    def __init__(self, basis):
+        self.basis = basis
+
+    def evaluate(self):
+        return CartesianImageStack()
+
+
+class FBBasisImageStack(BasisImageStack):
+    pass

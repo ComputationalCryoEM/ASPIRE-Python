@@ -1,5 +1,5 @@
 from aspyre.utils.config import ConfigArgumentParser
-from aspyre.source.star import Starfile
+from aspyre.source.relion import RelionStarfileStack
 from aspyre.basis.fb_3d import FBBasis3D
 from aspyre.estimation.mean import MeanEstimator
 from aspyre.estimation.covar import CovarianceEstimator
@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     with parser.parse_args() as args:
 
-        source = Starfile(
+        source = RelionStarfileStack(
             args.starfile,
             pixel_size=args.pixel_size,
             ignore_missing_files=args.ignore_missing_files,
