@@ -1,9 +1,9 @@
 from unittest import TestCase
 import numpy as np
 
-from aspyre.source.relion import RelionStarfileStack
-from aspyre.image import ImageStack
-from aspyre.utils.filters import ScalarFilter
+from aspire.source.relion import RelionStarfileStack
+from aspire.image import ImageStack
+from aspire.utils.filters import ScalarFilter
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

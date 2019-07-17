@@ -1,6 +1,6 @@
 from unittest import TestCase
-from aspyre.image import ImageStack
-from aspyre.source.mrcstack import MrcStack
+from aspire.image import ImageStack
+from aspire.source.mrcstack import MrcStack
 
 import os.path
 MRCS_FILE = os.path.join(os.path.dirname(__file__), 'saved_test_data', 'mrc_files', 'stack_0500_cor_DW.mrcs')

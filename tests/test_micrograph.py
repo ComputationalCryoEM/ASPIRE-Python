@@ -1,5 +1,5 @@
 from unittest import TestCase
-from aspyre.io.micrograph import Micrograph
+from aspire.io.micrograph import Micrograph
 
 import os.path
 MRC_FILE = os.path.join(os.path.dirname(__file__), 'saved_test_data', 'mrc_files', 'falcon_2012_06_12-14_33_35_0.mrc')

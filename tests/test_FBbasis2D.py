@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from aspyre.basis.fb_2d import FBBasis2D
+from aspire.basis.fb_2d import FBBasis2D
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

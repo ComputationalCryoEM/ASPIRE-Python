@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from aspyre.basis.ffb_3d import FFBBasis3D
+from aspire.basis.ffb_3d import FFBBasis3D
 
 import os.path
 

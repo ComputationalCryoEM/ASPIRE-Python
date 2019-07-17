@@ -1,11 +1,11 @@
 import numpy as np
 from unittest import TestCase
 
-from aspyre.source import SourceFilter
-from aspyre.source.simulation import Simulation
-from aspyre.basis.fb_3d import FBBasis3D
-from aspyre.utils.filters import RadialCTFFilter
-from aspyre.estimation.mean import MeanEstimator
+from aspire.source import SourceFilter
+from aspire.source.simulation import Simulation
+from aspire.basis.fb_3d import FBBasis3D
+from aspire.utils.filters import RadialCTFFilter
+from aspire.estimation.mean import MeanEstimator
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

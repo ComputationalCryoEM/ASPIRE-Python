@@ -1,7 +1,7 @@
 from random import random
 from unittest import TestCase
 
-from aspyre.utils.em import voltage_to_wavelength, wavelength_to_voltage
+from aspire.utils.em import voltage_to_wavelength, wavelength_to_voltage
 
 
 class ImagingTestCase(TestCase):

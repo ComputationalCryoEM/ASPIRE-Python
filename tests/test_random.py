@@ -1,5 +1,5 @@
 from unittest import TestCase
-from aspyre.utils.matlab_compat import randi
+from aspire.utils.matlab_compat import randi
 
 
 class UtilsRandomTestCase(TestCase):

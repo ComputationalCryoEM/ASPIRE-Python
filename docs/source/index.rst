@@ -1,4 +1,4 @@
-Aspyre
+Aspire
 ======
 
 Algorithms for Single Particle Reconstruction

@@ -1,5 +1,5 @@
-from aspyre.apple.apple import Apple
-from aspyre.utils.config import ConfigArgumentParser
+from aspire.apple.apple import Apple
+from aspire.utils.config import ConfigArgumentParser
 
 
 if __name__ == '__main__':

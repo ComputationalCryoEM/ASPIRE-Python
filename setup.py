@@ -1,8 +1,8 @@
 from setuptools import setup, find_namespace_packages
 
 setup(
-    name='aspyre',
-    version='0.3.0',
+    name='aspire',
+    version='0.4.0',
 
     description='Algorithms for Single Particle Reconstruction',
     url='https://github.com/ComputationalCryoEM/ASPIRE-Python',
@@ -15,7 +15,7 @@ setup(
 
     package_dir={'': 'src'},
     packages=find_namespace_packages(where='src'),
-    package_data={'aspyre': ['config.ini']},
+    package_data={'aspire': ['config.ini']},
 
     zip_safe=True,
     test_suite='tests',

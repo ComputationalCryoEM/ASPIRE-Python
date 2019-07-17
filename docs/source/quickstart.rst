@@ -2,7 +2,7 @@ Getting Started
 ===============
 
 The following top-level scripts are currently available in the ``scripts`` folder to run different stages of the Cryo-EM data pipeline.
-To run these, make sure you have activated the proper conda environment for ASPyRE (see :doc:`installation` for installation instructions).
+To run these, make sure you have activated the proper conda environment for ASPIRE (see :doc:`installation` for installation instructions).
 
 1. Particle-Picking
 *******************
@@ -10,7 +10,7 @@ To run these, make sure you have activated the proper conda environment for ASPy
 The ``apple.py`` script takes in a folder of one or more ``*.mrc`` files, picks particles using the Apple-Picker algorithm described at
 :cite:`DBLP:journals/corr/abs-1802-00469`, and generates ``*.star`` files, one for each ``*.mrc`` file processed, at an output folder location.
 
-For example, to run the script on sample data included in ASPyRE (a single ``falcon_2012_06_12-14_33_35_0.mrc`` file provided from the 5.3 GB
+For example, to run the script on sample data included in ASPIRE (a single ``falcon_2012_06_12-14_33_35_0.mrc`` file provided from the 5.3 GB
 `Beta-galactosidase Falcon-II micrographs EMPIAR dataset <https://www.ebi.ac.uk/pdbe/emdb/empiar/entry/10017/>`_) and save results to a
 ``particles`` folder:
 
@@ -26,7 +26,7 @@ Use the ``--help`` argument with the script and look for the several ``config.ap
 *************
 
 The ``simulation.py`` script simulates a virtual particle made up of multiple Gaussian blobs, generates of set of (noisy) images,
-runs the ASPyRE pipeline to determine the estimated mean volume and estimated covariance on the mean volume,
+runs the ASPIRE pipeline to determine the estimated mean volume and estimated covariance on the mean volume,
 and runs evaluations on these estimated quantities (against the `true` values which we know from the simulation).
 
 ::
@@ -40,11 +40,11 @@ the resolution of the (square) images generated etc.
 3. Processing Starfiles
 ***********************
 
-The ``starfile.py`` script takes in a ``*.star`` file, processes the images (*.mrcs files) found in the starfile, and runs the ASPyRE pipeline
+The ``starfile.py`` script takes in a ``*.star`` file, processes the images (*.mrcs files) found in the starfile, and runs the ASPIRE pipeline
 to determine the estimated mean volume and estimated covariance on the mean volume. No results are saved by the script, but this script is
-a good way to exercise most parts of the ASPyRE pipeline.
+a good way to exercise most parts of the ASPIRE pipeline.
 
-For example, to run the script on sample data included in ASPyRE:
+For example, to run the script on sample data included in ASPIRE:
 
 ::
 
@@ -54,7 +54,7 @@ For example, to run the script on sample data included in ASPyRE:
 .. note::
 
     Pay special attention to the flags specified in the example above. The ``--ignore_missing_files`` flag ignores any *.mrcs files
-    referenced by the starfile but not found in the filesystem (as is the case with sample data provided in ASPyRE). The ``-L 8``
+    referenced by the starfile but not found in the filesystem (as is the case with sample data provided in ASPIRE). The ``-L 8``
     flag down-samples images to 8x8 pixels (needed otherwise you may run out of memory, and/or the script may take way too long to execute).
     The ``config.covar.cg_tol`` flag is explained below.
 
