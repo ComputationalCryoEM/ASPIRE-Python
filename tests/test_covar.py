@@ -6,15 +6,15 @@ from unittest import TestCase
 from unittest.mock import patch
 import pytest
 
-from aspyre.source import SourceFilter
-from aspyre.source.simulation import Simulation
-from aspyre.basis.fb_3d import FBBasis3D
-from aspyre.utils.filters import RadialCTFFilter
-from aspyre.estimation.mean import MeanEstimator
-from aspyre.estimation.covar import CovarianceEstimator
-from aspyre.utils.matrix import eigs
-from aspyre.utils.misc import src_wiener_coords
-from aspyre.utils.matlab_compat import Random
+from aspire.source import SourceFilter
+from aspire.source.simulation import Simulation
+from aspire.basis.fb_3d import FBBasis3D
+from aspire.utils.filters import RadialCTFFilter
+from aspire.estimation.mean import MeanEstimator
+from aspire.estimation.covar import CovarianceEstimator
+from aspire.utils.matrix import eigs
+from aspire.utils.misc import src_wiener_coords
+from aspire.utils.matlab_compat import Random
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

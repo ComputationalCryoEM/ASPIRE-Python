@@ -1,8 +1,8 @@
 from unittest import TestCase
 import numpy as np
 
-from aspyre.utils.coor_trans import grid_2d, grid_3d
-from aspyre.utils.matrix import roll_dim, unroll_dim, im_to_vec, vec_to_im, vol_to_vec, vec_to_vol, \
+from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils.matrix import roll_dim, unroll_dim, im_to_vec, vec_to_im, vol_to_vec, vec_to_vol, \
     vecmat_to_volmat, volmat_to_vecmat, mat_to_vec, symmat_to_vec_iso, vec_to_symmat, vec_to_symmat_iso
 
 import os.path

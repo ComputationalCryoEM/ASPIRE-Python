@@ -1,7 +1,7 @@
 Installation
 ============
 
-ASPyRE runs on Python 3.6, and comes with an ``environment.yml`` to reconstruct a working Conda environment to run the package.
+ASPIRE runs on Python 3.6, and comes with an ``environment.yml`` to reconstruct a working Conda environment to run the package.
 The package is tested on Linux/Windows/Mac OS X. Pre-built binaries are available for all platform-specific components. No manual
 compilation should be needed.
 
@@ -25,7 +25,7 @@ Once `conda` is installed and available on the path, create and activate the env
 
     cd /path/to/git/clone/folder
     conda env create -f environment.yml
-    conda activate aspyre
+    conda activate aspire
 
 Test the package
 ****************
@@ -42,7 +42,7 @@ Tests currently take around 5 minutes to run. If some tests fail, you may realiz
 Install the package
 *******************
 
-If the tests pass, install the ASPyRE package for the currently active Conda environment:
+If the tests pass, install the ASPIRE package for the currently active Conda environment:
 
 ::
 
@@ -50,9 +50,9 @@ If the tests pass, install the ASPyRE package for the currently active Conda env
     python setup.py install
 
 .. note::
-    Installing the package installs ASPyRE to the ``site-packages`` folder of your active environment.
-    This is only desirable if you are not going to be doing any development on ASPyRE,
-    but simply want to run scripts that depend on the ASPyRE package.
+    Installing the package installs ASPIRE to the ``site-packages`` folder of your active environment.
+    This is only desirable if you are not going to be doing any development on ASPIRE,
+    but simply want to run scripts that depend on the ASPIRE package.
 
 Generating Documentation
 ************************

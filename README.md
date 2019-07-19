@@ -14,17 +14,17 @@ Algorithms for Single Particle Reconstruction
 
 ### Linux/Mac OS X/Windows
 
-The simplest option is to use Anaconda 64-bit for your platform, and use the provided `environment.yml` file to build a Conda environment to run ASPyRE.
+The simplest option is to use Anaconda 64-bit for your platform, and use the provided `environment.yml` file to build a Conda environment to run ASPIRE.
 
 ```
 cd /path/to/git/clone/folder
 conda env create -f environment.yml
-conda activate aspyre
+conda activate aspire
 ```
 
 ## Make sure everything works
 
-Once ASPyRE is installed, make sure the unit tests run correctly on your platform by doing:
+Once ASPIRE is installed, make sure the unit tests run correctly on your platform by doing:
 ```
 cd /path/to/git/clone/folder
 python setup.py test
@@ -40,7 +40,7 @@ This provides a cleaner output to analyze.
 
 ## Install
 
-If the tests pass, install the ASPyRE package for the currently active Conda environment:
+If the tests pass, install the ASPIRE package for the currently active Conda environment:
 ```
 cd /path/to/git/clone/folder
 python setup.py install
@@ -48,7 +48,7 @@ python setup.py install
 
 ## Development Guidelines
 
-ASPyRE follows [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
+ASPIRE follows [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
 Please submit any PRs against the `develop` branch.
 
 ![Gitflow Diagram](https://wac-cdn.atlassian.com/dam/jcr:61ccc620-5249-4338-be66-94d563f2843c/05%20(2).svg?cdnVersion=357)

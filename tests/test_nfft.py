@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase, skipUnless
 
-from aspyre.nfft import Plan, backend_available
+from aspire.nfft import Plan, backend_available
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

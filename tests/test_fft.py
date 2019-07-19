@@ -1,6 +1,6 @@
 from unittest import TestCase
 import numpy as np
-from aspyre.utils.numeric import xp
+from aspire.utils.numeric import xp
 
 
 class ConfigTest(TestCase):

@@ -1,6 +1,6 @@
 import numpy as np
 from unittest import TestCase
-from aspyre.estimation.kernel import FourierKernel
+from aspire.estimation.kernel import FourierKernel
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

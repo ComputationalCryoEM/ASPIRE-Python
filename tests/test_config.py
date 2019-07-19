@@ -1,5 +1,5 @@
 from unittest import TestCase
-from aspyre.utils.config import Config, ConfigArgumentParser
+from aspire.utils.config import Config, ConfigArgumentParser
 
 
 class ConfigTest(TestCase):
@@ -32,12 +32,12 @@ class ConfigTest(TestCase):
         # A ConfigArgumentParser can be instantiated from a Config object
         # which provides an override mechanism for the Config object through a context manager
 
-        # If the 'config' kwarg is unspecified in the constructor, the 'config' object in the aspyre package
+        # If the 'config' kwarg is unspecified in the constructor, the 'config' object in the aspire package
         # is (temporarily) overridden.
-        # This allows scripts to support all options that are found in the aspyre 'config' object
+        # This allows scripts to support all options that are found in the aspire 'config' object
 
         # Here we test our custom 'self.config' object since we can't make any guarantees about keys present in
-        # the aspyre config object
+        # the aspire config object
         parser = ConfigArgumentParser(config=self.config)
 
         # 'zero' has the expected value here

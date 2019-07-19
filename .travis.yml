@@ -32,7 +32,7 @@ install:
   - CFLAGS=-I$CONDA_ENV_LOC/include LDFLAGS=-L$CONDA_ENV_LOC/lib pip install git+https://github.com/vineetbansal/pyNFFT.git
   - python setup.py install
   
-script: py.test --cov=aspyre tests
+script: py.test --cov=aspire tests
 
 after_success:
   - coveralls

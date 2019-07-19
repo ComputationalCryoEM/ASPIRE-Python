@@ -1,5 +1,5 @@
 from unittest import TestCase
-from aspyre.apple.apple import Apple
+from aspire.apple.apple import Apple
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data', 'mrc_files')
