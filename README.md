@@ -25,7 +25,7 @@ pip install aspire
 
 The final step above should install any dependent packages from `pip` automatically.
 
-Note that this step installs the base `aspire` package for you to work with, but not the unit tests/scripts/documentation. If you need to replicate and environment for ASPIRE development purposes, read on.
+Note that this step installs the base `aspire` package for you to work with, but not the unit tests/scripts/documentation. If you need to install ASPIRE for development purposes, read on.
 
 For developers
 --------------
@@ -46,7 +46,7 @@ cd /path/to/git/clone/folder
 python setup.py test
 ```
 
-Tests currently take around 5 minutes to run. If some tests fail, you may realize that `python setup.py test` produces too much information.
+Tests currently take around 2 minutes to run. If some tests fail, you may realize that `python setup.py test` produces too much information.
 You may want to re-run tests using:
 ```
 cd /path/to/git/clone/folder
