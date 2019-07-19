@@ -2,7 +2,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name='aspire',
-    version='0.4.0',
+    version='0.5.1',
 
     description='Algorithms for Single Particle Reconstruction',
     url='https://github.com/ComputationalCryoEM/ASPIRE-Python',
@@ -10,7 +10,20 @@ setup(
     author_email='devs.aspire@gmail.com',
 
     install_requires=[
-        'importlib_resources>=1.0.2'
+        'importlib_resources>=1.0.2',
+        'mrcfile',
+        'python-box',
+        'finufftpy',
+        'console_progressbar',
+        'pyfftw',
+        'click',
+        'matplotlib',
+        'numpy',
+        'pandas>=0.23.4',
+        'scipy==0.19.1',
+        'tqdm',
+        'scikit-learn',
+        'scikit-image'
     ],
 
     package_dir={'': 'src'},
