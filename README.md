@@ -12,9 +12,25 @@ Algorithms for Single Particle Reconstruction
 
 ## Installation Instructions
 
-### Linux/Mac OS X/Windows
+For end-users
+-------------
 
-The simplest option is to use Anaconda 64-bit for your platform, and use the provided `environment.yml` file to build a Conda environment to run ASPIRE.
+ASPIRE is a pip-installable package that works on Linux/Mac/Windows, and requires Python 3.6. The simplest option is to use Anaconda 64-bit for your platform with a minimum of Python 3.6 and pip, and then use `pip` to install `aspire` in that environment.
+
+```
+conda create -n aspire_env python=3.6 pip
+conda activate aspire_env
+pip install aspire
+```
+
+The final step above should install any dependent packages from `pip` automatically.
+
+Note that this step installs the base `aspire` package for you to work with, but not the unit tests/scripts/documentation. If you need to replicate and environment for ASPIRE development purposes, read on.
+
+For developers
+--------------
+
+After cloning this repo, the simplest option is to use Anaconda 64-bit for your platform, and use the provided `environment.yml` file to build a Conda environment to run ASPIRE.
 
 ```
 cd /path/to/git/clone/folder
@@ -22,7 +38,7 @@ conda env create -f environment.yml
 conda activate aspire
 ```
 
-## Make sure everything works
+### Make sure everything works
 
 Once ASPIRE is installed, make sure the unit tests run correctly on your platform by doing:
 ```
@@ -38,17 +54,10 @@ PYTHONPATH=./src pytest tests
 ```
 This provides a cleaner output to analyze.
 
-## Install
+### Install
 
 If the tests pass, install the ASPIRE package for the currently active Conda environment:
 ```
 cd /path/to/git/clone/folder
 python setup.py install
 ```
-
-## Development Guidelines
-
-ASPIRE follows [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
-Please submit any PRs against the `develop` branch.
-
-![Gitflow Diagram](https://wac-cdn.atlassian.com/dam/jcr:61ccc620-5249-4338-be66-94d563f2843c/05%20(2).svg?cdnVersion=357)
