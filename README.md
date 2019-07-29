@@ -6,9 +6,20 @@
 [![Coverage Status](https://coveralls.io/repos/github/ComputationalCryoEM/ASPIRE-Python/badge.svg?branch=master)](https://coveralls.io/github/ComputationalCryoEM/ASPIRE-Python?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/aspire/badge/?version=latest)](https://aspire.readthedocs.io/en/latest/?badge=latest)
 
-# ASPIRE
+# ASPIRE - Algorithms for Single Particle Reconstruction
 
-Algorithms for Single Particle Reconstruction
+This is the Python version to substitute the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire) 
+which was initiated as a private repository in 2013 and opened to public in 2019. 
+
+Our project aims to develop mathematical theory, improved algorithms, and 
+open source software for 3-D molecular structure determination using cryo-EM. 
+Our methods use a combination of tools from different areas of mathematics, 
+statistics, and computer science, such as computerized tomography, 
+optimization (convex and non-convex), random matrix theory, 
+signal and image processing, linear and nonlinear dimension reduction, 
+randomized algorithms in numerical linear algebra, and representation theory.
+
+
 
 ## Installation Instructions
 
