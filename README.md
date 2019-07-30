@@ -8,8 +8,7 @@
 
 # ASPIRE - Algorithms for Single Particle Reconstruction
 
-This is the Python version to substitute the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire) 
-which was initiated as a private repository in 2013 and opened to public in 2019. 
+This is the Python version to supersede the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire). 
 
 Our project aims to develop mathematical theory, improved algorithms, and 
 open source software for 3-D molecular structure determination using cryo-EM. 
