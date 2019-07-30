@@ -1,10 +1,17 @@
+import os
 from setuptools import setup, find_namespace_packages
 
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+	
 setup(
     name='aspire',
-    version='0.5.1',
+    version='0.5.3',
 
     description='Algorithms for Single Particle Reconstruction',
+    long_description=read('README.md'),
+    long_description_content_type='text/markdown',	
+    license="GPLv3",
     url='https://github.com/ComputationalCryoEM/ASPIRE-Python',
     author='Joakim Anden, Yoel Shkolnisky, Itay Sason, Robbie Brook, Vineet Bansal, Junchao Xia',
     author_email='devs.aspire@gmail.com',
@@ -32,4 +39,10 @@ setup(
 
     zip_safe=True,
     test_suite='tests',
+	
+    classifiers = [
+        "Development Status :: 3 - Alpha",
+        "Programming Language :: Python",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    ]
 )
