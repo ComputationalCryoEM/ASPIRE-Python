@@ -6,9 +6,15 @@
 [![Coverage Status](https://coveralls.io/repos/github/ComputationalCryoEM/ASPIRE-Python/badge.svg?branch=master)](https://coveralls.io/github/ComputationalCryoEM/ASPIRE-Python?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/aspire/badge/?version=latest)](https://aspire.readthedocs.io/en/latest/?badge=latest)
 
-# ASPIRE
+# ASPIRE - Algorithms for Single Particle Reconstruction
 
-Algorithms for Single Particle Reconstruction
+This is the Python version to supersede the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire). 
+
+ASPIRE is an open-source software package for processing single-particle cryo-EM data to determine three-dimensional structures of biological macromolecules. The package includes advanced algorithms based on rigorous mathematics and recent developments in
+statistics and machine learning. It provides unique and improved solutions to important computational challenges of the cryo-EM
+processing pipeline, including 3-D *ab-initio* modeling, 2-D class averaging, automatic particle picking, and 3-D heterogeneity analysis.
+
+
 
 ## Installation Instructions
 
