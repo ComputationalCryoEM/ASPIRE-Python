@@ -10,13 +10,9 @@
 
 This is the Python version to supersede the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire). 
 
-Our project aims to develop mathematical theory, improved algorithms, and 
-open source software for 3-D molecular structure determination using cryo-EM. 
-Our methods use a combination of tools from different areas of mathematics, 
-statistics, and computer science, such as computerized tomography, 
-optimization (convex and non-convex), random matrix theory, 
-signal and image processing, linear and nonlinear dimension reduction, 
-randomized algorithms in numerical linear algebra, and representation theory.
+ASPIRE is an open-source software package for processing single-particle cryo-EM data to determine three-dimensional structures of biological macromolecules. The package includes advanced algorithms based on rigorous mathematics and recent developments in
+statistics and machine learning. It provides unique and improved solutions to important computational challenges of the cryo-EM
+processing pipeline, including 3-D ab-initio modeling, 2-D class averaging, automatic particle picking, and 3-D heterogeneity analysis.
 
 
 
