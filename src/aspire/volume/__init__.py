@@ -7,7 +7,7 @@ from aspire.utils.matlab_compat import m_reshape, m_flatten
 from aspire.nfft import Plan
 
 
-class VolumeStack:
+class Volume:
     """
     stack of volumes
     """
@@ -21,20 +21,20 @@ class VolumeStack:
         raise NotImplementedError
 
 
-class CartesianVolumeStack(VolumeStack):
+class CartesianVolume(Volume):
     def expand(self, basis):
-        return BasisVolumeStack(basis)
+        return BasisVolume(basis)
 
 
-class BasisVolumeStack(VolumeStack):
+class BasisVolume(Volume):
     def __init__(self, basis):
         self.basis = basis
 
     def evaluate(self):
-        return CartesianVolumeStack()
+        return CartesianVolume()
 
 
-class FBBasisVolumeStack(BasisVolumeStack):
+class FBBasisVolume(BasisVolume):
     pass
 
 

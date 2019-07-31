@@ -5,7 +5,7 @@ from aspire.image import im_filter, im_translate
 from aspire.volume import im_backproject, vol_project
 from aspire.utils.filters import IdentityFilter, ScalarFilter
 from aspire.estimation.noise import WhiteNoiseEstimator
-from aspire.image import ImageStack
+from aspire.image import Image
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matlab_compat import m_reshape, randn, randi
@@ -122,7 +122,7 @@ class ImageSource:
         logger.info('Caching source images')
         if im is None:
             im = self.images()
-        self._im = ImageStack(im)
+        self._im = Image(im)
 
     def images(self, start=0, num=None, apply_noise=False):
         if self._im is not None:

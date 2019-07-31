@@ -2,7 +2,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.source.relion import RelionStarfileStack
-from aspire.image import ImageStack
+from aspire.image import Image
 from aspire.utils.filters import ScalarFilter
 
 import os.path
@@ -19,7 +19,7 @@ class StarfileTestCase(TestCase):
     def testImageStackType(self):
         # Since src is an ImageSource, we can call images() on it to get an ImageStack
         image_stack = self.src.images()
-        self.assertIsInstance(image_stack, ImageStack)
+        self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
         # Note that the test folder only includes a single .mrcs file for the first 17 images

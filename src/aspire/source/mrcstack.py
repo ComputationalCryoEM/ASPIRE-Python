@@ -1,5 +1,5 @@
 from aspire.io.micrograph import Micrograph
-from aspire.image import ImageStack
+from aspire.image import Image
 from aspire.source import ImageSource
 
 
@@ -17,4 +17,4 @@ class MrcStack(ImageSource):
         if num is not None:
             end = min(start + num, self.n)
         x = self.im[:, :, start:end]
-        return ImageStack(x)
+        return Image(x)
