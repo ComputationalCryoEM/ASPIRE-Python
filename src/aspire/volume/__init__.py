@@ -26,6 +26,16 @@ class CartesianVolume(Volume):
         return BasisVolume(basis)
 
 
+class PolarVolume(Volume):
+    def expand(self, basis):
+        return BasisVolume(basis)
+
+
+class BispecVolume(Volume):
+    def expand(self, basis):
+        return BasisVolume(basis)
+
+
 class BasisVolume(Volume):
     def __init__(self, basis):
         self.basis = basis
