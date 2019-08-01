@@ -90,7 +90,7 @@ def im_filter(im, filt, *args, **kwargs):
     return im
 
 
-class ImageStack:
+class Image:
     def __init__(self, data):
         ensure(data.ndim == 3, 'Initialize the image stack using a 3d ndarray.')
         self._data = data
@@ -106,18 +106,28 @@ class ImageStack:
         raise NotImplementedError
 
 
-class CartesianImageStack(ImageStack):
+class CartesianImage(Image):
     def expand(self, basis):
-        return BasisImageStack(basis)
+        return BasisImage(basis)
 
 
-class BasisImageStack(ImageStack):
+class PolarImage(Image):
+    def expand(self, basis):
+        return BasisImage(basis)
+
+
+class BispecImage(Image):
+    def expand(self, basis):
+        return BasisImage(basis)
+
+
+class BasisImage(Image):
     def __init__(self, basis):
         self.basis = basis
 
     def evaluate(self):
-        return CartesianImageStack()
+        return CartesianImage()
 
 
-class FBBasisImageStack(BasisImageStack):
+class FBBasisImage(BasisImage):
     pass
