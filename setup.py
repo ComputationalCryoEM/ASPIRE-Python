@@ -1,12 +1,14 @@
 import os
 from setuptools import setup, find_namespace_packages
 
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
-	
+
+
 setup(
     name='aspire',
-    version='0.5.4',
+    version='0.5.5',
 
     description='Algorithms for Single Particle Reconstruction',
     long_description=read('README.md'),
@@ -35,11 +37,11 @@ setup(
 
     package_dir={'': 'src'},
     packages=find_namespace_packages(where='src'),
-    package_data={'aspire': ['config.ini']},
+    package_data={'aspire': ['config.ini'], 'aspire.data': ['*.*']},
 
-    zip_safe=True,
+    zip_safe=False,
     test_suite='tests',
-	
+
     classifiers = [
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python",

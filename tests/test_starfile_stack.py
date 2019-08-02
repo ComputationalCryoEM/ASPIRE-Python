@@ -1,6 +1,7 @@
 from unittest import TestCase
 import numpy as np
-
+import importlib_resources
+import aspire.data
 from aspire.source.relion import RelionStarfileStack
 from aspire.image import Image
 from aspire.utils.filters import ScalarFilter
@@ -10,8 +11,20 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
 class StarfileTestCase(TestCase):
+    def run(self, result=None):
+        """Overridden run method to use context manager provided by importlib_resources"""
+        with importlib_resources.path(aspire.data, 'sample.star') as path:
+
+            # TODO: This test only works because the mrcs files referenced by the starfile are actually
+            # found at the same location as the starfile (due to zip_safe=False in setup.py)
+            # A more advanced approach with mock/patch is needed for this to work in a general case.
+            # Once this test is fixed, zip_safe can be set to True in setup.py
+
+            self.src = RelionStarfileStack(path, ignore_missing_files=True)
+            super(StarfileTestCase, self).run(result)
+
     def setUp(self):
-        self.src = RelionStarfileStack(os.path.join(DATA_DIR, 'starfile.star'), ignore_missing_files=True)
+        pass
 
     def tearDown(self):
         pass
@@ -22,7 +35,7 @@ class StarfileTestCase(TestCase):
         self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
-        # Note that the test folder only includes a single .mrcs file for the first 17 images
+        # Note that sample data only includes a single .mrcs file for the first 17 images
         # Load 10 images starting at index 0
         images = self.src.images(0, 10)
         self.assertEqual(images.shape, (200, 200, 10))

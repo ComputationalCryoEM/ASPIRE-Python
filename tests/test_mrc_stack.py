@@ -1,25 +1,28 @@
 from unittest import TestCase
+import importlib_resources
+import aspire.data
 from aspire.image import Image
 from aspire.source.mrcstack import MrcStack
-
-import os.path
-MRCS_FILE = os.path.join(os.path.dirname(__file__), 'saved_test_data', 'mrc_files', 'stack_0500_cor_DW.mrcs')
 
 
 class MicrographTestCase(TestCase):
     def setUp(self):
-        self.mrc_stack = MrcStack(MRCS_FILE)
+        pass
 
     def tearDown(self):
         pass
 
     def testImageStackType(self):
-        # Since mrc_stack is an ImageSource, we can call images() on it to get an ImageStack
-        image_stack = self.mrc_stack.images()
-        self.assertIsInstance(image_stack, Image)
+        with importlib_resources.path(aspire.data, 'sample.mrcs') as path:
+            mrc_stack = MrcStack(path)
+            # Since mrc_stack is an ImageSource, we can call images() on it to get an ImageStack
+            image_stack = mrc_stack.images()
+            self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
-        # Try to get a total of 10 images from our ImageSource
-        image_stack = self.mrc_stack.images(num=10)
-        # The shape of the resulting ImageStack is 200 (height) x 200 (width) x 10 (n_images)
-        self.assertEqual(image_stack.shape, (200, 200, 10))
+        with importlib_resources.path(aspire.data, 'sample.mrcs') as path:
+            mrc_stack = MrcStack(path)
+            # Try to get a total of 5 images from our ImageSource
+            image_stack = mrc_stack.images(num=5)
+            # The shape of the resulting ImageStack is 200 (height) x 200 (width) x 5 (n_images)
+            self.assertEqual(image_stack.shape, (200, 200, 5))

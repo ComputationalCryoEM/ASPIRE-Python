@@ -98,6 +98,9 @@ class StarfileStack(ImageSource):
 
         n = len(self.df)
 
+        if n == 0:
+            raise RuntimeError('No mrcs files found for starfile!')
+
         # Peek into the first image and populate some attributes
         first_mrc_filepath = self.df.iloc[0]._mrc_filepath
         mrc = mrcfile.open(first_mrc_filepath)

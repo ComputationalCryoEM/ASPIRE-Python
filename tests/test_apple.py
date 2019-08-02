@@ -1,8 +1,7 @@
 from unittest import TestCase
+import importlib_resources
+import aspire.data
 from aspire.apple.apple import Apple
-
-import os.path
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data', 'mrc_files')
 
 
 class ApplePickerTestCase(TestCase):
@@ -82,13 +81,14 @@ class ApplePickerTestCase(TestCase):
 
         apple_picker = Apple()
 
-        centers_found = apple_picker.process_micrograph(os.path.join(DATA_DIR, 'falcon_2012_06_12-14_33_35_0.mrc'))
-        for center_found in centers_found:
-            _x, _y = tuple(center_found)
-            if (_x, _y) not in centers:
-                self.fail('({}, {}) not an expected center.'.format(_x, _y))
-            else:
-                centers.remove((_x, _y))
+        with importlib_resources.path(aspire.data, 'sample.mrc') as mrc_path:
+            centers_found = apple_picker.process_micrograph(mrc_path)
+            for center_found in centers_found:
+                _x, _y = tuple(center_found)
+                if (_x, _y) not in centers:
+                    self.fail('({}, {}) not an expected center.'.format(_x, _y))
+                else:
+                    centers.remove((_x, _y))
 
-        if centers:
-            self.fail('Not all expected centers were found!')
+            if centers:
+                self.fail('Not all expected centers were found!')

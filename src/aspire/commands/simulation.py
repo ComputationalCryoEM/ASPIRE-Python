@@ -13,7 +13,6 @@ from aspire.estimation.covar import CovarianceEstimator
 from aspire.utils.matlab_compat import Random
 from aspire.utils.matrix import eigs
 from aspire.utils.misc import src_wiener_coords
-from aspire.aspire.utils.helpers import yellow, requires_binaries, set_output_name, red
 
 
 logger = logging.getLogger('aspire')
@@ -24,7 +23,6 @@ logger = logging.getLogger('aspire')
 @click.option('--image_size', default=8, type=int, help='Image size in pixels')
 @click.option('--num_images', default=1024, type=int, help='No. of images')
 @click.option('--num_eigs', default=16, type=int, help='Number of EigenVectors to estimate')
-@requires_binaries('bessel.npy')
 def simulation(num_volumes, image_size, num_images, num_eigs):
     """Generate a Simulation and run Covariance estimation."""
 
