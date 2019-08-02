@@ -19,14 +19,14 @@ Currently, the following operations can be run with ASPIRE:
 The ``apple`` command takes in a folder of one or more ``*.mrc`` files, picks particles using the Apple-Picker algorithm described at
 :cite:`DBLP:journals/corr/abs-1802-00469`, and generates ``*.star`` files, one for each ``*.mrc`` file processed, at an output folder location.
 
-For example, to run the command on sample data included in ASPIRE (a single ``falcon_2012_06_12-14_33_35_0.mrc`` file provided from the 5.3 GB
+For example, to run the command on sample data included in ASPIRE (a single ``sample.mrc`` file provided from the 5.3 GB
 `Beta-galactosidase Falcon-II micrographs EMPIAR dataset <https://www.ebi.ac.uk/pdbe/emdb/empiar/entry/10017/>`_) and save results to a
 ``particles`` folder:
 
 .. code-block:: console
 
     mkdir apple_output
-    python -m aspire apple --mrc_file ../tests/saved_test_data/mrc_files/falcon_2012_06_12-14_33_35_0.mrc --output_dir particles
+    python -m aspire apple --mrc_file /path/to/aspire/data/sample.mrc --output_dir particles
 
 Use the ``--help`` argument with the command to see the several options associated with this command.
 
@@ -51,11 +51,11 @@ The ``cov3d`` command takes in a ``*.star`` file, processes the images (``*.mrcs
 to determine the estimated mean volume and estimated covariance on the mean volume. No results are saved currently, but this command is
 a good way to exercise most parts of the ASPIRE pipeline.
 
-For example, to run the command on sample data included in ASPIRE:
+For example, to run the command on a sample data included in ASPIRE:
 
 .. code-block:: console
 
-    python -m aspire cov3d --starfile ../tests/saved_test_data/starfile.star --ignore_missing_files --pixel_size 1.338 --max_resolution 8 --cg_tol 0.2
+    python -m aspire cov3d --starfile /path/to/aspire/data/sample.star --ignore_missing_files --pixel_size 1.338 --max_resolution 8 --cg_tol 0.2
 
 .. note::
 
@@ -88,7 +88,7 @@ Arguments, options and flags
    For example, when running 'compare' command, you must provide 2 MRC files to compare.
 
 - **Options** are, like their name suggests, optional inputs.
-   For example, ``aspire.py`` accepts option '*-v 2*' for setting verbosity level to 2.
+   For example, ``aspire`` accepts option '*-v 2*' for setting verbosity level to 2.
    All options have a default value set for them.
 
 - **Flags** are optional values which tells Aspire to activate/deactivate certain behaviour.
@@ -105,7 +105,7 @@ provide another layer of arguments, options and flags. For example, in case of `
 
 .. code-block:: console
 
-   $ python aspire.py -v 2 --debug compare  a.mrc  b.mrc --max-error=0.123
+   $ python -m aspire -v 2 --debug compare  a.mrc  b.mrc --max-error=0.123
 
 
 .. bibliography:: references.bib

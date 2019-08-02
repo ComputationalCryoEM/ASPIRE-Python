@@ -2,6 +2,7 @@ import os
 import pyfftw
 import mrcfile
 import finufftpy
+import importlib_resources
 
 import scipy.special as sp
 import numpy as np
@@ -13,6 +14,7 @@ from console_progressbar import ProgressBar
 
 from numpy.polynomial.legendre import leggauss
 
+import aspire.data
 from aspire.aspire.common.config import ClassAveragesConfig
 from aspire.aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec, load_stack_from_file, c_to_fortran
 from aspire.aspire.utils.array_utils import estimate_snr, image_grid, cfft2, icfft2
@@ -600,7 +602,8 @@ def lgwt(n, a, b):
 
 
 def bessel_ns_radial(bandlimit, support_size, x):
-    bessel = np.load(ClassAveragesConfig.bessel_file)
+    with importlib_resources.path(aspire.data, ClassAveragesConfig.bessel_file) as bessel_file:
+        bessel = np.load(bessel_file)
     bessel = bessel[bessel[:, 3] <= 2 * np.pi * bandlimit * support_size, :]
     angular_freqs = bessel[:, 0]
     max_ang_freq = int(np.max(angular_freqs))
@@ -827,7 +830,8 @@ def ift_fb(support_size, bandlimit):
     theta = theta[inside_circle]
     r = r[inside_circle]
 
-    bessel = np.load(ClassAveragesConfig.bessel_file)
+    with importlib_resources.path(aspire.data, ClassAveragesConfig.bessel_file) as bessel_file:
+        bessel = np.load(bessel_file)
     bessel = bessel[bessel[:, 3] <= 2 * np.pi * bandlimit * support_size, :]
     k_max = int(np.max(bessel[:, 0]))
     fn = []

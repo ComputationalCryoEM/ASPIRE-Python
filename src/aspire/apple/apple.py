@@ -82,7 +82,6 @@ class Apple:
 
     def process_micrograph(self, filepath, return_centers=True, return_img=False, show_progress=True, create_jpg=False):
         ensure(not all([return_centers, return_img]), "Cannot specify both return_centers and return_img")
-        ensure(filepath.endswith('.mrc'), f"Input file doesn't seem to be in MRC format! ({filepath})")
 
         picker = Picker(self.particle_size, self.max_particle_size, self.min_particle_size, self.query_image_size,
                         self.tau1, self.tau2, self.minimum_overlap_amount, self.container_size, filepath,

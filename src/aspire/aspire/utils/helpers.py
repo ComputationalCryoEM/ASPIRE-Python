@@ -2,7 +2,9 @@ import functools
 import os
 import sys
 from logging import warning
+from importlib_resources import is_resource
 
+import aspire.data
 from aspire.aspire.common.exceptions import DimensionsIncompatible
 from aspire.aspire.common.logger import logger
 
@@ -84,15 +86,12 @@ def requires_binaries(*filenames):
 
         missing_binaries = set()
         for fn in filenames:
-            if not os.path.exists(f'./binaries/{fn}'):
+            if not is_resource(aspire.data, f'{fn}'):
                 missing_binaries.add(fn)
 
         if missing_binaries:
             for fn in missing_binaries:
                 logger.error(f"Binary file {yellow(fn)} is required!")
-
-            logger.error(f"Please run \'{yellow('make data')}\' and try again.")
-            sys.exit(1)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

@@ -49,7 +49,7 @@ class Micrograph:
         ]
 
         if self.square:
-            side_length = min(im.shape)
+            side_length = min(im.shape[0], im.shape[1])
             im = im[:side_length, :side_length]
 
         if self.shrink_factor is not None:
