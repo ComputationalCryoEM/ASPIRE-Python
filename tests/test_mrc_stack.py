@@ -1,5 +1,5 @@
 from unittest import TestCase
-from aspire.image import ImageStack
+from aspire.image import Image
 from aspire.source.mrcstack import MrcStack
 
 import os.path
@@ -16,7 +16,7 @@ class MicrographTestCase(TestCase):
     def testImageStackType(self):
         # Since mrc_stack is an ImageSource, we can call images() on it to get an ImageStack
         image_stack = self.mrc_stack.images()
-        self.assertIsInstance(image_stack, ImageStack)
+        self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
         # Try to get a total of 10 images from our ImageSource

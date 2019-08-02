@@ -1,16 +1,9 @@
-#!/usr/bin/env python3
-import logging
 import os
 import sys
 import click
 import mrcfile
 import numpy as np
 
-try:
-    import finufftpy
-except ImportError:
-    print(f"Can't import finufftpy! Please run 'make finufftpy' and try again.")
-    sys.exit(2)
 
 from aspire.aspire.abinitio import Abinitio
 from aspire.aspire.common.logger import logger
@@ -23,32 +16,11 @@ from aspire.aspire.utils.helpers import yellow, requires_binaries, set_output_na
 from aspire.aspire.utils.viewstack import view_stack
 
 
+# TODO: Setting the random seed for numpy should be made a globally available option for all commands.
 np.random.seed(1137)
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-@click.group(chain=False, context_settings=CONTEXT_SETTINGS)
-@click.option('--debug/--no-debug', default=False, help="Default is --no-debug.")
-@click.option('-v', '--verbosity', default=0, help='Verbosity level (0-3).')
-def simple_cli(debug, verbosity):
-    """\b
-        \033[1;33m ASPIRE-Python \033[0m
-        \b
-        ASPIRE tool accepts one command at a time, executes it and terminates.
-        \b
-        To view the help message of a command, simply type:
-        $ python aspire.py <cmd> -h
-
-        \b
-        To view the full docs, please visit
-        https://aspire-python.readthedocs.io
-    """
-    AspireConfig.verbosity = verbosity
-    if debug:
-        logger.setLevel(logging.DEBUG)
-
-
-@simple_cli.command('abinitio', short_help='Abinitio algorithm')
+@click.command('abinitio', short_help='Abinitio algorithm')
 @click.argument('stack_file', type=click.Path(exists=True))
 @click.option('-o', '--output', help='output file name')
 def abinitio_cmd(stack_file, output):
@@ -80,7 +52,7 @@ def abinitio_cmd(stack_file, output):
     logger.info(f"saved to {yellow(output)}.")
 
 
-@simple_cli.command('classify', short_help='Classification-Averaging algorithm')
+@click.command('classify', short_help='Classification-Averaging algorithm')
 @click.argument('stack_file', type=click.Path(exists=True))
 @click.option('-o', '--output', type=click.Path(exists=False),
               help='output file name')
@@ -130,7 +102,7 @@ def classify_cmd(stack_file, output, avg_nn, classification_nn):
     logger.info(f"saved to {yellow(subset_output_name)}.")
 
 
-@simple_cli.command('compare', short_help='Compare 2 stack files')
+@click.command('compare', short_help='Compare 2 stack files')
 @click.argument('stack_file_1', type=click.Path(exists=True))
 @click.argument('stack_file_2', type=click.Path(exists=True))
 @click.option('--max-error', default=None, type=float,
@@ -150,7 +122,7 @@ def compare_cmd(stack_file_1, stack_file_2, max_error):
     logger.info(f"relative err: {relative_err}")
 
 
-@simple_cli.command('crop', short_help='Crop/Pad projections in stack')
+@click.command('crop', short_help='Crop/Pad projections in stack')
 @click.argument('stack_file', type=click.Path(exists=True))
 @click.argument('size', type=int)
 @click.option('--fill-value', type=float, default=PreProcessorConfig.crop_stack_fill_value)
@@ -169,7 +141,7 @@ def crop_cmd(stack_file, size, output, fill_value):
     PreProcessor.crop_stack_file(stack_file, size, output_stack_file=output, fill_value=fill_value)
 
 
-@simple_cli.command('inspect', short_help='Show stack size/type')
+@click.command('inspect', short_help='Show stack size/type')
 @click.argument('stack_file', type=click.Path(exists=True))
 def inspect_cmd(stack_file):
     """ \b
@@ -187,7 +159,7 @@ def inspect_cmd(stack_file):
                 f"\nContiguous type: {contiguous}")
 
 
-@simple_cli.command('global_phaseflip', short_help='Global-phaseflip stack file')
+@click.command('global_phaseflip', short_help='Global-phaseflip stack file')
 @click.option('-o', '--output',
               help="output mrc file name (default adds '_g-pf' to input name)")
 @click.argument('stack_file', type=click.Path(exists=True))
@@ -202,7 +174,7 @@ def global_phaseflip_cmd(stack_file, output):
     PreProcessor.global_phaseflip_stack_file(stack_file, output_stack_file=output)
 
 
-@simple_cli.command('phaseflip', short_help='Read STAR and created unified phaseflipped stack')
+@click.command('phaseflip', short_help='Read STAR and created unified phaseflipped stack')
 @click.option('-o', '--output', help=("output mrc file name (default "
                                       "adds '_phaseflipped' to input name)"))
 @click.argument('star_file', type=click.Path(exists=True))
@@ -247,7 +219,7 @@ def star_phaseflip_cmd(star_file, output=None):
     logger.info(f"saved {yellow(output)}.")
 
 
-@simple_cli.command('prewhitten', short_help='Prewhitten projections in stack')
+@click.command('prewhitten', short_help='Prewhitten projections in stack')
 @click.option('-o', '--output', help=("output mrc file name (default "
                                       "adds '_prewhitten' to input name)"))
 @click.argument('stack_file', type=click.Path(exists=True))
@@ -279,7 +251,7 @@ def star_phaseflip_cmd(stack_file, output=None):
     logger.info(f"saved to {yellow(output)}.")
 
 
-@simple_cli.command('normalize', short_help='Normalize background')
+@click.command('normalize', short_help='Normalize background')
 @click.option('-o', '--output', help=("output mrc file name (default "
                                       "adds '_normalized' to input name)"))
 @click.argument('stack_file', type=click.Path(exists=True))
@@ -315,7 +287,7 @@ def normalize_cmd(stack_file, output=None):
     logger.info(f"saved to {yellow(output)}.")
 
 
-@simple_cli.command('downsample', short_help='Downsample projections in stack')
+@click.command('downsample', short_help='Downsample projections in stack')
 @click.argument('stack_file', type=click.Path(exists=True))
 @click.argument('side', type=int)
 @click.option('--mask', default=None)
@@ -336,7 +308,7 @@ def downsample_cmd(stack_file, side, output, mask):
     PreProcessor.downsample_stack_file(stack_file, side, output_stack_file=output, mask_file=mask)
 
 
-@simple_cli.command('viewstack', short_help='Plot projections in stack file')
+@click.command('viewstack', short_help='Plot projections in stack file')
 @click.argument('stack_file', type=click.Path(exists=True))
 @click.option('--numslices', type=int, default=16)
 @click.option('--startslice', type=int, default=1)
@@ -404,10 +376,3 @@ def chained_save_stack(ctx_obj, o):
 
     logger.info("saving stack {}..".format(o))
     mrcfile.new(o, ctx_obj.stack)
-
-
-if __name__ == "__main__":
-    simple_cli()
-
-    # todo this should allow users to funnel a stack into a pipeline of commands
-    # piped_cli

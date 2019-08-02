@@ -10,7 +10,7 @@ from multiprocessing import cpu_count
 
 from aspire.utils import ensure
 from aspire.source import ImageSource
-from aspire.image import ImageStack
+from aspire.image import Image
 from aspire.image import im_downsample
 
 logger = logging.getLogger(__name__)
@@ -170,4 +170,4 @@ class StarfileStack(ImageSource):
                 pbar.update(len(indices))
         pbar.close()
 
-        return ImageStack(im)
+        return Image(im)

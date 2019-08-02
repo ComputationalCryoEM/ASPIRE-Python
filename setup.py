@@ -6,7 +6,7 @@ def read(fname):
 	
 setup(
     name='aspire',
-    version='0.5.3',
+    version='0.5.4',
 
     description='Algorithms for Single Particle Reconstruction',
     long_description=read('README.md'),
