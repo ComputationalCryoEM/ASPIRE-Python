@@ -31,7 +31,7 @@ pip install aspire
 
 The final step above should install any dependent packages from `pip` automatically.
 
-Note that this step installs the base `aspire` package for you to work with, but not the unit tests/scripts/documentation. If you need to install ASPIRE for development purposes, read on.
+Note that this step installs the base `aspire` package for you to work with, but not the unit tests/documentation. If you need to install ASPIRE for development purposes, read on.
 
 For developers
 --------------
