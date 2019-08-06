@@ -217,3 +217,14 @@ class RadialCTFFilter(CTFFilter):
     def __init__(self, pixel_size=None, voltage=None, defocus=None, Cs=None, alpha=None, B=None, power=1):
         super().__init__(pixel_size=pixel_size, voltage=voltage, defocus_u=defocus, defocus_v=defocus, defocus_ang=0,
                          Cs=Cs, alpha=alpha, B=B, power=power)
+
+    def evaluate_k(self, kvals):
+        lamb = self.wavelength
+        dk = 1/self.pixel_size
+        k2 = -np.pi/2*2*lamb*self.defocus_u
+        k4 = np.pi/2*1e7*self.Cs*lamb**3
+        h_fun = np.zeros_like(kvals)
+        for i in range(np.size(kvals)):
+            h_fun[i] = np.sqrt(1-self.alpha**2)*np.sin(k2*(kvals[i]*dk)**2+k4*(kvals[i]*dk)**4) -\
+                    self.alpha * np.cos(k2*(kvals[i]*dk)**2+k4*(kvals[i]*dk)**4)
+        return h_fun

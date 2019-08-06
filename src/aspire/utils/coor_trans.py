@@ -3,7 +3,7 @@ General purpose math functions, mostly geometric in nature.
 """
 
 import numpy as np
-
+from aspire.utils.matlab_compat import randn
 
 def cart2pol(x, y):
     """
@@ -61,6 +61,18 @@ def grid_2d(n):
     }
 
 
+def cgrid_2d(n):
+    if n % 2 == 1:
+        grid_1d = np.arange(-(n-1)/2, (n-1)/2+1)
+    else:
+        grid_1d = np.arange(-n/2+1/2, n/2+1/2)
+    x, y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
+
+    return {
+        'x': x,
+        'y': y
+    }
+
 def grid_3d(n):
     grid_1d = np.ceil(np.arange(-n/2, n/2)) / (n/2)
     x, y, z = np.meshgrid(grid_1d, grid_1d, grid_1d, indexing='ij')
@@ -100,3 +112,69 @@ def zrot(theta):
 def yrot(theta):
     sin, cos = np.sin(theta), np.cos(theta)
     return np.array([[cos, 0, sin], [0, 1, 0], [-sin, 0, cos]])
+
+
+def qrand(nrot, seed=0):
+
+    """
+    Generate a set of quaternions from random normal distribution.
+
+    Each quaternions is a four-elements column vector. Returns a matrix of
+    size 4xn.
+
+    The 3-sphere S^3 in R^4 is a double cover of the rotation group SO(3), SO(3) = RP^3.
+    We identify unit norm quaternions a^2+b^2+c^2+d^2=1 with group elements.
+    The antipodal points (-a,-b,-c,-d) and (a,b,c,d) are identified as the same group elements,
+    so we take a>=0.
+    :param nrot: The number of quaternions for rotations.
+    :param seed: The random seed.
+    :return: An array consists of 4 dimensions quaternions
+    """
+    q = randn(4, nrot, seed=seed)
+    l2_norm = np.sqrt(q[0, :]**2 + q[1, :]**2 + q[2, :]**2 + q[3, :]**2)
+    for i in range(4):
+        q[i, :] = q[i, :] / l2_norm
+
+    for k in range(nrot):
+        if q[0, k] < 0:
+            q[:, k] = -q[:, k]
+
+    return q
+
+
+def q_to_rot(q):
+    """
+    Convert the quaternions into a rotation matrices.
+
+    :param q: Array of quaternions. May be a vector of dimensions 4 x n
+    :return rot_mat: Array of 3x3 rotation matrices.
+    """
+
+    nrot = np.size(q, 1)
+    rot_mat = np.zeros((3, 3, nrot), dtype=q.dtype)
+
+    rot_mat[0, 0, :] = q[0, :]**2 + q[1, :]**2 - q[2, :]**2 - q[3, :]**2
+    rot_mat[0, 1, :] = 2*q[1, :]*q[2, :] - 2*q[0, :]*q[3, :]
+    rot_mat[0, 2, :] = 2*q[0, :]*q[2, :] + 2*q[1, :]*q[3, :]
+
+    rot_mat[1, 0, :] = 2*q[1, :]*q[2, :] + 2*q[0, :]*q[3, :]
+    rot_mat[1, 1, :] = q[0, :]**2 - q[1, :]**2 + q[2, :]**2 - q[3, :]**2
+    rot_mat[1, 2, :] = -2*q[0, :]*q[1, :] + 2*q[2, :]*q[3, :]
+
+    rot_mat[2, 0, :] = -2*q[0, :]*q[2, :] + 2*q[1, :]*q[3, :]
+    rot_mat[2, 1, :] = 2*q[0, :]*q[1, :] + 2*q[2, :]*q[3, :]
+    rot_mat[2, 2, :] = q[0, :]**2 - q[1, :]**2 - q[2, :]**2 + q[3, :]**2
+    return rot_mat
+
+
+def qrand_rots(nrot, seed=0):
+    """
+    Generate random rotations from quaternions
+
+    :param nrot: The totalArray of quaternions. May be a vector of dimensions 4 x n
+    :return: Array of 3x3 rotation matrices.
+    """
+    qs = qrand(nrot, seed)
+
+    return q_to_rot(qs)
+
