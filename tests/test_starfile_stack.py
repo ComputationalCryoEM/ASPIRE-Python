@@ -1,6 +1,8 @@
 from unittest import TestCase
 import numpy as np
 import importlib_resources
+import os
+
 import aspire.data
 from aspire.source.relion import RelionStarfileStack
 from aspire.image import Image
@@ -14,14 +16,21 @@ class StarfileTestCase(TestCase):
     def run(self, result=None):
         """Overridden run method to use context manager provided by importlib_resources"""
         with importlib_resources.path(aspire.data, 'sample.star') as path:
+            # Create a temporary file with the contents of the sample.mrcs file at the same location as the starfile,
+            # to allow our classes to do their job
+            temp_file_path = os.path.join(path.parent.absolute(), 'sample.mrcs')
 
-            # TODO: This test only works because the mrcs files referenced by the starfile are actually
-            # found at the same location as the starfile (due to zip_safe=False in setup.py)
-            # A more advanced approach with mock/patch is needed for this to work in a general case.
-            # Once this test is fixed, zip_safe can be set to True in setup.py
+            should_delete = False
+            if not os.path.exists(temp_file_path):
+                with open(temp_file_path, 'wb') as f:
+                    f.write(importlib_resources.read_binary(aspire.data, 'sample.mrcs'))
+                should_delete = True
 
             self.src = RelionStarfileStack(path, ignore_missing_files=True)
             super(StarfileTestCase, self).run(result)
+
+            if should_delete:
+                os.remove(temp_file_path)
 
     def setUp(self):
         pass
