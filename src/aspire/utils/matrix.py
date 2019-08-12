@@ -7,7 +7,7 @@ from scipy.linalg import eigh
 
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
-from numpy.linalg.eig import eig
+from numpy.linalg import eig
 
 SQRT2 = np.sqrt(2)
 SQRT2_R = 1/SQRT2

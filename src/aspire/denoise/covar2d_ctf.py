@@ -1,31 +1,36 @@
 import logging
-import numpy as np
 from scipy.linalg import sqrtm
 from scipy.linalg import solve
 from numpy.linalg import inv
 
-from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 
 from aspire.utils.blk_diag_func import *
-from aspire.utils.cell import Cell2D
 
-from aspire.utils.optimize import fill_struct
+from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import conj_grad
 from aspire.denoise.covar2d import RotCov2D
+from aspire.utils import ensure
 
 
 logger = logging.getLogger(__name__)
 
+
 class Cov2DCTF(RotCov2D):
     """
-    Define a derived class for denoising 2D images using CTF and Wiener Cov2D method
+    Define a derived class for denoising 2D images using CTF information and the Covariance Wiener Filtering (CWF)
+    Cov2D method described in
+
+    T. Bhamre, T. Zhang, and A. Singer, "Denoising and covariance estimation of single particle cryo-EM images",
+    J. Struct. Biol. 195, 27-81 (2016). DOI: 10.1016/j.jsb.2016.04.013
     """
 
     def get_mean_ctf(self, coeffs, ctf_fb, ctf_idx):
         """
-        Calculate the mean vector from the expansion coefficient.
-        param b_coeffs: A coefficient vector (or an array of coefficient vectors) to be evaluated.
+        Calculate the mean vector from the expansion coefficients.
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
+        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_idx: An array of the CFT function indices for all 2D images.
         :return: The mean value vector for all images.
         """
         if coeffs is None:
@@ -48,12 +53,28 @@ class Cov2DCTF(RotCov2D):
         return mean_coeff
 
     def get_covar_ctf(self, coeffs, ctf_fb, ctf_idx, mean_coeff=None, noise_var=1, covar_est_opt=None):
+        """
+        Calculate the covariance matrix from the expansion coefficients and CTF functions.
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
+        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_idx: An array of the CFT function indices for all 2D images.
+        :param mean_coeff: The mean value vector from all images.
+        :param noise_var: The estimated variance of noise.
+        :param covar_est_opt: The optimization parameter list for obtaining the Cov2D matrix.
+        :return: The basis coefficients of the covariance matrix in
+            the form of cell array representing a block diagonal matrix. These
+            block diagonal matrices may be manipulated using the `blk_diag_*` functions.
+            The covariance is calculated from the images represented by the coeffs array,
+            along with all possible rotations and reflections. As a result, the computed covariance
+            matrix is invariant to both reflection and rotation. The effect of the filters in ctf_fb
+            are accounted for and inverted to yield a covariance estimate of the unfiltered images.
+        """
 
         def identity(x):
             return x
 
         if covar_est_opt is None:
-            covar_est_opt = {'shrinker': 'none', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
+            covar_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
                              'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
                              'preconditioner': 'identity'}
 
@@ -89,7 +110,7 @@ class Cov2DCTF(RotCov2D):
 
             M = blk_diag_add(M, A[k])
 
-        if covar_est_opt['shrinker'] == 'none':
+        if covar_est_opt['shrinker'] == 'None':
             b = blk_diag_add(b_coeff, blk_diag_mult(-noise_var, b_noise))
         else:
             b = self.shrink_covar_backward(b_coeff, b_noise, np.size(coeffs, 1),
@@ -100,7 +121,8 @@ class Cov2DCTF(RotCov2D):
 
         def precond_fun(S, x):
             p = np.size(S, 0)
-            x = m_reshape(x, p*np.ones((1, 2)))
+            ensure(x.size() == p*p, 'The sizes of S and x are not consistent.')
+            x = m_reshape(x, (p, p))
             y = S @ x @ S
             return y
 
@@ -124,19 +146,39 @@ class Cov2DCTF(RotCov2D):
         return covar_coeff
 
     def shrink_covar_backward(self, b, b_noise, n, noise_var, shrinker):
+        """
+        Apply the shrinking method to the 2D covariance of coefficients.
+        :param b: An input coefficient covariance.
+        :param b_noise: The noise covariance.
+        :param noise_var: The estimated variance of noise.
+        :param shrinker: The shrinking method.
+        :return: The shrinked 2D covariance coefficients.
+        """
         b_out = b
         for ell in range(0, b.size()):
             b_ell = b[ell]
             p = np.size(b_ell, 1)
             S = sqrtm(b_noise[ell])
             # from Matlab b_ell = S \ b_ell /S
-            b_ell = np.divide(solve(S,b_ell), S)
+            b_ell = np.divide(solve(S, b_ell), S)
             b_ell = shrink_covar(b_ell, noise_var, p/n, shrinker)
             b_ell = S @ b_ell @ S
             b_out[ell] = b_ell
         return b_out
 
     def get_wiener_ctf(self, coeffs, ctf_fb, ctf_idx, mean_coeff=None, covar_coeff=None, noise_var=1):
+        """
+        Calculate the covariance matrix from the expansion coefficients and CTF functions.
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
+        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_idx: An array of the CFT function indices for all 2D images.
+        :param mean_coeff: The mean value vector from all images.
+        :param covar_coeff: The block diagonal covariance matrix of the clean coefficients represented by a cell array.
+        :param noise_var: The estimated variance of noise.
+        :return: The estimated coefficients of the unfiltered images in certain math basis.
+            These are obtained using a Wiener filter with the specified covariance for the clean images
+            and white noise of variance `noise_var` for the noise.
+        """
         if mean_coeff is None:
             mean_coeff = self.get_mean_ctf(coeffs, ctf_fb, ctf_idx)
         if covar_coeff is None:
@@ -151,18 +193,16 @@ class Cov2DCTF(RotCov2D):
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[:, ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
-            print("ctf_fb_k", ctf_fb_k)
-            print("covar_coeff", covar_coeff)
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
             sig_covar_coeff = blk_diag_mult(ctf_fb_k, blk_diag_mult(covar_coeff, ctf_fb_k_t))
             sig_noise_covar_coeff = blk_diag_add(sig_covar_coeff, noise_covar_coeff)
 
             mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff)
 
-            coeff_est_k = coeff_k - mean_coeff_k   # blk_diag_minus(coeff_k, mean_coeff_k)
+            coeff_est_k = coeff_k - mean_coeff_k
             coeff_est_k = blk_diag_solve(sig_noise_covar_coeff, coeff_est_k)
             coeff_est_k = blk_diag_apply(blk_diag_mult(covar_coeff, ctf_fb_k_t), coeff_est_k)
-            coeff_est_k = coeff_est_k + mean_coeff  # = blk_dia_add(coeff_est_k + mean_coeff)
+            coeff_est_k = coeff_est_k + mean_coeff
 
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
