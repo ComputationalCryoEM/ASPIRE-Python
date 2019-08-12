@@ -10,7 +10,7 @@ import scipy.sparse.linalg as spsl
 from pyfftw.interfaces import numpy_fft
 
 from aspire.aspire.common.config import AbinitioConfig
-from aspire.aspire.common.exceptions import WrongInput
+from aspire.exceptions import WrongInput
 from aspire.aspire.common.logger import logger
 from aspire.aspire.utils.data_utils import validate_square_projections, c_to_fortran
 

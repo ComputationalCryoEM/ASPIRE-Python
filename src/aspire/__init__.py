@@ -1,4 +1,4 @@
-__version__ = "0.5.5"
+from .version import version as __version__
 
 
 from importlib_resources import read_text
@@ -22,12 +22,18 @@ logging.config.dictConfig({
             "formatter": "simple_formatter",
             "level": "DEBUG",
             "stream": "ext://sys.stdout"
+        },
+        "errfile": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "aspire.err.log",
+            "formatter": "simple_formatter",
+            "level": "ERROR"
         }
     },
     "loggers": {
         "aspire": {
             "level": "DEBUG",
-            "handlers": ["console"]
+            "handlers": ["console", "errfile"]
         }
     }
 })
