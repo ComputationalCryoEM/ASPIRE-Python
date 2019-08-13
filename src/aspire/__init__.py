@@ -26,7 +26,7 @@ logging.config.dictConfig({
     },
     "loggers": {
         "aspire": {
-            "level": 1,
+            "level": "DEBUG",
             "handlers": ["console"]
         }
     }
