@@ -1,5 +1,5 @@
 from unittest import TestCase
-from aspire.utils.config import Config, ConfigArgumentParser
+from aspire.utils.config import Config, config_override
 
 
 class ConfigTest(TestCase):
@@ -28,26 +28,22 @@ class ConfigTest(TestCase):
     def testList(self):
         self.assertEqual('Ramanujan', self.config.math.names[1])
 
-    def testConfigArgumentParser(self):
-        # A ConfigArgumentParser can be instantiated from a Config object
-        # which provides an override mechanism for the Config object through a context manager
-
-        # If the 'config' kwarg is unspecified in the constructor, the 'config' object in the aspire package
-        # is (temporarily) overridden.
-        # This allows scripts to support all options that are found in the aspire 'config' object
-
-        # Here we test our custom 'self.config' object since we can't make any guarantees about keys present in
-        # the aspire config object
-        parser = ConfigArgumentParser(config=self.config)
+    def testConfigOverride(self):
+        # We have an override mechanism for the Config object through a context manager
 
         # 'zero' has the expected value here
         self.assertEqual(0, self.config.math.zero)
 
-        # A ConfigParser adds configuration parameters as 'config.<section>.<key>' options
-        with parser.parse_args(['--config.math.zero', '42']):
-            # value overridden - notice that the type is inferred from the original value
-            self.assertTrue(int, type(self.config.math.zero))
+        # If the second ('config') argument is unspecified in 'config_override', the 'config' object in the aspire
+        # package is (temporarily) overridden.
+        # Here we test our custom 'self.config' object since we can't make any guarantees about keys present in
+        # the aspire config object.
+        with config_override({'math.zero': 42}, self.config):
+            # value overridden!
             self.assertEqual(42, self.config.math.zero)
 
         # 'zero' reverts to its expected value here
         self.assertEqual(0, self.config.math.zero)
+
+
+

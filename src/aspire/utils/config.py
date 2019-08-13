@@ -1,10 +1,13 @@
 import configparser
 from contextlib import contextmanager
-from argparse import ArgumentParser
 
 
 @contextmanager
-def config_override(config, args):
+def config_override(args, config=None):
+
+    if config is None:
+        from aspire import config
+
     try:
         # save original section values so we can reapply them later
         old_values = {}
@@ -14,11 +17,10 @@ def config_override(config, args):
             for k, v in section.items():
                 old_values[section_name][k] = v
 
-        for k, v in args.__dict__.items():
-            if k.startswith('config.'):
-                _, section_name, key_name = k.split('.')
-                section = getattr(config, section_name)
-                setattr(section, key_name, type(old_values[section_name][key_name])(v))
+        for k, v in args.items():
+            section_name, key_name = k.split('.')
+            section = getattr(config, section_name)
+            setattr(section, key_name, type(old_values[section_name][key_name])(v))
         yield args
     finally:
         for section_name in old_values:
@@ -83,35 +85,3 @@ class Config:
 
     def sections(self):
         return self.config.sections()
-
-
-class ConfigArgumentParser(ArgumentParser):
-    """
-    An ArgumentParser that adds arguments found in the (flat) 'config' (of type Config) object used in it's
-    constructor. By default, the aspire.config Config object is used.
-    All arguments to the parser are added with the 'config.' prefix
-    """
-
-    def __init__(self, *args, **kwargs):
-        if 'config' in kwargs:
-            self._config = kwargs['config']
-            kwargs.pop('config')
-        else:
-            from aspire import config
-            self._config = config
-
-        super().__init__(*args, **kwargs)
-
-        config_group = self.add_argument_group('config')
-        for section in self._config.sections():
-            for k, v in getattr(self._config, section).items():
-                config_group.add_argument(f'--config.{section}.{k}', default=v)
-
-    def parse_args(self, *args, **kwargs):
-        """
-        A context manager that parses command line arguments,
-        tweaks the Config object associated with this ArgumentParser within the 'with' block,
-        and reverts it back to it's original values once the block exits.
-        """
-        args = super().parse_args(*args, *kwargs)
-        return config_override(self._config, args)

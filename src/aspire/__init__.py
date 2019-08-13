@@ -1,11 +1,11 @@
-__version__ = "0.5.5"
-
+from .version import version as __version__
 
 from importlib_resources import read_text
 import logging.config
 
 import aspire
 from aspire.utils.config import Config
+from aspire.exceptions import handle_exception
 
 
 logging.config.dictConfig({
@@ -33,3 +33,6 @@ logging.config.dictConfig({
 })
 
 config = Config(read_text(aspire, 'config.ini'))
+if config.common.log_errors:
+    import sys
+    sys.excepthook = handle_exception
