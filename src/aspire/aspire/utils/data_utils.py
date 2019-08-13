@@ -4,7 +4,7 @@ import numpy as np
 
 from scipy.io import loadmat, savemat
 
-from aspire.aspire.common.exceptions import WrongInput, UnknownFormat, DimensionsIncompatible
+from aspire.exceptions import WrongInput, UnknownFormat, DimensionsIncompatible
 from aspire.aspire.common.logger import logger
 from aspire.aspire.utils.helpers import accepts
 
