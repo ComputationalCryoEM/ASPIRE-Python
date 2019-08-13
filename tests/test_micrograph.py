@@ -25,4 +25,4 @@ class MicrographTestCase(TestCase):
             micrograph = Micrograph(path)
 
         # The first 2 dimensions are the shape of each image, the last dimension the no. of images
-        self.assertEqual(micrograph.im.shape, (200, 200, 267))
+        self.assertEqual(micrograph.im.shape, (200, 200, 17))
