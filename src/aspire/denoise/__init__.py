@@ -1,3 +1,5 @@
+from aspire.utils import ensure
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,8 +14,6 @@ class Denoise:
         """
         constructor of an object for denoising 2D images
         """
-
-        ensure(basis.d == 2, 'Only two-dimensional basis functions are needed.')
 
         self.src = src
         self.as_type = as_type
