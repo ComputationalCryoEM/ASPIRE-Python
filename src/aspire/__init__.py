@@ -22,19 +22,12 @@ logging.config.dictConfig({
             "formatter": "simple_formatter",
             "level": "DEBUG",
             "stream": "ext://sys.stdout"
-        },
-        "error_file": {
-            "class": "logging.FileHandler",
-            "mode": "w",
-            "filename": "aspire.err.log",
-            "formatter": "simple_formatter",
-            "level": 1  # A 'low' number as compared to other handlers.
         }
     },
     "loggers": {
         "aspire": {
             "level": 1,
-            "handlers": ["console", "error_file"]
+            "handlers": ["console"]
         }
     }
 })

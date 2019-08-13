@@ -1,5 +1,4 @@
 import sys
-import logging
 import platform
 import struct
 import subprocess
@@ -22,43 +21,39 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         return
 
     from aspire.utils import get_full_version
-    logger = logging.getLogger('aspire')
 
-    # Default level at which we log messages.
-    # Since we'll be logging a whole bunch of diagnostic information which we do not want to clutter stdout with,
-    # this should be a 'low-enough' number so we can pass below the radar w.r.t. other registered logging handlers.
-    level = 5
+    lines = list()
 
-    logger.log(level, '-----------Uncaught exception-----------')
-    logger.log(level, f'Application version: {get_full_version()}')
-    logger.log(level, f'Platform: {platform.platform()}')
-    logger.log(level, f'Python version: {sys.version}')
-    logger.log(level, f'Python 32/64 bit: {8 * struct.calcsize("P")}')
+    lines.append(f'Application version: {get_full_version()}')
+    lines.append(f'Platform: {platform.platform()}')
+    lines.append(f'Python version: {sys.version}')
+    lines.append(f'Python 32/64 bit: {8 * struct.calcsize("P")}')
 
-    logger.log(level, 'conda list output:')
+    lines.append('conda list output:')
     try:
-        out = subprocess.check_output(['conda', 'list'], stderr=subprocess.STDOUT).decode('utf8')
-        for line in out.split('\n'):
-            logger.log(level, line)
+        lines.extend(subprocess.check_output(['conda', 'list'], stderr=subprocess.STDOUT).decode('utf8').split('\n'))
     except:  # nopep8
         pass
 
-    logger.log(level, 'pip freeze output:')
+    lines.append('pip freeze output:')
     try:
-        out = subprocess.check_output(['pip', 'freeze'], stderr=subprocess.STDOUT).decode('utf8')
-        for line in out.split('\n'):
-            logger.log(5, line)
+        lines.extend(subprocess.check_output(['pip', 'freeze'], stderr=subprocess.STDOUT).decode('utf8').split('\n'))
     except:  # nopep8
         pass
 
     # Walk through all traceback objects (oldest call -> most recent call), capturing frame/local variable information.
-    logger.log(level, 'Exception Details (most recent call last)')
+    lines.append('Exception Details (most recent call last)')
     frame_generator = traceback.walk_tb(exc_traceback)
     stack_summary = traceback.StackSummary.extract(frame_generator, capture_locals=True)
     frame_strings = stack_summary.format()
     for s in frame_strings:
-        for line in s.split('\n'):
-            logger.log(level, line)
+        lines.extend(s.split('\n'))
+
+    try:
+        with open('aspire.err.log', 'w') as f:
+            f.write('\n'.join(lines))
+    except:  # nopep8
+        pass
 
     try:
         # re-raise the exception we got for the caller.
