@@ -22,7 +22,10 @@ def blk_diag_eye(blk_partition, dtype=None):
         dtype = 'double'
     blk_diag = []
     for blk_sz in blk_partition:
-        blk_diag.append(np.ones(blk_sz, dtype=dtype))
+        mat_temp = np.zeros(blk_sz, dtype=dtype)
+        for i in range(mat_temp.shape[0]):
+            mat_temp[i, i] = 1.0
+        blk_diag.append(mat_temp)
     return blk_diag
 
 
