@@ -89,6 +89,29 @@ def im_filter(im, filt, *args, **kwargs):
 
     return im
 
+def im_filter_mat(im, filt):
+    """
+    Apply filter matrix such as CTF to images
+    :param im: Set of images to be filtered in the form of an array L-by-L-by-K, where K is the number of images.
+    :param filt: The filter in the matrix format (at least an array L-by-L.
+    :return: An array of images after the filter applied.
+    """
+    # TODO: Move inside appropriate object
+    ensure(im.shape[0] == filt.shape[0], 'The images should have the same size of the filter.')
+    im, sz_roll = unroll_dim(im, 3)
+
+    im_f = centered_fft2(im)
+    if im_f.ndim > filt.ndim:
+        im_f = np.expand_dims(filt, 2) * im_f
+    else:
+        im_f = filt * im_f
+    im = centered_ifft2(im_f)
+    im = np.real(im)
+    im = roll_dim(im, sz_roll)
+
+    return im
+
+
 
 class Image:
     def __init__(self, data):
