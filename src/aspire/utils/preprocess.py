@@ -184,6 +184,7 @@ def crop_pad(mat, n, fill_value=None):
         else:
             raise RuntimeError("Can't crop and pad simultaneously!")
 
+
 def downsample(insamples, szout, mask=None):
     """
     Blur and downsample 1D to 3D objects such as, curves, images or volumes
