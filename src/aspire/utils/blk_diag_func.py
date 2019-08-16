@@ -8,6 +8,7 @@ from scipy.special import jv
 from aspire.utils.cell import Cell2D
 from aspire.basis.basis_func import lgwt
 
+
 def blk_diag_zeros(blk_partition, dtype=None):
     if dtype is None:
         dtype = 'double'
@@ -106,7 +107,7 @@ def blk_diag_mult(blk_diag_a, blk_diag_b):
 def blk_diag_norm(blk_diag):
     maxvalues = []
     for i in range(0, len(blk_diag)):
-        maxvalues.append(norm(blk_diag[i]))
+        maxvalues.append(norm(blk_diag[i],2))
     max_results = max(maxvalues)
     return max_results
 
@@ -159,6 +160,7 @@ def blk_diag_isnumeric(x):
         return 0 == x*0
     except:
         return False
+
 
 def radial_filter2fb_mat(h_fun, fbasis):
     n_r = fbasis.sz[0]
