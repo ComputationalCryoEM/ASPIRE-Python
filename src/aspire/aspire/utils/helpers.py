@@ -5,7 +5,7 @@ from logging import warning
 from importlib_resources import is_resource
 
 import aspire.data
-from aspire.aspire.common.exceptions import DimensionsIncompatible
+from aspire.exceptions import DimensionsIncompatible
 from aspire.aspire.common.logger import logger
 
 

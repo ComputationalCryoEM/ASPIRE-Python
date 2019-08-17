@@ -20,7 +20,7 @@ import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
-class CovarianceTestCase(TestCase):
+class Covar3DTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.sim = Simulation(
@@ -44,7 +44,7 @@ class CovarianceTestCase(TestCase):
         pass
 
     @pytest.mark.expensive
-    def testCovariance(self):
+    def testCovar3D(self):
         covar_est = self.covar_estimator_with_preconditioner.estimate(self.mean_est, self.noise_variance)
 
         self.assertTrue(np.allclose(
@@ -63,7 +63,7 @@ class CovarianceTestCase(TestCase):
         ))
 
     @patch('scipy.sparse.linalg.cg')
-    def testCovariance1(self, cg):
+    def testCovar3D1(self, cg):
         cg_return_value = np.load(os.path.join(DATA_DIR, 'cg_return_value.npy'))
         cg.return_value = cg_return_value, 0  # 0 = convergence success
 
@@ -92,7 +92,7 @@ class CovarianceTestCase(TestCase):
         ))
 
     @patch('scipy.sparse.linalg.cg')
-    def testCovariance2(self, cg):
+    def testCovar3D2(self, cg):
         # Essentially the same as above, except that our estimator now has a preconditioner
         cg_return_value = np.load(os.path.join(DATA_DIR, 'cg_return_value.npy'))
         cg.return_value = cg_return_value, 0  # 0 = convergence success

@@ -12,7 +12,7 @@ from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
 from numpy.ma import sqrt
 
 from aspire.aspire.common.config import PreProcessorConfig, AspireConfig
-from aspire.aspire.common.exceptions import DimensionsIncompatible, WrongInput
+from aspire.exceptions import DimensionsIncompatible, WrongInput
 from aspire.aspire.common.logger import logger
 from aspire.aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr, \
     c_to_fortran, fortran_to_c

@@ -121,14 +121,14 @@ class Cov2DCTF(RotCov2D):
 
         def precond_fun(S, x):
             p = np.size(S, 0)
-            ensure(x.size() == p*p, 'The sizes of S and x are not consistent.')
+            ensure(np.size(x) == p*p, 'The sizes of S and x are not consistent.')
             x = m_reshape(x, (p, p))
             y = S @ x @ S
             return y
 
         def apply(A, x):
             p = np.size(A[0], 0)
-            x = m_reshape(x, p*np.ones((1, 2)))
+            x = m_reshape(x, (p, p))
             y = np.zeros_like(x)
             for k in range(0, len(A)):
                     y = y + A[k] @ x @ A[k].T
@@ -166,9 +166,9 @@ class Cov2DCTF(RotCov2D):
             b_out[ell] = b_ell
         return b_out
 
-    def get_wiener_ctf(self, coeffs, ctf_fb, ctf_idx, mean_coeff=None, covar_coeff=None, noise_var=1):
+    def get_cwf_coeffs(self, coeffs, ctf_fb, ctf_idx, mean_coeff=None, covar_coeff=None, noise_var=1):
         """
-        Calculate the covariance matrix from the expansion coefficients and CTF functions.
+        Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
         :param ctf_fb: The CFT functions in the FB expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
