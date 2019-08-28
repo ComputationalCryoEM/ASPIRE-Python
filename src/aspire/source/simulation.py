@@ -22,12 +22,12 @@ class Simulation(ImageSource):
         :param rots: A 3-by-3-by-n array of rotation matrices corresponding to viewing directions
         """
 
-        offsets = offsets or L / 16 * randn(2, n, seed=0)
+        offsets = offsets or L / 16 * randn(2, n, seed=0).T
         if amplitudes is None:
             min_, max_ = 2./3, 3./2
             amplitudes = min_ + rand(n, seed=0) * (max_ - min_)
         states = states or randi(C, n, seed=0)
-        rots = rots or self._uniform_random_rotations(n, seed=0)
+        rots = rots or angles_to_rots(self._uniform_random_angles(n, seed=0))
 
         super().__init__(
             L=L,
@@ -43,14 +43,14 @@ class Simulation(ImageSource):
         self.C = C
         self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=0)
 
-    def _uniform_random_rotations(self, n, seed=None):
+    def _uniform_random_angles(self, n, seed=None):
         with Random(seed):
-            angles = np.vstack((
-                np.random.random((1, n)) * 2 * np.pi,
-                np.arccos(2 * np.random.random((1, n)) - 1),
-                np.random.random((1, n)) * 2 * np.pi
+            angles = np.column_stack((
+                np.random.random(n) * 2 * np.pi,
+                np.arccos(2 * np.random.random(n) - 1),
+                np.random.random(n) * 2 * np.pi
             ))
-        return angles_to_rots(angles)
+        return angles
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
         """
@@ -131,7 +131,7 @@ class Simulation(ImageSource):
         im = self.filters(im, start, num)
 
         # Translations
-        im = im_translate(im, self.offsets[:, all_idx])
+        im = im_translate(im, self.offsets[all_idx, :])
 
         # Amplitudes
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))

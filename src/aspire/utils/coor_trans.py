@@ -92,11 +92,11 @@ def grid_3d(n):
 
 
 def angles_to_rots(angles):
-    n_angles = angles.shape[-1]
+    n_angles = angles.shape[0]
     rots = np.zeros(shape=(3, 3, n_angles))
 
     for i in range(n_angles):
-        rots[:, :, i] = erot(angles[:, i])
+        rots[:, :, i] = erot(angles[i, :])
     return rots
 
 

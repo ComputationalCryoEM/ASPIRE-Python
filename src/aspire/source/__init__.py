@@ -86,7 +86,7 @@ class ImageSource:
             Note that images() may return a different no. of images based on it's arguments.
         :param states: A 1-by-n array containing the state (label) for each image (1-indexed)
         :param filters: A SourceFilter object
-        :param offsets: ndarray of shape (2, n) specifying the shifts of the images
+        :param offsets: A n-by-2 array specifying the shifts of the images
         :param amplitudes: ndarray of shape (n,) specifying the amplitude multipliers of the images
         :param rots:
         :param dtype: A string representing a valid numpy dtype (typically 'single' or 'double')
@@ -216,7 +216,7 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
 
-        im = im_translate(im, -self.offsets[:, all_idx])
+        im = im_translate(im, -self.offsets[all_idx, :])
 
         im = self.filters(im, start=start, num=num)
 
@@ -238,7 +238,7 @@ class ImageSource:
 
         im = self.filters(im, start, num)
 
-        im = im_translate(im, self.offsets[:, all_idx])
+        im = im_translate(im, self.offsets[all_idx, :])
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
 
         return im

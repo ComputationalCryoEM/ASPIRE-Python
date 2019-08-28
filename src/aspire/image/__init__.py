@@ -13,15 +13,15 @@ def im_translate(im, shifts):
     """
     Translate image by shifts
     :param im: An array of size L-by-L-by-n containing images to be translated.
-    :param shifts: An array of size 2-by-n specifying the shifts in pixels.
+    :param shifts: An array of size n-by-2 specifying the shifts in pixels.
         Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
     :return: The images translated by the shifts, with periodic boundaries.
     """
 
     n_im = im.shape[-1]
-    n_shifts = shifts.shape[-1]
+    n_shifts = shifts.shape[0]
 
-    ensure(shifts.shape[0] == 2, "shifts must be 2xn")
+    ensure(shifts.shape[-1] == 2, "shifts must be nx2")
     ensure(n_shifts == 1 or n_shifts == n_im, "no. of shifts must be 1 or match the no. of images")
     ensure(im.shape[0] == im.shape[1], "images must be square")
 
@@ -30,8 +30,8 @@ def im_translate(im, shifts):
     grid_1d = ifftshift(np.ceil(np.arange(-L/2, L/2))) * 2 * np.pi / L
     om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
 
-    phase_shifts_x = np.broadcast_to(-shifts[0, :], (L, L, n_shifts))
-    phase_shifts_y = np.broadcast_to(-shifts[1, :], (L, L, n_shifts))
+    phase_shifts_x = np.broadcast_to(-shifts[:, 0], (L, L, n_shifts))
+    phase_shifts_y = np.broadcast_to(-shifts[:, 1], (L, L, n_shifts))
     phase_shifts = (om_x[:, :, np.newaxis] * phase_shifts_x) + (om_y[:, :, np.newaxis] * phase_shifts_y)
 
     mult_f = np.exp(-1j * phase_shifts)

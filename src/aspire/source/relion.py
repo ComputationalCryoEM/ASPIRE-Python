@@ -95,7 +95,7 @@ class RelionStarfileStack(StarfileStack):
         self.B = B
 
         rots = angles_to_rots(
-            self.df[['_rlnAngleRot_radians', '_rlnAngleTilt_radians', '_rlnAnglePsi_radians']].values.T
+            self.df[['_rlnAngleRot_radians', '_rlnAngleTilt_radians', '_rlnAnglePsi_radians']].values
         )
 
         filter_params, filter_indices = np.unique(
@@ -127,7 +127,7 @@ class RelionStarfileStack(StarfileStack):
             )
         filters = SourceFilter(filters, indices=filter_indices)
 
-        offsets = self.df[['rlnOriginX', 'rlnOriginY']].values.T
+        offsets = self.df[['rlnOriginX', 'rlnOriginY']].values
         amplitudes = np.ones(self.n)
         states = self.df['rlnClassNumber'].values
 
