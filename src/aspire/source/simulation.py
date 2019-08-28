@@ -109,7 +109,7 @@ class Simulation(ImageSource):
         for k in unique_states:
             vol_k = self.vols[:, :, :, k-1]
             idx_k = np.where(self.states[all_idx] == k)[0]
-            rot = self.rots[:, :, all_idx[idx_k]]
+            rot = self.rots[all_idx[idx_k], :, :]
 
             im_k = vol_project(vol_k, rot)
             im[:, :, idx_k] = im_k

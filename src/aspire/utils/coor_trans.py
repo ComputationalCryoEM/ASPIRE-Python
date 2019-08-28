@@ -93,10 +93,10 @@ def grid_3d(n):
 
 def angles_to_rots(angles):
     n_angles = angles.shape[0]
-    rots = np.zeros(shape=(3, 3, n_angles))
+    rots = np.zeros(shape=(n_angles, 3, 3))
 
     for i in range(n_angles):
-        rots[:, :, i] = erot(angles[i, :])
+        rots[i, :, :] = erot(angles[i, :])
     return rots
 
 
@@ -147,23 +147,23 @@ def q_to_rot(q):
     Convert the quaternions into a rotation matrices.
 
     :param q: Array of quaternions. May be a vector of dimensions 4 x n
-    :return rot_mat: Array of 3x3 rotation matrices.
+    :return rot_mat: n-by-3-by-3 array of 3x3 rotation matrices.
     """
 
     nrot = np.size(q, 1)
-    rot_mat = np.zeros((3, 3, nrot), dtype=q.dtype)
+    rot_mat = np.zeros((nrot, 3, 3), dtype=q.dtype)
 
-    rot_mat[0, 0, :] = q[0, :]**2 + q[1, :]**2 - q[2, :]**2 - q[3, :]**2
-    rot_mat[0, 1, :] = 2*q[1, :]*q[2, :] - 2*q[0, :]*q[3, :]
-    rot_mat[0, 2, :] = 2*q[0, :]*q[2, :] + 2*q[1, :]*q[3, :]
+    rot_mat[:, 0, 0] = q[0, :]**2 + q[1, :]**2 - q[2, :]**2 - q[3, :]**2
+    rot_mat[:, 0, 1] = 2*q[1, :]*q[2, :] - 2*q[0, :]*q[3, :]
+    rot_mat[:, 0, 2] = 2*q[0, :]*q[2, :] + 2*q[1, :]*q[3, :]
 
-    rot_mat[1, 0, :] = 2*q[1, :]*q[2, :] + 2*q[0, :]*q[3, :]
-    rot_mat[1, 1, :] = q[0, :]**2 - q[1, :]**2 + q[2, :]**2 - q[3, :]**2
-    rot_mat[1, 2, :] = -2*q[0, :]*q[1, :] + 2*q[2, :]*q[3, :]
+    rot_mat[:, 1, 0] = 2*q[1, :]*q[2, :] + 2*q[0, :]*q[3, :]
+    rot_mat[:, 1, 1] = q[0, :]**2 - q[1, :]**2 + q[2, :]**2 - q[3, :]**2
+    rot_mat[:, 1, 2] = -2*q[0, :]*q[1, :] + 2*q[2, :]*q[3, :]
 
-    rot_mat[2, 0, :] = -2*q[0, :]*q[2, :] + 2*q[1, :]*q[3, :]
-    rot_mat[2, 1, :] = 2*q[0, :]*q[1, :] + 2*q[2, :]*q[3, :]
-    rot_mat[2, 2, :] = q[0, :]**2 - q[1, :]**2 - q[2, :]**2 + q[3, :]**2
+    rot_mat[:, 2, 0] = -2*q[0, :]*q[2, :] + 2*q[1, :]*q[3, :]
+    rot_mat[:, 2, 1] = 2*q[0, :]*q[1, :] + 2*q[2, :]*q[3, :]
+    rot_mat[:, 2, 2] = q[0, :]**2 - q[1, :]**2 - q[2, :]**2 + q[3, :]**2
     return rot_mat
 
 

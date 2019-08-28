@@ -88,7 +88,7 @@ class ImageSource:
         :param filters: A SourceFilter object
         :param offsets: A n-by-2 array specifying the shifts of the images
         :param amplitudes: ndarray of shape (n,) specifying the amplitude multipliers of the images
-        :param rots:
+        :param rots: A n-by-3 array of rotation angles of the imaged volumes in the images
         :param dtype: A string representing a valid numpy dtype (typically 'single' or 'double')
             TODO: Elaborate
         """
@@ -220,7 +220,7 @@ class ImageSource:
 
         im = self.filters(im, start=start, num=num)
 
-        vol = im_backproject(im, self.rots[:, :, start:start+num])
+        vol = im_backproject(im, self.rots[start:start+num, :, :])
 
         return vol
 
@@ -234,7 +234,7 @@ class ImageSource:
             amplitude.
         """
         all_idx = np.arange(start, min(start + num, self.n))
-        im = vol_project(vol, self.rots[:, :, all_idx])
+        im = vol_project(vol, self.rots[all_idx, :, :])
 
         im = self.filters(im, start, num)
 

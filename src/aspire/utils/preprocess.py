@@ -242,7 +242,7 @@ def vol2img(volume, rots, L=None, dtype=None):
     The function handles odd and even-sized arrays correctly. The center of
     an odd array is taken to be at (n+1)/2, and an even array is n/2+1.
     :param volume: A 3D volume objects.
-    :param rots: A series of rotation angles.
+    :param rots: A n-by-3-by-3 array of rotation angles.
     :param L: The output size of 2D images.
     :return: An array consists of 2D images.
     """
@@ -272,16 +272,14 @@ def vol2img(volume, rots, L=None, dtype=None):
 
     grid2d = cgrid_2d(lv)
 
-    num_rots = rots.shape[-1]
-
     num_pts = lv**2
-    num_rots = rots.shape[-1]
+    num_rots = rots.shape[0]
     pts = np.pi * np.vstack([grid2d['x'].flatten('F'), grid2d['y'].flatten('F'), np.zeros(num_pts)])
 
     pts_rot = np.zeros((3, num_pts, num_rots))
 
     for i in range(num_rots):
-        pts_rot[:, :, i] = rots[:, :, i].T @ pts
+        pts_rot[:, :, i] = rots[i, :, :].T @ pts
 
     pts_rot = m_reshape(pts_rot, (3, lv**2*num_rots))
 

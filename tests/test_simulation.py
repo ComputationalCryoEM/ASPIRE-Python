@@ -29,7 +29,7 @@ class SimTestCase(TestCase):
 
     def testSimulationRots(self):
         self.assertTrue(np.allclose(
-            self.sim.rots[:, :, 0],
+            self.sim.rots[0, :, :],
             np.array([
                 [0.91675498, 0.2587233, 0.30433956],
                 [0.39941773, -0.58404652, -0.70665065],
