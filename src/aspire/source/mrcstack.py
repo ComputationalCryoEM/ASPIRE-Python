@@ -17,4 +17,4 @@ class MrcStack(ImageSource):
         if num is not None:
             end = min(start + num, self.n)
         x = self.im[:, :, start:end]
-        return Image(x)
+        return x

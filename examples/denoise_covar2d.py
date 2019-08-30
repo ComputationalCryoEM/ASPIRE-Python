@@ -11,7 +11,6 @@ import logging
 
 import numpy as np
 
-from aspire.source import SourceFilter
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.utils.filters import RadialCTFFilter
@@ -51,12 +50,15 @@ defocus_ct = 7                   # Number of defocus groups.
 Cs = 2.0                         # Spherical aberration
 alpha = 0.1                      # Amplitude contrast
 
-# Create a simulation object
+# Create filters
+filters = [RadialCTFFilter(pixel_size, voltage,defocus=d, Cs=2.0, alpha=0.1)
+                          for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
+
+# Create a simulation object with specified filters
 sim = Simulation(
     n=num_imgs,
     C=num_maps,
-    filters=SourceFilter([RadialCTFFilter(pixel_size, voltage,defocus=d, Cs=2.0, alpha=0.1)
-                          for d in np.linspace(defocus_min, defocus_max, defocus_ct)], n=num_imgs)
+    filters=filters
 )
 
 # Load 3D map from the data file, corresponding to the experimentally obtained EM map of a 70S Ribosome.
@@ -77,21 +79,16 @@ rots = qrand_rots(num_imgs, seed=0)
 imgs_clean = vol2img(vols[..., 0], rots)
 
 # Assign the CTF information and index for each image
-h_idx = sim.filters.indices
-filters = sim.filters.filters
+h_idx = np.array([filters.index(f) for f in sim.filters])
 
 # Evaluate CTF in the 8X8 coordinate grid
-h_ctf = sim.filters.evaluate_grid(img_size)
+h_ctf = sim.eval_filter_grid(img_size)
 
 # Evaluate CTF in the 8X8 FB basis
 h_ctf_fb = [radial_filter2fb_mat(filt.evaluate_k, ffbbasis) for filt in filters]
 
-# Apply the CTF to the clean images. For each defocus group, find the images that are assigned to that CTF,
-# and filter them.
-imgs_ctf_clean = np.zeros_like(imgs_clean)
-for k in range(defocus_ct):
-    mask = h_idx == k
-    imgs_ctf_clean[..., mask] = im_filter_mat(imgs_clean[..., mask], h_ctf[..., k])
+# Apply the CTF to the clean images.
+imgs_ctf_clean = im_filter_mat(imgs_clean, h_ctf)
 sim.cache(imgs_ctf_clean)
 
 # Apply the noise at the desired singal-noise ratio to the filtered clean images

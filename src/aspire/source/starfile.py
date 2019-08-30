@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import os.path
 import logging
 import pandas as pd
@@ -12,62 +11,77 @@ from aspire.utils import ensure
 from aspire.source import ImageSource
 from aspire.image import Image
 from aspire.image import im_downsample
+from aspire.io.starfile import Starfile
+from aspire.utils.filters import CTFFilter
 
 logger = logging.getLogger(__name__)
 
 
 class StarfileStack(ImageSource):
 
-    """
-    Mapping from column name to data type. Leading underscores need not be included here.
-    Any column names not found here are defaulted to a string type.
-    """
-    column_mappings = {}
+    @classmethod
+    def starfile2df(cls, filepath, block_index_or_name=0, loop_index=0, ignore_missing_files=False, max_rows=None):
 
-    @staticmethod
-    def star2df(filepath, column_mappings):
         dirpath = os.path.dirname(filepath)
-        columns = OrderedDict()
-        skiprows = 0
-        with open(filepath, 'r') as f:
-            for line in f.readlines():
-                if line.startswith('_rln'):
-                    name = line.split(' ')[0][1:]
-                    columns[name] = column_mappings.get(name, str)
-                    skiprows += 1
-                elif len(columns) > 0:
-                    break
-                else:
-                    skiprows += 1
+        df = Starfile(filepath)[block_index_or_name][loop_index].data
+        column_types = {name: cls._metadata_types.get(name, str) for name in df.columns}
+        df = df.astype(column_types)
 
-        if 'rlnImageName' not in columns:
-            raise RuntimeError('Valid starfiles at least need a _rlnImageName column specified')
+        # Rename fields to standard notation
+        reverse_metadata_aliases = {v: k for k, v in cls._metadata_aliases.items()}
 
-        df = pd.read_csv(filepath, delim_whitespace=True, skiprows=skiprows, names=columns, dtype=columns)
+        df = df.rename(reverse_metadata_aliases, axis=1)
 
         # TODO: Check behavior if this is a single mrc file (no '@')
-        _index, df['_mrc_filename'] = df['rlnImageName'].str.split('@', 1).str
-        df['_mrc_index'] = pd.to_numeric(_index)
+        _index, df['__mrc_filename'] = df['_image_name'].str.split('@', 1).str
+        df['__mrc_index'] = pd.to_numeric(_index)
 
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself
-        df['_mrc_filepath'] = df['_mrc_filename'].apply(lambda filename: os.path.join(dirpath, filename))
-        df['_mrc_found'] = df['_mrc_filepath'].apply(lambda filepath: os.path.exists(filepath))
+        df['__mrc_filepath'] = df['__mrc_filename'].apply(lambda filename: os.path.join(dirpath, filename))
 
-        msg = f'Read starfile with {len(df)} records'
-        n_missing = sum(df['_mrc_found'] == False)  # nopep8
-        if n_missing > 0:
-            msg += f' ({n_missing} files missing)'
-            logger.warning(msg)
+        # Helper function to check if a file exists
+        def file_exists(filepath):
+            return os.path.exists(filepath)
+
+        if max_rows is not None:
+            # Keep track of how many mrc files we've found
+            df['__mrc_found'] = False
+            max_rows = min(max_rows, len(df))
+            # Build up our data in chunks of max_rows rows
+            for i in range(0, len(df), max_rows):
+                _range = np.arange(i, i + max_rows)
+                df.loc[_range, '__mrc_found'] = df.loc[_range]['__mrc_filepath'].apply(file_exists)
+                # Do we have at least max_rows rows? No need to continue
+                if sum(df['__mrc_found'] == True) >= max_rows:  # nopep8
+                    break
         else:
-            logger.info(msg)
+            max_rows = len(df)
+            df['__mrc_found'] = df['__mrc_filepath'].apply(file_exists)
 
-        return df
+        missing = df['__mrc_found'] == False  # nopep8
+        n_missing = sum(missing)
+        if ignore_missing_files:
+            if n_missing > 0:
+                logger.info(f'Dropping {n_missing} rows with missing mrc files')
+                df = df[~missing]
+                df.reset_index(inplace=True)
+        else:
+            ensure(n_missing == 0, f'{n_missing} mrc files missing')
 
-    def __init__(self, filepath, n_workers=-1, ignore_missing_files=False, max_rows=None):
+        return df.iloc[:max_rows]
+
+    def __init__(self, filepath, pixel_size=1, B=0, n_workers=-1, block_index_or_name=0, loop_index=0,
+                 ignore_missing_files=False, max_rows=None):
         """
         Load starfile at given filepath
         :param filepath: Absolute or relative path to .star file
+        :param pixel_size: the pixel size of the images in angstroms (Default 1)
+        :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
+        :param n_workers: No. of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
+        :param block_index_or_name: An integer specifying the block index (0-indexed), of a string specifying
+            the block name
+        :param loop_index: An integer specifying the loop index (0-indexed)
         :param ignore_missing_files: Whether to ignore missing MRC files or not (Default False)
         :param max_rows: Maximum no. of rows in .star file to read. If None (default), all rows are read.
             Note that this refers to the max no. of images to load, not the max. number of .mrcs files (which may be
@@ -76,33 +90,20 @@ class StarfileStack(ImageSource):
             If ignore_missing_files is True, then the first max_rows *available* rows from the .star file are
             considered.
         """
-        logger.debug(f'Loading starfile at path {filepath}')
+        logger.debug(f'Creating ImageSource from starfile at path {filepath}')
 
+        self.pixel_size = pixel_size
+        self.B = B
         self.n_workers = n_workers
-        self.df = StarfileStack.star2df(filepath, self.column_mappings)
-        self.df = self.add_metadata()
 
-        # Handle missing files
-        missing = self.df['_mrc_found'] == False  # nopep8
-        n_missing = sum(missing)
-        if ignore_missing_files:
-            if n_missing > 0:
-                logger.info(f'Dropping {n_missing} rows with missing mrc files')
-                self.df = self.df[~missing]
-                self.df.reset_index(inplace=True)
-        else:
-            ensure(n_missing == 0, f'{n_missing} mrc files missing')
+        metadata = self.__class__.starfile2df(filepath, block_index_or_name, loop_index, ignore_missing_files, max_rows)
 
-        if max_rows is not None:
-            self.df = self.df.iloc[:max_rows]
-
-        n = len(self.df)
-
+        n = len(metadata)
         if n == 0:
             raise RuntimeError('No mrcs files found for starfile!')
 
         # Peek into the first image and populate some attributes
-        first_mrc_filepath = self.df.iloc[0]._mrc_filepath
+        first_mrc_filepath = metadata.iloc[0]['__mrc_filepath']
         mrc = mrcfile.open(first_mrc_filepath)
 
         # Get the 'mode' (data type) - TODO: There's probably a more direct way to do this.
@@ -114,31 +115,57 @@ class StarfileStack(ImageSource):
         shape = mrc.data.shape
         ensure(shape[1] == shape[2], "Only square images are supported")
         L = shape[1]
+        logger.debug(f'Image size = {L}x{L}')
 
         # Save original image resolution
         self._L = L
 
-        logger.debug(f'Image size = {L}x{L}')
+        filter_params, filter_indices = np.unique(
+            metadata[[
+                '_voltage',
+                '_defocus_u',
+                '_defocus_v',
+                '_defocus_ang',
+                '_Cs',
+                '_alpha'
+            ]].values,
+            return_inverse=True,
+            axis=0
+        )
 
-        ImageSource.__init__(self, L=L, n=n, dtype=dtype)
+        filters = []
+        for row in filter_params:
+            filters.append(
+                CTFFilter(
+                    pixel_size=self.pixel_size,
+                    voltage=row[0],
+                    defocus_u=row[1],
+                    defocus_v=row[2],
+                    defocus_ang=row[3] * np.pi / 180,  # degrees to radians
+                    Cs=row[4],
+                    alpha=row[5],
+                    B=B
+                )
+            )
+
+        metadata['__filter'] = [filters[i] for i in filter_indices]
+
+        ImageSource.__init__(
+            self,
+            L=L,
+            n=n,
+            dtype=dtype,
+            metadata=metadata
+        )
 
     def __str__(self):
         return f'Starfile ({self.n} images of size {self.L}x{self.L})'
-
-    def add_metadata(self):
-        """
-        Modify the self.df DataFrame to add any calculated columns/change data types.
-        This base class implementation of add_metadata() doesn't modify the DataFrame at all.
-
-        :return: A modified DataFrame with calculated columns added.
-        """
-        return self.df
 
     def _images(self, start=0, num=None):
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
-            data = arr[df['_mrc_index'] - 1, :, :].T
+            data = arr[df['__mrc_index'] - 1, :, :].T
 
             if self.L < self._L:
                 data = im_downsample(data, self.L)
@@ -154,10 +181,10 @@ class StarfileStack(ImageSource):
         else:
             num = min(self.n - start, num)
 
-        df = self.df[start:num]
+        df = self._metadata[start:num]
         im = np.empty((self.L, self.L, num))
 
-        groups = df.groupby('_mrc_filepath')
+        groups = df.groupby('__mrc_filepath')
         n_workers = min(n_workers, len(groups))
 
         pbar = tqdm(total=self.n)
@@ -173,4 +200,4 @@ class StarfileStack(ImageSource):
                 pbar.update(len(indices))
         pbar.close()
 
-        return Image(im)
+        return im

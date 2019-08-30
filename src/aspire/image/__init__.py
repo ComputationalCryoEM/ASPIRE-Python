@@ -1,6 +1,8 @@
 import numpy as np
+import warnings
 from scipy.fftpack import ifftshift, ifft2, fft2
 from scipy.interpolate import RegularGridInterpolator
+import mrcfile
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
@@ -17,7 +19,6 @@ def im_translate(im, shifts):
         Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
     :return: The images translated by the shifts, with periodic boundaries.
     """
-
     n_im = im.shape[-1]
     n_shifts = shifts.shape[0]
 
@@ -116,17 +117,27 @@ def im_filter_mat(im, filt):
 class Image:
     def __init__(self, data):
         ensure(data.ndim == 3, 'Initialize the image stack using a 3d ndarray.')
-        self._data = data
-        self.shape = self._data.shape
+        self.data = data
+        self.shape = self.data.shape
+        self.n_images = self.shape[-1]
 
     def __getitem__(self, item):
-        return self._data[item]
+        if item == slice(None, None, None):
+            warnings.warn('Access to underlying Image data detected. Image class should directly support called operation.')
+        return self.data[item]
+
+    def __add__(self, other):
+        return Image(self.data + other.data)
 
     def shift(self):
         raise NotImplementedError
 
     def rotate(self):
         raise NotImplementedError
+
+    def save(self, mrcs_filepath, overwrite=False):
+        with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
+            mrc.set_data(self.data.astype('float32'))
 
 
 class CartesianImage(Image):

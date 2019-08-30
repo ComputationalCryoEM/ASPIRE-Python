@@ -26,7 +26,7 @@ class StarfileTestCase(TestCase):
                     f.write(importlib_resources.read_binary(aspire.data, 'sample.mrcs'))
                 should_delete = True
 
-            self.src = RelionStarfileStack(path, ignore_missing_files=True)
+            self.src = RelionStarfileStack(path, block_index_or_name='model_class_1', ignore_missing_files=True, max_rows=12)
             super(StarfileTestCase, self).run(result)
 
             if should_delete:
@@ -44,7 +44,6 @@ class StarfileTestCase(TestCase):
         self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
-        # Note that sample data only includes a single .mrcs file for the first 17 images
         # Load 10 images starting at index 0
         images = self.src.images(0, 10)
         self.assertEqual(images.shape, (200, 200, 10))
@@ -58,9 +57,9 @@ class StarfileTestCase(TestCase):
         ))
 
     def testMetadata(self):
-        # The 'df' attribute of the StarfileStack object is a Pandas Dataframe
-        # that contains relevant metadata for the individual .mrcs file(s)
-        self.assertAlmostEqual(3073.912046, self.src.df.iloc[0].rlnCoordinateY)
+        # The 'get_metadata' method of the StarfileStack object can be used to get metadata information
+        # for a particular image index. Here we get the '_rlnCoordinateY' attribute of the first image.
+        self.assertAlmostEqual(3073.912046, self.src.get_metadata('_rlnCoordinateY', [0])[0])
 
     def testImageDownsample(self):
         self.src.set_max_resolution(16)

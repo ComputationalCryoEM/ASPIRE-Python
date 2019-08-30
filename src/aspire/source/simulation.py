@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import qr, eigh
 
 from aspire.source import ImageSource
-from aspire.image import im_translate
+from aspire.image import Image, im_translate
 from aspire.volume import vol_project
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import Random, m_reshape
@@ -13,44 +13,43 @@ from aspire.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, ve
 
 class Simulation(ImageSource):
     def __init__(self, L=8, n=1024, states=None, filters=None, offsets=None, amplitudes=None, dtype='single', C=2,
-                 rots=None):
+                 angles=None):
         """
         A Cryo-EM simulation
         Other than the base class attributes, it has:
 
         :param C: The no. of distinct volumes
-        :param rots: A 3-by-3-by-n array of rotation matrices corresponding to viewing directions
+        :param angles: A 3-by-n array of rotation angles
         """
+        super().__init__(L=L, n=n, dtype=dtype)
 
         offsets = offsets or L / 16 * randn(2, n, seed=0).T
         if amplitudes is None:
             min_, max_ = 2./3, 3./2
             amplitudes = min_ + rand(n, seed=0) * (max_ - min_)
         states = states or randi(C, n, seed=0)
-        rots = rots or angles_to_rots(self._uniform_random_angles(n, seed=0))
+        angles = angles or self._uniform_random_angles(n, seed=0)
 
-        super().__init__(
-            L=L,
-            n=n,
-            states=states,
-            filters=filters,
-            offsets=offsets,
-            amplitudes=amplitudes,
-            rots=rots,
-            dtype=dtype
-        )
-
+        self.states = states
+        if filters is not None:
+            self.filters = np.take(filters, randi(len(filters), n, seed=0) - 1)
+        else:
+            self.filters = None
+        self.offsets = offsets
+        self.amplitudes = amplitudes
+        self.angles = angles
         self.C = C
         self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=0)
 
     def _uniform_random_angles(self, n, seed=None):
+        # Generate random rotation angles (IN DEGREES)
         with Random(seed):
             angles = np.column_stack((
                 np.random.random(n) * 2 * np.pi,
                 np.arccos(2 * np.random.random(n) - 1),
                 np.random.random(n) * 2 * np.pi
             ))
-        return angles
+        return angles * 180 / np.pi
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
         """
@@ -105,10 +104,11 @@ class Simulation(ImageSource):
         all_idx = np.arange(start, min(start+num, self.n))
         im = np.zeros((self.L, self.L, len(all_idx)))
 
-        unique_states = np.unique(self.states[all_idx])
+        states = self.states[all_idx]
+        unique_states = np.unique(states)
         for k in unique_states:
             vol_k = self.vols[:, :, :, k-1]
-            idx_k = np.where(self.states[all_idx] == k)[0]
+            idx_k = np.where(states == k)[0]
             rot = self.rots[all_idx[idx_k], :, :]
 
             im_k = vol_project(vol_k, rot)
@@ -125,10 +125,13 @@ class Simulation(ImageSource):
         end = self.n
         if num is not None:
             end = min(start + num, self.n)
+        else:
+            num = end - start
+
         all_idx = np.arange(start, end)
 
         im = self.clean_images(start, num)
-        im = self.filters(im, start, num)
+        im = self.eval_filters(im, start, num)
 
         # Translations
         im = im_translate(im, self.offsets[all_idx, :])

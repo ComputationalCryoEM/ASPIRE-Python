@@ -3,7 +3,6 @@ import numpy as np
 from scipy.cluster.vq import kmeans2
 import click
 
-from aspire.source import SourceFilter
 from aspire.source.simulation import Simulation
 from aspire.basis.fb_3d import FBBasis3D
 from aspire.utils.filters import RadialCTFFilter
@@ -33,10 +32,7 @@ def simulation(num_volumes, image_size, num_images, num_eigs):
     sim = Simulation(
         n=n,
         C=C,
-        filters=SourceFilter(
-            [RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-            n=n
-        )
+        filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
     )
     basis = FBBasis3D((L, L, L))
 

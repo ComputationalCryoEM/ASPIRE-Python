@@ -6,7 +6,6 @@ from unittest import TestCase
 from unittest.mock import patch
 import pytest
 
-from aspire.source import SourceFilter
 from aspire.source.simulation import Simulation
 from aspire.basis.fb_3d import FBBasis3D
 from aspire.utils.filters import RadialCTFFilter
@@ -25,10 +24,7 @@ class Covar3DTestCase(TestCase):
     def setUpClass(cls):
         cls.sim = Simulation(
             n=1024,
-            filters=SourceFilter(
-                [RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-                n=1024
-            )
+            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
         )
         basis = FBBasis3D((8, 8, 8))
         cls.noise_variance = 0.0030762743633643615

@@ -67,7 +67,7 @@ class Estimator:
         mean_b = np.zeros((self.L, self.L, self.L), dtype=self.as_type)
 
         for i in range(0, self.n, self.batch_size):
-            im = self.src.images(i, self.batch_size)
+            im = self.src.images(i, self.batch_size)[:]
             batch_mean_b = self.src.im_backward(im, i) / self.n
             mean_b += batch_mean_b.astype(self.as_type)
 

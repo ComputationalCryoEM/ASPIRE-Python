@@ -1,110 +1,163 @@
+import os.path
 import logging
 import numpy as np
+import pandas as pd
 
-from aspire.image import im_filter, im_translate
+from aspire.image import Image, im_filter, im_translate
 from aspire.volume import im_backproject, vol_project
-from aspire.utils.filters import IdentityFilter, ScalarFilter
+from aspire.utils.filters import ScalarFilter
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.utils import ensure
-from aspire.utils.coor_trans import grid_2d
-from aspire.utils.matlab_compat import m_reshape, randn, randi
+from aspire.utils.coor_trans import grid_2d, angles_to_rots
+from aspire.utils.matlab_compat import m_reshape, randn
+from aspire.io.starfile import Starfile
 
 logger = logging.getLogger(__name__)
 
 
-# TODO: The SourceFilter class shouldn't exist!
-# The assignment of filters to Images should happen inside the ImageSource object!
-class SourceFilter:
-    """
-    An object representing Filter objects and their assignments to a particular Source object
-    """
-    def __init__(self, filters, indices=None, n=None):
-        """
-        :param filters: An iterable of Filter objects.
-        :param indices: An iterable of indices representing the 0-indexed indices of an image stack
-            on which to apply the filters. If unspecified, `n` must be supplied, and individual filters are applied
-            randomly.
-        :param n: An integer representing the depth of the image stack on which this SourceFilter is applied.
-            Not needed if `indices` are supplied.
-        """
-        if indices is None:
-            ensure(n is not None, "Either indices or n must be supplied for a SourceFilter")
-            # Assign filters randomly.
-            # For Matlab compatibility, randi returns numbers in the range [1, iMax] decrement by one for our purposes
-            indices = randi(len(filters), n, seed=0) - 1
-        else:
-            ensure(n is None, "Cannot supply both indices and n for a SourceFilter")
-            n = len(indices)
-
-        self.filters = filters
-        self.indices = indices
-        self.n = n
-
-    def __str__(self):
-        return f'SourceFilter ({len(self.filters)} filters, {self.n} images)'
-
-    def __call__(self, im, start=0, num=None):
-        ensure(im.ndim == 3, "A SourceFilter can only be called for a 3d volume representing a stack of images")
-
-        end = self.n
-        if num is not None:
-            end = min(start + num, self.n)
-        all_idx = np.arange(start, end)
-
-        unique_filters = np.unique(self.indices[all_idx]).astype('int')
-        for k in unique_filters:
-            idx_k = np.where(self.indices[all_idx] == k)[0]
-            im[:, :, idx_k] = im_filter(im[:, :, idx_k], self.filters[k])
-        return im
-
-    def evaluate(self, omega, *args, **kwargs):
-        return np.column_stack([f.evaluate(omega, *args, **kwargs) for f in self.filters])
-
-    def evaluate_grid(self, L, *args, **kwargs):
-        # Todo: remove redundancy wrt a single Filter's evaluate_grid
-        grid2d = grid_2d(L)
-        omega = np.pi * np.vstack((grid2d['x'].flatten('F'), grid2d['y'].flatten('F')))
-        h = self.evaluate(omega, *args, **kwargs)
-
-        h = m_reshape(h, grid2d['x'].shape + (len(self.filters),))
-
-        return h
-
-    def scale(self, c):
-        logger.info(f'Scaling SourceFilter by factor {c}')
-        for f in self.filters:
-            f.scale(c)
-
-
 class ImageSource:
-    def __init__(self, L, n, states=None, filters=None, offsets=None, amplitudes=None, rots=None, dtype='double'):
+
+    # ----------------------------------------------------
+    # Class Attributes that can be overridden by subclasses
+    # ----------------------------------------------------
+
+    # Optional renaming of metadata fields, used
+    # These are used ONLY during serialization/deserialization (to/from Starfiles, for example).
+    _metadata_aliases = {
+        '_image_name':  '_image_name',
+        '_offset_x':    '_offset_x',
+        '_offset_y':    '_offset_y',
+        '_state':       '_state',
+        '_angle_0':     '_angle_0',
+        '_angle_1':     '_angle_1',
+        '_angle_2':     '_angle_2',
+        '_amplitude':   '_amplitude',
+        '_voltage':     '_voltage',
+        '_defocus_u':   '_defocus_u',
+        '_defocus_v':   '_defocus_v',
+        '_defocus_ang': '_defocus_ang',
+        '_Cs':          '_Cs',
+        '_alpha':       '_alpha'
+    }
+
+    # All metadata fields are strings by default, specify any overrides here.
+    # Use the renamed metadata field name (i.e the 'values' in _metadata_aliases) to specify these.
+    _metadata_types = {}
+    # ----------------------------------------------------
+
+    def __init__(self, L, n, dtype='double', metadata=None):
         """
         A Cryo-EM Source object that supplies images along with other parameters for image manipulation.
 
         :param L: resolution of (square) images (int)
         :param n: The total no. of images available
             Note that images() may return a different no. of images based on it's arguments.
-        :param states: A 1-by-n array containing the state (label) for each image (1-indexed)
-        :param filters: A SourceFilter object
-        :param offsets: A n-by-2 array specifying the shifts of the images
-        :param amplitudes: ndarray of shape (n,) specifying the amplitude multipliers of the images
-        :param rots: A n-by-3 array of rotation angles of the imaged volumes in the images
-        :param dtype: A string representing a valid numpy dtype (typically 'single' or 'double')
-            TODO: Elaborate
+        :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         """
-        if filters is None:
-            filters = SourceFilter([IdentityFilter()], n=n)
         self.L = L
         self.n = n
-        self.states = states
-        self.filters = filters
-        self.offsets = offsets
-        self.amplitudes = amplitudes
-        self.rots = rots
         self.dtype = dtype
+        self.rots = None
 
         # The private attribute '_im' can be cached by calling this object's cache() method explicitly
         self._im = None
+
+        if metadata is None:
+            self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
+        else:
+            self._metadata = metadata
+
+    @property
+    def states(self):
+        return self.get_metadata('_state')
+
+    @states.setter
+    def states(self, values):
+        return self.set_metadata('_state', values)
+
+    @property
+    def filters(self):
+        return self.get_metadata('__filter')
+
+    @filters.setter
+    def filters(self, values):
+        self.set_metadata('__filter', values)
+        new_values = np.array([(
+            getattr(f, 'voltage', np.nan),
+            getattr(f, 'defocus_u', np.nan),
+            getattr(f, 'defocus_v', np.nan),
+            getattr(f, 'defocus_ang', np.nan),
+            getattr(f, 'Cs', np.nan),
+            getattr(f, 'alpha', np.nan)
+        ) for f in values])
+
+        self.set_metadata(
+            ['_voltage', '_defocus_u', '_defocus_v', '_defocus_ang', '_Cs', '_alpha'],
+            new_values
+        )
+
+    @property
+    def offsets(self):
+        return self.get_metadata(['_offset_x', '_offset_y'])
+
+    @offsets.setter
+    def offsets(self, values):
+        return self.set_metadata(['_offset_x', '_offset_y'], values)
+
+    @property
+    def amplitudes(self):
+        return self.get_metadata('_amplitude')
+
+    @amplitudes.setter
+    def amplitudes(self, values):
+        return self.set_metadata('_amplitude', values)
+
+    @property
+    def angles(self):
+        return self.get_metadata(['_angle_0', '_angle_1', '_angle_2'])
+
+    @angles.setter
+    def angles(self, values):
+        self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], values)
+        self.rots = angles_to_rots(values * np.pi / 180)
+
+    def set_metadata(self, metadata_fields, values, indices=None):
+        """
+        Modify metadata field information of this ImageSource for selected indices
+        :param metadata_fields: A string, or list of strings, representing the metadata field(s) to be modified
+        :param values: A scalar or vector (of length |indices|) of replacement values.
+        :param indices: A list of 0-based indices indicating the indices for which to modify metadata.
+            If indices is None, then all indices in this Source object are modified. In this case,
+            values should either be a scalar or a vector of length equal to the total no. of images, |self.n|.
+        :return: On return, the metadata associated with the specified indices has been modified.
+        """
+        # Convert a single metadata field into a list of single metadata field, since that's what the 'columns'
+        # argument of a DataFrame constructor expects.
+        if isinstance(metadata_fields, str):
+            metadata_fields = [metadata_fields]
+
+        if indices is None:
+            indices = self._metadata.index.values
+
+        df = pd.DataFrame(values, columns=metadata_fields, index=indices)
+        for metadata_field in metadata_fields:
+            series = df[metadata_field]
+            if metadata_field not in self._metadata.columns:
+                self._metadata = self._metadata.merge(series, how='left', left_index=True, right_index=True)
+            else:
+                self._metadata.update(df)
+
+    def get_metadata(self, metadata_fields, indices=None):
+        """
+        Get metadata field information of this ImageSource for selected indices
+        :param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
+        :param indices: A list of 0-based indices indicating the indices for which to get metadata.
+            If indices is None, then
+        :return: An ndarray of values (any valid np types) representing metadata info.
+        """
+        if indices is None:
+            indices = self._metadata.index.values
+        return self._metadata.loc[indices, metadata_fields].to_numpy()
 
     def _images(self, start=0, num=None):
         """
@@ -115,7 +168,31 @@ class ImageSource:
         :return: A 3d volume of images of size L x L x n
 
         """
-        raise NotImplementedError('Subclasses should implement this and return an Image object')
+        raise NotImplementedError('Subclasses should implement this and return a 3d ndarray')
+
+    def eval_filters(self, im_orig, start=0, num=None):
+        im = im_orig.copy()
+        end = self.n
+        if num is not None:
+            end = min(start + num, self.n)
+        all_idx = np.arange(start, end)
+
+        unique_filters = set(self.filters)
+        for f in unique_filters:
+            idx_k = np.where(self.filters[all_idx] == f)[0]
+            if len(idx_k) > 0:
+                im[:, :, idx_k] = im_filter(im[:, :, idx_k], f)
+
+        return im
+
+    def eval_filter_grid(self, L):
+        grid2d = grid_2d(L)
+        omega = np.pi * np.vstack((grid2d['x'].flatten('F'), grid2d['y'].flatten('F')))
+        h = np.column_stack([f.evaluate(omega) for f in self.filters])
+
+        h = m_reshape(h, grid2d['x'].shape + (len(self.filters),))
+
+        return h
 
     def cache(self, im=None):
         logger.info('Caching source images')
@@ -128,9 +205,9 @@ class ImageSource:
             end = self.n
             if num is not None:
                 end = min(start + num, self.n)
-            im = self._im[:, :, start:end]
+            im = Image(self._im[:, :, start:end])
         else:
-            im = self._images(start, num)
+            im = Image(self._images(start, num))
 
         if apply_noise:
             im += self._noise_images(start, num)
@@ -157,14 +234,15 @@ class ImageSource:
 
             im[:, :, idx-start] = im_s
 
-        return im
+        return Image(im)
 
     def set_max_resolution(self, max_L):
         ensure(max_L <= self.L, "Max desired resolution should be less than the current resolution")
+        logger.info(f'Setting max. resolution of source = {max_L}')
         self.L = max_L
 
         ds_factor = self._L / max_L
-        self.filters.scale(ds_factor)
+        self.filters = [f.scale(ds_factor) for f in self.filters]
         self.offsets /= ds_factor
 
         # Invalidate images
@@ -177,30 +255,22 @@ class ImageSource:
         :param whiten_filter: Whitening filter to apply. If None, determined automatically.
         :return: On return, the Source object has been modified in place.
         """
-        logger.debug("Whitening source object")
+        logger.info("Whitening source object")
         if whiten_filter is None:
             logger.info('Determining Whitening Filter')
             whiten_filter = WhiteNoiseEstimator(self).filter
             whiten_filter.power = -0.5
 
-        # Create a whitening SourceFilter object that applies to all available images
-        whiten_source_filter = SourceFilter(
-            [whiten_filter],
-            indices=np.zeros(self.n).astype('int')
-        )
         # Get source images and cache the whitened images
-        logger.debug("Getting all images")
+        logger.info('Getting all images')
         images = self.images()
         logger.debug("Applying whitening filter to all images and caching")
-        whitened_images = whiten_source_filter(images[:, :, :])
-        self.cache(whitened_images)
+        whitened_images = im_filter(images[:, :, :], whiten_filter)
+        self.cache(Image(whitened_images))
 
-        # Modify this Source's SourceFilter
-        # TODO: Add ability to multiply a SourceFilter object with a Filter object to avoid attribute access below
-        self.filters = SourceFilter(
-            [f * whiten_filter for f in self.filters.filters],
-            indices=self.filters.indices
-        )
+        # TODO: Multiplying every row of self.filters (which may have references to a handful of unique Filter objects)
+        # will end up creating self.n unique Filter objects, most of which will be identical !
+        self.filters = [f * whiten_filter for f in self.filters]
 
     def im_backward(self, im, start):
         """
@@ -218,7 +288,7 @@ class ImageSource:
 
         im = im_translate(im, -self.offsets[all_idx, :])
 
-        im = self.filters(im, start=start, num=num)
+        im = self.eval_filters(im, start=start, num=num)
 
         vol = im_backproject(im, self.rots[start:start+num, :, :])
 
@@ -236,9 +306,31 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im = vol_project(vol, self.rots[all_idx, :, :])
 
-        im = self.filters(im, start, num)
+        im = self.eval_filters(im, start, num)
 
         im = im_translate(im, self.offsets[all_idx, :])
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
 
         return im
+
+    def to_starfile(self, mrcs_filename, block_name='', fields=None):
+        df = self._metadata.copy()
+        df['_image_name'] = pd.Series(['{0:05}@{1}'.format(i+1, mrcs_filename) for i in range(self.n)])
+        df = df.rename(self._metadata_aliases, axis=1)
+        df = df.drop([str(col) for col in df.columns if col.startswith('__')], axis=1)
+
+        if fields is not None:
+            df = df.drop([str(col) for col in df.columns if col not in fields], axis=1)
+
+        return Starfile(dataframe=df, block_name=block_name)
+
+    def save(self, starfile_filepath, overwrite=True, block_name='', fields=None):
+        # TODO: Support optional start/num parameters
+        mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + '.mrcs'
+        mrcs_filepath = os.path.join(
+            os.path.dirname(starfile_filepath),
+            mrcs_filename
+        )
+
+        self.images().save(mrcs_filepath, overwrite=overwrite)
+        self.to_starfile(mrcs_filename, block_name=block_name, fields=fields).save(starfile_filepath, overwrite=overwrite)
