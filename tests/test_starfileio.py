@@ -50,3 +50,13 @@ class StarfileTestCase(TestCase):
         # A StarfileLoop has a 'data' attribute which is a Pandas Dataframe
         loop = self.starfile[1][0]
         self.assertTrue(isinstance(loop.data, DataFrame))
+
+    def testSave(self):
+        # Save the Starfile object to disk, re-read it back, and check for equality
+        # Note that __eq__ is supported for Starfile/StarfileBlock/StarfileLoop classes
+
+        self.starfile.save('sample_saved.star')
+        self.starfile2 = Starfile('sample_saved.star')
+        self.assertEqual(self.starfile, self.starfile2)
+
+        os.remove('sample_saved.star')

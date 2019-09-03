@@ -32,6 +32,10 @@ class StarfileBlock:
     def __getitem__(self, item):
         return self.loops[item]
 
+    def __eq__(self, other):
+        return self.name == other.name and self.metadata == other.metadata and \
+               all([l1 == l2 for l1, l2 in zip(self.loops, other.loops)])
+
 
 class StarfileLoop:
     def __init__(self, field_names=None, rows=None, dataframe=None):
@@ -44,6 +48,9 @@ class StarfileLoop:
 
     def __repr__(self):
         return f'StarfileLoop with {self._n_rows} rows and {self._n_columns} columns'
+
+    def __eq__(self, other):
+        return self.data.equals(other.data)
 
 
 class Starfile:
@@ -166,6 +173,9 @@ class Starfile:
     def __len__(self):
         return len(self.blocks)
 
+    def __eq__(self, other):
+        return all(b1 == b2 for b1, b2 in zip(self.blocks, other.blocks))
+
     def save(self, filename, overwrite=True):
         if not overwrite and os.path.exists(filename):
             raise RuntimeError(f'File {filename} already exists. Use overwrite=True to overwrite.')
@@ -173,6 +183,9 @@ class Starfile:
         with open(filename, 'w') as f:
             for i, block in enumerate(self):
                 f.write(f'data_{self.block_names[i]}\n\n')
+                for k, v in block.metadata.items():
+                    f.write(f'{k} {v}\n')
+                f.write('\n')
                 for loop in block:
                     f.write('loop_\n')
                     for col in loop.data.columns:
