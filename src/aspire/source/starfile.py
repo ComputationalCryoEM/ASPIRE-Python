@@ -65,7 +65,7 @@ class StarfileStack(ImageSource):
             if n_missing > 0:
                 logger.info(f'Dropping {n_missing} rows with missing mrc files')
                 df = df[~missing]
-                df.reset_index(inplace=True)
+                df.reset_index(inplace=True, drop=True)
         else:
             ensure(n_missing == 0, f'{n_missing} mrc files missing')
 

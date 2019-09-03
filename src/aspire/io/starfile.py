@@ -183,8 +183,9 @@ class Starfile:
         with open(filename, 'w') as f:
             for i, block in enumerate(self):
                 f.write(f'data_{self.block_names[i]}\n\n')
-                for k, v in block.metadata.items():
-                    f.write(f'{k} {v}\n')
+                if block.metadata is not None:
+                    for k, v in block.metadata.items():
+                        f.write(f'{k} {v}\n')
                 f.write('\n')
                 for loop in block:
                     f.write('loop_\n')
