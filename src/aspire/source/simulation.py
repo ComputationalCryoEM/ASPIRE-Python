@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import qr, eigh
 
 from aspire.source import ImageSource
-from aspire.image import Image, im_translate
+from aspire.image import Image
 from aspire.volume import vol_project
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import Random, m_reshape
@@ -134,7 +134,7 @@ class Simulation(ImageSource):
         im = self.eval_filters(im, start, num)
 
         # Translations
-        im = im_translate(im, self.offsets[all_idx, :])
+        im = Image(im).shift(self.offsets[all_idx, :]).asnumpy()
 
         # Amplitudes
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))

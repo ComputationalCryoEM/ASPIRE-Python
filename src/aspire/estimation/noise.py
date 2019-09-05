@@ -61,7 +61,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         first_moment = 0
         second_moment = 0
         for i in range(0, self.n, self.batchSize):
-            images = self.src.images(start=i, num=self.batchSize)[:]
+            images = self.src.images(start=i, num=self.batchSize).asnumpy()
             images_masked = (images * np.expand_dims(mask, 2))
 
             _denominator = self.n * np.sum(mask)
@@ -114,7 +114,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         mean_est = 0
         noise_psd_est = np.zeros((self.L, self.L)).astype(self.src.dtype)
         for i in range(0, self.n, self.batchSize):
-            images = self.src.images(i, self.batchSize)[:]
+            images = self.src.images(i, self.batchSize).asnumpy()
             images_masked = (images * np.expand_dims(mask, 2))
 
             _denominator = self.n * np.sum(mask)

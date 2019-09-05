@@ -34,11 +34,11 @@ class SimTestCase(TestCase):
         ))
 
     def testSimulationCleanImages(self):
-        images = self.sim.images(0, 512)[:]
+        images = self.sim.images(0, 512).asnumpy()
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy')), rtol=1e-2))
 
     def testSimulationImages(self):
-        images = self.sim.images(0, 512, apply_noise=True)[:]
+        images = self.sim.images(0, 512, apply_noise=True).asnumpy()
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_images_with_noise.npy')), rtol=1e-2))
 
     def testSimulationImagesShape(self):

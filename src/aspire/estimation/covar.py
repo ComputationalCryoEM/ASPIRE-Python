@@ -157,7 +157,7 @@ class CovarianceEstimator(Estimator):
         covar_b = np.zeros((self.L, self.L, self.L, self.L, self.L, self.L), dtype=self.as_type)
 
         for i in range(0, self.n, self.batch_size):
-            im = self.src.images(i, self.batch_size)[:]
+            im = self.src.images(i, self.batch_size).asnumpy()
             batch_n = im.shape[-1]
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 

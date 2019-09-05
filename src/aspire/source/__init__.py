@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from aspire.image import Image, im_filter, im_translate
+from aspire.image import Image
 from aspire.volume import im_backproject, vol_project
 from aspire.utils.filters import ScalarFilter
 from aspire.estimation.noise import WhiteNoiseEstimator
@@ -181,7 +181,7 @@ class ImageSource:
         for f in unique_filters:
             idx_k = np.where(self.filters[all_idx] == f)[0]
             if len(idx_k) > 0:
-                im[:, :, idx_k] = im_filter(im[:, :, idx_k], f)
+                im[:, :, idx_k] = Image(im[:, :, idx_k]).filter(f).asnumpy()
 
         return im
 
@@ -229,7 +229,7 @@ class ImageSource:
         for idx in all_idx:
             random_seed = noise_seed + 191*(idx+1)
             im_s = randn(2*self.L, 2*self.L, seed=random_seed)
-            im_s = im_filter(im_s, noise_filter)
+            im_s = Image(im_s).filter(noise_filter)[:, :, 0]
             im_s = im_s[:self.L, :self.L]
 
             im[:, :, idx-start] = im_s
@@ -265,8 +265,8 @@ class ImageSource:
         logger.info('Getting all images')
         images = self.images()
         logger.debug("Applying whitening filter to all images and caching")
-        whitened_images = im_filter(images[:, :, :], whiten_filter)
-        self.cache(Image(whitened_images))
+        whitened_images = Image(images[:, :, :]).filter(whiten_filter)
+        self.cache(whitened_images)
 
         # TODO: Multiplying every row of self.filters (which may have references to a handful of unique Filter objects)
         # will end up creating self.n unique Filter objects, most of which will be identical !
@@ -286,7 +286,7 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
 
-        im = im_translate(im, -self.offsets[all_idx, :])
+        im = Image(im).shift(-self.offsets[all_idx, :]).asnumpy()
 
         im = self.eval_filters(im, start=start, num=num)
 
@@ -308,7 +308,8 @@ class ImageSource:
 
         im = self.eval_filters(im, start, num)
 
-        im = im_translate(im, self.offsets[all_idx, :])
+        im = Image(im).shift(self.offsets[all_idx, :]).asnumpy()
+
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
 
         return im

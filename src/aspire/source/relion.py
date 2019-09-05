@@ -9,7 +9,7 @@ from multiprocessing import cpu_count
 
 from aspire.utils import ensure
 from aspire.source import ImageSource
-from aspire.image import im_downsample
+from aspire.image import Image
 from aspire.io.starfile import Starfile
 from aspire.utils.filters import CTFFilter
 
@@ -219,7 +219,7 @@ class RelionStarfileStack(ImageSource):
             data = arr[df['__mrc_index'] - 1, :, :].T
 
             if self.L < self._L:
-                data = im_downsample(data, self.L)
+                data = Image(data).downsample(self.L).asnumpy()
 
             return df.index, data
 

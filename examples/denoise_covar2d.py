@@ -18,7 +18,7 @@ from aspire.utils.preprocess import downsample
 from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.preprocess import vol2img
 from aspire.utils.blk_diag_func import radial_filter2fb_mat
-from aspire.image import im_filter_mat
+from aspire.image import Image
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 from aspire.denoise.covar2d import RotCov2D
@@ -88,8 +88,11 @@ h_ctf = sim.eval_filter_grid(img_size)
 h_ctf_fb = [radial_filter2fb_mat(filt.evaluate_k, ffbbasis) for filt in filters]
 
 # Apply the CTF to the clean images.
-imgs_ctf_clean = im_filter_mat(imgs_clean, h_ctf)
+imgs_ctf_clean = Image(imgs_clean).filter(filter_values=h_ctf)
 sim.cache(imgs_ctf_clean)
+
+# imgs_ctf_clean is an Image object. Convert to numpy array for subsequent statements
+imgs_ctf_clean = imgs_ctf_clean[:]
 
 # Apply the noise at the desired singal-noise ratio to the filtered clean images
 power_clean = anorm(imgs_ctf_clean)**2/np.size(imgs_ctf_clean)

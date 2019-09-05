@@ -16,7 +16,7 @@ from aspire.utils.matlab_compat import randn
 
 from aspire.denoise.covar2d import RotCov2D
 from aspire.denoise.covar2d_ctf import Cov2DCTF
-from aspire.image import im_filter_mat
+from aspire.image import Image
 
 
 import os.path
@@ -62,7 +62,7 @@ class Cov2DTestCase(TestCase):
         self.h_ctf = sim.eval_filter_grid(L)
         self.h_ctf_fb = [radial_filter2fb_mat(filt.evaluate_k, self.basis) for filt in self.filters]
 
-        self.imgs_ctf_clean = im_filter_mat(self.imgs_clean, self.h_ctf)
+        self.imgs_ctf_clean = Image(self.imgs_clean).filter(filter_values=self.h_ctf).asnumpy()
 
         sim.cache(self.imgs_ctf_clean)
 
