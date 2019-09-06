@@ -24,7 +24,7 @@ def _im_translate(im, shifts):
     n_shifts = shifts.shape[0]
 
     ensure(shifts.shape[-1] == 2, "shifts must be nx2")
-    ensure(n_shifts == 1 or n_shifts == n_im, "no. of shifts must be 1 or match the no. of images")
+    ensure(n_shifts == 1 or n_shifts == n_im, "number of shifts must be 1 or match the number of images")
     ensure(im.shape[0] == im.shape[1], "images must be square")
 
     L = im.shape[0]
@@ -100,8 +100,6 @@ class Image:
         return f'{self.n_images} images of size {self.res}x{self.res}'
 
     def asnumpy(self):
-        warnings.warn('Access to underlying Image data is discouraged.'
-                      'If possible, Image class should directly support called operation.')
         return self.data
 
     def shift(self, shifts):
@@ -114,31 +112,25 @@ class Image:
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
 
-        warnings.warn('Multiple implementations of im_translate. Running both for sanity check.'
-                      'Eliminating this will result in substantial speedup.')
-
-        im_translated = _im_translate(self.data, shifts)       # slower
-        im_translated2 = _im_translate2(self.data, -shifts.T)  # faster
-        assert np.allclose(im_translated, im_translated2)
-
+        im_translated = _im_translate(self.data, shifts)
         return Image(im_translated)
 
-    def downsample(self, res):
+    def downsample(self, ds_res):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
-        :param res: int - new resolution, should be <= the current resolution of this Image
-        :return: The down-sampled Image object.
+        :param ds_res: int - new resolution, should be <= the current resolution of this Image
+        :return: The downsampled Image object.
         """
         grid = grid_2d(self.res)
-        grid_ds = grid_2d(res)
+        grid_ds = grid_2d(ds_res)
 
-        im_ds = np.zeros((res, res, self.n_images)).astype(self.data.dtype)
+        im_ds = np.zeros((ds_res, ds_res, self.n_images)).astype(self.data.dtype)
 
         # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
         res_by_2 = self.res / 2
         x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
 
-        mask = (np.abs(grid['x']) < res / self.res) & (np.abs(grid['y']) < res / self.res)
+        mask = (np.abs(grid['x']) < ds_res / self.res) & (np.abs(grid['y']) < ds_res / self.res)
         im = np.real(centered_ifft2(centered_fft2(self.data) * np.expand_dims(mask, 2)))
 
         for s in range(im_ds.shape[-1]):

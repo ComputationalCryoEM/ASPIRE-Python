@@ -18,7 +18,7 @@ class Simulation(ImageSource):
         A Cryo-EM simulation
         Other than the base class attributes, it has:
 
-        :param C: The no. of distinct volumes
+        :param C: The number of distinct volumes
         :param angles: A 3-by-n array of rotation angles
         """
         super().__init__(L=L, n=n, dtype=dtype)
@@ -119,7 +119,7 @@ class Simulation(ImageSource):
         """
         Return images from the source.
         :param start: start index (0-indexed) of the start image to return
-        :param num: No. of images to return. If None, *all* images are returned.
+        :param num: Number of images to return. If None, *all* images are returned.
         :return: An ndarray of shape (L, L, num) where L = min(L, max_L), L being the size of each image.
         """
         end = self.n

@@ -13,7 +13,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 class StarfileTestCase(TestCase):
     def setUp(self):
         with importlib_resources.path(aspire.data, 'sample.star') as path:
-            self.starfile= Starfile(path)
+            self.starfile = Starfile(path)
 
     def tearDown(self):
         pass

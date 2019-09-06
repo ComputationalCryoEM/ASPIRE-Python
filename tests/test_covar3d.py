@@ -127,7 +127,7 @@ class Covar3DTestCase(TestCase):
         covar_est = np.load(os.path.join(DATA_DIR, 'covar_8_8_8_8_8_8.npy'))
         eigs_est, lambdas_est = eigs(covar_est, 16)
 
-        # No. of distinct volumes
+        # Number of distinct volumes
         C = 2
 
         # Eigenvalues and their corresponding eigenvectors are returned in descending order

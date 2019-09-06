@@ -15,7 +15,7 @@ class Micrograph:
 
         # Attributes populated by the time this constructor returns
         # A 2-D ndarray if loading a MRC file, a 3-D ndarray if loading a MRCS file,
-        # with the last dimension indicating the no. of images
+        # with the last dimension indicating the number of images
         self.im = None
 
         self._init_margins(margin)

@@ -51,7 +51,7 @@ Cs = 2.0                         # Spherical aberration
 alpha = 0.1                      # Amplitude contrast
 
 # Create filters
-filters = [RadialCTFFilter(pixel_size, voltage,defocus=d, Cs=2.0, alpha=0.1)
+filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
                           for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
 # Create a simulation object with specified filters
@@ -92,7 +92,7 @@ imgs_ctf_clean = Image(imgs_clean).filter(filter_values=h_ctf)
 sim.cache(imgs_ctf_clean)
 
 # imgs_ctf_clean is an Image object. Convert to numpy array for subsequent statements
-imgs_ctf_clean = imgs_ctf_clean[:]
+imgs_ctf_clean = imgs_ctf_clean.asnumpy()
 
 # Apply the noise at the desired singal-noise ratio to the filtered clean images
 power_clean = anorm(imgs_ctf_clean)**2/np.size(imgs_ctf_clean)

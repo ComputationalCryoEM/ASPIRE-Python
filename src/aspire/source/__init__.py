@@ -50,8 +50,8 @@ class ImageSource:
         A Cryo-EM Source object that supplies images along with other parameters for image manipulation.
 
         :param L: resolution of (square) images (int)
-        :param n: The total no. of images available
-            Note that images() may return a different no. of images based on it's arguments.
+        :param n: The total number of images available
+            Note that images() may return a different number of images based on it's arguments.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         """
         self.L = L
@@ -128,7 +128,7 @@ class ImageSource:
         :param values: A scalar or vector (of length |indices|) of replacement values.
         :param indices: A list of 0-based indices indicating the indices for which to modify metadata.
             If indices is None, then all indices in this Source object are modified. In this case,
-            values should either be a scalar or a vector of length equal to the total no. of images, |self.n|.
+            values should either be a scalar or a vector of length equal to the total number of images, |self.n|.
         :return: On return, the metadata associated with the specified indices has been modified.
         """
         # Convert a single metadata field into a list of single metadata field, since that's what the 'columns'
@@ -299,7 +299,7 @@ class ImageSource:
         Apply forward image model to volume
         :param vol: A volume of size L-by-L-by-L.
         :param start: Start index of image to consider
-        :param num: No. of images to consider
+        :param num: Number of images to consider
         :return: The images obtained from volume by projecting, applying CTFs, translating, and multiplying by the
             amplitude.
         """
