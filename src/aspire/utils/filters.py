@@ -108,10 +108,10 @@ class ArrayFilter(Filter):
             if xfer_fn_array.shape[0] % 2 == 0:
                 xfer_fn_array = np.concatenate((xfer_fn_array, np.array([xfer_fn_array[0]])))
         elif dim == 2:
-            # If we have a 2d array with an even no. of rows, append the first row reversed at the bottom
+            # If we have a 2d array with an even number of rows, append the first row reversed at the bottom
             if xfer_fn_array.shape[0] % 2 == 0:
                 xfer_fn_array = np.vstack((xfer_fn_array, xfer_fn_array[0, ::-1]))
-            # If we have a 2d array with an even no. of columns, append the first column reversed at the right
+            # If we have a 2d array with an even number of columns, append the first column reversed at the right
             if xfer_fn_array.shape[1] % 2 == 0:
                 xfer_fn_array = np.hstack((xfer_fn_array, xfer_fn_array[::-1, 0][:, np.newaxis]))
 

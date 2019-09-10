@@ -129,14 +129,14 @@ class RelionStarfileStack(ImageSource):
         :param filepath: Absolute or relative path to .star file
         :param pixel_size: the pixel size of the images in angstroms (Default 1)
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
-        :param n_workers: No. of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
+        :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
         :param block_index_or_name: An integer specifying the block index (0-indexed), of a string specifying
             the block name
         :param loop_index: An integer specifying the loop index (0-indexed)
         :param ignore_missing_files: Whether to ignore missing MRC files or not (Default False)
-        :param max_rows: Maximum no. of rows in .star file to read. If None (default), all rows are read.
-            Note that this refers to the max no. of images to load, not the max. number of .mrcs files (which may be
-            equal to or less than the no. of images).
+        :param max_rows: Maximum number of rows in .star file to read. If None (default), all rows are read.
+            Note that this refers to the max number of images to load, not the max. number of .mrcs files (which may be
+            equal to or less than the number of images).
             If ignore_missing_files is False, the first max_rows rows read from the .star file are considered.
             If ignore_missing_files is True, then the first max_rows *available* rows from the .star file are
             considered.
