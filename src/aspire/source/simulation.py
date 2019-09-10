@@ -6,14 +6,14 @@ from aspire.image import Image
 from aspire.volume import vol_project
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import Random, m_reshape
-from aspire.utils.coor_trans import grid_3d, angles_to_rots
+from aspire.utils.coor_trans import grid_3d
 from aspire.utils.matlab_compat import rand, randi, randn
 from aspire.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
 
 
 class Simulation(ImageSource):
     def __init__(self, L=8, n=1024, states=None, filters=None, offsets=None, amplitudes=None, dtype='single', C=2,
-                 angles=None):
+                 angles=None, seed=0):
         """
         A Cryo-EM simulation
         Other than the base class attributes, it has:
@@ -23,23 +23,23 @@ class Simulation(ImageSource):
         """
         super().__init__(L=L, n=n, dtype=dtype)
 
-        offsets = offsets or L / 16 * randn(2, n, seed=0).T
+        offsets = offsets or L / 16 * randn(2, n, seed=seed).T
         if amplitudes is None:
             min_, max_ = 2./3, 3./2
-            amplitudes = min_ + rand(n, seed=0) * (max_ - min_)
-        states = states or randi(C, n, seed=0)
-        angles = angles or self._uniform_random_angles(n, seed=0)
+            amplitudes = min_ + rand(n, seed=seed) * (max_ - min_)
+        states = states or randi(C, n, seed=seed)
+        angles = angles or self._uniform_random_angles(n, seed=seed)
 
         self.states = states
         if filters is not None:
-            self.filters = np.take(filters, randi(len(filters), n, seed=0) - 1)
+            self.filters = np.take(filters, randi(len(filters), n, seed=seed) - 1)
         else:
             self.filters = None
         self.offsets = offsets
         self.amplitudes = amplitudes
         self.angles = angles
         self.C = C
-        self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=0)
+        self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
 
     def _uniform_random_angles(self, n, seed=None):
         # Generate random rotation angles (IN DEGREES)
