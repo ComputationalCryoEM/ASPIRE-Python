@@ -19,7 +19,6 @@ class FBBasis3D(Basis):
     # TODO: Methods that return dictionaries should return useful objects instead
 
     """
-
     def __init__(self, size, ell_max=None):
 
         d = len(size)

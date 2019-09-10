@@ -54,7 +54,6 @@ class StarfileLoop:
 
 
 class Starfile:
-
     def __init__(self, starfile_path=None, blocks=None, loop=None, dataframe=None, block_name=''):
 
         self.blocks = self.block_names = None
@@ -77,7 +76,6 @@ class Starfile:
         :return: An initialized Starfile object
         """
         logger.info(f'Parsing starfile at path {starfile_path}')
-
         with open(starfile_path, 'r') as f:
 
             blocks = []       # list of StarfileBlock objects

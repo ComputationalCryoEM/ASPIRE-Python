@@ -4,7 +4,6 @@ logger = logging.getLogger(__name__)
 
 
 class Class2D:
-
     def __init__(self, src):
         """
         constructor of an object for classifying 2D images

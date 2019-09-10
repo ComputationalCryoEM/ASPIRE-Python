@@ -14,7 +14,6 @@ class RotCov2D(Denoise):
     T. Bhamre, T. Zhang, and A. Singer, "Denoising and covariance estimation of single particle cryo-EM images",
     J. Struct. Biol. 195, 27-81 (2016). DOI: 10.1016/j.jsb.2016.04.013
     """
-
     def __init__(self, src, basis, as_type='single'):
         """
         constructor of an object for 2D covariance analysis

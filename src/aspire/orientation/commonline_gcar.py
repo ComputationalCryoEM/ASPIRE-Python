@@ -12,7 +12,6 @@ class CommLineGCAR(Orient3D):
     Eigenvestors of Center of Mass Operators, Applied and Computational Harmonic Analysis, 28, 296-312 (2010).
 
     """
-
     def __init__(self, src):
         """
         constructor of an object for estimating 3D oreintations

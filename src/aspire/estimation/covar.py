@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 class CovarianceEstimator(Estimator):
-
     def __init__(self, *args, **kwargs):
         if 'mean_kernel' in kwargs:
             self.mean_kernel = kwargs.pop('mean_kernel')

@@ -16,7 +16,6 @@ class Basis:
     and 3D structure volumes.
 
     """
-
     def __init__(self, size, ell_max=None):
         if ell_max is None:
             ell_max = np.inf
