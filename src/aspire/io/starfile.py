@@ -123,7 +123,6 @@ class Starfile:
                     assert len(tokens) == len(field_names), \
                         f'Error at line {i}. Expected {len(field_names)} values, got {len(tokens)}.'
 
-                    # rows.append({k: v for k, v in zip(field_names, tokens)})
                     rows.append(tokens)
 
                     pbar.update()

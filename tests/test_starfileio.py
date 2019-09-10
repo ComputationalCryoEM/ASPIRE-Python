@@ -22,6 +22,11 @@ class StarfileTestCase(TestCase):
         # Starfile is an iterable that gives us blocks. We have 2 blocks in our sample starfile.
         self.assertEqual(2, len(self.starfile))
 
+    def testIteration(self):
+        # A Starfile can be iterated over, yielding StarfileBlocks
+        for block in self.starfile:
+            self.assertTrue(isinstance(block, StarfileBlock))
+
     def testBlockByIndex(self):
         # Indexing a Starfile with a 0-based index gives us a 'block',
         block0 = self.starfile[0]
