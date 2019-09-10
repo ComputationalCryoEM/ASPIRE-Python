@@ -84,7 +84,7 @@ class Image:
         if data.ndim == 2:
             data = data[:, :, np.newaxis]
 
-        self.data = data.copy()
+        self.data = data
         self.shape = self.data.shape
         self.n_images = self.shape[-1]
         self.res = self.shape[0]
