@@ -81,14 +81,11 @@ imgs_clean = vol2img(vols[..., 0], rots)
 # Assign the CTF information and index for each image
 h_idx = np.array([filters.index(f) for f in sim.filters])
 
-# Evaluate CTF in the 8X8 coordinate grid
-h_ctf = sim.eval_filter_grid(img_size)
-
 # Evaluate CTF in the 8X8 FB basis
 h_ctf_fb = [radial_filter2fb_mat(filt.evaluate_k, ffbbasis) for filt in filters]
 
 # Apply the CTF to the clean images.
-imgs_ctf_clean = Image(imgs_clean).filter(filter_values=h_ctf)
+imgs_ctf_clean = Image(sim.eval_filters(imgs_clean))
 sim.cache(imgs_ctf_clean)
 
 # imgs_ctf_clean is an Image object. Convert to numpy array for subsequent statements

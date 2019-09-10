@@ -1,5 +1,4 @@
 import numpy as np
-import warnings
 from scipy.fftpack import ifftshift, ifft2, fft2
 from scipy.interpolate import RegularGridInterpolator
 import mrcfile
@@ -144,18 +143,13 @@ class Image:
 
         return Image(im_ds)
 
-    def filter(self, filter=None, filter_values=None):
+    def filter(self, filter):
         """
         Apply a Filter object to the Image. This method returns a new Image.
         :param filter: An object of type Filter
-        :param filter_values: An ndarray of precomputed filter values that can be specified instead of a Filter object.
         :return: A new filtered Image object.
         """
-        ensure((filter is None and filter_values is not None) or (filter is not None and filter_values is None),
-               'Specify either the Filter object or pre-evaluated filter values directly.')
-
-        if filter_values is None:
-            filter_values = filter.evaluate_grid(self.res)
+        filter_values = filter.evaluate_grid(self.res)
 
         im_f = centered_fft2(self.data)
         if im_f.ndim > filter_values.ndim:
