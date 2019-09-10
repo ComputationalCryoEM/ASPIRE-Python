@@ -16,7 +16,7 @@ from aspire.utils.filters import CTFFilter
 logger = logging.getLogger(__name__)
 
 
-class RelionStarfileStack(ImageSource):
+class RelionSource(ImageSource):
 
     _metadata_aliases = {
         '_image_name':  '_rlnImageName',
@@ -125,8 +125,8 @@ class RelionStarfileStack(ImageSource):
     def __init__(self, filepath, pixel_size=1, B=0, n_workers=-1, block_index_or_name=0, loop_index=0,
                  ignore_missing_files=False, max_rows=None):
         """
-        Load starfile at given filepath
-        :param filepath: Absolute or relative path to .star file
+        Load STAR file at given filepath
+        :param filepath: Absolute or relative path to STAR file
         :param pixel_size: the pixel size of the images in angstroms (Default 1)
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
         :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
@@ -134,11 +134,11 @@ class RelionStarfileStack(ImageSource):
             the block name
         :param loop_index: An integer specifying the loop index (0-indexed)
         :param ignore_missing_files: Whether to ignore missing MRC files or not (Default False)
-        :param max_rows: Maximum number of rows in .star file to read. If None (default), all rows are read.
+        :param max_rows: Maximum number of rows in STAR file to read. If None (default), all rows are read.
             Note that this refers to the max number of images to load, not the max. number of .mrcs files (which may be
             equal to or less than the number of images).
-            If ignore_missing_files is False, the first max_rows rows read from the .star file are considered.
-            If ignore_missing_files is True, then the first max_rows *available* rows from the .star file are
+            If ignore_missing_files is False, the first max_rows rows read from the STAR file are considered.
+            If ignore_missing_files is True, then the first max_rows *available* rows from the STAR file are
             considered.
         """
         logger.debug(f'Creating ImageSource from starfile at path {filepath}')

@@ -2,7 +2,7 @@ import logging
 import click
 
 
-from aspire.source.relion import RelionStarfileStack
+from aspire.source.relion import RelionSource
 from aspire.basis.fb_3d import FBBasis3D
 from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.covar import CovarianceEstimator
@@ -22,7 +22,7 @@ logger = logging.getLogger('aspire')
 def cov3d(starfile, pixel_size, ignore_missing_files, max_rows, max_resolution, cg_tol):
     """Estimate mean volume and covariance from a starfile."""
 
-    source = RelionStarfileStack(
+    source = RelionSource(
         starfile,
         pixel_size=pixel_size,
         ignore_missing_files=ignore_missing_files,
