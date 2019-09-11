@@ -100,44 +100,42 @@ class Simulation(ImageSource):
 
         return vol
 
-    def clean_images(self, start=0, num=None):
-        all_idx = np.arange(start, min(start+num, self.n))
-        im = np.zeros((self.L, self.L, len(all_idx)))
+    def clean_images(self, start=0, num=np.inf, indices=None):
+        if indices is None:
+            indices = np.arange(start, min(start+num, self.n))
 
-        states = self.states[all_idx]
+        im = np.zeros((self.L, self.L, len(indices)))
+
+        states = self.states[indices]
         unique_states = np.unique(states)
         for k in unique_states:
             vol_k = self.vols[:, :, :, k-1]
             idx_k = np.where(states == k)[0]
-            rot = self.rots[all_idx[idx_k], :, :]
+            rot = self.rots[indices[idx_k], :, :]
 
             im_k = vol_project(vol_k, rot)
             im[:, :, idx_k] = im_k
         return im
 
-    def _images(self, start=0, num=None):
+    def _images(self, start=0, num=np.inf, indices=None):
         """
         Return images from the source.
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
+        :param indices: A numpy array of image indices. If specified, start and num are ignored.
         :return: An ndarray of shape (L, L, num) where L = min(L, max_L), L being the size of each image.
         """
-        end = self.n
-        if num is not None:
-            end = min(start + num, self.n)
-        else:
-            num = end - start
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
 
-        all_idx = np.arange(start, end)
-
-        im = self.clean_images(start, num)
-        im = self.eval_filters(im, start, num)
+        im = self.clean_images(start=start, num=num, indices=indices)
+        im = self.eval_filters(im, start=start, num=num, indices=indices)
 
         # Translations
-        im = Image(im).shift(self.offsets[all_idx, :]).asnumpy()
+        im = Image(im).shift(self.offsets[indices, :]).asnumpy()
 
         # Amplitudes
-        im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
+        im *= np.broadcast_to(self.amplitudes[indices], (self.L, self.L, len(indices)))
 
         return im
 

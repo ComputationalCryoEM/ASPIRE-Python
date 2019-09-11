@@ -82,8 +82,6 @@ class RelionSource(ImageSource):
         reverse_metadata_aliases = {v: k for k, v in cls._metadata_aliases.items()}
 
         df = df.rename(reverse_metadata_aliases, axis=1)
-
-        # TODO: Check behavior if this is a single mrc file (no '@')
         _index, df['__mrc_filename'] = df['_image_name'].str.split('@', 1).str
         df['__mrc_index'] = pd.to_numeric(_index)
 
@@ -120,7 +118,7 @@ class RelionSource(ImageSource):
         else:
             ensure(n_missing == 0, f'{n_missing} mrc files missing')
 
-        return df.iloc[:max_rows]
+        return df.loc[:max_rows]
 
     def __init__(self, filepath, pixel_size=1, B=0, n_workers=-1, block_index_or_name=0, loop_index=0,
                  ignore_missing_files=False, max_rows=None):
@@ -154,7 +152,7 @@ class RelionSource(ImageSource):
             raise RuntimeError('No mrcs files found for starfile!')
 
         # Peek into the first image and populate some attributes
-        first_mrc_filepath = metadata.iloc[0]['__mrc_filepath']
+        first_mrc_filepath = metadata.loc[0]['__mrc_filepath']
         mrc = mrcfile.open(first_mrc_filepath)
 
         # Get the 'mode' (data type) - TODO: There's probably a more direct way to do this.
@@ -210,9 +208,11 @@ class RelionSource(ImageSource):
         )
 
     def __str__(self):
-        return f'Starfile ({self.n} images of size {self.L}x{self.L})'
+        return f'RelionSource ({self.n} images of size {self.L}x{self.L})'
 
-    def _images(self, start=0, num=None):
+    def _images(self, start=0, num=np.inf, indices=None):
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
@@ -227,13 +227,8 @@ class RelionSource(ImageSource):
         if n_workers < 0:
             n_workers = cpu_count() - 1
 
-        if num is None:
-            num = self.n - start
-        else:
-            num = min(self.n - start, num)
-
-        df = self._metadata[start:num]
-        im = np.empty((self.L, self.L, num))
+        df = self._metadata.loc[indices]
+        im = np.empty((self.L, self.L, len(indices)))
 
         groups = df.groupby('__mrc_filepath')
         n_workers = min(n_workers, len(groups))

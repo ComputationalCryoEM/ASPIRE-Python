@@ -159,27 +159,25 @@ class ImageSource:
             indices = self._metadata.index.values
         return self._metadata.loc[indices, metadata_fields].to_numpy()
 
-    def _images(self, start=0, num=None):
+    def _images(self, start=0, num=np.inf, indices=None):
         """
         Return images WITHOUT applying any filters/translations/rotations/amplitude corrections/noise
         Subclasses may want to implement their own caching mechanisms.
         :param start: start index of image
         :param num: number of images to return
+        :param indices: A numpy array of image indices. If specified, start and num are ignored.
         :return: A 3d volume of images of size L x L x n
-
         """
         raise NotImplementedError('Subclasses should implement this and return a 3d ndarray')
 
-    def eval_filters(self, im_orig, start=0, num=None):
+    def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
         im = im_orig.copy()
-        end = self.n
-        if num is not None:
-            end = min(start + num, self.n)
-        all_idx = np.arange(start, end)
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
 
         unique_filters = set(self.filters)
         for f in unique_filters:
-            idx_k = np.where(self.filters[all_idx] == f)[0]
+            idx_k = np.where(self.filters[indices] == f)[0]
             if len(idx_k) > 0:
                 im[:, :, idx_k] = Image(im[:, :, idx_k]).filter(f).asnumpy()
 
@@ -200,33 +198,29 @@ class ImageSource:
             im = self.images()
         self._im = im
 
-    def images(self, start=0, num=None, apply_noise=False):
+    def images(self, start=0, num=np.inf, indices=None, apply_noise=False):
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
+
         if self._im is not None:
-            end = self.n
-            if num is not None:
-                end = min(start + num, self.n)
-            im = Image(self._im[:, :, start:end])
+            im = Image(self._im[:, :, indices])
         else:
-            im = Image(self._images(start, num))
+            im = Image(self._images(start=start, num=num, indices=indices))
 
         if apply_noise:
-            im += self._noise_images(start, num)
+            im += self._noise_images(start=start, num=num, indices=indices)
         return im
 
-    def _noise_images(self, start=0, num=None, noise_seed=0, noise_filter=None):
-        # Generate noisy images in interval [start, start+num-1] (a total of 'num' images)
-
-        end = self.n
-        if num is not None:
-            end = min(start + num, self.n)
-        all_idx = np.arange(start, end)
+    def _noise_images(self, start=0, num=np.inf, indices=None, noise_seed=0, noise_filter=None):
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
 
         if noise_filter is None:
             noise_filter = ScalarFilter(value=1, power=0.5)
 
-        im = np.zeros((self.L, self.L, len(all_idx)), dtype=self.dtype)
+        im = np.zeros((self.L, self.L, len(indices)), dtype=self.dtype)
 
-        for idx in all_idx:
+        for idx in indices:
             random_seed = noise_seed + 191*(idx+1)
             im_s = randn(2*self.L, 2*self.L, seed=random_seed)
             im_s = Image(im_s).filter(noise_filter)[:, :, 0]
