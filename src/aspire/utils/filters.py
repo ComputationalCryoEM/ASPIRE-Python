@@ -143,7 +143,6 @@ class ArrayFilter(Filter):
 
     def scale(self, c):
         self._scale *= c
-        return self
 
 
 class ScalarFilter(Filter):
@@ -155,7 +154,8 @@ class ScalarFilter(Filter):
         return self.value * np.ones_like(omega)
 
     def scale(self, c):
-        return self
+        # TODO: Is this a bug?
+        pass
 
 
 class IdentityFilter(ScalarFilter):
@@ -219,7 +219,6 @@ class CTFFilter(Filter):
 
     def scale(self, c=1):
         self.pixel_size *= c
-        return self
 
 
 class RadialCTFFilter(CTFFilter):
