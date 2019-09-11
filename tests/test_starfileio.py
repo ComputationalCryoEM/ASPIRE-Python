@@ -3,7 +3,7 @@ import importlib_resources
 from pandas import DataFrame
 
 import aspire.data
-from aspire.io.starfile import Starfile, StarfileBlock, StarfileLoop
+from aspire.io.starfile import Starfile, StarfileBlock
 
 
 import os.path
@@ -49,16 +49,11 @@ class StarfileTestCase(TestCase):
 
     def testLoop(self):
         loop = self.starfile[1][0]
-        self.assertTrue(isinstance(loop, StarfileLoop))
-
-    def testLoopData(self):
-        # A StarfileLoop has a 'data' attribute which is a Pandas Dataframe
-        loop = self.starfile[1][0]
-        self.assertTrue(isinstance(loop.data, DataFrame))
+        self.assertIsInstance(loop, DataFrame)
 
     def testSave(self):
         # Save the Starfile object to disk, re-read it back, and check for equality
-        # Note that __eq__ is supported for Starfile/StarfileBlock/StarfileLoop classes
+        # Note that __eq__ is supported for Starfile/StarfileBlock classes
 
         self.starfile.save('sample_saved.star')
         self.starfile2 = Starfile('sample_saved.star')
