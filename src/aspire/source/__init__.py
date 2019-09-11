@@ -77,11 +77,11 @@ class ImageSource:
 
     @property
     def filters(self):
-        return self.get_metadata('__filter')
+        return self.get_metadata('filter')
 
     @filters.setter
     def filters(self, values):
-        self.set_metadata('__filter', values)
+        self.set_metadata('filter', values)
         new_values = np.array([(
             getattr(f, 'voltage', np.nan),
             getattr(f, 'defocus_u', np.nan),
@@ -169,6 +169,10 @@ class ImageSource:
         :return: A 3d volume of images of size L x L x n
         """
         raise NotImplementedError('Subclasses should implement this and return a 3d ndarray')
+
+    def group_by(self, by):
+        for by_value, df in self._metadata.groupby(by, sort=False):
+            yield by_value, self.images(indices=df.index.values)
 
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
         im = im_orig.copy()

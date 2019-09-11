@@ -197,7 +197,7 @@ class RelionSource(ImageSource):
                 )
             )
 
-        metadata['__filter'] = [filters[i] for i in filter_indices]
+        metadata['filter'] = [filters[i] for i in filter_indices]
 
         ImageSource.__init__(
             self,

@@ -3,6 +3,7 @@ import numpy as np
 from unittest import TestCase
 
 from aspire.source.simulation import Simulation
+from aspire.image import Image
 from aspire.utils.filters import RadialCTFFilter
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -70,3 +71,15 @@ class SimTestCase(TestCase):
         values = self.sim.get_metadata(['rand_value1', 'rand_value2'], [0, 1, 2, 3])
         self.assertTrue(np.allclose(np.column_stack([[11, 12, np.nan, 13], [21, 22, np.nan, 23]]), values, equal_nan=True))
 
+    def testMetadataGroupBy(self):
+        # Set 2 distinct metadata values for 'greeting' - one for the first 512 images, another for the next 512
+        self.sim.set_metadata('greeting', 'hello', np.arange(0, 512))
+        self.sim.set_metadata('greeting', 'goodbye', np.arange(512, 1024))
+
+        # Return unique values of 'greeting', and corresponding Image objects
+        # Note that we should not rely on the order in which these unique values are returned
+        # (i.e. we may not get hello, goodbye or goodbye, hello ..)
+        for group_value, group_image in self.sim.group_by('greeting'):
+            self.assertIn(group_value, ('hello', 'goodbye'))
+            self.assertIsInstance(group_image, Image)
+            self.assertEqual(group_image.shape, (8, 8, 512))
