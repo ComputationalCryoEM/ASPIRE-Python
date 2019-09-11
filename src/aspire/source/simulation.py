@@ -84,8 +84,7 @@ class Simulation(ImageSource):
 
     def eval_gaussian_blobs(self, L, Q, D, mu):
         g = grid_3d(L)
-        # Migration Note - Matlab (:) flattens in column-major order, so specify 'F' with flatten()
-        coords = np.array([g['x'].flatten('F'), g['y'].flatten('F'), g['z'].flatten('F')])
+        coords = np.array([g['x'].flatten(), g['y'].flatten(), g['z'].flatten()])
 
         K = Q.shape[-1]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(self.dtype)
@@ -96,7 +95,7 @@ class Simulation(ImageSource):
 
             vol += np.exp(-0.5 * np.sum(np.abs(coords_k)**2, axis=0))
 
-        vol = m_reshape(vol, g['x'].shape)
+        vol = np.reshape(vol, g['x'].shape)
 
         return vol
 

@@ -78,7 +78,7 @@ class SimTestCase(TestCase):
 
         # Return unique values of 'greeting', and corresponding Image objects
         # Note that we should not rely on the order in which these unique values are returned
-        # (i.e. we may not get hello, goodbye or goodbye, hello ..)
+        # (i.e. we may get hello, goodbye or goodbye, hello ..)
         for group_value, group_image in self.sim.group_by('greeting'):
             self.assertIn(group_value, ('hello', 'goodbye'))
             self.assertIsInstance(group_image, Image)

@@ -189,11 +189,15 @@ class ImageSource:
 
     def eval_filter_grid(self, L):
         grid2d = grid_2d(L)
-        omega = np.pi * np.vstack((grid2d['x'].flatten('F'), grid2d['y'].flatten('F')))
-        h = np.column_stack([f.evaluate(omega) for f in self.filters])
+        omega = np.pi * np.vstack((grid2d['x'].flatten(), grid2d['y'].flatten()))
 
-        h = m_reshape(h, grid2d['x'].shape + (len(self.filters),))
+        h = np.empty((omega.shape[-1], len(self.filters)))
+        for f in set(self.filters):
+            idx_k = np.where(self.filters == f)[0]
+            if len(idx_k) > 0:
+                h[:, idx_k] = np.column_stack((f.evaluate(omega),) * len(idx_k))
 
+        h = np.reshape(h, grid2d['x'].shape + (len(self.filters),))
         return h
 
     def cache(self, im=None):
