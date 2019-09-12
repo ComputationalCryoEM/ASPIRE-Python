@@ -44,6 +44,7 @@ class Filter:
 
         if self.radial:
             h = np.take(h, idx)
+
         return h
 
     def _evaluate(self, omega):
@@ -215,7 +216,7 @@ class CTFFilter(Filter):
         if self.B:
             h *= np.exp(-self.B * r2)
 
-        return h
+        return h.squeeze()
 
     def scale(self, c=1):
         self.pixel_size *= c

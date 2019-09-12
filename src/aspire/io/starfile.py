@@ -98,8 +98,11 @@ class Starfile:
                 else:
                     # we're looking at a data row
                     tokens = line.split()
-                    assert len(tokens) == len(field_names), \
-                        f'Error at line {i}. Expected {len(field_names)} values, got {len(tokens)}.'
+                    if len(tokens) < len(field_names):
+                        logger.warning(f'Line {i} - Expected {len(field_names)} values, got {len(tokens)}.')
+                        tokens.extend([''] * (len(field_names)-len(tokens)))
+                    else:
+                        tokens = tokens[:len(field_names)]  # ignore any extra tokens
 
                     rows.append(tokens)
 

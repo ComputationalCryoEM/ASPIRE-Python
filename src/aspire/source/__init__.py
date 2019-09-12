@@ -9,7 +9,7 @@ from aspire.utils.filters import ScalarFilter
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, angles_to_rots
-from aspire.utils.matlab_compat import m_reshape, randn
+from aspire.utils.matlab_compat import randn
 from aspire.io.starfile import Starfile
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,6 @@ class ImageSource:
         self.L = L
         self.n = n
         self.dtype = dtype
-        self.rots = None
 
         # The private attribute '_im' can be cached by calling this object's cache() method explicitly
         self._im = None
@@ -70,6 +69,11 @@ class ImageSource:
     @property
     def states(self):
         return self.get_metadata('_state')
+
+    @property
+    def rots(self):
+        angles = self.get_metadata(['_angle_0', '_angle_1', '_angle_2'])
+        return angles_to_rots(angles * np.pi / 180)
 
     @states.setter
     def states(self, values):
@@ -119,7 +123,6 @@ class ImageSource:
     @angles.setter
     def angles(self, values):
         self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], values)
-        self.rots = angles_to_rots(values * np.pi / 180)
 
     def set_metadata(self, metadata_fields, values, indices=None):
         """

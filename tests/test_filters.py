@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.filters import IdentityFilter, ScalarFilter, CTFFilter, RadialCTFFilter
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -9,12 +9,34 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class SimTestCase(TestCase):
     def setUp(self):
-        pass
+        # A 2 x 256 ndarray of spatial frequencies
+        self.omega = np.load(os.path.join(DATA_DIR, 'omega_2_256.npy'))
 
     def tearDown(self):
         pass
 
+    def testIdentityFilter(self):
+        result = IdentityFilter().evaluate(self.omega)
+        # For all filters, we should get a 1d ndarray back on evaluate
+        self.assertEqual(result.shape, (256,))
+        self.assertTrue(np.allclose(result, np.ones(256)))
+
+    def testScalarFilter(self):
+        result = ScalarFilter(value=1.5).evaluate(self.omega)
+        self.assertEqual(result.shape, (256,))
+        self.assertTrue(np.allclose(result, np.repeat(1.5, 256)))
+
+    def testCTFFilter(self):
+        filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
+        result = filter.evaluate(self.omega)
+        self.assertEqual(result.shape, (256,))
+
     def testRadialCTFFilter(self):
+        filter = RadialCTFFilter(defocus=2.5e4)
+        result = filter.evaluate(self.omega)
+        self.assertEqual(result.shape, (256,))
+
+    def testRadialCTFFilterGrid(self):
         filter = RadialCTFFilter(defocus=2.5e4)
         result = filter.evaluate_grid(8)
 
@@ -33,7 +55,7 @@ class SimTestCase(TestCase):
             ])
         ))
 
-    def testRadialCTFFilterMultiplier(self):
+    def testRadialCTFFilterMultiplierGrid(self):
         filter = RadialCTFFilter(defocus=2.5e4) * RadialCTFFilter(defocus=2.5e4)
         result = filter.evaluate_grid(8)
 

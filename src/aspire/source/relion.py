@@ -3,7 +3,6 @@ import logging
 import pandas as pd
 import numpy as np
 import mrcfile
-from tqdm import tqdm
 from concurrent import futures
 from multiprocessing import cpu_count
 
@@ -71,10 +70,13 @@ class RelionSource(ImageSource):
     }
 
     @classmethod
-    def starfile2df(cls, filepath, block_index_or_name=0, loop_index=0, ignore_missing_files=False, max_rows=None):
+    def starfile2df(cls, filepath, max_rows=np.inf):
 
         dirpath = os.path.dirname(filepath)
-        df = Starfile(filepath)[block_index_or_name][loop_index]
+
+        # Note: Valid Relion image "_data.star" files have to have their data in the first loop of the first block.
+        # We thus index our Starfile class with [0][0].
+        df = Starfile(filepath)[0][0]
         column_types = {name: cls._metadata_types.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 
@@ -89,55 +91,18 @@ class RelionSource(ImageSource):
         # Note that os.path.join works as expected when the second argument is an absolute path itself
         df['__mrc_filepath'] = df['__mrc_filename'].apply(lambda filename: os.path.join(dirpath, filename))
 
-        # Helper function to check if a file exists
-        def file_exists(filepath):
-            return os.path.exists(filepath)
+        return df.iloc[:max_rows]
 
-        if max_rows is not None:
-            # Keep track of how many mrc files we've found
-            df['__mrc_found'] = False
-            max_rows = min(max_rows, len(df))
-            # Build up our data in chunks of max_rows rows
-            for i in range(0, len(df), max_rows):
-                _range = np.arange(i, i + max_rows)
-                df.loc[_range, '__mrc_found'] = df.loc[_range]['__mrc_filepath'].apply(file_exists)
-                # Do we have at least max_rows rows? No need to continue
-                if sum(df['__mrc_found'] == True) >= max_rows:  # nopep8
-                    break
-        else:
-            max_rows = len(df)
-            df['__mrc_found'] = df['__mrc_filepath'].apply(file_exists)
-
-        missing = df['__mrc_found'] == False  # nopep8
-        n_missing = sum(missing)
-        if ignore_missing_files:
-            if n_missing > 0:
-                logger.info(f'Dropping {n_missing} rows with missing mrc files')
-                df = df[~missing]
-                df.reset_index(inplace=True, drop=True)
-        else:
-            ensure(n_missing == 0, f'{n_missing} mrc files missing')
-
-        return df.loc[:max_rows]
-
-    def __init__(self, filepath, pixel_size=1, B=0, n_workers=-1, block_index_or_name=0, loop_index=0,
-                 ignore_missing_files=False, max_rows=None):
+    def __init__(self, filepath, pixel_size=1, B=0, n_workers=-1, max_rows=np.inf):
         """
         Load STAR file at given filepath
         :param filepath: Absolute or relative path to STAR file
         :param pixel_size: the pixel size of the images in angstroms (Default 1)
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
         :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
-        :param block_index_or_name: An integer specifying the block index (0-indexed), of a string specifying
-            the block name
-        :param loop_index: An integer specifying the loop index (0-indexed)
-        :param ignore_missing_files: Whether to ignore missing MRC files or not (Default False)
-        :param max_rows: Maximum number of rows in STAR file to read. If None (default), all rows are read.
+        :param max_rows: Maximum number of rows in STAR file to read.
             Note that this refers to the max number of images to load, not the max. number of .mrcs files (which may be
             equal to or less than the number of images).
-            If ignore_missing_files is False, the first max_rows rows read from the STAR file are considered.
-            If ignore_missing_files is True, then the first max_rows *available* rows from the STAR file are
-            considered.
         """
         logger.debug(f'Creating ImageSource from starfile at path {filepath}')
 
@@ -145,7 +110,7 @@ class RelionSource(ImageSource):
         self.B = B
         self.n_workers = n_workers
 
-        metadata = self.__class__.starfile2df(filepath, block_index_or_name, loop_index, ignore_missing_files, max_rows)
+        metadata = self.__class__.starfile2df(filepath, max_rows)
 
         n = len(metadata)
         if n == 0:
@@ -198,6 +163,8 @@ class RelionSource(ImageSource):
             )
 
         metadata['filter'] = [filters[i] for i in filter_indices]
+        # TODO: Is there an amplitude field in Relion?
+        metadata['_amplitude'] = 1.0
 
         ImageSource.__init__(
             self,
@@ -213,6 +180,7 @@ class RelionSource(ImageSource):
     def _images(self, start=0, num=np.inf, indices=None):
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
+        logger.info(f'Loading {len(indices)} images from STAR file')
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
@@ -233,7 +201,6 @@ class RelionSource(ImageSource):
         groups = df.groupby('__mrc_filepath')
         n_workers = min(n_workers, len(groups))
 
-        pbar = tqdm(total=self.n)
         with futures.ThreadPoolExecutor(n_workers) as executor:
             to_do = []
             for filepath, _df in groups:
@@ -243,7 +210,7 @@ class RelionSource(ImageSource):
             for future in futures.as_completed(to_do):
                 indices, data = future.result()
                 im[:, :, indices] = data
-                pbar.update(len(indices))
-        pbar.close()
+
+        logger.info(f'Loading {len(indices)} images complete')
 
         return im

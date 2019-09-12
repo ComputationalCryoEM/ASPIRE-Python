@@ -15,7 +15,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 class StarfileTestCase(TestCase):
     def run(self, result=None):
         """Overridden run method to use context manager provided by importlib_resources"""
-        with importlib_resources.path(aspire.data, 'sample.star') as path:
+        with importlib_resources.path(aspire.data, 'sample_relion_data.star') as path:
             # Create a temporary file with the contents of the sample.mrcs file at the same location as the starfile,
             # to allow our classes to do their job
             temp_file_path = os.path.join(path.parent.absolute(), 'sample.mrcs')
@@ -26,7 +26,7 @@ class StarfileTestCase(TestCase):
                     f.write(importlib_resources.read_binary(aspire.data, 'sample.mrcs'))
                 should_delete = True
 
-            self.src = RelionSource(path, block_index_or_name='model_class_1', ignore_missing_files=True, max_rows=12)
+            self.src = RelionSource(path, block_index_or_name='model_class_1', max_rows=12)
             super(StarfileTestCase, self).run(result)
 
             if should_delete:
@@ -39,7 +39,7 @@ class StarfileTestCase(TestCase):
         pass
 
     def testImageStackType(self):
-        # Since src is an ImageSource, we can call images() on it to get an ImageStack
+        # Since src is an ImageSource, we can call images() on it to get an Image
         image_stack = self.src.images()
         self.assertIsInstance(image_stack, Image)
 
