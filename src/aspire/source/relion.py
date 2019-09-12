@@ -74,7 +74,7 @@ class RelionSource(ImageSource):
     def starfile2df(cls, filepath, block_index_or_name=0, loop_index=0, ignore_missing_files=False, max_rows=None):
 
         dirpath = os.path.dirname(filepath)
-        df = Starfile(filepath)[block_index_or_name][loop_index].data
+        df = Starfile(filepath)[block_index_or_name][loop_index]
         column_types = {name: cls._metadata_types.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 
