@@ -8,7 +8,7 @@ from aspire.volume import im_backproject, vol_project
 from aspire.utils.filters import ScalarFilter
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.utils import ensure
-from aspire.utils.coor_trans import grid_2d, angles_to_rots
+from aspire.utils.coor_trans import grid_2d, angles_to_rots, rots_to_angles
 from aspire.utils.matlab_compat import randn
 from aspire.io.starfile import Starfile
 
@@ -70,11 +70,6 @@ class ImageSource:
     def states(self):
         return self.get_metadata('_state')
 
-    @property
-    def rots(self):
-        angles = self.get_metadata(['_angle_0', '_angle_1', '_angle_2'])
-        return angles_to_rots(angles * np.pi / 180)
-
     @states.setter
     def states(self, values):
         return self.set_metadata('_state', values)
@@ -123,6 +118,16 @@ class ImageSource:
     @angles.setter
     def angles(self, values):
         self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], values)
+        self.rots = angles_to_rots(values)
+
+    @property
+    def rots(self):
+        return angles_to_rots(self.angles * np.pi / 180)
+
+    @rots.setter
+    def rots(self, values):
+        angles = rots_to_angles(values) * 180 / np.pi
+        self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], angles)
 
     def set_metadata(self, metadata_fields, values, indices=None):
         """

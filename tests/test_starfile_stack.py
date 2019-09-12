@@ -26,7 +26,7 @@ class StarfileTestCase(TestCase):
                     f.write(importlib_resources.read_binary(aspire.data, 'sample.mrcs'))
                 should_delete = True
 
-            self.src = RelionSource(path, block_index_or_name='model_class_1', max_rows=12)
+            self.src = RelionSource(path, max_rows=12)
             super(StarfileTestCase, self).run(result)
 
             if should_delete:

@@ -42,14 +42,14 @@ class Simulation(ImageSource):
         self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
 
     def _uniform_random_angles(self, n, seed=None):
-        # Generate random rotation angles (IN DEGREES)
+        # Generate random rotation angles, in radians
         with Random(seed):
             angles = np.column_stack((
                 np.random.random(n) * 2 * np.pi,
                 np.arccos(2 * np.random.random(n) - 1),
                 np.random.random(n) * 2 * np.pi
             ))
-        return angles * 180 / np.pi
+        return angles
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
         """
