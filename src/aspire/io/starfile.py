@@ -33,7 +33,7 @@ class StarfileBlock:
 
 
 class Starfile:
-    def __init__(self, starfile_path=None, blocks=None, loop=None, dataframe=None, block_name=''):
+    def __init__(self, starfile_path=None, blocks=None):
 
         self.blocks = self.block_names = None
 
@@ -41,10 +41,6 @@ class Starfile:
             self.init_from_starfile(starfile_path)
         elif blocks is not None:
             self.init_from_blocks(blocks)
-        elif loop is not None:
-            self.init_from_loop(loop, block_name)
-        elif dataframe is not None:
-            self.init_from_dataframe(dataframe, block_name)
         else:
             raise RuntimeError('Invalid constructor.')
 
@@ -128,13 +124,6 @@ class Starfile:
         """
         self.blocks = blocks
         self.block_names = [block.name for block in self.blocks]
-
-    def init_from_loop(self, loop, block_name=''):
-        self.init_from_blocks([StarfileBlock(loops=[loop], name=block_name)])
-
-    def init_from_dataframe(self, dataframe, block_name=''):
-        loop = dataframe
-        self.init_from_loop(loop, block_name=block_name)
 
     def __repr__(self):
         return f'Starfile with {len(self.blocks)} blocks'

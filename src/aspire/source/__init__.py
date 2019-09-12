@@ -10,7 +10,7 @@ from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, angles_to_rots, rots_to_angles
 from aspire.utils.matlab_compat import randn
-from aspire.io.starfile import Starfile
+from aspire.io.starfile import Starfile, StarfileBlock
 
 logger = logging.getLogger(__name__)
 
@@ -24,20 +24,20 @@ class ImageSource:
     # Optional renaming of metadata fields, used
     # These are used ONLY during serialization/deserialization (to/from Starfiles, for example).
     _metadata_aliases = {
-        '_image_name':  '_image_name',
-        '_offset_x':    '_offset_x',
-        '_offset_y':    '_offset_y',
-        '_state':       '_state',
-        '_angle_0':     '_angle_0',
-        '_angle_1':     '_angle_1',
-        '_angle_2':     '_angle_2',
+        '_image_name':  '_rlnImageName',
+        '_offset_x':    '_rlnOriginX',
+        '_offset_y':    '_rlnOriginY',
+        '_state':       '_rlnClassNumber',
+        '_angle_0':     '_rlnAngleRot',
+        '_angle_1':     '_rlnAngleTilt',
+        '_angle_2':     '_rlnAnglePsi',
         '_amplitude':   '_amplitude',
-        '_voltage':     '_voltage',
-        '_defocus_u':   '_defocus_u',
-        '_defocus_v':   '_defocus_v',
-        '_defocus_ang': '_defocus_ang',
-        '_Cs':          '_Cs',
-        '_alpha':       '_alpha'
+        '_voltage':     '_rlnVoltage',
+        '_defocus_u':   '_rlnDefocusU',
+        '_defocus_v':   '_rlnDefocusV',
+        '_defocus_ang': '_rlnDefocusAngle',
+        '_Cs':          '_rlnSphericalAberration',
+        '_alpha':       '_rlnAmplitudeContrast'
     }
 
     # All metadata fields are strings by default, specify any overrides here.
@@ -324,18 +324,15 @@ class ImageSource:
 
         return im
 
-    def to_starfile(self, mrcs_filename, block_name='', fields=None):
+    def to_starfile(self, mrcs_filename):
         df = self._metadata.copy()
-        df['_image_name'] = pd.Series(['{0:05}@{1}'.format(i+1, mrcs_filename) for i in range(self.n)])
+        df['_image_name'] = pd.Series(['{0:06}@{1}'.format(i+1, mrcs_filename) for i in range(self.n)])
         df = df.rename(self._metadata_aliases, axis=1)
-        df = df.drop([str(col) for col in df.columns if col.startswith('__')], axis=1)
+        df = df.drop([str(col) for col in df.columns if not col.startswith('_')], axis=1)
 
-        if fields is not None:
-            df = df.drop([str(col) for col in df.columns if col not in fields], axis=1)
+        return Starfile(blocks=[StarfileBlock(loops=[df])])
 
-        return Starfile(dataframe=df, block_name=block_name)
-
-    def save(self, starfile_filepath, overwrite=True, block_name='', fields=None):
+    def save(self, starfile_filepath, overwrite=True):
         # TODO: Support optional start/num parameters
         mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + '.mrcs'
         mrcs_filepath = os.path.join(
@@ -344,4 +341,4 @@ class ImageSource:
         )
 
         self.images().save(mrcs_filepath, overwrite=overwrite)
-        self.to_starfile(mrcs_filename, block_name=block_name, fields=fields).save(starfile_filepath, overwrite=overwrite)
+        self.to_starfile(mrcs_filename).save(starfile_filepath, overwrite=overwrite)

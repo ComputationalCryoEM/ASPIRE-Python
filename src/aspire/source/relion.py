@@ -17,23 +17,6 @@ logger = logging.getLogger(__name__)
 
 class RelionSource(ImageSource):
 
-    _metadata_aliases = {
-        '_image_name':  '_rlnImageName',
-        '_offset_x':    '_rlnOriginX',
-        '_offset_y':    '_rlnOriginY',
-        '_state':       '_rlnClassNumber',
-        '_angle_0':     '_rlnAngleRot',
-        '_angle_1':     '_rlnAngleTilt',
-        '_angle_2':     '_rlnAnglePsi',
-        '_amplitude':   '_amplitude',
-        '_voltage':     '_rlnVoltage',
-        '_defocus_u':   '_rlnDefocusU',
-        '_defocus_v':   '_rlnDefocusV',
-        '_defocus_ang': '_rlnDefocusAngle',
-        '_Cs':          '_rlnSphericalAberration',
-        '_alpha':       '_rlnAmplitudeContrast'
-    }
-
     _metadata_types = {
         '_rlnVoltage': float,
         '_rlnDefocusU': float,
