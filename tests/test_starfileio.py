@@ -41,7 +41,7 @@ class StarfileTestCase(TestCase):
         # This block has a single 'loop'.
         self.assertEqual(1, len(block1))
 
-    def testBlockMetadata(self):
+    def testBlockProperties(self):
         # A StarfileBlock may have attributes that were read from the starfile key=>value pairs
         block0 = self.starfile['model_general']
         # Note that no typecasting is performed

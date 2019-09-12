@@ -6,20 +6,20 @@ logger = logging.getLogger(__name__)
 
 
 class StarfileBlock:
-    def __init__(self, loops, name='', metadata=None):
+    def __init__(self, loops, name='', properties=None):
         # Note: Starfile data blocks may have have key=>value pairs that start with a '_'.
         # We serve these up to the user using getattr.
         # To avoid potential conflicts with our custom
         # attributes here, we simply make them 'public' without a leading underscore.
         self.loops = loops
         self.name = name
-        self.metadata = metadata
+        self.properties = properties
 
     def __repr__(self):
         return f'StarfileBlock (name={self.name}) with {len(self.loops)} loops'
 
     def __getattr__(self, name):
-        return self.metadata[name]
+        return self.properties[name]
 
     def __len__(self):
         return len(self.loops)
@@ -28,7 +28,7 @@ class StarfileBlock:
         return self.loops[item]
 
     def __eq__(self, other):
-        return self.name == other.name and self.metadata == other.metadata and \
+        return self.name == other.name and self.properties == other.properties and \
                all([all(l1 == l2) for l1, l2 in zip(self.loops, other.loops)])
 
 
@@ -59,7 +59,7 @@ class Starfile:
 
             blocks = []       # list of StarfileBlock objects
             block_name = ''   # name of current block
-            metadata = {}     # key value mappings to add to current block
+            properties = {}   # key value mappings to add to current block
 
             loops = []        # a list of DataFrames
             in_loop = False   # whether we're inside a loop
@@ -79,11 +79,11 @@ class Starfile:
                             in_loop = False
 
                 elif line.startswith('data_'):
-                    if loops or metadata:
-                        blocks.append(StarfileBlock(loops, name=block_name, metadata=metadata))
+                    if loops or properties:
+                        blocks.append(StarfileBlock(loops, name=block_name, properties=properties))
                         loops = []
-                        metadata = {}
-                    block_name = line[5:]  # note: block name might be, and most likely would be, blank
+                        properties = {}
+                    block_name = line[5:]  # note: block name might be, and most likely would be blank
 
                 elif line.startswith('loop_'):
                     in_loop = True
@@ -93,7 +93,7 @@ class Starfile:
                         field_names.append(line.split()[0])
                     else:
                         k, v = line.split()[:2]
-                        metadata[k] = v
+                        properties[k] = v
 
                 else:
                     # we're looking at a data row
@@ -107,9 +107,9 @@ class Starfile:
             if rows:
                 loops.append(pd.DataFrame(rows, columns=field_names, dtype=str))
 
-            # Any pending loops/metadata to be added?
-            if loops or metadata:
-                blocks.append(StarfileBlock(loops, name=block_name, metadata=metadata))
+            # Any pending loops/properties to be added?
+            if loops or properties:
+                blocks.append(StarfileBlock(loops, name=block_name, properties=properties))
 
             logger.info(f'Starfile parse complete')
 
@@ -155,8 +155,8 @@ class Starfile:
         with open(filename, 'w') as f:
             for i, block in enumerate(self):
                 f.write(f'data_{self.block_names[i]}\n\n')
-                if block.metadata is not None:
-                    for k, v in block.metadata.items():
+                if block.properties is not None:
+                    for k, v in block.properties.items():
                         f.write(f'{k} {v}\n')
                 f.write('\n')
                 for loop in block:
