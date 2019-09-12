@@ -113,21 +113,27 @@ class ImageSource:
 
     @property
     def angles(self):
-        return self.get_metadata(['_angle_0', '_angle_1', '_angle_2'])
+        """
+        :return: Rotation angles in radians, as a n x 3 array
+        """
+        return np.deg2rad(self.get_metadata(['_angle_0', '_angle_1', '_angle_2']))
 
     @angles.setter
     def angles(self, values):
-        self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], values)
-        self.rots = angles_to_rots(values)
+        """
+        Set rotation angles
+        :param values: Rotation angles in radians, as a n x 3 array
+        :return: None
+        """
+        self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], np.rad2deg(values))
 
     @property
     def rots(self):
-        return angles_to_rots(self.angles * np.pi / 180)
+        return angles_to_rots(self.angles)
 
     @rots.setter
     def rots(self, values):
-        angles = rots_to_angles(values) * 180 / np.pi
-        self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], angles)
+        self.angles = rots_to_angles(values)
 
     def set_metadata(self, metadata_fields, values, indices=None):
         """
