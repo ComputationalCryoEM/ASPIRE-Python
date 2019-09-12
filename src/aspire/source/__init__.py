@@ -10,7 +10,7 @@ from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, angles_to_rots, rots_to_angles
 from aspire.utils.matlab_compat import randn
-from aspire.io.starfile import Starfile, StarfileBlock
+from aspire.io.starfile import StarFile, StarFileBlock
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class ImageSource:
     # ----------------------------------------------------
 
     # Optional renaming of metadata fields, used
-    # These are used ONLY during serialization/deserialization (to/from Starfiles, for example).
+    # These are used ONLY during serialization/deserialization (to/from StarFiles, for example).
     _metadata_aliases = {
         '_image_name':  '_rlnImageName',
         '_offset_x':    '_rlnOriginX',
@@ -330,7 +330,7 @@ class ImageSource:
         df = df.rename(self._metadata_aliases, axis=1)
         df = df.drop([str(col) for col in df.columns if not col.startswith('_')], axis=1)
 
-        return Starfile(blocks=[StarfileBlock(loops=[df])])
+        return StarFile(blocks=[StarFileBlock(loops=[df])])
 
     def save(self, starfile_filepath, overwrite=True):
         # TODO: Support optional start/num parameters

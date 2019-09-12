@@ -9,7 +9,7 @@ from multiprocessing import cpu_count
 from aspire.utils import ensure
 from aspire.source import ImageSource
 from aspire.image import Image
-from aspire.io.starfile import Starfile
+from aspire.io.starfile import StarFile
 from aspire.utils.filters import CTFFilter
 
 logger = logging.getLogger(__name__)
@@ -58,8 +58,8 @@ class RelionSource(ImageSource):
         dirpath = os.path.dirname(filepath)
 
         # Note: Valid Relion image "_data.star" files have to have their data in the first loop of the first block.
-        # We thus index our Starfile class with [0][0].
-        df = Starfile(filepath)[0][0]
+        # We thus index our StarFile class with [0][0].
+        df = StarFile(filepath)[0][0]
         column_types = {name: cls._metadata_types.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 

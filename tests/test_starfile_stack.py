@@ -12,7 +12,7 @@ import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
-class StarfileTestCase(TestCase):
+class StarFileTestCase(TestCase):
     def run(self, result=None):
         """Overridden run method to use context manager provided by importlib_resources"""
         with importlib_resources.path(aspire.data, 'sample_relion_data.star') as path:
@@ -27,7 +27,7 @@ class StarfileTestCase(TestCase):
                 should_delete = True
 
             self.src = RelionSource(path, max_rows=12)
-            super(StarfileTestCase, self).run(result)
+            super(StarFileTestCase, self).run(result)
 
             if should_delete:
                 os.remove(temp_file_path)
@@ -57,7 +57,7 @@ class StarfileTestCase(TestCase):
         ))
 
     def testMetadata(self):
-        # The 'get_metadata' method of the StarfileStack object can be used to get metadata information
+        # The 'get_metadata' method of the StarFileStack object can be used to get metadata information
         # for a particular image index. Here we get the '_rlnCoordinateY' attribute of the first image.
         self.assertAlmostEqual(3073.912046, self.src.get_metadata('_rlnCoordinateY', [0])[0])
 

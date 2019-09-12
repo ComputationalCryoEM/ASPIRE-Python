@@ -5,9 +5,9 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-class StarfileBlock:
+class StarFileBlock:
     def __init__(self, loops, name='', properties=None):
-        # Note: Starfile data blocks may have have key=>value pairs that start with a '_'.
+        # Note: StarFile data blocks may have have key=>value pairs that start with a '_'.
         # We serve these up to the user using getattr.
         # To avoid potential conflicts with our custom
         # attributes here, we simply make them 'public' without a leading underscore.
@@ -16,7 +16,7 @@ class StarfileBlock:
         self.properties = properties
 
     def __repr__(self):
-        return f'StarfileBlock (name={self.name}) with {len(self.loops)} loops'
+        return f'StarFileBlock (name={self.name}) with {len(self.loops)} loops'
 
     def __getattr__(self, name):
         return self.properties[name]
@@ -32,7 +32,7 @@ class StarfileBlock:
                all([all(l1 == l2) for l1, l2 in zip(self.loops, other.loops)])
 
 
-class Starfile:
+class StarFile:
     def __init__(self, starfile_path=None, blocks=None):
 
         self.blocks = self.block_names = None
@@ -46,14 +46,14 @@ class Starfile:
 
     def init_from_starfile(self, starfile_path):
         """
-        Initalize a Starfile from a star file at a given path
+        Initalize a StarFile from a star file at a given path
         :param starfile_path: Path to saved starfile.
-        :return: An initialized Starfile object
+        :return: An initialized StarFile object
         """
         logger.info(f'Parsing starfile at path {starfile_path}')
         with open(starfile_path, 'r') as f:
 
-            blocks = []       # list of StarfileBlock objects
+            blocks = []       # list of StarFileBlock objects
             block_name = ''   # name of current block
             properties = {}   # key value mappings to add to current block
 
@@ -76,7 +76,7 @@ class Starfile:
 
                 elif line.startswith('data_'):
                     if loops or properties:
-                        blocks.append(StarfileBlock(loops, name=block_name, properties=properties))
+                        blocks.append(StarFileBlock(loops, name=block_name, properties=properties))
                         loops = []
                         properties = {}
                     block_name = line[5:]  # note: block name might be, and most likely would be blank
@@ -108,25 +108,25 @@ class Starfile:
 
             # Any pending loops/properties to be added?
             if loops or properties:
-                blocks.append(StarfileBlock(loops, name=block_name, properties=properties))
+                blocks.append(StarFileBlock(loops, name=block_name, properties=properties))
 
-            logger.info(f'Starfile parse complete')
+            logger.info(f'StarFile parse complete')
 
-        logger.info(f'Initializing Starfile object from data')
+        logger.info(f'Initializing StarFile object from data')
         self.init_from_blocks(blocks)
         logger.info(f'Created <{self}>')
 
     def init_from_blocks(self, blocks):
         """
-        Initialize a Starfile from a list of blocks
-        :param blocks: A list of StarfileBlock objects
-        :return: An initialized Starfile object
+        Initialize a StarFile from a list of blocks
+        :param blocks: A list of StarFileBlock objects
+        :return: An initialized StarFile object
         """
         self.blocks = blocks
         self.block_names = [block.name for block in self.blocks]
 
     def __repr__(self):
-        return f'Starfile with {len(self.blocks)} blocks'
+        return f'StarFile with {len(self.blocks)} blocks'
 
     def __getitem__(self, item):
         if isinstance(item, str):
