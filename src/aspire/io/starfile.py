@@ -1,5 +1,6 @@
 import os.path
 import logging
+from collections import OrderedDict
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ class StarFileBlock:
 class StarFile:
     def __init__(self, starfile_path=None, blocks=None):
 
-        self.blocks = self.block_names = None
+        self.blocks = OrderedDict()
 
         if starfile_path is not None:
             self.init_from_starfile(starfile_path)
@@ -119,20 +120,20 @@ class StarFile:
     def init_from_blocks(self, blocks):
         """
         Initialize a StarFile from a list of blocks
-        :param blocks: A list of StarFileBlock objects
+        :param blocks: An iterable of StarFileBlock objects
         :return: An initialized StarFile object
         """
-        self.blocks = blocks
-        self.block_names = [block.name for block in self.blocks]
+        for block in blocks:
+            self.blocks[block.name] = block
 
     def __repr__(self):
         return f'StarFile with {len(self.blocks)} blocks'
 
     def __getitem__(self, item):
         if isinstance(item, str):
-            return self.blocks[self.block_names.index(item)]
-        else:
             return self.blocks[item]
+        else:
+            return self.blocks[list(self.blocks.keys())[item]]
 
     def __len__(self):
         return len(self.blocks)
@@ -146,7 +147,7 @@ class StarFile:
 
         with open(filename, 'w') as f:
             for i, block in enumerate(self):
-                f.write(f'data_{self.block_names[i]}\n\n')
+                f.write(f'data_{block.name}\n\n')
                 if block.properties is not None:
                     for k, v in block.properties.items():
                         f.write(f'{k} {v}\n')
