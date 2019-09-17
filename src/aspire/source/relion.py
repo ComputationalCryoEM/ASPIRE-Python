@@ -53,9 +53,12 @@ class RelionSource(ImageSource):
     }
 
     @classmethod
-    def starfile2df(cls, filepath, max_rows=np.inf):
-
-        dirpath = os.path.dirname(filepath)
+    def starfile2df(cls, filepath, data_folder=None, max_rows=np.inf):
+        if data_folder is not None:
+            if not os.path.isabs(data_folder):
+                data_folder = os.path.join(os.path.dirname(filepath), data_folder)
+        else:
+            data_folder = os.path.dirname(filepath)
 
         # Note: Valid Relion image "_data.star" files have to have their data in the first loop of the first block.
         # We thus index our StarFile class with [0][0].
@@ -72,14 +75,16 @@ class RelionSource(ImageSource):
 
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself
-        df['__mrc_filepath'] = df['__mrc_filename'].apply(lambda filename: os.path.join(dirpath, filename))
+        df['__mrc_filepath'] = df['__mrc_filename'].apply(lambda filename: os.path.join(data_folder, filename))
 
         return df.iloc[:max_rows]
 
-    def __init__(self, filepath, pixel_size=1, B=0, n_workers=-1, max_rows=np.inf):
+    def __init__(self, filepath, data_folder=None, pixel_size=1, B=0, n_workers=-1, max_rows=np.inf):
         """
         Load STAR file at given filepath
         :param filepath: Absolute or relative path to STAR file
+        :param data_folder: Path to folder w.r.t which all relative paths to .mrcs files are resolved.
+            If None, the folder corresponding to filepath is used.
         :param pixel_size: the pixel size of the images in angstroms (Default 1)
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
         :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
@@ -87,13 +92,13 @@ class RelionSource(ImageSource):
             Note that this refers to the max number of images to load, not the max. number of .mrcs files (which may be
             equal to or less than the number of images).
         """
-        logger.debug(f'Creating ImageSource from starfile at path {filepath}')
+        logger.debug(f'Creating ImageSource from STAR file at path {filepath}')
 
         self.pixel_size = pixel_size
         self.B = B
         self.n_workers = n_workers
 
-        metadata = self.__class__.starfile2df(filepath, max_rows)
+        metadata = self.__class__.starfile2df(filepath, data_folder, max_rows)
 
         n = len(metadata)
         if n == 0:

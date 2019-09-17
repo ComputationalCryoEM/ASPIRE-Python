@@ -16,21 +16,31 @@ class StarFileTestCase(TestCase):
     def run(self, result=None):
         """Overridden run method to use context manager provided by importlib_resources"""
         with importlib_resources.path(aspire.data, 'sample_relion_data.star') as path:
-            # Create a temporary file with the contents of the sample.mrcs file at the same location as the starfile,
-            # to allow our classes to do their job
-            temp_file_path = os.path.join(path.parent.absolute(), 'sample.mrcs')
 
-            should_delete = False
+            # Create a temporary file with the contents of the sample.mrcs file in a subfolder at the same location
+            # as the starfile, to allow our classes to do their job
+            temp_folder_path = os.path.join(path.parent.absolute(), '_temp')
+
+            should_delete_folder = False
+            if not os.path.exists(temp_folder_path):
+                os.mkdir(temp_folder_path)
+                should_delete_folder = True
+
+            temp_file_path = os.path.join(temp_folder_path, 'sample.mrcs')
+
+            should_delete_file = False
             if not os.path.exists(temp_file_path):
                 with open(temp_file_path, 'wb') as f:
                     f.write(importlib_resources.read_binary(aspire.data, 'sample.mrcs'))
-                should_delete = True
+                    should_delete_file = True
 
-            self.src = RelionSource(path, max_rows=12)
+            self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)
             super(StarFileTestCase, self).run(result)
 
-            if should_delete:
+            if should_delete_file:
                 os.remove(temp_file_path)
+            if should_delete_folder:
+                os.removedirs(temp_folder_path)
 
     def setUp(self):
         pass
