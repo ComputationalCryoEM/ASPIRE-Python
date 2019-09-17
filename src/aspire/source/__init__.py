@@ -201,7 +201,7 @@ class ImageSource:
 
         return im
 
-    def eval_filter_grid(self, L):
+    def eval_filter_grid(self, L, power=1):
         grid2d = grid_2d(L)
         omega = np.pi * np.vstack((grid2d['x'].flatten(), grid2d['y'].flatten()))
 
@@ -209,9 +209,13 @@ class ImageSource:
         for f in set(self.filters):
             idx_k = np.where(self.filters == f)[0]
             if len(idx_k) > 0:
-                h[:, idx_k] = np.column_stack((f.evaluate(omega),) * len(idx_k))
+                filter_values = f.evaluate(omega)
+                if power != 1:
+                    filter_values **= power
+                h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
         h = np.reshape(h, grid2d['x'].shape + (len(self.filters),))
+
         return h
 
     def cache(self, im=None):

@@ -43,8 +43,7 @@ class CovarianceEstimator(Estimator):
         _2L = 2 * self.L
 
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.as_type)
-        filters_f = self.src.eval_filter_grid(L)
-        sq_filters_f = np.array(filters_f ** 2, dtype=self.as_type)
+        sq_filters_f = self.src.eval_filter_grid(self.L, power=2)
 
         for i in tqdm(range(0, n, self.batch_size)):
             _range = np.arange(i, min(n, i + self.batch_size))
