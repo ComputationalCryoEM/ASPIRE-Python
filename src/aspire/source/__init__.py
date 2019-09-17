@@ -5,11 +5,10 @@ import pandas as pd
 
 from aspire.image import Image
 from aspire.volume import im_backproject, vol_project
-from aspire.utils.filters import ScalarFilter
+
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, angles_to_rots, rots_to_angles
-from aspire.utils.matlab_compat import randn
 from aspire.io.starfile import StarFile, StarFileBlock
 
 logger = logging.getLogger(__name__)
@@ -180,9 +179,9 @@ class ImageSource:
         :param start: start index of image
         :param num: number of images to return
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :return: A 3d volume of images of size L x L x n
+        :return: A 3D volume of images of size L x L x n
         """
-        raise NotImplementedError('Subclasses should implement this and return a 3d ndarray')
+        raise NotImplementedError('Subclasses should implement this and return an Image object')
 
     def group_by(self, by):
         for by_value, df in self._metadata.groupby(by, sort=False):
@@ -224,37 +223,16 @@ class ImageSource:
             im = self.images()
         self._im = im
 
-    def images(self, start=0, num=np.inf, indices=None, apply_noise=False):
+    def images(self, start=0, num=np.inf, indices=None, *args, **kwargs):
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
         if self._im is not None:
             im = Image(self._im[:, :, indices])
         else:
-            im = Image(self._images(start=start, num=num, indices=indices))
+            im = self._images(start=start, num=num, indices=indices, *args, **kwargs)
 
-        if apply_noise:
-            im += self._noise_images(start=start, num=num, indices=indices)
         return im
-
-    def _noise_images(self, start=0, num=np.inf, indices=None, noise_seed=0, noise_filter=None):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
-
-        if noise_filter is None:
-            noise_filter = ScalarFilter(value=1, power=0.5)
-
-        im = np.zeros((self.L, self.L, len(indices)), dtype=self.dtype)
-
-        for idx in indices:
-            random_seed = noise_seed + 191*(idx+1)
-            im_s = randn(2*self.L, 2*self.L, seed=random_seed)
-            im_s = Image(im_s).filter(noise_filter)[:, :, 0]
-            im_s = im_s[:self.L, :self.L]
-
-            im[:, :, idx-start] = im_s
-
-        return Image(im)
 
     def set_max_resolution(self, max_L):
         ensure(max_L <= self.L, "Max desired resolution should be less than the current resolution")

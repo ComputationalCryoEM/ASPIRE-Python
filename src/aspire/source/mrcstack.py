@@ -1,7 +1,7 @@
 import numpy as np
 from aspire.io.micrograph import Micrograph
 from aspire.source import ImageSource
-
+from aspire.image import Image
 
 class MrcStack(ImageSource):
     def __init__(self, filepath):
@@ -15,4 +15,4 @@ class MrcStack(ImageSource):
     def _images(self, start=0, num=np.inf, indices=None):
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
-        return self.im[:, :, indices]
+        return Image(self.im[:, :, indices])

@@ -196,4 +196,4 @@ class RelionSource(ImageSource):
 
         logger.info(f'Loading {len(indices)} images complete')
 
-        return im
+        return Image(im)

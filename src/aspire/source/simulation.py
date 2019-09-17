@@ -2,10 +2,11 @@ import numpy as np
 from scipy.linalg import qr, eigh
 
 from aspire.source import ImageSource
+from aspire.utils.filters import ScalarFilter
 from aspire.image import Image
 from aspire.volume import vol_project
 from aspire.utils import ensure
-from aspire.utils.matlab_compat import Random, m_reshape
+from aspire.utils.matlab_compat import Random
 from aspire.utils.coor_trans import grid_3d
 from aspire.utils.matlab_compat import rand, randi, randn
 from aspire.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
@@ -116,12 +117,13 @@ class Simulation(ImageSource):
             im[:, :, idx_k] = im_k
         return im
 
-    def _images(self, start=0, num=np.inf, indices=None):
+    def _images(self, start=0, num=np.inf, indices=None, apply_noise=False):
         """
         Return images from the source.
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
+        :param apply_noise: A boolean indicating whether we should apply noise to the generated images
         :return: An ndarray of shape (L, L, num) where L = min(L, max_L), L being the size of each image.
         """
         if indices is None:
@@ -135,6 +137,28 @@ class Simulation(ImageSource):
 
         # Amplitudes
         im *= np.broadcast_to(self.amplitudes[indices], (self.L, self.L, len(indices)))
+
+        if apply_noise:
+            im += self._noise_arrays(start=start, num=num, indices=indices)
+
+        return Image(im)
+
+    def _noise_arrays(self, start=0, num=np.inf, indices=None, noise_seed=0, noise_filter=None):
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
+
+        if noise_filter is None:
+            noise_filter = ScalarFilter(value=1, power=0.5)
+
+        im = np.zeros((self.L, self.L, len(indices)), dtype=self.dtype)
+
+        for idx in indices:
+            random_seed = noise_seed + 191*(idx+1)
+            im_s = randn(2*self.L, 2*self.L, seed=random_seed)
+            im_s = Image(im_s).filter(noise_filter)[:, :, 0]
+            im_s = im_s[:self.L, :self.L]
+
+            im[:, :, idx-start] = im_s
 
         return im
 
