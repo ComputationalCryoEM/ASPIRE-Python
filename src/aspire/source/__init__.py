@@ -165,7 +165,7 @@ class ImageSource:
         Get metadata field information of this ImageSource for selected indices
         :param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
         :param indices: A list of 0-based indices indicating the indices for which to get metadata.
-            If indices is None, then
+            If indices is None, then values corresponding to all indices in this Source object are returned.
         :return: An ndarray of values (any valid np types) representing metadata info.
         """
         if indices is None:
