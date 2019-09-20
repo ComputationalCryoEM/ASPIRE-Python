@@ -20,7 +20,7 @@ dependencies:
   - python=3.6
   - scikit-image=0.14.0
   - scikit-learn
-  - scipy=0.19.1
+  - scipy=1.0.0
   - wheel
   - pip:
     - console_progressbar
