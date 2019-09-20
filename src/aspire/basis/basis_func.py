@@ -384,6 +384,13 @@ def t_x_derivative_mat(t1, t2, x, big_n, range_array, approx_length):
            (big_n + 0.5) * np.outer(np.power(x, big_n - 0.5), t2) * p_n(approx_length - 1, big_n, 0, t1)
 
 
+def t_radial_part_mat(x, n, j, m):
+    a = np.power(x, n)
+    b = np.sqrt(2 * (2 * j + n + 1))
+    c = p_n(m - 1, n, 0, 1 - 2 * np.square(x))
+    return np.einsum('i,j,ij->ij', a, b, c)
+
+
 def k_operator(nu, x):
     return jn(nu, x) * np.sqrt(x)
 
