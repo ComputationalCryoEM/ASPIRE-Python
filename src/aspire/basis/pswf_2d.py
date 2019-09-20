@@ -39,7 +39,17 @@ class PSWFBasis2D(Basis):
 
     def _build(self):
 
-        logger.info('Expanding 2D images in the direct method using PSFW basis functions.')
+        logger.info('Expanding 2D images in the direct method using PSWF basis functions.')
+
+        # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
+        self.bandlimit = self.beta * np.pi * self.resolution
+        self.d_vec_all, self.alpha_all, self.lengths = self.init_pswf_func2d(self.bandlimit, eps=np.spacing(1))
+
+        # generate_the 2D grid and corresponding indices inside the disc.
+        self.generate_grid()
+
+        # precompute the basis functions in 2D grids
+        self.precomp()
 
         # calculate total number of basis functions
         # self.basis_count = self.k_max[0] + sum(2 * self.k_max[1:])
@@ -50,17 +60,23 @@ class PSWFBasis2D(Basis):
         # generate 1D indices for basis functions
         # self._indices = self.indices()
 
-        # precompute the basis functions in 2D grids
-        # self._precomp = self.precomp()
-        self.precomp()
-
-        # get normalized factors
-        # self._norms = self.norms()
+    def generate_grid(self):
+        if self.even:
+            x_1d_grid = range(-self.resolution, self.resolution)
+        else:
+            x_1d_grid = range(-self.resolution, self.resolution + 1)
+        x_2d_grid, y_2d_grid = np.meshgrid(x_1d_grid, x_1d_grid)
+        r_2d_grid = np.sqrt(np.square(x_2d_grid) + np.square(y_2d_grid))
+        points_inside_the_circle = r_2d_grid <= self.resolution
+        x = y_2d_grid[points_inside_the_circle]
+        y = x_2d_grid[points_inside_the_circle]
+        self.r_2d_grid_on_the_circle = np.sqrt(np.square(x) + np.square(y)) / self.resolution
+        self.theta_2d_grid_on_the_circle = np.angle(x + 1j * y)
+        self.image_height = len(x_1d_grid)
+        self.points_inside_the_circle = points_inside_the_circle
+        self.points_inside_the_circle_vec = points_inside_the_circle.reshape(self.image_height ** 2)
 
     def precomp(self):
-
-        bandlimit = self.beta * np.pi * self.resolution
-        self.d_vec_all, self.alpha_all, self.lengths = self.init_pswf_func2d(bandlimit, eps=np.spacing(1))
 
         max_ns = []
         a = np.square(float(self.beta * self.resolution) / 2)
@@ -83,34 +99,14 @@ class PSWFBasis2D(Basis):
                 alpha_all.extend(alpha[:n_end])
                 m += 1
 
-        if self.even:
-            x_1d_grid = range(-self.resolution, self.resolution)
-        else:
-            x_1d_grid = range(-self.resolution, self.resolution + 1)
-            
-        x_2d_grid, y_2d_grid = np.meshgrid(x_1d_grid, x_1d_grid)
-        r_2d_grid = np.sqrt(np.square(x_2d_grid) + np.square(y_2d_grid))
-        points_inside_the_circle = r_2d_grid <= self.resolution
-        x = y_2d_grid[points_inside_the_circle]
-        y = x_2d_grid[points_inside_the_circle]
-
-        r_2d_grid_on_the_circle = np.sqrt(np.square(x) + np.square(y)) / self.resolution
-        theta_2d_grid_on_the_circle = np.angle(x + 1j * y)
-
-        self.samples = self.evaluate_pswf2d_all(r_2d_grid_on_the_circle, theta_2d_grid_on_the_circle, max_ns)
+        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_on_the_circle, self.theta_2d_grid_on_the_circle, max_ns)
 
         self.angular_frequency = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
         self.radian_frequency = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
         self.alpha_nn = np.array(alpha_all)
+
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
-        #self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn.conj()
         self.samples_conj_transpose = self.samples.conj().transpose()
-
-        self.image_height = len(x_1d_grid)
-
-        self.points_inside_the_circle = points_inside_the_circle
-
-        self.points_inside_the_circle_vec = points_inside_the_circle.reshape(self.image_height ** 2)
 
         self.non_neg_freq_inds = slice(0, len(self.angular_frequency))
 
@@ -119,15 +115,6 @@ class PSWFBasis2D(Basis):
 
         tmp = np.nonzero(self.angular_frequency > 0)[0]
         self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
-
-    def get_points_inside_the_circle(self):
-        return self.points_inside_the_circle
-
-    def mask_points_inside_the_circle(self, images):
-        return self.__mask_points_inside_the_circle_cpu(images)
-
-    def __mask_points_inside_the_circle_cpu(self, images):
-        return images * self.points_inside_the_circle
 
     def evaluate_t(self, images):
         images_shape = images.shape
@@ -158,6 +145,15 @@ class PSWFBasis2D(Basis):
         images[self.get_points_inside_the_circle(), :] = flatten_images
         images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images)
+
+    def get_points_inside_the_circle(self):
+        return self.points_inside_the_circle
+
+    def mask_points_inside_the_circle(self, images):
+        return self.__mask_points_inside_the_circle_cpu(images)
+
+    def __mask_points_inside_the_circle_cpu(self, images):
+        return images * self.points_inside_the_circle
 
     def get_samples_as_images(self):
         print("get_samples_as_images is not supported.")
