@@ -141,21 +141,17 @@ class StarFile:
     def __eq__(self, other):
         return all(b1 == b2 for b1, b2 in zip(self.blocks, other.blocks))
 
-    def save(self, filename, overwrite=True):
-        if not overwrite and os.path.exists(filename):
-            raise RuntimeError(f'File {filename} already exists. Use overwrite=True to overwrite.')
-
-        with open(filename, 'w') as f:
-            for i, block in enumerate(self):
-                f.write(f'data_{block.name}\n\n')
-                if block.properties is not None:
-                    for k, v in block.properties.items():
-                        f.write(f'{k} {v}\n')
+    def save(self, f):
+        for i, block in enumerate(self):
+            f.write(f'data_{block.name}\n\n')
+            if block.properties is not None:
+                for k, v in block.properties.items():
+                    f.write(f'{k} {v}\n')
+            f.write('\n')
+            for loop in block:
+                f.write('loop_\n')
+                for col in loop.columns:
+                    f.write(f'{col}\n')
+                for _, row in loop.iterrows():
+                    f.write(' '.join(map(str, row)) + '\n')
                 f.write('\n')
-                for loop in block:
-                    f.write('loop_\n')
-                    for col in loop.columns:
-                        f.write(f'{col}\n')
-                    for _, row in loop.iterrows():
-                        f.write(' '.join(map(str, row)) + '\n')
-                    f.write('\n')

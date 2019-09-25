@@ -69,7 +69,8 @@ class StarFileTestCase(TestCase):
         # Save the StarFile object to disk, re-read it back, and check for equality
         # Note that __eq__ is supported for StarFile/StarFileBlock classes
 
-        self.starfile.save('sample_saved.star')
+        with open('sample_saved.star', 'w') as f:
+            self.starfile.save(f)
         self.starfile2 = StarFile('sample_saved.star')
         self.assertEqual(self.starfile, self.starfile2)
 

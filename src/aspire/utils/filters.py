@@ -151,6 +151,9 @@ class ScalarFilter(Filter):
         super().__init__(dim=dim, radial=True, power=power)
         self.value = value
 
+    def __repr__(self):
+        return f'Scalar Filter (dim={self.dim}, value={self.value}, power={self.power})'
+
     def _evaluate(self, omega):
         return self.value * np.ones_like(omega)
 

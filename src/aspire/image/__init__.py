@@ -92,6 +92,9 @@ class Image:
     def __getitem__(self, item):
         return self.data[item]
 
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
     def __add__(self, other):
         return Image(self.data + other.data)
 
@@ -100,6 +103,9 @@ class Image:
 
     def asnumpy(self):
         return self.data
+
+    def copy(self):
+        return Image(self.data.copy())
 
     def shift(self, shifts):
         """

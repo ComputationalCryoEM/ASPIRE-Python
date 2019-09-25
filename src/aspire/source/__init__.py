@@ -80,14 +80,17 @@ class ImageSource:
     @filters.setter
     def filters(self, values):
         self.set_metadata('filter', values)
-        new_values = np.array([(
-            getattr(f, 'voltage', np.nan),
-            getattr(f, 'defocus_u', np.nan),
-            getattr(f, 'defocus_v', np.nan),
-            getattr(f, 'defocus_ang', np.nan),
-            getattr(f, 'Cs', np.nan),
-            getattr(f, 'alpha', np.nan)
-        ) for f in values])
+        if values is None:
+            new_values = np.nan
+        else:
+            new_values = np.array([(
+                getattr(f, 'voltage', np.nan),
+                getattr(f, 'defocus_u', np.nan),
+                getattr(f, 'defocus_v', np.nan),
+                getattr(f, 'defocus_ang', np.nan),
+                getattr(f, 'Cs', np.nan),
+                getattr(f, 'alpha', np.nan)
+            ) for f in values])
 
         self.set_metadata(
             ['_voltage', '_defocus_u', '_defocus_v', '_defocus_ang', '_Cs', '_alpha'],
@@ -312,21 +315,37 @@ class ImageSource:
 
         return im
 
-    def to_starfile(self, mrcs_filename):
+    def _to_starfile_loopdata(self):
         df = self._metadata.copy()
-        df['_image_name'] = pd.Series(['{0:06}@{1}'.format(i+1, mrcs_filename) for i in range(self.n)])
         df = df.rename(self._metadata_aliases, axis=1)
         df = df.drop([str(col) for col in df.columns if not col.startswith('_')], axis=1)
 
-        return StarFile(blocks=[StarFileBlock(loops=[df])])
+        return df
 
-    def save(self, starfile_filepath, overwrite=True):
-        # TODO: Support optional start/num parameters
-        mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + '.mrcs'
-        mrcs_filepath = os.path.join(
-            os.path.dirname(starfile_filepath),
-            mrcs_filename
-        )
+    def save(self, starfile_filepath, batch_size=1024, overwrite=False):
 
-        self.images().save(mrcs_filepath, overwrite=overwrite)
-        self.to_starfile(mrcs_filename).save(starfile_filepath, overwrite=overwrite)
+        df = self._to_starfile_loopdata()
+
+        # Create a new column that we will be populating in the loop below
+        df['_image_name'] = ''
+
+        with open(starfile_filepath, 'w') as f:
+            for i_start in np.arange(0, self.n, batch_size):
+
+                i_end = min(self.n, i_start + batch_size)
+                num = i_end - i_start
+
+                mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + f'_{i_start}_{i_end}.mrcs'
+                mrcs_filepath = os.path.join(
+                    os.path.dirname(starfile_filepath),
+                    mrcs_filename
+                )
+
+                logger.info(f'Saving ImageSource[{i_start}-{i_end}] to {mrcs_filepath}')
+                im = self.images(start=i_start, num=num)
+                im.save(mrcs_filepath, overwrite=overwrite)
+
+                df['_image_name'][i_start: i_end] = pd.Series(['{0:06}@{1}'.format(j + 1, mrcs_filepath) for j in range(num)])
+
+            starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
+            starfile.save(f)

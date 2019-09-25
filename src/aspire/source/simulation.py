@@ -7,7 +7,7 @@ from aspire.image import Image
 from aspire.volume import vol_project
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import Random
-from aspire.utils.coor_trans import grid_3d
+from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.matlab_compat import rand, randi, randn
 from aspire.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
 
@@ -29,7 +29,7 @@ class Simulation(ImageSource):
             min_, max_ = 2./3, 3./2
             amplitudes = min_ + rand(n, seed=seed) * (max_ - min_)
         states = states or randi(C, n, seed=seed)
-        angles = angles or self._uniform_random_angles(n, seed=seed)
+        angles = angles or uniform_random_angles(n, seed=seed)
 
         self.states = states
         if filters is not None:
@@ -41,16 +41,7 @@ class Simulation(ImageSource):
         self.angles = angles
         self.C = C
         self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
-
-    def _uniform_random_angles(self, n, seed=None):
-        # Generate random rotation angles, in radians
-        with Random(seed):
-            angles = np.column_stack((
-                np.random.random(n) * 2 * np.pi,
-                np.arccos(2 * np.random.random(n) - 1),
-                np.random.random(n) * 2 * np.pi
-            ))
-        return angles
+        self.seed = seed
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
         """
@@ -101,6 +92,13 @@ class Simulation(ImageSource):
         return vol
 
     def clean_images(self, start=0, num=np.inf, indices=None):
+        """
+        Return images without applying filters/shifts/amplitudes/noise
+        :param start: start index (0-indexed) of the start image to return
+        :param num: Number of images to return. If None, *all* images are returned.
+        :param indices: A numpy array of image indices. If specified, start and num are ignored.
+        :return: An ndarray of shape (L, L, num), L being the size of each image.
+        """
         if indices is None:
             indices = np.arange(start, min(start+num, self.n))
 
@@ -117,29 +115,31 @@ class Simulation(ImageSource):
             im[:, :, idx_k] = im_k
         return im
 
-    def _images(self, start=0, num=np.inf, indices=None, apply_noise=False):
+    def _images(self, start=0, num=np.inf, indices=None, apply_noise=False, clean=False):
         """
         Return images from the source.
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
         :param apply_noise: A boolean indicating whether we should apply noise to the generated images
-        :return: An ndarray of shape (L, L, num) where L = min(L, max_L), L being the size of each image.
+        :param clean: A boolean indicating whether to return images without filters/shifts/amplitudes/noise applied.
+            If True, the apply_noise parameter is ignored.
+        :return: An Image of shape (L, L, num), L being the size of each image.
         """
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
         im = self.clean_images(start=start, num=num, indices=indices)
+
+        if clean:
+            return Image(im)
+
         im = self.eval_filters(im, start=start, num=num, indices=indices)
-
-        # Translations
         im = Image(im).shift(self.offsets[indices, :]).asnumpy()
-
-        # Amplitudes
         im *= np.broadcast_to(self.amplitudes[indices], (self.L, self.L, len(indices)))
 
         if apply_noise:
-            im += self._noise_arrays(start=start, num=num, indices=indices)
+            im += self._noise_arrays(start=start, num=num, indices=indices, noise_seed=self.seed)
 
         return Image(im)
 

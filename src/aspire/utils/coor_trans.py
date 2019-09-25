@@ -3,7 +3,7 @@ General purpose math functions, mostly geometric in nature.
 """
 
 import numpy as np
-from aspire.utils.matlab_compat import randn
+from aspire.utils.matlab_compat import randn, Random
 
 
 def cart2pol(x, y):
@@ -213,3 +213,19 @@ def qrand_rots(nrot, seed=0):
 
     return q_to_rot(qs)
 
+
+def uniform_random_angles(n, seed=None):
+    """
+    Generate random 3D rotation angles
+    :param n: The number of rotation angles to generate
+    :param seed: Random integer seed to use. If None, the current random state is used.
+    :return: A n-by-3 ndarray of rotation angles
+    """
+    # Generate random rotation angles, in radians
+    with Random(seed):
+        angles = np.column_stack((
+            np.random.random(n) * 2 * np.pi,
+            np.arccos(2 * np.random.random(n) - 1),
+            np.random.random(n) * 2 * np.pi
+        ))
+    return angles
