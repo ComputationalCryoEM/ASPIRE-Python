@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__)
 
 
 class MRAClass2D(Class2D):
-
     def __init__(self, src):
         """
         constructor of an object for classifying 2D images using

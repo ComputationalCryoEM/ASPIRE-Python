@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__)
 
 
 class Cov3D(Class3D):
-
     def __init__(self, src):
         """
         constructor of an object for classifying 3D images

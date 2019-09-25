@@ -34,7 +34,7 @@ class PreProcessor:
         """
             Reduce the size of a vector, square or cube 'mat' by cropping (or
             increase the size by padding with fill_value, by default zero) to a final
-            size of n, (n x n), or (n x n x n) respectively. This is the analogue of down-sample, but
+            size of n, (n x n), or (n x n x n) respectively. This is the analogue of downsample, but
             it doesn't change magnification.
 
             If mat is 2-dimensional and n is a vector, m is cropped to n=[mat_x mat_y].

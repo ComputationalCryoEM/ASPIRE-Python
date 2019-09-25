@@ -44,6 +44,7 @@ class Filter:
 
         if self.radial:
             h = np.take(h, idx)
+
         return h
 
     def _evaluate(self, omega):
@@ -108,10 +109,10 @@ class ArrayFilter(Filter):
             if xfer_fn_array.shape[0] % 2 == 0:
                 xfer_fn_array = np.concatenate((xfer_fn_array, np.array([xfer_fn_array[0]])))
         elif dim == 2:
-            # If we have a 2d array with an even no. of rows, append the first row reversed at the bottom
+            # If we have a 2d array with an even number of rows, append the first row reversed at the bottom
             if xfer_fn_array.shape[0] % 2 == 0:
                 xfer_fn_array = np.vstack((xfer_fn_array, xfer_fn_array[0, ::-1]))
-            # If we have a 2d array with an even no. of columns, append the first column reversed at the right
+            # If we have a 2d array with an even number of columns, append the first column reversed at the right
             if xfer_fn_array.shape[1] % 2 == 0:
                 xfer_fn_array = np.hstack((xfer_fn_array, xfer_fn_array[::-1, 0][:, np.newaxis]))
 
@@ -151,11 +152,15 @@ class ScalarFilter(Filter):
         super().__init__(dim=dim, radial=True, power=power)
         self.value = value
 
+    def __repr__(self):
+        return f'Scalar Filter (dim={self.dim}, value={self.value}, power={self.power})'
+
     def _evaluate(self, omega):
         return self.value * np.ones_like(omega)
 
     def scale(self, c):
-        return self
+        # TODO: Is this a bug?
+        pass
 
 
 class IdentityFilter(ScalarFilter):
@@ -215,7 +220,7 @@ class CTFFilter(Filter):
         if self.B:
             h *= np.exp(-self.B * r2)
 
-        return h
+        return h.squeeze()
 
     def scale(self, c=1):
         self.pixel_size *= c

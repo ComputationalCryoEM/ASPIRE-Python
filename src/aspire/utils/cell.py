@@ -9,7 +9,6 @@ class Cell2D:
     Define a base class of Cell to perform similar cell functions in MATLAB.
 
     """
-
     def __init__(self, rows, cols, dtype=None):
 
         if dtype is None:

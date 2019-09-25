@@ -7,7 +7,6 @@ class Reconstruct3D:
     """
     Define a base class for 3D reconstruction
     """
-
     def __init__(self, src):
         """
         constructor of an object for 3D reconstruction

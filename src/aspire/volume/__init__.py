@@ -99,7 +99,7 @@ def im_backproject(im, rot_matrices):
     """
     L, _, n = im.shape
     ensure(L == im.shape[1], "im must be LxLxK")
-    ensure(n == rot_matrices.shape[0], "No. of rotation matrices must match the number of images")
+    ensure(n == rot_matrices.shape[0], "Number of rotation matrices must match the number of images")
 
     pts_rot = rotated_grids(L, rot_matrices)
     pts_rot = m_reshape(pts_rot, (3, -1))

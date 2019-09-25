@@ -4,7 +4,6 @@ import numpy as np
 from unittest import TestCase
 
 
-from aspire.source import SourceFilter
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.utils.filters import RadialCTFFilter
@@ -17,7 +16,7 @@ from aspire.utils.matlab_compat import randn
 
 from aspire.denoise.covar2d import RotCov2D
 from aspire.denoise.covar2d_ctf import Cov2DCTF
-from aspire.image import im_filter_mat
+from aspire.image import Image
 
 
 import os.path
@@ -39,14 +38,13 @@ class Cov2DTestCase(TestCase):
         Cs = 2.0
         alpha = 0.1
 
+        filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1) for d in
+                   np.linspace(defocus_min, defocus_max, defocus_ct)]
+
         sim = Simulation(
             n=n,
             C=C,
-            filters=SourceFilter(
-                [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
-                 for d in np.linspace(defocus_min, defocus_max, defocus_ct)],
-                n=n
-            )
+            filters=filters
         )
 
         vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
@@ -59,17 +57,12 @@ class Cov2DTestCase(TestCase):
         sim.rots = qrand_rots(n, seed=0)
         self.imgs_clean = vol2img(vols[..., 0], sim.rots)
 
-        self.h_idx = sim.filters.indices
-        self.filters = sim.filters.filters
-        self.h_ctf = sim.filters.evaluate_grid(L)
-        h_fb = self.basis.evaluate_t(self.h_ctf)
+        self.h_idx = np.array([filters.index(f) for f in sim.filters])
+        self.filters = filters
         self.h_ctf_fb = [radial_filter2fb_mat(filt.evaluate_k, self.basis) for filt in self.filters]
 
-        self.imgs_ctf_clean = np.zeros_like(self.imgs_clean)
-        for k in range(defocus_ct):
-            mask = self.h_idx == k
-            self.imgs_ctf_clean[..., mask] = im_filter_mat(self.imgs_clean[..., mask],
-                                                           self.h_ctf[..., k])
+        self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
+
         sim.cache(self.imgs_ctf_clean)
 
         power_clean = anorm(self.imgs_ctf_clean)**2/np.size(self.imgs_ctf_clean)

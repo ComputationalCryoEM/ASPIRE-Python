@@ -11,7 +11,6 @@ class CommLineSync(Orient3D):
     SIAM J. Imaging Sciences, 5, 1088-1110 (2012).
 
     """
-
     def __init__(self, src):
         """
         constructor of an object for estimating 3D orientations

@@ -1,7 +1,6 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.source import SourceFilter
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 
@@ -14,10 +13,8 @@ class SimTestCase(TestCase):
         self.sim = Simulation(
             n=1024,
             L=8,
-            filters=SourceFilter(
-                filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-                n=1024
-            )
+            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+            seed=0
         )
 
     def tearDown(self):
@@ -38,11 +35,11 @@ class SimTestCase(TestCase):
         ))
 
     def testSimulationCleanImages(self):
-        images = self.sim.images(0, 512)
+        images = self.sim.images(0, 512).asnumpy()
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy')), rtol=1e-2))
 
     def testSimulationImages(self):
-        images = self.sim.images(0, 512, apply_noise=True)
+        images = self.sim.images(0, 512, apply_noise=True).asnumpy()
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_images_with_noise.npy')), rtol=1e-2))
 
     def testSimulationImagesShape(self):

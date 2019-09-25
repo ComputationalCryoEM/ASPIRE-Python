@@ -2,55 +2,46 @@ import numpy as np
 from scipy.linalg import qr, eigh
 
 from aspire.source import ImageSource
-from aspire.image import im_translate
+from aspire.utils.filters import ScalarFilter
+from aspire.image import Image
 from aspire.volume import vol_project
 from aspire.utils import ensure
-from aspire.utils.matlab_compat import Random, m_reshape
-from aspire.utils.coor_trans import grid_3d, angles_to_rots
+from aspire.utils.matlab_compat import Random
+from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.matlab_compat import rand, randi, randn
 from aspire.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
 
 
 class Simulation(ImageSource):
     def __init__(self, L=8, n=1024, states=None, filters=None, offsets=None, amplitudes=None, dtype='single', C=2,
-                 rots=None):
+                 angles=None, seed=0):
         """
         A Cryo-EM simulation
         Other than the base class attributes, it has:
 
-        :param C: The no. of distinct volumes
-        :param rots: A 3-by-3-by-n array of rotation matrices corresponding to viewing directions
+        :param C: The number of distinct volumes
+        :param angles: A 3-by-n array of rotation angles
         """
+        super().__init__(L=L, n=n, dtype=dtype)
 
-        offsets = offsets or L / 16 * randn(2, n, seed=0).T
+        offsets = offsets or L / 16 * randn(2, n, seed=seed).T
         if amplitudes is None:
             min_, max_ = 2./3, 3./2
-            amplitudes = min_ + rand(n, seed=0) * (max_ - min_)
-        states = states or randi(C, n, seed=0)
-        rots = rots or angles_to_rots(self._uniform_random_angles(n, seed=0))
+            amplitudes = min_ + rand(n, seed=seed) * (max_ - min_)
+        states = states or randi(C, n, seed=seed)
+        angles = angles or uniform_random_angles(n, seed=seed)
 
-        super().__init__(
-            L=L,
-            n=n,
-            states=states,
-            filters=filters,
-            offsets=offsets,
-            amplitudes=amplitudes,
-            rots=rots,
-            dtype=dtype
-        )
-
+        self.states = states
+        if filters is not None:
+            self.filters = np.take(filters, randi(len(filters), n, seed=seed) - 1)
+        else:
+            self.filters = None
+        self.offsets = offsets
+        self.amplitudes = amplitudes
+        self.angles = angles
         self.C = C
-        self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=0)
-
-    def _uniform_random_angles(self, n, seed=None):
-        with Random(seed):
-            angles = np.column_stack((
-                np.random.random(n) * 2 * np.pi,
-                np.arccos(2 * np.random.random(n) - 1),
-                np.random.random(n) * 2 * np.pi
-            ))
-        return angles
+        self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
+        self.seed = seed
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
         """
@@ -85,8 +76,7 @@ class Simulation(ImageSource):
 
     def eval_gaussian_blobs(self, L, Q, D, mu):
         g = grid_3d(L)
-        # Migration Note - Matlab (:) flattens in column-major order, so specify 'F' with flatten()
-        coords = np.array([g['x'].flatten('F'), g['y'].flatten('F'), g['z'].flatten('F')])
+        coords = np.array([g['x'].flatten(), g['y'].flatten(), g['z'].flatten()])
 
         K = Q.shape[-1]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(self.dtype)
@@ -97,44 +87,78 @@ class Simulation(ImageSource):
 
             vol += np.exp(-0.5 * np.sum(np.abs(coords_k)**2, axis=0))
 
-        vol = m_reshape(vol, g['x'].shape)
+        vol = np.reshape(vol, g['x'].shape)
 
         return vol
 
-    def clean_images(self, start=0, num=None):
-        all_idx = np.arange(start, min(start+num, self.n))
-        im = np.zeros((self.L, self.L, len(all_idx)))
+    def clean_images(self, start=0, num=np.inf, indices=None):
+        """
+        Return images without applying filters/shifts/amplitudes/noise
+        :param start: start index (0-indexed) of the start image to return
+        :param num: Number of images to return. If None, *all* images are returned.
+        :param indices: A numpy array of image indices. If specified, start and num are ignored.
+        :return: An ndarray of shape (L, L, num), L being the size of each image.
+        """
+        if indices is None:
+            indices = np.arange(start, min(start+num, self.n))
 
-        unique_states = np.unique(self.states[all_idx])
+        im = np.zeros((self.L, self.L, len(indices)))
+
+        states = self.states[indices]
+        unique_states = np.unique(states)
         for k in unique_states:
             vol_k = self.vols[:, :, :, k-1]
-            idx_k = np.where(self.states[all_idx] == k)[0]
-            rot = self.rots[all_idx[idx_k], :, :]
+            idx_k = np.where(states == k)[0]
+            rot = self.rots[indices[idx_k], :, :]
 
             im_k = vol_project(vol_k, rot)
             im[:, :, idx_k] = im_k
         return im
 
-    def _images(self, start=0, num=None):
+    def _images(self, start=0, num=np.inf, indices=None, apply_noise=False, clean=False):
         """
         Return images from the source.
         :param start: start index (0-indexed) of the start image to return
-        :param num: No. of images to return. If None, *all* images are returned.
-        :return: An ndarray of shape (L, L, num) where L = min(L, max_L), L being the size of each image.
+        :param num: Number of images to return. If None, *all* images are returned.
+        :param indices: A numpy array of image indices. If specified, start and num are ignored.
+        :param apply_noise: A boolean indicating whether we should apply noise to the generated images
+        :param clean: A boolean indicating whether to return images without filters/shifts/amplitudes/noise applied.
+            If True, the apply_noise parameter is ignored.
+        :return: An Image of shape (L, L, num), L being the size of each image.
         """
-        end = self.n
-        if num is not None:
-            end = min(start + num, self.n)
-        all_idx = np.arange(start, end)
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
 
-        im = self.clean_images(start, num)
-        im = self.filters(im, start, num)
+        im = self.clean_images(start=start, num=num, indices=indices)
 
-        # Translations
-        im = im_translate(im, self.offsets[all_idx, :])
+        if clean:
+            return Image(im)
 
-        # Amplitudes
-        im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
+        im = self.eval_filters(im, start=start, num=num, indices=indices)
+        im = Image(im).shift(self.offsets[indices, :]).asnumpy()
+        im *= np.broadcast_to(self.amplitudes[indices], (self.L, self.L, len(indices)))
+
+        if apply_noise:
+            im += self._noise_arrays(start=start, num=num, indices=indices, noise_seed=self.seed)
+
+        return Image(im)
+
+    def _noise_arrays(self, start=0, num=np.inf, indices=None, noise_seed=0, noise_filter=None):
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
+
+        if noise_filter is None:
+            noise_filter = ScalarFilter(value=1, power=0.5)
+
+        im = np.zeros((self.L, self.L, len(indices)), dtype=self.dtype)
+
+        for idx in indices:
+            random_seed = noise_seed + 191*(idx+1)
+            im_s = randn(2*self.L, 2*self.L, seed=random_seed)
+            im_s = Image(im_s).filter(noise_filter)[:, :, 0]
+            im_s = im_s[:self.L, :self.L]
+
+            im[:, :, idx-start] = im_s
 
         return im
 

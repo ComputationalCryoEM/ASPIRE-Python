@@ -334,7 +334,6 @@ class PipedObj:
     """ This object will be passed between piped commands and be
         used for saving intermediate results and settings.
     """
-
     def __init__(self, mrc_file, debug, verbosity):
         self.stack = mrcfile.open(mrc_file).data
         self.debug = debug
