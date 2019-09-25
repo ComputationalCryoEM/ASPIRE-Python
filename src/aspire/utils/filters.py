@@ -144,6 +144,7 @@ class ArrayFilter(Filter):
 
     def scale(self, c):
         self._scale *= c
+        return self
 
 
 class ScalarFilter(Filter):
@@ -174,7 +175,7 @@ class CTFFilter(Filter):
         A CTF (Contrast Transfer Function) Filter
 
         :param pixel_size:  Pixel size in Angstrom
-        :param voltage:  Electron voltage in kV
+        :param voltage:     Electron voltage in kV
         :param defocus_u:   Defocus depth along the u-axis in Angstrom
         :param defocus_v:   Defocus depth along the v-axis in Angstrom
         :param defocus_ang: Angle between the x-axis and the u-axis in radians
@@ -223,6 +224,7 @@ class CTFFilter(Filter):
 
     def scale(self, c=1):
         self.pixel_size *= c
+        return self
 
 
 class RadialCTFFilter(CTFFilter):
