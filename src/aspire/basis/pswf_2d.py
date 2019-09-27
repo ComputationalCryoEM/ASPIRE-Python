@@ -1,14 +1,12 @@
 import logging
 import numpy as np
-import scipy.linalg as linalg
 
 from aspire.basis import Basis
 from aspire.basis.bn_matrix import BNMatrix
-from aspire.basis.basis_func import d_decay_approx_fun, p_n, t_radial_part_mat, t_x_mat, t_x_derivative_mat
+from aspire.basis.basis_func import d_decay_approx_fun, t_radial_part_mat, t_x_mat, t_x_derivative_mat
 from aspire.basis.basis_func import k_operator, leggauss_0_1
 
 logger = logging.getLogger(__name__)
-
 
 class PSWFBasis2D(Basis):
     """
@@ -21,9 +19,6 @@ class PSWFBasis2D(Basis):
         functions on a disk", Appl. Comput. Harmon. Anal. 43, 381-403 (2017).
         3) Yoel Shkolnisky, "Prolate spheroidal wave functions on a disc-Integration and approximation of
         two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
-
-    Attributes:
-
     """
     def __init__(self, resolution, truncation, beta, even):
         # find max alpha for each N
@@ -33,9 +28,6 @@ class PSWFBasis2D(Basis):
         self.even = even
 
         self._build()
-
-        # linalg.init()  # TODO: is this the right place to do init???
-
 
     def _build(self):
 
