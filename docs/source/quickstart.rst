@@ -55,15 +55,15 @@ For example, to run the command on a sample data included in ASPIRE:
 
 .. code-block:: console
 
-    python -m aspire cov3d --starfile /path/to/aspire/data/sample.star --ignore_missing_files --pixel_size 1.338 --max_resolution 8 --cg_tol 0.2
+    python -m aspire cov3d --starfile /path/to/aspire/data/sample_relion_data.star --pixel_size 1.338 --max_resolution 8 --cg_tol 0.2
 
 .. note::
 
-    Pay special attention to the flags specified in the example above. The ``--ignore_missing_files`` flag ignores any mrcs files
-    referenced by the starfile but not found in the filesystem (as is the case with sample data provided in ASPIRE). The ``--max_resolution 8``
-    flag down-samples images to 8x8 pixels (needed otherwise you may run out of memory, and/or the script may take way too long to execute).
-    ``--cg_tol 0.2`` sets very liberal (and unrealistic) limits on optimization convergence tolerance, which is needed for such a small
-    dataset. For real datasets, you typically *do not* want to override this parameter.
+    Pay special attention to the flags specified in the example above. The ``--max_resolution 8``
+    flag down-samples images to 8x8 pixels (needed otherwise you may run out of memory, and/or the script may take way
+    too long to execute). ``--cg_tol 0.2`` sets very liberal (and unrealistic) limits on optimization convergence
+    tolerance, which is needed for such a small dataset. For real datasets, you typically *do not* want to override this
+    parameter.
 
 Use the ``--help`` argument to look for configurable options.
 

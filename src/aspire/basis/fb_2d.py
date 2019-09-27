@@ -25,7 +25,6 @@ class FBBasis2D(Basis):
     """
 
     # TODO: Methods that return dictionaries should return useful objects instead
-
     def __init__(self, size, ell_max=None):
         d = len(size)
         ensure(d == 2, 'Only two-dimensional basis functions are supported.')

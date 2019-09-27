@@ -1,7 +1,6 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.source import SourceFilter
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.estimation.noise import WhiteNoiseEstimator
@@ -14,10 +13,7 @@ class SimTestCase(TestCase):
     def setUp(self):
         self.sim = Simulation(
             n=1024,
-            filters=SourceFilter(
-                [RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-                n=1024
-            )
+            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
         )
 
     def tearDown(self):

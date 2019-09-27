@@ -8,7 +8,6 @@ class ClassAvg(Denoise):
     """
     Define a derived class for denoising 2D images using class average methods
     """
-
     def __init__(self, img_src, class_index):
         """
         constructor of an object for denoising 2D images using class averaging method. 

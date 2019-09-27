@@ -13,6 +13,7 @@ from aspire.aspire.common.config import AbinitioConfig
 from aspire.exceptions import WrongInput
 from aspire.aspire.common.logger import logger
 from aspire.aspire.utils.data_utils import validate_square_projections, c_to_fortran
+from aspire.image import _im_translate2 as im_translate
 
 
 class DiracBasis:
@@ -392,32 +393,6 @@ def im_filter(im, filter_f):
     im_filtered_f = im_f * filter_f
     im_filtered = np.real(icfft2(im_filtered_f))
     return im_filtered
-
-
-def im_translate(im, shifts):
-    n_im = im.shape[2]
-    n_shifts = shifts.shape[1]
-
-    if shifts.shape[0] != 2:
-        raise ValueError('Input `shifts` must be of size 2-by-n')
-
-    if n_shifts != 1 and n_shifts != n_im:
-        raise ValueError('The number of shifts must be 1 or match the number of images')
-
-    if im.shape[0] != im.shape[1]:
-        raise ValueError('Images must be square')
-
-    resolution = im.shape[1]
-    grid = np.fft.ifftshift(np.ceil(np.arange(-resolution / 2, resolution / 2)))
-    om_y, om_x = np.meshgrid(grid, grid)
-    phase_shifts = np.einsum('ij, k -> ijk', om_x, shifts[0]) + np.einsum('ij, k -> ijk', om_y, shifts[1])
-    phase_shifts /= resolution
-
-    mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
-    im_f = np.fft.fft2(im, axes=(0, 1))
-    im_translated_f = im_f * mult_f
-    im_translated = np.real(np.fft.ifft2(im_translated_f, axes=(0, 1)))
-    return im_translated
 
 
 def circularize_kernel_f(kernel_f):

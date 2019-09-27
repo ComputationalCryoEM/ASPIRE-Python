@@ -1,7 +1,6 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.source import SourceFilter
 from aspire.source.simulation import Simulation
 from aspire.basis.fb_3d import FBBasis3D
 from aspire.utils.filters import RadialCTFFilter
@@ -15,10 +14,7 @@ class MeanEstimatorTestCase(TestCase):
     def setUp(self):
         sim = Simulation(
             n=1024,
-            filters=SourceFilter(
-                [RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-                n=1024
-            )
+            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
         )
         basis = FBBasis3D((8, 8, 8))
         self.estimator = MeanEstimator(sim, basis, preconditioner='none')

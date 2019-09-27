@@ -4,7 +4,7 @@ import importlib_resources
 import os
 
 import aspire.data
-from aspire.source.relion import RelionStarfileStack
+from aspire.source.relion import RelionSource
 from aspire.image import Image
 from aspire.utils.filters import ScalarFilter
 
@@ -12,25 +12,35 @@ import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
-class StarfileTestCase(TestCase):
+class StarFileTestCase(TestCase):
     def run(self, result=None):
         """Overridden run method to use context manager provided by importlib_resources"""
-        with importlib_resources.path(aspire.data, 'sample.star') as path:
-            # Create a temporary file with the contents of the sample.mrcs file at the same location as the starfile,
-            # to allow our classes to do their job
-            temp_file_path = os.path.join(path.parent.absolute(), 'sample.mrcs')
+        with importlib_resources.path(aspire.data, 'sample_relion_data.star') as path:
 
-            should_delete = False
+            # Create a temporary file with the contents of the sample.mrcs file in a subfolder at the same location
+            # as the starfile, to allow our classes to do their job
+            temp_folder_path = os.path.join(path.parent.absolute(), '_temp')
+
+            should_delete_folder = False
+            if not os.path.exists(temp_folder_path):
+                os.mkdir(temp_folder_path)
+                should_delete_folder = True
+
+            temp_file_path = os.path.join(temp_folder_path, 'sample.mrcs')
+
+            should_delete_file = False
             if not os.path.exists(temp_file_path):
                 with open(temp_file_path, 'wb') as f:
                     f.write(importlib_resources.read_binary(aspire.data, 'sample.mrcs'))
-                should_delete = True
+                    should_delete_file = True
 
-            self.src = RelionStarfileStack(path, ignore_missing_files=True)
-            super(StarfileTestCase, self).run(result)
+            self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)
+            super(StarFileTestCase, self).run(result)
 
-            if should_delete:
+            if should_delete_file:
                 os.remove(temp_file_path)
+            if should_delete_folder:
+                os.removedirs(temp_folder_path)
 
     def setUp(self):
         pass
@@ -39,12 +49,11 @@ class StarfileTestCase(TestCase):
         pass
 
     def testImageStackType(self):
-        # Since src is an ImageSource, we can call images() on it to get an ImageStack
+        # Since src is an ImageSource, we can call images() on it to get an Image
         image_stack = self.src.images()
         self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
-        # Note that sample data only includes a single .mrcs file for the first 17 images
         # Load 10 images starting at index 0
         images = self.src.images(0, 10)
         self.assertEqual(images.shape, (200, 200, 10))
@@ -58,9 +67,9 @@ class StarfileTestCase(TestCase):
         ))
 
     def testMetadata(self):
-        # The 'df' attribute of the StarfileStack object is a Pandas Dataframe
-        # that contains relevant metadata for the individual .mrcs file(s)
-        self.assertAlmostEqual(3073.912046, self.src.df.iloc[0].rlnCoordinateY)
+        # The 'get_metadata' method of the StarFileStack object can be used to get metadata information
+        # for a particular image index. Here we get the '_rlnCoordinateY' attribute of the first image.
+        self.assertAlmostEqual(3073.912046, self.src.get_metadata('_rlnCoordinateY', [0])[0])
 
     def testImageDownsample(self):
         self.src.set_max_resolution(16)

@@ -5,7 +5,6 @@ from aspire.utils import ensure
 
 
 class FINufftPlan(Plan):
-
     def __init__(self, sz, fourier_pts, epsilon=1e-15, **kwargs):
         """
         A plan for non-uniform FFT (3D)
