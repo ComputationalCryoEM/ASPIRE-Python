@@ -93,62 +93,6 @@ def grid_3d(n):
     }
 
 
-def angles_to_rots(angles):
-    """
-    Generate 3 x 3 rotation matrices for given rotation angles
-    :param angles: An n-by-3 array of rotation angles
-    :return: An n-by-3-by-3 array of rotation matrix values
-    """
-    n_angles = angles.shape[0]
-    rots = np.zeros(shape=(n_angles, 3, 3))
-
-    for i in range(n_angles):
-        rots[i, :, :] = erot(angles[i, :])
-
-    return rots
-
-
-def erot(angles, *args):
-    return zrot(angles[0]) @ yrot(angles[1]) @ zrot(angles[2])
-
-
-def zrot(theta):
-    sin, cos = np.sin(theta), np.cos(theta)
-    return np.array([[cos, -sin, 0], [sin, cos, 0], [0, 0, 1]])
-
-
-def yrot(theta):
-    sin, cos = np.sin(theta), np.cos(theta)
-    return np.array([[cos, 0, sin], [0, 1, 0], [-sin, 0, cos]])
-
-
-def rots_to_angles(rots):
-    """
-    Generate rotation angles for given rotation matrices
-    :param rots: An n-by-3-by-3 array of rotation matrix values
-    :return: An n-by-3 array of rotation angles
-    """
-    n_rotations = rots.shape[0]
-    angles = np.zeros(shape=(n_rotations, 3))
-
-    for i in range(n_rotations):
-        angles[i, :] = eulang(rots[i, :, :])
-    return angles
-
-
-def eulang(rot):
-    """
-    Generate rotation angles for a single 3 x 3 rotation matrix
-    :param rot: A 3 x 3 rotation matrix
-    :return: A 3 element vector of angles
-    """
-    return np.array([
-        np.arctan2(rot[1, 2], rot[0, 2]),
-        np.arccos(rot[2, 2]),
-        np.arctan2(rot[2, 1], -rot[2, 0])
-    ])
-
-
 def qrand(nrot, seed=0):
 
     """
