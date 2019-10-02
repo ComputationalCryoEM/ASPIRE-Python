@@ -1,28 +1,29 @@
 import numpy as np
 from scipy.fftpack import ifftshift, ifft2, fft2
 from scipy.interpolate import RegularGridInterpolator
+import mrcfile
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2, centered_ifft2
-from aspire.utils.matrix import roll_dim, unroll_dim
 
 
-# TODO: The following functions all need to move inside the Image class
-def im_translate(im, shifts):
+# TODO: The implementation of these functions should move directly inside the appropriate Image methods that call them.
+def _im_translate(im, shifts):
     """
     Translate image by shifts
     :param im: An array of size L-by-L-by-n containing images to be translated.
-    :param shifts: An array of size 2-by-n specifying the shifts in pixels.
+    :param shifts: An array of size n-by-2 specifying the shifts in pixels.
         Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
     :return: The images translated by the shifts, with periodic boundaries.
+
+    TODO: This implementation is slower than _im_translate2
     """
-
     n_im = im.shape[-1]
-    n_shifts = shifts.shape[-1]
+    n_shifts = shifts.shape[0]
 
-    ensure(shifts.shape[0] == 2, "shifts must be 2xn")
-    ensure(n_shifts == 1 or n_shifts == n_im, "no. of shifts must be 1 or match the no. of images")
+    ensure(shifts.shape[-1] == 2, "shifts must be nx2")
+    ensure(n_shifts == 1 or n_shifts == n_im, "number of shifts must be 1 or match the number of images")
     ensure(im.shape[0] == im.shape[1], "images must be square")
 
     L = im.shape[0]
@@ -30,8 +31,8 @@ def im_translate(im, shifts):
     grid_1d = ifftshift(np.ceil(np.arange(-L/2, L/2))) * 2 * np.pi / L
     om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
 
-    phase_shifts_x = np.broadcast_to(-shifts[0, :], (L, L, n_shifts))
-    phase_shifts_y = np.broadcast_to(-shifts[1, :], (L, L, n_shifts))
+    phase_shifts_x = np.broadcast_to(-shifts[:, 0], (L, L, n_shifts))
+    phase_shifts_y = np.broadcast_to(-shifts[:, 1], (L, L, n_shifts))
     phase_shifts = (om_x[:, :, np.newaxis] * phase_shifts_x) + (om_y[:, :, np.newaxis] * phase_shifts_y)
 
     mult_f = np.exp(-1j * phase_shifts)
@@ -42,91 +43,136 @@ def im_translate(im, shifts):
     return im_translated
 
 
-def im_downsample(im, L_ds):
+def _im_translate2(im, shifts):
     """
-    Blur and downsample image
-    :param im: Set of images to be downsampled in the form of an array L-by-L-by-K, where K is the number of images.
-    :param L_ds: The desired resolution of the downsampled images. Must be smaller than L.
-    :return: An array of the form L_ds-by-L_ds-by-K consisting of the blurred and downsampled images.
+    Translate image by shifts
+    :param im: An array of size L-by-L-by-n containing images to be translated.
+    :param shifts: An array of size 2-by-n specifying the shifts in pixels.
+        Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
+    :return: The images translated by the shifts
+
+    TODO: This implementation has been moved here from aspire.aspire.abinitio and is faster than _im_translate.
     """
-    N = im.shape[0]
-    grid = grid_2d(N)
-    grid_ds = grid_2d(L_ds)
+    n_im = im.shape[2]
+    n_shifts = shifts.shape[1]
 
-    im_ds = np.zeros((L_ds, L_ds, im.shape[2])).astype(im.dtype)
+    if shifts.shape[0] != 2:
+        raise ValueError('Input `shifts` must be of size 2-by-n')
 
-    # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
-    x = y = np.ceil(np.arange(-N/2, N/2)) / (N/2)
+    if n_shifts != 1 and n_shifts != n_im:
+        raise ValueError('The number of shifts must be 1 or match the number of images')
 
-    mask = (np.abs(grid['x']) < L_ds/N) & (np.abs(grid['y']) < L_ds/N)
-    im = np.real(centered_ifft2(centered_fft2(im) * np.expand_dims(mask, 2)))
+    if im.shape[0] != im.shape[1]:
+        raise ValueError('Images must be square')
 
-    for s in range(im_ds.shape[-1]):
-        interpolator = RegularGridInterpolator(
-            (x, y),
-            im[:, :, s],
-            bounds_error=False,
-            fill_value=0
-        )
-        im_ds[:, :, s] = interpolator(np.dstack([grid_ds['x'], grid_ds['y']]))
+    resolution = im.shape[1]
+    grid = np.fft.ifftshift(np.ceil(np.arange(-resolution / 2, resolution / 2)))
+    om_y, om_x = np.meshgrid(grid, grid)
+    phase_shifts = np.einsum('ij, k -> ijk', om_x, shifts[0]) + np.einsum('ij, k -> ijk', om_y, shifts[1])
+    phase_shifts /= resolution
 
-    return im_ds
-
-
-def im_filter(im, filt, *args, **kwargs):
-    # TODO: Move inside appropriate object
-    L = im.shape[0]
-    im, sz_roll = unroll_dim(im, 3)
-    filter_vals = filt.evaluate_grid(L, *args, **kwargs)
-    im_f = centered_fft2(im)
-    if im_f.ndim > filter_vals.ndim:
-        im_f = np.expand_dims(filter_vals, 2) * im_f
-    else:
-        im_f = filter_vals * im_f
-    im = centered_ifft2(im_f)
-    im = np.real(im)
-    im = roll_dim(im, sz_roll)
-
-    return im
-
-def im_filter_mat(im, filt):
-    """
-    Apply filter matrix such as CTF to images
-    :param im: Set of images to be filtered in the form of an array L-by-L-by-K, where K is the number of images.
-    :param filt: The filter in the matrix format (at least an array L-by-L.
-    :return: An array of images after the filter applied.
-    """
-    # TODO: Move inside appropriate object
-    ensure(im.shape[0] == filt.shape[0], 'The images should have the same size of the filter.')
-    im, sz_roll = unroll_dim(im, 3)
-
-    im_f = centered_fft2(im)
-    if im_f.ndim > filt.ndim:
-        im_f = np.expand_dims(filt, 2) * im_f
-    else:
-        im_f = filt * im_f
-    im = centered_ifft2(im_f)
-    im = np.real(im)
-    im = roll_dim(im, sz_roll)
-
-    return im
-
+    mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
+    im_f = np.fft.fft2(im, axes=(0, 1))
+    im_translated_f = im_f * mult_f
+    im_translated = np.real(np.fft.ifft2(im_translated_f, axes=(0, 1)))
+    return im_translated
 
 
 class Image:
     def __init__(self, data):
-        ensure(data.ndim == 3, 'Initialize the image stack using a 3d ndarray.')
-        self._data = data
-        self.shape = self._data.shape
+        ensure(data.shape[0] == data.shape[1], 'Only square ndarrays are supported.')
+        if data.ndim == 2:
+            data = data[:, :, np.newaxis]
+
+        self.data = data
+        self.shape = self.data.shape
+        self.n_images = self.shape[-1]
+        self.res = self.shape[0]
 
     def __getitem__(self, item):
-        return self._data[item]
+        return self.data[item]
 
-    def shift(self):
-        raise NotImplementedError
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __add__(self, other):
+        return Image(self.data + other.data)
+
+    def __repr__(self):
+        return f'{self.n_images} images of size {self.res}x{self.res}'
+
+    def asnumpy(self):
+        return self.data
+
+    def copy(self):
+        return Image(self.data.copy())
+
+    def shift(self, shifts):
+        """
+        Translate image by shifts. This method returns a new Image.
+        :param shifts: An array of size n-by-2 specifying the shifts in pixels.
+            Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
+        :return: The Image translated by the shifts, with periodic boundaries.
+        """
+        if shifts.ndim == 1:
+            shifts = shifts[np.newaxis, :]
+
+        im_translated = _im_translate(self.data, shifts)
+        return Image(im_translated)
+
+    def downsample(self, ds_res):
+        """
+        Downsample Image to a specific resolution. This method returns a new Image.
+        :param ds_res: int - new resolution, should be <= the current resolution of this Image
+        :return: The downsampled Image object.
+        """
+        grid = grid_2d(self.res)
+        grid_ds = grid_2d(ds_res)
+
+        im_ds = np.zeros((ds_res, ds_res, self.n_images)).astype(self.data.dtype)
+
+        # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
+        res_by_2 = self.res / 2
+        x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
+
+        mask = (np.abs(grid['x']) < ds_res / self.res) & (np.abs(grid['y']) < ds_res / self.res)
+        im = np.real(centered_ifft2(centered_fft2(self.data) * np.expand_dims(mask, 2)))
+
+        for s in range(im_ds.shape[-1]):
+            interpolator = RegularGridInterpolator(
+                (x, y),
+                im[:, :, s],
+                bounds_error=False,
+                fill_value=0
+            )
+            im_ds[:, :, s] = interpolator(np.dstack([grid_ds['x'], grid_ds['y']]))
+
+        return Image(im_ds)
+
+    def filter(self, filter):
+        """
+        Apply a Filter object to the Image. This method returns a new Image.
+        :param filter: An object of type Filter
+        :return: A new filtered Image object.
+        """
+        filter_values = filter.evaluate_grid(self.res)
+
+        im_f = centered_fft2(self.data)
+        if im_f.ndim > filter_values.ndim:
+            im_f = np.expand_dims(filter_values, 2) * im_f
+        else:
+            im_f = filter_values * im_f
+        im = centered_ifft2(im_f)
+        im = np.real(im)
+
+        return Image(im)
 
     def rotate(self):
         raise NotImplementedError
+
+    def save(self, mrcs_filepath, overwrite=False):
+        with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
+            mrc.set_data(self.data.astype('float32'))
 
 
 class CartesianImage(Image):

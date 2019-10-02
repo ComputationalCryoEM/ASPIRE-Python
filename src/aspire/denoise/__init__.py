@@ -9,7 +9,6 @@ class Denoise:
     """
     Define a base class for denoising 2D images
     """
-
     def __init__(self, src, as_type='single'):
         """
         constructor of an object for denoising 2D images

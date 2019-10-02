@@ -24,5 +24,5 @@ class MicrographTestCase(TestCase):
         with importlib_resources.path(aspire.data, 'sample.mrcs') as path:
             micrograph = Micrograph(path)
 
-        # The first 2 dimensions are the shape of each image, the last dimension the no. of images
+        # The first 2 dimensions are the shape of each image, the last dimension the number of images
         self.assertEqual(micrograph.im.shape, (200, 200, 17))

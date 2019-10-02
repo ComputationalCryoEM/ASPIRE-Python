@@ -20,7 +20,7 @@ def get_full_version():
     Get as much version information as we can, including git info (if applicable)
     This method should never raise exceptions!
 
-    :return: A version no. in the form:
+    :return: A version number in the form:
         <maj>.<min>.<bld>
             If we're running as a package distributed through setuptools
         <maj>.<min>.<bld>.<rev>
@@ -49,8 +49,8 @@ def get_full_version():
         else:
             # We're very likely running as a package
             rev = ''
-    except:
-        # Something unexpected happened - rev no. defaults to 'x'
+    except:  # nopep8
+        # Something unexpected happened - rev number defaults to 'x'
         rev = 'x'
 
     if rev == '':

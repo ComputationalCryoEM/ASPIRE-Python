@@ -3,7 +3,6 @@ import numpy as np
 from scipy.cluster.vq import kmeans2
 import click
 
-from aspire.source import SourceFilter
 from aspire.source.simulation import Simulation
 from aspire.basis.fb_3d import FBBasis3D
 from aspire.utils.filters import RadialCTFFilter
@@ -19,9 +18,9 @@ logger = logging.getLogger('aspire')
 
 
 @click.command()
-@click.option('--num_volumes', default=2, type=int, help='No. of distinct volumes')
+@click.option('--num_volumes', default=2, type=int, help='Number of distinct volumes')
 @click.option('--image_size', default=8, type=int, help='Image size in pixels')
-@click.option('--num_images', default=1024, type=int, help='No. of images')
+@click.option('--num_images', default=1024, type=int, help='Number of images')
 @click.option('--num_eigs', default=16, type=int, help='Number of EigenVectors to estimate')
 def simulation(num_volumes, image_size, num_images, num_eigs):
     """Generate a Simulation and run Covariance estimation."""
@@ -33,10 +32,7 @@ def simulation(num_volumes, image_size, num_images, num_eigs):
     sim = Simulation(
         n=n,
         C=C,
-        filters=SourceFilter(
-            [RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-            n=n
-        )
+        filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
     )
     basis = FBBasis3D((L, L, L))
 

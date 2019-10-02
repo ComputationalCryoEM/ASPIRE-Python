@@ -6,8 +6,9 @@ import mrcfile
 import numpy as np
 from tqdm import tqdm
 
-from scipy import ndimage, misc, signal
+from scipy import ndimage, signal
 from scipy.ndimage import binary_fill_holes, binary_erosion, binary_dilation, center_of_mass
+from PIL import Image
 from sklearn import svm, preprocessing
 
 from aspire import config
@@ -19,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 class Picker:
     """ This class does the actual picking with help from PickerHelper class. """
-
     def __init__(self, particle_size, max_size, min_size, query_size, tau1, tau2, moa,
                  container_size, filename, output_directory):
 
@@ -87,7 +87,9 @@ class Picker:
         side_length = min(im.shape)
         im = im[:side_length, :side_length]
 
-        im = misc.imresize(im, 1/config.apple.mrc_shrink_factor, mode='F', interp='cubic')
+        size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
+        im = np.array(Image.fromarray(im).resize(size, Image.BICUBIC))
+
         im = signal.correlate(
             im,
             PickerHelper.gaussian_filter(

@@ -1,8 +1,11 @@
-from scipy import misc, signal
+from scipy import signal
+from PIL import Image
 import mrcfile
 import numpy as np
+
 from aspire.utils.numeric import xp
 from aspire.utils import ensure
+from aspire import config
 
 
 class Micrograph:
@@ -15,7 +18,7 @@ class Micrograph:
 
         # Attributes populated by the time this constructor returns
         # A 2-D ndarray if loading a MRC file, a 3-D ndarray if loading a MRCS file,
-        # with the last dimension indicating the no. of images
+        # with the last dimension indicating the number of images
         self.im = None
 
         self._init_margins(margin)
@@ -53,7 +56,8 @@ class Micrograph:
             im = im[:side_length, :side_length]
 
         if self.shrink_factor is not None:
-            im = misc.imresize(im, 1/self.shrink_factor, mode='F', interp='cubic')
+            size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
+            im = np.array(Image.fromarray(im).resize(size, Image.BICUBIC))
 
         if self.gauss_filter_size is not None:
             im = signal.correlate(

@@ -146,8 +146,8 @@ class DirectModel:
     def get_neg_freq_inds(self):
         ValueError('no negative frequencies')
 
-class DirectModel_Full(DirectModel):
 
+class DirectModel_Full(DirectModel):
     def __init__(self, resolution, truncation, beta, pswf2d, even):
         super().__init__(resolution, truncation, beta, pswf2d, even)
 

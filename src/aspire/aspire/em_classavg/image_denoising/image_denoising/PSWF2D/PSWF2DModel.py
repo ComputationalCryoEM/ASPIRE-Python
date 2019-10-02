@@ -18,7 +18,6 @@ class PSWF2D:
         d_vec_all (list of 2D lists): the corresponding eigenvectors for alpha_all
         lengths (list of ints): lengths[i] = len(alpha_all[i])
     """
-
     def __init__(self, c, eps=1e-16):
         self.c = c
         self.eps = eps

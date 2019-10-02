@@ -181,10 +181,10 @@ def besselj_zeros(nu, k):
 
         n = n + j
         if max(abs(err)) < err_tol:
-            # Predictions were close enough, double no. of zeros
+            # Predictions were close enough, double number of zeros
             j *= 2
         else:
-            # Some predictions were off, set to double the no. of good predictions
+            # Some predictions were off, set to double the number of good predictions
             j = 2 * (np.where(abs(err) >= err_tol)[0][0] + 1)
 
     return z

@@ -2,7 +2,7 @@ import logging
 import click
 
 
-from aspire.source.relion import RelionStarfileStack
+from aspire.source.relion import RelionSource
 from aspire.basis.fb_3d import FBBasis3D
 from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.covar import CovarianceEstimator
@@ -14,18 +14,18 @@ logger = logging.getLogger('aspire')
 
 @click.command()
 @click.option('--starfile', required=True, help='Path to starfile')
+@click.option('--data_folder', default=None, help='Path to mrcs files referenced in starfile')
 @click.option('--pixel_size', default=1, type=float, help='Pixel size of images in starfile')
-@click.option('--ignore_missing_files', is_flag=True, help='Whether to ignore missing mrc files')
-@click.option('--max_rows', default=None, type=int, help='Max. no. of image rows to read from starfile')
-@click.option('--max_resolution', default=16, type=int, help='Resolution of downsampled images read from starfile')
+@click.option('--max_rows', default=None, type=int, help='Max. number of image rows to read from starfile')
+@click.option('--max_resolution', default=8, type=int, help='Resolution of downsampled images read from starfile')
 @click.option('--cg_tol', default=1e-5, help='Tolerance for optimization convergence')
-def cov3d(starfile, pixel_size, ignore_missing_files, max_rows, max_resolution, cg_tol):
+def cov3d(starfile, data_folder, pixel_size, max_rows, max_resolution, cg_tol):
     """Estimate mean volume and covariance from a starfile."""
 
-    source = RelionStarfileStack(
+    source = RelionSource(
         starfile,
+        data_folder=data_folder,
         pixel_size=pixel_size,
-        ignore_missing_files=ignore_missing_files,
         max_rows=max_rows
     )
 

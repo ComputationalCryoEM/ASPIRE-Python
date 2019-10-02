@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__)
 
 
 class ApplePicker(Picker):
-
     def __init__(self, mrcfiles):
         """
         constructor of an object for picking particles from 2d micrograph using APPLE

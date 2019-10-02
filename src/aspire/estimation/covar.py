@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 class CovarianceEstimator(Estimator):
-
     def __init__(self, *args, **kwargs):
         if 'mean_kernel' in kwargs:
             self.mean_kernel = kwargs.pop('mean_kernel')
@@ -44,13 +43,13 @@ class CovarianceEstimator(Estimator):
         _2L = 2 * self.L
 
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.as_type)
-        filters_f = self.src.filters.evaluate_grid(L)
-        sq_filters_f = np.array(filters_f ** 2, dtype=self.as_type)
+        sq_filters_f = self.src.eval_filter_grid(self.L, power=2)
 
         for i in tqdm(range(0, n, self.batch_size)):
-            pts_rot = rotated_grids(L, self.src.rots[:, :, i:i+self.batch_size])
-            weights = sq_filters_f[:, :, self.src.filters.indices[i:i+self.batch_size]]
-            weights *= self.src.amplitudes[i:i+self.batch_size] ** 2
+            _range = np.arange(i, min(n, i + self.batch_size))
+            pts_rot = rotated_grids(L, self.src.rots[_range, :, :])
+            weights = sq_filters_f[:, :, _range]
+            weights *= self.src.amplitudes[_range] ** 2
 
             if L % 2 == 0:
                 weights[0, :, :] = 0
@@ -156,7 +155,7 @@ class CovarianceEstimator(Estimator):
         covar_b = np.zeros((self.L, self.L, self.L, self.L, self.L, self.L), dtype=self.as_type)
 
         for i in range(0, self.n, self.batch_size):
-            im = self.src.images(i, self.batch_size)
+            im = self.src.images(i, self.batch_size).asnumpy()
             batch_n = im.shape[-1]
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 

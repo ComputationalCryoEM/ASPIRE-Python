@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
@@ -20,13 +21,19 @@ class Filter:
     def evaluate(self, omega):
         """
         Evaluate the filter at specified frequencies.
-        :param omega: An array of size 2-by-n representing the spatial frequencies at which the filter
-            is to be evaluated. These are normalized so that pi is equal to the Nyquist frequency.
+        :param omega: A vector of size n (for 1d filters), or an array of size 2-by-n, representing the spatial
+            frequencies at which the filter is to be evaluated. These are normalized so that pi is equal to the Nyquist
+            frequency.
         :return: The value of the filter at the specified frequencies.
         """
-        ensure(omega.shape[0] == self.dim, f'Omega must be of size {self.dim} x n')
+        if omega.ndim == 1:
+            ensure(self.radial, f'Cannot evaluate a non-radial filter on 1D input array.')
+        elif omega.ndim == 2:
+            ensure(omega.shape[0] == self.dim, f'Omega must be of size {self.dim} x n')
+
         if self.radial:
-            omega = np.sqrt(np.sum(omega ** 2, axis=0))
+            if omega.ndim > 1:
+                omega = np.sqrt(np.sum(omega ** 2, axis=0))
             omega, idx = np.unique(omega, return_inverse=True)
             omega = np.vstack((omega, np.zeros_like(omega)))
 
@@ -37,6 +44,7 @@ class Filter:
 
         if self.radial:
             h = np.take(h, idx)
+
         return h
 
     def _evaluate(self, omega):
@@ -101,10 +109,10 @@ class ArrayFilter(Filter):
             if xfer_fn_array.shape[0] % 2 == 0:
                 xfer_fn_array = np.concatenate((xfer_fn_array, np.array([xfer_fn_array[0]])))
         elif dim == 2:
-            # If we have a 2d array with an even no. of rows, append the first row reversed at the bottom
+            # If we have a 2d array with an even number of rows, append the first row reversed at the bottom
             if xfer_fn_array.shape[0] % 2 == 0:
                 xfer_fn_array = np.vstack((xfer_fn_array, xfer_fn_array[0, ::-1]))
-            # If we have a 2d array with an even no. of columns, append the first column reversed at the right
+            # If we have a 2d array with an even number of columns, append the first column reversed at the right
             if xfer_fn_array.shape[1] % 2 == 0:
                 xfer_fn_array = np.hstack((xfer_fn_array, xfer_fn_array[::-1, 0][:, np.newaxis]))
 
@@ -136,6 +144,7 @@ class ArrayFilter(Filter):
 
     def scale(self, c):
         self._scale *= c
+        return self
 
 
 class ScalarFilter(Filter):
@@ -143,10 +152,14 @@ class ScalarFilter(Filter):
         super().__init__(dim=dim, radial=True, power=power)
         self.value = value
 
+    def __repr__(self):
+        return f'Scalar Filter (dim={self.dim}, value={self.value}, power={self.power})'
+
     def _evaluate(self, omega):
         return self.value * np.ones_like(omega)
 
     def scale(self, c):
+        # TODO: Is this a bug?
         pass
 
 
@@ -162,7 +175,7 @@ class CTFFilter(Filter):
         A CTF (Contrast Transfer Function) Filter
 
         :param pixel_size:  Pixel size in Angstrom
-        :param voltage:  Electron voltage in kV
+        :param voltage:     Electron voltage in kV
         :param defocus_u:   Defocus depth along the u-axis in Angstrom
         :param defocus_v:   Defocus depth along the v-axis in Angstrom
         :param defocus_ang: Angle between the x-axis and the u-axis in radians
@@ -207,10 +220,11 @@ class CTFFilter(Filter):
         if self.B:
             h *= np.exp(-self.B * r2)
 
-        return h
+        return h.squeeze()
 
     def scale(self, c=1):
         self.pixel_size *= c
+        return self
 
 
 class RadialCTFFilter(CTFFilter):
@@ -219,12 +233,6 @@ class RadialCTFFilter(CTFFilter):
                          Cs=Cs, alpha=alpha, B=B, power=power)
 
     def evaluate_k(self, kvals):
-        lamb = self.wavelength
-        dk = 1/self.pixel_size
-        k2 = -np.pi/2*2*lamb*self.defocus_u
-        k4 = np.pi/2*1e7*self.Cs*lamb**3
-        h_fun = np.zeros_like(kvals)
-        for i in range(np.size(kvals)):
-            h_fun[i] = np.sqrt(1-self.alpha**2)*np.sin(k2*(kvals[i]*dk)**2+k4*(kvals[i]*dk)**4) -\
-                    self.alpha * np.cos(k2*(kvals[i]*dk)**2+k4*(kvals[i]*dk)**4)
-        return h_fun
+        warnings.warn("evaluate_k method is unnecessary and will be removed. Please call evaluate with the appropriate"
+                      " 1d values of omega instead.", DeprecationWarning)
+        return self.evaluate(kvals * 2 * np.pi)
