@@ -11,6 +11,7 @@ import numpy as np
 from aspire.basis.fb_2d import FBBasis2D
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.pswf_2d import PSWFBasis2D
+from aspire.basis.fpswf_2d import FPSWFBasis2D
 from aspire.utils.matrix import anorm
 import matplotlib.pyplot as plt
 
@@ -38,14 +39,16 @@ print(f'Maximum difference between the FB estimated images to the original image
 # Calculate the normalized RMSE of the FB estimated images
 nrmse_ims = anorm(fb_images-org_images)/anorm(org_images)
 print(f'FB estimated images normalized RMSE: {nrmse_ims}')
+
+#plt.subplots(nrows=3, ncols=4)
 # plot the first images
-plt.subplot(3, 3, 1)
+plt.subplot(3, 4, 1)
 plt.imshow(np.real(org_images[..., 0]), cmap='gray')
 plt.title('Original')
-plt.subplot(3, 3, 2)
+plt.subplot(3, 4, 5)
 plt.imshow(np.real(fb_images[..., 0]), cmap='gray')
 plt.title('FB Image')
-plt.subplot(3, 3, 3)
+plt.subplot(3, 4, 9)
 plt.imshow(np.real(org_images[..., 0] - fb_images[..., 0]), cmap='gray')
 plt.title('Differences')
 
@@ -65,13 +68,13 @@ print(f'Maximum value of the differences from the FFB estimated images to the or
 nrmse_ims = anorm(ffb_images-org_images)/anorm(org_images)
 print(f'FFB Estimated images normalized RMSE: {nrmse_ims}')
 # plot the first images
-plt.subplot(3, 3, 4)
+plt.subplot(3, 4, 2)
 plt.imshow(np.real(org_images[..., 0]), cmap='gray')
 plt.title('Original')
-plt.subplot(3, 3, 5)
+plt.subplot(3, 4, 6)
 plt.imshow(np.real(ffb_images[..., 0]), cmap='gray')
 plt.title('FFB Image')
-plt.subplot(3, 3, 6)
+plt.subplot(3, 4, 10)
 plt.imshow(np.real(org_images[..., 0] - ffb_images[..., 0]), cmap='gray')
 plt.title('Differences')
 #
@@ -91,14 +94,41 @@ print(f'Maximum value of the differences from the PSWF estimated images to the o
 nrmse_ims = anorm(pswf_images-org_images)/anorm(org_images)
 print(f'PSWF Estimated images normalized RMSE: {nrmse_ims}')
 # plot the first images
-plt.subplot(3, 3, 7)
+plt.subplot(3, 4, 3)
 plt.imshow(np.real(org_images[..., 0]), cmap='gray')
 plt.title('Original')
-plt.subplot(3, 3, 8)
+plt.subplot(3, 4, 7)
 plt.imshow(np.real(pswf_images[..., 0]), cmap='gray')
 plt.title('PSWF Image')
-plt.subplot(3, 3, 9)
+plt.subplot(3, 4, 11)
 plt.imshow(np.real(org_images[..., 0] - pswf_images[..., 0]), cmap='gray')
 plt.title('Differences')
-plt.show()
 
+#
+# Specify the direct FPSWF basis method for expending the 2D images
+#
+img_size = 64
+fpswf_basis = FPSWFBasis2D(img_size, 1.0, 1.0, 0)
+# Get the expansion coefficients based on direct PSWF basis
+fpswf_coeffs = fpswf_basis.evaluate_t(org_images)
+# Reconstruct images from the expansion coefficients based on direct PSWF basis
+fpswf_images = pswf_basis.evaluate(fpswf_coeffs)
+fpswf_images = np.swapaxes(fpswf_images, 0, 1)
+logger.info('Finish direct FPSWF expansion and reconstruction.')
+# Calculate the maximum difference between the direct FPSWF estimated images to the original images
+fpswf_maxdiff = np.max(abs(fpswf_images-org_images))
+print(f'Maximum value of the differences from the FPSWF estimated images to the original images: {fpswf_maxdiff}')
+# Calculate the normalized RMSE of the estimated images
+nrmse_ims = anorm(fpswf_images-org_images)/anorm(org_images)
+print(f'FPSWF Estimated images normalized RMSE: {nrmse_ims}')
+# plot the first images
+plt.subplot(3, 4, 4)
+plt.imshow(np.real(org_images[..., 0]), cmap='gray')
+plt.title('Original')
+plt.subplot(3, 4, 8)
+plt.imshow(np.real(fpswf_images[..., 0]), cmap='gray')
+plt.title('FPSWF Image')
+plt.subplot(3, 4, 12)
+plt.imshow(np.real(org_images[..., 0] - fpswf_images[..., 0]), cmap='gray')
+plt.title('Differences')
+plt.show()
