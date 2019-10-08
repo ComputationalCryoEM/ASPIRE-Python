@@ -377,6 +377,10 @@ def t_x_mat(x, n, j, approx_length):
     c = p_n(approx_length - 1, n, 0, 1 - 2 * np.square(x))
     return np.einsum('i,j,ij->ij', a, b, c)
 
+# use np.outer instead of x as mat
+def t_x_mat2(x, n, j, approx_length): return np.power(x, n + 0.5).dot(np.sqrt(2 * (2 * j + n + 1))) * \
+                                            p_n(approx_length - 1, n, 0, 1 - 2 * np.square(x))
+
 
 def t_x_derivative_mat(t1, t2, x, big_n, range_array, approx_length):
     return -2 * (big_n + range_array + 1) * np.outer(np.power(x, big_n + 1.5), t2) *\
