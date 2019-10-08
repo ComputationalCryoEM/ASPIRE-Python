@@ -1,7 +1,14 @@
 import logging
 import numpy as np
+from numpy import pi
+from scipy.fftpack import fft
 
 from scipy.special import jn
+from numpy.linalg import lstsq
+from scipy.optimize import least_squares
+from aspire.nfft import anufft3, nufft3
+
+from aspire.basis.basis_func import t_x_mat, t_x_mat2
 from aspire.basis.pswf_2d import PSWFBasis2D
 
 
@@ -66,8 +73,8 @@ class FPSWFBasis2D(PSWFBasis2D):
                 max_ns.extend([n_end])
                 alpha_all.extend(alpha[:n_end])
                 m += 1
-
-        a, b, c, d, e, f = self._generate_pswf_quad(4 * self.resolution, 2 * self.bandlimit, 1e-16, 1e-16, 1e-16)
+        eps = np.spacing(1)
+        a, b, c, d, e, f = self._generate_pswf_quad(4 * self.resolution, 2 * self.bandlimit, eps, eps, eps)
 
         self.pswf_radial_quad = self.evaluate_pswf2d_all(d, np.zeros(len(d)), max_ns)
         self.quad_rule_pts_x = a
@@ -93,7 +100,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.numel_for_n = numel_for_n
         self.indices_for_n = indices_for_n
         self.n_max = n_max
-        self.size_x = len(self.points_inside_circle)
+        self.size_x = len(self.points_inside_the_circle)
 
     def evaluate_t(self, images):
         # start and finish are for the threads option in the future
@@ -110,9 +117,10 @@ class FPSWFBasis2D(PSWFBasis2D):
             flattened_images = images.reshape((images_shape[0] * images_shape[1], 1), order='F')
             finish = 1
 
-        flattened_images = flattened_images[self.points_inside_circle_vec, :]
+        flattened_images = flattened_images[self.points_inside_the_circle_vec, :]
 
-        nfft_res = self._compute_nfft_potts(flattened_images, start, finish)
+        #nfft_res = self._compute_nfft_potts(flattened_images, start, finish)
+        nfft_res = self._compute_nfft_potts(images, start, finish)
         coefficients = self._pswf_integration(nfft_res)
         return coefficients
 
@@ -169,7 +177,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         idx_for_quad_nodes = int((k + 1) / 2)
         num_quad_pts = idx_for_quad_nodes - 1
 
-        phi_zeros = find_initial_nodes(x, n, bandlimit / 2, phi_approximate_error, idx_for_quad_nodes)
+        phi_zeros = self.find_initial_nodes(x, n, bandlimit / 2, phi_approximate_error, idx_for_quad_nodes)
 
         def phi_for_quad_weights(t):
             return np.dot(t_x_mat2(t, big_n, range_array, approx_length), d_vec[:, :k - 1])
@@ -177,9 +185,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         b = np.dot(w * np.sqrt(x), phi_for_quad_weights(x_as_mat))
 
         a = phi_for_quad_weights(phi_zeros.reshape((len(phi_zeros), 1))).transpose() * np.sqrt(phi_zeros)
-        init_quad_weights = lstsq(a, b)
+        init_quad_weights = lstsq(a, b, rcond=None)
         init_quad_weights = init_quad_weights[0]
-        tolerance = 1e-16
+        tolerance = np.spacing(1)
 
         def obj_func(quad_rule):
             q = quad_rule.reshape((len(quad_rule), 1))
@@ -195,11 +203,10 @@ class FPSWFBasis2D(PSWFBasis2D):
         quad_rule_weights = quad_rule_final[num_quad_pts:]
         return quad_rule_pts, quad_rule_weights
 
-
-    def find_initial_nodes(x, n, bandlimit, phi_approximate_error, idx_for_quad_nodes):
+    def find_initial_nodes(self, x, n, bandlimit, phi_approximate_error, idx_for_quad_nodes):
         big_n = 0
 
-        d_vec, approx_length, range_array = pswf_2d_minor_computations(big_n, n, bandlimit, phi_approximate_error)
+        d_vec, approx_length, range_array = self._pswf_2d_minor_computations(big_n, n, bandlimit, phi_approximate_error)
 
         def phi_for_quad_nodes(t):
             return np.dot(t_x_mat(t, big_n, range_array, approx_length), d_vec[:, idx_for_quad_nodes - 1])
@@ -217,12 +224,11 @@ class FPSWFBasis2D(PSWFBasis2D):
         phi_zeros = np.array(phi_zeros)
         return phi_zeros
 
-
     def _sum_minus_cumsum_smaller_eps(self, x, eps):
         y = np.cumsum(np.flipud(x))
         return len(y) - np.where(y > eps)[0][0] + 1
 
-    def __pswf_integration_sub_routine(self):
+    def _pswf_integration_sub_routine(self):
 
         t = 2
 
@@ -249,15 +255,9 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         return blk_r, num_angular_pts, r_quad_indices, numel_for_n, indices_for_n, n_max
 
-
-    # use np.outer instead of x as mat
-    def t_x_mat2(x, n, j, approx_length): return np.power(x, n + 0.5).dot(np.sqrt(2 * (2 * j + n + 1))) * \
-                                                p_n(approx_length - 1, n, 0, 1 - 2 * np.square(x))
-
     def _compute_nfft_potts(self, images, start, finish):
         x = self.us_fft_pts
         n = self.size_x
-        points_inside_circle = self.points_inside_circle
         num_images = finish - start
 
         # pynufft
@@ -272,17 +272,15 @@ class FPSWFBasis2D(PSWFBasis2D):
         # nufft_obj = py_nufft.factory('nufft')
 
         # pynfft
+
         m = x.shape[0]
-        plan = NFFT(N=[n, n], M=m)
-        plan.x = x
-        plan.precompute()
 
         images_nufft = np.zeros((m, num_images), dtype='complex128')
         current_image = np.zeros((n, n))
         for i in range(start, finish):
-            current_image[points_inside_circle] = images[:, i]
-            plan.f_hat = current_image
-            images_nufft[:, i - start] = plan.trafo()
+            #current_image[self.points_inside_the_circle] = images[:, i]
+            images_nufft[:, i - start] = nufft3(images[..., i], 2 * pi * x.T,
+                                                (n, n))
 
         return images_nufft
 
@@ -294,9 +292,8 @@ class FPSWFBasis2D(PSWFBasis2D):
         for i in range(len(self.radial_quad_pts)):
             curr_r_mat = images_nufft[self.r_quad_indices[i]: self.r_quad_indices[i] + self.num_angular_pts[i], :]
             curr_r_mat = np.concatenate((curr_r_mat, np.conj(curr_r_mat)))
-            fft_plan = pyfftw.builders.fft(curr_r_mat, axis=0, overwrite_input=True, auto_contiguous=True,
-                                           auto_align_input=False, avoid_copy=True, planner_effort='FFTW_ESTIMATE')
-            angular_eval = fft_plan() * self.quad_rule_radial_wts[i]
+            fft_plan = fft(curr_r_mat, curr_r_mat.shape[0], axis=0)
+            angular_eval = fft_plan * self.quad_rule_radial_wts[i]
 
             r_n_eval_mat[i, :, :] = np.tile(angular_eval, (int(max(1, np.ceil(n_max_float / self.num_angular_pts[i]))),
                                                            1))[:self.n_max, :]
