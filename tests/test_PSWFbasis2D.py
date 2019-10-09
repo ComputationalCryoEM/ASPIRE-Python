@@ -8,7 +8,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class PSWFBasis2DTestCase(TestCase):
     def setUp(self):
-        self.basis = PSWFBasis2D(64, 1.0, 1.0, 0)
+        self.basis = PSWFBasis2D((129, 129), 1.0, 1.0)
 
     def tearDown(self):
         pass
