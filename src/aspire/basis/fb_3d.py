@@ -21,8 +21,8 @@ class FBBasis3D(Basis):
     """
     def __init__(self, size, ell_max=None):
 
-        d = len(size)
-        ensure(d == 3, 'Only three-dimensional basis functions are supported.')
+        ndim = len(size)
+        ensure(ndim == 3, 'Only three-dimensional basis functions are supported.')
         ensure(len(set(size)) == 1, 'Only cubic domains are supported.')
 
         super().__init__(size, ell_max)
@@ -38,7 +38,7 @@ class FBBasis3D(Basis):
         self.basis_count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
 
         # obtain a 3D grid to represent basis functions
-        self.basis_coords = unique_coords_nd(self.N, self.d)
+        self.basis_coords = unique_coords_nd(self.nres, self.ndim)
 
         # generate 1D indices for basis functions
         self._indices = self.indices()
@@ -110,7 +110,7 @@ class FBBasis3D(Basis):
         return norms
 
     def basis_norm_3d(self, ell, k):
-        return np.abs(sph_bessel(ell + 1, self.r0[k - 1, ell])) / np.sqrt(2) * np.sqrt((self.N / 2) ** 3)
+        return np.abs(sph_bessel(ell + 1, self.r0[k - 1, ell])) / np.sqrt(2) * np.sqrt((self.nres / 2) ** 3)
 
     def evaluate(self, v):
         """
@@ -162,8 +162,8 @@ class FBBasis3D(Basis):
             This is an array of vectors whose first dimension equals `self.basis_count` and whose remaining dimensions
             correspond to higher dimensions of `v`.
         """
-        x, sz_roll = unroll_dim(v, self.d + 1)
-        x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.d:])))
+        x, sz_roll = unroll_dim(v, self.ndim + 1)
+        x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim:])))
 
         r_idx = self.basis_coords['r_idx']
         ang_idx = self.basis_coords['ang_idx']
@@ -201,7 +201,7 @@ class FBBasis3D(Basis):
         b = vol_to_vec(self.evaluate(v))
 
         operator = LinearOperator(
-            shape=(self.N**3, self.N**3),
+            shape=(self.nres ** 3, self.nres ** 3),
             matvec=lambda x: vol_to_vec(self.evaluate(self.evaluate_t(vec_to_vol(x))))
         )
 

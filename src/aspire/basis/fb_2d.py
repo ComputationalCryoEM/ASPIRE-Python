@@ -26,8 +26,8 @@ class FBBasis2D(Basis):
 
     # TODO: Methods that return dictionaries should return useful objects instead
     def __init__(self, size, ell_max=None):
-        d = len(size)
-        ensure(d == 2, 'Only two-dimensional basis functions are supported.')
+        ndim = len(size)
+        ensure(ndim == 2, 'Only two-dimensional basis functions are supported.')
         ensure(len(set(size)) == 1, 'Only square domains are supported.')
         super().__init__(size, ell_max)
 
@@ -42,7 +42,7 @@ class FBBasis2D(Basis):
         self.basis_count = self.k_max[0] + sum(2 * self.k_max[1:])
 
         # obtain a 2D grid to represent basis functions
-        self.basis_coords = unique_coords_nd(self.N, self.d)
+        self.basis_coords = unique_coords_nd(self.nres, self.ndim)
 
         # generate 1D indices for basis functions
         self._indices = self.indices()
@@ -117,7 +117,7 @@ class FBBasis2D(Basis):
         return norms
 
     def basis_norm_2d(self, ell, k):
-        result = np.abs(jv(ell + 1, self.r0[k - 1, ell])) * np.sqrt(np.pi / 2.) * self.N / 2.
+        result = np.abs(jv(ell + 1, self.r0[k - 1, ell])) * np.sqrt(np.pi / 2.) * self.nres / 2.
         if ell == 0:
             result *= np.sqrt(2)
 
@@ -174,8 +174,8 @@ class FBBasis2D(Basis):
             This is an array of vectors whose first dimension equals `self.basis_count` and whose remaining dimensions
             correspond to higher dimensions of `v`.
         """
-        x, sz_roll = unroll_dim(v, self.d + 1)
-        x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.d:])))
+        x, sz_roll = unroll_dim(v, self.ndim + 1)
+        x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim:])))
 
         r_idx = self.basis_coords['r_idx']
         ang_idx = self.basis_coords['ang_idx']
@@ -214,7 +214,7 @@ class FBBasis2D(Basis):
         b = im_to_vec(self.evaluate(v))
 
         operator = LinearOperator(
-            shape=(self.N**2, self.N**2),
+            shape=(self.nres ** 2, self.nres ** 2),
             matvec=lambda x: im_to_vec(self.evaluate(self.evaluate_t(vec_to_im(x))))
         )
 

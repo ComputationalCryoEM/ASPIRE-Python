@@ -26,8 +26,8 @@ class FFBBasis3D(FBBasis3D):
         logger.info('Expanding 3D map in frequency domain.')
 
         # set cutoff values
-        self.R = self.N / 2
-        self.c = 0.5
+        self.rcut = self.nres / 2
+        self.kcut = 0.5
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()
@@ -55,7 +55,7 @@ class FFBBasis3D(FBBasis3D):
         n_theta = int(2*self.sz[0])
         n_phi = int(self.ell_max+1)
 
-        r, wt_r = lgwt(n_r, 0.0, self.c)
+        r, wt_r = lgwt(n_r, 0.0, self.kcut)
         z, wt_z = lgwt(n_phi, -1, 1)
         r = m_reshape(r, (n_r, 1))
         wt_r = m_reshape(wt_r, (n_r, 1))
@@ -70,7 +70,7 @@ class FFBBasis3D(FBBasis3D):
         radial_wtd = np.zeros(shape=(n_r, np.max(self.k_max), self.ell_max+1))
         for ell in range(0, self.ell_max + 1):
             k_max_ell = self.k_max[ell]
-            rmat = r*self.r0[0:k_max_ell, ell].T/self.c
+            rmat = r*self.r0[0:k_max_ell, ell].T/self.kcut
             radial_ell = np.zeros_like(rmat)
             for ik in range(0, k_max_ell):
                 radial_ell[:, ik] = sph_bessel(ell, rmat[:, ik])
@@ -343,7 +343,7 @@ class FFBBasis3D(FBBasis3D):
         """
         # TODO: this is function could be move to base class if all standard and fast versions of 2d and 3d are using
         #       the same data structures of x and v.
-        ensure(x.shape[:self.d] == self.sz, f'First {self.d} dimensions of x must match {self.sz}.')
+        ensure(x.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of x must match {self.sz}.')
 
         operator = LinearOperator(shape=(self.basis_count, self.basis_count),
                                   matvec=lambda v: self.evaluate_t(self.evaluate(v)))
@@ -353,7 +353,7 @@ class FFBBasis3D(FBBasis3D):
         logger.info('Expanding array in basis')
 
         # number of image samples
-        n_data = np.size(x, self.d)
+        n_data = np.size(x, self.ndim)
         v = np.zeros((self.basis_count, n_data), dtype=x.dtype)
 
         for isample in range(0, n_data):
