@@ -5,8 +5,8 @@ based on the basis functions of  Fourier Bessel (FB) and Prolate Spheroidal Wave
 
 import os
 import logging
-
 import numpy as np
+import timeit
 
 from aspire.basis.fb_2d import FBBasis2D
 from aspire.basis.ffb_2d import FFBBasis2D
@@ -32,7 +32,7 @@ fb_basis = FBBasis2D((img_size, img_size))
 fb_coeffs = fb_basis.evaluate_t(org_images)
 # Reconstruct images from the expansion coefficients based on FB basis
 fb_images = fb_basis.evaluate(fb_coeffs)
-logger.info('Finish normal FB expansion and reconstruction.')
+print(f'Finish normal FB expansion and reconstruction.')
 # Calculate the maximum difference between the FB estimated images to the original images
 fb_maxdiff = np.max(abs(fb_images-org_images))
 print(f'Maximum difference between the FB estimated images to the original images: {fb_maxdiff}')
@@ -60,13 +60,14 @@ ffb_basis = FFBBasis2D((img_size, img_size))
 ffb_coeffs = ffb_basis.evaluate_t(org_images)
 # Reconstruct images from the expansion coefficients based on fast FB basis
 ffb_images = ffb_basis.evaluate(ffb_coeffs)
-logger.info('Finish Fast FB expansion and reconstruction.')
+print(f'Finish Fast FB expansion and reconstruction.')
 # Calculate the maximum difference between the fast FB estimated images to the original images
 ffb_maxdiff = np.max(abs(ffb_images-org_images))
 print(f'Maximum value of the differences from the FFB estimated images to the original images: {ffb_maxdiff}')
 # Calculate the normalized RMSE of the estimated images
 nrmse_ims = anorm(ffb_images-org_images)/anorm(org_images)
 print(f'FFB Estimated images normalized RMSE: {nrmse_ims}')
+
 # plot the first images
 plt.subplot(3, 4, 2)
 plt.imshow(np.real(org_images[..., 0]), cmap='gray')
@@ -77,22 +78,23 @@ plt.title('FFB Image')
 plt.subplot(3, 4, 10)
 plt.imshow(np.real(org_images[..., 0] - ffb_images[..., 0]), cmap='gray')
 plt.title('Differences')
+
 #
 # Specify the direct PSWF basis method for expending the 2D images
 #
-img_size = 64
-pswf_basis = PSWFBasis2D(img_size, 1.0, 1.0, 0)
+pswf_basis = PSWFBasis2D((img_size, img_size), 1.0, 1.0)
 # Get the expansion coefficients based on direct PSWF basis
 pswf_coeffs = pswf_basis.evaluate_t(org_images)
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
 pswf_images = pswf_basis.evaluate(pswf_coeffs)
-logger.info('Finish direct PSWF expansion and reconstruction.')
+print(f'Finish direct PSWF expansion and reconstruction.')
 # Calculate the maximum difference between the direct PSWF estimated images to the original images
 pswf_maxdiff = np.max(abs(pswf_images-org_images))
 print(f'Maximum value of the differences from the PSWF estimated images to the original images: {pswf_maxdiff}')
 # Calculate the normalized RMSE of the estimated images
 nrmse_ims = anorm(pswf_images-org_images)/anorm(org_images)
 print(f'PSWF Estimated images normalized RMSE: {nrmse_ims}')
+
 # plot the first images
 plt.subplot(3, 4, 3)
 plt.imshow(np.real(org_images[..., 0]), cmap='gray')
@@ -107,14 +109,13 @@ plt.title('Differences')
 #
 # Specify the direct FPSWF basis method for expending the 2D images
 #
-img_size = 64
-fpswf_basis = FPSWFBasis2D(img_size, 1.0, 1.0, 0)
-# Get the expansion coefficients based on direct PSWF basis
+fpswf_basis = FPSWFBasis2D((img_size, img_size), 1.0, 1.0)
+# Get the expansion coefficients based on fast PSWF basis
 fpswf_coeffs = fpswf_basis.evaluate_t(org_images)
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
 fpswf_images = pswf_basis.evaluate(fpswf_coeffs)
 fpswf_images = np.swapaxes(fpswf_images, 0, 1)
-logger.info('Finish direct FPSWF expansion and reconstruction.')
+print(f'Finish direct FPSWF expansion and reconstruction.')
 # Calculate the maximum difference between the direct FPSWF estimated images to the original images
 fpswf_maxdiff = np.max(abs(fpswf_images-org_images))
 print(f'Maximum value of the differences from the FPSWF estimated images to the original images: {fpswf_maxdiff}')
