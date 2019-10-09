@@ -203,18 +203,20 @@ def num_besselj_zeros(ell, r):
     return len(r0), r0
 
 
-def unique_coords_nd(N, ndim):
+def unique_coords_nd(N, ndim, shifted=False, normalized=True):
     """
     Generate unique polar coordinates from 2D or 3D rectangular coordinates.
     :param N: length size of a square or cube.
     :param ndim: number of dimension, 2 or 3.
+    :param shifted: shifted half pixel or not for odd N.
+    :param normalized: normalized the grid or not.
     :return: The unique polar coordinates in 2D or 3D
     """
     ensure(ndim in (2, 3), 'Only two- or three-dimensional basis functions are supported.')
     ensure(N > 0, 'Number of grid points should be greater than 0.')
 
     if ndim == 2:
-        grid = grid_2d(N)
+        grid = grid_2d(N, shifted=shifted, normalized=normalized)
         mask = grid['r'] <= 1
 
         # Minor differences in r/theta/phi values are unimportant for the purpose
@@ -231,7 +233,7 @@ def unique_coords_nd(N, ndim):
         ang_unique, ang_idx = np.unique(phi, return_inverse=True)
 
     else:
-        grid = grid_3d(N)
+        grid = grid_3d(N, shifted=shifted, normalized=normalized)
         mask = grid['r'] <= 1
 
         # In Numpy, elements in the indexed array are always iterated and returned in row-major (C-style) order.
