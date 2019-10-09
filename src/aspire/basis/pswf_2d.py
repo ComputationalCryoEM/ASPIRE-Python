@@ -8,6 +8,7 @@ from aspire.basis.basis_func import k_operator, leggauss_0_1
 
 logger = logging.getLogger(__name__)
 
+
 class PSWFBasis2D(Basis):
     """
     Define a derived class using the Prolate Spheroidal Wave Function (PSWF) basis for mapping 2D images.
@@ -20,13 +21,12 @@ class PSWFBasis2D(Basis):
         3) Yoel Shkolnisky, "Prolate spheroidal wave functions on a disc-Integration and approximation of
         two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
     """
-    def __init__(self, resolution, truncation, beta, even):
+    def __init__(self, size, gamma_truncation, beta):
         # find max alpha for each N
-        self.resolution = resolution
-        self.truncation = truncation
+        self.rcut = size[0] // 2
+        self.gmcut = gamma_truncation
         self.beta = beta
-        self.even = even
-
+        super().__init__(size)
         self._build()
 
     def _build(self):
@@ -34,7 +34,7 @@ class PSWFBasis2D(Basis):
         logger.info('Expanding 2D images in the direct method using PSWF basis functions.')
 
         # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
-        self.bandlimit = self.beta * np.pi * self.resolution
+        self.bandlimit = self.beta * np.pi * self.rcut
         self.d_vec_all, self.alpha_all, self.lengths = self.init_pswf_func2d(self.bandlimit, eps=np.spacing(1))
 
         # generate_the 2D grid and corresponding indices inside the disc.
@@ -53,16 +53,16 @@ class PSWFBasis2D(Basis):
         # self._indices = self.indices()
 
     def generate_grid(self):
-        if self.even:
-            x_1d_grid = range(-self.resolution, self.resolution)
+        if self.nres % 2 == 0:
+            x_1d_grid = range(-self.rcut, self.rcut)
         else:
-            x_1d_grid = range(-self.resolution, self.resolution + 1)
+            x_1d_grid = range(-self.rcut, self.rcut + 1)
         x_2d_grid, y_2d_grid = np.meshgrid(x_1d_grid, x_1d_grid)
         r_2d_grid = np.sqrt(np.square(x_2d_grid) + np.square(y_2d_grid))
-        points_inside_the_circle = r_2d_grid <= self.resolution
+        points_inside_the_circle = r_2d_grid <= self.rcut
         x = y_2d_grid[points_inside_the_circle]
         y = x_2d_grid[points_inside_the_circle]
-        self.r_2d_grid_on_the_circle = np.sqrt(np.square(x) + np.square(y)) / self.resolution
+        self.r_2d_grid_on_the_circle = np.sqrt(np.square(x) + np.square(y)) / self.rcut
         self.theta_2d_grid_on_the_circle = np.angle(x + 1j * y)
         self.image_height = len(x_1d_grid)
         self.points_inside_the_circle = points_inside_the_circle
@@ -71,7 +71,7 @@ class PSWFBasis2D(Basis):
     def precomp(self):
 
         max_ns = []
-        a = np.square(float(self.beta * self.resolution) / 2)
+        a = np.square(float(self.beta * self.rcut) / 2)
         m = 0
         alpha_all = []
 
@@ -81,7 +81,7 @@ class PSWFBasis2D(Basis):
             lambda_var = a * np.square(np.absolute(alpha))
             gamma = np.sqrt(np.absolute(lambda_var / (1 - lambda_var)))
 
-            n_end = np.where(gamma <= self.truncation)[0]
+            n_end = np.where(gamma <= self.gmcut)[0]
 
             if len(n_end) != 0:
                 n_end = n_end[0]

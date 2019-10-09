@@ -31,10 +31,10 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def _build(self):
 
-        logger.info('Expanding 2D images in the direct method using PSWF basis functions.')
+        logger.info('Expanding 2D images in the direct method using FPSWF basis functions.')
 
         # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
-        self.bandlimit = self.beta * np.pi * self.resolution
+        self.bandlimit = self.beta * np.pi * self.rcut
         self.d_vec_all, self.alpha_all, self.lengths = self.init_pswf_func2d(self.bandlimit, eps=np.spacing(1))
 
         # generate_the 2D grid and corresponding indices inside the disc.
@@ -55,7 +55,7 @@ class FPSWFBasis2D(PSWFBasis2D):
     def precomp(self):
         # find max alpha for each N
         max_ns = []
-        a = np.square(float(self.beta * self.resolution) / 2)
+        a = np.square(float(self.beta * self.rcut) / 2)
         m = 0
         alpha_all = []
         while True:
@@ -64,7 +64,7 @@ class FPSWFBasis2D(PSWFBasis2D):
             lambda_var = a * np.square(np.absolute(alpha))
             gamma = np.sqrt(np.absolute(lambda_var / (1 - lambda_var)))
 
-            n_end = np.where(gamma <= self.truncation)[0]
+            n_end = np.where(gamma <= self.gmcut)[0]
 
             if len(n_end) != 0:
                 n_end = n_end[0]
@@ -74,7 +74,7 @@ class FPSWFBasis2D(PSWFBasis2D):
                 alpha_all.extend(alpha[:n_end])
                 m += 1
         eps = np.spacing(1)
-        a, b, c, d, e, f = self._generate_pswf_quad(4 * self.resolution, 2 * self.bandlimit, eps, eps, eps)
+        a, b, c, d, e, f = self._generate_pswf_quad(4 * self.rcut, 2 * self.bandlimit, eps, eps, eps)
 
         self.pswf_radial_quad = self.evaluate_pswf2d_all(d, np.zeros(len(d)), max_ns)
         self.quad_rule_pts_x = a
@@ -89,7 +89,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         # pre computing variables for forward
         us_fft_pts = np.column_stack((self.quad_rule_pts_x, self.quad_rule_pts_y))
-        us_fft_pts = self.bandlimit / (self.resolution * np.pi * 2) * us_fft_pts  # for pynfft
+        us_fft_pts = self.bandlimit / (self.rcut * np.pi * 2) * us_fft_pts  # for pynfft
         blk_r, num_angular_pts, r_quad_indices, numel_for_n, indices_for_n, n_max =\
             self._pswf_integration_sub_routine()
 
@@ -249,7 +249,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         indices_for_n = np.cumsum(indices_for_n, dtype='int')
 
         blk_r = [0] * n_max
-        temp_const = self.bandlimit / (2 * np.pi * self.resolution)
+        temp_const = self.bandlimit / (2 * np.pi * self.rcut)
         for i in range(n_max):
             blk_r[i] = temp_const * self.pswf_radial_quad[:, indices_for_n[i] + np.arange(numel_for_n[i])].T
 
@@ -259,19 +259,6 @@ class FPSWFBasis2D(PSWFBasis2D):
         x = self.us_fft_pts
         n = self.size_x
         num_images = finish - start
-
-        # pynufft
-        # m = x.shape[0]
-        # nufft_obj = NUFFT_cpu()
-        # nufft_obj.plan(x, (n, n), (2*n, 2*n), (10, 10))
-        # shift = np.exp(x * fast_model.resolution * 1j)
-        # shift = np.sum(shift, axis=1)
-
-        # gal nufft
-        # m = x.shape[1]
-        # nufft_obj = py_nufft.factory('nufft')
-
-        # pynfft
 
         m = x.shape[0]
 
