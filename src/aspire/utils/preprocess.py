@@ -4,7 +4,7 @@ import numpy as np
 
 from scipy.interpolate import RegularGridInterpolator
 from aspire.utils import ensure
-from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d, cgrid_2d
+from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
 from scipy.fftpack import ifftshift, ifft, ifft2, fftshift, fft, fft2, ifftn, fftn
 from aspire.utils.fft import centered_fft1, centered_ifft1, centered_fft2, centered_ifft2, centered_fft3, centered_ifft3
 from aspire.nfft import Plan
@@ -270,7 +270,7 @@ def vol2img(volume, rots, L=None, dtype=None):
         #  The new volume size
         lv = L
 
-    grid2d = cgrid_2d(lv)
+    grid2d = grid_2d(lv, shifted=True, normalized=False)
 
     num_pts = lv**2
     num_rots = rots.shape[0]

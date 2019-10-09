@@ -93,19 +93,6 @@ def grid_2d(n, shifted=False, normalized=True):
     }
 
 
-def cgrid_2d(n):
-    if n % 2 == 1:
-        grid_1d = np.arange(-(n-1)/2, (n-1)/2+1)
-    else:
-        grid_1d = np.arange(-n/2+1/2, n/2+1/2)
-    x, y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
-
-    return {
-        'x': x,
-        'y': y
-    }
-
-
 def grid_3d(n, shifted=False, normalized=True):
     """
     Generate three dimensional grid.
