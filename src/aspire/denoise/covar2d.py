@@ -19,7 +19,7 @@ class RotCov2D(Denoise):
         constructor of an object for 2D covariance analysis
         """
         self.basis = basis
-        ensure(basis.d == 2, 'Only two-dimensional basis functions are needed.')
+        ensure(basis.ndim == 2, 'Only two-dimensional basis functions are needed.')
 
         super().__init__(src, as_type)
 
