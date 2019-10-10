@@ -25,7 +25,7 @@ from aspire.denoise.covar2d import RotCov2D
 from aspire.denoise.covar2d_ctf import Cov2DCTF
 from aspire.utils.blk_diag_func import blk_diag_add, blk_diag_mult, blk_diag_norm
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('aspire')
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../tests/saved_test_data')
 
@@ -154,8 +154,8 @@ diff_covar = blk_diag_norm(covar_coeff_diff)/blk_diag_norm(covar_coeff)
 # Calculate the normalized RMSE of the estimated images.
 nrmse_ims = anorm(imgs_est-imgs_clean)/anorm(imgs_clean)
 
-print(f'Deviation of the noisy mean estimate: {diff_mean}')
-print(f'Deviation of the noisy covariance estimate: {diff_covar}')
-print(f'Estimated images normalized RMSE:{nrmse_ims}')
+logger.info(f'Deviation of the noisy mean estimate: {diff_mean}')
+logger.info(f'Deviation of the noisy covariance estimate: {diff_covar}')
+logger.info(f'Estimated images normalized RMSE:{nrmse_ims}')
 
 
