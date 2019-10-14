@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 
 logger = logging.getLogger('aspire')
 
+
+logger.info('This script illustrates different image expansion methods in ASPIRE package.')
+
 # Load the images from numpy array
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../tests/saved_test_data')
 org_images = np.load(os.path.join(DATA_DIR, 'example_data_np_array.npy'))
@@ -33,9 +36,9 @@ logger.info('Finish normal FB expansion of original images.')
 # Reconstruct images from the expansion coefficients based on FB basis
 fb_images = fb_basis.evaluate(fb_coeffs)
 logger.info('Finish reconstruction of images from normal FB expansion coefficients.')
-# Calculate the maximum difference between the FB estimated images to the original images
-fb_maxdiff = np.max(abs(fb_images-org_images))
-logger.info(f'Maximum difference between the FB estimated images to the original images: {fb_maxdiff}')
+# Calculate the mean value of maximum differences between the FB estimated images and the original images
+fb_meanmax = np.mean(np.max(abs(fb_images-org_images), axis=2))
+logger.info(f'Mean value of maximum differences between FB estimated images and original images: {fb_meanmax}')
 # Calculate the normalized RMSE of the FB estimated images
 nrmse_ims = anorm(fb_images-org_images)/anorm(org_images)
 logger.info(f'FB estimated images normalized RMSE: {nrmse_ims}')
@@ -62,9 +65,9 @@ logger.info('Finish fast FB expansion of original images.')
 # Reconstruct images from the expansion coefficients based on fast FB basis
 ffb_images = ffb_basis.evaluate(ffb_coeffs)
 logger.info('Finish reconstruction of images from fast FB expansion coefficients.')
-# Calculate the maximum difference between the fast FB estimated images to the original images
-ffb_maxdiff = np.max(abs(ffb_images-org_images))
-logger.info(f'Maximum value of the differences from the FFB estimated images to the original images: {ffb_maxdiff}')
+# Calculate the mean value of maximum differences between the fast FB estimated images to the original images
+ffb_meanmax = np.mean(np.max(abs(ffb_images-org_images), axis=2))
+logger.info(f'Mean value of maximum differences between FFB estimated images and original images: {ffb_meanmax}')
 # Calculate the normalized RMSE of the estimated images
 nrmse_ims = anorm(ffb_images-org_images)/anorm(org_images)
 logger.info(f'FFB Estimated images normalized RMSE: {nrmse_ims}')
@@ -83,16 +86,16 @@ plt.title('Differences')
 #
 # Specify the direct PSWF basis method for expending the 2D images
 #
-pswf_basis = PSWFBasis2D((img_size, img_size), 1.0, 1.0)
+pswf_basis = PSWFBasis2D((img_size, img_size), 1.0e-3, 1.0)
 # Get the expansion coefficients based on direct PSWF basis
 pswf_coeffs = pswf_basis.evaluate_t(org_images)
 logger.info('Finish direct PSWF expansion of original images.')
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
 pswf_images = pswf_basis.evaluate(pswf_coeffs)
 logger.info('Finish reconstruction of images from direct PSWF expansion coefficients.')
-# Calculate the maximum difference between the direct PSWF estimated images to the original images
-pswf_maxdiff = np.max(abs(pswf_images-org_images))
-logger.info(f'Maximum value of the differences from the PSWF estimated images to the original images: {pswf_maxdiff}')
+# Calculate the mean value of maximum differences between direct PSWF estimated images and original images
+pswf_meanmax = np.mean(np.max(abs(pswf_images-org_images), axis=2))
+logger.info(f'Mean value of maximum differences between PSWF estimated images and original images: {pswf_meanmax}')
 # Calculate the normalized RMSE of the estimated images
 nrmse_ims = anorm(pswf_images-org_images)/anorm(org_images)
 logger.info(f'PSWF Estimated images normalized RMSE: {nrmse_ims}')
@@ -111,7 +114,7 @@ plt.title('Differences')
 #
 # Specify the direct FPSWF basis method for expending the 2D images
 #
-fpswf_basis = FPSWFBasis2D((img_size, img_size), 1.0, 1.0)
+fpswf_basis = FPSWFBasis2D((img_size, img_size), 1.0e-3, 1.0)
 # Get the expansion coefficients based on fast PSWF basis
 fpswf_coeffs = fpswf_basis.evaluate_t(org_images)
 logger.info('Finish fast PSWF expansion of original images.')
@@ -119,9 +122,9 @@ logger.info('Finish fast PSWF expansion of original images.')
 fpswf_images = pswf_basis.evaluate(fpswf_coeffs)
 fpswf_images = np.swapaxes(fpswf_images, 0, 1)
 logger.info('Finish reconstruction of images from fast PSWF expansion coefficients.')
-# Calculate the maximum difference between the direct FPSWF estimated images to the original images
-fpswf_maxdiff = np.max(abs(fpswf_images-org_images))
-logger.info(f'Maximum value of the differences from the FPSWF estimated images to the original images: {fpswf_maxdiff}')
+# Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
+fpswf_meanmax = np.mean(np.max(abs(fpswf_images-org_images), axis=2))
+logger.info(f'Mean value of maximum differences between FPSWF estimated images and original images: {fpswf_meanmax}')
 # Calculate the normalized RMSE of the estimated images
 nrmse_ims = anorm(fpswf_images-org_images)/anorm(org_images)
 logger.info(f'FPSWF Estimated images normalized RMSE: {nrmse_ims}')
