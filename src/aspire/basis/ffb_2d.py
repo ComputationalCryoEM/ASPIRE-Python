@@ -28,7 +28,7 @@ class FFBBasis2D(FBBasis2D):
     """
     def _build(self):
 
-        logger.info('Expanding 2D images in frequency domain.')
+        logger.info('Expanding 2D images using fast FB method in frequency domain.')
 
         # set cutoff values
         self.rcut = self.nres / 2

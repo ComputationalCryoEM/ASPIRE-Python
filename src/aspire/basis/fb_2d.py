@@ -33,7 +33,7 @@ class FBBasis2D(Basis):
 
     def _build(self):
 
-        logger.info('Expanding 2D images in spatial domain.')
+        logger.info('Expanding 2D images using normal FB method in spatial domain.')
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()

@@ -23,7 +23,7 @@ class FFBBasis3D(FBBasis3D):
 
     def _build(self):
 
-        logger.info('Expanding 3D map in frequency domain.')
+        logger.info('Expanding 3D map using fast FB method in frequency domain.')
 
         # set cutoff values
         self.rcut = self.nres / 2

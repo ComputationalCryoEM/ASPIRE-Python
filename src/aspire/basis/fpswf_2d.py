@@ -31,7 +31,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def _build(self):
 
-        logger.info('Expanding 2D images in the direct method using FPSWF basis functions.')
+        logger.info('Expanding 2D images using fast PSWF method.')
 
         # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
         self.bandlimit = self.beta * np.pi * self.rcut
@@ -122,6 +122,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         #nfft_res = self._compute_nfft_potts(flattened_images, start, finish)
         nfft_res = self._compute_nfft_potts(images, start, finish)
         coefficients = self._pswf_integration(nfft_res)
+
         return coefficients
 
     def _generate_pswf_quad(self, n, bandlimit, phi_approximate_error, lambda_max, epsilon):

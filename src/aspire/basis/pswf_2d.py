@@ -27,11 +27,10 @@ class PSWFBasis2D(Basis):
         self.gmcut = gamma_truncation
         self.beta = beta
         super().__init__(size)
-        self._build()
 
     def _build(self):
 
-        logger.info('Expanding 2D images in the direct method using PSWF basis functions.')
+        logger.info('Expanding 2D images using direct PSWF method.')
 
         # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
         self.bandlimit = self.beta * np.pi * self.rcut
