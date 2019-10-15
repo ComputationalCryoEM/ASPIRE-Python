@@ -9,7 +9,7 @@ from aspire.utils.blk_diag_func import *
 
 from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import conj_grad
-from aspire.denoise.covar2d import RotCov2D
+from aspire.estimation.covar2d import RotCov2D
 from aspire.utils import ensure
 
 

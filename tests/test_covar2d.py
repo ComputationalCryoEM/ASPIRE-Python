@@ -14,10 +14,8 @@ from aspire.utils.blk_diag_func import radial_filter2fb_mat
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 
-from aspire.denoise.covar2d import RotCov2D
-from aspire.denoise.covar2d_ctf import Cov2DCTF
-from aspire.image import Image
-
+from aspire.estimation.covar2d import RotCov2D
+from aspire.estimation.covar2d_ctf import Cov2DCTF
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

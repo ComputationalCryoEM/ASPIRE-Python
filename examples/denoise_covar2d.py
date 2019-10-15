@@ -21,8 +21,8 @@ from aspire.utils.blk_diag_func import radial_filter2fb_mat
 from aspire.image import Image
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
-from aspire.denoise.covar2d import RotCov2D
-from aspire.denoise.covar2d_ctf import Cov2DCTF
+from aspire.estimation.covar2d import RotCov2D
+from aspire.estimation.covar2d_ctf import Cov2DCTF
 from aspire.utils.blk_diag_func import blk_diag_add, blk_diag_mult, blk_diag_norm
 
 logger = logging.getLogger(__name__)
