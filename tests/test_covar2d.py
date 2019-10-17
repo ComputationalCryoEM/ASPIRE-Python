@@ -1,8 +1,6 @@
 import os
 import numpy as np
-
 from unittest import TestCase
-
 
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
@@ -15,7 +13,7 @@ from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 
 from aspire.estimation.covar2d import RotCov2D
-from aspire.estimation.covar2d_ctf import Cov2DCTF
+
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -67,8 +65,7 @@ class Cov2DTestCase(TestCase):
         self.noise_var = power_clean/SNR
         self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var)*randn(L, L, n, seed=0)
 
-        self.cov2d = RotCov2D(sim, self.basis)
-        self.cov2dctf = Cov2DCTF(sim, self.basis)
+        self.cov2d = RotCov2D(self.basis)
         self.coeff_clean = self.basis.evaluate_t(self.imgs_clean)
         self.coeff = self.basis.evaluate_t(self.imgs_ctf_noise)
 
@@ -90,12 +87,12 @@ class Cov2DTestCase(TestCase):
 
     def test03GetMeanCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_meanctf.npy'))
-        self.mean_coeff_ctf = self.cov2dctf.get_mean_ctf(self.coeff, self.h_ctf_fb, self.h_idx)
+        self.mean_coeff_ctf = self.cov2d.get_mean_ctf(self.coeff, self.h_ctf_fb, self.h_idx)
         self.assertTrue(np.allclose(results, self.mean_coeff_ctf, atol=1e-7))
 
     def test04GetCovarCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf.npy'))
-        self.covar_coeff_ctf = self.cov2dctf.get_covar_ctf(self.coeff, self.h_ctf_fb, self.h_idx,
+        self.covar_coeff_ctf = self.cov2d.get_covar_ctf(self.coeff, self.h_ctf_fb, self.h_idx,
                                                            noise_var=self.noise_var)
         im = 0
         for mat in results[0].tolist():
@@ -104,6 +101,6 @@ class Cov2DTestCase(TestCase):
 
     def test05GetCWFCoeffs(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff.npy'))
-        self.coeff_cwf = self.cov2dctf.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
+        self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                       noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf, atol=1e-7))
