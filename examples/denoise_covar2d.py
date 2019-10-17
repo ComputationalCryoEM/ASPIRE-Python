@@ -8,7 +8,6 @@ if the same methods of generating random numbers are used.
 
 import os
 import logging
-
 import numpy as np
 
 from aspire.source.simulation import Simulation
@@ -22,13 +21,13 @@ from aspire.image import Image
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 from aspire.estimation.covar2d import RotCov2D
-from aspire.estimation.covar2d_ctf import Cov2DCTF
 from aspire.utils.blk_diag_func import blk_diag_add, blk_diag_mult, blk_diag_norm
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('aspire')
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../tests/saved_test_data')
 
+logger.info('This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package.')
 
 # Set the sizes of images 8 X 8
 img_size = 8
@@ -50,6 +49,7 @@ defocus_ct = 7                   # Number of defocus groups.
 Cs = 2.0                         # Spherical aberration
 alpha = 0.1                      # Amplitude contrast
 
+logger.info('Initialize simulation object and CTF filters.')
 # Create filters
 filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
                           for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
@@ -62,6 +62,7 @@ sim = Simulation(
 )
 
 # Load 3D map from the data file, corresponding to the experimentally obtained EM map of a 70S Ribosome.
+logger.info('Load 3D map and downsample to desired grids.')
 vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
 vols = vols[..., np.newaxis]
 
@@ -75,6 +76,7 @@ ffbbasis = FFBBasis2D((img_size, img_size))
 # Generate 2D clean images from input 3D map. The following statement can be used from the sim object:
 # imgs_clean = sim.clean_images(start=0, num=num_imgs)
 # To be consistent with the Matlab version in the numbers, we need to use the statements as below:
+logger.info('Generate random distributed rotation angles and obtain corresponding 2D clean images.')
 rots = qrand_rots(num_imgs, seed=0)
 imgs_clean = vol2img(vols[..., 0], rots)
 
@@ -85,6 +87,7 @@ h_idx = np.array([filters.index(f) for f in sim.filters])
 h_ctf_fb = [radial_filter2fb_mat(filt.evaluate_k, ffbbasis) for filt in filters]
 
 # Apply the CTF to the clean images.
+logger.info('Apply CTF filters to clean images.')
 imgs_ctf_clean = Image(sim.eval_filters(imgs_clean))
 sim.cache(imgs_ctf_clean)
 
@@ -92,6 +95,7 @@ sim.cache(imgs_ctf_clean)
 imgs_ctf_clean = imgs_ctf_clean.asnumpy()
 
 # Apply the noise at the desired singal-noise ratio to the filtered clean images
+logger.info('Apply noise filters to clean images.')
 power_clean = anorm(imgs_ctf_clean)**2/np.size(imgs_ctf_clean)
 noise_var = power_clean/sn_ratio
 imgs_noise = imgs_ctf_clean + np.sqrt(noise_var)*randn(img_size, img_size, num_imgs, seed=0)
@@ -102,6 +106,7 @@ imgs_noise = imgs_ctf_clean + np.sqrt(noise_var)*randn(img_size, img_size, num_i
 # Since the basis is close to orthonormal, we may approximate the exact
 # expansion by applying the adjoint of the evaluation mapping using
 # `basis.evaluate_t`.
+logger.info('Get coefficients of clean and noisy images in FFB basis.')
 coeff_clean = ffbbasis.evaluate_t(imgs_clean)
 coeff_noise = ffbbasis.evaluate_t(imgs_noise)
 
@@ -115,7 +120,8 @@ coeff_noise = ffbbasis.evaluate_t(imgs_noise)
 # constraints, so to reduce space, only the diagonal blocks are stored. The
 # mean and covariance estimates will allow us to evaluate the mean and
 # covariance estimates from the filtered, noisy data, later.
-cov2d = RotCov2D(sim, ffbbasis)
+logger.info('Get 2D covariance matrices of clean and noisy images using FB coefficients.')
+cov2d = RotCov2D(ffbbasis)
 mean_coeff = cov2d.get_mean(coeff_clean)
 covar_coeff = cov2d.get_covar(coeff_clean, mean_coeff)
 
@@ -126,17 +132,17 @@ covar_coeff = cov2d.get_covar(coeff_clean, mean_coeff)
 # estimates. For the covariance estimation, the additional information of
 # the estimated mean and the variance of the noise are needed. Again, the
 # covariance matrix estimate is provided in block diagonal form.
-cov2dctf = Cov2DCTF(sim, ffbbasis)
-mean_coeff_est = cov2dctf.get_mean_ctf(coeff_noise, h_ctf_fb, h_idx)
-covar_coeff_est = cov2dctf.get_covar_ctf(coeff_noise, h_ctf_fb, h_idx, mean_coeff_est, noise_var=noise_var)
+mean_coeff_est = cov2d.get_mean_ctf(coeff_noise, h_ctf_fb, h_idx)
+covar_coeff_est = cov2d.get_covar_ctf(coeff_noise, h_ctf_fb, h_idx, mean_coeff_est, noise_var=noise_var)
 
 # Estimate the Fourier-Bessel coefficients of the underlying images using a
 # Wiener filter. This Wiener filter is calculated from the estimated mean,
 # covariance, and the variance of the noise. The resulting estimator has
 # the lowest expected mean square error out of all linear estimators.
-coeff_est = cov2dctf.get_cwf_coeffs(coeff_noise, h_ctf_fb, h_idx,
-                                    mean_coeff=mean_coeff_est,
-                                    covar_coeff=covar_coeff_est, noise_var=noise_var)
+logger.info('Get the CWF coefficients of noising images.')
+coeff_est = cov2d.get_cwf_coeffs(coeff_noise, h_ctf_fb, h_idx,
+                                 mean_coeff=mean_coeff_est,
+                                 covar_coeff=covar_coeff_est, noise_var=noise_var)
 
 # Convert Fourier-Bessel coefficients back into 2D images
 imgs_est = ffbbasis.evaluate(coeff_est)
@@ -154,8 +160,8 @@ diff_covar = blk_diag_norm(covar_coeff_diff)/blk_diag_norm(covar_coeff)
 # Calculate the normalized RMSE of the estimated images.
 nrmse_ims = anorm(imgs_est-imgs_clean)/anorm(imgs_clean)
 
-print(f'Deviation of the noisy mean estimate: {diff_mean}')
-print(f'Deviation of the noisy covariance estimate: {diff_covar}')
-print(f'Estimated images normalized RMSE:{nrmse_ims}')
+logger.info(f'Deviation of the noisy mean estimate: {diff_mean}')
+logger.info(f'Deviation of the noisy covariance estimate: {diff_covar}')
+logger.info(f'Estimated images normalized RMSE:{nrmse_ims}')
 
 
