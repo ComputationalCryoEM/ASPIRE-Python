@@ -1,0 +1,43 @@
+# hash:sha256:4Dfe01eda421d957a3c13334e3f1bbff5d4b565d14b6c1663f0f7b1387605eb7
+FROM registry.codeocean.com/codeocean/miniconda3:4.6.14-python3.7.3-ubuntu18.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        tmux=2.6-3ubuntu0.2 \
+        vim=2:8.0.1453-1ubuntu1.1 \
+        wget=1.19.4-1ubuntu2.2 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN conda install -y \
+        click==7.0 \
+        cython==0.26.1 \
+        fftw==3.3.8 \
+        jupyter==1.0.0 \
+        make==4.2.1 \
+        matplotlib==3.1.0 \
+        numpy==1.14.2 \
+        numpydoc==0.7.0 \
+        pandas==0.25.0 \
+        pip==19.1.1 \
+        pybind11==2.2.4 \
+        pytest==5.0.1 \
+        scikit-image==0.14.0 \
+        scikit-learn==0.20.1 \
+        scipy==1.3.0 \
+        wheel==0.33.4 \
+    && conda clean -ya
+
+RUN pip install -U --no-cache-dir \
+    console-progressbar \
+    coveralls==1.8.2 \
+    finufftpy \
+    importlib-resources==1.0.2 \
+    mrcfile==1.1.2 \
+    pyfftw==0.11.1 \
+    pytest-cov==2.7.1 \
+    python-box==3.4.2 \
+    sphinx-rtd-theme==0.4.2 \
+    sphinxcontrib-bibtex==0.4.2 \
+    tqdm==4.33.0

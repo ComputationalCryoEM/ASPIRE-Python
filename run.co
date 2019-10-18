@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -ex
+
+# Steps to make the new capsule of Code Ocean. 
+# 1) login the code ocean account
+# 2) initialize new capsule 
+# 3) lauch cloud workstation and go the terminal 
+# 4) cd code folder and git clone the git branch such as 
+#    git clone --single-branch --branch develop https://github.com/ComputationalCryoEM/ASPIRE-Python 
+# 5) shutdown the cloud workstation and go back to capsule interface 
+# 6) create the Dockfile under the environment folder 
+# 7) create the run script using the examples as listed below
+# 8) click "Reproducible Run"    
+  
+# This is the master script for the capsule of Code Ocean. When you 
+# click "Reproducible Run", the code in this file will execute.
+
+# change to the package root folder 
+cd ASPIRE-Python
+# run tests 
+python setup.py test
+
+# run scripts under the example folder
+PYTHONPATH=./src python examples/denoise_covar2d.py 
+
+#
+# run examples of notbooks 
+#
+# cd ASPIRE-Python/notebooks/
+#
+#jupyter nbconvert \
+#	--ExecutePreprocessor.allow_errors=True \
+#	--ExecutePreprocessor.timeout=-1 \
+#	--FilesWriter.build_directory=../../../results \
+#	--execute '00_image_class.ipynb'
+    
+#jupyter nbconvert \
+#	--ExecutePreprocessor.allow_errors=True \
+#	--ExecutePreprocessor.timeout=-1 \
+#	--FilesWriter.build_directory=../../../results \
+#	--execute '01_apple_picker.ipynb'
+    
+#jupyter nbconvert \
+#	--ExecutePreprocessor.allow_errors=True \
+#	--ExecutePreprocessor.timeout=-1 \
+#	--FilesWriter.build_directory=../../../results \
+#	--execute '02_particle_picking.ipynb'
+    
+# for f in *.ipynb
+# do 
+#    jupyter nbconvert \
+#        --ExecutePreprocessor.allow_errors=True \
+#        --ExecutePreprocessor.timeout=-1 \
+#        --FilesWriter.build_directory=../../../results \
+#        --execute "$f" 
+# done 
