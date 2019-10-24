@@ -1,7 +1,7 @@
 from unittest import TestCase
 import numpy as np
 
-from aspire.utils.coor_trans import grid_2d, grid_3d, qrand, q_to_rot, qrand_rots, angles_to_rots, rots_to_angles
+from aspire.utils.coor_trans import grid_2d, grid_3d, qrand, q_to_rot, qrand_rots
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -13,35 +13,6 @@ class UtilsTestCase(TestCase):
 
     def tearDown(self):
         pass
-
-    def testAnglesToRots(self):
-        # An n x 3 array of angles
-        angles = np.array([[1.234, 1.541, -0.3124], [0.421, 1.133, 0.511]])
-        rots = angles_to_rots(angles)
-
-        self.assertTrue(np.allclose(
-            rots[0, :, :],
-            [
-                [0.29944493,  -0.89511032,  0.33031842],
-                [-0.07480906,  0.32311209,  0.94339927],
-                [-0.95117629, -0.30720693,  0.02979192]
-            ]
-        ))
-
-        self.assertTrue(np.allclose(
-            rots[1, :, :],
-            [
-                [ 0.13763699,  -0.54569385,  0.82660407],
-                [ 0.59746887,   0.71136089,  0.37013058],
-                [-0.78999178,   0.44292653,  0.42394466]
-            ]
-        ))
-
-    def testRotsToAngles(self):
-        angles = np.array([[1.234, 1.541, -0.3124], [0.421, 1.133, 0.511]])
-        rots = angles_to_rots(angles)
-        angles_redux = rots_to_angles(rots)
-        self.assertTrue(np.allclose(angles, angles_redux))
 
     def testGrid2d(self):
         grid2d = grid_2d(8)
