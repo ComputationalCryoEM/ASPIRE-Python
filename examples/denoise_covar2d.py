@@ -52,7 +52,7 @@ alpha = 0.1                      # Amplitude contrast
 logger.info('Initialize simulation object and CTF filters.')
 # Create filters
 filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
-                          for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
+           for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
 # Create a simulation object with specified filters
 sim = Simulation(
@@ -162,6 +162,6 @@ nrmse_ims = anorm(imgs_est-imgs_clean)/anorm(imgs_clean)
 
 logger.info(f'Deviation of the noisy mean estimate: {diff_mean}')
 logger.info(f'Deviation of the noisy covariance estimate: {diff_covar}')
-logger.info(f'Estimated images normalized RMSE:{nrmse_ims}')
+logger.info(f'Estimated images normalized RMSE: {nrmse_ims}')
 
 
