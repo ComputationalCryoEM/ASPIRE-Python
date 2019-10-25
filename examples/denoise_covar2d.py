@@ -132,8 +132,8 @@ covar_coeff = cov2d.get_covar(coeff_clean, mean_coeff)
 # estimates. For the covariance estimation, the additional information of
 # the estimated mean and the variance of the noise are needed. Again, the
 # covariance matrix estimate is provided in block diagonal form.
-mean_coeff_est = cov2d.get_mean_ctf(coeff_noise, h_ctf_fb, h_idx)
-covar_coeff_est = cov2d.get_covar_ctf(coeff_noise, h_ctf_fb, h_idx, mean_coeff_est, noise_var=noise_var)
+mean_coeff_est = cov2d.get_mean(coeff_noise, h_ctf_fb, h_idx)
+covar_coeff_est = cov2d.get_covar(coeff_noise, h_ctf_fb, h_idx, mean_coeff_est, noise_var=noise_var)
 
 # Estimate the Fourier-Bessel coefficients of the underlying images using a
 # Wiener filter. This Wiener filter is calculated from the estimated mean,
