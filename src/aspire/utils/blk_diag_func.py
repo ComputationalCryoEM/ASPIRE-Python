@@ -165,7 +165,7 @@ def blk_diag_isnumeric(x):
 def radial_filter2fb_mat(h_fun, fbasis):
     n_r = fbasis.sz[0]
     k_vals, wts = lgwt(n_r, 0, 0.5)
-    h_vals = h_fun(k_vals*2 * np.pi)
+    h_vals = h_fun(k_vals*2*np.pi)
 
     h_fb = []
     ind = 0
