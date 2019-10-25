@@ -4,12 +4,9 @@ from scipy.linalg import solve
 from numpy.linalg import inv
 
 from aspire.utils.matlab_compat import m_reshape
-
 from aspire.utils.blk_diag_func import *
-
 from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import conj_grad
-
 from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)
@@ -17,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class RotCov2D:
     """
-    Define a class for denoising 2D images using the Cov2D method with CTF information described in
+    Define a class for performing Cov2D analysis with CTF information described in
 
     T. Bhamre, T. Zhang, and A. Singer, "Denoising and covariance estimation of single particle cryo-EM images",
     J. Struct. Biol. 195, 27-81 (2016). DOI: 10.1016/j.jsb.2016.04.013
@@ -38,9 +35,9 @@ class RotCov2D:
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
         :return: The mean value vector for all images.
         """
-        if coeffs is None:
+        if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated first!')
-
+        self.as_type = coeffs.dtype
         mask = self.basis._indices["ells"] == 0
         mean_coeff = np.zeros((self.basis.basis_count, 1), dtype=self.as_type)
         mean_coeff[mask, 0] = np.mean(coeffs[mask, ...], axis=1)
@@ -56,7 +53,7 @@ class RotCov2D:
         :param do_refl: If true, enforce invariance to reflection (default false).
         :return: The covariance matrix of coefficients for all images.
         """
-        if coeffs is None:
+        if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated first!')
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs)
@@ -64,7 +61,7 @@ class RotCov2D:
         covar_coeff = []
         ind = 0
         ell = 0
-        mask =  self.basis._indices["ells"] == ell
+        mask = self.basis._indices["ells"] == ell
         coeff_ell = coeffs[mask, ...] - mean_coeff[mask, ...]
         covar_ell = np.array(coeff_ell @ coeff_ell.T/np.size(coeffs, 1))
         covar_coeff.append(covar_ell)
@@ -80,12 +77,12 @@ class RotCov2D:
             if do_refl:
                 covar_coeff.append(covar_ell_diag)
                 covar_coeff.append(covar_ell_diag)
-                ind = ind+2
+                ind = ind + 2
             else:
                 covar_ell_off = np.array((coeffs[mask_pos, :] @ coeffs[mask_neg, :].T / np.size(coeffs, 1) -
-                                 coeffs[mask_neg, :] @ coeffs[mask_pos, :].T)/(2*np.size(coeffs, 1)))
+                                 coeffs[mask_neg, :] @ coeffs[mask_pos, :].T)/(2 * np.size(coeffs, 1)))
                 hsize = np.size(covar_ell_diag, 0)
-                covar_coeff_blk = np.zeros((2*hsize, 2*hsize))
+                covar_coeff_blk = np.zeros((2 * hsize, 2 * hsize))
 
                 fsize = np.size(covar_coeff_blk, 0)
                 covar_coeff_blk[0:hsize, 0:hsize] = covar_ell_diag[0:hsize, 0:hsize]
@@ -93,18 +90,9 @@ class RotCov2D:
                 covar_coeff_blk[0:hsize, hsize:fsize] = covar_ell_off[0:hsize, 0:hsize]
                 covar_coeff_blk[hsize:fsize, 0:hsize] = covar_ell_off.T[0:hsize, 0:hsize]
                 covar_coeff.append(covar_coeff_blk)
-                ind = ind+1
+                ind = ind + 1
 
         return covar_coeff
-
-    def get_coeffs(self, src):
-        """
-        Apply adjoint mapping to 2D images and obtain the coefficients
-
-        :return: The coefficients of `basis` after the adjoint mapping is applied to the images.
-        """
-        # TODO It is will be more convenient to calculate the coefficients if they are not done
-        raise NotImplementedError('to be implemented')
 
     def get_mean_ctf(self, coeffs, ctf_fb, ctf_idx):
         """
@@ -115,7 +103,7 @@ class RotCov2D:
         :param ctf_idx: An array of the CFT function indices for all 2D images.
         :return: The mean value vector for all images.
         """
-        if coeffs is None:
+        if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated!')
 
         b = np.zeros((self.basis.basis_count, 1), dtype=self.as_type)
@@ -152,6 +140,9 @@ class RotCov2D:
             matrix is invariant to both reflection and rotation. The effect of the filters in ctf_fb
             are accounted for and inverted to yield a covariance estimate of the unfiltered images.
         """
+
+        if coeffs.size == 0:
+            raise RuntimeError('The coefficients need to be calculated!')
 
         def identity(x):
             return x
@@ -288,11 +279,6 @@ class RotCov2D:
             coeff_est_k = blk_diag_solve(sig_noise_covar_coeff, coeff_est_k)
             coeff_est_k = blk_diag_apply(blk_diag_mult(covar_coeff, ctf_fb_k_t), coeff_est_k)
             coeff_est_k = coeff_est_k + mean_coeff
-
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
         return coeffs_est
-
-
-
-
