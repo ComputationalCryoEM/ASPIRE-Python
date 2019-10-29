@@ -95,11 +95,23 @@ class Cov2DTestCase(TestCase):
         self.covar_coeff_ctf = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                     noise_var=self.noise_var)
         im = 0
-        for mat in results[0].tolist():
+        for mat in results.tolist():
             self.assertTrue(np.allclose(mat, self.covar_coeff_ctf[im]))
             im += 1
 
-    def test05GetCWFCoeffs(self):
+    def test05GetCovarCTFShrink(self):
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'))
+        covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
+                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
+                     'preconditioner': 'identity'}
+        self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
+                                                           noise_var=self.noise_var, covar_est_opt=covar_opt)
+        im = 0
+        for mat in results.tolist():
+            self.assertTrue(np.allclose(mat, self.covar_coeff_ctf_shrink[im]))
+            im += 1
+
+    def test06GetCWFCoeffs(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff.npy'))
         self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                    noise_var=self.noise_var)
