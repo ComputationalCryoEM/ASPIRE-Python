@@ -4,6 +4,7 @@ import numpy as np
 def fill_struct(obj=None, att_vals=None, overwrite=None):
     """
     Fill object with attributes in a dictionary.
+
     If a struct is not given a new object will be created and filled.
     If the given struct has a field in att_vals, the original field will stay, unless specified otherwise in overwrite.
     att_vals is a dictionary with string keys, and for each key:
@@ -41,7 +42,47 @@ def fill_struct(obj=None, att_vals=None, overwrite=None):
 
 
 def conj_grad(a_fun, b, cg_opt=None, init=None):
+    """
+    Conjugate Gradient method to solve the linear system.
 
+    This is corresponding to the implemented version in the ASPIRE Matlab package.
+    :param a_fun:  A function handle specifying the linear operation x -> Ax.
+    :param b:  The vector consisting of the right hand side of Ax = b.
+    :param cg_opt: The parameters for the conjugate gradient method, including:
+            max_iter: Maximum number of iterations (default 50).
+            verbose: The extent to which information on progress should be
+                output to the terminal (default 1).
+            iter_callback: If non-empty, specifies a function to be called at
+                the end of every iteration. In this case, iter_callback must be a
+                function handle taking as single argument the info structure at
+                the current iteration. For information on the info structure,
+                see below (default []).
+            preconditioner: If non-empty, specifies a preconditioner to be
+                used in every iteration as a function handle defining the linear
+                operator x -> Px (default []).
+            rel_tolerance: The relative error at which to stop the algorithm,
+                even if it has not yet reached the maximum number of iterations
+                (default 1e-15).
+            store_iterates: Defines whether to store each intermediate results
+                in the info structure under the x, p and r fields. Since this
+                may require a large amount of memory, this is not recommended
+                (default false).
+    :param init: A structure specifying the starting point of the algorithm.
+            This can contain values of x or p that will be used for initialization
+            (default empty).
+    :return: The output result includes:
+            x: The result of the conjugate gradient method after max_iter iterations
+                or once the residual norm has decreased below rel_tolerance, relative.
+            obj: The value of the objective function at the last iteration.
+            info: A structure array containing intermediate information obtained
+            during each iteration. These fields include:
+            - iter: The iteration number.
+            - x (for store_iterates true): The value of x.
+            - r (for store_iterates true): The residual vector.
+            - p (for store_iterates true): The p vector.
+            - res: The square norm of the residual.
+            - obj: The objective function.
+    """
     if cg_opt is None:
         def identity(input_x):
             return input_x
@@ -82,8 +123,8 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         print('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]), np.sum(info.obj[0])))
 
     if b_norm == 0:
-        print('b_norm == 0')
-        return
+        # Matlat code returns b_norm == 0, this break the Python code when b = 0
+        return x, obj, info
 
     i = 0
     for i in range(1, cg_opt["max_iter"]):
@@ -120,7 +161,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         if np.all(res < b_norm * cg_opt["rel_tolerance"]):
             break
 
-    # if i == cg_opt.max_iter - 1:
-    #     raise Warning('Conjugate gradient reached maximum number of iterations!')
+    if i == cg_opt["max_iter"] - 1:
+        raise Warning('Conjugate gradient reached maximum number of iterations!')
     return x, obj, info
 
