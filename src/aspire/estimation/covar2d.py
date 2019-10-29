@@ -237,12 +237,12 @@ class RotCov2D:
         :return: The shrinked 2D covariance coefficients.
         """
         b_out = b
-        for ell in range(0, b.size()):
+        for ell in range(0, len(b)):
             b_ell = b[ell]
             p = np.size(b_ell, 1)
             S = sqrtm(b_noise[ell])
             # from Matlab b_ell = S \ b_ell /S
-            b_ell = np.divide(solve(S, b_ell), S)
+            b_ell = solve(S, b_ell) @ inv(S)
             b_ell = shrink_covar(b_ell, noise_var, p/n, shrinker)
             b_ell = S @ b_ell @ S
             b_out[ell] = b_ell
