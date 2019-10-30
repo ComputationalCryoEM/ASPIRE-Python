@@ -6,12 +6,15 @@ from aspire.basis.bn_matrix import BNMatrix
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
+
 class BNMatrixTestCase(TestCase):
+
     def setUp(self):
-        big_n=0
-        bandlimit=1.0*np.pi*64
+        big_n = 0
+        bandlimit = 1.0*np.pi*64
         approx_length = 182
         self.bnmatrix = BNMatrix(big_n, bandlimit, approx_length)
+
     def tearDown(self):
         pass
 
