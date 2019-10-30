@@ -27,13 +27,6 @@ class PSWFBasis2DTestCase(TestCase):
         images = np.load(os.path.join(DATA_DIR, 'example_data_pswf2d_reconsImgs64.npy'))
         self.assertTrue(np.allclose(result, images))
 
-    def testPSWFBasis2DDiff(self):
-        images = np.load(os.path.join(DATA_DIR, 'example_data_np_array.npy'))
-        coeffs = self.basis.evaluate_t(images)
-        result = self.basis.evaluate(coeffs)
-        maxdiff = np.max(abs(result[..., 0]-images[..., 0]))
-        print(maxdiff)
-        self.assertTrue(maxdiff < 0.01)
 
 
 
