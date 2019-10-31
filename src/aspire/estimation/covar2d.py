@@ -4,37 +4,110 @@ from scipy.linalg import solve
 from numpy.linalg import inv
 
 from aspire.utils.matlab_compat import m_reshape
-
 from aspire.utils.blk_diag_func import *
-
 from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import conj_grad
-from aspire.denoise.covar2d import RotCov2D
 from aspire.utils import ensure
-
 
 logger = logging.getLogger(__name__)
 
 
-class Cov2DCTF(RotCov2D):
+class RotCov2D:
     """
-    Define a derived class for denoising 2D images using CTF information and the Covariance Wiener Filtering (CWF)
-    Cov2D method described in
+    Define a class for performing Cov2D analysis with CTF information described in
 
     T. Bhamre, T. Zhang, and A. Singer, "Denoising and covariance estimation of single particle cryo-EM images",
     J. Struct. Biol. 195, 27-81 (2016). DOI: 10.1016/j.jsb.2016.04.013
     """
 
-    def get_mean_ctf(self, coeffs, ctf_fb, ctf_idx):
+    def __init__(self, basis, as_type='single'):
         """
-        Calculate the mean vector from the expansion coefficients.
+        constructor of an object for 2D covariance analysis
+        """
+        self.basis = basis
+        ensure(basis.d == 2, 'Only two-dimensional basis functions are needed.')
+        self.as_type = as_type
+
+    def _get_mean(self, coeffs):
+        """
+        Calculate the mean vector from the expansion coefficients of 2D images without CTF information.
+
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
+        :return: The mean value vector for all images.
+        """
+        if coeffs.size == 0:
+            raise RuntimeError('The coefficients need to be calculated first!')
+        self.as_type = coeffs.dtype
+        mask = self.basis._indices["ells"] == 0
+        mean_coeff = np.zeros((self.basis.basis_count, 1), dtype=self.as_type)
+        mean_coeff[mask, 0] = np.mean(coeffs[mask, ...], axis=1)
+
+        return mean_coeff
+
+    def _get_covar(self, coeffs, mean_coeff=None,  do_refl=True):
+        """
+        Calculate the covariance matrix from the expansion coefficients without CTF information.
+
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) calculated from 2D images.
+        :param mean_coeff: The mean vector calculated from the `coeffs`.
+        :param do_refl: If true, enforce invariance to reflection (default false).
+        :return: The covariance matrix of coefficients for all images.
+        """
+        if coeffs.size == 0:
+            raise RuntimeError('The coefficients need to be calculated first!')
+        if mean_coeff is None:
+            mean_coeff = self._get_mean(coeffs)
+
+        covar_coeff = []
+        ind = 0
+        ell = 0
+        mask = self.basis._indices["ells"] == ell
+        coeff_ell = coeffs[mask, ...] - mean_coeff[mask, ...]
+        covar_ell = np.array(coeff_ell @ coeff_ell.T/np.size(coeffs, 1))
+        covar_coeff.append(covar_ell)
+        ind += 1
+
+        for ell in range(1, self.basis.ell_max+1):
+            mask = self.basis._indices["ells"] == ell
+            mask_pos = [mask[i] and (self.basis._indices['sgns'][i] == +1) for i in range(len(mask))]
+            mask_neg = [mask[i] and (self.basis._indices['sgns'][i] == -1) for i in range(len(mask))]
+            covar_ell_diag = np.array(coeffs[mask_pos, :] @ coeffs[mask_pos, :].T +
+                coeffs[mask_neg, :] @ coeffs[mask_neg, :].T) / (2 * np.size(coeffs, 1))
+
+            if do_refl:
+                covar_coeff.append(covar_ell_diag)
+                covar_coeff.append(covar_ell_diag)
+                ind = ind + 2
+            else:
+                covar_ell_off = np.array((coeffs[mask_pos, :] @ coeffs[mask_neg, :].T / np.size(coeffs, 1) -
+                                 coeffs[mask_neg, :] @ coeffs[mask_pos, :].T)/(2 * np.size(coeffs, 1)))
+                hsize = np.size(covar_ell_diag, 0)
+                covar_coeff_blk = np.zeros((2 * hsize, 2 * hsize))
+
+                fsize = np.size(covar_coeff_blk, 0)
+                covar_coeff_blk[0:hsize, 0:hsize] = covar_ell_diag[0:hsize, 0:hsize]
+                covar_coeff_blk[hsize:fsize, hsize:fsize] = covar_ell_diag[0:hsize, 0:hsize]
+                covar_coeff_blk[0:hsize, hsize:fsize] = covar_ell_off[0:hsize, 0:hsize]
+                covar_coeff_blk[hsize:fsize, 0:hsize] = covar_ell_off.T[0:hsize, 0:hsize]
+                covar_coeff.append(covar_coeff_blk)
+                ind = ind + 1
+
+        return covar_coeff
+
+    def get_mean(self, coeffs, ctf_fb=None, ctf_idx=None):
+        """
+        Calculate the mean vector from the expansion coefficients with CTF information.
+
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
         :param ctf_fb: The CFT functions in the FB expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
         :return: The mean value vector for all images.
         """
-        if coeffs is None:
+        if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated!')
+
+        if (ctf_fb is None) or (ctf_idx is None):
+            return self._get_mean(coeffs)
 
         b = np.zeros((self.basis.basis_count, 1), dtype=self.as_type)
 
@@ -42,7 +115,7 @@ class Cov2DCTF(RotCov2D):
         for k in np.unique(ctf_idx[:]).T:
             coeff_k = coeffs[:, ctf_idx == k]
             weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
-            mean_coeff_k = self.get_mean(coeff_k)
+            mean_coeff_k = self._get_mean(coeff_k)
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
             b = b + weight*blk_diag_apply(ctf_fb_k_t, mean_coeff_k)
@@ -52,9 +125,11 @@ class Cov2DCTF(RotCov2D):
 
         return mean_coeff
 
-    def get_covar_ctf(self, coeffs, ctf_fb, ctf_idx, mean_coeff=None, noise_var=1, covar_est_opt=None):
+    def get_covar(self, coeffs, ctf_fb=None, ctf_idx=None, mean_coeff=None,
+                  do_refl=True, noise_var=1, covar_est_opt=None):
         """
-        Calculate the covariance matrix from the expansion coefficients and CTF functions.
+        Calculate the covariance matrix from the expansion coefficients and CTF information.
+
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
         :param ctf_fb: The CFT functions in the FB expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
@@ -70,6 +145,12 @@ class Cov2DCTF(RotCov2D):
             are accounted for and inverted to yield a covariance estimate of the unfiltered images.
         """
 
+        if coeffs.size == 0:
+            raise RuntimeError('The coefficients need to be calculated!')
+
+        if (ctf_fb is None) or (ctf_idx is None):
+            return self._get_covar(coeffs, mean_coeff, do_refl)
+
         def identity(x):
             return x
 
@@ -79,7 +160,7 @@ class Cov2DCTF(RotCov2D):
                              'preconditioner': 'identity'}
 
         if mean_coeff is None:
-            mean_coeff = self.get_mean_ctf(coeffs, ctf_fb, ctf_idx)
+            mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
         block_partition = blk_diag_partition(ctf_fb[0])
         b_coeff = blk_diag_zeros(block_partition, dtype=self.as_type)
@@ -98,7 +179,7 @@ class Cov2DCTF(RotCov2D):
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
             mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff)
-            covar_coeff_k = self.get_covar(coeff_k, mean_coeff_k)
+            covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
             b_coeff = blk_diag_add(b_coeff, blk_diag_mult(ctf_fb_k_t,
                 blk_diag_mult(covar_coeff_k, blk_diag_mult(ctf_fb_k, weight))))
@@ -148,6 +229,7 @@ class Cov2DCTF(RotCov2D):
     def shrink_covar_backward(self, b, b_noise, n, noise_var, shrinker):
         """
         Apply the shrinking method to the 2D covariance of coefficients.
+
         :param b: An input coefficient covariance.
         :param b_noise: The noise covariance.
         :param noise_var: The estimated variance of noise.
@@ -155,12 +237,12 @@ class Cov2DCTF(RotCov2D):
         :return: The shrinked 2D covariance coefficients.
         """
         b_out = b
-        for ell in range(0, b.size()):
+        for ell in range(0, len(b)):
             b_ell = b[ell]
             p = np.size(b_ell, 1)
             S = sqrtm(b_noise[ell])
             # from Matlab b_ell = S \ b_ell /S
-            b_ell = np.divide(solve(S, b_ell), S)
+            b_ell = solve(S, b_ell) @ inv(S)
             b_ell = shrink_covar(b_ell, noise_var, p/n, shrinker)
             b_ell = S @ b_ell @ S
             b_out[ell] = b_ell
@@ -169,6 +251,7 @@ class Cov2DCTF(RotCov2D):
     def get_cwf_coeffs(self, coeffs, ctf_fb, ctf_idx, mean_coeff=None, covar_coeff=None, noise_var=1):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
+
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
         :param ctf_fb: The CFT functions in the FB expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
@@ -180,9 +263,9 @@ class Cov2DCTF(RotCov2D):
             and white noise of variance `noise_var` for the noise.
         """
         if mean_coeff is None:
-            mean_coeff = self.get_mean_ctf(coeffs, ctf_fb, ctf_idx)
+            mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
         if covar_coeff is None:
-            covar_coeff = self.get_covar_ctf(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
+            covar_coeff = self.get_covar(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
 
         blk_partition = blk_diag_partition(ctf_fb[0])
 
@@ -203,7 +286,6 @@ class Cov2DCTF(RotCov2D):
             coeff_est_k = blk_diag_solve(sig_noise_covar_coeff, coeff_est_k)
             coeff_est_k = blk_diag_apply(blk_diag_mult(covar_coeff, ctf_fb_k_t), coeff_est_k)
             coeff_est_k = coeff_est_k + mean_coeff
-
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
         return coeffs_est

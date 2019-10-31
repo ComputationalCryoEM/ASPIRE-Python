@@ -232,7 +232,3 @@ class RadialCTFFilter(CTFFilter):
         super().__init__(pixel_size=pixel_size, voltage=voltage, defocus_u=defocus, defocus_v=defocus, defocus_ang=0,
                          Cs=Cs, alpha=alpha, B=B, power=power)
 
-    def evaluate_k(self, kvals):
-        warnings.warn("evaluate_k method is unnecessary and will be removed. Please call evaluate with the appropriate"
-                      " 1d values of omega instead.", DeprecationWarning)
-        return self.evaluate(kvals * 2 * np.pi)
