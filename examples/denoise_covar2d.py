@@ -125,15 +125,19 @@ cov2d = RotCov2D(ffbbasis)
 mean_coeff = cov2d.get_mean(coeff_clean)
 covar_coeff = cov2d.get_covar(coeff_clean, mean_coeff)
 
-# Create the Cov2DCFT object and estimate mean and covariance for noise images with CTF.
+# Estimate mean and covariance for noise images with CTF and shrink method.
 # We now estimate the mean and covariance from the Fourier-Bessel
 # coefficients of the noisy, filtered images. These functions take into
 # account the filters applied to each image to undo their effect on the
 # estimates. For the covariance estimation, the additional information of
 # the estimated mean and the variance of the noise are needed. Again, the
 # covariance matrix estimate is provided in block diagonal form.
+covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250,
+             'iter_callback': [], 'store_iterates': False, 'rel_tolerance': 1e-12,
+             'precision': 'float64', 'preconditioner': 'identity'}
 mean_coeff_est = cov2d.get_mean(coeff_noise, h_ctf_fb, h_idx)
-covar_coeff_est = cov2d.get_covar(coeff_noise, h_ctf_fb, h_idx, mean_coeff_est, noise_var=noise_var)
+covar_coeff_est = cov2d.get_covar(coeff_noise, h_ctf_fb, h_idx, mean_coeff_est,
+                                  noise_var=noise_var, covar_est_opt=covar_opt)
 
 # Estimate the Fourier-Bessel coefficients of the underlying images using a
 # Wiener filter. This Wiener filter is calculated from the estimated mean,
