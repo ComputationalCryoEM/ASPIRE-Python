@@ -53,6 +53,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         # self._indices = self.indices()
 
     def precomp(self):
+        """
+        Precomute the basis functions on a polar Fourier grid.
+        """
         # find max alpha for each N
         max_ns = []
         a = np.square(float(self.beta * self.rcut) / 2)
@@ -103,6 +106,12 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.size_x = len(self.points_inside_the_circle)
 
     def evaluate_t(self, images):
+        """
+        Evaluate coefficient vectors in PSWF basis using the direct method
+
+        :param images: coefficient array in the standard 2D coordinate basis to be evaluated.
+        :return : The evaluation of the coefficient array in the PSWF basis.
+        """
         # start and finish are for the threads option in the future
         images_shape = images.shape
         start = 0
@@ -124,6 +133,27 @@ class FPSWFBasis2D(PSWFBasis2D):
         coefficients = self._pswf_integration(nfft_res)
 
         return coefficients
+
+    def evaluate(self, coefficients):
+        """
+        Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
+
+        :param coeffcients: A coefficient vector (or an array of coefficient vectors) in PSWF basis to be evaluated.
+        :return : The evaluation of the coefficient vector(s) in standard 2D coordinate basis.
+        """
+        # if we got only one vector
+        if len(coefficients.shape) == 1:
+            coefficients = coefficients.reshape((len(coefficients), 1))
+
+        angular_is_zero = np.absolute(self.angular_frequency) == 0
+        flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) + \
+                         2.0 * np.real(self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
+
+        n_images = int(flatten_images.shape[1])
+        images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
+        images[self.get_points_inside_the_circle(), :] = flatten_images
+        images = np.transpose(images, axes=(1, 0, 2))
+        return np.real(images)
 
     def _generate_pswf_quad(self, n, bandlimit, phi_approximate_error, lambda_max, epsilon):
         radial_quad_points, radial_quad_weights = self._generate_pswf_radial_quad(n, bandlimit, phi_approximate_error,
