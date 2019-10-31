@@ -1,8 +1,6 @@
 import os
 import numpy as np
-
 from unittest import TestCase
-
 
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
@@ -14,9 +12,7 @@ from aspire.utils.blk_diag_func import radial_filter2fb_mat
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 
-from aspire.denoise.covar2d import RotCov2D
-from aspire.denoise.covar2d_ctf import Cov2DCTF
-from aspire.image import Image
+from aspire.estimation.covar2d import RotCov2D
 
 
 import os.path
@@ -59,7 +55,7 @@ class Cov2DTestCase(TestCase):
 
         self.h_idx = np.array([filters.index(f) for f in sim.filters])
         self.filters = filters
-        self.h_ctf_fb = [radial_filter2fb_mat(filt.evaluate_k, self.basis) for filt in self.filters]
+        self.h_ctf_fb = [radial_filter2fb_mat(filt.evaluate, self.basis) for filt in self.filters]
 
         self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
 
@@ -69,8 +65,7 @@ class Cov2DTestCase(TestCase):
         self.noise_var = power_clean/SNR
         self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var)*randn(L, L, n, seed=0)
 
-        self.cov2d = RotCov2D(sim, self.basis)
-        self.cov2dctf = Cov2DCTF(sim, self.basis)
+        self.cov2d = RotCov2D(self.basis)
         self.coeff_clean = self.basis.evaluate_t(self.imgs_clean)
         self.coeff = self.basis.evaluate_t(self.imgs_ctf_noise)
 
@@ -79,33 +74,45 @@ class Cov2DTestCase(TestCase):
 
     def test01GetMean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_mean.npy'))
-        self.mean_coeff = self.cov2d.get_mean(self.coeff_clean)
-        self.assertTrue(np.allclose(results, self.mean_coeff, atol=1e-7))
+        self.mean_coeff = self.cov2d._get_mean(self.coeff_clean)
+        self.assertTrue(np.allclose(results, self.mean_coeff))
 
     def test02GetCovar(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covar.npy'))
-        self.covar_coeff = self.cov2d.get_covar(self.coeff_clean)
+        self.covar_coeff = self.cov2d._get_covar(self.coeff_clean)
         im = 0
         for mat in results[0].tolist():
-            self.assertTrue(np.allclose(mat, self.covar_coeff[im], atol=1e-7))
+            self.assertTrue(np.allclose(mat, self.covar_coeff[im]))
             im += 1
 
     def test03GetMeanCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_meanctf.npy'))
-        self.mean_coeff_ctf = self.cov2dctf.get_mean_ctf(self.coeff, self.h_ctf_fb, self.h_idx)
-        self.assertTrue(np.allclose(results, self.mean_coeff_ctf, atol=1e-7))
+        self.mean_coeff_ctf = self.cov2d.get_mean(self.coeff, self.h_ctf_fb, self.h_idx)
+        self.assertTrue(np.allclose(results, self.mean_coeff_ctf))
 
     def test04GetCovarCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf.npy'))
-        self.covar_coeff_ctf = self.cov2dctf.get_covar_ctf(self.coeff, self.h_ctf_fb, self.h_idx,
-                                                           noise_var=self.noise_var)
+        self.covar_coeff_ctf = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
+                                                    noise_var=self.noise_var)
         im = 0
-        for mat in results[0].tolist():
-            self.assertTrue(np.allclose(mat, self.covar_coeff_ctf[im], atol=1e-7))
+        for mat in results.tolist():
+            self.assertTrue(np.allclose(mat, self.covar_coeff_ctf[im]))
             im += 1
 
-    def test05GetCWFCoeffs(self):
+    def test05GetCovarCTFShrink(self):
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'))
+        covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
+                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
+                     'preconditioner': 'identity'}
+        self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
+                                                           noise_var=self.noise_var, covar_est_opt=covar_opt)
+        im = 0
+        for mat in results.tolist():
+            self.assertTrue(np.allclose(mat, self.covar_coeff_ctf_shrink[im]))
+            im += 1
+
+    def test06GetCWFCoeffs(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff.npy'))
-        self.coeff_cwf = self.cov2dctf.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
-                                                      noise_var=self.noise_var)
-        self.assertTrue(np.allclose(results, self.coeff_cwf, atol=1e-7))
+        self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
+                                                   noise_var=self.noise_var)
+        self.assertTrue(np.allclose(results, self.coeff_cwf))
