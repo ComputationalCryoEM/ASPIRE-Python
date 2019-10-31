@@ -68,6 +68,9 @@ class PSWFBasis2D(Basis):
         self.points_inside_the_circle_vec = points_inside_the_circle.reshape(self.image_height ** 2)
 
     def precomp(self):
+        """
+        Precomute the basis functions on a polar Fourier grid.
+        """
 
         max_ns = []
         a = np.square(float(self.beta * self.rcut) / 2)
@@ -108,6 +111,12 @@ class PSWFBasis2D(Basis):
         self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
     def evaluate_t(self, images):
+        """
+        Evaluate coefficient vectors in PSWF basis using the direct method
+
+        :param images: coefficient array in the standard 2D coordinate basis to be evaluated.
+        :return : The evaluation of the coefficient array in the PSWF basis.
+        """
         images_shape = images.shape
 
         # if we got several images
@@ -123,6 +132,12 @@ class PSWFBasis2D(Basis):
         return coefficients
 
     def evaluate(self, coefficients):
+        """
+        Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
+
+        :param coeffcients: A coefficient vector (or an array of coefficient vectors) in PSWF basis to be evaluated.
+        :return : The evaluation of the coefficient vector(s) in standard 2D coordinate basis.
+        """
         # if we got only one vector
         if len(coefficients.shape) == 1:
             coefficients = coefficients.reshape((len(coefficients), 1))
@@ -141,9 +156,9 @@ class PSWFBasis2D(Basis):
         return self.points_inside_the_circle
 
     def mask_points_inside_the_circle(self, images):
-        return self.__mask_points_inside_the_circle_cpu(images)
+        return self._mask_points_inside_the_circle_cpu(images)
 
-    def __mask_points_inside_the_circle_cpu(self, images):
+    def _mask_points_inside_the_circle_cpu(self, images):
         return images * self.points_inside_the_circle
 
     def get_samples_as_images(self):
@@ -189,9 +204,7 @@ class PSWFBasis2D(Basis):
 
         m = 0
         n = int(np.ceil(2 * c / np.pi))
-        #n = self.resolution + 1
         x, w = leggauss_0_1(n)
-        #x, w = leggauss_0_1(1000)
 
         cons = c / 2 / np.pi
         while True:
@@ -210,7 +223,6 @@ class PSWFBasis2D(Basis):
                 alpha_all.append(alpha[:n_end])
                 d_vec_all.append(d_vec[:, :n_end])
                 m += 1
-                # print("generating pswfs for angular index: {}".format(m))
                 n = n_end + 1
             else:
                 n *= 2
@@ -240,13 +252,11 @@ class PSWFBasis2D(Basis):
             range_array = np.arange(len(d_vec))
             r_radial_part_mat = t_radial_part_mat(x, i, range_array, len(d_vec)).dot(d_vec[:, :max_n])
 
-            # pswf_n_n_mat = r_radial_part_mat * phase_part.reshape((len(phase_part), 1)).dot(np.ones((1, max_n)))
             pswf_n_n_mat = (phase_part * r_radial_part_mat.T)
 
             out_mat.extend(pswf_n_n_mat)
         out_mat = np.array(out_mat).T
         return out_mat
-
 
     def pswf_func2d(self, big_n, n, bandlimit, phi_approximate_error, x, w):
 
