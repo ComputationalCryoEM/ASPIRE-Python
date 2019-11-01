@@ -374,10 +374,9 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
     :return: The shrinked covariance matrix
     """
 
-    ensure(shrinker in (None, 'frobenius_norm', 'operator_norm', 'soft_threshold'), 'Unsupported shrink method')
-
     if shrinker is None:
         shrinker = 'frobenius_norm'
+    ensure(shrinker in ('frobenius_norm', 'operator_norm', 'soft_threshold'), 'Unsupported shrink method')
 
     covar = covar_in/noise_var
 
@@ -405,7 +404,7 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
     diag_lambs=np.zeros_like(covar)
     np.fill_diagonal(diag_lambs, lambs)
 
-    shrinked_covar = eig_vec @ diag_lambs @eig_vec.conj().tranpose()
+    shrinked_covar = eig_vec @ diag_lambs @eig_vec.conj().T
     shrinked_covar *= noise_var
 
     return shrinked_covar

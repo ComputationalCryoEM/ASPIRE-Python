@@ -12,8 +12,8 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
 
-  - bash: conda update -q -y conda
-    displayName: Update conda
+#  - bash: conda update -q -y conda
+#    displayName: Update conda
     
   - bash: conda env create --name myEnvironment --file environment.yml
     displayName: Create Anaconda environment
