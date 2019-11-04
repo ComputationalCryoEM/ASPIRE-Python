@@ -79,6 +79,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         eps = np.spacing(1)
         a, b, c, d, e, f = self._generate_pswf_quad(4 * self.rcut, 2 * self.bandlimit, eps, eps, eps)
 
+        # TODO: check the second parameter is reasonable or not, any difference to direct PSWF
         self.pswf_radial_quad = self.evaluate_pswf2d_all(d, np.zeros(len(d)), max_ns)
         self.quad_rule_pts_x = a
         self.quad_rule_pts_y = b
@@ -89,6 +90,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.angular_frequency = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
         self.radian_frequency = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
         self.alpha_nn = np.array(alpha_all)
+
+        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_on_the_circle, self.theta_2d_grid_on_the_circle, max_ns)
+        self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
 
         # pre computing variables for forward
         us_fft_pts = np.column_stack((self.quad_rule_pts_x, self.quad_rule_pts_y))
@@ -152,7 +156,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
         images[self.get_points_inside_the_circle(), :] = flatten_images
-        images = np.transpose(images, axes=(1, 0, 2))
+        # images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images)
 
     def _generate_pswf_quad(self, n, bandlimit, phi_approximate_error, lambda_max, epsilon):
