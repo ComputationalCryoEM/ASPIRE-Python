@@ -31,6 +31,7 @@ img_size = 129
 #
 fb_basis = FBBasis2D((img_size, img_size))
 # Get the expansion coefficients based on FB basis
+logger.info('start normal FB expansion of original images.')
 fb_coeffs = fb_basis.evaluate_t(org_images)
 logger.info('Finish normal FB expansion of original images.')
 # Reconstruct images from the expansion coefficients based on FB basis
@@ -60,6 +61,7 @@ plt.title('Differences')
 #
 ffb_basis = FFBBasis2D((img_size, img_size))
 # Get the expansion coefficients based on fast FB basis
+logger.info('start fast FB expansion of original images.')
 ffb_coeffs = ffb_basis.evaluate_t(org_images)
 logger.info('Finish fast FB expansion of original images.')
 # Reconstruct images from the expansion coefficients based on fast FB basis
@@ -86,8 +88,9 @@ plt.title('Differences')
 #
 # Specify the direct PSWF basis method for expending the 2D images
 #
-pswf_basis = PSWFBasis2D((img_size, img_size), 1.0e-3, 1.0)
+pswf_basis = PSWFBasis2D((img_size, img_size), 1.0, 1.0)
 # Get the expansion coefficients based on direct PSWF basis
+logger.info('Start direct PSWF expansion of original images.')
 pswf_coeffs = pswf_basis.evaluate_t(org_images)
 logger.info('Finish direct PSWF expansion of original images.')
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
@@ -114,13 +117,14 @@ plt.title('Differences')
 #
 # Specify the direct FPSWF basis method for expending the 2D images
 #
-fpswf_basis = FPSWFBasis2D((img_size, img_size), 1.0e-3, 1.0)
+fpswf_basis = FPSWFBasis2D((img_size, img_size), 1.0, 1.0)
 # Get the expansion coefficients based on fast PSWF basis
+logger.info('Start fast PSWF expansion of original images.')
 fpswf_coeffs = fpswf_basis.evaluate_t(org_images)
 logger.info('Finish fast PSWF expansion of original images.')
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
-fpswf_images = pswf_basis.evaluate(fpswf_coeffs)
-fpswf_images = np.swapaxes(fpswf_images, 0, 1)
+fpswf_images = fpswf_basis.evaluate(fpswf_coeffs)
+#fpswf_images = np.swapaxes(fpswf_images, 0, 1)
 logger.info('Finish reconstruction of images from fast PSWF expansion coefficients.')
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
 fpswf_meanmax = np.mean(np.max(abs(fpswf_images-org_images), axis=2))
