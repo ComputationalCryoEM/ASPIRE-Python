@@ -37,8 +37,8 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
 
-#  - bash: conda update -q -y conda
-#    displayName: Update conda
+  - bash: conda update -q -y conda
+    displayName: Update conda
 
   - bash: conda clean -i -t -y
     displayName: Removing conda cached package tarballs.
