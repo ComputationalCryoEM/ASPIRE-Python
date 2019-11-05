@@ -42,15 +42,6 @@ class PSWFBasis2D(Basis):
         # precompute the basis functions in 2D grids
         self.precomp()
 
-        # calculate total number of basis functions
-        # self.basis_count = self.k_max[0] + sum(2 * self.k_max[1:])
-
-        # obtain a 2D grid to represent basis functions
-        # self.basis_coords = unique_coords_nd(self.N, self.d)
-
-        # generate 1D indices for basis functions
-        # self._indices = self.indices()
-
     def generate_grid(self):
         if self.nres % 2 == 0:
             x_1d_grid = range(-self.rcut, self.rcut)
@@ -169,7 +160,6 @@ class PSWFBasis2D(Basis):
         return self.angular_frequency
 
     def get_num_prolates(self):
-        # TODO: fix once Itay gives the samples in the correct way
         print("get_samples_as_images is not supported.")
         return -1
 
