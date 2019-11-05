@@ -43,15 +43,6 @@ class FPSWFBasis2D(PSWFBasis2D):
         # precompute the basis functions in 2D grids
         self.precomp()
 
-        # calculate total number of basis functions
-        # self.basis_count = self.k_max[0] + sum(2 * self.k_max[1:])
-
-        # obtain a 2D grid to represent basis functions
-        # self.basis_coords = unique_coords_nd(self.N, self.d)
-
-        # generate 1D indices for basis functions
-        # self._indices = self.indices()
-
     def precomp(self):
         """
         Precomute the basis functions on a polar Fourier grid.
@@ -122,18 +113,14 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         # if we got several images
         if len(images_shape) == 3:
-            flattened_images = images.reshape((images_shape[0] * images_shape[1], images_shape[2]), order='F')
             finish = images_shape[2]
 
         # else we got only one image
         else:
-            flattened_images = images.reshape((images_shape[0] * images_shape[1], 1), order='F')
             finish = 1
-
-        flattened_images = flattened_images[self.points_inside_the_circle_vec, :]
-
-        #nfft_res = self._compute_nfft_potts(flattened_images, start, finish)
-        nfft_res = self._compute_nfft_potts(images, start, finish)
+        images_disk = np.zeros(images.shape, dtype=images.dtype, order='F')
+        images_disk[self.points_inside_the_circle, :] = images[self.points_inside_the_circle, :]
+        nfft_res = self._compute_nfft_potts(images_disk, start, finish)
         coefficients = self._pswf_integration(nfft_res)
 
         return coefficients
@@ -156,6 +143,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
         images[self.get_points_inside_the_circle(), :] = flatten_images
+        # TODO: no need to switch x and y any more, need to make consistent with direct method
         # images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images)
 
@@ -292,18 +280,15 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def _compute_nfft_potts(self, images, start, finish):
         x = self.us_fft_pts
-        n = self.size_x
+        n = images.shape[0]
         num_images = finish - start
 
         m = x.shape[0]
 
         images_nufft = np.zeros((m, num_images), dtype='complex128')
-        current_image = np.zeros((n, n))
         for i in range(start, finish):
-            #current_image[self.points_inside_the_circle] = images[:, i]
             images_nufft[:, i - start] = nufft3(images[..., i], 2 * pi * x.T,
                                                 (n, n))
-
         return images_nufft
 
     def _pswf_integration(self, images_nufft):
