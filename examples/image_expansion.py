@@ -95,7 +95,7 @@ plt.title('Differences')
 #
 # Specify the direct PSWF basis method for expending the 2D images
 #
-pswf_basis = PSWFBasis2D((img_size, img_size), 1.0, 1.0)
+pswf_basis = PSWFBasis2D((img_size, img_size))
 # Get the expansion coefficients based on direct PSWF basis
 logger.info('Start direct PSWF expansion of original images.')
 tstart = timeit.default_timer()
@@ -127,7 +127,7 @@ plt.title('Differences')
 #
 # Specify the direct FPSWF basis method for expending the 2D images
 #
-fpswf_basis = FPSWFBasis2D((img_size, img_size), 1.0, 1.0)
+fpswf_basis = FPSWFBasis2D((img_size, img_size))
 # Get the expansion coefficients based on fast PSWF basis
 logger.info('Start fast PSWF expansion of original images.')
 tstart = timeit.default_timer()
@@ -137,7 +137,6 @@ dtime = tstop - tstart
 logger.info(f'Finish fast PSWF expansion of original images in {dtime:.4f} seconds.')
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
 fpswf_images = fpswf_basis.evaluate(fpswf_coeffs)
-#fpswf_images = np.swapaxes(fpswf_images, 0, 1)
 logger.info('Finish reconstruction of images from fast PSWF expansion coefficients.')
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
 fpswf_meanmax = np.mean(np.max(abs(fpswf_images-org_images), axis=2))
