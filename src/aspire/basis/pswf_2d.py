@@ -21,7 +21,7 @@ class PSWFBasis2D(Basis):
         3) Yoel Shkolnisky, "Prolate spheroidal wave functions on a disc-Integration and approximation of
         two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
     """
-    def __init__(self, size, gamma_truncation, beta):
+    def __init__(self, size, gamma_truncation=1.0, beta=1.0):
         # find max alpha for each N
         self.rcut = size[0] // 2
         self.gmcut = gamma_truncation
