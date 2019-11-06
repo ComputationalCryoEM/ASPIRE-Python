@@ -37,6 +37,8 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
 
+  - bash: unset SUDO_UID SUDO_GID SUDO_USER 
+
   - bash: conda update -q -y conda
     displayName: Update conda
 
