@@ -6,6 +6,7 @@ from aspire.basis.pswf_utils import BNMatrix
 from aspire.basis.basis_utils import d_decay_approx_fun, t_radial_part_mat, t_x_mat, t_x_derivative_mat
 from aspire.basis.basis_utils import k_operator, leggauss_0_1
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,14 +23,18 @@ class PSWFBasis2D(Basis):
         two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
     """
     def __init__(self, size, gamma_truncation=1.0, beta=1.0):
-        # find max alpha for each N
+        """
+        Initial an object for 2D Prolate Spheroidal Wave Function (PSWF) basis expansion using direct method.
+        """
         self.rcut = size[0] // 2
         self.gmcut = gamma_truncation
         self.beta = beta
         super().__init__(size)
 
     def _build(self):
-
+        """
+        Build internal data structures for the direct 2D PSWF method.
+        """
         logger.info('Expanding 2D images using direct PSWF method.')
 
         # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
@@ -43,6 +48,9 @@ class PSWFBasis2D(Basis):
         self.precomp()
 
     def generate_grid(self):
+        """
+        Generate the 2D sampling grid.
+        """
         if self.nres % 2 == 0:
             x_1d_grid = range(-self.rcut, self.rcut)
         else:
@@ -60,7 +68,7 @@ class PSWFBasis2D(Basis):
 
     def precomp(self):
         """
-        Precomute the basis functions on a polar Fourier grid.
+        Precompute the basis functions on a polar Fourier 2D grid.
         """
 
         max_ns = []
@@ -110,13 +118,8 @@ class PSWFBasis2D(Basis):
         """
         images_shape = images.shape
 
-        # if we got several images
-        if len(images_shape) == 3:
-            flattened_images = images.reshape((images_shape[0] * images_shape[1], images_shape[2]), order='F')
-
-        # else we got only one image
-        else:
-            flattened_images = images.reshape((images_shape[0] * images_shape[1], 1), order='F')
+        images_shape = (images_shape + (1,)) if len(images_shape) == 2 else images_shape
+        flattened_images = images.reshape((images_shape[0] * images_shape[1], images_shape[2]), order='F')
 
         flattened_images = flattened_images[self.points_inside_the_circle_vec, :]
         coefficients = self.samples_conj_transpose.dot(flattened_images)
@@ -131,11 +134,11 @@ class PSWFBasis2D(Basis):
         """
         # if we got only one vector
         if len(coefficients.shape) == 1:
-            coefficients = coefficients.reshape((len(coefficients), 1))
+            coefficients = coefficients[:, np.newaxis]
 
         angular_is_zero = np.absolute(self.angular_frequency) == 0
-        flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) + \
-                         2.0 * np.real(self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
+        flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) +  2.0 * np.real(
+            self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
 
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
@@ -153,15 +156,13 @@ class PSWFBasis2D(Basis):
         return images * self.points_inside_the_circle
 
     def get_samples_as_images(self):
-        print("get_samples_as_images is not supported.")
-        return -1
+        raise NotImplementedError("get_samples_as_images is not supported.")
 
     def get_angular_frequency(self):
         return self.angular_frequency
 
     def get_num_prolates(self):
-        print("get_samples_as_images is not supported.")
-        return -1
+        raise NotImplementedError("get_samples_as_images is not supported.")
 
     def get_non_neg_freq_inds(self):
         return self.non_neg_freq_inds
@@ -173,12 +174,13 @@ class PSWFBasis2D(Basis):
         return self.pos_freq_inds
 
     def get_neg_freq_inds(self):
-        ValueError('no negative frequencies')
+        raise ValueError('no negative frequencies')
 
     def init_pswf_func2d(self, c, eps):
         """
-        initialize the whole set of PSWF functions with the input bandlimit and error.   
-        :param c: bandlimit  
+        Initialize the whole set of PSWF functions with the input bandlimit and error.
+
+        :param c: bandlimit (>0) can be estimated by beta * pi * rcut
         :param eps: error tolerance
         :return:
             alpha_all (list of arrays):
@@ -194,13 +196,12 @@ class PSWFBasis2D(Basis):
 
         m = 0
         n = int(np.ceil(2 * c / np.pi))
-        x, w = leggauss_0_1(n)
+        r, w = leggauss_0_1(n)
 
         cons = c / 2 / np.pi
         while True:
-            alpha, d_vec, a = self.pswf_func2d(m, n, c, eps, x, w)
+            alpha, d_vec, a = self.pswf_func2d(m, n, c, eps, r, w)
 
-            # should check this lambda
             lambda_var = np.sqrt(cons * np.absolute(alpha))
 
             n_end = np.where(lambda_var <= eps)[0]
@@ -209,24 +210,25 @@ class PSWFBasis2D(Basis):
                 n_end = n_end[0]
                 if n_end == 0:
                     break
-                n_order_length_vec.extend([n_end])
+                n_order_length_vec.append(n_end)
                 alpha_all.append(alpha[:n_end])
                 d_vec_all.append(d_vec[:, :n_end])
                 m += 1
                 n = n_end + 1
             else:
                 n *= 2
-                x, w = leggauss_0_1(n)
+                r, w = leggauss_0_1(n)
 
         return d_vec_all, alpha_all, n_order_length_vec
 
-    def evaluate_pswf2d_all(self, x, y, max_ns):
+    def evaluate_pswf2d_all(self, r, theta, max_ns):
         """
-        Evaluate the numerical values of PSWF basis functions for all N's, up to certain given n for each N
-        :param x: Radial part to evaluate
-        :param y: Phase part to evaluate
-        :param max_ns: List of ints max_ns[i] is max n to to use for N=i, not included. If max_ns[i]<1  N=i wont be used
-        :return: (len(x), sum(max_ns)) ndarray
+        Evaluate the numerical values of PSWF basis functions for all N's, up to certain given n for each N.
+
+        :param r: Radial part to evaluate
+        :param theta: Phase part to evaluate
+        :param max_ns: List of ints max_ns[i] is max n to to use for N=i, not included. If max_ns[i]<1 N=i won't be used
+        :return: (len(r), sum(max_ns)) ndarray
             Indices are corresponding to the list (N, n)
             (0, 0),..., (0, max_ns[0]), (1, 0),..., (1, max_ns[1]),... , (len(max_ns)-1, 0), (len(max_ns)-1, max_ns[-1])
         """
@@ -238,9 +240,9 @@ class PSWFBasis2D(Basis):
 
             d_vec = self.d_vec_all[i]
 
-            phase_part = np.exp(1j * i * y) / np.sqrt(2 * np.pi)
+            phase_part = np.exp(1j * i * theta) / np.sqrt(2 * np.pi)
             range_array = np.arange(len(d_vec))
-            r_radial_part_mat = t_radial_part_mat(x, i, range_array, len(d_vec)).dot(d_vec[:, :max_n])
+            r_radial_part_mat = t_radial_part_mat(r, i, range_array, len(d_vec)).dot(d_vec[:, :max_n])
 
             pswf_n_n_mat = (phase_part * r_radial_part_mat.T)
 
@@ -248,24 +250,38 @@ class PSWFBasis2D(Basis):
         out_mat = np.array(out_mat).T
         return out_mat
 
-    def pswf_func2d(self, big_n, n, bandlimit, phi_approximate_error, x, w):
+    def pswf_func2d(self, big_n, n, bandlimit, phi_approximate_error, r, w):
+        """
+         Calculate the eigen-values and eigen-vectors of PSWF basis functions for all N's and n's.
+
+        :param big_n: The integer N in PSWF basis.
+        :param n: The integer n in PSWF basis.
+        :param bandlimit: The band limit estimated by beta * pi * rcut.
+        :param phi_approximate_error: The input approximate error for phi.
+        :param r: The Gauss quadrature nodes.
+        :param w: The Gauss quadrature weights.
+        :return:
+            alpha_n (ndarray): the eigen-values for N.
+            d_vec (ndarray): the corresponding eigen-vectors for alpha_n.
+            approx_length (int): the number of eigenvalues,len(alpha_n).
+        """
 
         d_vec, approx_length, range_array = self._pswf_2d_minor_computations(big_n, n, bandlimit, phi_approximate_error)
 
-        t1 = 1 - 2 * np.square(x)
+        t1 = 1 - 2 * np.square(r)
         t2 = np.sqrt(2 * (2 * range_array + big_n + 1))
 
-        phi = t_x_mat(x, big_n, range_array, approx_length).dot(d_vec[:, :(n + 1)])
-        phi_derivatives = t_x_derivative_mat(t1, t2, x, big_n, range_array, approx_length).dot(d_vec[:, :(n + 1)])
+        phi = t_x_mat(r, big_n, range_array, approx_length).dot(d_vec[:, :(n + 1)])
+        phi_derivatives = t_x_derivative_mat(t1, t2, r, big_n, range_array, approx_length).dot(d_vec[:, :(n + 1)])
 
         max_phi_idx = np.argmax(np.absolute(phi[:, 0]))
         max_phi_val = phi[max_phi_idx, 0]
-        x_for_calc = x[max_phi_idx]
+        x_for_calc = r[max_phi_idx]
 
-        right_hand_side_integral = np.einsum('j, j, j ->', w, k_operator(big_n, bandlimit * x_for_calc * x), phi[:, 0])
+        right_hand_side_integral = np.einsum('j, j, j ->', w, k_operator(big_n, bandlimit * x_for_calc * r), phi[:, 0])
         lambda_n_1 = right_hand_side_integral / max_phi_val
 
-        temp_calc = x * w
+        temp_calc = r * w
         upper_integral_values = np.einsum('j, ji, ji -> i', temp_calc, phi_derivatives[:, :-1], phi[:, 1:])
         lower_integral_values = np.einsum('j, ji, ji -> i', temp_calc, phi[:, :-1], phi_derivatives[:, 1:])
 
@@ -277,7 +293,8 @@ class PSWFBasis2D(Basis):
 
     def _pswf_2d_minor_computations(self, big_n, n, bandlimit, phi_approximate_error):
         """
-        approximate the number of n's for fixed  N (big_n) and compute the d_vec defined in eq (18) of paper 3).
+        Approximate the number of n's for fixed N (big_n) and compute the d_vec defined in eq (18) of paper 3).
+
         :param big_n: int
         :param n: int
                 used for the computation of approx_length
