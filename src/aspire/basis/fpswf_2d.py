@@ -1,20 +1,19 @@
 import logging
 import numpy as np
 from numpy import pi
-from scipy.fftpack import fft
-
-from scipy.special import jn
 from numpy.linalg import lstsq
+from scipy.fftpack import fft
+from scipy.special import jn
 from scipy.optimize import least_squares
-from aspire.nfft import anufft3, nufft3
 
+from aspire.nfft import nufft3
 from aspire.basis.basis_utils import t_x_mat, t_x_mat2
 from aspire.basis.pswf_2d import PSWFBasis2D
-
-
 from aspire.basis.basis_utils import leggauss_0_1
 
+
 logger = logging.getLogger(__name__)
+
 
 class FPSWFBasis2D(PSWFBasis2D):
     """
@@ -29,8 +28,16 @@ class FPSWFBasis2D(PSWFBasis2D):
         two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
     """
 
-    def _build(self):
+    def __init__(self, size, gamma_truncation=1.0, beta=1.0):
+        """
+        Initial an object for 2D Prolate Spheroidal Wave Function (PSWF) basis expansion using fast method.
+        """
+        super().__init__(size, gamma_truncation, beta)
 
+    def _build(self):
+        """
+        Build internal data structures for the direct 2D PSWF method.
+        """
         logger.info('Expanding 2D images using fast PSWF method.')
 
         # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
@@ -45,7 +52,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def precomp(self):
         """
-        Precomute the basis functions on a polar Fourier grid.
+        Precomute the basis functions on a polar Fourier 2D grid.
         """
         # find max alpha for each N
         max_ns = []
@@ -70,7 +77,6 @@ class FPSWFBasis2D(PSWFBasis2D):
         eps = np.spacing(1)
         a, b, c, d, e, f = self._generate_pswf_quad(4 * self.rcut, 2 * self.bandlimit, eps, eps, eps)
 
-        # TODO: check the second parameter is reasonable or not, any difference to direct PSWF
         self.pswf_radial_quad = self.evaluate_pswf2d_all(d, np.zeros(len(d)), max_ns)
         self.quad_rule_pts_x = a
         self.quad_rule_pts_y = b
@@ -78,11 +84,11 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.radial_quad_pts = d
         self.quad_rule_radial_wts = e
         self.num_angular_pts = f
-        self.angular_frequency = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
-        self.radian_frequency = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
+        self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
+        self.rad_freqs = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
         self.alpha_nn = np.array(alpha_all)
 
-        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_on_the_circle, self.theta_2d_grid_on_the_circle, max_ns)
+        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_in_disk, self.theta_2d_grid_in_disk, max_ns)
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
 
         # pre computing variables for forward
@@ -98,7 +104,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.numel_for_n = numel_for_n
         self.indices_for_n = indices_for_n
         self.n_max = n_max
-        self.size_x = len(self.points_inside_the_circle)
+        self.size_x = len(self.points_in_disk)
 
     def evaluate_t(self, images):
         """
@@ -119,7 +125,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         else:
             finish = 1
         images_disk = np.zeros(images.shape, dtype=images.dtype, order='F')
-        images_disk[self.points_inside_the_circle, :] = images[self.points_inside_the_circle, :]
+        images_disk[self.points_in_disk, :] = images[self.points_in_disk, :]
         nfft_res = self._compute_nfft_potts(images_disk, start, finish)
         coefficients = self._pswf_integration(nfft_res)
 
@@ -129,20 +135,20 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
 
-        :param coeffcients: A coefficient vector (or an array of coefficient vectors) in PSWF basis to be evaluated.
+        :param coefficients: A coefficient vector (or an array of coefficient vectors) in PSWF basis to be evaluated.
         :return : The evaluation of the coefficient vector(s) in standard 2D coordinate basis.
         """
         # if we got only one vector
         if len(coefficients.shape) == 1:
             coefficients = coefficients.reshape((len(coefficients), 1))
 
-        angular_is_zero = np.absolute(self.angular_frequency) == 0
+        angular_is_zero = np.absolute(self.ang_freqs) == 0
         flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) + \
                          2.0 * np.real(self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
 
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
-        images[self.get_points_inside_the_circle(), :] = flatten_images
+        images[self.get_points_in_disk(), :] = flatten_images
         # TODO: no need to switch x and y any more, need to make consistent with direct method
         # images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images)
@@ -261,11 +267,11 @@ class FPSWFBasis2D(PSWFBasis2D):
         r_quad_indices.extend(num_angular_pts)
         r_quad_indices = np.cumsum(r_quad_indices, dtype='int')
 
-        n_max = int(max(self.angular_frequency) + 1)
+        n_max = int(max(self.ang_freqs) + 1)
 
         numel_for_n = np.zeros(n_max, dtype='int')
         for i in range(n_max):
-            numel_for_n[i] = np.count_nonzero(self.angular_frequency == i)
+            numel_for_n[i] = np.count_nonzero(self.ang_freqs == i)
 
         indices_for_n = [0]
         indices_for_n.extend(numel_for_n)
@@ -306,7 +312,7 @@ class FPSWFBasis2D(PSWFBasis2D):
                                                            1))[:self.n_max, :]
 
         r_n_eval_mat = r_n_eval_mat.reshape((len(self.radial_quad_pts) * self.n_max, num_images), order='F')
-        coeff_vec_quad = np.zeros((len(self.angular_frequency), num_images), dtype='complex128')
+        coeff_vec_quad = np.zeros((len(self.ang_freqs), num_images), dtype='complex128')
         m = len(self.pswf_radial_quad)
         for i in range(self.n_max):
             coeff_vec_quad[self.indices_for_n[i] + np.arange(self.numel_for_n[i]), :] =\
