@@ -70,7 +70,20 @@ class PSWFBasis2D(Basis):
         """
         Precompute the basis functions on a polar Fourier 2D grid.
         """
+        self.generate_samples()
 
+        self.non_neg_freq_inds = slice(0, len(self.ang_freqs))
+
+        tmp = np.nonzero(self.ang_freqs == 0)[0]
+        self.zero_freq_inds = slice(tmp[0], tmp[-1] + 1)
+
+        tmp = np.nonzero(self.ang_freqs > 0)[0]
+        self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
+
+    def generate_samples(self):
+        """
+        Precompute the basis functions on a polar Fourier 2D grid.
+        """
         max_ns = []
         a = np.square(float(self.beta * self.rcut) / 2)
         m = 0
@@ -92,22 +105,14 @@ class PSWFBasis2D(Basis):
                 alpha_all.extend(alpha[:n_end])
                 m += 1
 
-        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_in_disk, self.theta_2d_grid_in_disk, max_ns)
+        self.alpha_nn = np.array(alpha_all)
+        self.max_ns = max_ns
 
+        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_in_disk, self.theta_2d_grid_in_disk, max_ns)
         self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
         self.rad_freqs = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
-        self.alpha_nn = np.array(alpha_all)
-
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
         self.samples_conj_transpose = self.samples.conj().transpose()
-
-        self.non_neg_freq_inds = slice(0, len(self.ang_freqs))
-
-        tmp = np.nonzero(self.ang_freqs == 0)[0]
-        self.zero_freq_inds = slice(tmp[0], tmp[-1] + 1)
-
-        tmp = np.nonzero(self.ang_freqs > 0)[0]
-        self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
     def evaluate_t(self, images):
         """
