@@ -11,19 +11,28 @@ class BNMatrix:
       two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
     """
 
-    def __init__(self, n, band_limit, approx_length):
+    def __init__(self, big_n, band_limit, approx_length):
+        """
+        Initial an object to compute the B_N matrix ( with elements of b^N_mn).
+
+        :param big_n: A positive integer represented by N.
+        :param band_limit: The band limit.
+        :param approx_length: The approximated length represented by n.
+        """
 
         k = np.arange(1, approx_length, dtype=float)
         self.diagonal = np.ones(approx_length)
-        self.diagonal[0] = self._generate_bn_mat_b_n_on_diagonal(n, 0, band_limit)
+        self.diagonal[0] = self._generate_bn_mat_b_n_on_diagonal(big_n, 0, band_limit)
         # BN matrix is a symmetric tridiagonal matrix
-        self.diagonal[1:] = self._generate_bn_mat_b_n_on_diagonal(n, k, band_limit)
-        self.off_diagonal = self._generate_bn_mat_b_n_above_diagonal(n, k, band_limit)
-        self.off_diagonal += self._generate_bn_mat_b_n_below_diagonal(n, k - 1, band_limit)
+        self.diagonal[1:] = self._generate_bn_mat_b_n_on_diagonal(big_n, k, band_limit)
+        self.off_diagonal = self._generate_bn_mat_b_n_above_diagonal(big_n, k, band_limit)
+        self.off_diagonal += self._generate_bn_mat_b_n_below_diagonal(big_n, k - 1, band_limit)
         self.off_diagonal /= 2
 
     def get_eig_vectors(self):
         """
+        Calculated the eigen-values and eigen-vectors of B_N matrix.
+
         :return: v: (M,M) ndarray
                     The normalized eigenvectors corresponding to the eigenvalues, v[:, i] is corresponding to the w[i].
                     In each eigenvector v[:, i], v[argmax(abs(v[:, i])), i] >= 0.
@@ -36,8 +45,8 @@ class BNMatrix:
         sorted_idx = np.argsort(-w)
         v = v[:, sorted_idx]
         w = w[sorted_idx]
-        # Why need to rescale? It can not fix the problem that the eigen vectors
-        # have the different signs to that of Matlab version.
+        # We need to rescale the eigen-vectors to fix the sign problem and make consistent with
+        # the Matlab version.
         a = np.argmax(np.absolute(v), axis=0)
         b = np.array([np.sign(v[a[k], k]) for k in range(len(v))])
         v = v * b
@@ -46,8 +55,10 @@ class BNMatrix:
 
     def dense_mat(self):
         """
+        Represent the full B_N matrix by a 2D array.
+
         :return: mat: (M,M), ndarray
-            The full BN matrix .
+                The full BN matrix.
         """
 
         diagonal = self.diagonal
@@ -66,6 +77,8 @@ class BNMatrix:
 
     def shape(self):
         """
+        Ruturn the shape of B_N matrix.
+
         :return: tuple: (n, n)
             The dense matrix shape
         """
@@ -110,7 +123,6 @@ class BNMatrix:
 
         return -((np.square(k) * self._generate_bn_mat_h(n, k)) /
                  ((2 * k + n + 1) * (2 * k + n) * self._generate_bn_mat_h(n, k - 1))) * ((n + k) / k)
-
 
     def _generate_bn_mat_b_n_above_diagonal(self, n, k, c):
         """
