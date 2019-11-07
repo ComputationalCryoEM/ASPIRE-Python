@@ -4,17 +4,16 @@ Prolate Spheroidal Wave Function (PSWF) objects.
 """
 
 import sys
-
 import logging
 import numpy as np
 from numpy import pi, log, exp, diff
 from scipy.special import jv, lpmv
+from scipy.special import jn
+from numpy.polynomial.legendre import leggauss
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, grid_3d
 
-from numpy.polynomial.legendre import leggauss
-from scipy.special import jn
 
 logger = logging.getLogger(__name__)
 
@@ -330,6 +329,7 @@ def lgwt(ndeg, a, b):
 def j_polynomial(m, n, alpha, beta, x):
     """
     The Jacobi polynomials defined in the paper, eq (2), page 6
+
     :param m: int, > 0
         The dimension of x
     :param n: int, > 0
@@ -379,15 +379,18 @@ def t_x_mat(x, n, j, approx_length):
     c = p_n(approx_length - 1, n, 0, 1 - 2 * np.square(x))
     return np.einsum('i,j,ij->ij', a, b, c)
 
-# use np.outer instead of x as mat
-def t_x_mat2(x, n, j, approx_length): return np.power(x, n + 0.5).dot(np.sqrt(2 * (2 * j + n + 1))) * \
-                                            p_n(approx_length - 1, n, 0, 1 - 2 * np.square(x))
+
+def t_x_mat2(x, n, j, approx_length):
+    # use np.outer instead of x as mat
+    return np.power(x, n + 0.5).dot(np.sqrt(2 * (2 * j + n + 1))) * p_n(
+        approx_length - 1, n, 0, 1 - 2 * np.square(x))
 
 
 def t_x_derivative_mat(t1, t2, x, big_n, range_array, approx_length):
-    return -2 * (big_n + range_array + 1) * np.outer(np.power(x, big_n + 1.5), t2) *\
-           np.column_stack((np.zeros(len(x)), p_n(approx_length - 2, big_n + 1, 1, t1))) +\
-           (big_n + 0.5) * np.outer(np.power(x, big_n - 0.5), t2) * p_n(approx_length - 1, big_n, 0, t1)
+    return -2 * (big_n + range_array + 1) * np.outer(
+        np.power(x, big_n + 1.5), t2) * np.column_stack(
+        (np.zeros(len(x)), p_n(approx_length - 2, big_n + 1, 1, t1))) + (big_n + 0.5) * np.outer(
+        np.power(x, big_n - 0.5), t2) * p_n(approx_length - 1, big_n, 0, t1)
 
 
 def t_radial_part_mat(x, n, j, m):
