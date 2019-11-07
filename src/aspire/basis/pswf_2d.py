@@ -57,14 +57,14 @@ class PSWFBasis2D(Basis):
             x_1d_grid = range(-self.rcut, self.rcut + 1)
         x_2d_grid, y_2d_grid = np.meshgrid(x_1d_grid, x_1d_grid)
         r_2d_grid = np.sqrt(np.square(x_2d_grid) + np.square(y_2d_grid))
-        points_inside_the_circle = r_2d_grid <= self.rcut
-        x = y_2d_grid[points_inside_the_circle]
-        y = x_2d_grid[points_inside_the_circle]
-        self.r_2d_grid_on_the_circle = np.sqrt(np.square(x) + np.square(y)) / self.rcut
-        self.theta_2d_grid_on_the_circle = np.angle(x + 1j * y)
+        points_in_disk = r_2d_grid <= self.rcut
+        x = y_2d_grid[points_in_disk]
+        y = x_2d_grid[points_in_disk]
+        self.r_2d_grid_in_disk = np.sqrt(np.square(x) + np.square(y)) / self.rcut
+        self.theta_2d_grid_in_disk = np.angle(x + 1j * y)
         self.image_height = len(x_1d_grid)
-        self.points_inside_the_circle = points_inside_the_circle
-        self.points_inside_the_circle_vec = points_inside_the_circle.reshape(self.image_height ** 2)
+        self.points_in_disk = points_in_disk
+        self.points_in_disk_vec = points_in_disk.reshape(self.image_height ** 2)
 
     def precomp(self):
         """
@@ -92,21 +92,21 @@ class PSWFBasis2D(Basis):
                 alpha_all.extend(alpha[:n_end])
                 m += 1
 
-        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_on_the_circle, self.theta_2d_grid_on_the_circle, max_ns)
+        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_in_disk, self.theta_2d_grid_in_disk, max_ns)
 
-        self.angular_frequency = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
-        self.radian_frequency = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
+        self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
+        self.rad_freqs = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
         self.alpha_nn = np.array(alpha_all)
 
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
         self.samples_conj_transpose = self.samples.conj().transpose()
 
-        self.non_neg_freq_inds = slice(0, len(self.angular_frequency))
+        self.non_neg_freq_inds = slice(0, len(self.ang_freqs))
 
-        tmp = np.nonzero(self.angular_frequency == 0)[0]
+        tmp = np.nonzero(self.ang_freqs == 0)[0]
         self.zero_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
-        tmp = np.nonzero(self.angular_frequency > 0)[0]
+        tmp = np.nonzero(self.ang_freqs > 0)[0]
         self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
     def evaluate_t(self, images):
@@ -121,7 +121,7 @@ class PSWFBasis2D(Basis):
         images_shape = (images_shape + (1,)) if len(images_shape) == 2 else images_shape
         flattened_images = images.reshape((images_shape[0] * images_shape[1], images_shape[2]), order='F')
 
-        flattened_images = flattened_images[self.points_inside_the_circle_vec, :]
+        flattened_images = flattened_images[self.points_in_disk_vec, :]
         coefficients = self.samples_conj_transpose.dot(flattened_images)
         return coefficients
 
@@ -136,30 +136,30 @@ class PSWFBasis2D(Basis):
         if len(coefficients.shape) == 1:
             coefficients = coefficients[:, np.newaxis]
 
-        angular_is_zero = np.absolute(self.angular_frequency) == 0
+        angular_is_zero = np.absolute(self.ang_freqs) == 0
         flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) +  2.0 * np.real(
             self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
 
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
-        images[self.get_points_inside_the_circle(), :] = flatten_images
+        images[self.get_points_in_disk(), :] = flatten_images
         images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images)
 
-    def get_points_inside_the_circle(self):
-        return self.points_inside_the_circle
+    def get_points_in_disk(self):
+        return self.points_in_disk
 
-    def mask_points_inside_the_circle(self, images):
-        return self._mask_points_inside_the_circle_cpu(images)
+    def mask_points_in_disk(self, images):
+        return self._mask_points_in_disk_cpu(images)
 
-    def _mask_points_inside_the_circle_cpu(self, images):
-        return images * self.points_inside_the_circle
+    def _mask_points_in_disk_cpu(self, images):
+        return images * self.points_in_disk
 
     def get_samples_as_images(self):
         raise NotImplementedError("get_samples_as_images is not supported.")
 
     def get_angular_frequency(self):
-        return self.angular_frequency
+        return self.ang_freqs
 
     def get_num_prolates(self):
         raise NotImplementedError("get_samples_as_images is not supported.")
