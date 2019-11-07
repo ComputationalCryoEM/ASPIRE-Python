@@ -9,7 +9,7 @@ from aspire.nfft import anufft3, nufft3
 
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
-from aspire.basis.basis_func import lgwt
+from aspire.basis.basis_utils import lgwt
 from aspire.basis.fb_2d import FBBasis2D
 
 logger = logging.getLogger(__name__)

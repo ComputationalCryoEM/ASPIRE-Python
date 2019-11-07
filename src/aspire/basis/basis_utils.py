@@ -1,5 +1,5 @@
 """
-Define related functions for Fourier-Bessel (2D), Spherical Fourier-Bessel (3D) and
+Define related utility functions for Fourier-Bessel (2D), Spherical Fourier-Bessel (3D) and
 Prolate Spheroidal Wave Function (PSWF) objects.
 """
 

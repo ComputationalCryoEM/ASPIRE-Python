@@ -5,7 +5,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 from aspire.utils import ensure
 from aspire.utils.matrix import roll_dim, unroll_dim, vol_to_vec, vec_to_vol
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.basis.basis_func import unique_coords_nd, sph_bessel, real_sph_harmonic
+from aspire.basis.basis_utils import unique_coords_nd, sph_bessel, real_sph_harmonic
 from aspire.basis import Basis
 
 

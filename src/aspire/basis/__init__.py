@@ -5,7 +5,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 from aspire.utils import ensure
 from aspire.utils.matrix import mdim_mat_fun_conj, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_reshape
-from aspire.basis.basis_func import num_besselj_zeros
+from aspire.basis.basis_utils import num_besselj_zeros
 
 logger = logging.getLogger(__name__)
 

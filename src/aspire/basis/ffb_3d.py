@@ -6,7 +6,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 from aspire.nfft import anufft3, nufft3
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.basis.basis_func import sph_bessel, norm_assoc_legendre, lgwt
+from aspire.basis.basis_utils import sph_bessel, norm_assoc_legendre, lgwt
 from aspire.basis.fb_3d import FBBasis3D
 
 

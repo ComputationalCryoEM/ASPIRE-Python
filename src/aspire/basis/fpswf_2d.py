@@ -8,11 +8,11 @@ from numpy.linalg import lstsq
 from scipy.optimize import least_squares
 from aspire.nfft import anufft3, nufft3
 
-from aspire.basis.basis_func import t_x_mat, t_x_mat2
+from aspire.basis.basis_utils import t_x_mat, t_x_mat2
 from aspire.basis.pswf_2d import PSWFBasis2D
 
 
-from aspire.basis.basis_func import leggauss_0_1
+from aspire.basis.basis_utils import leggauss_0_1
 
 logger = logging.getLogger(__name__)
 

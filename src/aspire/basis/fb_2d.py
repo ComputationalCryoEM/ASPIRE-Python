@@ -6,7 +6,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 from aspire.utils import ensure
 from aspire.utils.matrix import roll_dim, unroll_dim, im_to_vec, vec_to_im
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.basis.basis_func import unique_coords_nd
+from aspire.basis.basis_utils import unique_coords_nd
 from aspire.basis import Basis
 
 
