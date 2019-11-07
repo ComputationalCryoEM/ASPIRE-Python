@@ -2,7 +2,7 @@ import logging
 import numpy as np
 
 from aspire.basis import Basis
-from aspire.basis.bn_matrix import BNMatrix
+from aspire.basis.pswf_utils import BNMatrix
 from aspire.basis.basis_func import d_decay_approx_fun, t_radial_part_mat, t_x_mat, t_x_derivative_mat
 from aspire.basis.basis_func import k_operator, leggauss_0_1
 

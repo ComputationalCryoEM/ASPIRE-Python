@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.basis.bn_matrix import BNMatrix
+from aspire.basis.pswf_utils import BNMatrix
 
 import os.path
 
