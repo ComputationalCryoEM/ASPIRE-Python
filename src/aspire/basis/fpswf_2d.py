@@ -54,42 +54,17 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         Precomute the basis functions on a polar Fourier 2D grid.
         """
-        # find max alpha for each N
-        max_ns = []
-        a = np.square(float(self.beta * self.rcut) / 2)
-        m = 0
-        alpha_all = []
-        while True:
-            alpha = self.alpha_all[m]
+        self.generate_samples()
 
-            lambda_var = a * np.square(np.absolute(alpha))
-            gamma = np.sqrt(np.absolute(lambda_var / (1 - lambda_var)))
-
-            n_end = np.where(gamma <= self.gmcut)[0]
-
-            if len(n_end) != 0:
-                n_end = n_end[0]
-                if n_end == 0:
-                    break
-                max_ns.extend([n_end])
-                alpha_all.extend(alpha[:n_end])
-                m += 1
         eps = np.spacing(1)
         a, b, c, d, e, f = self._generate_pswf_quad(4 * self.rcut, 2 * self.bandlimit, eps, eps, eps)
-
-        self.pswf_radial_quad = self.evaluate_pswf2d_all(d, np.zeros(len(d)), max_ns)
+        self.pswf_radial_quad = self.evaluate_pswf2d_all(d, np.zeros(len(d)), self.max_ns)
         self.quad_rule_pts_x = a
         self.quad_rule_pts_y = b
         self.quad_rule_wts = c
         self.radial_quad_pts = d
         self.quad_rule_radial_wts = e
         self.num_angular_pts = f
-        self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
-        self.rad_freqs = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
-        self.alpha_nn = np.array(alpha_all)
-
-        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_in_disk, self.theta_2d_grid_in_disk, max_ns)
-        self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
 
         # pre computing variables for forward
         us_fft_pts = np.column_stack((self.quad_rule_pts_x, self.quad_rule_pts_y))
@@ -108,7 +83,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def evaluate_t(self, images):
         """
-        Evaluate coefficient vectors in PSWF basis using the direct method
+        Evaluate coefficient vectors in PSWF basis using the fast method
 
         :param images: coefficient array in the standard 2D coordinate basis to be evaluated.
         :return : The evaluation of the coefficient array in the PSWF basis.
