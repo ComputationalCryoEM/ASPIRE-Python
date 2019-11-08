@@ -91,13 +91,14 @@ class FPSWFBasis2D(PSWFBasis2D):
         # start and finish are for the threads option in the future
         images_shape = images.shape
         start = 0
-
         # if we got several images
         if len(images_shape) == 3:
             finish = images_shape[2]
 
         # else we got only one image
         else:
+            images_shape = (images_shape + (1,))
+            images = images[..., np.newaxis]
             finish = 1
         images_disk = np.zeros(images.shape, dtype=images.dtype, order='F')
         images_disk[self.points_in_disk, :] = images[self.points_in_disk, :]
