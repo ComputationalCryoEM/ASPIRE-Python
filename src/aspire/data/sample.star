@@ -6,6 +6,7 @@ _pi                                3.1415
 _greeting                          hello
 
 
+# Planetary Data follows in this data_ section
 data_planetary
 
 loop_

@@ -66,6 +66,9 @@ class StarFile:
             for i, line in enumerate(f):
                 line = line.strip()
 
+                if line.startswith('#'):
+                    continue
+
                 # When in a 'loop', any blank line implies we break out of the loop
                 if not line:
                     if in_loop:
