@@ -34,11 +34,13 @@ jobs:
         python.version: '3.6'
 
   steps:
-  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+  - bash: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      sudo chown -R $USER $CONDA
     displayName: Add conda to PATH
 
-#  - bash: conda update -q -y conda
-#    displayName: Update conda
+  - bash: conda update -q -y conda
+    displayName: Update conda
 
   - bash: conda clean -i -t -y
     displayName: Removing conda cached package tarballs.
