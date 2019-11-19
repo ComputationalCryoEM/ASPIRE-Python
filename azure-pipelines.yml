@@ -34,10 +34,10 @@ jobs:
         python.version: '3.6'
 
   steps:
-  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+  - bash: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      sudo chown -R $USER $CONDA
     displayName: Add conda to PATH
-
-  - bash: unset SUDO_UID SUDO_GID SUDO_USER 
 
   - bash: conda update -q -y conda
     displayName: Update conda

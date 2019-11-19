@@ -53,7 +53,7 @@ class RelionSource(ImageSource):
     }
 
     @classmethod
-    def starfile2df(cls, filepath, data_folder=None, max_rows=np.inf):
+    def starfile2df(cls, filepath, data_folder=None, max_rows=None):
         if data_folder is not None:
             if not os.path.isabs(data_folder):
                 data_folder = os.path.join(os.path.dirname(filepath), data_folder)
@@ -77,9 +77,12 @@ class RelionSource(ImageSource):
         # Note that os.path.join works as expected when the second argument is an absolute path itself
         df['__mrc_filepath'] = df['__mrc_filename'].apply(lambda filename: os.path.join(data_folder, filename))
 
-        return df.iloc[:max_rows]
+        if max_rows is None:
+            return df
+        else:
+            return df.iloc[:max_rows]
 
-    def __init__(self, filepath, data_folder=None, pixel_size=1, B=0, n_workers=-1, max_rows=np.inf):
+    def __init__(self, filepath, data_folder=None, pixel_size=1, B=0, n_workers=-1, max_rows=None):
         """
         Load STAR file at given filepath
         :param filepath: Absolute or relative path to STAR file
@@ -88,7 +91,7 @@ class RelionSource(ImageSource):
         :param pixel_size: the pixel size of the images in angstroms (Default 1)
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
         :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
-        :param max_rows: Maximum number of rows in STAR file to read.
+        :param max_rows: Maximum number of rows in STAR file to read. If None, all rows are read.
             Note that this refers to the max number of images to load, not the max. number of .mrcs files (which may be
             equal to or less than the number of images).
         """
