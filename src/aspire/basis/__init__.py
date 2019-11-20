@@ -5,7 +5,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 from aspire.utils import ensure
 from aspire.utils.matrix import mdim_mat_fun_conj, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_reshape
-from aspire.basis.basis_func import num_besselj_zeros
+from aspire.basis.basis_utils import num_besselj_zeros
 
 logger = logging.getLogger(__name__)
 
@@ -20,20 +20,20 @@ class Basis:
         if ell_max is None:
             ell_max = np.inf
 
-        d = len(size)
-        N = size[0]
+        ndim = len(size)
+        nres = size[0]
         self.sz = size
-        self.N = N
+        self.nres = nres
         self.basis_count = 0
         self.ell_max = ell_max
-        self.d = d
+        self.ndim = ndim
 
         self._build()
 
     def _getfbzeros(self):
 
         # get upper_bound of zeros of Bessel functions
-        upper_bound = min(self.ell_max + 1, 2 * self.N + 1)
+        upper_bound = min(self.ell_max + 1, 2 * self.nres + 1)
 
         # List of number of zeros
         n = []
@@ -42,7 +42,7 @@ class Basis:
 
         # generate zeros of Bessel functions for each ell
         for ell in range(upper_bound):
-            _n, _zeros = num_besselj_zeros(ell + (self.d - 2) / 2, self.N * np.pi / 2)
+            _n, _zeros = num_besselj_zeros(ell + (self.ndim - 2) / 2, self.nres * np.pi / 2)
             if _n == 0:
                 break
             else:
@@ -139,9 +139,9 @@ class Basis:
 
         .. seealso:: evaluate
         """
-        ensure(v.shape[:self.d] == self.sz, f'First {self.d} dimensions of v must match {self.sz}.')
+        ensure(v.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of v must match {self.sz}.')
 
-        v, sz_roll = unroll_dim(v, self.d + 1)
+        v, sz_roll = unroll_dim(v, self.ndim + 1)
         b = self.evaluate_t(v)
         operator = LinearOperator(
             shape=(self.basis_count, self.basis_count),
