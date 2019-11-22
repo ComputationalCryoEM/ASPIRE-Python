@@ -1,4 +1,5 @@
 import warnings
+import inspect
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
@@ -9,6 +10,19 @@ from aspire.utils.matlab_compat import m_reshape
 
 
 class Filter:
+
+    @classmethod
+    def from_func(cls, f, dim=None):
+        n_args = len(inspect.signature(f).parameters)
+        assert n_args in (1, 2), "Only 1D or 2D functions are supported"
+
+        assert dim in (None, 1, 2), "Only 1D or 2D dimensions are supported"
+        dim = dim or n_args
+        
+        self = cls(dim=dim, radial=dim > n_args)
+        self._evaluate = f
+        return self
+
     def __init__(self, dim=2, radial=False, power=1):
         self.dim = dim
         self.radial = radial
@@ -134,7 +148,7 @@ class ArrayFilter(Filter):
             bounds_error=False,
             fill_value=0
         )
-        return interpolator(
+        result = interpolator(
             # Split omega into input arrays and stack depth-wise because that's how
             # the interpolator wants it
             np.dstack(
@@ -142,18 +156,21 @@ class ArrayFilter(Filter):
             )
         )
 
+        # Result is 1 x np.prod(sz) in shape; convert to a 1-d vector
+        result = np.squeeze(result, 0)
+        return result
+
     def scale(self, c):
         self._scale *= c
-        return self
 
 
 class ScalarFilter(Filter):
-    def __init__(self, dim=2, value=1, power=1):
-        super().__init__(dim=dim, radial=True, power=power)
+    def __init__(self, dim=2, value=1):
+        super().__init__(dim=dim, radial=True)
         self.value = value
 
     def __repr__(self):
-        return f'Scalar Filter (dim={self.dim}, value={self.value}, power={self.power})'
+        return f'Scalar Filter (dim={self.dim}, value={self.value})'
 
     def _evaluate(self, omega):
         return self.value * np.ones_like(omega)
@@ -164,13 +181,13 @@ class ScalarFilter(Filter):
 
 
 class IdentityFilter(ScalarFilter):
-    def __init__(self, dim=2, power=1):
-        super().__init__(dim=dim, value=1, power=power)
+    def __init__(self, dim=2):
+        super().__init__(dim=dim, value=1)
 
 
 class CTFFilter(Filter):
-    def __init__(self, pixel_size=None, voltage=None, defocus_u=None, defocus_v=None, defocus_ang=None, Cs=None,
-                 alpha=None, B=None, power=1):
+    def __init__(self, pixel_size=10, voltage=200, defocus_u=15000, defocus_v=15000, defocus_ang=0, Cs=2.26,
+                 alpha=0.07, B=0):
         """
         A CTF (Contrast Transfer Function) Filter
 
@@ -181,19 +198,18 @@ class CTFFilter(Filter):
         :param defocus_ang: Angle between the x-axis and the u-axis in radians
         :param Cs:          Spherical aberration constant
         :param alpha:       Amplitude contrast phase in radians
-        :param B:           Envelope decay in inverse square Angstrom
-        :param power:       Power of the filter (default 1)
+        :param B:           Envelope decay in inverse square Angstrom (default 0)
         """
-        super().__init__(dim=2, radial=defocus_u == defocus_v, power=power)
-        self.pixel_size = pixel_size or 10
-        self.voltage = voltage or 200
+        super().__init__(dim=2, radial=defocus_u == defocus_v)
+        self.pixel_size = pixel_size
+        self.voltage = voltage
         self.wavelength = voltage_to_wavelength(self.voltage)
-        self.defocus_u = defocus_u or 1.5e4
-        self.defocus_v = defocus_v or 1.5e4
-        self.defocus_ang = defocus_ang or 0
-        self.Cs = Cs or 2.26
-        self.alpha = alpha or 0.07
-        self.B = B or 0
+        self.defocus_u = defocus_u
+        self.defocus_v = defocus_v
+        self.defocus_ang = defocus_ang
+        self.Cs = Cs
+        self.alpha = alpha
+        self.B = B
 
         self.defocus_mean = 0.5 * (self.defocus_u + self.defocus_v)
         self.defocus_diff = 0.5 * (self.defocus_u - self.defocus_v)
@@ -224,11 +240,9 @@ class CTFFilter(Filter):
 
     def scale(self, c=1):
         self.pixel_size *= c
-        return self
 
 
 class RadialCTFFilter(CTFFilter):
-    def __init__(self, pixel_size=None, voltage=None, defocus=None, Cs=None, alpha=None, B=None, power=1):
+    def __init__(self, pixel_size=10, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0):
         super().__init__(pixel_size=pixel_size, voltage=voltage, defocus_u=defocus, defocus_v=defocus, defocus_ang=0,
-                         Cs=Cs, alpha=alpha, B=B, power=power)
-
+                         Cs=Cs, alpha=alpha, B=B)

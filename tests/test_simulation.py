@@ -14,7 +14,8 @@ class SimTestCase(TestCase):
             n=1024,
             L=8,
             filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-            seed=0
+            seed=0,
+            noisy=True
         )
 
     def tearDown(self):
@@ -34,13 +35,19 @@ class SimTestCase(TestCase):
             ])
         ))
 
-    def testSimulationCleanImages(self):
-        images = self.sim.images(0, 512).asnumpy()
+    def testSimulationImages(self):
+        images = self.sim.clean_images(0, 512).asnumpy()
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy')), rtol=1e-2))
 
-    def testSimulationImages(self):
-        images = self.sim.images(0, 512, apply_noise=True).asnumpy()
+    def testSimulationImagesNoisy(self):
+        images = self.sim.images(0, 512).asnumpy()
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_images_with_noise.npy')), rtol=1e-2))
+
+    def testSimulationImagesDownsample(self):
+        # The simulation already generates images of size 8 x 8; Downsampling to resolution 8 should thus have no effect
+        self.sim.downsample(8)
+        images = self.sim.clean_images(0, 512).asnumpy()
+        self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy')), rtol=1e-2))
 
     def testSimulationImagesShape(self):
         # The 'images' method should be tolerant of bounds - here we ask for 1000 images starting at index 1000,

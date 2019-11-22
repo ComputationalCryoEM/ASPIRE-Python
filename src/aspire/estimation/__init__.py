@@ -1,8 +1,11 @@
 import logging
 import numpy as np
 from functools import partial
-from scipy.sparse.linalg import LinearOperator, cg
-from tqdm import tqdm
+import scipy.sparse.linalg
+from scipy.sparse.linalg import LinearOperator
+from scipy.linalg import norm
+
+from aspire import config
 from aspire.estimation.kernel import FourierKernel
 
 logger = logging.getLogger(__name__)
@@ -49,10 +52,10 @@ class Estimator:
     def compute_kernel(self):
         raise NotImplementedError('Subclasses must implement the compute_kernel method')
 
-    def estimate(self, b_coeff=None):
+    def estimate(self, b_coeff=None, tol=None, regularizer=None):
         if b_coeff is None:
             b_coeff = self.src_backward()
-        est_coeff = self.conj_grad(b_coeff)
+        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
         est = self.basis.evaluate(est_coeff)
 
         return est
@@ -67,7 +70,7 @@ class Estimator:
         mean_b = np.zeros((self.L, self.L, self.L), dtype=self.as_type)
 
         for i in range(0, self.n, self.batch_size):
-            im = self.src.images(i, self.batch_size).asnumpy()
+            im = self.src.images(i, self.batch_size)
             batch_mean_b = self.src.im_backward(im, i) / self.n
             mean_b += batch_mean_b.astype(self.as_type)
 
@@ -75,17 +78,31 @@ class Estimator:
         logger.info(f'Determined adjoint mappings. Shape = {res.shape}')
         return res
 
-    def conj_grad(self, b_coeff):
+    def conj_grad(self, b_coeff, tol=None, regularizer=None):
         n = b_coeff.shape[0]
-        operator = LinearOperator((n, n), matvec=self.apply_kernel)
+        kernel = self.kernel
+
+        if regularizer is None:
+            regularizer = config.mean.regularizer
+        if regularizer > 0:
+            kernel += regularizer
+
+        operator = LinearOperator((n, n), matvec=partial(self.apply_kernel, kernel=kernel))
         if self.precond_kernel is None:
             M = None
         else:
-            M = LinearOperator((n, n), matvec=partial(self.apply_kernel, kernel=self.precond_kernel))
+            precond_kernel = self.precond_kernel
+            if regularizer > 0:
+                precond_kernel += regularizer
+            M = LinearOperator((n, n), matvec=partial(self.apply_kernel, kernel=precond_kernel))
 
-        pbar = tqdm(desc='Running Conjugate Gradient Optimizer')
-        x, info = cg(operator, b_coeff, M=M, callback=lambda xk: pbar.update())
-        pbar.close()
+        tol = tol or config.mean.cg_tol
+        target_residual = tol * norm(b_coeff)
+
+        def cb(xk):
+            logger.info(f'Delta {norm(b_coeff - self.apply_kernel(xk))} (target {target_residual})')
+
+        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol)
 
         if info != 0:
             raise RuntimeError('Unable to converge!')

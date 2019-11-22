@@ -98,6 +98,9 @@ class Image:
     def __add__(self, other):
         return Image(self.data + other.data)
 
+    def __sub__(self, other):
+        return Image(self.data - other.data)
+
     def __repr__(self):
         return f'{self.n_images} images of size {self.res}x{self.res}'
 
@@ -149,13 +152,14 @@ class Image:
 
         return Image(im_ds)
 
-    def filter(self, filter):
+    def filter(self, filter, power=1):
         """
         Apply a Filter object to the Image. This method returns a new Image.
         :param filter: An object of type Filter
+        :param power: Power at which to evaluate the filter, default 1
         :return: A new filtered Image object.
         """
-        filter_values = filter.evaluate_grid(self.res)
+        filter_values = filter.evaluate_grid(self.res) ** power
 
         im_f = centered_fft2(self.data)
         if im_f.ndim > filter_values.ndim:
@@ -169,6 +173,10 @@ class Image:
 
     def rotate(self):
         raise NotImplementedError
+
+    def multiply(self, amplitudes):
+        amplitudes = np.broadcast_to(amplitudes, (self.res, self.res, len(amplitudes)))
+        return Image(self.data * amplitudes)
 
     def save(self, mrcs_filepath, overwrite=False):
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:

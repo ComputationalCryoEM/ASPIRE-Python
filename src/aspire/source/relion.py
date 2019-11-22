@@ -17,41 +17,6 @@ logger = logging.getLogger(__name__)
 
 class RelionSource(ImageSource):
 
-    _metadata_types = {
-        '_rlnVoltage': float,
-        '_rlnDefocusU': float,
-        '_rlnDefocusV': float,
-        '_rlnDefocusAngle': float,
-        '_rlnSphericalAberration': float,
-        '_rlnDetectorPixelSize': float,
-        '_rlnCtfFigureOfMerit': float,
-        '_rlnMagnification': float,
-        '_rlnAmplitudeContrast': float,
-        '_rlnImageName': str,
-        '_rlnOriginalName': str,
-        '_rlnCtfImage': str,
-        '_rlnCoordinateX': float,
-        '_rlnCoordinateY': float,
-        '_rlnCoordinateZ': float,
-        '_rlnNormCorrection': float,
-        '_rlnMicrographName': str,
-        '_rlnGroupName': str,
-        '_rlnGroupNumber': str,
-        '_rlnOriginX': float,
-        '_rlnOriginY': float,
-        '_rlnAngleRot': float,
-        '_rlnAngleTilt': float,
-        '_rlnAnglePsi': float,
-        '_rlnClassNumber': int,
-        '_rlnLogLikeliContribution': float,
-        '_rlnRandomSubset': int,
-        '_rlnParticleName': str,
-        '_rlnOriginalParticleName': str,
-        '_rlnNrOfSignificantSamples': float,
-        '_rlnNrOfFrames': int,
-        '_rlnMaxValueProbDistribution': float
-    }
-
     @classmethod
     def starfile2df(cls, filepath, data_folder=None, max_rows=None):
         if data_folder is not None:
@@ -63,14 +28,10 @@ class RelionSource(ImageSource):
         # Note: Valid Relion image "_data.star" files have to have their data in the first loop of the first block.
         # We thus index our StarFile class with [0][0].
         df = StarFile(filepath)[0][0]
-        column_types = {name: cls._metadata_types.get(name, str) for name in df.columns}
+        column_types = {name: cls.metadata_fields.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 
-        # Rename fields to standard notation
-        reverse_metadata_aliases = {v: k for k, v in cls._metadata_aliases.items()}
-
-        df = df.rename(reverse_metadata_aliases, axis=1)
-        _index, df['__mrc_filename'] = df['_image_name'].str.split('@', 1).str
+        _index, df['__mrc_filename'] = df['_rlnImageName'].str.split('@', 1).str
         df['__mrc_index'] = pd.to_numeric(_index)
 
         # Adding a full-filepath field to the Dataframe helps us save time later
@@ -82,7 +43,7 @@ class RelionSource(ImageSource):
         else:
             return df.iloc[:max_rows]
 
-    def __init__(self, filepath, data_folder=None, pixel_size=1, B=0, n_workers=-1, max_rows=None):
+    def __init__(self, filepath, data_folder=None, pixel_size=1, B=0, n_workers=-1, max_rows=None, memory=None):
         """
         Load STAR file at given filepath
         :param filepath: Absolute or relative path to STAR file
@@ -94,6 +55,8 @@ class RelionSource(ImageSource):
         :param max_rows: Maximum number of rows in STAR file to read. If None, all rows are read.
             Note that this refers to the max number of images to load, not the max. number of .mrcs files (which may be
             equal to or less than the number of images).
+        :param memory: str or None
+            The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         """
         logger.debug(f'Creating ImageSource from STAR file at path {filepath}')
 
@@ -122,17 +85,17 @@ class RelionSource(ImageSource):
         L = shape[1]
         logger.debug(f'Image size = {L}x{L}')
 
-        # Save original image resolution
-        self._L = L
+        # Save original image resolution that we expect to use when we start reading actual data
+        self._original_resolution = L
 
         filter_params, filter_indices = np.unique(
             metadata[[
-                '_voltage',
-                '_defocus_u',
-                '_defocus_v',
-                '_defocus_ang',
-                '_Cs',
-                '_alpha'
+                '_rlnVoltage',
+                '_rlnDefocusU',
+                '_rlnDefocusV',
+                '_rlnDefocusAngle',
+                '_rlnSphericalAberration',
+                '_rlnAmplitudeContrast'
             ]].values,
             return_inverse=True,
             axis=0
@@ -153,17 +116,19 @@ class RelionSource(ImageSource):
                 )
             )
 
-        metadata['filter'] = [filters[i] for i in filter_indices]
-        # TODO: Is there an amplitude field in Relion?
-        metadata['_amplitude'] = 1.0
+        metadata['__filter'] = [filters[i] for i in filter_indices]
+        metadata['__filter_indices'] = filter_indices
 
         ImageSource.__init__(
             self,
             L=L,
             n=n,
             dtype=dtype,
-            metadata=metadata
+            metadata=metadata,
+            memory=memory
         )
+
+        self.init_model_pipeline()
 
     def __str__(self):
         return f'RelionSource ({self.n} images of size {self.L}x{self.L})'
@@ -177,9 +142,6 @@ class RelionSource(ImageSource):
             arr = mrcfile.open(filepath).data
             data = arr[df['__mrc_index'] - 1, :, :].T
 
-            if self.L < self._L:
-                data = Image(data).downsample(self.L).asnumpy()
-
             return df.index, data
 
         n_workers = self.n_workers
@@ -187,7 +149,7 @@ class RelionSource(ImageSource):
             n_workers = cpu_count() - 1
 
         df = self._metadata.loc[indices]
-        im = np.empty((self.L, self.L, len(indices)))
+        im = np.empty((self._original_resolution, self._original_resolution, len(indices)))
 
         groups = df.groupby('__mrc_filepath')
         n_workers = min(n_workers, len(groups))
@@ -199,8 +161,8 @@ class RelionSource(ImageSource):
                 to_do.append(future)
 
             for future in futures.as_completed(to_do):
-                indices, data = future.result()
-                im[:, :, indices] = data
+                data_indices, data = future.result()
+                im[:, :, data_indices-start] = data
 
         logger.info(f'Loading {len(indices)} images complete')
 

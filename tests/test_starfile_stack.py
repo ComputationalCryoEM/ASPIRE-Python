@@ -69,16 +69,16 @@ class StarFileTestCase(TestCase):
     def testMetadata(self):
         # The 'get_metadata' method of the StarFileStack object can be used to get metadata information
         # for a particular image index. Here we get the '_rlnCoordinateY' attribute of the first image.
-        self.assertAlmostEqual(3073.912046, self.src.get_metadata('_rlnCoordinateY', [0])[0])
+        self.assertAlmostEqual(3073.912046, self.src.get_metadata('_rlnCoordinateY', [0]))
 
     def testImageDownsample(self):
-        self.src.set_max_resolution(16)
+        self.src.downsample(16)
         first_image = self.src.images(0, 1)[:, :, 0]
         self.assertEqual(first_image.shape, (16, 16))
 
     def testImageDownsampleAndWhiten(self):
-        self.src.set_max_resolution(16)
-        self.src.whiten(whiten_filter=ScalarFilter(dim=2, value=0.02450909546680349, power=-0.5))
+        self.src.downsample(16)
+        self.src.whiten(whiten_filter=ScalarFilter(dim=2, value=0.02450909546680349))
         first_whitened_image = self.src.images(0, 1)[:, :, 0]
 
         self.assertTrue(np.allclose(

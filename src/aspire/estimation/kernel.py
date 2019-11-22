@@ -24,6 +24,19 @@ class FourierKernel(Kernel):
         # TODO: `centered` should be populated based on how the object is constructed, not explicitly
         self._centered = centered
 
+    def __add__(self, regularizer):
+        """
+        There is often a need to add a regularization parameter (a small positive value) to a FourierKernel object,
+        to be able to use it within optimization loops. This value gets passed in to modify the underlying kernel
+        matrix attribute. This operator returns a new FourierKernel object with the underlying 'kernel' attribute
+        tweaked with the regularization parameter
+        :param regularizer: A small positive float specifying regularization (towards 1.0)
+         A value 0 implies no regularization.
+        :return: A new FourierKernel object with a modified kernel
+        """
+        new_kernel = self.kernel + regularizer
+        return FourierKernel(new_kernel, self._centered)
+
     def is_centered(self):
         return self._centered
 

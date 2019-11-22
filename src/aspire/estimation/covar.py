@@ -8,6 +8,7 @@ from tqdm import tqdm
 from functools import partial
 
 from aspire import config
+from aspire.image import Image
 from aspire.volume import rotated_grids
 from aspire.nfft import anufft3
 from aspire.utils.fft import mdim_ifftshift
@@ -85,10 +86,10 @@ class CovarianceEstimator(Estimator):
 
         return FourierKernel(kernel_f, centered=False)
 
-    def estimate(self, mean_vol, noise_variance, tol=None):
+    def estimate(self, mean_vol, noise_variance, tol=None, regularizer=None):
         logger.info('Running Covariance Estimator')
         b_coeff = self.src_backward(mean_vol, noise_variance)
-        est_coeff = self.conj_grad(b_coeff, tol=tol)
+        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
         covar_est = self.basis.mat_evaluate(est_coeff)
         covar_est = vecmat_to_volmat(
             make_symmat(
@@ -97,17 +98,24 @@ class CovarianceEstimator(Estimator):
         )
         return covar_est
 
-    def conj_grad(self, b_coeff, tol=None):
-        # TODO: Support regularizer when solving for volume covariance
-
+    def conj_grad(self, b_coeff, tol=None, regularizer=None):
         b_coeff = symmat_to_vec_iso(b_coeff)
         N = b_coeff.shape[0]
+        kernel = self.kernel
 
-        operator = LinearOperator((N, N), matvec=partial(self.apply_kernel, kernel=self.kernel, packed=True))
+        if regularizer is None:
+            regularizer = config.covar.regularizer
+        if regularizer > 0:
+            kernel += regularizer
+
+        operator = LinearOperator((N, N), matvec=partial(self.apply_kernel, kernel=kernel, packed=True))
         if self.precond_kernel is None:
             M = None
         else:
-            M = LinearOperator((N, N), matvec=partial(self.apply_kernel, kernel=self.precond_kernel, packed=True))
+            precond_kernel = self.precond_kernel
+            if regularizer > 0:
+                precond_kernel += regularizer
+            M = LinearOperator((N, N), matvec=partial(self.apply_kernel, kernel=precond_kernel, packed=True))
 
         tol = tol or config.covar.cg_tol
         target_residual = tol * norm(b_coeff)
@@ -155,13 +163,13 @@ class CovarianceEstimator(Estimator):
         covar_b = np.zeros((self.L, self.L, self.L, self.L, self.L, self.L), dtype=self.as_type)
 
         for i in range(0, self.n, self.batch_size):
-            im = self.src.images(i, self.batch_size).asnumpy()
+            im = self.src.images(i, self.batch_size)
             batch_n = im.shape[-1]
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 
             im_centered_b = np.zeros((self.L, self.L, self.L, batch_n), dtype=self.as_type)
             for j in range(batch_n):
-                im_centered_b[:, :, :, j] = self.src.im_backward(im_centered[:, :, j], i+j)
+                im_centered_b[:, :, :, j] = self.src.im_backward(Image(im_centered[:, :, j]), i+j)
             im_centered_b = vol_to_vec(im_centered_b)
 
             covar_b += vecmat_to_volmat(im_centered_b @ im_centered_b.T) / self.n
