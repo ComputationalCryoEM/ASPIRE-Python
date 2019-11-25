@@ -21,7 +21,7 @@ class Xform:
     At runtime, it gets an Image object (a thin wrapper on a L x L x n ndarray),
     as well as numeric `indices` (a numpy array of index values) that correspond to index values (the 'window') of
     the incoming Image object within the context of all images (i.e. an Image object of L x L x N, where N represents
-    the no. of total images that can ever pass through this Xform.
+    the number of total images that can ever pass through this Xform.
 
     At runtime, The Xform object may choose to ignore `indices` altogether (e.g. a Xform that downsamples all incoming
     images to a constant resolution won't care what `indices` they correspond to), or may do something with it (e.g. a
@@ -30,7 +30,7 @@ class Xform:
 
     class XformActiveContextManager:
         """
-        This inner class allows us to temporarily enable/disable a Xform object, by tweaking it's `active`
+        This inner class allows us to temporarily enable/disable a Xform object, by tweaking its `active`
         attribute on enter/exit.
         """
         def __init__(self, xform, active):
@@ -88,14 +88,14 @@ class Xform:
 
     def enabled(self):
         """
-        Enable this Xform in a context manager, regardless of it's `active` attribute value.
+        Enable this Xform in a context manager, regardless of its `active` attribute value.
         :return: A context manager in which this Xform is enabled.
         """
         return Xform.XformActiveContextManager(self, active=True)
 
     def disabled(self):
         """
-        Disable this Xform in a context manager, regardless of it's `active` attribute value.
+        Disable this Xform in a context manager, regardless of its `active` attribute value.
         :return: A context manager in which this Xform is disabled.
         """
         return Xform.XformActiveContextManager(self, active=False)
@@ -105,7 +105,7 @@ class Xform:
         Downsample this Xform object to deal with Image objects of size resolution x resolution x n.
         On return, the Xform has been modified to expect Image objects in new resolution.
         Subclasses will typically want to do more than simply make a note of the new resolution as is done here.
-        :param resolution: The new resolution of incoming Image objects in `forward` or `adjoint`
+        :param resolution: The new resolution of incoming Image objects in `forward` or `adjoint`.
         :return: None.
         """
         self.resolution = resolution
@@ -129,14 +129,14 @@ class OneWayXform(Xform):
 
 class Multiply(SymmetricXform):
     """
-    A Xform that changes the amplitudes of a 3D Image by multiplying all pixels of a single 2d image by a constant
-    factor.
+    A Xform that changes the amplitudes of a stack of 2D images (in the form of an Image object) by multiplying all
+    pixels of a single 2D  image by a constant factor.
     """
     def __init__(self, factor, resolution=np.inf):
         """
         Initialize a Multiply Xform using specified factors
         :param factor: An ndarray of scalar factors to use for amplitude multiplication.
-        :param resolution: Resolution of images expected to pass through this Transform
+        :param resolution: Resolution of images expected to pass through this Xform
         """
         super().__init__(resolution=resolution)
         self.multipliers = factor
@@ -147,13 +147,14 @@ class Multiply(SymmetricXform):
 
 class Shift(Xform):
     """
-    A Xform that shifts pixels of a 3D Image by offsetting all pixels of a single 2d image by constant x/y offsets.
+    A Xform that shifts pixels of a stack of 2D images (in the form of an Image object)by offsetting all pixels of a
+    single 2D image by constant x/y offsets.
     """
     def __init__(self, shifts, resolution=np.inf):
         """
-        Initialize a Shift Transform using a numpy array of shift values.
+        Initialize a Shift Xform using a Numpy array of shift values.
         :param shifts: An ndarray of shape (n, 2)
-        :param resolution: Resolution of images expected to pass through this Transform
+        :param resolution: Resolution of images expected to pass through this Xform
         """
         super().__init__(resolution=resolution)
         self.shifts = shifts
@@ -178,15 +179,15 @@ class DownSample(OneWayXform):
         return im.downsample(self.resolution)
 
 
-class Filter(SymmetricXform):
+class FilterXform(SymmetricXform):
     """
-    A Xform that applies a single CTF Filter object to a 3D Image.
+    A `Xform` that applies a single `Filter` object to a stack of 2D images (as an Image object).
     """
     def __init__(self, filter, resolution=np.inf):
         """
-        Initialize the Filter Xform using a Filter object
+        Initialize the Filter `Xform` using a `Filter` object
         :param filter: An object of type `aspire.utils.filters.Filter`
-        :param resolution: Resolution of images expected to pass through this Transform
+        :param resolution: Resolution of images expected to pass through this Xform
         """
         super().__init__(resolution=resolution)
         self.filter = filter
@@ -206,7 +207,7 @@ class NoiseAdder(OneWayXform):
     def __init__(self, resolution=np.inf, seed=0, noise_filter=None):
         """
         Initialize the random state of this NoiseAdder using specified values.
-        :param resolution: Resolution of images expected to pass through this Transform
+        :param resolution: Resolution of images expected to pass through this Xform
         :param seed: The random seed used to generate white noise
         :param noise_filter: An optional aspire.utils.filters.Filter object to use to filter the generated white noise.
             Be default, a ScalarFilter is used, emulating true white noise, but any additional filter can be used
@@ -235,8 +236,8 @@ class IndexedXform(Xform):
 
     This extra layer of abstraction is used because individual Xform objects are typically capable of dealing with
     a stack of images (an Image object) in an efficient manner. The IndexedXform class groups the invocation of each
-    of its unique Xform objects, so that calls to individual Xform objects within it is minimized, and equals the no.
-    of unique Xforms found.
+    of its unique Xform objects, so that calls to individual Xform objects within it is minimized, and equals the
+    number of unique Xforms found.
     """
     def __init__(self, unique_xforms, indices=None):
         if indices is None:
@@ -271,20 +272,21 @@ class IndexedXform(Xform):
         # Ensure that we will be able to apply all transformers to the image
         assert self.n_indices >= im.n_images, f'Can process Image object of max depth {self.n_indices}. Got {im.n_images}.'
 
-        im_data = im.asnumpy().copy()
+        im_data = np.empty_like(im.asnumpy())
 
         # For each individual transformation
-        for i in range(self.n_xforms):
+        for i, xform in enumerate(self.unique_xforms):
             # Get the indices corresponding to that transformation
-            idx = np.where(self.indices == i)[0]
+            idx = np.flatnonzero(self.indices == i)
             # For the incoming Image object, find out which transformation indices are applicable
             idx = np.intersect1d(idx, indices)
             # For the transformation indices we found, find the indices in the Image object that we'll use
-            im_data_indices = np.where(np.isin(indices, idx))[0]
+            im_data_indices = np.flatnonzero(np.isin(indices, idx))
             # Apply the transformation to the selected indices in the Image object
             if len(im_data_indices) > 0:
-                fn_handle = getattr(self.unique_xforms[i], which)
-                im_data[:, :, im_data_indices] = fn_handle(Image(im_data[:, :, im_data_indices])).asnumpy()
+                fn_handle = getattr(xform, which)
+                im_data[:, :, im_data_indices] = fn_handle(Image(im[:, :, im_data_indices])).asnumpy()
+
         return Image(im_data)
 
     def _forward(self, im, indices):
@@ -299,7 +301,7 @@ class IndexedXform(Xform):
         super().downsample(resolution)
 
 
-def _apply_transform(xform, im, indices, adjoint=False):
+def _apply_xform(xform, im, indices, adjoint=False):
     """
     A simple global function (i.e. not a method) that is capable of being cached by joblib.Memory object's `cache`
     method.
@@ -314,18 +316,17 @@ def _apply_transform(xform, im, indices, adjoint=False):
 
 class Pipeline(Xform):
     """
-    A Pipeline is a Xform made up of individual transformation steps (i.e. multiple Xform objects).
-    The Pipeline, just like any other Xform, can be run in the `forward` or `adjoint` mode.
+    A `Pipeline` is a `Xform` made up of individual transformation steps (i.e. multiple `Xform` objects).
+    The `Pipeline`, just like any other `Xform`, can be run in the `forward` or `adjoint` mode.
 
-    In addition to keeping client-side code clean, a major advantage of Pipeline is that individual steps of the pipeline
-    can be cached transparently by the Pipeline, providing significant performance advantages for steps that are performed
-    repeatedly (especially during development while setting up these pipelines) on any Image/Xform pair. This caching
-    uses joblib.Memory object behind the scenes, but is disabled by default.
+    In addition to keeping client-side code clean, a major advantage of `Pipeline` is that individual steps of the
+    pipeline can be cached transparently by the `Pipeline`, providing significant performance advantages for steps that
+    are performed repeatedly (especially during development while setting up these pipelines) on any Image/Xform pair.
+    This caching uses `joblib.Memory` object behind the scenes, but is disabled by default.
     """
-
     def __init__(self, xforms=None, memory=None):
         """
-        Initialize a Pipeline with Xform objects.
+        Initialize a `Pipeline` with `Xform` objects.
         :param xforms: An iterable of Xform objects to use in the Pipeline.
         :param memory: None for no caching (default), or the location of a directory to use to cache steps of the 
             pipeline.
@@ -342,19 +343,19 @@ class Pipeline(Xform):
         else:
             self.resolution = np.inf
 
-    def add_transform(self, xform):
+    def add_xform(self, xform):
         """
-        Add a single Xform object at the end of the pipeline.
-        :param xform: A Xform object.
+        Add a single `Xform` object at the end of the pipeline.
+        :param xform: A `Xform` object.
         :return: None
         """
         self.xforms.append(xform)
         self._register_xforms_changed()
 
-    def add_transforms(self, xforms):
+    def add_xforms(self, xforms):
         """
-        Add multiple Xform objects at the end of the pipeline.
-        :param xform: An iterable of Xform objects.
+        Add multiple `Xform` objects at the end of the pipeline.
+        :param xform: An iterable of `Xform` objects.
         :return: None
         """
         self.xforms.extend(xforms)
@@ -362,7 +363,7 @@ class Pipeline(Xform):
 
     def _forward(self, im, indices):
         memory = Memory(location=self.memory, verbose=0)
-        _apply_transform_cached = memory.cache(_apply_transform)
+        _apply_transform_cached = memory.cache(_apply_xform)
 
         logger.info('Applying forward transformations in pipeline')
         for xform in self.xforms:
@@ -373,7 +374,7 @@ class Pipeline(Xform):
 
     def _adjoint(self, im, indices):
         memory = Memory(location=self.memory, verbose=0)
-        _apply_transform_cached = memory.cache(_apply_transform)
+        _apply_transform_cached = memory.cache(_apply_xform)
 
         logger.info('Applying adjoint transformations in pipeline')
         for xform in self.xforms[::-1]:

@@ -3,6 +3,7 @@ from unittest import TestCase
 from scipy import misc
 
 from aspire.image import Image, _im_translate, _im_translate2
+from aspire.source import ArrayImageSource
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -36,4 +37,12 @@ class ImageTestCase(TestCase):
         self.assertTrue(np.allclose(im.asnumpy(), im1))
         self.assertTrue(np.allclose(im1, im2))
         self.assertTrue(np.allclose(im1[:, :, 0], im3))
+
+    def testArrayImageSource(self):
+        # An Image can be wrapped in an ArrayImageSource when we need to deal with ImageSource objects.
+        src = ArrayImageSource(self.im)
+        im = src.images()
+        self.assertTrue(np.allclose(im.asnumpy(), self.im_np))
+
+
 

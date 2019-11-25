@@ -1,4 +1,3 @@
-import warnings
 import inspect
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
@@ -10,19 +9,6 @@ from aspire.utils.matlab_compat import m_reshape
 
 
 class Filter:
-
-    @classmethod
-    def from_func(cls, f, dim=None):
-        n_args = len(inspect.signature(f).parameters)
-        assert n_args in (1, 2), "Only 1D or 2D functions are supported"
-
-        assert dim in (None, 1, 2), "Only 1D or 2D dimensions are supported"
-        dim = dim or n_args
-        
-        self = cls(dim=dim, radial=dim > n_args)
-        self._evaluate = f
-        return self
-
     def __init__(self, dim=2, radial=False, power=1):
         self.dim = dim
         self.radial = radial
@@ -83,9 +69,30 @@ class Filter:
         return h
 
 
+class FunctionFilter(Filter):
+    """
+    A Filter object that is instantiated directly using a 1D or 2D function, which is then directly used for evaluating
+    the filter.
+    """
+    def __init__(self, f, dim=None):
+        n_args = len(inspect.signature(f).parameters)
+        assert n_args in (1, 2), "Only 1D or 2D functions are supported"
+
+        assert dim in (None, 1, 2), "Only 1D or 2D dimensions are supported"
+        dim = dim or n_args
+
+        self.f = f  # will be used directly in this Filter's evaluate method
+        # Note: The function may well be radial from the caller's perspective, but we won't be applying it in a radial
+        # manner (i.e. we will still expect the incoming omega values to have x and y components).
+        super().__init__(dim=dim, radial=dim > n_args)
+
+    def _evaluate(self, omega):
+        return self.f(*omega)
+
+
 class MultiplicativeFilter(Filter):
     """
-    A Filter object that returns the product of the evaluation of it's individual filters
+    A Filter object that returns the product of the evaluation of its individual filters
     """
     def __init__(self, *args):
         super().__init__(
@@ -115,7 +122,7 @@ class ArrayFilter(Filter):
         # sz is assigned before we do anything with xfer_fn_array
         self.sz = xfer_fn_array.shape
 
-        # The following code, though superficially different from the MATLAB code it's copied from,
+        # The following code, though superficially different from the MATLAB code its copied from,
         # results in the same behavior.
         # TODO: This could use documentation - very unintuitive!
         if dim == 1:

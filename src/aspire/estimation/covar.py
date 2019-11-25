@@ -86,10 +86,10 @@ class CovarianceEstimator(Estimator):
 
         return FourierKernel(kernel_f, centered=False)
 
-    def estimate(self, mean_vol, noise_variance, tol=None, regularizer=None):
+    def estimate(self, mean_vol, noise_variance, tol=None):
         logger.info('Running Covariance Estimator')
         b_coeff = self.src_backward(mean_vol, noise_variance)
-        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
+        est_coeff = self.conj_grad(b_coeff, tol=tol)
         covar_est = self.basis.mat_evaluate(est_coeff)
         covar_est = vecmat_to_volmat(
             make_symmat(
@@ -98,13 +98,12 @@ class CovarianceEstimator(Estimator):
         )
         return covar_est
 
-    def conj_grad(self, b_coeff, tol=None, regularizer=None):
+    def conj_grad(self, b_coeff, tol=None):
         b_coeff = symmat_to_vec_iso(b_coeff)
         N = b_coeff.shape[0]
         kernel = self.kernel
 
-        if regularizer is None:
-            regularizer = config.covar.regularizer
+        regularizer = config.covar.regularizer
         if regularizer > 0:
             kernel += regularizer
 

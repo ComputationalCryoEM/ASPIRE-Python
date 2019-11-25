@@ -85,6 +85,7 @@ class Image:
             data = data[:, :, np.newaxis]
 
         self.data = data
+        self.dtype = self.data.dtype
         self.shape = self.data.shape
         self.n_images = self.shape[-1]
         self.res = self.shape[0]
@@ -132,7 +133,7 @@ class Image:
         grid = grid_2d(self.res)
         grid_ds = grid_2d(ds_res)
 
-        im_ds = np.zeros((ds_res, ds_res, self.n_images)).astype(self.data.dtype)
+        im_ds = np.zeros((ds_res, ds_res, self.n_images)).astype(self.dtype)
 
         # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
         res_by_2 = self.res / 2

@@ -52,10 +52,10 @@ class Estimator:
     def compute_kernel(self):
         raise NotImplementedError('Subclasses must implement the compute_kernel method')
 
-    def estimate(self, b_coeff=None, tol=None, regularizer=None):
+    def estimate(self, b_coeff=None, tol=None):
         if b_coeff is None:
             b_coeff = self.src_backward()
-        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
+        est_coeff = self.conj_grad(b_coeff, tol=tol)
         est = self.basis.evaluate(est_coeff)
 
         return est
@@ -78,12 +78,11 @@ class Estimator:
         logger.info(f'Determined adjoint mappings. Shape = {res.shape}')
         return res
 
-    def conj_grad(self, b_coeff, tol=None, regularizer=None):
+    def conj_grad(self, b_coeff, tol=None):
         n = b_coeff.shape[0]
         kernel = self.kernel
 
-        if regularizer is None:
-            regularizer = config.mean.regularizer
+        regularizer = config.mean.regularizer
         if regularizer > 0:
             kernel += regularizer
 

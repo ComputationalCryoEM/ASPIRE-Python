@@ -11,29 +11,28 @@ from aspire.utils import ensure
 from aspire.utils.filters import MultiplicativeFilter
 from aspire.utils.coor_trans import grid_2d
 from aspire.io.starfile import StarFile, StarFileBlock
-from aspire.source.xform import Pipeline, DownSample, Filter
-from aspire.source.xform import Multiply, Shift, Filter, IndexedXform
+from aspire.source.xform import Multiply, Shift, DownSample, FilterXform, IndexedXform, Pipeline
+from aspire.estimation.noise import WhiteNoiseEstimator
 
 logger = logging.getLogger(__name__)
 
 
 class ImageSource:
-
     """
-    When creating an ImageSource object, a 'metadata' table holds metadata information about all images in the
-    ImageSource. The number of rows in this metadata table will equal the total no. of images supported by this
-    ImageSource (available as the 'n' attribute), though reading/writing of images is usually done in chunks.
+    When creating an `ImageSource` object, a 'metadata' table holds metadata information about all images in the
+    `ImageSource`. The number of rows in this metadata table will equal the total number of images supported by this
+    `ImageSource` (available as the 'n' attribute), though reading/writing of images is usually done in chunks.
 
-    This metadata table is implemented as a pandas DataFrame.
+    This metadata table is implemented as a pandas `DataFrame`.
 
     The 'values' in this metadata table are usually primitive types (floats/ints/strings) that are suitable
     for being read from STAR files, and being written to STAR files. The columns corresponding to these fields
     begin with a single underscore '_'.
 
     In addition, the metadata table may also contain references to Python objects.
-    'Filter' objects, for example, are stored in this metadata table as references  to unique Filter objects that
-    correspond to images in this ImageSource. Several rows of metadata may end up containing a reference to a small
-    handful of unique Filter objects, depending on the values found in other columns (identical Filter
+    `Filter` objects, for example, are stored in this metadata table as references to unique `Filter` objects that
+    correspond to images in this `ImageSource`. Several rows of metadata may end up containing a reference to a small
+    handful of unique `Filter` objects, depending on the values found in other columns (identical `Filter`
     objects, depending on unique CTF values found for _rlnDefocusU/_rlnDefocusV etc.
     """
 
@@ -77,19 +76,13 @@ class ImageSource:
         '_rlnMaxValueProbDistribution': float
     }
 
-    @classmethod
-    def from_image(cls, im):
-        self = cls(L=im.res, n=im.n_images)
-        self._im = im
-        return self
-
     def __init__(self, L, n, dtype='double', metadata=None, memory=None):
         """
-        A Cryo-EM Source object that supplies images along with other parameters for image manipulation.
+        A Cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
 
         :param L: resolution of (square) images (int)
         :param n: The total number of images available
-            Note that images() may return a different number of images based on it's arguments.
+            Note that images() may return a different number of images based on its arguments.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
@@ -113,14 +106,14 @@ class ImageSource:
     def init_model_pipeline(self):
         if self.filters is not None:
             unique_filters = list(set(self.filters))
-            self.model_pipeline.add_transform(
+            self.model_pipeline.add_xform(
                 IndexedXform(
-                    [Filter(f, resolution=self.L) for f in unique_filters],
+                    [FilterXform(f, resolution=self.L) for f in unique_filters],
                     indices=[unique_filters.index(f) for f in self.filters]
                 )
             )
 
-        self.model_pipeline.add_transforms([
+        self.model_pipeline.add_xforms([
             Shift(self.offsets, resolution=self.L),
             Multiply(self.amplitudes, resolution=self.L)
         ])
@@ -269,7 +262,7 @@ class ImageSource:
                 else:
                     result = right
             else:
-                raise RuntimeError('Missing columns and no default value provided!')
+                raise RuntimeError('Missing columns and no default value provided')
 
         return result.to_numpy().squeeze()
 
@@ -345,18 +338,18 @@ class ImageSource:
         logger.info(f'Loaded {len(indices)} images')
         return im
 
-    def downsample(self, max_L):
-        ensure(max_L <= self.L, "Max desired resolution should be less than the current resolution")
-        logger.info(f'Setting max. resolution of source = {max_L}')
+    def downsample(self, L):
+        ensure(L <= self.L, "Max desired resolution should be less than the current resolution")
+        logger.info(f'Setting max. resolution of source = {L}')
 
-        self.model_pipeline.downsample(resolution=max_L)
-        self.generation_pipeline.add_transform(DownSample(resolution=max_L))
+        self.model_pipeline.downsample(resolution=L)
+        self.generation_pipeline.add_xform(DownSample(resolution=L))
 
-        self.L = max_L
+        self.L = L
         # Invalidate images
         self._im = None
 
-    def whiten(self, whiten_filter):
+    def whiten(self, whiten_filter=None):
         """
         Modify the Source object in place by whitening + caching all images, and adding the appropriate whitening
             filter to all available filters.
@@ -365,9 +358,14 @@ class ImageSource:
         """
         logger.info("Whitening source object")
 
-        whiten_filter = copy(whiten_filter)
-        whiten_filter.power = -0.5
-        self.generation_pipeline.add_transform(Filter(whiten_filter))
+        if whiten_filter is None:
+            logger.info('Determining Whitening Filter through a WhiteNoiseEstimator')
+            whiten_filter = WhiteNoiseEstimator(self).filter
+            whiten_filter.power = -0.5
+        else:
+            whiten_filter = copy(whiten_filter)
+            whiten_filter.power = -0.5
+        self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
         unique_filters = set(self.filters)
         for f in unique_filters:
@@ -435,3 +433,24 @@ class ImageSource:
 
             starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
             starfile.save(f)
+
+
+class ArrayImageSource(ImageSource):
+    """
+    An `ImageSource` object that holds a reference to an underlying `Image` object (a thin wrapper on an ndarray)
+    representing images. It does not produce its images on the fly, but keeps them in memory. As such, it should not be
+    used where large Image objects are involved, but can be used in situations where API conformity is desired.
+    """
+    def __init__(self, im, metadata=None):
+        """
+        Initialize from an `Image` object
+        :param im: An `Image` object representing image data served up by this `ImageSource`
+        :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
+        """
+        super().__init__(L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None)
+        self._im = im
+
+    def _images(self, start=0, num=np.inf, indices=None):
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
+        return self._im[indices]

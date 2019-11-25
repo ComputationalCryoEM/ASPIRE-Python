@@ -61,7 +61,7 @@ class Simulation(ImageSource):
             # We save a reference to the NoiseAdder transform we add to the pipeline,
             # so that we can easily disable it if need be (i.e. to run evaluations on the simulation, for example).
             self.noise_adder = NoiseAdder(resolution=L, seed=self.seed, noise_filter=noise_filter)
-            self.generation_pipeline.add_transform(self.noise_adder)
+            self.generation_pipeline.add_xform(self.noise_adder)
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
         """

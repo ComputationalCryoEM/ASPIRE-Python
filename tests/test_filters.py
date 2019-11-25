@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.utils.filters import IdentityFilter, ScalarFilter, CTFFilter, RadialCTFFilter
+from aspire.utils.filters import FunctionFilter, IdentityFilter, ScalarFilter, CTFFilter, RadialCTFFilter
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -14,6 +14,15 @@ class SimTestCase(TestCase):
 
     def tearDown(self):
         pass
+
+    def testFunctionFilter(self):
+        filt = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
+        result = filt.evaluate(self.omega)
+        self.assertEqual(result.shape, (256,))
+        self.assertTrue(np.allclose(
+            result[:5],
+            [5.17231862e-05, 1.64432545e-04, 4.48039823e-04, 1.04633750e-03, 2.09436945e-03]
+        ))
 
     def testIdentityFilter(self):
         result = IdentityFilter().evaluate(self.omega)
