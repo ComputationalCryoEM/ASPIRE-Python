@@ -170,7 +170,7 @@ class Shift(LinearXform):
 
 class Downsample(LinearXform):
     """
-    A Xform that downsamples a 3D Image to a resolution specified by this Xform's resolution.
+    A Xform that downsamples an Image object to a resolution specified by this Xform's resolution.
     """
     def _forward(self, im, indices):
         return im.downsample(self.resolution)
