@@ -10,7 +10,7 @@ from aspire.volume import im_backproject, vol_project
 from aspire.utils import ensure
 from aspire.utils.filters import MultiplicativeFilter
 from aspire.utils.coor_trans import grid_2d
-from aspire.source.xform import Multiply, Shift, Downsample, FilterXform, IndexedXform, Pipeline
+from aspire.source.xform import Multiply, Shift, Downsample, FilterXform, LinearIndexedXform, Pipeline, LinearPipeline
 from aspire.estimation.noise import WhiteNoiseEstimator
 
 logger = logging.getLogger(__name__)
@@ -99,14 +99,14 @@ class ImageSource:
             self._metadata = metadata
             self._rotations = R.from_euler('ZYZ', self.get_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']), degrees=True)
 
-        self.model_pipeline = Pipeline(xforms=None, memory=memory)
+        self.model_pipeline = LinearPipeline(xforms=None, memory=memory)
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
     def init_model_pipeline(self):
         if self.filters is not None:
             unique_filters = list(set(self.filters))
             self.model_pipeline.add_xform(
-                IndexedXform(
+                LinearIndexedXform(
                     [FilterXform(f, resolution=self.L) for f in unique_filters],
                     indices=[unique_filters.index(f) for f in self.filters]
                 )

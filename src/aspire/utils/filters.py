@@ -198,14 +198,14 @@ class CTFFilter(Filter):
         """
         A CTF (Contrast Transfer Function) Filter
 
-        :param pixel_size:  Pixel size in Angstrom
+        :param pixel_size:  Pixel size in angstrom
         :param voltage:     Electron voltage in kV
-        :param defocus_u:   Defocus depth along the u-axis in Angstrom
-        :param defocus_v:   Defocus depth along the v-axis in Angstrom
+        :param defocus_u:   Defocus depth along the u-axis in angstrom
+        :param defocus_v:   Defocus depth along the v-axis in angstrom
         :param defocus_ang: Angle between the x-axis and the u-axis in radians
         :param Cs:          Spherical aberration constant
         :param alpha:       Amplitude contrast phase in radians
-        :param B:           Envelope decay in inverse square Angstrom (default 0)
+        :param B:           Envelope decay in inverse square angstrom (default 0)
         """
         super().__init__(dim=2, radial=defocus_u == defocus_v)
         self.pixel_size = pixel_size

@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 class Xform:
     """
-    An Xform is anything that implements `forward` and `adjoint` methods that takes in a square Image object
-    and spits out a square Image object corresponding to forward/adjoint operations.
+    An Xform is anything that implements a `forward` method (and an `adjoint` method, in the case of a LinearXform),
+    that takes in a square Image object and spits out a square Image object corresponding to forward/adjoint operations.
 
     It does this by setting up whatever internal data structures it needs to set up in its constructor.
     Xform objects usually set up data structures that are typically *larger* than the depth of the Image
@@ -70,22 +70,6 @@ class Xform:
     def _forward(self, im, indices):
         raise NotImplementedError('Subclasses must implement the _forward method applicable to im/indices.')
 
-    def adjoint(self, im, indices=None):
-        """
-        Apply adjoint transformation for this Xform object to an Image object.
-        :param im: The incoming Image object of depth `n`, on which to apply the adjoint transformation.
-        :param indices: The indices to use within this Xform. If unspecified, [0..n) is used.
-        :return: An Image object after applying the adjoint transformation.
-        """
-        if not self.active:
-            return im
-        if indices is None:
-            indices = np.arange(im.n_images)
-        return self._adjoint(im, indices=indices)
-
-    def _adjoint(self, im, indices):
-        raise NotImplementedError('Subclasses must implement the _adjoint method applicable to im/indices.')
-
     def enabled(self):
         """
         Enable this Xform in a context manager, regardless of its `active` attribute value.
@@ -111,20 +95,33 @@ class Xform:
         self.resolution = resolution
 
 
-class SymmetricXform(Xform):
+class LinearXform(Xform):
     """
-    A Symmetric Xform that works identical whether we're applying the forward or adjoint transformation.
+    A LinearXform is a Xform that additionally provides an `adjoint` method, similar to the `forward` method.
+    """
+    def adjoint(self, im, indices=None):
+        """
+        Apply adjoint transformation for this Xform object to an Image object.
+        :param im: The incoming Image object of depth `n`, on which to apply the adjoint transformation.
+        :param indices: The indices to use within this Xform. If unspecified, [0..n) is used.
+        :return: An Image object after applying the adjoint transformation.
+        """
+        if not self.active:
+            return im
+        if indices is None:
+            indices = np.arange(im.n_images)
+        return self._adjoint(im, indices=indices)
+
+    def _adjoint(self, im, indices):
+        raise NotImplementedError('Subclasses must implement the _adjoint method applicable to im/indices.')
+
+
+class SymmetricXform(LinearXform):
+    """
+    A Symmetric Xform is a LinearXform where the forward/adjoint operations are identical.
     """
     def _adjoint(self, im, indices=None):
         return self._forward(im, indices)
-
-
-class OneWayXform(Xform):
-    """
-    A One-way Xform that does nothing when applying the adjoint, but simply lets the incoming Image 'pass-through'.
-    """
-    def _adjoint(self, im, indices=None):
-        return im
 
 
 class Multiply(SymmetricXform):
@@ -145,7 +142,7 @@ class Multiply(SymmetricXform):
         return im * self.multipliers[indices]
 
 
-class Shift(Xform):
+class Shift(LinearXform):
     """
     A Xform that shifts pixels of a stack of 2D images (in the form of an Image object)by offsetting all pixels of a
     single 2D image by constant x/y offsets.
@@ -171,12 +168,16 @@ class Shift(Xform):
         super().downsample(resolution)
 
 
-class Downsample(OneWayXform):
+class Downsample(LinearXform):
     """
     A Xform that downsamples a 3D Image to a resolution specified by this Xform's resolution.
     """
     def _forward(self, im, indices):
         return im.downsample(self.resolution)
+
+    def _adjoint(self, im, indices):
+        # TODO: Implement upsampling with zero-padding
+        raise NotImplementedError('Adjoint of downsampling not implemented yet.')
 
 
 class FilterXform(SymmetricXform):
@@ -200,7 +201,7 @@ class FilterXform(SymmetricXform):
         super().downsample(resolution)
 
 
-class NoiseAdder(OneWayXform):
+class NoiseAdder(Xform):
     """
     A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
     """
@@ -262,15 +263,15 @@ class IndexedXform(Xform):
         # the same Xform object.
         self.xforms = [unique_xforms[i] for i in indices]
 
-    def _forward_or_adjoint(self, im, indices, which):
+    def _indexed_operation(self, im, indices, which):
         """
         Apply either a forward or adjoint transformations to `im`, depending on the value of the 'which' parameter.
         :param im: The incoming Image object on which to apply the forward or adjoint transformations.
         :param indices: The indices of the transformations to apply.
-        :param which: Either 'forward' or 'adjoint'.
+        :param which: The attribute indicating the function handle to obtain from underlying `Xform` objects.
+            Typically either 'forward' or 'adjoint'.
         :return: An Image object as a result of applying forward or adjoint transformation to `im`.
         """
-        assert which in ('forward', 'adjoint')
         # Ensure that we will be able to apply all transformers to the image
         assert self.n_indices >= im.n_images, f'Can process Image object of max depth {self.n_indices}. Got {im.n_images}.'
 
@@ -292,15 +293,17 @@ class IndexedXform(Xform):
         return Image(im_data)
 
     def _forward(self, im, indices):
-        return self._forward_or_adjoint(im, indices, 'forward')
-
-    def _adjoint(self, im, indices):
-        return self._forward_or_adjoint(im, indices, 'adjoint')
+        return self._indexed_operation(im, indices, 'forward')
 
     def downsample(self, resolution):
         for xform in self.unique_xforms:
             xform.downsample(resolution)
         super().downsample(resolution)
+
+
+class LinearIndexedXform(IndexedXform, LinearXform):
+    def _adjoint(self, im, indices):
+        return self._indexed_operation(im, indices, 'adjoint')
 
 
 def _apply_xform(xform, im, indices, adjoint=False):
@@ -319,7 +322,8 @@ def _apply_xform(xform, im, indices, adjoint=False):
 class Pipeline(Xform):
     """
     A `Pipeline` is a `Xform` made up of individual transformation steps (i.e. multiple `Xform` objects).
-    The `Pipeline`, just like any other `Xform`, can be run in the `forward` or `adjoint` mode.
+    The `Pipeline`, just like any other `Xform`, can be run in the `forward` (or `adjoint` mode, in the case of a
+    `LinearPipeline`.
 
     In addition to keeping client-side code clean, a major advantage of `Pipeline` is that individual steps of the
     pipeline can be cached transparently by the `Pipeline`, providing significant performance advantages for steps that
@@ -374,6 +378,13 @@ class Pipeline(Xform):
 
         return im
 
+    def downsample(self, resolution):
+        for xform in self.xforms:
+            xform.downsample(resolution)
+        super().downsample(resolution)
+
+
+class LinearPipeline(Pipeline, LinearXform):
     def _adjoint(self, im, indices):
         memory = Memory(location=self.memory, verbose=0)
         _apply_transform_cached = memory.cache(_apply_xform)
@@ -384,8 +395,3 @@ class Pipeline(Xform):
         logger.info('All adjoint transformations applied')
 
         return im
-
-    def downsample(self, resolution):
-        for xform in self.xforms:
-            xform.downsample(resolution)
-        super().downsample(resolution)
