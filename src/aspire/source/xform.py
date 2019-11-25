@@ -142,10 +142,7 @@ class Multiply(SymmetricXform):
         self.multipliers = factor
 
     def _forward(self, im, indices):
-        xx = Image(im.asnumpy() * self.multipliers[indices])
-        yy = im * self.multipliers[indices]
-        assert np.allclose(xx.data, yy.data)
-        return yy
+        return im * self.multipliers[indices]
 
 
 class Shift(Xform):
