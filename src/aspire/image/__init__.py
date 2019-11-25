@@ -102,6 +102,9 @@ class Image:
     def __sub__(self, other):
         return Image(self.data - other.data)
 
+    def __mul__(self, amplitudes):
+        return Image(self.data * amplitudes)
+
     def __repr__(self):
         return f'{self.n_images} images of size {self.res}x{self.res}'
 
@@ -174,10 +177,6 @@ class Image:
 
     def rotate(self):
         raise NotImplementedError
-
-    def multiply(self, amplitudes):
-        amplitudes = np.broadcast_to(amplitudes, (self.res, self.res, len(amplitudes)))
-        return Image(self.data * amplitudes)
 
     def save(self, mrcs_filepath, overwrite=False):
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:

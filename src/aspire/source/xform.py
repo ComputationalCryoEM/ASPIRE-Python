@@ -142,7 +142,10 @@ class Multiply(SymmetricXform):
         self.multipliers = factor
 
     def _forward(self, im, indices):
-        return Image(im.asnumpy() * self.multipliers[indices])
+        xx = Image(im.asnumpy() * self.multipliers[indices])
+        yy = im * self.multipliers[indices]
+        assert np.allclose(xx.data, yy.data)
+        return yy
 
 
 class Shift(Xform):
@@ -171,7 +174,7 @@ class Shift(Xform):
         super().downsample(resolution)
 
 
-class DownSample(OneWayXform):
+class Downsample(OneWayXform):
     """
     A Xform that downsamples a 3D Image to a resolution specified by this Xform's resolution.
     """
@@ -204,7 +207,7 @@ class NoiseAdder(OneWayXform):
     """
     A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
     """
-    def __init__(self, resolution=np.inf, seed=0, noise_filter=None):
+    def __init__(self, resolution=np.inf, seed=0, noise_filter=None, noise_variance=1):
         """
         Initialize the random state of this NoiseAdder using specified values.
         :param resolution: Resolution of images expected to pass through this Xform
@@ -212,10 +215,12 @@ class NoiseAdder(OneWayXform):
         :param noise_filter: An optional aspire.utils.filters.Filter object to use to filter the generated white noise.
             Be default, a ScalarFilter is used, emulating true white noise, but any additional filter can be used
             to emulate isotropic noise etc.
+        :param noise_variance: The noise variance of the noise. Consulted if no noise_filter is specified, in which
+            case white noise is filtered through a `ScalarFilter` with this value.
         """
         super().__init__(resolution=resolution)
         self.seed = seed
-        self.noise_filter = noise_filter or ScalarFilter(value=1)
+        self.noise_filter = noise_filter or ScalarFilter(value=noise_variance)
 
     def _forward(self, im, indices):
         im = im.copy()

@@ -1,5 +1,6 @@
 import os.path
 import logging
+from copy import copy
 import pandas as pd
 import numpy as np
 import mrcfile
@@ -11,6 +12,8 @@ from aspire.source import ImageSource
 from aspire.image import Image
 from aspire.io.starfile import StarFile
 from aspire.utils.filters import CTFFilter
+from aspire.source.xform import FilterXform
+from aspire.estimation.noise import WhiteNoiseEstimator
 
 logger = logging.getLogger(__name__)
 
@@ -167,3 +170,23 @@ class RelionSource(ImageSource):
         logger.info(f'Loading {len(indices)} images complete')
 
         return Image(im)
+
+    def whiten(self, whiten_filter=None):
+        """
+        Modify the Source object in place by whitening + caching all images, and adding the appropriate whitening
+            filter to all available filters.
+        :param whiten_filter: Whitening filter to apply.
+        :return: On return, the Source object has been modified in place.
+        """
+        if whiten_filter is None:
+            logger.info('Determining Whitening Filter through a WhiteNoiseEstimator')
+            whiten_filter = WhiteNoiseEstimator(self).filter
+            whiten_filter.power = -0.5
+        else:
+            whiten_filter = copy(whiten_filter)
+            whiten_filter.power = -0.5
+
+        super().whiten(whiten_filter=whiten_filter)
+
+        logger.info('Adding Whitening Filter Xform to end of generation pipeline')
+        self.generation_pipeline.add_xform(FilterXform(whiten_filter))

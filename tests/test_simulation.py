@@ -15,7 +15,7 @@ class SimTestCase(TestCase):
             L=8,
             filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
             seed=0,
-            noisy=True
+            noise_variance=1.0
         )
 
     def tearDown(self):

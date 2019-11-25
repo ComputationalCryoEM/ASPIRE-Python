@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class Simulation(ImageSource):
     def __init__(self, L=8, n=1024, states=None, filters=None, offsets=None, amplitudes=None, dtype='single', C=2,
-                 angles=None, seed=0, memory=None, noisy=False, noise_filter=None):
+                 angles=None, seed=0, memory=None, noise_filter=None, noise_variance=0):
         """
         A Cryo-EM simulation
         Other than the base class attributes, it has:
@@ -56,11 +56,12 @@ class Simulation(ImageSource):
         # except that we might add a NoiseAdder transform at the end
         self.generation_pipeline = Pipeline(self.model_pipeline.xforms, memory=self.model_pipeline.memory)
 
-        self.noisy = noisy
-        if noisy:
+        self.noisy = noise_variance != 0
+        if self.noisy:
             # We save a reference to the NoiseAdder transform we add to the pipeline,
             # so that we can easily disable it if need be (i.e. to run evaluations on the simulation, for example).
-            self.noise_adder = NoiseAdder(resolution=L, seed=self.seed, noise_filter=noise_filter)
+            self.noise_adder = NoiseAdder(resolution=L, seed=self.seed, noise_filter=noise_filter,
+                                          noise_variance=noise_variance)
             self.generation_pipeline.add_xform(self.noise_adder)
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
@@ -136,6 +137,8 @@ class Simulation(ImageSource):
         return Image(im)
 
     def clean_images(self, start=0, num=np.inf, indices=None):
+        if indices is None:
+            indices = np.arange(start, min(start+num, self.n))
         im = self._images(start=start, num=num, indices=indices)
 
         logger.info(f'Applying Pipeline with NoiseAdder disabled')

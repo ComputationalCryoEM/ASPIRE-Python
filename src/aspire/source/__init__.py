@@ -10,8 +10,7 @@ from aspire.volume import im_backproject, vol_project
 from aspire.utils import ensure
 from aspire.utils.filters import MultiplicativeFilter
 from aspire.utils.coor_trans import grid_2d
-from aspire.io.starfile import StarFile, StarFileBlock
-from aspire.source.xform import Multiply, Shift, DownSample, FilterXform, IndexedXform, Pipeline
+from aspire.source.xform import Multiply, Shift, Downsample, FilterXform, IndexedXform, Pipeline
 from aspire.estimation.noise import WhiteNoiseEstimator
 
 logger = logging.getLogger(__name__)
@@ -343,7 +342,7 @@ class ImageSource:
         logger.info(f'Setting max. resolution of source = {L}')
 
         self.model_pipeline.downsample(resolution=L)
-        self.generation_pipeline.add_xform(DownSample(resolution=L))
+        self.generation_pipeline.add_xform(Downsample(resolution=L))
 
         self.L = L
         # Invalidate images
@@ -365,8 +364,8 @@ class ImageSource:
         else:
             whiten_filter = copy(whiten_filter)
             whiten_filter.power = -0.5
-        self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
+        logger.info('Transforming all CTF Filters into Multiplicative Filters')
         unique_filters = set(self.filters)
         for f in unique_filters:
             f_new = copy(f)
@@ -403,36 +402,6 @@ class ImageSource:
         im = self.model_pipeline.forward(Image(im), indices=all_idx)
 
         return im
-
-    def save(self, starfile_filepath, batch_size=1024, overwrite=False):
-
-        df = self._metadata.copy()
-        # Drop any column that doesn't start with a *single* underscore
-        df = df.drop([str(col) for col in df.columns if not col.startswith('_') or col.startswith('__')], axis=1)
-
-        # Create a new column that we will be populating in the loop below
-        df['_rlnImageName'] = ''
-
-        with open(starfile_filepath, 'w') as f:
-            for i_start in np.arange(0, self.n, batch_size):
-
-                i_end = min(self.n, i_start + batch_size)
-                num = i_end - i_start
-
-                mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + f'_{i_start}_{i_end}.mrcs'
-                mrcs_filepath = os.path.join(
-                    os.path.dirname(starfile_filepath),
-                    mrcs_filename
-                )
-
-                logger.info(f'Saving ImageSource[{i_start}-{i_end}] to {mrcs_filepath}')
-                im = self.images(start=i_start, num=num)
-                im.save(mrcs_filepath, overwrite=overwrite)
-
-                df['_rlnImageName'][i_start: i_end] = pd.Series(['{0:06}@{1}'.format(j + 1, mrcs_filepath) for j in range(num)])
-
-            starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
-            starfile.save(f)
 
 
 class ArrayImageSource(ImageSource):
