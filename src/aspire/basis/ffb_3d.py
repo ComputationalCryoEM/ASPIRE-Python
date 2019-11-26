@@ -23,7 +23,7 @@ class FFBBasis3D(FBBasis3D):
 
     def _build(self):
 
-        logger.info('Expanding 3D map using fast FB method in frequency domain.')
+        logger.info('Expanding 3D map in a frequency-domain Fourier–Bessel basis using the fast method.')
 
         # set cutoff values
         self.rcut = self.nres / 2
@@ -70,7 +70,7 @@ class FFBBasis3D(FBBasis3D):
         radial_wtd = np.zeros(shape=(n_r, np.max(self.k_max), self.ell_max+1))
         for ell in range(0, self.ell_max + 1):
             k_max_ell = self.k_max[ell]
-            rmat = r*self.r0[0:k_max_ell, ell].T/self.kcut
+            rmat = r * self.r0[0:k_max_ell, ell].T / self.kcut
             radial_ell = np.zeros_like(rmat)
             for ik in range(0, k_max_ell):
                 radial_ell[:, ik] = sph_bessel(ell, rmat[:, ik])
