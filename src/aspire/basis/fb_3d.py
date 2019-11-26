@@ -29,7 +29,7 @@ class FBBasis3D(Basis):
 
     def _build(self):
 
-        logger.info('Expanding 3D map using normal FB method in spatial domain.')
+        logger.info('Expanding 3D map in a spatial-domain Fourier–Bessel basis using the direct method.')
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()
