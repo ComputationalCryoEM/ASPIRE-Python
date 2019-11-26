@@ -1,6 +1,6 @@
 """
-Define related utility functions for Fourier-Bessel (2D), Spherical Fourier-Bessel (3D) and
-Prolate Spheroidal Wave Function (PSWF) objects.
+Define related utility functions for Fourier–Bessel (2D), Spherical Fourier–Bessel (3D) and
+prolate spheroidal wave function (PSWF) objects.
 """
 
 import sys
@@ -208,7 +208,7 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True):
     :param N: length size of a square or cube.
     :param ndim: number of dimension, 2 or 3.
     :param shifted: shifted half pixel or not for odd N.
-    :param normalized: normalized the grid or not.
+    :param normalized: normalize the grid or not.
     :return: The unique polar coordinates in 2D or 3D
     """
     ensure(ndim in (2, 3), 'Only two- or three-dimensional basis functions are supported.')
@@ -326,12 +326,14 @@ def lgwt(ndeg, a, b):
     return x, w
 
 
-def j_polynomial(m, n, alpha, beta, x):
-    """
-    The Jacobi polynomials defined in the paper, eq (2), page 6
+def d_decay_approx_fun(a, b, c, d):
+    return np.square(c) / (16 * (np.square(d) + d * (2 * b + a + 1)) - np.square(c))
 
-    :param m: int, > 0
-        The dimension of x
+
+def p_n(n, alpha, beta, x):
+    """
+    The first n jacobi polynomial of x as defined in Yoel's PSWF paper, eq (2), page 6
+
     :param n: int, > 0
         Number of polynomials to compute
     :param alpha: float, > -1
@@ -340,7 +342,7 @@ def j_polynomial(m, n, alpha, beta, x):
     :return: v: (m, n + 1) ndarray
         v[:, i] = P^{(alpha, beta)}_n(x) as defined in the paper
     """
-
+    m = len(x)
     if n < 0:
         return np.array([])
     if n == 0:
@@ -358,19 +360,7 @@ def j_polynomial(m, n, alpha, beta, x):
         c3 = (2 * i + alpha_p_beta - 1) * alpha_p_beta * alpha_m_beta
         c4 = -2 * (i - 1 + alpha) * (i - 1 + beta) * (2 * i + alpha_p_beta)
         v[:, i] = ((c3 + c2 * x) * v[:, i - 1] + c4 * v[:, i - 2]) / c1
-
     return v
-
-
-def d_decay_approx_fun(a, b, c, d):
-    return np.square(c) / (16 * (np.square(d) + d * (2 * b + a + 1)) - np.square(c))
-
-
-def p_n(n, alpha, beta, x):
-    """
-    wrapper to j_polynomial, returns the first n jacobi polynomial of x
-    """
-    return j_polynomial(len(x), n, alpha, beta, x)
 
 
 def t_x_mat(x, n, j, approx_length):
@@ -380,8 +370,8 @@ def t_x_mat(x, n, j, approx_length):
     return np.einsum('i,j,ij->ij', a, b, c)
 
 
-def t_x_mat2(x, n, j, approx_length):
-    # use np.outer instead of x as mat
+def t_x_mat_dot(x, n, j, approx_length):
+    #  x need to be a matrix instead of a vector in t_x_mat
     return np.power(x, n + 0.5).dot(np.sqrt(2 * (2 * j + n + 1))) * p_n(
         approx_length - 1, n, 0, 1 - 2 * np.square(x))
 
@@ -408,7 +398,7 @@ def leggauss_0_1(n):
     """
     Wrapper for numpy.polynomial leggauss
     :param n: int > 0, the number of sampled points to integrate
-    :return: Legendre-Gauss Quadrature of degree n between 0 and 1
+    :return: Legendre-Gauss quadrature of degree n between 0 and 1
     """
     sample_points, weights = leggauss(n)
     sample_points = (sample_points + 1) / 2

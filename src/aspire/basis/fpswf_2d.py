@@ -7,10 +7,9 @@ from scipy.special import jn
 from scipy.optimize import least_squares
 
 from aspire.nfft import nufft3
-from aspire.basis.basis_utils import t_x_mat, t_x_mat2
+from aspire.basis.basis_utils import t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.basis.basis_utils import leggauss_0_1
-
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +184,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         phi_zeros = self.find_initial_nodes(x, n, bandlimit / 2, phi_approximate_error, idx_for_quad_nodes)
 
         def phi_for_quad_weights(t):
-            return np.dot(t_x_mat2(t, big_n, range_array, approx_length), d_vec[:, :k - 1])
+            return np.dot(t_x_mat_dot(t, big_n, range_array, approx_length), d_vec[:, :k - 1])
 
         b = np.dot(w * np.sqrt(x), phi_for_quad_weights(x_as_mat))
 
