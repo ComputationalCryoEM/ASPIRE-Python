@@ -29,7 +29,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def __init__(self, size, gamma_truncation=1.0, beta=1.0):
         """
-        Initial an object for 2D Prolate Spheroidal Wave Function (PSWF) basis expansion using fast method.
+        Initialize an object for 2D prolate spheroidal wave function (PSWF) basis expansion using fast method.
         """
         super().__init__(size, gamma_truncation, beta)
 
@@ -53,7 +53,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         Precomute the basis functions on a polar Fourier 2D grid.
         """
-        self.generate_samples()
+        self._generate_samples()
 
         eps = np.spacing(1)
         a, b, c, d, e, f = self._generate_pswf_quad(4 * self.rcut, 2 * self.bandlimit, eps, eps, eps)
@@ -68,7 +68,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         # pre computing variables for forward
         us_fft_pts = np.column_stack((self.quad_rule_pts_x, self.quad_rule_pts_y))
         us_fft_pts = self.bandlimit / (self.rcut * np.pi * 2) * us_fft_pts  # for pynfft
-        blk_r, num_angular_pts, r_quad_indices, numel_for_n, indices_for_n, n_max =\
+        blk_r, num_angular_pts, r_quad_indices, numel_for_n, indices_for_n, n_max = \
             self._pswf_integration_sub_routine()
 
         self.us_fft_pts = us_fft_pts
@@ -78,7 +78,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.numel_for_n = numel_for_n
         self.indices_for_n = indices_for_n
         self.n_max = n_max
-        self.size_x = len(self.points_in_disk)
+        self.size_x = len(self._disk_mask)
 
     def evaluate_t(self, images):
         """
@@ -90,17 +90,17 @@ class FPSWFBasis2D(PSWFBasis2D):
         # start and finish are for the threads option in the future
         images_shape = images.shape
         start = 0
-        # if we got several images
-        if len(images_shape) == 3:
-            finish = images_shape[2]
 
-        # else we got only one image
+        if len(images_shape) == 3:
+            # if we got several images
+            finish = images_shape[2]
         else:
+            # else we got only one image
             images_shape = (images_shape + (1,))
             images = images[..., np.newaxis]
             finish = 1
         images_disk = np.zeros(images.shape, dtype=images.dtype, order='F')
-        images_disk[self.points_in_disk, :] = images[self.points_in_disk, :]
+        images_disk[self._disk_mask, :] = images[self._disk_mask, :]
         nfft_res = self._compute_nfft_potts(images_disk, start, finish)
         coefficients = self._pswf_integration(nfft_res)
 
@@ -118,21 +118,22 @@ class FPSWFBasis2D(PSWFBasis2D):
             coefficients = coefficients.reshape((len(coefficients), 1))
 
         angular_is_zero = np.absolute(self.ang_freqs) == 0
-        flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) + \
-                         2.0 * np.real(self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
+        flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) + (
+                         2.0 * np.real(self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero])))
 
         n_images = int(flatten_images.shape[1])
-        images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
-        images[self.get_points_in_disk(), :] = flatten_images
+        images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
+        images[self.get_disk_mask(), :] = flatten_images
         # TODO: no need to switch x and y any more, need to make consistent with direct method
-        # images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images)
 
     def _generate_pswf_quad(self, n, bandlimit, phi_approximate_error, lambda_max, epsilon):
-        radial_quad_points, radial_quad_weights = self._generate_pswf_radial_quad(n, bandlimit, phi_approximate_error,
+        radial_quad_points, radial_quad_weights = self._generate_pswf_radial_quad(n, bandlimit,
+                                                                                  phi_approximate_error,
                                                                                   lambda_max)
 
-        num_angular_points = np.ceil(np.e * radial_quad_points * bandlimit / 2 - np.log(epsilon)).astype('int') + 1
+        num_angular_points = np.ceil(np.e * radial_quad_points * bandlimit / 2
+                                     - np.log(epsilon)).astype('int') + 1
 
         for i in range(len(radial_quad_points)):
             ang_error_vec = np.absolute(jn(range(1, 2 * num_angular_points[i] + 1),
@@ -181,7 +182,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         idx_for_quad_nodes = int((k + 1) / 2)
         num_quad_pts = idx_for_quad_nodes - 1
 
-        phi_zeros = self.find_initial_nodes(x, n, bandlimit / 2, phi_approximate_error, idx_for_quad_nodes)
+        phi_zeros = self._find_initial_nodes(x, n, bandlimit / 2, phi_approximate_error, idx_for_quad_nodes)
 
         def phi_for_quad_weights(t):
             return np.dot(t_x_mat_dot(t, big_n, range_array, approx_length), d_vec[:, :k - 1])
@@ -207,7 +208,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         quad_rule_weights = quad_rule_final[num_quad_pts:]
         return quad_rule_pts, quad_rule_weights
 
-    def find_initial_nodes(self, x, n, bandlimit, phi_approximate_error, idx_for_quad_nodes):
+    def _find_initial_nodes(self, x, n, bandlimit, phi_approximate_error, idx_for_quad_nodes):
         big_n = 0
 
         d_vec, approx_length, range_array = self._pswf_2d_minor_computations(big_n, n, bandlimit, phi_approximate_error)
@@ -221,8 +222,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         tmp = phi_for_quad_nodes(x)
         for i, j in enumerate(sign_flipping_vec[:idx_for_quad_nodes - 1]):
-            new_zero = x[j] - tmp[j] * \
-                       (x[j + 1] - x[j]) / (tmp[j + 1] - tmp[j])
+            new_zero = x[j] - tmp[j] * (x[j + 1] - x[j]) / (tmp[j + 1] - tmp[j])
             phi_zeros[i] = new_zero
 
         phi_zeros = np.array(phi_zeros)
@@ -233,9 +233,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         return len(y) - np.where(y > eps)[0][0] + 1
 
     def _pswf_integration_sub_routine(self):
-
         t = 2
-
         num_angular_pts = (self.num_angular_pts / t).astype('int')
 
         r_quad_indices = [0]
@@ -294,6 +292,3 @@ class FPSWFBasis2D(PSWFBasis2D):
                 np.dot(self.blk_r[i], r_n_eval_mat[i * m:(i + 1)*m, :])
 
         return coeff_vec_quad
-
-
-
