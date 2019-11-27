@@ -21,15 +21,10 @@ class PSWFBasis2DTestCase(TestCase):
         coeffs = np.load(os.path.join(DATA_DIR, 'pswf2d_vcoeffs_out_8_8.npy'))
         # make sure both real and imaginary parts are consistent.
         self.assertTrue(np.allclose(np.real(result), np.real(coeffs)) and
-                        np.allclose(np.imag(result)*1j, np.imag(coeffs)*1j))
+                        np.allclose(np.imag(result) * 1j, np.imag(coeffs) * 1j))
 
     def testPSWFBasis2DEvaluate(self):
         coeffs = np.load(os.path.join(DATA_DIR, 'pswf2d_vcoeffs_out_8_8.npy'))
         result = self.basis.evaluate(coeffs)
         images = np.load(os.path.join(DATA_DIR, 'pswf2d_xcoeff_out_8_8.npy'))
         self.assertTrue(np.allclose(result, images))
-
-
-
-
-

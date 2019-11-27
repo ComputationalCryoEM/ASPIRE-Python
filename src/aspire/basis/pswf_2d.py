@@ -24,7 +24,7 @@ class PSWFBasis2D(Basis):
     """
     def __init__(self, size, gamma_truncation=1.0, beta=1.0):
         """
-        Initial an object for 2D Prolate Spheroidal Wave Function (PSWF) basis expansion using direct method.
+        Initialize an object for 2D prolate spheroidal wave function (PSWF) basis expansion using direct method.
         """
         self.rcut = size[0] // 2
         self.gmcut = gamma_truncation
@@ -60,17 +60,17 @@ class PSWFBasis2D(Basis):
         points_in_disk = r_2d_grid <= self.rcut
         x = y_2d_grid[points_in_disk]
         y = x_2d_grid[points_in_disk]
-        self.r_2d_grid_in_disk = np.sqrt(np.square(x) + np.square(y)) / self.rcut
-        self.theta_2d_grid_in_disk = np.angle(x + 1j * y)
-        self.image_height = len(x_1d_grid)
-        self.points_in_disk = points_in_disk
-        self.points_in_disk_vec = points_in_disk.reshape(self.image_height ** 2)
+        self._r_disk = np.sqrt(np.square(x) + np.square(y)) / self.rcut
+        self._theta_disk = np.angle(x + 1j * y)
+        self._image_height = len(x_1d_grid)
+        self._disk_mask = points_in_disk
+        self._disk_mask_vec = points_in_disk.reshape(self._image_height ** 2)
 
     def precomp(self):
         """
         Precompute the basis functions on a polar Fourier 2D grid.
         """
-        self.generate_samples()
+        self._generate_samples()
 
         self.non_neg_freq_inds = slice(0, len(self.ang_freqs))
 
@@ -80,7 +80,7 @@ class PSWFBasis2D(Basis):
         tmp = np.nonzero(self.ang_freqs > 0)[0]
         self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
-    def generate_samples(self):
+    def _generate_samples(self):
         """
         Precompute the basis functions on a polar Fourier 2D grid.
         """
@@ -108,7 +108,7 @@ class PSWFBasis2D(Basis):
         self.alpha_nn = np.array(alpha_all)
         self.max_ns = max_ns
 
-        self.samples = self.evaluate_pswf2d_all(self.r_2d_grid_in_disk, self.theta_2d_grid_in_disk, max_ns)
+        self.samples = self.evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
         self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
         self.rad_freqs = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
@@ -126,7 +126,7 @@ class PSWFBasis2D(Basis):
         images_shape = (images_shape + (1,)) if len(images_shape) == 2 else images_shape
         flattened_images = images.reshape((images_shape[0] * images_shape[1], images_shape[2]), order='F')
 
-        flattened_images = flattened_images[self.points_in_disk_vec, :]
+        flattened_images = flattened_images[self._disk_mask_vec, :]
         coefficients = self.samples_conj_transpose.dot(flattened_images)
         return coefficients
 
@@ -146,19 +146,16 @@ class PSWFBasis2D(Basis):
             self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
 
         n_images = int(flatten_images.shape[1])
-        images = np.zeros((self.image_height, self.image_height, n_images)).astype('complex')
-        images[self.get_points_in_disk(), :] = flatten_images
+        images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
+        images[self.get_disk_mask(), :] = flatten_images
         images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images)
 
-    def get_points_in_disk(self):
-        return self.points_in_disk
+    def get_disk_mask(self):
+        return self._disk_mask
 
     def mask_points_in_disk(self, images):
-        return self._mask_points_in_disk_cpu(images)
-
-    def _mask_points_in_disk_cpu(self, images):
-        return images * self.points_in_disk
+        return images * self._disk_mask
 
     def get_samples_as_images(self):
         raise NotImplementedError("get_samples_as_images is not supported.")
@@ -167,7 +164,7 @@ class PSWFBasis2D(Basis):
         return self.ang_freqs
 
     def get_num_prolates(self):
-        raise NotImplementedError("get_samples_as_images is not supported.")
+        raise NotImplementedError("get_num_prolates is not supported.")
 
     def get_non_neg_freq_inds(self):
         return self.non_neg_freq_inds
@@ -257,14 +254,14 @@ class PSWFBasis2D(Basis):
 
     def pswf_func2d(self, big_n, n, bandlimit, phi_approximate_error, r, w):
         """
-         Calculate the eigen-values and eigen-vectors of PSWF basis functions for all N's and n's.
+         Calculate the eigenvalues and eigenvectors of PSWF basis functions for all N's and n's.
 
         :param big_n: The integer N in PSWF basis.
         :param n: The integer n in PSWF basis.
         :param bandlimit: The band limit estimated by beta * pi * rcut.
         :param phi_approximate_error: The input approximate error for phi.
-        :param r: The Gauss quadrature nodes.
-        :param w: The Gauss quadrature weights.
+        :param r: The Legendre–Gauss quadrature nodes.
+        :param w: The Legendre–Gauss quadrature weights.
         :return:
             alpha_n (ndarray): the eigen-values for N.
             d_vec (ndarray): the corresponding eigen-vectors for alpha_n.
