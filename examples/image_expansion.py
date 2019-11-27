@@ -21,20 +21,18 @@ logger = logging.getLogger('aspire')
 
 logger.info('This script illustrates different image expansion methods in ASPIRE package.')
 
-# Load the images from numpy array, 10 images of Ribosome 70S with size of 129 X 129
+# Load the images from NumPy array, 10 images of 70S Ribosome with size 129 x 129
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../tests/saved_test_data')
 org_images = np.load(os.path.join(DATA_DIR, 'example_data_np_array.npy'))
 
-# Set the sizes of images 129X129
+# Set the sizes of images 129×129
 img_size = 129
 
-#
-# Specify the normal FB basis method for expending the 2D images
-#
+# Specify the normal FB basis method for expanding the 2D image
 fb_basis = FBBasis2D((img_size, img_size))
 
 # Get the expansion coefficients based on FB basis
-logger.info('start normal FB expansion of original images.')
+logger.info('Start normal FB expansion of original images.')
 tstart = timeit.default_timer()
 fb_coeffs = fb_basis.evaluate_t(org_images)
 tstop = timeit.default_timer()
@@ -64,9 +62,7 @@ plt.subplot(3, 4, 9)
 plt.imshow(np.real(org_images[..., 0] - fb_images[..., 0]), cmap='gray')
 plt.title('Differences')
 
-#
-# Specify the fast FB basis method for expending the 2D images
-#
+# Specify the fast FB basis method for expanding the 2D images
 ffb_basis = FFBBasis2D((img_size, img_size))
 
 # Get the expansion coefficients based on fast FB basis
@@ -100,9 +96,7 @@ plt.subplot(3, 4, 10)
 plt.imshow(np.real(org_images[..., 0] - ffb_images[..., 0]), cmap='gray')
 plt.title('Differences')
 
-#
-# Specify the direct PSWF basis method for expending the 2D images
-#
+# Specify the direct PSWF basis method for expanding the 2D images
 pswf_basis = PSWFBasis2D((img_size, img_size))
 
 # Get the expansion coefficients based on direct PSWF basis
@@ -136,9 +130,7 @@ plt.subplot(3, 4, 11)
 plt.imshow(np.real(org_images[..., 0] - pswf_images[..., 0]), cmap='gray')
 plt.title('Differences')
 
-#
-# Specify the fast FPSWF basis method for expending the 2D images
-#
+# Specify the fast FPSWF basis method for expanding the 2D images
 fpswf_basis = FPSWFBasis2D((img_size, img_size))
 
 # Get the expansion coefficients based on fast PSWF basis
@@ -154,11 +146,11 @@ fpswf_images = fpswf_basis.evaluate(fpswf_coeffs)
 logger.info('Finish reconstruction of images from fast PSWF expansion coefficients.')
 
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
-fpswf_meanmax = np.mean(np.max(abs(fpswf_images-org_images), axis=2))
+fpswf_meanmax = np.mean(np.max(abs(fpswf_images - org_images), axis=2))
 logger.info(f'Mean value of maximum differences between FPSWF estimated images and original images: {fpswf_meanmax}')
 
 # Calculate the normalized RMSE of the estimated images
-nrmse_ims = anorm(fpswf_images-org_images)/anorm(org_images)
+nrmse_ims = anorm(fpswf_images - org_images) / anorm(org_images)
 logger.info(f'FPSWF Estimated images normalized RMSE: {nrmse_ims}')
 
 # plot the first images using the fast PSWF method
