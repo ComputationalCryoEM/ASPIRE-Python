@@ -57,7 +57,7 @@ def grid_1d(n, shifted=False, normalized=True):
         if shifted and n % 2 == 0:
             grid = grid / (n/2-1/2)
         else:
-            grid = grid / np.ceil(n/2)
+            grid = grid / (n/2)
 
     x = np.meshgrid(grid)
     r = x
@@ -86,7 +86,7 @@ def grid_2d(n, shifted=False, normalized=True):
         if shifted and n % 2 == 0:
             grid = grid / (n/2-1/2)
         else:
-            grid = grid / np.ceil(n/2)
+            grid = grid / (n/2)
 
     x, y = np.meshgrid(grid, grid, indexing='ij')
     phi, r = cart2pol(x, y)
@@ -117,7 +117,7 @@ def grid_3d(n, shifted=False, normalized=True):
         if shifted and n % 2 == 0:
             grid = grid / (n/2-1/2)
         else:
-            grid = grid / np.ceil(n/2)
+            grid = grid / (n/2)
 
     x, y, z = np.meshgrid(grid, grid, grid, indexing='ij')
     phi, theta, r = cart2sph(x, y, z)
