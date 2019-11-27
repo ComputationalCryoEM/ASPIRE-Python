@@ -31,7 +31,7 @@ class BNMatrix:
 
     def get_eig_vectors(self):
         """
-        Calculated the eigen-values and eigen-vectors of B_N matrix.
+        Calculated the eigenvalues and eigenvectors of B_N matrix.
 
         :return: v: (M,M) ndarray
                     The normalized eigenvectors corresponding to the eigenvalues, v[:, i] is corresponding to the w[i].
@@ -45,7 +45,7 @@ class BNMatrix:
         sorted_idx = np.argsort(-w)
         v = v[:, sorted_idx]
         w = w[sorted_idx]
-        # We need to rescale the eigen-vectors to fix the sign problem and make consistent with
+        # We need to rescale the eigenvectors to fix the sign problem and make consistent with
         # the Matlab version.
         a = np.argmax(np.absolute(v), axis=0)
         b = np.array([np.sign(v[a[k], k]) for k in range(len(v))])
