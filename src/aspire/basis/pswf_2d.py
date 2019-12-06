@@ -39,15 +39,15 @@ class PSWFBasis2D(Basis):
 
         # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
         self.bandlimit = self.beta * np.pi * self.rcut
-        self.d_vec_all, self.alpha_all, self.lengths = self.init_pswf_func2d(self.bandlimit, eps=np.spacing(1))
+        self.d_vec_all, self.alpha_all, self.lengths = self._init_pswf_func2d(self.bandlimit, eps=np.spacing(1))
 
         # generate_the 2D grid and corresponding indices inside the disc.
-        self.generate_grid()
+        self._generate_grid()
 
         # precompute the basis functions in 2D grids
         self.precomp()
 
-    def generate_grid(self):
+    def _generate_grid(self):
         """
         Generate the 2D sampling grid.
         """
@@ -108,7 +108,7 @@ class PSWFBasis2D(Basis):
         self.alpha_nn = np.array(alpha_all)
         self.max_ns = max_ns
 
-        self.samples = self.evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
+        self.samples = self._evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
         self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype('float')
         self.rad_freqs = np.concatenate([range(1, l + 1) for l in max_ns]).astype('float')
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
@@ -147,38 +147,11 @@ class PSWFBasis2D(Basis):
 
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
-        images[self.get_disk_mask(), :] = flatten_images
+        images[self._disk_mask, :] = flatten_images
         images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images)
 
-    def get_disk_mask(self):
-        return self._disk_mask
-
-    def mask_points_in_disk(self, images):
-        return images * self._disk_mask
-
-    def get_samples_as_images(self):
-        raise NotImplementedError("get_samples_as_images is not supported.")
-
-    def get_angular_frequency(self):
-        return self.ang_freqs
-
-    def get_num_prolates(self):
-        raise NotImplementedError("get_num_prolates is not supported.")
-
-    def get_non_neg_freq_inds(self):
-        return self.non_neg_freq_inds
-
-    def get_zero_freq_inds(self):
-        return self.zero_freq_inds
-
-    def get_pos_freq_inds(self):
-        return self.pos_freq_inds
-
-    def get_neg_freq_inds(self):
-        raise ValueError('no negative frequencies')
-
-    def init_pswf_func2d(self, c, eps):
+    def _init_pswf_func2d(self, c, eps):
         """
         Initialize the whole set of PSWF functions with the input bandlimit and error.
 
@@ -223,7 +196,7 @@ class PSWFBasis2D(Basis):
 
         return d_vec_all, alpha_all, n_order_length_vec
 
-    def evaluate_pswf2d_all(self, r, theta, max_ns):
+    def _evaluate_pswf2d_all(self, r, theta, max_ns):
         """
         Evaluate the numerical values of PSWF basis functions for all N's, up to certain given n for each N.
 

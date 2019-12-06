@@ -41,10 +41,10 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         # initial the whole set of PSWF basis functions based on the bandlimit and eps error.
         self.bandlimit = self.beta * np.pi * self.rcut
-        self.d_vec_all, self.alpha_all, self.lengths = self.init_pswf_func2d(self.bandlimit, eps=np.spacing(1))
+        self.d_vec_all, self.alpha_all, self.lengths = self._init_pswf_func2d(self.bandlimit, eps=np.spacing(1))
 
         # generate_the 2D grid and corresponding indices inside the disc.
-        self.generate_grid()
+        self._generate_grid()
 
         # precompute the basis functions in 2D grids
         self.precomp()
@@ -57,7 +57,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         eps = np.spacing(1)
         a, b, c, d, e, f = self._generate_pswf_quad(4 * self.rcut, 2 * self.bandlimit, eps, eps, eps)
-        self.pswf_radial_quad = self.evaluate_pswf2d_all(d, np.zeros(len(d)), self.max_ns)
+        self.pswf_radial_quad = self._evaluate_pswf2d_all(d, np.zeros(len(d)), self.max_ns)
         self.quad_rule_pts_x = a
         self.quad_rule_pts_y = b
         self.quad_rule_wts = c
@@ -123,7 +123,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
-        images[self.get_disk_mask(), :] = flatten_images
+        images[self._disk_mask, :] = flatten_images
         # TODO: no need to switch x and y any more, need to make consistent with direct method
         return np.real(images)
 
