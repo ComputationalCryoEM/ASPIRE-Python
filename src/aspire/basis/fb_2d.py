@@ -48,7 +48,7 @@ class FBBasis2D(Basis):
         self._indices = self.indices()
 
         # precompute the basis functions in 2D grids
-        self._precomp = self.precomp()
+        self._precomp = self._precomp()
 
         # get normalized factors
         self._norms = self.norms()
@@ -77,7 +77,7 @@ class FBBasis2D(Basis):
             'sgns': indices_sgns
         }
 
-    def precomp(self):
+    def _precomp(self):
 
         r_unique = self.basis_coords['r_unique']
         ang_unique = self.basis_coords['ang_unique']

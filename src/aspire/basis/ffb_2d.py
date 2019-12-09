@@ -44,12 +44,12 @@ class FFBBasis2D(FBBasis2D):
         self._indices = self.indices()
 
         # precompute the basis functions in 2D grids
-        self._precomp = self.precomp()
+        self._precomp = self._precomp()
 
         # get normalized factors
         self._norms = self.norms()
 
-    def precomp(self):
+    def _precomp(self):
         """
         Precomute the basis functions on a polar Fourier grid.
 

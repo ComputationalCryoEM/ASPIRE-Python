@@ -44,7 +44,7 @@ class FBBasis3D(Basis):
         self._indices = self.indices()
 
         # precompute the basis functions in 3D grids
-        self._precomp = self.precomp()
+        self._precomp = self._precomp()
 
         # get normalized factors
         self._norms = self.norms()
@@ -72,7 +72,7 @@ class FBBasis3D(Basis):
             'ks': indices_ks
         }
 
-    def precomp(self):
+    def _precomp(self):
 
         r_unique = self.basis_coords['r_unique']
         ang_unique = self.basis_coords['ang_unique']

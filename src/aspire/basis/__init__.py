@@ -67,7 +67,7 @@ class Basis:
     def indices(self):
         raise NotImplementedError('subclasses must implement this')
 
-    def precomp(self):
+    def _precomp(self):
         raise NotImplementedError('subclasses must implement this')
 
     def norms(self):

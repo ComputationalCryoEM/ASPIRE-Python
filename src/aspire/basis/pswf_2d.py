@@ -45,7 +45,7 @@ class PSWFBasis2D(Basis):
         self._generate_grid()
 
         # precompute the basis functions in 2D grids
-        self.precomp()
+        self._precomp()
 
     def _generate_grid(self):
         """
@@ -66,7 +66,7 @@ class PSWFBasis2D(Basis):
         self._disk_mask = points_in_disk
         self._disk_mask_vec = points_in_disk.reshape(self._image_height ** 2)
 
-    def precomp(self):
+    def _precomp(self):
         """
         Precompute the basis functions on a polar Fourier 2D grid.
         """

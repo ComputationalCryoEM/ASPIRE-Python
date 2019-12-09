@@ -39,12 +39,12 @@ class FFBBasis3D(FBBasis3D):
         self._indices = self.indices()
 
         # precompute the basis functions in 3D grids
-        self._precomp = self.precomp()
+        self._precomp = self._precomp()
 
         # get normalized factors
         self._norms = self.norms()
 
-    def precomp(self):
+    def _precomp(self):
         """
         Precomute the basis functions on a polar Fourier 3D grid.
 

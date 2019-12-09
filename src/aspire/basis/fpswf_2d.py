@@ -47,9 +47,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         self._generate_grid()
 
         # precompute the basis functions in 2D grids
-        self.precomp()
+        self._precomp()
 
-    def precomp(self):
+    def _precomp(self):
         """
         Precomute the basis functions on a polar Fourier 2D grid.
         """
