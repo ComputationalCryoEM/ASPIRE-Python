@@ -11,7 +11,7 @@ from aspire.utils import ensure
 from aspire.source import ImageSource
 from aspire.image import Image
 from aspire.io.starfile import StarFile
-from aspire.utils.filters import CTFFilter
+from aspire.utils.filters import CTFFilter, PowerFilter
 from aspire.source.xform import FilterXform
 from aspire.estimation.noise import WhiteNoiseEstimator
 
@@ -131,8 +131,6 @@ class RelionSource(ImageSource):
             memory=memory
         )
 
-        self.init_model_pipeline()
-
     def __str__(self):
         return f'RelionSource ({self.n} images of size {self.L}x{self.L})'
 
@@ -171,22 +169,13 @@ class RelionSource(ImageSource):
 
         return Image(im)
 
-    def whiten(self, whiten_filter=None):
+    def whiten(self, whiten_filter):
         """
-        Modify the Source object in place by whitening + caching all images, and adding the appropriate whitening
-            filter to all available filters.
-        :param whiten_filter: Whitening filter to apply.
-        :return: On return, the Source object has been modified in place.
+        Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
+        :param whiten_filter: Whitening filter to apply, as a `Filter` object.
+        :return: On return, the `ImageSource` object has been modified in place.e.
         """
-        if whiten_filter is None:
-            logger.info('Determining Whitening Filter through a WhiteNoiseEstimator')
-            whiten_filter = WhiteNoiseEstimator(self).filter
-            whiten_filter.power = -0.5
-        else:
-            whiten_filter = copy(whiten_filter)
-            whiten_filter.power = -0.5
-
         super().whiten(whiten_filter=whiten_filter)
 
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(FilterXform(whiten_filter))
+        self.generation_pipeline.add_xform(FilterXform(PowerFilter(whiten_filter, power=-0.5)))

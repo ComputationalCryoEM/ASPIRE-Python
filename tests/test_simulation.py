@@ -2,7 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.filters import RadialCTFFilter, IdentityFilter
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -15,7 +15,7 @@ class SimTestCase(TestCase):
             L=8,
             filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
             seed=0,
-            noise_variance=1.0
+            noise_filter=IdentityFilter()
         )
 
     def tearDown(self):

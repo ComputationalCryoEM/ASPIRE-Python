@@ -3,7 +3,7 @@ import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
-from aspire.utils.filters import ScalarFilter
+from aspire.utils.filters import ZeroFilter, PowerFilter
 from aspire.utils.matlab_compat import randn
 
 logger = logging.getLogger(__name__)
@@ -44,14 +44,11 @@ class Xform:
         def __exit__(self, exc_type, exc_value, exc_traceback):
             self.xform.active = self.xform_old_state
 
-    def __init__(self, resolution=np.inf, active=True):
+    def __init__(self, active=True):
         """
         Create a Xform object that works at a specific resolution.
-        :param resolution: The side-length of the Image object on which this Xform is applicable.
-            Note that it is possible to downsample this Xform by later using the `downsample` method on it.
         :param active: A boolean indicating whether the Xform is active. True by default.
         """
-        self.resolution = resolution
         self.active = active
 
     def forward(self, im, indices=None):
@@ -83,16 +80,6 @@ class Xform:
         :return: A context manager in which this Xform is disabled.
         """
         return Xform.XformActiveContextManager(self, active=False)
-
-    def downsample(self, resolution):
-        """
-        Downsample this Xform object to deal with Image objects of size resolution x resolution x n.
-        On return, the Xform has been modified to expect Image objects in new resolution.
-        Subclasses will typically want to do more than simply make a note of the new resolution as is done here.
-        :param resolution: The new resolution of incoming Image objects in `forward` or `adjoint`.
-        :return: None.
-        """
-        self.resolution = resolution
 
 
 class LinearXform(Xform):
@@ -129,13 +116,12 @@ class Multiply(SymmetricXform):
     A Xform that changes the amplitudes of a stack of 2D images (in the form of an Image object) by multiplying all
     pixels of a single 2D  image by a constant factor.
     """
-    def __init__(self, factor, resolution=np.inf):
+    def __init__(self, factor):
         """
         Initialize a Multiply Xform using specified factors
         :param factor: An ndarray of scalar factors to use for amplitude multiplication.
-        :param resolution: Resolution of images expected to pass through this Xform
         """
-        super().__init__(resolution=resolution)
+        super().__init__()
         self.multipliers = factor
 
     def _forward(self, im, indices):
@@ -147,13 +133,12 @@ class Shift(LinearXform):
     A Xform that shifts pixels of a stack of 2D images (in the form of an Image object)by offsetting all pixels of a
     single 2D image by constant x/y offsets.
     """
-    def __init__(self, shifts, resolution=np.inf):
+    def __init__(self, shifts):
         """
         Initialize a Shift Xform using a Numpy array of shift values.
         :param shifts: An ndarray of shape (n, 2)
-        :param resolution: Resolution of images expected to pass through this Xform
         """
-        super().__init__(resolution=resolution)
+        super().__init__()
         self.shifts = shifts
         self.n = shifts.shape[0]
 
@@ -163,15 +148,15 @@ class Shift(LinearXform):
     def _adjoint(self, im, indices):
         return im.shift(-self.shifts[indices])
 
-    def downsample(self, resolution):
-        self.shifts /= self.resolution / resolution
-        super().downsample(resolution)
-
 
 class Downsample(LinearXform):
     """
     A Xform that downsamples an Image object to a resolution specified by this Xform's resolution.
     """
+    def __init__(self, resolution):
+        self.resolution = resolution
+        super().__init__()
+
     def _forward(self, im, indices):
         return im.downsample(self.resolution)
 
@@ -184,41 +169,33 @@ class FilterXform(SymmetricXform):
     """
     A `Xform` that applies a single `Filter` object to a stack of 2D images (as an Image object).
     """
-    def __init__(self, filter, resolution=np.inf):
+    def __init__(self, filter):
         """
         Initialize the Filter `Xform` using a `Filter` object
         :param filter: An object of type `aspire.utils.filters.Filter`
-        :param resolution: Resolution of images expected to pass through this Xform
         """
-        super().__init__(resolution=resolution)
+        super().__init__()
         self.filter = filter
 
     def _forward(self, im, indices):
         return im.filter(self.filter)
-
-    def downsample(self, resolution):
-        self.filter.scale(self.resolution / resolution)
-        super().downsample(resolution)
 
 
 class NoiseAdder(Xform):
     """
     A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
     """
-    def __init__(self, resolution=np.inf, seed=0, noise_filter=None, noise_variance=1):
+    def __init__(self, seed=0, noise_filter=None):
         """
         Initialize the random state of this NoiseAdder using specified values.
-        :param resolution: Resolution of images expected to pass through this Xform
         :param seed: The random seed used to generate white noise
         :param noise_filter: An optional aspire.utils.filters.Filter object to use to filter the generated white noise.
-            Be default, a ScalarFilter is used, emulating true white noise, but any additional filter can be used
-            to emulate isotropic noise etc.
-        :param noise_variance: The noise variance of the noise. Consulted if no noise_filter is specified, in which
-            case white noise is filtered through a `ScalarFilter` with this value.
+            By default, a ZeroFilter is used, generating no noise.
         """
-        super().__init__(resolution=resolution)
+        super().__init__()
         self.seed = seed
-        self.noise_filter = noise_filter or ScalarFilter(value=noise_variance)
+        noise_filter = noise_filter or ZeroFilter()
+        self.noise_filter = PowerFilter(noise_filter, power=0.5)
 
     def _forward(self, im, indices):
         im = im.copy()
@@ -226,9 +203,9 @@ class NoiseAdder(Xform):
         for i, idx in enumerate(indices):
             # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
             random_seed = self.seed + 191 * (idx + 1)
-            im_s = randn(2 * self.resolution, 2 * self.resolution, seed=random_seed)
-            im_s = Image(im_s).filter(self.noise_filter, power=0.5)[:, :, 0]
-            im[:, :, i] += im_s[:self.resolution, :self.resolution]
+            im_s = randn(2 * im.res, 2 * im.res, seed=random_seed)
+            im_s = Image(im_s).filter(self.noise_filter)[:, :, 0]
+            im[:, :, i] += im_s[:im.res, :im.res]
 
         return im
 
@@ -251,8 +228,7 @@ class IndexedXform(Xform):
             assert np.min(indices) >= 0
             assert np.max(indices) < len(unique_xforms)
 
-        resolution = min(np.inf, *[xform.resolution for xform in unique_xforms])
-        super().__init__(resolution=resolution)
+        super().__init__()
 
         self.n_indices = len(indices)
         self.indices = indices
@@ -295,11 +271,6 @@ class IndexedXform(Xform):
     def _forward(self, im, indices):
         return self._indexed_operation(im, indices, 'forward')
 
-    def downsample(self, resolution):
-        for xform in self.unique_xforms:
-            xform.downsample(resolution)
-        super().downsample(resolution)
-
 
 class LinearIndexedXform(IndexedXform, LinearXform):
     def _adjoint(self, im, indices):
@@ -340,14 +311,6 @@ class Pipeline(Xform):
         self.xforms = xforms or []
         self.memory = memory
         self.active = True
-        self._register_xforms_changed()
-
-    def _register_xforms_changed(self):
-        # Update resolution of the Pipeline in case any of the transformations changed.
-        if len(self.xforms) > 0:
-            self.resolution = min(np.inf, *[xform.resolution for xform in self.xforms])
-        else:
-            self.resolution = np.inf
 
     def add_xform(self, xform):
         """
@@ -356,7 +319,6 @@ class Pipeline(Xform):
         :return: None
         """
         self.xforms.append(xform)
-        self._register_xforms_changed()
 
     def add_xforms(self, xforms):
         """
@@ -365,7 +327,6 @@ class Pipeline(Xform):
         :return: None
         """
         self.xforms.extend(xforms)
-        self._register_xforms_changed()
 
     def _forward(self, im, indices):
         memory = Memory(location=self.memory, verbose=0)
@@ -377,11 +338,6 @@ class Pipeline(Xform):
         logger.info('All forward transformations applied')
 
         return im
-
-    def downsample(self, resolution):
-        for xform in self.xforms:
-            xform.downsample(resolution)
-        super().downsample(resolution)
 
 
 class LinearPipeline(Pipeline, LinearXform):

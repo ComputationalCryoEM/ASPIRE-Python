@@ -8,7 +8,7 @@ from scipy.spatial.transform import Rotation as R
 from aspire.image import Image
 from aspire.volume import im_backproject, vol_project
 from aspire.utils import ensure
-from aspire.utils.filters import MultiplicativeFilter
+from aspire.utils.filters import MultiplicativeFilter, PowerFilter
 from aspire.utils.coor_trans import grid_2d
 from aspire.source.xform import Multiply, Shift, Downsample, FilterXform, LinearIndexedXform, Pipeline, LinearPipeline
 from aspire.estimation.noise import WhiteNoiseEstimator
@@ -99,23 +99,7 @@ class ImageSource:
             self._metadata = metadata
             self._rotations = R.from_euler('ZYZ', self.get_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']), degrees=True)
 
-        self.model_pipeline = LinearPipeline(xforms=None, memory=memory)
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
-
-    def init_model_pipeline(self):
-        if self.filters is not None:
-            unique_filters = list(set(self.filters))
-            self.model_pipeline.add_xform(
-                LinearIndexedXform(
-                    [FilterXform(f, resolution=self.L) for f in unique_filters],
-                    indices=[unique_filters.index(f) for f in self.filters]
-                )
-            )
-
-        self.model_pipeline.add_xforms([
-            Shift(self.offsets, resolution=self.L),
-            Multiply(self.amplitudes, resolution=self.L)
-        ])
 
     @property
     def states(self):
@@ -316,7 +300,24 @@ class ImageSource:
             im = self.images()
         self._im = im
 
-    def images(self, start=0, num=np.inf, indices=None, batch_size=256, *args, **kwargs):
+    def images(self, start=0, num=np.inf, indices=None, batch_size=32678, *args, **kwargs):
+        """
+        Return images from this ImageSource as an Image object.
+        :param start: The inclusive start index from which to return images (default 0).
+            Ignored if `indices` is specified.
+        :param num: The exclusive end index up to which to return images (default np.inf).
+            Ignored if `indices` is specified.
+        :param indices: The 0-indexed indices of images to return. None by default.
+            If this is specified, start and num are ignored.
+        :param batch_size: The batch size to use internally to generate an `Image` object to return.
+            This number determines how images are propagated through a 'generation pipeline` to construct a final
+            `Image` object. Default value is 32768, so as to be much higher than, and thus not interfere with
+            common use cases of this method, like mean or covariance estimation (methods that will want to perform
+            their own batching of images).
+        :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
+        :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
+        :return: an `Image` object.
+        """
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
@@ -324,8 +325,7 @@ class ImageSource:
             logger.info(f'Loading images from cache')
             im = Image(self._im[:, :, indices])
         else:
-            resolution = min(self.generation_pipeline.resolution, self.L)
-            im = np.empty((resolution, resolution, len(indices)), dtype=self.dtype)
+            im = np.empty((self.L, self.L, len(indices)), dtype=self.dtype)
             for i in range(0, len(indices), batch_size):
                 chunk_range = np.arange(i, min(i + batch_size, len(indices)))
                 chunk_indices = indices[chunk_range]
@@ -341,29 +341,25 @@ class ImageSource:
         ensure(L <= self.L, "Max desired resolution should be less than the current resolution")
         logger.info(f'Setting max. resolution of source = {L}')
 
-        self.model_pipeline.downsample(resolution=L)
         self.generation_pipeline.add_xform(Downsample(resolution=L))
+
+        ds_factor = self.L / L
+        for f in set(self.filters):
+            f.scale(ds_factor)
+        self.offsets /= ds_factor
 
         self.L = L
         # Invalidate images
         self._im = None
 
-    def whiten(self, whiten_filter=None):
+    def whiten(self, whiten_filter):
         """
-        Modify the Source object in place by whitening + caching all images, and adding the appropriate whitening
-            filter to all available filters.
-        :param whiten_filter: Whitening filter to apply.
-        :return: On return, the Source object has been modified in place.
+        Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
+        :param whiten_filter: Whitening filter to apply, as a `Filter` object.
+        :return: On return, the `ImageSource` object has been modified in place.
         """
         logger.info("Whitening source object")
-
-        if whiten_filter is None:
-            logger.info('Determining Whitening Filter through a WhiteNoiseEstimator')
-            whiten_filter = WhiteNoiseEstimator(self).filter
-            whiten_filter.power = -0.5
-        else:
-            whiten_filter = copy(whiten_filter)
-            whiten_filter.power = -0.5
+        whiten_filter = PowerFilter(whiten_filter, power=-0.5)
 
         logger.info('Transforming all CTF Filters into Multiplicative Filters')
         unique_filters = set(self.filters)
@@ -382,7 +378,9 @@ class ImageSource:
         num = im.shape[-1]
 
         all_idx = np.arange(start, min(start + num, self.n))
-        im = self.model_pipeline.adjoint(im, indices=all_idx).asnumpy()
+        im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
+        im = im.shift(-self.offsets[all_idx, :])
+        im = self.eval_filters(im, start=start, num=num).asnumpy()
         vol = im_backproject(im, self.rots[start:start+num, :, :])
 
         return vol
@@ -398,9 +396,9 @@ class ImageSource:
         """
         all_idx = np.arange(start, min(start + num, self.n))
         im = vol_project(vol, self.rots[all_idx, :, :])
-
-        im = self.model_pipeline.forward(Image(im), indices=all_idx)
-
+        im = self.eval_filters(im, start, num)
+        im = Image(im).shift(self.offsets[all_idx, :])
+        im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
         return im
 
 

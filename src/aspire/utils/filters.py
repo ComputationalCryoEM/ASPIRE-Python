@@ -9,10 +9,9 @@ from aspire.utils.matlab_compat import m_reshape
 
 
 class Filter:
-    def __init__(self, dim=2, radial=False, power=1):
+    def __init__(self, dim=2, radial=False):
         self.dim = dim
         self.radial = radial
-        self.power = power
         self._scale = 1  # If needed, modified through the scale() method
 
     def __mul__(self, other):
@@ -38,9 +37,6 @@ class Filter:
             omega = np.vstack((omega, np.zeros_like(omega)))
 
         h = self._evaluate(omega)
-
-        if self.power != 1:
-            h = h ** self.power
 
         if self.radial:
             h = np.take(h, idx)
@@ -83,11 +79,25 @@ class FunctionFilter(Filter):
 
         self.f = f  # will be used directly in this Filter's evaluate method
         # Note: The function may well be radial from the caller's perspective, but we won't be applying it in a radial
-        # manner (i.e. we will still expect the incoming omega values to have x and y components).
+        # manner if the function we were initialized from expected 2 arguments
+        # (i.e. at runtime, we will still expect the incoming omega values to have x and y components).
         super().__init__(dim=dim, radial=dim > n_args)
 
     def _evaluate(self, omega):
         return self.f(*omega)
+
+
+class PowerFilter(Filter):
+    """
+    A Filter object that is composed of a regular `Filter` object, but evaluates it to a specified power.
+    """
+    def __init__(self, filter, power=1):
+        self._filter = filter
+        self._power = power
+        super().__init__(dim=filter.dim, radial=filter.radial)
+
+    def _evaluate(self, omega):
+        return self._filter.evaluate(omega) ** self._power
 
 
 class MultiplicativeFilter(Filter):
@@ -185,6 +195,11 @@ class ScalarFilter(Filter):
     def scale(self, c):
         # TODO: Is this a bug?
         pass
+
+
+class ZeroFilter(ScalarFilter):
+    def __init__(self, dim=2):
+        super().__init__(dim=dim, value=0)
 
 
 class IdentityFilter(ScalarFilter):

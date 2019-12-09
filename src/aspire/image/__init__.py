@@ -156,14 +156,13 @@ class Image:
 
         return Image(im_ds)
 
-    def filter(self, filter, power=1):
+    def filter(self, filter):
         """
-        Apply a Filter object to the Image. This method returns a new Image.
-        :param filter: An object of type Filter
-        :param power: Power at which to evaluate the filter, default 1
-        :return: A new filtered Image object.
+        Apply a `Filter` object to the Image. This method returns a new Image.
+        :param filter: An object of type `Filter`.
+        :return: A new filtered `Image` object.
         """
-        filter_values = filter.evaluate_grid(self.res) ** power
+        filter_values = filter.evaluate_grid(self.res)
 
         im_f = centered_fft2(self.data)
         if im_f.ndim > filter_values.ndim:
