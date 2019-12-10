@@ -260,10 +260,6 @@ class ImageSource:
         """
         raise NotImplementedError('Subclasses should implement this and return an Image object')
 
-    def group_by(self, by):
-        for by_value, df in self._metadata.groupby(by, sort=False):
-            yield by_value, self.images(indices=df.index.values)
-
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
         im = im_orig.copy()
         if indices is None:
@@ -297,42 +293,26 @@ class ImageSource:
     def cache(self, im=None):
         logger.info('Caching source images')
         if im is None:
-            im = self.images()
+            im = self.images(start=0, num=np.inf)
         self._im = im
 
-    def images(self, start=0, num=np.inf, indices=None, batch_size=32678, *args, **kwargs):
+    def images(self, start, num, *args, **kwargs):
         """
         Return images from this ImageSource as an Image object.
-        :param start: The inclusive start index from which to return images (default 0).
-            Ignored if `indices` is specified.
-        :param num: The exclusive end index up to which to return images (default np.inf).
-            Ignored if `indices` is specified.
-        :param indices: The 0-indexed indices of images to return. None by default.
-            If this is specified, start and num are ignored.
-        :param batch_size: The batch size to use internally to generate an `Image` object to return.
-            This number determines how images are propagated through a 'generation pipeline` to construct a final
-            `Image` object. Default value is 32768, so as to be much higher than, and thus not interfere with
-            common use cases of this method, like mean or covariance estimation (methods that will want to perform
-            their own batching of images).
+        :param start: The inclusive start index from which to return images.
+        :param num: The exclusive end index up to which to return images.
         :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
+        indices = np.arange(start, min(start + num, self.n))
 
         if self._im is not None:
             logger.info(f'Loading images from cache')
             im = Image(self._im[:, :, indices])
         else:
-            im = np.empty((self.L, self.L, len(indices)), dtype=self.dtype)
-            for i in range(0, len(indices), batch_size):
-                chunk_range = np.arange(i, min(i + batch_size, len(indices)))
-                chunk_indices = indices[chunk_range]
-                _im = self._images(start=np.min(chunk_indices), indices=chunk_indices, *args, **kwargs)
-                _im = self.generation_pipeline.forward(_im, indices=chunk_indices)
-                im[:, :, chunk_range] = _im.asnumpy()
-            im = Image(im)
+            im = self._images(indices=indices, *args, **kwargs)
+            im = self.generation_pipeline.forward(im, indices=indices)
 
         logger.info(f'Loaded {len(indices)} images')
         return im
@@ -352,14 +332,15 @@ class ImageSource:
         # Invalidate images
         self._im = None
 
-    def whiten(self, whiten_filter):
+    def whiten(self, noise_filter):
         """
         Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
-        :param whiten_filter: Whitening filter to apply, as a `Filter` object.
+        :param noise_filter: The noise psd of the images as a `Filter` object. Typically determined by a
+            NoiseEstimator class, and available as its `filter` attribute.
         :return: On return, the `ImageSource` object has been modified in place.
         """
         logger.info("Whitening source object")
-        whiten_filter = PowerFilter(whiten_filter, power=-0.5)
+        whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
         logger.info('Transforming all CTF Filters into Multiplicative Filters')
         unique_filters = set(self.filters)

@@ -41,7 +41,7 @@ class ImageTestCase(TestCase):
     def testArrayImageSource(self):
         # An Image can be wrapped in an ArrayImageSource when we need to deal with ImageSource objects.
         src = ArrayImageSource(self.im)
-        im = src.images()
+        im = src.images(start=0, num=np.inf)
         self.assertTrue(np.allclose(im.asnumpy(), self.im_np))
 
 

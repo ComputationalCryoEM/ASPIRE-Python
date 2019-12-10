@@ -50,7 +50,7 @@ class StarFileTestCase(TestCase):
 
     def testImageStackType(self):
         # Since src is an ImageSource, we can call images() on it to get an Image
-        image_stack = self.src.images()
+        image_stack = self.src.images(start=0, num=np.inf)
         self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
@@ -78,7 +78,7 @@ class StarFileTestCase(TestCase):
 
     def testImageDownsampleAndWhiten(self):
         self.src.downsample(16)
-        self.src.whiten(whiten_filter=ScalarFilter(dim=2, value=0.02450909546680349))
+        self.src.whiten(noise_filter=ScalarFilter(dim=2, value=0.02450909546680349))
         first_whitened_image = self.src.images(0, 1)[:, :, 0]
 
         self.assertTrue(np.allclose(
