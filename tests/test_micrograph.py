@@ -12,7 +12,7 @@ class MicrographTestCase(TestCase):
         pass
 
     def testShape1(self):
-        # Load a single micrograph and check it's shape
+        # Load a single micrograph and check its shape
         with importlib_resources.path(aspire.data, 'sample.mrc') as path:
             micrograph = Micrograph(path, margin=100, shrink_factor=2)
 
@@ -20,7 +20,7 @@ class MicrographTestCase(TestCase):
         self.assertEqual(micrograph.im.shape, (1948, 1948))
 
     def testShape2(self):
-        # Load a MRCS stack and check it's shape
+        # Load a MRCS stack and check its shape
         with importlib_resources.path(aspire.data, 'sample.mrcs') as path:
             micrograph = Micrograph(path)
 

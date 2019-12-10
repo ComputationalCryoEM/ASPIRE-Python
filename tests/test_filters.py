@@ -1,7 +1,8 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.utils.filters import IdentityFilter, ScalarFilter, CTFFilter, RadialCTFFilter
+from aspire.utils.filters import FunctionFilter, ZeroFilter, IdentityFilter, ScalarFilter, CTFFilter, RadialCTFFilter, \
+    PowerFilter
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -15,6 +16,21 @@ class SimTestCase(TestCase):
     def tearDown(self):
         pass
 
+    def testFunctionFilter(self):
+        filt = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
+        result = filt.evaluate(self.omega)
+        self.assertEqual(result.shape, (256,))
+        self.assertTrue(np.allclose(
+            result[:5],
+            [5.17231862e-05, 1.64432545e-04, 4.48039823e-04, 1.04633750e-03, 2.09436945e-03]
+        ))
+
+    def testZeroFilter(self):
+        result = ZeroFilter().evaluate(self.omega)
+        # For all filters, we should get a 1d ndarray back on evaluate
+        self.assertEqual(result.shape, (256,))
+        self.assertTrue(np.allclose(result, np.zeros(256)))
+
     def testIdentityFilter(self):
         result = IdentityFilter().evaluate(self.omega)
         # For all filters, we should get a 1d ndarray back on evaluate
@@ -25,6 +41,15 @@ class SimTestCase(TestCase):
         result = ScalarFilter(value=1.5).evaluate(self.omega)
         self.assertEqual(result.shape, (256,))
         self.assertTrue(np.allclose(result, np.repeat(1.5, 256)))
+
+    def testPowerFilter(self):
+        filt = PowerFilter(filter=FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2)), power=0.5)
+        result = filt.evaluate(self.omega)
+        self.assertEqual(result.shape, (256,))
+        self.assertTrue(np.allclose(
+            result[:5],
+            np.array([5.17231862e-05, 1.64432545e-04, 4.48039823e-04, 1.04633750e-03, 2.09436945e-03])**0.5
+        ))
 
     def testCTFFilter(self):
         filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)

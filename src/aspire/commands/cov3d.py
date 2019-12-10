@@ -29,7 +29,7 @@ def cov3d(starfile, data_folder, pixel_size, max_rows, max_resolution, cg_tol):
         max_rows=max_rows
     )
 
-    source.set_max_resolution(max_resolution)
+    source.downsample(max_resolution)
     source.cache()
 
     source.whiten()

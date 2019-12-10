@@ -1,20 +1,24 @@
+import logging
 import numpy as np
 from scipy.linalg import qr, eigh
 
 from aspire.source import ImageSource
-from aspire.utils.filters import ScalarFilter
 from aspire.image import Image
 from aspire.volume import vol_project
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import Random
+from aspire.utils.filters import ZeroFilter
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.matlab_compat import rand, randi, randn
 from aspire.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
+from aspire.source.xform import NoiseAdder, Pipeline
+
+logger = logging.getLogger(__name__)
 
 
 class Simulation(ImageSource):
     def __init__(self, L=8, n=1024, states=None, filters=None, offsets=None, amplitudes=None, dtype='single', C=2,
-                 angles=None, seed=0):
+                 angles=None, seed=0, memory=None, noise_filter=None):
         """
         A Cryo-EM simulation
         Other than the base class attributes, it has:
@@ -22,12 +26,15 @@ class Simulation(ImageSource):
         :param C: The number of distinct volumes
         :param angles: A 3-by-n array of rotation angles
         """
-        super().__init__(L=L, n=n, dtype=dtype)
+        super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
-        offsets = offsets or L / 16 * randn(2, n, seed=seed).T
+        if offsets is None:
+            offsets = L / 16 * randn(2, n, seed=seed).T
+
         if amplitudes is None:
             min_, max_ = 2./3, 3./2
             amplitudes = min_ + rand(n, seed=seed) * (max_ - min_)
+
         states = states or randi(C, n, seed=seed)
         angles = angles or uniform_random_angles(n, seed=seed)
 
@@ -42,6 +49,11 @@ class Simulation(ImageSource):
         self.C = C
         self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
         self.seed = seed
+
+        self.noise_adder = None
+        if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
+            logger.info(f'Appending a NoiseAdder to generation pipeline')
+            self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
         """
@@ -91,9 +103,9 @@ class Simulation(ImageSource):
 
         return vol
 
-    def clean_images(self, start=0, num=np.inf, indices=None):
+    def projections(self, start=0, num=np.inf, indices=None):
         """
-        Return images without applying filters/shifts/amplitudes/noise
+        Return projections of generated volumes, without applying filters/shifts/amplitudes/noise
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
@@ -113,53 +125,22 @@ class Simulation(ImageSource):
 
             im_k = vol_project(vol_k, rot)
             im[:, :, idx_k] = im_k
-        return im
-
-    def _images(self, start=0, num=np.inf, indices=None, apply_noise=False, clean=False):
-        """
-        Return images from the source.
-        :param start: start index (0-indexed) of the start image to return
-        :param num: Number of images to return. If None, *all* images are returned.
-        :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :param apply_noise: A boolean indicating whether we should apply noise to the generated images
-        :param clean: A boolean indicating whether to return images without filters/shifts/amplitudes/noise applied.
-            If True, the apply_noise parameter is ignored.
-        :return: An Image of shape (L, L, num), L being the size of each image.
-        """
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
-
-        im = self.clean_images(start=start, num=num, indices=indices)
-
-        if clean:
-            return Image(im)
-
-        im = self.eval_filters(im, start=start, num=num, indices=indices)
-        im = Image(im).shift(self.offsets[indices, :]).asnumpy()
-        im *= np.broadcast_to(self.amplitudes[indices], (self.L, self.L, len(indices)))
-
-        if apply_noise:
-            im += self._noise_arrays(start=start, num=num, indices=indices, noise_seed=self.seed)
-
         return Image(im)
 
-    def _noise_arrays(self, start=0, num=np.inf, indices=None, noise_seed=0, noise_filter=None):
+    def clean_images(self, start=0, num=np.inf, indices=None):
+        return self._images(start=start, num=num, indices=indices, enable_noise=False)
+
+    def _images(self, start=0, num=np.inf, indices=None, enable_noise=True):
         if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
+            indices = np.arange(start, min(start+num, self.n))
 
-        if noise_filter is None:
-            noise_filter = ScalarFilter(value=1, power=0.5)
+        im = self.projections(start=start, num=num, indices=indices)
+        im = self.eval_filters(im, start=start, num=num, indices=indices)
+        im = im.shift(self.offsets[indices, :])
+        im *= np.broadcast_to(self.amplitudes[indices], (self.L, self.L, len(indices)))
 
-        im = np.zeros((self.L, self.L, len(indices)), dtype=self.dtype)
-
-        for idx in indices:
-            random_seed = noise_seed + 191*(idx+1)
-            im_s = randn(2*self.L, 2*self.L, seed=random_seed)
-            im_s = Image(im_s).filter(noise_filter)[:, :, 0]
-            im_s = im_s[:self.L, :self.L]
-
-            im[:, :, idx-start] = im_s
-
+        if enable_noise and self.noise_adder is not None:
+            im = self.noise_adder.forward(im, indices=indices)
         return im
 
     def vol_coords(self, mean_vol=None, eig_vols=None):

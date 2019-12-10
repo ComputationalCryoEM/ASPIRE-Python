@@ -1,6 +1,7 @@
 import os.path
 import logging
 from collections import OrderedDict
+import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -158,3 +159,46 @@ class StarFile:
                 for _, row in loop.iterrows():
                     f.write(' '.join(map(str, row)) + '\n')
                 f.write('\n')
+
+
+def save_star(image_source, starfile_filepath, batch_size=1024, overwrite=False):
+    """
+    Save an ImageSource to a STAR file + individual .mrcs files
+    Note that .mrcs files are saved at the same location as the STAR file.
+
+    :param image_source: The ImageSource object to save
+    :param starfile_filepath: Path to STAR file where we want to save image_source
+    :param batch_size: Batch size of images to query from the `ImageSource` object. Every `batch_size` rows,
+        entries are written to STAR file, and the `.mrcs` files saved.
+    :param overwrite: Whether to overwrite any .mrcs files found at the target location.
+    :return: None
+    """
+
+    # TODO: Accessing protected member - provide a way to get a handle on the _metadata attribute.
+    df = image_source._metadata.copy()
+    # Drop any column that doesn't start with a *single* underscore
+    df = df.drop([str(col) for col in df.columns if not col.startswith('_') or col.startswith('__')], axis=1)
+
+    # Create a new column that we will be populating in the loop below
+    df['_rlnImageName'] = ''
+
+    with open(starfile_filepath, 'w') as f:
+        for i_start in np.arange(0, image_source.n, batch_size):
+
+            i_end = min(image_source.n, i_start + batch_size)
+            num = i_end - i_start
+
+            mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + f'_{i_start}_{i_end}.mrcs'
+            mrcs_filepath = os.path.join(
+                os.path.dirname(starfile_filepath),
+                mrcs_filename
+            )
+
+            logger.info(f'Saving ImageSource[{i_start}-{i_end}] to {mrcs_filepath}')
+            im = image_source.images(start=i_start, num=num)
+            im.save(mrcs_filepath, overwrite=overwrite)
+
+            df['_rlnImageName'][i_start: i_end] = pd.Series(['{0:06}@{1}'.format(j + 1, mrcs_filepath) for j in range(num)])
+
+        starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
+        starfile.save(f)

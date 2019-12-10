@@ -9,7 +9,7 @@ from aspire.nfft import anufft3, nufft3
 
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
-from aspire.basis.basis_func import lgwt
+from aspire.basis.basis_utils import lgwt
 from aspire.basis.fb_2d import FBBasis2D
 
 logger = logging.getLogger(__name__)
@@ -28,11 +28,11 @@ class FFBBasis2D(FBBasis2D):
     """
     def _build(self):
 
-        logger.info('Expanding 2D images in frequency domain.')
+        logger.info('Expanding 2D image in a frequency-domain Fourier–Bessel basis using the fast method.')
 
         # set cutoff values
-        self.R = self.N / 2
-        self.c = 0.5
+        self.rcut = self.nres / 2
+        self.kcut = 0.5
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()
@@ -44,12 +44,12 @@ class FFBBasis2D(FBBasis2D):
         self._indices = self.indices()
 
         # precompute the basis functions in 2D grids
-        self._precomp = self.precomp()
+        self._precomp = self._precomp()
 
         # get normalized factors
         self._norms = self.norms()
 
-    def precomp(self):
+    def _precomp(self):
         """
         Precomute the basis functions on a polar Fourier grid.
 
@@ -57,21 +57,21 @@ class FFBBasis2D(FBBasis2D):
         The sampling criterion requires n_r=4*c*R and n_theta= 16*c*R.
         
         """
-        n_r = int(np.ceil(4 * self.R * self.c))
-        r, w = lgwt(n_r, 0.0, self.c)
+        n_r = int(np.ceil(4 * self.rcut * self.kcut))
+        r, w = lgwt(n_r, 0.0, self.kcut)
 
         radial = np.zeros(shape=(n_r, np.sum(self.k_max)))
         ind_radial = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[:, ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.c)
+                radial[:, ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
                 # NOTE: We need to remove the factor due to the discretization here
                 # since it is already included in our quadrature weights
                 nrm = 1 / (np.sqrt(np.prod(self.sz))) * self.basis_norm_2d(ell, k)
                 radial[:, ind_radial] /= nrm
                 ind_radial += 1
 
-        n_theta = np.ceil(16 * self.c * self.R)
+        n_theta = np.ceil(16 * self.kcut * self.rcut)
         n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
 
         # Only calculate "positive" frequencies in one half-plane.
@@ -249,7 +249,7 @@ class FFBBasis2D(FBBasis2D):
              and the second and higher dimensions of the return value correspond to those higher dimensions of `x`.
 
         """
-        ensure(x.shape[:self.d] == self.sz, f'First {self.d} dimensions of x must match {self.sz}.')
+        ensure(x.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of x must match {self.sz}.')
 
         operator = LinearOperator(shape=(self.basis_count, self.basis_count),
                                   matvec=lambda v: self.evaluate_t(self.evaluate(v)))
@@ -259,7 +259,7 @@ class FFBBasis2D(FBBasis2D):
         logger.info('Expanding array in basis')
 
         # number of image samples
-        n_data = np.size(x, self.d)
+        n_data = np.size(x, self.ndim)
         v = np.zeros((self.basis_count, n_data), dtype=x.dtype)
 
         for isample in range(0, n_data):

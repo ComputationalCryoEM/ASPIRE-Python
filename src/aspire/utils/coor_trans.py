@@ -38,8 +38,27 @@ def cart2sph(x, y, z):
     return az, el, r
 
 
-def grid_1d(n):
-    grid = np.ceil(np.arange(-n/2, n/2)) / (n/2)
+def grid_1d(n, shifted=False, normalized=True):
+    """
+    Generate one dimensional grid.
+
+    :param n: the number of grid points.
+    :param shifted: shifted by half of grid or not when n is even.
+    :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :return: the rectangular and polar coordinates of all grid points.
+    """
+
+    grid = np.ceil(np.arange(-n/2, n/2))
+
+    if shifted and n % 2 == 0:
+        grid = np.arange(-n/2+1/2, n/2+1/2)
+
+    if normalized:
+        if shifted and n % 2 == 0:
+            grid = grid / (n/2-1/2)
+        else:
+            grid = grid / (n/2)
+
     x = np.meshgrid(grid)
     r = x
 
@@ -49,9 +68,27 @@ def grid_1d(n):
     }
 
 
-def grid_2d(n):
-    grid_1d = np.ceil(np.arange(-n/2, n/2)) / (n/2)
-    x, y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
+def grid_2d(n, shifted=False, normalized=True):
+    """
+    Generate two dimensional grid.
+
+    :param n: the number of grid points in each dimension.
+    :param shifted: shifted by half of grid or not when n is even.
+    :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :return: the rectangular and polar coordinates of all grid points.
+    """
+    grid = np.ceil(np.arange(-n/2, n/2))
+
+    if shifted and n % 2 == 0:
+        grid = np.arange(-n/2+1/2, n/2+1/2)
+
+    if normalized:
+        if shifted and n % 2 == 0:
+            grid = grid / (n/2-1/2)
+        else:
+            grid = grid / (n/2)
+
+    x, y = np.meshgrid(grid, grid, indexing='ij')
     phi, r = cart2pol(x, y)
 
     return {
@@ -62,22 +99,27 @@ def grid_2d(n):
     }
 
 
-def cgrid_2d(n):
-    if n % 2 == 1:
-        grid_1d = np.arange(-(n-1)/2, (n-1)/2+1)
-    else:
-        grid_1d = np.arange(-n/2+1/2, n/2+1/2)
-    x, y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
+def grid_3d(n, shifted=False, normalized=True):
+    """
+    Generate three dimensional grid.
 
-    return {
-        'x': x,
-        'y': y
-    }
+    :param n: the number of grid points in each dimension.
+    :param shifted: shifted by half of grid or not when n is even.
+    :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :return: the rectangular and spherical coordinates of all grid points.
+    """
+    grid = np.ceil(np.arange(-n/2, n/2))
 
+    if shifted and n % 2 == 0:
+        grid = np.arange(-n/2+1/2, n/2+1/2)
 
-def grid_3d(n):
-    grid_1d = np.ceil(np.arange(-n/2, n/2)) / (n/2)
-    x, y, z = np.meshgrid(grid_1d, grid_1d, grid_1d, indexing='ij')
+    if normalized:
+        if shifted and n % 2 == 0:
+            grid = grid / (n/2-1/2)
+        else:
+            grid = grid / (n/2)
+
+    x, y, z = np.meshgrid(grid, grid, grid, indexing='ij')
     phi, theta, r = cart2sph(x, y, z)
 
     # TODO: Should this theta adjustment be moved inside cart2sph?

@@ -1,13 +1,15 @@
 """
-Define functions for Fourier-Bessel (2D), Spherical Fourier-Bessel (3D) objects.
+Define related utility functions for Fourier–Bessel (2D), Spherical Fourier–Bessel (3D) and
+prolate spheroidal wave function (PSWF) objects.
 """
 
 import sys
-
 import logging
 import numpy as np
 from numpy import pi, log, exp, diff
 from scipy.special import jv, lpmv
+from scipy.special import jn
+from numpy.polynomial.legendre import leggauss
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, grid_3d
@@ -200,18 +202,20 @@ def num_besselj_zeros(ell, r):
     return len(r0), r0
 
 
-def unique_coords_nd(N, ndim):
+def unique_coords_nd(N, ndim, shifted=False, normalized=True):
     """
     Generate unique polar coordinates from 2D or 3D rectangular coordinates.
     :param N: length size of a square or cube.
     :param ndim: number of dimension, 2 or 3.
+    :param shifted: shifted half pixel or not for odd N.
+    :param normalized: normalize the grid or not.
     :return: The unique polar coordinates in 2D or 3D
     """
     ensure(ndim in (2, 3), 'Only two- or three-dimensional basis functions are supported.')
     ensure(N > 0, 'Number of grid points should be greater than 0.')
 
     if ndim == 2:
-        grid = grid_2d(N)
+        grid = grid_2d(N, shifted=shifted, normalized=normalized)
         mask = grid['r'] <= 1
 
         # Minor differences in r/theta/phi values are unimportant for the purpose
@@ -228,7 +232,7 @@ def unique_coords_nd(N, ndim):
         ang_unique, ang_idx = np.unique(phi, return_inverse=True)
 
     else:
-        grid = grid_3d(N)
+        grid = grid_3d(N, shifted=shifted, normalized=normalized)
         mask = grid['r'] <= 1
 
         # In Numpy, elements in the indexed array are always iterated and returned in row-major (C-style) order.
@@ -320,3 +324,83 @@ def lgwt(ndeg, a, b):
     x = x[ids]
 
     return x, w
+
+
+def d_decay_approx_fun(a, b, c, d):
+    return np.square(c) / (16 * (np.square(d) + d * (2 * b + a + 1)) - np.square(c))
+
+
+def p_n(n, alpha, beta, x):
+    """
+    The first n jacobi polynomial of x as defined in Yoel's PSWF paper, eq (2), page 6
+
+    :param n: int, > 0
+        Number of polynomials to compute
+    :param alpha: float, > -1
+    :param beta: float, > -1
+    :param x: (m,) ndarray
+    :return: v: (m, n + 1) ndarray
+        v[:, i] = P^{(alpha, beta)}_n(x) as defined in the paper
+    """
+    m = len(x)
+    if n < 0:
+        return np.array([])
+    if n == 0:
+        return np.ones(m)
+    x = x.reshape((m,))
+    v = np.zeros((m, n + 1))
+    alpha_p_beta = alpha + beta
+    alpha_m_beta = alpha - beta
+    v[:, 0] = 1
+    v[:, 1] = (1 + 0.5 * alpha_p_beta) * x + 0.5 * alpha_m_beta
+
+    for i in range(2, n + 1):
+        c1 = 2 * i * (i + alpha_p_beta) * (2 * i + alpha_p_beta - 2)
+        c2 = (2 * i + alpha_p_beta) * (2 * i + alpha_p_beta - 1) * (2 * i + alpha_p_beta - 2)
+        c3 = (2 * i + alpha_p_beta - 1) * alpha_p_beta * alpha_m_beta
+        c4 = -2 * (i - 1 + alpha) * (i - 1 + beta) * (2 * i + alpha_p_beta)
+        v[:, i] = ((c3 + c2 * x) * v[:, i - 1] + c4 * v[:, i - 2]) / c1
+    return v
+
+
+def t_x_mat(x, n, j, approx_length):
+    a = np.power(x, n + 0.5)
+    b = np.sqrt(2 * (2 * j + n + 1))
+    c = p_n(approx_length - 1, n, 0, 1 - 2 * np.square(x))
+    return np.einsum('i,j,ij->ij', a, b, c)
+
+
+def t_x_mat_dot(x, n, j, approx_length):
+    #  x need to be a matrix instead of a vector in t_x_mat
+    return np.power(x, n + 0.5).dot(np.sqrt(2 * (2 * j + n + 1))) * p_n(
+        approx_length - 1, n, 0, 1 - 2 * np.square(x))
+
+
+def t_x_derivative_mat(t1, t2, x, big_n, range_array, approx_length):
+    return -2 * (big_n + range_array + 1) * np.outer(
+        np.power(x, big_n + 1.5), t2) * np.column_stack(
+        (np.zeros(len(x)), p_n(approx_length - 2, big_n + 1, 1, t1))) + (big_n + 0.5) * np.outer(
+        np.power(x, big_n - 0.5), t2) * p_n(approx_length - 1, big_n, 0, t1)
+
+
+def t_radial_part_mat(x, n, j, m):
+    a = np.power(x, n)
+    b = np.sqrt(2 * (2 * j + n + 1))
+    c = p_n(m - 1, n, 0, 1 - 2 * np.square(x))
+    return np.einsum('i,j,ij->ij', a, b, c)
+
+
+def k_operator(nu, x):
+    return jn(nu, x) * np.sqrt(x)
+
+
+def leggauss_0_1(n):
+    """
+    Wrapper for numpy.polynomial leggauss
+    :param n: int > 0, the number of sampled points to integrate
+    :return: Legendre-Gauss quadrature of degree n between 0 and 1
+    """
+    sample_points, weights = leggauss(n)
+    sample_points = (sample_points + 1) / 2
+    weights = weights / 2
+    return sample_points, weights
