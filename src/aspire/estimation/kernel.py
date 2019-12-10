@@ -24,6 +24,21 @@ class FourierKernel(Kernel):
         # TODO: `centered` should be populated based on how the object is constructed, not explicitly
         self._centered = centered
 
+    def __add__(self, delta):
+        """
+        Add a tiny delta to the underlying kernel.
+
+        :param delta: A scalar or an `ndarray` that can be broadcast to the `kernel` attribute of this object.
+        :return: A new FourierKernel object with a modified kernel
+
+        .. note::
+            There is often a need to add a regularization parameter (a small positive value) to a FourierKernel object,
+            to be able to use it within optimization loops. This operator allows one to use the FourierKernel object
+            with the underlying 'kernel' attribute tweaked with a regularization parameter.
+        """
+        new_kernel = self.kernel + delta
+        return FourierKernel(new_kernel, self._centered)
+
     def is_centered(self):
         return self._centered
 

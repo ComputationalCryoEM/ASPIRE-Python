@@ -1,4 +1,5 @@
 import os.path
+from copy import copy
 import logging
 import numpy as np
 import pandas as pd
@@ -6,52 +7,84 @@ from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image
 from aspire.volume import im_backproject, vol_project
-from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.utils import ensure
+from aspire.utils.filters import MultiplicativeFilter, PowerFilter
 from aspire.utils.coor_trans import grid_2d
-from aspire.io.starfile import StarFile, StarFileBlock
+from aspire.source.xform import Multiply, Shift, Downsample, FilterXform, LinearIndexedXform, Pipeline, LinearPipeline
+from aspire.estimation.noise import WhiteNoiseEstimator
 
 logger = logging.getLogger(__name__)
 
 
 class ImageSource:
+    """
+    When creating an `ImageSource` object, a 'metadata' table holds metadata information about all images in the
+    `ImageSource`. The number of rows in this metadata table will equal the total number of images supported by this
+    `ImageSource` (available as the 'n' attribute), though reading/writing of images is usually done in chunks.
 
-    # ----------------------------------------------------
-    # Class Attributes that can be overridden by subclasses
-    # ----------------------------------------------------
+    This metadata table is implemented as a pandas `DataFrame`.
 
-    # Optional renaming of metadata fields, used
-    # These are used ONLY during serialization/deserialization (to/from StarFiles, for example).
-    _metadata_aliases = {
-        '_image_name':  '_rlnImageName',
-        '_offset_x':    '_rlnOriginX',
-        '_offset_y':    '_rlnOriginY',
-        '_state':       '_rlnClassNumber',
-        '_angle_0':     '_rlnAngleRot',
-        '_angle_1':     '_rlnAngleTilt',
-        '_angle_2':     '_rlnAnglePsi',
-        '_amplitude':   '_amplitude',
-        '_voltage':     '_rlnVoltage',
-        '_defocus_u':   '_rlnDefocusU',
-        '_defocus_v':   '_rlnDefocusV',
-        '_defocus_ang': '_rlnDefocusAngle',
-        '_Cs':          '_rlnSphericalAberration',
-        '_alpha':       '_rlnAmplitudeContrast'
+    The 'values' in this metadata table are usually primitive types (floats/ints/strings) that are suitable
+    for being read from STAR files, and being written to STAR files. The columns corresponding to these fields
+    begin with a single underscore '_'.
+
+    In addition, the metadata table may also contain references to Python objects.
+    `Filter` objects, for example, are stored in this metadata table as references to unique `Filter` objects that
+    correspond to images in this `ImageSource`. Several rows of metadata may end up containing a reference to a small
+    handful of unique `Filter` objects, depending on the values found in other columns (identical `Filter`
+    objects, depending on unique CTF values found for _rlnDefocusU/_rlnDefocusV etc.
+    """
+
+    """
+    The metadata_fields dictionary below specifies default data types of certain key fields used in the codebase.
+    The STAR file used to initialize subclasses of ImageSource may well contain other columns not found below; these
+    additional columns are available when read, and they default to the pandas data type 'object'.
+    """
+    metadata_fields = {
+        '_rlnVoltage': float,
+        '_rlnDefocusU': float,
+        '_rlnDefocusV': float,
+        '_rlnDefocusAngle': float,
+        '_rlnSphericalAberration': float,
+        '_rlnDetectorPixelSize': float,
+        '_rlnCtfFigureOfMerit': float,
+        '_rlnMagnification': float,
+        '_rlnAmplitudeContrast': float,
+        '_rlnImageName': str,
+        '_rlnOriginalName': str,
+        '_rlnCtfImage': str,
+        '_rlnCoordinateX': float,
+        '_rlnCoordinateY': float,
+        '_rlnCoordinateZ': float,
+        '_rlnNormCorrection': float,
+        '_rlnMicrographName': str,
+        '_rlnGroupName': str,
+        '_rlnGroupNumber': str,
+        '_rlnOriginX': float,
+        '_rlnOriginY': float,
+        '_rlnAngleRot': float,
+        '_rlnAngleTilt': float,
+        '_rlnAnglePsi': float,
+        '_rlnClassNumber': int,
+        '_rlnLogLikeliContribution': float,
+        '_rlnRandomSubset': int,
+        '_rlnParticleName': str,
+        '_rlnOriginalParticleName': str,
+        '_rlnNrOfSignificantSamples': float,
+        '_rlnNrOfFrames': int,
+        '_rlnMaxValueProbDistribution': float
     }
 
-    # All metadata fields are strings by default, specify any overrides here.
-    # Use the renamed metadata field name (i.e the 'values' in _metadata_aliases) to specify these.
-    _metadata_types = {}
-    # ----------------------------------------------------
-
-    def __init__(self, L, n, dtype='double', metadata=None):
+    def __init__(self, L, n, dtype='double', metadata=None, memory=None):
         """
-        A Cryo-EM Source object that supplies images along with other parameters for image manipulation.
+        A Cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
 
         :param L: resolution of (square) images (int)
         :param n: The total number of images available
-            Note that images() may return a different number of images based on it's arguments.
+            Note that images() may return a different number of images based on its arguments.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
+        :param memory: str or None
+            The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         """
         self.L = L
         self.n = n
@@ -64,22 +97,25 @@ class ImageSource:
             self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
         else:
             self._metadata = metadata
+            self._rotations = R.from_euler('ZYZ', self.get_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']), degrees=True)
+
+        self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
     @property
     def states(self):
-        return self.get_metadata('_state')
+        return self.get_metadata('_rlnClassNumber')
 
     @states.setter
     def states(self, values):
-        return self.set_metadata('_state', values)
+        return self.set_metadata('_rlnClassNumber', values)
 
     @property
     def filters(self):
-        return self.get_metadata('filter')
+        return self.get_metadata('__filter')
 
     @filters.setter
     def filters(self, values):
-        self.set_metadata('filter', values)
+        self.set_metadata('__filter', values)
         if values is None:
             new_values = np.nan
         else:
@@ -93,25 +129,29 @@ class ImageSource:
             ) for f in values])
 
         self.set_metadata(
-            ['_voltage', '_defocus_u', '_defocus_v', '_defocus_ang', '_Cs', '_alpha'],
+            ['_rlnVoltage', '_rlnDefocusU', '_rlnDefocusV', '_rlnDefocusAngle', '_rlnSphericalAberration', '_rlnAmplitudeContrast'],
             new_values
         )
 
     @property
+    def filter_indices(self):
+        return self.get_metadata('__filter_indices')
+
+    @property
     def offsets(self):
-        return self.get_metadata(['_offset_x', '_offset_y'])
+        return self.get_metadata(['_rlnOriginX', '_rlnOriginY'], default_value=0.)
 
     @offsets.setter
     def offsets(self, values):
-        return self.set_metadata(['_offset_x', '_offset_y'], values)
+        return self.set_metadata(['_rlnOriginX', '_rlnOriginY'], values)
 
     @property
     def amplitudes(self):
-        return self.get_metadata('_amplitude')
+        return self.get_metadata('_rlnAmplitude', default_value=1.)
 
     @amplitudes.setter
     def amplitudes(self, values):
-        return self.set_metadata('_amplitude', values)
+        return self.set_metadata('_rlnAmplitude', values)
 
     @property
     def angles(self):
@@ -135,7 +175,7 @@ class ImageSource:
         :return: None
         """
         self._rotations = R.from_euler('ZYZ', values)
-        self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], np.rad2deg(values))
+        self.set_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi'], np.rad2deg(values))
 
     @rots.setter
     def rots(self, values):
@@ -145,7 +185,7 @@ class ImageSource:
         :return: None
         """
         self._rotations = R.from_dcm(values)
-        self.set_metadata(['_angle_0', '_angle_1', '_angle_2'], self._rotations.as_euler('ZYZ', degrees=True))
+        self.set_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi'], self._rotations.as_euler('ZYZ', degrees=True))
 
     def set_metadata(self, metadata_fields, values, indices=None):
         """
@@ -171,19 +211,43 @@ class ImageSource:
             if metadata_field not in self._metadata.columns:
                 self._metadata = self._metadata.merge(series, how='left', left_index=True, right_index=True)
             else:
-                self._metadata.update(df)
+                self._metadata[metadata_field] = series
 
-    def get_metadata(self, metadata_fields, indices=None):
+    def get_metadata(self, metadata_fields, indices=None, default_value=None):
         """
         Get metadata field information of this ImageSource for selected indices
         :param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
         :param indices: A list of 0-based indices indicating the indices for which to get metadata.
             If indices is None, then values corresponding to all indices in this Source object are returned.
+        :param default_value: Default scalar value to use for any fields not found in the metadata. If None,
+            no default value is used, and missing field(s) cause a RuntimeError.
         :return: An ndarray of values (any valid np types) representing metadata info.
         """
+        if isinstance(metadata_fields, str):
+            metadata_fields = [metadata_fields]
         if indices is None:
             indices = self._metadata.index.values
-        return self._metadata.loc[indices, metadata_fields].to_numpy()
+
+        # The pandas .loc indexer does work with missing columns (as long as not ALL of them are missing)
+        # which messes with our logic. This behavior will change in pandas 0.21.0.
+        # See https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#indexing-with-list-with-missing-labels-is-deprecated
+        # We deal with the situation in a slightly verbose manner as follows.
+        missing_columns = [col for col in metadata_fields if col not in self._metadata.columns]
+        if len(missing_columns) == 0:
+            result = self._metadata.loc[indices, metadata_fields]
+        else:
+            if default_value is not None:
+                right = pd.DataFrame(default_value, columns=missing_columns, index=indices)
+                found_columns = [col for col in metadata_fields if col not in missing_columns]
+                if len(found_columns) > 0:
+                    left = self._metadata.loc[indices, found_columns]
+                    result = left.join(right)
+                else:
+                    result = right
+            else:
+                raise RuntimeError('Missing columns and no default value provided')
+
+        return result.to_numpy().squeeze()
 
     def _images(self, start=0, num=np.inf, indices=None):
         """
@@ -195,10 +259,6 @@ class ImageSource:
         :return: A 3D volume of images of size L x L x n
         """
         raise NotImplementedError('Subclasses should implement this and return an Image object')
-
-    def group_by(self, by):
-        for by_value, df in self._metadata.groupby(by, sort=False):
-            yield by_value, self.images(indices=df.index.values)
 
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
         im = im_orig.copy()
@@ -233,55 +293,61 @@ class ImageSource:
     def cache(self, im=None):
         logger.info('Caching source images')
         if im is None:
-            im = self.images()
+            im = self.images(start=0, num=np.inf)
         self._im = im
 
-    def images(self, start=0, num=np.inf, indices=None, *args, **kwargs):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
+    def images(self, start, num, *args, **kwargs):
+        """
+        Return images from this ImageSource as an Image object.
+        :param start: The inclusive start index from which to return images.
+        :param num: The exclusive end index up to which to return images.
+        :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
+        :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
+        :return: an `Image` object.
+        """
+        indices = np.arange(start, min(start + num, self.n))
 
         if self._im is not None:
+            logger.info(f'Loading images from cache')
             im = Image(self._im[:, :, indices])
         else:
-            im = self._images(start=start, num=num, indices=indices, *args, **kwargs)
+            im = self._images(indices=indices, *args, **kwargs)
+            im = self.generation_pipeline.forward(im, indices=indices)
 
+        logger.info(f'Loaded {len(indices)} images')
         return im
 
-    def set_max_resolution(self, max_L):
-        ensure(max_L <= self.L, "Max desired resolution should be less than the current resolution")
-        logger.info(f'Setting max. resolution of source = {max_L}')
-        self.L = max_L
+    def downsample(self, L):
+        ensure(L <= self.L, "Max desired resolution should be less than the current resolution")
+        logger.info(f'Setting max. resolution of source = {L}')
 
-        ds_factor = self._L / max_L
-        self.filters = [f.scale(ds_factor) for f in self.filters]
+        self.generation_pipeline.add_xform(Downsample(resolution=L))
+
+        ds_factor = self.L / L
+        for f in set(self.filters):
+            f.scale(ds_factor)
         self.offsets /= ds_factor
 
+        self.L = L
         # Invalidate images
         self._im = None
 
-    def whiten(self, whiten_filter=None):
+    def whiten(self, noise_filter):
         """
-        Modify the Source object in place by whitening + caching all images, and adding the appropriate whitening
-            filter to all available filters.
-        :param whiten_filter: Whitening filter to apply. If None, determined automatically.
-        :return: On return, the Source object has been modified in place.
+        Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
+        :param noise_filter: The noise psd of the images as a `Filter` object. Typically determined by a
+            NoiseEstimator class, and available as its `filter` attribute.
+        :return: On return, the `ImageSource` object has been modified in place.
         """
         logger.info("Whitening source object")
-        if whiten_filter is None:
-            logger.info('Determining Whitening Filter')
-            whiten_filter = WhiteNoiseEstimator(self).filter
-            whiten_filter.power = -0.5
+        whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
-        # Get source images and cache the whitened images
-        logger.info('Getting all images')
-        images = self.images()
-        logger.debug("Applying whitening filter to all images and caching")
-        whitened_images = Image(images[:, :, :]).filter(whiten_filter)
-        self.cache(whitened_images)
-
-        # TODO: Multiplying every row of self.filters (which may have references to a handful of unique Filter objects)
-        # will end up creating self.n unique Filter objects, most of which will be identical !
-        self.filters = [f * whiten_filter for f in self.filters]
+        logger.info('Transforming all CTF Filters into Multiplicative Filters')
+        unique_filters = set(self.filters)
+        for f in unique_filters:
+            f_new = copy(f)
+            f.__class__ = MultiplicativeFilter
+            f.__init__(f_new, whiten_filter)
 
     def im_backward(self, im, start):
         """
@@ -290,17 +356,12 @@ class ImageSource:
         :param start: Start index of image to consider
         :return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.
         """
-        if im.ndim < 3:
-            im = im[:, :, np.newaxis]
         num = im.shape[-1]
 
         all_idx = np.arange(start, min(start + num, self.n))
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
-
-        im = Image(im).shift(-self.offsets[all_idx, :]).asnumpy()
-
-        im = self.eval_filters(im, start=start, num=num)
-
+        im = im.shift(-self.offsets[all_idx, :])
+        im = self.eval_filters(im, start=start, num=num).asnumpy()
         vol = im_backproject(im, self.rots[start:start+num, :, :])
 
         return vol
@@ -316,46 +377,28 @@ class ImageSource:
         """
         all_idx = np.arange(start, min(start + num, self.n))
         im = vol_project(vol, self.rots[all_idx, :, :])
-
         im = self.eval_filters(im, start, num)
-
-        im = Image(im).shift(self.offsets[all_idx, :]).asnumpy()
-
+        im = Image(im).shift(self.offsets[all_idx, :])
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
-
         return im
 
-    def _to_starfile_loopdata(self):
-        df = self._metadata.copy()
-        df = df.rename(self._metadata_aliases, axis=1)
-        df = df.drop([str(col) for col in df.columns if not col.startswith('_')], axis=1)
 
-        return df
+class ArrayImageSource(ImageSource):
+    """
+    An `ImageSource` object that holds a reference to an underlying `Image` object (a thin wrapper on an ndarray)
+    representing images. It does not produce its images on the fly, but keeps them in memory. As such, it should not be
+    used where large Image objects are involved, but can be used in situations where API conformity is desired.
+    """
+    def __init__(self, im, metadata=None):
+        """
+        Initialize from an `Image` object
+        :param im: An `Image` object representing image data served up by this `ImageSource`
+        :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
+        """
+        super().__init__(L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None)
+        self._im = im
 
-    def save(self, starfile_filepath, batch_size=1024, overwrite=False):
-
-        df = self._to_starfile_loopdata()
-
-        # Create a new column that we will be populating in the loop below
-        df['_image_name'] = ''
-
-        with open(starfile_filepath, 'w') as f:
-            for i_start in np.arange(0, self.n, batch_size):
-
-                i_end = min(self.n, i_start + batch_size)
-                num = i_end - i_start
-
-                mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + f'_{i_start}_{i_end}.mrcs'
-                mrcs_filepath = os.path.join(
-                    os.path.dirname(starfile_filepath),
-                    mrcs_filename
-                )
-
-                logger.info(f'Saving ImageSource[{i_start}-{i_end}] to {mrcs_filepath}')
-                im = self.images(start=i_start, num=num)
-                im.save(mrcs_filepath, overwrite=overwrite)
-
-                df['_image_name'][i_start: i_end] = pd.Series(['{0:06}@{1}'.format(j + 1, mrcs_filepath) for j in range(num)])
-
-            starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
-            starfile.save(f)
+    def _images(self, start=0, num=np.inf, indices=None):
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
+        return self._im[indices]

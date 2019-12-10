@@ -85,6 +85,7 @@ class Image:
             data = data[:, :, np.newaxis]
 
         self.data = data
+        self.dtype = self.data.dtype
         self.shape = self.data.shape
         self.n_images = self.shape[-1]
         self.res = self.shape[0]
@@ -97,6 +98,12 @@ class Image:
 
     def __add__(self, other):
         return Image(self.data + other.data)
+
+    def __sub__(self, other):
+        return Image(self.data - other.data)
+
+    def __mul__(self, amplitudes):
+        return Image(self.data * amplitudes)
 
     def __repr__(self):
         return f'{self.n_images} images of size {self.res}x{self.res}'
@@ -129,7 +136,7 @@ class Image:
         grid = grid_2d(self.res)
         grid_ds = grid_2d(ds_res)
 
-        im_ds = np.zeros((ds_res, ds_res, self.n_images)).astype(self.data.dtype)
+        im_ds = np.zeros((ds_res, ds_res, self.n_images)).astype(self.dtype)
 
         # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
         res_by_2 = self.res / 2
@@ -151,9 +158,9 @@ class Image:
 
     def filter(self, filter):
         """
-        Apply a Filter object to the Image. This method returns a new Image.
-        :param filter: An object of type Filter
-        :return: A new filtered Image object.
+        Apply a `Filter` object to the Image. This method returns a new Image.
+        :param filter: An object of type `Filter`.
+        :return: A new filtered `Image` object.
         """
         filter_values = filter.evaluate_grid(self.res)
 
