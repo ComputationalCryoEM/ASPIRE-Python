@@ -6,7 +6,7 @@ from scipy.linalg import block_diag
 from scipy.special import jv
 
 from aspire.utils.cell import Cell2D
-from aspire.basis.basis_func import lgwt
+from aspire.basis.basis_utils import lgwt
 
 
 def blk_diag_zeros(blk_partition, dtype=None):

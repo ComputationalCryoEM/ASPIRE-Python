@@ -25,7 +25,7 @@ class RotCov2D:
         constructor of an object for 2D covariance analysis
         """
         self.basis = basis
-        ensure(basis.d == 2, 'Only two-dimensional basis functions are needed.')
+        ensure(basis.ndim == 2, 'Only two-dimensional basis functions are needed.')
         self.as_type = as_type
 
     def _get_mean(self, coeffs):
