@@ -137,6 +137,8 @@ class RelionSource(ImageSource):
     def _images(self, start=0, num=np.inf, indices=None):
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
+        else:
+            start = indices.min()
         logger.info(f'Loading {len(indices)} images from STAR file')
 
         def load_single_mrcs(filepath, df):
