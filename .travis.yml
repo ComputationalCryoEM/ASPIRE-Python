@@ -42,7 +42,7 @@ before_deploy:
 deploy:
   provider: pages:git
   cleanup: false
-  token: $github_token
+  token: $GITHUB_TOKEN
   local_dir: docs/_build/html/
   edge: true
   on:
