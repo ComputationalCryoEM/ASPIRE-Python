@@ -43,7 +43,7 @@ deploy:
   provider: pages:git
   cleanup: false
   token: $GITHUB_TOKEN
-  local_dir: docs/_build/html/
+  local_dir: _build/html/
   edge: true
   on:
     branch: auto_docs
