@@ -35,3 +35,15 @@ script: py.test --cov=aspire tests
 
 after_success:
   - coveralls
+
+before_deploy:
+  - cd docs && make html
+
+deploy:
+  provider: pages:git
+  cleanup: false
+  token: $github_token
+  local_dir: docs/_build/html/
+  edge: true
+  on:
+    branch: auto_docs
