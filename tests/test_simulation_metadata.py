@@ -55,7 +55,9 @@ class SimTestCase(TestCase):
         rand_values1 = np.random.rand(1024)
         rand_values2 = np.random.rand(1024)
         new_data = np.column_stack([rand_values1, rand_values2])
+        self.assertFalse(self.sim.has_metadata(['rand_value1', 'rand_value2']))
         self.sim.set_metadata(['rand_value1', 'rand_value2'], new_data)
+        self.assertTrue(self.sim.has_metadata(['rand_value2', 'rand_value1']))
         # Get value of metadata fields for all images
         values = self.sim.get_metadata(['rand_value1', 'rand_value2'])
         self.assertTrue(np.allclose(new_data, values))
