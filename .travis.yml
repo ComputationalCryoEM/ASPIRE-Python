@@ -37,11 +37,11 @@ after_success:
   - coveralls
 
 before_deploy:
-  - cd docs && sphinx-apidoc -f -o ./source ../src -H Modules && make html
+  - cd docs && sphinx-apidoc -f -o ./source ../src -H Modules && make html && touch build/html/.nojekyll
 
 deploy:
   provider: pages:git
-  skip_cleanup: true
+  cleanup: false
   token: $GITHUB_TOKEN
   local_dir: build/html/
   edge: true
