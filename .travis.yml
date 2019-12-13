@@ -37,7 +37,7 @@ after_success:
   - coveralls
 
 before_deploy:
-  - cd docs && make html
+  - cd docs && sphinx-apidoc -f -o ./source ../src -H Modules && make html
 
 deploy:
   provider: pages:git
