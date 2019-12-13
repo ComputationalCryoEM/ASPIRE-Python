@@ -4,7 +4,6 @@
 [![Travis Build Status](https://travis-ci.org/ComputationalCryoEM/ASPIRE-Python.svg?branch=master)](https://travis-ci.org/ComputationalCryoEM/ASPIRE-Python)
 [![Appveyor Build status](https://ci.appveyor.com/api/projects/status/ywgud2vu9ot330bq/branch/master?svg=true)](https://ci.appveyor.com/project/vineetbansal/aspire-python/branch/master)
 [![Coverage Status](https://coveralls.io/repos/github/ComputationalCryoEM/ASPIRE-Python/badge.svg?branch=master)](https://coveralls.io/github/ComputationalCryoEM/ASPIRE-Python?branch=master)
-[![Documentation Status](https://readthedocs.org/projects/aspire/badge/?version=latest)](https://aspire.readthedocs.io/en/latest/?badge=latest)
 
 # ASPIRE - Algorithms for Single Particle Reconstruction
 
@@ -16,6 +15,7 @@ processing pipeline, including 3-D *ab-initio* modeling, 2-D class averaging, au
 
 For more information about the project, algorithms, and related publications please refer to the [ASPIRE Project website](http://spr.math.princeton.edu/).
 
+**For full documentation see [the docs](https://computationalcryoem.github.io/ASPIRE-Python).**
 
 ## Installation Instructions
 
