@@ -46,4 +46,4 @@ deploy:
   local_dir: build/html/
   edge: true
   on:
-    branch: auto_docs
+    branch: master
