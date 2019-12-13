@@ -97,7 +97,12 @@ class ImageSource:
             self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
         else:
             self._metadata = metadata
-            self._rotations = R.from_euler('ZYZ', self.get_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']), degrees=True)
+            if self.has_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']):
+                self._rotations = R.from_euler(
+                    'ZYZ',
+                    self.get_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']),
+                    degrees=True
+                )
 
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
@@ -212,6 +217,16 @@ class ImageSource:
                 self._metadata = self._metadata.merge(series, how='left', left_index=True, right_index=True)
             else:
                 self._metadata[metadata_field] = series
+
+    def has_metadata(self, metadata_fields):
+        """
+        Find out if one more more metadata fields are available for this `ImageSource`.
+        :param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
+        :return: Boolean value indicating whether the field(s) are available.
+        """
+        if isinstance(metadata_fields, str):
+            metadata_fields = [metadata_fields]
+        return all(f in self._metadata.columns for f in metadata_fields)
 
     def get_metadata(self, metadata_fields, indices=None, default_value=None):
         """
