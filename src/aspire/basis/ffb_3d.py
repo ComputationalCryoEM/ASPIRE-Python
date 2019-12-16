@@ -15,15 +15,18 @@ logger = logging.getLogger(__name__)
 
 class FFBBasis3D(FBBasis3D):
     """
-    Define a derived class of spherical Harmonics Bessel basis for mapping 3D volumes.
+    Define a derived class for fast spherical Harmonics Bessel basis expanding 3D volumes
 
     # TODO: Methods that return dictionaries should return useful objects instead
 
     """
 
     def _build(self):
-
-        logger.info('Expanding 3D map in a frequency-domain Fourier–Bessel basis using the fast method.')
+        """
+        Build the internal data structure for 3D Fourier-Bessel basis
+        """
+        logger.info('Expanding 3D map in a frequency-domain Fourier–Bessel'
+                    ' basis using the fast method.')
 
         # set cutoff values
         self.rcut = self.nres / 2
@@ -46,7 +49,7 @@ class FFBBasis3D(FBBasis3D):
 
     def _precomp(self):
         """
-        Precomute the basis functions on a polar Fourier 3D grid.
+        Precomute the basis functions on a polar Fourier 3D grid
 
         Gaussian quadrature points and weights are also generated
         in radical and phi dimensions.
@@ -133,13 +136,14 @@ class FFBBasis3D(FBBasis3D):
 
     def evaluate(self, v):
         """
-        Evaluate coefficients in standard 3D coordinate basis from those in 3D Fourier-Bessel basis
+        Evaluate coefficients in standard 3D coordinate basis from those in 3D FB basis
 
-        :param v: A coefficient vector (or an array of coefficient vectors) in FB basis to be evaluated.
-            The first dimension must equal `self.basis_count`.
-        :return x: The evaluation of the coefficient vector(s) `x` in standard 3D coordinate basis.
-            This is an array whose first three dimensions equal `self.sz` and the remaining dimensions correspond to
-            dimensions two and higher of `v`.
+        :param v: A coefficient vector (or an array of coefficient vectors) in FB basis
+            to be evaluated. The first dimension must equal `self.basis_count`.
+        :return x: The evaluation of the coefficient vector(s) `x` in standard 3D
+            coordinate basis. This is an array whose first three dimensions equal
+            `self.sz` and the remaining dimensions correspond to dimensions two and
+            higher of `v`.
         """
         # make should the first dimension of v is self.basis_count
         v = m_reshape(v, (self.basis_count, -1))
@@ -152,8 +156,10 @@ class FFBBasis3D(FBBasis3D):
         # number of 3D image samples
         n_data = np.size(v, 1)
 
-        u_even = np.zeros((n_r, int(2*self.ell_max+1), n_data, int(np.floor(self.ell_max/2)+1)), dtype=v.dtype)
-        u_odd = np.zeros((n_r, int(2*self.ell_max+1), n_data, int(np.ceil(self.ell_max/2))), dtype=v.dtype)
+        u_even = np.zeros((n_r, int(2*self.ell_max+1), n_data, int(
+            np.floor(self.ell_max/2)+1)), dtype=v.dtype)
+        u_odd = np.zeros((n_r, int(2*self.ell_max+1), n_data, int(
+            np.ceil(self.ell_max/2))), dtype=v.dtype)
 
         # go through each basis function and find corresponding coefficient
         # evaluate the radial parts
@@ -168,7 +174,7 @@ class FFBBasis3D(FBBasis3D):
             v_ell = m_reshape(v_ell, (n_r, 2*ell+1, n_data))
 
             if np.mod(ell, 2) == 0:
-                u_even[:, int(self.ell_max-ell): int(self.ell_max + ell+1), :,  int(ell/2)] = v_ell
+                u_even[:, int(self.ell_max-ell): int(self.ell_max + ell+1), :, int(ell/2)] = v_ell
             else:
                 u_odd[:, int(self.ell_max-ell): int(self.ell_max + ell+1), :, int((ell-1)/2)] = v_ell
 
@@ -235,13 +241,14 @@ class FFBBasis3D(FBBasis3D):
 
     def evaluate_t(self, x):
         """
-        Evaluate coefficient in Fourier Bessel basis from those in standard 3D coordinate basis
+        Evaluate coefficient in FB basis from those in standard 3D coordinate basis
 
-        :param x: The coefficient array in the standard 3D coordinate basis to be evaluated. The first three
-            dimensions must equal `self.sz`.
-        :return v: The evaluation of the coefficient array `v` in the Fourier Bessel basis.
-            This is an array of vectors whose first dimension equals `self.basis_count` and whose remaining dimensions
-            correspond to higher dimensions of `x`.
+        :param x: The coefficient array in the standard 3D coordinate basis
+            to be evaluated. The first three dimensions must equal `self.sz`.
+        :return v: The evaluation of the coefficient array `v` in the FB basis.
+            This is an array of vectors whose first dimension equals
+            `self.basis_count` and whose remaining dimensions correspond to higher
+            dimensions of `x`.
         """
         # ensure the first three dimensions with size of self.sz
         x = m_reshape(x, (self.sz[0], self.sz[1], self.sz[2], -1))
@@ -268,8 +275,10 @@ class FFBBasis3D(FBBasis3D):
         u_even = np.transpose(u_even, (1, 2, 3, 0))
         u_odd = np.transpose(u_odd, (1, 2, 3, 0))
 
-        w_even = np.zeros((int(np.floor(self.ell_max/2)+1), n_r, 2*self.ell_max+1, n_data), dtype=x.dtype)
-        w_odd = np.zeros((int(np.ceil(self.ell_max/2)), n_r, 2*self.ell_max+1, n_data), dtype=x.dtype)
+        w_even = np.zeros((int(np.floor(self.ell_max/2)+1),
+                           n_r, 2*self.ell_max+1, n_data), dtype=x.dtype)
+        w_odd = np.zeros((int(np.ceil(self.ell_max/2)),
+                          n_r, 2*self.ell_max+1, n_data), dtype=x.dtype)
 
         # evaluate the phi parts
         for m in range(0, self.ell_max+1):
@@ -330,15 +339,16 @@ class FFBBasis3D(FBBasis3D):
     def expand(self, x):
 
         """
-        Obtain expansion coefficients in Fourier Bessel basis from those in standard 3D coordinate basis.
+        Obtain expansion coefficients in FB basis from those in standard 3D coordinate basis
 
-        This is a similar function to evaluate_t but with more accuracy by using the cg optimizing of linear
-        equation, Ax=b.
+        This is a similar function to evaluate_t but with more accuracy by using
+        the cg optimizing of linear equation, Ax=b.
 
         :param x: An array whose first three dimensions are to be expanded in FB basis.
              These dimensions must equal `self.sz`.
-        :return : The coefficients of `v` expanded in FB basis. The first dimension of `v` is with size of `basis_count`
-             and the second and higher dimensions of the return value correspond to those higher dimensions of `x`.
+        :return : The coefficients of `v` expanded in FB basis. The first dimension
+            of `v` is with size of `basis_count` and the second and higher dimensions
+            of the return value correspond to those higher dimensions of `x`.
 
         """
         # TODO: this is function could be move to base class if all standard and fast versions of 2d and 3d are using

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class FFBBasis2D(FBBasis2D):
     """
-    Define a derived class for Fast Fourier Bessel expansion for 2D images.
+    Define a derived class for Fast Fourier Bessel expansion for 2D images
 
     The expansion coefficients of 2D images on this basis are obtained by
     a fast method instead of the least squares method.
@@ -27,8 +27,11 @@ class FFBBasis2D(FBBasis2D):
 
     """
     def _build(self):
-
-        logger.info('Expanding 2D image in a frequency-domain Fourier–Bessel basis using the fast method.')
+        """
+        Build the internal data structure to 2D Fourier-Bessel basis
+        """
+        logger.info('Expanding 2D image in a frequency-domain Fourier–Bessel'
+                    ' basis using the fast method.')
 
         # set cutoff values
         self.rcut = self.nres / 2
@@ -51,7 +54,7 @@ class FFBBasis2D(FBBasis2D):
 
     def _precomp(self):
         """
-        Precomute the basis functions on a polar Fourier grid.
+        Precomute the basis functions on a polar Fourier grid
 
         Gaussian quadrature points and weights are also generated.
         The sampling criterion requires n_r=4*c*R and n_theta= 16*c*R.
@@ -75,8 +78,10 @@ class FFBBasis2D(FBBasis2D):
         n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
 
         # Only calculate "positive" frequencies in one half-plane.
-        freqs_x = m_reshape(r, (n_r, 1)) @ m_reshape(np.cos(np.arange(n_theta) * 2 * pi / (2 * n_theta)), (1, n_theta))
-        freqs_y = m_reshape(r, (n_r, 1)) @ m_reshape(np.sin(np.arange(n_theta) * 2 * pi / (2 * n_theta)), (1, n_theta))
+        freqs_x = m_reshape(r, (n_r, 1)) @ m_reshape(
+            np.cos(np.arange(n_theta) * 2 * pi / (2 * n_theta)), (1, n_theta))
+        freqs_y = m_reshape(r, (n_r, 1)) @ m_reshape(
+            np.sin(np.arange(n_theta) * 2 * pi / (2 * n_theta)), (1, n_theta))
         freqs = np.vstack((freqs_x[np.newaxis, ...], freqs_y[np.newaxis, ...]))
 
         return {
@@ -88,13 +93,13 @@ class FFBBasis2D(FBBasis2D):
 
     def evaluate(self, v):
         """
-        Evaluate coefficients in standard 2D coordinate basis from those in Fourier-Bessel basis
+        Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
-        :param v: A coefficient vector (or an array of coefficient vectors) in FB basis to be evaluated.
-            The first dimension must equal `self.basis_count`.
-        :return x: The evaluation of the coefficient vector(s) `x` in standard 2D coordinate basis.
-            This is an array whose first two dimensions equal `self.sz` and the remaining dimensions correspond to
-            dimensions two and higher of `v`.
+        :param v: A coefficient vector (or an array of coefficient vectors)
+            in FB basis to be evaluated. The first dimension must equal `self.basis_count`.
+        :return x: The evaluation of the coefficient vector(s) `x` in standard 2D
+            coordinate basis. This is an array whose first two dimensions equal `self.sz`
+            and the remaining dimensions correspond to dimensions two and higher of `v`.
         """
         # make should the first dimension of v is self.basis_count
         v = m_reshape(v, (self.basis_count, -1))
@@ -149,7 +154,8 @@ class FFBBasis2D(FBBasis2D):
         pf = pf[:, 0:hsize, :]
 
         for i_r in range(0, n_r):
-            pf[i_r, ...] = pf[i_r, ...] * (self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
+            pf[i_r, ...] = pf[i_r, ...] * (
+                    self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
         pf = m_reshape(pf, (n_r * n_theta, n_data))
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
@@ -164,13 +170,13 @@ class FFBBasis2D(FBBasis2D):
 
     def evaluate_t(self, x):
         """
-        Evaluate coefficient in Fourier Bessel basis from those in standard 2D coordinate basis
+        Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
-        :param x: The coefficient array in the standard 2D coordinate basis to be evaluated. The first two
-            dimensions must equal `self.sz`.
-        :return v: The evaluation of the coefficient array `v` in the Fourier Bessel basis.
-            This is an array of vectors whose first dimension equals `self.basis_count` and whose remaining dimensions
-            correspond to higher dimensions of `x`.
+        :param x: The coefficient array in the standard 2D coordinate basis to be
+            evaluated. The first two dimensions must equal `self.sz`.
+        :return v: The evaluation of the coefficient array `v` in the FB basis.
+            This is an array of vectors whose first dimension equals `self.basis_count`
+            and whose remaining dimensions correspond to higher dimensions of `x`.
         """
         # ensure the first two dimensions with size of self.sz
         x = m_reshape(x, (self.sz[0], self.sz[1], -1))
@@ -194,7 +200,8 @@ class FFBBasis2D(FBBasis2D):
 
         # evaluate radial integral using the Gauss-Legendre quadrature rule
         for i_r in range(0, n_r):
-            pf[i_r, ...] = pf[i_r, ...] * (self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
+            pf[i_r, ...] = pf[i_r, ...] * (
+                    self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
 
         #  1D FFT on the angular dimension for each concentric circle
         pf = 2 * pi / (2 * n_theta) * fft(pf, 2*n_theta, 1)
@@ -238,18 +245,20 @@ class FFBBasis2D(FBBasis2D):
 
     def expand(self, x):
         """
-        Obtain expansion coefficients in Fourier Bessel basis from those in standard 2D coordinate basis.
+        Obtain coefficients in FB basis from those in standard 2D coordinate basis
 
-        This is a similar function to evaluate_t but with more accuracy by using the cg optimizing of linear
-        equation, Ax=b.
+        This is a similar function to evaluate_t but with more accuracy by using
+        the cg optimizing of linear equation, Ax=b.
 
         :param x: An array whose first two dimensions are to be expanded in FB basis.
              These dimensions must equal `self.sz`.
-        :return : The coefficients of `v` expanded in FB basis. The first dimension of `v` is with size of `basis_count`
-             and the second and higher dimensions of the return value correspond to those higher dimensions of `x`.
+        :return : The coefficients of `v` expanded in FB basis. The first dimension
+            of `v` is with size of `basis_count` and the second and higher dimensions
+            of the return value correspond to those higher dimensions of `x`.
 
         """
-        ensure(x.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of x must match {self.sz}.')
+        ensure(x.shape[:self.ndim] == self.sz,
+               f'First {self.ndim} dimensions of x must match {self.sz}.')
 
         operator = LinearOperator(shape=(self.basis_count, self.basis_count),
                                   matvec=lambda v: self.evaluate_t(self.evaluate(v)))
