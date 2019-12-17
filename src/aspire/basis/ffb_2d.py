@@ -8,6 +8,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 from aspire.nfft import anufft3, nufft3
 
 from aspire.utils import ensure
+from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_reshape
 from aspire.basis.basis_utils import lgwt
 from aspire.basis.fb_2d import FBBasis2D
@@ -102,6 +103,7 @@ class FFBBasis2D(FBBasis2D):
             and the remaining dimensions correspond to dimensions two and higher of `v`.
         """
         # make should the first dimension of v is self.basis_count
+        v, sz_roll = unroll_dim(v, 2)
         v = m_reshape(v, (self.basis_count, -1))
 
         # get information on polar grids from precomputed data
@@ -165,7 +167,7 @@ class FFBBasis2D(FBBasis2D):
             x[..., isample] = 2*np.real(anufft3(pf[:, isample], 2 * pi * freqs, self.sz))
 
         # return the x with the first two dimensions of self.sz
-
+        x = roll_dim(x, sz_roll)
         return x
 
     def evaluate_t(self, x):
@@ -179,6 +181,7 @@ class FFBBasis2D(FBBasis2D):
             and whose remaining dimensions correspond to higher dimensions of `x`.
         """
         # ensure the first two dimensions with size of self.sz
+        x, sz_roll = unroll_dim(x, self.ndim + 1)
         x = m_reshape(x, (self.sz[0], self.sz[1], -1))
 
         # get information on polar grids from precomputed data
@@ -241,6 +244,7 @@ class FFBBasis2D(FBBasis2D):
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
         # return v coefficients with the first dimension of self.basis_count
+        v = roll_dim(v, sz_roll)
         return v
 
     def expand(self, x):
@@ -257,6 +261,9 @@ class FFBBasis2D(FBBasis2D):
             of the return value correspond to those higher dimensions of `x`.
 
         """
+        # ensure the first two dimensions with size of self.sz
+        x, sz_roll = unroll_dim(x, self.ndim + 1)
+        x = m_reshape(x, (self.sz[0], self.sz[1], -1))
         ensure(x.shape[:self.ndim] == self.sz,
                f'First {self.ndim} dimensions of x must match {self.sz}.')
 
@@ -279,4 +286,5 @@ class FFBBasis2D(FBBasis2D):
                 raise RuntimeError('Unable to converge!')
 
         # return v coefficients with the first dimension of self.basis_count
+        v = roll_dim(v, sz_roll)
         return v

@@ -98,7 +98,6 @@ class FFBBasis3DTestCase(TestCase):
                 -9.82705453e-04,   6.46337066e-05
             ]
         )
-        coeffs = coeffs[..., np.newaxis]
         result = self.basis.evaluate(coeffs)
 
         self.assertTrue(np.allclose(
@@ -108,7 +107,6 @@ class FFBBasis3DTestCase(TestCase):
 
     def testFFBBasis3DEvaluate_t(self):
         x = np.load(os.path.join(DATA_DIR, 'ffbbasis3d_xcoeff_in_8_8_8.npy'))
-        x = x[..., np.newaxis]
         result = self.basis.evaluate_t(x)
         self.assertTrue(np.allclose(
             result,
@@ -117,7 +115,6 @@ class FFBBasis3DTestCase(TestCase):
 
     def testFFBBasis3DExpand(self):
         x = np.load(os.path.join(DATA_DIR, 'ffbbasis3d_xcoeff_in_8_8_8.npy'))
-        x = x[..., np.newaxis]
         result = self.basis.expand(x)
         self.assertTrue(np.allclose(
             result,

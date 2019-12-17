@@ -5,6 +5,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.nfft import anufft3, nufft3
 from aspire.utils import ensure
+from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 from aspire.basis.basis_utils import sph_bessel, norm_assoc_legendre, lgwt
 from aspire.basis.fb_3d import FBBasis3D
@@ -146,6 +147,7 @@ class FFBBasis3D(FBBasis3D):
             higher of `v`.
         """
         # make should the first dimension of v is self.basis_count
+        v, sz_roll = unroll_dim(v, 2)
         v = m_reshape(v, (self.basis_count, -1))
 
         # get information on polar grids from precomputed data
@@ -237,6 +239,7 @@ class FFBBasis3D(FBBasis3D):
             x[..., isample] = np.real(anufft3(pf[:, isample], freqs, self.sz))
 
         # return the x with the first three dimensions of self.sz
+        x = roll_dim(x, sz_roll)
         return x
 
     def evaluate_t(self, x):
@@ -251,6 +254,7 @@ class FFBBasis3D(FBBasis3D):
             dimensions of `x`.
         """
         # ensure the first three dimensions with size of self.sz
+        x, sz_roll = unroll_dim(x, self.ndim + 1)
         x = m_reshape(x, (self.sz[0], self.sz[1], self.sz[2], -1))
 
         n_data = np.size(x, 3)
@@ -333,7 +337,7 @@ class FFBBasis3D(FBBasis3D):
             # TODO: Fix this to avoid lookup each time.
             ind = self._indices['ells'] == ell
             v[ind, :] = v_ell
-
+        v = roll_dim(v, sz_roll)
         return v
 
     def expand(self, x):
@@ -353,6 +357,10 @@ class FFBBasis3D(FBBasis3D):
         """
         # TODO: this is function could be move to base class if all standard and fast versions of 2d and 3d are using
         #       the same data structures of x and v.
+        # ensure the first three dimensions with size of self.sz
+        x, sz_roll = unroll_dim(x, self.ndim + 1)
+        x = m_reshape(x, (self.sz[0], self.sz[1], self.sz[2], -1))
+
         ensure(x.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of x must match {self.sz}.')
 
         operator = LinearOperator(shape=(self.basis_count, self.basis_count),
@@ -374,4 +382,5 @@ class FFBBasis3D(FBBasis3D):
                 raise RuntimeError('Unable to converge!')
 
         # return v coefficients with the first dimension of self.basis_count
+        v = roll_dim(v, sz_roll)
         return v
