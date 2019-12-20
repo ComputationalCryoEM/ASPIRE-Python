@@ -12,28 +12,44 @@ logger = logging.getLogger(__name__)
 
 class PSWFBasis2D(Basis):
     """
-    Define a derived class using the Prolate Spheroidal Wave Function (PSWF) basis for mapping 2D images.
-    The numerical evaluation for 2D PSWFs at arbitrary points in the unit disk is based on the direct method
-    described in the papers as below:
-        1) Boris Landa and Yoel Shkolnisky, "Steerable principal components for space-frequency localized images",
-        SIAM J. Imag. Sci. 10, 508-534 (2017).
-        2) Boris Landa and Yoel Shkolnisky, "Approximation scheme for essentially bandlimited and space-concentrated
-        functions on a disk", Appl. Comput. Harmon. Anal. 43, 381-403 (2017).
-        3) Yoel Shkolnisky, "Prolate spheroidal wave functions on a disc-Integration and approximation of
-        two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
+    Define a derived class for direct Prolate Spheroidal Wave Function (PSWF) expanding 2D images
+
+    The numerical evaluation for 2D PSWFs at arbitrary points in the unit disk is based on the
+    direct method described in the papers as below:
+        1) Boris Landa and Yoel Shkolnisky, "Steerable principal components
+        for space-frequency localized images", SIAM J. Imag. Sci. 10, 508-534 (2017).
+        2) Boris Landa and Yoel Shkolnisky, "Approximation scheme for essentially
+        bandlimited and space-concentrated functions on a disk", Appl. Comput.
+        Harmon. Anal. 43, 381-403 (2017).
+        3) Yoel Shkolnisky, "Prolate spheroidal wave functions on a disc-Integration
+        and approximation of two-dimensional bandlimited functions", Appl.
+        Comput. Harmon. Anal. 22, 235-256 (2007).
     """
-    def __init__(self, size, gamma_truncation=1.0, beta=1.0):
+    def __init__(self, size, gamma_trunc=1.0, beta=1.0):
         """
-        Initialize an object for 2D prolate spheroidal wave function (PSWF) basis expansion using direct method.
+        Initialize an object for 2D PSWF basis expansion using direct method
+
+        :param size: The size of the vectors for which to define the basis
+            and the image resultion. Currently only square images are supported.
+        :param gamma_trunc: Truncation parameter of PSWFs, between 0 and 1e6,
+            which controls the length of the expansion and the approximation error.
+            Smaller values (close to zero) guarantee smaller errors, yet longer
+            expansions, and vice-versa. Note: Due to numerical considerations,
+            do not exceed 1e6.
+        :param beta: Bandlimit ratio relative to the Nyquist rate, between 0 and 1.
+            In general, the bandlimit is c = beta*pi*(size[0]//2), therefore for
+            the default value beta = 1 there is no oversampling assumed. This
+            parameter controls the bandlimit of the PSWFs.
         """
+
         self.rcut = size[0] // 2
-        self.gmcut = gamma_truncation
+        self.gmcut = gamma_trunc
         self.beta = beta
         super().__init__(size)
 
     def _build(self):
         """
-        Build internal data structures for the direct 2D PSWF method.
+        Build internal data structures for the direct 2D PSWF method
         """
         logger.info('Expanding 2D images using direct PSWF method.')
 
@@ -49,7 +65,9 @@ class PSWFBasis2D(Basis):
 
     def _generate_grid(self):
         """
-        Generate the 2D sampling grid.
+        Generate the 2D sampling grid
+
+        TODO: need to re-implement to use the similar grid function as FB methods.
         """
         if self.nres % 2 == 0:
             x_1d_grid = range(-self.rcut, self.rcut)
@@ -68,7 +86,7 @@ class PSWFBasis2D(Basis):
 
     def _precomp(self):
         """
-        Precompute the basis functions on a polar Fourier 2D grid.
+        Precompute PSWF functions on a polar Fourier 2D grid
         """
         self._generate_samples()
 
@@ -82,7 +100,7 @@ class PSWFBasis2D(Basis):
 
     def _generate_samples(self):
         """
-        Precompute the basis functions on a polar Fourier 2D grid.
+        Generate sample points for PSWF functions
         """
         max_ns = []
         a = np.square(float(self.beta * self.rcut) / 2)
@@ -118,13 +136,15 @@ class PSWFBasis2D(Basis):
         """
         Evaluate coefficient vectors in PSWF basis using the direct method
 
-        :param images: coefficient array in the standard 2D coordinate basis to be evaluated.
+        :param images: coefficient array in the standard 2D coordinate basis
+            to be evaluated.
         :return : The evaluation of the coefficient array in the PSWF basis.
         """
         images_shape = images.shape
 
         images_shape = (images_shape + (1,)) if len(images_shape) == 2 else images_shape
-        flattened_images = images.reshape((images_shape[0] * images_shape[1], images_shape[2]), order='F')
+        flattened_images = images.reshape((images_shape[0] * images_shape[1],
+                                           images_shape[2]), order='F')
 
         flattened_images = flattened_images[self._disk_mask_vec, :]
         coefficients = self.samples_conj_transpose.dot(flattened_images)
@@ -134,15 +154,18 @@ class PSWFBasis2D(Basis):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
 
-        :param coeffcients: A coefficient vector (or an array of coefficient vectors) in PSWF basis to be evaluated.
-        :return : The evaluation of the coefficient vector(s) in standard 2D coordinate basis.
+        :param coeffcients: A coefficient vector (or an array of coefficient
+            vectors) in PSWF basis to be evaluated.
+        :return : The evaluation of the coefficient vector(s) in standard 2D
+            coordinate basis.
         """
         # if we got only one vector
         if len(coefficients.shape) == 1:
             coefficients = coefficients[:, np.newaxis]
 
         angular_is_zero = np.absolute(self.ang_freqs) == 0
-        flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) +  2.0 * np.real(
+        flatten_images = self.samples[:, angular_is_zero].dot(
+            coefficients[angular_is_zero]) + 2.0 * np.real(
             self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
 
         n_images = int(flatten_images.shape[1])
@@ -153,16 +176,16 @@ class PSWFBasis2D(Basis):
 
     def _init_pswf_func2d(self, c, eps):
         """
-        Initialize the whole set of PSWF functions with the input bandlimit and error.
+        Initialize the whole set of PSWF functions with the input bandlimit and error
 
         :param c: bandlimit (>0) can be estimated by beta * pi * rcut
         :param eps: error tolerance
         :return:
             alpha_all (list of arrays):
-            alpha = alpha_all[i] contains all the eigenvalues for N=i such that lambda > eps,
-                    where lambda is the normalized  alpha values (i.e. lambda is between 0 and 1) ,
-                    given by lambda=sqrt(c*np.absolute(alpha)/(2*pi)).
-            d_vec_all (list of 2D lists): the corresponding eigenvectors for alpha_all
+            alpha = alpha_all[i] contains all the eigenvalues for N=i such that
+                lambda > eps, where lambda is the normalized  alpha values (i.e.
+                lambda is between 0 and 1), given by lambda=sqrt(c*np.absolute(alpha)/(2*pi)).
+            d_vec_all (list of 2D lists): the corresponding eigenvectors for alpha_all.
             n_order_length_vec (list of ints): n_order_length_vec[i] = len(alpha_all[i])
         """
         d_vec_all = []
@@ -198,14 +221,16 @@ class PSWFBasis2D(Basis):
 
     def _evaluate_pswf2d_all(self, r, theta, max_ns):
         """
-        Evaluate the numerical values of PSWF basis functions for all N's, up to certain given n for each N.
+        Evaluate the numerical values of PSWF functions for all N's, up to given n for each N
 
         :param r: Radial part to evaluate
         :param theta: Phase part to evaluate
-        :param max_ns: List of ints max_ns[i] is max n to to use for N=i, not included. If max_ns[i]<1 N=i won't be used
+        :param max_ns: List of ints max_ns[i] is max n to to use for N=i, not included.
+            If max_ns[i]<1 N=i won't be used
         :return: (len(r), sum(max_ns)) ndarray
             Indices are corresponding to the list (N, n)
-            (0, 0),..., (0, max_ns[0]), (1, 0),..., (1, max_ns[1]),... , (len(max_ns)-1, 0), (len(max_ns)-1, max_ns[-1])
+            (0, 0),..., (0, max_ns[0]), (1, 0),..., (1, max_ns[1]),... , (len(max_ns)-1, 0),
+            (len(max_ns)-1, max_ns[-1])
         """
         max_ns_ints = [int(max_n) for max_n in max_ns]
         out_mat = []
@@ -227,7 +252,7 @@ class PSWFBasis2D(Basis):
 
     def pswf_func2d(self, big_n, n, bandlimit, phi_approximate_error, r, w):
         """
-         Calculate the eigenvalues and eigenvectors of PSWF basis functions for all N's and n's.
+        Calculate the eigenvalues and eigenvectors of PSWF basis functions for all N's and n's
 
         :param big_n: The integer N in PSWF basis.
         :param n: The integer n in PSWF basis.
@@ -268,7 +293,7 @@ class PSWFBasis2D(Basis):
 
     def _pswf_2d_minor_computations(self, big_n, n, bandlimit, phi_approximate_error):
         """
-        Approximate the number of n's for fixed N (big_n) and compute the d_vec defined in eq (18) of paper 3).
+        Approximate the number of n's for fixed N (big_n) and compute the d_vec
 
         :param big_n: int
         :param n: int

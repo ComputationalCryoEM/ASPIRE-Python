@@ -12,11 +12,20 @@ logger = logging.getLogger(__name__)
 
 class Basis:
     """
-    Define a base class of mathematical basis for mapping 2D particle images
-    and 3D structure volumes.
+    Define a base class for expanding 2D particle images and 3D structure volumes
 
     """
     def __init__(self, size, ell_max=None):
+        """
+        Initialize an object for the base of basis class
+
+        :param size: The size of the vectors for which to define the basis.
+            Currently only square images and cubic volumes are supported.
+        :ell_max: The maximum order ell of the basis elements. If no input
+            (= None), it will be set to np.Inf and the basis includes all
+            ell such that the resulting basis vectors are concentrated
+            below the Nyquist frequency (default Inf).
+        """
         if ell_max is None:
             ell_max = np.inf
 
@@ -31,7 +40,9 @@ class Basis:
         self._build()
 
     def _getfbzeros(self):
-
+        """
+        Generate zeros of Bessel functions
+        """
         # get upper_bound of zeros of Bessel functions
         upper_bound = min(self.ell_max + 1, 2 * self.nres + 1)
 
@@ -62,46 +73,62 @@ class Basis:
         self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1))
 
     def _build(self):
+        """
+        Build the internal data structure to represent basis
+        """
         raise NotImplementedError('subclasses must implement this')
 
     def indices(self):
+        """
+        Create the indices for each basis function
+        """
         raise NotImplementedError('subclasses must implement this')
 
     def _precomp(self):
+        """
+        Precompute the basis functions at defined sample points
+        """
         raise NotImplementedError('subclasses must implement this')
 
     def norms(self):
-        raise NotImplementedError('subclasses must implement this')
-
-    def expand(self, v):
+        """
+        Calculate the normalized factors of basis functions
+        """
         raise NotImplementedError('subclasses must implement this')
 
     def evaluate(self, v):
         """
         Evaluate coefficient vector in basis
-        :param v: A coefficient vector (or an array of coefficient vectors) to be evaluated.
-            The first dimension must equal `self.basis_count`.
+
+        :param v: A coefficient vector (or an array of coefficient vectors)
+            to be evaluated. The first dimension must equal `self.basis_count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
-            This is an array whose first dimensions equal `self.z` and the remaining dimensions correspond to
-            dimensions two and higher of `v`.
+            This is an array whose first dimensions equal `self.z` and the
+            remaining dimensions correspond to dimensions two and higher of `v`.
         """
         raise NotImplementedError('subclasses must implement this')
 
     def evaluate_t(self, v):
         """
         Evaluate coefficient in dual basis
-        :param v: The coefficient array to be evaluated. The first dimensions must equal `self.sz`.
-        :return: The evaluation of the coefficient array `v` in the dual basis of `basis`.
-            This is an array of vectors whose first dimension equals `self.basis_count` and whose remaining dimensions
-            correspond to higher dimensions of `v`.
+
+        :param v: The coefficient array to be evaluated. The first dimensions
+            must equal `self.sz`.
+        :return: The evaluation of the coefficient array `v` in the dual
+            basis of `basis`.
+            This is an array of vectors whose first dimension equals `self.basis_count`
+            and whose remaining dimensions correspond to higher dimensions of `v`.
         """
         raise NotImplementedError('Subclasses should implement this')
 
     def mat_evaluate(self, V):
         """
         Evaluate coefficient matrix in basis
-        :param V: A coefficient matrix of size `self.basis_count`-by-`self.basis_count` to be evaluated.
-        :return: A multidimensional matrix of size `self.sz`-by-`self.sz` corresponding to the evaluation of `V` in
+
+        :param V: A coefficient matrix of size `self.basis_count`-by-
+            `self.basis_count` to be evaluated.
+        :return: A multidimensional matrix of size `self.sz`-by
+            -`self.sz` corresponding to the evaluation of `V` in
             this basis.
         """
         return mdim_mat_fun_conj(V, 1, len(self.sz), self.evaluate)
@@ -109,15 +136,16 @@ class Basis:
     def mat_evaluate_t(self, X):
         """
         Evaluate coefficient matrix in dual basis
-        :param X: The coefficient array of size `self.sz`-by-`self.sz` to be evaluated.
-        :return: The evaluation of `X` in the dual basis. This is `self.count`-by-`self.count`. matrix
 
-        If `V` is a matrix of size `self.basis_count`-by-`self.basis_count`, `B` is the change-of-basis matrix of
-        `basis`, and `x` is a multidimensional matrix of size `basis.sz`-by-`basis.sz`, the function calculates
-
-        V = B' * X * B
-
-        where the rows of `B`, rows of 'X', and columns of `X` are read as vectorized arrays.
+        :param X: The coefficient array of size `self.sz`-by-`self.sz`
+            to be evaluated.
+        :return: The evaluation of `X` in the dual basis. This is
+            `self.count`-by-`self.count`. matrix.
+            If `V` is a matrix of size `self.basis_count`-by-`self.basis_count`,
+            `B` is the change-of-basis matrix of `basis`, and `x` is a
+            multidimensional matrix of size `basis.sz`-by-`basis.sz`, the
+            function calculates V = B' * X * B, where the rows of `B`, rows
+            of 'X', and columns of `X` are read as vectorized arrays.
         """
         return mdim_mat_fun_conj(X, len(self.sz), 1, self.evaluate_t)
 
@@ -125,19 +153,20 @@ class Basis:
         """
         Expand array in basis
 
-        If `v` is a matrix of size `basis.ct`-by-..., `B` is the change-of-basis matrix of this basis, and `x` is a
-        matrix of size `self.sz`-by-..., the function calculates
+        This is a similar function to `evaluate_t` but with more accuracy by
+         using the cg optimizing of linear equation, Ax=b.
 
-            v = (B' * B)^(-1) * B' * x
-
-        where the rows of `B` and columns of `x` are read as vectorized arrays.
+        If `v` is a matrix of size `basis.ct`-by-..., `B` is the change-of-basis
+        matrix of this basis, and `x` is a matrix of size `self.sz`-by-...,
+        the function calculates  v = (B' * B)^(-1) * B' * x, where the rows
+        of `B` and columns of `x` are read as vectorized arrays.
 
         :param v: An array whose first few dimensions are to be expanded in this basis.
             These dimensions must equal `self.sz`.
-        :return: The coefficients of `v` expanded in this basis. If more than one array of size `self.sz` is found in
-            `v`, the second and higher dimensions of the return value correspond to those higher dimensions of `v`.
+        :return: The coefficients of `v` expanded in this basis. If more than
+            one array of size `self.sz` is found in `v`, the second and higher
+            dimensions of the return value correspond to those higher dimensions of `v`.
 
-        .. seealso:: evaluate
         """
         ensure(v.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of v must match {self.sz}.')
 
@@ -164,17 +193,19 @@ class Basis:
         """
         Expand array in dual basis
 
-        If `v` is a matrix of size `basis.ct`-by-..., `B` is the change-of-basis matrix of this basis, and `x` is a
-        matrix of size `self.sz`-by-..., the function calculates
+        This is a similar function to `evaluate` but with more accuracy by
+         using the cg optimizing of linear equation, Ax=b.
 
-            x = (B * B')^(-1) * B * v
+        If `v` is a matrix of size `basis.ct`-by-..., `B` is the change-of-basis
+        matrix of this basis, and `x` is a matrix of size `self.sz`-by-...,
+        the function calculates x = (B * B')^(-1) * B * v, where the rows of `B`
+        and columns of `x` are read as vectorized arrays.
 
-        where the rows of `B` and columns of `x` are read as vectorized arrays.
-
-        :param v: An array whose first dimension is to be expanded in this basis's dual.
-            This dimension must be equal to `self.basis_count`.
-        :return: The coefficients of `v` expanded in the dual of `basis`. If more than one vector is supplied in `v`,
-            the higher dimensions of the return value correspond to second and higher dimensions of `v`.
+        :param v: An array whose first dimension is to be expanded in this
+            basis's dual. This dimension must be equal to `self.basis_count`.
+        :return: The coefficients of `v` expanded in the dual of `basis`. If more
+            than one vector is supplied in `v`, the higher dimensions of the return
+            value correspond to second and higher dimensions of `v`.
 
         .. seealso:: expand
         """

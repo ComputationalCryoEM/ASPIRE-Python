@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class FBBasis2D(Basis):
     """
-    Define a derived class using the Fourier-Bessel basis for mapping 2D images.
+    Define a derived class using the Fourier-Bessel basis for mapping 2D images
 
     The expansion coefficients of 2D images on this basis are obtained by
     the least squares method. The algorithm is described in the publication:
@@ -26,14 +26,28 @@ class FBBasis2D(Basis):
 
     # TODO: Methods that return dictionaries should return useful objects instead
     def __init__(self, size, ell_max=None):
+        """
+        Initialize an object for the 2D Fourier-Bessel basis class
+
+        :param size: The size of the vectors for which to define the basis.
+            Currently only square images are supported.
+        :ell_max: The maximum order ell of the basis elements. If no input
+            (= None), it will be set to np.Inf and the basis includes all
+            ell such that the resulting basis vectors are concentrated
+            below the Nyquist frequency (default Inf).
+        """
+
         ndim = len(size)
         ensure(ndim == 2, 'Only two-dimensional basis functions are supported.')
         ensure(len(set(size)) == 1, 'Only square domains are supported.')
         super().__init__(size, ell_max)
 
     def _build(self):
-
-        logger.info('Expanding 2D images in a spatial-domain Fourier–Bessel basis using the direct method.')
+        """
+        Build the internal data structure to 2D Fourier-Bessel basis
+        """
+        logger.info('Expanding 2D images in a spatial-domain Fourier–Bessel'
+                    ' basis using the direct method.')
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()
@@ -54,6 +68,9 @@ class FBBasis2D(Basis):
         self._norms = self.norms()
 
     def indices(self):
+        """
+        Create the indices for each basis function
+        """
         indices_ells = np.zeros(self.basis_count)
         indices_ks = np.zeros(self.basis_count)
         indices_sgns = np.zeros(self.basis_count)
@@ -78,6 +95,9 @@ class FBBasis2D(Basis):
         }
 
     def _precomp(self):
+        """
+        Precompute the basis functions at defined sample points
+        """
 
         r_unique = self.basis_coords['r_unique']
         ang_unique = self.basis_coords['ang_unique']
@@ -105,6 +125,9 @@ class FBBasis2D(Basis):
         }
 
     def norms(self):
+        """
+        Calculate the normalized factors of basis functions
+        """
         norms = np.zeros(np.sum(self.k_max))
         norm_fn = self.basis_norm_2d
 
@@ -117,6 +140,9 @@ class FBBasis2D(Basis):
         return norms
 
     def basis_norm_2d(self, ell, k):
+        """
+        Calculate the normalized factor of a specified basis function
+        """
         result = np.abs(jv(ell + 1, self.r0[k - 1, ell])) * np.sqrt(np.pi / 2.) * self.nres / 2.
         if ell == 0:
             result *= np.sqrt(2)
@@ -125,12 +151,13 @@ class FBBasis2D(Basis):
 
     def evaluate(self, v):
         """
-        Evaluate coefficient vector in basis
-        :param v: A coefficient vector (or an array of coefficient vectors) to be evaluated.
-            The first dimension must equal `self.basis_count`.
+        Evaluate coefficients in standard 2D coordinate basis from those in FB basis
+
+        :param v: A coefficient vector (or an array of coefficient vectors) to
+            be evaluated. The first dimension must equal `self.basis_count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
-            This is an array whose first dimensions equal `self.z` and the remaining dimensions correspond to
-            dimensions two and higher of `v`.
+            This is an array whose first dimensions equal `self.z` and the remaining
+            dimensions correspond to dimensions two and higher of `v`.
         """
         v, sz_roll = unroll_dim(v, 2)
 
@@ -168,11 +195,14 @@ class FBBasis2D(Basis):
 
     def evaluate_t(self, v):
         """
-        Evaluate coefficient in dual basis
-        :param v: The coefficient array to be evaluated. The first dimensions must equal `self.sz`.
-        :return: The evaluation of the coefficient array `v` in the dual basis of `basis`.
-            This is an array of vectors whose first dimension equals `self.basis_count` and whose remaining dimensions
-            correspond to higher dimensions of `v`.
+        Evaluate coefficient in FB basis from those in standard 2D coordinate basis
+
+        :param v: The coefficient array to be evaluated. The first dimensions
+            must equal `self.sz`.
+        :return: The evaluation of the coefficient array `v` in the dual basis
+            of `basis`. This is an array of vectors whose first dimension equals
+             `self.basis_count` and whose remaining dimensions correspond to
+             higher dimensions of `v`.
         """
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim:])))
@@ -208,6 +238,25 @@ class FBBasis2D(Basis):
         return v
 
     def expand_t(self, v):
+        """
+        Expand array in dual basis
+
+        This is a similar function to `evaluate` but with more accuracy by
+         using the cg optimizing of linear equation, Ax=b.
+
+        If `v` is a matrix of size `basis.ct`-by-..., `B` is the change-of-basis
+        matrix of this basis, and `x` is a matrix of size `self.sz`-by-...,
+        the function calculates x = (B * B')^(-1) * B * v, where the rows of `B`
+        and columns of `x` are read as vectorized arrays.
+
+        :param v: An array whose first dimension is to be expanded in this
+            basis's dual. This dimension must be equal to `self.basis_count`.
+        :return: The coefficients of `v` expanded in the dual of `basis`. If more
+            than one vector is supplied in `v`, the higher dimensions of the return
+            value correspond to second and higher dimensions of `v`.
+
+        .. seealso:: expand
+        """
         ensure(v.shape[0] == self.basis_count, f'First dimension of v must be {self.basis_count}')
 
         v, sz_roll = unroll_dim(v, 2)
