@@ -248,7 +248,7 @@ class RotCov2D:
             b_out[ell] = b_ell
         return b_out
 
-    def get_cwf_coeffs(self, coeffs, ctf_fb, ctf_idx, mean_coeff=None, covar_coeff=None, noise_var=1):
+    def get_cwf_coeffs(self, coeffs, ctf_fb=None, ctf_idx=None, mean_coeff=None, covar_coeff=None, noise_var=1):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
 
@@ -267,9 +267,16 @@ class RotCov2D:
         if covar_coeff is None:
             covar_coeff = self.get_covar(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
 
-        blk_partition = blk_diag_partition(ctf_fb[0])
-
+        blk_partition = blk_diag_partition(covar_coeff)
         noise_covar_coeff = blk_diag_mult(noise_var, blk_diag_eye(blk_partition, dtype=self.as_type))
+
+        if (ctf_fb is None) or (ctf_idx is None):
+            sig_noise_covar_coeff = blk_diag_add(covar_coeff, noise_covar_coeff)
+            coeffs_est = coeffs - mean_coeff
+            coeffs_est = blk_diag_solve(sig_noise_covar_coeff, coeffs_est)
+            coeffs_est = blk_diag_apply(covar_coeff, coeffs_est)
+            coeffs_est = coeffs_est + mean_coeff
+            return coeffs_est
 
         coeffs_est = np.zeros_like(coeffs, dtype=self.as_type)
 
