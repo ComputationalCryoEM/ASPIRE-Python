@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 class FPSWFBasis2D(PSWFBasis2D):
     """
-    Define a derived class using the Prolate Spheroidal Wave Function (PSWF) basis for mapping 2D images.
+    Define a derived class for fast Prolate Spheroidal Wave Function (PSWF) expanding 2D images
+
     The numerical evaluation for 2D PSWFs at arbitrary points in the unit disk is based on the fast method
     described in the papers as below:
         1) Boris Landa and Yoel Shkolnisky, "Steerable principal components for space-frequency localized images",
@@ -30,12 +31,24 @@ class FPSWFBasis2D(PSWFBasis2D):
     def __init__(self, size, gamma_truncation=1.0, beta=1.0):
         """
         Initialize an object for 2D prolate spheroidal wave function (PSWF) basis expansion using fast method.
+
+        :param size: The size of the vectors for which to define the basis
+            and the image resultion. Currently only square images are supported.
+        :param gamma_trunc: Truncation parameter of PSWFs, between 0 and 1e6,
+            which controls the length of the expansion and the approximation error.
+            Smaller values (close to zero) guarantee smaller errors, yet longer
+            expansions, and vice-versa. Note: Due to numerical considerations,
+            do not exceed 1e6.
+        :param beta: Bandlimit ratio relative to the Nyquist rate, between 0 and 1.
+            In general, the bandlimit is c = beta*pi*(size[0]//2), therefore for
+            the default value beta = 1 there is no oversampling assumed. This
+            parameter controls the bandlimit of the PSWFs.
         """
         super().__init__(size, gamma_truncation, beta)
 
     def _build(self):
         """
-        Build internal data structures for the direct 2D PSWF method.
+        Build internal data structures for the fast 2D PSWF method
         """
         logger.info('Expanding 2D images using fast PSWF method.')
 
@@ -51,7 +64,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def _precomp(self):
         """
-        Precomute the basis functions on a polar Fourier 2D grid.
+        Precomute the PSWF functions on a polar Fourier 2D grid for the fast method
         """
         self._generate_samples()
 
@@ -84,7 +97,8 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         Evaluate coefficient vectors in PSWF basis using the fast method
 
-        :param images: coefficient array in the standard 2D coordinate basis to be evaluated.
+        :param images: coefficient array in the standard 2D coordinate basis
+            to be evaluated.
         :return : The evaluation of the coefficient array in the PSWF basis.
         """
         # start and finish are for the threads option in the future
@@ -110,16 +124,19 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
 
-        :param coefficients: A coefficient vector (or an array of coefficient vectors) in PSWF basis to be evaluated.
-        :return : The evaluation of the coefficient vector(s) in standard 2D coordinate basis.
+        :param coefficients: A coefficient vector (or an array of coefficient vectors)
+            in PSWF basis to be evaluated.
+        :return : The evaluation of the coefficient vector(s) in standard 2D
+            coordinate basis.
         """
         # if we got only one vector
         if len(coefficients.shape) == 1:
             coefficients = coefficients.reshape((len(coefficients), 1))
 
         angular_is_zero = np.absolute(self.ang_freqs) == 0
-        flatten_images = self.samples[:, angular_is_zero].dot(coefficients[angular_is_zero]) + (
-                         2.0 * np.real(self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero])))
+        flatten_images = self.samples[:, angular_is_zero].dot(
+            coefficients[angular_is_zero]) + ( 2.0 * np.real(
+            self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero])))
 
         n_images = int(flatten_images.shape[1])
         images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
@@ -128,9 +145,11 @@ class FPSWFBasis2D(PSWFBasis2D):
         return np.real(images)
 
     def _generate_pswf_quad(self, n, bandlimit, phi_approximate_error, lambda_max, epsilon):
-        radial_quad_points, radial_quad_weights = self._generate_pswf_radial_quad(n, bandlimit,
-                                                                                  phi_approximate_error,
-                                                                                  lambda_max)
+        """
+        Generate Gaussian quadrature points and weights for 2D PSWF functions
+        """
+        radial_quad_points, radial_quad_weights = self._generate_pswf_radial_quad(
+            n, bandlimit, phi_approximate_error, lambda_max)
 
         num_angular_points = np.ceil(np.e * radial_quad_points * bandlimit / 2
                                      - np.log(epsilon)).astype('int') + 1
@@ -149,7 +168,8 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         quad_rule_radial_weights = temp * radial_quad_points * radial_quad_weights
         quad_rule_weights = np.repeat(quad_rule_radial_weights, repeats=num_angular_points)
-        quad_rule_pts_r = np.repeat(radial_quad_points, repeats=(num_angular_points / t).astype('int'))
+        quad_rule_pts_r = np.repeat(radial_quad_points,
+                                    repeats=(num_angular_points / t).astype('int'))
         quad_rule_pts_theta = np.concatenate([temp[i] * np.arange(num_angular_points[i] / t)
                                               for i in range(len(radial_quad_points))])
 
@@ -159,6 +179,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         return pts_x, pts_y, quad_rule_weights, radial_quad_points, quad_rule_radial_weights, num_angular_points
 
     def _generate_pswf_radial_quad(self, n, bandlimit, phi_approximate_error, lambda_max):
+        """
+        Generate Gaussian quadrature points and weights for the radical parts of 2D PSWFs
+        """
         x, w = leggauss_0_1(20 * n)
 
         big_n = 0
@@ -209,6 +232,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         return quad_rule_pts, quad_rule_weights
 
     def _find_initial_nodes(self, x, n, bandlimit, phi_approximate_error, idx_for_quad_nodes):
+        """
+        Find initial quadrature nodes
+        """
         big_n = 0
 
         d_vec, approx_length, range_array = self._pswf_2d_minor_computations(big_n, n, bandlimit, phi_approximate_error)
@@ -258,6 +284,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         return blk_r, num_angular_pts, r_quad_indices, numel_for_n, indices_for_n, n_max
 
     def _compute_nfft_potts(self, images, start, finish):
+        """
+        Perform NuFFT transform for images in rectangular coordinates
+        """
         x = self.us_fft_pts
         n = images.shape[0]
         num_images = finish - start
@@ -271,6 +300,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         return images_nufft
 
     def _pswf_integration(self, images_nufft):
+        """
+        Perform integration part for rotational invariant property.
+        """
         num_images = images_nufft.shape[1]
         n_max_float = float(self.n_max) / 2
         r_n_eval_mat = np.zeros((len(self.radial_quad_pts), self.n_max, num_images), dtype='complex128')
