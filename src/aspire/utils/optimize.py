@@ -1,4 +1,7 @@
+import logging
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 def fill_struct(obj=None, att_vals=None, overwrite=None):
@@ -101,7 +104,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
 
     if np.any(x != 0):
         if cg_opt["verbose"]:
-            print('[CG] Calculating initial residual')
+            logger.info('[CG] Calculating initial residual')
         a_x = a_fun(x)
         r = r-a_x
         s = cg_opt["preconditioner"](r)
@@ -120,7 +123,8 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         info = fill_struct(info, att_vals={'x': [x], 'r': [r], 'p': [p]})
 
     if cg_opt["verbose"]:
-        print('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]), np.sum(info.obj[0])))
+        logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]),
+                                                                           np.sum(info.obj[0])))
 
     if b_norm == 0:
         # Matlat code returns b_norm == 0, this break the Python code when b = 0
@@ -129,14 +133,17 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     i = 0
     for i in range(1, cg_opt["max_iter"]):
         if cg_opt["verbose"]:
-            print('[CG] Applying matrix & preconditioner')
+            logger.info('[CG] Applying matrix & preconditioner')
 
         a_p = a_fun(p)
         old_gamma = np.real(np.sum(s.conj() * r))
 
         alpha = old_gamma / np.real(np.sum(p.conj() * a_p))
-        x += alpha * p
-        a_x += alpha * a_p
+        # TODO: Check p and a_p should be real or not ?
+        #x += alpha * p
+        #a_x += alpha * a_p
+        x += alpha * np.real(p)
+        a_x += alpha * np.real(a_p)
 
         r -= alpha * a_p
         s = cg_opt["preconditioner"](r)
@@ -156,12 +163,14 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
             info.p.append(p)
 
         if cg_opt["verbose"]:
-            print('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]), np.sum(info.obj[0])))
+            logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]),
+                                                                              np.sum(info.obj[0])))
 
         if np.all(res < b_norm * cg_opt["rel_tolerance"]):
             break
 
     if i == cg_opt["max_iter"] - 1:
-        raise Warning('Conjugate gradient reached maximum number of iterations!')
+        logger.warning('Conjugate gradient reached maximum number of iterations!')
+
     return x, obj, info
 
