@@ -9,6 +9,7 @@ if the same methods of generating random numbers are used.
 import os
 import logging
 import numpy as np
+import matplotlib.pyplot as plt
 
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
@@ -29,8 +30,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), '../tests/saved_test_data')
 
 logger.info('This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package.')
 
-# Set the sizes of images 8 X 8
-img_size = 8
+# Set the sizes of images 64 X 64
+img_size = 64
 # Set the total number of images generated from the 3D map
 num_imgs = 1024
 
@@ -168,4 +169,17 @@ logger.info(f'Deviation of the noisy mean estimate: {diff_mean}')
 logger.info(f'Deviation of the noisy covariance estimate: {diff_covar}')
 logger.info(f'Estimated images normalized RMSE: {nrmse_ims}')
 
-
+# plot the first images at different stages
+plt.subplot(2, 2, 1)
+plt.imshow(np.real(imgs_noise[..., 0]), cmap='gray')
+plt.title('Noise')
+plt.subplot(2, 2, 2)
+plt.imshow(np.real(-imgs_clean[..., 0]), cmap='gray')
+plt.title('Clean')
+plt.subplot(2, 2, 3)
+plt.imshow(np.real(-imgs_est[..., 0]), cmap='gray')
+plt.title('Estimated')
+plt.subplot(2, 2, 4)
+plt.imshow(np.real(imgs_est[..., 0] - imgs_clean[..., 0]), cmap='gray')
+plt.title('|Clean-Estimated|')
+plt.show()
