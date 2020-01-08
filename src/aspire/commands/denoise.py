@@ -5,7 +5,7 @@ from aspire.source.relion import RelionSource
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.estimation.noise import AnisotropicNoiseEstimator
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.denoise.denoise_cov2d import DenoiseCov2D
+from aspire.denoise.denoise_cov2d import DenoiserCov2D
 
 logger = logging.getLogger('aspire')
 
@@ -28,7 +28,7 @@ logger = logging.getLogger('aspire')
 @click.option('--ctf_info', default=True, type=bool,
               help='Whether include CTF information')
 @click.option('--denoise_method', default='CWF', type=str,
-              help='Specified method for denoise 2D images')
+              help='Specified method for denoising 2D images')
 def denoise(starfile_in, data_folder, starfile_out, pixel_size, max_rows, max_resolution,
             noise_type, ctf_info, denoise_method):
     """
@@ -49,7 +49,7 @@ def denoise(starfile_in, data_folder, starfile_out, pixel_size, max_rows, max_re
         source.downsample(max_resolution)
 
     # Specify the fast FB basis method for expending the 2D images
-    ffbbasis = FFBBasis2D((max_resolution, max_resolution))
+    basis = FFBBasis2D((max_resolution, max_resolution))
 
     # Estimate the noise of images
     noise_estimator = None
@@ -59,19 +59,20 @@ def denoise(starfile_in, data_folder, starfile_out, pixel_size, max_rows, max_re
     else:
         logger.info(f'Estimate the noise of images using anisotropic method')
         noise_estimator = AnisotropicNoiseEstimator(source)
-    var_noise = noise_estimator.estimate()
 
     # Whiten the noise of images
     logger.info(f'Whiten the noise of images from the noise estimator')
     source.whiten(noise_estimator.filter)
-
+    var_noise = noise_estimator.estimate()
+    # source.cache()
+    # img_whitened = source.eval_filters(source.images())
     if denoise_method == 'CWF':
-        denoise_cov2d = DenoiseCov2D(source, ffbbasis, var_noise, ctf_info)
+        denoise_cov2d = DenoiserCov2D(source, basis, var_noise, ctf_info)
         logger.info(f'Denoise the images using CWF cov2D method.')
-        denoise_cov2d.denoise(ffbbasis)
+        denoise_cov2d.denoise()
         logger.info(f'Output the denoised images.')
         denoise_cov2d.save(starfile_out, batch_size=max_rows)
     else:
-        raise NotImplementedError('Currently only Covariance Wiener Filtering method is supported')
+        raise NotImplementedError('Currently only covariance Wiener filtering method is supported')
 
 

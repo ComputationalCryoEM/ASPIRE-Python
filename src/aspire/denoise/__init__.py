@@ -8,7 +8,7 @@ from aspire.io.starfile import save_star
 logger = logging.getLogger(__name__)
 
 
-class Denoise:
+class Denoiser:
     """
     Define a base class for denoising 2D images
     """
@@ -24,7 +24,7 @@ class Denoise:
         self.nres = src.L
         self.nimg = src.n
 
-        self.imgs_noise = self.src.images(start=0, num=np.inf).asnumpy()
+        self.imgs_noise = None
         self.imgs_estim = None
 
     def denoise(self):
@@ -46,7 +46,3 @@ class Denoise:
         src = ArrayImageSource(Image(self.imgs_estim))
 
         save_star(src, starfile_filepath, batch_size=batch_size, overwrite=overwrite)
-
-
-
-
