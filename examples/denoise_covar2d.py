@@ -30,7 +30,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), '../tests/saved_test_data')
 
 logger.info('This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package.')
 
-# Set the sizes of images 64 X 64
+# Set the sizes of images 64 x 64
 img_size = 64
 # Set the total number of images generated from the 3D map
 num_imgs = 1024
