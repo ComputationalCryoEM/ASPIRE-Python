@@ -9,7 +9,8 @@ def fill_struct(obj=None, att_vals=None, overwrite=None):
     Fill object with attributes in a dictionary.
 
     If a struct is not given a new object will be created and filled.
-    If the given struct has a field in att_vals, the original field will stay, unless specified otherwise in overwrite.
+    If the given struct has a field in att_vals, the original field will stay,
+    unless specified otherwise in overwrite.
     att_vals is a dictionary with string keys, and for each key:
     if hasattr(s, key) and key in overwrite:
         pass
@@ -140,8 +141,6 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
 
         alpha = old_gamma / np.real(np.sum(p.conj() * a_p))
         # TODO: Check p and a_p should be real or not ?
-        #x += alpha * p
-        #a_x += alpha * a_p
         x += alpha * np.real(p)
         a_x += alpha * np.real(a_p)
 
@@ -170,7 +169,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
             break
 
     if i == cg_opt["max_iter"] - 1:
-        logger.warning('Conjugate gradient reached maximum number of iterations!')
+        logger.warning('[CG] Conjugate gradient reached maximum number of iterations!')
 
     return x, obj, info
 
