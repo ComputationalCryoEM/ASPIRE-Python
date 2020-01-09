@@ -3,7 +3,6 @@ import numpy as np
 
 from aspire.denoise import Denoiser
 from aspire.utils.filters import RadialCTFFilter
-from aspire.utils.blk_diag_func import radial_filter2fb_mat
 from aspire.utils.blk_diag_func import blk_diag_partition
 from aspire.utils.blk_diag_func import blk_diag_eye
 from aspire.basis.ffb_2d import FFBBasis2D
@@ -41,21 +40,21 @@ class DenoiserCov2D(Denoiser):
             logger.info(f'Convert non radial CTF filters to radial ones')
             uniq_rad_filters = []
             uniq_ctf_filters = list(set(src.filters))
+            # Note that the reason we create the new radial filter list is that the src.filters
+            # have be converted to MultiplicativeFilter class.
             for f in uniq_ctf_filters:
-                # convert non radical CTF filters to radial ones
-                defocus = np.sqrt(f.defocus_u*f.defocus_u + f.defocus_v*f.defocus_v)
-                uniq_rad_filters.append(RadialCTFFilter(
-                    f.pixel_size, f.voltage, defocus=defocus, Cs=f.Cs, alpha=f.alpha))
+                filt = RadialCTFFilter()
+                filt.convert_from(f)
+                uniq_rad_filters.append(filt)
+            # Create the indices of CTF filters from all images
             self.ctf_idx = np.array([uniq_ctf_filters.index(f) for f in src.filters])
-            # Evaluate CTF in the FFB basis
-            self.ctf_fb = [radial_filter2fb_mat(f.evaluate, basis)
-                           for f in uniq_rad_filters]
+            # Evaluate CTFs in the FFB basis
+            self.ctf_fb = [f.fb_mat(basis) for f in uniq_rad_filters]
         else:
             logger.info(f'CTF filters are not included in Cov2D denoising.')
-            f = RadialCTFFilter(1.0, 200, defocus=1.5e4, Cs=2.0, alpha=0.1)
-            # set CTF filters to an identity filter
+            # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(self.nimg, dtype=int)
-            self.ctf_fb = [blk_diag_eye(blk_diag_partition(radial_filter2fb_mat(f.evaluate, basis)))]
+            self.ctf_fb = [blk_diag_eye(blk_diag_partition(RadialCTFFilter().fb_mat(basis)))]
 
     def denoise(self, covar_opt=None):
         """
