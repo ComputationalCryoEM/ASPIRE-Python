@@ -9,6 +9,8 @@ from aspire.utils.preprocess import downsample
 from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.preprocess import vol2img
 from aspire.utils.blk_diag_func import radial_filter2fb_mat
+from aspire.utils.blk_diag_func import blk_diag_eye
+from aspire.utils.blk_diag_func import blk_diag_partition
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 
@@ -117,7 +119,16 @@ class Cov2DTestCase(TestCase):
                                                    noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf))
 
-    def test07GetCWFCoeffsNoCTF(self):
+    def test07GetCWFCoeffsIdentityCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
-        self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
+        ctf_idx = np.zeros(32, dtype=int)
+        ctf_fb = [blk_diag_eye(blk_diag_partition(self.h_ctf_fb[0]))]
+        self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, ctf_fb, ctf_idx,
+                                                         noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF))
+
+    def test08GetCWFCoeffsClean(self):
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))
+        self.coeff_cwf_clean = self.cov2d.get_cwf_coeffs(self.coeff_clean, noise_var=0)
+        self.assertTrue(np.allclose(results, self.coeff_cwf_clean))
+

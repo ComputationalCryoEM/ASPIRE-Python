@@ -8,6 +8,7 @@ from aspire.utils.blk_diag_func import *
 from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import conj_grad
 from aspire.utils import ensure
+from aspire.utils.filters import RadialCTFFilter
 
 logger = logging.getLogger(__name__)
 
@@ -99,14 +100,17 @@ class RotCov2D:
         Calculate the mean vector from the expansion coefficients with CTF information.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
-        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_fb: The CFT functions in the FB expansion. If ctf_fb is None,
         :param ctf_idx: An array of the CFT function indices for all 2D images.
+            If ctf_fb or ctf_idx is None, the 'coeffs' should be obtained from clean images of
+            simulation data.
         :return: The mean value vector for all images.
         """
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated!')
 
         if (ctf_fb is None) or (ctf_idx is None):
+            logger.info(f'Calculating the mean value of Cov2D using clean images.')
             return self._get_mean(coeffs)
 
         b = np.zeros((self.basis.basis_count, 1), dtype=self.as_type)
@@ -133,6 +137,8 @@ class RotCov2D:
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
         :param ctf_fb: The CFT functions in the FB expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
+            If ctf_fb or ctf_idx is None, the 'coeffs' should be obtained from clean images of
+            simulation data.
         :param mean_coeff: The mean value vector from all images.
         :param noise_var: The estimated variance of noise.
         :param covar_est_opt: The optimization parameter list for obtaining the Cov2D matrix.
@@ -149,6 +155,7 @@ class RotCov2D:
             raise RuntimeError('The coefficients need to be calculated!')
 
         if (ctf_fb is None) or (ctf_idx is None):
+            logger.info(f'Calculating the covariance value of Cov2D using clean images.')
             return self._get_covar(coeffs, mean_coeff, do_refl)
 
         def identity(x):
@@ -255,6 +262,8 @@ class RotCov2D:
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
         :param ctf_fb: The CFT functions in the FB expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
+            If ctf_fb or ctf_idx is None, the 'coeffs' should be obtained from clean images of
+            simulation data and `noise_var` should be set to 0.
         :param mean_coeff: The mean value vector from all images.
         :param covar_coeff: The block diagonal covariance matrix of the clean coefficients represented by a cell array.
         :param noise_var: The estimated variance of noise.
@@ -268,15 +277,14 @@ class RotCov2D:
             covar_coeff = self.get_covar(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
 
         blk_partition = blk_diag_partition(covar_coeff)
-        noise_covar_coeff = blk_diag_mult(noise_var, blk_diag_eye(blk_partition, dtype=self.as_type))
 
         if (ctf_fb is None) or (ctf_idx is None):
-            sig_noise_covar_coeff = blk_diag_add(covar_coeff, noise_covar_coeff)
-            coeffs_est = coeffs - mean_coeff
-            coeffs_est = blk_diag_solve(sig_noise_covar_coeff, coeffs_est)
-            coeffs_est = blk_diag_apply(covar_coeff, coeffs_est)
-            coeffs_est = coeffs_est + mean_coeff
-            return coeffs_est
+            logger.info(f'Calculating the CWF coefficients of clean images using Cov2D.')
+            ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
+            ctf_fb = [blk_diag_eye(blk_partition)]
+            noise_var = 0.0
+
+        noise_covar_coeff = blk_diag_mult(noise_var, blk_diag_eye(blk_partition, dtype=self.as_type))
 
         coeffs_est = np.zeros_like(coeffs, dtype=self.as_type)
 
