@@ -37,9 +37,7 @@ class Cell2D:
         for i in range(0, self.nrow):
             offsetc = 0
             for j in range(0, self.ncol):
-                for k in range(0, rows[i]):
-                    for m in range(0, cols[j]):
-                        self.cell_list[offset][k, m] = mat[offsetr + k, offsetc+m]
+                self.cell_list[offset][:] = mat[offsetr:offsetr + rows[i], offsetc:offsetc + cols[j]]
                 offset += 1
                 offsetc += cols[j]
             offsetr += rows[i]
