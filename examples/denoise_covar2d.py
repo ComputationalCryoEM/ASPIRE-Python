@@ -124,7 +124,7 @@ coeff_noise = ffbbasis.evaluate_t(imgs_noise)
 logger.info('Get 2D covariance matrices of clean and noisy images using FB coefficients.')
 cov2d = RotCov2D(ffbbasis)
 mean_coeff = cov2d.get_mean(coeff_clean)
-covar_coeff = cov2d.get_covar(coeff_clean, mean_coeff)
+covar_coeff = cov2d.get_covar(coeff_clean, mean_coeff, noise_var=0)
 
 # Estimate mean and covariance for noise images with CTF and shrink method.
 # We now estimate the mean and covariance from the Fourier-Bessel
@@ -171,13 +171,13 @@ logger.info(f'Estimated images normalized RMSE: {nrmse_ims}')
 
 # plot the first images at different stages
 plt.subplot(2, 2, 1)
-plt.imshow(np.real(imgs_noise[..., 0]), cmap='gray')
+plt.imshow(np.real(-imgs_noise[..., 0]), cmap='gray')
 plt.title('Noise')
 plt.subplot(2, 2, 2)
-plt.imshow(np.real(-imgs_clean[..., 0]), cmap='gray')
+plt.imshow(np.real(imgs_clean[..., 0]), cmap='gray')
 plt.title('Clean')
 plt.subplot(2, 2, 3)
-plt.imshow(np.real(-imgs_est[..., 0]), cmap='gray')
+plt.imshow(np.real(imgs_est[..., 0]), cmap='gray')
 plt.title('Estimated')
 plt.subplot(2, 2, 4)
 plt.imshow(np.real(imgs_est[..., 0] - imgs_clean[..., 0]), cmap='gray')

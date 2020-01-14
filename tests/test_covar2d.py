@@ -121,10 +121,7 @@ class Cov2DTestCase(TestCase):
 
     def test07GetCWFCoeffsIdentityCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
-        ctf_idx = np.zeros(32, dtype=int)
-        ctf_fb = [blk_diag_eye(blk_diag_partition(self.h_ctf_fb[0]))]
-        self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, ctf_fb, ctf_idx,
-                                                         noise_var=self.noise_var)
+        self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF))
 
     def test08GetCWFCoeffsClean(self):
