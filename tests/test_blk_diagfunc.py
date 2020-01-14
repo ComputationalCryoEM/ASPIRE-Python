@@ -494,4 +494,3 @@ class BlkDiagFuncTestCase(TestCase):
         for mat in result:
             self.assertTrue(np.allclose(mat, blk_c[im]))
             im += 1
-

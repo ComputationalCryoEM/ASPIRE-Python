@@ -84,4 +84,3 @@ class DenoiserCov2D(Denoiser):
 
         # Convert Fourier-Bessel coefficients back into 2D images
         self.imgs_estim = self.basis.evaluate(self.coeffs_estim)
-

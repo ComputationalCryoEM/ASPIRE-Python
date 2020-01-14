@@ -24,9 +24,6 @@ class Denoiser:
         self.nres = src.L
         self.nimg = src.n
 
-        self.imgs_noise = None
-        self.imgs_estim = None
-
     def denoise(self):
         """
         Denoise 2D images

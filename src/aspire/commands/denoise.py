@@ -74,5 +74,3 @@ def denoise(starfile_in, data_folder, starfile_out, pixel_size, max_rows, max_re
         denoise_cov2d.save(starfile_out, batch_size=max_rows)
     else:
         raise NotImplementedError('Currently only covariance Wiener filtering method is supported')
-
-

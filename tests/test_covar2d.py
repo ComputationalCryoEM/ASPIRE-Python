@@ -131,4 +131,3 @@ class Cov2DTestCase(TestCase):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))
         self.coeff_cwf_clean = self.cov2d.get_cwf_coeffs(self.coeff_clean, noise_var=0)
         self.assertTrue(np.allclose(results, self.coeff_cwf_clean))
-
