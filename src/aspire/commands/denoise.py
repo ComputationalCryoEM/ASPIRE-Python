@@ -5,7 +5,7 @@ from aspire.source.relion import RelionSource
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.estimation.noise import AnisotropicNoiseEstimator
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.denoise.denoise_cov2d import DenoiserCov2D
+from aspire.denoising.denoiser_cov2d import DenoiserCov2D
 
 logger = logging.getLogger('aspire')
 

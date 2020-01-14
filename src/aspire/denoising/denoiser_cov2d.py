@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 
-from aspire.denoise import Denoiser
+from aspire.denoising import Denoiser
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.blk_diag_func import blk_diag_partition
 from aspire.utils.blk_diag_func import blk_diag_eye

@@ -1,4 +1,4 @@
-from aspire.denoise import Denoiser
+from aspire.denoising import Denoiser
 import logging
 
 logger = logging.getLogger(__name__)
