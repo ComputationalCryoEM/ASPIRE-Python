@@ -1,0 +1,11 @@
+cython
+jupyter
+numpydoc
+pillow
+pip
+pybind11
+wheel
+coveralls
+python-box
+sphinxcontrib-bibtex
+sphinx-rtd-theme==0.4.2
