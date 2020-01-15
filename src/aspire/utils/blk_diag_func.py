@@ -125,6 +125,12 @@ def blk_diag_apply(blk_diag, x):
 
     if np.sum(cols) != np.size(x, 0):
         raise RuntimeError('Sizes of matrix `blk_diag` and `x` are not compatible.')
+
+    vector = False
+    if np.ndim(x) == 1:
+        x = x[:, np.newaxis]
+        vector = True
+
     rows = np.array([np.size(x, 1), ])
     cellarray = Cell2D(cols, rows, dtype=x.dtype)
     x_cell = cellarray.mat2cell(x, cols, rows)
@@ -133,6 +139,10 @@ def blk_diag_apply(blk_diag, x):
         mat = blk_diag[i] @ x_cell[i]
         y.append(mat)
     y = np.concatenate(y, axis=0)
+
+    if vector:
+        y = y[:, 0]
+
     return y
 
 
@@ -196,6 +206,12 @@ def blk_diag_solve(blk_diag, y):
     rows = np.array([np.size(mat_a, 0) for mat_a in blk_diag])
     if sum(rows) != np.size(y, 0):
         raise RuntimeError('Sizes of matrix `blk_diag` and `y` are not compatible.')
+
+    vector = False
+    if np.ndim(y) == 1:
+        y = y[:, np.newaxis]
+        vector = True
+
     cols = np.array([np.size(y, 1)])
     cellarray = Cell2D(rows, cols, dtype=y.dtype)
     y = cellarray.mat2cell(y, rows, cols)
@@ -203,6 +219,10 @@ def blk_diag_solve(blk_diag, y):
     for i in range(0,len(blk_diag)):
         x.append(solve(blk_diag[i], y[i]))
     x = np.concatenate(x, axis=0)
+
+    if vector:
+        x = x[:, 0]
+
     return x
 
 
