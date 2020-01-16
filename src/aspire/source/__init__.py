@@ -125,7 +125,7 @@ class ImageSource:
         """
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        return self._rotations.as_dcm()
+        return self._rotations.as_matrix()
 
     @angles.setter
     def angles(self, values):
