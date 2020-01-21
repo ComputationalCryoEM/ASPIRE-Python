@@ -33,7 +33,7 @@ class Basis:
         nres = size[0]
         self.sz = size
         self.nres = nres
-        self.basis_count = 0
+        self.count = 0
         self.ell_max = ell_max
         self.ndim = ndim
 
@@ -101,7 +101,7 @@ class Basis:
         Evaluate coefficient vector in basis
 
         :param v: A coefficient vector (or an array of coefficient vectors)
-            to be evaluated. The first dimension must equal `self.basis_count`.
+            to be evaluated. The first dimension must equal `self.count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
@@ -116,7 +116,7 @@ class Basis:
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual
             basis of `basis`.
-            This is an array of vectors whose first dimension equals `self.basis_count`
+            This is an array of vectors whose first dimension equals `self.count`
             and whose remaining dimensions correspond to higher dimensions of `v`.
         """
         raise NotImplementedError('Subclasses should implement this')
@@ -125,8 +125,8 @@ class Basis:
         """
         Evaluate coefficient matrix in basis
 
-        :param V: A coefficient matrix of size `self.basis_count`-by-
-            `self.basis_count` to be evaluated.
+        :param V: A coefficient matrix of size `self.count`-by-
+            `self.count` to be evaluated.
         :return: A multidimensional matrix of size `self.sz`-by
             -`self.sz` corresponding to the evaluation of `V` in
             this basis.
@@ -141,7 +141,7 @@ class Basis:
             to be evaluated.
         :return: The evaluation of `X` in the dual basis. This is
             `self.count`-by-`self.count`. matrix.
-            If `V` is a matrix of size `self.basis_count`-by-`self.basis_count`,
+            If `V` is a matrix of size `self.count`-by-`self.count`,
             `B` is the change-of-basis matrix of `basis`, and `x` is a
             multidimensional matrix of size `basis.sz`-by-`basis.sz`, the
             function calculates V = B' * X * B, where the rows of `B`, rows
@@ -173,7 +173,7 @@ class Basis:
         v, sz_roll = unroll_dim(v, self.ndim + 1)
         b = self.evaluate_t(v)
         operator = LinearOperator(
-            shape=(self.basis_count, self.basis_count),
+            shape=(self.count, self.count),
             matvec=lambda x: self.evaluate_t(self.evaluate(x))
         )
 
@@ -202,7 +202,7 @@ class Basis:
         and columns of `x` are read as vectorized arrays.
 
         :param v: An array whose first dimension is to be expanded in this
-            basis's dual. This dimension must be equal to `self.basis_count`.
+            basis's dual. This dimension must be equal to `self.count`.
         :return: The coefficients of `v` expanded in the dual of `basis`. If more
             than one vector is supplied in `v`, the higher dimensions of the return
             value correspond to second and higher dimensions of `v`.
