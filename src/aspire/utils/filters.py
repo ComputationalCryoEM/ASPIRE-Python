@@ -1,13 +1,13 @@
 import inspect
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from scipy.special import jv
 
 from aspire.utils import ensure
 from aspire.utils.em import voltage_to_wavelength
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matlab_compat import m_reshape
-from aspire.basis.basis_utils import lgwt
+from aspire.utils.blk_diag_func import radial_filter2fb_mat
+
 
 class Filter:
     def __init__(self, dim=2, radial=False):
@@ -45,6 +45,9 @@ class Filter:
         return h
 
     def _evaluate(self, omega):
+        raise NotImplementedError('Subclasses should implement this method')
+
+    def radialize(self):
         raise NotImplementedError('Subclasses should implement this method')
 
     def scale(self, c):
@@ -264,52 +267,28 @@ class CTFFilter(Filter):
     def scale(self, c=1):
         self.pixel_size *= c
 
-
-class RadialCTFFilter(CTFFilter):
-    def __init__(self, pixel_size=10, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0):
-        super().__init__(pixel_size=pixel_size, voltage=voltage, defocus_u=defocus, defocus_v=defocus, defocus_ang=0,
-                         Cs=Cs, alpha=alpha, B=B)
-
-    def convert_from(self, filt):
+    def radialize(self):
         """
         Convert the non-radial CTF filter to a radial one.
         """
-        defocus = np.sqrt(filt.defocus_u*filt.defocus_u + filt.defocus_v*filt.defocus_v)
-        self.pixel_size = filt.pixel_size
-        self.voltage = filt.voltage
-        self.wavelength = voltage_to_wavelength(self.voltage)
+        defocus = np.sqrt(self.defocus_u*self.defocus_u + self.defocus_v*self.defocus_v)
         self.defocus_u = defocus
         self.defocus_v = defocus
         self.defocus_ang = 0
-        self.Cs = filt.Cs
-        self.alpha = filt.alpha
-        self.B = filt.B
         self.defocus_mean = 0.5 * (self.defocus_u + self.defocus_v)
         self.defocus_diff = 0.5 * (self.defocus_u - self.defocus_v)
+        self.radial = True
 
     def fb_mat(self, fbasis):
         """
         Represent the radical CTF filter in FB basis
         """
-        n_r = fbasis.sz[0]
-        k_vals, wts = lgwt(n_r, 0, 0.5)
-        h_vals = self.evaluate(k_vals*2*np.pi)
+        if not self.radial:
+            self.radialize()
+        return radial_filter2fb_mat(self.evaluate, fbasis)
 
-        h_fb = []
-        ind = 0
-        for ell in range(0, fbasis.ell_max+1):
-            k_max = fbasis.k_max[ell]
-            rmat = 2*k_vals.reshape(n_r, 1)*fbasis.r0[0:k_max, ell].T
-            fb_vals = np.zeros_like(rmat)
-            for ik in range(0, k_max):
-                fb_vals[:, ik] = jv(ell, rmat[:, ik])
-            fb_nrms = 1/np.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
-            fb_vals = fb_vals/fb_nrms
-            h_fb_vals = fb_vals*h_vals.reshape(n_r, 1)
-            h_fb_ell = fb_vals.T @ (h_fb_vals*k_vals.reshape(n_r, 1)*wts.reshape(n_r, 1))
-            h_fb.append(h_fb_ell)
-            ind = ind+1
-            if ell > 0:
-                h_fb.append(h_fb[ind-1])
-                ind = ind+1
-        return h_fb
+
+class RadialCTFFilter(CTFFilter):
+    def __init__(self, pixel_size=10, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0):
+        super().__init__(pixel_size=pixel_size, voltage=voltage, defocus_u=defocus, defocus_v=defocus, defocus_ang=0,
+                         Cs=Cs, alpha=alpha, B=B)

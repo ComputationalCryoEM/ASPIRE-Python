@@ -178,7 +178,6 @@ class RelionSource(ImageSource):
             NoiseEstimator class, and available as its `filter` attribute.
         :return: On return, the `ImageSource` object has been modified in place.e.
         """
-        super().whiten(noise_filter=noise_filter)
 
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(PowerFilter(noise_filter, power=-0.5)))

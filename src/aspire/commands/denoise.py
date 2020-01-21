@@ -47,6 +47,7 @@ def denoise(starfile_in, data_folder, starfile_out, pixel_size, max_rows, max_re
     if max_resolution < source.L:
         # Downsample the images
         source.downsample(max_resolution)
+    source.cache()
 
     # Specify the fast FB basis method for expending the 2D images
     basis = FFBBasis2D((max_resolution, max_resolution))
@@ -64,7 +65,6 @@ def denoise(starfile_in, data_folder, starfile_out, pixel_size, max_rows, max_re
     logger.info(f'Whiten the noise of images from the noise estimator')
     source.whiten(noise_estimator.filter)
     var_noise = noise_estimator.estimate()
-    # source.cache()
     # img_whitened = source.eval_filters(source.images())
     if denoise_method == 'CWF':
         denoise_cov2d = DenoiserCov2D(source, basis, var_noise, ctf_info)

@@ -38,18 +38,14 @@ class DenoiserCov2D(Denoiser):
         # Assign the CTF information and index for each image
         if ctf_info and not (src.filters is None):
             logger.info(f'Convert non radial CTF filters to radial ones')
-            uniq_rad_filters = []
             uniq_ctf_filters = list(set(src.filters))
-            # Note that the reason we create the new radial filter list is that the src.filters
-            # have be converted to MultiplicativeFilter class.
+            # Convert non-radial CTF filters to radial ones
             for f in uniq_ctf_filters:
-                filt = RadialCTFFilter()
-                filt.convert_from(f)
-                uniq_rad_filters.append(filt)
+                f.radialize()
             # Create the indices of CTF filters from all images
             self.ctf_idx = np.array([uniq_ctf_filters.index(f) for f in src.filters])
             # Evaluate CTFs in the FFB basis
-            self.ctf_fb = [f.fb_mat(basis) for f in uniq_rad_filters]
+            self.ctf_fb = [f.fb_mat(basis) for f in uniq_ctf_filters]
         else:
             logger.info(f'CTF filters are not included in Cov2D denoising.')
             # set all CTF filters to an identity filter
