@@ -37,7 +37,7 @@ class FFBBasis3D(FBBasis3D):
         self._getfbzeros()
 
         # calculate total number of basis functions
-        self.basis_count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
+        self.count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
 
         # generate 1D indices for basis functions
         self._indices = self.indices()
@@ -140,15 +140,15 @@ class FFBBasis3D(FBBasis3D):
         Evaluate coefficients in standard 3D coordinate basis from those in 3D FB basis
 
         :param v: A coefficient vector (or an array of coefficient vectors) in FB basis
-            to be evaluated. The first dimension must equal `self.basis_count`.
+            to be evaluated. The first dimension must equal `self.count`.
         :return x: The evaluation of the coefficient vector(s) `x` in standard 3D
             coordinate basis. This is an array whose first three dimensions equal
             `self.sz` and the remaining dimensions correspond to dimensions two and
             higher of `v`.
         """
-        # make should the first dimension of v is self.basis_count
+        # make should the first dimension of v is self.count
         v, sz_roll = unroll_dim(v, 2)
-        v = m_reshape(v, (self.basis_count, -1))
+        v = m_reshape(v, (self.count, -1))
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp['ang_theta_wtd'], 0)
@@ -250,7 +250,7 @@ class FFBBasis3D(FBBasis3D):
             to be evaluated. The first three dimensions must equal `self.sz`.
         :return v: The evaluation of the coefficient array `v` in the FB basis.
             This is an array of vectors whose first dimension equals
-            `self.basis_count` and whose remaining dimensions correspond to higher
+            `self.count` and whose remaining dimensions correspond to higher
             dimensions of `x`.
         """
         # ensure the first three dimensions with size of self.sz
@@ -318,7 +318,7 @@ class FFBBasis3D(FBBasis3D):
         w_odd = np.transpose(w_odd, (1, 2, 3, 0))
 
         # evaluate the radial parts
-        v = np.zeros((self.basis_count, n_data), dtype=x.dtype)
+        v = np.zeros((self.count, n_data), dtype=x.dtype)
         for ell in range(0, self.ell_max+1):
             k_max_ell = self.k_max[ell]
             radial_wtd = self._precomp['radial_wtd'][:, 0:k_max_ell, ell]
@@ -351,7 +351,7 @@ class FFBBasis3D(FBBasis3D):
         :param x: An array whose first three dimensions are to be expanded in FB basis.
              These dimensions must equal `self.sz`.
         :return : The coefficients of `v` expanded in FB basis. The first dimension
-            of `v` is with size of `basis_count` and the second and higher dimensions
+            of `v` is with size of `count` and the second and higher dimensions
             of the return value correspond to those higher dimensions of `x`.
 
         """
@@ -363,7 +363,7 @@ class FFBBasis3D(FBBasis3D):
 
         ensure(x.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of x must match {self.sz}.')
 
-        operator = LinearOperator(shape=(self.basis_count, self.basis_count),
+        operator = LinearOperator(shape=(self.count, self.count),
                                   matvec=lambda v: self.evaluate_t(self.evaluate(v)))
 
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
@@ -372,7 +372,7 @@ class FFBBasis3D(FBBasis3D):
 
         # number of image samples
         n_data = np.size(x, self.ndim)
-        v = np.zeros((self.basis_count, n_data), dtype=x.dtype)
+        v = np.zeros((self.count, n_data), dtype=x.dtype)
 
         for isample in range(0, n_data):
             b = self.evaluate_t(x[..., isample])
@@ -381,6 +381,6 @@ class FFBBasis3D(FBBasis3D):
             if info != 0:
                 raise RuntimeError('Unable to converge!')
 
-        # return v coefficients with the first dimension of self.basis_count
+        # return v coefficients with the first dimension of self.count
         v = roll_dim(v, sz_roll)
         return v

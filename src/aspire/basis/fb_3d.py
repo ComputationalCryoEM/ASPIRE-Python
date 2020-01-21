@@ -48,7 +48,7 @@ class FBBasis3D(Basis):
         self._getfbzeros()
 
         # calculate total number of basis functions
-        self.basis_count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
+        self.count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
 
         # obtain a 3D grid to represent basis functions
         self.basis_coords = unique_coords_nd(self.nres, self.ndim)
@@ -66,9 +66,9 @@ class FBBasis3D(Basis):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.basis_count)
-        indices_ms = np.zeros(self.basis_count)
-        indices_ks = np.zeros(self.basis_count)
+        indices_ells = np.zeros(self.count)
+        indices_ms = np.zeros(self.count)
+        indices_ks = np.zeros(self.count)
 
         ind = 0
         for ell in range(self.ell_max + 1):
@@ -140,7 +140,7 @@ class FBBasis3D(Basis):
         """
         Evaluate coefficients in standard 3D coordinate basis from those in FB basis
         :param v: A coefficient vector (or an array of coefficient vectors) to
-            be evaluated. The first dimension must equal `self.basis_count`.
+            be evaluated. The first dimension must equal `self.count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
@@ -186,7 +186,7 @@ class FBBasis3D(Basis):
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual
             basis of `basis`. This is an array of vectors whose first dimension
-            equals `self.basis_count` and whose remaining dimensions correspond
+            equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
         x, sz_roll = unroll_dim(v, self.ndim + 1)
@@ -200,7 +200,7 @@ class FBBasis3D(Basis):
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.basis_count] + list(x.shape[1:])))
+        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])))
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
@@ -234,15 +234,15 @@ class FBBasis3D(Basis):
         and columns of `x` are read as vectorized arrays.
 
         :param v: An array whose first dimension is to be expanded in this
-            basis's dual. This dimension must be equal to `self.basis_count`.
+            basis's dual. This dimension must be equal to `self.count`.
         :return: The coefficients of `v` expanded in the dual of `basis`. If more
             than one vector is supplied in `v`, the higher dimensions of the return
             value correspond to second and higher dimensions of `v`.
 
         .. seealso:: expand
         """
-        ensure(v.shape[0] == self.basis_count,
-               f'First dimension of v must be {self.basis_count}')
+        ensure(v.shape[0] == self.count,
+               f'First dimension of v must be {self.count}')
 
         v, sz_roll = unroll_dim(v, 2)
         b = vol_to_vec(self.evaluate(v))

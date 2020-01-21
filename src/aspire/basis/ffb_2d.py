@@ -42,7 +42,7 @@ class FFBBasis2D(FBBasis2D):
         self._getfbzeros()
 
         # calculate total number of basis functions
-        self.basis_count = self.k_max[0] + sum(2 * self.k_max[1:])
+        self.count = self.k_max[0] + sum(2 * self.k_max[1:])
 
         # generate 1D indices for basis functions
         self._indices = self.indices()
@@ -97,14 +97,14 @@ class FFBBasis2D(FBBasis2D):
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
         :param v: A coefficient vector (or an array of coefficient vectors)
-            in FB basis to be evaluated. The first dimension must equal `self.basis_count`.
+            in FB basis to be evaluated. The first dimension must equal `self.count`.
         :return x: The evaluation of the coefficient vector(s) `x` in standard 2D
             coordinate basis. This is an array whose first two dimensions equal `self.sz`
             and the remaining dimensions correspond to dimensions two and higher of `v`.
         """
-        # make should the first dimension of v is self.basis_count
+        # make should the first dimension of v is self.count
         v, sz_roll = unroll_dim(v, 2)
-        v = m_reshape(v, (self.basis_count, -1))
+        v = m_reshape(v, (self.count, -1))
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
@@ -177,7 +177,7 @@ class FFBBasis2D(FBBasis2D):
         :param x: The coefficient array in the standard 2D coordinate basis to be
             evaluated. The first two dimensions must equal `self.sz`.
         :return v: The evaluation of the coefficient array `v` in the FB basis.
-            This is an array of vectors whose first dimension equals `self.basis_count`
+            This is an array of vectors whose first dimension equals `self.count`
             and whose remaining dimensions correspond to higher dimensions of `x`.
         """
         # ensure the first two dimensions with size of self.sz
@@ -210,7 +210,7 @@ class FFBBasis2D(FBBasis2D):
         pf = 2 * pi / (2 * n_theta) * fft(pf, 2*n_theta, 1)
 
         # This only makes it easier to slice the array later.
-        v = np.zeros((self.basis_count, n_data), dtype=x.dtype)
+        v = np.zeros((self.count, n_data), dtype=x.dtype)
 
         # go through each basis function and find the corresponding coefficient
         ind = 0
@@ -218,7 +218,7 @@ class FFBBasis2D(FBBasis2D):
         mask = self._indices["ells"] == 0
 
         v[mask, :] = self._precomp["radial"][:, idx].T @ pf[:, 0, :].real
-        v = m_reshape(v, (self.basis_count, -1))
+        v = m_reshape(v, (self.count, -1))
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -243,7 +243,7 @@ class FFBBasis2D(FBBasis2D):
 
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
-        # return v coefficients with the first dimension of self.basis_count
+        # return v coefficients with the first dimension of self.count
         v = roll_dim(v, sz_roll)
         return v
 
@@ -257,7 +257,7 @@ class FFBBasis2D(FBBasis2D):
         :param x: An array whose first two dimensions are to be expanded in FB basis.
              These dimensions must equal `self.sz`.
         :return : The coefficients of `v` expanded in FB basis. The first dimension
-            of `v` is with size of `basis_count` and the second and higher dimensions
+            of `v` is with size of `count` and the second and higher dimensions
             of the return value correspond to those higher dimensions of `x`.
 
         """
@@ -267,7 +267,7 @@ class FFBBasis2D(FBBasis2D):
         ensure(x.shape[:self.ndim] == self.sz,
                f'First {self.ndim} dimensions of x must match {self.sz}.')
 
-        operator = LinearOperator(shape=(self.basis_count, self.basis_count),
+        operator = LinearOperator(shape=(self.count, self.count),
                                   matvec=lambda v: self.evaluate_t(self.evaluate(v)))
 
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
@@ -276,7 +276,7 @@ class FFBBasis2D(FBBasis2D):
 
         # number of image samples
         n_data = np.size(x, self.ndim)
-        v = np.zeros((self.basis_count, n_data), dtype=x.dtype)
+        v = np.zeros((self.count, n_data), dtype=x.dtype)
 
         for isample in range(0, n_data):
             b = self.evaluate_t(x[..., isample])
@@ -285,6 +285,6 @@ class FFBBasis2D(FBBasis2D):
             if info != 0:
                 raise RuntimeError('Unable to converge!')
 
-        # return v coefficients with the first dimension of self.basis_count
+        # return v coefficients with the first dimension of self.count
         v = roll_dim(v, sz_roll)
         return v
