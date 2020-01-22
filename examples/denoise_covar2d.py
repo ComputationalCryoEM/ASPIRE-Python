@@ -67,7 +67,7 @@ logger.info('Load 3D map and downsample to desired grids.')
 vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
 vols = vols[..., np.newaxis]
 
-# Downsample the 3D map to 8X8X8
+# Downsample the 3D map to desired resolution
 vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
 sim.vols = vols
 
@@ -170,16 +170,21 @@ logger.info(f'Deviation of the noisy covariance estimate: {diff_covar}')
 logger.info(f'Estimated images normalized RMSE: {nrmse_ims}')
 
 # plot the first images at different stages
+idm = 0
 plt.subplot(2, 2, 1)
-plt.imshow(np.real(-imgs_noise[..., 0]), cmap='gray')
+plt.imshow(np.real(-imgs_noise[..., idm]), cmap='gray')
+plt.colorbar()
 plt.title('Noise')
 plt.subplot(2, 2, 2)
-plt.imshow(np.real(imgs_clean[..., 0]), cmap='gray')
+plt.imshow(np.real(imgs_clean[..., idm]), cmap='gray')
+plt.colorbar()
 plt.title('Clean')
 plt.subplot(2, 2, 3)
-plt.imshow(np.real(imgs_est[..., 0]), cmap='gray')
+plt.imshow(np.real(imgs_est[..., idm]), cmap='gray')
+plt.colorbar()
 plt.title('Estimated')
 plt.subplot(2, 2, 4)
-plt.imshow(np.real(imgs_est[..., 0] - imgs_clean[..., 0]), cmap='gray')
-plt.title('|Clean-Estimated|')
+plt.imshow(np.real(imgs_est[..., idm] - imgs_clean[..., idm]), cmap='gray')
+plt.colorbar()
+plt.title('Clean-Estimated')
 plt.show()
