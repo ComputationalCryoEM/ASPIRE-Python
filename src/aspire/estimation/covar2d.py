@@ -41,7 +41,7 @@ class RotCov2D:
             raise RuntimeError('The coefficients need to be calculated first!')
         self.dtype = coeffs.dtype
         mask = self.basis._indices["ells"] == 0
-        mean_coeff = np.zeros((self.basis.count, 1), dtype=self.as_type)
+        mean_coeff = np.zeros((self.basis.count, 1), dtype=self.dtype)
         mean_coeff[mask, 0] = np.mean(coeffs[mask, ...], axis=1)
 
         return mean_coeff
@@ -113,7 +113,7 @@ class RotCov2D:
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [blk_diag_eye(blk_diag_partition(RadialCTFFilter().fb_mat(self.basis)))]
 
-        b = np.zeros((self.basis.count, 1), dtype=self.as_type)
+        b = np.zeros((self.basis.count, 1), dtype=self.dtype)
 
         A = blk_diag_zeros(blk_diag_partition(ctf_fb[0]), dtype=self.dtype)
         for k in np.unique(ctf_idx[:]).T:
