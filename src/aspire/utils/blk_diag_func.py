@@ -280,9 +280,9 @@ def blk_diag_isnumeric(x):
         return False
 
 
-def radial_filter2fb_mat(h_fun, fbasis):
+def nonradial_filter2fb_mat(h_fun, fbasis):
     """
-    Convert a function in k space into a basis representation
+    Convert a nonradial function in k space into a basis representation
 
     :param h_fun: The function form in k space
     :param fbasis: The basis object for expanding
@@ -290,23 +290,68 @@ def radial_filter2fb_mat(h_fun, fbasis):
     """
     if not isinstance(fbasis, FFBBasis2D):
             raise NotImplementedError('Currently only fast FB method is supported')
+    # Set same dimensions as basis object
+    n_k = int(np.ceil(4 * fbasis.rcut * fbasis.kcut))
+    n_theta = np.ceil(16 * fbasis.kcut * fbasis.rcut)
+    n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
+    # get 2D grid in polar coordinate
+    k_vals, wts = lgwt(n_k, 0, 0.5)
+    k, theta = np.meshgrid(k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing='ij')
+    # Get function values in polar 2D grid and average out angle contribution
+    omegax = k*np.cos(theta)
+    omegay = k*np.sin(theta)
+    omega = 2 * np.pi * np.vstack((omegax.flatten('C'), omegay.flatten('C')))
+    h_vals2d = h_fun(omega).reshape(n_k, n_theta)
+    h_vals = np.sum(h_vals2d, axis=1)/n_theta
 
-    n_r = fbasis.sz[0]
-    k_vals, wts = lgwt(n_r, 0, 0.5)
+    # Represent 1D function values in fbasis
+    return fun2fb_mat(k_vals, wts, h_vals, fbasis)
+
+
+def radial_filter2fb_mat(h_fun, fbasis):
+    """
+    Convert a radial function in k space into a basis representation
+
+    :param h_fun: The function form in k space
+    :param fbasis: The basis object for expanding
+    :return: a matrix representation using the `fbasis` expansion
+    """
+    if not isinstance(fbasis, FFBBasis2D):
+            raise NotImplementedError('Currently only fast FB method is supported')
+    # Set same dimensions as basis object
+    n_k = int(np.ceil(4 * fbasis.rcut * fbasis.kcut))
+    # get function values in 1D grid
+    k_vals, wts = lgwt(n_k, 0, 0.5)
     h_vals = h_fun(k_vals*2*np.pi)
+    # Represent 1D function values in fbasis
+    return fun2fb_mat(k_vals, wts, h_vals, fbasis)
+
+
+def fun2fb_mat(k_vals, wts, h_vals, fbasis):
+    """
+    Convert 1D array of function values in k space into a basis representation
+
+    :param k_vals: The k values
+    :param wts: The weights for each k value
+    :param h_vals: The function values in k space
+    :param fbasis: The basis object for expanding
+    :return: a matrix representation using the `fbasis` expansion
+    """
+    # Set same dimensions as basis object
+    n_k = k_vals.size
 
     h_fb = []
     ind = 0
     for ell in range(0, fbasis.ell_max+1):
         k_max = fbasis.k_max[ell]
-        rmat = 2*k_vals.reshape(n_r, 1)*fbasis.r0[0:k_max, ell].T
+        rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
         fb_vals = np.zeros_like(rmat)
         for ik in range(0, k_max):
             fb_vals[:, ik] = jv(ell, rmat[:, ik])
         fb_nrms = 1/np.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
         fb_vals = fb_vals/fb_nrms
-        h_fb_vals = fb_vals*h_vals.reshape(n_r, 1)
-        h_fb_ell = fb_vals.T @ (h_fb_vals*k_vals.reshape(n_r, 1)*wts.reshape(n_r, 1))
+        h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
+        h_fb_ell = fb_vals.T @ (h_fb_vals*k_vals.reshape(n_k, 1)*wts.reshape(n_k, 1))
         h_fb.append(h_fb_ell)
         ind = ind+1
         if ell > 0:
@@ -314,4 +359,3 @@ def radial_filter2fb_mat(h_fun, fbasis):
             ind = ind+1
 
     return h_fb
-
