@@ -364,6 +364,9 @@ class ImageSource:
             f.__class__ = MultiplicativeFilter
             f.__init__(f_new, whiten_filter)
 
+        logger.info('Adding Whitening Filter Xform to end of generation pipeline')
+        self.generation_pipeline.add_xform(FilterXform(whiten_filter))
+
     def im_backward(self, im, start):
         """
         Apply adjoint mapping to set of images
