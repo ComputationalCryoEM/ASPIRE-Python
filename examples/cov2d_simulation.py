@@ -26,7 +26,7 @@ from aspire.utils.blk_diag_func import blk_diag_add, blk_diag_mult, blk_diag_nor
 
 logger = logging.getLogger('aspire')
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), '../tests/saved_test_data')
+DATA_DIR = os.path.join(os.path.dirname(__file__), '../src/aspire/data/')
 
 logger.info('This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package.')
 
@@ -55,20 +55,19 @@ logger.info('Initialize simulation object and CTF filters.')
 filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
            for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-# Create a simulation object with specified filters
+# Create a simulation object with specified filters and 3D map of a 70S Ribosome
+logger.info('Load 3D map and creat simulation object.')
 sim = Simulation(
     n=num_imgs,
+    vols_file=os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'),
     C=num_maps,
     filters=filters
 )
 
-# Load 3D map from the data file, corresponding to the experimentally obtained EM map of a 70S Ribosome.
-logger.info('Load 3D map and downsample to desired grids.')
-vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
-vols = vols[..., np.newaxis]
-
-# Downsample the 3D map to desired resolution
-vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
+# Downsample the 3D map to desired resolution This can be done by the internal function of sim object.
+# Below we use alternative implementation to obtain the exact result with Matlab version.
+logger.info(f'Downsample 3D map to desired grids of {img_size} x {img_size} x {img_size}.')
+vols = downsample(sim.vols, (img_size*np.ones(3, dtype=int)))
 sim.vols = vols
 
 # Specify the fast FB basis method for expending the 2D images
@@ -79,7 +78,7 @@ ffbbasis = FFBBasis2D((img_size, img_size))
 # To be consistent with the Matlab version in the numbers, we need to use the statements as below:
 logger.info('Generate random distributed rotation angles and obtain corresponding 2D clean images.')
 rots = qrand_rots(num_imgs, seed=0)
-imgs_clean = vol2img(vols[..., 0], rots)
+imgs_clean = vol2img(sim.vols[..., 0], rots)
 
 # Assign the CTF information and index for each image
 h_idx = np.array([filters.index(f) for f in sim.filters])
