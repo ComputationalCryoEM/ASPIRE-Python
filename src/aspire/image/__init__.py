@@ -179,7 +179,9 @@ class Image:
 
     def save(self, mrcs_filepath, overwrite=False):
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
-            mrc.set_data(self.data.astype('float32'))
+            # change back to the original input format (the image index first)
+            # for the consistency with reading
+            mrc.set_data(np.swapaxes(self.data.astype('float32'), 0, 2))
 
 
 class CartesianImage(Image):
