@@ -20,7 +20,6 @@ class Denoiser:
         """
         self.src = src
 
-        self.nres = src.L
         self.nimg = src.n
 
     def denoise(self):
@@ -28,6 +27,13 @@ class Denoiser:
         Denoise 2D images
         """
         raise NotImplementedError('subclasses must implement this')
+
+    def src_denoised(self):
+        """
+        Return an ImageSource object with denoised images
+        """
+        src = ArrayImageSource(Image(self.imgs_estim))
+        return src
 
     def save(self, starfile_filepath, batch_size=512, overwrite=False):
         """
