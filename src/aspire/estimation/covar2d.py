@@ -2,12 +2,11 @@ import logging
 from scipy.linalg import sqrtm
 from scipy.linalg import solve
 from numpy.linalg import inv
-from sys import float_info
 
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.blk_diag_func import *
 from aspire.utils.matrix import shrink_covar
-from aspire.utils.optimize import conj_grad
+from aspire.utils.optimize import fill_struct, conj_grad
 from aspire.utils import ensure
 from aspire.utils.filters import RadialCTFFilter
 
@@ -160,10 +159,10 @@ class RotCov2D:
         def identity(x):
             return x
 
-        if covar_est_opt is None:
-            covar_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
+        default_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
                              'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
-                             'preconditioner': 'identity'}
+                             'preconditioner': identity}
+        covar_est_opt = fill_struct(default_est_opt, covar_est_opt)
 
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)

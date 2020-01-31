@@ -7,6 +7,7 @@ from aspire.utils.blk_diag_func import blk_diag_partition
 from aspire.utils.blk_diag_func import blk_diag_eye
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.estimation.covar2d import RotCov2D
+from aspire.utils.optimize import fill_struct
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +62,10 @@ class DenoiserCov2D(Denoiser):
 
         cov2d = RotCov2D(self.basis)
 
-        if covar_opt is None:
-            covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250,
+        default_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250,
             'iter_callback': [], 'store_iterates': False, 'rel_tolerance': 1e-12,
-            'precision': 'float64', 'preconditioner': 'identity'}
+            'precision': 'float64'}
+        covar_opt = fill_struct(default_opt, covar_opt)
 
         mean_coeffs_est = cov2d.get_mean(self.coeffs_noise, self.ctf_fb, self.ctf_idx)
 

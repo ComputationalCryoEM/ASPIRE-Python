@@ -4,7 +4,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-def fill_struct(obj=None, att_vals=None, overwrite=None):
+def fill_struct(obj=None, att_vals=None, overwrite=False):
     """
     Fill object with attributes in a dictionary.
 
@@ -22,37 +22,30 @@ def fill_struct(obj=None, att_vals=None, overwrite=None):
     :return:
     """
     # TODO should consider making copy option - i.e that the input won't change
+
     if obj is None:
-        class DisposableObject:
-            pass
-
-        obj = DisposableObject()
-
+        obj = {}
     if att_vals is None:
         return obj
 
-    if overwrite is None or not overwrite:
-        overwrite = []
-    if overwrite is True:
-        overwrite = list(att_vals.keys())
-
     for key in att_vals.keys():
-        if hasattr(obj, key) and key not in overwrite:
-            continue
+        if hasattr(obj, key):
+            if overwrite:
+                obj[key] = att_vals[key]
         else:
-            setattr(obj, key, att_vals[key])
+            obj[key] = att_vals[key]
 
     return obj
 
 
-def conj_grad(a_fun, b, cg_opt=None, init=None):
+def conj_grad(a_fun, b, min_opt=None, init=None):
     """
     Conjugate Gradient method to solve the linear system.
 
     This is corresponding to the implemented version in the ASPIRE Matlab package.
     :param a_fun:  A function handle specifying the linear operation x -> Ax.
     :param b:  The vector consisting of the right hand side of Ax = b.
-    :param cg_opt: The parameters for the conjugate gradient method, including:
+    :param min_opt: The parameters for the conjugate gradient method, including:
             max_iter: Maximum number of iterations (default 50).
             verbose: The extent to which information on progress should be
                 output to the terminal (default 1).
@@ -87,53 +80,56 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
             - res: The square norm of the residual.
             - obj: The objective function.
     """
-    if cg_opt is None:
-        def identity(input_x):
-            return input_x
-        cg_opt = fill_struct({'verbose': 0, 'max_iter': 50, 'iter_callback': [],
-                             'store_iterates': False, 'rel_tolerance': 1e-15, 'precision': 'float64',
-                             'preconditioner': 'identity'})
-    init = fill_struct(init, {'x': None, 'p': None})
-    if init.x is None:
+
+    def identity(input_x):
+        return input_x
+    default_opt = {'verbose': 0, 'max_iter': 50, 'iter_callback': [],
+                   'store_iterates': False, 'rel_tolerance': 1e-15,
+                   'precision': 'float64', 'preconditioner': identity}
+    cg_opt = fill_struct(default_opt, min_opt, overwrite=True)
+
+    default_init = {'x': None, 'p': None}
+    init = fill_struct(default_init, init)
+    if init['x'] is None:
         x = np.zeros(b.shape)
     else:
-        x = init.x
+        x = init['x']
 
     b_norm = np.linalg.norm(b)
     r = b.copy()
-    s = cg_opt["preconditioner"](r)
+    s = cg_opt['preconditioner'](r)
 
     if np.any(x != 0):
-        if cg_opt["verbose"]:
+        if cg_opt['verbose']:
             logger.info('[CG] Calculating initial residual')
         a_x = a_fun(x)
         r = r-a_x
-        s = cg_opt["preconditioner"](r)
+        s = cg_opt['preconditioner'](r)
     else:
         a_x = np.zeros(x.shape)
 
     obj = np.real(np.sum(x.conj() * a_x, 0) - 2 * np.real(np.sum(np.conj(b * x), 0)))
 
-    if init.p is None:
+    if init['p'] is None:
         p = s
     else:
-        p = init.p
+        p = init['p']
 
     info = fill_struct(att_vals={'iter': [0], 'res': [np.linalg.norm(r)], 'obj': [obj]})
-    if cg_opt["store_iterates"]:
+    if cg_opt['store_iterates']:
         info = fill_struct(info, att_vals={'x': [x], 'r': [r], 'p': [p]})
 
-    if cg_opt["verbose"]:
-        logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]),
-                                                                           np.sum(info.obj[0])))
+    if cg_opt['verbose']:
+        logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(
+            np.linalg.norm(info['res'][0]), np.sum(info['obj'][0])))
 
     if b_norm == 0:
         # Matlat code returns b_norm == 0, this break the Python code when b = 0
         return x, obj, info
 
     i = 0
-    for i in range(1, cg_opt["max_iter"]):
-        if cg_opt["verbose"]:
+    for i in range(1, cg_opt['max_iter']):
+        if cg_opt['verbose']:
             logger.info('[CG] Applying matrix & preconditioner')
 
         a_p = a_fun(p)
@@ -145,7 +141,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         a_x += alpha * np.real(a_p)
 
         r -= alpha * a_p
-        s = cg_opt["preconditioner"](r)
+        s = cg_opt['preconditioner'](r)
         new_gamma = np.real(np.sum(r.conj() * s))
         beta = new_gamma / old_gamma
         p *= beta
@@ -153,22 +149,22 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
 
         obj = np.real(np.sum(x.conj() * a_x, 0) - 2 * np.real(np.sum(np.conj(b * x), 0)))
         res = np.linalg.norm(r)
-        info.iter.append(i)
-        info.res.append(res)
-        info.obj.append(obj)
-        if cg_opt["store_iterates"]:
-            info.x.append(x)
-            info.r.append(r)
-            info.p.append(p)
+        info['iter'].append(i)
+        info['res'].append(res)
+        info['obj'].append(obj)
+        if cg_opt['store_iterates']:
+            info['x'].append(x)
+            info['r'].append(r)
+            info['p'].append(p)
 
-        if cg_opt["verbose"]:
-            logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(np.linalg.norm(info.res[0]),
-                                                                              np.sum(info.obj[0])))
+        if cg_opt['verbose']:
+            logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(
+                np.linalg.norm(info['res'][0]), np.sum(info['obj'][0])))
 
-        if np.all(res < b_norm * cg_opt["rel_tolerance"]):
+        if np.all(res < b_norm * cg_opt['rel_tolerance']):
             break
 
-    if i == cg_opt["max_iter"] - 1:
+    if i == cg_opt['max_iter'] - 1:
         logger.warning('[CG] Conjugate gradient reached maximum number of iterations!')
 
     return x, obj, info

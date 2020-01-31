@@ -9,8 +9,6 @@ from aspire.utils.preprocess import downsample
 from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.preprocess import vol2img
 from aspire.utils.blk_diag_func import radial_filter2fb_mat
-from aspire.utils.blk_diag_func import blk_diag_eye
-from aspire.utils.blk_diag_func import blk_diag_partition
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 
@@ -104,8 +102,7 @@ class Cov2DTestCase(TestCase):
     def test05GetCovarCTFShrink(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'))
         covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
-                     'preconditioner': 'identity'}
+                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64'}
         self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                            noise_var=self.noise_var, covar_est_opt=covar_opt)
         im = 0
