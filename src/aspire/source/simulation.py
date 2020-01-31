@@ -11,14 +11,13 @@ from aspire.utils.filters import ZeroFilter
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.matlab_compat import rand, randi, randn
 from aspire.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
-from aspire.source.xform import NoiseAdder, Pipeline
-import mrcfile
+from aspire.source.xform import NoiseAdder
 
 logger = logging.getLogger(__name__)
 
 
 class Simulation(ImageSource):
-    def __init__(self, L=8, n=1024, vols_file=None, states=None, filters=None,
+    def __init__(self, L=8, n=1024, vols=None, states=None, filters=None,
                  offsets=None, amplitudes=None, dtype='single', C=2,
                  angles=None, seed=0, memory=None, noise_filter=None):
         """
@@ -49,17 +48,11 @@ class Simulation(ImageSource):
         self.amplitudes = amplitudes
         self.angles = angles
         self.C = C
-        if vols_file is None:
+        if vols is None:
             self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
         else:
-            infile = mrcfile.open(vols_file)
-            self.vols = infile.data
-            if self.vols.ndim == 3:
-                self.vols =self.vols[..., np.newaxis]
-                self.C = 1
-                logger.info(f'Only one 3D map is used for simulation.')
-            else:
-                raise NotImplementedError('Currently only one 3D map is supported.')
+            self.vols = vols
+
         self.seed = seed
 
         self.noise_adder = None

@@ -10,6 +10,7 @@ import os
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+import mrcfile
 
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
@@ -57,9 +58,13 @@ filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
 
 # Create a simulation object with specified filters and 3D map of a 70S Ribosome
 logger.info('Load 3D map and creat simulation object.')
+infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
+vols = infile.data
+vols = vols[..., np.newaxis]
+
 sim = Simulation(
     n=num_imgs,
-    vols_file=os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'),
+    vols=vols,
     C=num_maps,
     filters=filters
 )
