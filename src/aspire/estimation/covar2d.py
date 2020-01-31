@@ -28,7 +28,6 @@ class RotCov2D:
         """
         self.basis = basis
         ensure(basis.ndim == 2, 'Only two-dimensional basis functions are needed.')
-        self.dtype = 'double'
 
     def _get_mean(self, coeffs):
         """
@@ -39,9 +38,8 @@ class RotCov2D:
         """
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated first!')
-        self.dtype = coeffs.dtype
         mask = self.basis._indices["ells"] == 0
-        mean_coeff = np.zeros((self.basis.count, 1), dtype=self.dtype)
+        mean_coeff = np.zeros((self.basis.count, 1), dtype=coeffs.dtype)
         mean_coeff[mask, 0] = np.mean(coeffs[mask, ...], axis=1)
 
         return mean_coeff.flatten()
@@ -114,9 +112,9 @@ class RotCov2D:
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [blk_diag_eye(blk_diag_partition(RadialCTFFilter().fb_mat(self.basis)))]
 
-        b = np.zeros((self.basis.count, 1), dtype=self.dtype)
+        b = np.zeros((self.basis.count, 1), dtype=coeffs.dtype)
 
-        A = blk_diag_zeros(blk_diag_partition(ctf_fb[0]), dtype=self.dtype)
+        A = blk_diag_zeros(blk_diag_partition(ctf_fb[0]), dtype=coeffs.dtype)
         for k in np.unique(ctf_idx[:]).T:
             coeff_k = coeffs[:, ctf_idx == k]
             weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
@@ -172,13 +170,13 @@ class RotCov2D:
         mean_coeff = mean_coeff.reshape((self.basis.count, 1))
 
         block_partition = blk_diag_partition(ctf_fb[0])
-        b_coeff = blk_diag_zeros(block_partition, dtype=self.dtype)
-        b_noise = blk_diag_zeros(block_partition, dtype=self.dtype)
+        b_coeff = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
+        b_noise = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
         A = []
         for k in range(0, len(ctf_fb)):
-            A.append(blk_diag_zeros(block_partition, dtype=self.dtype))
+            A.append(blk_diag_zeros(block_partition, dtype=coeffs.dtype))
 
-        M = blk_diag_zeros(block_partition, dtype=self.dtype)
+        M = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
 
         for k in np.unique(ctf_idx[:]):
 
@@ -207,7 +205,7 @@ class RotCov2D:
                                            noise_var, covar_est_opt['shrinker'])
 
         cg_opt = covar_est_opt
-        covar_coeff = blk_diag_zeros(block_partition, dtype=self.dtype)
+        covar_coeff = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
 
         def precond_fun(S, x):
             p = np.size(S, 0)
@@ -286,9 +284,9 @@ class RotCov2D:
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [blk_diag_eye(blk_partition)]
 
-        noise_covar_coeff = blk_diag_mult(noise_var, blk_diag_eye(blk_partition, dtype=self.dtype))
+        noise_covar_coeff = blk_diag_mult(noise_var, blk_diag_eye(blk_partition, dtype=coeffs.dtype))
 
-        coeffs_est = np.zeros_like(coeffs, dtype=self.dtype)
+        coeffs_est = np.zeros_like(coeffs, dtype=coeffs.dtype)
 
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[:, ctf_idx == k]
