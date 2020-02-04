@@ -1,8 +1,5 @@
 import logging
-import numpy as np
 
-from aspire.source import ArrayImageSource
-from aspire.image import Image
 from aspire.io.starfile import save_star
 
 logger = logging.getLogger(__name__)
@@ -28,12 +25,11 @@ class Denoiser:
         """
         raise NotImplementedError('subclasses must implement this')
 
-    def src_denoised(self):
+    def to_src(self):
         """
         Return an ImageSource object with denoised images
         """
-        src = ArrayImageSource(Image(self.imgs_estim))
-        return src
+        raise NotImplementedError('subclasses must implement this')
 
     def save(self, starfile_filepath, batch_size=512, overwrite=False):
         """
@@ -45,6 +41,6 @@ class Denoiser:
             and the `.mrcs` files saved.
         :param overwrite: Whether to overwrite any .mrcs files found at the target location.
         """
-        src = ArrayImageSource(Image(self.imgs_estim))
+        src = self.to_src()
 
         save_star(src, starfile_filepath, batch_size=batch_size, overwrite=overwrite)
