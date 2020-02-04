@@ -56,24 +56,24 @@ logger.info('Initialize simulation object and CTF filters.')
 filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
            for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-# Create a simulation object with specified filters and 3D map of a 70S Ribosome
-logger.info('Load 3D map and creat simulation object.')
+# Load the map file of a 70S Ribosome and downsample the 3D map to desired resolution.
+# The downsampling should be done by the internal function of sim object in future.
+# Below we use alternative implementation to obtain the exact result with Matlab version.
+logger.info(f'Load 3D map and downsample 3D map to desired grids '
+            f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
 vols = infile.data
 vols = vols[..., np.newaxis]
+vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
 
+# Create a simulation object with specified filters and the downsampled 3D map
+logger.info('Use downsampled map to creat simulation object.')
 sim = Simulation(
     n=num_imgs,
     vols=vols,
     C=num_maps,
     filters=filters
 )
-
-# Downsample the 3D map to desired resolution This can be done by the internal function of sim object.
-# Below we use alternative implementation to obtain the exact result with Matlab version.
-logger.info(f'Downsample 3D map to desired grids of {img_size} x {img_size} x {img_size}.')
-vols = downsample(sim.vols, (img_size*np.ones(3, dtype=int)))
-sim.vols = vols
 
 # Specify the fast FB basis method for expending the 2D images
 ffbbasis = FFBBasis2D((img_size, img_size))
@@ -176,19 +176,19 @@ logger.info(f'Estimated images normalized RMSE: {nrmse_ims}')
 # plot the first images at different stages
 idm = 0
 plt.subplot(2, 2, 1)
-plt.imshow(np.real(-imgs_noise[..., idm]), cmap='gray')
+plt.imshow(-imgs_noise[..., idm], cmap='gray')
 plt.colorbar()
 plt.title('Noise')
 plt.subplot(2, 2, 2)
-plt.imshow(np.real(imgs_clean[..., idm]), cmap='gray')
+plt.imshow(imgs_clean[..., idm], cmap='gray')
 plt.colorbar()
 plt.title('Clean')
 plt.subplot(2, 2, 3)
-plt.imshow(np.real(imgs_est[..., idm]), cmap='gray')
+plt.imshow(imgs_est[..., idm], cmap='gray')
 plt.colorbar()
 plt.title('Estimated')
 plt.subplot(2, 2, 4)
-plt.imshow(np.real(imgs_est[..., idm] - imgs_clean[..., idm]), cmap='gray')
+plt.imshow(imgs_est[..., idm] - imgs_clean[..., idm], cmap='gray')
 plt.colorbar()
 plt.title('Clean-Estimated')
 plt.show()
