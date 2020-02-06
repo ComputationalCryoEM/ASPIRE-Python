@@ -4,7 +4,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-def fill_struct(obj=None, att_vals=None, overwrite=False):
+def fill_struct(obj=None, att_vals=None):
     """
     Fill object with attributes in a dictionary.
 
@@ -29,10 +29,7 @@ def fill_struct(obj=None, att_vals=None, overwrite=False):
         return obj
 
     for key in att_vals.keys():
-        if key in obj.keys():
-            if overwrite:
-                obj[key] = att_vals[key]
-        else:
+        if key not in obj.keys():
             obj[key] = att_vals[key]
 
     return obj
@@ -86,7 +83,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     default_opt = {'verbose': 0, 'max_iter': 50, 'iter_callback': [],
                    'store_iterates': False, 'rel_tolerance': 1e-15,
                    'precision': 'float64', 'preconditioner': identity}
-    cg_opt = fill_struct(cg_opt, default_opt, overwrite=False)
+    cg_opt = fill_struct(cg_opt, default_opt)
 
     default_init = {'x': None, 'p': None}
     init = fill_struct(default_init, init)

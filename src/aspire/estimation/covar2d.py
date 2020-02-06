@@ -163,7 +163,7 @@ class RotCov2D:
                              'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
                              'preconditioner': identity}
 
-        covar_est_opt = fill_struct(covar_est_opt, default_est_opt, overwrite=False)
+        covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
