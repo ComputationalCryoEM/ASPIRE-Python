@@ -38,10 +38,10 @@ class RotCov2D:
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated first!')
         mask = self.basis._indices["ells"] == 0
-        mean_coeff = np.zeros((self.basis.count, 1), dtype=coeffs.dtype)
-        mean_coeff[mask, 0] = np.mean(coeffs[mask, ...], axis=1)
+        mean_coeff = np.zeros(self.basis.count, dtype=coeffs.dtype)
+        mean_coeff[mask] = np.mean(coeffs[mask, ...], axis=1)
 
-        return mean_coeff.flatten()
+        return mean_coeff
 
     def _get_covar(self, coeffs, mean_coeff=None,  do_refl=True):
         """
@@ -56,13 +56,12 @@ class RotCov2D:
             raise RuntimeError('The coefficients need to be calculated first!')
         if mean_coeff is None:
             mean_coeff = self._get_mean(coeffs)
-        mean_coeff = mean_coeff.reshape((self.basis.count, 1))
 
         covar_coeff = []
         ind = 0
         ell = 0
         mask = self.basis._indices["ells"] == ell
-        coeff_ell = coeffs[mask, ...] - mean_coeff[mask, ...]
+        coeff_ell = coeffs[mask, ...] - mean_coeff[mask, np.newaxis]
         covar_ell = np.array(coeff_ell @ coeff_ell.T/np.size(coeffs, 1))
         covar_coeff.append(covar_ell)
         ind += 1
@@ -117,15 +116,16 @@ class RotCov2D:
         for k in np.unique(ctf_idx[:]).T:
             coeff_k = coeffs[:, ctf_idx == k]
             weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
-            mean_coeff_k = self._get_mean(coeff_k).reshape((self.basis.count, 1))
+            mean_coeff_k = self._get_mean(coeff_k)
+            mean_coeff_k = mean_coeff_k[:, np.newaxis]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
             b = b + weight*blk_diag_apply(ctf_fb_k_t, mean_coeff_k)
             A = blk_diag_add(A, blk_diag_mult(weight, blk_diag_mult(ctf_fb_k_t, ctf_fb_k)))
 
-        mean_coeff = blk_diag_solve(A, b)
+        mean_coeff = blk_diag_solve(A, b).flatten()
 
-        return mean_coeff.flatten()
+        return mean_coeff
 
     def get_covar(self, coeffs, ctf_fb=None, ctf_idx=None, mean_coeff=None,
                   do_refl=True, noise_var=1, covar_est_opt=None):
@@ -162,11 +162,11 @@ class RotCov2D:
         default_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
                              'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
                              'preconditioner': identity}
-        covar_est_opt = fill_struct(default_est_opt, covar_est_opt)
+
+        covar_est_opt = fill_struct(covar_est_opt, default_est_opt, overwrite=False)
 
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
-        mean_coeff = mean_coeff.reshape((self.basis.count, 1))
 
         block_partition = blk_diag_partition(ctf_fb[0])
         b_coeff = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
@@ -184,8 +184,9 @@ class RotCov2D:
 
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
-            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff)
-            covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k.flatten())
+            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])
+            mean_coeff_k = mean_coeff_k.flatten()
+            covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
             b_coeff = blk_diag_add(b_coeff, blk_diag_mult(ctf_fb_k_t,
                 blk_diag_mult(covar_coeff_k, blk_diag_mult(ctf_fb_k, weight))))
@@ -204,6 +205,7 @@ class RotCov2D:
                                            noise_var, covar_est_opt['shrinker'])
 
         cg_opt = covar_est_opt
+
         covar_coeff = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
 
         def precond_fun(S, x):
@@ -272,7 +274,6 @@ class RotCov2D:
         """
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
-        mean_coeff = mean_coeff.reshape((self.basis.count, 1))
 
         if covar_coeff is None:
             covar_coeff = self.get_covar(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
@@ -294,12 +295,12 @@ class RotCov2D:
             sig_covar_coeff = blk_diag_mult(ctf_fb_k, blk_diag_mult(covar_coeff, ctf_fb_k_t))
             sig_noise_covar_coeff = blk_diag_add(sig_covar_coeff, noise_covar_coeff)
 
-            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff)
+            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])
 
             coeff_est_k = coeff_k - mean_coeff_k
             coeff_est_k = blk_diag_solve(sig_noise_covar_coeff, coeff_est_k)
             coeff_est_k = blk_diag_apply(blk_diag_mult(covar_coeff, ctf_fb_k_t), coeff_est_k)
-            coeff_est_k = coeff_est_k + mean_coeff
+            coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
         return coeffs_est

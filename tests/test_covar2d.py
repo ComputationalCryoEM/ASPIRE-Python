@@ -75,7 +75,7 @@ class Cov2DTestCase(TestCase):
     def test01GetMean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_mean.npy'))
         self.mean_coeff = self.cov2d._get_mean(self.coeff_clean)
-        self.assertTrue(np.allclose(results.flatten(), self.mean_coeff))
+        self.assertTrue(np.allclose(results, self.mean_coeff))
 
     def test02GetCovar(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covar.npy'))
@@ -88,7 +88,7 @@ class Cov2DTestCase(TestCase):
     def test03GetMeanCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_meanctf.npy'))
         self.mean_coeff_ctf = self.cov2d.get_mean(self.coeff, self.h_ctf_fb, self.h_idx)
-        self.assertTrue(np.allclose(results.flatten(), self.mean_coeff_ctf))
+        self.assertTrue(np.allclose(results, self.mean_coeff_ctf))
 
     def test04GetCovarCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf.npy'))

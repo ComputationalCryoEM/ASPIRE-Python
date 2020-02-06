@@ -366,6 +366,8 @@ class ImageSource:
 
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
+        # Invalidate images
+        self._im = None
 
     def im_backward(self, im, start):
         """
