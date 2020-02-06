@@ -2,7 +2,8 @@ import numpy as np
 from unittest import TestCase
 
 from aspire.utils.blk_diag_func import *
-
+from aspire.utils.filters import CTFFilter
+from aspire.basis.ffb_2d import FFBBasis2D
 
 class BlkDiagFuncTestCase(TestCase):
     def setUp(self):
@@ -493,4 +494,48 @@ class BlkDiagFuncTestCase(TestCase):
         im = 0
         for mat in result:
             self.assertTrue(np.allclose(mat, blk_c[im]))
+            im += 1
+
+    def testFilter2Fb(self):
+        result = [
+            np.array([[-0.58675097,  0.2040708 ,  0.18325847, -0.09036895],
+                      [ 0.2040708 , -0.47928185,  0.04313577,  0.24247684],
+                      [ 0.18325847,  0.04313577, -0.42896488,  0.02604912],
+                      [-0.09036895,  0.24247684,  0.02604912, -0.48441593]]),
+            np.array([[-0.72062802,  0.05036225,  0.22385134],
+                      [ 0.05036225, -0.47534276,  0.00623491],
+                      [ 0.22385134,  0.00623491, -0.44639676]]),
+            np.array([[-0.72062802,  0.05036225,  0.22385134],
+                      [ 0.05036225, -0.47534276,  0.00623491],
+                      [ 0.22385134,  0.00623491, -0.44639676]]),
+            np.array([[-0.73973316, -0.07009974,  0.23478964],
+                      [-0.07009974, -0.51093276, -0.03225313],
+                      [ 0.23478964, -0.03225313, -0.50725702]]),
+            np.array([[-0.73973316, -0.07009974,  0.23478964],
+                      [-0.07009974, -0.51093276, -0.03225313],
+                      [ 0.23478964, -0.03225313, -0.50725702]]),
+            np.array([[-0.71541676, -0.15571368],
+                      [-0.15571368, -0.55014515]]),
+            np.array([[-0.71541676, -0.15571368],
+                      [-0.15571368, -0.55014515]]),
+            np.array([[-0.67374877, -0.21482035],
+                      [-0.21482035, -0.58875286]]),
+            np.array([[-0.67374877, -0.21482035],
+                      [-0.21482035, -0.58875286]]),
+            np.array([[-0.6259839 , -0.25350524],
+                      [-0.25350524, -0.6223537 ]]),
+            np.array([[-0.6259839 , -0.25350524],
+                      [-0.25350524, -0.6223537 ]]),
+            np.array([[-0.57752714]]), np.array([[-0.57752714]]),
+            np.array([[-0.53092283]]), np.array([[-0.53092283]]),
+            np.array([[-0.48707716]]), np.array([[-0.48707716]])
+        ]
+
+        self.basis = FFBBasis2D((8, 8))
+        filter = CTFFilter(defocus_u=1.5e4, defocus_v=2.5e4)
+        f_fb = filter_to_fb_mat(filter.evaluate, self.basis)
+
+        im = 0
+        for mat in result:
+            self.assertTrue(np.allclose(mat, f_fb[im]))
             im += 1

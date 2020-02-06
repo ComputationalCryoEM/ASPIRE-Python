@@ -69,7 +69,6 @@ class DenoiserCov2D(Denoiser):
             'iter_callback': [], 'store_iterates': False, 'rel_tolerance': 1e-12,
             'precision': 'float64'}
         covar_opt = fill_struct(covar_opt, default_opt)
-        print(f'covar_opt= {covar_opt}')
         mean_coeffs_est = cov2d.get_mean(self.coeffs_noise, self.ctf_fb, self.ctf_idx)
 
         covar_coeffs_est = cov2d.get_covar(self.coeffs_noise, self.ctf_fb, self.ctf_idx, mean_coeffs_est,

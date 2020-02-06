@@ -6,7 +6,7 @@ from aspire.utils import ensure
 from aspire.utils.em import voltage_to_wavelength
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.blk_diag_func import nonradial_filter2fb_mat, radial_filter2fb_mat
+from aspire.utils.blk_diag_func import filter_to_fb_mat
 
 
 class Filter:
@@ -47,17 +47,11 @@ class Filter:
     def _evaluate(self, omega):
         raise NotImplementedError('Subclasses should implement this method')
 
-    def radialize(self):
-        raise NotImplementedError('Subclasses should implement this method')
-
     def fb_mat(self, fbasis):
         """
         Represent the filter in FB basis matrix
         """
-        if self.radial:
-            return radial_filter2fb_mat(self.evaluate, fbasis)
-        else :
-            return nonradial_filter2fb_mat(self.evaluate, fbasis)
+        return filter_to_fb_mat(self.evaluate, fbasis)
 
     def scale(self, c):
         """
@@ -275,26 +269,6 @@ class CTFFilter(Filter):
 
     def scale(self, c=1):
         self.pixel_size *= c
-
-    def radialize(self):
-        """
-        Convert the non-radial CTF filter to a radial one.
-        """
-        defocus = np.sqrt(self.defocus_u*self.defocus_u + self.defocus_v*self.defocus_v)
-        self.defocus_u = defocus
-        self.defocus_v = defocus
-        self.defocus_ang = 0
-        self.defocus_mean = 0.5 * (self.defocus_u + self.defocus_v)
-        self.defocus_diff = 0.5 * (self.defocus_u - self.defocus_v)
-        self.radial = True
-
-    def fb_mat(self, fbasis):
-        """
-        Represent the radical CTF filter in FB basis
-        """
-        if not self.radial:
-            self.radialize()
-        return radial_filter2fb_mat(self.evaluate, fbasis)
 
 
 class RadialCTFFilter(CTFFilter):

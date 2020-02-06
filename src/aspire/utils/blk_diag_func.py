@@ -280,7 +280,7 @@ def blk_diag_isnumeric(x):
         return False
 
 
-def nonradial_filter2fb_mat(h_fun, fbasis):
+def filter_to_fb_mat(h_fun, fbasis):
     """
     Convert a nonradial function in k space into a basis representation
 
@@ -305,26 +305,26 @@ def nonradial_filter2fb_mat(h_fun, fbasis):
     h_vals = np.sum(h_vals2d, axis=1)/n_theta
 
     # Represent 1D function values in fbasis
-    return fun2fb_mat(k_vals, wts, h_vals, fbasis)
+    h_fb = []
+    ind = 0
+    for ell in range(0, fbasis.ell_max+1):
+        k_max = fbasis.k_max[ell]
+        rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
+        fb_vals = np.zeros_like(rmat)
+        for ik in range(0, k_max):
+            fb_vals[:, ik] = jv(ell, rmat[:, ik])
+        fb_nrms = 1/np.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
+        fb_vals = fb_vals/fb_nrms
+        h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
+        h_fb_ell = fb_vals.T @ (h_fb_vals*k_vals.reshape(n_k, 1)*wts.reshape(n_k, 1))
+        h_fb.append(h_fb_ell)
+        ind = ind+1
+        if ell > 0:
+            h_fb.append(h_fb[ind-1])
+            ind = ind+1
 
-
-def radial_filter2fb_mat(h_fun, fbasis):
-    """
-    Convert a radial function in k space into a basis representation
-
-    :param h_fun: The function form in k space
-    :param fbasis: The basis object for expanding
-    :return: a matrix representation using the `fbasis` expansion
-    """
-    if not isinstance(fbasis, FFBBasis2D):
-            raise NotImplementedError('Currently only fast FB method is supported')
-    # Set same dimensions as basis object
-    n_k = int(np.ceil(4 * fbasis.rcut * fbasis.kcut))
-    # get function values in 1D grid
-    k_vals, wts = lgwt(n_k, 0, 0.5)
-    h_vals = h_fun(k_vals*2*np.pi)
-    # Represent 1D function values in fbasis
-    return fun2fb_mat(k_vals, wts, h_vals, fbasis)
+    return h_fb
+    # return fun2fb_mat(k_vals, wts, h_vals, fbasis)
 
 
 def fun2fb_mat(k_vals, wts, h_vals, fbasis):

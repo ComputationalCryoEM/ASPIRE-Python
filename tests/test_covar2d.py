@@ -8,7 +8,7 @@ from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
 from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.preprocess import vol2img
-from aspire.utils.blk_diag_func import radial_filter2fb_mat
+from aspire.utils.blk_diag_func import filter_to_fb_mat
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 
@@ -55,7 +55,7 @@ class Cov2DTestCase(TestCase):
 
         self.h_idx = np.array([filters.index(f) for f in sim.filters])
         self.filters = filters
-        self.h_ctf_fb = [radial_filter2fb_mat(filt.evaluate, self.basis) for filt in self.filters]
+        self.h_ctf_fb = [filter_to_fb_mat(filt.evaluate, self.basis) for filt in self.filters]
 
         self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
 
