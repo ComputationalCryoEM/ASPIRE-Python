@@ -188,25 +188,3 @@ class Basis:
         v = roll_dim(v, sz_roll)
 
         return v
-
-    def expand_t(self, v):
-        """
-        Expand array in dual basis
-
-        This is a similar function to `evaluate` but with more accuracy by
-         using the cg optimizing of linear equation, Ax=b.
-
-        If `v` is a matrix of size `basis.ct`-by-..., `B` is the change-of-basis
-        matrix of this basis, and `x` is a matrix of size `self.sz`-by-...,
-        the function calculates x = (B * B')^(-1) * B * v, where the rows of `B`
-        and columns of `x` are read as vectorized arrays.
-
-        :param v: An array whose first dimension is to be expanded in this
-            basis's dual. This dimension must be equal to `self.count`.
-        :return: The coefficients of `v` expanded in the dual of `basis`. If more
-            than one vector is supplied in `v`, the higher dimensions of the return
-            value correspond to second and higher dimensions of `v`.
-
-        .. seealso:: expand
-        """
-        raise NotImplementedError('subclasses should implement this')
