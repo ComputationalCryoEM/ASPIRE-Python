@@ -79,16 +79,30 @@ def _im_translate2(im, shifts):
 
 
 class Image:
-    def __init__(self, data):
-        ensure(data.shape[0] == data.shape[1], 'Only square ndarrays are supported.')
+    def __init__(self, data, order_in='F'):
         if data.ndim == 2:
-            data = data[:, :, np.newaxis]
+            if order_in == 'F':
+                data = data[:, :, np.newaxis]
+            else:
+                data = data[np.newaxis, :, :]
+
+        if order_in == 'C':
+            data = data.transpose((2, 1, 0))
+
+        ensure(data.shape[0] == data.shape[1], 'Only square ndarrays are supported.')
 
         self.data = data
         self.dtype = self.data.dtype
         self.shape = self.data.shape
         self.n_images = self.shape[-1]
         self.res = self.shape[0]
+
+        # Create separate view for C-ordered access.
+        cdata = self.data.view()
+        cdata = cdata.transpose((2, 1, 0))
+
+        self.fdata = self.data
+        self.cdata = cdata
 
     def __getitem__(self, item):
         return self.data[item]
