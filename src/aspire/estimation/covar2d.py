@@ -110,7 +110,7 @@ class RotCov2D:
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [blk_diag_eye(blk_diag_partition(RadialCTFFilter().fb_mat(self.basis)))]
 
-        b = np.zeros((self.basis.count, 1), dtype=coeffs.dtype)
+        b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
         A = blk_diag_zeros(blk_diag_partition(ctf_fb[0]), dtype=coeffs.dtype)
         for k in np.unique(ctf_idx[:]).T:
@@ -120,10 +120,10 @@ class RotCov2D:
             mean_coeff_k = mean_coeff_k[:, np.newaxis]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
-            b = b + weight*blk_diag_apply(ctf_fb_k_t, mean_coeff_k)
+            b = b + weight*blk_diag_apply(ctf_fb_k_t, mean_coeff_k)[:, 0]
             A = blk_diag_add(A, blk_diag_mult(weight, blk_diag_mult(ctf_fb_k_t, ctf_fb_k)))
 
-        mean_coeff = blk_diag_solve(A, b).flatten()
+        mean_coeff = blk_diag_solve(A, b[:, np.newaxis])[:, 0]
 
         return mean_coeff
 
@@ -185,8 +185,7 @@ class RotCov2D:
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
             mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])
-            mean_coeff_k = mean_coeff_k.flatten()
-            covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
+            covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k[:, 0])
 
             b_coeff = blk_diag_add(b_coeff, blk_diag_mult(ctf_fb_k_t,
                 blk_diag_mult(covar_coeff_k, blk_diag_mult(ctf_fb_k, weight))))
@@ -295,9 +294,9 @@ class RotCov2D:
             sig_covar_coeff = blk_diag_mult(ctf_fb_k, blk_diag_mult(covar_coeff, ctf_fb_k_t))
             sig_noise_covar_coeff = blk_diag_add(sig_covar_coeff, noise_covar_coeff)
 
-            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])
+            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])[:, 0]
 
-            coeff_est_k = coeff_k - mean_coeff_k
+            coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
             coeff_est_k = blk_diag_solve(sig_noise_covar_coeff, coeff_est_k)
             coeff_est_k = blk_diag_apply(blk_diag_mult(covar_coeff, ctf_fb_k_t), coeff_est_k)
             coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
