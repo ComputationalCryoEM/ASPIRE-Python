@@ -149,7 +149,7 @@ class Basis:
         """
         return mdim_mat_fun_conj(X, len(self.sz), 1, self.evaluate_t)
 
-    def expand(self, v):
+    def expand(self, x):
         """
         Expand array in basis
 
@@ -166,25 +166,32 @@ class Basis:
         :return: The coefficients of `v` expanded in this basis. If more than
             one array of size `self.sz` is found in `v`, the second and higher
             dimensions of the return value correspond to those higher dimensions of `v`.
-
         """
-        ensure(v.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of v must match {self.sz}.')
+        x, sz_roll = unroll_dim(x, self.ndim + 1)
 
-        v, sz_roll = unroll_dim(v, self.ndim + 1)
-        b = self.evaluate_t(v)
-        operator = LinearOperator(
-            shape=(self.count, self.count),
-            matvec=lambda x: self.evaluate_t(self.evaluate(x))
-        )
+        ensure(x.shape[:self.ndim] == self.sz,
+               f'First {self.ndim} dimensions of x must match {self.sz}.')
 
-        # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
-        tol = 10 * np.finfo(v.dtype).eps
+        operator = LinearOperator(shape=(self.count, self.count),
+                                  matvec=lambda v: self.evaluate_t(self.evaluate(v)))
+
+        # TODO: (from MATLAB implementation)
+        # Check that this tolerance make sense for multiple columns in x.
+        tol = 10 * np.finfo(x.dtype).eps
         logger.info('Expanding array in basis')
-        v, info = cg(operator, b, tol=tol)
 
-        if info != 0:
-            raise RuntimeError('Unable to converge!')
+        # number of image samples
+        n_data = np.size(x, self.ndim)
+        v = np.zeros((self.count, n_data), dtype=x.dtype)
 
+        for isample in range(0, n_data):
+            b = self.evaluate_t(x[..., isample])
+            # TODO: need check the initial condition x0 can improve the results or not.
+            v[..., isample], info = cg(operator, b, tol=tol)
+            if info != 0:
+                raise RuntimeError('Unable to converge!')
+
+        # return v coefficients with the first dimension of self.count
         v = roll_dim(v, sz_roll)
 
         return v
