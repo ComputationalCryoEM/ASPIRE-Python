@@ -155,8 +155,8 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
             info['p'].append(p)
 
         if cg_opt['verbose']:
-            logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(
-                np.linalg.norm(info['res'][0]), np.sum(info['obj'][0])))
+            logger.info('[CG] Iteration {}. Residual: {}. Objective: {}'.format(
+                i, np.linalg.norm(info['res'][i]), np.sum(info['obj'][i])))
 
         if np.all(res < b_norm * cg_opt['rel_tolerance']):
             break
