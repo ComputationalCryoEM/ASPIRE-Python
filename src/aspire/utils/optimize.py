@@ -124,8 +124,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         # Matlat code returns b_norm == 0, this break the Python code when b = 0
         return x, obj, info
 
-    i = 0
-    for i in range(1, cg_opt['max_iter']):
+    for i in range(1, cg_opt['max_iter'] + 1):
         if cg_opt['verbose']:
             logger.info('[CG] Applying matrix & preconditioner')
 
@@ -161,7 +160,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         if np.all(res < b_norm * cg_opt['rel_tolerance']):
             break
 
-    if i == cg_opt['max_iter'] - 1:
+    if i == cg_opt['max_iter']:
         logger.warning('[CG] Conjugate gradient reached maximum number of iterations!')
 
     return x, obj, info
