@@ -6,6 +6,7 @@ from aspire.utils import ensure
 from aspire.utils.em import voltage_to_wavelength
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.blk_diag_func import filter_to_fb_mat
 
 
 class Filter:
@@ -45,6 +46,12 @@ class Filter:
 
     def _evaluate(self, omega):
         raise NotImplementedError('Subclasses should implement this method')
+
+    def fb_mat(self, fbasis):
+        """
+        Represent the filter in FB basis matrix
+        """
+        return filter_to_fb_mat(self.evaluate, fbasis)
 
     def scale(self, c):
         """

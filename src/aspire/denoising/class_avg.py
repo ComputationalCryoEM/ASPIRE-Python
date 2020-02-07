@@ -1,10 +1,10 @@
-from aspire.denoise import Denoise
+from aspire.denoising import Denoiser
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class ClassAvg(Denoise):
+class ClassAvg(Denoiser):
     """
     Define a derived class for denoising 2D images using class average methods
     """

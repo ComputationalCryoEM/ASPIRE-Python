@@ -8,7 +8,6 @@ from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
 from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.preprocess import vol2img
-from aspire.utils.blk_diag_func import radial_filter2fb_mat
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 
@@ -55,7 +54,7 @@ class Cov2DTestCase(TestCase):
 
         self.h_idx = np.array([filters.index(f) for f in sim.filters])
         self.filters = filters
-        self.h_ctf_fb = [radial_filter2fb_mat(filt.evaluate, self.basis) for filt in self.filters]
+        self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in self.filters]
 
         self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
 
@@ -102,8 +101,7 @@ class Cov2DTestCase(TestCase):
     def test05GetCovarCTFShrink(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'))
         covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
-                     'preconditioner': 'identity'}
+                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64'}
         self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                            noise_var=self.noise_var, covar_est_opt=covar_opt)
         im = 0
@@ -116,3 +114,13 @@ class Cov2DTestCase(TestCase):
         self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                    noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf))
+
+    def test07GetCWFCoeffsIdentityCTF(self):
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
+        self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
+        self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF))
+
+    def test08GetCWFCoeffsClean(self):
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))
+        self.coeff_cwf_clean = self.cov2d.get_cwf_coeffs(self.coeff_clean, noise_var=0)
+        self.assertTrue(np.allclose(results, self.coeff_cwf_clean))

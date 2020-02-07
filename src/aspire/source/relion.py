@@ -170,15 +170,3 @@ class RelionSource(ImageSource):
         logger.info(f'Loading {len(indices)} images complete')
 
         return Image(im)
-
-    def whiten(self, noise_filter):
-        """
-        Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
-        :param noise_filter: The noise psd of the images as a `Filter` object. Typically determined by a
-            NoiseEstimator class, and available as its `filter` attribute.
-        :return: On return, the `ImageSource` object has been modified in place.e.
-        """
-        super().whiten(noise_filter=noise_filter)
-
-        logger.info('Adding Whitening Filter Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(FilterXform(PowerFilter(noise_filter, power=-0.5)))
