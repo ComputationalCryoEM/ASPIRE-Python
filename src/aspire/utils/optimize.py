@@ -94,7 +94,10 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
 
     b_norm = np.linalg.norm(b)
     r = b.copy()
-    s = cg_opt['preconditioner'](r)
+
+    # Need the copy call to ensure that s and r are not identical in the case
+    # of an identity preconditioner.
+    s = cg_opt['preconditioner'](r.copy())
 
     if np.any(x != 0):
         if cg_opt['verbose']:
@@ -108,7 +111,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     obj = np.real(np.sum(x.conj() * a_x, 0) - 2 * np.real(np.sum(np.conj(b * x), 0)))
 
     if init['p'] is None:
-        p = s
+        p = s.copy()
     else:
         p = init['p']
 
@@ -137,7 +140,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         a_x += alpha * np.real(a_p)
 
         r -= alpha * a_p
-        s = cg_opt['preconditioner'](r)
+        s = cg_opt['preconditioner'](r.copy())
         new_gamma = np.real(np.sum(r.conj() * s))
         beta = new_gamma / old_gamma
         p *= beta
