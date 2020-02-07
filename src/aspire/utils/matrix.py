@@ -19,12 +19,11 @@ def unroll_dim(X, dim):
     dim = dim - 1
     old_shape = X.shape
     new_shape = old_shape[:dim]
-    if dim < len(old_shape):
-        new_shape += (-1, )
-    if old_shape != new_shape:
-        Y = m_reshape(X, new_shape)
-    else:
-        Y = X
+
+    new_shape += (-1, )
+
+    Y = m_reshape(X, new_shape)
+
     removed_dims = old_shape[dim:]
 
     return Y, removed_dims
@@ -32,13 +31,10 @@ def unroll_dim(X, dim):
 
 def roll_dim(X, dim):
     # TODO: dim is still 1-indexed like in MATLAB to reduce headaches for now
-    if len(dim) > 0:
-        old_shape = X.shape
-        new_shape = old_shape[:-1] + dim
-        Y = m_reshape(X, new_shape)
-        return Y
-    else:
-        return X
+    old_shape = X.shape
+    new_shape = old_shape[:-1] + dim
+    Y = m_reshape(X, new_shape)
+    return Y
 
 
 def im_to_vec(im):
