@@ -212,6 +212,7 @@ class RotCov2D:
             ensure(np.size(x) == p*p, 'The sizes of S and x are not consistent.')
             x = m_reshape(x, (p, p))
             y = S @ x @ S
+            y = m_reshape(y, (p ** 2,))
             return y
 
         def apply(A, x):
@@ -220,16 +221,19 @@ class RotCov2D:
             y = np.zeros_like(x)
             for k in range(0, len(A)):
                     y = y + A[k] @ x @ A[k].T
+            y = m_reshape(y, (p ** 2,))
             return y
 
         for ell in range(0, len(b)):
             A_ell = []
             for k in range(0, len(A)):
                 A_ell.append(A[k][ell])
-            b_ell = b[ell]
+            p = np.size(A_ell[0], 0)
+            b_ell = m_reshape(b[ell], (p ** 2,))
             S = inv(M[ell])
             cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
-            covar_coeff[ell], _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
         return covar_coeff
 
