@@ -27,7 +27,7 @@ logger = logging.getLogger('aspire')
 def estimate_ctf(data_folder, pixel_size, cs, amplitude_contrast, voltage, num_tapers, psd_size, g_min, g_max, corr, output_dir):
     """Estimate mean volume and covariance from a starfile."""
     dir_content = os.scandir(data_folder)
-    #file_names = [f.name for f in dir_content if f.is_file]
+
     mrc_files = [f.name for f in dir_content if os.path.splitext(f)[1]=='.mrc']
     mrcs_files = [f.name for f in dir_content if os.path.splitext(f)[1]=='.mrcs']
     file_names = mrc_files + mrcs_files
@@ -105,14 +105,10 @@ def estimate_ctf(data_folder, pixel_size, cs, amplitude_contrast, voltage, num_t
 
         noise_image = np.subtract(signal_observed, signal)
 
-        sio.savemat('background_2d.mat', {'background_2d': background_2d})
-
         with mrcfile.new(output_dir + '/' +  os.path.splitext(name)[0] + '_noise.mrc', overwrite=True) as mrc:
             mrc.set_data(np.float32(background_2d))
             mrc.voxel_size = pixel_size
             mrc.close()
-
-        sio.savemat('signal.mat', {'signal': signal})
 
         df = (cc_array[ml,0] + cc_array[ml, 1])*np.ones(theta.shape, theta.dtype) + (cc_array[ml,0] - cc_array[ml, 1])*np.cos(2*theta - 2*cc_array[ml, 2]*np.ones(theta.shape, theta.dtype))
         ctf_im = - np.sin(np.pi*lmbd*np.power(r_ctf, 2)/2 * (df - np.power(lmbd, 2)*np.power(r_ctf, 2)*(cs*np.power(10,6))) + amplitude_contrast)
