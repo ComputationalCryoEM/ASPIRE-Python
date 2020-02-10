@@ -127,13 +127,3 @@ def estimate_ctf(data_folder, pixel_size, cs, amplitude_contrast, voltage, num_t
 
         print(cc_array)
         print(ml)
-
-
-        #cc_fit, r, A_1d, CTF_fit_1d =
-        ctf_object.verification(cc_array[ml,0], cc_array[ml, 1], cc_array[ml, 2], signal)
-
-        #sio.savemat(cc_fit, {'cc_fit': cc_fit})
-        #sio.savemat(A_1d, {'A_1d': A_1d})
-        #sio.savemat(CTF_fit_1d, {'CTF_fit_1d': CTF_fit_1d})
-
-
