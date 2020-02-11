@@ -25,7 +25,7 @@ logger = logging.getLogger('aspire')
 @click.option('--output_dir', default="results", help='Path to output files')
 
 def estimate_ctf(data_folder, pixel_size, cs, amplitude_contrast, voltage, num_tapers, psd_size, g_min, g_max, corr, output_dir):
-    """Estimate mean volume and covariance from a starfile."""
+
     dir_content = os.scandir(data_folder)
 
     mrc_files = [f.name for f in dir_content if os.path.splitext(f)[1]=='.mrc']
