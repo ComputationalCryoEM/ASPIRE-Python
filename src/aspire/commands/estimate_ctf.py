@@ -12,15 +12,15 @@ logger = logging.getLogger('aspire')
 
 
 @click.command()
-@click.option('--data_folder', default=None, help='Path to mrcs files referenced in starfile')
+@click.option('--data_folder', default=None, help='Path to mrc or mrcs files')
 @click.option('--pixel_size', default=1, type=float, help='Pixel size in A')
 @click.option('--cs', default=2.0, type=float, help='Spherical aberration')
 @click.option('--amplitude_contrast', default=0.07, type=float, help='Amplitude contrast')
 @click.option('--voltage', default=300, type=float, help='Voltage in electron microscope')
 @click.option('--num_tapers', default=2, type=int, help='Number of tapers to apply in PSD estimation')
 @click.option('--psd_size', default=512, type=int, help='Size of blocks for use in PSD estimation')
-@click.option('--g_min', default=30, type=float, help='g_min')
-@click.option('--g_max', default=5, type=float, help='g_max')
+@click.option('--g_min', default=30, type=float, help='Inverse of minimum resolution for PSD')
+@click.option('--g_max', default=5, type=float, help='Inverse of maximum resolution for PSD')
 @click.option('--corr', default=1, type=float, help='Select method')
 @click.option('--output_dir', default="results", help='Path to output files')
 
