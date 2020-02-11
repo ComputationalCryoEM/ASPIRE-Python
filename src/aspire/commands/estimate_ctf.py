@@ -121,5 +121,3 @@ def estimate_ctf(data_folder, pixel_size, cs, amplitude_contrast, voltage, num_t
             mrc.voxel_size = pixel_size
             mrc.close()
 
-        print(cc_array)
-        print(ml)
