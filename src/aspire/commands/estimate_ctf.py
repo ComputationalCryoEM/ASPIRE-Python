@@ -103,6 +103,11 @@ def estimate_ctf(data_folder, pixel_size, cs, amplitude_contrast, voltage, num_t
         ml = np.argmax(cc_array[:,3],-1)
         ctf_object.write_star(cc_array[ml, 0], cc_array[ml, 1], cc_array[ml, 2], cs, voltage, pixel_size, amp, name)
 
+        ctf_object.set_df1(cc_array[ml, 0])
+        ctf_object.set_df2(cc_array[ml, 1])
+        ctf_object.set_angle(cc_array[ml, 2])
+        h_ctf = ctf_object.generate_ctf()
+
         noise_image = np.subtract(signal_observed, signal)
 
         with mrcfile.new(output_dir + '/' +  os.path.splitext(name)[0] + '_noise.mrc', overwrite=True) as mrc:
