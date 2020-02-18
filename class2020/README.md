@@ -1,5 +1,5 @@
  
-#Introduction  
+# Introduction  
 
 This folder contains the python examples for the 2020 Courses of MAT586, APC511 and S2020, Computational Methods 
 in Cryo-Electron Microscopy. The instructions below are developed to run the individual examples 
@@ -14,7 +14,7 @@ For more general introduction of mathematics, algorithms, and publications behin
 **Full documentation on ASPIRE Python package is being developed 
 on [the docs webpage](https://computationalcryoem.github.io/ASPIRE-Python).**
 
-#Installation Instructions
+# Installation Instructions
 
 Download and install git version control tool (optional but recommended)
 --------------
@@ -90,7 +90,7 @@ to install it if significant Python code development is necessary.
 
  
 
-#Run Python example scripts
+# Run Python example scripts
 
 The `class2020` folder under the root folder of ASPIRE package includes the example scripts. To run 
 these scripts individually, please follow the commands as below.   
