@@ -35,3 +35,4 @@ dependencies:
     - sphinxcontrib-bibtex
     - sphinx-rtd-theme==0.4.2
     - tqdm
+    - numba
