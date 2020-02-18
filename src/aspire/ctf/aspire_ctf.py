@@ -38,6 +38,7 @@ class CtfEstimator:
         self.defocus1 = 0
         self.defocus2 = 0
         self.angle = 0
+        self.h = 0
 
     def set_df1(self, df):
         self.defocus1 = df
@@ -56,7 +57,7 @@ class CtfEstimator:
         amplitude_contrast_term = np.divide(self.amplitude_contrast, np.sqrt(1-np.square(self.amplitude_contrast)))
         chi = defocus_factor - np.pi * np.power(self.lmbd, 3) * self.cs * np.power(10,6) * np.square(self.r_ctf)/2 + amplitude_contrast_term
         h = -np.sin(chi)
-        return h
+        self.h = h
 
     def ctf_preprocess(self, micrograph, block_size):
         # verify block_size is even
