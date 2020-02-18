@@ -182,6 +182,8 @@ class Basis:
         logger.info('Expanding array in basis')
         v, info = cg(operator, b, tol=tol)
 
+        v = v[..., np.newaxis]
+
         if info != 0:
             raise RuntimeError('Unable to converge!')
 

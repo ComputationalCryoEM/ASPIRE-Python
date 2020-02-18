@@ -81,26 +81,26 @@ class FourierKernel(Kernel):
         :return: The original volumes convolved by the kernel with the same dimensions as before.
         """
         N = x.shape[0]
-        kernel_f = self.kernel
+        kernel_f = self.kernel[..., np.newaxis]
         N_ker = kernel_f.shape[0]
 
         x, sz_roll = unroll_dim(x, 4)
         ensure(x.shape[0] == x.shape[1] == x.shape[2] == N, "Volumes in x must be cubic")
-        ensure(kernel_f.ndim == 3, "Convolution kernel must be cubic")
-        ensure(len(set(kernel_f.shape)) == 1, "Convolution kernel must be cubic")
+        ensure(kernel_f.shape[3] == 1, "Convolution kernel must be cubic")
+        ensure(len(set(kernel_f.shape[:3])) == 1, "Convolution kernel must be cubic")
 
-        is_singleton = x.ndim == 3
+        is_singleton = x.shape[3] == 1
 
         if is_singleton:
-            x = fftn(x, (N_ker, N_ker, N_ker))
+            x = fftn(x[..., 0], (N_ker, N_ker, N_ker))[..., np.newaxis]
         else:
             raise NotImplementedError('not yet')
 
         x = x * kernel_f
 
         if is_singleton:
-            x = np.real(ifftn(x))
-            x = x[:N, :N, :N]
+            x[..., 0] = np.real(ifftn(x[..., 0]))
+            x = x[:N, :N, :N, :]
         else:
             raise NotImplementedError('not yet')
 

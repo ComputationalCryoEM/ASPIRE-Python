@@ -41,7 +41,12 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
 
     This is corresponding to the implemented version in the ASPIRE Matlab package.
     :param a_fun:  A function handle specifying the linear operation x -> Ax.
-    :param b:  The vector consisting of the right hand side of Ax = b.
+        When multiple right-hand sides are supplied, this function takes as
+        input an array of shape (n, p), where n is the number of right-hand
+        sides and p is the dimension of the space.
+    :param b:  The vector consisting of the right hand side of Ax = b. Again,
+        n different right-hand sides are given by supplying an array of shape
+        (n, p).
     :param min_opt: The parameters for the conjugate gradient method, including:
             max_iter: Maximum number of iterations (default 50).
             verbose: The extent to which information on progress should be
@@ -94,7 +99,10 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
 
     b_norm = np.linalg.norm(b)
     r = b.copy()
-    s = cg_opt['preconditioner'](r)
+
+    # Need the copy call to ensure that s and r are not identical in the case
+    # of an identity preconditioner.
+    s = cg_opt['preconditioner'](r.copy())
 
     if np.any(x != 0):
         if cg_opt['verbose']:
@@ -105,10 +113,11 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     else:
         a_x = np.zeros(x.shape)
 
-    obj = np.real(np.sum(x.conj() * a_x, 0) - 2 * np.real(np.sum(np.conj(b * x), 0)))
+    obj = (np.real(np.sum(x.conj() * a_x, -1)
+           - 2 * np.real(np.sum(np.conj(b * x), -1))))
 
     if init['p'] is None:
-        p = s
+        p = s.copy()
     else:
         p = init['p']
 
@@ -124,28 +133,28 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         # Matlat code returns b_norm == 0, this break the Python code when b = 0
         return x, obj, info
 
-    i = 0
-    for i in range(1, cg_opt['max_iter']):
+    for i in range(1, cg_opt['max_iter'] + 1):
         if cg_opt['verbose']:
             logger.info('[CG] Applying matrix & preconditioner')
 
         a_p = a_fun(p)
-        old_gamma = np.real(np.sum(s.conj() * r))
+        old_gamma = np.real(np.sum(s.conj() * r, -1))
 
-        alpha = old_gamma / np.real(np.sum(p.conj() * a_p))
+        alpha = old_gamma / np.real(np.sum(p.conj() * a_p, -1))
         # TODO: Check p and a_p should be real or not ?
-        x += alpha * np.real(p)
-        a_x += alpha * np.real(a_p)
+        x += alpha[..., np.newaxis] * np.real(p)
+        a_x += alpha[..., np.newaxis] * np.real(a_p)
 
-        r -= alpha * a_p
-        s = cg_opt['preconditioner'](r)
-        new_gamma = np.real(np.sum(r.conj() * s))
+        r -= alpha[..., np.newaxis] * a_p
+        s = cg_opt['preconditioner'](r.copy())
+        new_gamma = np.real(np.sum(r.conj() * s, -1))
         beta = new_gamma / old_gamma
-        p *= beta
+        p *= beta[..., np.newaxis]
         p += s
 
-        obj = np.real(np.sum(x.conj() * a_x, 0) - 2 * np.real(np.sum(np.conj(b * x), 0)))
-        res = np.linalg.norm(r)
+        obj = (np.real(np.sum(x.conj() * a_x, -1)
+               - 2 * np.real(np.sum(np.conj(b * x), -1))))
+        res = np.sqrt(np.sum(r ** 2, -1))
         info['iter'].append(i)
         info['res'].append(res)
         info['obj'].append(obj)
@@ -155,13 +164,13 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
             info['p'].append(p)
 
         if cg_opt['verbose']:
-            logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(
-                np.linalg.norm(info['res'][0]), np.sum(info['obj'][0])))
+            logger.info('[CG] Iteration {}. Residual: {}. Objective: {}'.format(
+                i, np.linalg.norm(info['res'][i]), np.sum(info['obj'][i])))
 
         if np.all(res < b_norm * cg_opt['rel_tolerance']):
             break
 
-    if i == cg_opt['max_iter'] - 1:
+    if i == cg_opt['max_iter']:
         logger.warning('[CG] Conjugate gradient reached maximum number of iterations!')
 
     return x, obj, info
