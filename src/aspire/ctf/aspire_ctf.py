@@ -35,6 +35,28 @@ class CtfEstimator:
         rb = np.sqrt(np.square(X) + np.square(Y))
         self.r_ctf = rb * (10 / pixel_size)
         self.theta = np.arctan2(Y, X)
+        self.defocus1 = 0
+        self.defocus2 = 0
+        self.angle = 0
+
+    def set_df1(self, df):
+        self.defocus1 = df
+
+    def set_df2(self, df):
+        self.defocus2 = df
+
+    def set_angle(self, df):
+        self.angle = df
+
+    def generate_ctf(self):
+        astigmatism_angle = np.reshape(np.repeat(self.angle, np.multiply(self.theta.shape[0], self.theta.shape[1])), self.theta.shape)
+        defocus_sum = np.reshape(np.repeat(self.defocus1+self.defocus2, np.multiply(self.theta.shape[0], self.theta.shape[1])), self.theta.shape)
+        defocus = defocus_sum + np.multiply(self.defocus1 - self.defocus2, np.cos(2*(self.theta - astigmatism_angle)))
+        defocus_factor = np.pi * self.lmbd * np.multiply(self.r_ctf, defocus) / 2
+        amplitude_contrast_term = np.divide(self.amplitude_contrast, np.sqrt(1-np.square(self.amplitude_contrast)))
+        chi = defocus_factor - np.pi * np.power(self.lmbd, 3) * self.cs * np.power(10,6) * np.square(self.r_ctf)/2 + amplitude_contrast_term
+        h = -np.sin(chi)
+        return h
 
     def ctf_preprocess(self, micrograph, block_size):
         # verify block_size is even
