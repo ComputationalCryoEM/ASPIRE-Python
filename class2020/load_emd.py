@@ -54,7 +54,7 @@ surface[5, ...] = vol[:, :, -3:-1, 0].flatten()
 avg_value = np.sum(surface)/surface.size
 logger.info(f'The average density from 6 cubic surfaces are {avg_value} ')
 
-# Remove the average density
+# Remove the average density and reverse the contrast representation
 vol_avg = -(vol - avg_value)
 
 # Generate a mask so that only related density map is shown

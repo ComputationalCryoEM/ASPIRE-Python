@@ -86,7 +86,8 @@ Install Pycharm IDE (optional)
 [Pycharm from Jet Brains](https://www.jetbrains.com/pycharm/) is a very good IDE for developing, 
 debugging, profiling and optimizing Python code. The professional version is also available for
 academic users with free license fee in addition to the community version. It is highly recommended
-to install it if significant Python code development is necessary. 
+to install it if significant Python code development is necessary. For simple project you are welcome 
+to select any text editor to write your python scripts. 
 
  
 
@@ -99,12 +100,16 @@ these scripts individually, please follow the commands as below.
 cd /path/to/git/clone/folder
 
 # set PYTHONPATH environment variable for aspire module first 
-export PYTHONPATH=/path/to/git/clone/folder/aspire
-
+# Note that 'export PYTHONPATH environment variable' tell python commond 
+# to find the aspire module under that path.   
+export PYTHONPATH=/path/to/git/clone/folder/src
+ 
 # change to class2020 folder
 cd class2020
 
 # run load_emd.py script for the example of load mrc file and downsample the 3D map
+# Note that if PYTHONPATH environment variable was not specified as above, run the commond as   
+# 'PYTHONPATH=/path/to/git/clone/folder/src python load_emd.py'
 python load_emd.py
 
 # run rot_project.py script for the example of rotating 3D map and projecting to 2D image  
@@ -113,4 +118,26 @@ python rot_project.py
 # run fft_transform.py script for the example of 2D and 3D FFT/IFFT  
 python fft_transform.py 
 
+```
+
+# Run standalone ASPIRE commands for analyzing experimental data
+
+Currently, several submodules of aspire module are available for analyzing experimental data. 
+These standalone python scripts are under the '/path/to/git/clone/folder/src/aspire/commands', 
+such as `apple.py` for APPLE-Picker, `denoise.py` for denoising using 2D covariance analysis, 
+and `cov3d.py` for structural heterogeneity using 3D covariance analysis. As an example, 
+to run one of them, please follow the steps as below: 
+
+```
+# set PYTHONPATH environment variable for aspire module first 
+export PYTHONPATH=/path/to/git/clone/folder/src
+
+# run APPLE-Picker command 
+python -m aspire apple --mrc_file /path/to/git/clone/folder/src/aspire/data/sample.mrc --output_dir particles
+
+# run Cov2d denosing command using startfile 
+python -m aspire denoise --starfile_in /tigress/junchaox/CryoEMdata/empiar10028/shiny_2sets_shift.star  \
+                         --starfile_out /tigress/junchaox/CryoEMdata/empiar10028/Denoise/particles_denoise.star \
+                         --pixel_size 1.34 --max_resolution 60 --data_folder /tigress/junchaox/CryoEMdata/empiar10028 \
+                         --max_rows 1024 --noise_type aniso --ctf_info True 
 ```
