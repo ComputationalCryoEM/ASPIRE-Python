@@ -77,7 +77,7 @@ class Cov2DTestCase(TestCase):
         self.assertTrue(np.allclose(results, self.mean_coeff))
 
     def test02GetCovar(self):
-        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covar.npy'))
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covar.npy'), allow_pickle=True)
         self.covar_coeff = self.cov2d._get_covar(self.coeff_clean)
         im = 0
         for mat in results[0].tolist():
@@ -90,7 +90,7 @@ class Cov2DTestCase(TestCase):
         self.assertTrue(np.allclose(results, self.mean_coeff_ctf))
 
     def test04GetCovarCTF(self):
-        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf.npy'))
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf.npy'), allow_pickle=True)
         self.covar_coeff_ctf = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                     noise_var=self.noise_var)
         im = 0
@@ -99,7 +99,7 @@ class Cov2DTestCase(TestCase):
             im += 1
 
     def test05GetCovarCTFShrink(self):
-        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'))
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'), allow_pickle=True)
         covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
                      'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64'}
         self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
