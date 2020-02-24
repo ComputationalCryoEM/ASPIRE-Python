@@ -117,14 +117,12 @@ class RotCov2D:
             coeff_k = coeffs[:, ctf_idx == k]
             weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
             mean_coeff_k = self._get_mean(coeff_k)
-            mean_coeff_k = mean_coeff_k[:, np.newaxis]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
-            b = b + weight*blk_diag_apply(ctf_fb_k_t, mean_coeff_k)[:, 0]
+            b = b + weight*blk_diag_apply(ctf_fb_k_t, mean_coeff_k)
             A = blk_diag_add(A, blk_diag_mult(weight, blk_diag_mult(ctf_fb_k_t, ctf_fb_k)))
 
-        mean_coeff = blk_diag_solve(A, b[:, np.newaxis])[:, 0]
-
+        mean_coeff = blk_diag_solve(A, b)
         return mean_coeff
 
     def get_covar(self, coeffs, ctf_fb=None, ctf_idx=None, mean_coeff=None,
@@ -184,17 +182,16 @@ class RotCov2D:
 
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
-            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])
-            covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k[:, 0])
+            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff)
+            covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
             b_coeff = blk_diag_add(b_coeff, blk_diag_mult(ctf_fb_k_t,
                 blk_diag_mult(covar_coeff_k, blk_diag_mult(ctf_fb_k, weight))))
 
-            b_noise = blk_diag_add(b_noise, blk_diag_mult(weight,
-                blk_diag_mult(ctf_fb_k_t, ctf_fb_k)))
+            A_temp = blk_diag_mult(ctf_fb_k_t, ctf_fb_k)
+            b_noise = blk_diag_add(b_noise, blk_diag_mult(A_temp, weight))
 
-            A[k] = blk_diag_mult(ctf_fb_k_t, blk_diag_mult(ctf_fb_k, np.sqrt(weight)))
-
+            A[k] = blk_diag_mult(A_temp, np.sqrt(weight))
             M = blk_diag_add(M, A[k])
 
         if covar_est_opt['shrinker'] == 'None':
@@ -421,17 +418,12 @@ class BatchedRotCov2D(RotCov2D):
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
 
-            A_mean_k = blk_diag_mult(ctf_fb_k_t, ctf_fb_k)
-            A_mean_k = blk_diag_mult(weight, A_mean_k)
-
+            A_temp = blk_diag_mult(ctf_fb_k_t, ctf_fb_k)
+            A_mean_k = blk_diag_mult(weight, A_temp)
             A_mean = blk_diag_add(A_mean, A_mean_k)
 
-            A_covar_k = blk_diag_mult(ctf_fb_k_t, ctf_fb_k)
-            A_covar_k = blk_diag_mult(np.sqrt(weight), A_covar_k)
-
+            A_covar_k = blk_diag_mult(np.sqrt(weight), A_temp)
             A_covar[k] = A_covar_k
-
-            M_covar_k = A_covar_k
 
             M_covar = blk_diag_add(M_covar, A_covar_k)
 
@@ -441,7 +433,6 @@ class BatchedRotCov2D(RotCov2D):
 
     def _mean_correct_covar_rhs(self, b_covar, b_mean, mean_coeff):
         src = self.src
-        basis = self.basis
 
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
@@ -493,6 +484,7 @@ class BatchedRotCov2D(RotCov2D):
             ensure(np.size(x) == p*p, 'The sizes of S and x are not consistent.')
             x = m_reshape(x, (p, p))
             y = S @ x @ S
+            y = m_reshape(y, (p**2,))
             return y
 
         def apply(A, x):
@@ -501,6 +493,7 @@ class BatchedRotCov2D(RotCov2D):
             y = np.zeros_like(x)
             for k in range(0, len(A)):
                     y = y + A[k] @ x @ A[k].T
+            y = m_reshape(y, (p**2,))
             return y
 
         cg_opt = covar_est_opt
@@ -510,10 +503,14 @@ class BatchedRotCov2D(RotCov2D):
             A_ell = []
             for k in range(0, len(A_covar)):
                 A_ell.append(A_covar[k][ell])
-            b_ell = b_covar[ell]
+            #A b_ell = b_covar[ell]
+            p = np.size(A_ell[0], 0)
+            b_ell = m_reshape(b_covar[ell], (p ** 2,))
             S = inv(M[ell])
             cg_opt['preconditioner'] = lambda x: precond_fun(S, x)
-            covar_coeff[ell], _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            # covar_coeff[ell], _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
         return covar_coeff
 
@@ -568,14 +565,14 @@ class BatchedRotCov2D(RotCov2D):
         manipulated using the `blk_diag_*` functions.
         """
 
-        if not covar_est_opt:
-            covar_est_opt = {'shrinker': 'None',
-                             'verbose': 0,
-                             'max_iter': 250,
-                             'iter_callback': [],
-                             'store_iterates': False,
-                             'rel_tolerance': 1e-12,
-                             'precision': 'float64'}
+        def identity(x):
+            return x
+
+        default_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
+                             'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
+                             'preconditioner': identity}
+
+        covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
         if not self.b_covar:
             self._calc_rhs()
