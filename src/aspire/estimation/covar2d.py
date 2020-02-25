@@ -475,7 +475,6 @@ class BatchedRotCov2D(RotCov2D):
 
     def _solve_covar(self, A_covar, b_covar, M, covar_est_opt):
         ctf_fb = self.ctf_fb
-        ctf_idx = self.ctf_idx
 
         partition = blk_diag_partition(ctf_fb[0])
 
@@ -503,12 +502,10 @@ class BatchedRotCov2D(RotCov2D):
             A_ell = []
             for k in range(0, len(A_covar)):
                 A_ell.append(A_covar[k][ell])
-            #A b_ell = b_covar[ell]
             p = np.size(A_ell[0], 0)
             b_ell = m_reshape(b_covar[ell], (p ** 2,))
             S = inv(M[ell])
             cg_opt['preconditioner'] = lambda x: precond_fun(S, x)
-            # covar_coeff[ell], _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
             covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 

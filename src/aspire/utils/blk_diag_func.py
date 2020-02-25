@@ -344,38 +344,3 @@ def filter_to_fb_mat(h_fun, fbasis):
             ind = ind+1
 
     return h_fb
-    # return fun2fb_mat(k_vals, wts, h_vals, fbasis)
-
-
-def fun2fb_mat(k_vals, wts, h_vals, fbasis):
-    """
-    Convert 1D array of function values in k space into a basis representation
-
-    :param k_vals: The k values
-    :param wts: The weights for each k value
-    :param h_vals: The function values in k space
-    :param fbasis: The basis object for expanding
-    :return: a matrix representation using the `fbasis` expansion
-    """
-    # Set same dimensions as basis object
-    n_k = k_vals.size
-
-    h_fb = []
-    ind = 0
-    for ell in range(0, fbasis.ell_max+1):
-        k_max = fbasis.k_max[ell]
-        rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
-        fb_vals = np.zeros_like(rmat)
-        for ik in range(0, k_max):
-            fb_vals[:, ik] = jv(ell, rmat[:, ik])
-        fb_nrms = 1/np.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
-        fb_vals = fb_vals/fb_nrms
-        h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
-        h_fb_ell = fb_vals.T @ (h_fb_vals*k_vals.reshape(n_k, 1)*wts.reshape(n_k, 1))
-        h_fb.append(h_fb_ell)
-        ind = ind+1
-        if ell > 0:
-            h_fb.append(h_fb[ind-1])
-            ind = ind+1
-
-    return h_fb
