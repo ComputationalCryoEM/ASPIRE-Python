@@ -47,7 +47,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     :param b:  The vector consisting of the right hand side of Ax = b. Again,
         n different right-hand sides are given by supplying an array of shape
         (n, p).
-    :param min_opt: The parameters for the conjugate gradient method, including:
+    :param cg_opt: The parameters for the conjugate gradient method, including:
             max_iter: Maximum number of iterations (default 50).
             verbose: The extent to which information on progress should be
                 output to the terminal (default 1).
@@ -114,7 +114,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         a_x = np.zeros(x.shape)
 
     obj = (np.real(np.sum(x.conj() * a_x, -1)
-           - 2 * np.real(np.sum(np.conj(b * x), -1))))
+            - 2 * np.real(np.sum(np.conj(b * x), -1))))
 
     if init['p'] is None:
         p = s.copy()
@@ -141,9 +141,8 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         old_gamma = np.real(np.sum(s.conj() * r, -1))
 
         alpha = old_gamma / np.real(np.sum(p.conj() * a_p, -1))
-        # TODO: Check p and a_p should be real or not ?
-        x += alpha[..., np.newaxis] * np.real(p)
-        a_x += alpha[..., np.newaxis] * np.real(a_p)
+        x += alpha[..., np.newaxis] * p
+        a_x += alpha[..., np.newaxis] * a_p
 
         r -= alpha[..., np.newaxis] * a_p
         s = cg_opt['preconditioner'](r.copy())
@@ -153,7 +152,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         p += s
 
         obj = (np.real(np.sum(x.conj() * a_x, -1)
-               - 2 * np.real(np.sum(np.conj(b * x), -1))))
+                - 2 * np.real(np.sum(np.conj(b * x), -1))))
         res = np.sqrt(np.sum(r ** 2, -1))
         info['iter'].append(i)
         info['res'].append(res)
