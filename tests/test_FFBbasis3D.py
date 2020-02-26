@@ -101,7 +101,7 @@ class FFBBasis3DTestCase(TestCase):
         result = self.basis.evaluate(coeffs)
 
         self.assertTrue(np.allclose(
-            result[..., 0],
+            result,
             np.load(os.path.join(DATA_DIR, 'ffbbasis3d_xcoeff_out_8_8_8.npy'))
         ))
 
@@ -110,7 +110,7 @@ class FFBBasis3DTestCase(TestCase):
         result = self.basis.evaluate_t(x)
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'ffbbasis3d_vcoeff_out_8_8_8.npy'))
+            np.load(os.path.join(DATA_DIR, 'ffbbasis3d_vcoeff_out_8_8_8.npy'))[..., 0]
         ))
 
     def testFFBBasis3DExpand(self):
@@ -118,6 +118,6 @@ class FFBBasis3DTestCase(TestCase):
         result = self.basis.expand(x)
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'ffbbasis3d_vcoeff_out_exp_8_8_8.npy'))
+            np.load(os.path.join(DATA_DIR, 'ffbbasis3d_vcoeff_out_exp_8_8_8.npy'))[..., 0]
         ))
 

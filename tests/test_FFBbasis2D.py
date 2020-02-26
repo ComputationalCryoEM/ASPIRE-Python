@@ -70,16 +70,17 @@ class FFBBasis2DTestCase(TestCase):
         result = self.basis.evaluate(v)
 
         self.assertTrue(np.allclose(
-            result[..., 0],
+            result,
             np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_out_8_8.npy'))
         ))
 
     def testFFBBasis2DEvaluate_t(self):
         x = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy'))
         result = self.basis.evaluate_t(x)
+
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_8_8.npy'))
+            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_8_8.npy'))[..., 0]
         ))
 
     def testFFBBasis2DExpand(self):
@@ -87,6 +88,6 @@ class FFBBasis2DTestCase(TestCase):
         result = self.basis.expand(x)
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_exp_8_8.npy'))
+            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_exp_8_8.npy'))[..., 0]
         ))
 
