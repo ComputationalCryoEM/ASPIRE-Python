@@ -1,6 +1,6 @@
 from unittest import TestCase
 import importlib_resources
-import aspire.data
+import tests.saved_test_data
 from aspire.apple.apple import Apple
 
 
@@ -81,7 +81,7 @@ class ApplePickerTestCase(TestCase):
 
         apple_picker = Apple()
 
-        with importlib_resources.path(aspire.data, 'sample.mrc') as mrc_path:
+        with importlib_resources.path(tests.saved_test_data, 'sample.mrc') as mrc_path:
             centers_found = apple_picker.process_micrograph(mrc_path)
             for center_found in centers_found:
                 _x, _y = tuple(center_found)
