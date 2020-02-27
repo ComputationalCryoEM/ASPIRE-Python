@@ -1,7 +1,7 @@
 from unittest import TestCase
 import numpy as np
 import importlib_resources
-import aspire.data
+import tests.saved_test_data
 from aspire.image import Image
 from aspire.source.mrcstack import MrcStack
 
@@ -14,14 +14,14 @@ class MicrographTestCase(TestCase):
         pass
 
     def testImageStackType(self):
-        with importlib_resources.path(aspire.data, 'sample.mrcs') as path:
+        with importlib_resources.path(tests.saved_test_data, 'sample.mrcs') as path:
             mrc_stack = MrcStack(path)
             # Since mrc_stack is an ImageSource, we can call images() on it to get an ImageStack
             image_stack = mrc_stack.images(start=0, num=np.inf)
             self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
-        with importlib_resources.path(aspire.data, 'sample.mrcs') as path:
+        with importlib_resources.path(tests.saved_test_data, 'sample.mrcs') as path:
             mrc_stack = MrcStack(path)
             # Try to get a total of 5 images from our ImageSource
             image_stack = mrc_stack.images(start=0, num=5)

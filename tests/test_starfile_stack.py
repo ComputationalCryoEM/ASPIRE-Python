@@ -3,7 +3,7 @@ import numpy as np
 import importlib_resources
 import os
 
-import aspire.data
+import tests.saved_test_data
 from aspire.source.relion import RelionSource
 from aspire.image import Image
 from aspire.utils.filters import ScalarFilter
@@ -15,7 +15,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 class StarFileTestCase(TestCase):
     def run(self, result=None):
         """Overridden run method to use context manager provided by importlib_resources"""
-        with importlib_resources.path(aspire.data, 'sample_relion_data.star') as path:
+        with importlib_resources.path(tests.saved_test_data, 'sample_relion_data.star') as path:
 
             # Create a temporary file with the contents of the sample.mrcs file in a subfolder at the same location
             # as the starfile, to allow our classes to do their job
@@ -31,7 +31,7 @@ class StarFileTestCase(TestCase):
             should_delete_file = False
             if not os.path.exists(temp_file_path):
                 with open(temp_file_path, 'wb') as f:
-                    f.write(importlib_resources.read_binary(aspire.data, 'sample.mrcs'))
+                    f.write(importlib_resources.read_binary(tests.saved_test_data, 'sample.mrcs'))
                     should_delete_file = True
 
             self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)

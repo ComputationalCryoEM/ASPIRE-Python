@@ -2,7 +2,7 @@ from unittest import TestCase
 import importlib_resources
 from pandas import DataFrame
 
-import aspire.data
+import tests.saved_test_data
 from aspire.io.starfile import StarFile, StarFileBlock
 
 
@@ -12,7 +12,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class StarFileTestCase(TestCase):
     def setUp(self):
-        with importlib_resources.path(aspire.data, 'sample.star') as path:
+        with importlib_resources.path(tests.saved_test_data, 'sample.star') as path:
             self.starfile = StarFile(path)
 
     def tearDown(self):
