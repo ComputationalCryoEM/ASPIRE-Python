@@ -21,6 +21,7 @@ install:
 
   - conda env create -n test-environment -f environment.yml
   - source activate test-environment
+  - python setup.py install
   
 script: py.test --cov=aspire tests
 
