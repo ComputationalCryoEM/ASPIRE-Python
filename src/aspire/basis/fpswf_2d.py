@@ -9,7 +9,7 @@ from scipy.optimize import least_squares
 from aspire.nfft import nufft3
 from aspire.basis.basis_utils import t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
-from aspire.basis.basis_utils import leggauss_0_1
+from aspire.basis.basis_utils import lgwt
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         Generate Gaussian quadrature points and weights for the radical parts of 2D PSWFs
         """
-        x, w = leggauss_0_1(20 * n)
+        x, w = lgwt(20 * n, 0, 1)
 
         big_n = 0
 
