@@ -3,7 +3,6 @@ Define related utility functions for Fourier–Bessel (2D), Spherical Fourier–
 prolate spheroidal wave function (PSWF) objects.
 """
 
-import sys
 import logging
 import numpy as np
 from numpy import pi, log, exp, diff
@@ -267,61 +266,25 @@ def lgwt(ndeg, a, b):
 
     Generates the Legendre-Gauss nodes and weights on an interval
     [a, b] with truncation order of ndeg for computing definite integrals
-    using Legendre-Gauss quadrature. Computes
+    using Legendre-Gauss quadrature.
     Suppose you have a continuous function f(x) which is defined on [a, b]
     which you can evaluate at any x in [a, b]. Simply evaluate it at all of
     the values contained in the x vector to obtain a vector f, then compute
     the definite integral using sum(f.*w);
 
-    The nodes are sorted in ascending order.
-
-    Modified from the MATLAB lgwt version by Greg von Winckel - 02/25/2004
+    This is a 2rapper for numpy.polynomial leggauss which outputs only in the
+    range of (-1, 1).
 
     :param ndeg: truncation order, that is, the number of nodes.
     :param a, b: The endpoints of the interval over which the quadrature is defined.
     :return x, w: The quadrature nodes and weights.
     """
-    N = ndeg - 1
-    N1 = N + 1
-    N2 = N + 2
 
-    xu = np.linspace(-1, 1, N1).T
-
-    # Initial guess.
-    y = np.cos((2 * np.arange(N + 1).T + 1) * pi / (2 * N + 2)) + (0.27 / N1) * np.sin(pi * xu * N / N2)
-
-    # Legendre-Gauss Vandermonde matrix.
-    L = np.zeros((N1, N2))
-
-    # Derivative of the matrix.
-    Lp = np.zeros_like(y)
-
-    # Compute the zeros of the (N+1)th Legendre polynomial using the recursion
-    # relation and the Newton-Raphson method. Iterate until new points are
-    # uniformly within epsilon of old points.
-    y0 = 2
-    while np.max(abs(y - y0)) > sys.float_info.epsilon:
-        L[:, 0] = 1
-        L[:, 1] = y
-
-        for k in range(1, N1):
-            L[:, k + 1] = ((2 * (k + 1) - 1) * y * L[:, k] - k * L[:, k - 1]) / (k + 1)
-
-        Lp = N2 * (L[:, N1 - 1] - y * L[:, N2 - 1]) / (1 - y ** 2)
-
-        y0 = y
-        y = y0 - L[:, N2 - 1] / Lp
-
-    # Linear map from [-1, 1] to [a, b].
-    x = (a * (1 - y) + b * (1 + y)) / 2
-
-    # Compute the weights.
-    w = (b - a) / ((1 - y ** 2) * Lp ** 2) * (N2 / N1) ** 2
-
-    # Sort x in ascending order.
-    ids = np.argsort(x)
-    w = w[ids]
-    x = x[ids]
+    x, w = leggauss(ndeg)
+    scale_factor = (b - a) / 2
+    shift = (a + b) / 2
+    x = scale_factor * x + shift
+    w = scale_factor * w
 
     return x, w
 
@@ -393,14 +356,3 @@ def t_radial_part_mat(x, n, j, m):
 def k_operator(nu, x):
     return jn(nu, x) * np.sqrt(x)
 
-
-def leggauss_0_1(n):
-    """
-    Wrapper for numpy.polynomial leggauss
-    :param n: int > 0, the number of sampled points to integrate
-    :return: Legendre-Gauss quadrature of degree n between 0 and 1
-    """
-    sample_points, weights = leggauss(n)
-    sample_points = (sample_points + 1) / 2
-    weights = weights / 2
-    return sample_points, weights

@@ -4,7 +4,7 @@ import numpy as np
 from aspire.basis import Basis
 from aspire.basis.pswf_utils import BNMatrix
 from aspire.basis.basis_utils import d_decay_approx_fun, t_radial_part_mat, t_x_mat, t_x_derivative_mat
-from aspire.basis.basis_utils import k_operator, leggauss_0_1
+from aspire.basis.basis_utils import k_operator, lgwt
 
 
 logger = logging.getLogger(__name__)
@@ -194,7 +194,7 @@ class PSWFBasis2D(Basis):
 
         m = 0
         n = int(np.ceil(2 * c / np.pi))
-        r, w = leggauss_0_1(n)
+        r, w = lgwt(n, 0, 1)
 
         cons = c / 2 / np.pi
         while True:
@@ -215,7 +215,7 @@ class PSWFBasis2D(Basis):
                 n = n_end + 1
             else:
                 n *= 2
-                r, w = leggauss_0_1(n)
+                r, w = lgwt(n, 0, 1)
 
         return d_vec_all, alpha_all, n_order_length_vec
 
