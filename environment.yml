@@ -6,6 +6,7 @@ channels:
 
 dependencies:
   - fftw
+  - libgfortran
   - pip
   - python=3.6
   - pip:
