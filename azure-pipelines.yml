@@ -48,7 +48,7 @@ jobs:
   - bash: conda env create --name myEnvironment --file environment.yml
     displayName: Create Anaconda environment
 
-  - bash: conda install libgfortran
+  - bash: conda install -y libgfortran
     displayName: libgfortran on Mac
     
   - bash: |
