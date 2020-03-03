@@ -21,6 +21,14 @@ install:
 
   - conda env create -n test-environment -f environment.yml
   - source activate test-environment
+  
+  # Install pynfft and dependent packages manually so we have a redundant nfft library for unit testing purposes
+  - conda install fftw=3.3.8
+  - conda install -c conda-forge nfft=3.4.1
+  # pyNFFT is broken as of 4/18 and does not play well with nfft 3.4.1 + fftw 3.3.8
+  # Install from custom location
+  - export CONDA_ENV_LOC=`conda info | grep "active env location" | awk '{print $5}'`
+  - CFLAGS=-I$CONDA_ENV_LOC/include LDFLAGS=-L$CONDA_ENV_LOC/lib pip install git+https://github.com/vineetbansal/pyNFFT.git
   - python setup.py install
   
 script: py.test --cov=aspire tests
