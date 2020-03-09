@@ -1,4 +1,3 @@
-import os.path
 from copy import copy
 import logging
 import numpy as np
@@ -11,7 +10,6 @@ from aspire.utils import ensure
 from aspire.utils.filters import MultiplicativeFilter, PowerFilter
 from aspire.utils.coor_trans import grid_2d
 from aspire.source.xform import Multiply, Shift, Downsample, FilterXform, LinearIndexedXform, Pipeline, LinearPipeline
-from aspire.estimation.noise import WhiteNoiseEstimator
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +169,15 @@ class ImageSource:
         :return: Rotation matrices as a n x 3 x 3 array
         """
         return self._rotations.as_dcm()
+
+    @property
+    def group_unique_hist(self):
+        """
+        :return: Unique group numbers and counts
+        """
+        group_number = self._metadata['_rlnGroupNumber']
+        unique_elements, counts_elements = np.unique(group_number.astype(np.int), return_counts=True)
+        return unique_elements, counts_elements
 
     @angles.setter
     def angles(self, values):

@@ -34,7 +34,7 @@ class StarFileTestCase(TestCase):
                     f.write(importlib_resources.read_binary(tests.saved_test_data, 'sample.mrcs'))
                     should_delete_file = True
 
-            self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)
+            self.src = RelionSource(path.parent.absolute(), 'sample_relion_data.star', max_rows=12)
             super(StarFileTestCase, self).run(result)
 
             if should_delete_file:
