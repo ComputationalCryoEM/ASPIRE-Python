@@ -47,7 +47,7 @@ jobs:
     
   - bash: conda env create --name myEnvironment --file environment.yml
     displayName: Create Anaconda environment
-
+    
   - bash: |
       source activate myEnvironment
       python setup.py install
