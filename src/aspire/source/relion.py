@@ -19,7 +19,6 @@ class RelionSource(ImageSource):
 
     @classmethod
     def starfile2df(cls, proj_folder, filepath, max_rows=None):
-
         star_folder = proj_folder
         if proj_folder is not None:
             if not os.path.isabs(filepath):
@@ -49,9 +48,10 @@ class RelionSource(ImageSource):
     def __init__(self, proj_folder, filepath, pixel_size=1, B=0, n_workers=-1, max_rows=None, memory=None):
         """
         Load STAR file at given filepath
-        :param proj_folder: Path to project folder w.r.t which all relative paths to all submodules..
+        :param proj_folder: Absolute path to project folder with respect to all relative paths to
+            star files for different analysis such as denoising and 2D classification.
             If None, the folder corresponding to filepath is used.
-        :param filepath: Absolute or relative path to STAR file
+        :param filepath: include relative path to project folder and input STAR file
         :param pixel_size: the pixel size of the images in angstroms (Default 1)
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
         :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
