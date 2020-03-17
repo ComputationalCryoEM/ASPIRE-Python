@@ -301,3 +301,160 @@ def vol2img(volume, rots, L=None, dtype=None):
     return np.real(im)
 
 
+# TODO - out of core version
+def cryo_crop(x, out_shape):
+    """
+    :param x: ndarray of size (N_1,...N_k)
+    :param out_shape: iterable of integers of length k. The value in position i (n_i) is the size we want to cut from
+        the center of x in dimension i. If the value of n_i <= 0 or >= N_i then the dimension is left as is.
+    :return: out: The center of x with size outshape.
+    """
+    in_shape = np.array(x.shape)
+    out_shape = np.array([s if 0 < s < in_shape[i] else in_shape[i] for i, s in enumerate(out_shape)])
+    start_indices = in_shape // 2 - out_shape // 2
+    end_indices = start_indices + out_shape
+    indexer = tuple([slice(i, j) for (i, j) in zip(start_indices, end_indices)])
+    out = x[indexer]
+    return out
+
+
+def cryo_downsample(x, out_shape):
+    """
+    :param x: ndarray of size (N_1,...N_k)
+    :param out_shape: iterable of integers of length k. The value in position i (n_i) is the size we want to cut from
+        the center of x in dimension i. If the value of n_i <= 0 or >= N_i then the dimension is left as is.
+    :return: out: downsampled x
+    """
+    dtype_in = x.dtype
+    in_shape = np.array(x.shape)
+    out_shape = np.array([s if 0 < s < in_shape[i] else in_shape[i] for i, s in enumerate(out_shape)])
+    fourier_dims = np.array([i for i, s in enumerate(out_shape) if 0 < s < in_shape[i]])
+    size_in = np.prod(in_shape[fourier_dims])
+    size_out = np.prod(out_shape[fourier_dims])
+
+    fx = cryo_crop(np.fft.fftshift(np.fft.fft2(x, axes=fourier_dims), axes=fourier_dims), out_shape)
+    out = ifft2(np.fft.ifftshift(fx, axes=fourier_dims), axes=fourier_dims) * (size_out / size_in)
+    return out.astype(dtype_in)
+
+
+def downsample_preprocess(stack, n, mask=None, stack_in_fourier=False):
+    """
+    A specific downsample version for preprocess for optimized code. In the likely case where preprocess does not use
+    crop, the phaseflip_star_file return the images in fourier and downsample_preprocess receives it in fourier.
+    These two functions use full sized images, so the fourier transformation is slow. This function also works with C
+    aligned images instead of F aligned.
+    Args:
+        stack: ndarray (N, L, L)
+        n: size to downsample to, n<L
+        mask: ndarray (L, L)
+        stack_in_fourier: Bool (True or False), if true, stack is assumed to be in fourier.
+
+    Returns:
+        downsampled_images: ndarray (N, n, n), downsampled images.
+
+    """
+    size_in = np.square(stack.shape[1])
+    size_out = np.square(n)
+    mask = 1 if mask is None else mask
+    num_images = stack.shape[0]
+    downsampled_images = np.zeros((num_images, n, n), dtype='float32')
+    images_batches = np.array_split(np.arange(num_images), 500)
+    for batch in images_batches:
+        curr_batch = np.array(stack[batch])
+        curr_batch = curr_batch if stack_in_fourier else fft2(curr_batch)
+        fx = cryo_crop(np.fft.fftshift(curr_batch, axes=(-2, -1)), (-1, n, n)) * mask
+        downsampled_images[batch] = ifft2(np.fft.ifftshift(fx, axes=(-2, -1))) * (size_out / size_in)
+        print('finished {}/{}'.format(batch[-1] + 1, num_images))
+    return downsampled_images
+
+
+def normalize_background(stack, radius=None):
+    n = stack.shape[1]
+    radius = n // 2 if radius is None else radius
+    circle = ~disc(n, radius)
+    background_pixels = stack[circle]
+    mean = np.mean(background_pixels, 0)
+    std = np.std(background_pixels, 0, ddof=1)
+    stack -= mean
+    stack /= std
+    return stack, mean, std
+
+
+def global_phaseflip(stack):
+    """ Apply global phase flip to an image stack if needed.
+
+    Check if all images in a stack should be globally phase flipped so that
+    the molecule corresponds to brighter pixels and the background corresponds
+    to darker pixels. This is done by comparing the mean in a small circle
+    around the origin (supposed to correspond to the molecule) with the mean
+    of the noise, and making sure that the mean of the molecule is larger.
+
+    Examples:
+        >> import mrcfile
+        >> stack = mrcfile.open('stack.mrcs')
+        >> stack = global_phaseflip_stack(stack)
+
+    :param stack: stack of images to phaseflip if needed
+    :return stack: stack which might be phaseflipped when needed
+    """
+
+    n = stack.shape[0]
+    image_center = (n + 1) / 2
+    coor_mat_m, coor_mat_n = np.meshgrid(np.arange(1, n + 1), np.arange(1, n + 1))
+    distance_from_center = np.sqrt((coor_mat_m - image_center) ** 2 + (coor_mat_n - image_center) ** 2)
+
+    # calculate indices of signal and noise samples assuming molecule is around the center
+    signal_indices = distance_from_center < round(n / 4)
+    noise_indices = distance_from_center > round(n / 2 * 0.8)
+
+    signal_mean = np.mean(stack[signal_indices], 0)
+    noise_mean = np.mean(stack[noise_indices], 0)
+
+    signal_mean = np.mean(signal_mean)
+    noise_mean = np.mean(noise_mean)
+
+    if signal_mean < noise_mean:
+        stack *= -1
+    return stack
+
+
+# TODO - maybe these three functions can be added to some general utils as it is being used many times?
+def disc(n, r=None, inner=False):
+    """
+    Return the points inside the circle of radius=r in a square with side n. if inner is True don't return only the
+    strictly inside points.
+    :param n: integer, the side of the square
+    :param r: The radius of the circle (default: n // 2)
+    :param inner:
+    :return: nd array with 0 outside of the circle and 1 inside
+    """
+    r = n // 2 if r is None else r
+    radiisq = cart2rad(n)
+    if inner is True:
+        return radiisq < r
+    return radiisq <= r
+
+
+def cart2rad(n):
+    """ Compute the radii corresponding to the points of a cartesian grid of size NxN points
+        XXX This is a name for this function. """
+
+    n = np.floor(n)
+    x, y = image_grid(n)
+    r = np.sqrt(np.square(x) + np.square(y))
+    return r
+
+
+def image_grid(n):
+    """
+    Return the coordinates of Cartesian points in an nxn grid centered around the origin. The origin of the grid is
+    always in the center, for both odd and even n.
+    Args:
+        n: int, size of grid
+
+    Returns:
+
+    """
+    p = (n - 1.0) / 2.0
+    x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
+    return x, y

@@ -1,6 +1,7 @@
 import numpy as np
 import pyfftw
-import aspire.utils.common as common
+from aspire.utils.fft import centered_fft2, centered_ifft2
+from aspire.utils.preprocess import cart2rad
 
 
 def prewhiten(stack):
@@ -81,9 +82,11 @@ def cryo_prewhiten(proj, noise_response, rel_threshold=None):
     for i in range(num_images):
         pp[start_idx:end_idx, start_idx:end_idx] = proj[i]
 
-        fp = common.fast_cfft2(pp)
+        # fp = fast_cfft2(pp)
+        fp = centered_fft2(pp)
         fp *= one_over_fnz_as_mat
-        pp2 = common.fast_icfft2(fp)
+        # pp2 = fast_icfft2(fp)
+        pp2 = centered_ifft2(fp)
 
         p2[i] = np.real(pp2[start_idx:end_idx, start_idx:end_idx])
 
@@ -110,7 +113,8 @@ def cryo_epsds(imstack, samples_idx, max_d):
                 r2[i+p-1, j+p-1] = r[idx-1]
 
     w = gwindow(p, max_d)
-    p2 = common.fast_cfft2(r2 * w)
+    # p2 = fast_cfft2(r2 * w)
+    p2 = centered_fft2(r2 * w)
 
     p2 = p2.real
 
@@ -239,21 +243,3 @@ def bsearch(x, lower_bound, upper_bound):
         return None, None
 
     return lower_idx, upper_idx
-
-
-def cart2rad(n):
-    """ Compute the radii corresponding to the points of a cartesian grid of size NxN points
-        XXX This is a name for this function. """
-
-    n = np.floor(n)
-    x, y = image_grid(n)
-    r = np.sqrt(np.square(x) + np.square(y))
-    return r
-
-
-def image_grid(n):
-    # Return the coordinates of Cartesian points in an NxN grid centered around the origin.
-    # The origin of the grid is always in the center, for both odd and even N.
-    p = (n - 1.0) / 2.0
-    x, y = np.meshgrid(np.linspace(-p, p, n), np.linspace(-p, p, n))
-    return x, y

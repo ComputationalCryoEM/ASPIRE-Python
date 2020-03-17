@@ -5,13 +5,12 @@ from pyfftw.interfaces.numpy_fft import fft2, ifft2, rfft2, irfft2
 from scipy.io import loadmat
 import mrcfile
 from box import Box
-# from aspire.aspire.utils.common import create_struct
 import time
 
 
 def phaseflip_star_file(star_file, pixel_size=None, return_in_fourier=False):
     """
-
+    A highly optimized version of phaseflip_star_file
     :param star_file:
     :param pixel_size:
     :param return_in_fourier: To save computation can skip the ifft.
@@ -47,8 +46,9 @@ def phaseflip_star_file(star_file, pixel_size=None, return_in_fourier=False):
             raise ValueError("Pixel size not provided and does not appear in STAR file")
 
     # Initializing parameter for cryo_CTF_Relion_fast
-    # a, b, c = precompute_cryo_CTF_Relion_fast(resolution, r=True)
     a, b, c = precompute_cryo_CTF_Relion_fast(resolution, r=False)
+    #  r stands for real (rfft) or not. This should be tested if this is still too slow.
+    # a, b, c = precompute_cryo_CTF_Relion_fast(resolution, r=True)
 
     num_finished = 0
     for stack_name in stack_info:
