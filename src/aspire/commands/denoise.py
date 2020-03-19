@@ -11,8 +11,8 @@ logger = logging.getLogger('aspire')
 
 
 @click.command()
-@click.option('--proj_folder', default=None,
-              help='Path to project folder')
+@click.option('--data_folder', default=None,
+              help='Path to data folder')
 @click.option('--starfile_in', required=True,
               help='Path to input starfile relative to project folder')
 @click.option('--starfile_out', required=True,
@@ -25,20 +25,18 @@ logger = logging.getLogger('aspire')
               help='Resolution of downsampled images read from starfile')
 @click.option('--noise_type', default='Isotropic', type=str,
               help='Noise type for estimation')
-@click.option('--ctf_info', default=True, type=bool,
-              help='Whether include CTF information')
 @click.option('--denoise_method', default='CWF', type=str,
               help='Specified method for denoising 2D images')
-def denoise(proj_folder, starfile_in, starfile_out, pixel_size, max_rows, max_resolution,
-            noise_type, ctf_info, denoise_method):
+def denoise(data_folder, starfile_in, starfile_out, pixel_size, max_rows, max_resolution,
+            noise_type, denoise_method):
     """
     Denoise the images and output the clean images using the default CWF method.
     """
     # Create a source object for 2D images
     logger.info(f'Read in images from {starfile_in} and preprocess the images.')
     source = RelionSource(
-        proj_folder,
         starfile_in,
+        data_folder,
         pixel_size=pixel_size,
         max_rows=max_rows
     )
@@ -67,8 +65,10 @@ def denoise(proj_folder, starfile_in, starfile_out, pixel_size, max_rows, max_re
     var_noise = noise_estimator.estimate()
     # img_whitened = source.eval_filters(source.images())
     if denoise_method == 'CWF':
-        denoise_cov2d = DenoiserCov2D(source, basis, var_noise, ctf_info, starfile_out)
         logger.info(f'Denoise the images using CWF cov2D method.')
-        denoise_cov2d.denoise()
+        denoiser = DenoiserCov2D(source, basis, var_noise)
+        denoiser.build_cov2d(batch_size=512)
+        source.create_star(starfile_out, batch_size=512)
+        source.denoise(denoiser, batch_size=512, overwrite=False)
     else:
         raise NotImplementedError('Currently only covariance Wiener filtering method is supported')
