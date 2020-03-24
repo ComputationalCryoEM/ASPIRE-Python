@@ -369,21 +369,6 @@ class ImageSource:
         # Invalidate images
         self._im = None
 
-    def denoise(self, denoiser, batch_size=1024, overwrite=False):
-
-        """
-        Denoise the noising images using a specified denoising method
-
-        :param denoiser: The denoiser object to specify the denoising method.
-        :param batch_size: Batch size of images to query from the `ImageSource` object.
-        :param overwrite: Option to overwrite the output mrcs files.
-        """
-        logger.info("Denoise images")
-        for istart in range(0, self.n, batch_size):
-            batch = np.arange(istart, min(istart + batch_size, self.n))
-            imgs_estim = denoiser.denoise(istart=istart, batch_size=batch_size)
-            imgs_estim.save(self.mrcs_fileout[istart], overwrite=overwrite)
-
     def create_star(self, starfile_filepath, batch_size=1024):
         """
         Create a new STAR file and corresponding individual name for output .mrcs files
