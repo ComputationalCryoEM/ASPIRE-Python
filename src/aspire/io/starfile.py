@@ -188,13 +188,13 @@ def save_star(image_source, starfile_filepath, batch_size=1024, overwrite=False)
             i_end = min(image_source.n, i_start + batch_size)
             num = i_end - i_start
 
-            mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + f'_{i_start}_{i_end}.mrcs'
+            mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + f'_{i_start}_{i_end-1}.mrcs'
             mrcs_filepath = os.path.join(
                 os.path.dirname(starfile_filepath),
                 mrcs_filename
             )
 
-            logger.info(f'Saving ImageSource[{i_start}-{i_end}] to {mrcs_filepath}')
+            logger.info(f'Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}')
             im = image_source.images(start=i_start, num=num)
             im.save(mrcs_filepath, overwrite=overwrite)
 

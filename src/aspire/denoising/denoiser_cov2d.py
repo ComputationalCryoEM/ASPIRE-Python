@@ -1,11 +1,11 @@
 import logging
-import numpy as np
 
 from aspire.denoising import Denoiser
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.estimation.covar2d import BatchedRotCov2D
 from aspire.utils.optimize import fill_struct
 from aspire.image import Image
+from aspire.denoising.denoised_src import DenoisedImageSource
 
 
 logger = logging.getLogger(__name__)
@@ -31,14 +31,14 @@ class DenoiserCov2D(Denoiser):
         self.cov2d = None
         self.mean_est = None
         self.covar_est = None
-        self._im = None
 
     def denoise(self, covar_opt=None, batch_size=512):
         """
-         Build covariance matrix of 2D images
+         Build covariance matrix of 2D images and return a new ImageSource object
 
         :param covar_opt: The option list for building Cov2D matrix
         :param batch_size: The batch size for processing images
+        :return: A `DenoisedImageSource` object with the specified denoising object
         """
 
         # Initialize the rotationally invariant covariance matrix of 2D images
@@ -55,12 +55,15 @@ class DenoiserCov2D(Denoiser):
         self.covar_est = self.cov2d.get_covar(noise_var=self.var_noise, mean_coeff=self.mean_est,
                                            covar_est_opt=covar_opt)
 
+        return DenoisedImageSource(self.src, self)
+
     def images(self, istart=0, batch_size=512):
         """
-        Denoise a batch size of 2D images using Cov2D matrix
+        Obtain a batch size of 2D images after denosing by Cov2D method
 
         :param istart: the index of starting image
         :param batch_size: The batch size for processing images
+        :return: an `Image` object with denoised images
         """
         src = self.src
 
@@ -68,12 +71,11 @@ class DenoiserCov2D(Denoiser):
 
         img_start = istart
         img_end = min(istart + batch_size, src.n)
-        
         imgs_noise = src.images(img_start, batch_size)
         coeffs_noise = self.basis.evaluate_t(imgs_noise.data)
         logger.info(f'Estimating Cov2D coefficients for images from {img_start} to {img_end-1}')
         coeffs_estim = self.cov2d.get_cwf_coeffs(coeffs_noise, self.cov2d.ctf_fb,
-                                                 self.cov2d.ctf_idx[img_start:img_start+batch_size],
+                                                 self.cov2d.ctf_idx[img_start:img_end],
                                                  mean_coeff=self.mean_est, covar_coeff=self.covar_est,
                                                  noise_var=self.var_noise)
 
@@ -83,32 +85,3 @@ class DenoiserCov2D(Denoiser):
         imgs_denoised = Image(imgs_estim)
 
         return imgs_denoised
-
-    def cache(self, im=None):
-        logger.info('Caching denoised images')
-
-        if im is None:
-            im = self.images(start=0, batch_size=self.src.n)
-        self._im = im
-
-
-
-    def save(self, batch_size=512, overwrite=False):
-        """
-        Save the denoised images to mrc files
-
-        :param batch_size: Batch size of images to query.
-        :param overwrite: Option to overwrite the output mrcs files.
-        """
-        logger.info("save denoise images")
-        for istart in range(0, self.src.n, batch_size):
-
-            if self._im is None:
-                logger.info(f'save images {istart} to {istart+batch_size-1} after denoising')
-                imgs_estim = self.images(istart=istart, batch_size=batch_size)
-            else:
-                logger.info(f'save images {istart} to {istart+batch_size-1} from cache')
-                indices = np.arange(istart, min(istart + batch_size, self.src.n))
-                imgs_estim = Image(self._im[:, :, indices])
-
-            imgs_estim.save(self.src.mrcs_fileout[istart], overwrite=overwrite)
