@@ -6,7 +6,6 @@ import pandas as pd
 from aspire.image import Image
 from aspire.source import ImageSource
 from aspire.io.starfile import StarFileBlock, StarFile
-from aspire.io.starfile import save_star
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +22,10 @@ class DenoisedImageSource(ImageSource):
         :param src: Original ImageSource object storing noisy images
         :param denoiser: A Denoiser object for specifying a method for denoising
         """
-        self.L = src.L
-        self.n = src.n
-        self.dtype = src.dtype
-        # The private attribute '_im' can be cached by calling this object's cache() method explicitly
+
+        super().__init__(src.L, src. n, dtype=src.dtype,metadata=src._metadata.copy())
         self._im = None
-        self._metadata = src._metadata.copy()
+        # self._metadata=src._metadata.copy()
         self.denoiser = denoiser
 
     def _images(self, start=0, num=np.inf, indices=None, batch_size=512):
@@ -54,36 +51,6 @@ class DenoisedImageSource(ImageSource):
             im = imgs_denoised.data
 
         return Image(im)
-
-    def cache(self, im=None):
-        """
-        Cache the denoised images into memory
-
-        :param im: An input Image object with a set of images.
-        """
-        logger.info('Caching denoised images')
-        if im is None:
-            im = self.images(start=0, num=np.inf)
-        self._im = im
-
-    def images(self, start, num):
-        """
-        Public interface to return a set of denoised images from this ImageSource as an Image object
-
-        :param start: The inclusive start index from which to return images.
-        :param num: The exclusive end index up to which to return images.
-        :return: an `Image` object.
-        """
-        indices = np.arange(start, min(start + num, self.n))
-
-        if self._im is not None:
-            logger.info(f'Loading denoised images from cache')
-            im = Image(self._im[:, :, indices])
-        else:
-            im = self._images(indices=indices)
-
-        logger.info(f'Loaded {len(indices)} denoised images')
-        return im
 
     def _create_star(self, starfile_filepath, batch_size=512):
         """
@@ -121,15 +88,3 @@ class DenoisedImageSource(ImageSource):
 
             starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
             starfile.save(f)
-
-    def save(self, starfile_filepath, batch_size=512, overwrite=False):
-        """
-        Save the denoised images to mrc files
-
-        :param batch_size: Batch size of images to query.
-        :param overwrite: Option to overwrite the output mrcs files.
-        """
-        logger.info("save denoised images")
-
-        save_star(self, starfile_filepath, batch_size=batch_size, overwrite=overwrite)
-
