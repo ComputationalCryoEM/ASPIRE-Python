@@ -3,6 +3,7 @@ import logging
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
+import mrcfile
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ class StarFile:
                 f.write('\n')
 
 
-def save_star(image_source, starfile_filepath, batch_size=1024, overwrite=False):
+def save_star(image_source, starfile_filepath, batch_size=1024, save_mode=None, overwrite=False):
     """
     Save an ImageSource to a STAR file + individual .mrcs files
     Note that .mrcs files are saved at the same location as the STAR file.
@@ -170,6 +171,7 @@ def save_star(image_source, starfile_filepath, batch_size=1024, overwrite=False)
     :param starfile_filepath: Path to STAR file where we want to save image_source
     :param batch_size: Batch size of images to query from the `ImageSource` object. Every `batch_size` rows,
         entries are written to STAR file, and the `.mrcs` files saved.
+    :param save_mode: Whether to save all images in a single or multiple files in batch size.
     :param overwrite: Whether to overwrite any .mrcs files found at the target location.
     :return: None
     """
@@ -183,22 +185,46 @@ def save_star(image_source, starfile_filepath, batch_size=1024, overwrite=False)
     df['_rlnImageName'] = ''
 
     with open(starfile_filepath, 'w') as f:
-        for i_start in np.arange(0, image_source.n, batch_size):
-
-            i_end = min(image_source.n, i_start + batch_size)
-            num = i_end - i_start
-
-            mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath))[0] + f'_{i_start}_{i_end-1}.mrcs'
+        if save_mode == 'single':
+            # save all images into one single mrc file
+            mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath)
+                                            )[0] + f'_{0}_{image_source.n-1}.mrcs'
             mrcs_filepath = os.path.join(
                 os.path.dirname(starfile_filepath),
                 mrcs_filename
             )
+            df['_rlnImageName'][0: image_source.n] = pd.Series(['{0:06}@{1}'.format(j + 1, mrcs_filepath)
+                                                                for j in range(image_source.n)])
+            with mrcfile.new_mmap(mrcs_filepath, shape=(image_source.n, image_source.L,
+                                                        image_source.L), mrc_mode=2, overwrite=overwrite) as mrc:
+                for i_start in np.arange(0, image_source.n, batch_size):
+                    i_end = min(image_source.n, i_start + batch_size)
+                    num = i_end - i_start
+                    logger.info(f'Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}')
+                    mrc.data[i_start:i_end, :, :] = np.swapaxes(image_source.images(
+                        start=i_start, num=num).data.astype('float32'), 0, 2)
+            mrc.close()
 
-            logger.info(f'Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}')
-            im = image_source.images(start=i_start, num=num)
-            im.save(mrcs_filepath, overwrite=overwrite)
+        else:
+            # save all images into multiple mrc files in batch size
+            for i_start in np.arange(0, image_source.n, batch_size):
 
-            df['_rlnImageName'][i_start: i_end] = pd.Series(['{0:06}@{1}'.format(j + 1, mrcs_filepath) for j in range(num)])
+                i_end = min(image_source.n, i_start + batch_size)
+                num = i_end - i_start
+                mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath)
+                                                 )[0] + f'_{i_start}_{i_end-1}.mrcs'
+                mrcs_filepath = os.path.join(
+                    os.path.dirname(starfile_filepath),
+                    mrcs_filename
+                )
 
+                logger.info(f'Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}')
+                im = image_source.images(start=i_start, num=num)
+                im.save(mrcs_filepath, overwrite=overwrite)
+
+                df['_rlnImageName'][i_start: i_end] = pd.Series(
+                    ['{0:06}@{1}'.format(j + 1, mrcs_filepath) for j in range(num)])
+
+        # initial the star file object and save it
         starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
         starfile.save(f)

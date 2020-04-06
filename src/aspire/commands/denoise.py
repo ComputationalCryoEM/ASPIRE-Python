@@ -69,6 +69,6 @@ def denoise(data_folder, starfile_in, starfile_out, pixel_size, max_rows, max_re
         logger.info(f'Denoise the images using CWF cov2D method.')
         denoiser = DenoiserCov2D(source, basis, var_noise)
         denoised_src = denoiser.denoise(batch_size=512)
-        denoised_src.save(starfile_out, batch_size=512, overwrite=False)
+        denoised_src.save(starfile_out, batch_size=512, save_mode='single', overwrite=False)
     else:
         raise NotImplementedError('Currently only covariance Wiener filtering method is supported')
