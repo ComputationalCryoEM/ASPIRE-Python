@@ -1,5 +1,6 @@
 import os
 from setuptools import setup, find_namespace_packages
+from Cython.Build import cythonize
 
 
 def read(fname):
@@ -22,7 +23,7 @@ setup(
 
     description='Algorithms for Single Particle Reconstruction',
     long_description=read('README.md'),
-    long_description_content_type='text/markdown',	
+    long_description_content_type='text/markdown',
     license="GPLv3",
     url='https://github.com/ComputationalCryoEM/ASPIRE-Python',
     author='Joakim Anden, Yoel Shkolnisky, Itay Sason, Robbie Brook, Vineet Bansal, Junchao Xia',
@@ -56,5 +57,8 @@ setup(
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    ]
+    ],
+
+    ext_modules = cythonize("src/aspire/utils/BlockDiagonal.pyx")
+
 )

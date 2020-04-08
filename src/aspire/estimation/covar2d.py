@@ -1,10 +1,12 @@
 import logging
+import numpy as np
 from scipy.linalg import sqrtm
 from scipy.linalg import solve
 from numpy.linalg import inv
 
+from aspire.utils.BlockDiagonal import BlockDiagonal
+from aspire.utils.BlockDiagonal import get_partition
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.blk_diag_func import *
 from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import fill_struct, conj_grad
 from aspire.utils import ensure
@@ -91,7 +93,7 @@ class RotCov2D:
                 covar_coeff.append(covar_coeff_blk)
                 ind = ind + 1
 
-        return covar_coeff
+        return BlockDiagonal.from_blk_diag(covar_coeff, dtype=coeffs.dtype)
 
     def get_mean(self, coeffs, ctf_fb=None, ctf_idx=None):
         """
@@ -108,21 +110,21 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [blk_diag_eye(blk_diag_partition(RadialCTFFilter().fb_mat(self.basis)))]
+            ctf_fb = [BlockDiagonal.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)),dtype=coeffs.dtype)]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
-        A = blk_diag_zeros(blk_diag_partition(ctf_fb[0]), dtype=coeffs.dtype)
+        A = BlockDiagonal.zeros(get_partition(ctf_fb[0]), dtype=coeffs.dtype)
         for k in np.unique(ctf_idx[:]).T:
             coeff_k = coeffs[:, ctf_idx == k]
             weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
             mean_coeff_k = self._get_mean(coeff_k)
             ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
-            b = b + weight*blk_diag_apply(ctf_fb_k_t, mean_coeff_k)
-            A = blk_diag_add(A, blk_diag_mult(weight, blk_diag_mult(ctf_fb_k_t, ctf_fb_k)))
+            ctf_fb_k_t = ctf_fb_k.T
+            b = b + ctf_fb_k_t.apply(mean_coeff_k) * weight
+            A += weight * (ctf_fb_k_t @ ctf_fb_k)
 
-        mean_coeff = blk_diag_solve(A, b)
+        mean_coeff = A.solve(b)
         return mean_coeff
 
     def get_covar(self, coeffs, ctf_fb=None, ctf_idx=None, mean_coeff=None,
@@ -152,7 +154,7 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [blk_diag_eye(blk_diag_partition(RadialCTFFilter().fb_mat(self.basis)))]
+            ctf_fb = [BlockDiagonal.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)))]
 
         def identity(x):
             return x
@@ -166,14 +168,14 @@ class RotCov2D:
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
-        block_partition = blk_diag_partition(ctf_fb[0])
-        b_coeff = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
-        b_noise = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
+        block_partition = get_partition(ctf_fb[0])
+        b_coeff = BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype)
+        b_noise = BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype)
         A = []
         for k in range(0, len(ctf_fb)):
-            A.append(blk_diag_zeros(block_partition, dtype=coeffs.dtype))
+            A.append(BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype))
 
-        M = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
+        M = BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype)
 
         for k in np.unique(ctf_idx[:]):
 
@@ -181,28 +183,34 @@ class RotCov2D:
             weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
 
             ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
-            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff)
+            ctf_fb_k_t = ctf_fb_k.T
+            mean_coeff_k = ctf_fb_k.apply(mean_coeff)
             covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
-            b_coeff = blk_diag_add(b_coeff, blk_diag_mult(ctf_fb_k_t,
-                blk_diag_mult(covar_coeff_k, blk_diag_mult(ctf_fb_k, weight))))
+            b_coeff += ctf_fb_k_t @ covar_coeff_k @ (ctf_fb_k * weight)
 
-            A_temp = blk_diag_mult(ctf_fb_k_t, ctf_fb_k)
-            b_noise = blk_diag_add(b_noise, blk_diag_mult(A_temp, weight))
+            A_temp = ctf_fb_k_t @ ctf_fb_k
+            b_noise += A_temp * weight
 
-            A[k] = blk_diag_mult(A_temp, np.sqrt(weight))
-            M = blk_diag_add(M, A[k])
+            A[k] = A_temp * np.sqrt(weight)
+            M += A[k]
 
         if covar_est_opt['shrinker'] == 'None':
-            b = blk_diag_add(b_coeff, blk_diag_mult(-noise_var, b_noise))
+            # XXXX todo fix rmul
+            # print(repr(b_coeff))
+            # print(repr(noise_var)) #scalar
+            # print(repr(b_noise))
+            # print(repr(b_noise * -noise_var))
+            # print(repr(noise_var * b_noise))
+            # b = b_coeff + (-noise_var * b_noise)
+            b = b_coeff + (b_noise * -noise_var)
         else:
             b = self.shrink_covar_backward(b_coeff, b_noise, np.size(coeffs, 1),
                                            noise_var, covar_est_opt['shrinker'])
 
         cg_opt = covar_est_opt
 
-        covar_coeff = blk_diag_zeros(block_partition, dtype=coeffs.dtype)
+        covar_coeff = BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype)
 
         def precond_fun(S, x):
             p = np.size(S, 0)
@@ -278,28 +286,29 @@ class RotCov2D:
         if covar_coeff is None:
             covar_coeff = self.get_covar(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
 
-        blk_partition = blk_diag_partition(covar_coeff)
+        blk_partition = get_partition(covar_coeff)
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [blk_diag_eye(blk_partition)]
+            ctf_fb = [BlockDiagonal.eye(blk_partition, dtype=coeffs.dtype)]
 
-        noise_covar_coeff = blk_diag_mult(noise_var, blk_diag_eye(blk_partition, dtype=coeffs.dtype))
+        noise_covar_coeff = BlockDiagonal.eye(blk_partition, dtype=coeffs.dtype) * noise_var
 
         coeffs_est = np.zeros_like(coeffs, dtype=coeffs.dtype)
 
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[:, ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
-            sig_covar_coeff = blk_diag_mult(ctf_fb_k, blk_diag_mult(covar_coeff, ctf_fb_k_t))
-            sig_noise_covar_coeff = blk_diag_add(sig_covar_coeff, noise_covar_coeff)
+            ctf_fb_k_t = ctf_fb_k.T
+            sig_covar_coeff = ctf_fb_k @ (covar_coeff @ ctf_fb_k_t)
+            sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
-            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])[:, 0]
+            mean_coeff_k = ctf_fb_k.apply(mean_coeff[:, np.newaxis])[:, 0]
 
             coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
-            coeff_est_k = blk_diag_solve(sig_noise_covar_coeff, coeff_est_k)
-            coeff_est_k = blk_diag_apply(blk_diag_mult(covar_coeff, ctf_fb_k_t), coeff_est_k)
+            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
+            tmp = covar_coeff @ ctf_fb_k_t
+            coeff_est_k = tmp.apply(coeff_est_k)
             coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
@@ -350,12 +359,11 @@ class BatchedRotCov2D(RotCov2D):
             logger.info(f'CTF filters are not included in Cov2D denoising')
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
-            self.ctf_fb = [blk_diag_eye(blk_diag_partition(RadialCTFFilter().fb_mat(self.basis)))]
+            self.ctf_fb = [BlockDiag.from_partition(RadialCTFFilter().fb_mat(self.basis), dtype=src.type)]
         else:
             logger.info(f'Represent CTF filters in FB basis')
             unique_filters = list(set(src.filters))
             self.ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
-
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
 
     def _calc_rhs(self):
@@ -365,13 +373,13 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        partition = blk_diag_partition(ctf_fb[0])
+        partition = get_partition(ctf_fb[0])
 
         zero_coeff = np.zeros((basis.count,))
 
         b_mean = [np.zeros(basis.count) for _ in ctf_fb]
 
-        b_covar = blk_diag_zeros(partition, dtype=src.dtype)
+        b_covar = BlockDiagonal.zeros(partition, dtype=src.dtype)
 
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
@@ -386,19 +394,19 @@ class BatchedRotCov2D(RotCov2D):
                 mean_coeff_k = self._get_mean(coeff_k)
 
                 ctf_fb_k = ctf_fb[k]
-                ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
+                ctf_fb_k_t = ctf_fb_k.T
 
-                b_mean_k = weight * blk_diag_apply(ctf_fb_k_t, mean_coeff_k)
+                b_mean_k = weight * ctf_fb_k_t.apply(mean_coeff_k)
 
                 b_mean[k] += b_mean_k
 
                 covar_coeff_k = self._get_covar(coeff_k, zero_coeff)
 
-                b_covar_k = blk_diag_mult(ctf_fb_k_t, covar_coeff_k)
-                b_covar_k = blk_diag_mult(b_covar_k, ctf_fb_k)
-                b_covar_k = blk_diag_mult(weight, b_covar_k)
+                b_covar_k = ctf_fb_k_t @ covar_coeff_k
+                b_covar_k = b_covar_k @ ctf_fb_k
+                b_covar_k *= weight
 
-                b_covar = blk_diag_add(b_covar, b_covar_k)
+                b_covar += b_covar_k
 
         self.b_mean = b_mean
         self.b_covar = b_covar
@@ -410,26 +418,26 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        partition = blk_diag_partition(ctf_fb[0])
+        partition = get_partition(ctf_fb[0])
 
-        A_mean = blk_diag_zeros(partition, dtype=src.dtype)
+        A_mean = BlockDiagonal.zeros(partition, dtype=src.dtype)
         A_covar = [None for _ in ctf_fb]
-        M_covar = blk_diag_zeros(partition, dtype=src.dtype)
+        M_covar = BlockDiagonal.zeros(partition, dtype=src.dtype)
 
         for k in np.unique(ctf_idx):
             weight = np.count_nonzero(ctf_idx == k) / src.n
 
             ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
+            ctf_fb_k_t = ctf_fb_k.T
 
-            A_temp = blk_diag_mult(ctf_fb_k_t, ctf_fb_k)
-            A_mean_k = blk_diag_mult(weight, A_temp)
-            A_mean = blk_diag_add(A_mean, A_mean_k)
+            A_temp = ctf_fb_k_t @ ctf_fb_k
+            A_mean_k = A_temp * weight
+            A_mean += A_mean_k
 
-            A_covar_k = blk_diag_mult(np.sqrt(weight), A_temp)
+            A_covar_k = A_temp * np.sqrt(weight)
             A_covar[k] = A_covar_k
 
-            M_covar = blk_diag_add(M_covar, A_covar_k)
+            M_covar += A_covar_k
 
         self.A_mean = A_mean
         self.A_covar = A_covar
@@ -441,20 +449,23 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        partition = blk_diag_partition(ctf_fb[0])
+        partition = get_partition(ctf_fb[0])
+
+        # GBW, Why are they deep copying, where are they using refs...
 
         # Note: If we don't do this, we'll be modifying the stored `b_covar`
         # since the operations below are in-place.
-        b_covar = [blk.copy() for blk in b_covar]
+        b_covar.data = [blk.copy() for blk in b_covar]
+
 
         for k in np.unique(ctf_idx):
             weight = np.count_nonzero(ctf_idx == k) / src.n
 
             ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
+            ctf_fb_k_t = ctf_fb_k.T
 
-            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff)
-            mean_coeff_k = blk_diag_apply(ctf_fb_k_t, mean_coeff_k)
+            mean_coeff_k = ctf_fb_k.apply(mean_coeff)
+            mean_coeff_k = ctf_fb_k_t.apply(mean_coeff_k)
 
             mean_coeff_k = mean_coeff_k[:partition[0][0]]
             b_mean_k = b_mean[k][:partition[0][0]]
@@ -469,8 +480,8 @@ class BatchedRotCov2D(RotCov2D):
 
     def _noise_correct_covar_rhs(self, b_covar, b_noise, noise_var, shrinker):
         if shrinker == 'None':
-            b_noise = blk_diag_mult(-noise_var, b_noise)
-            b_covar = blk_diag_add(b_covar, b_noise)
+            b_noise = b_noise * -noise_var
+            b_covar += b_noise
         else:
             b_covar = self.shrink_covar_backward(b_covar, b_noise, self.src.n,
                                                  noise_var, shrinker)
@@ -480,7 +491,7 @@ class BatchedRotCov2D(RotCov2D):
     def _solve_covar(self, A_covar, b_covar, M, covar_est_opt):
         ctf_fb = self.ctf_fb
 
-        partition = blk_diag_partition(ctf_fb[0])
+        partition = get_partition(ctf_fb[0])
 
         def precond_fun(S, x):
             p = np.size(S, 0)
@@ -500,7 +511,7 @@ class BatchedRotCov2D(RotCov2D):
             return y
 
         cg_opt = covar_est_opt
-        covar_coeff = blk_diag_zeros(partition, dtype=b_covar[0].dtype)
+        covar_coeff = BlockDiagonal.zeros(partition, dtype=b_covar[0].dtype)
 
         for ell in range(0, len(b_covar)):
             A_ell = []
@@ -530,7 +541,7 @@ class BatchedRotCov2D(RotCov2D):
             self._calc_op()
 
         b_mean_all = np.stack(self.b_mean).sum(axis=0)
-        mean_coeff = blk_diag_solve(self.A_mean, b_mean_all)
+        mean_coeff = self.A_mean.solve(b_mean_all)
 
         return mean_coeff
 

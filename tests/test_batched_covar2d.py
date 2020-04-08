@@ -4,6 +4,7 @@ from unittest import TestCase
 
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.utils.BlockDiagonal import BlockDiagonal
 from aspire.utils.filters import RadialCTFFilter
 
 from aspire.estimation.covar2d import RotCov2D, BatchedRotCov2D
@@ -27,17 +28,18 @@ class BatchedRotCov2DTestCase(TestCase):
         filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
                    for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-        src = Simulation(L, n, filters=filters)
+        # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
+        src = Simulation(L, n, filters=filters, dtype='double')
 
         basis = FFBBasis2D((L, L))
 
         unique_filters = list(set(src.filters))
         ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
 
-        ctf_fb = [f.fb_mat(basis) for f in unique_filters]
+        ctf_fb = [BlockDiagonal.from_blk_diag(f.fb_mat(basis),dtype=src.dtype) for f in unique_filters]
 
         im = src.images(0, src.n)
-        coeff = basis.evaluate_t(im.data)
+        coeff = basis.evaluate_t(im.data).astype(src.dtype)
 
         cov2d = RotCov2D(basis)
         bcov2d = BatchedRotCov2D(src, basis, batch_size=7)
@@ -58,11 +60,15 @@ class BatchedRotCov2DTestCase(TestCase):
     def blk_diag_allclose(self, blk_diag_a, blk_diag_b):
         close = True
         for blk_a, blk_b in zip(blk_diag_a, blk_diag_b):
-            close = (close and np.allclose(blk_a, blk_b))
+            test = np.allclose(blk_a, blk_b)
+            close = (close and test)
+            if not test:
+                print('blk_a', blk_a)
+                print('blk_b', blk_b)
         return close
 
     def test01(self):
-        # Test basic functionality again RotCov2D.
+        # Test basic functionality against RotCov2D.
         noise_var = 0.1848
 
         mean_cov2d = self.cov2d.get_mean(self.coeff, ctf_fb=self.ctf_fb,

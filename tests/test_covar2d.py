@@ -4,6 +4,7 @@ from unittest import TestCase
 
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.utils.BlockDiagonal import BlockDiagonal
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
 from aspire.utils.coor_trans import qrand_rots
@@ -36,10 +37,12 @@ class Cov2DTestCase(TestCase):
         filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
+        # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
         sim = Simulation(
             n=n,
             C=C,
-            filters=filters
+            filters=filters,
+            dtype='double'
         )
 
         vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
@@ -54,7 +57,7 @@ class Cov2DTestCase(TestCase):
 
         self.h_idx = np.array([filters.index(f) for f in sim.filters])
         self.filters = filters
-        self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in self.filters]
+        self.h_ctf_fb = [BlockDiagonal.from_blk_diag(filt.fb_mat(self.basis),dtype=sim.dtype) for filt in self.filters]
 
         self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
 

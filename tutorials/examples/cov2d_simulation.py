@@ -22,7 +22,7 @@ from aspire.image import Image
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 from aspire.estimation.covar2d import RotCov2D
-from aspire.utils.blk_diag_func import blk_diag_add, blk_diag_mult, blk_diag_norm
+from aspire.utils.BlockDiagonal import BlockDiagonal
 
 logger = logging.getLogger('aspire')
 
@@ -88,7 +88,7 @@ imgs_clean = vol2img(sim.vols[..., 0], rots)
 h_idx = np.array([filters.index(f) for f in sim.filters])
 
 # Evaluate CTF in the 8X8 FB basis
-h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in filters]
+h_ctf_fb = [BlockDiagonal.from_blk_diag(filt.fb_mat(ffbbasis), dtype=np.float64) for filt in filters]
 
 # Apply the CTF to the clean images.
 logger.info('Apply CTF filters to clean images.')
@@ -158,12 +158,12 @@ imgs_est = ffbbasis.evaluate(coeff_est)
 # Evaluate the results
 # Calculate the difference between the estimated covariance and the "true"
 # covariance estimated from the clean Fourier-Bessel coefficients.
-covar_coeff_diff = blk_diag_add(covar_coeff, blk_diag_mult(-1, covar_coeff_est))
+covar_coeff_diff = covar_coeff - covar_coeff_est
 
 # Calculate the deviation between the clean estimates and those obtained from
 # the noisy, filtered images.
 diff_mean = anorm(mean_coeff_est-mean_coeff)/anorm(mean_coeff)
-diff_covar = blk_diag_norm(covar_coeff_diff)/blk_diag_norm(covar_coeff)
+diff_covar = covar_coeff_diff.norm() / covar_coeff.norm()
 
 # Calculate the normalized RMSE of the estimated images.
 nrmse_ims = anorm(imgs_est-imgs_clean)/anorm(imgs_clean)

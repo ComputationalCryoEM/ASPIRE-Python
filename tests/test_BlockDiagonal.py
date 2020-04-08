@@ -1,13 +1,11 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.utils.blk_diag_func import *
-from aspire.utils.filters import CTFFilter
-from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.utils.BlockDiagonal import BlockDiagonal
 
-class BlkDiagFuncTestCase(TestCase):
+class BlockDiagonalTestCase(TestCase):
     def setUp(self):
-        self.blk_a = [
+        self.blk_a = BlockDiagonal.from_blk_diag([
             np.array([[-0.30656809, -0.34287864, -0.00854488,  0.5275285 ],
                       [-0.34287864, -0.19752432,  0.17833916, -0.22052178],
                       [-0.00854488,  0.17833916, -0.4125285 , -0.30338836],
@@ -39,9 +37,9 @@ class BlkDiagFuncTestCase(TestCase):
             np.array([[-0.13551364]]), np.array([[-0.13551364]]),
             np.array([[-0.18975111]]), np.array([[-0.18975111]]),
             np.array([[-0.22661312]]), np.array([[-0.22661312]])
-        ]
+        ])
 
-        self.blk_b = [
+        self.blk_b = BlockDiagonal.from_blk_diag([
             np.array([[-0.27457111, -0.33770709, -0.09067737,  0.52007584],
                       [-0.33770709, -0.24677034,  0.20639731, -0.2078888 ],
                       [-0.09067737,  0.20639731, -0.36507922, -0.37742705],
@@ -73,18 +71,23 @@ class BlkDiagFuncTestCase(TestCase):
             np.array([[-0.18418421]]), np.array([[-0.18418421]]),
             np.array([[-0.22672867]]), np.array([[-0.22672867]]),
             np.array([[-0.24393745]]), np.array([[-0.24393745]])
-        ]
+        ])
 
-        self.blk_partition = get_partition(self.blk_a)
+        self.blk_partition = self.blk_a.partition
 
     def tearDown(self):
         pass
 
+    def allallfunc(self, A, B, func=np.allclose):
+        """ checks assertTrue(func()) as it iterates through A, B """
+        for (a,b) in zip(A, B):
+            self.assertTrue(func(a,b))
+
     def testBlkDiagPartition(self):
-        result = [(4, 4), (3, 3), (3, 3), (3, 3), (3, 3), (2, 2), (2, 2), (2, 2), (2, 2),
-                  (2, 2), (2, 2), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1)
-                  ]
-        blk_partition = get_partition(self.blk_a)
+        result = [(4, 4), (3, 3), (3, 3), (3, 3), (3, 3), (2, 2), (2, 2),
+                  (2, 2), (2, 2), (2, 2), (2, 2), (1, 1), (1, 1), (1, 1),
+                  (1, 1), (1, 1), (1, 1)]
+        blk_partition = self.blk_a.partition
         self.assertTrue(result, blk_partition)
 
     def testBlkDiagZeros(self):
@@ -121,11 +124,8 @@ class BlkDiagFuncTestCase(TestCase):
             np.array([[0.]]), np.array([[0.]]),
             np.array([[0.]]), np.array([[0.]])
         ]
-        blk_zeros = blk_diag_zeros(self.blk_partition)
-        im = 0
-        for mat in result:
-            self.assertTrue(np.allclose(mat, blk_zeros[im]))
-            im += 1
+        blk_zeros = BlockDiagonal.zeros(self.blk_partition)
+        self.allallfunc(blk_zeros, result)
 
     def testBlkDiagEye(self):
         result = [
@@ -162,11 +162,8 @@ class BlkDiagFuncTestCase(TestCase):
             np.array([[1.]]), np.array([[1.]])
         ]
 
-        blk_eye = blk_diag_eye(self.blk_partition)
-        im = 0
-        for mat in result:
-            self.assertTrue(np.allclose(mat, blk_eye[im]))
-            im += 1
+        blk_eye = BlockDiagonal.eye(self.blk_partition)
+        self.allallfunc(blk_eye, result)
 
     def testBlkDiagAdd(self):
         result = [
@@ -203,14 +200,13 @@ class BlkDiagFuncTestCase(TestCase):
             np.array([[-0.47055057]]), np.array([[-0.47055057]])
         ]
 
-        blk_c = blk_diag_add(self.blk_a, self.blk_b)
+        blk_c = self.blk_a + self.blk_b
+        self.allallfunc(result, blk_c)
 
-        im = 0
-        for mat in result:
-            self.assertTrue(np.allclose(mat, blk_c[im]))
-            im += 1
+        blk_c = self.blk_a.add(self.blk_b)
+        self.allallfunc(result, blk_c)
 
-    def testBlkDiagMinus(self):
+    def testBlkDiagSub(self):
         result = [
                 np.array([[-0.03199698, -0.00517155,  0.08213249,  0.00745266],
                           [-0.00517155,  0.04924602, -0.02805815, -0.01263298],
@@ -245,12 +241,12 @@ class BlkDiagFuncTestCase(TestCase):
                 np.array([[0.01732433]]), np.array([[0.01732433]])
         ]
 
-        blk_c = blk_diag_minus(self.blk_a, self.blk_b)
+        blk_c = self.blk_a - self.blk_b
+        self.allallfunc(result, blk_c)
 
-        im = 0
-        for mat in result:
-            self.assertTrue(np.allclose(mat, blk_c[im]))
-            im += 1
+        blk_c = self.blk_a.minus(self.blk_b)
+        self.allallfunc(result, blk_c)
+
 
     def testBlkDiagApply(self):
 
@@ -327,8 +323,8 @@ class BlkDiagFuncTestCase(TestCase):
             [-0.00000000e+00],
             [-0.00000000e+00]])
 
-        blk_c = blk_diag_apply(self.blk_a, mean_coeff)
-        self.assertTrue(np.allclose(result, blk_c))
+        blk_c = self.blk_a.apply(mean_coeff)
+        self.allallfunc(result, blk_c)
 
     def testBlkDiagMult(self):
         result = [
@@ -365,16 +361,17 @@ class BlkDiagFuncTestCase(TestCase):
             np.array([[0.05527943]]), np.array([[0.05527943]])
         ]
 
-        blk_c = blk_diag_mult(self.blk_a, self.blk_b)
+        blk_c = self.blk_a @ self.blk_b
+        self.allallfunc(blk_c, result)
 
-        im = 0
-        for mat in result:
-            self.assertTrue(np.allclose(mat, blk_c[im]))
-            im += 1
+        self.blk_a.matmul(self.blk_b)
+        self.allallfunc(blk_c, result)
 
     def testBlkDiagNorm(self):
         result = 0.8235750261689248
-        norm = blk_diag_norm(self.blk_a)
+        norm = self.blk_a.norm()
+        print(norm)
+        print(result==norm)
         self.assertTrue(result == norm)
 
     def testBlkDiagSolve(self):
@@ -485,57 +482,14 @@ class BlkDiagFuncTestCase(TestCase):
                  [ 2.06426457e-04,  8.27577854e-05, -4.61942718e-05, -6.92981952e-05,  4.04636422e-05]
                  ])
 
-        coeff_est = blk_diag_solve(sn_matrix, coeff)
-        self.assertTrue(np.allclose(result, coeff_est))
+        A = BlockDiagonal.from_blk_diag(sn_matrix)
+        # note, still need to go implement solve via class, this just wraps old call, for now
+        coeff_est = A.solve(coeff)
+        self.allallfunc(result, coeff_est)
 
     def testBlkDiagTranspose(self):
-        blk_c = blk_diag_transpose(self.blk_a)
-        result = self.blk_a
-        im = 0
-        for mat in result:
-            self.assertTrue(np.allclose(mat, blk_c[im]))
-            im += 1
-
-    def testFilter2Fb(self):
-        result = [
-            np.array([[-0.58675097,  0.2040708 ,  0.18325847, -0.09036895],
-                      [ 0.2040708 , -0.47928185,  0.04313577,  0.24247684],
-                      [ 0.18325847,  0.04313577, -0.42896488,  0.02604912],
-                      [-0.09036895,  0.24247684,  0.02604912, -0.48441593]]),
-            np.array([[-0.72062802,  0.05036225,  0.22385134],
-                      [ 0.05036225, -0.47534276,  0.00623491],
-                      [ 0.22385134,  0.00623491, -0.44639676]]),
-            np.array([[-0.72062802,  0.05036225,  0.22385134],
-                      [ 0.05036225, -0.47534276,  0.00623491],
-                      [ 0.22385134,  0.00623491, -0.44639676]]),
-            np.array([[-0.73973316, -0.07009974,  0.23478964],
-                      [-0.07009974, -0.51093276, -0.03225313],
-                      [ 0.23478964, -0.03225313, -0.50725702]]),
-            np.array([[-0.73973316, -0.07009974,  0.23478964],
-                      [-0.07009974, -0.51093276, -0.03225313],
-                      [ 0.23478964, -0.03225313, -0.50725702]]),
-            np.array([[-0.71541676, -0.15571368],
-                      [-0.15571368, -0.55014515]]),
-            np.array([[-0.71541676, -0.15571368],
-                      [-0.15571368, -0.55014515]]),
-            np.array([[-0.67374877, -0.21482035],
-                      [-0.21482035, -0.58875286]]),
-            np.array([[-0.67374877, -0.21482035],
-                      [-0.21482035, -0.58875286]]),
-            np.array([[-0.6259839 , -0.25350524],
-                      [-0.25350524, -0.6223537 ]]),
-            np.array([[-0.6259839 , -0.25350524],
-                      [-0.25350524, -0.6223537 ]]),
-            np.array([[-0.57752714]]), np.array([[-0.57752714]]),
-            np.array([[-0.53092283]]), np.array([[-0.53092283]]),
-            np.array([[-0.48707716]]), np.array([[-0.48707716]])
-        ]
-
-        self.basis = FFBBasis2D((8, 8))
-        filter = CTFFilter(defocus_u=1.5e4, defocus_v=2.5e4)
-        f_fb = filter_to_fb_mat(filter.evaluate, self.basis)
-
-        im = 0
-        for mat in result:
-            self.assertTrue(np.allclose(mat, f_fb[im]))
-            im += 1
+        # i don't like this test
+        blk_c = self.blk_a.T
+        self.allallfunc(blk_c, self.blk_a)
+        blk_c = self.blk_a.transpose()
+        self.allallfunc(blk_c, self.blk_a)

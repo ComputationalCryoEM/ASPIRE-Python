@@ -54,7 +54,7 @@ def blk_diag_eye(blk_partition, dtype=None):
     return blk_diag
 
 
-def blk_diag_partition(blk_diag):
+def get_partition(blk_diag):
     """
     Create a partition of block diagonal matrix
 
