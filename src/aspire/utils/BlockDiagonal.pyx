@@ -9,9 +9,6 @@ from aspire.utils.cell import Cell2D
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.basis_utils import lgwt
 
-from aspire.utils.blk_diag_func import blk_diag_apply
-from aspire.utils.blk_diag_func import blk_diag_solve
-
 SCALAR_TYPES=(int, float, complex)
 
 class BlockDiagonal:
@@ -44,11 +41,8 @@ class BlockDiagonal:
             raise KeyError("Key {} is outside reversed nblocks {}".format(key, self.nblocks))
         return
 
-    def __copy__(self):
-        raise NotImplementedError("Not yet implemented")
-
-    def __deepcopy__(self):
-        raise NotImplementedError("Not yet implemented")
+    def copy(self):
+        return BlockDiagonal.from_blk_diag(self.data)
 
     # Manually overload list methods
     #    we could make BlockDiagonal a subclass of list, but this and len() might be all we need....
@@ -402,6 +396,30 @@ class BlockDiagonal:
             C[i] = np.abs(self[i])
         return C
 
+    def __pow__(self, val):
+        """
+        Compute the elementwise power of BlockDiagonal matrix.
+
+        :return: A BlockDiagonal like self.
+        """
+
+        C = BlockDiagonal(self.nblocks, dtype=self.dtype)
+        for i in range(self.nblocks):
+            C[i] = np.power(self[i], val)
+        return C
+
+    def __ipow__(self, val):
+        """
+        Compute the in place elementwise power of BlockDiagonal matrix.
+
+        :return: self raised to power, elementwise.
+        """
+
+        for i in range(self.nblocks):
+            self[i] **= val
+        return self
+
+
     def norm(self, order=2):
         """
         Compute the norm of a BlockDiagonal matrix.
@@ -470,7 +488,8 @@ class BlockDiagonal:
         A = BlockDiagonal(len(partition), partition=partition, dtype=dtype)
 
         # set the data
-        A.data = blk_diag
+        for i in range(A.nblocks):
+            A.data[i] = blk_diag[i].copy()
 
         return A
 
@@ -500,14 +519,67 @@ class BlockDiagonal:
         return A
 
 
-    def solve(self, y):
-        # todo
-        X = blk_diag_solve(self.data, y)
+    def solve(self, Y):
+        """
+        Solve a linear system involving a block diagonal matrix
+
+        :param Y: The right-hand side in the linear system.  May be a matrix
+            consisting of  coefficient vectors, in which case each column is
+            solved for separately.
+        :return: The result of solving the linear system formed by the matrix.
+        """
+        rows = np.array([np.size(mat_a, 0) for mat_a in self])
+        if sum(rows) != np.size(Y, 0):
+            raise RuntimeError('Sizes of matrix `self` and `Y` are not compatible.')
+
+        vector = False
+        if np.ndim(Y) == 1:
+            Y = Y[:, np.newaxis]
+            vector = True
+
+        cols = np.array([np.size(Y, 1)])
+        cellarray = Cell2D(rows, cols, dtype=Y.dtype)
+        Y = cellarray.mat2cell(Y, rows, cols)
+        X = []
+        for i in range(0,self.nblocks):
+            X.append(solve(self[i], Y[i]))
+        X = np.concatenate(X, axis=0)
+
+        if vector:
+            X = X[:, 0]
+
         return X
 
-    def apply(self, x):
-        # todo
-        Y = blk_diag_apply(self.data, x)
+
+    def apply(self, X):
+        """
+        Define the apply option of a block diagonal matrix with a matrix of coefficient vectors
+
+        :param X: The coefficient matrix with each column is a coefficient vector
+        :return: A matrix with new coefficient vectors
+        """
+        cols = np.array([np.size(mat, 1) for mat in self])
+
+        if np.sum(cols) != np.size(X, 0):
+            raise RuntimeError('Sizes of matrix `self` and `X` are not compatible.')
+
+        vector = False
+        if np.ndim(X) == 1:
+            X = X[:, np.newaxis]
+            vector = True
+
+        rows = np.array([np.size(X, 1), ])
+        cellarray = Cell2D(cols, rows, dtype=X.dtype)
+        x_cell = cellarray.mat2cell(X, cols, rows)
+        Y = []
+        for i in range(0, self.nblocks):
+            mat = self[i] @ x_cell[i]
+            Y.append(mat)
+        Y = np.concatenate(Y, axis=0)
+
+        if vector:
+            Y = Y[:, 0]
+
         return Y
 
 
