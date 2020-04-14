@@ -15,7 +15,7 @@ class Basis:
     Define a base class for expanding 2D particle images and 3D structure volumes
 
     """
-    def __init__(self, size, ell_max=None):
+    def __init__(self, size, ell_max=None, dtype=np.float64):
         """
         Initialize an object for the base of basis class
 
@@ -36,6 +36,9 @@ class Basis:
         self.count = 0
         self.ell_max = ell_max
         self.ndim = ndim
+        self.dtype = dtype
+        if self.dtype != np.float64:
+            raise NotImplementedError("Currently only implemented for default double (np.float64) type")
 
         self._build()
 

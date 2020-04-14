@@ -36,7 +36,7 @@ class BatchedRotCov2DTestCase(TestCase):
         unique_filters = list(set(src.filters))
         ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
 
-        ctf_fb = [BlockDiagonal.from_blk_diag(f.fb_mat(basis),dtype=src.dtype) for f in unique_filters]
+        ctf_fb = [f.fb_mat(basis) for f in unique_filters]
 
         im = src.images(0, src.n)
         coeff = basis.evaluate_t(im.data).astype(src.dtype)

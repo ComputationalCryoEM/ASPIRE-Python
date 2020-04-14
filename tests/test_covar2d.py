@@ -57,7 +57,7 @@ class Cov2DTestCase(TestCase):
 
         self.h_idx = np.array([filters.index(f) for f in sim.filters])
         self.filters = filters
-        self.h_ctf_fb = [BlockDiagonal.from_blk_diag(filt.fb_mat(self.basis),dtype=sim.dtype) for filt in self.filters]
+        self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in self.filters]
 
         self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
 

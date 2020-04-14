@@ -88,7 +88,7 @@ imgs_clean = vol2img(sim.vols[..., 0], rots)
 h_idx = np.array([filters.index(f) for f in sim.filters])
 
 # Evaluate CTF in the 8X8 FB basis
-h_ctf_fb = [BlockDiagonal.from_blk_diag(filt.fb_mat(ffbbasis), dtype=np.float64) for filt in filters]
+h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in filters]
 
 # Apply the CTF to the clean images.
 logger.info('Apply CTF filters to clean images.')

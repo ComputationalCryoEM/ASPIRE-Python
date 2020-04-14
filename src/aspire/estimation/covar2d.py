@@ -142,7 +142,7 @@ class RotCov2D:
         :param covar_est_opt: The optimization parameter list for obtaining the Cov2D matrix.
         :return: The basis coefficients of the covariance matrix in
             the form of cell array representing a block diagonal matrix. These
-            block diagonal matrices may be manipulated using the `blk_diag_*` functions.
+            block diagonal matrices may be manipulated using the `BlockDiagonal` functions.
             The covariance is calculated from the images represented by the coeffs array,
             along with all possible rotations and reflections. As a result, the computed covariance
             matrix is invariant to both reflection and rotation. The effect of the filters in ctf_fb
@@ -359,7 +359,7 @@ class BatchedRotCov2D(RotCov2D):
             logger.info(f'CTF filters are not included in Cov2D denoising')
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
-            self.ctf_fb = [BlockDiag.from_partition(RadialCTFFilter().fb_mat(self.basis), dtype=src.type)]
+            self.ctf_fb = [BlockDiagonal.from_partition(RadialCTFFilter().fb_mat(self.basis), dtype=src.type)]
         else:
             logger.info(f'Represent CTF filters in FB basis')
             unique_filters = list(set(src.filters))
@@ -574,7 +574,7 @@ class BatchedRotCov2D(RotCov2D):
               documentation for `conj_grad`, default `'float64'`)
         :return: The block diagonal matrix containing the basis coefficients (in
         `self.basis`) for the estimated covariance matrix. These may be
-        manipulated using the `blk_diag_*` functions.
+        manipulated using the `BlockDiagonal` functions.
         """
 
         def identity(x):

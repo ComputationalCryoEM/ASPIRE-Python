@@ -593,7 +593,7 @@ def filter_to_fb_mat(h_fun, fbasis):
 
     :param h_fun: The function form in k space
     :param fbasis: The basis object for expanding
-    :return: a matrix representation using the `fbasis` expansion
+    :return: a BlockDiagonal matrix representation using the `fbasis` expansion
     """
     if not isinstance(fbasis, FFBBasis2D):
             raise NotImplementedError('Currently only fast FB method is supported')
@@ -612,7 +612,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     h_vals = np.sum(h_vals2d, axis=1)/n_theta
 
     # Represent 1D function values in fbasis
-    h_fb = []
+    h_fb = BlockDiagonal(2 * fbasis.ell_max + 1, dtype=fbasis.dtype)
     ind = 0
     for ell in range(0, fbasis.ell_max+1):
         k_max = fbasis.k_max[ell]
@@ -624,10 +624,10 @@ def filter_to_fb_mat(h_fun, fbasis):
         fb_vals = fb_vals/fb_nrms
         h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (h_fb_vals*k_vals.reshape(n_k, 1)*wts.reshape(n_k, 1))
-        h_fb.append(h_fb_ell)
-        ind = ind+1
+        h_fb[ind] =h_fb_ell
+        ind += 1
         if ell > 0:
-            h_fb.append(h_fb[ind-1])
-            ind = ind+1
+            h_fb[ind] = h_fb[ind-1]
+            ind += 1
 
     return h_fb
