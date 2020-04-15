@@ -141,7 +141,7 @@ class BlockDiagonalTestCase(TestCase):
         blk_zeros = BlockDiagonal.zeros(self.blk_partition)
         self.allallfunc(blk_zeros, result)
 
-    def testBlockDiagonalZeros(self):
+    def testBlockDiagonalOnes(self):
         result = [
             np.array([[1., 1., 1., 1.],
                       [1., 1., 1., 1.],
