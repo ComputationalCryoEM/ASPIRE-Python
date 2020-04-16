@@ -52,4 +52,4 @@ class Cell2D:
                 offset += 1
                 if i == j:
                     blk_diag.append(self.cell_list[offset])
-        return BlockDiagonal.from_blk_diag(blk_diag)
+        return BlkDiagMatrix.from_blk_diag(blk_diag)

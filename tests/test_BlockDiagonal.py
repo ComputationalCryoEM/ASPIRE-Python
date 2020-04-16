@@ -1,11 +1,11 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.utils.blk_diag_matrix import BlockDiagonal
+from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 
-class BlockDiagonalTestCase(TestCase):
+class BlkDiagMatrixTestCase(TestCase):
     def setUp(self):
-        self.blk_a = BlockDiagonal.from_blk_diag([
+        self.blk_a = BlkDiagMatrix.from_blk_diag([
             np.array([[-0.30656809, -0.34287864, -0.00854488,  0.5275285 ],
                       [-0.34287864, -0.19752432,  0.17833916, -0.22052178],
                       [-0.00854488,  0.17833916, -0.4125285 , -0.30338836],
@@ -42,7 +42,7 @@ class BlockDiagonalTestCase(TestCase):
             np.array([[-0.22661312]])
         ])
 
-        self.blk_b = BlockDiagonal.from_blk_diag([
+        self.blk_b = BlkDiagMatrix.from_blk_diag([
             np.array([[-0.27457111, -0.33770709, -0.09067737,  0.52007584],
                       [-0.33770709, -0.24677034,  0.20639731, -0.2078888 ],
                       [-0.09067737,  0.20639731, -0.36507922, -0.37742705],
@@ -89,7 +89,7 @@ class BlockDiagonalTestCase(TestCase):
         for (a,b) in zip(A, B):
             self.assertTrue(func(a,b))
 
-    def testBlockDiagonalPartition(self):
+    def testBlkDiagMatrixPartition(self):
         result = [(4, 4), (3, 3), (3, 3), (3, 3), (3, 3), (2, 2), (2, 2),
                   (2, 2), (2, 2), (2, 2), (2, 2), (1, 1), (1, 1), (1, 1),
                   (1, 1), (1, 1), (1, 1)]
@@ -98,10 +98,10 @@ class BlockDiagonalTestCase(TestCase):
         self.assertTrue(result, blk_partition)
 
         # Test utility function
-        blk_partition = BlockDiagonal.get_partition(self.blk_a)
+        blk_partition = BlkDiagMatrix.get_partition(self.blk_a)
         self.assertTrue(result, blk_partition)
 
-    def testBlockDiagonalZeros(self):
+    def testBlkDiagMatrixZeros(self):
         result = [
             np.array([[0., 0., 0., 0.],
                       [0., 0., 0., 0.],
@@ -138,10 +138,10 @@ class BlockDiagonalTestCase(TestCase):
             np.array([[0.]]),
             np.array([[0.]])
         ]
-        blk_zeros = BlockDiagonal.zeros(self.blk_partition)
+        blk_zeros = BlkDiagMatrix.zeros(self.blk_partition)
         self.allallfunc(blk_zeros, result)
 
-    def testBlockDiagonalOnes(self):
+    def testBlkDiagMatrixOnes(self):
         result = [
             np.array([[1., 1., 1., 1.],
                       [1., 1., 1., 1.],
@@ -179,10 +179,10 @@ class BlockDiagonalTestCase(TestCase):
             np.array([[1.]])
         ]
 
-        blk_ones = BlockDiagonal.ones(self.blk_partition)
+        blk_ones = BlkDiagMatrix.ones(self.blk_partition)
         self.allallfunc(blk_ones, result)
 
-    def testBlockDiagonalEye(self):
+    def testBlkDiagMatrixEye(self):
         result = [
             np.array([[1., 0., 0., 0.],
                       [0., 1., 0., 0.],
@@ -220,10 +220,10 @@ class BlockDiagonalTestCase(TestCase):
             np.array([[1.]])
         ]
 
-        blk_eye = BlockDiagonal.eye(self.blk_partition)
+        blk_eye = BlkDiagMatrix.eye(self.blk_partition)
         self.allallfunc(blk_eye, result)
 
-    def testBlockDiagonalAdd(self):
+    def testBlkDiagMatrixAdd(self):
         result = [
             np.array([[-0.5811392 , -0.68058573, -0.09922225,  1.04760434],
                       [-0.68058573, -0.44429466,  0.38473647, -0.42841058],
@@ -267,7 +267,7 @@ class BlockDiagonalTestCase(TestCase):
         blk_c = self.blk_a.add(self.blk_b)
         self.allallfunc(result, blk_c)
 
-    def testBlockDiagonalSub(self):
+    def testBlkDiagMatrixSub(self):
         result = [
             np.array([[-0.03199698, -0.00517155,  0.08213249,  0.00745266],
                       [-0.00517155,  0.04924602, -0.02805815, -0.01263298],
@@ -315,7 +315,7 @@ class BlockDiagonalTestCase(TestCase):
         self.allallfunc(result, blk_c)
 
 
-    def testBlockDiagonalApply(self):
+    def testBlkDiagMatrixApply(self):
 
         mean_coeff = np.array([
             [ 4.53531036e-04],
@@ -393,7 +393,7 @@ class BlockDiagonalTestCase(TestCase):
         blk_c = self.blk_a.apply(mean_coeff)
         self.allallfunc(result, blk_c)
 
-    def testBlockDiagonalMatMult(self):
+    def testBlkDiagMatrixMatMult(self):
         result = [
             np.array([[ 0.47509694,  0.07671159, -0.23895441,  0.07671072],
                       [ 0.02999056,  0.24718842,  0.00844581, -0.27214144],
@@ -437,7 +437,7 @@ class BlockDiagonalTestCase(TestCase):
         self.blk_a.matmul(self.blk_b)
         self.allallfunc(blk_c, result)
 
-    def testBlockDiagonalScalarMult(self):
+    def testBlkDiagMatrixScalarMult(self):
         result = [
             np.array([[-12.87585978, -14.40090288,  -0.35888496,  22.156197  ],
                       [-14.40090288,  -8.29602144,   7.49024472,  -9.26191476],
@@ -481,7 +481,7 @@ class BlockDiagonalTestCase(TestCase):
         blk_c = 42. * self.blk_a
         self.allallfunc(blk_c, result)
 
-    def testBlockDiagonalScalarAdd(self):
+    def testBlkDiagMatrixScalarAdd(self):
 
         result = [
             np.array([[41.69343191, 41.65712136, 41.99145512, 42.5275285 ],
@@ -526,7 +526,7 @@ class BlockDiagonalTestCase(TestCase):
         blk_c = 42. + self.blk_a
         self.allallfunc(blk_c, result)
 
-    def testBlockDiagonalScalarSub(self):
+    def testBlkDiagMatrixScalarSub(self):
 
         result_1 = [
             np.array([[-42.30656809, -42.34287864, -42.00854488, -41.4724715 ],
@@ -574,7 +574,7 @@ class BlockDiagonalTestCase(TestCase):
         blk_c = 42. - self.blk_a
         self.allallfunc(blk_c, result_2)
 
-    def testBlockDiagonalDeepCopy(self):
+    def testBlkDiagMatrixDeepCopy(self):
         blk_a_copy_1 = self.blk_a.copy()
         blk_a_copy_2 = self.blk_a.copy()
 
@@ -589,7 +589,7 @@ class BlockDiagonalTestCase(TestCase):
         # and blk_a is unchanged
         self.allallfunc(blk_a_copy_2, self.blk_a)
 
-    def testBlockDiagonalInPlace(self):
+    def testBlkDiagMatrixInPlace(self):
         """ Tests sequence of in place optimized arithmetic (add, sub, mul) """
         result_1 = [x + x + 10. for x in self.blk_a]
         result_2 = [np.ones(x.shape) * 5. for x in self.blk_a]
@@ -607,7 +607,7 @@ class BlockDiagonalTestCase(TestCase):
         blk_c += 10.
         self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
 
-        blk_a5 = BlockDiagonal.ones(self.blk_partition)
+        blk_a5 = BlkDiagMatrix.ones(self.blk_partition)
         id1 = [id(x) for x in blk_a5]
         blk_a5 *= 5.
         self.assertTrue(all(id(blk_a5[x]) == id1[x] for x in range(len(blk_c))))
@@ -623,14 +623,14 @@ class BlockDiagonalTestCase(TestCase):
         self.allallfunc(blk_c, self.blk_a)
 
 
-    def testBlockDiagonalNorm(self):
+    def testBlkDiagMatrixNorm(self):
         result = 0.8235750261689248
         norm = self.blk_a.norm()
         print(norm)
         print(result==norm)
         self.assertTrue(result == norm)
 
-    def testBlockDiagonalSolve(self):
+    def testBlkDiagMatrixSolve(self):
         result = np.array([
             [ -2108.56909528,  -1599.04367287,  12983.7980645 ,   4907.54823872,  11596.60358098],
             [-13261.71782311,  19064.68118668,  -7058.51163424, -23505.65277468,  10718.98836096],
@@ -741,19 +741,19 @@ class BlockDiagonalTestCase(TestCase):
             [ 2.06426457e-04,  8.27577854e-05, -4.61942718e-05, -6.92981952e-05,  4.04636422e-05]
         ])
 
-        A = BlockDiagonal.from_blk_diag(sn_matrix)
+        A = BlkDiagMatrix.from_blk_diag(sn_matrix)
         # note, still need to go implement solve via class, this just wraps old call, for now
         coeff_est = A.solve(coeff)
         self.allallfunc(result, coeff_est)
 
-    def testBlockDiagonalTranspose(self):
+    def testBlkDiagMatrixTranspose(self):
         # i don't like this test
         blk_c = self.blk_a.T
         self.allallfunc(blk_c, self.blk_a)
         blk_c = self.blk_a.transpose()
         self.allallfunc(blk_c, self.blk_a)
 
-    def testBlockDiagonalNeg(self):
+    def testBlkDiagMatrixNeg(self):
         result = [
             np.array([[ 0.30656809,  0.34287864,  0.00854488, -0.5275285 ],
                       [ 0.34287864,  0.19752432, -0.17833916,  0.22052178],
@@ -793,7 +793,7 @@ class BlockDiagonalTestCase(TestCase):
         blk_c = -self.blk_a
         self.allallfunc(blk_c, result)
 
-    def testBlockDiagonalAbs(self):
+    def testBlkDiagMatrixAbs(self):
         result = [
             np.array([[0.30656809, 0.34287864, 0.00854488, 0.5275285 ],
                       [0.34287864, 0.19752432, 0.17833916, 0.22052178],
@@ -834,7 +834,7 @@ class BlockDiagonalTestCase(TestCase):
 
         self.allallfunc(blk_c, result)
 
-    def testBlockDiagonalPow(self):
+    def testBlkDiagMatrixPow(self):
         result = [
             np.array([[9.39839938e-02, 1.17565762e-01, 7.30149742e-05, 2.78286318e-01],
                       [1.17565762e-01, 3.90158570e-02, 3.18048560e-02, 4.86298555e-02],

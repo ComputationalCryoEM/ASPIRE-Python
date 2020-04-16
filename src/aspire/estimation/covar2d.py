@@ -4,7 +4,7 @@ from scipy.linalg import sqrtm
 from scipy.linalg import solve
 from numpy.linalg import inv
 
-from aspire.utils.blk_diag_matrix import BlockDiagonal
+from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 from aspire.utils.blk_diag_matrix import get_partition
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import shrink_covar
@@ -93,7 +93,7 @@ class RotCov2D:
                 covar_coeff.append(covar_coeff_blk)
                 ind = ind + 1
 
-        return BlockDiagonal.from_blk_diag(covar_coeff, dtype=coeffs.dtype)
+        return BlkDiagMatrix.from_blk_diag(covar_coeff, dtype=coeffs.dtype)
 
     def get_mean(self, coeffs, ctf_fb=None, ctf_idx=None):
         """
@@ -110,11 +110,11 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [BlockDiagonal.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)),dtype=coeffs.dtype)]
+            ctf_fb = [BlkDiagMatrix.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)),dtype=coeffs.dtype)]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
-        A = BlockDiagonal.zeros(get_partition(ctf_fb[0]), dtype=coeffs.dtype)
+        A = BlkDiagMatrix.zeros(get_partition(ctf_fb[0]), dtype=coeffs.dtype)
         for k in np.unique(ctf_idx[:]).T:
             coeff_k = coeffs[:, ctf_idx == k]
             weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
@@ -142,7 +142,7 @@ class RotCov2D:
         :param covar_est_opt: The optimization parameter list for obtaining the Cov2D matrix.
         :return: The basis coefficients of the covariance matrix in
             the form of cell array representing a block diagonal matrix. These
-            block diagonal matrices may be manipulated using the `BlockDiagonal` functions.
+            block diagonal matrices may be manipulated using the `BlkDiagMatrix` functions.
             The covariance is calculated from the images represented by the coeffs array,
             along with all possible rotations and reflections. As a result, the computed covariance
             matrix is invariant to both reflection and rotation. The effect of the filters in ctf_fb
@@ -154,7 +154,7 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [BlockDiagonal.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)))]
+            ctf_fb = [BlkDiagMatrix.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)))]
 
         def identity(x):
             return x
@@ -169,13 +169,13 @@ class RotCov2D:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
         block_partition = get_partition(ctf_fb[0])
-        b_coeff = BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype)
-        b_noise = BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype)
+        b_coeff = BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype)
+        b_noise = BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype)
         A = []
         for k in range(0, len(ctf_fb)):
-            A.append(BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype))
+            A.append(BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype))
 
-        M = BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype)
+        M = BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype)
 
         for k in np.unique(ctf_idx[:]):
 
@@ -210,7 +210,7 @@ class RotCov2D:
 
         cg_opt = covar_est_opt
 
-        covar_coeff = BlockDiagonal.zeros(block_partition, dtype=coeffs.dtype)
+        covar_coeff = BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype)
 
         def precond_fun(S, x):
             p = np.size(S, 0)
@@ -290,9 +290,9 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [BlockDiagonal.eye(blk_partition, dtype=coeffs.dtype)]
+            ctf_fb = [BlkDiagMatrix.eye(blk_partition, dtype=coeffs.dtype)]
 
-        noise_covar_coeff = BlockDiagonal.eye(blk_partition, dtype=coeffs.dtype) * noise_var
+        noise_covar_coeff = BlkDiagMatrix.eye(blk_partition, dtype=coeffs.dtype) * noise_var
 
         coeffs_est = np.zeros_like(coeffs, dtype=coeffs.dtype)
 
@@ -379,7 +379,7 @@ class BatchedRotCov2D(RotCov2D):
 
         b_mean = [np.zeros(basis.count) for _ in ctf_fb]
 
-        b_covar = BlockDiagonal.zeros(partition, dtype=src.dtype)
+        b_covar = BlkDiagMatrix.zeros(partition, dtype=src.dtype)
 
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
@@ -420,9 +420,9 @@ class BatchedRotCov2D(RotCov2D):
 
         partition = get_partition(ctf_fb[0])
 
-        A_mean = BlockDiagonal.zeros(partition, dtype=src.dtype)
+        A_mean = BlkDiagMatrix.zeros(partition, dtype=src.dtype)
         A_covar = [None for _ in ctf_fb]
-        M_covar = BlockDiagonal.zeros(partition, dtype=src.dtype)
+        M_covar = BlkDiagMatrix.zeros(partition, dtype=src.dtype)
 
         for k in np.unique(ctf_idx):
             weight = np.count_nonzero(ctf_idx == k) / src.n
@@ -511,7 +511,7 @@ class BatchedRotCov2D(RotCov2D):
             return y
 
         cg_opt = covar_est_opt
-        covar_coeff = BlockDiagonal.zeros(partition, dtype=b_covar[0].dtype)
+        covar_coeff = BlkDiagMatrix.zeros(partition, dtype=b_covar[0].dtype)
 
         for ell in range(0, len(b_covar)):
             A_ell = []
@@ -574,7 +574,7 @@ class BatchedRotCov2D(RotCov2D):
               documentation for `conj_grad`, default `'float64'`)
         :return: The block diagonal matrix containing the basis coefficients (in
         `self.basis`) for the estimated covariance matrix. These may be
-        manipulated using the `BlockDiagonal` functions.
+        manipulated using the `BlkDiagMatrix` functions.
         """
 
         def identity(x):

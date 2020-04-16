@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.utils.blk_diag_matrix import BlockDiagonal
+from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 from aspire.utils.filters import RadialCTFFilter
 
 from aspire.estimation.covar2d import RotCov2D, BatchedRotCov2D
