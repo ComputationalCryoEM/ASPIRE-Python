@@ -196,14 +196,7 @@ class RotCov2D:
             M += A[k]
 
         if covar_est_opt['shrinker'] == 'None':
-            # XXXX todo fix rmul
-            # print(repr(b_coeff))
-            # print(repr(noise_var)) #scalar
-            # print(repr(b_noise))
-            # print(repr(b_noise * -noise_var))
-            # print(repr(noise_var * b_noise))
-            # b = b_coeff + (-noise_var * b_noise)
-            b = b_coeff + (b_noise * -noise_var)
+            b = b_coeff + (-noise_var * b_noise)
         else:
             b = self.shrink_covar_backward(b_coeff, b_noise, np.size(coeffs, 1),
                                            noise_var, covar_est_opt['shrinker'])
