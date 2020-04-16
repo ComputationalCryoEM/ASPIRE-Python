@@ -4,8 +4,8 @@ from scipy.linalg import sqrtm
 from scipy.linalg import solve
 from numpy.linalg import inv
 
-from aspire.utils.BlockDiagonal import BlockDiagonal
-from aspire.utils.BlockDiagonal import get_partition
+from aspire.utils.blk_diag_matrix import BlockDiagonal
+from aspire.utils.blk_diag_matrix import get_partition
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import fill_struct, conj_grad

@@ -22,7 +22,7 @@ from aspire.image import Image
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
 from aspire.estimation.covar2d import RotCov2D
-from aspire.utils.BlockDiagonal import BlockDiagonal
+from aspire.utils.blk_diag_matrix import BlockDiagonal
 
 logger = logging.getLogger('aspire')
 

@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from aspire.utils.BlockDiagonal import BlockDiagonal
+from aspire.utils.blk_diag_matrix import BlockDiagonal
 
 class BlockDiagonalTestCase(TestCase):
     def setUp(self):
