@@ -15,14 +15,7 @@ class BlkDiagMatrix:
 
     def __init__(self, nblocks, partition=None, dtype=np.float64):
         self.nblocks = nblocks
-        #todo, warn
-        if dtype == 'single':
-            dtype = np.float32
-        elif dtype == 'double':
-            dtype = np.float64
-        #else:
-        #    enforce numpy types
-        self.dtype = dtype
+        self.dtype = np.dtype(dtype)
         self.data = [[]] * nblocks
         self._cached_blk_sizes = None
         if partition:
