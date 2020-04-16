@@ -23,22 +23,25 @@ class BlkDiagMatrix:
             assert self._cached_blk_sizes.shape[1] == 2
 
     def __repr__(self):
-        return "BlkDiagMatrix({},{})".format(repr(self.nblocks), repr(self.dtype))
+        return "BlkDiagMatrix({}, {})".format(
+            repr(self.nblocks), repr(self.dtype))
 
     def _check_key(self, key):
         if not isinstance(key, int):
-            raise TypeError("BlkDiagMatrix is indexed by integers. Got {}".format(repr(key)))
+            raise TypeError(
+                "BlkDiagMatrix is indexed by ints. Got {}".format(repr(key)))
         elif key >= self.nblocks:
-            raise IndexError("Key {} is outside nblocks {}".format(key, self.nblocks))
+            raise IndexError(
+                "Key {} is outside nblocks {}".format(key, self.nblocks))
         elif key <= -self.nblocks:
-            raise KeyError("Key {} is outside reversed nblocks {}".format(key, self.nblocks))
+            raise KeyError(
+                "Key {} is outside -nblocks {}".format(key, self.nblocks))
         return
 
     def copy(self):
         return BlkDiagMatrix.from_blk_diag(self.data)
 
     # Manually overload list methods
-    #    we could make BlkDiagMatrix a subclass of list, but this and len() might be all we need....
     def __getitem__(self, key):
         self._check_key(key)
         return self.data[key]
@@ -48,9 +51,7 @@ class BlkDiagMatrix:
         self.data[key] = value
 
     def __len__(self):
-        #return self.data.__len__
         return self.nblocks
-
 
     @staticmethod
     def zeros(blk_partition, dtype=np.float64):
@@ -59,7 +60,7 @@ class BlkDiagMatrix:
 
         :param blk_partition: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows and columns)
+        where `blk_partition[i]` corresponds to the shape (number of rows cols)
         of the `i` diagonal matrix block.
         :param dtype: The data type to set precision of diagonal matrix block.
         :return: A BlkDiagMatrix matrix consisting of `K` zero blocks.
@@ -79,7 +80,7 @@ class BlkDiagMatrix:
 
         :param blk_partition: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows and columns)
+        where `blk_partition[i]` corresponds to the shape (number of rows cols)
         of the `i` diagonal matrix block.
         :param dtype: The data type to set precision of diagonal matrix block.
         :return: A BlkDiagMatrix matrix consisting of `K` ones blocks.
@@ -99,9 +100,9 @@ class BlkDiagMatrix:
 
         :param blk_partition: The matrix block partition in the form of a
             K-element list storing all shapes of K diagonal matrix blocks,
-            where `blk_partition[i]` corresponds to the shape (number of rows and columns)
+            where `blk_partition[i]` corresponds to the shape (num of rows cols)
             of the `i` diagonal matrix block.
-        :param dtype: The data type to set the pricision of diagonal matrix block.
+        :param dtype: The data type of the diagonal matrix blocks.
         :return: A BlkDiagMatrix matrix consisting of `K` eye (identity) blocks.
         """
         n = len(blk_partition)
@@ -121,7 +122,7 @@ class BlkDiagMatrix:
            element corresponds to a diagonal block.
         :return: The matrix block partition of `blk_diag` in the form of a
             K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (n rows and columns)
+        where `blk_partition[i]` corresponds to the shape (n rows cols)
         of the `i` diagonal matrix block.
         """
         blk_partition = [[]]*len(blk_diag)
@@ -135,7 +136,7 @@ class BlkDiagMatrix:
         Return the partitions (block sizes) of this BlkDiagMatrix
         :return: The matrix block partition in the form of a
             K-element list storing all shapes of K diagonal matrix blocks,
-            where `partition[i]` corresponds to the shape (number of rows and columns)
+            where `partition[i]` corresponds to the shape (number of rows cols)
             of the `i` diagonal matrix block.
         """
 
@@ -157,13 +158,16 @@ class BlkDiagMatrix:
             raise RuntimeError("Currently BlkDiagMatrix only interfaces with "
                                "its own instances, got {}".format(repr(other)))
         elif len(self) != len(other):
-            raise RuntimeError('Number of blocks {} {} are not equal!'.format(len(self), len(other) ) )
+            raise RuntimeError('Number of blocks {} {} are not equal!'.format(
+                len(self), len(other)))
         elif np.any(self.partition != other.partition):
             # be helpful and find the first one as an example
             for i, (a,b) in enumerate(zip(self.partition, other.partition)):
                 if a != b:
                     break
-            raise RuntimeError('{}th block of BlkDiagMatrix matrices are not same shape {} {}!'.format(i, a, b))
+            raise RuntimeError(
+                '{}th block of BlkDiagMatrix matrices are '
+                'not same shape {} {}!'.format(i, a, b))
 
         return True
 
@@ -173,7 +177,7 @@ class BlkDiagMatrix:
         Check a block diag matrix is numeric or not
         :return: Bool
         """
-        #Note, I think numpy has a method for this somewhere...
+
         try:
             return 0 == self*0
         except:
@@ -184,7 +188,7 @@ class BlkDiagMatrix:
         Define the element addition of BlkDiagMatrix matrix
 
         :param other: The rhs BlkDiagMatrix matrix
-        :return:  BlkDiagMatrix matrix with elementwise sum equal to self + other.
+        :return:  BlkDiagMatrix matrix with elementwise sum equal to self+other.
         """
         if isinstance(other, SCALAR_TYPES):
             return self.scalar_add(other)
@@ -206,7 +210,9 @@ class BlkDiagMatrix:
         if isinstance(other, SCALAR_TYPES):
             return self.scalar_add(other, inplace=True)
         elif not self.check_compatible(other):
-            raise TypeError('{} is not understood by BlkDiagMatrix.__iadd__'.format(repr(other)))
+            raise TypeError(
+                '{} is not understood by BlkDiagMatrix.__iadd__'.format(
+                    repr(other)))
         for i in range(self.nblocks):
             self[i] += other[i]
 
@@ -216,8 +222,8 @@ class BlkDiagMatrix:
         """ Convenient function for elementwise scalar addition """
         # Note, the case of BlkDiagMatrix_L + BlkDiagMatrix_R would be
         #   evaluated as L.add(R), so this is only for other
-        #   Object + BlkDiagMatrix situations, namely scalars.
-        # addition commutes
+        #   Object + BlkDiagMatrix situations, namely scalars,
+        # where addition commutes
         return self.scalar_add(other)
 
     def scalar_add(self, scalar, inplace=False):
@@ -225,7 +231,7 @@ class BlkDiagMatrix:
         Define the element addition of BlkDiagMatrix matrix
 
         :param scalar: constant addend value
-        :return:  BlkDiagMatrix matrix with elementwise sum equal to self + other.
+        :return:  BlkDiagMatrix matrix with elementwise sum equal to self+other.
         """
         assert any((isinstance(scalar, x) for x in SCALAR_TYPES))
 
@@ -240,13 +246,13 @@ class BlkDiagMatrix:
 
         return C
 
-
     def sub(self, other):
         """
         Define the element subtraction of BlkDiagMatrix matrix
 
         :param other: The rhs BlkDiagMatrix matrix
-        :return: A BlkDiagMatrix matrix with elementwise subraction equal to self - other.
+        :return: A BlkDiagMatrix matrix with elementwise subraction equal to
+         self - other.
         """
         if isinstance(other, SCALAR_TYPES):
             return self.scalar_sub(other)
@@ -285,7 +291,8 @@ class BlkDiagMatrix:
         Define the elementwise subtraction from BlkDiagMatrix matrix
 
         :param scalar: constant subtractend value
-        :return:  BlkDiagMatrix matrix with elementwise sum equal to self + other.
+        :return:  BlkDiagMatrix matrix with elementwise sum equal to
+         self + other.
         """
         assert any((isinstance(scalar, x) for x in SCALAR_TYPES))
 
@@ -333,14 +340,20 @@ class BlkDiagMatrix:
 
     def mul(self, val):
         """
-        Compute the numeric (elementwise) multiplication of a BlkDiagMatrix matrix and a scalar.
+        Compute the numeric (elementwise) multiplication of a BlkDiagMatrix
+         matrix and a scalar.
 
         :param other: The rhs BlkDiagMatrix matrix
         :return: A BlkDiagMatrix of self * other.
         """
-        # TODO, probably I should only handle a few specfic instances instead...
+
         if isinstance(val, BlkDiagMatrix):
-            raise RuntimeError("Attempt numeric multiplication (*,mul) of two BlkDiagMatrixs, try (matmul,@)")
+            raise RuntimeError("Attempt numeric multiplication (*,mul) of two "
+                               "BlkDiagMatrixs, try (matmul,@)")
+        elif not isinstance(val, SCALAR_TYPES):
+            raise RuntimeError("Attempt numeric multiplication (*,mul) of a "
+                               "BlkDiagMatrix and {}".format(
+                                   type(val)))
 
         C = BlkDiagMatrix(self.nblocks, dtype=self.dtype)
         # note, we can do this in parallel
@@ -353,7 +366,9 @@ class BlkDiagMatrix:
 
     def __imul__(self, val):
         if isinstance(val, BlkDiagMatrix):
-            raise RuntimeError("Attempt numeric multiplication (*,mul) of two BlkDiagMatrixs, try (matmul,@)")
+            raise RuntimeError(
+                "Attempt numeric multiplication (*,mul) of two BlkDiagMatrixs, "
+                "try (matmul,@)")
         for i in range(self.nblocks):
             self[i] *= val
 
@@ -418,7 +433,9 @@ class BlkDiagMatrix:
         """
         IMPLEMENTED_ORDERS  = (2,)
         if order not in IMPLEMENTED_ORDERS:
-            raise NotImplementedError("Order {} not yet implemented, only {}".format(ord, IMPLEMENTED_ORDERS))
+            raise NotImplementedError(
+                "Order {} not yet implemented, only {}".format(
+                    ord, IMPLEMENTED_ORDERS))
 
         return np.max([norm(blk, ord=order) for blk in self])
 
@@ -426,7 +443,7 @@ class BlkDiagMatrix:
         """
         Get the transpose matrix of a BlkDiagMatrix matrix
 
-        :return: The corresponding transpose form as a BlkDiagMatrix matrix instance
+        :return: The corresponding transpose form as a BlkDiagMatrix
         """
 
         T = BlkDiagMatrix(self.nblocks, dtype=self.dtype)
@@ -463,13 +480,14 @@ class BlkDiagMatrix:
 
         :param blk_diag; The blk_diag representation in the form of a
             K-element list storing all shapes of K diagonal matrix blocks,
-            where `blk_partition[i]` corresponds to the shape (number of rows and columns)
+            where `blk_partition[i]` corresponds to the shape (rows cols)
             of the `i` diagonal matrix block.
 
         :return: The BlkDiagMatrix matrix
         """
 
-        # todo, maybe can dress this up a little better
+        # TODO: maybe can improve implementation
+
         # get the partition (just sizes)
         partition = BlkDiagMatrix.get_partition(blk_diag)
 
@@ -482,22 +500,22 @@ class BlkDiagMatrix:
 
         return A
 
-
     @staticmethod
     def from_mat(mat, blk_partition, dtype=np.float64):
         """
         Convert full block diagonal matrix into list representation
-        :param mat; The full block diagonal matrix including the zero elements of
-            non-diagonal blocks.
+        :param mat; The full block diagonal matrix including the zero elements
+         ofnon-diagonal blocks.
         :param blk_partition: The matrix block partition in the form of a
             K-element list storing all shapes of K diagonal matrix blocks,
-            where `blk_partition[i]` corresponds to the shape (number of rows and columns)
+            where `blk_partition[i]` corresponds to the shape (num rows cols)
             of the `i` diagonal matrix block.
 
         :return: The BlkDiagMatrix matrix
         """
 
-        # todo, maybe can dress this up a little better
+        # TODO: maybe can improve this implementation
+
         A = BlkDiagMatrix(len(blk_partition), dtype=dtype)
 
         rows = blk_partition[:, 0]
@@ -517,9 +535,10 @@ class BlkDiagMatrix:
             solved for separately.
         :return: The result of solving the linear system formed by the matrix.
         """
+
         rows = np.array([np.size(mat_a, 0) for mat_a in self])
         if sum(rows) != np.size(Y, 0):
-            raise RuntimeError('Sizes of matrix `self` and `Y` are not compatible.')
+            raise RuntimeError('Sizes of `self` and `Y` are not compatible.')
 
         vector = False
         if np.ndim(Y) == 1:
@@ -542,15 +561,17 @@ class BlkDiagMatrix:
 
     def apply(self, X):
         """
-        Define the apply option of a block diagonal matrix with a matrix of coefficient vectors
+        Define the apply option of a block diagonal matrix with a matrix of
+         coefficient vectors.
 
-        :param X: The coefficient matrix with each column is a coefficient vector
+        :param X: The coefficient matrix with each col is a coefficient vector
         :return: A matrix with new coefficient vectors
         """
         cols = np.array([np.size(mat, 1) for mat in self])
 
         if np.sum(cols) != np.size(X, 0):
-            raise RuntimeError('Sizes of matrix `self` and `X` are not compatible.')
+            raise RuntimeError(
+                'Sizes of matrix `self` and `X` are not compatible.')
 
         vector = False
         if np.ndim(X) == 1:
@@ -585,14 +606,17 @@ def filter_to_fb_mat(h_fun, fbasis):
     :return: a BlkDiagMatrix matrix representation using the `fbasis` expansion
     """
     if not isinstance(fbasis, FFBBasis2D):
-            raise NotImplementedError('Currently only fast FB method is supported')
+        raise NotImplementedError('Currently only fast FB method is supported')
     # Set same dimensions as basis object
     n_k = int(np.ceil(4 * fbasis.rcut * fbasis.kcut))
     n_theta = np.ceil(16 * fbasis.kcut * fbasis.rcut)
     n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
+
     # get 2D grid in polar coordinate
     k_vals, wts = lgwt(n_k, 0, 0.5)
-    k, theta = np.meshgrid(k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing='ij')
+    k, theta = np.meshgrid(
+        k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing='ij')
+
     # Get function values in polar 2D grid and average out angle contribution
     omegax = k*np.cos(theta)
     omegay = k*np.sin(theta)
@@ -612,7 +636,8 @@ def filter_to_fb_mat(h_fun, fbasis):
         fb_nrms = 1/np.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
         fb_vals = fb_vals/fb_nrms
         h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
-        h_fb_ell = fb_vals.T @ (h_fb_vals*k_vals.reshape(n_k, 1)*wts.reshape(n_k, 1))
+        h_fb_ell = fb_vals.T @ (
+            h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1))
         h_fb[ind] =h_fb_ell
         ind += 1
         if ell > 0:
