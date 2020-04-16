@@ -89,6 +89,20 @@ class BlkDiagMatrixTestCase(TestCase):
         for (a,b) in zip(A, B):
             self.assertTrue(func(a,b))
 
+    def testBlkDiagMatrixCompat(self):
+        self.assertTrue(self.blk_a.check_compatible(self.blk_b))
+
+        # Create a differently shaped matrix
+        x = BlkDiagMatrix.from_blk_diag(self.blk_a[1:-1])
+        # code should raise
+        raised = False
+        try:
+            x.check_compatible(self.blk_a)
+        except RuntimeError as e:
+            raised = True
+        finally:
+            self.assertTrue(raised)
+
     def testBlkDiagMatrixPartition(self):
         result = [(4, 4), (3, 3), (3, 3), (3, 3), (3, 3), (2, 2), (2, 2),
                   (2, 2), (2, 2), (2, 2), (2, 2), (1, 1), (1, 1), (1, 1),
@@ -580,8 +594,10 @@ class BlkDiagMatrixTestCase(TestCase):
 
         # change a copy, test that copy is changed
         blk_a_copy_1 *= 2.
-        self.allallfunc(blk_a_copy_1, self.blk_a, func=lambda x,y: not np.allclose(x,y))
-        self.allallfunc(blk_a_copy_1, blk_a_copy_2, func=lambda x,y: not np.allclose(x,y))
+        self.allallfunc(blk_a_copy_1, self.blk_a,
+                        func=lambda x,y: not np.allclose(x,y))
+        self.allallfunc(blk_a_copy_1, blk_a_copy_2,
+                        func=lambda x,y: not np.allclose(x,y))
         # and blk_a is unchanged
         self.allallfunc(blk_a_copy_2, self.blk_a)
 
@@ -738,12 +754,10 @@ class BlkDiagMatrixTestCase(TestCase):
         ])
 
         A = BlkDiagMatrix.from_blk_diag(sn_matrix)
-        # note, still need to go implement solve via class, this just wraps old call, for now
         coeff_est = A.solve(coeff)
         self.allallfunc(result, coeff_est)
 
     def testBlkDiagMatrixTranspose(self):
-        # i don't like this test
         blk_c = self.blk_a.T
         self.allallfunc(blk_c, self.blk_a)
         blk_c = self.blk_a.transpose()
@@ -870,7 +884,7 @@ class BlkDiagMatrixTestCase(TestCase):
         blk_c = self.blk_a ** 2.
         self.allallfunc(blk_c, result)
 
-        # in place power
+        # In place power
         # store the python object ids of each array in blk_c
         #  we want to ensure the actual object refs are _not_ changing
         #  for in place operations.
@@ -879,3 +893,18 @@ class BlkDiagMatrixTestCase(TestCase):
         blk_c **=0.5
         self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
         self.allallfunc(blk_c, abs(self.blk_a))
+
+    def testBlkDiagMatrixIsNumeric(self):
+        self.assertTrue(self.blk_a.isnumeric)
+
+        # construct a copy to mutate
+        blk_inf = self.blk_a.copy()
+        # assign inf value
+        blk_inf[0][0] = np.inf
+        self.assertFalse(blk_inf.isnumeric)
+
+        # construct a copy to mutate
+        blk_nan = self.blk_a.copy()
+        # assign inf value
+        blk_nan[0][0] = np.nan
+        self.assertFalse(blk_nan.isnumeric)

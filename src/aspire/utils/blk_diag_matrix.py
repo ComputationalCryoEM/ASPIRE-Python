@@ -14,8 +14,6 @@ from aspire.utils.cell import Cell2D
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.basis_utils import lgwt
 
-SCALAR_TYPES=(int, float, complex)
-
 class BlkDiagMatrix:
 
     def __init__(self, nblocks, partition=None, dtype=np.float64):
@@ -44,19 +42,6 @@ class BlkDiagMatrix:
         return "BlkDiagMatrix({}, {})".format(
             repr(self.nblocks), repr(self.dtype))
 
-    def _check_key(self, key):
-        """ Key bounds checking """
-        if not isinstance(key, int):
-            raise TypeError(
-                "BlkDiagMatrix is indexed by ints. Got {}".format(repr(key)))
-        elif key >= self.nblocks:
-            raise IndexError(
-                "Key {} is outside nblocks {}".format(key, self.nblocks))
-        elif key <= -self.nblocks:
-            raise KeyError(
-                "Key {} is outside -nblocks {}".format(key, self.nblocks))
-        return
-
     def copy(self):
         """
         Returns new BlkDiagMatrix which is a copy of `self`.
@@ -69,17 +54,23 @@ class BlkDiagMatrix:
     #     instead of writing self.data all the time. You may use either.
     def __getitem__(self, key):
         """ Convenience function for operation on self.data """
-        self._check_key(key)
         return self.data[key]
 
     def __setitem__(self, key, value):
         """ Convenience function for operation on self.data """
-        self._check_key(key)
         self.data[key] = value
 
     def __len__(self):
         """ Convenience function for getting nblocks """
         return self.nblocks
+
+    def _is_scalar_type(self, x):
+        """ Internal helper function checking scalar-ness for elementwise ops
+
+        :return: bool
+        """
+        # Implemented as a function in case we need to modify it in future...
+        return  np.isscalar(x)
 
     @staticmethod
     def zeros(blk_partition, dtype=np.float64):
@@ -202,14 +193,17 @@ class BlkDiagMatrix:
     @property
     def isnumeric(self):
         """
-        Check a block diag matrix is numeric or not
+        Check if all blocks in diag matrix are numeric
         :return: Bool
         """
-
-        try:
-            return 0 == self*0
-        except:
-            return False
+        # Note Matlab port checked 0 == blk*0 for a single blk.
+        #   However, the only use case I could think of would be for the
+        #     entire matrix, so that is implemented here. Easily changed.
+        for blk in self:
+            if not np.all(np.isfinite(blk)):
+                return False
+        else:
+            return True
 
     def add(self, other):
         """
@@ -218,7 +212,7 @@ class BlkDiagMatrix:
         :param other: The rhs BlkDiagMatrix matrix
         :return:  BlkDiagMatrix matrix with elementwise sum equal to self+other.
         """
-        if isinstance(other, SCALAR_TYPES):
+        if self._is_scalar_type(other):
             return self.scalar_add(other)
 
         self.check_compatible(other)
@@ -237,12 +231,11 @@ class BlkDiagMatrix:
 
     def __iadd__(self, other):
         """ Operator overloading for in place addition """
-        if isinstance(other, SCALAR_TYPES):
+        if self._is_scalar_type(other):
             return self.scalar_add(other, inplace=True)
-        elif not self.check_compatible(other):
-            raise TypeError(
-                '{} is not understood by BlkDiagMatrix.__iadd__'.format(
-                    repr(other)))
+
+        self.check_compatible(other)
+
         for i in range(self.nblocks):
             self[i] += other[i]
 
@@ -263,7 +256,7 @@ class BlkDiagMatrix:
         :param scalar: constant addend value
         :return:  BlkDiagMatrix matrix with elementwise sum equal to self+other.
         """
-        assert any((isinstance(scalar, x) for x in SCALAR_TYPES))
+        assert self._is_scalar_type(scalar)
 
         if not inplace:
             C = BlkDiagMatrix.from_blk_diag(self.data)
@@ -284,7 +277,7 @@ class BlkDiagMatrix:
         :return: A BlkDiagMatrix matrix with elementwise subraction equal to
          self - other.
         """
-        if isinstance(other, SCALAR_TYPES):
+        if self._is_scalar_type(other):
             return self.scalar_sub(other)
 
         self.check_compatible(other)
@@ -302,7 +295,7 @@ class BlkDiagMatrix:
 
     def __isub__(self, other):
         """ Operator overloading for in place subtraction """
-        if isinstance(other, SCALAR_TYPES):
+        if self._is_scalar_type(other):
             return self.scalar_sub(other, inplace=True)
         self.check_compatible(other)
 
@@ -326,7 +319,7 @@ class BlkDiagMatrix:
         :return:  BlkDiagMatrix matrix with elementwise sum equal to
          self + other.
         """
-        assert any((isinstance(scalar, x) for x in SCALAR_TYPES))
+        assert self._is_scalar_type(scalar)
 
         if not inplace:
             C = BlkDiagMatrix.from_blk_diag(self.data)
@@ -387,7 +380,7 @@ class BlkDiagMatrix:
         if isinstance(val, BlkDiagMatrix):
             raise RuntimeError("Attempt numeric multiplication (*,mul) of two "
                                "BlkDiagMatrixs, try (matmul,@)")
-        elif not isinstance(val, SCALAR_TYPES):
+        elif not self._is_scalar_type(val):
             raise RuntimeError("Attempt numeric multiplication (*,mul) of a "
                                "BlkDiagMatrix and {}".format(
                                    type(val)))
