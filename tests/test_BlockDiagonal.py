@@ -311,10 +311,6 @@ class BlkDiagMatrixTestCase(TestCase):
         blk_c = self.blk_a.sub(self.blk_b)
         self.allallfunc(result, blk_c)
 
-        blk_c = self.blk_a.minus(self.blk_b)
-        self.allallfunc(result, blk_c)
-
-
     def testBlkDiagMatrixApply(self):
 
         mean_coeff = np.array([

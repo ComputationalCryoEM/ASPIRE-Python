@@ -263,10 +263,6 @@ class BlkDiagMatrix:
     def __sub__(self, other):
         return self.sub(other)
 
-    # Minus exists to match old implementation, deprecate?
-    def minus(self, other):
-        return self.__sub__(other)
-
     def __isub__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return self.scalar_sub(other, inplace=True)
