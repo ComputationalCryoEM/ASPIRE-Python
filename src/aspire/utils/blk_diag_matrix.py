@@ -1,3 +1,8 @@
+"""
+Define a BlkDiagMatrix class which implements operations for
+block diagonal matrices as used by ASPIRE.
+"""
+
 import numpy as np
 
 from numpy.linalg import norm
@@ -14,6 +19,18 @@ SCALAR_TYPES=(int, float, complex)
 class BlkDiagMatrix:
 
     def __init__(self, nblocks, partition=None, dtype=np.float64):
+        """
+        Instantiate a BlkDiagMatrix.
+
+        :param nblocks: Number of diagonal matrix blocks
+        :param partition: Optionally supply the matrix block partition
+         in the form of a `nblock`-element list storing all shapes of
+         diagonal matrix blocks, where `partition[i]` corresponds to
+         the shape (number of rows and columns) of the `i` matrix block.
+        :return BlkDiagMatrix instance
+
+        """
+
         self.nblocks = nblocks
         self.dtype = np.dtype(dtype)
         self.data = [[]] * nblocks
@@ -23,10 +40,12 @@ class BlkDiagMatrix:
             assert self._cached_blk_sizes.shape[1] == 2
 
     def __repr__(self):
+        """String represention describing instance """
         return "BlkDiagMatrix({}, {})".format(
             repr(self.nblocks), repr(self.dtype))
 
     def _check_key(self, key):
+        """ Key bounds checking """
         if not isinstance(key, int):
             raise TypeError(
                 "BlkDiagMatrix is indexed by ints. Got {}".format(repr(key)))
@@ -39,18 +58,27 @@ class BlkDiagMatrix:
         return
 
     def copy(self):
+        """
+        Returns new BlkDiagMatrix which is a copy of `self`.
+        :return BlkDiagMatrix like self
+        """
         return BlkDiagMatrix.from_blk_diag(self.data)
 
-    # Manually overload list methods
+    # Manually overload list methods,
+    #   This is just for syntax which allows us to reference self[i] etc
+    #     instead of writing self.data all the time. You may use either.
     def __getitem__(self, key):
+        """ Convenience function for operation on self.data """
         self._check_key(key)
         return self.data[key]
 
     def __setitem__(self, key, value):
+        """ Convenience function for operation on self.data """
         self._check_key(key)
         self.data[key] = value
 
     def __len__(self):
+        """ Convenience function for getting nblocks """
         return self.nblocks
 
     @staticmethod
@@ -185,7 +213,7 @@ class BlkDiagMatrix:
 
     def add(self, other):
         """
-        Define the element addition of BlkDiagMatrix matrix
+        Define the elementwise addition of BlkDiagMatrix matrix
 
         :param other: The rhs BlkDiagMatrix matrix
         :return:  BlkDiagMatrix matrix with elementwise sum equal to self+other.
@@ -204,9 +232,11 @@ class BlkDiagMatrix:
         return C
 
     def __add__(self, other):
+        """ Operator overloading for addition """
         return self.add(other)
 
     def __iadd__(self, other):
+        """ Operator overloading for in place addition """
         if isinstance(other, SCALAR_TYPES):
             return self.scalar_add(other, inplace=True)
         elif not self.check_compatible(other):
@@ -219,7 +249,7 @@ class BlkDiagMatrix:
         return self
 
     def __radd__(self, other):
-        """ Convenient function for elementwise scalar addition """
+        """ Convenience function for elementwise scalar addition """
         # Note, the case of BlkDiagMatrix_L + BlkDiagMatrix_R would be
         #   evaluated as L.add(R), so this is only for other
         #   Object + BlkDiagMatrix situations, namely scalars,
@@ -267,9 +297,11 @@ class BlkDiagMatrix:
         return C
 
     def __sub__(self, other):
+        """ Operator overloading for subtraction """
         return self.sub(other)
 
     def __isub__(self, other):
+        """ Operator overloading for in place subtraction """
         if isinstance(other, SCALAR_TYPES):
             return self.scalar_sub(other, inplace=True)
         self.check_compatible(other)
@@ -329,9 +361,14 @@ class BlkDiagMatrix:
         return C
 
     def __matmul__(self, other):
+        """ Operator overload for matrix matrix multiply of BlkDiagMatrixes """
         return self.matmul(other)
 
     def __imatmul__(self, other):
+        """
+        Operator overload for in place matrix matrix multiply
+        of BlkDiagMatrixes.
+        """
         self.check_compatible(other)
         for i in range(self.nblocks):
             self[i] @= other[i]
@@ -362,9 +399,11 @@ class BlkDiagMatrix:
         return C
 
     def __mul__(self, val):
+        """ Operator overload for BlkDiagMatrix scalar multiply"""
         return self.mul(val)
 
     def __imul__(self, val):
+        """ Operator overload for in place BlkDiagMatrix scalar multiply"""
         if isinstance(val, BlkDiagMatrix):
             raise RuntimeError(
                 "Attempt numeric multiplication (*,mul) of two BlkDiagMatrixs, "
@@ -455,8 +494,8 @@ class BlkDiagMatrix:
 
     @property
     def T(self):
+        """ Syntactic sugar for self.transpose() """
         return self.transpose()
-
 
     def dense(self):
         """
@@ -468,10 +507,6 @@ class BlkDiagMatrix:
         non-diagonal blocks.
         """
         return block_diag(self.data)
-
-    # not sure about the naming conventions atm
-    def to_mat(self):
-        return self.dense()
 
     @staticmethod
     def from_blk_diag(blk_diag, dtype=np.float64):
@@ -594,7 +629,7 @@ class BlkDiagMatrix:
 
 
 def get_partition(blk_diag):
-    """ Convenience wrapper of BlkDiagMatrix"""
+    """ Convenience wrapper of BlkDiagMatrix.get_partition"""
     return BlkDiagMatrix.get_partition(blk_diag)
 
 def filter_to_fb_mat(h_fun, fbasis):
