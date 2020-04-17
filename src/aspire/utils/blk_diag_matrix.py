@@ -219,7 +219,6 @@ class BlkDiagMatrix:
 
         C = BlkDiagMatrix(self.nblocks, dtype=self.dtype)
 
-        # the can be done in parallel later (prange)
         for i in range(self.nblocks):
             C[i] = self[i] + other[i]
 
@@ -263,7 +262,6 @@ class BlkDiagMatrix:
         else:
             C = self
 
-        # the can be done in parallel later (prange)
         for i in range(self.nblocks):
             C[i] += scalar
 
@@ -326,7 +324,6 @@ class BlkDiagMatrix:
         else:
             C = self
 
-        # the can be done in parallel later (prange)
         for i in range(self.nblocks):
             C[i] -= scalar
 
@@ -348,7 +345,7 @@ class BlkDiagMatrix:
         self.check_compatible(other)
 
         C = BlkDiagMatrix(self.nblocks, dtype=self.dtype)
-        # note, we can do this in parallel
+
         for i in range(self.nblocks):
             C[i] = self[i] @ other[i]
         return C
@@ -386,7 +383,7 @@ class BlkDiagMatrix:
                                    type(val)))
 
         C = BlkDiagMatrix(self.nblocks, dtype=self.dtype)
-        # note, we can do this in parallel
+
         for i in range(self.nblocks):
             C[i] = self[i] * val
         return C
