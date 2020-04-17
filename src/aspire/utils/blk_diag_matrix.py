@@ -16,6 +16,14 @@ from aspire.basis.basis_utils import lgwt
 
 class BlkDiagMatrix:
 
+    # All instances of this class should have priority over ndarray ops
+    #   because we implement them here ourselves.
+    # This is a more np current implementation of __array_priority__
+    #   operator precedence schedule.
+    # Mainly this effects rmul, radd, rsub eg:
+    #   blk_y = scalar_a + ( scalar_b * blk_x)
+    __array_ufunc__ = None
+
     def __init__(self, nblocks, partition=None, dtype=np.float64):
         """
         Instantiate a BlkDiagMatrix.
@@ -174,8 +182,9 @@ class BlkDiagMatrix:
         """
 
         if not isinstance(other, BlkDiagMatrix):
-            raise RuntimeError("Currently BlkDiagMatrix only interfaces with "
-                               "its own instances, got {}".format(repr(other)))
+            raise NotImplementedError(
+                "Currently BlkDiagMatrix only interfaces "
+                "with its own instances, got {}".format(repr(other)))
         elif len(self) != len(other):
             raise RuntimeError('Number of blocks {} {} are not equal!'.format(
                 len(self), len(other)))
