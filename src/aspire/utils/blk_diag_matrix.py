@@ -1,5 +1,5 @@
 """
-Define a BlkDiagMatrix class which implements operations for
+Define a BlkDiagMatrix module which implements operations for
 block diagonal matrices as used by ASPIRE.
 """
 
@@ -15,6 +15,10 @@ from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.basis_utils import lgwt
 
 class BlkDiagMatrix:
+    """
+    Define a BlkDiagMatrix class which implements operations for
+    block diagonal matrices as used by ASPIRE.
+    """
 
     # All instances of this class should have priority over ndarray ops
     #   because we implement them here ourselves.
