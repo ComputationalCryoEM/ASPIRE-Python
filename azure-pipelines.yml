@@ -1,3 +1,12 @@
+schedules:
+- cron: "0 0 * * *" # cron syntax defining a schedule
+  displayName: Daily Build
+  branches:
+    include:
+    - master
+    - develop
+  always: true # Always run the Daily Build
+
 jobs:
 - job:
   displayName: ubuntu-latest
@@ -36,7 +45,7 @@ jobs:
 
 #  - bash: conda update -q -y conda
 #    displayName: Update conda
-    
+
   - bash: conda env create --name myEnvironment --file environment.yml
     displayName: Create Anaconda environment
 
@@ -96,10 +105,10 @@ jobs:
 
   - bash: conda clean -i -t -y
     displayName: Removing conda cached package tarballs.
-    
+
   - bash: conda env create --name myEnvironment --file environment.yml
     displayName: Create Anaconda environment
-    
+
   - bash: |
       source activate myEnvironment
       python setup.py install
@@ -149,7 +158,7 @@ jobs:
 
   - script: conda update -q -y conda
     displayName: Update conda
-    
+
   - script: |
       call activate myEnvironment
       python setup.py install
