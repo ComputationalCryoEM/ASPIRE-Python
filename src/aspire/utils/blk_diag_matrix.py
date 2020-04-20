@@ -65,11 +65,11 @@ class BlkDiagMatrix:
     #   This is just for syntax which allows us to reference self[i] etc
     #     instead of writing self.data all the time. You may use either.
     def __getitem__(self, key):
-        """ Convenience function for operation on self.data """
+        """ Convenience wrapper, getter on self.data """
         return self.data[key]
 
     def __setitem__(self, key, value):
-        """ Convenience function for operation on self.data """
+        """ Convenience wrapper, setter on self.data """
         self.data[key] = value
 
     def __len__(self):
