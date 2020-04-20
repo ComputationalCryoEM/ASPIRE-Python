@@ -14,6 +14,7 @@ from aspire.utils.cell import Cell2D
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.basis_utils import lgwt
 
+
 class BlkDiagMatrix:
     """
     Define a BlkDiagMatrix class which implements operations for
@@ -82,7 +83,7 @@ class BlkDiagMatrix:
         :return: bool
         """
         # Implemented as a function in case we need to modify it in future...
-        return  np.isscalar(x)
+        return np.isscalar(x)
 
     @staticmethod
     def zeros(blk_partition, dtype=np.float64):
@@ -129,15 +130,16 @@ class BlkDiagMatrix:
         """
         Build a BlkDiagMatrix eye (identity) matrix
 
-        :param blk_partition: The matrix block partition in the form of a
-        K-element list storing all shapes of K diagonal matrix blocks,
+        :param blk_partition: The matrix block partition in the form of
+        a K-element list storing all shapes of K diagonal matrix blocks,
         where `blk_partition[i]` corresponds to the shape (number of rows
         and columns) of the `i` diagonal matrix block.
         :param dtype: The data type of the diagonal matrix blocks.
-        :return: A BlkDiagMatrix matrix consisting of `K` eye (identity) blocks.
+        :return: A BlkDiagMatrix matrix consisting of `K` eye (identity)
+        blocks.
         """
         n = len(blk_partition)
-        A = BlkDiagMatrix(n,dtype=dtype)
+        A = BlkDiagMatrix(n, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
             rows, cols = blk_sz
@@ -172,7 +174,7 @@ class BlkDiagMatrix:
         """
 
         if self._cached_blk_sizes is None:
-            blk_sizes = np.empty((self.nblocks,2))
+            blk_sizes = np.empty((self.nblocks, 2))
             for i, blk in enumerate(self.data):
                 blk_sizes[i] = np.shape(blk)
             self._cached_blk_sizes = blk_sizes
@@ -194,7 +196,7 @@ class BlkDiagMatrix:
                 len(self), len(other)))
         elif np.any(self.partition != other.partition):
             # be helpful and find the first one as an example
-            for i, (a,b) in enumerate(zip(self.partition, other.partition)):
+            for i, (a, b) in enumerate(zip(self.partition, other.partition)):
                 if a != b:
                     break
             raise RuntimeError(
@@ -224,7 +226,8 @@ class BlkDiagMatrix:
         Define the elementwise addition of BlkDiagMatrix matrix
 
         :param other: The rhs BlkDiagMatrix matrix
-        :return:  BlkDiagMatrix matrix with elementwise sum equal to self+other.
+        :return:  BlkDiagMatrix matrix with elementwise sum equal
+        to self + other.
         """
         if self._is_scalar_type(other):
             return self.scalar_add(other)
@@ -269,7 +272,8 @@ class BlkDiagMatrix:
         :param scalar: constant addend value
         :param inplace: bool, when false (default) return new instance.
 
-        :return:  BlkDiagMatrix matrix with elementwise sum equal to self+other.
+        :return:  BlkDiagMatrix matrix with elementwise sum equal
+        to self + other.
         """
         assert self._is_scalar_type(scalar)
 
@@ -417,8 +421,8 @@ class BlkDiagMatrix:
         """ Operator overload for in place BlkDiagMatrix scalar multiply"""
         if isinstance(val, BlkDiagMatrix):
             raise RuntimeError(
-                "Attempt numeric multiplication (*,mul) of two BlkDiagMatrixs, "
-                "try (matmul,@)")
+                "Attempt numeric multiplication (*,mul) of two BlkDiagMatrixs,"
+                " try (matmul,@)")
         for i in range(self.nblocks):
             self[i] *= val
 
@@ -473,7 +477,6 @@ class BlkDiagMatrix:
             self[i] **= val
         return self
 
-
     def norm(self, order=2):
         """
         Compute the norm of a BlkDiagMatrix matrix.
@@ -482,11 +485,11 @@ class BlkDiagMatrix:
 
         :return: The norm of the BlkDiagMatrix matrix
         """
-        IMPLEMENTED_ORDERS  = (2,)
-        if order not in IMPLEMENTED_ORDERS:
+        implimented_orders = (2,)
+        if order not in implimented_orders:
             raise NotImplementedError(
                 "Order {} not yet implemented, only {}".format(
-                    ord, IMPLEMENTED_ORDERS))
+                    ord, implimented_orders))
 
         return np.max([norm(blk, ord=order) for blk in self])
 
@@ -597,7 +600,7 @@ class BlkDiagMatrix:
         cellarray = Cell2D(rows, cols, dtype=Y.dtype)
         Y = cellarray.mat2cell(Y, rows, cols)
         X = []
-        for i in range(0,self.nblocks):
+        for i in range(0, self.nblocks):
             X.append(solve(self[i], Y[i]))
         X = np.concatenate(X, axis=0)
 
@@ -688,7 +691,7 @@ def filter_to_fb_mat(h_fun, fbasis):
         h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
             h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1))
-        h_fb[ind] =h_fb_ell
+        h_fb[ind] = h_fb_ell
         ind += 1
         if ell > 0:
             h_fb[ind] = h_fb[ind-1]
