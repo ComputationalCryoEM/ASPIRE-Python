@@ -91,8 +91,8 @@ class BlkDiagMatrix:
 
         :param blk_partition: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows cols)
-        of the `i` diagonal matrix block.
+        where `blk_partition[i]` corresponds to the shape (number of rows and
+        columns) of the `i` diagonal matrix block.
         :param dtype: The data type to set precision of diagonal matrix block.
         :return: A BlkDiagMatrix matrix consisting of `K` zero blocks.
         """
@@ -111,8 +111,8 @@ class BlkDiagMatrix:
 
         :param blk_partition: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows cols)
-        of the `i` diagonal matrix block.
+        where `blk_partition[i]` corresponds to the shape (number of rows and
+        columns) of the `i` diagonal matrix block.
         :param dtype: The data type to set precision of diagonal matrix block.
         :return: A BlkDiagMatrix matrix consisting of `K` ones blocks.
         """
@@ -130,9 +130,9 @@ class BlkDiagMatrix:
         Build a BlkDiagMatrix eye (identity) matrix
 
         :param blk_partition: The matrix block partition in the form of a
-            K-element list storing all shapes of K diagonal matrix blocks,
-            where `blk_partition[i]` corresponds to the shape (num of rows cols)
-            of the `i` diagonal matrix block.
+        K-element list storing all shapes of K diagonal matrix blocks,
+        where `blk_partition[i]` corresponds to the shape (number of rows
+        and columns) of the `i` diagonal matrix block.
         :param dtype: The data type of the diagonal matrix blocks.
         :return: A BlkDiagMatrix matrix consisting of `K` eye (identity) blocks.
         """
@@ -150,11 +150,11 @@ class BlkDiagMatrix:
         Create a partition of block diagonal matrix
 
         :param blk_diag: A block diagonal matrix in the form of a list. Each
-           element corresponds to a diagonal block.
+        element corresponds to a diagonal block.
         :return: The matrix block partition of `blk_diag` in the form of a
-            K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (n rows cols)
-        of the `i` diagonal matrix block.
+        K-element list storing all shapes of K diagonal matrix blocks,
+        where `blk_partition[i]` corresponds to the shape (number of rows and
+        columns) of the `i` diagonal matrix block.
         """
         blk_partition = [[]]*len(blk_diag)
         for i, mat in enumerate(blk_diag):
@@ -166,9 +166,9 @@ class BlkDiagMatrix:
         """
         Return the partitions (block sizes) of this BlkDiagMatrix
         :return: The matrix block partition in the form of a
-            K-element list storing all shapes of K diagonal matrix blocks,
-            where `partition[i]` corresponds to the shape (number of rows cols)
-            of the `i` diagonal matrix block.
+        K-element list storing all shapes of K diagonal matrix blocks,
+        where `partition[i]` corresponds to the shape (number of rows and
+        columns) of the `i` diagonal matrix block.
         """
 
         if self._cached_blk_sizes is None:
@@ -207,6 +207,7 @@ class BlkDiagMatrix:
     def isnumeric(self):
         """
         Check if all blocks in diag matrix are numeric
+
         :return: Bool
         """
         # Note Matlab port checked 0 == blk*0 for a single blk.
@@ -266,6 +267,8 @@ class BlkDiagMatrix:
         Define the element addition of BlkDiagMatrix matrix
 
         :param scalar: constant addend value
+        :param inplace: bool, when false (default) return new instance.
+
         :return:  BlkDiagMatrix matrix with elementwise sum equal to self+other.
         """
         assert self._is_scalar_type(scalar)
@@ -285,6 +288,7 @@ class BlkDiagMatrix:
         Define the element subtraction of BlkDiagMatrix matrix
 
         :param other: The rhs BlkDiagMatrix matrix
+
         :return: A BlkDiagMatrix matrix with elementwise subraction equal to
          self - other.
         """
@@ -327,6 +331,8 @@ class BlkDiagMatrix:
         Define the elementwise subtraction from BlkDiagMatrix matrix
 
         :param scalar: constant subtractend value
+        :param inplace: bool, when false (default) return new instance.
+
         :return:  BlkDiagMatrix matrix with elementwise sum equal to
          self + other.
         """
@@ -347,6 +353,7 @@ class BlkDiagMatrix:
         Compute the Matrix multiplication of two BlkDiagMatrix matrices
 
         :param other: The rhs BlkDiagMatrix matrix
+
         :return: A BlkDiagMatrix of self @ other.
         """
         if not isinstance(other, BlkDiagMatrix):
@@ -384,6 +391,7 @@ class BlkDiagMatrix:
          matrix and a scalar.
 
         :param other: The rhs BlkDiagMatrix matrix
+
         :return: A BlkDiagMatrix of self * other.
         """
 
@@ -471,6 +479,7 @@ class BlkDiagMatrix:
         Compute the norm of a BlkDiagMatrix matrix.
 
         :param order: Norm order, see np.norm. Defaults to order 2 norm.
+
         :return: The norm of the BlkDiagMatrix matrix
         """
         IMPLEMENTED_ORDERS  = (2,)
@@ -517,9 +526,9 @@ class BlkDiagMatrix:
         Convert full from list representation into BlkDiagMatrix
 
         :param blk_diag; The blk_diag representation in the form of a
-            K-element list storing all shapes of K diagonal matrix blocks,
-            where `blk_partition[i]` corresponds to the shape (rows cols)
-            of the `i` diagonal matrix block.
+        K-element list storing all shapes of K diagonal matrix blocks,
+        where `blk_partition[i]` corresponds to the shape (number of rows
+        and columns) of the `i` diagonal matrix block.
 
         :return: The BlkDiagMatrix matrix
         """
@@ -542,12 +551,13 @@ class BlkDiagMatrix:
     def from_mat(mat, blk_partition, dtype=np.float64):
         """
         Convert full block diagonal matrix into list representation
+
         :param mat; The full block diagonal matrix including the zero elements
-         ofnon-diagonal blocks.
+        ofnon-diagonal blocks.
         :param blk_partition: The matrix block partition in the form of a
-            K-element list storing all shapes of K diagonal matrix blocks,
-            where `blk_partition[i]` corresponds to the shape (num rows cols)
-            of the `i` diagonal matrix block.
+        K-element list storing all shapes of K diagonal matrix blocks,
+        where `blk_partition[i]` corresponds to the shape (number rows
+        and columns) of the `i` diagonal matrix block.
 
         :return: The BlkDiagMatrix matrix
         """
@@ -563,14 +573,14 @@ class BlkDiagMatrix:
         A.data = BlkDiagMatrix.from_blk_diag(blk_diag)
         return A
 
-
     def solve(self, Y):
         """
         Solve a linear system involving a block diagonal matrix
 
         :param Y: The right-hand side in the linear system.  May be a matrix
-            consisting of  coefficient vectors, in which case each column is
-            solved for separately.
+        consisting of  coefficient vectors, in which case each column is
+        solved for separately.
+
         :return: The result of solving the linear system formed by the matrix.
         """
 
@@ -596,13 +606,13 @@ class BlkDiagMatrix:
 
         return X
 
-
     def apply(self, X):
         """
         Define the apply option of a block diagonal matrix with a matrix of
-         coefficient vectors.
+        coefficient vectors.
 
         :param X: The coefficient matrix with each col is a coefficient vector
+
         :return: A matrix with new coefficient vectors
         """
         cols = np.array([np.size(mat, 1) for mat in self])
@@ -635,12 +645,14 @@ def get_partition(blk_diag):
     """ Convenience wrapper of BlkDiagMatrix.get_partition"""
     return BlkDiagMatrix.get_partition(blk_diag)
 
+
 def filter_to_fb_mat(h_fun, fbasis):
     """
     Convert a nonradial function in k space into a basis representation
 
     :param h_fun: The function form in k space
     :param fbasis: The basis object for expanding
+
     :return: a BlkDiagMatrix matrix representation using the `fbasis` expansion
     """
     if not isinstance(fbasis, FFBBasis2D):
