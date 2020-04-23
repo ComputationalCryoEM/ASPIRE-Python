@@ -208,11 +208,10 @@ def save_star(image_source, starfile_filepath, batch_size=1024, save_mode=None, 
         else:
             # save all images into multiple mrc files in batch size
             for i_start in np.arange(0, image_source.n, batch_size):
-
                 i_end = min(image_source.n, i_start + batch_size)
                 num = i_end - i_start
-                mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath)
-                                                 )[0] + f'_{i_start}_{i_end-1}.mrcs'
+                mrcs_filename = os.path.splitext(
+                    os.path.basename(starfile_filepath))[0] + f'_{i_start}_{i_end-1}.mrcs'
                 mrcs_filepath = os.path.join(
                     os.path.dirname(starfile_filepath),
                     mrcs_filename

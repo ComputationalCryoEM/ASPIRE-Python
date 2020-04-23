@@ -24,7 +24,7 @@ class Denoiser:
         """
         raise NotImplementedError('subclasses must implement this')
 
-    def images(self):
+    def image(self, istart=0, batch_size=512):
         """
         Obtain a batch size of 2D images after denosing by a specified method
         """

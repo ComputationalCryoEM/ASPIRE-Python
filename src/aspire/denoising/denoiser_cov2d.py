@@ -50,7 +50,7 @@ class DenoiserCov2D(Denoiser):
             'precision': 'float64'}
         covar_opt = fill_struct(covar_opt, default_opt)
         # Calculate the mean and covariance for the rotationally invariant covariance matrix of 2D images
-        self.mean__est = self.cov2d.get_mean()
+        self.mean_est = self.cov2d.get_mean()
 
         self.covar_est = self.cov2d.get_covar(noise_var=self.var_noise, mean_coeff=self.mean_est,
                                            covar_est_opt=covar_opt)
@@ -68,7 +68,6 @@ class DenoiserCov2D(Denoiser):
         src = self.src
 
         # Denoise one batch size of 2D images using the SPCAs from the rotationally invariant covariance matrix
-
         img_start = istart
         img_end = min(istart + batch_size, src.n)
         imgs_noise = src.images(img_start, batch_size)
