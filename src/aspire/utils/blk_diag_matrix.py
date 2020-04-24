@@ -21,6 +21,7 @@ class BlkDiagMatrix:
     block diagonal matrices as used by ASPIRE.
     """
 
+    # Developers' Note:
     # All instances of this class should have priority over ndarray ops
     #   because we implement them here ourselves.
     # This is a more np current implementation of __array_priority__
@@ -572,7 +573,7 @@ class BlkDiagMatrix:
         rows = blk_partition[:, 0]
         cols = blk_partition[:, 1]
         cellarray = Cell2D(rows, cols, dtype=mat.dtype)
-        blk_diag = cellarray.mat2blk_diag(mat, rows, cols)
+        blk_diag = cellarray.mat_to_blk_diag(mat, rows, cols)
         A.data = BlkDiagMatrix.from_blk_diag(blk_diag)
         return A
 

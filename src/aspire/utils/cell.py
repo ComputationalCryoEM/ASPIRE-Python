@@ -43,7 +43,7 @@ class Cell2D:
             offsetr += rows[i]
         return self.cell_list
 
-    def mat2blk_diag(self, mat, rows, cols):
+    def mat_to_blk_diag(self, mat, rows, cols):
         self.mat2cell(mat, rows, cols)
         blk_diag=[]
         offset = 0

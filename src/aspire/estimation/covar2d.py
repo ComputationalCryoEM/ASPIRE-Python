@@ -110,7 +110,7 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)),dtype=coeffs.dtype)]
+            ctf_fb = [BlkDiagMatrix.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)), dtype=coeffs.dtype)]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
@@ -121,7 +121,7 @@ class RotCov2D:
             mean_coeff_k = self._get_mean(coeff_k)
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
-            b = b + ctf_fb_k_t.apply(mean_coeff_k) * weight
+            b += weight * ctf_fb_k_t.apply(mean_coeff_k)
             A += weight * (ctf_fb_k_t @ ctf_fb_k)
 
         mean_coeff = A.solve(b)
@@ -142,7 +142,7 @@ class RotCov2D:
         :param covar_est_opt: The optimization parameter list for obtaining the Cov2D matrix.
         :return: The basis coefficients of the covariance matrix in
             the form of cell array representing a block diagonal matrix. These
-            block diagonal matrices may be manipulated using the `BlkDiagMatrix` functions.
+            block diagonal matrices are implemented as BlkDiagMatrix instances.
             The covariance is calculated from the images represented by the coeffs array,
             along with all possible rotations and reflections. As a result, the computed covariance
             matrix is invariant to both reflection and rotation. The effect of the filters in ctf_fb
@@ -187,16 +187,16 @@ class RotCov2D:
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
             covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
-            b_coeff += ctf_fb_k_t @ covar_coeff_k @ (ctf_fb_k * weight)
+            b_coeff +=  weight * (ctf_fb_k_t @ covar_coeff_k @ ctf_fb_k)
 
-            A_temp = ctf_fb_k_t @ ctf_fb_k
-            b_noise += A_temp * weight
+            ctf_fb_k_sq = ctf_fb_k_t @ ctf_fb_k
+            b_noise += weight * ctf_fb_k_sq
 
-            A[k] = A_temp * np.sqrt(weight)
+            A[k] = np.sqrt(weight) * ctf_fb_k_sq
             M += A[k]
 
         if covar_est_opt['shrinker'] == 'None':
-            b = b_coeff + (-noise_var * b_noise)
+            b = b_coeff - noise_var * b_noise
         else:
             b = self.shrink_covar_backward(b_coeff, b_noise, np.size(coeffs, 1),
                                            noise_var, covar_est_opt['shrinker'])
@@ -293,15 +293,14 @@ class RotCov2D:
             coeff_k = coeffs[:, ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
-            sig_covar_coeff = ctf_fb_k @ (covar_coeff @ ctf_fb_k_t)
+            sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
             sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff[:, np.newaxis])[:, 0]
 
             coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
             coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
-            tmp = covar_coeff @ ctf_fb_k_t
-            coeff_est_k = tmp.apply(coeff_est_k)
+            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
             coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
@@ -423,11 +422,11 @@ class BatchedRotCov2D(RotCov2D):
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
 
-            A_temp = ctf_fb_k_t @ ctf_fb_k
-            A_mean_k = A_temp * weight
+            ctf_fb_k_sq = ctf_fb_k_t @ ctf_fb_k
+            A_mean_k = weight * ctf_fb_k_sq
             A_mean += A_mean_k
 
-            A_covar_k = A_temp * np.sqrt(weight)
+            A_covar_k = np.sqrt(weight) * ctf_fb_k_sq
             A_covar[k] = A_covar_k
 
             M_covar += A_covar_k
@@ -444,12 +443,9 @@ class BatchedRotCov2D(RotCov2D):
 
         partition = get_partition(ctf_fb[0])
 
-        # GBW, Why are they deep copying, where are they using refs...
-
         # Note: If we don't do this, we'll be modifying the stored `b_covar`
         # since the operations below are in-place.
-        b_covar.data = [blk.copy() for blk in b_covar]
-
+        b_covar = b_covar.copy()
 
         for k in np.unique(ctf_idx):
             weight = np.count_nonzero(ctf_idx == k) / src.n
@@ -473,7 +469,7 @@ class BatchedRotCov2D(RotCov2D):
 
     def _noise_correct_covar_rhs(self, b_covar, b_noise, noise_var, shrinker):
         if shrinker == 'None':
-            b_noise = b_noise * -noise_var
+            b_noise = -noise_var * b_noise
             b_covar += b_noise
         else:
             b_covar = self.shrink_covar_backward(b_covar, b_noise, self.src.n,
@@ -566,8 +562,8 @@ class BatchedRotCov2D(RotCov2D):
             - 'precision': Precision of conjugate gradient algorithm (see
               documentation for `conj_grad`, default `'float64'`)
         :return: The block diagonal matrix containing the basis coefficients (in
-        `self.basis`) for the estimated covariance matrix. These may be
-        manipulated using the `BlkDiagMatrix` functions.
+        `self.basis`) for the estimated covariance matrix. These are
+        implemented using `BlkDiagMatrix`.
         """
 
         def identity(x):
