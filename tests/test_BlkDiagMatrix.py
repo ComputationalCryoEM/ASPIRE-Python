@@ -1,7 +1,10 @@
 import numpy as np
+import operator
+import pytest
 from unittest import TestCase
 
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
+
 
 class BlkDiagMatrixTestCase(TestCase):
     def setUp(self):
@@ -79,15 +82,21 @@ class BlkDiagMatrixTestCase(TestCase):
             np.array([[-0.24393745]])
         ])
 
-        self.blk_partition = self.blk_a.partition
+        self.blk_partition = [(4, 4), (3, 3), (3, 3), (3, 3), (3, 3), (2, 2),
+                              (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (1, 1),
+                              (1, 1), (1, 1), (1, 1), (1, 1), (1, 1)]
 
     def tearDown(self):
         pass
 
     def allallfunc(self, A, B, func=np.allclose):
         """ checks assertTrue(func()) as it iterates through A, B """
-        for (a,b) in zip(A, B):
-            self.assertTrue(func(a,b))
+        for (a, b) in zip(A, B):
+            self.assertTrue(func(a, b))
+
+    def allallid(self, A, B_ids, func=np.allclose):
+        """ checks assertTrue(func()) as it iterates through A, B """
+        return self.allallfunc(A, B_ids, func=lambda x,y: id(x) == y)
 
     def testBlkDiagMatrixCompat(self):
         self.assertTrue(self.blk_a.check_compatible(self.blk_b))
@@ -95,25 +104,16 @@ class BlkDiagMatrixTestCase(TestCase):
         # Create a differently shaped matrix
         x = BlkDiagMatrix.from_blk_diag(self.blk_a[1:-1])
         # code should raise
-        raised = False
-        try:
+        with pytest.raises(RuntimeError):
             x.check_compatible(self.blk_a)
-        except RuntimeError as e:
-            raised = True
-        finally:
-            self.assertTrue(raised)
 
     def testBlkDiagMatrixPartition(self):
-        result = [(4, 4), (3, 3), (3, 3), (3, 3), (3, 3), (2, 2), (2, 2),
-                  (2, 2), (2, 2), (2, 2), (2, 2), (1, 1), (1, 1), (1, 1),
-                  (1, 1), (1, 1), (1, 1)]
         # Test class attribute
-        blk_partition = self.blk_a.partition
-        self.assertTrue(result, blk_partition)
+        self.allallfunc(self.blk_a.partition, self.blk_partition)
 
         # Test utility function
         blk_partition = BlkDiagMatrix.get_partition(self.blk_a)
-        self.assertTrue(result, blk_partition)
+        self.allallfunc(blk_partition, self.blk_partition)
 
     def testBlkDiagMatrixZeros(self):
         result = [
@@ -152,6 +152,7 @@ class BlkDiagMatrixTestCase(TestCase):
             np.array([[0.]]),
             np.array([[0.]])
         ]
+
         blk_zeros = BlkDiagMatrix.zeros(self.blk_partition)
         self.allallfunc(blk_zeros, result)
 
@@ -326,7 +327,6 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(result, blk_c)
 
     def testBlkDiagMatrixApply(self):
-
         mean_coeff = np.array([
             [ 4.53531036e-04],
             [ 2.29341625e-04],
@@ -492,7 +492,6 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(blk_c, result)
 
     def testBlkDiagMatrixScalarAdd(self):
-
         result = [
             np.array([[41.69343191, 41.65712136, 41.99145512, 42.5275285 ],
                       [41.65712136, 41.80247568, 42.17833916, 41.77947822],
@@ -537,7 +536,6 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(blk_c, result)
 
     def testBlkDiagMatrixScalarSub(self):
-
         result_1 = [
             np.array([[-42.30656809, -42.34287864, -42.00854488, -41.4724715 ],
                       [-42.34287864, -42.19752432, -41.82166084, -42.22052178],
@@ -575,7 +573,7 @@ class BlkDiagMatrixTestCase(TestCase):
             np.array([[-42.22661312]])]
 
         # a-b = -1*(b-a)
-        result_2 = [-1*x for x in result_1]
+        result_2 = [-1 * x for x in result_1]
 
         blk_c = self.blk_a - 42.
         self.allallfunc(blk_c, result_1)
@@ -598,6 +596,7 @@ class BlkDiagMatrixTestCase(TestCase):
                         func=lambda x,y: not np.allclose(x,y))
         self.allallfunc(blk_a_copy_1, blk_a_copy_2,
                         func=lambda x,y: not np.allclose(x,y))
+
         # and blk_a is unchanged
         self.allallfunc(blk_a_copy_2, self.blk_a)
 
@@ -615,6 +614,7 @@ class BlkDiagMatrixTestCase(TestCase):
 
         blk_c += self.blk_a
         self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
+        self.allallid(blk_c, id0)
 
         blk_c += 10.
         self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
@@ -631,15 +631,11 @@ class BlkDiagMatrixTestCase(TestCase):
         blk_c -= self.blk_a
         self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
 
-        # a = (a+a+10) - 5. - 5. -a
         self.allallfunc(blk_c, self.blk_a)
-
 
     def testBlkDiagMatrixNorm(self):
         result = 0.8235750261689248
         norm = self.blk_a.norm()
-        print(norm)
-        print(result==norm)
         self.assertTrue(result == norm)
 
     def testBlkDiagMatrixSolve(self):
@@ -890,21 +886,21 @@ class BlkDiagMatrixTestCase(TestCase):
         #  for in place operations.
         id0 = [id(x) for x in blk_c]
 
-        blk_c **=0.5
+        blk_c **= 0.5
         self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
         self.allallfunc(blk_c, abs(self.blk_a))
 
-    def testBlkDiagMatrixIsNumeric(self):
-        self.assertTrue(self.blk_a.isnumeric)
+    def testBlkDiagMatrixIsFinite(self):
+        self.assertTrue(self.blk_a.isfinite)
 
         # construct a copy to mutate
         blk_inf = self.blk_a.copy()
         # assign inf value
         blk_inf[0][0] = np.inf
-        self.assertFalse(blk_inf.isnumeric)
+        self.assertFalse(blk_inf.isfinite)
 
         # construct a copy to mutate
         blk_nan = self.blk_a.copy()
         # assign inf value
         blk_nan[0][0] = np.nan
-        self.assertFalse(blk_nan.isnumeric)
+        self.assertFalse(blk_nan.isfinite)
