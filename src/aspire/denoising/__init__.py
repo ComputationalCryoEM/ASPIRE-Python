@@ -1,6 +1,5 @@
 import logging
 
-from aspire.io.starfile import save_star
 
 logger = logging.getLogger(__name__)
 
@@ -21,26 +20,12 @@ class Denoiser:
 
     def denoise(self):
         """
-        Denoise 2D images
+        Precompute for Denoiser and DenoisedImageSource for 2D images
         """
         raise NotImplementedError('subclasses must implement this')
 
-    def to_src(self):
+    def image(self, istart=0, batch_size=512):
         """
-        Return an ImageSource object with denoised images
+        Obtain a batch size of 2D images after denosing by a specified method
         """
         raise NotImplementedError('subclasses must implement this')
-
-    def save(self, starfile_filepath, batch_size=512, overwrite=False):
-        """
-        Output the denoised images to specified file
-
-        :param starfile_filepath: Path to STAR file for saving image_source
-        :param batch_size: Batch size of images to query from the `ImageSource` object.
-            Every `batch_size` rows, entries are written to STAR file,
-            and the `.mrcs` files saved.
-        :param overwrite: Whether to overwrite any .mrcs files found at the target location.
-        """
-        src = self.to_src()
-
-        save_star(src, starfile_filepath, batch_size=batch_size, overwrite=overwrite)

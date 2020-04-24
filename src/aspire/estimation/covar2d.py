@@ -346,13 +346,17 @@ class BatchedRotCov2D(RotCov2D):
             from aspire.basis.ffb_2d import FFBBasis2D
             self.basis = FFBBasis2D((src.L, src.L))
 
-        unique_filters = list(set(src.filters))
-        ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
+        if src.filters is None:
+            logger.info(f'CTF filters are not included in Cov2D denoising')
+            # set all CTF filters to an identity filter
+            self.ctf_idx = np.zeros(src.n, dtype=int)
+            self.ctf_fb = [blk_diag_eye(blk_diag_partition(RadialCTFFilter().fb_mat(self.basis)))]
+        else:
+            logger.info(f'Represent CTF filters in FB basis')
+            unique_filters = list(set(src.filters))
+            self.ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
 
-        ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
-
-        self.ctf_fb = ctf_fb
-        self.ctf_idx = ctf_idx
+            self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
 
     def _calc_rhs(self):
         src = self.src
@@ -590,3 +594,52 @@ class BatchedRotCov2D(RotCov2D):
                                         covar_est_opt)
 
         return covar_coeff
+
+    def get_cwf_coeffs(self, coeffs, ctf_fb, ctf_idx, mean_coeff, covar_coeff, noise_var=1):
+        """
+        Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
+
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
+        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_idx: An array of the CFT function indices for all 2D images.
+            If ctf_fb or ctf_idx is None, the identity filter will be applied.
+        :param mean_coeff: The mean value vector from all images.
+        :param covar_coeff: The block diagonal covariance matrix of the clean coefficients represented by a cell array.
+        :param noise_var: The estimated variance of noise. The value should be zero for `coeffs`
+            from clean images of simulation data.
+        :return: The estimated coefficients of the unfiltered images in certain math basis.
+            These are obtained using a Wiener filter with the specified covariance for the clean images
+            and white noise of variance `noise_var` for the noise.
+        """
+        if mean_coeff is None:
+            mean_coeff = self.get_mean()
+
+        if covar_coeff is None:
+            covar_coeff = self.get_covar(noise_var=noise_var, mean_coeff=mean_coeff)
+
+        blk_partition = blk_diag_partition(covar_coeff)
+
+        if (ctf_fb is None) or (ctf_idx is None):
+            ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
+            ctf_fb = [blk_diag_eye(blk_partition)]
+
+        noise_covar_coeff = blk_diag_mult(noise_var, blk_diag_eye(blk_partition, dtype=coeffs.dtype))
+
+        coeffs_est = np.zeros_like(coeffs, dtype=coeffs.dtype)
+
+        for k in np.unique(ctf_idx[:]):
+            coeff_k = coeffs[:, ctf_idx == k]
+            ctf_fb_k = ctf_fb[k]
+            ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
+            sig_covar_coeff = blk_diag_mult(ctf_fb_k, blk_diag_mult(covar_coeff, ctf_fb_k_t))
+            sig_noise_covar_coeff = blk_diag_add(sig_covar_coeff, noise_covar_coeff)
+
+            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])[:, 0]
+
+            coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
+            coeff_est_k = blk_diag_solve(sig_noise_covar_coeff, coeff_est_k)
+            coeff_est_k = blk_diag_apply(blk_diag_mult(covar_coeff, ctf_fb_k_t), coeff_est_k)
+            coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
+            coeffs_est[:, ctf_idx == k] = coeff_est_k
+
+        return coeffs_est

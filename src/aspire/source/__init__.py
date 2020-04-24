@@ -1,4 +1,3 @@
-import os.path
 from copy import copy
 import logging
 import numpy as np
@@ -11,7 +10,7 @@ from aspire.utils import ensure
 from aspire.utils.filters import MultiplicativeFilter, PowerFilter
 from aspire.utils.coor_trans import grid_2d
 from aspire.source.xform import Multiply, Shift, Downsample, FilterXform, LinearIndexedXform, Pipeline, LinearPipeline
-from aspire.estimation.noise import WhiteNoiseEstimator
+from aspire.io.starfile import save_star
 
 logger = logging.getLogger(__name__)
 
@@ -401,6 +400,19 @@ class ImageSource:
         im = Image(im).shift(self.offsets[all_idx, :])
         im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
         return im
+
+    def save(self, starfile_filepath, batch_size=512, save_mode=None, overwrite=False):
+        """
+        Save the output images to mrc files
+
+        :param batch_size: Batch size of images to query.
+        :param save_mode: Whether to save all images in a single or multiple files in batch size.
+        :param overwrite: Option to overwrite the output mrcs files.
+        """
+        logger.info("save images")
+
+        save_star(self, starfile_filepath, batch_size=batch_size, save_mode=save_mode,
+                  overwrite=overwrite)
 
 
 class ArrayImageSource(ImageSource):
