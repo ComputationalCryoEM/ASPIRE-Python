@@ -60,11 +60,7 @@ class BatchedRotCov2DTestCase(TestCase):
     def blk_diag_allclose(self, blk_diag_a, blk_diag_b):
         close = True
         for blk_a, blk_b in zip(blk_diag_a, blk_diag_b):
-            test = np.allclose(blk_a, blk_b)
-            close = (close and test)
-            if not test:
-                print('blk_a', blk_a)
-                print('blk_b', blk_b)
+            close = (close and np.allclose(blk_a, blk_b))
         return close
 
     def test01(self):
