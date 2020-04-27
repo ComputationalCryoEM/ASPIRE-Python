@@ -90,12 +90,12 @@ class BlkDiagMatrixTestCase(TestCase):
         pass
 
     def allallfunc(self, A, B, func=np.allclose):
-        """ checks assertTrue(func()) as it iterates through A, B """
+        """ Checks assertTrue(func()) as it iterates through A, B. """
         for (a, b) in zip(A, B):
             self.assertTrue(func(a, b))
 
     def allallid(self, A, B_ids, func=np.allclose):
-        """ checks assertTrue(func()) as it iterates through A, B """
+        """ Checks id(a) matches b_id for (a, b_id) in zip(A, B_ids). """
         return self.allallfunc(A, B_ids, func=lambda x,y: id(x) == y)
 
     def testBlkDiagMatrixCompat(self):
@@ -613,23 +613,22 @@ class BlkDiagMatrixTestCase(TestCase):
         id0 = [id(x) for x in blk_c]
 
         blk_c += self.blk_a
-        self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
         self.allallid(blk_c, id0)
 
         blk_c += 10.
-        self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
+        self.allallid(blk_c, id0)
 
         blk_a5 = BlkDiagMatrix.ones(self.blk_partition)
         id1 = [id(x) for x in blk_a5]
         blk_a5 *= 5.
-        self.assertTrue(all(id(blk_a5[x]) == id1[x] for x in range(len(blk_c))))
+        self.allallid(blk_a5, id1)
 
         blk_c -= blk_a5
         blk_c -= blk_a5
-        self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
+        self.allallid(blk_c, id0)
 
         blk_c -= self.blk_a
-        self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
+        self.allallid(blk_c, id0)
 
         self.allallfunc(blk_c, self.blk_a)
 
@@ -887,7 +886,7 @@ class BlkDiagMatrixTestCase(TestCase):
         id0 = [id(x) for x in blk_c]
 
         blk_c **= 0.5
-        self.assertTrue(all(id(blk_c[x]) == id0[x] for x in range(len(blk_c))))
+        self.allallid(blk_c, id0)
         self.allallfunc(blk_c, abs(self.blk_a))
 
     def testBlkDiagMatrixIsFinite(self):
