@@ -1,5 +1,4 @@
 import numpy as np
-import operator
 import pytest
 from unittest import TestCase
 
@@ -8,7 +7,7 @@ from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 
 class BlkDiagMatrixTestCase(TestCase):
     def setUp(self):
-        self.blk_a = BlkDiagMatrix.from_blk_diag([
+        self.blk_a = BlkDiagMatrix.from_list([
             np.array([[-0.30656809, -0.34287864, -0.00854488,  0.5275285 ],
                       [-0.34287864, -0.19752432,  0.17833916, -0.22052178],
                       [-0.00854488,  0.17833916, -0.4125285 , -0.30338836],
@@ -45,7 +44,7 @@ class BlkDiagMatrixTestCase(TestCase):
             np.array([[-0.22661312]])
         ])
 
-        self.blk_b = BlkDiagMatrix.from_blk_diag([
+        self.blk_b = BlkDiagMatrix.from_list([
             np.array([[-0.27457111, -0.33770709, -0.09067737,  0.52007584],
                       [-0.33770709, -0.24677034,  0.20639731, -0.2078888 ],
                       [-0.09067737,  0.20639731, -0.36507922, -0.37742705],
@@ -102,7 +101,7 @@ class BlkDiagMatrixTestCase(TestCase):
         self.assertTrue(self.blk_a.check_compatible(self.blk_b))
 
         # Create a differently shaped matrix
-        x = BlkDiagMatrix.from_blk_diag(self.blk_a[1:-1])
+        x = BlkDiagMatrix.from_list(self.blk_a[1:-1])
         # code should raise
         with pytest.raises(RuntimeError):
             x.check_compatible(self.blk_a)
@@ -112,7 +111,7 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(self.blk_a.partition, self.blk_partition)
 
         # Test utility function
-        blk_partition = BlkDiagMatrix.get_partition(self.blk_a)
+        blk_partition = self.blk_a.partition
         self.allallfunc(blk_partition, self.blk_partition)
 
     def testBlkDiagMatrixZeros(self):
@@ -754,7 +753,7 @@ class BlkDiagMatrixTestCase(TestCase):
             [ 2.06426457e-04,  8.27577854e-05, -4.61942718e-05, -6.92981952e-05,  4.04636422e-05]
         ])
 
-        A = BlkDiagMatrix.from_blk_diag(sn_matrix)
+        A = BlkDiagMatrix.from_list(sn_matrix)
         coeff_est = A.solve(coeff)
         self.allallfunc(result, coeff_est)
 

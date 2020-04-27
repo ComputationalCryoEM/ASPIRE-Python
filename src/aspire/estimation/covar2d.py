@@ -58,14 +58,13 @@ class RotCov2D:
         if mean_coeff is None:
             mean_coeff = self._get_mean(coeffs)
 
-        covar_coeff = []
-        ind = 0
+        # Initialize a totally empty BlkDiagMatrix, build incrementally.
+        covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
         ell = 0
         mask = self.basis._indices["ells"] == ell
         coeff_ell = coeffs[mask, ...] - mean_coeff[mask, np.newaxis]
         covar_ell = np.array(coeff_ell @ coeff_ell.T/np.size(coeffs, 1))
         covar_coeff.append(covar_ell)
-        ind += 1
 
         for ell in range(1, self.basis.ell_max+1):
             mask = self.basis._indices["ells"] == ell
@@ -77,7 +76,6 @@ class RotCov2D:
             if do_refl:
                 covar_coeff.append(covar_ell_diag)
                 covar_coeff.append(covar_ell_diag)
-                ind = ind + 2
             else:
                 covar_ell_off = np.array((coeffs[mask_pos, :] @ coeffs[mask_neg, :].T / np.size(coeffs, 1) -
                                  coeffs[mask_neg, :] @ coeffs[mask_pos, :].T)/(2 * np.size(coeffs, 1)))
@@ -90,9 +88,8 @@ class RotCov2D:
                 covar_coeff_blk[0:hsize, hsize:fsize] = covar_ell_off[0:hsize, 0:hsize]
                 covar_coeff_blk[hsize:fsize, 0:hsize] = covar_ell_off.T[0:hsize, 0:hsize]
                 covar_coeff.append(covar_coeff_blk)
-                ind = ind + 1
 
-        return BlkDiagMatrix.from_blk_diag(covar_coeff, dtype=coeffs.dtype)
+        return covar_coeff
 
     def get_mean(self, coeffs, ctf_fb=None, ctf_idx=None):
         """
@@ -109,7 +106,7 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis), dtype=coeffs.dtype)]
+            ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
@@ -613,7 +610,7 @@ class BatchedRotCov2D(RotCov2D):
 
         noise_covar_coeff = noise_var *  BlkDiagMatrix.eye_like(covar_coeff)
 
-        coeffs_est = np.zeros_like(coeffs, dtype=coeffs.dtype)
+        coeffs_est = np.zeros_like(coeffs)
 
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[:, ctf_idx == k]

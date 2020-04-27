@@ -1,6 +1,9 @@
 import numpy as np
 import logging
 
+# ugh circular depends
+#from aspire.utils.blk_diag_matrix import BlkDiagMatrix
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,11 +48,11 @@ class Cell2D:
 
     def mat_to_blk_diag(self, mat, rows, cols):
         self.mat2cell(mat, rows, cols)
-        blk_diag=[]
+        blk_diag = BlkDiagMatrix.empty(0, self.dtype)
         offset = 0
         for i in range(0, self.nrow):
             for j in range(0, self.ncol):
                 offset += 1
                 if i == j:
                     blk_diag.append(self.cell_list[offset])
-        return BlkDiagMatrix.from_blk_diag(blk_diag)
+        return blk_diag
