@@ -5,7 +5,6 @@ from scipy.linalg import solve
 from numpy.linalg import inv
 
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
-from aspire.utils.blk_diag_matrix import get_partition
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import fill_struct, conj_grad
@@ -114,7 +113,7 @@ class RotCov2D:
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
-        A = BlkDiagMatrix.zeros(get_partition(ctf_fb[0]), dtype=coeffs.dtype)
+        A = BlkDiagMatrix.zeros_like(ctf_fb[0])
         for k in np.unique(ctf_idx[:]).T:
             coeff_k = coeffs[:, ctf_idx == k]
             weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
@@ -168,14 +167,13 @@ class RotCov2D:
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
-        block_partition = get_partition(ctf_fb[0])
-        b_coeff = BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype)
-        b_noise = BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype)
+        b_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
+        b_noise = BlkDiagMatrix.zeros_like(ctf_fb[0])
         A = []
         for k in range(0, len(ctf_fb)):
-            A.append(BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype))
+            A.append(BlkDiagMatrix.zeros_like(ctf_fb[0]))
 
-        M = BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype)
+        M = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
         for k in np.unique(ctf_idx[:]):
 
@@ -203,7 +201,7 @@ class RotCov2D:
 
         cg_opt = covar_est_opt
 
-        covar_coeff = BlkDiagMatrix.zeros(block_partition, dtype=coeffs.dtype)
+        covar_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
         def precond_fun(S, x):
             p = np.size(S, 0)
@@ -406,11 +404,9 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        partition = get_partition(ctf_fb[0])
-
-        A_mean = BlkDiagMatrix.zeros(partition, dtype=src.dtype)
+        A_mean = BlkDiagMatrix.zeros_like(ctf_fb[0])
         A_covar = [None for _ in ctf_fb]
-        M_covar = BlkDiagMatrix.zeros(partition, dtype=src.dtype)
+        M_covar = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
         for k in np.unique(ctf_idx):
             weight = np.count_nonzero(ctf_idx == k) / src.n
@@ -437,7 +433,7 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        partition = get_partition(ctf_fb[0])
+        partition = ctf_fb[0].partition
 
         # Note: If we don't do this, we'll be modifying the stored `b_covar`
         # since the operations below are in-place.
@@ -476,8 +472,6 @@ class BatchedRotCov2D(RotCov2D):
     def _solve_covar(self, A_covar, b_covar, M, covar_est_opt):
         ctf_fb = self.ctf_fb
 
-        partition = get_partition(ctf_fb[0])
-
         def precond_fun(S, x):
             p = np.size(S, 0)
             ensure(np.size(x) == p*p, 'The sizes of S and x are not consistent.')
@@ -496,7 +490,7 @@ class BatchedRotCov2D(RotCov2D):
             return y
 
         cg_opt = covar_est_opt
-        covar_coeff = BlkDiagMatrix.zeros(partition, dtype=b_covar[0].dtype)
+        covar_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
         for ell in range(0, len(b_covar)):
             A_ell = []

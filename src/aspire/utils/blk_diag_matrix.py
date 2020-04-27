@@ -44,7 +44,7 @@ class BlkDiagMatrix:
 
         self.nblocks = nblocks
         self.dtype = np.dtype(dtype)
-        self.data = [[]] * nblocks
+        self.data = [None] * nblocks
         self._cached_blk_sizes = None
         if partition is not None:
             self._cached_blk_sizes = np.array(partition)
@@ -213,7 +213,7 @@ class BlkDiagMatrix:
         where `blk_partition[i]` corresponds to the shape (number of rows and
         columns) of the `i` diagonal matrix block.
         """
-        blk_partition = [[]] * len(blk_diag)
+        blk_partition = [None] * len(blk_diag)
         for i, mat in enumerate(blk_diag):
             blk_partition[i] = np.shape(mat)
         return blk_partition
@@ -713,11 +713,6 @@ class BlkDiagMatrix:
             Y = Y[:, 0]
 
         return Y
-
-
-def get_partition(blk_diag):
-    """ Convenience wrapper of BlkDiagMatrix.get_partition. """
-    return BlkDiagMatrix.get_partition(blk_diag)
 
 
 def filter_to_fb_mat(h_fun, fbasis):
