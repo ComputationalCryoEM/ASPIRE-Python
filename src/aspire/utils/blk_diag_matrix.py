@@ -91,7 +91,9 @@ class BlkDiagMatrix:
         self.reset_cache()
 
     def __repr__(self):
-        """String represention describing instance. """
+        """
+        String represention describing instance.
+        """
         return "BlkDiagMatrix({}, {})".format(
             repr(self.nblocks), repr(self.dtype))
 
@@ -113,20 +115,30 @@ class BlkDiagMatrix:
     #   This is just for syntax which allows us to reference self[i] etc
     #     instead of writing self.data all the time. You may use either.
     def __getitem__(self, key):
-        """ Convenience wrapper, getter on self.data. """
+        """
+        Convenience wrapper, getter on self.data.
+        """
+
         return self.data[key]
 
     def __setitem__(self, key, value):
-        """ Convenience wrapper, setter on self.data. """
+        """
+        Convenience wrapper, setter on self.data.
+        """
+
         self.data[key] = value
         self.reset_cache()
 
     def __len__(self):
-        """ Convenience function for getting nblocks. """
+        """
+        Convenience function for getting nblocks.
+        """
+
         return self.nblocks
 
     def _is_scalar_type(self, x):
-        """ Internal helper function checking scalar-ness for elementwise ops.
+        """
+        Internal helper function checking scalar-ness for elementwise ops.
 
         Essentially we are checking for a single numeric object, as opposed to
         something like an `ndarray` or `BlkDiagMatrix`. We do this by
@@ -140,6 +152,7 @@ class BlkDiagMatrix:
 
         :return: bool.
         """
+
         return np.isscalar(x)
 
     @staticmethod
@@ -193,6 +206,7 @@ class BlkDiagMatrix:
         :return: A BlkDiagMatrix instance consisting of `K` eye (identity)
         blocks.
         """
+
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
@@ -211,6 +225,7 @@ class BlkDiagMatrix:
         :return: BlkDiagMatrix instance consisting of `K` eye (identity)
         blocks.
         """
+
         if dtype is None:
             dtype = A.dtype
 
@@ -226,6 +241,7 @@ class BlkDiagMatrix:
         :param dtype: Optional, data type of the new diagonal matrix blocks.
         :return: BlkDiagMatrix instance consisting of `K` zeros blocks.
         """
+
         if dtype is None:
             dtype = A.dtype
 
@@ -249,6 +265,40 @@ class BlkDiagMatrix:
             self._cached_blk_sizes = blk_sizes
         return self._cached_blk_sizes
 
+    def check_size_compatible(self, other):
+        """
+        Sanity check two BlkDiagMatrix instances are compatible in size.
+
+        :para other: The BlkDiagMatrix to compare with self.
+        :return: Returns True if no error is raised.
+        """
+
+        if np.any(self.partition != other.partition):
+            # be helpful and find the first one as an example
+            for i, (a, b) in enumerate(zip(self.partition, other.partition)):
+                if a != b:
+                    break
+            raise RuntimeError(
+                'Block i={} of BlkDiagMatrix instances are '
+                'not same shape {} {}'.format(i, a, b))
+
+        return True
+
+    def check_dtype_compatible(self, other):
+        """
+        Sanity check two BlkDiagMatrix instances are compatible in dtype.
+
+        :para other: The BlkDiagMatrix to compare with self.
+        :return: Returns True if no error is raised.
+        """
+
+        if self.dtype != other.dtype:
+            raise RuntimeError('BlkDiagMatrix received different types,'
+                               ' {} and {}.  Please validate and cast'
+                               ' as appropriate.'.format(
+                                   self.dtype, other.dtype))
+        return True
+
     def check_compatible(self, other):
         """
         Sanity check two BlkDiagMatrix instances are compatible in size.
@@ -261,17 +311,13 @@ class BlkDiagMatrix:
             raise NotImplementedError(
                 "Currently BlkDiagMatrix only interfaces "
                 "with its own instances, got {}".format(repr(other)))
-        elif len(self) != len(other):
+
+        if len(self) != len(other):
             raise RuntimeError('Number of blocks {} {} are not equal.'.format(
                 len(self), len(other)))
-        elif np.any(self.partition != other.partition):
-            # be helpful and find the first one as an example
-            for i, (a, b) in enumerate(zip(self.partition, other.partition)):
-                if a != b:
-                    break
-            raise RuntimeError(
-                'Block i={} of BlkDiagMatrix instances are '
-                'not same shape {} {}'.format(i, a, b))
+
+        self.check_size_compatible(other)
+        self.check_dtype_compatible(other)
 
         return True
 
@@ -285,6 +331,7 @@ class BlkDiagMatrix:
 
         :return: Bool.
         """
+
         # Developers' Note Matlab port checked 0 == blk*0 for a single blk.
         #   However, the only use case I could think of would be for the
         #     entire matrix, so that is implemented here. Easily changed.
@@ -294,44 +341,57 @@ class BlkDiagMatrix:
         else:
             return True
 
-    def add(self, other):
+    def add(self, other, inplace=False):
         """
         Define the elementwise addition of BlkDiagMatrix instance.
 
         :param other: The rhs BlkDiagMatrix instance.
+        :param inplace: Boolean, when set to True change values in place,
+        otherwise return a new instance (default).
         :return:  BlkDiagMatrix instance with elementwise sum equal
         to self + other.
         """
+
         if self._is_scalar_type(other):
             return self.__scalar_add(other)
 
         self.check_compatible(other)
 
-        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+        if inplace:
+            for i in range(self.nblocks):
+                self[i] += other[i]
 
-        for i in range(self.nblocks):
-            C[i] = self[i] + other[i]
+            C = self
+        else:
+            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+
+            for i in range(self.nblocks):
+                C[i] = self[i] + other[i]
 
         return C
 
     def __add__(self, other):
-        """ Operator overloading for addition """
+        """
+        Operator overloading for addition.
+        """
+
         return self.add(other)
 
     def __iadd__(self, other):
-        """ Operator overloading for in-place addition """
+        """
+        Operator overloading for in-place addition.
+        """
+
         if self._is_scalar_type(other):
             return self.__scalar_add(other, inplace=True)
 
-        self.check_compatible(other)
-
-        for i in range(self.nblocks):
-            self[i] += other[i]
-
-        return self
+        return self.add(other, inplace=True)
 
     def __radd__(self, other):
-        """ Convenience function for elementwise scalar addition """
+        """
+        Convenience function for elementwise scalar addition.
+        """
+
         # Note, the case of BlkDiagMatrix_L + BlkDiagMatrix_R would be
         #   evaluated as L.add(R), so this is only for other
         #   Object + BlkDiagMatrix situations, namely scalars,
@@ -343,65 +403,79 @@ class BlkDiagMatrix:
         Define the element addition of BlkDiagMatrix instance.
 
         :param scalar: constant addend value.
-        :param inplace: bool, when false (default) return new instance.
-
+        :param inplace: Boolean, when set to True change values in place,
+        otherwise return a new instance (default).
         :return:  BlkDiagMatrix instance with elementwise sum equal
         to self + other.
         """
+
         assert self._is_scalar_type(scalar)
 
-        if not inplace:
-            C = self.copy()
-        else:
+        if inplace:
             C = self
+        else:
+            C = self.copy()
 
         for i in range(self.nblocks):
             C[i] += scalar
 
         return C
 
-    def sub(self, other):
+    def sub(self, other, inplace=False):
         """
         Define the element subtraction of BlkDiagMatrix instance.
 
         :param other: The rhs BlkDiagMatrix instance.
-
+        :param inplace: Boolean, when set to True change values in place,
+        otherwise return a new instance (default).
         :return: A BlkDiagMatrix instance with elementwise subraction equal to
          self - other.
         """
+
         if self._is_scalar_type(other):
             return self.__scalar_sub(other)
 
         self.check_compatible(other)
 
-        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+        if inplace:
+            for i in range(self.nblocks):
+                self[i] -= other[i]
 
-        for i in range(self.nblocks):
-            C[i] = self[i] - other[i]
+            C = self
+        else:
+            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+
+            for i in range(self.nblocks):
+                C[i] = self[i] - other[i]
 
         return C
 
     def __sub__(self, other):
-        """ Operator overloading for subtraction. """
+        """
+        Operator overloading for subtraction.
+        """
+
         return self.sub(other)
 
     def __isub__(self, other):
-        """ Operator overloading for in-place subtraction. """
+        """
+        Operator overloading for in-place subtraction.
+        """
+
         if self._is_scalar_type(other):
             return self.__scalar_sub(other, inplace=True)
 
-        self.check_compatible(other)
-
-        for i in range(self.nblocks):
-            self[i] -= other[i]
-
-        return self
+        return self.sub(other, inplace=True)
 
     def __rsub__(self, other):
-        """ Convenience function for elementwise scalar subtraction. """
+        """
+        Convenience function for elementwise scalar subtraction.
+        """
+
         # Note, the case of BlkDiagMatrix_L - BlkDiagMatrix_R would be
         #   evaluated as L.sub(R), so this is only for other
         #   Object - BlkDiagMatrix situations, namely scalars.
+
         return -(self - other)
 
     def __scalar_sub(self, scalar, inplace=False):
@@ -410,30 +484,32 @@ class BlkDiagMatrix:
 
         :param scalar: constant subtractend value.
         :param inplace: bool, when false (default) return new instance.
-
         :return:  BlkDiagMatrix instance with elementwise sum equal to
          self + other.
         """
+
         assert self._is_scalar_type(scalar)
 
-        if not inplace:
-            C = BlkDiagMatrix.from_list(self.data)
-        else:
+        if inplace:
             C = self
+        else:
+            C = BlkDiagMatrix.from_list(self.data)
 
         for i in range(self.nblocks):
             C[i] -= scalar
 
         return C
 
-    def matmul(self, other):
+    def matmul(self, other, inplace=False):
         """
         Compute the matrix multiplication of two BlkDiagMatrix instances.
 
         :param other: The rhs BlkDiagMatrix instance.
-
+        :param inplace: Boolean, when set to True change values in place,
+        otherwise return a new instance (default).
         :return: A BlkDiagMatrix of self @ other.
         """
+
         if not isinstance(other, BlkDiagMatrix):
             raise RuntimeError(
                 "Attempt BlkDiagMatrix matrix multiplication "
@@ -442,10 +518,15 @@ class BlkDiagMatrix:
 
         self.check_compatible(other)
 
-        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+        if inplace:
+            for i in range(self.nblocks):
+                self[i] @= other[i]
+            C = self
+        else:
+            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
 
-        for i in range(self.nblocks):
-            C[i] = self[i] @ other[i]
+            for i in range(self.nblocks):
+                C[i] = self[i] @ other[i]
 
         return C
 
@@ -453,6 +534,7 @@ class BlkDiagMatrix:
         """
         Operator overload for matrix multiply of BlkDiagMatrix instances.
         """
+
         return self.matmul(other)
 
     def __imatmul__(self, other):
@@ -460,19 +542,17 @@ class BlkDiagMatrix:
         Operator overload for in-place matrix multiply of BlkDiagMatrix
          instances.
         """
-        self.check_compatible(other)
-        for i in range(self.nblocks):
-            self[i] @= other[i]
 
-        return self
+        return self.matmul(other, inplace=True)
 
-    def mul(self, val):
+    def mul(self, val, inplace=False):
         """
         Compute the numeric multiplication of a BlkDiagMatrix instance and a
         scalar.
 
         :param other: The rhs BlkDiagMatrix instance.
-
+        :param inplace: Boolean, when set to True change values in place,
+        otherwise return a new instance (default).
         :return: A BlkDiagMatrix of self * other.
         """
 
@@ -485,39 +565,52 @@ class BlkDiagMatrix:
                                "BlkDiagMatrix and {}.".format(
                                    type(val)))
 
-        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+        if inplace:
+            for i in range(self.nblocks):
+                self[i] *= val
 
-        for i in range(self.nblocks):
-            C[i] = self[i] * val
+            C = self
+        else:
+            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+
+            for i in range(self.nblocks):
+                C[i] = self[i] * val
 
         return C
 
     def __mul__(self, val):
-        """ Operator overload for BlkDiagMatrix scalar multiply. """
+        """
+        Operator overload for BlkDiagMatrix scalar multiply.
+        """
+
         return self.mul(val)
 
     def __imul__(self, val):
-        """ Operator overload for in-place BlkDiagMatrix scalar multiply. """
+        """
+        Operator overload for in-place BlkDiagMatrix scalar multiply.
+        """
+
         if isinstance(val, BlkDiagMatrix):
             raise RuntimeError(
                 "Attempt numeric multiplication (*,mul) of two BlkDiagMatrix "
                 "instances, try (matmul,@).")
 
-        for i in range(self.nblocks):
-            self[i] *= val
-
-        return self
+        return self.mul(val, inplace=True)
 
     def __rmul__(self, other):
-        """ Convenience function, elementwise rmul commutes to mul. """
+        """
+        Convenience function, elementwise rmul commutes to mul.
+        """
+
         return self.mul(other)
 
-    def __neg__(self):
+    def neg(self):
         """
         Compute the unary negation of BlkDiagMatrix instance.
 
         :return: A BlkDiagMatrix like self.
         """
+
         C = BlkDiagMatrix(self.partition, dtype=self.dtype)
 
         for i in range(self.nblocks):
@@ -525,12 +618,19 @@ class BlkDiagMatrix:
 
         return C
 
-    def __abs__(self):
+    def __neg__(self):
+        """
+        Operator overload for unary negation of BlkDiagMatrix instance.
+        """
+        return self.neg()
+
+    def abs(self):
         """
         Compute the elementwise absolute value of BlkDiagMatrix instance.
 
         :return: A BlkDiagMatrix like self.
         """
+
         C = BlkDiagMatrix(self.partition, dtype=self.dtype)
 
         for i in range(self.nblocks):
@@ -538,17 +638,37 @@ class BlkDiagMatrix:
 
         return C
 
-    def __pow__(self, val):
+    def __abs__(self):
+        """
+        Operator overload for absolute value of BlkDiagMatrix instance.
+        """
+
+        return self.abs()
+
+    def pow(self, val, inplace=False):
         """
         Compute the elementwise power of BlkDiagMatrix instance.
-
+        :param inplace: Boolean, when set to True change values in place,
+        otherwise return a new instance (default).
         :return: A BlkDiagMatrix like self.
         """
 
-        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
-        for i in range(self.nblocks):
-            C[i] = np.power(self[i], val)
+        if inplace:
+            for i in range(self.nblocks):
+                self[i] **= val
+            C = self
+        else:
+            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+            for i in range(self.nblocks):
+                C[i] = np.power(self[i], val)
         return C
+
+    def __pow__(self, val):
+        """
+        Operator overload for inplace pow of BlkDiagMatrix instance.
+        """
+
+        return self.pow(val)
 
     def __ipow__(self, val):
         """
@@ -557,18 +677,18 @@ class BlkDiagMatrix:
         :return: self raised to power, elementwise.
         """
 
-        for i in range(self.nblocks):
-            self[i] **= val
-        return self
+        return self.pow(val, inplace=True)
 
     def norm(self, order=2):
         """
         Compute the norm of a BlkDiagMatrix instance.
 
         :param order: Norm order, see np.norm. Defaults to order 2 norm.
-
+        :param inplace: Boolean, when set to True change values in place,
+        otherwise return a new instance (default).
         :return: The norm of the BlkDiagMatrix instance.
         """
+
         implemented_orders = (2,)
         if order not in implemented_orders:
             raise NotImplementedError(
@@ -593,7 +713,10 @@ class BlkDiagMatrix:
 
     @property
     def T(self):
-        """ Syntactic sugar for self.transpose(). """
+        """
+        Syntactic sugar for self.transpose().
+        """
+
         return self.transpose()
 
     def dense(self):
@@ -604,6 +727,7 @@ class BlkDiagMatrix:
         :return: The BlkDiagMatrix instance including the zero elements of
         non-diagonal blocks.
         """
+
         return block_diag(self.data)
 
     @staticmethod
@@ -705,6 +829,7 @@ class BlkDiagMatrix:
 
         :return: A matrix with new coefficient vectors.
         """
+
         cols = np.array([np.size(mat, 1) for mat in self])
 
         if np.sum(cols) != np.size(X, 0):
@@ -741,6 +866,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     :return: a BlkDiagMatrix instance representation using the
     `fbasis` expansion.
     """
+
     if not isinstance(fbasis, FFBBasis2D):
         raise NotImplementedError('Currently only fast FB method is supported')
     # Set same dimensions as basis object
