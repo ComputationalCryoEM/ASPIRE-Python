@@ -110,7 +110,7 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)), dtype=coeffs.dtype)]
+            ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis), dtype=coeffs.dtype)]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
@@ -154,7 +154,7 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye(get_partition(RadialCTFFilter().fb_mat(self.basis)))]
+            ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
 
         def identity(x):
             return x
@@ -279,15 +279,13 @@ class RotCov2D:
         if covar_coeff is None:
             covar_coeff = self.get_covar(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
 
-        blk_partition = get_partition(covar_coeff)
-
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye(blk_partition, dtype=coeffs.dtype)]
+            ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
-        noise_covar_coeff = BlkDiagMatrix.eye(blk_partition, dtype=coeffs.dtype) * noise_var
+        noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
 
-        coeffs_est = np.zeros_like(coeffs, dtype=coeffs.dtype)
+        coeffs_est = np.zeros_like(coeffs)
 
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[:, ctf_idx == k]
@@ -351,7 +349,7 @@ class BatchedRotCov2D(RotCov2D):
             logger.info(f'CTF filters are not included in Cov2D denoising')
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
-            self.ctf_fb = [BlockDiagonal.from_partition(RadialCTFFilter().fb_mat(self.basis), dtype=src.type)]
+            self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
         else:
             logger.info(f'Represent CTF filters in FB basis')
             unique_filters = list(set(src.filters))
@@ -365,13 +363,11 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        partition = get_partition(ctf_fb[0])
-
         zero_coeff = np.zeros((basis.count,))
 
         b_mean = [np.zeros(basis.count) for _ in ctf_fb]
 
-        b_covar = BlkDiagMatrix.zeros(partition, dtype=src.dtype)
+        b_covar = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
@@ -617,28 +613,26 @@ class BatchedRotCov2D(RotCov2D):
         if covar_coeff is None:
             covar_coeff = self.get_covar(noise_var=noise_var, mean_coeff=mean_coeff)
 
-        blk_partition = blk_diag_partition(covar_coeff)
-
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
-            ctf_fb = [blk_diag_eye(blk_partition)]
+            ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
-        noise_covar_coeff = blk_diag_mult(noise_var, blk_diag_eye(blk_partition, dtype=coeffs.dtype))
+        noise_covar_coeff = noise_var *  BlkDiagMatrix.eye_like(covar_coeff)
 
         coeffs_est = np.zeros_like(coeffs, dtype=coeffs.dtype)
 
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[:, ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = blk_diag_transpose(ctf_fb_k)
-            sig_covar_coeff = blk_diag_mult(ctf_fb_k, blk_diag_mult(covar_coeff, ctf_fb_k_t))
-            sig_noise_covar_coeff = blk_diag_add(sig_covar_coeff, noise_covar_coeff)
+            ctf_fb_k_t = ctf_fb_k.T
+            sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
+            sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
-            mean_coeff_k = blk_diag_apply(ctf_fb_k, mean_coeff[:, np.newaxis])[:, 0]
+            mean_coeff_k = ctf_fb_k.apply(mean_coeff[:, np.newaxis])[:, 0]
 
             coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
-            coeff_est_k = blk_diag_solve(sig_noise_covar_coeff, coeff_est_k)
-            coeff_est_k = blk_diag_apply(blk_diag_mult(covar_coeff, ctf_fb_k_t), coeff_est_k)
+            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
+            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
             coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 

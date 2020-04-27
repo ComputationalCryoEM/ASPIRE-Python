@@ -156,6 +156,9 @@ class BlkDiagMatrixTestCase(TestCase):
         blk_zeros = BlkDiagMatrix.zeros(self.blk_partition)
         self.allallfunc(blk_zeros, result)
 
+        blk_zeros = BlkDiagMatrix.zeros_like(self.blk_a)
+        self.allallfunc(blk_zeros, result)
+
     def testBlkDiagMatrixOnes(self):
         result = [
             np.array([[1., 1., 1., 1.],
@@ -236,6 +239,9 @@ class BlkDiagMatrixTestCase(TestCase):
         ]
 
         blk_eye = BlkDiagMatrix.eye(self.blk_partition)
+        self.allallfunc(blk_eye, result)
+
+        blk_eye = BlkDiagMatrix.eye_like(self.blk_a)
         self.allallfunc(blk_eye, result)
 
     def testBlkDiagMatrixAdd(self):

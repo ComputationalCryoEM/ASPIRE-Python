@@ -46,7 +46,7 @@ class BlkDiagMatrix:
         self.dtype = np.dtype(dtype)
         self.data = [[]] * nblocks
         self._cached_blk_sizes = None
-        if partition:
+        if partition is not None:
             self._cached_blk_sizes = np.array(partition)
             assert self._cached_blk_sizes.shape[1] == 2
 
@@ -157,6 +157,51 @@ class BlkDiagMatrix:
         return A
 
     @staticmethod
+    def eye_like(A, dtype=None):
+        """
+        Build a BlkDiagMatrix eye (identity) matrix with the partition
+        structure of BlkDiagMatrix A.  Defaults to dtype of A.
+
+        :param A: BlkDiagMatrix instance.
+        :param dtype: Optional, data type of the new diagonal matrix blocks.
+        :return: BlkDiagMatrix instance consisting of `K` eye (identity)
+        blocks.
+        """
+        if dtype is None:
+            dtype = A.dtype
+
+        n = len(A)
+        partition = A.partition
+        I = BlkDiagMatrix(n, partition=partition, dtype=dtype)
+
+        for i, blk_sz in enumerate(partition):
+            rows, cols = blk_sz
+            I[i] = np.eye(N=rows, M=cols, dtype=dtype)
+        return I
+
+
+    @staticmethod
+    def zeros_like(A, dtype=None):
+        """
+        Build a BlkDiagMatrix zeros matrix with the partition
+        structure of BlkDiagMatrix A.  Defaults to dtype of A.
+
+        :param A: BlkDiagMatrix instance.
+        :param dtype: Optional, data type of the new diagonal matrix blocks.
+        :return: BlkDiagMatrix instance consisting of `K` zeros blocks.
+        """
+        if dtype is None:
+            dtype = A.dtype
+
+        n = len(A)
+        partition = A.partition
+        Z = BlkDiagMatrix(n, partition=partition, dtype=dtype)
+
+        for i, blk_sz in enumerate(partition):
+            Z[i] = np.zeros(blk_sz, dtype=dtype)
+        return Z
+
+    @staticmethod
     def get_partition(blk_diag):
         """
         Create a partition of block diagonal matrix
@@ -185,7 +230,7 @@ class BlkDiagMatrix:
         """
 
         if self._cached_blk_sizes is None:
-            blk_sizes = np.empty((self.nblocks, 2))
+            blk_sizes = np.empty((self.nblocks, 2), dtype=np.int)
             for i, blk in enumerate(self.data):
                 blk_sizes[i] = np.shape(blk)
             self._cached_blk_sizes = blk_sizes
