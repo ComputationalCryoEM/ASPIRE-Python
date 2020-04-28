@@ -19,6 +19,10 @@ class BlkDiagMatrix:
     """
     Define a BlkDiagMatrix class which implements operations for
     block diagonal matrices as used by ASPIRE.
+
+    Currently BlkDiagMatrix is implemented only for square blocks.
+    While in the future this can be extended, at this time assigning
+    a non square array will raise NotImplementedError.
     """
 
     # Developers' Note:
@@ -39,7 +43,7 @@ class BlkDiagMatrix:
          diagonal matrix blocks, where `partition[i]` corresponds to
          the shape (number of rows and columns) of the `i` matrix block.
         :param dtype: Datatype for blocks, defaults to np.float64.
-        :return BlkDiagMatrix instance.
+        :return: BlkDiagMatrix instance.
         """
 
         self.nblocks = len(partition)
@@ -48,6 +52,22 @@ class BlkDiagMatrix:
         self._cached_blk_sizes = np.array(partition)
         if len(partition):
             assert self._cached_blk_sizes.shape[1] == 2
+            assert all([BlkDiagMatrix.check_square(shp) for shp in partition])
+
+    @staticmethod
+    def check_square(shp):
+        """
+        Check if supplied shape tuple is square.
+
+        :param shp:  Shape to test, expressed as a 2-tuple.
+        :return: True or raises NotImplementedError.
+
+        """
+        if shp[0] != shp[1]:
+            raise NotImplementedError("Currently BlkDiagMatrix only supports"
+                                      " square blocks.  Received {}".format(
+                                          shp))
+        return True
 
     def reset_cache(self):
         """
@@ -126,6 +146,7 @@ class BlkDiagMatrix:
         Convenience wrapper, setter on self.data.
         """
 
+        BlkDiagMatrix.check_square(value.shape)
         self.data[key] = value
         self.reset_cache()
 
