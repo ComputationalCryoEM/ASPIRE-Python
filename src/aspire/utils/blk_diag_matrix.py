@@ -93,7 +93,7 @@ class BlkDiagMatrix:
         """
 
         # Empty partition has block dims of zero until they are assigned
-        partition =  [(0,0)] * nblocks
+        partition = [(0, 0)] * nblocks
 
         return BlkDiagMatrix(partition, dtype=dtype)
 
@@ -784,10 +784,10 @@ class BlkDiagMatrix:
     @staticmethod
     def from_mat(mat, blk_partition, dtype=np.float64):
         """
-        Convert full block diagonal matrix into list representation.
+        Convert full block diagonal matrix into BlkDiagMatrix.
 
         :param mat; The full block diagonal matrix including the zero elements
-        ofnon-diagonal blocks.
+        of non-diagonal blocks.
         :param blk_partition: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
         where `blk_partition[i]` corresponds to the shape (number rows
@@ -796,15 +796,21 @@ class BlkDiagMatrix:
         :return: The BlkDiagMatrix instance.
         """
 
-        # TODO: maybe can improve this implementation
-
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         rows = blk_partition[:, 0]
         cols = blk_partition[:, 1]
         cellarray = Cell2D(rows, cols, dtype=mat.dtype)
-        blk_diag = cellarray.mat_to_blk_diag(mat, rows, cols)
-        A.data = BlkDiagMatrix.from_list(blk_diag)
+
+        offset = 0
+        blk_ind = 0
+        for i in range(0, cellarray.nrow):
+            for j in range(0, cellarray.ncol):
+                offset += 1
+                if i == j:
+                    blk_ind += 1
+                    A[blk_ind] = cellarray.cell_list[offset]
+
         return A
 
     def solve(self, Y):
