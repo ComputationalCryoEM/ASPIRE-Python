@@ -14,20 +14,19 @@ class DiracBasis(Basis):
     """
     def __init__(self, sz, mask=None):
         """
-        initialize an object for Dirac Basis
-        :param sz: The size of the vectors for which to define the basis.
-        :param mask: A boolean mask of size sz indicating which coordinates
-            to include in the basis (default true(sz)).
+        Initialize an object for Dirac basis
+        :param sz: The shape of the vectors for which to define the basis.
+        :param mask: A boolean _mask of size sz indicating which coordinates
+            to include in the basis (default np.full(sz, True)).
         """
         if mask is None:
-            mask = np.ones(sz)
-            mask = mask > 0
+            mask = np.full(sz, True)
 
         super().__init__(sz)
 
-        self.mask = m_flatten(mask)
+        self._mask = m_flatten(mask)
         self.count = np.sum(mask)
-        self.sz_prod = self.nres**self.ndim
+        self._sz_prod = self.nres ** self.ndim
 
     def _build(self):
         """
@@ -46,8 +45,8 @@ class DiracBasis(Basis):
             dimensions correspond to dimensions two and higher of `v`.
         """
         v, sz_roll = unroll_dim(v, 2)
-        x = np.zeros(shape=tuple([self.sz_prod] + list(v.shape[1:])))
-        x[self.mask, ...] = v
+        x = np.zeros(shape=(self._sz_prod,) + v.shape[1:])
+        x[self._mask, ...] = v
         x = m_reshape(x, self.sz + x.shape[1:])
         x = roll_dim(x, sz_roll)
 
@@ -65,15 +64,12 @@ class DiracBasis(Basis):
              higher dimensions of `v`.
         """
         x, sz_roll = unroll_dim(x, self.ndim + 1)
-        x = m_reshape(x, new_shape=tuple([self.sz_prod] + list(x.shape[self.ndim:])))
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])))
-        v = x[self.mask, ...]
+        x = m_reshape(x, new_shape=(self._sz_prod,) + x.shape[self.ndim:])
+        v = np.zeros(shape=(self.count, ) + x.shape[1:])
+        v = x[self._mask, ...]
         v = roll_dim(v, sz_roll)
 
         return v
 
     def expand(self, x):
-        return self.evaluate_t(x)
-
-    def expand_t(self, x):
         return self.evaluate_t(x)
