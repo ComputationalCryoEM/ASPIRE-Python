@@ -68,6 +68,7 @@ vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to creat simulation object.')
 sim = Simulation(
+    L=img_size,
     n=num_imgs,
     vols=vols,
     C=num_maps,
