@@ -289,7 +289,7 @@ class RotCov2D:
             sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
             sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
-            mean_coeff_k = ctf_fb_k.apply(mean_coeff[:, np.newaxis])[:, 0]
+            mean_coeff_k = ctf_fb_k.apply(mean_coeff)
 
             coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
             coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
@@ -619,7 +619,7 @@ class BatchedRotCov2D(RotCov2D):
             sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
             sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
-            mean_coeff_k = ctf_fb_k.apply(mean_coeff[:, np.newaxis])[:, 0]
+            mean_coeff_k = ctf_fb_k.apply(mean_coeff)
 
             coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
             coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
