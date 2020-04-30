@@ -52,21 +52,7 @@ class BlkDiagMatrix:
         self._cached_blk_sizes = np.array(partition)
         if len(partition):
             assert self._cached_blk_sizes.shape[1] == 2
-            assert all([BlkDiagMatrix.__check_square(shp) for shp in partition])
-
-    @staticmethod
-    def __check_square(shp):
-        """
-        Check if supplied shape tuple is square.
-
-        :param shp:  Shape to test, expressed as a 2-tuple.
-        """
-        if shp[0] != shp[1]:
-            raise NotImplementedError("Currently BlkDiagMatrix only supports"
-                                      " square blocks.  Received {}".format(
-                                          shp))
-
-        return True
+            assert all([BlkDiagMatrix.__check_square(s) for s in partition])
 
     def reset_cache(self):
         """
@@ -75,26 +61,6 @@ class BlkDiagMatrix:
         """
 
         self._cached_blk_sizes = None
-
-    @staticmethod
-    def empty(nblocks, dtype=np.float64):
-        """
-        Instantiate an empty BlkDiagMatrix with `nblocks`, where each
-        data block is initially None with size (0,0).
-
-        This is used for incrementally building up a BlkDiagMatrix, by
-        using nblocks=0 in conjunction with `append` method or
-        situations where blocks are immediately assigned in a loop,
-        such as in a `copy`.
-
-        :param nblocks: Number of diagonal matrix blocks.
-        :return BlkDiagMatrix instance where each block is None.
-        """
-
-        # Empty partition has block dims of zero until they are assigned
-        partition = [(0, 0)] * nblocks
-
-        return BlkDiagMatrix(partition, dtype=dtype)
 
     def append(self, blk):
         """
@@ -174,119 +140,6 @@ class BlkDiagMatrix:
         """
 
         return np.isscalar(x)
-
-    @staticmethod
-    def zeros(blk_partition, dtype=np.float64):
-        """
-        Build a BlkDiagMatrix zeros matrix.
-
-        :param blk_partition: The matrix block partition in the form of a
-        K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows and
-        columns) of the `i` diagonal matrix block.
-        :param dtype: The data type to set precision of diagonal matrix block.
-        :return: A BlkDiagMatrix instance consisting of `K` zero blocks.
-        """
-
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
-
-        for i, blk_sz in enumerate(blk_partition):
-            A[i] = np.zeros(blk_sz, dtype=dtype)
-
-        return A
-
-    @staticmethod
-    def ones(blk_partition, dtype=np.float64):
-        """
-        Build a BlkDiagMatrix ones matrix.
-
-        :param blk_partition: The matrix block partition in the form of a
-        K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows and
-        columns) of the `i` diagonal matrix block.
-        :param dtype: The data type to set precision of diagonal matrix block.
-        :return: A BlkDiagMatrix instance consisting of `K` ones blocks.
-        """
-
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
-
-        for i, blk_sz in enumerate(blk_partition):
-            A[i] = np.ones(blk_sz, dtype=dtype)
-
-        return A
-
-    @staticmethod
-    def eye(blk_partition, dtype=np.float64):
-        """
-        Build a BlkDiagMatrix eye (identity) matrix
-
-        :param blk_partition: The matrix block partition in the form of
-        a K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows
-        and columns) of the `i` diagonal matrix block.
-        :param dtype: The data type of the diagonal matrix blocks.
-        :return: A BlkDiagMatrix instance consisting of `K` eye (identity)
-        blocks.
-        """
-
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
-
-        for i, blk_sz in enumerate(blk_partition):
-            rows, cols = blk_sz
-            A[i] = np.eye(N=rows, M=cols, dtype=dtype)
-
-        return A
-
-    @staticmethod
-    def eye_like(A, dtype=None):
-        """
-        Build a BlkDiagMatrix eye (identity) matrix with the partition
-        structure of BlkDiagMatrix A.  Defaults to dtype of A.
-
-        :param A: BlkDiagMatrix instance.
-        :param dtype: Optional, data type of the new diagonal matrix blocks.
-        :return: BlkDiagMatrix instance consisting of `K` eye (identity)
-        blocks.
-        """
-
-        if dtype is None:
-            dtype = A.dtype
-
-        return BlkDiagMatrix.eye(A.partition, dtype=dtype)
-
-    @staticmethod
-    def zeros_like(A, dtype=None):
-        """
-        Build a BlkDiagMatrix zeros matrix with the partition
-        structure of BlkDiagMatrix A.  Defaults to dtype of A.
-
-        :param A: BlkDiagMatrix instance.
-        :param dtype: Optional, data type of the new diagonal matrix blocks.
-        :return: BlkDiagMatrix instance consisting of `K` zeros blocks.
-        """
-
-        if dtype is None:
-            dtype = A.dtype
-
-        return BlkDiagMatrix.zeros(A.partition, dtype=dtype)
-
-    @property
-    def partition(self):
-        """
-        Return the partitions (block sizes) of this BlkDiagMatrix
-
-        :return: The matrix block partition in the form of a
-        K-element list storing all shapes of K diagonal matrix blocks,
-        where `partition[i]` corresponds to the shape (number of rows and
-        columns) of the `i` diagonal matrix block.
-        """
-
-        if self._cached_blk_sizes is None:
-            blk_sizes = np.empty((self.nblocks, 2), dtype=np.int)
-            for i, blk in enumerate(self.data):
-                blk_sizes[i] = np.shape(blk)
-            self._cached_blk_sizes = blk_sizes
-        return self._cached_blk_sizes
 
     def __check_size_compatible(self, other):
         """
@@ -400,6 +253,7 @@ class BlkDiagMatrix:
         """
         Convenience function for elementwise scalar addition.
         """
+
         return self.add(other)
 
     def __scalar_add(self, scalar, inplace=False):
@@ -621,6 +475,7 @@ class BlkDiagMatrix:
         """
         Operator overload for unary negation of BlkDiagMatrix instance.
         """
+
         return self.neg()
 
     def abs(self):
@@ -722,35 +577,23 @@ class BlkDiagMatrix:
 
         return block_diag(self.data)
 
-    @staticmethod
-    def from_list(blk_diag, dtype=np.float64):
+    @property
+    def partition(self):
         """
-        Convert full from python list representation into BlkDiagMatrix.
+        Return the partitions (block sizes) of this BlkDiagMatrix
 
-        This is to facilitate integration with code that may not be
-        using the BlkDiagMatrix class yet.
-
-        :param blk_diag; The blk_diag representation in the form of a
+        :return: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows
-        and columns) of the `i` diagonal matrix block.
-
-        :return: The BlkDiagMatrix instance.
+        where `partition[i]` corresponds to the shape (number of rows and
+        columns) of the `i` diagonal matrix block.
         """
 
-        # get the partition (just sizes)
-        blk_partition = [None] * len(blk_diag)
-        for i, mat in enumerate(blk_diag):
-            blk_partition[i] = np.shape(mat)
-
-        # instantiate an empty BlkDiagMatrix with that structure
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
-
-        # set the data
-        for i in range(A.nblocks):
-            A.data[i] = np.array(blk_diag[i], dtype=dtype)
-
-        return A
+        if self._cached_blk_sizes is None:
+            blk_sizes = np.empty((self.nblocks, 2), dtype=np.int)
+            for i, blk in enumerate(self.data):
+                blk_sizes[i] = np.shape(blk)
+            self._cached_blk_sizes = blk_sizes
+        return self._cached_blk_sizes
 
     def solve(self, Y):
         """
@@ -763,7 +606,7 @@ class BlkDiagMatrix:
         :return: The result of solving the linear system formed by the matrix.
         """
 
-        rows = self.partition[:,0]
+        rows = self.partition[:, 0]
         if sum(rows) != np.size(Y, 0):
             raise RuntimeError('Sizes of `self` and `Y` are not compatible.')
 
@@ -796,7 +639,7 @@ class BlkDiagMatrix:
         :return: A matrix with new coefficient vectors.
         """
 
-        cols = self.partition[:,1]
+        cols = self.partition[:, 1]
 
         if np.sum(cols) != np.size(X, 0):
             raise RuntimeError(
@@ -820,6 +663,166 @@ class BlkDiagMatrix:
             Y = Y[:, 0]
 
         return Y
+
+    @staticmethod
+    def __check_square(shp):
+        """
+        Check if supplied shape tuple is square.
+
+        :param shp:  Shape to test, expressed as a 2-tuple.
+        """
+
+        if shp[0] != shp[1]:
+            raise NotImplementedError("Currently BlkDiagMatrix only supports"
+                                      " square blocks.  Received {}".format(
+                                          shp))
+
+        return True
+
+    @staticmethod
+    def empty(nblocks, dtype=np.float64):
+        """
+        Instantiate an empty BlkDiagMatrix with `nblocks`, where each
+        data block is initially None with size (0,0).
+
+        This is used for incrementally building up a BlkDiagMatrix, by
+        using nblocks=0 in conjunction with `append` method or
+        situations where blocks are immediately assigned in a loop,
+        such as in a `copy`.
+
+        :param nblocks: Number of diagonal matrix blocks.
+        :return BlkDiagMatrix instance where each block is None.
+        """
+
+        # Empty partition has block dims of zero until they are assigned
+        partition = [(0, 0)] * nblocks
+
+        return BlkDiagMatrix(partition, dtype=dtype)
+
+    @staticmethod
+    def zeros(blk_partition, dtype=np.float64):
+        """
+        Build a BlkDiagMatrix zeros matrix.
+
+        :param blk_partition: The matrix block partition in the form of a
+        K-element list storing all shapes of K diagonal matrix blocks,
+        where `blk_partition[i]` corresponds to the shape (number of rows and
+        columns) of the `i` diagonal matrix block.
+        :param dtype: The data type to set precision of diagonal matrix block.
+        :return: A BlkDiagMatrix instance consisting of `K` zero blocks.
+        """
+
+        A = BlkDiagMatrix(blk_partition, dtype=dtype)
+
+        for i, blk_sz in enumerate(blk_partition):
+            A[i] = np.zeros(blk_sz, dtype=dtype)
+
+        return A
+
+    @staticmethod
+    def ones(blk_partition, dtype=np.float64):
+        """
+        Build a BlkDiagMatrix ones matrix.
+
+        :param blk_partition: The matrix block partition in the form of a
+        K-element list storing all shapes of K diagonal matrix blocks,
+        where `blk_partition[i]` corresponds to the shape (number of rows and
+        columns) of the `i` diagonal matrix block.
+        :param dtype: The data type to set precision of diagonal matrix block.
+        :return: A BlkDiagMatrix instance consisting of `K` ones blocks.
+        """
+
+        A = BlkDiagMatrix(blk_partition, dtype=dtype)
+
+        for i, blk_sz in enumerate(blk_partition):
+            A[i] = np.ones(blk_sz, dtype=dtype)
+
+        return A
+
+    @staticmethod
+    def eye(blk_partition, dtype=np.float64):
+        """
+        Build a BlkDiagMatrix eye (identity) matrix
+
+        :param blk_partition: The matrix block partition in the form of
+        a K-element list storing all shapes of K diagonal matrix blocks,
+        where `blk_partition[i]` corresponds to the shape (number of rows
+        and columns) of the `i` diagonal matrix block.
+        :param dtype: The data type of the diagonal matrix blocks.
+        :return: A BlkDiagMatrix instance consisting of `K` eye (identity)
+        blocks.
+        """
+
+        A = BlkDiagMatrix(blk_partition, dtype=dtype)
+
+        for i, blk_sz in enumerate(blk_partition):
+            rows, cols = blk_sz
+            A[i] = np.eye(N=rows, M=cols, dtype=dtype)
+
+        return A
+
+    @staticmethod
+    def eye_like(A, dtype=None):
+        """
+        Build a BlkDiagMatrix eye (identity) matrix with the partition
+        structure of BlkDiagMatrix A.  Defaults to dtype of A.
+
+        :param A: BlkDiagMatrix instance.
+        :param dtype: Optional, data type of the new diagonal matrix blocks.
+        :return: BlkDiagMatrix instance consisting of `K` eye (identity)
+        blocks.
+        """
+
+        if dtype is None:
+            dtype = A.dtype
+
+        return BlkDiagMatrix.eye(A.partition, dtype=dtype)
+
+    @staticmethod
+    def zeros_like(A, dtype=None):
+        """
+        Build a BlkDiagMatrix zeros matrix with the partition
+        structure of BlkDiagMatrix A.  Defaults to dtype of A.
+
+        :param A: BlkDiagMatrix instance.
+        :param dtype: Optional, data type of the new diagonal matrix blocks.
+        :return: BlkDiagMatrix instance consisting of `K` zeros blocks.
+        """
+
+        if dtype is None:
+            dtype = A.dtype
+
+        return BlkDiagMatrix.zeros(A.partition, dtype=dtype)
+
+    @staticmethod
+    def from_list(blk_diag, dtype=np.float64):
+        """
+        Convert full from python list representation into BlkDiagMatrix.
+
+        This is to facilitate integration with code that may not be
+        using the BlkDiagMatrix class yet.
+
+        :param blk_diag; The blk_diag representation in the form of a
+        K-element list storing all shapes of K diagonal matrix blocks,
+        where `blk_partition[i]` corresponds to the shape (number of rows
+        and columns) of the `i` diagonal matrix block.
+
+        :return: The BlkDiagMatrix instance.
+        """
+
+        # get the partition (just sizes)
+        blk_partition = [None] * len(blk_diag)
+        for i, mat in enumerate(blk_diag):
+            blk_partition[i] = np.shape(mat)
+
+        # instantiate an empty BlkDiagMatrix with that structure
+        A = BlkDiagMatrix(blk_partition, dtype=dtype)
+
+        # set the data
+        for i in range(A.nblocks):
+            A.data[i] = np.array(blk_diag[i], dtype=dtype)
+
+        return A
 
 
 def filter_to_fb_mat(h_fun, fbasis):
