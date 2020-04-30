@@ -608,7 +608,7 @@ class BatchedRotCov2D(RotCov2D):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
-        noise_covar_coeff = noise_var *  BlkDiagMatrix.eye_like(covar_coeff)
+        noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
 
         coeffs_est = np.zeros_like(coeffs)
 

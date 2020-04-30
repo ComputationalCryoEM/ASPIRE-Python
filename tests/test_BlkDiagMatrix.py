@@ -98,13 +98,12 @@ class BlkDiagMatrixTestCase(TestCase):
         return self.allallfunc(A, B_ids, func=lambda x,y: id(x) == y)
 
     def testBlkDiagMatrixCompat(self):
-        self.assertTrue(self.blk_a.check_compatible(self.blk_b))
-
+        """ Check incompatible matrix raises exception. """
         # Create a differently shaped matrix
         x = BlkDiagMatrix.from_list(self.blk_a[1:-1])
         # code should raise
         with pytest.raises(RuntimeError):
-            x.check_compatible(self.blk_a)
+            _ = x + self.blk_a
 
     def testBlkDiagMatrixPartition(self):
         # Test class attribute

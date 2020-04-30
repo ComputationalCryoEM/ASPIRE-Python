@@ -52,21 +52,20 @@ class BlkDiagMatrix:
         self._cached_blk_sizes = np.array(partition)
         if len(partition):
             assert self._cached_blk_sizes.shape[1] == 2
-            assert all([BlkDiagMatrix.check_square(shp) for shp in partition])
+            assert all([BlkDiagMatrix.__check_square(shp) for shp in partition])
 
     @staticmethod
-    def check_square(shp):
+    def __check_square(shp):
         """
         Check if supplied shape tuple is square.
 
         :param shp:  Shape to test, expressed as a 2-tuple.
-        :return: True or raises NotImplementedError.
-
         """
         if shp[0] != shp[1]:
             raise NotImplementedError("Currently BlkDiagMatrix only supports"
                                       " square blocks.  Received {}".format(
                                           shp))
+
         return True
 
     def reset_cache(self):
@@ -146,7 +145,7 @@ class BlkDiagMatrix:
         Convenience wrapper, setter on self.data.
         """
 
-        BlkDiagMatrix.check_square(value.shape)
+        BlkDiagMatrix.__check_square(value.shape)
         self.data[key] = value
         self.reset_cache()
 
@@ -193,6 +192,7 @@ class BlkDiagMatrix:
 
         for i, blk_sz in enumerate(blk_partition):
             A[i] = np.zeros(blk_sz, dtype=dtype)
+
         return A
 
     @staticmethod
@@ -212,6 +212,7 @@ class BlkDiagMatrix:
 
         for i, blk_sz in enumerate(blk_partition):
             A[i] = np.ones(blk_sz, dtype=dtype)
+
         return A
 
     @staticmethod
@@ -233,6 +234,7 @@ class BlkDiagMatrix:
         for i, blk_sz in enumerate(blk_partition):
             rows, cols = blk_sz
             A[i] = np.eye(N=rows, M=cols, dtype=dtype)
+
         return A
 
     @staticmethod
@@ -286,12 +288,11 @@ class BlkDiagMatrix:
             self._cached_blk_sizes = blk_sizes
         return self._cached_blk_sizes
 
-    def check_size_compatible(self, other):
+    def __check_size_compatible(self, other):
         """
         Sanity check two BlkDiagMatrix instances are compatible in size.
 
-        :para other: The BlkDiagMatrix to compare with self.
-        :return: Returns True if no error is raised.
+        :param other: The BlkDiagMatrix to compare with self.
         """
 
         if np.any(self.partition != other.partition):
@@ -303,14 +304,11 @@ class BlkDiagMatrix:
                 'Block i={} of BlkDiagMatrix instances are '
                 'not same shape {} {}'.format(i, a, b))
 
-        return True
-
-    def check_dtype_compatible(self, other):
+    def __check_dtype_compatible(self, other):
         """
         Sanity check two BlkDiagMatrix instances are compatible in dtype.
 
-        :para other: The BlkDiagMatrix to compare with self.
-        :return: Returns True if no error is raised.
+        :param other: The BlkDiagMatrix to compare with self.
         """
 
         if self.dtype != other.dtype:
@@ -318,14 +316,12 @@ class BlkDiagMatrix:
                                ' {} and {}.  Please validate and cast'
                                ' as appropriate.'.format(
                                    self.dtype, other.dtype))
-        return True
 
-    def check_compatible(self, other):
+    def __check_compatible(self, other):
         """
         Sanity check two BlkDiagMatrix instances are compatible in size.
 
-        :para other: The BlkDiagMatrix to compare with self.
-        :return: Returns True if no error is raised.
+        :param other: The BlkDiagMatrix to compare with self.
         """
 
         if not isinstance(other, BlkDiagMatrix):
@@ -337,10 +333,8 @@ class BlkDiagMatrix:
             raise RuntimeError('Number of blocks {} {} are not equal.'.format(
                 len(self), len(other)))
 
-        self.check_size_compatible(other)
-        self.check_dtype_compatible(other)
-
-        return True
+        self.__check_size_compatible(other)
+        self.__check_dtype_compatible(other)
 
     @property
     def isfinite(self):
@@ -353,9 +347,6 @@ class BlkDiagMatrix:
         :return: Bool.
         """
 
-        # Developers' Note Matlab port checked 0 == blk*0 for a single blk.
-        #   However, the only use case I could think of would be for the
-        #     entire matrix, so that is implemented here. Easily changed.
         for blk in self:
             if not np.all(np.isfinite(blk)):
                 return False
@@ -374,9 +365,9 @@ class BlkDiagMatrix:
         """
 
         if self._is_scalar_type(other):
-            return self.__scalar_add(other)
+            return self.__scalar_add(other, inplace=inplace)
 
-        self.check_compatible(other)
+        self.__check_compatible(other)
 
         if inplace:
             for i in range(self.nblocks):
@@ -403,21 +394,13 @@ class BlkDiagMatrix:
         Operator overloading for in-place addition.
         """
 
-        if self._is_scalar_type(other):
-            return self.__scalar_add(other, inplace=True)
-
         return self.add(other, inplace=True)
 
     def __radd__(self, other):
         """
         Convenience function for elementwise scalar addition.
         """
-
-        # Note, the case of BlkDiagMatrix_L + BlkDiagMatrix_R would be
-        #   evaluated as L.add(R), so this is only for other
-        #   Object + BlkDiagMatrix situations, namely scalars,
-        # where addition commutes
-        return self.__scalar_add(other)
+        return self.add(other)
 
     def __scalar_add(self, scalar, inplace=False):
         """
@@ -454,9 +437,9 @@ class BlkDiagMatrix:
         """
 
         if self._is_scalar_type(other):
-            return self.__scalar_sub(other)
+            return self.__scalar_sub(other, inplace=inplace)
 
-        self.check_compatible(other)
+        self.__check_compatible(other)
 
         if inplace:
             for i in range(self.nblocks):
@@ -514,7 +497,7 @@ class BlkDiagMatrix:
         if inplace:
             C = self
         else:
-            C = BlkDiagMatrix.from_list(self.data)
+            C = self.copy()
 
         for i in range(self.nblocks):
             C[i] -= scalar
@@ -537,7 +520,7 @@ class BlkDiagMatrix:
                 "(matmul,@) of non BlkDiagMatrix {}, try (*,mul)".format(
                     repr(other)))
 
-        self.check_compatible(other)
+        self.__check_compatible(other)
 
         if inplace:
             for i in range(self.nblocks):
@@ -610,11 +593,6 @@ class BlkDiagMatrix:
         """
         Operator overload for in-place BlkDiagMatrix scalar multiply.
         """
-
-        if isinstance(val, BlkDiagMatrix):
-            raise RuntimeError(
-                "Attempt numeric multiplication (*,mul) of two BlkDiagMatrix "
-                "instances, try (matmul,@).")
 
         return self.mul(val, inplace=True)
 
@@ -700,23 +678,16 @@ class BlkDiagMatrix:
 
         return self.pow(val, inplace=True)
 
-    def norm(self, order=2):
+    def norm(self):
         """
         Compute the norm of a BlkDiagMatrix instance.
 
-        :param order: Norm order, see np.norm. Defaults to order 2 norm.
         :param inplace: Boolean, when set to True change values in place,
         otherwise return a new instance (default).
         :return: The norm of the BlkDiagMatrix instance.
         """
 
-        implemented_orders = (2,)
-        if order not in implemented_orders:
-            raise NotImplementedError(
-                "Order {} not yet implemented, only {}".format(
-                    ord, implemented_orders))
-
-        return np.max([norm(blk, ord=order) for blk in self])
+        return np.max([norm(blk, ord=2) for blk in self])
 
     def transpose(self):
         """
@@ -781,50 +752,18 @@ class BlkDiagMatrix:
 
         return A
 
-    @staticmethod
-    def from_mat(mat, blk_partition, dtype=np.float64):
-        """
-        Convert full block diagonal matrix into BlkDiagMatrix.
-
-        :param mat; The full block diagonal matrix including the zero elements
-        of non-diagonal blocks.
-        :param blk_partition: The matrix block partition in the form of a
-        K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number rows
-        and columns) of the `i` diagonal matrix block.
-
-        :return: The BlkDiagMatrix instance.
-        """
-
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
-
-        rows = blk_partition[:, 0]
-        cols = blk_partition[:, 1]
-        cellarray = Cell2D(rows, cols, dtype=mat.dtype)
-
-        offset = 0
-        blk_ind = 0
-        for i in range(0, cellarray.nrow):
-            for j in range(0, cellarray.ncol):
-                offset += 1
-                if i == j:
-                    blk_ind += 1
-                    A[blk_ind] = cellarray.cell_list[offset]
-
-        return A
-
     def solve(self, Y):
         """
         Solve a linear system involving a block diagonal matrix.
 
         :param Y: The right-hand side in the linear system.  May be a matrix
-        consisting of  coefficient vectors, in which case each column is
+        consisting of coefficient vectors, in which case each column is
         solved for separately.
 
         :return: The result of solving the linear system formed by the matrix.
         """
 
-        rows = np.array([np.size(mat_a, 0) for mat_a in self])
+        rows = self.partition[:,0]
         if sum(rows) != np.size(Y, 0):
             raise RuntimeError('Sizes of `self` and `Y` are not compatible.')
 
@@ -857,7 +796,7 @@ class BlkDiagMatrix:
         :return: A matrix with new coefficient vectors.
         """
 
-        cols = np.array([np.size(mat, 1) for mat in self])
+        cols = self.partition[:,1]
 
         if np.sum(cols) != np.size(X, 0):
             raise RuntimeError(
