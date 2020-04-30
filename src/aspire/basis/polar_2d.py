@@ -12,21 +12,21 @@ logger = logging.getLogger(__name__)
 
 class PolarBasis2D(Basis):
     """
-    Define a derived class for polar Fourier expansion for 2D images
+    Define a derived class for polar Fourier representation for 2D images
     """
 
     def __init__(self, size, nrad=None, ntheta=None):
         """
-        Initialize an object for the 2D polar Fourier basis class
+        Initialize an object for the 2D polar Fourier grid class
 
-        :param size: The size of the vectors for which to define the basis.
+        :param size: The shape of the vectors for which to define the grid.
             Currently only square images are supported.
         :param nrad: The number of points in the radial dimension.
         :param ntheta: The number of points in the angular dimension.
         """
 
         ndim = len(size)
-        ensure(ndim == 2, 'Only two-dimensional basis functions are supported.')
+        ensure(ndim == 2, 'Only two-dimensional grids are supported.')
         ensure(len(set(size)) == 1, 'Only square domains are supported.')
 
         self.nrad = nrad
@@ -42,19 +42,19 @@ class PolarBasis2D(Basis):
 
     def _build(self):
         """
-        Build the internal data structure to 2D polar Fourier basis
+        Build the internal data structure to 2D polar Fourier grid
         """
-        logger.info('Expanding 2D image in a polar Fourier basis')
+        logger.info('Represent 2D image in a polar Fourier grid')
 
         self.count = self.nrad * self.ntheta
-        self.sz_prod = self.sz[0] * self.sz[1]
+        self._sz_prod = self.sz[0] * self.sz[1]
 
         # precompute the basis functions in 2D grids
         self.freqs = self._precomp()
 
     def _precomp(self):
         """
-        Precomute the basis functions on a polar Fourier grid
+        Precomute the polar Fourier grid
         """
         omega0 = 2 * np.pi / (2 * self.nrad - 1)
         dtheta = 2 * np.pi / self.ntheta
@@ -69,13 +69,36 @@ class PolarBasis2D(Basis):
         freqs *= omega0
         return freqs
 
+    def evaluate(self, v):
+        """
+        Evaluate coefficients in standard 2D coordinate basis from those in polar Fourier basis
+
+        :param v: A coefficient vector (or an array of coefficient vectors)
+            in polar Fourier basis to be evaluated. The first two dimensions must equal
+            `self.nrad` and `self.ntheta`.
+        :return x: The evaluation of the coefficient vector(s) `x` in standard 2D
+            coordinate basis. This is an array whose first two dimensions equal `self.sz`
+            and the remaining dimensions correspond to dimensions two and higher of `v`.
+        """
+        # TODO: need check the normalization factor and develop unit test
+        v, sz_roll = unroll_dim(v, 3)
+        v = m_reshape(v, (self.nrad*self.ntheta, v.shape[2]))
+        nimgs = v.shape[1]
+        # finufftpy require it to be aligned in fortran order
+        pf = np.empty((self._sz_prod, nimgs), dtype='complex128', order='F')
+        finufftpy.nufft2d1many(self.freqs[0], self.freqs[1], v, 1, 1e-15, self.sz[0], self.sz[1], pf)
+        x = np.real(m_reshape(pf, (self.sz[0], self.sz[1], nimgs)))
+        x = roll_dim(x, sz_roll)
+
+        return x
+
     def evaluate_t(self, x):
         """
-        Evaluate coefficient in polar Fourier basis from those in standard 2D coordinate basis
+        Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
         :param x: The coefficient array in the standard 2D coordinate basis to be
             evaluated. The first two dimensions must equal `self.sz`.
-        :return v: The evaluation of the coefficient array `v` in the polar Fourier basis.
+        :return v: The evaluation of the coefficient array `v` in the polar Fourier grid.
             This is an array of vectors whose first two dimensions are `self.nrad` and
             `self.ntheta` and whose remaining dimensions correspond to higher dimensions of `x`.
         """
@@ -87,25 +110,13 @@ class PolarBasis2D(Basis):
         # finufftpy require it to be aligned in fortran order
         half_size = self.nrad * self.ntheta // 2
         pf = np.empty((half_size, nimgs), dtype='complex128', order='F')
-        finufftpy.nufft2d2many(self.freqs[0, 0:half_size], self.freqs[1, 0:half_size], pf, 1, 1e-15, x)
+        finufftpy.nufft2d2many(self.freqs[0, :half_size], self.freqs[1, :half_size], pf, 1, 1e-15, x)
         pf = m_reshape(pf, (self.nrad, self.ntheta // 2, nimgs))
-        v = np.concatenate((pf, pf.conj()), axis=1).copy()
+        v = np.concatenate((pf, pf.conj()), axis=1)
 
-        # return v coefficients with the first dimension of self.count
+        # return v coefficients with two dimensions of (self.nrad, self.ntheta)
+        # TODO: Squeeze the first two dimensions into one for consistent with other basis classes
+
         v = roll_dim(v, sz_roll)
+
         return v
-
-    def expand(self, x):
-        """
-        Obtain coefficients in polar Fourier basis from those in standard 2D coordinate basis
-
-        This is the same function to `evaluate_t` for a consistent implementation
-        with other expanding methods.
-
-        :param x: The coefficient array in the standard 2D coordinate basis to be
-            evaluated. The first two dimensions must equal `self.sz`.
-        :return v: The evaluation of the coefficient array `v` in the polar Fourier basis.
-            This is an array of vectors whose first two dimensions are `self.nrad` and
-            `self.ntheta` and whose remaining dimensions correspond to higher dimensions of `x`.
-        """
-        return self.evaluate_t(x)
