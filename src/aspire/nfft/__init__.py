@@ -25,6 +25,10 @@ def check_backends(raise_errors=True):
         """
         This function tries out a particular NFFT backend by name.
         :param backend: A string representing the NFFT backend we want to try. Currently one of:
+            'cufinufft'
+                The Python wrapper for the CUDA variant of FINUFFT library
+                https://github.com/janden/cufinufft
+                https://github.com/MelodyShih/cufinufft
             'finufft'
                 The Python wrapper for the FlatIron Institute's FINUFFT library
                 https://github.com/flatironinstitute/finufft
@@ -39,7 +43,16 @@ def check_backends(raise_errors=True):
         """
         logger.info(f"Trying NFFT backend {backend}")
         plan_class = None
-        if backend == "finufft":
+        if backend == "cufinufft":
+            try:
+                # note we expect the cu library is in LD path.
+                from .cufinufft import lib
+                from aspire.nfft.cufinufft import cuFINufftPlan
+                plan_class = cuFINufftPlan
+            except ImportError:
+                pass
+
+        elif backend == "finufft":
             try:
                 from finufftpy import nufft1d1
                 from aspire.nfft.finufft import FINufftPlan

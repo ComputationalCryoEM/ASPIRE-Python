@@ -20,4 +20,7 @@ python-box
 sphinxcontrib-bibtex
 sphinx-rtd-theme==0.4.2
 tqdm
-
+# Note, we might not want pycuda in the mainline...
+#  adding here so it shows up in the diff.
+#  Clearly some code exists that uses it..
+#pycuda
