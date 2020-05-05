@@ -21,18 +21,17 @@ class DiracBasis(Basis):
         """
         if mask is None:
             mask = np.full(sz, True)
+        self._mask = m_flatten(mask)
 
         super().__init__(sz)
-
-        self._mask = m_flatten(mask)
-        self.count = np.sum(mask)
-        self._sz_prod = self.nres ** self.ndim
 
     def _build(self):
         """
         Build the internal data structure to Dirac basis
         """
         logger.info('Expanding object in a Dirac basis.')
+        self.count = np.sum(self._mask)
+        self._sz_prod = self.nres ** self.ndim
 
     def evaluate(self, v):
         """
