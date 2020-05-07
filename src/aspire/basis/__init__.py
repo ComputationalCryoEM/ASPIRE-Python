@@ -149,46 +149,46 @@ class Basis:
         """
         return mdim_mat_fun_conj(X, len(self.sz), 1, self.evaluate_t)
 
-    def expand(self, v):
+    def expand(self, x):
         """
-        Expand array in basis
+        Obtain coefficients in the basis from those in standard coordinate basis
 
-        This is a similar function to `evaluate_t` but with more accuracy by
-         using the cg optimizing of linear equation, Ax=b.
+        This is a similar function to evaluate_t but with more accuracy by using
+        the cg optimizing of linear equation, Ax=b.
 
-        If `v` is a matrix of size `basis.ct`-by-..., `B` is the change-of-basis
-        matrix of this basis, and `x` is a matrix of size `self.sz`-by-...,
-        the function calculates  v = (B' * B)^(-1) * B' * x, where the rows
-        of `B` and columns of `x` are read as vectorized arrays.
-
-        :param v: An array whose first few dimensions are to be expanded in this basis.
-            These dimensions must equal `self.sz`.
-        :return: The coefficients of `v` expanded in this basis. If more than
-            one array of size `self.sz` is found in `v`, the second and higher
-            dimensions of the return value correspond to those higher dimensions of `v`.
+        :param x: An array whose first two or three dimensions are to be expanded
+            the desired basis. These dimensions must equal `self.sz`.
+        :return : The coefficients of `v` expanded in the desired basis.
+            The first dimension of `v` is with size of `count` and the
+            second and higher dimensions of the return value correspond to
+            those higher dimensions of `x`.
 
         """
-        ensure(v.shape[:self.ndim] == self.sz, f'First {self.ndim} dimensions of v must match {self.sz}.')
+        # ensure the first dimensions with size of self.sz
+        x, sz_roll = unroll_dim(x, self.ndim + 1)
+        ensure(x.shape[:self.ndim] == self.sz,
+               f'First {self.ndim} dimensions of x must match {self.sz}.')
 
-        v, sz_roll = unroll_dim(v, self.ndim + 1)
-        b = self.evaluate_t(v)
-        operator = LinearOperator(
-            shape=(self.count, self.count),
-            matvec=lambda x: self.evaluate_t(self.evaluate(x))
-        )
+        operator = LinearOperator(shape=(self.count, self.count),
+                                  matvec=lambda v: self.evaluate_t(self.evaluate(v)))
 
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
-        tol = 10 * np.finfo(v.dtype).eps
+        tol = 10*np.finfo(x.dtype).eps
         logger.info('Expanding array in basis')
-        v, info = cg(operator, b, tol=tol)
 
-        v = v[..., np.newaxis]
+        # number of image samples
+        n_data = np.size(x, self.ndim)
+        v = np.zeros((self.count, n_data), dtype=x.dtype)
 
-        if info != 0:
-            raise RuntimeError('Unable to converge!')
+        for isample in range(0, n_data):
+            b = self.evaluate_t(x[..., isample])
+            # TODO: need check the initial condition x0 can improve the results or not.
+            v[..., isample], info = cg(operator, b, tol=tol)
+            if info != 0:
+                raise RuntimeError('Unable to converge!')
 
+        # return v coefficients with the first dimension of self.count
         v = roll_dim(v, sz_roll)
-
         return v
 
     def expand_t(self, v):
