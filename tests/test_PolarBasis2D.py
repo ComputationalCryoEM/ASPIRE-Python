@@ -208,8 +208,8 @@ class PolarBasis2DTestCase(TestCase):
 
         self.assertTrue(np.allclose(x, result))
 
-    def testPolarBasis2DAjoint(self):
-        # The evaluate function should be the ajoint operator of evaluate_t.
+    def testPolarBasis2DAdjoint(self):
+        # The evaluate function should be the adjoint operator of evaluate_t.
         # Namely, if A = evaluate, B = evaluate_t, and B=A^t, we will have
         # (y, A*x) = (A^t*y, x) = (B*y, x)
         x = np.random.randn(self.basis.count)
