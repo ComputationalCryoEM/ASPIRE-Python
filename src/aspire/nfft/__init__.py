@@ -15,10 +15,12 @@ default_plan_class = None
 
 def check_backends(raise_errors=True):
     """
-    Check all NFFT backends in package configuration
+    Check all NFFT backends in package configuration.
+
     :param raise_errors: Whether to raise a RuntimeError if no backends detected.
     :return: On return, the global names 'backends'/'default_plan_class' have been populated
     """
+
     global backends, default_plan_class
 
     def _try_backend(backend):
@@ -41,15 +43,18 @@ def check_backends(raise_errors=True):
         We only check for working imports here to keep things simple and lightweight.
         If imports are working but the actual backend is not then we have bigger problems anyway.
         """
+
         logger.info(f"Trying NFFT backend {backend}")
         plan_class = None
+        msg = None
         if backend == "cufinufft":
             try:
                 # note we expect the cu library is in LD path.
                 from .cufinufft import lib
                 from aspire.nfft.cufinufft import cuFINufftPlan
                 plan_class = cuFINufftPlan
-            except ImportError:
+            except ImportError as e:
+                msg = str(e)
                 pass
 
         elif backend == "finufft":
@@ -57,7 +62,8 @@ def check_backends(raise_errors=True):
                 from finufftpy import nufft1d1
                 from aspire.nfft.finufft import FINufftPlan
                 plan_class = FINufftPlan
-            except ImportError:
+            except ImportError as e:
+                msg = str(e)
                 pass
 
         elif backend == "pynfft":
@@ -65,19 +71,20 @@ def check_backends(raise_errors=True):
                 from pynfft.nfft import NFFT
                 from aspire.nfft.pynfft import PyNfftPlan
                 plan_class = PyNfftPlan
-            except ImportError:
+            except ImportError as e:
+                msg = str(e)
                 pass
 
         if plan_class is None:
-            logger.info(f"NFFT backend {backend} not usable")
+            logger.info(f"NFFT backend {backend} not usable:\n\t{msg}")
         else:
-            logger.info(f"NFFT backend {backend} usable")
+            logger.info(f"NFFT backend {backend} usable.")
             return plan_class
 
     backends = OrderedDict((k, _try_backend(k)) for k in config.nfft.backends)
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
-        logger.error(f'Selected NFFT backend = {default_backend}')
+        logger.error(f'Selected NFFT backend = {default_backend}.')
         default_plan_class = backends[default_backend]
     except StopIteration:
         msg = "No usable NFFT backend detected."
@@ -89,9 +96,11 @@ def check_backends(raise_errors=True):
 
 def all_backends():
     """
-    Determine all available NFFT backends
-    :return: A list of strings representing available NFFT backends
+    Determine all available NFFT backends.
+
+    :return: A list of strings representing available NFFT backends.
     """
+
     global backends
 
     if backends is None:
@@ -101,9 +110,10 @@ def all_backends():
 
 def backend_available(backend):
     """
-    Whether a particular NFFT backend is available
-    :param backend: String representing the NFFT backend, e.g. 'finufft' or 'pynfft'
-    :return: Boolean on whether the backend is available
+    Whether a particular NFFT backend is available.
+
+    :param backend: String representing the NFFT backend, e.g. 'finufft' or 'pynfft'.
+    :return: Boolean on whether the backend is available.
     """
     return backend in all_backends()
 

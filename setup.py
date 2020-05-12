@@ -22,7 +22,7 @@ setup(
 
     description='Algorithms for Single Particle Reconstruction',
     long_description=read('README.md'),
-    long_description_content_type='text/markdown',	
+    long_description_content_type='text/markdown',
     license="GPLv3",
     url='https://github.com/ComputationalCryoEM/ASPIRE-Python',
     author='Joakim Anden, Yoel Shkolnisky, Itay Sason, Robbie Brook, Vineet Bansal, Junchao Xia',
@@ -44,6 +44,17 @@ setup(
         'scikit-learn',
         'scikit-image'
     ],
+
+    # Note, we probably do not want pycuda in the mainline.
+    #  Many users (without CUDA) would not be able to install correctly.
+    #  Use PEP-0508 syntax to declare optional requirement here.
+    #  Usage:
+    #    pip install aspire[gpu]
+    #  or
+    #    pip install -e .[gpu]
+    extra_requires={
+        'gpu': ['pycuda'],
+    },
 
     package_dir={'': 'src'},
     packages=find_namespace_packages(where='src'),

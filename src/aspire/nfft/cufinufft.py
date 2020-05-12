@@ -186,13 +186,13 @@ def destroy(plan):
 
 class cuFINufftPlan(Plan):
     def __init__(self, sz, fourier_pts, epsilon=1e-15, **kwargs):
+        # TODO: decide how to handle/log dtypes/casting.
         self.sz = sz
         self.dim = len(sz)
         # TODO: Things get messed up unless we ensure a 'C' ordering here - investigate why
         self.fourier_pts = np.asarray(np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order='C')
         self.num_pts = fourier_pts.shape[1]
-        #self.epsilon = 1e-3 # XXX
-        self.epsilon = max(epsilon, np.finfo(np.float32).eps) #XXXX
+        self.epsilon = max(epsilon, np.finfo(np.float32).eps)
 
         self._transform_plan = plan(2, self.sz, -1, self.epsilon)
 
@@ -204,11 +204,10 @@ class cuFINufftPlan(Plan):
 
     def transform(self, signal):
         ensure(signal.shape == self.sz, f'Signal to be transformed must have shape {self.sz}')
-        # hrrm , this library was singles, xxx, later
 
         # maybe just enfore the F order here on the edge,
         #  or let the gpu do the transpose... (faster if we need to be there anyway...)
-        signal_gpu = gpuarray.to_gpu(signal.astype(np.float32).astype(np.complex64, copy=False, order='F'))
+        signal_gpu = gpuarray.to_gpu(signal.astype(np.complex64, copy=False, order='F'))
 
         result_gpu = gpuarray.GPUArray(self.num_pts, dtype=np.complex64, order='F')
 
@@ -223,7 +222,6 @@ class cuFINufftPlan(Plan):
         return result
 
     def adjoint(self, signal):
-        # hrrm , this library was singles, xxx, later
 
         # maybe just enfore the F order here on the edge,
         #  or let the gpu do the transpose... (faster if we need to be there anyway...)
