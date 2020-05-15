@@ -124,7 +124,7 @@ _make_plan.argtypes = [
     c_int, c_float, c_int, CufinufftPlan_p]
 _make_plan.restypes = c_int
 
-def plan(finufft_type, modes, isign, tol, opts=None):
+def plan(finufft_type, modes, isign, tol, many=1, opts=None):
     dim = len(modes)
 
     if opts is None:
@@ -136,7 +136,9 @@ def plan(finufft_type, modes, isign, tol, opts=None):
     plan = CufinufftPlan()
     plan.opts = opts
 
-    ier = _make_plan(finufft_type - 1, dim, modes, isign, 1, float(tol), 1, plan)
+    maxbatch = many    # TODO: This should be improved, but perhaps somewhere else.
+
+    ier = _make_plan(finufft_type - 1, dim, modes, isign, many, float(tol), maxbatch, plan)
 
     if ier != 0:
         raise RuntimeError('Error creating plan.')
@@ -185,7 +187,14 @@ def destroy(plan):
 #         'make_plan', 'set_nu_pts', 'exec_plan', 'destroy_plan']
 
 class cuFINufftPlan(Plan):
-    def __init__(self, sz, fourier_pts, epsilon=1e-15, **kwargs):
+    def __init__(self, sz, fourier_pts, epsilon=1e-15, many=None, **kwargs):
+        # Passing "many" expects one large higher dimensional array.
+        #   Set some housekeeping variables so we can discern how to handle the dims later.
+        self.many = False
+        self.ntransforms = 1
+        if many is not None:
+            self.many = True
+            self.ntransforms = many
         # TODO: decide how to handle/log dtypes/casting.
         self.sz = sz
         self.dim = len(sz)
@@ -194,22 +203,24 @@ class cuFINufftPlan(Plan):
         self.num_pts = fourier_pts.shape[1]
         self.epsilon = max(epsilon, np.finfo(np.float32).eps)
 
-        self._transform_plan = plan(2, self.sz, -1, self.epsilon)
+        self._transform_plan = plan(2, self.sz, -1, self.epsilon, many=self.ntransforms)
 
-        self._adjoint_plan = plan(1, self.sz, 1, self.epsilon)
+        self._adjoint_plan = plan(1, self.sz, 1, self.epsilon, many=self.ntransforms)
 
     def __del__(self):
         for plan in [self._transform_plan, self._adjoint_plan]:
             destroy(plan)
 
     def transform(self, signal):
-        ensure(signal.shape == self.sz, f'Signal to be transformed must have shape {self.sz}')
+        sig_shape = signal.shape
+        if self.many:
+            sig_shape = signal.shape[:-1]         # order...
+        ensure(sig_shape == self.sz, f'Signal to be transformed must have shape {self.sz}')
 
-        # maybe just enfore the F order here on the edge,
-        #  or let the gpu do the transpose... (faster if we need to be there anyway...)
         signal_gpu = gpuarray.to_gpu(signal.astype(np.complex64, copy=False, order='F'))
 
-        result_gpu = gpuarray.GPUArray(self.num_pts, dtype=np.complex64, order='F')
+        # This ordering situation is a little strange, but it works.
+        result_gpu = gpuarray.GPUArray((self.ntransforms, self.num_pts), dtype=np.complex64, order='C')
 
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts.astype(np.float32, copy=False))
         set_nu_pts(self._transform_plan, self.num_pts, *fourier_pts_gpu)
@@ -219,12 +230,13 @@ class cuFINufftPlan(Plan):
 
         result = result_gpu.get()
 
+        if not self.many:
+            result = result[0]
+
         return result
 
     def adjoint(self, signal):
 
-        # maybe just enfore the F order here on the edge,
-        #  or let the gpu do the transpose... (faster if we need to be there anyway...)
         signal_gpu = gpuarray.to_gpu(signal.astype(np.complex64, copy=False, order='F'))
 
         result_gpu = gpuarray.GPUArray(self.sz, dtype=np.complex64, order='F')

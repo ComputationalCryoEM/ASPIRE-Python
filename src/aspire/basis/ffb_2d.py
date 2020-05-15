@@ -192,10 +192,23 @@ class FFBBasis2D(FBBasis2D):
         # number of 2D image samples
         n_data = np.size(x, 2)
 
-        pf = np.zeros((n_r*n_theta, n_data), dtype=complex)
-        # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        for isample in range(0, n_data):
-            pf[..., isample] = nufft3(x[..., isample], 2 * pi * freqs, self.sz)
+        ###--------------------------------------------------------------------------------------------------------
+        import cProfile, io, pstats
+        pr = cProfile.Profile()
+
+        pr.enable()
+        pfc = np.zeros((n_data, n_r*n_theta), dtype=np.complex128) # lets try c order
+        pfc[:,:] = nufft3(x, 2 * pi * freqs, self.sz, many=n_data) # works with finufft and cufinufft 2d2many
+        pf = pfc.T
+
+        pr.disable()
+        s = io.StringIO()
+        ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
+        ps.print_stats()
+        print(s.getvalue())
+
+        ###--------------------------------------------------------------------------------------------------------
+
         pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
 
         # Recover "negative" frequencies from "positive" half plane.
@@ -271,7 +284,9 @@ class FFBBasis2D(FBBasis2D):
                                   matvec=lambda v: self.evaluate_t(self.evaluate(v)))
 
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
-        tol = 10*np.finfo(x.dtype).eps
+        # tol = 10*np.finfo(x.dtype).eps
+        # cufinufft is presently in singles only.
+        tol = 10*np.finfo(np.float32).eps
         logger.info('Expanding array in basis')
 
         # number of image samples
@@ -281,7 +296,7 @@ class FFBBasis2D(FBBasis2D):
         for isample in range(0, n_data):
             b = self.evaluate_t(x[..., isample])
             # TODO: need check the initial condition x0 can improve the results or not.
-            v[..., isample], info = cg(operator, b, tol=tol)
+            v[..., isample], info = cg(operator, b, tol=tol, atol='legacy')
             if info != 0:
                 raise RuntimeError('Unable to converge!')
 

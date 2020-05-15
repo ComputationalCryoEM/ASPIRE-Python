@@ -33,7 +33,7 @@ logger.info('This script illustrates 2D covariance Wiener filtering functionalit
 # Set the sizes of images 64 x 64
 img_size = 64
 # Set the total number of images generated from the 3D map
-num_imgs = 1024
+num_imgs = 1024    # Note, num_imgs is tied to img_size s.t. the combination is memory bound.
 
 # Set the number of 3D maps
 num_maps = 1

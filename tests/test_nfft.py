@@ -21,6 +21,9 @@ class SimTestCase(TestCase):
 
         self.vol = np.load(os.path.join(DATA_DIR, 'nfft_volume.npy'))
 
+        # Setup a 2D slice for testing 2d many
+        self.plane = self.vol[0]
+
         self.recip_space = np.array([-0.05646675 + 1.503746j, 1.677600 + 0.6610926j, 0.9124417 - 0.7394574j, -0.9136836 - 0.5491410j])
 
         self.adjoint_vol = np.array([[[9.59495207e-01-1.06291322e+00j,  4.96001394e-01+1.60922425e+00j,
@@ -294,6 +297,29 @@ class SimTestCase(TestCase):
         result = plan.transform(self.vol)
         self.assertTrue(np.allclose(result, self.recip_space))
 
+    def _testTransformMany(self, backend, many=3):
+        if not backend_available(backend):
+            raise SkipTest
+
+        plan = Plan(self.plane.shape, self.fourier_pts[0:2], backend=backend, many=many)
+
+        ## Note, this is how (cu)finufft wants it, F storage.
+        batch = np.empty((*self.plane.shape, many), self.plane.dtype)
+        for i in range(many):
+            batch[:,:,i] = self.plane
+
+        result = plan.transform(batch)
+
+        ref = np.array(
+            [-0.14933796+0.00324942j,
+             -0.29726508+0.07601329j,
+             -0.26276074+0.12634184j,
+             -0.09722212+0.12028122j],
+            dtype=np.complex128)
+
+        for r in range(many):
+            self.assertTrue(np.allclose(result[r], ref))
+
     def _testAdjoint(self, backend):
         if not backend_available(backend):
             raise SkipTest
@@ -309,6 +335,12 @@ class SimTestCase(TestCase):
 
     def testTransform0(self):
         self._testTransform('cufinufft')
+
+    def testTransformMany0(self):
+        self._testTransformMany('cufinufft')
+
+    def testTransformMany1(self):
+        self._testTransformMany('finufft')
 
     def testAdjoint0(self):
         self._testAdjoint('cufinufft')

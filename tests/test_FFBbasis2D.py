@@ -71,7 +71,8 @@ class FFBBasis2DTestCase(TestCase):
 
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_out_8_8.npy'))
+            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_out_8_8.npy')),
+            atol = 10*np.finfo(np.float32).eps # note, running cuffinufft in singles atm
         ))
 
     def testFFBBasis2DEvaluate_t(self):
@@ -86,8 +87,10 @@ class FFBBasis2DTestCase(TestCase):
     def testFFBBasis2DExpand(self):
         x = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy'))
         result = self.basis.expand(x)
+        print("XXX", np.abs(result -np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_exp_8_8.npy'))[..., 0]))
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_exp_8_8.npy'))[..., 0]
+            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_exp_8_8.npy'))[..., 0],
+            atol = 10*np.finfo(np.float32).eps # note, running cuffinufft in singles atm
         ))
 
