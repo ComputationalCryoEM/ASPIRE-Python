@@ -1,3 +1,8 @@
+ASPIRE has contributions from a growing team of collaborators.
+To learn more about them please visit our `Team <http://spr.math.princeton.edu/team>`_ webpage.
+
+Code contributors to the Python and Matlab collection of ASPIRE codes are listed below.
+
 +------------------+--------------+------------------------------+----------------------+
 | Name             | GithubID     | Email                        | Affiliations         |
 +==================+==============+==============================+======================+
@@ -27,3 +32,6 @@
 +------------------+--------------+------------------------------+----------------------+
 | Jane Zhao        |              |                              | Princeton University |
 +------------------+--------------+------------------------------+----------------------+
+
+
+If we've missed you or would like to update your details, please contact us and we'll be happy to do so.
