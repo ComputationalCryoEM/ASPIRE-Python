@@ -29,8 +29,7 @@ def check_backends(raise_errors=True):
         :param backend: A string representing the NFFT backend we want to try. Currently one of:
             'cufinufft'
                 The Python wrapper for the CUDA variant of FINUFFT library
-                https://github.com/janden/cufinufft
-                https://github.com/MelodyShih/cufinufft
+                https://github.com/flatironinstitute/cufinufft
             'finufft'
                 The Python wrapper for the FlatIron Institute's FINUFFT library
                 https://github.com/flatironinstitute/finufft
