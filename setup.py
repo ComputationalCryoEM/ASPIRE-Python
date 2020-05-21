@@ -32,7 +32,6 @@ setup(
         'importlib_resources>=1.0.2',
         'mrcfile',
         'python-box',
-        'finufftpy',
         'console_progressbar',
         'pyfftw',
         'click',
@@ -54,6 +53,7 @@ setup(
     #    pip install -e .[gpu]
     extra_requires={
         'gpu': ['pycuda'],
+        'finufft': ['finufftpy'],
     },
 
     package_dir={'': 'src'},
