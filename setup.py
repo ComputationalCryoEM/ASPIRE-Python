@@ -39,7 +39,7 @@ setup(
         'matplotlib',
         'numpy',
         'pandas>=0.23.4',
-        'scipy==1.3.0',
+        'scipy>=1.3.0',
         'tqdm',
         'scikit-learn',
         'scikit-image'
