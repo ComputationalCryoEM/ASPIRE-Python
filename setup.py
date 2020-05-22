@@ -51,7 +51,7 @@ setup(
     #    pip install aspire[gpu]
     #  or
     #    pip install -e .[gpu]
-    extra_requires={
+    extras_require={
         'gpu': ['pycuda'],
         'finufft': ['finufftpy'],
     },
