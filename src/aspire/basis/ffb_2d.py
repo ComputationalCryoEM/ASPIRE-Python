@@ -31,7 +31,7 @@ class FFBBasis2D(FBBasis2D):
         """
         Build the internal data structure to 2D Fourier-Bessel basis
         """
-        logger.info('Expanding 2D image in a frequency-domain Fourier–Bessel'
+        logger.info('Expanding 2D image in a frequency-domain Fourier-Bessel'
                     ' basis using the fast method.')
 
         # set cutoff values
