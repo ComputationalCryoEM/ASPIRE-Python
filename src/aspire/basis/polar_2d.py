@@ -82,9 +82,10 @@ class PolarBasis2D(Basis):
         nimgs = v.shape[1]
 
         # finufftpy require it to be aligned in fortran order
-        pf = np.empty((self._sz_prod, nimgs), dtype='complex128', order='F')
-        finufftpy.nufft2d1many(self.freqs[0], self.freqs[1], v, 1, 1e-15, self.sz[0], self.sz[1], pf)
-        x = m_reshape(pf, (self.sz[0], self.sz[1], nimgs))
+        x = np.empty((self._sz_prod, nimgs), dtype='complex128', order='F')
+        finufftpy.nufft2d1many(self.freqs[0], self.freqs[1], v, 1, 1e-15,
+                               self.sz[0], self.sz[1], x)
+        x = m_reshape(x, (self.sz[0], self.sz[1], nimgs))
         # return coefficients whose first two dimensions equal to self.sz
         x = roll_dim(x, sz_roll)
 
