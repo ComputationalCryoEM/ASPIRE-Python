@@ -81,11 +81,22 @@ class PolarBasis2D(Basis):
         v, sz_roll = unroll_dim(v, 2)
         nimgs = v.shape[1]
 
+        half_size = self.nrad * self.ntheta // 2
+
+        v = m_reshape(v, (self.nrad, self.ntheta, nimgs))
+
+        v = (v[:, :self.ntheta // 2, :]
+             + v[:, self.ntheta // 2:, :].conj())
+
+        v = m_reshape(v, (half_size, nimgs))
+
         # finufftpy require it to be aligned in fortran order
         x = np.empty((self._sz_prod, nimgs), dtype='complex128', order='F')
-        finufftpy.nufft2d1many(self.freqs[0], self.freqs[1], v, 1, 1e-15,
-                               self.sz[0], self.sz[1], x)
+        finufftpy.nufft2d1many(self.freqs[0, :half_size],
+                               self.freqs[1, :half_size],
+                               v, 1, 1e-15, self.sz[0], self.sz[1], x)
         x = m_reshape(x, (self.sz[0], self.sz[1], nimgs))
+        x = x.real
         # return coefficients whose first two dimensions equal to self.sz
         x = roll_dim(x, sz_roll)
 
