@@ -68,7 +68,7 @@ def main(img_size=64, num_imgs=1024):
     # Below we use alternative implementation to obtain the exact result with Matlab version.
     logger.info(f'Load 3D map and downsample 3D map to desired grids '
                 f'of {img_size} x {img_size} x {img_size}.')
-    infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
+    infile = mrcfile.open(os.path.join(DATA_DIR, 'vol_10028_emd_2660.mrc'))
     vols = infile.data
     vols = vols[..., np.newaxis]
     vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
