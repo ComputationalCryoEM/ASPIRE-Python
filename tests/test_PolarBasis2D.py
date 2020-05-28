@@ -213,6 +213,16 @@ class PolarBasis2DTestCase(TestCase):
         # Namely, if A = evaluate, B = evaluate_t, and B=A^t, we will have
         # (y, A*x) = (A^t*y, x) = (B*y, x)
         x = np.random.randn(self.basis.count)
+
+        x = m_reshape(x, (self.basis.nrad, self.basis.ntheta))
+
+        x = (1 / 2 * x[:, :self.basis.ntheta // 2]
+             + 1 / 2 * x[:, :self.basis.ntheta // 2].conj())
+
+        x = np.concatenate((x, x.conj()), axis=1)
+
+        x = m_reshape(x, (self.basis.nrad * self.basis.ntheta,))
+
         x_t = self.basis.evaluate(x)
         y = np.random.randn(np.prod(self.basis.sz))
         y_t = self.basis.evaluate_t(m_reshape(y, self.basis.sz))
