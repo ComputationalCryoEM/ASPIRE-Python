@@ -3,7 +3,11 @@ General purpose math functions, mostly geometric in nature.
 """
 
 import numpy as np
+from numpy.linalg import norm
+from scipy.linalg import svd
+
 from aspire.utils.matlab_compat import randn, Random
+from aspire.utils import ensure
 
 
 def cart2pol(x, y):
@@ -215,3 +219,81 @@ def uniform_random_angles(n, seed=None):
             np.random.random(n) * 2 * np.pi
         ))
     return angles
+
+
+def register_rotations(rots, rots_ref):
+    """
+    Register estimated orientations to reference ones.
+
+    Finds the orthogonal transformation that best aligns the estimated rotations
+    to the reference rotations. `regrot` are the estimated rotations after registering
+    them to the reference ones, O is the optimal orthogonal 3x3 matrix to align
+    the two sets. If flag==2 then J conjugacy is required.
+
+    :param rots: The rotations to be aligned in the form of a 3-by-3-by-n array.
+    :param rots_ref: The reference rotations to which we would like to align in
+        the form of a 3-by-3-by-n array.
+    :return: regrot, aligned rotation matrices;
+             mse, mean squired error between the estimated and aligned matrices;
+             diff, difference array between the estimated and aligned matrices;
+             o_mat, optimal orthogonal 3x3 matrix to align the two sets;
+            flag, flag==2 then J conjugacy is required.
+    """
+
+    ensure(rots.shape == rots_ref.shape,
+           'Two sets of rotations must have same dimensions.')
+    K = rots.shape[2]
+
+    # Reflection matrix
+    J = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
+
+    O1 = np.zeros((3, 3), dtype=rots.dtype)
+    O2 = np.zeros((3, 3), dtype=rots.dtype)
+
+    for k in range(K):
+        R = rots[:, :, k]
+        Rref = rots_ref[:, :, k]
+        O1 = O1+R @ Rref.T
+        O2 = O2+(J @ R @ J) @ Rref.T
+
+    # Compute the two possible orthogonal matrices which register the
+    # estimated rotations to the true ones.
+    O1 = O1/K
+    O2 = O2/K
+
+    # We are registering one set of rotations (the estimated ones) to
+    # another set of rotations (the true ones). Thus, the transformation
+    # matrix between the two sets of rotations should be orthogonal. This
+    # matrix is either O1 if we recover the non-reflected solution, or O2,
+    # if we got the reflected one. In any case, one of them should be
+    # orthogonal.
+
+    err1 = norm(O1@O1.T - np.eye(3), ord='fro')
+    err2 = norm(O2@O2.T - np.eye(3), ord='fro')
+
+    # In any case, enforce the registering matrix O to be a rotation.
+    if err1 < err2:
+        # Use O1 as the registering matrix
+        U, _, V = svd(O1)
+        flag = 1
+    else:
+        # Use O2 as the registering matrix
+        U, _, V = svd(O2)
+        flag = 2
+
+    o_mat = U @ V
+    # estimate errors
+    diff = np.zeros((K, 1))
+    mse = 0
+    regrot = np.zeros_like(rots)
+    for k in range(K):
+        R = rots[:, :, k]
+        Rref = rots_ref[:, :, k]
+        if flag == 2:
+            R = J @ R @ J
+        regrot[:, :, k] = o_mat.T @ R
+        diff[k] = norm(o_mat.T @ R - Rref, ord='fro')
+        mse = mse + diff[k]**2
+    mse = mse/K
+
+    return regrot, mse, diff, o_mat, flag
