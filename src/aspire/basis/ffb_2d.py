@@ -192,22 +192,9 @@ class FFBBasis2D(FBBasis2D):
         # number of 2D image samples
         n_data = np.size(x, 2)
 
-        ###--------------------------------------------------------------------------------------------------------
-        import cProfile, io, pstats
-        pr = cProfile.Profile()
-
-        pr.enable()
         pfc = np.zeros((n_data, n_r*n_theta), dtype=np.complex128) # lets try c order
         pfc[:,:] = nufft3(x, 2 * pi * freqs, self.sz, many=n_data) # works with finufft and cufinufft 2d2many
         pf = pfc.T
-
-        pr.disable()
-        s = io.StringIO()
-        ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
-        ps.print_stats()
-        print(s.getvalue())
-
-        ###--------------------------------------------------------------------------------------------------------
 
         pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
 
