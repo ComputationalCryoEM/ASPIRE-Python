@@ -639,7 +639,7 @@ class BlkDiagMatrixTestCase(TestCase):
     def testBlkDiagMatrixNorm(self):
         result = 0.8235750261689248
         norm = self.blk_a.norm()
-        self.assertTrue(result == norm)
+        self.assertTrue(np.allclose(result, norm))
 
     def testBlkDiagMatrixSolve(self):
         result = np.array([
