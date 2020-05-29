@@ -189,10 +189,10 @@ class FFBBasis2D(FBBasis2D):
         # number of 2D image samples
         n_data = np.size(x, 2)
 
-        pf = np.zeros((n_r*n_theta, n_data), dtype=complex)
-        # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        for isample in range(0, n_data):
-            pf[..., isample] = nufft3(x[..., isample], 2 * pi * freqs, self.sz)
+        pfc = np.zeros((n_data, n_r*n_theta), dtype=np.complex128)     # lets try c order
+        pfc[:,:] = nufft3(x, 2 * pi * freqs, self.sz, many=n_data)     # works with finufft and cufinufft 2d2many
+        pf = pfc.T
+
         pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
 
         # Recover "negative" frequencies from "positive" half plane.

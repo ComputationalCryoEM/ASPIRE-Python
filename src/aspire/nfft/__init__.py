@@ -142,7 +142,7 @@ def anufft3(vol_f, fourier_pts, sz, real=False):
     return np.real(adjoint) if real else adjoint
 
 
-def nufft3(vol_f, fourier_pts, sz, real=False):
-    plan = Plan(sz=sz, fourier_pts=fourier_pts)
+def nufft3(vol_f, fourier_pts, sz, real=False, many=None):
+    plan = Plan(sz=sz, fourier_pts=fourier_pts, many=many)
     transform = plan.transform(vol_f)
     return np.real(transform) if real else transform

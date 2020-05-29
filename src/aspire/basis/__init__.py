@@ -176,6 +176,7 @@ class Basis:
                                   matvec=lambda v: self.evaluate_t(self.evaluate(v)))
 
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
+        # cufinufft is presently in singles only.
         tol = 10*np.finfo(x.dtype).eps
         logger.info('Expanding array in basis')
 
@@ -186,7 +187,7 @@ class Basis:
         for isample in range(0, n_data):
             b = self.evaluate_t(x[..., isample])
             # TODO: need check the initial condition x0 can improve the results or not.
-            v[..., isample], info = cg(operator, b, tol=tol)
+            v[..., isample], info = cg(operator, b, tol=tol, atol='legacy')
             if info != 0:
                 raise RuntimeError('Unable to converge!')
 
