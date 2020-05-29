@@ -3,11 +3,8 @@ import numpy as np
 from numpy import pi
 from scipy.special import jv
 from scipy.fftpack import ifft, fft
-from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.nfft import anufft3, nufft3
-
-from aspire.utils import ensure
 from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_reshape
 from aspire.basis.basis_utils import lgwt
@@ -242,50 +239,6 @@ class FFBBasis2D(FBBasis2D):
             ind = ind + np.size(idx)
 
             ind_pos = ind_pos + 2 * self.k_max[ell]
-
-        # return v coefficients with the first dimension of self.count
-        v = roll_dim(v, sz_roll)
-        return v
-
-    def expand(self, x):
-        """
-        Obtain coefficients in FB basis from those in standard 2D coordinate basis
-
-        This is a similar function to evaluate_t but with more accuracy by using
-        the cg optimizing of linear equation, Ax=b.
-
-        :param x: An array whose first two dimensions are to be expanded in FB basis.
-             These dimensions must equal `self.sz`.
-        :return : The coefficients of `v` expanded in FB basis. The first dimension
-            of `v` is with size of `count` and the second and higher dimensions
-            of the return value correspond to those higher dimensions of `x`.
-
-        """
-        # ensure the first two dimensions with size of self.sz
-        x, sz_roll = unroll_dim(x, self.ndim + 1)
-        x = m_reshape(x, (self.sz[0], self.sz[1], -1))
-        ensure(x.shape[:self.ndim] == self.sz,
-               f'First {self.ndim} dimensions of x must match {self.sz}.')
-
-        operator = LinearOperator(shape=(self.count, self.count),
-                                  matvec=lambda v: self.evaluate_t(self.evaluate(v)))
-
-        # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
-        # tol = 10*np.finfo(x.dtype).eps
-        # cufinufft is presently in singles only.
-        tol = 10*np.finfo(np.float32).eps
-        logger.info('Expanding array in basis')
-
-        # number of image samples
-        n_data = np.size(x, self.ndim)
-        v = np.zeros((self.count, n_data), dtype=x.dtype)
-
-        for isample in range(0, n_data):
-            b = self.evaluate_t(x[..., isample])
-            # TODO: need check the initial condition x0 can improve the results or not.
-            v[..., isample], info = cg(operator, b, tol=tol, atol='legacy')
-            if info != 0:
-                raise RuntimeError('Unable to converge!')
 
         # return v coefficients with the first dimension of self.count
         v = roll_dim(v, sz_roll)
