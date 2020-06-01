@@ -162,7 +162,7 @@ def main(img_size=64, num_imgs=1024, data_file='clean70SRibosome_vol_65p.mrc', c
     # the lowest expected mean square error out of all linear estimators.
     logger.info('Get the CWF coefficients of noising images.')
     #  This part can be improved using GPU
-    with prof_sandwich(event_name='get_cwf_coeffs', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=3):
+    with prof_sandwich(event_name='get_cwf_coeffs', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
         coeffs_est = cov2d.get_cwf_coeffs(coeffs_noise, h_ctf_fb, h_idx,
                                          mean_coeff=mean_coeffs_est,
                                          covar_coeff=covar_coeffs_est, noise_var=noise_var)
