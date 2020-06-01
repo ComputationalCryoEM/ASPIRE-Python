@@ -81,14 +81,12 @@ sim = Simulation(
 # Initialize a class object of the fast FB basis method for expending the 2D images
 ffbbasis = FFBBasis2D((img_size, img_size))
 
-
 # Generate 2D clean images from input 3D map. The following statement can be used from the sim object:
 # imgs_clean = sim.clean_images(start=0, num=num_imgs)
 # To be consistent with the Matlab version in the numbers, we need to use the statements as below:
 logger.info('Generate random distributed rotation angles and obtain corresponding 2D clean images.')
 rots = qrand_rots(num_imgs, seed=0)
 imgs_clean = vol2img(sim.vols[..., 0], rots)
-
 
 # Apply the CTF to the clean images.
 logger.info('Apply CTF filters to clean images.')
@@ -111,7 +109,6 @@ imgs_noise = imgs_ctf_clean + np.sqrt(noise_var)*randn(img_size, img_size, num_i
 # expansion by applying the adjoint of the evaluation mapping using
 # `basis.evaluate_t`.
 logger.info('Get coefficients of noisy images in FFB basis.')
-
 #  This part can be improved using GPU
 RangePush('evaluate_t', 0)
 coeffs_noise = ffbbasis.evaluate_t(imgs_noise)
@@ -124,16 +121,18 @@ RangePop()
 # estimates. For the covariance estimation, the additional information of
 # the estimated mean and the variance of the noise are needed. Again, the
 # covariance matrix estimate is provided in block diagonal form.
-
+logger.info('Get 2D covariance matrices of noisy images using FB coefficients.')
 #  This part can be improved using GPU
 bcov2d = BatchedRotCov2D(sim, ffbbasis, batch_size=batch_size)
 covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250,
              'iter_callback': [], 'store_iterates': False, 'rel_tolerance': 1e-12,
              'precision': 'float64', 'preconditioner': 'identity'}
+logger.info('Get mean values for 2D covariance matrices')
 #  This part can be improved using GPU
 RangePush('get_mean', 1)
 mean_bcov2d = bcov2d.get_mean()
 RangePop()
+logger.info('Get 2D covariance matrices.')
 #  This part can be improved using GPU
 RangePush('get_covar', 2)
 covar_bcov2d = bcov2d.get_covar(noise_var=noise_var, mean_coeff=mean_bcov2d,
@@ -152,6 +151,7 @@ coeffs_est = bcov2d.get_cwf_coeffs(coeffs_noise, bcov2d.ctf_fb,
                                    covar_coeff=covar_bcov2d, noise_var=noise_var)
 RangePop()
 # Convert Fourier-Bessel coefficients back into 2D images
+logger.info('Get denoised images from the CWF coefficients.')
 #  This part can be improved using GPU
 RangePush('evaluate', 4)
 imgs_est = ffbbasis.evaluate(coeffs_est)

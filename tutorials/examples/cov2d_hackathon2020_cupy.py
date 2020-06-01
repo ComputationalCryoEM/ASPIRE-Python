@@ -113,7 +113,6 @@ imgs_noise = imgs_ctf_clean + np.sqrt(noise_var)*randn(img_size, img_size, num_i
 # expansion by applying the adjoint of the evaluation mapping using
 # `basis.evaluate_t`.
 logger.info('Get coefficients of noisy images in FFB basis.')
-
 #  This part can be improved using GPU
 RangePush('evaluate_t', 0)
 coeffs_noise = ffbbasis.evaluate_t(imgs_noise)
@@ -126,16 +125,18 @@ RangePop()
 # estimates. For the covariance estimation, the additional information of
 # the estimated mean and the variance of the noise are needed. Again, the
 # covariance matrix estimate is provided in block diagonal form.
-
+logger.info('Get 2D covariance matrices of noisy images using FB coefficients.')
 #  This part can be improved using GPU
 cov2d = RotCov2D(ffbbasis)
 covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250,
              'iter_callback': [], 'store_iterates': False, 'rel_tolerance': 1e-12,
              'precision': 'float64', 'preconditioner': 'identity'}
+logger.info('Get mean values for 2D covariance matrices')
 #  This part can be improved using GPU
 RangePush('get_mean', 1)
 mean_coeffs_est = cov2d.get_mean(coeffs_noise, h_ctf_fb, h_idx)
 RangePop()
+logger.info('Get 2D covariance matrices.')
 #  This part can be improved using GPU
 RangePush('get_covar', 2)
 covar_coeffs_est = cov2d.get_covar(coeffs_noise, h_ctf_fb, h_idx, mean_coeffs_est,
@@ -153,7 +154,9 @@ coeffs_est = cov2d.get_cwf_coeffs(coeffs_noise, h_ctf_fb, h_idx,
                                  mean_coeff=mean_coeffs_est,
                                  covar_coeff=covar_coeffs_est, noise_var=noise_var)
 RangePop()
+
 # Convert Fourier-Bessel coefficients back into 2D images
+logger.info('Get denoised images from the CWF coefficients.')
 #  This part can be improved using GPU
 RangePush('evaluate', 4)
 imgs_est = ffbbasis.evaluate(coeffs_est)
