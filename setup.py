@@ -52,7 +52,10 @@ setup(
     #  or
     #    pip install -e .[gpu]
     extras_require={
-        'gpu': ['pycuda'],
+        'gpu': [
+            'cupy',
+            'pycuda'
+        ],
         'finufft': ['finufftpy'],
     },
 

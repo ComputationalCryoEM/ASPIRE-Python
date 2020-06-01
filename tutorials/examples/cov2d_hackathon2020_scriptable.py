@@ -11,6 +11,8 @@ import os
 import logging
 import numpy as np
 import mrcfile
+from itertools import count
+from itertools import repeat
 
 from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
@@ -31,7 +33,7 @@ logger = logging.getLogger('aspire')
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data/')
 
-def main(img_size=64, num_imgs=1024):
+def main(img_size=64, num_imgs=1024, data_file='clean70SRibosome_vol_65p.mrc', cupy=False):
     """
     This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package.
 
@@ -42,6 +44,14 @@ def main(img_size=64, num_imgs=1024):
     """
 
     logger.info('This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package.')
+
+    # If we are logging nvtx events, setup an auto incrementer for their id.
+    #  You can of course override if you want to manually group things.
+    if cupy:
+        logger.info('Logging NVTX events using cupy.')
+        nvtx_id = count()
+    else:
+        nvtx_id = repeat(False)
 
     # Set the number of 3D maps
     num_maps = 1
@@ -68,7 +78,7 @@ def main(img_size=64, num_imgs=1024):
     # Below we use alternative implementation to obtain the exact result with Matlab version.
     logger.info(f'Load 3D map and downsample 3D map to desired grids '
                 f'of {img_size} x {img_size} x {img_size}.')
-    infile = mrcfile.open(os.path.join(DATA_DIR, 'vol_10028_emd_2660.mrc'))
+    infile = mrcfile.open(os.path.join(DATA_DIR, data_file))
     vols = infile.data
     vols = vols[..., np.newaxis]
     vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
@@ -122,7 +132,7 @@ def main(img_size=64, num_imgs=1024):
     logger.info('Get coefficients of noisy images in FFB basis.')
 
     #  This part can be improved using GPU
-    with prof_sandwich(event_name='evaluate_t', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}'):
+    with prof_sandwich(event_name='evaluate_t', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
         coeffs_noise = ffbbasis.evaluate_t(imgs_noise)
 
     # Estimate mean and covariance for noise images with CTF and shrink method.
@@ -139,10 +149,10 @@ def main(img_size=64, num_imgs=1024):
                  'iter_callback': [], 'store_iterates': False, 'rel_tolerance': 1e-12,
                  'precision': 'float64', 'preconditioner': 'identity'}
     #  This part can be improved using GPU
-    with prof_sandwich(event_name='get_mean', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}'):
+    with prof_sandwich(event_name='get_mean', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
         mean_coeffs_est = cov2d.get_mean(coeffs_noise, h_ctf_fb, h_idx)
     #  This part can be improved using GPU
-    with prof_sandwich(event_name='get_covar', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}'):
+    with prof_sandwich(event_name='get_covar', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
         covar_coeffs_est = cov2d.get_covar(coeffs_noise, h_ctf_fb, h_idx, mean_coeffs_est,
                                            noise_var=noise_var, covar_est_opt=covar_opt)
 
@@ -152,14 +162,14 @@ def main(img_size=64, num_imgs=1024):
     # the lowest expected mean square error out of all linear estimators.
     logger.info('Get the CWF coefficients of noising images.')
     #  This part can be improved using GPU
-    with prof_sandwich(event_name='get_cwf_coeffs', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}'):
+    with prof_sandwich(event_name='get_cwf_coeffs', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=3):
         coeffs_est = cov2d.get_cwf_coeffs(coeffs_noise, h_ctf_fb, h_idx,
                                          mean_coeff=mean_coeffs_est,
                                          covar_coeff=covar_coeffs_est, noise_var=noise_var)
 
     # Convert Fourier-Bessel coefficients back into 2D images
     #  This part can be improved using GPU
-    with prof_sandwich(event_name='evaluate', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}'):
+    with prof_sandwich(event_name='evaluate', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
         imgs_est = ffbbasis.evaluate(coeffs_est)
 
     # Calculate the normalized RMSE of the estimated images.
@@ -177,5 +187,10 @@ if __name__ == "__main__":
                         help='Sizes of images, img_size x img_size, defaults 64 x 64.')
     parser.add_argument('-n', '--num_imgs', type=int, default=1024,
                         help='Total number of images, defaults 1024.')
+    parser.add_argument('-f', '--mrc_file', type=str, default='clean70SRibosome_vol_65p.mrc',
+                        help='Optional mrc file. Defaults clean70SRibosome_vol_65p.mrc .' \
+                        ' Try vol_10028_emd_2660.mrc for hires if you have downloaded.')
+    parser.add_argument('-p', '--profile_nvtx_events', action='store_true',
+                        help='Enable NVTX event recording via cupy. Requires cupy.')
     args = parser.parse_args()
-    main(args.img_size, args.num_imgs)
+    main(args.img_size, args.num_imgs, args.mrc_file, args.profile_nvtx_events)
