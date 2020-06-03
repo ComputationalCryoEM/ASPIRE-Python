@@ -49,7 +49,7 @@ def main(img_size=64, num_imgs=1024, data_file='clean70SRibosome_vol_65p.mrc', c
     #  You can of course override if you want to manually group things.
     if cupy:
         logger.info('Logging NVTX events using cupy.')
-        nvtx_id = count()
+        nvtx_id = count(1)
     else:
         nvtx_id = repeat(False)
 

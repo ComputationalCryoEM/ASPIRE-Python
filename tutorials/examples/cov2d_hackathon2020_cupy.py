@@ -114,7 +114,7 @@ imgs_noise = imgs_ctf_clean + np.sqrt(noise_var)*randn(img_size, img_size, num_i
 # `basis.evaluate_t`.
 logger.info('Get coefficients of noisy images in FFB basis.')
 #  This part can be improved using GPU
-RangePush('evaluate_t', 0)
+RangePush('evaluate_t', 1)
 coeffs_noise = ffbbasis.evaluate_t(imgs_noise)
 RangePop()
 
@@ -133,12 +133,12 @@ covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250,
              'precision': 'float64', 'preconditioner': 'identity'}
 logger.info('Get mean values for 2D covariance matrices')
 #  This part can be improved using GPU
-RangePush('get_mean', 1)
+RangePush('get_mean', 2)
 mean_coeffs_est = cov2d.get_mean(coeffs_noise, h_ctf_fb, h_idx)
 RangePop()
 logger.info('Get 2D covariance matrices.')
 #  This part can be improved using GPU
-RangePush('get_covar', 2)
+RangePush('get_covar', 3)
 covar_coeffs_est = cov2d.get_covar(coeffs_noise, h_ctf_fb, h_idx, mean_coeffs_est,
                                   noise_var=noise_var, covar_est_opt=covar_opt)
 RangePop()
@@ -149,7 +149,7 @@ RangePop()
 # the lowest expected mean square error out of all linear estimators.
 logger.info('Get the CWF coefficients of noising images.')
 #  This part can be improved using GPU
-RangePush('get_cwf_ceffs', 3)
+RangePush('get_cwf_ceffs', 4)
 coeffs_est = cov2d.get_cwf_coeffs(coeffs_noise, h_ctf_fb, h_idx,
                                  mean_coeff=mean_coeffs_est,
                                  covar_coeff=covar_coeffs_est, noise_var=noise_var)
@@ -158,7 +158,7 @@ RangePop()
 # Convert Fourier-Bessel coefficients back into 2D images
 logger.info('Get denoised images from the CWF coefficients.')
 #  This part can be improved using GPU
-RangePush('evaluate', 4)
+RangePush('evaluate', 5)
 imgs_est = ffbbasis.evaluate(coeffs_est)
 RangePop()
 
