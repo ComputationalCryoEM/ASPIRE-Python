@@ -114,13 +114,13 @@ class Plan:
             return super(Plan, cls).__new__(cls)
 
 
-def anufft3(vol_f, fourier_pts, sz, real=False):
-    plan = Plan(sz=sz, fourier_pts=fourier_pts)
+def anufft3(vol_f, fourier_pts, sz, real=False, isign=1):
+    plan = Plan(sz=sz, fourier_pts=fourier_pts, isign=isign)
     adjoint = plan.adjoint(vol_f)
     return np.real(adjoint) if real else adjoint
 
 
-def nufft3(vol_f, fourier_pts, sz, real=False):
-    plan = Plan(sz=sz, fourier_pts=fourier_pts)
+def nufft3(vol_f, fourier_pts, sz, real=False, isign=-1):
+    plan = Plan(sz=sz, fourier_pts=fourier_pts, isign=isign)
     transform = plan.transform(vol_f)
     return np.real(transform) if real else transform

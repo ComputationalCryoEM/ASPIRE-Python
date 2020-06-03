@@ -118,7 +118,7 @@ class PolarBasis2D(Basis):
         half_size = self.ntheta // 2
         pf = np.empty((self.nrad * half_size, nimgs), dtype='complex128', order='F')
         for isample in range(0, nimgs):
-            pf[..., isample] = nufft3(x[..., isample], self.freqs, self.sz)
+            pf[..., isample] = nufft3(x[..., isample], self.freqs, self.sz, isign=1)
 
         pf = m_reshape(pf, (self.nrad, half_size, nimgs))
         v = np.concatenate((pf, pf.conj()), axis=1)

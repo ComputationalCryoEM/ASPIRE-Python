@@ -5,13 +5,14 @@ from aspire.utils import ensure
 
 
 class FINufftPlan(Plan):
-    def __init__(self, sz, fourier_pts, epsilon=1e-15, **kwargs):
+    def __init__(self, sz, fourier_pts, epsilon=1e-15, isign=None, **kwargs):
         """
         A plan for non-uniform FFT (3D)
         :param sz: A tuple indicating the geometry of the signal
         :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a 3-by-K array. These need to be in the range [-pi, pi] in each dimension.
         :param epsilon: The desired precision of the NUFFT
+        :param isign: Defaults to -1 for transform, and 1 for adjoint. May force -1 or 1.
         """
         self.sz = sz
         self.dim = len(sz)
@@ -19,6 +20,7 @@ class FINufftPlan(Plan):
         self.fourier_pts = np.asarray(np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order='C')
         self.num_pts = fourier_pts.shape[1]
         self.epsilon = epsilon
+        self.isign = isign
 
         # Get a handle on the appropriate 1d/2d/3d forward transform function in finufftpy
         self.transform_function = getattr(finufftpy, {1: 'nufft1d2', 2: 'nufft2d2', 3: 'nufft3d2'}[self.dim])
@@ -42,7 +44,7 @@ class FINufftPlan(Plan):
         result_code = self.transform_function(
             *self.fourier_pts,
             result,
-            -1,
+            self.isign or -1,
             epsilon,
             signal
         )
@@ -69,7 +71,7 @@ class FINufftPlan(Plan):
         result_code = self.adjoint_function(
             *self.fourier_pts,
             signal,
-            1,
+            self.isign or 1,
             epsilon,
             *self.sz,
             result
