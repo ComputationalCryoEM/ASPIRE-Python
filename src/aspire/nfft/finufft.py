@@ -80,7 +80,11 @@ class FINufftPlan(Plan):
         # We form these function signatures here by tuple-unpacking
 
         # Note: Important to have order='F' here!
-        result = np.zeros(self.sz, order='F').astype('complex128')
+        res_shape = self.sz
+        if self.many:
+            res_shape = (*self.sz, self.ntransforms)
+
+        result = np.zeros(res_shape, order='F').astype('complex128')
 
         result_code = self.adjoint_function(
             *self.fourier_pts,
