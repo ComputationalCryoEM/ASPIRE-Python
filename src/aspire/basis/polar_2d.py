@@ -90,7 +90,7 @@ class PolarBasis2D(Basis):
              + v[:, half_size:, :].conj())
 
         v = m_reshape(v, (self.nrad*half_size, nimgs))
-        x = np.empty((self.sz[0], self.sz[1], nimgs), dtype='complex128')
+        x = np.empty((self.sz[0], self.sz[1], nimgs), dtype='float64')
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
             x[..., isample] = np.real(anufft3(v[:, isample], self.freqs, self.sz))
