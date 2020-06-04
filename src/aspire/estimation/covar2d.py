@@ -1,9 +1,14 @@
 import logging
 import numpy as np
+
+from multiprocessing import get_context
+from os import getpid
+
 from scipy.linalg import sqrtm
 from scipy.linalg import solve
 from numpy.linalg import inv
 
+from aspire import config
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import shrink_covar
@@ -351,48 +356,64 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
 
+    # what we want to do
+    def the(self, batch):
+        print(f"Child PID:process {getpid()}")
+        im = self.src.images(batch[0], len(batch))
+        coeff = self.basis.evaluate_t(im.data)
+
+        zero_coeff = np.zeros((self.basis.count,))
+        b_mean = [np.zeros(self.basis.count) for _ in self.ctf_fb]
+        b_covar = BlkDiagMatrix.zeros_like(self.ctf_fb[0])
+
+        for k in np.unique(self.ctf_idx[batch]):
+            coeff_k = coeff[:, self.ctf_idx[batch] == k]
+            weight = np.size(coeff_k, 1) / self.src.n
+
+            mean_coeff_k = self._get_mean(coeff_k)
+
+            ctf_fb_k = self.ctf_fb[k]
+            ctf_fb_k_t = ctf_fb_k.T
+
+            b_mean_k = weight * ctf_fb_k_t.apply(mean_coeff_k)
+
+            # ABA
+            b_mean[k] += b_mean_k
+
+            covar_coeff_k = self._get_covar(coeff_k, zero_coeff)
+
+            b_covar_k = ctf_fb_k_t @ covar_coeff_k
+            b_covar_k = b_covar_k @ ctf_fb_k
+            b_covar_k *= weight
+
+            # ABA
+            b_covar += b_covar_k
+
+        return b_mean, b_covar
+
     def _calc_rhs(self):
-        src = self.src
-        basis = self.basis
 
-        ctf_fb = self.ctf_fb
-        ctf_idx = self.ctf_idx
+        # generate batch ranges, push into queue
+        Q = []
+        for start in range(0, self.src.n, self.batch_size):
+            batch = np.arange(start, min(start + self.batch_size, self.src.n))
+            Q.append(batch)
+        print(Q)
+        # make a process pool based on config.ngpu
+        nprocs = config.common.ngpu
 
-        zero_coeff = np.zeros((basis.count,))
+        with get_context("spawn").Pool(processes=nprocs) as pool:
+            # each process sets a cuda_visible_device.
+            print(f"Parent PID:process {getpid()}")
 
-        b_mean = [np.zeros(basis.count) for _ in ctf_fb]
+            # pop off batches from the Q
+            results = pool.map(self.the, Q)
 
-        b_covar = BlkDiagMatrix.zeros_like(ctf_fb[0])
-
-        for start in range(0, src.n, self.batch_size):
-            batch = np.arange(start, min(start + self.batch_size, src.n))
-
-            im = src.images(batch[0], len(batch))
-            coeff = basis.evaluate_t(im.data)
-
-            for k in np.unique(ctf_idx[batch]):
-                coeff_k = coeff[:, ctf_idx[batch] == k]
-                weight = np.size(coeff_k, 1) / src.n
-
-                mean_coeff_k = self._get_mean(coeff_k)
-
-                ctf_fb_k = ctf_fb[k]
-                ctf_fb_k_t = ctf_fb_k.T
-
-                b_mean_k = weight * ctf_fb_k_t.apply(mean_coeff_k)
-
-                b_mean[k] += b_mean_k
-
-                covar_coeff_k = self._get_covar(coeff_k, zero_coeff)
-
-                b_covar_k = ctf_fb_k_t @ covar_coeff_k
-                b_covar_k = b_covar_k @ ctf_fb_k
-                b_covar_k *= weight
-
-                b_covar += b_covar_k
-
-        self.b_mean = b_mean
-        self.b_covar = b_covar
+        self.b_mean = [np.zeros(self.basis.count) for _ in self.ctf_fb]
+        self.b_covar = BlkDiagMatrix.zeros_like(self.ctf_fb[0])
+        for _b_mean, _b_covar in results:
+            self.b_mean += _b_mean
+            self.b_covar += _b_covar
 
     def _calc_op(self):
         src = self.src
