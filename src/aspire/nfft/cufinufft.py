@@ -237,9 +237,10 @@ class cuFINufftPlan(Plan):
 
     def adjoint(self, signal):
 
-        signal_gpu = gpuarray.to_gpu(signal.astype(np.complex64, copy=False, order='F'))
+        signal_gpu = gpuarray.to_gpu(signal.astype(np.complex64, copy=False, order='C'))
 
-        result_gpu = gpuarray.GPUArray(self.sz, dtype=np.complex64, order='F')
+        # This ordering situation is a little strange, but it works.
+        result_gpu = gpuarray.GPUArray((*self.sz, self.ntransforms), dtype=np.complex64, order='F')
 
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts.astype(np.float32, copy=False))
         set_nu_pts(self._adjoint_plan, self.num_pts, *fourier_pts_gpu)
@@ -247,5 +248,8 @@ class cuFINufftPlan(Plan):
         execute(self._adjoint_plan, signal_gpu.ptr, result_gpu.ptr)
 
         result = result_gpu.get()
+
+        if not self.many:
+            result = result[...,0]
 
         return result
