@@ -31,23 +31,15 @@ logger = logging.getLogger('aspire')
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data/')
 
-def main(img_size=64, num_imgs=1024, data_file='clean70SRibosome_vol_65p.mrc', cupy=False):
+def main(img_size=64, num_imgs=1024, batch_size=256, data_file='clean70SRibosome_vol_65p.mrc', cupy=False):
 
     logger.info('This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package.')
-
-    # Set the sizes of images 64 x 64
-    img_size = 64
-    # Set the total number of images generated from the 3D map
-    num_imgs = 1024
 
     # Set the number of 3D maps
     num_maps = 1
 
     # Set the signal-noise ratio
     sn_ratio = 1
-
-    # Set the batch size
-    batch_size = 256
 
     # Specify the CTF parameters
     pixel_size = 5                   # Pixel size of the images (in angstroms).
@@ -167,10 +159,12 @@ if __name__ == "__main__":
                         help='Sizes of images, img_size x img_size, defaults 64 x 64.')
     parser.add_argument('-n', '--num_imgs', type=int, default=1024,
                         help='Total number of images, defaults 1024.')
+    parser.add_argument('-b', '--batch_size', type=int, default=256,
+                        help='Max number of images in each batch, defaults 256.')
     parser.add_argument('-f', '--mrc_file', type=str, default='clean70SRibosome_vol_65p.mrc',
                         help='Optional mrc file. Defaults clean70SRibosome_vol_65p.mrc .' \
                         ' Try vol_10028_emd_2660.mrc for hires if you have downloaded.')
     parser.add_argument('-p', '--profile_nvtx_events', action='store_true',
                         help='Enable NVTX event recording via cupy. Requires cupy.')
     args = parser.parse_args()
-    main(args.img_size, args.num_imgs, args.mrc_file, args.profile_nvtx_events)
+    main(img_size=args.img_size, num_imgs=args.num_imgs, batch_size=args.batch_size, data_file=args.mrc_file, cupy=args.profile_nvtx_events)
