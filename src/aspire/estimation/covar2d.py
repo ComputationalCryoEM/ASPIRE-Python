@@ -1,7 +1,12 @@
 import logging
+import os
 import numpy as np
 
+from itertools import count
 from multiprocessing import get_context
+from multiprocessing import Pool
+from multiprocessing import Queue
+#from queue import Empty, Full
 from os import getpid
 
 from scipy.linalg import sqrtm
@@ -17,6 +22,15 @@ from aspire.utils import ensure
 from aspire.utils.filters import RadialCTFFilter
 
 logger = logging.getLogger(__name__)
+
+def _set_device(device_id):
+    #if backend is cufnufft:
+    #device_id = device_id_Q.get()
+    print(f"Init Child PID: {getpid()}    Device: {device_id}")
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(device_id)
+    #os.environ['CUDA_DEVICE'] = str(device_id)
+
+    #else: ..
 
 
 class RotCov2D:
@@ -357,8 +371,10 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
 
     # what we want to do
-    def the(self, batch):
-        print(f"Child PID:process {getpid()}")
+    def the(self, args):
+        batch, dev = args
+        print(f"Child PID: {getpid()} Working batch starting: {batch[0]}.")
+        _set_device(dev)
         im = self.src.images(batch[0], len(batch))
         coeff = self.basis.evaluate_t(im.data)
 
@@ -393,14 +409,19 @@ class BatchedRotCov2D(RotCov2D):
 
     def _calc_rhs(self):
 
-        # generate batch ranges, push into queue
-        Q = []
-        for start in range(0, self.src.n, self.batch_size):
-            batch = np.arange(start, min(start + self.batch_size, self.src.n))
-            Q.append(batch)
-        print(Q)
         # make a process pool based on config.ngpu
         nprocs = config.common.ngpu
+
+        # generate batch ranges, push into queue
+        Q = []
+        for d, start in enumerate(range(0, self.src.n, self.batch_size)):
+            batch = np.arange(start, min(start + self.batch_size, self.src.n))
+            dev = d % nprocs
+            Q.append((batch, dev))
+
+        # devQ = Queue()
+        # for dev in range(nprocs):
+        #     devQ.put(dev)
 
         with get_context("spawn").Pool(processes=nprocs) as pool:
             # each process sets a cuda_visible_device.
