@@ -167,12 +167,14 @@ class FFBBasis2D(FBBasis2D):
         pf = m_reshape(xp.asnumpy(pf), (n_r * n_theta, n_data))
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
-        x = np.zeros((self.sz[0], self.sz[1], n_data), dtype=v.dtype)
-        for isample in range(0, n_data):
-            x[..., isample] = 2*np.real(anufft3(pf[:, isample], 2 * pi * freqs, self.sz))
-        # xc = np.zeros((n_data, self.sz[0], self.sz[1]), dtype=v.dtype)
-        # xc = 2*np.real(anufft3(pf, 2 * pi * freqs, self.sz, many=n_data))
-        # x = xc.T
+        # C major outer dimension, with F indexing in C order
+        # This will at least give an idea on the single vs many plan cost.
+        # TODO: try to avoid the axis swapping etc when we do clean up
+        pfc = np.empty((n_data, n_r * n_theta), pf.dtype)
+        for transf in range(n_data):
+            pfc[transf] = pf[..., transf]
+        pfc = pfc.reshape(pf.shape)
+        x = 2 * anufft3(pfc, 2 * pi * freqs, self.sz, real=True, many=n_data)
 
         # return the x with the first two dimensions of self.sz
         x = roll_dim(x, sz_roll)
