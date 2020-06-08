@@ -26,6 +26,12 @@ class SimTestCase(TestCase):
 
         self.recip_space = np.array([-0.05646675 + 1.503746j, 1.677600 + 0.6610926j, 0.9124417 - 0.7394574j, -0.9136836 - 0.5491410j])
 
+        self.recip_space_plane = np.array([-0.14933796+0.00324942j,
+                                           -0.29726508+0.07601329j,
+                                           -0.26276074+0.12634184j,
+                                           -0.09722212+0.12028122j],
+                                          dtype=np.complex128)
+
         self.adjoint_vol = np.array([[[9.59495207e-01-1.06291322e+00j,  4.96001394e-01+1.60922425e+00j,
                                -2.78391527e+00-2.18820002e+00j,  4.53910627e+00+2.52530574e+00j,
                                -4.67770008e+00-2.29928671e+00j,  3.12346140e+00+1.42107788e+00j,
@@ -283,8 +289,33 @@ class SimTestCase(TestCase):
                                -5.62945787e-01+8.74090053e-01j,  5.55461782e-01-1.32420148e+00j,
                                9.47476817e-01+1.33834936e+00j, -3.28600548e+00-1.08079454e+00j]]])
 
-        # ask the guys that still practice math whether we can just use a classic test using the
-        ## conjugate transpose or soemthing, this is gross ^, but effective enough for now...
+        self.adjoint_plane = np.array([
+            [0.28276817+0.15660023j, -0.21264103+0.1325063j, -0.00666806-0.1822552j,
+             0.10494716+0.0590003j, -0.06044544+0.02754128j,  0.01542389-0.02038304j,
+             -0.02641121+0.01316627j, 0.0215158 -0.05030556j],
+            [ 0.54833966+0.33850828j, -0.4958592 +0.28852081j, -0.01713981-0.49898315j,
+              0.37897714+0.18819081j, -0.28442755+0.19914825j, -0.02887101-0.27192077j,
+              0.18678311+0.08113525j, -0.11320052+0.08151796j],
+            [ 0.69768533+0.51111915j, -0.74630965+0.36269529j,  0.0271063 -0.78358501j,
+              0.63172175+0.3637445j , -0.56446735+0.35344828j, -0.04125834-0.59543717j,
+              0.47733585+0.21476558j, -0.35533761+0.27220962j],
+            [ 0.65654   +0.5830565j, -0.83763171+0.31681567j,  0.10977528-0.89399695j,
+              0.73395449+0.50935065j, -0.77541578+0.40262967j,  0.00588976-0.84221936j,
+              0.70430209+0.37900244j, -0.62136058+0.41564458j],
+            [ 0.45551939+0.50553654j, -0.7169248 +0.18720528j,  0.17640627-0.77381197j,
+              0.63754892+0.54242801j, -0.8065859 +0.32588577j,  0.08788936-0.88691676j,
+              0.75201985+0.49518815j, -0.78544962+0.43340316j],
+            [ 0.2040729 +0.31334696j, -0.4437996 +0.05144511j,  0.17955537-0.48801972j,
+              0.40159172+0.4344763j,  -0.63566113+0.17655863j,  0.14807687-0.70699674j,
+              0.60199882+0.49236828j, -0.75763457+0.32461718j],
+            [ 0.01713837+0.10888565j, -0.15671647-0.02906575j,  0.11958363-0.1813168j,
+              0.14886852+0.23912486j, -0.34893683+0.03792622j,  0.14555865-0.39746133j,
+              0.33976368+0.36217065j, -0.54640878+0.15861484j],
+            [-0.05256636-0.00471347j,  0.01359614-0.04566816j,  0.04580664+0.01237401j,
+             -0.01350782+0.06196736j, -0.09008373-0.0351467j,   0.08978393-0.11075246j,
+             0.09570568+0.1731567j,  -0.25950948+0.02134457j]
+        ], dtype=np.complex128)
+
 
     def tearDown(self):
         pass
@@ -310,15 +341,8 @@ class SimTestCase(TestCase):
 
         result = plan.transform(batch)
 
-        ref = np.array(
-            [-0.14933796+0.00324942j,
-             -0.29726508+0.07601329j,
-             -0.26276074+0.12634184j,
-             -0.09722212+0.12028122j],
-            dtype=np.complex128)
-
         for r in range(many):
-            self.assertTrue(np.allclose(result[r], ref))
+            self.assertTrue(np.allclose(result[r], self.recip_space_plane))
 
     def _testAdjoint(self, backend):
         if not backend_available(backend):
@@ -330,6 +354,28 @@ class SimTestCase(TestCase):
         result = plan.adjoint(self.recip_space)
 
         self.assertTrue(np.allclose(result, self.adjoint_vol))
+
+    def _testAdjointMany(self, backend, many=2):
+        if not backend_available(backend):
+            raise SkipTest
+
+        plan = Plan(self.plane.shape, self.fourier_pts[0:2], backend=backend, many=many)
+
+        batch = np.empty((many, *self.recip_space_plane.shape), dtype=self.recip_space_plane.dtype)
+        for i in range(many):
+            batch[i] = self.recip_space_plane
+        # Note, at least at the outer the binding layer, finufft wants the batches in C storage, but with F index shape.
+        #  Maybe it was trying to match aspire?
+        # Im not sure if this quirk is at a particular layer (python, outer c++ etc) yet;
+        # would like to track down and make coherent.
+        # For now, we hack to store it in memory as I understand and just lie about the indexing to python.
+        batch = batch.reshape(batch.shape[::-1])
+
+        # test adjoint
+        result = plan.adjoint(batch)
+
+        for r in range(many):
+            self.assertTrue(np.allclose(result[:,:,r], self.adjoint_plane))
 
     # I think this could be done better, but more pressing things...
 
@@ -345,11 +391,17 @@ class SimTestCase(TestCase):
     def testAdjoint0(self):
         self._testAdjoint('cufinufft')
 
+    def testAdjointMany0(self):
+        self._testAdjointMany('cufinufft')
+
     def testTransform1(self):
         self._testTransform('finufft')
 
     def testAdjoint1(self):
         self._testAdjoint('finufft')
+
+    def testAdjointMany1(self):
+        self._testAdjointMany('finufft')
 
     def testTransform2(self):
         self._testTransform('pynfft')
