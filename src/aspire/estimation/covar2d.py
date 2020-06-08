@@ -8,7 +8,6 @@ from itertools import repeat
 from multiprocessing import get_context
 from multiprocessing import Pool
 from multiprocessing import Manager
-#from queue import Empty, Full
 from os import getpid
 
 from scipy.linalg import sqrtm
@@ -679,6 +678,14 @@ class MultiBatchedRotCov2D(BatchedRotCov2D):
     def _calc_rhs(self):
 
         Q = self._calc_rhs_gen_batch()
+
+        # Sanity check how many devices we have, import pycuda here so its not in mainline code... can package nicely another time...
+        import pycuda.driver
+        device_count = pycuda.driver.Device.count()
+        global ngpu
+        if ngpu > device_count:
+            logger.warning(f"WARNING: Configuration ngpu={ngpu} but only {device_count} found.  Setting ngpu={device_count}.")
+            ngpu = device_count
 
         # You probably want to use spawn or you will have a bad time.
         with get_context("spawn").Pool(processes=ngpu) as pool:
