@@ -22,7 +22,8 @@ from aspire.utils.preprocess import vol2img
 from aspire.image import Image
 from aspire.utils.matrix import anorm
 from aspire.utils.matlab_compat import randn
-from aspire.estimation.covar2d import BatchedRotCov2D
+#from aspire.estimation.covar2d import BatchedRotCov2D    # nice and clean...
+from aspire.estimation.covar2d import MultiBatchedRotCov2D as BatchedRotCov2D
 from aspire.utils.profiler_helper import prof_sandwich
 from aspire.nfft import all_backends
 

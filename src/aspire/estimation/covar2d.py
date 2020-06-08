@@ -3,9 +3,11 @@ import os
 import numpy as np
 
 from itertools import count
+from itertools import repeat
+
 from multiprocessing import get_context
 from multiprocessing import Pool
-from multiprocessing import Queue
+from multiprocessing import Manager
 #from queue import Empty, Full
 from os import getpid
 
@@ -23,15 +25,8 @@ from aspire.utils.filters import RadialCTFFilter
 
 logger = logging.getLogger(__name__)
 
-def _set_device(device_id):
-    #if backend is cufnufft:
-    #device_id = device_id_Q.get()
-    print(f"Init Child PID: {getpid()}    Device: {device_id}")
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(device_id)
-    #os.environ['CUDA_DEVICE'] = str(device_id)
-
-    #else: ..
-
+# Later we make a process pool based on config.ngpu, also used for device id queue.
+ngpu = config.common.ngpu
 
 class RotCov2D:
     """
@@ -371,10 +366,8 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
 
     # what we want to do
-    def the(self, args):
-        batch, dev = args
-        print(f"Child PID: {getpid()} Working batch starting: {batch[0]}.")
-        _set_device(dev)
+    def _calc_rhs_batch(self, batch):
+
         im = self.src.images(batch[0], len(batch))
         coeff = self.basis.evaluate_t(im.data)
 
@@ -407,34 +400,25 @@ class BatchedRotCov2D(RotCov2D):
 
         return b_mean, b_covar
 
-    def _calc_rhs(self):
-
-        # make a process pool based on config.ngpu
-        nprocs = config.common.ngpu
-
-        # generate batch ranges, push into queue
-        Q = []
-        for d, start in enumerate(range(0, self.src.n, self.batch_size)):
-            batch = np.arange(start, min(start + self.batch_size, self.src.n))
-            dev = d % nprocs
-            Q.append((batch, dev))
-
-        # devQ = Queue()
-        # for dev in range(nprocs):
-        #     devQ.put(dev)
-
-        with get_context("spawn").Pool(processes=nprocs) as pool:
-            # each process sets a cuda_visible_device.
-            print(f"Parent PID:process {getpid()}")
-
-            # pop off batches from the Q
-            results = pool.map(self.the, Q)
-
+    def _calc_rhs_aggregation(self, results):
         self.b_mean = [np.zeros(self.basis.count) for _ in self.ctf_fb]
         self.b_covar = BlkDiagMatrix.zeros_like(self.ctf_fb[0])
         for _b_mean, _b_covar in results:
             self.b_mean += _b_mean
             self.b_covar += _b_covar
+
+    def _calc_rhs_gen_batch(self):
+        # generate batch ranges, push into queue
+        Q = []
+        for start in range(0, self.src.n, self.batch_size):
+            batch = np.arange(start, min(start + self.batch_size, self.src.n))
+            Q.append(batch)
+        return Q
+
+    def _calc_rhs(self):
+        Q = self._calc_rhs_gen_batch()
+        results = map(self._calc_rhs_batch, Q)
+        self._calc_rhs_aggregation(results)
 
     def _calc_op(self):
         src = self.src
@@ -670,3 +654,62 @@ class BatchedRotCov2D(RotCov2D):
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
         return coeffs_est
+
+
+class MultiBatchedRotCov2D(BatchedRotCov2D):
+    """
+    Perform batchwise rotationally equivariant 2D covariance estimation from an
+    `ImageSource` objects. This is done with a single pass through the data,
+    processing moderately-sized batches one at a time. The rotational
+    equivariance is achieved by decomposing images in a steerable Fourier–Bessel
+    basis. For more information, see
+
+        T. Bhamre, T. Zhang, and A. Singer, "Denoising and covariance estimation
+        of single particle cryo-EM images", J. Struct. Biol. 195, 27-81 (2016).
+        DOI: 10.1016/j.jsb.2016.04.013
+
+        :param src: The `ImageSource` object from which the sample images are to
+        be extracted.
+        :param basis: The `FBBasis2D` object used to decompose the images. By
+        default, this is set to `FFBBasis2D((src.L, src.L))`.
+        :param batch_size: The number of images to process at a time (default
+        8192).
+    """
+
+    def _calc_rhs(self):
+
+        Q = self._calc_rhs_gen_batch()
+
+        # You probably want to use spawn or you will have a bad time.
+        with get_context("spawn").Pool(processes=ngpu) as pool:
+
+            logger.info(f"Parent PID:process {getpid()}")
+
+            manager = Manager()
+            device_pool_Q = manager.Queue()
+            for dev in range(ngpu):
+                device_pool_Q.put(dev)
+
+            # pop off batches from the Q and compute them,
+            #  note we hack the device queue into the args using itertools
+            results = pool.starmap(self._calc_rhs_batch, zip(Q, repeat(device_pool_Q)))
+
+            # accumulate the results.
+            self._calc_rhs_aggregation(results)
+
+    def _calc_rhs_batch(self, batch, device_pool_Q):
+
+        logger.info(f"Child PID: {getpid()} Working batch starting: {batch[0]}.")
+
+        #if backend is cufnufft:
+        device_id = device_pool_Q.get()
+        logger.info(f"Init Child PID: {getpid()}    Device: {device_id}")
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(device_id)
+        #maybe in another case need os.environ['CUDA_DEVICE'] = str(device_id)
+        #else: ..
+
+        b_mean, b_covar = super()._calc_rhs_batch(batch)
+
+        device_pool_Q.put(device_id)
+
+        return b_mean, b_covar
