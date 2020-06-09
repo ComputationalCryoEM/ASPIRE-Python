@@ -5,14 +5,13 @@ block diagonal matrices as used by ASPIRE.
 
 import numpy as np
 
-from numpy.linalg import norm
-from numpy.linalg import solve
 from scipy.linalg import block_diag
 from scipy.special import jv
 
 from aspire.utils.cell import Cell2D
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.basis_utils import lgwt
+from aspire.utils.numeric import xp
 
 
 class BlkDiagMatrix:
@@ -34,7 +33,7 @@ class BlkDiagMatrix:
     #   blk_y = scalar_a + ( scalar_b * blk_x)
     __array_ufunc__ = None
 
-    def __init__(self, partition, dtype=np.float64):
+    def __init__(self, partition, dtype=xp.float64):
         """
         Instantiate a BlkDiagMatrix.
 
@@ -42,14 +41,14 @@ class BlkDiagMatrix:
          in the form of a `nblock`-element list storing all shapes of
          diagonal matrix blocks, where `partition[i]` corresponds to
          the shape (number of rows and columns) of the `i` matrix block.
-        :param dtype: Datatype for blocks, defaults to np.float64.
+        :param dtype: Datatype for blocks, defaults to xp.float64.
         :return: BlkDiagMatrix instance.
         """
 
         self.nblocks = len(partition)
-        self.dtype = np.dtype(dtype)
+        self.dtype = xp.dtype(dtype)
         self.data = [None] * self.nblocks
-        self._cached_blk_sizes = np.array(partition)
+        self._cached_blk_sizes = xp.array(partition)
         if len(partition):
             assert self._cached_blk_sizes.shape[1] == 2
             assert all([BlkDiagMatrix.__check_square(s) for s in partition])
@@ -139,7 +138,7 @@ class BlkDiagMatrix:
         :return: bool.
         """
 
-        return np.isscalar(x)
+        return xp.isscalar(x)
 
     def __check_size_compatible(self, other):
         """
@@ -148,7 +147,7 @@ class BlkDiagMatrix:
         :param other: The BlkDiagMatrix to compare with self.
         """
 
-        if np.any(self.partition != other.partition):
+        if xp.any(self.partition != other.partition):
             # be helpful and find the first one as an example
             for i, (a, b) in enumerate(zip(self.partition, other.partition)):
                 if a != b:
@@ -201,7 +200,7 @@ class BlkDiagMatrix:
         """
 
         for blk in self:
-            if not np.all(np.isfinite(blk)):
+            if not xp.all(xp.isfinite(blk)):
                 return False
         else:
             return True
@@ -488,7 +487,7 @@ class BlkDiagMatrix:
         C = BlkDiagMatrix(self.partition, dtype=self.dtype)
 
         for i in range(self.nblocks):
-            C[i] = np.abs(self[i])
+            C[i] = xp.abs(self[i])
 
         return C
 
@@ -514,7 +513,7 @@ class BlkDiagMatrix:
         else:
             C = BlkDiagMatrix(self.partition, dtype=self.dtype)
             for i in range(self.nblocks):
-                C[i] = np.power(self[i], val)
+                C[i] = xp.power(self[i], val)
         return C
 
     def __pow__(self, val):
@@ -542,7 +541,7 @@ class BlkDiagMatrix:
         :return: The norm of the BlkDiagMatrix instance.
         """
 
-        return np.max([norm(blk, ord=2) for blk in self])
+        return xp.max([xp.linalg.norm(blk, ord=2) for blk in self])
 
     def transpose(self):
         """
@@ -589,9 +588,10 @@ class BlkDiagMatrix:
         """
 
         if self._cached_blk_sizes is None:
-            blk_sizes = np.empty((self.nblocks, 2), dtype=np.int)
+            blk_sizes = xp.empty((self.nblocks, 2), dtype=xp.int)
             for i, blk in enumerate(self.data):
-                blk_sizes[i] = np.shape(blk)
+                blk_sizes[i][0] = blk.shape[0]
+                blk_sizes[i][1] = blk.shape[1]
             self._cached_blk_sizes = blk_sizes
         return self._cached_blk_sizes
 
@@ -607,21 +607,21 @@ class BlkDiagMatrix:
         """
 
         rows = self.partition[:, 0]
-        if sum(rows) != np.size(Y, 0):
+        if sum(rows) != xp.size(Y, 0):
             raise RuntimeError('Sizes of `self` and `Y` are not compatible.')
 
         vector = False
-        if np.ndim(Y) == 1:
-            Y = Y[:, np.newaxis]
+        if len(Y.shape) == 1:
+            Y = Y[:, xp.newaxis]
             vector = True
 
-        cols = np.array([np.size(Y, 1)])
+        cols = xp.array([xp.size(Y, 1)])
         cellarray = Cell2D(rows, cols, dtype=Y.dtype)
         Y = cellarray.mat2cell(Y, rows, cols)
         X = []
         for i in range(0, self.nblocks):
-            X.append(solve(self[i], Y[i]))
-        X = np.concatenate(X, axis=0)
+            X.append(xp.linalg.solve(self[i], Y[i]))
+        X = xp.concatenate(X, axis=0)
 
         if vector:
             X = X[:, 0]
@@ -641,23 +641,24 @@ class BlkDiagMatrix:
 
         cols = self.partition[:, 1]
 
-        if np.sum(cols) != np.size(X, 0):
+        if xp.sum(cols) != xp.size(X, 0):
             raise RuntimeError(
                 'Sizes of matrix `self` and `X` are not compatible.')
 
         vector = False
-        if np.ndim(X) == 1:
-            X = X[:, np.newaxis]
+        if len(X.shape) == 1:
+            X = X[:, xp.newaxis]
             vector = True
 
-        rows = np.array([np.size(X, 1), ])
+        rows = xp.asarray([xp.size(X, 1), ])
+        #cols = xp.asarray(cols)
         cellarray = Cell2D(cols, rows, dtype=X.dtype)
         x_cell = cellarray.mat2cell(X, cols, rows)
         Y = []
         for i in range(0, self.nblocks):
             mat = self[i] @ x_cell[i]
             Y.append(mat)
-        Y = np.concatenate(Y, axis=0)
+        Y = xp.concatenate(Y, axis=0)
 
         if vector:
             Y = Y[:, 0]
@@ -680,7 +681,7 @@ class BlkDiagMatrix:
         return True
 
     @staticmethod
-    def empty(nblocks, dtype=np.float64):
+    def empty(nblocks, dtype=xp.float64):
         """
         Instantiate an empty BlkDiagMatrix with `nblocks`, where each
         data block is initially None with size (0,0).
@@ -700,7 +701,7 @@ class BlkDiagMatrix:
         return BlkDiagMatrix(partition, dtype=dtype)
 
     @staticmethod
-    def zeros(blk_partition, dtype=np.float64):
+    def zeros(blk_partition, dtype=xp.float64):
         """
         Build a BlkDiagMatrix zeros matrix.
 
@@ -715,12 +716,12 @@ class BlkDiagMatrix:
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
-            A[i] = np.zeros(blk_sz, dtype=dtype)
+            A[i] = xp.zeros((int(blk_sz[0]), int(blk_sz[1])), dtype=dtype)
 
         return A
 
     @staticmethod
-    def ones(blk_partition, dtype=np.float64):
+    def ones(blk_partition, dtype=xp.float64):
         """
         Build a BlkDiagMatrix ones matrix.
 
@@ -735,12 +736,12 @@ class BlkDiagMatrix:
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
-            A[i] = np.ones(blk_sz, dtype=dtype)
+            A[i] = xp.ones((blk_sz[0], blk_sz[1]), dtype=dtype)
 
         return A
 
     @staticmethod
-    def eye(blk_partition, dtype=np.float64):
+    def eye(blk_partition, dtype=xp.float64):
         """
         Build a BlkDiagMatrix eye (identity) matrix
 
@@ -756,8 +757,8 @@ class BlkDiagMatrix:
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
-            rows, cols = blk_sz
-            A[i] = np.eye(N=rows, M=cols, dtype=dtype)
+            rows, cols = blk_sz[0], blk_sz[1]
+            A[i] = xp.eye(N=int(rows), M=int(cols), dtype=dtype)
 
         return A
 
@@ -795,7 +796,7 @@ class BlkDiagMatrix:
         return BlkDiagMatrix.zeros(A.partition, dtype=dtype)
 
     @staticmethod
-    def from_list(blk_diag, dtype=np.float64):
+    def from_list(blk_diag, dtype=xp.float64):
         """
         Convert full from python list representation into BlkDiagMatrix.
 
@@ -813,14 +814,14 @@ class BlkDiagMatrix:
         # get the partition (just sizes)
         blk_partition = [None] * len(blk_diag)
         for i, mat in enumerate(blk_diag):
-            blk_partition[i] = np.shape(mat)
+            blk_partition[i] = xp.shape(mat)
 
         # instantiate an empty BlkDiagMatrix with that structure
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         # set the data
         for i in range(A.nblocks):
-            A.data[i] = np.array(blk_diag[i], dtype=dtype)
+            A.data[i] = xp.array(blk_diag[i], dtype=dtype)
 
         return A
 
@@ -851,20 +852,22 @@ def filter_to_fb_mat(h_fun, fbasis):
     # Get function values in polar 2D grid and average out angle contribution
     omegax = k * np.cos(theta)
     omegay = k * np.sin(theta)
-    omega = 2 * np.pi * np.vstack((omegax.flatten('C'), omegay.flatten('C')))
+    omega = 2 * np.pi * np.vstack((omegax.flatten(), omegay.flatten()))
     h_vals2d = h_fun(omega).reshape(n_k, n_theta)
     h_vals = np.sum(h_vals2d, axis=1)/n_theta
-
+    h_vals = xp.asarray(h_vals)
+    k_vals = xp.asarray(k_vals)
+    wts = xp.asarray(wts)
     # Represent 1D function values in fbasis
     h_fb = BlkDiagMatrix.empty(2 * fbasis.ell_max + 1, dtype=fbasis.dtype)
     ind = 0
     for ell in range(0, fbasis.ell_max+1):
         k_max = fbasis.k_max[ell]
-        rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
-        fb_vals = np.zeros_like(rmat)
+        rmat = 2*k_vals.reshape(n_k, 1)*xp.asarray(fbasis.r0[0:k_max, ell].T)
+        fb_vals = xp.zeros_like(rmat)
         for ik in range(0, k_max):
-            fb_vals[:, ik] = jv(ell, rmat[:, ik])
-        fb_nrms = 1/np.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
+            fb_vals[:, ik] = xp.asarray(jv(ell, xp.asnumpy(rmat[:, ik])))
+        fb_nrms = 1/xp.sqrt(2)*xp.abs(xp.asarray(jv(ell+1, fbasis.r0[0:k_max, ell].T)))/2
         fb_vals = fb_vals/fb_nrms
         h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (

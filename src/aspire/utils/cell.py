@@ -1,5 +1,6 @@
-import numpy as np
 import logging
+
+from aspire.utils.numeric import xp
 
 logger = logging.getLogger(__name__)
 
@@ -14,23 +15,23 @@ class Cell2D:
         if dtype is None:
             dtype = 'double'
         self.dtype = dtype
-        self.rows = rows
-        self.cols = cols
-        self.nrow = np.size(rows)
-        self.ncol = np.size(cols)
+        self.rows = xp.asarray(rows)
+        self.cols = xp.asarray(cols)
+        self.nrow = xp.size(rows)
+        self.ncol = xp.size(cols)
 
         size = 0
-        for i in range(0, np.size(rows)):
-            for j in range(0, np.size(cols)):
+        for i in range(0, xp.size(rows)):
+            for j in range(0, xp.size(cols)):
                 size += rows[i]*cols[j]
         self.size = size
         self.cell_list = []
-        for i in range(0, np.size(rows)):
-            for j in range(0, np.size(cols)):
-                self.cell_list.append(np.zeros((rows[i], cols[j]), dtype=dtype))
+        for i in range(0, xp.size(rows)):
+            for j in range(0, xp.size(cols)):
+                self.cell_list.append(xp.zeros((int(rows[i]), int(cols[j])), dtype=dtype))
 
     def mat2cell(self, mat, rows, cols):
-        if np.sum(rows) != np.size(mat, 0) or np.sum(cols) != np.size(mat, 1):
+        if xp.sum(rows) != xp.size(mat, 0) or xp.sum(cols) != xp.size(mat, 1):
             raise RuntimeError('Matrix is not compatible wth the cell array in rows or cols size!')
         offset = 0
         offsetr = 0
