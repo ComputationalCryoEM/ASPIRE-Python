@@ -1,8 +1,5 @@
 import logging
 import numpy as np
-from scipy.linalg import sqrtm
-from scipy.linalg import solve
-from numpy.linalg import inv
 
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 from aspire.utils.matlab_compat import m_reshape
@@ -10,6 +7,7 @@ from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import fill_struct, conj_grad
 from aspire.utils import ensure
 from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.numeric import xp
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +26,7 @@ class RotCov2D:
         """
         self.basis = basis
         ensure(basis.ndim == 2, 'Only two-dimensional basis functions are needed.')
+        self.basis_count = self.basis.count
 
     def _get_mean(self, coeffs):
         """
@@ -39,8 +38,8 @@ class RotCov2D:
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated first!')
         mask = self.basis._indices["ells"] == 0
-        mean_coeff = np.zeros(self.basis.count, dtype=coeffs.dtype)
-        mean_coeff[mask] = np.mean(coeffs[mask, ...], axis=1)
+        mean_coeff = xp.zeros(int(self.basis.count), dtype=coeffs.dtype)
+        mean_coeff[mask] = xp.mean(coeffs[mask, ...], axis=1)
 
         return mean_coeff
 
@@ -61,28 +60,31 @@ class RotCov2D:
         # Initialize a totally empty BlkDiagMatrix, build incrementally.
         covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
         ell = 0
-        mask = self.basis._indices["ells"] == ell
-        coeff_ell = coeffs[mask, ...] - mean_coeff[mask, np.newaxis]
-        covar_ell = np.array(coeff_ell @ coeff_ell.T/np.size(coeffs, 1))
+        mask = xp.asarray(self.basis._indices["ells"] == ell)
+        mean_coeff = mean_coeff[..., np.newaxis]
+        coeff_ell = coeffs[mask, ...] - mean_coeff[mask]
+        covar_ell = xp.array(xp.matmul(coeff_ell, coeff_ell.T)/xp.size(coeffs, 1))
         covar_coeff.append(covar_ell)
 
         for ell in range(1, self.basis.ell_max+1):
             mask = self.basis._indices["ells"] == ell
             mask_pos = [mask[i] and (self.basis._indices['sgns'][i] == +1) for i in range(len(mask))]
             mask_neg = [mask[i] and (self.basis._indices['sgns'][i] == -1) for i in range(len(mask))]
-            covar_ell_diag = np.array(coeffs[mask_pos, :] @ coeffs[mask_pos, :].T +
-                coeffs[mask_neg, :] @ coeffs[mask_neg, :].T) / (2 * np.size(coeffs, 1))
+            covar_ell_diag = xp.array(xp.matmul(coeffs[mask_pos, :], coeffs[mask_pos, :].T) +
+                xp.matmul(coeffs[mask_neg, :], coeffs[mask_neg, :].T)) / (2 * xp.size(coeffs, 1))
 
             if do_refl:
                 covar_coeff.append(covar_ell_diag)
                 covar_coeff.append(covar_ell_diag)
             else:
-                covar_ell_off = np.array((coeffs[mask_pos, :] @ coeffs[mask_neg, :].T / np.size(coeffs, 1) -
-                                 coeffs[mask_neg, :] @ coeffs[mask_pos, :].T)/(2 * np.size(coeffs, 1)))
-                hsize = np.size(covar_ell_diag, 0)
-                covar_coeff_blk = np.zeros((2 * hsize, 2 * hsize))
+                covar_ell_off = np.array(
+                    (xp.matmul(coeffs[mask_pos, :], coeffs[mask_neg, :].T) / xp.size(coeffs, 1) -
+                     xp.matmul(coeffs[mask_neg, :], coeffs[mask_pos, :].T))/(2 * xp.size(coeffs, 1))
+                )
+                hsize = xp.size(covar_ell_diag, 0)
+                covar_coeff_blk = xp.zeros((2 * hsize, 2 * hsize))
 
-                fsize = np.size(covar_coeff_blk, 0)
+                fsize = xp.size(covar_coeff_blk, 0)
                 covar_coeff_blk[0:hsize, 0:hsize] = covar_ell_diag[0:hsize, 0:hsize]
                 covar_coeff_blk[hsize:fsize, hsize:fsize] = covar_ell_diag[0:hsize, 0:hsize]
                 covar_coeff_blk[0:hsize, hsize:fsize] = covar_ell_off[0:hsize, 0:hsize]
@@ -103,22 +105,23 @@ class RotCov2D:
         """
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated!')
+        coeffs = xp.asarray(coeffs)
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
-
-        b = np.zeros(self.basis.count, dtype=coeffs.dtype)
+        ctf_idx = xp.asarray(ctf_idx)
+        b = xp.zeros(int(self.basis_count), dtype=coeffs.dtype)
 
         A = BlkDiagMatrix.zeros_like(ctf_fb[0])
-        for k in np.unique(ctf_idx[:]).T:
+        for k in xp.unique(ctf_idx[:]).T:
             coeff_k = coeffs[:, ctf_idx == k]
-            weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
+            weight = xp.size(coeff_k, 1)/xp.size(coeffs, 1)
             mean_coeff_k = self._get_mean(coeff_k)
-            ctf_fb_k = ctf_fb[k]
+            ctf_fb_k = ctf_fb[int(k)]
             ctf_fb_k_t = ctf_fb_k.T
             b += weight * ctf_fb_k_t.apply(mean_coeff_k)
-            A += weight * (ctf_fb_k_t @ ctf_fb_k)
+            A += weight * ctf_fb_k_t @ ctf_fb_k
 
         mean_coeff = A.solve(b)
         return mean_coeff
@@ -147,10 +150,12 @@ class RotCov2D:
 
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated!')
+        coeffs = xp.asarray(coeffs)
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
+        ctf_idx = xp.asarray(ctf_idx)
 
         def identity(x):
             return x
@@ -163,6 +168,7 @@ class RotCov2D:
 
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
+        mean_coeff = xp.asarray(mean_coeff)
 
         b_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
         b_noise = BlkDiagMatrix.zeros_like(ctf_fb[0])
@@ -172,28 +178,28 @@ class RotCov2D:
 
         M = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
-        for k in np.unique(ctf_idx[:]):
+        for k in xp.unique(ctf_idx[:]):
 
             coeff_k = coeffs[:, ctf_idx == k]
-            weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
+            weight = xp.size(coeff_k, 1)/xp.size(coeffs, 1)
 
-            ctf_fb_k = ctf_fb[k]
+            ctf_fb_k = ctf_fb[int(k)]
             ctf_fb_k_t = ctf_fb_k.T
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
             covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
-            b_coeff +=  weight * (ctf_fb_k_t @ covar_coeff_k @ ctf_fb_k)
+            b_coeff += weight * ctf_fb_k_t @ covar_coeff_k @ ctf_fb_k
 
             ctf_fb_k_sq = ctf_fb_k_t @ ctf_fb_k
             b_noise += weight * ctf_fb_k_sq
 
-            A[k] = np.sqrt(weight) * ctf_fb_k_sq
-            M += A[k]
+            A[int(k)] = np.sqrt(weight) * ctf_fb_k_sq
+            M += A[int(k)]
 
         if covar_est_opt['shrinker'] == 'None':
             b = b_coeff - noise_var * b_noise
         else:
-            b = self.shrink_covar_backward(b_coeff, b_noise, np.size(coeffs, 1),
+            b = self.shrink_covar_backward(b_coeff, b_noise, xp.size(coeffs, 1),
                                            noise_var, covar_est_opt['shrinker'])
 
         cg_opt = covar_est_opt
@@ -201,17 +207,17 @@ class RotCov2D:
         covar_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
         def precond_fun(S, x):
-            p = np.size(S, 0)
-            ensure(np.size(x) == p*p, 'The sizes of S and x are not consistent.')
+            p = xp.size(S, 0)
+            ensure(xp.size(x) == p*p, 'The sizes of S and x are not consistent.')
             x = m_reshape(x, (p, p))
             y = S @ x @ S
             y = m_reshape(y, (p ** 2,))
             return y
 
         def apply(A, x):
-            p = np.size(A[0], 0)
+            p = xp.size(A[0], 0)
             x = m_reshape(x, (p, p))
-            y = np.zeros_like(x)
+            y = xp.zeros_like(x)
             for k in range(0, len(A)):
                     y = y + A[k] @ x @ A[k].T
             y = m_reshape(y, (p ** 2,))
@@ -221,9 +227,9 @@ class RotCov2D:
             A_ell = []
             for k in range(0, len(A)):
                 A_ell.append(A[k][ell])
-            p = np.size(A_ell[0], 0)
+            p = xp.size(A_ell[0], 0)
             b_ell = m_reshape(b[ell], (p ** 2,))
-            S = inv(M[ell])
+            S = xp.linalg.inv(M[ell])
             cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
             covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
@@ -243,10 +249,12 @@ class RotCov2D:
         b_out = b
         for ell in range(0, len(b)):
             b_ell = b[ell]
-            p = np.size(b_ell, 1)
-            S = sqrtm(b_noise[ell])
+            p = xp.size(b_ell, 1)
+            # reimplement S = sqrtm(b_noise[ell]) for both Numpy and Cupy
+            lambs, eig_vec = xp.linalg.eigh(b_noise[ell])
+            S = eig_vec @ xp.diag(xp.sqrt(lambs)) @ xp.linalg.inv(eig_vec)
             # from Matlab b_ell = S \ b_ell /S
-            b_ell = solve(S, b_ell) @ inv(S)
+            b_ell = xp.linalg.solve(S, b_ell) @ xp.linalg.inv(S)
             b_ell = shrink_covar(b_ell, noise_var, p/n, shrinker)
             b_ell = S @ b_ell @ S
             b_out[ell] = b_ell
@@ -268,6 +276,9 @@ class RotCov2D:
             These are obtained using a Wiener filter with the specified covariance for the clean images
             and white noise of variance `noise_var` for the noise.
         """
+
+        coeffs = xp.asarray(coeffs)
+
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
@@ -277,24 +288,25 @@ class RotCov2D:
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
+        ctf_idx = xp.asarray(ctf_idx)
 
         noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
 
-        coeffs_est = np.zeros_like(coeffs)
+        coeffs_est = xp.zeros_like(coeffs)
 
-        for k in np.unique(ctf_idx[:]):
+        for k in xp.unique(ctf_idx[:]):
             coeff_k = coeffs[:, ctf_idx == k]
-            ctf_fb_k = ctf_fb[k]
+            ctf_fb_k = ctf_fb[int(k)]
             ctf_fb_k_t = ctf_fb_k.T
             sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
             sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
 
-            coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
+            coeff_est_k = coeff_k - mean_coeff_k[:, xp.newaxis]
             coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
             coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
-            coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
+            coeff_est_k = coeff_est_k + mean_coeff[:, xp.newaxis]
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
         return coeffs_est
