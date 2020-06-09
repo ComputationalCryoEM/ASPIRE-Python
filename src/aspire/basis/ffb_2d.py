@@ -159,9 +159,9 @@ class FFBBasis2D(FBBasis2D):
         batch_size = 256
         for i_start in xp.arange(0, n_data, batch_size):
             i_end = min(n_data, i_start + batch_size)
-            pf[:, :, i_start:i_end] = 2 * pi * xp.fft.ifft(
-                pf[:, :, i_start:i_end], 2*n_theta, axis=1)
-
+            pfs = pf[:, :, i_start:i_end]
+            pfs = 2 * pi * xp.fft.ifft(pfs, 2*n_theta, axis=1)
+            pf[:, :, i_start:i_end] = pfs
         # Only need "positive" frequencies.
         hsize = int(xp.size(pf, 1) / 2)
         pf = pf[:, 0:hsize, :]
@@ -228,8 +228,10 @@ class FFBBasis2D(FBBasis2D):
         batch_size = 256
         for i_start in xp.arange(0, n_data, batch_size):
             i_end = min(n_data, i_start + batch_size)
-            pf[:, :, i_start:i_end] = 2 * pi / (2 * n_theta) * xp.fft.fft(
-                pf[:, :, i_start:i_end], 2*n_theta, axis=1)
+            pfs = pf[:, :, i_start:i_end]
+            pfs = 2 * pi / (2 * n_theta) * xp.fft.fft(
+                pfs, 2*n_theta, axis=1)
+            pf[:, :, i_start:i_end] = pfs
 
         # This only makes it easier to slice the array later.
         v = xp.zeros((self.count, n_data), dtype=x.dtype)
