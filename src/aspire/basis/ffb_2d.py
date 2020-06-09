@@ -152,7 +152,7 @@ class FFBBasis2D(FBBasis2D):
 
             ind = ind + xp.size(idx)
             ind_pos = ind_pos + 2 * self.k_max[ell]
-
+        v = None
         # 1D inverse FFT in the degree of polar angle
         pf = 2 * pi * xp.fft.ifft(pf, 2*n_theta, axis=1)
 
@@ -227,7 +227,7 @@ class FFBBasis2D(FBBasis2D):
         ind = 0
         idx = ind + xp.arange(self.k_max[0])
         mask = xp.asarray(self._indices["ells"] == 0)
-        v[mask, :] = xp.matmul(radial[:, idx].T, np.real(pf[:, 0, :]))
+        v[mask, :] = xp.matmul(radial[:, idx].T, xp.real(pf[:, 0, :]))
 
         v = xp.reshape(v, (self.count, -1))
         ind = ind + xp.size(idx)
