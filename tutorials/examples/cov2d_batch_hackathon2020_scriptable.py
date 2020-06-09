@@ -27,6 +27,7 @@ from aspire.estimation.covar2d import MultiBatchedRotCov2D as BatchedRotCov2D
 from aspire.utils.profiler_helper import prof_sandwich
 from aspire.nfft import all_backends
 
+backend = all_backends()[0]
 
 logger = logging.getLogger('aspire')
 
@@ -35,6 +36,14 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), '../data/')
 def main(img_size=64, num_imgs=1024, batch_size=256, data_file='clean70SRibosome_vol_65p.mrc', cupy=False):
 
     logger.info('This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package.')
+
+    # If we are logging nvtx events, setup an auto incrementer for their id.
+    #  You can of course override if you want to manually group things.
+    if cupy:
+        logger.info('Logging NVTX events using cupy.')
+        nvtx_id = count(1)
+    else:
+        nvtx_id = repeat(False)
 
     # Set the number of 3D maps
     num_maps = 1
@@ -108,7 +117,8 @@ def main(img_size=64, num_imgs=1024, batch_size=256, data_file='clean70SRibosome
     # `basis.evaluate_t`.
     logger.info('Get coefficients of noisy images in FFB basis.')
     #  This part can be improved using GPU
-    coeffs_noise = ffbbasis.evaluate_t(imgs_noise)
+    with prof_sandwich(event_name='evaluate_t', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
+        coeffs_noise = ffbbasis.evaluate_t(imgs_noise)
 
     # Estimate mean and covariance for noise images with CTF and shrink method.
     # We now estimate the mean and covariance from the Fourier-Bessel
@@ -125,10 +135,13 @@ def main(img_size=64, num_imgs=1024, batch_size=256, data_file='clean70SRibosome
                  'precision': 'float64', 'preconditioner': 'identity'}
     logger.info('Get mean values for 2D covariance matrices')
     #  This part can be improved using GPU
-    mean_bcov2d = bcov2d.get_mean()
+    with prof_sandwich(event_name='get_mean', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
+        mean_bcov2d = bcov2d.get_mean()
+
     logger.info('Get 2D covariance matrices.')
     #  This part can be improved using GPU
-    covar_bcov2d = bcov2d.get_covar(noise_var=noise_var, mean_coeff=mean_bcov2d,
+    with prof_sandwich(event_name='get_covar', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
+        covar_bcov2d = bcov2d.get_covar(noise_var=noise_var, mean_coeff=mean_bcov2d,
                                                covar_est_opt=covar_opt)
 
     # Estimate the Fourier-Bessel coefficients of the underlying images using a
@@ -137,14 +150,16 @@ def main(img_size=64, num_imgs=1024, batch_size=256, data_file='clean70SRibosome
     # the lowest expected mean square error out of all linear estimators.
     logger.info('Get the CWF coefficients of noising images.')
     #  This part can be improved using GPU
-    coeffs_est = bcov2d.get_cwf_coeffs(coeffs_noise, bcov2d.ctf_fb,
+    with prof_sandwich(event_name='get_cwf_coeffs', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
+        coeffs_est = bcov2d.get_cwf_coeffs(coeffs_noise, bcov2d.ctf_fb,
                                        bcov2d.ctf_idx, mean_coeff=mean_bcov2d,
                                        covar_coeff=covar_bcov2d, noise_var=noise_var)
 
     # Convert Fourier-Bessel coefficients back into 2D images
     logger.info('Get denoised images from the CWF coefficients.')
     #  This part can be improved using GPU
-    imgs_est = ffbbasis.evaluate(coeffs_est)
+    with prof_sandwich(event_name='evaluate', verbose=False, suffix=f's{img_size}_n{num_imgs}_{backend}', nvtx=next(nvtx_id)):
+        imgs_est = ffbbasis.evaluate(coeffs_est)
 
     # Calculate the normalized RMSE of the estimated images.
     nrmse_ims = anorm(imgs_est-imgs_clean)/anorm(imgs_clean)
