@@ -1,6 +1,8 @@
 import logging
 import numpy as np
 
+from aspire.utils.numeric import xp
+
 logger = logging.getLogger(__name__)
 
 
@@ -93,41 +95,41 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     default_init = {'x': None, 'p': None}
     init = fill_struct(default_init, init)
     if init['x'] is None:
-        x = np.zeros(b.shape)
+        x = xp.zeros(b.shape)
     else:
         x = init['x']
 
-    b_norm = np.linalg.norm(b)
+    b_norm = xp.linalg.norm(b)
     r = b.copy()
 
     # Need the copy call to ensure that s and r are not identical in the case
     # of an identity preconditioner.
     s = cg_opt['preconditioner'](r.copy())
 
-    if np.any(x != 0):
+    if xp.any(x != 0):
         if cg_opt['verbose']:
             logger.info('[CG] Calculating initial residual')
         a_x = a_fun(x)
         r = r-a_x
         s = cg_opt['preconditioner'](r)
     else:
-        a_x = np.zeros(x.shape)
+        a_x = xp.zeros(x.shape)
 
-    obj = (np.real(np.sum(x.conj() * a_x, -1)
-            - 2 * np.real(np.sum(np.conj(b * x), -1))))
+    obj = (xp.real(xp.sum(x.conj() * a_x, -1)
+            - 2 * xp.real(xp.sum(xp.conj(b * x), -1))))
 
     if init['p'] is None:
         p = s.copy()
     else:
-        p = init['p']
+        p = xp.asarray(init['p'])
 
-    info = fill_struct(att_vals={'iter': [0], 'res': [np.linalg.norm(r)], 'obj': [obj]})
+    info = fill_struct(att_vals={'iter': [0], 'res': [xp.linalg.norm(r)], 'obj': [obj]})
     if cg_opt['store_iterates']:
         info = fill_struct(info, att_vals={'x': [x], 'r': [r], 'p': [p]})
 
     if cg_opt['verbose']:
         logger.info('[CG] Initialized. Residual: {}. Objective: {}'.format(
-            np.linalg.norm(info['res'][0]), np.sum(info['obj'][0])))
+            xp.linalg.norm(info['res'][0]), xp.sum(info['obj'][0])))
 
     if b_norm == 0:
         # Matlat code returns b_norm == 0, this break the Python code when b = 0
@@ -138,35 +140,40 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
             logger.info('[CG] Applying matrix & preconditioner')
 
         a_p = a_fun(p)
-        old_gamma = np.real(np.sum(s.conj() * r, -1))
+        old_gamma = xp.real(xp.sum(s.conj() * r, -1))
 
-        alpha = old_gamma / np.real(np.sum(p.conj() * a_p, -1))
-        x += alpha[..., np.newaxis] * p
-        a_x += alpha[..., np.newaxis] * a_p
+        alpha = old_gamma / xp.real(xp.sum(p.conj() * a_p, -1))
+        # x += alpha[..., xp.newaxis] * p
+        # a_x += alpha[..., xp.newaxis] * a_p
+        x += xp.expand_dims(alpha, axis=1) * p
+        a_x += xp.expand_dims(alpha, axis=1) * a_p
 
-        r -= alpha[..., np.newaxis] * a_p
+        # r -= alpha[..., np.newaxis] * a_p
+        r -= xp.expand_dims(alpha, axis=1) * a_p
         s = cg_opt['preconditioner'](r.copy())
-        new_gamma = np.real(np.sum(r.conj() * s, -1))
+        new_gamma = xp.real(xp.sum(r.conj() * s, -1))
         beta = new_gamma / old_gamma
-        p *= beta[..., np.newaxis]
+        # p *= beta[..., xp.newaxis]
+        p *= xp.expand_dims(beta, axis=1)
         p += s
 
-        obj = (np.real(np.sum(x.conj() * a_x, -1)
-                - 2 * np.real(np.sum(np.conj(b * x), -1))))
-        res = np.sqrt(np.sum(r ** 2, -1))
-        info['iter'].append(i)
-        info['res'].append(res)
-        info['obj'].append(obj)
-        if cg_opt['store_iterates']:
-            info['x'].append(x)
-            info['r'].append(r)
-            info['p'].append(p)
+        obj = (xp.real(xp.sum(x.conj() * a_x, -1)
+                - 2 * xp.real(xp.sum(xp.conj(b * x), -1))))
+        res = xp.sqrt(np.sum(r ** 2, -1))
 
-        if cg_opt['verbose']:
-            logger.info('[CG] Iteration {}. Residual: {}. Objective: {}'.format(
-                i, np.linalg.norm(info['res'][i]), np.sum(info['obj'][i])))
+        #info['iter'].append(i)
+        #info['res'].append(res)
+        #info['obj'].append(obj)
+        #if cg_opt['store_iterates']:
+        #    info['x'].append(x)
+        #    info['r'].append(r)
+        #    info['p'].append(p)
 
-        if np.all(res < b_norm * cg_opt['rel_tolerance']):
+        #if cg_opt['verbose']:
+        #    logger.info('[CG] Iteration {}. Residual: {}. Objective: {}'.format(
+        #        i, xp.linalg.norm(info['res'][i]), xp.sum(info['obj'][i])))
+
+        if xp.all(res < b_norm * cg_opt['rel_tolerance']):
             break
 
     if i == cg_opt['max_iter']:
