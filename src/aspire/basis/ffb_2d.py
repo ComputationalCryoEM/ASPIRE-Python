@@ -152,16 +152,14 @@ class FFBBasis2D(FBBasis2D):
 
             ind = ind + xp.size(idx)
             ind_pos = ind_pos + 2 * self.k_max[ell]
-        v = None
 
         # 1D inverse FFT in the degree of polar angle
         # pf = 2 * pi * xp.fft.ifft(pf, 2*n_theta, axis=1)
-        batch_size = 256
-        for i_start in xp.arange(0, n_data, batch_size):
+        batch_size = 64
+        for i_start in range(0, n_data, batch_size):
             i_end = min(n_data, i_start + batch_size)
-            pfs = pf[:, :, i_start:i_end]
-            pfs = 2 * pi * xp.fft.ifft(pfs, 2*n_theta, axis=1)
-            pf[:, :, i_start:i_end] = pfs
+            pf[:, :, i_start:i_end] = 2 * pi * xp.fft.ifft(
+                pf[:, :, i_start:i_end], 2*n_theta, axis=1)
         # Only need "positive" frequencies.
         hsize = int(xp.size(pf, 1) / 2)
         pf = pf[:, 0:hsize, :]
@@ -225,13 +223,11 @@ class FFBBasis2D(FBBasis2D):
 
         #  1D FFT on the angular dimension for each concentric circle
         # pf = 2 * pi / (2 * n_theta) * xp.fft.fft(pf, 2*n_theta, axis=1)
-        batch_size = 256
-        for i_start in xp.arange(0, n_data, batch_size):
+        batch_size = 64
+        for i_start in range(0, n_data, batch_size):
             i_end = min(n_data, i_start + batch_size)
-            pfs = pf[:, :, i_start:i_end]
-            pfs = 2 * pi / (2 * n_theta) * xp.fft.fft(
-                pfs, 2*n_theta, axis=1)
-            pf[:, :, i_start:i_end] = pfs
+            pf[:, :, i_start:i_end] = 2 * pi / (2 * n_theta) * xp.fft.fft(
+                pf[:, :, i_start:i_end], 2*n_theta, axis=1)
 
         # This only makes it easier to slice the array later.
         v = xp.zeros((self.count, n_data), dtype=x.dtype)
