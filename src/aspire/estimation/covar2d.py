@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 
-from aspire.utils.blk_diag_matrix import BlkDiagMatrix
+from aspire.utils.squared_blk_diag_matrix import BlkDiagMatrix
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import shrink_covar
 from aspire.utils.optimize import fill_struct, conj_grad
@@ -121,6 +121,9 @@ class RotCov2D:
             ctf_fb_k = ctf_fb[int(k)]
             ctf_fb_k_t = ctf_fb_k.T
             b += weight * ctf_fb_k_t.apply(mean_coeff_k)
+            print(type(ctf_fb_k_t))
+            print(type(ctf_fb_k_t @ ctf_fb_k))
+            print(type(weight * ctf_fb_k_t @ ctf_fb_k))
             A += weight * ctf_fb_k_t @ ctf_fb_k
 
         mean_coeff = A.solve(b)
@@ -155,6 +158,7 @@ class RotCov2D:
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
+            print(type(ctf_fb[0]))
         ctf_idx = xp.asarray(ctf_idx)
 
         def identity(x):
