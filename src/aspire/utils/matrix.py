@@ -7,7 +7,7 @@ from scipy.linalg import eigh
 
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
-from numpy.linalg import eig
+from aspire.utils.numeric import xp
 
 SQRT2 = np.sqrt(2)
 SQRT2_R = 1/SQRT2
@@ -376,7 +376,7 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
 
     covar = covar_in/noise_var
 
-    lambs, eig_vec = eig(make_symmat(covar))
+    lambs, eig_vec = xp.linalg.eigh(make_symmat(covar))
 
     lambda_max = (1+np.sqrt(gamma))**2
 
@@ -384,12 +384,12 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
 
     if shrinker == 'operator_norm':
         lambdas = lambs[lambs>lambda_max]
-        lambdas = 1/2*(lambdas-gamma+1 + np.sqrt((lambdas-gamma+1)**2-4*lambdas))-1
+        lambdas = 1/2*(lambdas-gamma+1 + xp.sqrt((lambdas-gamma+1)**2-4*lambdas))-1
         lambs[lambs > lambda_max] = lambdas
     elif shrinker == 'frobenius_norm':
         lambdas = lambs[lambs>lambda_max]
-        lambdas = 1/2*(lambdas - gamma + 1 + np.sqrt((lambdas-gamma+1)**2-4*lambdas))-1
-        c = np.divide((1-np.divide(gamma, lambdas**2)), (1+np.divide(gamma, lambdas)))
+        lambdas = 1/2*(lambdas - gamma + 1 + xp.sqrt((lambdas-gamma+1)**2-4*lambdas))-1
+        c = xp.divide((1-xp.divide(gamma, lambdas**2)), (1+xp.divide(gamma, lambdas)))
         lambdas = lambdas*c
         lambs[lambs > lambda_max] = lambdas
     else:
@@ -397,8 +397,8 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
         lambdas = lambs[lambs > lambda_max]
         lambs[lambs > lambda_max] = lambdas-lambda_max
 
-    diag_lambs=np.zeros_like(covar)
-    np.fill_diagonal(diag_lambs, lambs)
+    diag_lambs=xp.zeros_like(covar)
+    xp.fill_diagonal(diag_lambs, lambs)
 
     shrinked_covar = eig_vec @ diag_lambs @eig_vec.conj().T
     shrinked_covar *= noise_var

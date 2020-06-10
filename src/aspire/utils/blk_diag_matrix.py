@@ -3,17 +3,15 @@ Define a BlkDiagMatrix module which implements operations for
 block diagonal matrices as used by ASPIRE.
 """
 
-import numpy as xp
-#import cupy as xp
+import numpy as np
 
-from numpy.linalg import norm
-from numpy.linalg import solve
 from scipy.linalg import block_diag
 from scipy.special import jv
 
 from aspire.utils.cell import Cell2D
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.basis_utils import lgwt
+from aspire.utils.numeric import xp
 
 
 class BlkDiagMatrix:
@@ -51,19 +49,11 @@ class BlkDiagMatrix:
         self.dtype = xp.dtype(dtype)
         self.data = [None] * self.nblocks
         self._cached_blk_sizes = xp.array(partition)
-        self.maxBlockSize = 0
         if len(partition):
             assert self._cached_blk_sizes.shape[1] == 2
             assert all([BlkDiagMatrix.__check_square(s) for s in partition])
             for b in partition:
                 self.maxBlockSize = max(self.maxBlockSize, b[0])
-
-    #def shape(self):
-    #    for blockShape in self.partition:
-    #        tmp = []
-    #        for i in range(self.maxBlockSize,0,-1):
-    #            count = blockShape.count(i)
-    #    return
 
     def reset_cache(self):
         """
@@ -551,7 +541,7 @@ class BlkDiagMatrix:
         :return: The norm of the BlkDiagMatrix instance.
         """
 
-        return xp.max([norm(blk, ord=2) for blk in self])
+        return xp.max([xp.linalg.norm(blk, ord=2) for blk in self])
 
     def transpose(self):
         """
@@ -600,7 +590,8 @@ class BlkDiagMatrix:
         if self._cached_blk_sizes is None:
             blk_sizes = xp.empty((self.nblocks, 2), dtype=xp.int)
             for i, blk in enumerate(self.data):
-                blk_sizes[i] = xp.array([len(blk),len(blk)])
+                blk_sizes[i][0] = blk.shape[0]
+                blk_sizes[i][1] = blk.shape[1]
             self._cached_blk_sizes = blk_sizes
         return self._cached_blk_sizes
 
@@ -620,7 +611,7 @@ class BlkDiagMatrix:
             raise RuntimeError('Sizes of `self` and `Y` are not compatible.')
 
         vector = False
-        if xp.ndim(Y) == 1:
+        if len(Y.shape) == 1:
             Y = Y[:, xp.newaxis]
             vector = True
 
@@ -629,7 +620,7 @@ class BlkDiagMatrix:
         Y = cellarray.mat2cell(Y, rows, cols)
         X = []
         for i in range(0, self.nblocks):
-            X.append(solve(self[i], Y[i]))
+            X.append(xp.linalg.solve(self[i], Y[i]))
         X = xp.concatenate(X, axis=0)
 
         if vector:
@@ -655,11 +646,12 @@ class BlkDiagMatrix:
                 'Sizes of matrix `self` and `X` are not compatible.')
 
         vector = False
-        if xp.ndim(X) == 1:
+        if len(X.shape) == 1:
             X = X[:, xp.newaxis]
             vector = True
 
-        rows = xp.array([xp.size(X, 1), ])
+        rows = xp.asarray([xp.size(X, 1), ])
+        #cols = xp.asarray(cols)
         cellarray = Cell2D(cols, rows, dtype=X.dtype)
         x_cell = cellarray.mat2cell(X, cols, rows)
         Y = []
@@ -724,7 +716,7 @@ class BlkDiagMatrix:
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
-            A[i] = xp.zeros(blk_sz, dtype=dtype)
+            A[i] = xp.zeros((int(blk_sz[0]), int(blk_sz[1])), dtype=dtype)
 
         return A
 
@@ -744,7 +736,7 @@ class BlkDiagMatrix:
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
-            A[i] = xp.ones(blk_sz, dtype=dtype)
+            A[i] = xp.ones((blk_sz[0], blk_sz[1]), dtype=dtype)
 
         return A
 
@@ -765,8 +757,8 @@ class BlkDiagMatrix:
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
-            rows, cols = blk_sz
-            A[i] = xp.eye(N=rows, M=cols, dtype=dtype)
+            rows, cols = blk_sz[0], blk_sz[1]
+            A[i] = xp.eye(N=int(rows), M=int(cols), dtype=dtype)
 
         return A
 
@@ -822,15 +814,14 @@ class BlkDiagMatrix:
         # get the partition (just sizes)
         blk_partition = [None] * len(blk_diag)
         for i, mat in enumerate(blk_diag):
-            blk_partition[i] = mat.shape
+            blk_partition[i] = xp.shape(mat)
 
         # instantiate an empty BlkDiagMatrix with that structure
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
 
         # set the data
         for i in range(A.nblocks):
-            blk = blk_diag[i]
-            A.data[i] = blk
+            A.data[i] = xp.array(blk_diag[i], dtype=dtype)
 
         return A
 
@@ -859,22 +850,24 @@ def filter_to_fb_mat(h_fun, fbasis):
         k_vals, xp.arange(n_theta) * 2 * xp.pi / (2 * n_theta), indexing='ij')
 
     # Get function values in polar 2D grid and average out angle contribution
-    omegax = k * xp.cos(theta)
-    omegay = k * xp.sin(theta)
-    omega = 2 * xp.pi * xp.vstack((omegax.flatten('C'), omegay.flatten('C')))
+    omegax = k * np.cos(theta)
+    omegay = k * np.sin(theta)
+    omega = 2 * np.pi * np.vstack((omegax.flatten(), omegay.flatten()))
     h_vals2d = h_fun(omega).reshape(n_k, n_theta)
-    h_vals = xp.sum(h_vals2d, axis=1)/n_theta
-
+    h_vals = np.sum(h_vals2d, axis=1)/n_theta
+    h_vals = xp.asarray(h_vals)
+    k_vals = xp.asarray(k_vals)
+    wts = xp.asarray(wts)
     # Represent 1D function values in fbasis
     h_fb = BlkDiagMatrix.empty(2 * fbasis.ell_max + 1, dtype=fbasis.dtype)
     ind = 0
     for ell in range(0, fbasis.ell_max+1):
         k_max = fbasis.k_max[ell]
-        rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
+        rmat = 2*k_vals.reshape(n_k, 1)*xp.asarray(fbasis.r0[0:k_max, ell].T)
         fb_vals = xp.zeros_like(rmat)
         for ik in range(0, k_max):
-            fb_vals[:, ik] = jv(ell, rmat[:, ik])
-        fb_nrms = 1/xp.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
+            fb_vals[:, ik] = xp.asarray(jv(ell, xp.asnumpy(rmat[:, ik])))
+        fb_nrms = 1/xp.sqrt(2)*xp.abs(xp.asarray(jv(ell+1, fbasis.r0[0:k_max, ell].T)))/2
         fb_vals = fb_vals/fb_nrms
         h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
