@@ -1,11 +1,11 @@
-#import numpy as xp
-import cupy as xp
+from aspire.utils.numeric import xp
+from aspire import config
 
 from aspire.utils.squared_blk_diag_matrix import SquaredBlkDiagMatrix
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 from matrices_testCase import matBlockShapeList
 #from tests.matrices_testCase import matBlockShapeList
-
+from aspire import config
 import time
 
 ## [(blockSize, nbBlocks)]
@@ -32,7 +32,8 @@ for  blockShapeList in matBlockShapeList:
     t1 = time.time()
     for i in range(iterations):
         A @= B
-    xp.cuda.Device(0).synchronize()
+    if config.common.cupy ==1:
+        xp.cuda.Device(0).synchronize()
     t2 = time.time()
     total = t2-t1
     print("ref {:.3E}".format(total))
@@ -40,7 +41,8 @@ for  blockShapeList in matBlockShapeList:
     t1 = time.time()
     for i in range(iterations):
         squaredA @= squaredB
-    xp.cuda.Device(0).synchronize()
+    if config.common.cupy ==1:
+        xp.cuda.Device(0).synchronize()
     t2 = time.time()
     total = t2-t1
     print("batched {:.3E}".format(total))

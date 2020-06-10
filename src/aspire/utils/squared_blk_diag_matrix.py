@@ -3,10 +3,7 @@ Define a SquaredBlkDiagMatrix module which implements operations for
 block diagonal matrices as used by ASPIRE.
 """
 
-import pdb
-#import numpy as xp
-import cupy as xp
-
+from aspire.utils.numeric import xp
 from numpy.linalg import norm
 from numpy.linalg import solve
 from scipy.linalg import block_diag

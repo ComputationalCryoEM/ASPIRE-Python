@@ -52,8 +52,6 @@ class BlkDiagMatrix:
         if len(partition):
             assert self._cached_blk_sizes.shape[1] == 2
             assert all([BlkDiagMatrix.__check_square(s) for s in partition])
-            for b in partition:
-                self.maxBlockSize = max(self.maxBlockSize, b[0])
 
     def reset_cache(self):
         """
@@ -814,7 +812,7 @@ class BlkDiagMatrix:
         # get the partition (just sizes)
         blk_partition = [None] * len(blk_diag)
         for i, mat in enumerate(blk_diag):
-            blk_partition[i] = xp.shape(mat)
+            blk_partition[i] = mat.shape
 
         # instantiate an empty BlkDiagMatrix with that structure
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
