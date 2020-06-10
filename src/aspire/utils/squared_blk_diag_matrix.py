@@ -1,8 +1,9 @@
 """
-Define a BlkDiagMatrix module which implements operations for
+Define a SquaredBlkDiagMatrix module which implements operations for
 block diagonal matrices as used by ASPIRE.
 """
 
+import pdb
 #import numpy as xp
 import cupy as xp
 
@@ -15,83 +16,34 @@ from aspire.utils.cell import Cell2D
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.basis_utils import lgwt
 
+from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 
-class BlkDiagMatrix:
+class SquaredBlkDiagMatrix(BlkDiagMatrix):
     """
-    Define a BlkDiagMatrix class which implements operations for
+    Define a SquaredBlkDiagMatrix class which implements operations for
     block diagonal matrices as used by ASPIRE.
 
-    Currently BlkDiagMatrix is implemented only for square blocks.
+    Currently SquaredBlkDiagMatrix is implemented only for square blocks.
     While in the future this can be extended, at this time assigning
     a non square array will raise NotImplementedError.
     """
 
-    # Developers' Note:
-    # All instances of this class should have priority over ndarray ops
-    #   because we implement them here ourselves.
-    # This is a more np current implementation of __array_priority__
-    #   operator precedence schedule.
-    # Mainly this effects rmul, radd, rsub eg:
-    #   blk_y = scalar_a + ( scalar_b * blk_x)
     __array_ufunc__ = None
 
     def __init__(self, partition, dtype=xp.float64):
-        """
-        Instantiate a BlkDiagMatrix.
-
-        :param partition: The matrix block partition
-         in the form of a `nblock`-element list storing all shapes of
-         diagonal matrix blocks, where `partition[i]` corresponds to
-         the shape (number of rows and columns) of the `i` matrix block.
-        :param dtype: Datatype for blocks, defaults to xp.float64.
-        :return: BlkDiagMatrix instance.
-        """
-
         self.nblocks = len(partition)
         self.dtype = xp.dtype(dtype)
-        self.data = [None] * self.nblocks
-        self._cached_blk_sizes = xp.array(partition)
-        self.maxBlockSize = 0
+        self.max_blk_size = 0
+        self.must_update = True
         if len(partition):
-            assert self._cached_blk_sizes.shape[1] == 2
-            assert all([BlkDiagMatrix.__check_square(s) for s in partition])
+            self.max_blk_size = 0
             for b in partition:
-                self.maxBlockSize = max(self.maxBlockSize, b[0])
-
-    #def shape(self):
-    #    for blockShape in self.partition:
-    #        tmp = []
-    #        for i in range(self.maxBlockSize,0,-1):
-    #            count = blockShape.count(i)
-    #    return
-
-    def reset_cache(self):
-        """
-        Resets this objects internal cache. This should trigger the cache
-        to be recalculated on the next request (ie lazily).
-        """
-
-        self._cached_blk_sizes = None
-
-    def append(self, blk):
-        """
-        Append `blk` to `self`. Used to incrementally build up a BlkDiagMatrix
-        instance where the number of blocks and/or shapes are derived
-        incrementally.
-
-        :param blk: Block to append (ndarray).
-        """
-
-        self.data.append(blk)
-        self.nblocks += 1
-        self.reset_cache()
-
-    def __repr__(self):
-        """
-        String represention describing instance.
-        """
-        return "BlkDiagMatrix({}, {})".format(
-            repr(self.nblocks), repr(self.dtype))
+                self.max_blk_size = max(self.max_blk_size, b[0])
+            self._cached_blk_sizes = xp.array(partition)
+            assert self._cached_blk_sizes.shape[1] == 2
+            assert all([SquaredBlkDiagMatrix.__check_square(s) for s in partition])
+            self.data  = None
+            self._data = [None] * len(partition)
 
     def copy(self):
         """
@@ -99,72 +51,33 @@ class BlkDiagMatrix:
 
         :return BlkDiagMatrix like self
         """
+        C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
 
-        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
-
-        for i in range(self.nblocks):
-            C[i] = self[i].copy()
+        C.data = self.data.copy()
+        C._data = self._data.copy()
 
         return C
 
-    # Manually overload list methods,
-    #   This is just for syntax which allows us to reference self[i] etc
-    #     instead of writing self.data all the time. You may use either.
-    def __getitem__(self, key):
-        """
-        Convenience wrapper, getter on self.data.
-        """
-
-        return self.data[key]
-
-    def __setitem__(self, key, value):
-        """
-        Convenience wrapper, setter on self.data.
-        """
-
-        BlkDiagMatrix.__check_square(value.shape)
-        self.data[key] = value
-        self.reset_cache()
-
-    def __len__(self):
-        """
-        Convenience function for getting nblocks.
-        """
-
-        return self.nblocks
-
-    def _is_scalar_type(self, x):
-        """
-        Internal helper function checking scalar-ness for elementwise ops.
-
-        Essentially we are checking for a single numeric object, as opposed to
-        something like an `ndarray` or `BlkDiagMatrix`. We do this by
-        checking `numpy.isscalar(x)`.
-
-        In the future this check may require extension to include ASPIRE or
-        other third party types beyond what is provided by numpy, so we
-        implement it now as a class method.
-
-        :param x: Value to check
-
-        :return: bool.
-        """
-
-        return xp.isscalar(x)
-
     def __check_size_compatible(self, other):
         """
-        Sanity check two BlkDiagMatrix instances are compatible in size.
+        Sanity check two SquaredBlkDiagMatrix instances are compatible in size.
 
-        :param other: The BlkDiagMatrix to compare with self.
+        :param other: The SquaredBlkDiagMatrix to compare with self.
         """
         if xp.any(self.partition != other.partition):
             # be helpful and find the first one as an example
+            print("check",type(self),type(other))
+            print(self.data)
+            print(other.data)
+            print(self._data)
+            print(other._data)
+            print(self.partition)
+            print(other.partition)
             for i, (a, b) in enumerate(zip(self.partition, other.partition)):
                 if not xp.allclose(a,b):
                     break
             raise RuntimeError(
-                'Block i={} of BlkDiagMatrix instances are '
+                'Block i={} of SquaredBlkDiagMatrix instances are '
                 'not same shape {} {}'.format(i, a, b))
 
     def __check_dtype_compatible(self, other):
@@ -175,7 +88,7 @@ class BlkDiagMatrix:
         """
 
         if self.dtype != other.dtype:
-            raise RuntimeError('BlkDiagMatrix received different types,'
+            raise RuntimeError('SquaredBlkDiagMatrix received different types,'
                                ' {} and {}.  Please validate and cast'
                                ' as appropriate.'.format(
                                    self.dtype, other.dtype))
@@ -199,22 +112,29 @@ class BlkDiagMatrix:
         self.__check_size_compatible(other)
         self.__check_dtype_compatible(other)
 
-    @property
-    def isfinite(self):
+    def __getitem__(self, key):
         """
-        Check if all blocks in diag matrix are finite.
+        Convenience wrapper, getter on self.data.
+        Use data without 0-padding (non squared)
+        update nopadded_data if needed
+        """
+        if self.must_update:
+            for i,blk in enumerate(self.data):
+                rownb = self._cached_blk_sizes[i][0]
+                colnb = self._cached_blk_sizes[i][1]
+                self._data[i] = blk[:rownb,:colnb]
+            self.must_update = False
+        return self._data[key]
 
-        Calls numpy.isfinite for every entry in self.  This has the effect of
-        checking values are not += `inf` or `nan`s.
 
-        :return: Bool.
+    def __setitem__(self, key, value):
+        """
+        Convenience wrapper, setter on self.data.
         """
 
-        for blk in self:
-            if not xp.all(xp.isfinite(blk)):
-                return False
-        else:
-            return True
+        SquaredBlkDiagMatrix.__check_square(value.shape)
+        self._data[key] = value
+        self.reset_cache()
 
     def add(self, other, inplace=False):
         """
@@ -226,21 +146,20 @@ class BlkDiagMatrix:
         :return:  BlkDiagMatrix instance with elementwise sum equal
         to self + other.
         """
+
+        print("addIDblkc",[id(x) for x in self._data])
         if self._is_scalar_type(other):
             return self.__scalar_add(other, inplace=inplace)
 
         self.__check_compatible(other)
 
         if inplace:
-            for i in range(self.nblocks):
-                self[i] += other[i]
-
+            self.data = self.data + other.data
             C = self
         else:
-            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
-
-            for i in range(self.nblocks):
-                C[i] = self[i] + other[i]
+            C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
+            C.data = self.data + other.data
+        C.must_update = True
 
         return C
 
@@ -283,8 +202,8 @@ class BlkDiagMatrix:
         else:
             C = self.copy()
 
-        for i in range(self.nblocks):
-            C[i] += scalar
+        C.data = C.data + scalar
+        C.must_update = True
 
         return C
 
@@ -298,22 +217,22 @@ class BlkDiagMatrix:
         :return: A BlkDiagMatrix instance with elementwise subraction equal to
          self - other.
         """
-        assert False
+
         if self._is_scalar_type(other):
             return self.__scalar_sub(other, inplace=inplace)
 
         self.__check_compatible(other)
-
+        print("SELF")
+        print(self)
+        print(self.data)
+        print(self._data)
         if inplace:
-            for i in range(self.nblocks):
-                self[i] -= other[i]
-
+            self.data = self.data - other.data
             C = self
         else:
-            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
-
-            for i in range(self.nblocks):
-                C[i] = self[i] - other[i]
+            C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
+            C.data = self.data - other.data
+        C.must_update = True
 
         return C
 
@@ -321,7 +240,6 @@ class BlkDiagMatrix:
         """
         Operator overloading for subtraction.
         """
-        assert False
 
         return self.sub(other)
 
@@ -329,17 +247,14 @@ class BlkDiagMatrix:
         """
         Operator overloading for in-place subtraction.
         """
-        assert False
         if self._is_scalar_type(other):
             return self.__scalar_sub(other, inplace=True)
-
         return self.sub(other, inplace=True)
 
     def __rsub__(self, other):
         """
         Convenience function for elementwise scalar subtraction.
         """
-        assert False
 
         # Note, the case of BlkDiagMatrix_L - BlkDiagMatrix_R would be
         #   evaluated as L.sub(R), so this is only for other
@@ -364,97 +279,95 @@ class BlkDiagMatrix:
         else:
             C = self.copy()
 
-        for i in range(self.nblocks):
-            C[i] -= scalar
+        C.data = C.data - scalar
+        C.must_update = True
 
         return C
 
     def matmul(self, other, inplace=False):
         """
-        Compute the matrix multiplication of two BlkDiagMatrix instances.
+        Compute the matrix multiplication of two SquaredBlkDiagMatrix instances.
 
-        :param other: The rhs BlkDiagMatrix instance.
+        :param other: The rhs SquaredBlkDiagMatrix instance.
         :param inplace: Boolean, when set to True change values in place,
         otherwise return a new instance (default).
-        :return: A BlkDiagMatrix of self @ other.
+        :return: A SquaredBlkDiagMatrix of self @ other.
         """
 
-        if not isinstance(other, BlkDiagMatrix):
+        if not isinstance(other, SquaredBlkDiagMatrix):
             raise RuntimeError(
-                "Attempt BlkDiagMatrix matrix multiplication "
-                "(matmul,@) of non BlkDiagMatrix {}, try (*,mul)".format(
+                "Attempt SquaredBlkDiagMatrix matrix multiplication "
+                "(matmul,@) of non SquaredBlkDiagMatrix {}, try (*,mul)".format(
                     repr(other)))
 
         self.__check_compatible(other)
 
         if inplace:
-            for i in range(self.nblocks):
-                self[i] = self[i] @ other[i]
+            self.data = self.data @ other.data
             C = self
         else:
-            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
-
-            for i in range(self.nblocks):
-                C[i] = self[i] @ other[i]
+            C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
+            C.data = self.data @ other.data
+        self.must_update = True
 
         return C
 
     def __matmul__(self, other):
         """
-        Operator overload for matrix multiply of BlkDiagMatrix instances.
+        Operator overload for matrix multiply of SquaredBlkDiagMatrix instances.
         """
+
         return self.matmul(other)
 
     def __imatmul__(self, other):
         """
-        Operator overload for in-place matrix multiply of BlkDiagMatrix
+        Operator overload for in-place matrix multiply of SquaredBlkDiagMatrix
          instances.
         """
         return self.matmul(other, inplace=True)
 
     def mul(self, val, inplace=False):
         """
-        Compute the numeric multiplication of a BlkDiagMatrix instance and a
+        Compute the numeric multiplication of a SquaredBlkDiagMatrix instance and a
         scalar.
 
-        :param other: The rhs BlkDiagMatrix instance.
+        :param other: The rhs SquaredBlkDiagMatrix instance.
         :param inplace: Boolean, when set to True change values in place,
         otherwise return a new instance (default).
-        :return: A BlkDiagMatrix of self * other.
+        :return: A SquaredBlkDiagMatrix of self * other.
         """
 
-        if isinstance(val, BlkDiagMatrix):
+        if isinstance(val, SquaredBlkDiagMatrix):
             raise RuntimeError("Attempt numeric multiplication (*,mul) of two "
-                               "BlkDiagMatrix instances, try (matmul,@).")
+                               "SquaredBlkDiagMatrix instances, try (matmul,@).")
 
         elif not self._is_scalar_type(val):
             raise RuntimeError("Attempt numeric multiplication (*,mul) of a "
-                               "BlkDiagMatrix and {}.".format(
+                               "SquaredBlkDiagMatrix and {}.".format(
                                    type(val)))
 
         if inplace:
-            for i in range(self.nblocks):
-                self[i] *= val
+            self.data = self.data * val
 
             C = self
         else:
-            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+            C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
 
-            for i in range(self.nblocks):
-                C[i] = self[i] * val
+            C.data = self.data * val
+        self.must_update = True
 
         return C
 
     def __mul__(self, val):
         """
-        Operator overload for BlkDiagMatrix scalar multiply.
+        Operator overload for SquaredBlkDiagMatrix scalar multiply.
         """
 
         return self.mul(val)
 
     def __imul__(self, val):
         """
-        Operator overload for in-place BlkDiagMatrix scalar multiply.
+        Operator overload for in-place SquaredBlkDiagMatrix scalar multiply.
         """
 
         return self.mul(val, inplace=True)
@@ -468,52 +381,48 @@ class BlkDiagMatrix:
 
     def neg(self):
         """
-        Compute the unary negation of BlkDiagMatrix instance.
+        Compute the unary negation of SquaredBlkDiagMatrix instance.
 
-        :return: A BlkDiagMatrix like self.
+        :return: A SquaredBlkDiagMatrix like self.
         """
 
-        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
-
-        for i in range(self.nblocks):
-            C[i] = -self[i]
+        C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
+        C.data = -self.data
+        self.must_update = True
 
         return C
 
     def __neg__(self):
         """
-        Operator overload for unary negation of BlkDiagMatrix instance.
+        Operator overload for unary negation of SquaredBlkDiagMatrix instance.
         """
 
         return self.neg()
 
     def abs(self):
         """
-        Compute the elementwise absolute value of BlkDiagMatrix instance.
+        Compute the elementwise absolute value of SquaredBlkDiagMatrix instance.
 
-        :return: A BlkDiagMatrix like self.
+        :return: A SquaredBlkDiagMatrix like self.
         """
 
-        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
-
-        for i in range(self.nblocks):
-            C[i] = xp.abs(self[i])
-
+        C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
+        C.data = xp.abs(self.data)
         return C
 
     def __abs__(self):
         """
-        Operator overload for absolute value of BlkDiagMatrix instance.
+        Operator overload for absolute value of SquaredBlkDiagMatrix instance.
         """
 
         return self.abs()
 
     def pow(self, val, inplace=False):
         """
-        Compute the elementwise power of BlkDiagMatrix instance.
+        Compute the elementwise power of SquaredBlkDiagMatrix instance.
         :param inplace: Boolean, when set to True change values in place,
         otherwise return a new instance (default).
-        :return: A BlkDiagMatrix like self.
+        :return: A SquaredBlkDiagMatrix like self.
         """
 
         if inplace:
@@ -521,21 +430,21 @@ class BlkDiagMatrix:
                 self[i] **= val
             C = self
         else:
-            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+            C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
             for i in range(self.nblocks):
                 C[i] = xp.power(self[i], val)
         return C
 
     def __pow__(self, val):
         """
-        Operator overload for inplace pow of BlkDiagMatrix instance.
+        Operator overload for inplace pow of SquaredBlkDiagMatrix instance.
         """
 
         return self.pow(val)
 
     def __ipow__(self, val):
         """
-        Compute the in-place elementwise power of BlkDiagMatrix instance.
+        Compute the in-place elementwise power of SquaredBlkDiagMatrix instance.
 
         :return: self raised to power, elementwise.
         """
@@ -544,23 +453,27 @@ class BlkDiagMatrix:
 
     def norm(self):
         """
-        Compute the norm of a BlkDiagMatrix instance.
+        Compute the norm of a SquaredBlkDiagMatrix instance.
 
         :param inplace: Boolean, when set to True change values in place,
         otherwise return a new instance (default).
-        :return: The norm of the BlkDiagMatrix instance.
+        :return: The norm of the SquaredBlkDiagMatrix instance.
         """
+        #n = 0
+        #for blk in self._data:
+        #    n = max(n,xp.linalg.norm(blk,ord=2))
+        #return n
 
-        return xp.max([norm(blk, ord=2) for blk in self])
+        return xp.max(xp.array([norm(blk, ord=2) for blk in self.data]))
 
     def transpose(self):
         """
-        Get the transpose matrix of a BlkDiagMatrix instance.
+        Get the transpose matrix of a SquaredBlkDiagMatrix instance.
 
-        :return: The corresponding transpose form as a BlkDiagMatrix.
+        :return: The corresponding transpose form as a SquaredBlkDiagMatrix.
         """
 
-        T = BlkDiagMatrix(self.partition, dtype=self.dtype)
+        T = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
 
         for i in range(self.nblocks):
             T[i] = self[i].T
@@ -577,10 +490,10 @@ class BlkDiagMatrix:
 
     def dense(self):
         """
-        Convert list representation of BlkDiagMatrix instance into full matrix.
+        Convert list representation of SquaredBlkDiagMatrix instance into full matrix.
 
-        :param blk_diag: The BlkDiagMatrix instance.
-        :return: The BlkDiagMatrix instance including the zero elements of
+        :param blk_diag: The SquaredBlkDiagMatrix instance.
+        :return: The SquaredBlkDiagMatrix instance including the zero elements of
         non-diagonal blocks.
         """
 
@@ -589,7 +502,7 @@ class BlkDiagMatrix:
     @property
     def partition(self):
         """
-        Return the partitions (block sizes) of this BlkDiagMatrix
+        Return the partitions (block sizes) of this SquaredBlkDiagMatrix
 
         :return: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
@@ -600,7 +513,7 @@ class BlkDiagMatrix:
         if self._cached_blk_sizes is None:
             blk_sizes = xp.empty((self.nblocks, 2), dtype=xp.int)
             for i, blk in enumerate(self.data):
-                blk_sizes[i] = xp.array([len(blk),len(blk)])
+                blk_sizes[i] = xp.array(blk.shape)
             self._cached_blk_sizes = blk_sizes
         return self._cached_blk_sizes
 
@@ -620,7 +533,7 @@ class BlkDiagMatrix:
             raise RuntimeError('Sizes of `self` and `Y` are not compatible.')
 
         vector = False
-        if xp.ndim(Y) == 1:
+        if Y.ndim == 1:
             Y = Y[:, xp.newaxis]
             vector = True
 
@@ -655,7 +568,7 @@ class BlkDiagMatrix:
                 'Sizes of matrix `self` and `X` are not compatible.')
 
         vector = False
-        if xp.ndim(X) == 1:
+        if X.ndim == 1:
             X = X[:, xp.newaxis]
             vector = True
 
@@ -682,7 +595,7 @@ class BlkDiagMatrix:
         """
 
         if shp[0] != shp[1]:
-            raise NotImplementedError("Currently BlkDiagMatrix only supports"
+            raise NotImplementedError("Currently SquaredBlkDiagMatrix only supports"
                                       " square blocks.  Received {}".format(
                                           shp))
 
@@ -691,37 +604,37 @@ class BlkDiagMatrix:
     @staticmethod
     def empty(nblocks, dtype=xp.float64):
         """
-        Instantiate an empty BlkDiagMatrix with `nblocks`, where each
+        Instantiate an empty SquaredBlkDiagMatrix with `nblocks`, where each
         data block is initially None with size (0,0).
 
-        This is used for incrementally building up a BlkDiagMatrix, by
+        This is used for incrementally building up a SquaredBlkDiagMatrix, by
         using nblocks=0 in conjunction with `append` method or
         situations where blocks are immediately assigned in a loop,
         such as in a `copy`.
 
         :param nblocks: Number of diagonal matrix blocks.
-        :return BlkDiagMatrix instance where each block is None.
+        :return SquaredBlkDiagMatrix instance where each block is None.
         """
 
         # Empty partition has block dims of zero until they are assigned
         partition = [(0, 0)] * nblocks
 
-        return BlkDiagMatrix(partition, dtype=dtype)
+        return SquaredBlkDiagMatrix(partition, dtype=dtype)
 
     @staticmethod
     def zeros(blk_partition, dtype=xp.float64):
         """
-        Build a BlkDiagMatrix zeros matrix.
+        Build a SquaredBlkDiagMatrix zeros matrix.
 
         :param blk_partition: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
         where `blk_partition[i]` corresponds to the shape (number of rows and
         columns) of the `i` diagonal matrix block.
         :param dtype: The data type to set precision of diagonal matrix block.
-        :return: A BlkDiagMatrix instance consisting of `K` zero blocks.
+        :return: A SquaredBlkDiagMatrix instance consisting of `K` zero blocks.
         """
 
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
+        A = SquaredBlkDiagMatrix(blk_partition, dtype=dtype)
 
         for i, blk_sz in enumerate(blk_partition):
             A[i] = xp.zeros(blk_sz, dtype=dtype)
@@ -731,106 +644,114 @@ class BlkDiagMatrix:
     @staticmethod
     def ones(blk_partition, dtype=xp.float64):
         """
-        Build a BlkDiagMatrix ones matrix.
+        Build a SquaredBlkDiagMatrix ones matrix.
 
         :param blk_partition: The matrix block partition in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
         where `blk_partition[i]` corresponds to the shape (number of rows and
         columns) of the `i` diagonal matrix block.
         :param dtype: The data type to set precision of diagonal matrix block.
-        :return: A BlkDiagMatrix instance consisting of `K` ones blocks.
+        :return: A SquaredBlkDiagMatrix instance consisting of `K` ones blocks.
         """
 
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
-
-        for i, blk_sz in enumerate(blk_partition):
-            A[i] = xp.ones(blk_sz, dtype=dtype)
+        blk_diag = []
+        for blk_sz in blk_partition:
+            blk_diag.append(xp.ones(blk_sz, dtype=dtype))
+        A = SquaredBlkDiagMatrix.from_list(blk_diag, dtype=dtype)
 
         return A
 
     @staticmethod
     def eye(blk_partition, dtype=xp.float64):
         """
-        Build a BlkDiagMatrix eye (identity) matrix
+        Build a SquaredBlkDiagMatrix eye (identity) matrix
 
         :param blk_partition: The matrix block partition in the form of
         a K-element list storing all shapes of K diagonal matrix blocks,
         where `blk_partition[i]` corresponds to the shape (number of rows
         and columns) of the `i` diagonal matrix block.
         :param dtype: The data type of the diagonal matrix blocks.
-        :return: A BlkDiagMatrix instance consisting of `K` eye (identity)
+        :return: A SquaredBlkDiagMatrix instance consisting of `K` eye (identity)
         blocks.
         """
 
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
-
+        blk_diag = []
         for i, blk_sz in enumerate(blk_partition):
             rows, cols = blk_sz
-            A[i] = xp.eye(N=rows, M=cols, dtype=dtype)
+            blk_diag.append(xp.eye(N=int(rows), M=int(cols), dtype=dtype))
+        A = SquaredBlkDiagMatrix.from_list(blk_diag, dtype)
 
         return A
 
     @staticmethod
     def eye_like(A, dtype=None):
         """
-        Build a BlkDiagMatrix eye (identity) matrix with the partition
-        structure of BlkDiagMatrix A.  Defaults to dtype of A.
+        Build a SquaredBlkDiagMatrix eye (identity) matrix with the partition
+        structure of SquaredBlkDiagMatrix A.  Defaults to dtype of A.
 
-        :param A: BlkDiagMatrix instance.
+        :param A: SquaredBlkDiagMatrix instance.
         :param dtype: Optional, data type of the new diagonal matrix blocks.
-        :return: BlkDiagMatrix instance consisting of `K` eye (identity)
+        :return: SquaredBlkDiagMatrix instance consisting of `K` eye (identity)
         blocks.
         """
 
         if dtype is None:
             dtype = A.dtype
 
-        return BlkDiagMatrix.eye(A.partition, dtype=dtype)
+        return SquaredBlkDiagMatrix.eye(A.partition, dtype=dtype)
 
     @staticmethod
     def zeros_like(A, dtype=None):
         """
-        Build a BlkDiagMatrix zeros matrix with the partition
-        structure of BlkDiagMatrix A.  Defaults to dtype of A.
+        Build a SquaredBlkDiagMatrix zeros matrix with the partition
+        structure of SquaredBlkDiagMatrix A.  Defaults to dtype of A.
 
-        :param A: BlkDiagMatrix instance.
+        :param A: SquaredBlkDiagMatrix instance.
         :param dtype: Optional, data type of the new diagonal matrix blocks.
-        :return: BlkDiagMatrix instance consisting of `K` zeros blocks.
+        :return: SquaredBlkDiagMatrix instance consisting of `K` zeros blocks.
         """
 
         if dtype is None:
             dtype = A.dtype
 
-        return BlkDiagMatrix.zeros(A.partition, dtype=dtype)
+        return SquaredBlkDiagMatrix.zeros(A.partition, dtype=dtype)
 
     @staticmethod
     def from_list(blk_diag, dtype=xp.float64):
         """
-        Convert full from python list representation into BlkDiagMatrix.
+        Convert full from python list representation into SquaredBlkDiagMatrix.
 
         This is to facilitate integration with code that may not be
-        using the BlkDiagMatrix class yet.
+        using the SquaredBlkDiagMatrix class yet.
 
         :param blk_diag; The blk_diag representation in the form of a
         K-element list storing all shapes of K diagonal matrix blocks,
         where `blk_partition[i]` corresponds to the shape (number of rows
         and columns) of the `i` diagonal matrix block.
 
-        :return: The BlkDiagMatrix instance.
+        :return: The SquaredBlkDiagMatrix instance.
         """
 
         # get the partition (just sizes)
         blk_partition = [None] * len(blk_diag)
-        for i, mat in enumerate(blk_diag):
-            blk_partition[i] = mat.shape
+        for i, blk in enumerate(blk_diag):
+            blk_partition[i] = blk.shape
+        max_blk_size = 0
+        for b in blk_partition:
+            max_blk_size = max(max_blk_size, b[0])
+            max_blk_size = max(max_blk_size, b[1])
 
-        # instantiate an empty BlkDiagMatrix with that structure
-        A = BlkDiagMatrix(blk_partition, dtype=dtype)
+        A = SquaredBlkDiagMatrix(blk_partition,dtype=dtype)
+        new_blk_diag = []
+        for i, blk in enumerate(blk_diag):
+            newRowShape = max_blk_size-blk.shape[0]
+            newColShape = max_blk_size-blk.shape[1]
+            newShape = ((0,newRowShape),(0,newColShape))
+            new_blk_diag.append(xp.pad(blk,newShape,'constant',constant_values=(0,0)))
+            A._data[i] = blk
 
-        # set the data
-        for i in range(A.nblocks):
-            blk = blk_diag[i]
-            A.data[i] = blk
+        # instantiate an empty SquaredBlkDiagMatrix with that structure
+        A.data = xp.array(new_blk_diag)
 
         return A
 
@@ -842,7 +763,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     :param h_fun: The function form in k space.
     :param fbasis: The basis object for expanding.
 
-    :return: a BlkDiagMatrix instance representation using the
+    :return: a SquaredBlkDiagMatrix instance representation using the
     `fbasis` expansion.
     """
 
@@ -866,7 +787,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     h_vals = xp.sum(h_vals2d, axis=1)/n_theta
 
     # Represent 1D function values in fbasis
-    h_fb = BlkDiagMatrix.empty(2 * fbasis.ell_max + 1, dtype=fbasis.dtype)
+    h_fb = SquaredBlkDiagMatrix.empty(2 * fbasis.ell_max + 1, dtype=fbasis.dtype)
     ind = 0
     for ell in range(0, fbasis.ell_max+1):
         k_max = fbasis.k_max[ell]
