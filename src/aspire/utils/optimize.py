@@ -121,7 +121,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     if init['p'] is None:
         p = s.copy()
     else:
-        p = init['p']
+        p = xp.asarray(init['p'])
 
     info = fill_struct(att_vals={'iter': [0], 'res': [xp.linalg.norm(r)], 'obj': [obj]})
     if cg_opt['store_iterates']:
@@ -143,30 +143,35 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         old_gamma = xp.real(xp.sum(s.conj() * r, -1))
 
         alpha = old_gamma / xp.real(xp.sum(p.conj() * a_p, -1))
-        x += alpha[..., xp.newaxis] * p
-        a_x += alpha[..., xp.newaxis] * a_p
+        # x += alpha[..., xp.newaxis] * p
+        # a_x += alpha[..., xp.newaxis] * a_p
+        x += xp.expand_dims(alpha, axis=1) * p
+        a_x += xp.expand_dims(alpha, axis=1) * a_p
 
-        r -= alpha[..., np.newaxis] * a_p
+        # r -= alpha[..., np.newaxis] * a_p
+        r -= xp.expand_dims(alpha, axis=1) * a_p
         s = cg_opt['preconditioner'](r.copy())
         new_gamma = xp.real(xp.sum(r.conj() * s, -1))
         beta = new_gamma / old_gamma
-        p *= beta[..., xp.newaxis]
+        # p *= beta[..., xp.newaxis]
+        p *= xp.expand_dims(beta, axis=1)
         p += s
 
         obj = (xp.real(xp.sum(x.conj() * a_x, -1)
                 - 2 * xp.real(xp.sum(xp.conj(b * x), -1))))
         res = xp.sqrt(np.sum(r ** 2, -1))
-        info['iter'].append(i)
-        info['res'].append(res)
-        info['obj'].append(obj)
-        if cg_opt['store_iterates']:
-            info['x'].append(x)
-            info['r'].append(r)
-            info['p'].append(p)
 
-        if cg_opt['verbose']:
-            logger.info('[CG] Iteration {}. Residual: {}. Objective: {}'.format(
-                i, xp.linalg.norm(info['res'][i]), xp.sum(info['obj'][i])))
+        #info['iter'].append(i)
+        #info['res'].append(res)
+        #info['obj'].append(obj)
+        #if cg_opt['store_iterates']:
+        #    info['x'].append(x)
+        #    info['r'].append(r)
+        #    info['p'].append(p)
+
+        #if cg_opt['verbose']:
+        #    logger.info('[CG] Iteration {}. Residual: {}. Objective: {}'.format(
+        #        i, xp.linalg.norm(info['res'][i]), xp.sum(info['obj'][i])))
 
         if xp.all(res < b_norm * cg_opt['rel_tolerance']):
             break
