@@ -38,7 +38,7 @@ class SquaredBlkDiagMatrix(BlkDiagMatrix):
         if len(partition):
             self.max_blk_size = 0
             for b in partition:
-                self.max_blk_size = max(self.max_blk_size, b[0])
+                self.max_blk_size = max(self.max_blk_size, int(b[0]))
             self._cached_blk_sizes = xp.array(partition)
             assert self._cached_blk_sizes.shape[1] == 2
             assert all([SquaredBlkDiagMatrix.__check_square(s) for s in partition])
@@ -66,13 +66,6 @@ class SquaredBlkDiagMatrix(BlkDiagMatrix):
         """
         if xp.any(self.partition != other.partition):
             # be helpful and find the first one as an example
-            print("check",type(self),type(other))
-            print(self.data)
-            print(other.data)
-            print(self._data)
-            print(other._data)
-            print(self.partition)
-            print(other.partition)
             for i, (a, b) in enumerate(zip(self.partition, other.partition)):
                 if not xp.allclose(a,b):
                     break
@@ -147,7 +140,6 @@ class SquaredBlkDiagMatrix(BlkDiagMatrix):
         to self + other.
         """
 
-        print("addIDblkc",[id(x) for x in self._data])
         if self._is_scalar_type(other):
             return self.__scalar_add(other, inplace=inplace)
 
@@ -222,10 +214,6 @@ class SquaredBlkDiagMatrix(BlkDiagMatrix):
             return self.__scalar_sub(other, inplace=inplace)
 
         self.__check_compatible(other)
-        print("SELF")
-        print(self)
-        print(self.data)
-        print(self._data)
         if inplace:
             self.data = self.data - other.data
             C = self
@@ -426,13 +414,12 @@ class SquaredBlkDiagMatrix(BlkDiagMatrix):
         """
 
         if inplace:
-            for i in range(self.nblocks):
-                self[i] **= val
+            self.data = xp.power(self.data,val)
             C = self
         else:
             C = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
-            for i in range(self.nblocks):
-                C[i] = xp.power(self[i], val)
+            C.data = xp.power(self.data, val)
+        C.must_update = True
         return C
 
     def __pow__(self, val):
@@ -474,9 +461,8 @@ class SquaredBlkDiagMatrix(BlkDiagMatrix):
         """
 
         T = SquaredBlkDiagMatrix(self.partition, dtype=self.dtype)
-
-        for i in range(self.nblocks):
-            T[i] = self[i].T
+        T.data = xp.transpose(self.data,(0,2,1))
+        T.must_update = True
 
         return T
 
@@ -635,9 +621,8 @@ class SquaredBlkDiagMatrix(BlkDiagMatrix):
         """
 
         A = SquaredBlkDiagMatrix(blk_partition, dtype=dtype)
-
-        for i, blk_sz in enumerate(blk_partition):
-            A[i] = xp.zeros(blk_sz, dtype=dtype)
+        A.data = xp.zeros((len(blk_partition),A.max_blk_size,A.max_blk_size), dtype=dtype)
+        A.must_update = True
 
         return A
 
@@ -714,7 +699,8 @@ class SquaredBlkDiagMatrix(BlkDiagMatrix):
         if dtype is None:
             dtype = A.dtype
 
-        return SquaredBlkDiagMatrix.zeros(A.partition, dtype=dtype)
+        B = SquaredBlkDiagMatrix.zeros(A.partition, dtype=dtype)
+        return B
 
     @staticmethod
     def from_list(blk_diag, dtype=xp.float64):

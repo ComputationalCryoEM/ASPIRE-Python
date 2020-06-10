@@ -4,7 +4,7 @@ import cupy as xp
 from aspire.utils.squared_blk_diag_matrix import SquaredBlkDiagMatrix
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 from matrices_testCase import matBlockShapeList
-from matrices_testCase import uniqueMatrixBlockShapeList
+#from tests.matrices_testCase import matBlockShapeList
 
 import time
 

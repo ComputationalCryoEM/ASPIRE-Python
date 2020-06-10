@@ -3,8 +3,8 @@ Define a BlkDiagMatrix module which implements operations for
 block diagonal matrices as used by ASPIRE.
 """
 
-#import numpy as xp
-import cupy as xp
+import numpy as xp
+#import cupy as xp
 
 from numpy.linalg import norm
 from numpy.linalg import solve
