@@ -146,10 +146,11 @@ class BlkDiagMatrix:
 
         :param other: The BlkDiagMatrix to compare with self.
         """
+
         if xp.any(self.partition != other.partition):
             # be helpful and find the first one as an example
             for i, (a, b) in enumerate(zip(self.partition, other.partition)):
-                if not xp.allclose(a,b):
+                if a != b:
                     break
             raise RuntimeError(
                 'Block i={} of BlkDiagMatrix instances are '
@@ -214,6 +215,7 @@ class BlkDiagMatrix:
         :return:  BlkDiagMatrix instance with elementwise sum equal
         to self + other.
         """
+
         if self._is_scalar_type(other):
             return self.__scalar_add(other, inplace=inplace)
 
@@ -286,7 +288,7 @@ class BlkDiagMatrix:
         :return: A BlkDiagMatrix instance with elementwise subraction equal to
          self - other.
         """
-        assert False
+
         if self._is_scalar_type(other):
             return self.__scalar_sub(other, inplace=inplace)
 
@@ -309,7 +311,6 @@ class BlkDiagMatrix:
         """
         Operator overloading for subtraction.
         """
-        assert False
 
         return self.sub(other)
 
@@ -317,7 +318,7 @@ class BlkDiagMatrix:
         """
         Operator overloading for in-place subtraction.
         """
-        assert False
+
         if self._is_scalar_type(other):
             return self.__scalar_sub(other, inplace=True)
 
@@ -327,7 +328,6 @@ class BlkDiagMatrix:
         """
         Convenience function for elementwise scalar subtraction.
         """
-        assert False
 
         # Note, the case of BlkDiagMatrix_L - BlkDiagMatrix_R would be
         #   evaluated as L.sub(R), so this is only for other
@@ -377,7 +377,7 @@ class BlkDiagMatrix:
 
         if inplace:
             for i in range(self.nblocks):
-                self[i] = self[i] @ other[i]
+                self[i] @= other[i]
             C = self
         else:
             C = BlkDiagMatrix(self.partition, dtype=self.dtype)
@@ -391,6 +391,7 @@ class BlkDiagMatrix:
         """
         Operator overload for matrix multiply of BlkDiagMatrix instances.
         """
+
         return self.matmul(other)
 
     def __imatmul__(self, other):
@@ -398,6 +399,7 @@ class BlkDiagMatrix:
         Operator overload for in-place matrix multiply of BlkDiagMatrix
          instances.
         """
+
         return self.matmul(other, inplace=True)
 
     def mul(self, val, inplace=False):
@@ -812,7 +814,7 @@ class BlkDiagMatrix:
         # get the partition (just sizes)
         blk_partition = [None] * len(blk_diag)
         for i, mat in enumerate(blk_diag):
-            blk_partition[i] = mat.shape
+            blk_partition[i] = xp.shape(mat)
 
         # instantiate an empty BlkDiagMatrix with that structure
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
@@ -838,14 +840,14 @@ def filter_to_fb_mat(h_fun, fbasis):
     if not isinstance(fbasis, FFBBasis2D):
         raise NotImplementedError('Currently only fast FB method is supported')
     # Set same dimensions as basis object
-    n_k = int(xp.ceil(4 * fbasis.rcut * fbasis.kcut))
-    n_theta = xp.ceil(16 * fbasis.kcut * fbasis.rcut)
-    n_theta = int((n_theta + xp.mod(n_theta, 2)) / 2)
+    n_k = int(np.ceil(4 * fbasis.rcut * fbasis.kcut))
+    n_theta = np.ceil(16 * fbasis.kcut * fbasis.rcut)
+    n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
 
     # get 2D grid in polar coordinate
     k_vals, wts = lgwt(n_k, 0, 0.5)
-    k, theta = xp.meshgrid(
-        k_vals, xp.arange(n_theta) * 2 * xp.pi / (2 * n_theta), indexing='ij')
+    k, theta = np.meshgrid(
+        k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing='ij')
 
     # Get function values in polar 2D grid and average out angle contribution
     omegax = k * np.cos(theta)
