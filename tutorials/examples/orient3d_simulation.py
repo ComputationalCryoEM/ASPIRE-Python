@@ -74,30 +74,24 @@ sim = Simulation(
     filters=filters
 )
 
-# Generate 2D clean images from input 3D map. The following statement can be used from the sim object:
-# imgs_clean = sim.clean_images(start=0, num=num_imgs)
-# To be more consistent with the Matlab version in the numbers, we need to use the statements as below
-# to replace the images generated automatically in the simulation object:
-logger.info('Generate random distributed rotation angles and obtain corresponding 2D clean images.')
-rots_true = qrand_rots(num_imgs, seed=0)
-rots_true_inv = np.swapaxes(rots_true, 0, 2)
 
-imgs_clean = vol2img(sim.vols[..., 0], rots_true)
-imgs_clean = np.swapaxes(imgs_clean, 0, 1)
-
-# Apply the noise at the desired singal-noise ratio to the filtered clean images
-logger.info('Apply noise filters to clean images.')
-power_clean = anorm(imgs_clean)**2/np.size(imgs_clean)
-noise_var = power_clean/sn_ratio
-imgs_noise = imgs_clean + np.sqrt(noise_var)*randn(img_size, img_size, num_imgs, seed=0)
+logger.info('Get true rotation angles generated randomly by the simulation object.')
+rots_true = sim.rots
+# change the first index to the last for consistency
+rots_true_inv = np.zeros((3, 3, rots_true.shape[0]))
+for i in range(rots_true.shape[0]):
+    rots_true_inv[:, :, i] = rots_true[i, :, :]
+# switch the X, Y to make consistent with orientation estimation code
+imgs_noise = sim.images(start=0, num=num_imgs).asnumpy()
+imgs_noise = np.swapaxes(imgs_noise, 0, 1)
 sim.cache(imgs_noise)
 
 # Initialize an orientation estimation object and perform view angle estimation
+logger.info('Estimate rotation angles using synchronization matrix and voting method.')
 orient_est = CommLineSync(sim, ntheta=36)
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
 
 regrot, mse_reg, diff, O, flag = register_rotations(rots_est, rots_true_inv)
-
 logger.info(f'MSE deviation of the estimated rotations using register_rotations : {mse_reg[0]}')
 
