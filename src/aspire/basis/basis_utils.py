@@ -77,7 +77,10 @@ def sph_bessel(ell, r):
     r_mask = r != 0
     j[r_mask] = np.sqrt(pi / (2 * r[r_mask])) * jv(ell + 0.5, r[r_mask])
 
-    return np.asscalar(j) if scalar else j
+    if scalar:
+        j = j.item()
+
+    return j
 
 
 def norm_assoc_legendre(j, m, x):

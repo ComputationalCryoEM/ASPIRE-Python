@@ -304,7 +304,7 @@ class Simulation(ImageSource):
         res_norms = res_norms[states]
         res_inners = res_inners[states]
 
-        mean_eigs_inners = np.asscalar(vol_to_vec(mean_vol).T @ vol_to_vec(eig_vols))
+        mean_eigs_inners = (vol_to_vec(mean_vol).T @ vol_to_vec(eig_vols)).item()
         coords_err = coords_true - coords_est
 
         err = np.hypot(res_norms, coords_err)
