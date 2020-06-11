@@ -1,0 +1,5 @@
+# See https://git-scm.com/docs/gitattributes for details on how to use this file
+
+# Among a bunch of other stuff we can
+#     add files or directory that should be ignored by tools like `git grep` like so
+tutorials/notebooks/*.ipynb binary
