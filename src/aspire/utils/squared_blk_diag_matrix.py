@@ -4,6 +4,7 @@ block diagonal matrices as used by ASPIRE.
 """
 
 import pdb
+import numpy
 from aspire.utils.numeric import xp
 from numpy.linalg import norm
 from numpy.linalg import solve
@@ -27,6 +28,7 @@ class BlkDiagMatrix:
     __array_ufunc__ = None
 
     def __init__(self, partition, max_blk_size=1, dtype=xp.float64):
+        #print("Squared")
         self.nblocks = len(partition)
         self.dtype = xp.dtype(dtype)
         self.max_blk_size = max_blk_size
@@ -370,7 +372,7 @@ class BlkDiagMatrix:
         else:
             C = BlkDiagMatrix(self.partition, dtype=self.dtype)
             C.data = self.data @ other.data
-        self.must_update = True
+        C.must_update = True
 
         return C
 
@@ -416,7 +418,7 @@ class BlkDiagMatrix:
             C = BlkDiagMatrix(self.partition, dtype=self.dtype)
 
             C.data = self.data * val
-        self.must_update = True
+        C.must_update = True
 
         return C
 
@@ -450,7 +452,7 @@ class BlkDiagMatrix:
 
         C = BlkDiagMatrix(self.partition, dtype=self.dtype)
         C.data = -self.data
-        self.must_update = True
+        C.must_update = True
 
         return C
 
@@ -834,13 +836,15 @@ def filter_to_fb_mat(h_fun, fbasis):
 
     # get 2D grid in polar coordinate
     k_vals, wts = lgwt(n_k, 0, 0.5)
+    k_vals = xp.asarray(k_vals)
     k, theta = xp.meshgrid(
         k_vals, xp.arange(n_theta) * 2 * xp.pi / (2 * n_theta), indexing='ij')
 
     # Get function values in polar 2D grid and average out angle contribution
     omegax = k * xp.cos(theta)
     omegay = k * xp.sin(theta)
-    omega = 2 * xp.pi * xp.vstack((omegax.flatten('C'), omegay.flatten('C')))
+    #omega = 2 * xp.pi * xp.vstack((omegax.flatten('C'), omegay.flatten('C')))
+    omega = 2 * xp.pi * xp.vstack((omegax.flatten(), omegay.flatten()))
     h_vals2d = h_fun(omega).reshape(n_k, n_theta)
     h_vals = xp.sum(h_vals2d, axis=1)/n_theta
 
@@ -849,15 +853,22 @@ def filter_to_fb_mat(h_fun, fbasis):
     ind = 0
     for ell in range(0, fbasis.ell_max+1):
         k_max = fbasis.k_max[ell]
-        rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
-        fb_vals = xp.zeros_like(rmat)
+        #rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
+        #fb_vals = xp.zeros_like(rmat)
+        rmat = 2*k_vals.reshape(n_k, 1) * xp.asarray(fbasis.r0[0:k_max, ell].T)
+        rmat_h = xp.asnumpy(rmat)
+        fb_vals = numpy.zeros_like(rmat_h)
         for ik in range(0, k_max):
-            fb_vals[:, ik] = jv(ell, rmat[:, ik])
-        fb_nrms = 1/xp.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
+            #fb_vals[:, ik] = jv(ell, rmat[:, ik])
+            fb_vals[:, ik] = jv(ell, rmat_h[:, ik])
+        #fb_nrms = 1/xp.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
+        fb_nrms = xp.asarray(1/numpy.sqrt(2) * abs(jv(ell+1, fbasis.r0[0:k_max, ell].T) )/2)
+        fb_vals = xp.asarray(fb_vals)
         fb_vals = fb_vals/fb_nrms
-        h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
+        h_fb_vals = fb_vals * h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
-            h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1))
+            #h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1))
+            h_fb_vals * xp.asarray(k_vals.reshape(n_k, 1)) * xp.asarray(wts.reshape(n_k, 1)))
         h_fb[ind] = h_fb_ell
         ind += 1
         if ell > 0:

@@ -1,7 +1,7 @@
 from aspire.utils.numeric import xp
 from aspire import config
 
-from aspire.utils.squared_blk_diag_matrix import SquaredBlkDiagMatrix
+from aspire.utils.squared_blk_diag_matrix import  BlkDiagMatrix as SquaredBlkDiagMatrix
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 from matrices_testCase import matBlockShapeList
 #from tests.matrices_testCase import matBlockShapeList

@@ -44,7 +44,7 @@ class BlkDiagMatrix:
         :param dtype: Datatype for blocks, defaults to xp.float64.
         :return: BlkDiagMatrix instance.
         """
-
+        print("Non squared")
         self.nblocks = len(partition)
         self.dtype = xp.dtype(dtype)
         self.data = [None] * self.nblocks
@@ -814,7 +814,10 @@ class BlkDiagMatrix:
         # get the partition (just sizes)
         blk_partition = [None] * len(blk_diag)
         for i, mat in enumerate(blk_diag):
-            blk_partition[i] = xp.shape(mat)
+            #if config.common.cupy ==1:
+            blk_partition[i] = mat.shape
+            #else:
+            #    blk_partition[i] = xp.shape(mat)
 
         # instantiate an empty BlkDiagMatrix with that structure
         A = BlkDiagMatrix(blk_partition, dtype=dtype)

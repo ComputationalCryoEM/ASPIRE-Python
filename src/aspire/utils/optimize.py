@@ -1,4 +1,5 @@
 import logging
+import pdb
 import numpy as np
 
 from aspire.utils.numeric import xp
@@ -143,18 +144,19 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         old_gamma = xp.real(xp.sum(s.conj() * r, -1))
 
         alpha = old_gamma / xp.real(xp.sum(p.conj() * a_p, -1))
-        # x += alpha[..., xp.newaxis] * p
-        # a_x += alpha[..., xp.newaxis] * a_p
-        x += xp.expand_dims(alpha, axis=1) * p
-        a_x += xp.expand_dims(alpha, axis=1) * a_p
+        x += alpha[..., xp.newaxis] * p
+        a_x += alpha[..., xp.newaxis] * a_p
+        #pdb.set_trace()
+        #x += xp.expand_dims(alpha, axis=1) * p
+        #a_x += xp.expand_dims(alpha, axis=1) * a_p
 
-        # r -= alpha[..., np.newaxis] * a_p
-        r -= xp.expand_dims(alpha, axis=1) * a_p
+        r -= alpha[..., np.newaxis] * a_p
+        #r -= xp.expand_dims(alpha, axis=1) * a_p
         s = cg_opt['preconditioner'](r.copy())
         new_gamma = xp.real(xp.sum(r.conj() * s, -1))
         beta = new_gamma / old_gamma
-        # p *= beta[..., xp.newaxis]
-        p *= xp.expand_dims(beta, axis=1)
+        p *= beta[..., xp.newaxis]
+        #p *= xp.expand_dims(beta, axis=1)
         p += s
 
         obj = (xp.real(xp.sum(x.conj() * a_x, -1)

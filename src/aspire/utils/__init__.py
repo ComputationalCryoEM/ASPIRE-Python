@@ -1,6 +1,11 @@
 import subprocess
 import os.path
 
+#from aspire import config
+#if config.common.square:
+#    from .squared_blk_diag_matrix import BlkDiagMatrix
+#else:
+#    from .blk_diag_matrix import BlkDiagMatrix
 
 def ensure(cond, error_message=None):
     """
