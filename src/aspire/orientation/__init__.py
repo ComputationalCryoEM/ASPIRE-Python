@@ -36,7 +36,3 @@ class Orient3D:
         Output the 3D orientations
         """
         pass
-
-
-
-

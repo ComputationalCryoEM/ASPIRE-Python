@@ -1,12 +1,12 @@
 import os
+
 import mrcfile
 import numpy as np
-
 from scipy.io import loadmat, savemat
 
-from aspire.exceptions import WrongInput, UnknownFormat, DimensionsIncompatible
 from aspire.aspire.common.logger import logger
 from aspire.aspire.utils.helpers import accepts
+from aspire.exceptions import DimensionsIncompatible, UnknownFormat, WrongInput
 
 
 @accepts(np.ndarray)

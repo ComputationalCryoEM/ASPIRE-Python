@@ -1,6 +1,8 @@
 import logging
 from collections import OrderedDict
+
 import numpy as np
+
 from aspire import config
 
 logger = logging.getLogger(__name__)

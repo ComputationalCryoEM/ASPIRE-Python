@@ -1,9 +1,10 @@
-import os.path
 import logging
+import os.path
 from collections import OrderedDict
+
+import mrcfile
 import numpy as np
 import pandas as pd
-import mrcfile
 
 logger = logging.getLogger(__name__)
 

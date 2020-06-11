@@ -1,5 +1,6 @@
-from aspire.class3d import Class3D
 import logging
+
+from aspire.class3d import Class3D
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,3 @@ class Cov3D(Class3D):
         Output the clean images
         """
         pass
-
-
-
-

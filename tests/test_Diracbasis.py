@@ -1,5 +1,6 @@
-import numpy as np
 from unittest import TestCase
+
+import numpy as np
 
 from aspire.basis.dirac import DiracBasis
 from aspire.utils.matlab_compat import m_flatten

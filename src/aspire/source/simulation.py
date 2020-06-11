@@ -1,17 +1,18 @@
 import logging
-import numpy as np
-from scipy.linalg import qr, eigh
 
-from aspire.source import ImageSource
+import numpy as np
+from scipy.linalg import eigh, qr
+
 from aspire.image import Image
-from aspire.volume import vol_project
-from aspire.utils import ensure
-from aspire.utils.matlab_compat import Random
-from aspire.utils.filters import ZeroFilter
-from aspire.utils.coor_trans import grid_3d, uniform_random_angles
-from aspire.utils.matlab_compat import rand, randi, randn
-from aspire.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
+from aspire.source import ImageSource
 from aspire.source.xform import NoiseAdder
+from aspire.utils import ensure
+from aspire.utils.coor_trans import grid_3d, uniform_random_angles
+from aspire.utils.filters import ZeroFilter
+from aspire.utils.matlab_compat import Random, rand, randi, randn
+from aspire.utils.matrix import (acorr, ainner, anorm, make_symmat, vec_to_vol,
+                                 vecmat_to_volmat, vol_to_vec)
+from aspire.volume import vol_project
 
 logger = logging.getLogger(__name__)
 

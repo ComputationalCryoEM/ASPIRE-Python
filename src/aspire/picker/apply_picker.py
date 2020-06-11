@@ -1,5 +1,6 @@
-from aspire.picker import Picker
 import logging
+
+from aspire.picker import Picker
 
 logger = logging.getLogger(__name__)
 

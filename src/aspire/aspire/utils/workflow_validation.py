@@ -8,6 +8,7 @@ import logging
 import sys
 
 from xmltodict import parse
+
 from aspire.aspire.common.config import necessary_workflow_fields
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,5 @@
 import numpy as np
+
 import aspire.em_classavg.data_utils as data_utils
 import aspire.em_classavg.em as em
 

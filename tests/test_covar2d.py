@@ -1,21 +1,19 @@
 import os
-import numpy as np
+import os.path
 from unittest import TestCase
 
-from aspire.source.simulation import Simulation
+import numpy as np
+
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.utils.blk_diag_matrix import BlkDiagMatrix
-from aspire.utils.filters import RadialCTFFilter
-from aspire.utils.preprocess import downsample
-from aspire.utils.coor_trans import qrand_rots
-from aspire.utils.preprocess import vol2img
-from aspire.utils.matrix import anorm
-from aspire.utils.matlab_compat import randn
-
 from aspire.estimation.covar2d import RotCov2D
+from aspire.source.simulation import Simulation
+from aspire.utils.blk_diag_matrix import BlkDiagMatrix
+from aspire.utils.coor_trans import qrand_rots
+from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.matlab_compat import randn
+from aspire.utils.matrix import anorm
+from aspire.utils.preprocess import downsample, vol2img
 
-
-import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 

@@ -1,12 +1,12 @@
-from .version import version as __version__
-
-from importlib_resources import read_text
 import logging.config
 
-import aspire
-from aspire.utils.config import Config
-from aspire.exceptions import handle_exception
+from importlib_resources import read_text
 
+import aspire
+from aspire.exceptions import handle_exception
+from aspire.utils.config import Config
+
+from .version import version as __version__
 
 logging.config.dictConfig({
     "version": 1,

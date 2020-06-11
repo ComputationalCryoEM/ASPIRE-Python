@@ -1,15 +1,15 @@
-import os
 import logging
+import os
 from concurrent import futures
 
 import mrcfile
 import numpy as np
-from tqdm import tqdm
-
-from scipy import ndimage, signal
-from scipy.ndimage import binary_fill_holes, binary_erosion, binary_dilation, center_of_mass
 from PIL import Image
-from sklearn import svm, preprocessing
+from scipy import ndimage, signal
+from scipy.ndimage import (binary_dilation, binary_erosion, binary_fill_holes,
+                           center_of_mass)
+from sklearn import preprocessing, svm
+from tqdm import tqdm
 
 from aspire import config
 from aspire.apple.helper import PickerHelper

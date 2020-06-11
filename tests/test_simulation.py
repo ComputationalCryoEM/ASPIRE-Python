@@ -1,10 +1,11 @@
-import numpy as np
+import os.path
 from unittest import TestCase
 
-from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter, IdentityFilter
+import numpy as np
 
-import os.path
+from aspire.source.simulation import Simulation
+from aspire.utils.filters import IdentityFilter, RadialCTFFilter
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 

@@ -1,25 +1,26 @@
 import os
-import pyfftw
-import mrcfile
+
 import finufftpy
 import importlib_resources
-
-import scipy.special as sp
+import mrcfile
 import numpy as np
-import scipy.sparse as sps
-import scipy.sparse.linalg as spsl
+import pyfftw
 import scipy.linalg as scl
 import scipy.optimize as optim
+import scipy.sparse as sps
+import scipy.sparse.linalg as spsl
+import scipy.special as sp
 from console_progressbar import ProgressBar
-
 from numpy.polynomial.legendre import leggauss
 
 import aspire.data
 from aspire.aspire.common.config import ClassAveragesConfig
-from aspire.aspire.utils.data_utils import mat_to_npy, mat_to_npy_vec, load_stack_from_file, c_to_fortran
-from aspire.aspire.utils.array_utils import estimate_snr, image_grid, cfft2, icfft2
 from aspire.aspire.common.logger import logger
-from aspire.aspire.utils.helpers import yellow, set_output_name
+from aspire.aspire.utils.array_utils import (cfft2, estimate_snr, icfft2,
+                                             image_grid)
+from aspire.aspire.utils.data_utils import (c_to_fortran, load_stack_from_file,
+                                            mat_to_npy, mat_to_npy_vec)
+from aspire.aspire.utils.helpers import set_output_name, yellow
 
 
 class Precomp:

@@ -1,10 +1,12 @@
-import numpy as np
+import os.path
 from unittest import TestCase
 
-from aspire.utils.filters import FunctionFilter, ZeroFilter, IdentityFilter, ScalarFilter, CTFFilter, RadialCTFFilter, \
-    PowerFilter
+import numpy as np
 
-import os.path
+from aspire.utils.filters import (CTFFilter, FunctionFilter, IdentityFilter,
+                                  PowerFilter, RadialCTFFilter, ScalarFilter,
+                                  ZeroFilter)
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
@@ -98,5 +100,3 @@ class SimTestCase(TestCase):
                 [-0.995184514498978,   0.626977423649552,   0.799934516166400,   0.004814348317439,  -0.298096205735759,   0.004814348317439,   0.799934516166400,   0.626977423649552]
             ])**2
         ))
-
-

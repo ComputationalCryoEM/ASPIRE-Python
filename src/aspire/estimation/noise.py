@@ -1,9 +1,10 @@
 import logging
+
 import numpy as np
 
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2
-from aspire.utils.filters import ScalarFilter, ArrayFilter
+from aspire.utils.filters import ArrayFilter, ScalarFilter
 
 logger = logging.getLogger(__name__)
 
