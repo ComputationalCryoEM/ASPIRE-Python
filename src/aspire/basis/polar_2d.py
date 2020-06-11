@@ -90,7 +90,7 @@ class PolarBasis2D(Basis):
              + v[:, half_size:, :].conj())
 
         v = m_reshape(v, (self.nrad*half_size, nimgs))
-        x = np.empty((self.sz[0], self.sz[1], nimgs), dtype='float64')
+        x = np.empty((self.sz[0], self.sz[1], nimgs), dtype=self.dtype)
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
             x[..., isample] = np.real(anufft3(v[:, isample], self.freqs, self.sz))
@@ -115,7 +115,15 @@ class PolarBasis2D(Basis):
         nimgs = x.shape[2]
 
         half_size = self.ntheta // 2
-        pf = np.empty((self.nrad * half_size, nimgs), dtype='complex128')
+
+        if self.dtype == np.float32:
+            out_type = np.complex64
+        elif self.dtype == np.float64:
+            out_type = np.complex128
+        else:
+            logger.error('Data type is not consistent in polar Fourier 2D grid.')
+
+        pf = np.empty((self.nrad * half_size, nimgs), dtype=out_type)
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
             pf[..., isample] = nufft3(x[..., isample], self.freqs, self.sz)
