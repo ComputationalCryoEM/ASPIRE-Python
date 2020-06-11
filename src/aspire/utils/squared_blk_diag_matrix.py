@@ -26,20 +26,24 @@ class BlkDiagMatrix:
 
     __array_ufunc__ = None
 
-    def __init__(self, partition, dtype=xp.float64):
+    def __init__(self, partition, max_blk_size=1, dtype=xp.float64):
         self.nblocks = len(partition)
         self.dtype = xp.dtype(dtype)
-        self.max_blk_size = 0
-        self.must_update = True
+        self.max_blk_size = max_blk_size
+        self.must_update = False
+        self._data = None
+        self.data = None
+        self._cached_blk_sizes = []
         if len(partition):
-            self.max_blk_size = 0
+            ## if empty constructor is called, at least ndarray has a length
+            assert all([BlkDiagMatrix.__check_square(s) for s in partition])
             for b in partition:
                 self.max_blk_size = max(self.max_blk_size, int(b[0]))
             self._cached_blk_sizes = xp.array(partition)
             assert self._cached_blk_sizes.shape[1] == 2
-            assert all([BlkDiagMatrix.__check_square(s) for s in partition])
-            self.data  = None
-            self._data = [None] * len(partition)
+        self.data  = xp.zeros((max(1,len(partition)),
+                                self.max_blk_size,self.max_blk_size))
+        self._data = [None] * len(partition)
 
     def reset_cache(self):
         """
@@ -57,11 +61,27 @@ class BlkDiagMatrix:
 
         :param blk: Block to append (ndarray).
         """
-        assert False
+        if not self._data:
+            self._data = []
+            new_size = 183
+        new_size = len(self.data)
+        old_size = new_size
+        if(new_size == self.nblocks):
+            new_size = new_size+1
+        key = len(self._data)
         self._data.append(blk)
-        self.partition.append(blk.shape)
-        self.nblocks += 1
         self.reset_cache()
+        self.nblocks += 1
+        old_blk_size = self.max_blk_size
+        self.max_blk_size = max(self.max_blk_size,max(blk.shape))
+        newRowShape = self.max_blk_size-old_blk_size
+        newColShape = newRowShape
+        newShape = ((0,new_size - old_size),(0,newRowShape),(0,newColShape))
+        self.data = xp.pad(self.data,newShape,'constant',constant_values=(0,0))
+        newRowShape = self.max_blk_size-blk.shape[0]
+        newColShape = self.max_blk_size-blk.shape[1]
+        newShape = ((0,newRowShape),(0,newColShape))
+        self.data[key] = (xp.pad(blk,newShape,'constant',constant_values=(0,0)))
 
     def copy(self):
         """
@@ -131,8 +151,6 @@ class BlkDiagMatrix:
         """
 
         if not isinstance(other, BlkDiagMatrix):
-            #pdb.set_trace()
-            print(type(other),BlkDiagMatrix,type(BlkDiagMatrix))
             raise NotImplementedError(
                 "Currently BlkDiagMatrix only interfaces "
                 "with its own instances, got {}".format(repr(other)))
@@ -144,6 +162,10 @@ class BlkDiagMatrix:
         self.__check_size_compatible(other)
         self.__check_dtype_compatible(other)
 
+    def __len__(self):
+        #assert len(self._data) == len(self.data)
+        return len(self._data)
+
     def __getitem__(self, key):
         """
         Convenience wrapper, getter on self.data.
@@ -152,8 +174,8 @@ class BlkDiagMatrix:
         """
         if self.must_update:
             for i,blk in enumerate(self.data):
-                rownb = self._cached_blk_sizes[i][0]
-                colnb = self._cached_blk_sizes[i][1]
+                rownb = self.partition[i][0]
+                colnb = self.partition[i][1]
                 self._data[i] = blk[:rownb,:colnb]
             self.must_update = False
         return self._data[key]
@@ -166,6 +188,19 @@ class BlkDiagMatrix:
 
         BlkDiagMatrix.__check_square(value.shape)
         self._data[key] = value
+        if value.shape[0]>self.max_blk_size or value.shape[1]>self.max_blk_size:
+            self.max_blk_size = max(value.shape[0],value.shape[1])
+            newdata = xp.zeros((len(self.data),self.max_blk_size,self.max_blk_size))
+            for i,blk in enumerate(self.data):
+                newRowShape = self.max_blk_size-blk.shape[0]
+                newColShape = self.max_blk_size-blk.shape[1]
+                newShape = ((0,newRowShape),(0,newColShape))
+                newdata[i] += xp.pad(blk,newShape,'constant',constant_values=(0,0))
+            self.data = newdata
+        newRowShape = self.max_blk_size-value.shape[0]
+        newColShape = self.max_blk_size-value.shape[1]
+        newShape = ((0,newRowShape),(0,newColShape))
+        self.data[key] += xp.pad(value,newShape,'constant',constant_values=(0,0))
         self.reset_cache()
 
     def add(self, other, inplace=False):
@@ -537,7 +572,7 @@ class BlkDiagMatrix:
 
         if self._cached_blk_sizes is None:
             blk_sizes = xp.empty((self.nblocks, 2), dtype=xp.int)
-            for i, blk in enumerate(self.data):
+            for i, blk in enumerate(self._data):
                 blk_sizes[i] = xp.array(blk.shape)
             self._cached_blk_sizes = blk_sizes
         return self._cached_blk_sizes
@@ -587,7 +622,6 @@ class BlkDiagMatrix:
         """
 
         cols = self.partition[:, 1]
-
         if xp.sum(cols) != xp.size(X, 0):
             raise RuntimeError(
                 'Sizes of matrix `self` and `X` are not compatible.')
@@ -627,7 +661,7 @@ class BlkDiagMatrix:
         return True
 
     @staticmethod
-    def empty(nblocks, dtype=xp.float64):
+    def empty(nblocks, max_blk_size=1, dtype=xp.float64):
         """
         Instantiate an empty BlkDiagMatrix with `nblocks`, where each
         data block is initially None with size (0,0).
@@ -643,8 +677,7 @@ class BlkDiagMatrix:
 
         # Empty partition has block dims of zero until they are assigned
         partition = [(0, 0)] * nblocks
-
-        return BlkDiagMatrix(partition, dtype=dtype)
+        return BlkDiagMatrix(partition, max_blk_size, dtype=dtype)
 
     @staticmethod
     def zeros(blk_partition, dtype=xp.float64):
@@ -661,7 +694,8 @@ class BlkDiagMatrix:
 
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
         A.data = xp.zeros((len(blk_partition),A.max_blk_size,A.max_blk_size), dtype=dtype)
-        A.must_update = True
+        for i, blk_sz in enumerate(blk_partition):
+            A._data[i] = xp.zeros((int(blk_sz[0]), int(blk_sz[1])), dtype=dtype)
 
         return A
 
@@ -737,7 +771,6 @@ class BlkDiagMatrix:
 
         if dtype is None:
             dtype = A.dtype
-
         B = BlkDiagMatrix.zeros(A.partition, dtype=dtype)
         return B
 
