@@ -186,7 +186,7 @@ class Basis:
         for isample in range(0, n_data):
             b = self.evaluate_t(x[..., isample])
             # TODO: need check the initial condition x0 can improve the results or not.
-            v[..., isample], info = cg(operator, b, tol=tol)
+            v[..., isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
                 raise RuntimeError('Unable to converge!')
 

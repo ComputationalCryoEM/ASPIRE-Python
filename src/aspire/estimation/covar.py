@@ -122,7 +122,7 @@ class CovarianceEstimator(Estimator):
         def cb(xk):
             logger.info(f'Delta {norm(b_coeff - self.apply_kernel(xk, packed=True))} (target {target_residual})')
 
-        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol)
+        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol, atol=0)
 
         if info != 0:
             raise RuntimeError('Unable to converge!')
