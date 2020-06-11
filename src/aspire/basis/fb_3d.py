@@ -212,7 +212,7 @@ class FBBasis3D(Basis):
                 ang = self._precomp['ang'][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
-                v[idx] = ang_radial.T @ x[mask]
+                v[idx] = np.real(ang_radial.T @ x[mask])
                 ind += len(idx)
                 ind_ang += 1
 
