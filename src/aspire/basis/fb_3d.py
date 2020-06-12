@@ -213,7 +213,7 @@ class FBBasis3D(Basis):
                 ang = self._precomp['ang'][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
-                v[idx] = ang_radial.T @ x[mask]
+                v[idx] = np.real(ang_radial.T @ x[mask])
                 ind += len(idx)
                 ind_ang += 1
 
@@ -256,7 +256,7 @@ class FBBasis3D(Basis):
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
         tol = 10 * np.finfo(v.dtype).eps
         logger.info('Expanding array in dual basis')
-        v, info = cg(operator, b, tol=tol)
+        v, info = cg(operator, b, tol=tol, atol=0)
 
         v = v[..., np.newaxis]
 

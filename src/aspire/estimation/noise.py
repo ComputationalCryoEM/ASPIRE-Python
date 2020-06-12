@@ -36,7 +36,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise variance of the images.
         """
-        return np.asscalar(self.filter.evaluate(np.zeros((2, 1))))
+        return self.filter.evaluate(np.zeros((2, 1))).item()
 
     def _create_filter(self, noise_variance=None):
         """
@@ -92,7 +92,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise variance of the images.
         """
-        return np.asscalar(self.filter.evaluate(np.zeros((2, 1))))
+        return self.filter.evaluate(np.zeros((2, 1))).item()
 
     def _create_filter(self, noise_psd=None):
         """

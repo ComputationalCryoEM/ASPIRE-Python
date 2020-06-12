@@ -166,7 +166,7 @@ class FourierKernel(Kernel):
 
         A = np.eye(L**3, dtype=self.as_type)
         for i in range(L**3):
-            A[:, i] = vol_to_vec(self.convolve_volume(vec_to_vol(A[:, i])))
+            A[:, i] = np.real(vol_to_vec(self.convolve_volume(vec_to_vol(A[:, i]))))
 
         A = vecmat_to_volmat(A)
         return A

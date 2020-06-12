@@ -270,7 +270,7 @@ class FBBasis2D(Basis):
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
         tol = 10 * np.finfo(v.dtype).eps
         logger.info('Expanding array in dual basis')
-        v, info = cg(operator, b, tol=tol)
+        v, info = cg(operator, b, tol=tol, atol=0)
 
         v = v[..., np.newaxis]
 
