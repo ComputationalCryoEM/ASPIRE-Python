@@ -1,13 +1,14 @@
-import logging
 import glob
+import logging
 import os
-import numpy as np
 from concurrent import futures
-from tqdm import tqdm
-from scipy import misc
 
-from aspire.apple.picking import Picker
+import numpy as np
+from scipy import misc
+from tqdm import tqdm
+
 from aspire import config
+from aspire.apple.picking import Picker
 from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)

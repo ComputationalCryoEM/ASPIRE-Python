@@ -1,5 +1,6 @@
-from aspire.orientation import Orient3D
 import logging
+
+from aspire.orientation import Orient3D
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,3 @@ class CommLineSDP(Orient3D):
         Output the 3D orientations
         """
         pass
-
-
-
-

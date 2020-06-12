@@ -1,11 +1,11 @@
 import time
+from random import randint
 
 import numpy as np
-from pycuda.compiler import SourceModule
-import pycuda.gpuarray as gpuarray
 import pycuda.autoinit
+import pycuda.gpuarray as gpuarray
+from pycuda.compiler import SourceModule
 from pycuda.tools import context_dependent_memoize
-from random import randint
 
 
 @context_dependent_memoize

@@ -1,18 +1,18 @@
 import math
 import time
-import finufftpy
 
+import finufftpy
 import numpy as np
-import scipy.special as sp
 import scipy.sparse as sps
 import scipy.sparse.linalg as spsl
-
+import scipy.special as sp
 from pyfftw.interfaces import numpy_fft
 
 from aspire.aspire.common.config import AbinitioConfig
-from aspire.exceptions import WrongInput
 from aspire.aspire.common.logger import logger
-from aspire.aspire.utils.data_utils import validate_square_projections, c_to_fortran
+from aspire.aspire.utils.data_utils import (c_to_fortran,
+                                            validate_square_projections)
+from aspire.exceptions import WrongInput
 from aspire.image import _im_translate2 as im_translate
 
 

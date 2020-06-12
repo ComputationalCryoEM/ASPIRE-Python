@@ -1,9 +1,10 @@
 import logging
-import numpy as np
 from functools import partial
+
+import numpy as np
 import scipy.sparse.linalg
-from scipy.sparse.linalg import LinearOperator
 from scipy.linalg import norm
+from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
 from aspire.estimation.kernel import FourierKernel
@@ -122,5 +123,3 @@ class Estimator:
         vol = self.basis.evaluate_t(vol)
 
         return vol
-
-

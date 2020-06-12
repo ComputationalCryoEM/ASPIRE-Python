@@ -1,5 +1,6 @@
 import click
 from click import UsageError
+
 from aspire.apple.apple import Apple
 
 

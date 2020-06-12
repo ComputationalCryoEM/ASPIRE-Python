@@ -1,16 +1,18 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import progressbar
 import pycuda.gpuarray as gpuarray
 import skcuda.linalg as linalg
 import skcuda.misc as misc
-import aspire.em_classavg.circ_shift_kernel as circ_shift_kernel
-import aspire.em_classavg.slice_assign_kernel as slice_assign_kernel
-import progressbar
 
+import aspire.em_classavg.circ_shift_kernel as circ_shift_kernel
 import aspire.em_classavg.config as config
 import aspire.em_classavg.data_utils as data_utils
-from aspire.em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
+import aspire.em_classavg.slice_assign_kernel as slice_assign_kernel
+from aspire.em_classavg.image_denoising.image_denoising.ConverterModel.Converter import \
+    Converter
 
 
 class EM:

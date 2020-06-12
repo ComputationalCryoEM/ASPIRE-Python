@@ -1,4 +1,5 @@
 from unittest import TestCase
+
 from aspire.utils.config import Config, config_override
 
 
@@ -44,6 +45,3 @@ class ConfigTest(TestCase):
 
         # 'zero' reverts to its expected value here
         self.assertEqual(0, self.config.math.zero)
-
-
-

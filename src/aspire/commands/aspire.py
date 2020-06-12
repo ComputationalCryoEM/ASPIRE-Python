@@ -1,20 +1,20 @@
 import os
 import sys
+
 import click
 import mrcfile
 import numpy as np
 
-
 from aspire.aspire.abinitio import Abinitio
-from aspire.aspire.common.logger import logger
-from aspire.aspire.common.config import AspireConfig, PreProcessorConfig
 from aspire.aspire.class_averaging import ClassAverages
+from aspire.aspire.common.config import AspireConfig, PreProcessorConfig
+from aspire.aspire.common.logger import logger
 from aspire.aspire.preprocessor import PreProcessor
 from aspire.aspire.utils.compare_stacks import compare_stack_files
 from aspire.aspire.utils.data_utils import load_stack_from_file
-from aspire.aspire.utils.helpers import yellow, requires_binaries, set_output_name, red
+from aspire.aspire.utils.helpers import (red, requires_binaries,
+                                         set_output_name, yellow)
 from aspire.aspire.utils.viewstack import view_stack
-
 
 # TODO: Setting the random seed for numpy should be made a globally available option for all commands.
 np.random.seed(1137)

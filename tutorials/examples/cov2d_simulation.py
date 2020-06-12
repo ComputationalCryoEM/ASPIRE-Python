@@ -6,23 +6,23 @@ that covariance matrix. The results can be reproduced exactly to the Matlab vers
 if the same methods of generating random numbers are used.
 """
 
-import os
 import logging
-import numpy as np
+import os
+
 import matplotlib.pyplot as plt
 import mrcfile
+import numpy as np
 
-from aspire.source.simulation import Simulation
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.utils.filters import RadialCTFFilter
-from aspire.utils.preprocess import downsample
-from aspire.utils.coor_trans import qrand_rots
-from aspire.utils.preprocess import vol2img
-from aspire.image import Image
-from aspire.utils.matrix import anorm
-from aspire.utils.matlab_compat import randn
 from aspire.estimation.covar2d import RotCov2D
+from aspire.image import Image
+from aspire.source.simulation import Simulation
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
+from aspire.utils.coor_trans import qrand_rots
+from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.matlab_compat import randn
+from aspire.utils.matrix import anorm
+from aspire.utils.preprocess import downsample, vol2img
 
 logger = logging.getLogger('aspire')
 

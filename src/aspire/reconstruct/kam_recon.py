@@ -1,5 +1,6 @@
-from aspire.reconstruct import Reconstruct3D
 import logging
+
+from aspire.reconstruct import Reconstruct3D
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,3 @@ class KamReconst(Reconstruct3D):
         Output the 3D volume
         """
         pass
-
-
-
-

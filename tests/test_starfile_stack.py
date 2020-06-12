@@ -1,14 +1,15 @@
-from unittest import TestCase
-import numpy as np
-import importlib_resources
 import os
+import os.path
+from unittest import TestCase
 
+import importlib_resources
+import numpy as np
 import tests.saved_test_data
-from aspire.source.relion import RelionSource
+
 from aspire.image import Image
+from aspire.source.relion import RelionSource
 from aspire.utils.filters import ScalarFilter
 
-import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 

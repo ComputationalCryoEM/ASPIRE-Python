@@ -1,11 +1,12 @@
-import numpy as np
+import os.path
 from unittest import TestCase
 
+import numpy as np
+
+from aspire.estimation.noise import AnisotropicNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
-from aspire.estimation.noise import AnisotropicNoiseEstimator
 
-import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 

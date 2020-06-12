@@ -1,11 +1,11 @@
-from scipy import signal
-from PIL import Image
 import mrcfile
 import numpy as np
+from PIL import Image
+from scipy import signal
 
-from aspire.utils.numeric import xp
-from aspire.utils import ensure
 from aspire import config
+from aspire.utils import ensure
+from aspire.utils.numeric import xp
 
 
 class Micrograph:

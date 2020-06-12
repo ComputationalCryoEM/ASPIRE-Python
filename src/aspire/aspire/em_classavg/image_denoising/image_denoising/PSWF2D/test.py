@@ -1,8 +1,9 @@
-from PSWF2D.PSWF2DModel import PSWF2D
-from PSWF2D.GeneralFunctions import leggauss_0_1
-import scipy.special as special
-import numpy as np
 import time
+
+import numpy as np
+import scipy.special as special
+from PSWF2D.GeneralFunctions import leggauss_0_1
+from PSWF2D.PSWF2DModel import PSWF2D
 
 
 def test():

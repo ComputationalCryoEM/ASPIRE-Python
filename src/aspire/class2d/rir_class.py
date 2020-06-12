@@ -1,5 +1,6 @@
-from aspire.class2d import Class2D
 import logging
+
+from aspire.class2d import Class2D
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,3 @@ class RIRClass2D(Class2D):
         Output the clean images
         """
         pass
-
-
-
-

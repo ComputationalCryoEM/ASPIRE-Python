@@ -4,15 +4,14 @@ prolate spheroidal wave function (PSWF) objects.
 """
 
 import logging
+
 import numpy as np
-from numpy import pi, log, exp, diff
-from scipy.special import jv, lpmv
-from scipy.special import jn
+from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
+from scipy.special import jn, jv, lpmv
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, grid_3d
-
 
 logger = logging.getLogger(__name__)
 
@@ -355,4 +354,3 @@ def t_radial_part_mat(x, n, j, m):
 
 def k_operator(nu, x):
     return jn(nu, x) * np.sqrt(x)
-

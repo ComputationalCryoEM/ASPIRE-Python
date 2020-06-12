@@ -1,15 +1,15 @@
 import logging
-import numpy as np
-from scipy.linalg import sqrtm
-from scipy.linalg import solve
-from numpy.linalg import inv
 
+import numpy as np
+from numpy.linalg import inv
+from scipy.linalg import solve, sqrtm
+
+from aspire.utils import ensure
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
+from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import shrink_covar
-from aspire.utils.optimize import fill_struct, conj_grad
-from aspire.utils import ensure
-from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.optimize import conj_grad, fill_struct
 
 logger = logging.getLogger(__name__)
 

@@ -1,15 +1,15 @@
 import logging
+
 import numpy as np
 from numpy import pi
 from numpy.linalg import lstsq
 from scipy.fftpack import fft
-from scipy.special import jn
 from scipy.optimize import least_squares
+from scipy.special import jn
 
-from aspire.nfft import nufft3
-from aspire.basis.basis_utils import t_x_mat, t_x_mat_dot
+from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
-from aspire.basis.basis_utils import lgwt
+from aspire.nfft import nufft3
 
 logger = logging.getLogger(__name__)
 

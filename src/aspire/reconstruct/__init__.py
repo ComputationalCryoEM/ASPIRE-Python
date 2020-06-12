@@ -24,7 +24,3 @@ class Reconstruct3D:
         Output the 3D volume
         """
         pass
-
-
-
-

@@ -3,28 +3,23 @@ import os
 
 import mrcfile
 import numpy as np
-
 from box import Box
 from console_progressbar import ProgressBar
-from numpy import meshgrid, mean
+from numpy import mean, meshgrid
 from numpy.core.multiarray import zeros
-from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
+from numpy.fft import fft, fft2, fftn, fftshift, ifft, ifft2, ifftn, ifftshift
 from numpy.ma import sqrt
 
-from aspire.aspire.common.config import PreProcessorConfig, AspireConfig
-from aspire.exceptions import DimensionsIncompatible, WrongInput
+from aspire.aspire.common.config import AspireConfig, PreProcessorConfig
 from aspire.aspire.common.logger import logger
-from aspire.aspire.utils.data_utils import load_stack_from_file, validate_square_projections, fctr, \
-    c_to_fortran, fortran_to_c
+from aspire.aspire.utils.array_utils import (cart2rad, cryo_epsds, fast_cfft2,
+                                             fast_icfft2, flatten, radius_norm)
+from aspire.aspire.utils.data_utils import (c_to_fortran, fctr, fortran_to_c,
+                                            load_stack_from_file,
+                                            validate_square_projections)
 from aspire.aspire.utils.helpers import TupleCompare, set_output_name, yellow
 from aspire.aspire.utils.parse_star import read_star
-
-from aspire.aspire.utils.array_utils import (flatten,
-                                      radius_norm,
-                                      fast_cfft2,
-                                      fast_icfft2,
-                                      cart2rad,
-                                      cryo_epsds)
+from aspire.exceptions import DimensionsIncompatible, WrongInput
 
 
 class PreProcessor:

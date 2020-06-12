@@ -1,5 +1,6 @@
-from aspire.denoising import Denoiser
 import logging
+
+from aspire.denoising import Denoiser
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,3 @@ class ClassAvg(Denoiser):
         Output the clean images
         """
         pass
-
-
-
-

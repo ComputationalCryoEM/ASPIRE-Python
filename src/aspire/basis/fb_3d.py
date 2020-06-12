@@ -1,13 +1,14 @@
 import logging
+
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
-from aspire.utils import ensure
-from aspire.utils.matrix import roll_dim, unroll_dim, vol_to_vec, vec_to_vol
-from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.basis.basis_utils import unique_coords_nd, sph_bessel, real_sph_harmonic
 from aspire.basis import Basis
-
+from aspire.basis.basis_utils import (real_sph_harmonic, sph_bessel,
+                                      unique_coords_nd)
+from aspire.utils import ensure
+from aspire.utils.matlab_compat import m_flatten, m_reshape
+from aspire.utils.matrix import roll_dim, unroll_dim, vec_to_vol, vol_to_vec
 
 logger = logging.getLogger(__name__)
 
