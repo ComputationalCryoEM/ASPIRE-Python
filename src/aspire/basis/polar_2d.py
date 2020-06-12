@@ -126,6 +126,7 @@ class PolarBasis2D(Basis):
         half_size = self.ntheta // 2
 
         # get consistent complex type from the real type of x
+        self.dtype = x.dtype
         out_type = complex_type(x.dtype)
         pf = np.empty((self.nrad * half_size, nimgs), dtype=out_type)
         # TODO: need to include the implementation of the many framework in Finufft.
