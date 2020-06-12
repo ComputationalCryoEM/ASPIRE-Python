@@ -13,13 +13,8 @@ from aspire.source.simulation import Simulation
 
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
-from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.coor_trans import register_rotations
-from aspire.utils.preprocess import vol2img
-from aspire.utils.matrix import anorm
-
 from aspire.orientation.commonline_sync import CommLineSync
-from aspire.utils.matlab_compat import randn
 
 logger = logging.getLogger('aspire')
 
