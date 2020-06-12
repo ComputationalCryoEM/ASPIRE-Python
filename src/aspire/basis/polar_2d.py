@@ -6,6 +6,7 @@ from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_reshape
 from aspire.basis import Basis
 from aspire.nfft import anufft3, nufft3
+from aspire.utils.misc import real_type, complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -116,13 +117,9 @@ class PolarBasis2D(Basis):
 
         half_size = self.ntheta // 2
 
-        if self.dtype == np.float32:
-            out_type = np.complex64
-        elif self.dtype == np.float64:
-            out_type = np.complex128
-        else:
-            logger.error('Data type is not consistent in polar Fourier 2D grid.')
-
+        # get consistent complex type from the real type of x
+        self.dtype = x.dtype
+        out_type = complex_type(x.dtype)
         pf = np.empty((self.nrad * half_size, nimgs), dtype=out_type)
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
