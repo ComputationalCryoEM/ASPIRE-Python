@@ -47,8 +47,8 @@ class UtilsTestCase(TestCase):
         rot_matrices32 = qrand_rots(32, seed=0)
         self.assertTrue(np.allclose(np.moveaxis(results, 2, 0), rot_matrices32, atol=1e-7))
 
-    def testRegistRots(self):
-        rots = np.load(os.path.join(DATA_DIR, 'rand_rot_matrices32.npy'))
+    def testRegisterRots(self):
+        rots = qrand_rots(32, seed=0).T
         regrots, mse, diff, o_mat, flag = register_rotations(rots, rots)
 
         o_result = np.array(
