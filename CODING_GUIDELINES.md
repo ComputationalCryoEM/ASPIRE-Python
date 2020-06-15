@@ -13,6 +13,13 @@ is a good candidate which has the professional version for academic users with f
 In the future compoenents of PEP8 and PEP257 will be checked programmatically.  Documentation of a standard tool to perform
 these operations locally will be provided to developers at that time.
 
+## Best Practices Reading
+
+For beginners in scientific computing, some general guides are suggested in Greg Wilson's papers as below:
+
+ 1. [Good Enough Practices in Scientific Computing]( https://doi.org/10.1371/journal.pcbi.1005510)
+ 2. [Best Practices for Scientific Computing]( https://doi.org/10.1371/journal.pbio.1001745)
+
 ## Source Code Control
 
 As an open source software, we use Git with GitHub for our source code control.
@@ -29,6 +36,7 @@ Please submit any PRs against the `develop` branch.
 
 The basic idea is that we have `feature` branches,  `develop` as an integration focused branch, and `master` for releases.
 We do not currently have a need for a dedicated release or staging branch; in our case `develop` also serves this purpose.
+Generally feature branches should branch off of the latest `develop` branch.
 
 Developers are welcome to maintain their own fork, but this is not required.
 
@@ -38,8 +46,8 @@ release would be a candadite to upload to PyPI.
 
 ###  Git Workflow Controls
 
-To facilitate effective integration, merges into `develop` must occur as a pull request that is approved by two developers.
-One devloper can be anyone, but should probably be someone related to the effort if that is applicable.
+To facilitate effective integration, merges into `develop` must occur as a pull request that is approved by two reviewers.
+One reviewer can be anyone, but should probably be someone related to the effort if that is applicable.
 The second developer is a designated codeowner described in the `CODEOWNERS` file.
 
 Additionally, all outstanding requested changes and comments must be resolved before merging.  Pushing new changes should trigger
@@ -48,7 +56,7 @@ a re-review process of changed files to prevent oversights.
 Code should be passing integration and unit tests as defined in code on all supported plaforms by the evolving continuous integration systems,
 or be explicitly exempted by a codeowner. This is both for code quality and so maintenence of CI systems is not overlooked.
 
-All of these controls will be managed automatically by the Gitlab server.
+All of these controls will be managed automatically by the Github server.
 
 (discussion note, maybe want an additional control (Amit?) on master/releases, I don't expect too often..).
 
@@ -69,7 +77,9 @@ which is not as simple).
 Do not merge over another persons working branch or pull request unless explicitly permitted to do so by the author.
 Pull requests are welcomed.
 
-We will for a time attempt using Project boards in conjunction with Issues to document tasks in various stages.
+## Project Collaboration
+
+We will for a time attempt using Github Project boards in conjunction with Issues to document tasks in various stages.
 Generally this will look like a board collecting related tasks which representing a conceptual project or
 actual milestone that comes out of our meetings.  For example, an event, release, or large feature set
 with many components all are reasonable project boards.  This is for planning purposes and to facilitate coordination
@@ -79,9 +89,3 @@ in the remote environment. If it helps we can keep doing it so long as the time 
 
 (Todo, get an idea what exactly is and is not setup wrt gh-pages/rtd etc and discuss, also consider integration with other tools/CI)
 
-## Best Practices Reading
-
-For beginners in scientific computing, some general guides are suggested in Greg Wilson's papers as below:
-
- 1. [Good Enough Practices in Scientific Computing]( https://doi.org/10.1371/journal.pcbi.1005510)
- 2. [Best Practices for Scientific Computing]( https://doi.org/10.1371/journal.pbio.1001745)
