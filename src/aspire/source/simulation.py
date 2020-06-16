@@ -164,7 +164,7 @@ class Simulation(ImageSource):
         vols = self.vols - np.expand_dims(mean_vol, 3)
         coords = vol_to_vec(eig_vols).T @ vol_to_vec(vols)
         res = vols - vec_to_vol(vol_to_vec(eig_vols) @ coords)
-        res_norms = np.diag(anorm(res, (0, 1, 2)))
+        res_norms = anorm(res, (0, 1, 2))
         res_inners = vol_to_vec(mean_vol).T @ vol_to_vec(res)
 
         return coords.squeeze(), res_norms, res_inners

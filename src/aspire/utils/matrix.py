@@ -300,8 +300,11 @@ def anorm(x, axes=None):
     :return: The Euclidean (l^2) norm of x along specified axes.
     """
     if axes is None:
-        axes = range(x.ndim)
-    return np.sqrt(ainner(x, x, axes))
+        norm = np.linalg.norm(x)
+    else:
+        axes = tuple(axes)    # Unrolls any generators, like `range`.
+        norm = np.sqrt(np.sum(x * x, axis=axes))
+    return norm
 
 
 def acorr(x, y, axes=None):
