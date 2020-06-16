@@ -117,8 +117,10 @@ class Image:
     def shift(self, shifts):
         """
         Translate image by shifts. This method returns a new Image.
+
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
-            Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
+            Alternatively, it can be a column vector of length 2, in which case
+            the same shifts is applied to each image.
         :return: The Image translated by the shifts, with periodic boundaries.
         """
         if shifts.ndim == 1:
@@ -130,7 +132,9 @@ class Image:
     def downsample(self, ds_res):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
-        :param ds_res: int - new resolution, should be <= the current resolution of this Image
+
+        :param ds_res: int - new resolution, should be <= the current resolution
+            of this Image
         :return: The downsampled Image object.
         """
         grid = grid_2d(self.res)
@@ -158,7 +162,8 @@ class Image:
 
     def filter(self, filter):
         """
-        Apply a `Filter` object to the Image. This method returns a new Image.
+        Apply a `Filter` object to the Image and returns a new Image.
+
         :param filter: An object of type `Filter`.
         :return: A new filtered `Image` object.
         """
@@ -169,6 +174,25 @@ class Image:
             im_f = np.expand_dims(filter_values, 2) * im_f
         else:
             im_f = filter_values * im_f
+        im = centered_ifft2(im_f)
+        im = np.real(im)
+
+        return Image(im)
+
+    def phase_flip(self, filter):
+        """
+        Perform phase flip to images by applying the sign of a `Filter` object.
+
+        :param filter: An object of type `Filter`.
+        :return: A new filtered `Image` object.
+        """
+        sign_values = np.sign(filter.evaluate_grid(self.res))
+
+        im_f = centered_fft2(self.data)
+        if im_f.ndim > sign_values.ndim:
+            im_f = np.expand_dims(sign_values, 2) * im_f
+        else:
+            im_f = sign_values * im_f
         im = centered_ifft2(im_f)
         im = np.real(im)
 
