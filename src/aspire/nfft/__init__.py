@@ -55,7 +55,7 @@ def check_backends(raise_errors=True):
                 #from .cufinufft import CufinufftPlanf
                 from aspire.nfft.cufinufft import cuFINufftPlan
                 plan_class = cuFINufftPlan
-            except ImportError as e:
+            except Exception as e:
                 msg = str(e)
                 pass
 
@@ -64,7 +64,7 @@ def check_backends(raise_errors=True):
                 from finufftpy import nufft1d1
                 from aspire.nfft.finufft import FINufftPlan
                 plan_class = FINufftPlan
-            except ImportError as e:
+            except Exception as e:
                 msg = str(e)
                 pass
 
@@ -73,7 +73,7 @@ def check_backends(raise_errors=True):
                 from pynfft.nfft import NFFT
                 from aspire.nfft.pynfft import PyNfftPlan
                 plan_class = PyNfftPlan
-            except ImportError as e:
+            except Exception as e:
                 msg = str(e)
                 pass
 
