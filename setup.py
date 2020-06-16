@@ -52,12 +52,11 @@ setup(
         'sphinx-rtd-theme>=0.4.2',
         'tqdm',
     ],
-
     # Here we can call out specific extras,
     #   for example gpu packages which may not install for all users,
     #   or developer tools that are handy but not required for users.
     extras_require = {
-        'gpu': ['pycuda', 'cupy'],
+        'gpu': ['pycuda', 'cupy', 'cufinufftpy'],
         'dev': ['bumpversion', 'flake8', 'isort', 'pyflakes', 'pydocstyle', 'snakeviz'],
     },
 
