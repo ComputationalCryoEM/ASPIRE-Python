@@ -83,7 +83,7 @@ sim.cache(imgs_noise)
 
 # Initialize an orientation estimation object and perform view angle estimation
 logger.info('Estimate rotation angles using synchronization matrix and voting method.')
-orient_est = CommLineSync(sim, ntheta=36)
+orient_est = CommLineSync(sim, n_theta=36)
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
 

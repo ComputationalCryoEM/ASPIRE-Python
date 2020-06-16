@@ -15,36 +15,36 @@ class Orient3D:
     """
     Define a base class for estimating 3D orientations
     """
-    def __init__(self, src, nrad=None, ntheta=None, masked=True):
+    def __init__(self, src, n_rad=None, n_theta=None, masked=True):
         """
         Initialize an object for estimating 3D orientations
 
         :param src: The source object of 2D denoised or class-averaged imag
-        :param nrad: The number of points in the radial direction
-        :param ntheta: The number of points in the theta direction
+        :param n_rad: The number of points in the radial direction
+        :param n_theta: The number of points in the theta direction
         :param masked: Whether applying a mask to the images or not
         """
         self.src = src
-        self.nimg = src.n
-        self.nres = self.src.L
-        if nrad is None:
-            self.nrad = math.ceil(config.orient.r_ratio * self.nres)
+        self.n_img = src.n
+        self.n_res = self.src.L
+        if n_rad is None:
+            self.n_rad = math.ceil(config.orient.r_ratio * self.n_res)
         else:
-            self.nrad = nrad
-        if ntheta is None:
-            self.ntheta = config.orient.n_theta
+            self.n_rad = n_rad
+        if n_theta is None:
+            self.n_theta = config.orient.n_theta
         else:
-            self.ntheta = ntheta
+            self.n_theta = n_theta
 
-        self.basis = PolarBasis2D((self.nres, self.nres), self.nrad, self.ntheta)
+        self.basis = PolarBasis2D((self.n_res, self.n_res), self.n_rad, self.n_theta)
 
-        self.max_shift = math.ceil(config.orient.max_shift * self.nres)
+        self.max_shift = math.ceil(config.orient.max_shift * self.n_res)
         self.shift_step = config.orient.shift_step
 
         imgs = self.src.images(start=0, num=np.inf).asnumpy()
 
         if masked:
-            mask_radius = self.nres * 0.45
+            mask_radius = self.n_res * 0.45
             self.rise_time = config.orient.rise_time
             self.fuzzy_mask_dims = config.orient.fuzzy_mask_dims
             # mask_radius is of the form xxx.5
@@ -54,7 +54,7 @@ class Orient3D:
             else:
                 mask_radius = int(round(mask_radius))
             # mask projections
-            m = self._fuzzy_mask(self.nres, mask_radius)
+            m = self._fuzzy_mask(self.n_res, mask_radius)
             masked_projs = imgs.copy()
             masked_projs = masked_projs.transpose((2, 0, 1))
             masked_projs *= m
@@ -63,18 +63,18 @@ class Orient3D:
             masked_projs = imgs
 
         # Obtain coefficients in polar Fourier basis for input 2D images
-        self.basis = PolarBasis2D((self.nres, self.nres), self.nrad, self.ntheta)
+        self.basis = PolarBasis2D((self.n_res, self.n_res), self.n_rad, self.n_theta)
         self.pf = self.basis.evaluate_t(masked_projs)
-        self.pf = m_reshape(self.pf, (self.nrad, self.ntheta, self.nimg))
+        self.pf = m_reshape(self.pf, (self.n_rad, self.n_theta, self.n_img))
 
-        n_theta = self.ntheta
+        n_theta = self.n_theta
         if n_theta % 2 == 1:
             raise ValueError('n_theta must be even')
         n_theta = n_theta // 2
         self.pf = np.concatenate((np.flip(self.pf[1:, n_theta:], 0), self.pf[:, :n_theta]), 0)
 
-        self.clmatrix= None
-        self.cormatrix= None
+        self.clmatrix = None
+        self.cormatrix = None
         self.shift_equations = None
         self.shift_equations_map = None
         self.clmatrix_mask = None
@@ -94,21 +94,21 @@ class Orient3D:
         """
         pass
 
-    def build_clmatrix(self, nk=None):
+    def build_clmatrix(self, n_check=None):
         """
         Build common-lines matrix from Fourier stack of 2D images
 
-        :param nk: For each projection find its common-lines with nk
-            projections. If nk is less than the total number a projection,
+        :param n_check: For each projection find its common-lines with n_check
+            projections. If n_check is less than the total number a projection,
             a random subset of nk projections is used.
         """
         max_shift = self.max_shift
         shift_step = self.shift_step
-        n_projs = self.nimg
-        if nk is None:
-            nk = n_projs
+        n_img = self.n_img
+        if n_check is None:
+            n_check = n_img
         n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
-        n_theta = self.ntheta
+        n_theta = self.n_theta
         if n_theta % 2 == 1:
             raise ValueError('n_theta must be even')
         n_theta = n_theta // 2
@@ -116,18 +116,18 @@ class Orient3D:
         pf = self.pf
 
         # Allocate variables
-        clstack = np.zeros((n_projs, n_projs)) - 1
-        corrstack = np.zeros((n_projs, n_projs))
-        clstack_mask = np.zeros((n_projs, n_projs))
+        clstack = -np.ones((n_img, n_img))
+        corrstack = np.zeros((n_img, n_img))
+        clstack_mask = np.zeros((n_img, n_img))
 
         # Allocate variables used for shift estimation
-        shifts_1d = np.zeros((n_projs, n_projs))
-        shift_i = np.zeros(4 * n_projs * nk)
-        shift_j = np.zeros(4 * n_projs * nk)
-        shift_eq = np.zeros(4 * n_projs * nk)
-        shift_equations_map = np.zeros((n_projs, n_projs))
+        shifts_1d = np.zeros((n_img, n_img))
+        shift_i = np.zeros(4 * n_img * n_check)
+        shift_j = np.zeros(4 * n_img * n_check)
+        shift_eq = np.zeros(4 * n_img * n_check)
+        shift_equations_map = np.zeros((n_img, n_img))
         shift_equation_idx = 0
-        shift_b = np.zeros(n_projs * (n_projs - 1) // 2)
+        shift_b = np.zeros(n_img * (n_img - 1) // 2)
         dtheta = np.pi / n_theta
 
         # Search for common lines between pairs of projections.
@@ -152,13 +152,13 @@ class Orient3D:
             shift = shifts[i]
             all_shift_phases[i] = np.exp(-2 * np.pi * 1j * rk2 * shift / (2 * r_max + 1))
 
-        for i in range(n_projs):
-            n2 = min(n_projs - i, nk)
+        for i in range(n_img):
+            n2 = min(n_img - i, n_check)
 
-            if n_projs - i - 1 == 0:
+            if n_img - i - 1 == 0:
                 subset_k2 = []
             else:
-                subset_k2 = np.sort(np.random.choice(n_projs - i - 1, n2 - 1,
+                subset_k2 = np.sort(np.random.choice(n_img - i - 1, n2 - 1,
                                                      replace=False) + i + 1)
 
             proj1 = pf3[i]
@@ -224,14 +224,14 @@ class Orient3D:
         l = 4 * shift_equation_idx
         shift_eq[l: l + shift_equation_idx] = shift_b
         shift_i[l: l + shift_equation_idx] = np.arange(shift_equation_idx)
-        shift_j[l: l + shift_equation_idx] = 2 * n_projs
+        shift_j[l: l + shift_equation_idx] = 2 * n_img
         tmp = np.where(shift_eq != 0)[0]
         shift_eq = shift_eq[tmp]
         shift_i = shift_i[tmp]
         shift_j = shift_j[tmp]
         l += shift_equation_idx
         shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)),
-                                         shape=(shift_equation_idx, 2 * n_projs + 1))
+                                         shape=(shift_equation_idx, 2 * n_img + 1))
         self.clmatrix = clstack
         self.cormatrix = corrstack
         self.shift_equations = shift_equations
@@ -250,7 +250,8 @@ class Orient3D:
             equations solved will be of size 2N x N*(N-1)/2*`memory_factor`.
             If `memory_factor` is larger than 100, then the number of
             equations is estimated in such a way that the memory used by the equations
-            is roughly `memory_factor megabytes`. Default is 1 (use all equations).
+            is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
+            The code will generate an error if `memory_factor` is between 1 and 100.
         :return: Estimated shifts for all images
         """
 
@@ -258,30 +259,30 @@ class Orient3D:
         shift_step = self.shift_step
 
         if memory_factor < 0 or (memory_factor > 1 and memory_factor < 100):
-            raise ValueError('Subsampling factor must be between 0 and 1 or larger than 100')
+            raise ValueError('Subsampling factor must be between 0 and 1 or larger than 100.')
 
-        n_theta = self.ntheta // 2
-        n_projs = self.nimg
+        n_theta = self.n_theta // 2
+        n_img = self.n_img
         rotations = self.rotations
 
         pf = self.pf
-        n_equations_total = int(np.ceil(n_projs * (n_projs - 1) / 2))
-        memory_total = n_equations_total * 2 * n_projs * 8
+        n_equations_total = int(np.ceil(n_img * (n_img - 1) / 2))
+        memory_total = n_equations_total * 2 * n_img * 8
 
         if memory_factor <= 1:
-            n_equations = int(np.ceil(n_projs * (n_projs - 1) * memory_factor / 2))
+            n_equations = int(np.ceil(n_img * (n_img - 1) * memory_factor / 2))
         else:
             subsampling_factor = (memory_factor * 10 ** 6) / memory_total
             if subsampling_factor < 1:
-                n_equations = int(np.ceil(n_projs * (n_projs - 1) * subsampling_factor / 2))
+                n_equations = int(np.ceil(n_img * (n_img - 1) * subsampling_factor / 2))
             else:
                 n_equations = n_equations_total
 
-        if n_equations < n_projs:
-            logger.warning('Too few equations. Increase memory_factor. Setting n_equations to n_projs')
-            n_equations = n_projs
+        if n_equations < n_img:
+            logger.warning('Too few equations. Increase memory_factor. Setting n_equations to n_img.')
+            n_equations = n_img
 
-        if n_equations < 2 * n_projs:
+        if n_equations < 2 * n_img:
             logger.warning('Number of equations is small. Consider increase memory_factor.')
 
         shift_i = np.zeros(4 * n_equations + n_equations)
@@ -303,8 +304,8 @@ class Orient3D:
 
         idx_i = []
         idx_j = []
-        for i in range(n_projs):
-            tmp_j = range(i + 1, n_projs)
+        for i in range(n_img):
+            tmp_j = range(i + 1, n_img)
             idx_i.extend([i] * len(tmp_j))
             idx_j.extend(tmp_j)
         idx_i = np.array(idx_i, dtype='int')
@@ -380,20 +381,20 @@ class Orient3D:
         t = 4 * n_equations
         shift_eq[t: t + n_equations] = shift_b
         shift_i[t: t + n_equations] = np.arange(n_equations)
-        shift_j[t: t + n_equations] = 2 * n_projs
-        tmp = np.where(shift_eq != 0)[0]
-        shift_eq = shift_eq[tmp]
-        shift_i = shift_i[tmp]
-        shift_j = shift_j[tmp]
+        shift_j[t: t + n_equations] = 2 * n_img
+        mask = np.where(shift_eq != 0)[0]
+        shift_eq = shift_eq[mask]
+        shift_i = shift_i[mask]
+        shift_j = shift_j[mask]
         shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)),
-                                         shape=(n_equations, 2 * n_projs + 1))
+                                         shape=(n_equations, 2 * n_img + 1))
 
         est_shifts = np.linalg.lstsq(shift_equations[:, :-1].todense(), shift_b, rcond=-1)[0]
-        est_shifts = est_shifts.reshape((2, n_projs), order='F')
+        est_shifts = est_shifts.reshape((2, n_img), order='F')
 
         return est_shifts, shift_equations
 
-    def _common_line_r(self, r1, r2, l):
+    def _common_line_r(self, r1, r2, ell):
         """
         Compute the common line induced by rotation matrices r1 and r2.
         """
@@ -401,12 +402,13 @@ class Orient3D:
         alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
         alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
 
-        l_ij = alpha_ij * l / (2 * np.pi)
-        l_ji = alpha_ji * l / (2 * np.pi)
+        ell_ij = alpha_ij * ell / (2 * np.pi)
+        ell_ji = alpha_ji * ell / (2 * np.pi)
 
-        l_ij = np.mod(np.round(l_ij), l)
-        l_ji = np.mod(np.round(l_ji), l)
-        return l_ij, l_ji
+        ell_ij = np.mod(np.round(ell_ij), ell)
+        ell_ji = np.mod(np.round(ell_ji), ell)
+
+        return ell_ij, ell_ji
 
     def _fuzzy_mask(self, n, r0, origin=None):
         """
@@ -437,13 +439,9 @@ class Orient3D:
                 r = np.sqrt(np.square(x) + np.square(y))
             else:
                 r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1]))
-
         else:
             logger.error('only 2D is allowed!')
 
         m = 0.5 * (1 - sp.erf(k * (r - r0[0])))
+
         return m
-
-
-
-
