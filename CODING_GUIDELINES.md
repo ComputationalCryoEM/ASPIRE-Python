@@ -95,7 +95,7 @@ We will for a time attempt using
 in conjunction with
 [Issues](https://help.github.com/en/github/managing-your-work-on-github/about-issues)
 to document tasks in various stages.
-Generally this will look like a board collecting related tasks which representing a conceptual project or
+Generally this will look like a board collecting related tasks representing a conceptual project or
 actual milestone that comes out of our meetings.  For example, an event, release, or large feature set
 with many components all are reasonable project boards.  This is for planning purposes and to facilitate coordination
 in the remote environment. If it helps we can keep doing it so long as the time and effort is accounted for.
