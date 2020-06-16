@@ -303,7 +303,7 @@ def anorm(x, axes=None):
         norm = np.linalg.norm(x)
     else:
         axes = tuple(axes)    # Unrolls any generators, like `range`.
-        norm = np.sqrt(np.sum(x * x, axis=axes))
+        norm = np.sqrt(ainner(x, x, axes=axes))
     return norm
 
 
@@ -331,10 +331,8 @@ def ainner(x, y, axes=None):
     :return:
     """
     ensure(x.shape == y.shape, "The shapes of the inputs have to match")
-
-    if axes is None:
-        axes = range(x.ndim)
-    return np.tensordot(x, y, axes=(axes, axes))
+    axes = tuple(axes)    # Unrolls any generators, like `range`.
+    return np.sum(x * y, axis=axes)
 
 
 def eigs(A, k):
