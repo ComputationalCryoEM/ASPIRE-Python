@@ -331,7 +331,10 @@ def ainner(x, y, axes=None):
     :return:
     """
     ensure(x.shape == y.shape, "The shapes of the inputs have to match")
-    axes = tuple(axes)    # Unrolls any generators, like `range`.
+
+    if axes is not None:
+        axes = tuple(axes)    # Unrolls any generators, like `range`.
+
     return np.sum(x * y, axis=axes)
 
 
