@@ -17,9 +17,11 @@ def real_type(complextype):
     :param complextype: Numpy complex type
     :return realtype: Numpy real type
     """
+    complextype = np.dtype(complextype)
+    realtype = None
     if complextype == np.complex64:
         realtype = np.float32
-    elif complextype == np.float128:
+    elif complextype == np.complex128:
         realtype = np.float64
     else:
         logger.error('Corresponding real type is not defined.')
@@ -33,6 +35,8 @@ def complex_type(realtype):
     :param realtype: Numpy real type
     :return complextype: Numpy complex type
     """
+    realtype = np.dtype(realtype)
+    complextype = None
     if realtype == np.float32:
         complextype = np.complex64
     elif realtype == np.float64:

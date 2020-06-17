@@ -80,6 +80,9 @@ class PolarBasis2D(Basis):
             coordinate basis. This is an array whose first two dimensions equal `self.sz`
             and the remaining dimensions correspond to dimensions two and higher of `v`.
         """
+        if self.dtype != real_type(v.dtype):
+            logger.error('Data type is not consistent with the defined in the class.')
+
         v, sz_roll = unroll_dim(v, 2)
         nimgs = v.shape[1]
 
@@ -111,6 +114,9 @@ class PolarBasis2D(Basis):
             This is an array of vectors whose first dimension is `self.count` and
             whose remaining dimensions correspond to higher dimensions of `x`.
         """
+        if self.dtype != x.dtype:
+            logger.error('Data type is not consistent with the defined in the class.')
+
         # ensure the first two dimensions with size of self.sz
         x, sz_roll = unroll_dim(x, self.ndim + 1)
         nimgs = x.shape[2]
@@ -118,7 +124,6 @@ class PolarBasis2D(Basis):
         half_size = self.ntheta // 2
 
         # get consistent complex type from the real type of x
-        self.dtype = x.dtype
         out_type = complex_type(x.dtype)
         pf = np.empty((self.nrad * half_size, nimgs), dtype=out_type)
         # TODO: need to include the implementation of the many framework in Finufft.
