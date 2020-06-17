@@ -57,8 +57,10 @@ One reviewer can be anyone, but should probably be a developer related to the ef
 The second reviewer is a designated codeowner described in the `CODEOWNERS` file.
 More information on codeowners can be [found on GitHub.](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/about-code-owners)
 
-Additionally, all outstanding requested changes and comments must be resolved before merging.  Pushing new changes should trigger
-a re-review process of changed files to prevent oversights.
+Additionally, all outstanding requested changes and comments should be resolved
+by the requesting reviewer before merging.
+Pushing new changes should trigger a re-review process
+of changed files to prevent oversights.  
 
 Code should be passing integration and unit tests as defined in code on all
 supported platforms by the evolving Continuous Integration (CI) systems,
