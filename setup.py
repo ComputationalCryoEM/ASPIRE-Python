@@ -34,7 +34,6 @@ setup(
         'mrcfile',
         'python-box',
         'finufftpy',
-        'console_progressbar',
         'pyfftw',
         'click',
         'matplotlib',
