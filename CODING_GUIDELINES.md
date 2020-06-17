@@ -15,7 +15,7 @@ these operations locally will be provided in Google Doc to developers at that ti
 
 ## Good Practices Reading
 
-Some thoughts on Scientific Computing are discussed in Greg Wilson's papers as below:
+Some thoughts on Scientific Computing are discussed in Greg Wilson and collaborators' paper as below:
 
  1. [Good Enough Practices in Scientific Computing]( https://doi.org/10.1371/journal.pcbi.1005510)
  2. [Best Practices for Scientific Computing]( https://doi.org/10.1371/journal.pbio.1001745)
@@ -68,7 +68,7 @@ This is both for code quality and so CI maintenance is not overlooked.
 All of these controls will be managed automatically by the GitHub server.
 
 Releases and merges to `master` should be coordinated between developers and the project PI.
-This will be documented with an additional required review when merging into `master`.
+This will be documented with an additional required review from the PI when merging into `master`.
 
 ### Git Workflow Courtesy
 
@@ -85,8 +85,8 @@ In the case a codeowner will not be available, such as (sickeness, vacation, tra
 and an emergency patch can not be delayed, a simple explicit consensus among
 the remaining developers should suffice.
 
-Do not push or merge over another working branch or pull request unless explicitly permitted to do so by the authors.
-Instead, Pull Requests are suggested for all collaborative contributions.
+Do not push or merge over another working branch unless explicitly permitted to do so by the authors.
+Instead, when working on a shared branch submit a Pull Request to the other party.
 
 ## Project Collaboration
 
@@ -99,8 +99,4 @@ Generally this will look like a board collecting related tasks representing a co
 actual milestone that comes out of our meetings.  For example, an event, release, or large feature set
 with many components all are reasonable project boards.  This is for planning purposes and to facilitate coordination
 in the remote environment. If it helps we can keep doing it so long as the time and effort is accounted for.
-
-## Documentation
-
-(Todo, get an idea what exactly is and is not setup wrt gh-pages/rtd etc and discuss, also consider integration with other tools/CI)
 
