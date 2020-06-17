@@ -49,11 +49,11 @@ class UtilsTestCase(TestCase):
 
     def testRegisterRots(self):
         rots = qrand_rots(32, seed=0).T
-        regrots, mse, diff, o_mat, flag = register_rotations(rots, rots)
+        regrots, q_mat, flag = register_rotations(rots, rots)
 
-        o_result = np.array(
+        result = np.array(
             [[ 1.00000000e+00, -3.37174190e-18,  2.60886371e-18],
              [ 3.37174190e-18,  1.00000000e+00, -5.19757560e-17],
              [-2.60886371e-18,  1.39415739e-16,  1.00000000e+00]]
         )
-        self.assertTrue(np.allclose(regrots, rots) and np.allclose(o_mat, o_result))
+        self.assertTrue(np.allclose(regrots, rots) and np.allclose(q_mat, result))

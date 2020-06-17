@@ -227,8 +227,8 @@ def register_rotations(rots, rots_ref):
 
     Finds the orthogonal transformation that best aligns the estimated rotations
     to the reference rotations. `regrot` are the estimated rotations after registering
-    them to the reference ones, O is the optimal orthogonal 3x3 matrix to align
-    the two sets. If flag==2 then J conjugacy is required.
+    them to the reference ones, `Q_mat` is the optimal orthogonal 3x3 matrix to align
+    the two sets. If flag==1 then J conjugacy is required and 0 is not.
 
     :param rots: The rotations to be aligned in the form of a 3-by-3-by-n array.
     :param rots_ref: The reference rotations to which we would like to align in
@@ -237,7 +237,7 @@ def register_rotations(rots, rots_ref):
              mse, mean squired error between the estimated and aligned matrices;
              diff, difference array between the estimated and aligned matrices;
              o_mat, optimal orthogonal 3x3 matrix to align the two sets;
-            flag, flag==2 then J conjugacy is required.
+            flag, flag==1 then J conjugacy is required and 0 is not.
     """
 
     ensure(rots.shape == rots_ref.shape,
@@ -247,53 +247,68 @@ def register_rotations(rots, rots_ref):
     # Reflection matrix
     J = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
 
-    O1 = np.zeros((3, 3), dtype=rots.dtype)
-    O2 = np.zeros((3, 3), dtype=rots.dtype)
+    Q1 = np.zeros((3, 3), dtype=rots.dtype)
+    Q2 = np.zeros((3, 3), dtype=rots.dtype)
 
     for k in range(K):
         R = rots[:, :, k]
         Rref = rots_ref[:, :, k]
-        O1 = O1+R @ Rref.T
-        O2 = O2+(J @ R @ J) @ Rref.T
+        Q1 = Q1 + R @ Rref.T
+        Q2 = Q2 + (J @ R @ J) @ Rref.T
 
     # Compute the two possible orthogonal matrices which register the
     # estimated rotations to the true ones.
-    O1 = O1/K
-    O2 = O2/K
+    Q1 = Q1/K
+    Q2 = Q2/K
 
     # We are registering one set of rotations (the estimated ones) to
     # another set of rotations (the true ones). Thus, the transformation
     # matrix between the two sets of rotations should be orthogonal. This
-    # matrix is either O1 if we recover the non-reflected solution, or O2,
+    # matrix is either Q1 if we recover the non-reflected solution, or Q2,
     # if we got the reflected one. In any case, one of them should be
     # orthogonal.
 
-    err1 = norm(O1@O1.T - np.eye(3), ord='fro')
-    err2 = norm(O2@O2.T - np.eye(3), ord='fro')
+    err1 = norm(Q1@Q1.T - np.eye(3), ord='fro')
+    err2 = norm(Q2@Q2.T - np.eye(3), ord='fro')
 
     # In any case, enforce the registering matrix O to be a rotation.
     if err1 < err2:
-        # Use O1 as the registering matrix
-        U, _, V = svd(O1)
-        flag = 1
+        # Use Q1 as the registering matrix
+        U, _, V = svd(Q1)
+        flag = 0
     else:
-        # Use O2 as the registering matrix
-        U, _, V = svd(O2)
-        flag = 2
+        # Use Q2 as the registering matrix
+        U, _, V = svd(Q2)
+        flag = 1
 
-    o_mat = U @ V
-    # estimate errors
-    diff = np.zeros((K, 1))
-    mse = 0
+    Q_mat = U @ V
+
     regrot = np.zeros_like(rots)
     for k in range(K):
         R = rots[:, :, k]
-        Rref = rots_ref[:, :, k]
-        if flag == 2:
+        if flag == 1:
             R = J @ R @ J
-        regrot[:, :, k] = o_mat.T @ R
-        diff[k] = norm(o_mat.T @ R - Rref, ord='fro')
+        regrot[:, :, k] = Q_mat.T @ R
+
+    return regrot, Q_mat, flag
+
+
+def get_rots_mse(rots_reg, rots_ref):
+    """
+    calculate MSE between the estimated orientations to reference ones.
+
+    :param rots_reg: The estimated rotations after alignment in the form of
+        a 3-by-3-by-n array.
+    :param rots_ref: The reference rotations.
+    :return: The MSE value between two sets of rotations.
+    """
+    ensure(rots_reg.shape == rots_ref.shape,
+           'Two sets of rotations must have same dimensions.')
+    K = rots_reg.shape[2]
+    diff = np.zeros((K, 1))
+    mse = 0
+    for k in range(K):
+        diff[k] = norm(rots_reg[:, :, k] - rots_ref[:, :, k], ord='fro')
         mse = mse + diff[k]**2
     mse = mse/K
-
-    return regrot, mse, diff, o_mat, flag
+    return mse[0]

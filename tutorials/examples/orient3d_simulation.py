@@ -13,7 +13,7 @@ from aspire.source.simulation import Simulation
 
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
-from aspire.utils.coor_trans import register_rotations
+from aspire.utils.coor_trans import register_rotations, get_rots_mse
 from aspire.orientation.commonline_sync import CommLineSync
 
 logger = logging.getLogger('aspire')
@@ -69,7 +69,6 @@ sim = Simulation(
     filters=filters
 )
 
-
 logger.info('Get true rotation angles generated randomly by the simulation object.')
 rots_true = sim.rots
 # change the first index to the last for consistency
@@ -87,6 +86,7 @@ orient_est = CommLineSync(sim, n_theta=36)
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
 
-regrot, mse_reg, diff, O, flag = register_rotations(rots_est, rots_true_inv)
-logger.info(f'MSE deviation of the estimated rotations using register_rotations : {mse_reg[0]}')
-
+# Get register rotations after performing global alignment
+regrot, O, flag = register_rotations(rots_est, rots_true_inv)
+mse_reg = get_rots_mse(regrot, rots_true_inv)
+logger.info(f'MSE deviation of the estimated rotations using register_rotations : {mse_reg}')
