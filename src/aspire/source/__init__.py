@@ -327,7 +327,7 @@ class ImageSource:
 
         if self._cached_im is not None:
             logger.info(f'Loading images from cache')
-            im = Image(self._cached_im[:, :, indices])
+            im = Image(self._cached_im[indices, :, :])
         else:
             im = self._images(indices=indices, *args, **kwargs)
 

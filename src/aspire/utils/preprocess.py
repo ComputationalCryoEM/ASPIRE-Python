@@ -10,8 +10,8 @@ from scipy.special import erf
 from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
-from aspire.utils.fft import (centered_fft1, centered_fft2, centered_fft3,
-                              centered_ifft1, centered_ifft2, centered_ifft3)
+from aspire.utils.fft import (centered_fft1, centered_fft2_F, centered_fft3,
+                              centered_ifft1, centered_ifft2_F, centered_ifft3)
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ def downsample_centered(insamples, szout):
         # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
         x = y = np.ceil(np.arange(-L_in/2, L_in/2)) / (L_in/2)
         mask = (np.abs(grid_in['x']) < L_out/L_in) & (np.abs(grid_in['y']) < L_out/L_in)
-        insamples_fft = np.real(centered_ifft2(centered_fft2(insamples) * np.expand_dims(mask, 2)))
+        insamples_fft = np.real(centered_ifft2_F(centered_fft2_F(insamples) * np.expand_dims(mask, 2)))
         for idata in range(ndata):
             interpolator = RegularGridInterpolator(
                 (x, y),
@@ -299,7 +299,7 @@ def vol2img(volume, rots, L=None, dtype=None):
         im_f = im_f * np.exp(1j*np.sum(pts_rot, 0)/2)
         im_f = im_f * np.expand_dims(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y']-1)/(2*lv)), 2)
 
-    im = centered_ifft2(im_f)
+    im = centered_ifft2_F(im_f)
     if lv % 2 == 0:
         im = im * m_reshape(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y'])/(2*lv)), (lv, lv, 1))
 

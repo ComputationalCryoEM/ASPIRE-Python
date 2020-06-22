@@ -3,7 +3,7 @@ import numpy as np
 from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.fft import centered_fft2, centered_ifft2
+from aspire.utils.fft import centered_fft2_F, centered_ifft2_F
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 
@@ -64,7 +64,7 @@ def vol_project(vol, rot_matrices):
         im_f[0, :, :] = 0
         im_f[:, 0, :] = 0
 
-    im = centered_ifft2(im_f)
+    im = centered_ifft2_F(im_f)
 
     return np.real(im)
 
