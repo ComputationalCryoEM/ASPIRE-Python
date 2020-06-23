@@ -180,17 +180,29 @@ class FFBBasis2D(FBBasis2D):
             This is an array of vectors whose first dimension equals `self.count`
             and whose remaining dimensions correspond to higher dimensions of `x`.
         """
-        # ensure the first two dimensions with size of self.sz
-        x, sz_roll = unroll_dim(x, self.ndim + 1)
-        x = m_reshape(x, (self.sz[0], self.sz[1], -1))
 
+        # sanity check
+        # x_ = np.empty((*x.shape[1:], x.shape[0]))
+        # for n, i in enumerate(x):
+        #     x_[..., n] = i
+        # x = x_
+        
+        # ensure the first two dimensions with size of self.sz
+        #x, sz_roll = unroll_dim(x, self.ndim + 1)
+        #x = m_reshape(x, (self.sz[0], self.sz[1], -1))
+
+        # print('x.shape', x.shape)
+        # print('x[0]', x[0])
+        # okay
+        
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
         n_r = np.size(self._precomp["freqs"], 1)
-        freqs = m_reshape(self._precomp["freqs"], new_shape=(2, n_r * n_theta))
+        freqs = np.reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # number of 2D image samples
-        n_data = np.size(x, 2)
+        #n_data = np.size(x, 2)
+        n_data = x.shape[0]
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
         pfc = nufft(x, 2 * pi * freqs)
@@ -199,26 +211,28 @@ class FFBBasis2D(FBBasis2D):
         pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
 
         # Recover "negative" frequencies from "positive" half plane.
-        pf = np.concatenate((pf, pf.conjugate()), axis=1)
+        pf = np.concatenate((pf, pf.conjugate()), axis=2)
 
         # evaluate radial integral using the Gauss-Legendre quadrature rule
         for i_r in range(0, n_r):
-            pf[i_r, ...] = pf[i_r, ...] * (
+            pf[:, i_r, :] = pf[:, i_r, :] * (
                     self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
 
         #  1D FFT on the angular dimension for each concentric circle
-        pf = 2 * pi / (2 * n_theta) * fft(pf, 2*n_theta, 1)
+        pf = 2 * pi / (2 * n_theta) * fft(pf, 2*n_theta, 2)
 
         # This only makes it easier to slice the array later.
-        v = np.zeros((self.count, n_data), dtype=x.dtype)
+        v = np.zeros((n_data, self.count), dtype=x.dtype)
 
         # go through each basis function and find the corresponding coefficient
         ind = 0
         idx = ind + np.arange(self.k_max[0])
         mask = self._indices["ells"] == 0
 
-        v[mask, :] = self._precomp["radial"][:, idx].T @ pf[:, 0, :].real
-        v = m_reshape(v, (self.count, -1))
+        #print('QQQ1', self._precomp["radial"][:, idx].shape) # 4, 8 
+        #print('QQQ2', pf[:, :, 0].real.shape) # 32, 8
+        v[:, mask] = pf[:, :, 0].real @ self._precomp["radial"][:, idx] 
+        #v = m_reshape(v, (self.count, -1))
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -227,7 +241,7 @@ class FFBBasis2D(FBBasis2D):
             idx_pos = ind_pos + np.arange(self.k_max[ell])
             idx_neg = idx_pos + self.k_max[ell]
 
-            v_ell = self._precomp["radial"][:, idx].T @ pf[:, ell, :]
+            v_ell = pf[:, :, ell] @ self._precomp["radial"][:, idx]
 
             if np.mod(ell, 2) == 0:
                 v_pos = np.real(v_ell)
@@ -236,13 +250,13 @@ class FFBBasis2D(FBBasis2D):
                 v_pos = np.imag(v_ell)
                 v_neg = np.real(v_ell)
 
-            v[idx_pos, :] = v_pos
-            v[idx_neg, :] = v_neg
+            v[:, idx_pos] = v_pos
+            v[:, idx_neg] = v_neg
 
             ind = ind + np.size(idx)
 
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
         # return v coefficients with the first dimension of self.count
-        v = roll_dim(v, sz_roll)
+        #v = roll_dim(v, sz_roll)
         return v

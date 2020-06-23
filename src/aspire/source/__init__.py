@@ -288,7 +288,7 @@ class ImageSource:
         for f in unique_filters:
             idx_k = np.where(self.filters[indices] == f)[0]
             if len(idx_k) > 0:
-                im[:, :, idx_k] = Image(im[:, :, idx_k]).filter(f).asnumpy()
+                im[idx_k] = Image(im[idx_k]).filter(f).asnumpy()
 
         return im
 

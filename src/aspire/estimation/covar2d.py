@@ -40,7 +40,7 @@ class RotCov2D:
             raise RuntimeError('The coefficients need to be calculated first!')
         mask = self.basis._indices["ells"] == 0
         mean_coeff = np.zeros(self.basis.count, dtype=coeffs.dtype)
-        mean_coeff[mask] = np.mean(coeffs[mask, ...], axis=1)
+        mean_coeff[mask] = np.mean(coeffs[..., mask], axis=0)
 
         return mean_coeff
 
@@ -62,7 +62,7 @@ class RotCov2D:
         covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
         ell = 0
         mask = self.basis._indices["ells"] == ell
-        coeff_ell = coeffs[mask, ...] - mean_coeff[mask, np.newaxis]
+        coeff_ell = coeffs[..., mask] - mean_coeff[np.newaxis, mask]
         covar_ell = np.array(coeff_ell @ coeff_ell.T/np.size(coeffs, 1))
         covar_coeff.append(covar_ell)
 
@@ -70,15 +70,15 @@ class RotCov2D:
             mask = self.basis._indices["ells"] == ell
             mask_pos = [mask[i] and (self.basis._indices['sgns'][i] == +1) for i in range(len(mask))]
             mask_neg = [mask[i] and (self.basis._indices['sgns'][i] == -1) for i in range(len(mask))]
-            covar_ell_diag = np.array(coeffs[mask_pos, :] @ coeffs[mask_pos, :].T +
-                coeffs[mask_neg, :] @ coeffs[mask_neg, :].T) / (2 * np.size(coeffs, 1))
+            covar_ell_diag = np.array(coeffs[:, mask_pos] @ coeffs[:, mask_pos].T +
+                coeffs[:, mask_neg] @ coeffs[:, mask_neg].T) / (2 * np.size(coeffs, 1))
 
             if do_refl:
                 covar_coeff.append(covar_ell_diag)
                 covar_coeff.append(covar_ell_diag)
             else:
-                covar_ell_off = np.array((coeffs[mask_pos, :] @ coeffs[mask_neg, :].T / np.size(coeffs, 1) -
-                                 coeffs[mask_neg, :] @ coeffs[mask_pos, :].T)/(2 * np.size(coeffs, 1)))
+                covar_ell_off = np.array((coeffs[:, mask_pos] @ coeffs[:, mask_neg].T / np.size(coeffs, 1) -
+                                 coeffs[:, mask_neg] @ coeffs[:, mask_pos].T)/(2 * np.size(coeffs, 1)))
                 hsize = np.size(covar_ell_diag, 0)
                 covar_coeff_blk = np.zeros((2 * hsize, 2 * hsize))
 

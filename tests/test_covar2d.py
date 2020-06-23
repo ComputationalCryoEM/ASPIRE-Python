@@ -12,7 +12,8 @@ from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import randn
 from aspire.utils.matrix import anorm
-from aspire.utils.preprocess import downsample, vol2img
+from aspire.utils.preprocess_C import downsample, vol2img
+from aspire.utils.preprocess import vol2img as vol2img_F
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -44,14 +45,18 @@ class Cov2DTestCase(TestCase):
         )
 
         vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
-        vols = vols[..., np.newaxis]
+        vols = vols[np.newaxis, ...]
         vols = downsample(vols, (L*np.ones(3, dtype=int)))
         sim.vols = vols
 
         self.basis = FFBBasis2D((L, L))
         # use new methods to generate random rotations and clean images
         sim.rots = qrand_rots(n, seed=0)
-        self.imgs_clean = vol2img(vols[..., 0], sim.rots)
+        self.imgs_clean = vol2img_F(vols[0], sim.rots)
+        # XXX hack for testing purposes (need to rewrite vol2img later)
+        self.imgs_clean = np.array([self.imgs_clean[..., i] for i in range(self.imgs_clean.shape[-1])])
+        
+        
 
         self.h_idx = np.array([filters.index(f) for f in sim.filters])
         self.filters = filters
@@ -61,7 +66,7 @@ class Cov2DTestCase(TestCase):
 
         power_clean = anorm(self.imgs_ctf_clean)**2/np.size(self.imgs_ctf_clean)
         self.noise_var = power_clean/SNR
-        self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var)*randn(L, L, n, seed=0)
+        self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var)*randn(n, L, L, seed=0)
 
         self.cov2d = RotCov2D(self.basis)
         self.coeff_clean = self.basis.evaluate_t(self.imgs_clean)
@@ -73,6 +78,8 @@ class Cov2DTestCase(TestCase):
     def test01GetMean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_mean.npy'))
         self.mean_coeff = self.cov2d._get_mean(self.coeff_clean)
+        print('results.shape', results)
+        print(self.mean_coeff)
         self.assertTrue(np.allclose(results, self.mean_coeff))
 
     def test02GetCovar(self):
