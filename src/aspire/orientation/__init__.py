@@ -15,14 +15,13 @@ class Orient3D:
     """
     Define a base class for estimating 3D orientations
     """
-    def __init__(self, src, n_rad=None, n_theta=None, masked=True):
+    def __init__(self, src, n_rad=None, n_theta=None):
         """
         Initialize an object for estimating 3D orientations
 
         :param src: The source object of 2D denoised or class-averaged imag
         :param n_rad: The number of points in the radial direction
         :param n_theta: The number of points in the theta direction
-        :param masked: Whether applying a mask to the images or not
         """
         self.src = src
         self.n_img = src.n
@@ -36,13 +35,25 @@ class Orient3D:
         else:
             self.n_theta = n_theta
 
-        self.basis = PolarBasis2D((self.n_res, self.n_res), self.n_rad, self.n_theta)
-
         self.max_shift = math.ceil(config.orient.max_shift * self.n_res)
         self.shift_step = config.orient.shift_step
 
-        imgs = self.src.images(start=0, num=np.inf).asnumpy()
+        self.clmatrix = None
+        self.cormatrix = None
+        self.shifts_1d = None
+        self.shift_equations = None
+        self.shift_equations_map = None
 
+        self.rotations = None
+
+        self._build()
+
+    def _build(self):
+        """
+        Build the internal data structure for orientation estimation
+        """
+        imgs = self.src.images(start=0, num=np.inf).asnumpy()
+        masked = True
         if masked:
             mask_radius = self.n_res * 0.45
             self.rise_time = config.orient.rise_time
@@ -69,16 +80,17 @@ class Orient3D:
 
         n_theta = self.n_theta
         if n_theta % 2 == 1:
-            raise ValueError('n_theta must be even')
+            logger.error('n_theta must be even')
         n_theta = n_theta // 2
+        # The first two dimension of pf is of size n_rad x n_theta. Convert pf into an
+        # array of size (2xn_r-1) x n_theta/2, that is, take then entire ray
+        # through the origin, but take the angles only up PI.
+        # This seems redundant: The original images are real, and thus
+        # each ray is conjugate symmetric. We therefore gain nothing by taking
+        # longer correlations (of length 2*n_r-1 instead of n_r), as the two halves
+        # are exactly the same. Taking shorter correlation would speed the
+        # computation by a factor of two.
         self.pf = np.concatenate((np.flip(self.pf[1:, n_theta:], 0), self.pf[:, :n_theta]), 0)
-
-        self.clmatrix = None
-        self.cormatrix = None
-        self.shift_equations = None
-        self.shift_equations_map = None
-        self.clmatrix_mask = None
-        self.rotations = None
 
     def estimate_rotations(self):
         """
@@ -98,77 +110,88 @@ class Orient3D:
         """
         Build common-lines matrix from Fourier stack of 2D images
 
-        :param n_check: For each projection find its common-lines with n_check
-            projections. If n_check is less than the total number a projection,
-            a random subset of nk projections is used.
+        :param n_check: For each image/projection find its common-lines with
+            n_check images. If n_check is less than the total number of images,
+            a random subset of n_check images is used.
         """
-        max_shift = self.max_shift
-        shift_step = self.shift_step
+
         n_img = self.n_img
         if n_check is None:
             n_check = n_img
-        n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
         n_theta = self.n_theta
         if n_theta % 2 == 1:
             raise ValueError('n_theta must be even')
         n_theta = n_theta // 2
 
-        pf = self.pf
+        # need to do a copy  to prevent modifying self.pf for other functions
+        pf = self.pf.copy()
 
-        # Allocate variables
+        # Allocate local variables for return
+        # clstack represents the common lines matrix:
+        # clstack[i, j] and clstack[j ,i] contain the index
+        # of the common line of projections i and j. Namely,
+        # clstack[i,j] contains the index of the common line
+        # in the image i. clstack[j,i] contains the index of
+        # the common line in j image.
         clstack = -np.ones((n_img, n_img))
+        # corrstack defines the correlation of the common line
+        # between image i and j. Since corrstack is symmetric,
+        # only above the diagonal entries are necessary.
+        # corrstack[i, j] measures how ''common'' is the between
+        # image i and j. Small value means high-similarity.
         corrstack = np.zeros((n_img, n_img))
-        clstack_mask = np.zeros((n_img, n_img))
 
         # Allocate variables used for shift estimation
-        shifts_1d = np.zeros((n_img, n_img))
-        shift_i = np.zeros(4 * n_img * n_check)
-        shift_j = np.zeros(4 * n_img * n_check)
-        shift_eq = np.zeros(4 * n_img * n_check)
-        shift_equations_map = np.zeros((n_img, n_img))
-        shift_equation_idx = 0
-        shift_b = np.zeros(n_img * (n_img - 1) // 2)
-        dtheta = np.pi / n_theta
 
-        # Search for common lines between pairs of projections.
-        # Creating pf3 and building common lines are different to Matlab version.
-        # The random selection is implemented.
+        # set maximum value of 1D shift (in pixels) to search
+        # between common-lines.
+        max_shift = self.max_shift
+        # Set resolution of shift estimation in pixels. Note that
+        # shift_step can be any positive real number.
+        shift_step = self.shift_step
+        n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
+        # 1D shift between common-lines
+        shifts_1d = np.zeros((n_img, n_img))
+
+        # Construct filter to apply to each Fourier ray.
         r_max = int((pf.shape[0] - 1) / 2)
         rk = np.arange(-r_max, r_max + 1)
+        # Filter for common-line detection
         h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * np.square(r_max / 4)))
 
-        pf3 = np.empty(pf.shape, dtype=pf.dtype)
-        np.einsum('ijk, i -> ijk', pf, h, out=pf3)
-        pf3[r_max - 1:r_max + 2] = 0
-        pf3 /= np.linalg.norm(pf3, axis=0)
-        pf3 = pf3[:r_max]
-        pf3 = pf3.transpose((2, 1, 0))
+        # Bandpass filter and normalize each ray of each image.
+        np.einsum('ijk, i -> ijk', pf, h, out=pf)
+        pf[r_max - 1:r_max + 2] = 0
+        pf /= np.linalg.norm(pf, axis=0)
 
-        rk2 = rk[:r_max]
+        # Only half of each ray is needed
+        pf = pf[0:r_max]
+        pf = pf.transpose((2, 1, 0))
 
+        rk2 = rk[0:r_max]
+        # Initialize the shift vector and matrix
         all_shift_phases = np.zeros((n_shifts, r_max), 'complex128')
         shifts = np.array([-max_shift + i * shift_step for i in range(n_shifts)], dtype='int')
         for i in range(n_shifts):
             shift = shifts[i]
             all_shift_phases[i] = np.exp(-2 * np.pi * 1j * rk2 * shift / (2 * r_max + 1))
 
-        for i in range(n_img):
-            n2 = min(n_img - i, n_check)
+        # Search for common lines between [i, j] pairs of images.
+        # Creating pf and building common lines are different to the Matlab version.
+        # The random selection is implemented.
+        for i in range(n_img-1):
 
-            if n_img - i - 1 == 0:
-                subset_k2 = []
-            else:
-                subset_k2 = np.sort(np.random.choice(n_img - i - 1, n2 - 1,
-                                                     replace=False) + i + 1)
-
-            proj1 = pf3[i]
-            p1 = proj1
+            p1 = pf[i]
             p1_real = np.real(p1)
             p1_imag = np.imag(p1)
 
-            for j in subset_k2:
-                proj2 = pf3[j]
-                p2_flipped = np.conj(proj2)
+            # build the subset of j images if n_check < n_img
+            n2 = min(n_img - i, n_check)
+            subset_j = np.sort(np.random.choice(n_img - i - 1, n2 - 1,
+                                                 replace=False) + i + 1)
+            for j in subset_j:
+
+                p2_flipped = np.conj(pf[j])
 
                 for shift in range(n_shifts):
                     shift_phases = all_shift_phases[shift]
@@ -199,6 +222,73 @@ class Orient3D:
                         corrstack[i, j] = sval
                         shifts_1d[i, j] = shifts[shift]
 
+        mask = np.where(corrstack != 0)
+        corrstack[mask] = 1 - corrstack[mask]
+
+        self.clmatrix = clstack
+        self.cormatrix = corrstack
+        self.shifts_1d = shifts_1d
+
+    def get_shifts_equations(self, n_check=None):
+        """
+        Obtain shifts equations from common-lines matrix
+
+        :param n_check: For each image/projection find its common-lines with
+            n_check images. If n_check is less than the total number of images,
+            a random subset of n_check images is used.
+        """
+
+        clstack = self.clmatrix
+        corrstack = self.cormatrix
+        shifts_1d = self.shifts_1d
+
+        n_img = self.n_img
+        if n_check is None:
+            n_check = n_img
+
+        n_theta = self.n_theta
+        if n_theta % 2 == 1:
+            raise ValueError('n_theta must be even')
+        n_theta = n_theta // 2
+
+        # Allocate variables used for shift estimation
+
+        # Based on the estimated common-lines, construct the equations
+        # for determining the 2D shift of each image. The shift equations
+        # are represented using a sparse matrix, since each row in the
+        # system contains four non-zeros (as it involves exactly four unknowns).
+        # The variables below are used to construct this sparse system.
+        # The k'th non-zero element of the equations matrix is stored as
+        # index (shift_i[k],shift_j[k]).
+
+        # Row index for sparse equations system
+        shift_i = np.zeros(4 * n_img * n_check)
+        #  Column index for sparse equations system
+        shift_j = np.zeros(4 * n_img * n_check)
+        # The coefficients of the center estimation system ordered
+        # as a single vector.
+        shift_eq = np.zeros(4 * n_img * n_check)
+        # shift_equations_map[k1,k2] is the index of the equation for
+        # the common line between images i and j.
+        shift_equations_map = np.zeros((n_img, n_img))
+        # The equation number we are currently processing
+        shift_equation_idx = 0
+        # Right hand side of the system
+        shift_b = np.zeros(n_img * (n_img - 1) // 2)
+        # Not 2*pi/n_theta, since we divided n_theta by 2 to take rays of length 2*n_r-1.
+        dtheta = np.pi / n_theta
+
+        # Search for common lines between pairs of projections.
+        # Creating pf3 and building common lines are different to Matlab version.
+        # The random selection is implemented.
+
+        for i in range(n_img-1):
+
+            # build the subset of j images
+
+            for j in range(i+1, n_img):
+                if corrstack[i, j] == 0:
+                    continue
                 # Create a shift equation for the projections pair (i, j).
                 idx = np.arange(4 * shift_equation_idx, 4 * shift_equation_idx + 4)
                 shift_alpha = clstack[i, j] * dtheta
@@ -219,24 +309,20 @@ class Orient3D:
                 shift_equations_map[i, j] = shift_equation_idx
                 shift_equation_idx += 1
 
-        tmp = np.where(corrstack != 0)
-        corrstack[tmp] = 1 - corrstack[tmp]
-        l = 4 * shift_equation_idx
-        shift_eq[l: l + shift_equation_idx] = shift_b
-        shift_i[l: l + shift_equation_idx] = np.arange(shift_equation_idx)
-        shift_j[l: l + shift_equation_idx] = 2 * n_img
-        tmp = np.where(shift_eq != 0)[0]
-        shift_eq = shift_eq[tmp]
-        shift_i = shift_i[tmp]
-        shift_j = shift_j[tmp]
-        l += shift_equation_idx
+        ell = 4 * shift_equation_idx
+        shift_eq[ell: ell + shift_equation_idx] = shift_b
+        shift_i[ell: ell + shift_equation_idx] = np.arange(shift_equation_idx)
+        shift_j[ell: ell + shift_equation_idx] = 2 * n_img
+        mask = np.where(shift_eq != 0)[0]
+        shift_eq = shift_eq[mask]
+        shift_i = shift_i[mask]
+        shift_j = shift_j[mask]
+        ell += shift_equation_idx
         shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)),
                                          shape=(shift_equation_idx, 2 * n_img + 1))
-        self.clmatrix = clstack
-        self.cormatrix = corrstack
+
         self.shift_equations = shift_equations
         self.shift_equations_map = shift_equations_map
-        self.clmatrix_mask = clstack_mask
 
     def estimate_shifts(self, memory_factor=10000):
         """
