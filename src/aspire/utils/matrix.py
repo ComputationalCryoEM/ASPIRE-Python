@@ -300,8 +300,11 @@ def anorm(x, axes=None):
     :return: The Euclidean (l^2) norm of x along specified axes.
     """
     if axes is None:
-        axes = range(x.ndim)
-    return np.sqrt(ainner(x, x, axes))
+        norm = np.linalg.norm(x)
+    else:
+        axes = tuple(axes)    # Unrolls any generators, like `range`.
+        norm = np.sqrt(ainner(x, x, axes=axes))
+    return norm
 
 
 def acorr(x, y, axes=None):
@@ -329,9 +332,10 @@ def ainner(x, y, axes=None):
     """
     ensure(x.shape == y.shape, "The shapes of the inputs have to match")
 
-    if axes is None:
-        axes = range(x.ndim)
-    return np.tensordot(x, y, axes=(axes, axes))
+    if axes is not None:
+        axes = tuple(axes)    # Unrolls any generators, like `range`.
+
+    return np.sum(x * y, axis=axes)
 
 
 def eigs(A, k):
