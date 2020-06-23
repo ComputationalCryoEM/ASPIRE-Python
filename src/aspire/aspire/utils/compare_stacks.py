@@ -58,11 +58,9 @@ def compare_stacks(stack1, stack2, verbose=None, max_error=None):
 
         if verbose == 0:
             continue
-
         elif verbose == 2 and (i+1) % 100 == 0:
             logger.info(f'Finished comparing {i+1}/{num_of_images} projections. '
                         f'Relative error so far: {relative_err}')
-
         elif verbose == 3:
             logger.info(f'Difference between projections ({i+1}) <> ({i+1}): {err}')
 
