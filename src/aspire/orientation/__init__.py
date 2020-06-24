@@ -3,6 +3,7 @@ import math
 import numpy as np
 import scipy.special as sp
 import scipy.sparse as sps
+
 from aspire import config
 
 from aspire.basis.polar_2d import PolarBasis2D
@@ -443,7 +444,7 @@ class Orient3D:
         shift_equations = sps.csr_matrix((shift_eq, (shift_i, shift_j)),
                                          shape=(n_equations, 2 * n_img + 1))
 
-        est_shifts = np.linalg.lstsq(shift_equations[:, :-1].todense(), shift_b, rcond=-1)[0]
+        est_shifts = sps.linalg.lsqr(shift_equations[:, :-1], shift_b)[0]
         est_shifts = est_shifts.reshape((2, n_img), order='F')
 
         return est_shifts, shift_equations
