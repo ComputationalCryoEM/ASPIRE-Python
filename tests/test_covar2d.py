@@ -63,10 +63,16 @@ class Cov2DTestCase(TestCase):
         self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in self.filters]
 
         self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
+        #okay print('self.imgs_ctf_clean', self.imgs_ctf_clean[0])
 
         power_clean = anorm(self.imgs_ctf_clean)**2/np.size(self.imgs_ctf_clean)
         self.noise_var = power_clean/SNR
-        self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var)*randn(n, L, L, seed=0)
+        # okay print('self.noise_var', self.noise_var)
+        # sigh, this is awful
+        R = np.swapaxes(randn(L, L, n, seed=0), 0, 1)
+        R = np.swapaxes(R, -1, 0)
+        self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var) * R
+        # okay, see horrorshow work above, print('self.imgs_ctf_noise', self.imgs_ctf_noise[0])
 
         self.cov2d = RotCov2D(self.basis)
         self.coeff_clean = self.basis.evaluate_t(self.imgs_clean)
@@ -78,7 +84,6 @@ class Cov2DTestCase(TestCase):
     def test01GetMean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_mean.npy'))
         self.mean_coeff = self.cov2d._get_mean(self.coeff_clean)
-        print(self.mean_coeff)
         self.assertTrue(np.allclose(results, self.mean_coeff))
 
     def test02GetCovar(self):

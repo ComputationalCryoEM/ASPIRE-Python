@@ -105,20 +105,24 @@ class RotCov2D:
             If ctf_fb or ctf_idx is None, the identity filter will be applied.
         :return: The mean value vector for all images.
         """
+        
+        
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated!')
 
+        # should assert we require none or both...
         if (ctf_fb is None) or (ctf_idx is None):
-            ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
+            ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
         A = BlkDiagMatrix.zeros_like(ctf_fb[0])
         for k in np.unique(ctf_idx[:]).T:
-            coeff_k = coeffs[:, ctf_idx == k]
-            weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
+            coeff_k = coeffs[ctf_idx == k]
+            weight = coeff_k.shape[0] / coeffs.shape[0]
             mean_coeff_k = self._get_mean(coeff_k)
+            
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
             b += weight * ctf_fb_k_t.apply(mean_coeff_k)
