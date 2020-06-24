@@ -312,3 +312,25 @@ def get_rots_mse(rots_reg, rots_ref):
         mse = mse + diff[k]**2
     mse = mse/K
     return mse[0]
+
+
+def common_line_from_rots(r1, r2, ell):
+    """
+    Compute the common line induced by rotation matrices r1 and r2.
+
+    :param r1: The first rotation matrix of 3-by-3 array.
+    :param r2: The second rotation matrix of 3-by-3 array.
+    :param ell: The total number of common lines.
+    :return: The common line indices for both first and second rotations.
+    """
+    ut = np.dot(r2, r1.T)
+    alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
+    alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
+
+    ell_ij = alpha_ij * ell / (2 * np.pi)
+    ell_ji = alpha_ji * ell / (2 * np.pi)
+
+    ell_ij = np.mod(np.round(ell_ij), ell)
+    ell_ji = np.mod(np.round(ell_ji), ell)
+
+    return ell_ij, ell_ji

@@ -8,6 +8,7 @@ from aspire import config
 
 from aspire.basis.polar_2d import PolarBasis2D
 from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.coor_trans import common_line_from_rots
 
 logger = logging.getLogger(__name__)
 
@@ -535,7 +536,7 @@ class Orient3D:
         # get the common line indices based on the rotations from i and j images
         r_i = rotations[:, :, i]
         r_j = rotations[:, :, j]
-        c_ij, c_ji = self._common_line_r(r_i.T, r_j.T, 2 * n_theta)
+        c_ij, c_ji = common_line_from_rots(r_i.T, r_j.T, 2 * n_theta)
 
         if c_ij >= n_theta:
             c_ij -= n_theta
@@ -568,22 +569,6 @@ class Orient3D:
         pf_j = pf_j[0:r_max]
 
         return pf_i, pf_j
-
-    def _common_line_r(self, r1, r2, ell):
-        """
-        Compute the common line induced by rotation matrices r1 and r2.
-        """
-        ut = np.dot(r2, r1.T)
-        alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
-        alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
-
-        ell_ij = alpha_ij * ell / (2 * np.pi)
-        ell_ji = alpha_ji * ell / (2 * np.pi)
-
-        ell_ij = np.mod(np.round(ell_ij), ell)
-        ell_ji = np.mod(np.round(ell_ji), ell)
-
-        return ell_ij, ell_ji
 
     def _fuzzy_mask(self, n, r0, origin=None):
         """
