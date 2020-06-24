@@ -208,7 +208,9 @@ class FFBBasis2D(FBBasis2D):
         pfc = nufft(x, 2 * pi * freqs)
         pf = pfc.T
 
-        pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
+        #print('pf[0]', pf[0])
+        #pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
+        pf = np.reshape(pf, (n_data, n_r, n_theta))
 
         # Recover "negative" frequencies from "positive" half plane.
         pf = np.concatenate((pf, pf.conjugate()), axis=2)

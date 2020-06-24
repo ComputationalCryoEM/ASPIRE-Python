@@ -284,13 +284,13 @@ def vol2img(volume, rots, L=None, dtype=None):
     for i in range(num_rots):
         pts_rot[:, :, i] = rots[i, :, :].T @ pts
 
-    #pts_rot = m_reshape(pts_rot, (3, lv**2*num_rots))
+    pts_rot = m_reshape(pts_rot, (3, lv**2*num_rots))
 
     pts_rot = -2*pts_rot/lv
 
     im_f = Plan(volume.shape, -pts_rot).transform(volume)
 
-    #im_f = m_reshape(im_f, (lv, lv, -1))
+    im_f = m_reshape(im_f, (lv, lv, -1))
 
     if lv % 2 == 0:
         pts_rot = m_reshape(pts_rot, (3, lv, lv, num_rots))
@@ -299,6 +299,6 @@ def vol2img(volume, rots, L=None, dtype=None):
 
     im = centered_ifft2_C(im_f)
     if lv % 2 == 0:
-        im = im * m_reshape(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y'])/(2*lv)), (lv, lv, 1))
+        im = im * m_reshape(np.exp(2*np.pi*1j * (grid2d['x'] + grid2d['y'])/(2*lv)), (lv, lv, 1))
 
     return np.real(im)
