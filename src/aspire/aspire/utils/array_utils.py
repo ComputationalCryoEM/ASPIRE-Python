@@ -6,7 +6,6 @@ TODO reduced this file by refactoring it and moving crop/downsample capabilities
 """
 import numpy as np
 import pyfftw
-from console_progressbar import ProgressBar
 from numpy.fft import fftshift, ifftshift
 from pyfftw.interfaces.numpy_fft import fft2, ifft2
 
