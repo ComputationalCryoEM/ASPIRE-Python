@@ -231,9 +231,9 @@ def register_rotations(rots, rots_ref):
     them to the reference ones, `Q_mat` is the optimal orthogonal 3x3 matrix to align
     the two sets. If flag==1 then J conjugacy is required and 0 is not.
 
-    :param rots: The rotations to be aligned in the form of a 3-by-3-by-n array.
+    :param rots: The rotations to be aligned in the form of a n-by-3-by-3 array.
     :param rots_ref: The reference rotations to which we would like to align in
-        the form of a 3-by-3-by-n array.
+        the form of a n-by-3-by-3 array.
     :return: regrot, aligned rotation matrices;
              mse, mean squired error between the estimated and aligned matrices;
              diff, difference array between the estimated and aligned matrices;
@@ -243,7 +243,7 @@ def register_rotations(rots, rots_ref):
 
     ensure(rots.shape == rots_ref.shape,
            'Two sets of rotations must have same dimensions.')
-    K = rots.shape[2]
+    K = rots.shape[0]
 
     # Reflection matrix
     J = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
@@ -252,8 +252,8 @@ def register_rotations(rots, rots_ref):
     Q2 = np.zeros((3, 3), dtype=rots.dtype)
 
     for k in range(K):
-        R = rots[:, :, k]
-        Rref = rots_ref[:, :, k]
+        R = rots[k, :, :]
+        Rref = rots_ref[k, :, :]
         Q1 = Q1 + R @ Rref.T
         Q2 = Q2 + (J @ R @ J) @ Rref.T
 
@@ -286,10 +286,10 @@ def register_rotations(rots, rots_ref):
 
     regrot = np.zeros_like(rots)
     for k in range(K):
-        R = rots[:, :, k]
+        R = rots[k, :, :]
         if flag == 1:
             R = J @ R @ J
-        regrot[:, :, k] = Q_mat.T @ R
+        regrot[k, :, :] = Q_mat.T @ R
 
     return regrot, Q_mat, flag
 
@@ -299,17 +299,17 @@ def get_rots_mse(rots_reg, rots_ref):
     calculate MSE between the estimated orientations to reference ones.
 
     :param rots_reg: The estimated rotations after alignment in the form of
-        a 3-by-3-by-n array.
+        a n-by-3-by-3 array.
     :param rots_ref: The reference rotations.
     :return: The MSE value between two sets of rotations.
     """
     ensure(rots_reg.shape == rots_ref.shape,
            'Two sets of rotations must have same dimensions.')
-    K = rots_reg.shape[2]
+    K = rots_reg.shape[0]
     diff = np.zeros((K, 1))
     mse = 0
     for k in range(K):
-        diff[k] = norm(rots_reg[:, :, k] - rots_ref[:, :, k], ord='fro')
+        diff[k] = norm(rots_reg[k, :, :] - rots_ref[k, :, :], ord='fro')
         mse = mse + diff[k]**2
     mse = mse/K
     return mse[0]

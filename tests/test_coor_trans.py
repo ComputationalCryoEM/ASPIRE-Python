@@ -49,7 +49,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(np.moveaxis(results, 2, 0), rot_matrices32, atol=1e-7))
 
     def testRegisterRots(self):
-        rots = qrand_rots(32, seed=0).T
+        rots = qrand_rots(32, seed=0)
         regrots, q_mat, flag = register_rotations(rots, rots)
 
         result = np.array(

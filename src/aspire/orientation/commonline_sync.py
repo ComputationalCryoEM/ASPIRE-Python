@@ -131,7 +131,7 @@ class CommLineSync(CLOrient3D):
         u, _, v = np.linalg.svd(rotations)
         np.einsum('ijk, ikl -> ijl', u, v, out=rotations)
 
-        self.rotations = rotations.transpose((1, 2, 0)).copy()
+        self.rotations = rotations
 
     def syncmatrix_vote(self):
         """

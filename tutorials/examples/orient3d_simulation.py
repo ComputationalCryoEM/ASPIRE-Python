@@ -50,8 +50,7 @@ filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
            for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
 # Load the map file of a 70S Ribosome and downsample the 3D map to desired resolution.
-# The downsampling should be done by the internal function of sim object in future.
-# Below we use alternative implementation to obtain the exact result with Matlab version.
+# The downsampling should be done by the internal function of Volume object in future.
 logger.info(f'Load 3D map and downsample 3D map to desired grids '
             f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
@@ -71,11 +70,10 @@ sim = Simulation(
 
 logger.info('Get true rotation angles generated randomly by the simulation object.')
 rots_true = sim.rots
-# change the first index to the last for consistency
-rots_true_inv = np.zeros((3, 3, rots_true.shape[0]))
-for i in range(rots_true.shape[0]):
-    rots_true_inv[:, :, i] = rots_true[i, :, :]
-# switch the X, Y to make consistent with orientation estimation code
+
+# Switch the X, Y to make consistent with orientation estimation code
+# This should be not necessary after we fix the typo in the projection
+# method from a 3D map to 2D images
 imgs_noise = sim.images(start=0, num=num_imgs).asnumpy()
 imgs_noise = np.swapaxes(imgs_noise, 0, 1)
 sim.cache(imgs_noise)
@@ -87,6 +85,6 @@ orient_est.estimate_rotations()
 rots_est = orient_est.rotations
 
 # Get register rotations after performing global alignment
-regrot, O, flag = register_rotations(rots_est, rots_true_inv)
-mse_reg = get_rots_mse(regrot, rots_true_inv)
+regrot, O, flag = register_rotations(rots_est, rots_true)
+mse_reg = get_rots_mse(regrot, rots_true)
 logger.info(f'MSE deviation of the estimated rotations using register_rotations : {mse_reg}')

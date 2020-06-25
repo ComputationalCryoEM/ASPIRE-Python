@@ -534,8 +534,8 @@ class CLOrient3D:
         :return: Common line indices for i and j images
         """
         # get the common line indices based on the rotations from i and j images
-        r_i = rotations[:, :, i]
-        r_j = rotations[:, :, j]
+        r_i = rotations[i, :, :]
+        r_j = rotations[j, :, :]
         c_ij, c_ji = common_line_from_rots(r_i.T, r_j.T, 2 * n_theta)
 
         if c_ij >= n_theta:
