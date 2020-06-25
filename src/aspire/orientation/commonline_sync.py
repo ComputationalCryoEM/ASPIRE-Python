@@ -5,6 +5,7 @@ import scipy.sparse as sps
 import scipy.sparse.linalg as spsl
 
 from aspire.orientation import CLOrient3D
+from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)
 
@@ -40,35 +41,65 @@ class CommLineSync(CLOrient3D):
         if self.syncmatrix is None:
             self.syncmatrix_vote()
 
-        s = self.syncmatrix
-        sz = s.shape
-        if sz[0] != sz[1]:
-            raise ValueError('clmatrix must be a square matrix.')
-        if sz[0] % 2 == 1:
-            raise ValueError('clmatrix must be a square matrix of size 2Kx2K.')
+        S = self.syncmatrix
+        sz = S.shape
+        ensure(sz[0] == sz[1], 'clmatrix must be a square matrix.')
+        ensure(sz[0] % 2 == 0, 'clmatrix must be a square matrix of size 2Kx2K.')
 
         n_check = sz[0] // 2
 
-        d, v = sps.linalg.eigs(s, 10)
+        # S is a 2Kx2K matrix (K=n_check), containing KxK blocks of size 2x2.
+        # The [i,j] block is given by [r11 r12; r12 r22], where
+        # r_{kl}=<R_{i}^{k},R_{j}^{l}>, k,l=1,2, namely, the dot product of
+        # column k of R_{i} and columns l of R_{j}. Thus, given the true
+        # rotations R_{1},...,R_{K}, S is decomposed as S=W^{T}W where
+        # W=(R_{1}^{1},R_{1}^{2},...,R_{K}^{1},R_{K}^{2}), where R_{j}^{k}
+        # the k column of R_{j}. Therefore, S is a rank-3 matrix, and thus, it
+        # three eigenvectors that correspond to non-zero eigenvealues, are linear
+        # combinations of the column space of S, namely, W^{T}.
+
+        # Extract three eigenvectors corresponding to non-zero eigenvalues.
+        d, v = sps.linalg.eigs(S, 10)
         d = np.real(d)
         sort_idx = np.argsort(-d)
-
         v = np.real(v[:, sort_idx[:3]])
+
+        # According to the structure of W^{T} above, the odd rows of V, denoted V1,
+        # are a linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
+        # column 1 of all rotation matrices. Similarly, the even rows of V,
+        # denoted, V2, are linear combinations of R_{i}^{1}, i=1,...,K.
         v1 = v[:2*n_check:2].T.copy()
         v2 = v[1:2*n_check:2].T.copy()
 
+        # We look for a linear transformation (3 x 3 matrix) A such that
+        # A*V1'=R1 and A*V2=R2 are the columns of the rotations matrices.
+        # Therefore:
+        # V1 * A'*A V1' = 1
+        # V2 * A'*A V2' = 1
+        # V1 * A'*A V2' = 0
+        # These are 3*K linear equations for 9 matrix entries of A'*A
+        # Actually, there are only 6 unknown variables, because A'*A is symmetric.
+
+        # Obtain 3*K equations in 9 variables (3 x 3 matrix entries).
         equations = np.zeros((3*n_check, 9))
         for i in range(3):
             for j in range(3):
                 equations[0::3, 3*i+j] = v1[i] * v1[j]
                 equations[1::3, 3*i+j] = v2[i] * v2[j]
                 equations[2::3, 3*i+j] = v1[i] * v2[j]
+
+        # Truncate from 9 variables to 6 variables corresponding
+        # to the upper half of the matrix A'*A
         truncated_equations = equations[:, [0, 1, 2, 4, 5, 8]]
 
+        # b = [1 1 0 1 1 0 ...]' is the right hand side vector
         b = np.ones(3 * n_check)
         b[2::3] = 0
 
+        # Find the least squares approximation of A'*A in vector form
         ata_vec = np.linalg.lstsq(truncated_equations, b, rcond=None)[0]
+
+        # Construct the matrix A'*A from the vectorized matrix.
         ata = np.zeros((3, 3))
         ata[0, 0] = ata_vec[0]
         ata[0, 1] = ata_vec[1]
@@ -80,9 +111,13 @@ class CommLineSync(CLOrient3D):
         ata[2, 1] = ata_vec[4]
         ata[2, 2] = ata_vec[5]
 
+        # The Cholesky decomposition of A'*A gives A
         # numpy returns lower, matlab upper
         a = np.linalg.cholesky(ata)
 
+        # Recover the rotations. The first two columns of all rotation
+        # matrices are given by unmixing V1 and V2 using A. The third
+        # column is the cross product of the first two.
         r1 = np.dot(a, v1)
         r2 = np.dot(a, v2)
         r3 = np.cross(r1, r2, axis=0)
@@ -91,8 +126,11 @@ class CommLineSync(CLOrient3D):
         rotations[:, :, 0] = r1.T
         rotations[:, :, 1] = r2.T
         rotations[:, :, 2] = r3.T
+        # Make sure that we got rotations by enforcing R to be
+        # a rotation (in case the error is large)
         u, _, v = np.linalg.svd(rotations)
         np.einsum('ijk, ikl -> ijl', u, v, out=rotations)
+
         self.rotations = rotations.transpose((1, 2, 0)).copy()
 
     def syncmatrix_vote(self):
