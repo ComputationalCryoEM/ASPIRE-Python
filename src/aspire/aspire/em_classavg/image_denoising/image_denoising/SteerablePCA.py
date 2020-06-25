@@ -1,6 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from ConverterModel.Converter import Converter
-import matplotlib.pyplot as plt
 
 
 def example():

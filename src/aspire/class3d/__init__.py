@@ -21,7 +21,3 @@ class Class3D:
         Output the clean images
         """
         pass
-
-
-
-

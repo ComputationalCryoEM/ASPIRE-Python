@@ -21,7 +21,3 @@ class Class2D:
         Output the clean images
         """
         pass
-
-
-
-

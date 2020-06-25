@@ -2,7 +2,9 @@
 FFT/IFFT utilities
 """
 
-from scipy.fftpack import ifftshift, ifft, ifft2, fftshift, fft, fft2, ifftn, fftn
+from scipy.fftpack import (fft, fft2, fftn, fftshift, ifft, ifft2, ifftn,
+                           ifftshift)
+
 
 def centered_ifft1(x):
     """

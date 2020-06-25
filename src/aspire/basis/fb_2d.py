@@ -1,14 +1,14 @@
 import logging
+
 import numpy as np
-from scipy.special import jv
 from scipy.sparse.linalg import LinearOperator, cg
+from scipy.special import jv
 
-from aspire.utils import ensure
-from aspire.utils.matrix import roll_dim, unroll_dim, im_to_vec, vec_to_im
-from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.basis.basis_utils import unique_coords_nd
 from aspire.basis import Basis
-
+from aspire.basis.basis_utils import unique_coords_nd
+from aspire.utils import ensure
+from aspire.utils.matlab_compat import m_flatten, m_reshape
+from aspire.utils.matrix import im_to_vec, roll_dim, unroll_dim, vec_to_im
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +270,7 @@ class FBBasis2D(Basis):
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
         tol = 10 * np.finfo(v.dtype).eps
         logger.info('Expanding array in dual basis')
-        v, info = cg(operator, b, tol=tol)
+        v, info = cg(operator, b, tol=tol, atol=0)
 
         v = v[..., np.newaxis]
 
@@ -281,4 +281,3 @@ class FBBasis2D(Basis):
         x = vec_to_im(v)
 
         return x
-

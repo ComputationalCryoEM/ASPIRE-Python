@@ -1,11 +1,11 @@
 import logging
 import numpy as np
 
-from aspire.utils import ensure
-from aspire.utils.matrix import roll_dim, unroll_dim
-from aspire.utils.matlab_compat import m_reshape
 from aspire.basis import Basis
 from aspire.nfft import anufft3, nufft3
+from aspire.utils import ensure
+from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.misc import real_type, complex_type
 
 logger = logging.getLogger(__name__)

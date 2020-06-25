@@ -1,21 +1,21 @@
 import os
-import numpy as np
-from scipy.cluster.vq import kmeans2
-
+import os.path
 from unittest import TestCase
 from unittest.mock import patch
-import pytest
 
-from aspire.source.simulation import Simulation
+import numpy as np
+import pytest
+from scipy.cluster.vq import kmeans2
+
 from aspire.basis.fb_3d import FBBasis3D
-from aspire.utils.filters import RadialCTFFilter
-from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.covar import CovarianceEstimator
+from aspire.estimation.mean import MeanEstimator
+from aspire.source.simulation import Simulation
+from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.matlab_compat import Random
 from aspire.utils.matrix import eigs
 from aspire.utils.misc import src_wiener_coords
-from aspire.utils.matlab_compat import Random
 
-import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 

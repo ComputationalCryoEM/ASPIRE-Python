@@ -1,12 +1,12 @@
 import os
-import numpy as np
 from unittest import TestCase
 
-from aspire.source.simulation import Simulation
-from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.utils.filters import RadialCTFFilter
+import numpy as np
 
-from aspire.estimation.covar2d import RotCov2D, BatchedRotCov2D
+from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.estimation.covar2d import BatchedRotCov2D, RotCov2D
+from aspire.source.simulation import Simulation
+from aspire.utils.filters import RadialCTFFilter
 
 
 class BatchedRotCov2DTestCase(TestCase):

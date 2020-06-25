@@ -2,11 +2,12 @@ import functools
 import os
 import sys
 from logging import warning
+
 from importlib_resources import is_resource
 
 import aspire.data
-from aspire.exceptions import DimensionsIncompatible
 from aspire.aspire.common.logger import logger
+from aspire.exceptions import DimensionsIncompatible
 
 
 def get_file_type(file_path):

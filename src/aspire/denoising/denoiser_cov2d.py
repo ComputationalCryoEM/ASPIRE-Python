@@ -1,12 +1,11 @@
 import logging
 
-from aspire.denoising import Denoiser
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.estimation.covar2d import BatchedRotCov2D
-from aspire.utils.optimize import fill_struct
-from aspire.image import Image
+from aspire.denoising import Denoiser
 from aspire.denoising.denoised_src import DenoisedImageSource
-
+from aspire.estimation.covar2d import BatchedRotCov2D
+from aspire.image import Image
+from aspire.utils.optimize import fill_struct
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,7 @@
-from aspire.em_classavg.image_denoising.image_denoising.PSWF2D.GeneralFunctions import pswf_2d, p_n, leggauss_0_1
 import numpy as np
+
+from aspire.em_classavg.image_denoising.image_denoising.PSWF2D.GeneralFunctions import (
+    leggauss_0_1, p_n, pswf_2d)
 
 
 def init_pswf_2d(c, eps):

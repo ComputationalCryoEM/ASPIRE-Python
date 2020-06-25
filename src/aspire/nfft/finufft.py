@@ -1,5 +1,6 @@
-import numpy as np
 import finufftpy
+import numpy as np
+
 from aspire.nfft import Plan
 from aspire.utils import ensure
 

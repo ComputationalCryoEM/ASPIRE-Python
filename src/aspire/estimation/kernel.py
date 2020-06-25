@@ -1,11 +1,13 @@
 import logging
+
 import numpy as np
-from scipy.fftpack import ifftn, fftn, fftshift, fft, ifft
+from scipy.fftpack import fft, fftn, fftshift, ifft, ifftn
 
 from aspire.utils import ensure
 from aspire.utils.fft import mdim_fftshift, mdim_ifftshift
-from aspire.utils.matrix import vol_to_vec, vec_to_vol, roll_dim, unroll_dim, vecmat_to_volmat
 from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.matrix import (roll_dim, unroll_dim, vec_to_vol,
+                                 vecmat_to_volmat, vol_to_vec)
 
 logger = logging.getLogger(__name__)
 
@@ -164,8 +166,7 @@ class FourierKernel(Kernel):
 
         A = np.eye(L**3, dtype=self.as_type)
         for i in range(L**3):
-            A[:, i] = vol_to_vec(self.convolve_volume(vec_to_vol(A[:, i])))
+            A[:, i] = np.real(vol_to_vec(self.convolve_volume(vec_to_vol(A[:, i]))))
 
         A = vecmat_to_volmat(A)
         return A
-

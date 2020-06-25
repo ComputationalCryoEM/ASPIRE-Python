@@ -1,7 +1,7 @@
-import sys
 import platform
 import struct
 import subprocess
+import sys
 import traceback
 
 

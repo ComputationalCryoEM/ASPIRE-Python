@@ -4,15 +4,13 @@ block diagonal matrices as used by ASPIRE.
 """
 
 import numpy as np
-
-from numpy.linalg import norm
-from numpy.linalg import solve
+from numpy.linalg import norm, solve
 from scipy.linalg import block_diag
 from scipy.special import jv
 
-from aspire.utils.cell import Cell2D
-from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.basis.basis_utils import lgwt
+from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.utils.cell import Cell2D
 
 
 class BlkDiagMatrix:

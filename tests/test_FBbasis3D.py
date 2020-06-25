@@ -1,9 +1,9 @@
-import numpy as np
+import os.path
 from unittest import TestCase
 
-from aspire.basis.fb_3d import FBBasis3D
+import numpy as np
 
-import os.path
+from aspire.basis.fb_3d import FBBasis3D
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 

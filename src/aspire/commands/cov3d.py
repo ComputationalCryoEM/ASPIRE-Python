@@ -1,13 +1,12 @@
 import logging
+
 import click
 
-
-from aspire.source.relion import RelionSource
 from aspire.basis.fb_3d import FBBasis3D
-from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.covar import CovarianceEstimator
+from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.noise import WhiteNoiseEstimator
-
+from aspire.source.relion import RelionSource
 
 logger = logging.getLogger('aspire')
 

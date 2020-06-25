@@ -1,13 +1,16 @@
 import logging
 import math
-import numpy as np
 
+import numpy as np
+from scipy.fftpack import (fft, fft2, fftn, fftshift, ifft, ifft2, ifftn,
+                           ifftshift)
 from scipy.interpolate import RegularGridInterpolator
+
+from aspire.nfft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
-from scipy.fftpack import ifftshift, ifft, ifft2, fftshift, fft, fft2, ifftn, fftn
-from aspire.utils.fft import centered_fft1, centered_ifft1, centered_fft2, centered_ifft2, centered_fft3, centered_ifft3
-from aspire.nfft import Plan
+from aspire.utils.fft import (centered_fft1, centered_fft2, centered_fft3,
+                              centered_ifft1, centered_ifft2, centered_ifft3)
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
@@ -299,5 +302,3 @@ def vol2img(volume, rots, L=None, dtype=None):
         im = im * m_reshape(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y'])/(2*lv)), (lv, lv, 1))
 
     return np.real(im)
-
-

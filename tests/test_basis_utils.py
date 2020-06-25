@@ -1,8 +1,10 @@
-import numpy as np
 from unittest import TestCase
 
-from aspire.basis.basis_utils import besselj_zeros, num_besselj_zeros, sph_bessel, real_sph_harmonic
-from aspire.basis.basis_utils import norm_assoc_legendre, unique_coords_nd, lgwt
+import numpy as np
+
+from aspire.basis.basis_utils import (besselj_zeros, lgwt, norm_assoc_legendre,
+                                      num_besselj_zeros, real_sph_harmonic,
+                                      sph_bessel, unique_coords_nd)
 
 
 class BesselTestCase(TestCase):

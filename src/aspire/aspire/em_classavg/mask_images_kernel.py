@@ -1,10 +1,11 @@
 import time
 
 import numpy as np
-from pycuda.compiler import SourceModule
-import pycuda.gpuarray as gpuarray
 import pycuda.autoinit
+import pycuda.gpuarray as gpuarray
+from pycuda.compiler import SourceModule
 from pycuda.tools import context_dependent_memoize
+
 
 @context_dependent_memoize
 def get_mask_kernel():

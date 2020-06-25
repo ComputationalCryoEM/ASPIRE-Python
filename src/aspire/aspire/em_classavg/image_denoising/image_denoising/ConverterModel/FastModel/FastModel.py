@@ -1,6 +1,8 @@
 import numpy as np
-from image_denoising.image_denoising.ConverterModel.FastModel.FastModel_init_utils import generate_pswf_quad, parameters_for_forward
-from image_denoising.image_denoising.ConverterModel.FastModel.FastModel_forward_utils import forward
+from image_denoising.image_denoising.ConverterModel.FastModel.FastModel_forward_utils import \
+    forward
+from image_denoising.image_denoising.ConverterModel.FastModel.FastModel_init_utils import (
+    generate_pswf_quad, parameters_for_forward)
 
 
 class FastModel:
@@ -88,4 +90,3 @@ class FastModel:
 
         coefficients = forward(flattened_images, self, start, finish)
         return coefficients
-

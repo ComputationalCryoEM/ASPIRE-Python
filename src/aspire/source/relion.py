@@ -1,19 +1,20 @@
-import os.path
 import logging
-from copy import copy
-import pandas as pd
-import numpy as np
-import mrcfile
+import os.path
 from concurrent import futures
+from copy import copy
 from multiprocessing import cpu_count
 
-from aspire.utils import ensure
-from aspire.source import ImageSource
+import mrcfile
+import numpy as np
+import pandas as pd
+
+from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.image import Image
 from aspire.io.starfile import StarFile
-from aspire.utils.filters import CTFFilter, PowerFilter
+from aspire.source import ImageSource
 from aspire.source.xform import FilterXform
-from aspire.estimation.noise import WhiteNoiseEstimator
+from aspire.utils import ensure
+from aspire.utils.filters import CTFFilter, PowerFilter
 
 logger = logging.getLogger(__name__)
 

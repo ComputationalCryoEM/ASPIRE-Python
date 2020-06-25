@@ -1,6 +1,7 @@
+from unittest import TestCase
+
 import numpy as np
 import pytest
-from unittest import TestCase
 
 from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 

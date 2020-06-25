@@ -1,5 +1,6 @@
-import numpy as np
 from unittest import TestCase
+
+import numpy as np
 
 from aspire.basis.polar_2d import PolarBasis2D
 from aspire.utils.matlab_compat import m_reshape

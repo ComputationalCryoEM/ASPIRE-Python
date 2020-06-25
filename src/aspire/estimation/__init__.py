@@ -1,9 +1,10 @@
 import logging
-import numpy as np
 from functools import partial
+
+import numpy as np
 import scipy.sparse.linalg
-from scipy.sparse.linalg import LinearOperator
 from scipy.linalg import norm
+from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
 from aspire.estimation.kernel import FourierKernel
@@ -101,7 +102,7 @@ class Estimator:
         def cb(xk):
             logger.info(f'Delta {norm(b_coeff - self.apply_kernel(xk))} (target {target_residual})')
 
-        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol)
+        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol, atol=0)
 
         if info != 0:
             raise RuntimeError('Unable to converge!')
@@ -122,5 +123,3 @@ class Estimator:
         vol = self.basis.evaluate_t(vol)
 
         return vol
-
-

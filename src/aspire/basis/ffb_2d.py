@@ -1,14 +1,15 @@
 import logging
+
 import numpy as np
 from numpy import pi
+from scipy.fftpack import fft, ifft
 from scipy.special import jv
-from scipy.fftpack import ifft, fft
 
-from aspire.nfft import anufft3, nufft3
-from aspire.utils.matrix import roll_dim, unroll_dim
-from aspire.utils.matlab_compat import m_reshape
 from aspire.basis.basis_utils import lgwt
 from aspire.basis.fb_2d import FBBasis2D
+from aspire.nfft import anufft3, nufft3
+from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.matrix import roll_dim, unroll_dim
 
 logger = logging.getLogger(__name__)
 

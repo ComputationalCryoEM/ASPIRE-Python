@@ -3,7 +3,8 @@ General purpose math functions, mostly geometric in nature.
 """
 
 import numpy as np
-from aspire.utils.matlab_compat import randn, Random
+
+from aspire.utils.matlab_compat import Random, randn
 
 
 def cart2pol(x, y):

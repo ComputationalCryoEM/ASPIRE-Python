@@ -1,24 +1,26 @@
 import logging
-import numpy as np
-from scipy.fftpack import fftn
-import scipy.sparse.linalg
-from scipy.sparse.linalg import LinearOperator
-from scipy.linalg import norm
-from tqdm import tqdm
 from functools import partial
 
+import numpy as np
+import scipy.sparse.linalg
+from scipy.fftpack import fftn
+from scipy.linalg import norm
+from scipy.sparse.linalg import LinearOperator
+from tqdm import tqdm
+
 from aspire import config
-from aspire.image import Image
-from aspire.volume import rotated_grids
-from aspire.nfft import anufft3
-from aspire.utils.fft import mdim_ifftshift
-from aspire.utils import ensure
-from aspire.utils.matrix import vol_to_vec, vecmat_to_volmat, volmat_to_vecmat, symmat_to_vec_iso, vec_to_symmat_iso, \
-    make_symmat
-from aspire.utils.matlab_compat import m_reshape
 from aspire.estimation import Estimator
-from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.kernel import FourierKernel
+from aspire.estimation.mean import MeanEstimator
+from aspire.image import Image
+from aspire.nfft import anufft3
+from aspire.utils import ensure
+from aspire.utils.fft import mdim_ifftshift
+from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.matrix import (make_symmat, symmat_to_vec_iso,
+                                 vec_to_symmat_iso, vecmat_to_volmat,
+                                 vol_to_vec, volmat_to_vecmat)
+from aspire.volume import rotated_grids
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +124,7 @@ class CovarianceEstimator(Estimator):
         def cb(xk):
             logger.info(f'Delta {norm(b_coeff - self.apply_kernel(xk, packed=True))} (target {target_residual})')
 
-        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol)
+        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol, atol=0)
 
         if info != 0:
             raise RuntimeError('Unable to converge!')
