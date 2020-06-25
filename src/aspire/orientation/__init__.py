@@ -13,13 +13,13 @@ from aspire.utils.coor_trans import common_line_from_rots
 logger = logging.getLogger(__name__)
 
 
-class Orient3D:
+class CLOrient3D:
     """
-    Define a base class for estimating 3D orientations
+    Define a base class for estimating 3D orientations using common lines methods
     """
     def __init__(self, src, n_rad=None, n_theta=None):
         """
-        Initialize an object for estimating 3D orientations
+        Initialize an object for estimating 3D orientations using common lines
 
         :param src: The source object of 2D denoised or class-averaged imag
         :param n_rad: The number of points in the radial direction

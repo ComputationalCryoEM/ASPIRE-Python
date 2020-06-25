@@ -4,12 +4,12 @@ import numpy as np
 import scipy.sparse as sps
 import scipy.sparse.linalg as spsl
 
-from aspire.orientation import Orient3D
+from aspire.orientation import CLOrient3D
 
 logger = logging.getLogger(__name__)
 
 
-class CommLineSync(Orient3D):
+class CommLineSync(CLOrient3D):
     """
     Define a class to estimate 3D orientations using synchronization matrix and voting method.
 

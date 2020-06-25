@@ -1,11 +1,11 @@
 import logging
 
-from aspire.orientation import Orient3D
+from aspire.orientation import CLOrient3D
 
 logger = logging.getLogger(__name__)
 
 
-class CommLineEV(Orient3D):
+class CommLineEV(CLOrient3D):
     """
     Class to estimate 3D orientations using Eigenvector method
     :cite:`DBLP:journals/siamis/SingerS11`

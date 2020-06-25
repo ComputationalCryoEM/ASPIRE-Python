@@ -1,11 +1,11 @@
 import logging
 
-from aspire.orientation import Orient3D
+from aspire.orientation import CLOrient3D
 
 logger = logging.getLogger(__name__)
 
 
-class CommLineSDP(Orient3D):
+class CommLineSDP(CLOrient3D):
     """
     Class to estimate 3D orientations using Semi-Definite Programming
     :cite:`DBLP:journals/siamis/SingerS11`

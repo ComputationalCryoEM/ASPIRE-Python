@@ -1,11 +1,11 @@
 import logging
 
-from aspire.orientation import Orient3D
+from aspire.orientation import CLOrient3D
 
 logger = logging.getLogger(__name__)
 
 
-class CommLineLUD(Orient3D):
+class CommLineLUD(CLOrient3D):
     """
     Define a derived class to estimate 3D orientations using Least Unsquared Deviations described as below:
     L. Wang, A. Singer, and  Z. Wen, Orientation Determination of Cryo-EM Images Using Least Unsquared Deviations,
