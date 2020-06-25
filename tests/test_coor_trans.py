@@ -1,10 +1,11 @@
+import os.path
 from unittest import TestCase
+
 import numpy as np
 
-from aspire.utils.coor_trans import grid_2d, grid_3d, qrand, q_to_rot, qrand_rots
-from aspire.utils.coor_trans import register_rotations
+from aspire.utils.coor_trans import (grid_2d, grid_3d, q_to_rot, qrand,
+                                     qrand_rots, register_rotations)
 
-import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 

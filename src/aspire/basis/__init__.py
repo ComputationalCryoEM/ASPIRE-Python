@@ -1,11 +1,12 @@
 import logging
+
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
-from aspire.utils import ensure
-from aspire.utils.matrix import mdim_mat_fun_conj, roll_dim, unroll_dim
-from aspire.utils.matlab_compat import m_reshape
 from aspire.basis.basis_utils import num_besselj_zeros
+from aspire.utils import ensure
+from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.matrix import mdim_mat_fun_conj, roll_dim, unroll_dim
 
 logger = logging.getLogger(__name__)
 
@@ -186,7 +187,7 @@ class Basis:
         for isample in range(0, n_data):
             b = self.evaluate_t(x[..., isample])
             # TODO: need check the initial condition x0 can improve the results or not.
-            v[..., isample], info = cg(operator, b, tol=tol)
+            v[..., isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
                 raise RuntimeError('Unable to converge!')
 

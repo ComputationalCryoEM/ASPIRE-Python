@@ -1,9 +1,9 @@
-import numpy as np
+import os.path
 from unittest import TestCase
 
-from aspire.basis.ffb_3d import FFBBasis3D
+import numpy as np
 
-import os.path
+from aspire.basis.ffb_3d import FFBBasis3D
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -120,4 +120,3 @@ class FFBBasis3DTestCase(TestCase):
             result,
             np.load(os.path.join(DATA_DIR, 'ffbbasis3d_vcoeff_out_exp_8_8_8.npy'))[..., 0]
         ))
-

@@ -1,6 +1,6 @@
-from warnings import warn
 from collections import namedtuple
-from itertools import tee, zip_longest, starmap
+from itertools import starmap, tee, zip_longest
+from warnings import warn
 
 
 def pairwise(iterable):

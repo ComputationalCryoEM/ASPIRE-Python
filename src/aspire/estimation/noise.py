@@ -1,9 +1,10 @@
 import logging
+
 import numpy as np
 
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2
-from aspire.utils.filters import ScalarFilter, ArrayFilter
+from aspire.utils.filters import ArrayFilter, ScalarFilter
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise variance of the images.
         """
-        return np.asscalar(self.filter.evaluate(np.zeros((2, 1))))
+        return self.filter.evaluate(np.zeros((2, 1))).item()
 
     def _create_filter(self, noise_variance=None):
         """
@@ -91,7 +92,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise variance of the images.
         """
-        return np.asscalar(self.filter.evaluate(np.zeros((2, 1))))
+        return self.filter.evaluate(np.zeros((2, 1))).item()
 
     def _create_filter(self, noise_psd=None):
         """

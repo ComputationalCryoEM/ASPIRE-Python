@@ -1,10 +1,12 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import time
+
+import matplotlib.pyplot as plt
+import numpy as np
 import skcuda.linalg as linalg
 
 import aspire.em_classavg.data_utils as data_utils
-from aspire.em_classavg.image_denoising.image_denoising.ConverterModel.Converter import Converter
+from aspire.em_classavg.image_denoising.image_denoising.ConverterModel.Converter import \
+    Converter
 
 
 class EM:

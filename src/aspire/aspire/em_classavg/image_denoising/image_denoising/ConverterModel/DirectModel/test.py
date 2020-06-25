@@ -1,8 +1,9 @@
+import os
+import time
+
 import numpy as np
 from ConverterModel.Converter import Converter
 from scipy.misc import imresize
-import time
-import os
 
 
 def test():

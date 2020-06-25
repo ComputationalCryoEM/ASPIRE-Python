@@ -1,9 +1,10 @@
 import os.path
-import numpy as np
 from unittest import TestCase
 
-from aspire.source.simulation import Simulation
+import numpy as np
+
 from aspire.image import Image
+from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -72,4 +73,3 @@ class SimTestCase(TestCase):
         # Get value of metadata fields for indices 0, 1, 2, 3
         values = self.sim.get_metadata(['rand_value1', 'rand_value2'], [0, 1, 2, 3])
         self.assertTrue(np.allclose(np.column_stack([[11, 12, np.nan, 13], [21, 22, np.nan, 23]]), values, equal_nan=True))
-

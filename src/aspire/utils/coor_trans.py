@@ -3,10 +3,11 @@ General purpose math functions, mostly geometric in nature.
 """
 
 import numpy as np
+
 from numpy.linalg import norm
 from scipy.linalg import svd
 
-from aspire.utils.matlab_compat import randn, Random
+from aspire.utils.matlab_compat import Random, randn
 from aspire.utils import ensure
 
 

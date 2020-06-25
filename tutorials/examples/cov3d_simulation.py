@@ -3,19 +3,19 @@ This script illustrates the example of Covariance 3D estimation using simulation
 generated from Gaussian blob volumes.
 """
 import logging
+
 import numpy as np
 from scipy.cluster.vq import kmeans2
 
-from aspire.source.simulation import Simulation
 from aspire.basis.fb_3d import FBBasis3D
-from aspire.utils.filters import RadialCTFFilter
-from aspire.estimation.noise import WhiteNoiseEstimator
-from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.covar import CovarianceEstimator
+from aspire.estimation.mean import MeanEstimator
+from aspire.estimation.noise import WhiteNoiseEstimator
+from aspire.source.simulation import Simulation
+from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import Random
 from aspire.utils.matrix import eigs
 from aspire.utils.misc import src_wiener_coords
-
 
 logger = logging.getLogger('aspire')
 

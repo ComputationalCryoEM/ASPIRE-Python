@@ -1,10 +1,10 @@
 import time
 
 import numpy as np
-import pycuda.driver as cuda
 import pycuda.autoinit
-from pycuda.compiler import SourceModule
+import pycuda.driver as cuda
 import pycuda.gpuarray as gpuarray
+from pycuda.compiler import SourceModule
 from pycuda.tools import context_dependent_memoize
 
 

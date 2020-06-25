@@ -1,13 +1,14 @@
 import logging
+
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
-from aspire.utils import ensure
-from aspire.utils.matrix import roll_dim, unroll_dim, vol_to_vec, vec_to_vol
-from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.basis.basis_utils import unique_coords_nd, sph_bessel, real_sph_harmonic
 from aspire.basis import Basis
-
+from aspire.basis.basis_utils import (real_sph_harmonic, sph_bessel,
+                                      unique_coords_nd)
+from aspire.utils import ensure
+from aspire.utils.matlab_compat import m_flatten, m_reshape
+from aspire.utils.matrix import roll_dim, unroll_dim, vec_to_vol, vol_to_vec
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +213,7 @@ class FBBasis3D(Basis):
                 ang = self._precomp['ang'][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
-                v[idx] = ang_radial.T @ x[mask]
+                v[idx] = np.real(ang_radial.T @ x[mask])
                 ind += len(idx)
                 ind_ang += 1
 
@@ -255,7 +256,7 @@ class FBBasis3D(Basis):
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
         tol = 10 * np.finfo(v.dtype).eps
         logger.info('Expanding array in dual basis')
-        v, info = cg(operator, b, tol=tol)
+        v, info = cg(operator, b, tol=tol, atol=0)
 
         v = v[..., np.newaxis]
 

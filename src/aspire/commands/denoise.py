@@ -1,11 +1,12 @@
 import logging
+
 import click
 
-from aspire.source.relion import RelionSource
-from aspire.estimation.noise import WhiteNoiseEstimator
-from aspire.estimation.noise import AnisotropicNoiseEstimator
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.denoising.denoiser_cov2d import DenoiserCov2D
+from aspire.estimation.noise import (AnisotropicNoiseEstimator,
+                                     WhiteNoiseEstimator)
+from aspire.source.relion import RelionSource
 
 logger = logging.getLogger('aspire')
 

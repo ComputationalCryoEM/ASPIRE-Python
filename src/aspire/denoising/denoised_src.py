@@ -1,11 +1,12 @@
-import os.path
 import logging
+import os.path
+
 import numpy as np
 import pandas as pd
 
 from aspire.image import Image
+from aspire.io.starfile import StarFile, StarFileBlock
 from aspire.source import ImageSource
-from aspire.io.starfile import StarFileBlock, StarFile
 
 logger = logging.getLogger(__name__)
 

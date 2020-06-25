@@ -1,8 +1,9 @@
 import numpy as np
 from pynfft.nfft import NFFT
-from aspire.utils import ensure
+
 from aspire.nfft import Plan
 from aspire.nfft.utils import nextpow2
+from aspire.utils import ensure
 
 
 class PyNfftPlan(Plan):

@@ -1,7 +1,7 @@
-import numpy as np
-from scipy.fftpack import ifftshift, ifft2, fft2
-from scipy.interpolate import RegularGridInterpolator
 import mrcfile
+import numpy as np
+from scipy.fftpack import fft2, ifft2, ifftshift
+from scipy.interpolate import RegularGridInterpolator
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d

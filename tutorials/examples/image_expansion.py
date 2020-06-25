@@ -3,18 +3,18 @@ This script illustrates several expansion methods for 2D images developed in ASP
 based on the basis functions of  Fourier Bessel (FB) and Prolate Spheroidal Wave Function (PSWF).
 """
 
-import os
 import logging
-import numpy as np
+import os
 import timeit
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 from aspire.basis.fb_2d import FBBasis2D
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.basis.fpswf_2d import FPSWFBasis2D
+from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.utils.matrix import anorm
-import matplotlib.pyplot as plt
-
 
 logger = logging.getLogger('aspire')
 

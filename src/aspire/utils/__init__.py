@@ -1,5 +1,5 @@
-import subprocess
 import os.path
+import subprocess
 
 
 def ensure(cond, error_message=None):

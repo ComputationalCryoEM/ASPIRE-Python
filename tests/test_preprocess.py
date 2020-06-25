@@ -1,11 +1,12 @@
-import numpy as np
+import os.path
 from unittest import TestCase
 
-from scipy.fftpack import fftshift, fftn
+import numpy as np
+from scipy.fftpack import fftn, fftshift
 
-from aspire.utils.preprocess import crop_pad, downsample, vol2img
 from aspire.utils.coor_trans import qrand_rots
-import os.path
+from aspire.utils.preprocess import crop_pad, downsample, vol2img
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 

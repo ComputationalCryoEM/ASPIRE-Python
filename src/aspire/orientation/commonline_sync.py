@@ -1,9 +1,10 @@
-from aspire.orientation import Orient3D
 import logging
 import numpy as np
 
 import scipy.sparse as sps
 import scipy.sparse.linalg as spsl
+
+from aspire.orientation import Orient3D
 
 logger = logging.getLogger(__name__)
 

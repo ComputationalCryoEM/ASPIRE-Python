@@ -1,7 +1,8 @@
 import pkgutil
-from click.core import Group, Command
-import aspire.commands
 
+from click.core import Command, Group
+
+import aspire.commands
 
 if __name__ == "__main__":
     main = Group(chain=False)

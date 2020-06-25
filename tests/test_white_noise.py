@@ -1,11 +1,12 @@
-import numpy as np
+import os.path
 from unittest import TestCase
 
+import numpy as np
+
+from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
-from aspire.estimation.noise import WhiteNoiseEstimator
 
-import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
@@ -23,6 +24,3 @@ class SimTestCase(TestCase):
         noise_estimator = WhiteNoiseEstimator(self.sim, batchSize=512)
         noise_variance = noise_estimator.estimate()
         self.assertAlmostEqual(noise_variance, 0.00307627)
-
-
-

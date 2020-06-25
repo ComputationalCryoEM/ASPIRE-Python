@@ -1,16 +1,18 @@
-from copy import copy
 import logging
+from copy import copy
+
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image
-from aspire.volume import im_backproject, vol_project
-from aspire.utils import ensure
-from aspire.utils.filters import MultiplicativeFilter, PowerFilter
-from aspire.utils.coor_trans import grid_2d
-from aspire.source.xform import Multiply, Shift, Downsample, FilterXform, LinearIndexedXform, Pipeline, LinearPipeline
 from aspire.io.starfile import save_star
+from aspire.source.xform import (Downsample, FilterXform, LinearIndexedXform,
+                                 LinearPipeline, Multiply, Pipeline, Shift)
+from aspire.utils import ensure
+from aspire.utils.coor_trans import grid_2d
+from aspire.utils.filters import MultiplicativeFilter, PowerFilter
+from aspire.volume import im_backproject, vol_project
 
 logger = logging.getLogger(__name__)
 

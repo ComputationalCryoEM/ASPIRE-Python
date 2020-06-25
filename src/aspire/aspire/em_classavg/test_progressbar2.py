@@ -1,6 +1,7 @@
 import time
-import progressbar
+
 import numpy as np
+import progressbar
 
 for i in progressbar.progressbar(np.arange(100)):
     time.sleep(0.02)

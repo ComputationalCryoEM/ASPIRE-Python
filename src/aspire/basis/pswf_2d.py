@@ -1,11 +1,12 @@
 import logging
+
 import numpy as np
 
 from aspire.basis import Basis
+from aspire.basis.basis_utils import (d_decay_approx_fun, k_operator, lgwt,
+                                      t_radial_part_mat, t_x_derivative_mat,
+                                      t_x_mat)
 from aspire.basis.pswf_utils import BNMatrix
-from aspire.basis.basis_utils import d_decay_approx_fun, t_radial_part_mat, t_x_mat, t_x_derivative_mat
-from aspire.basis.basis_utils import k_operator, lgwt
-
 
 logger = logging.getLogger(__name__)
 
