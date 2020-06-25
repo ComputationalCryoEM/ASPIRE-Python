@@ -81,7 +81,8 @@ class PolarBasis2D(Basis):
             and the remaining dimensions correspond to dimensions two and higher of `v`.
         """
         if self.dtype != real_type(v.dtype):
-            logger.error('Data type is not consistent with the defined in the class.')
+            logger.error(f'Input data type, {v.dtype}, is not consistent with'
+                         f' the defined in the class.')
 
         v, sz_roll = unroll_dim(v, 2)
         nimgs = v.shape[1]
@@ -115,7 +116,8 @@ class PolarBasis2D(Basis):
             whose remaining dimensions correspond to higher dimensions of `x`.
         """
         if self.dtype != x.dtype:
-            logger.error('Data type is not consistent with the defined in the class.')
+            logger.error(f' Input data type, {x.dtype}, is not consistent with'
+                         f' the defined in the class.')
 
         # ensure the first two dimensions with size of self.sz
         x, sz_roll = unroll_dim(x, self.ndim + 1)
