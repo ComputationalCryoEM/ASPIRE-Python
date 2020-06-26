@@ -84,6 +84,9 @@ orient_est = CommLineSync(sim, n_theta=36)
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
 
+# Save the estimated rotation matrices to a new ImageSource object
+sim_new = orient_est.save_rotations()
+
 # Get register rotations after performing global alignment
 regrot, O, flag = register_rotations(rots_est, rots_true)
 mse_reg = get_rots_mse(regrot, rots_true)

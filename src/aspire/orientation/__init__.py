@@ -6,8 +6,9 @@ import scipy.sparse as sps
 from aspire import config
 
 from aspire.basis.polar_2d import PolarBasis2D
-from aspire.utils.matlab_compat import m_reshape
+from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import common_line_from_rots
+from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -82,11 +83,15 @@ class CLOrient3D:
         """
         raise NotImplementedError('subclasses should implement this')
 
-    def output(self):
+    def save_rotations(self):
         """
-        Output the 3D orientations in a star file
+        Save the estimated rotation matrices to new ImageSource object
         """
-        pass
+        # Generate a new ImageSource object and save estimated rotation matrices
+        # It will be simpler if it is allowed to modify the original one
+        src = ArrayImageSource(self.src.images(start=0, num=np.inf))
+        src.rots = self.rotations
+        return src
 
     def build_clmatrix(self, n_check=None):
         """
