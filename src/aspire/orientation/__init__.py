@@ -66,13 +66,12 @@ class CLOrient3D:
             logger.error('n_theta must be even')
         n_theta = n_theta // 2
         # The first two dimension of pf is of size n_rad x n_theta. Convert pf into an
-        # array of size (2xn_r-1) x n_theta/2, that is, take then entire ray
-        # through the origin, but take the angles only up PI.
-        # This seems redundant: The original images are real, and thus
-        # each ray is conjugate symmetric. We therefore gain nothing by taking
-        # longer correlations (of length 2*n_r-1 instead of n_r), as the two halves
-        # are exactly the same. Taking shorter correlation would speed the
-        # computation by a factor of two.
+        # array of size (2xn_rad-1) x n_theta/2, that is, take entire ray
+        # through the origin, but take the angles only up PI. In fact, the original
+        # images are real, and thus each ray is conjugate symmetric. We therefore
+        # gain nothing by taking longer correlations (of length 2*n_rad-1 instead of n_rad),
+        # as the two halve are exactly the same. In real calculation of build_clmatrix below,
+        # We only taking shorter correlation and speed the computation by a factor of two.
         self.pf = np.concatenate((np.flip(self.pf[1:, n_theta:], 0), self.pf[:, :n_theta]), 0)
 
     def estimate_rotations(self):
