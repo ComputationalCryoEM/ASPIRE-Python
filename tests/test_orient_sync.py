@@ -6,8 +6,6 @@ from unittest import TestCase
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
-from aspire.utils.coor_trans import qrand_rots
-from aspire.utils.preprocess import vol2img
 from aspire.orientation.commonline_sync import CommLineSync
 
 import os.path
@@ -17,10 +15,9 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 class OrientSyncTestCase(TestCase):
     def setUp(self):
 
-        L = 16
-        n = 32
+        L = 32
+        n = 64
         C = 1
-        SNR = 1
         pixel_size = 5
         voltage = 200
         defocus_min = 1.5e4
@@ -29,27 +26,26 @@ class OrientSyncTestCase(TestCase):
         Cs = 2.0
         alpha = 0.1
 
-        filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1) for d in
+        filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=Cs, alpha=alpha) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
-
-        sim = Simulation(
-            L=L,
-            n=n,
-            C=C,
-            filters=filters
-        )
 
         vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
         vols = vols[..., np.newaxis]
         vols = downsample(vols, (L*np.ones(3, dtype=int)))
-        sim.vols = vols
 
-        # use new methods to generate random rotations and clean images
-        sim.rots = qrand_rots(n, seed=0)
-        imgs_clean = vol2img(vols[..., 0], sim.rots)
-        sim.cache(imgs_clean)
+        sim = Simulation(
+            L=L,
+            n=n,
+            vols=vols,
+            C=C,
+            filters=filters
+        )
 
-        self.orient_est = CommLineSync(sim, L//2, 180)
+        imgs_noise = sim.images(start=0, num=n).asnumpy()
+        imgs_noise = np.swapaxes(imgs_noise, 0, 1)
+        sim.cache(imgs_noise)
+
+        self.orient_est = CommLineSync(sim, L//2, 36)
         self.orient_est.build_clmatrix()
         self.orient_est.syncmatrix_vote()
         self.orient_est.estimate_rotations()

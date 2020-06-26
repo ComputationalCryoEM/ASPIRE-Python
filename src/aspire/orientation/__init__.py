@@ -1,7 +1,6 @@
 import logging
 import math
 import numpy as np
-import scipy.special as sp
 import scipy.sparse as sps
 
 from aspire import config
@@ -55,29 +54,10 @@ class CLOrient3D:
         Build the internal data structure for orientation estimation
         """
         imgs = self.src.images(start=0, num=np.inf).asnumpy()
-        masked = True
-        if masked:
-            mask_radius = self.n_res * 0.45
-            self.rise_time = config.orient.rise_time
-            self.fuzzy_mask_dims = config.orient.fuzzy_mask_dims
-            # mask_radius is of the form xxx.5
-            if mask_radius * 2 == int(mask_radius * 2):
-                mask_radius = math.ceil(mask_radius)
-            # mask is not of the form xxx.5
-            else:
-                mask_radius = int(round(mask_radius))
-            # mask projections
-            m = self._fuzzy_mask(self.n_res, mask_radius)
-            masked_projs = imgs.copy()
-            masked_projs = masked_projs.transpose((2, 0, 1))
-            masked_projs *= m
-            masked_projs = masked_projs.transpose((1, 2, 0))
-        else:
-            masked_projs = imgs
 
         # Obtain coefficients in polar Fourier basis for input 2D images
         self.basis = PolarBasis2D((self.n_res, self.n_res), self.n_rad, self.n_theta)
-        self.pf = self.basis.evaluate_t(masked_projs)
+        self.pf = self.basis.evaluate_t(imgs)
         self.pf = m_reshape(self.pf, (self.n_rad, self.n_theta, self.n_img))
 
         n_theta = self.n_theta
@@ -570,38 +550,3 @@ class CLOrient3D:
 
         return pf_i, pf_j
 
-    def _fuzzy_mask(self, n, r0, origin=None):
-        """
-        Create a centered 2d disc of radius r0
-
-        Made with an error function with effective rise time.
-        Todo: probably move it to utils folder
-
-        """
-        if isinstance(n, int):
-            n = np.array([n])
-
-        if isinstance(r0, int):
-            r0 = np.array([r0])
-
-        k = 1.782 / self.rise_time
-
-        if self.fuzzy_mask_dims == 2:
-            if origin is None:
-                origin = np.floor(n / 2) + 1
-                origin = origin.astype('int')
-            if len(n) == 1:
-                x, y = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[0]:n[0] - origin[0] + 1]
-            else:
-                x, y = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[1]:n[1] - origin[1] + 1]
-
-            if len(r0) < 2:
-                r = np.sqrt(np.square(x) + np.square(y))
-            else:
-                r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1]))
-        else:
-            logger.error('only 2D is allowed!')
-
-        m = 0.5 * (1 - sp.erf(k * (r - r0[0])))
-
-        return m

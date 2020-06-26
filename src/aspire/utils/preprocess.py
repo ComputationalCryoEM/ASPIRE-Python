@@ -5,6 +5,7 @@ import numpy as np
 from scipy.fftpack import (fft, fft2, fftn, fftshift, ifft, ifft2, ifftn,
                            ifftshift)
 from scipy.interpolate import RegularGridInterpolator
+import scipy.special as sp
 
 from aspire.nfft import Plan
 from aspire.utils import ensure
@@ -302,3 +303,71 @@ def vol2img(volume, rots, L=None, dtype=None):
         im = im * m_reshape(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y'])/(2*lv)), (lv, lv, 1))
 
     return np.real(im)
+
+
+def fuzzy_mask(n, dims, r0, risetime, origin=None):
+    """
+    Create a centered 1 to 3d object of radius r0
+
+    Made with an error function with effective rise time.
+    :param n:
+    :param dims:
+    :param r0:
+    :param risetime:
+    :param origin:
+    :return:
+    """
+
+    if isinstance(n, int):
+        n = np.array([n])
+
+    if isinstance(r0, int):
+        r0 = np.array([r0])
+
+    center = (n + 1.0) / 2
+    k = 1.782 / risetime
+
+    if dims == 1:
+        if origin is None:
+            origin = center
+            origin = origin.astype('int')
+        r = np.abs(np.arange(1 - origin[0], n - origin[0] + 1))
+
+    elif dims == 2:
+        if origin is None:
+            origin = np.floor(n / 2) + 1
+            origin = origin.astype('int')
+        if len(n) == 1:
+            x, y = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1,
+                   1 - origin[0]:n[0] - origin[0] + 1]
+        else:
+            x, y = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1,
+                   1 - origin[1]:n[1] - origin[1] + 1]
+
+        if len(r0) < 2:
+            r = np.sqrt(np.square(x) + np.square(y))
+        else:
+            r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1]))
+
+    elif dims == 3:
+        if origin is None:
+            origin = center
+            origin = origin.astype('int')
+        if len(n) == 1:
+            x, y, z = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1,
+                      1 - origin[0]:n[0] - origin[0] + 1, 1 - origin[0]:n[0] - origin[0] + 1]
+        else:
+            x, y, z = np.mgrid[1 - origin[0]:n[0] - origin[0] + 1,
+                      1 - origin[1]:n[1] - origin[1] + 1, 1 - origin[2]:n[2] - origin[2] + 1]
+
+        if len(r0) < 3:
+            r = np.sqrt(np.square(x) + np.square(y) + np.square(z))
+        else:
+            r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1])
+                        + np.square(z * r0[0] / r0[2]))
+    else:
+        logger.error('Only 1 to 3D is allowed!')
+
+    m = 0.5 * (1 - sp.erf(k * (r - r0[0])))
+
+    return m
