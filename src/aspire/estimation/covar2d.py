@@ -157,7 +157,7 @@ class RotCov2D:
             raise RuntimeError('The coefficients need to be calculated!')
 
         if (ctf_fb is None) or (ctf_idx is None):
-            ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
+            ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
 
         def identity(x):
@@ -175,15 +175,15 @@ class RotCov2D:
         b_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
         b_noise = BlkDiagMatrix.zeros_like(ctf_fb[0])
         A = []
-        for k in range(0, len(ctf_fb)):
+        for k in range(len(ctf_fb)):
             A.append(BlkDiagMatrix.zeros_like(ctf_fb[0]))
 
         M = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
         for k in np.unique(ctf_idx[:]):
 
-            coeff_k = coeffs[:, ctf_idx == k]
-            weight = np.size(coeff_k, 1)/np.size(coeffs, 1)
+            coeff_k = coeffs[ctf_idx == k]
+            weight = coeff_k.shape[0] / coeffs.shape[0]
 
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
@@ -204,6 +204,8 @@ class RotCov2D:
             b = self.shrink_covar_backward(b_coeff, b_noise, np.size(coeffs, 1),
                                            noise_var, covar_est_opt['shrinker'])
 
+        # okay, wow, come back later 
+        
         cg_opt = covar_est_opt
 
         covar_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
@@ -282,8 +284,9 @@ class RotCov2D:
         if covar_coeff is None:
             covar_coeff = self.get_covar(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
 
+        # should be none or both
         if (ctf_fb is None) or (ctf_idx is None):
-            ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
+            ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
         noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
@@ -291,19 +294,26 @@ class RotCov2D:
         coeffs_est = np.zeros_like(coeffs)
 
         for k in np.unique(ctf_idx[:]):
-            coeff_k = coeffs[:, ctf_idx == k]
+            #print('k', k)
+            coeff_k = coeffs[ctf_idx == k]
+            #print('coeff_k', coeff_k.shape) # xxx, okay, this transposed from orig code
             ctf_fb_k = ctf_fb[k]
+            #print('ctf_fb_k', ctf_fb_k[0])
             ctf_fb_k_t = ctf_fb_k.T
             sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
+            #print('sig_covar_coeff[0]', sig_covar_coeff[0])
+            
             sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
+            #print('sig_noise_covar_coeff[0]', sig_noise_covar_coeff[0])
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
+            #print('mean_coeff_k', mean_coeff_k)
 
-            coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
-            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
+            coeff_est_k = coeff_k - mean_coeff_k[np.newaxis, :]
+            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T) #xxx
             coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
-            coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
-            coeffs_est[:, ctf_idx == k] = coeff_est_k
+            coeff_est_k = coeff_est_k.T + mean_coeff[np.newaxis, :]
+            coeffs_est[ctf_idx == k] = coeff_est_k
 
         return coeffs_est
 

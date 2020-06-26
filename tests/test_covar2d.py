@@ -102,10 +102,8 @@ class Cov2DTestCase(TestCase):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf.npy'), allow_pickle=True)
         self.covar_coeff_ctf = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                     noise_var=self.noise_var)
-        im = 0
-        for mat in results.tolist():
+        for im, mat in enumerate(results.tolist()):
             self.assertTrue(np.allclose(mat, self.covar_coeff_ctf[im]))
-            im += 1
 
     def test05GetCovarCTFShrink(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'), allow_pickle=True)
@@ -113,23 +111,28 @@ class Cov2DTestCase(TestCase):
                      'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64'}
         self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                            noise_var=self.noise_var, covar_est_opt=covar_opt)
-        im = 0
-        for mat in results.tolist():
+
+        for im, mat in enumerate(results.tolist()):
             self.assertTrue(np.allclose(mat, self.covar_coeff_ctf_shrink[im]))
-            im += 1
 
     def test06GetCWFCoeffs(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff.npy'))
+        results = results.T # transpose?
+        print('QQQ', self.coeff)
+
         self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                    noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf))
 
     def test07GetCWFCoeffsIdentityCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
+        results = results.T # transpose?
+
         self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF))
 
     def test08GetCWFCoeffsClean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))
+        results = results.T # transpose?
         self.coeff_cwf_clean = self.cov2d.get_cwf_coeffs(self.coeff_clean, noise_var=0)
         self.assertTrue(np.allclose(results, self.coeff_cwf_clean))
