@@ -47,7 +47,7 @@ noise_estimator = WhiteNoiseEstimator(source)
 source.whiten(noise_estimator.filter)
 source.save(starfile_out, batch_size=512, save_mode='single', overwrite=False)
 
-logger.info('Reverse the global denisty constrast')
+logger.info('Reverse the global density contrast')
 starfile_out = '/tigress/junchaox/CryoEMdata/empiar10028/preprocess/shiny_2sets_reverse_contrast.star'
 source.reverse_contrast()
 source.save(starfile_out, batch_size=512, save_mode='single', overwrite=False)

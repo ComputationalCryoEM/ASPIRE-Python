@@ -9,6 +9,7 @@ from aspire.image import Image
 from aspire.io.starfile import save_star
 from aspire.source.xform import (Downsample, FilterXform, LinearIndexedXform,
                                  LinearPipeline, Multiply, Pipeline, Shift)
+from aspire.source.xform import Reduce
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filters import MultiplicativeFilter, PowerFilter
@@ -364,6 +365,114 @@ class ImageSource:
 
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
+
+    def phase_flip(self, batch_size=512):
+        """
+        Perform phase flip to images in the source object
+
+        :param batch_size: Batch size of images to query.
+        :return imgs_out: a Numpy array of images
+        """
+        # TODO: need to implement it by pipline
+        imgs_out = np.zeros((self.L, self.L, self.n))
+
+        for i in range(0, self.n, batch_size):
+            imgs_in = self.images(i, batch_size).asnumpy()
+            indices = np.arange(i, min(i + batch_size, self.n))
+            unique_filters = set(self.filters[indices])
+            for f in unique_filters:
+                idx_k = np.where(self.filters[indices] == f)[0]
+                if len(idx_k) > 0:
+                    imgs_out[:, :, idx_k] = Image(imgs_in[:, :, idx_k]).phase_flip(f).asnumpy()
+
+        return imgs_out
+
+    def reverse_contrast(self, batch_size=512):
+        """
+        Reverse the global contrast of images
+
+        Check if all images in a stack should be globally phase flipped so that
+        the molecule corresponds to brighter pixels and the background corresponds
+        to darker pixels. This is done by comparing the mean in a small circle
+        around the origin (supposed to correspond to the molecule) with the mean
+        of the noise, and making sure that the mean of the molecule is larger.
+        From the implementation level, we modify the `ImageSource` in-place by
+        appending a `Multiple` filter to the generation pipeline.
+
+        :param batch_size: Batch size of images to query.
+        :return: On return, the `ImageSource` object has been modified in place.
+        """
+
+        L = self.L
+        image_center = (L + 1) / 2
+        coor_mat_m, coor_mat_n = np.meshgrid(np.arange(1, L + 1), np.arange(1, L + 1))
+
+        distance_from_center = np.sqrt((coor_mat_m - image_center) ** 2
+                                       + (coor_mat_n - image_center) ** 2)
+
+        # Get mask indices of signal and noise samples assuming molecule is around the center
+        signal_mask = distance_from_center < round(L / 4)
+        noise_mask = distance_from_center > round(L / 2 * 0.8)
+
+        # Calculate mean values in batch_size
+        signal_mean = 0.0
+        noise_mean = 0.0
+        for i in range(0, self.n, batch_size):
+            images = self.images(i, batch_size).asnumpy()
+            signal = (images * np.expand_dims(signal_mask, 2))
+            noise = (images * np.expand_dims(noise_mask, 2))
+            signal_denominator = self.n * np.sum(signal_mask)
+            noise_denominator = self.n * np.sum(noise_mask)
+            signal_mean += np.sum(signal) / signal_denominator
+            noise_mean += np.sum(noise) / noise_denominator
+
+        if signal_mean < noise_mean:
+            scale_factor = -1.0 * np.ones(self.n)
+        else:
+            scale_factor = 1.0 * np.ones(self.n)
+
+        self.generation_pipeline.add_xform(Multiply(scale_factor))
+
+        # Invalidate images
+        self._im = None
+
+    def normalize_background(self, radius=None, batch_size=512):
+        """
+        Normalize the images by the noise background
+
+        This is done by shifting the image density by the mean value of background
+        and scaling the image density by the standard deviation of background.
+        From the implementation level, we modify the `ImageSource` in-place by
+        appending the `Reduce` and `Multiple` filters to the generation pipeline.
+
+        :param batch_size: Batch size of images to query.
+        :return: On return, the `ImageSource` object has been modified in place.
+        """
+
+        L = self.L
+        radius = L // 2 if radius is None else radius
+
+        grid = grid_2d(L)
+        mask = grid['r'] > (radius / L)
+
+        mean = 0.0
+        variance = 0.0
+        for i in range(0, self.n, batch_size):
+            images = self.images(start=i, num=batch_size).asnumpy()
+            images_masked = (images * np.expand_dims(mask, 2))
+            mean += np.sum(images_masked)
+            variance += np.sum(np.abs(images_masked**2))
+        denominator = self.n * np.sum(mask)
+        mean /= denominator
+        variance /= denominator
+        std = np.sqrt(variance)
+
+        self.generation_pipeline.add_xform(Reduce(mean))
+        scale_factor = std * np.ones(self.n)
+        self.generation_pipeline.add_xform(Multiply(scale_factor))
+
+        # Invalidate images
+        self._im = None
 
     def im_backward(self, im, start):
         """
