@@ -1,11 +1,49 @@
 """
 Miscellaneous Utilities that have no better place (yet).
 """
-
+import logging
 import numpy as np
 from numpy.linalg import qr, solve
 
 from aspire.utils.matrix import mat_to_vec, vec_to_mat
+
+logger = logging.getLogger(__name__)
+
+
+def real_type(complextype):
+    """
+    Get Numpy real type from corresponding complex type
+
+    :param complextype: Numpy complex type
+    :return realtype: Numpy real type
+    """
+    complextype = np.dtype(complextype)
+    realtype = None
+    if complextype == np.complex64:
+        realtype = np.float32
+    elif complextype == np.complex128:
+        realtype = np.float64
+    else:
+        logger.error('Corresponding real type is not defined.')
+    return realtype
+
+
+def complex_type(realtype):
+    """
+    Get Numpy complex type from corresponding real type
+
+    :param realtype: Numpy real type
+    :return complextype: Numpy complex type
+    """
+    realtype = np.dtype(realtype)
+    complextype = None
+    if realtype == np.float32:
+        complextype = np.complex64
+    elif realtype == np.float64:
+        complextype = np.complex128
+    else:
+        logger.error('Corresponding complex type is not defined')
+    return complextype
 
 
 def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_size=512):
