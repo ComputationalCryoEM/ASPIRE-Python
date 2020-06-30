@@ -21,7 +21,7 @@ For more information about the project, algorithms, and related publications ple
 For end-users
 -------------
 
-ASPIRE is a pip-installable package that works on Linux/Mac/Windows, and requires Python 3.6. The simplest option is to use Anaconda 64-bit for your platform with a minimum of Python 3.6 and pip, and then use `pip` to install `aspire` in that environment.
+ASPIRE is a pip-installable package that works on Linux/Mac/Windows, and requires Python 3.6. The simplest option is to use Anaconda 64-bit for your platform with a minimum of Python 3.6 and `pip`, and then use `pip` to install `aspire` in that environment.
 
 ```
 conda create -n aspire_env python=3.6 pip
@@ -44,7 +44,7 @@ conda env create -f environment.yml --name aspire_dev
 conda activate aspire_dev
 ```
 
-If you prefer not to use Anaconda, or want to manage environments yourself, you can simply use pip with Python >= 3.6.
+If you prefer not to use Anaconda, or want to manage environments yourself, you can simply use `pip` with Python >= 3.6.
 
 To install in a locally editable mode, equivalent to `python setup.py develop`  (probably what you want):
 
