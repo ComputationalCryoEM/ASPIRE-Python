@@ -29,7 +29,7 @@ conda activate aspire_env
 pip install aspire
 ```
 
-The final step above should install any dependent packages from `pip` automatically. To see required packages first you may run `pip show aspire`.
+The final step above should install any dependent packages from `pip` automatically. To see what packages are required, browse `setup.py`.
 
 Note that this step installs the base `aspire` package for you to work with, but not the unit tests/documentation. If you need to install ASPIRE for development purposes, read on.
 
