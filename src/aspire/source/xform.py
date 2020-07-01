@@ -202,6 +202,30 @@ class FilterXform(SymmetricXform):
         return im.filter(self.filter)
 
 
+class FlipXform(Xform):
+    """
+    A `Xform` that applies phase flip to a stack of 2D images (as an Image object).
+    """
+    def __init__(self, filters):
+        """
+        Initialize the `FlipXform` using CTF `Filter` objects
+        :param filters: CTF filters of images
+        """
+        super().__init__()
+        self.filters = filters
+
+    def _forward(self, im, indices):
+        unique_filters = set(self.filters[indices])
+        im_in = im.asnumpy()
+        im_out = np.zeros_like(im_in)
+        for f in unique_filters:
+            idx_k = np.where(self.filters[indices] == f)[0]
+            if len(idx_k) > 0:
+                im_out[:, :, idx_k] = Image(im_in[:, :, idx_k]).phase_flip(f).asnumpy()
+
+        return Image(im_out)
+
+
 class NoiseAdder(Xform):
     """
     A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
@@ -303,11 +327,12 @@ def _apply_xform(xform, im, indices, adjoint=False):
     A simple global function (i.e. not a method) that is capable of being cached by joblib.Memory object's `cache`
     method.
     """
+    xform_name = str(xform).split()[0].split('.')[-1]
     if not adjoint:
-        logger.info('  Applying ' + str(xform))
+        logger.info('  Applying ' + xform_name)
         return xform.forward(im, indices=indices)
     else:
-        logger.info('  Applying Adjoint ' + str(xform))
+        logger.info('  Applying Adjoint ' + xform_name)
         return xform.adjoint(im, indices=indices)
 
 

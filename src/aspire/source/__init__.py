@@ -7,12 +7,11 @@ from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image
 from aspire.io.starfile import save_star
-from aspire.source.xform import (Downsample, FilterXform, LinearIndexedXform,
-                                 LinearPipeline, Multiply, Pipeline, Shift)
-from aspire.source.xform import Reduce
+from aspire.source.xform import (Downsample, FilterXform, FlipXform, LinearIndexedXform,
+                                 LinearPipeline, Multiply, Pipeline, Reduce, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import MultiplicativeFilter, PowerFilter
+from aspire.utils.filters import (MultiplicativeFilter, PowerFilter)
 from aspire.volume import im_backproject, vol_project
 
 logger = logging.getLogger(__name__)
@@ -366,26 +365,15 @@ class ImageSource:
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
-    def phase_flip(self, batch_size=512):
+    def phase_flip(self):
         """
-        Perform phase flip to images in the source object
-
-        :param batch_size: Batch size of images to query.
-        :return imgs_out: a Numpy array of images
+        Perform phase flip to images in the source object using CTF information
         """
-        # TODO: need to implement it by pipline
-        imgs_out = np.zeros((self.L, self.L, self.n))
-
-        for i in range(0, self.n, batch_size):
-            imgs_in = self.images(i, batch_size).asnumpy()
-            indices = np.arange(i, min(i + batch_size, self.n))
-            unique_filters = set(self.filters[indices])
-            for f in unique_filters:
-                idx_k = np.where(self.filters[indices] == f)[0]
-                if len(idx_k) > 0:
-                    imgs_out[:, :, idx_k] = Image(imgs_in[:, :, idx_k]).phase_flip(f).asnumpy()
-
-        return imgs_out
+        logger.info('Perform phase flip on source object')
+        logger.info('Adding Phase Flip Xform to end of generation pipeline')
+        self.generation_pipeline.add_xform(FlipXform(self.filters))
+        # Invalidate images
+        self._im = None
 
     def reverse_contrast(self, batch_size=512):
         """
@@ -403,6 +391,7 @@ class ImageSource:
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
+        logger.info('Apply contrast reverse on source object')
         L = self.L
         image_center = (L + 1) / 2
         coor_mat_m, coor_mat_n = np.meshgrid(np.arange(1, L + 1), np.arange(1, L + 1))
@@ -427,10 +416,13 @@ class ImageSource:
             noise_mean += np.sum(noise) / noise_denominator
 
         if signal_mean < noise_mean:
+            logger.info('Need to reverse contrast')
             scale_factor = -1.0 * np.ones(self.n)
         else:
+            logger.info('No need to reverse contrast')
             scale_factor = 1.0 * np.ones(self.n)
 
+        logger.info('Adding Scaling Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
         # Invalidate images
@@ -448,7 +440,7 @@ class ImageSource:
         :param batch_size: Batch size of images to query.
         :return: On return, the `ImageSource` object has been modified in place.
         """
-
+        logger.info('Normalize background on source object')
         L = self.L
         radius = L // 2 if radius is None else radius
 
@@ -466,9 +458,10 @@ class ImageSource:
         mean /= denominator
         variance /= denominator
         std = np.sqrt(variance)
-
+        logger.info('Adding Reduce Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Reduce(mean))
         scale_factor = std * np.ones(self.n)
+        logger.info('Adding Scaling Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
         # Invalidate images
