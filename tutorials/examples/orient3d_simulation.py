@@ -71,13 +71,6 @@ sim = Simulation(
 logger.info('Get true rotation angles generated randomly by the simulation object.')
 rots_true = sim.rots
 
-# Switch the X, Y to make consistent with orientation estimation code
-# This should be not necessary after we fix the typo in the projection
-# method from a 3D map to 2D images
-imgs_noise = sim.images(start=0, num=num_imgs).asnumpy()
-imgs_noise = np.swapaxes(imgs_noise, 0, 1)
-sim.cache(imgs_noise)
-
 # Initialize an orientation estimation object and perform view angle estimation
 logger.info('Estimate rotation angles using synchronization matrix and voting method.')
 orient_est = CommLineSync(sim, n_theta=36)

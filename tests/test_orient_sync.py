@@ -41,10 +41,6 @@ class OrientSyncTestCase(TestCase):
             filters=filters
         )
 
-        imgs_noise = sim.images(start=0, num=n).asnumpy()
-        imgs_noise = np.swapaxes(imgs_noise, 0, 1)
-        sim.cache(imgs_noise)
-
         self.orient_est = CommLineSync(sim, L//2, 36)
         self.orient_est.build_clmatrix()
         self.orient_est.syncmatrix_vote()

@@ -55,6 +55,9 @@ class CLOrient3D:
         Build the internal data structure for orientation estimation
         """
         imgs = self.src.images(start=0, num=np.inf).asnumpy()
+        # Switch the X, Y to be consistent with the definition of project method
+        # in Volume class, it can be switch back to use the equations from paper
+        imgs = np.swapaxes(imgs, 0, 1)
 
         # Obtain coefficients in polar Fourier basis for input 2D images
         self.basis = PolarBasis2D((self.n_res, self.n_res), self.n_rad, self.n_theta)
