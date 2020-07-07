@@ -5,6 +5,7 @@ import numpy as np
 
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import IdentityFilter, RadialCTFFilter
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -39,9 +40,7 @@ class SimTestCase(TestCase):
 
     def testSimulationImages(self):
         images = self.sim.clean_images(0, 512).asnumpy()
-#        print("xxx images", images.shape, images)
         ref = np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy'))
-#        print("xxx ref", ref.shape, ref)
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy')), rtol=1e-2))
 
     def testSimulationImagesNoisy(self):
@@ -63,7 +62,7 @@ class SimTestCase(TestCase):
     def testSimulationEigen(self):
         eigs_true, lambdas_true = self.sim.eigs()
         self.assertTrue(np.allclose(
-            eigs_true[:, :, 2, 0],
+            eigs_true[0, :, :, 2],
             np.array([
                 [-1.67666201e-07, -7.95741380e-06, -1.49160041e-04, -1.10151654e-03, -3.11287888e-03, -3.09157884e-03, -9.91418026e-04, -1.31673165e-04],
                 [-1.15402077e-06, -2.49849709e-05, -3.51658906e-04, -2.21575261e-03, -7.83315487e-03, -9.44795180e-03, -4.07636259e-03, -9.02186439e-04],
@@ -97,7 +96,6 @@ class SimTestCase(TestCase):
     def testSimulationVolCoords(self):
         coords, norms, inners = self.sim.vol_coords()
         self.assertTrue(np.allclose([4.72837704, -4.72837709], coords, atol=1e-4))
-        print('test norms', norms)
         self.assertTrue(np.allclose([8.20515764e-07, 1.17550184e-06], norms, atol=1e-4))
         self.assertTrue(np.allclose([3.78030562e-06, -4.20475816e-06], inners, atol=1e-4))
 
@@ -133,8 +131,11 @@ class SimTestCase(TestCase):
         self.assertTrue(np.allclose(result['corr'], 0.8405347287741631, atol=1e-4))
 
     def testSimulationEvalCoords(self):
+        # xxx cleanup
         mean_est = np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy'))
+        mean_est = Volume(mean_est)
         eigs_est = np.load(os.path.join(DATA_DIR, 'eigs_est_8_8_8_1.npy'))
+        eigs_est = Volume(eigs_est[..., 0])
         clustered_coords_est = np.load(os.path.join(DATA_DIR, 'clustered_coords_est.npy'))
 
         result = self.sim.eval_coords(mean_est, eigs_est, clustered_coords_est)
@@ -145,11 +146,11 @@ class SimTestCase(TestCase):
         ))
 
         self.assertTrue(np.allclose(
-            result['rel_err'][:10],
+            result['rel_err'][0,:10],
             [0.11048937, 0.11048937, 0.21684697, 0.11048937, 0.11048937, 0.21684697, 0.21684697,0.11048937, 0.11048937, 0.11048937]
         ))
 
         self.assertTrue(np.allclose(
-            result['corr'][:10],
+            result['corr'][0, :10],
             [0.99390133, 0.99390133, 0.97658719, 0.99390133, 0.99390133, 0.97658719, 0.97658719, 0.99390133, 0.99390133, 0.99390133]
         ))

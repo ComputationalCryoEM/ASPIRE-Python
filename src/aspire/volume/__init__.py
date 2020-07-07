@@ -82,28 +82,16 @@ class Volume:
         n = rot_matrices.shape[0]
         
         pts_rot = rotated_grids(self.resolution, rot_matrices)
-        # okay print('pts_rot', pts_rot.shape, pts_rot)
         
         ## TODO: rotated_grids might as well give us correctly shaped array in the first place,
-        #  yea... this and the related code look real funny to me rn.
+        #  yea... this and the related code look real funny to me.
         pts_rot = m_reshape(pts_rot, (3, self.resolution**2*n))
-        #XXXX pts_rot = pts_rot.reshape((3, self.resolution**2*n))
-        print('pts_rot', pts_rot.shape, pts_rot)
 
-
-        print('self.volume_shape', self.volume_shape)
-        print('data.shape', data.shape)
-        
         im_f = (1./self.resolution *
                 Plan(self.volume_shape, pts_rot).transform(data))
         
         im_f = m_reshape(im_f, (self.resolution, self.resolution, -1))
-        #print('im_f', im_f.shape, im_f);raise
-        #XXXX im_f = im_f.reshape(...)
 
-        # if self.resolution % 2 == 0:
-        #     im_f[:, 0, :] = 0
-        #     im_f[:, :, 0] = 0
         if self.resolution % 2 == 0:
             im_f[0, :, :] = 0
             im_f[:, 0, :] = 0
@@ -116,7 +104,7 @@ class Volume:
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
         return m_reshape(self.data, (self.N,) + (self.resolution**3,))
-        #XXX return self.data.reshape(self.N, self.resolution**3)
+        #XXX reshape?
 
     @staticmethod
     def from_vec(vec):
