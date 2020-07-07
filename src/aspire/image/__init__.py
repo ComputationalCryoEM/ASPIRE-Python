@@ -179,25 +179,6 @@ class Image:
 
         return Image(im)
 
-    def phase_flip(self, filter):
-        """
-        Perform phase flip to images by applying the sign of a `Filter` object.
-
-        :param filter: An object of type `Filter`.
-        :return: A new filtered `Image` object.
-        """
-        sign_values = np.sign(filter.evaluate_grid(self.res))
-
-        im_f = centered_fft2(self.data)
-        if im_f.ndim > sign_values.ndim:
-            im_f = np.expand_dims(sign_values, 2) * im_f
-        else:
-            im_f = sign_values * im_f
-        im = centered_ifft2(im_f)
-        im = np.real(im)
-
-        return Image(im)
-
     def rotate(self):
         raise NotImplementedError
 
