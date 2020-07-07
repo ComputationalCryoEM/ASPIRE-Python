@@ -12,6 +12,7 @@ from aspire.utils.filters import ZeroFilter
 from aspire.utils.matlab_compat import Random, rand, randi, randn
 from aspire.utils.matrix import (acorr, ainner, anorm, make_symmat, vec_to_vol,
                                  vecmat_to_volmat, vol_to_vec)
+from aspire.volume import Volume
 from aspire.volume import vol_project
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,20 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
         self.angles = angles
+        self.C = C
+        if vols is None:
+            self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
+            #XXX HACK UNTIL _gaussian_blob_vols CONVERTED
+#            _vols = [Volume(self.L)]*self.C
+            _vols = []
+            for n in range(self.C):
+                _vols.append(self.vols[:,:,:,n])
+            self.vols = Volume(np.array(_vols))
+            #xxx okay hereprint("vols[0]", self.vols[0])
+            
+        else:
+            self.vols = vols
+
         self.seed = seed
 
         self.noise_adder = None
@@ -115,22 +130,32 @@ class Simulation(ImageSource):
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :return: An ndarray of shape (L, L, num), L being the size of each image.
+        :return: An ndarray of shape (num, L, L), L being the size of each image.
         """
         if indices is None:
             indices = np.arange(start, min(start+num, self.n))
 
-        im = np.zeros((self.L, self.L, len(indices)))
+        im = np.zeros((len(indices), self.L, self.L))
 
         states = self.states[indices]
         unique_states = np.unique(states)
         for k in unique_states:
-            vol_k = self.vols[:, :, :, k-1]
+            #vol_k = self.vols[k-1] #self.vols[:, :, :, k-1]
             idx_k = np.where(states == k)[0]
             rot = self.rots[indices[idx_k], :, :]
 
-            im_k = vol_project(vol_k, rot)
-            im[:, :, idx_k] = im_k
+            #vol_project(vol_k, rot)
+            im_k = self.vols.project(vol_idx=k-1,
+                                     rot_matrices=rot)
+#            print('im_k', im_k)
+#            print('im_k.shape', im_k.shape) # 8x8x261?
+#            print('im.shape', im.shape)
+#XXXX
+            im_k = np.swapaxes(im_k, 0, -1)
+            im_k = np.swapaxes(im_k, -2, -1)
+            im[idx_k, :, :] = im_k
+
+        # 512 8x8?
         return Image(im)
 
     def clean_images(self, start=0, num=np.inf, indices=None):
@@ -141,9 +166,13 @@ class Simulation(ImageSource):
             indices = np.arange(start, min(start+num, self.n))
 
         im = self.projections(start=start, num=num, indices=indices)
+        print('im[0]', im[0])
         im = self.eval_filters(im, start=start, num=num, indices=indices)
         im = im.shift(self.offsets[indices, :])
-        im *= np.broadcast_to(self.amplitudes[indices], (self.L, self.L, len(indices)))
+
+        
+        #im *= np.broadcast_to(self.amplitudes[indices], (len(indices), self.L, self.L))
+        im *= self.amplitudes[indices].reshape(len(indices), 1, 1)
 
         if enable_noise and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
@@ -157,20 +186,43 @@ class Simulation(ImageSource):
         :return:
         """
         if mean_vol is None:
-            mean_vol = self.mean_true()
+            mean_vol = Volume(self.mean_true())
         if eig_vols is None:
-            eig_vols = self.eigs()[0]
+            eig_vols = Volume(self.eigs()[0])
 
-        vols = self.vols - np.expand_dims(mean_vol, 3)
-        coords = vol_to_vec(eig_vols).T @ vol_to_vec(vols)
-        res = vols - vec_to_vol(vol_to_vec(eig_vols) @ coords)
-        res_norms = anorm(res, (0, 1, 2))
-        res_inners = vol_to_vec(mean_vol).T @ vol_to_vec(res)
+        vols = self.vols - mean_vol    # note, broadcast
+
+        #print('vols', vols[0])
+        # okay print('mean_vol', mean_vol.data)
+        # okay print('eig_vols', eig_vols.data[0])
+        
+        #coords = vol_to_vec(eig_vols).T @ vol_to_vec(vols)
+
+        V = vols.to_vec()
+        EV = eig_vols.to_vec()
+
+        coords = EV @ V.T
+
+        print('coords', coords) # very close, not exact
+
+        #res = vols - vec_to_vol(vol_to_vec(eig_vols) @ coords)
+        #print('EV.T @ coords', EV.T @ coords)                
+        #okay print('coords.T @ EV', Volume.from_vec(coords.T @ EV).data)
+        tmp = Volume.from_vec(coords.T @ EV) # very close, not exact
+        print('tmp', tmp.shape, tmp[0])
+        
+        res = vols - Volume.from_vec(coords.T @ EV)
+        
+        print('res', res[0])
+        
+        res_norms = anorm(res.data, (1, 2, 3))
+        #res_inners = vol_to_vec(mean_vol).T @ vol_to_vec(res)
+        res_inners = mean_vol.to_vec() @ res.to_vec().T
 
         return coords.squeeze(), res_norms, res_inners
 
     def mean_true(self):
-        return np.mean(self.vols, 3)
+        return np.mean(self.vols, 0)
 
     def covar_true(self):
         eigs_true, lamdbas_true = self.eigs()
@@ -184,12 +236,18 @@ class Simulation(ImageSource):
         """
         Eigendecomposition of volume covariance matrix of simulation
         :return: A 2-tuple:
-            eigs_true: The eigenvectors of the volume covariance matrix in the form of an L-by-L-by-L-by-(C-1) array,
+            eigs_true: The eigenvectors of the volume covariance matrix in the form of an (C-1)-by-L-by-L-by-Larray,
             where C is the number of distinct states in the simulation
             lambdas_true: The eigenvalues of the covariance matrix in the form of a (C-1)-by-(C-1) diagonal matrix.
         """
         C = self.C
-        vols_c = self.vols - np.expand_dims(self.mean_true(), 3)
+        vols_c = self.vols - self.mean_true()
+        #xxx convert vols_c and rest of this later
+
+        vols_c = np.swapaxes(vols_c, -3, -2)
+        vols_c = np.swapaxes(vols_c, 0, -1)
+
+        
         p = np.ones(C) / C
         vols_c = vol_to_vec(vols_c)
         Q, R = qr(vols_c, mode='economic')
@@ -204,6 +262,9 @@ class Simulation(ImageSource):
         # Arrange in descending order (flip column order in eigenvector matrix)
         w = w[::-1]
         eigs_true = np.flip(eigs_true, axis=-1)
+
+        eigs_true = np.swapaxes(eigs_true, -3, -2)
+        eigs_true = np.swapaxes(eigs_true, 0, -1)
 
         return eigs_true, np.diag(w)
 

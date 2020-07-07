@@ -24,7 +24,7 @@ class SimTestCase(TestCase):
         pass
 
     def testGaussianBlob(self):
-        blobs = self.sim.vols
+        blobs = self.sim.vols.data
         self.assertTrue(np.allclose(blobs, np.load(os.path.join(DATA_DIR, 'sim_blobs.npy'))))
 
     def testSimulationRots(self):
@@ -39,6 +39,9 @@ class SimTestCase(TestCase):
 
     def testSimulationImages(self):
         images = self.sim.clean_images(0, 512).asnumpy()
+#        print("xxx images", images.shape, images)
+        ref = np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy'))
+#        print("xxx ref", ref.shape, ref)
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy')), rtol=1e-2))
 
     def testSimulationImagesNoisy(self):
@@ -94,6 +97,7 @@ class SimTestCase(TestCase):
     def testSimulationVolCoords(self):
         coords, norms, inners = self.sim.vol_coords()
         self.assertTrue(np.allclose([4.72837704, -4.72837709], coords, atol=1e-4))
+        print('test norms', norms)
         self.assertTrue(np.allclose([8.20515764e-07, 1.17550184e-06], norms, atol=1e-4))
         self.assertTrue(np.allclose([3.78030562e-06, -4.20475816e-06], inners, atol=1e-4))
 
