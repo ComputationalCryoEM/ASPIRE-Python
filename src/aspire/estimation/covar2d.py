@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+from collections import OrderedDict
 from numpy.linalg import inv
 from scipy.linalg import solve, sqrtm
 
@@ -105,8 +106,8 @@ class RotCov2D:
             If ctf_fb or ctf_idx is None, the identity filter will be applied.
         :return: The mean value vector for all images.
         """
-        
-        
+
+
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated!')
 
@@ -122,7 +123,7 @@ class RotCov2D:
             coeff_k = coeffs[ctf_idx == k]
             weight = coeff_k.shape[0] / coeffs.shape[0]
             mean_coeff_k = self._get_mean(coeff_k)
-            
+
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
             b += weight * ctf_fb_k_t.apply(mean_coeff_k)
@@ -204,8 +205,8 @@ class RotCov2D:
             b = self.shrink_covar_backward(b_coeff, b_noise, np.size(coeffs, 1),
                                            noise_var, covar_est_opt['shrinker'])
 
-        # okay, wow, come back later 
-        
+        # okay, wow, come back later
+
         cg_opt = covar_est_opt
 
         covar_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
@@ -302,7 +303,7 @@ class RotCov2D:
             ctf_fb_k_t = ctf_fb_k.T
             sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
             #print('sig_covar_coeff[0]', sig_covar_coeff[0])
-            
+
             sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
             #print('sig_noise_covar_coeff[0]', sig_noise_covar_coeff[0])
 
@@ -365,7 +366,8 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
         else:
             logger.info(f'Represent CTF filters in FB basis')
-            unique_filters = list(set(src.filters))
+            # unique_filters = list(set(src.filters))
+            unique_filters = list(OrderedDict.fromkeys(src.filters))
             self.ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
 
@@ -389,8 +391,8 @@ class BatchedRotCov2D(RotCov2D):
             coeff = basis.evaluate_t(im.data)
 
             for k in np.unique(ctf_idx[batch]):
-                coeff_k = coeff[:, ctf_idx[batch] == k]
-                weight = np.size(coeff_k, 1) / src.n
+                coeff_k = coeff[ctf_idx[batch] == k]
+                weight = np.size(coeff_k, 0) / src.n
 
                 mean_coeff_k = self._get_mean(coeff_k)
 

@@ -180,6 +180,8 @@ class FFBBasis2D(FBBasis2D):
             This is an array of vectors whose first dimension equals `self.count`
             and whose remaining dimensions correspond to higher dimensions of `x`.
         """
+        if x.ndim == 2:
+            x = x[np.newaxis, :, :]
 
         # sanity check
         # x_ = np.empty((*x.shape[1:], x.shape[0]))
