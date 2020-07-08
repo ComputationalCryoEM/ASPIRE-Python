@@ -39,6 +39,7 @@ class CLOrient3D:
         self.shifts_1d = None
         self.shift_equations = None
         self.shift_equations_map = None
+        self.shift_b = None
 
         self.rotations = None
 
@@ -205,7 +206,41 @@ class CLOrient3D:
         self.corrmatrix = corrstack
         self.shifts_1d = shifts_1d
 
-    def get_shift_equations(self):
+    def estimate_shifts(self, memory_factor=10000):
+        """
+        Estimate 2D shifts in images
+
+        This function computes 2D shifts by solving the least-squares equations to
+        `Ax = b`, using precomputed shift equations represented by sparse matrix of `A`
+        and 1D shifts of `b`.
+
+        :param memory_factor: If there are N images, then the exact system of
+            equations solved for the shifts is of size 2N x N(N-1)/2 (2N
+            unknowns and N(N-1)/2 equations). This may be too big if N is
+            large. If `memory_factor` between 0 and 1, then it is the
+            fraction of equation to retain. That is, the system of
+            equations solved will be of size 2N x N*(N-1)/2*`memory_factor`.
+            If `memory_factor` is larger than 100, then the number of
+            equations is estimated in such a way that the memory used by the equations
+            is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
+            The code will generate an error if `memory_factor` is between 1 and 100. If
+            `memory_factor` is `None`, the shift equations will be generated exactly
+            from the common line matrix instead of estimated rotation matrices.
+        """
+
+        if memory_factor is None:
+            # Obtain exact shift equations from common-lines matrix
+            self._get_shift_equations()
+        else:
+            # Generate approximated shift equations from estimated rotations
+            self._get_shift_equations(memory_factor)
+
+        est_shifts = sparse.linalg.lsqr(self.shift_equations, self.shift_b)[0]
+        est_shifts = est_shifts.reshape((2, self.n_img), order='F')
+
+        return est_shifts
+
+    def _get_shift_equations(self):
         """
         Obtain exact shift equations from common-lines matrix
 
@@ -273,42 +308,34 @@ class CLOrient3D:
                 shift_b[shift_equation_idx] = shifts_1d[i, j]
 
                 # Compute the coefficients of the current equation.
-                if shift_beta < np.pi:
-                    shift_eq[idx] = [np.sin(shift_alpha), np.cos(shift_alpha),
-                                     -np.sin(shift_beta), -np.cos(shift_beta)]
-                else:
-                    shift_beta -= np.pi
-                    shift_eq[idx] = -1 * [np.sin(shift_alpha), np.cos(shift_alpha),
-                                          np.sin(shift_beta), np.cos(shift_beta)]
+                coeffs = np.array([np.sin(shift_alpha), np.cos(shift_alpha),
+                                   -np.sin(shift_beta), -np.cos(shift_beta)])
+                shift_eq[idx] = coeffs if shift_beta < np.pi else -1 * coeffs
 
                 shift_equations_map[i, j] = shift_equation_idx
                 shift_equation_idx += 1
 
-        # Generate the shift equations on the right side for each common line
-        ell = 4 * shift_equation_idx
-        shift_eq[ell:ell + shift_equation_idx] = shift_b
-        shift_i[ell:ell + shift_equation_idx] = np.arange(shift_equation_idx)
-        shift_j[ell:ell + shift_equation_idx] = 2 * n_img
         # Only use the non-zero elements and build sparse matrix
         mask = shift_eq != 0
         shift_eq = shift_eq[mask]
         shift_i = shift_i[mask]
         shift_j = shift_j[mask]
         shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
-                                            shape=(shift_equation_idx, 2 * n_img + 1))
+                                            shape=(shift_equation_idx, 2 * n_img))
 
         self.shift_equations = shift_equations
+        self.shift_b = shift_b
         self.shift_equations_map = shift_equations_map
 
-    def estimate_shifts(self, memory_factor=10000):
+    def _get_shift_equations(self, memory_factor=10000):
         """
-        Estimate 2D shifts in images using estimated rotations
+        Generate approximated shift equations from estimated rotations
 
         The function computes the common lines from the estimated rotations,
         and then, for each common line, estimates the 1D shift between its two
         Fourier rays (one in image i and one in image j). Using the common
-        lines and the 1D shifts, the function solves the least-squares
-        equations for the 2D shifts.
+        lines and the 1D shifts, shift equations are generated randomly based
+        on a memory factor and represented by sparse matrix.
 
         This function processes the (Fourier transformed) images exactly as the
         `build_clmatrix` function.
@@ -323,7 +350,6 @@ class CLOrient3D:
             equations is estimated in such a way that the memory used by the equations
             is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
             The code will generate an error if `memory_factor` is between 1 and 100.
-        :return: Estimated shifts for all images
         """
 
         if memory_factor < 0 or (memory_factor > 1 and memory_factor < 100):
@@ -344,9 +370,9 @@ class CLOrient3D:
         # this sparse system. The k'th non-zero element of the equations matrix
         # is stored at index (shift_i(k),shift_i(k)). Note the last n_equations
         # elements are used to store the right side of Ax = b.
-        shift_i = np.zeros(5 * n_equations)
-        shift_j = np.zeros(5 * n_equations)
-        shift_eq = np.zeros(5 * n_equations)
+        shift_i = np.zeros(4 * n_equations)
+        shift_j = np.zeros(4 * n_equations)
+        shift_eq = np.zeros(4 * n_equations)
         shift_b = np.zeros(n_equations)
 
         # Prepare the shift phases to try and generate filter for common-line detection
@@ -425,19 +451,12 @@ class CLOrient3D:
                                -np.sin(shift_beta), -np.cos(shift_beta)])
             shift_eq[idx] = -1 * coeffs if is_pf_j_flipped else coeffs
 
-        #  Attach the b information to shift_eq too
-        t = 4 * n_equations
-        shift_eq[t:t + n_equations] = shift_b
-        shift_i[t:t + n_equations] = np.arange(n_equations)
-        shift_j[t:t + n_equations] = 2 * n_img
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
-                                            shape=(n_equations, 2 * n_img + 1))
+                                            shape=(n_equations, 2 * n_img))
 
-        est_shifts = sparse.linalg.lsqr(shift_equations[:, :-1], shift_b)[0]
-        est_shifts = est_shifts.reshape((2, n_img), order='F')
-
-        return est_shifts, shift_equations
+        self.shift_equations = shift_equations
+        self.shift_b = shift_b
 
     def _estimate_num_shift_equations(self, n_img, memory_factor):
         """
