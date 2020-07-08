@@ -63,7 +63,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         second_moment = 0
         for i in range(0, self.n, self.batchSize):
             images = self.src.images(start=i, num=self.batchSize).asnumpy()
-            images_masked = (images * np.expand_dims(mask, 2))
+            images_masked = images * mask
 
             _denominator = self.n * np.sum(mask)
             first_moment += np.sum(images_masked) / _denominator
