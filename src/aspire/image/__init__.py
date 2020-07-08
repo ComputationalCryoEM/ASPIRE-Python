@@ -225,6 +225,7 @@ class Image:
 
         ensure(shifts.shape[-1] == 2, "shifts must be nx2")
 
+        print('qqq', im.shape, shifts.shape)
         ensure(n_shifts == 1 or n_shifts == n_im, "number of shifts must be 1 or match the number of images")
         ensure(im.shape[1] == im.shape[2], "images must be square")
 

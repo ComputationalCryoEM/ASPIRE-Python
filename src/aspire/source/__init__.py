@@ -452,13 +452,20 @@ class ImageSource:
         :param start: Start index of image to consider
         :return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.
         """
-        num = im.shape[-1]
+        num = im.shape[0]
 
         all_idx = np.arange(start, min(start + num, self.n))
-        im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
+        #im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
+        im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
         im = self.eval_filters(im, start=start, num=num).asnumpy()
-        vol = im_backproject(im, self.rots[start:start+num, :, :])
+
+        L = im.shape[1]
+        n = im.shape[0]
+        im_f = np.empty((L,L,n))
+        for k in range(n):
+            im_f[:, :, k] = im[k]
+        vol = im_backproject(im_f, self.rots[start:start+num, :, :])
 
         return vol
 

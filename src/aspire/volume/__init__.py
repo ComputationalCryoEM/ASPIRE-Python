@@ -208,7 +208,7 @@ def im_backproject(im, rot_matrices):
     pts_rot = rotated_grids(L, rot_matrices)
     pts_rot = m_reshape(pts_rot, (3, -1))
 
-    im_f = centered_fft2(im) / (L**2)
+    im_f = centered_fft2_F(im) / (L**2)
     if L % 2 == 0:
         im_f[0, :, :] = 0
         im_f[:, 0, :] = 0
