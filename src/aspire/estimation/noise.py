@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.fft import centered_fft2_F
+from aspire.utils.fft import centered_fft2_C
 from aspire.utils.filters import ArrayFilter, ScalarFilter
 
 logger = logging.getLogger(__name__)
@@ -116,12 +116,12 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         noise_psd_est = np.zeros((self.L, self.L)).astype(self.src.dtype)
         for i in range(0, self.n, self.batchSize):
             images = self.src.images(i, self.batchSize).asnumpy()
-            images_masked = (images * np.expand_dims(mask, 2))
+            images_masked = (images * np.expand_dims(mask, 0))
 
             _denominator = self.n * np.sum(mask)
             mean_est += np.sum(images_masked) / _denominator
-            im_masked_f = centered_fft2(images_masked)
-            noise_psd_est += np.sum(np.abs(im_masked_f**2), axis=2) / _denominator
+            im_masked_f = centered_fft2_C(images_masked)
+            noise_psd_est += np.sum(np.abs(im_masked_f**2), axis=0) / _denominator
 
         mid = self.L // 2
         noise_psd_est[mid, mid] -= mean_est**2
