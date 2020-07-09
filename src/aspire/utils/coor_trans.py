@@ -254,8 +254,8 @@ def register_rotations(rots, rots_ref):
 
     # Compute the two possible orthogonal matrices which register the
     # estimated rotations to the true ones.
-    Q1 = Q1/K
-    Q2 = Q2/K
+    Q1 = Q1 / K
+    Q2 = Q2 / K
 
     # We are registering one set of rotations (the estimated ones) to
     # another set of rotations (the true ones). Thus, the transformation
@@ -264,8 +264,8 @@ def register_rotations(rots, rots_ref):
     # if we got the reflected one. In any case, one of them should be
     # orthogonal.
 
-    err1 = norm(Q1@Q1.T - np.eye(3), ord='fro')
-    err2 = norm(Q2@Q2.T - np.eye(3), ord='fro')
+    err1 = norm(Q1 @ Q1.T - np.eye(3), ord='fro')
+    err2 = norm(Q2 @ Q2.T - np.eye(3), ord='fro')
 
     # In any case, enforce the registering matrix O to be a rotation.
     if err1 < err2:
