@@ -227,17 +227,12 @@ def register_rotations(rots, rots_ref):
     Register estimated orientations to reference ones.
 
     Finds the orthogonal transformation that best aligns the estimated rotations
-    to the reference rotations. `regrot` are the estimated rotations after registering
-    them to the reference ones, `Q_mat` is the optimal orthogonal 3x3 matrix to align
-    the two sets. If flag==1 then J conjugacy is required and 0 is not.
+    to the reference rotations.
 
     :param rots: The rotations to be aligned in the form of a n-by-3-by-3 array.
     :param rots_ref: The reference rotations to which we would like to align in
         the form of a n-by-3-by-3 array.
-    :return: regrot, aligned rotation matrices;
-             mse, mean squired error between the estimated and aligned matrices;
-             diff, difference array between the estimated and aligned matrices;
-             o_mat, optimal orthogonal 3x3 matrix to align the two sets;
+    :return: o_mat, optimal orthogonal 3x3 matrix to align the two sets;
             flag, flag==1 then J conjugacy is required and 0 is not.
     """
 
@@ -284,6 +279,29 @@ def register_rotations(rots, rots_ref):
 
     Q_mat = U @ V
 
+    return Q_mat, flag
+
+
+def get_aligned_rotations(rots, Q_mat, flag):
+    """
+    Get aligned rotation matrices to reference ones.
+
+    Calculated aligned rotation matrices from the orthogonal transformation
+    that best aligns the estimated rotations to the reference rotations.
+
+
+    :param rots: The reference rotations to which we would like to align in
+        the form of a n-by-3-by-3 array.
+    :param Q_mat:  optimal orthogonal 3x3 transformation matrix
+    :param flag:  flag==1 then J conjugacy is required and 0 is not
+    :return: regrot, aligned rotation matrices
+    """
+
+    K = rots.shape[0]
+
+    # Reflection matrix
+    J = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
+
     regrot = np.zeros_like(rots)
     for k in range(K):
         R = rots[k, :, :]
@@ -291,7 +309,7 @@ def register_rotations(rots, rots_ref):
             R = J @ R @ J
         regrot[k, :, :] = Q_mat.T @ R
 
-    return regrot, Q_mat, flag
+    return regrot
 
 
 def get_rots_mse(rots_reg, rots_ref):

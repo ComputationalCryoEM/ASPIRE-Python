@@ -2,9 +2,13 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 from aspire.utils.coor_trans import (grid_2d, grid_3d, q_to_rot, qrand,
-                                     qrand_rots, register_rotations)
+                                     qrand_rots, register_rotations,
+                                     uniform_random_angles, get_aligned_rotations)
+
+from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -49,12 +53,14 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(np.moveaxis(results, 2, 0), rot_matrices32, atol=1e-7))
 
     def testRegisterRots(self):
-        rots = qrand_rots(32, seed=0)
-        regrots, q_mat, flag = register_rotations(rots, rots)
+        angles = uniform_random_angles(32, seed=0)
+        rots_ref = Rotation.from_euler('ZYZ', angles).as_dcm()
 
-        result = np.array(
-            [[ 1.00000000e+00, -3.37174190e-18,  2.60886371e-18],
-             [ 3.37174190e-18,  1.00000000e+00, -5.19757560e-17],
-             [-2.60886371e-18,  1.39415739e-16,  1.00000000e+00]]
-        )
-        self.assertTrue(np.allclose(regrots, rots) and np.allclose(q_mat, result))
+        q_ang = [[45, 45, 45]]
+        q_mat = Rotation.from_euler('ZYZ', q_ang, degrees=True).as_dcm()[0]
+        flag = 0
+        regrots_ref = get_aligned_rotations(rots_ref, q_mat, flag)
+        q_mat_est, flag_est = register_rotations(rots_ref, regrots_ref)
+
+        self.assertTrue(np.allclose(flag_est, flag)
+                        and np.allclose(q_mat_est, q_mat))
