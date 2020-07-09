@@ -37,9 +37,6 @@ class CLOrient3D:
         self.clmatrix = None
         self.corrmatrix = None
         self.shifts_1d = None
-        self.shift_equations = None
-        self.shift_equations_map = None
-        self.shift_b = None
 
         self.rotations = None
 
@@ -145,7 +142,8 @@ class CLOrient3D:
 
         # Prepare the shift phases to try and generate filter for common-line detection
         r_max = int((pf.shape[0] - 1) / 2)
-        shifts, shift_phases, h = self._generate_shift_phase_and_filter(r_max, max_shift, shift_step)
+        shifts, shift_phases, h = self._generate_shift_phase_and_filter(
+            r_max, max_shift, shift_step)
         all_shift_phases = shift_phases.T
 
         # Apply bandpass filter, normalize each ray of each image
@@ -230,17 +228,17 @@ class CLOrient3D:
 
         if memory_factor is None:
             # Obtain exact shift equations from common-lines matrix
-            self._get_shift_equations()
+            shift_equations, shift_b = self._get_shift_equations_exact()
         else:
             # Generate approximated shift equations from estimated rotations
-            self._get_shift_equations(memory_factor)
+            shift_equations, shift_b = self._get_shift_equations_approx(memory_factor)
 
-        est_shifts = sparse.linalg.lsqr(self.shift_equations, self.shift_b)[0]
+        est_shifts = sparse.linalg.lsqr(shift_equations, shift_b)[0]
         est_shifts = est_shifts.reshape((2, self.n_img), order='F')
 
         return est_shifts
 
-    def _get_shift_equations(self):
+    def _get_shift_equations_exact(self):
         """
         Obtain exact shift equations from common-lines matrix
 
@@ -252,6 +250,8 @@ class CLOrient3D:
         and the estimated 1D shifts ( between its two Fourier rays one in image
         i and one in image j) from all common lines as the right-hand side,
         the 2D shifts can be computed by solves the least-squares method.
+
+        :return; The left and right-hand side of shift equations
         """
 
         clstack = self.clmatrix
@@ -323,11 +323,9 @@ class CLOrient3D:
         shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
                                             shape=(shift_equation_idx, 2 * n_img))
 
-        self.shift_equations = shift_equations
-        self.shift_b = shift_b
-        self.shift_equations_map = shift_equations_map
+        return shift_equations, shift_b
 
-    def _get_shift_equations(self, memory_factor=10000):
+    def _get_shift_equations_approx(self, memory_factor=10000):
         """
         Generate approximated shift equations from estimated rotations
 
@@ -455,8 +453,7 @@ class CLOrient3D:
         shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
                                             shape=(n_equations, 2 * n_img))
 
-        self.shift_equations = shift_equations
-        self.shift_b = shift_b
+        return shift_equations, shift_b
 
     def _estimate_num_shift_equations(self, n_img, memory_factor):
         """
