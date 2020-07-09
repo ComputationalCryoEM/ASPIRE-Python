@@ -13,7 +13,8 @@ from aspire.source.simulation import Simulation
 
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
-from aspire.utils.coor_trans import register_rotations, get_rots_mse
+from aspire.utils.coor_trans import (register_rotations,
+                                     get_aligned_rotations, get_rots_mse)
 from aspire.orientation.commonline_sync import CommLineSync
 
 logger = logging.getLogger('aspire')
@@ -30,9 +31,6 @@ num_imgs = 128
 
 # Set the number of 3D maps
 num_maps = 1
-
-# Set the signal-noise ratio
-sn_ratio = 32
 
 # Specify the CTF parameters not used for this example
 # but necessary for initializing the simulation object
@@ -56,7 +54,7 @@ logger.info(f'Load 3D map and downsample 3D map to desired grids '
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
 vols = infile.data
 vols = vols[..., np.newaxis]
-vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
+vols = downsample(vols, (img_size,) * 3)
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to creat simulation object.')
@@ -81,6 +79,7 @@ rots_est = orient_est.rotations
 sim_new = orient_est.save_rotations()
 
 # Get register rotations after performing global alignment
-regrot, O, flag = register_rotations(rots_est, rots_true)
+Q_mat, flag = register_rotations(rots_est, rots_true)
+regrot = get_aligned_rotations(rots_est, Q_mat, flag)
 mse_reg = get_rots_mse(regrot, rots_true)
 logger.info(f'MSE deviation of the estimated rotations using register_rotations : {mse_reg}')
