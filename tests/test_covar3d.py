@@ -15,6 +15,7 @@ from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import Random
 from aspire.utils.matrix import eigs
 from aspire.utils.misc import src_wiener_coords
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -30,7 +31,7 @@ class Covar3DTestCase(TestCase):
         cls.noise_variance = 0.0030762743633643615
 
         cls.mean_estimator = MeanEstimator(cls.sim, basis)
-        cls.mean_est = np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy'))
+        cls.mean_est = Volume(np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy')))
 
         # Passing in a mean_kernel argument to the following constructor speeds up some calculations
         cls.covar_estimator = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='none')
@@ -146,7 +147,12 @@ class Covar3DTestCase(TestCase):
 
         C = 2
 
-        eigs_est_trunc = eigs_est[:, :, :, :C-1]
+        # TODO, alter ref
+        eigs_est_trunc = np.swapaxes(eigs_est[:, :, :, :C-1], 0, -1)
+        eigs_est_trunc = np.swapaxes(eigs_est_trunc, 1, -1)
+        eigs_est_trunc = np.swapaxes(eigs_est_trunc, 2, -1)
+
+        eigs_est_trunc = Volume(eigs_est_trunc)
         lambdas_est_trunc = lambdas_est[:C-1, :C-1]
 
         # Estimate the coordinates in the eigenbasis. Given the images, we find the coordinates in the basis that

@@ -166,7 +166,7 @@ class Image:
 
         mask = (np.abs(grid['x']) < ds_res / self.res) & (np.abs(grid['y']) < ds_res / self.res)
         im = np.real(centered_ifft2_C(centered_fft2_C(self.data) *
-                                    np.expand_dims(mask, 2)))
+                                    np.expand_dims(mask, 0)))
 
         for s in range(im_ds.shape[0]):
             interpolator = RegularGridInterpolator(
@@ -225,7 +225,6 @@ class Image:
 
         ensure(shifts.shape[-1] == 2, "shifts must be nx2")
 
-        print('qqq', im.shape, shifts.shape)
         ensure(n_shifts == 1 or n_shifts == n_im, "number of shifts must be 1 or match the number of images")
         ensure(im.shape[1] == im.shape[2], "images must be square")
 

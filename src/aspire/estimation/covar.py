@@ -165,12 +165,12 @@ class CovarianceEstimator(Estimator):
 
         for i in range(0, self.n, self.batch_size):
             im = self.src.images(i, self.batch_size)
-            batch_n = im.shape[-1]
+            batch_n = im.n_images
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 
             im_centered_b = np.zeros((self.L, self.L, self.L, batch_n), dtype=self.as_type)
             for j in range(batch_n):
-                im_centered_b[:, :, :, j] = self.src.im_backward(Image(im_centered[:, :, j]), i+j)
+                im_centered_b[:, :, :, j] = self.src.im_backward(Image(im_centered[j]), i+j)
             im_centered_b = vol_to_vec(im_centered_b)
 
             covar_b += vecmat_to_volmat(im_centered_b @ im_centered_b.T) / self.n

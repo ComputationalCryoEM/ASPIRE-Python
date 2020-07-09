@@ -150,7 +150,7 @@ class RelionSource(ImageSource):
             n_workers = cpu_count() - 1
 
         df = self._metadata.loc[indices]
-        im = np.empty((self._original_resolution, self._original_resolution, len(indices)))
+        im = np.empty((len(indices), self._original_resolution, self._original_resolution))
 
         groups = df.groupby('__mrc_filepath')
         n_workers = min(n_workers, len(groups))
@@ -163,7 +163,8 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                im[:, :, data_indices-start] = data
+                for idx in  data_indices-start:
+                    im[idx, :, :] = data[:, :, idx]
 
         logger.info(f'Loading {len(indices)} images complete')
 

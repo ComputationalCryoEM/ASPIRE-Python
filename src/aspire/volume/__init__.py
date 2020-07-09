@@ -42,6 +42,8 @@ class Volume:
         self.volume_shape = self.data.shape[1:]
 
     def __getitem__(self, item):
+        # this is one reason why you might want Volume and VolumeStack classes...xxx
+        #return Volume(self.data[item])
         return self.data[item]
 
     def __setitem__(self, key, value):
@@ -55,6 +57,22 @@ class Volume:
         
     def __sub__(self, other):
         return Volume(self.data - other.data)
+
+    # def __mul__(self, other):
+    #     if isinstance(other, Volume):
+    #         res = Volume(self.data * other.data)
+    #     else:
+    #         res = Volume(self.data * other)
+
+    #     return res
+
+    # def __truediv__(self, other):
+    #     if isinstance(other, Volume):
+    #         res = Volume(self.data / other.data)
+    #     else:
+    #         res = Volume(self.data / other)
+
+    #     return res
 
     def _rotated_grids(self, rot_matrices):
         """
@@ -82,7 +100,8 @@ class Volume:
         n = rot_matrices.shape[0]
         
         pts_rot = rotated_grids(self.resolution, rot_matrices)
-        
+
+        # TODO: come back and convert this method internally to C order
         ## TODO: rotated_grids might as well give us correctly shaped array in the first place,
         #  yea... this and the related code look real funny to me.
         pts_rot = m_reshape(pts_rot, (3, self.resolution**2*n))
@@ -98,8 +117,10 @@ class Volume:
         
 
         im = centered_ifft2_F(im_f)
+        im_c = np.swapaxes(im, 0, -1)
+        im_c = np.swapaxes(im_c, -2, -1)
 
-        return np.real(im)
+        return np.real(im_c)
 
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""

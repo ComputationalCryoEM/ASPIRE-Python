@@ -14,7 +14,8 @@ from aspire.source.xform import (Downsample, FilterXform, FlipXform,
                                  Multiply, Pipeline, Add, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import (MultiplicativeFilter, PowerFilter)
+from aspire.utils.filters import MultiplicativeFilter, PowerFilter
+from aspire.volume import Volume
 from aspire.volume import im_backproject, vol_project
 
 logger = logging.getLogger(__name__)
@@ -277,6 +278,8 @@ class ImageSource:
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
         :return: A 3D volume of images of size L x L x n
         """
+        # GBW, why would the base class not implement this and just have interested sublasses
+        # overload it?
         raise NotImplementedError('Subclasses should implement this and return an Image object')
 
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
@@ -452,7 +455,7 @@ class ImageSource:
         :param start: Start index of image to consider
         :return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.
         """
-        num = im.shape[0]
+        num = im.n_images
 
         all_idx = np.arange(start, min(start + num, self.n))
         #im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
@@ -465,6 +468,7 @@ class ImageSource:
         im_f = np.empty((L,L,n))
         for k in range(n):
             im_f[:, :, k] = im[k]
+        # TODO: xxx convert method to C order
         vol = im_backproject(im_f, self.rots[start:start+num, :, :])
 
         return vol
@@ -472,17 +476,19 @@ class ImageSource:
     def vol_forward(self, vol, start, num):
         """
         Apply forward image model to volume
-        :param vol: A volume of size L-by-L-by-L.
+        :param vol: A volume instance.
         :param start: Start index of image to consider
         :param num: Number of images to consider
         :return: The images obtained from volume by projecting, applying CTFs, translating, and multiplying by the
             amplitude.
         """
         all_idx = np.arange(start, min(start + num, self.n))
-        im = vol_project(vol, self.rots[all_idx, :, :])
+        assert vol.N == 1, "vol_forward expects a single volume, not a stack"
+        #im = vol_project(vol, self.rots[all_idx, :, :])
+        im = vol.project(0, self.rots[all_idx, :, :])
         im = self.eval_filters(im, start, num)
         im = Image(im).shift(self.offsets[all_idx, :])
-        im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
+        im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
 
     def save(self, starfile_filepath, batch_size=512, save_mode=None, overwrite=False):

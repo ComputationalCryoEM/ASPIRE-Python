@@ -145,8 +145,7 @@ class Simulation(ImageSource):
 
             im_k = self.vols.project(vol_idx=k-1,
                                      rot_matrices=rot)
-            im_k = np.swapaxes(im_k, 0, -1)
-            im_k = np.swapaxes(im_k, -2, -1)
+            #Volume.project should return C order
             im[idx_k, :, :] = im_k
 
         return Image(im)
@@ -177,7 +176,7 @@ class Simulation(ImageSource):
         :return:
         """
         if mean_vol is None:
-            mean_vol = Volume(self.mean_true())
+            mean_vol = self.mean_true()
         if eig_vols is None:
             eig_vols = Volume(self.eigs()[0])
 
@@ -198,7 +197,7 @@ class Simulation(ImageSource):
         return coords.squeeze(), res_norms, res_inners
 
     def mean_true(self):
-        return np.mean(self.vols, 0)
+        return Volume(np.mean(self.vols, 0))
 
     def covar_true(self):
         eigs_true, lamdbas_true = self.eigs()
@@ -256,7 +255,8 @@ class Simulation(ImageSource):
 
         err = anorm(vol_true - vol_est)
         rel_err = err / norm_true
-        corr = acorr(vol_true, vol_est)
+        # xxx ugh gross
+        corr = acorr(vol_true.data, vol_est.data)
 
         return {
             'err': err,
@@ -296,7 +296,8 @@ class Simulation(ImageSource):
         """
         eigs_true, lambdas_true = self.eigs()
 
-        B = vol_to_vec(eigs_est).T @ vol_to_vec(eigs_true)
+        #B = vol_to_vec(eigs_est).T @ vol_to_vec(eigs_true)
+        B = vol_to_vec(eigs_est).T @  Volume(eigs_true).to_vec().T
         norm_true = anorm(lambdas_true)
         norm_est = anorm(lambdas_est)
 

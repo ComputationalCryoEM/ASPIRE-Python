@@ -6,6 +6,7 @@ import numpy as np
 from numpy.linalg import qr, solve
 
 from aspire.utils.matrix import mat_to_vec, vec_to_mat
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,8 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
     """
     Calculate coordinates using Wiener filter
     :param sim: A simulation object containing the images whose coordinates we want.
-    :param mean_vol: The mean volume of the source in an L-by-L-by-L array.
-    :param eig_vols: The eigenvolumes of the source in an L-by-L-by-L-by-K array.
+    :param mean_vol: The mean volume of the source as Volume instance.
+    :param eig_vols: The eigenvolumes of the source as Volume instance.
     :param lambdas: The eigenvalues in a K-by-K diagonal matrix (default `eye(K)`).
     :param noise_var: The variance of the noise in the images (default 0).
     :param batch_size: The size of the batches in which to compute the coordinates (default 512).
@@ -68,7 +69,7 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
 
     # TODO: Find a better place for this functionality other than in utils
     """
-    k = eig_vols.shape[-1]
+    k = eig_vols.N
     if lambdas is None:
         lambdas = np.eye(k)
 
@@ -77,13 +78,18 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
 
     for i in range(0, sim.n, batch_size):
         ims = sim.images(i, batch_size)
-        batch_n = ims.shape[-1]
+        batch_n = ims.shape[0]
         ims -= sim.vol_forward(mean_vol, i, batch_n)
 
         Qs, Rs = qr_vols_forward(sim, i, batch_n, eig_vols, k)
 
         Q_vecs = mat_to_vec(Qs)
-        im_vecs = mat_to_vec(ims.asnumpy())
+
+
+        # ugh
+        ims = np.swapaxes(ims.data, 1, 2)
+        ims = np.swapaxes(ims, 0, 2)
+        im_vecs = mat_to_vec(ims)
 
         for j in range(batch_n):
             im_coords = Q_vecs[:, :, j].T @ im_vecs[:, j]
@@ -106,11 +112,17 @@ def qr_vols_forward(sim, s, n, vols, k):
     :param k:
     :return:
     """
-    ims = np.zeros((sim.L, sim.L, n, k), dtype=vols.dtype)
+    ims = np.zeros((k, n, sim.L, sim.L), dtype=vols.dtype)
     for ell in range(k):
-        ims[:, :, :, ell] = sim.vol_forward(vols[:, :, :, ell], s, n).asnumpy()
+        ims[ell, :, :, :] = sim.vol_forward(Volume(vols[ell]), s, n).asnumpy()
 
-    ims = np.swapaxes(ims, 2, 3)
+    #ugh
+    #ims = np.swapaxes(ims, 0, 1)
+
+    ims = np.swapaxes(ims, 1, 3)
+    ims = np.swapaxes(ims, 0, 2)
+    #print('ims shape', ims.shape)
+    
     Q_vecs = np.zeros((sim.L**2, k, n), dtype=vols.dtype)
     Rs = np.zeros((k, k, n), dtype=vols.dtype)
 

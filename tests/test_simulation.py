@@ -89,7 +89,7 @@ class SimTestCase(TestCase):
                     [0.00539583, 0.06068972, 0.47008955, 1.17128026, 1.82821035, 1.18743944, 0.30667788, 0.04851476],
                     [0.00246362, 0.04867788, 0.65284950, 0.65238875, 0.65745538, 0.37955678, 0.08053055, 0.01210055],
                 ],
-                mean_vol[:, :, 4]
+                mean_vol[0, :, :, 4]
             )
         )
 
@@ -115,7 +115,7 @@ class SimTestCase(TestCase):
         self.assertTrue(np.allclose(result, covar[:, :, 4, 4, 4, 4], atol=1e-4))
 
     def testSimulationEvalMean(self):
-        mean_est = np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy'))
+        mean_est = Volume(np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy')))
         result = self.sim.eval_mean(mean_est)
 
         self.assertTrue(np.allclose(result['err'], 2.664116055950763, atol=1e-4))

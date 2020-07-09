@@ -57,11 +57,11 @@ class StarFileTestCase(TestCase):
     def testImageStackShape(self):
         # Load 10 images starting at index 0
         images = self.src.images(0, 10)
-        self.assertEqual(images.shape, (200, 200, 10))
+        self.assertEqual(images.shape, (10, 200, 200))
 
     def testImage0(self):
         image_stack = self.src.images(0, 1)
-        first_image = image_stack[:, :, 0]
+        first_image = image_stack[0]
         self.assertTrue(np.allclose(
             first_image,
             np.load(os.path.join(DATA_DIR, 'starfile_image_0.npy'))
@@ -74,14 +74,13 @@ class StarFileTestCase(TestCase):
 
     def testImageDownsample(self):
         self.src.downsample(16)
-        first_image = self.src.images(0, 1)[:, :, 0]
+        first_image = self.src.images(0, 1)[0]
         self.assertEqual(first_image.shape, (16, 16))
 
     def testImageDownsampleAndWhiten(self):
         self.src.downsample(16)
         self.src.whiten(noise_filter=ScalarFilter(dim=2, value=0.02450909546680349))
-        first_whitened_image = self.src.images(0, 1)[:, :, 0]
-
+        first_whitened_image = self.src.images(0, 1)[0]
         self.assertTrue(np.allclose(
             first_whitened_image,
             np.load(os.path.join(DATA_DIR, 'starfile_image_0_whitened.npy')),

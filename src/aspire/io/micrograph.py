@@ -1,9 +1,10 @@
 import mrcfile
 import numpy as np
-from PIL import Image
+from PIL import Image as PILImage
 from scipy import signal
 
 from aspire import config
+from aspire.image import Image
 from aspire.utils import ensure
 from aspire.utils.numeric import xp
 
@@ -18,7 +19,6 @@ class Micrograph:
 
         # Attributes populated by the time this constructor returns
         # A 2-D ndarray if loading a MRC file, a 3-D ndarray if loading a MRCS file,
-        # with the last dimension indicating the number of images
         self.im = None
 
         self._init_margins(margin)
@@ -38,26 +38,23 @@ class Micrograph:
         with mrcfile.open(self.filepath) as mrc:
             im = mrc.data.astype('double')
 
-        # For multiple mrc files, mrcfile returns an ndarray with (shape n_images, height, width)
-        # swap axes 0 and 2 so we get the more natural (height, width, n_images)
-        if im.ndim == 3:
-            im = np.swapaxes(im, 0, 2)
-
-        self.original_im = im
+        # NOTE: For multiple mrc files, mrcfile returns an ndarray with
+        # (shape n_images, height, width)
+        # TODO: check all of these handle C ordered im data (currently unused).
 
         # Discard outer pixels
-        im = im[
+        im = im[...,
             self.margin_top: -self.margin_bottom if self.margin_bottom is not None else None,
             self.margin_left: -self.margin_right if self.margin_right is not None else None
         ]
 
         if self.square:
-            side_length = min(im.shape[0], im.shape[1])
+            side_length = min(im.shape[-2], im.shape[-1])
             im = im[:side_length, :side_length]
 
         if self.shrink_factor is not None:
             size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
-            im = np.array(Image.fromarray(im).resize(size, Image.BICUBIC))
+            im = np.array(PILImage.fromarray(im).resize(size, PILImage.BICUBIC))
 
         if self.gauss_filter_size is not None:
             im = signal.correlate(
@@ -66,8 +63,8 @@ class Micrograph:
                 'same'
             )
 
-        self.im = im.astype('double')
-        self.shape = im.shape
+        self.im = Image(im)
+        self.shape = self.im.shape
 
     @classmethod
     def gaussian_filter(cls, size_filter, std):
