@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 
+from scipy.spatial.transform import Rotation
 import scipy.sparse as sparse
 
 from aspire.orientation import CLOrient3D
@@ -183,7 +184,7 @@ class CommLineSync(CLOrient3D):
             err = np.linalg.norm(diff) / np.linalg.norm(rot_block)
             if err > tol:
                 # This means that images i and j have inconsistent rotations.
-                # simply pass it as Matlab code.
+                # Simply pass it as Matlab code.
                 pass
         else:
             # This for the case that images i and j correspond to the same
@@ -208,45 +209,21 @@ class CommLineSync(CLOrient3D):
         :param n_theta: The number of points in the theta direction (common lines)
         :return: The rotation matrix that takes image i to image j for good index of k.
         """
-        
-        r = np.zeros((3, 3, len(good_k)))
+
         if i == j:
-            return 0, 0
+            return []
 
-        tol = 1e-12
+        # Prepare the theta values from the differences of common line indices
+        # C1, C2, and C3 are unit circles of image i, j, and k
+        # cl_diff1 is for the angle on C1 created by its intersection with C3 and C2.
+        # cl_diff2 is for the angle on C2 created by its intersection with C1 and C3.
+        # cl_diff3 is for the angle on C3 created by its intersection with C2 and C1.
+        cl_diff1 = clmatrix[i, good_k] - clmatrix[i, j]         # for theta1
+        cl_diff2 = clmatrix[j, good_k] - clmatrix[j, i]         # for - theta2
+        cl_diff3 = clmatrix[good_k, j] - clmatrix[good_k, i]    # for theta3
 
-        idx1 = clmatrix[good_k, j] - clmatrix[good_k, i]    #  theta3
-        idx2 = clmatrix[j, good_k] - clmatrix[j, i]         # -theta2
-        idx3 = clmatrix[i, good_k] - clmatrix[i, j]         #  theta1
-
-        a = np.cos(2 * np.pi * idx1 / n_theta)  # c3
-        b = np.cos(2 * np.pi * idx2 / n_theta)  # c2
-        c = np.cos(2 * np.pi * idx3 / n_theta)  # c1
-
-        # Make sure that the triangle is not too small. This will happen if the
-        # common line between (say) cl(1,2) is close to cl(1,3).
-        # To eliminate that, we require that det(G)=1+2abc-(a^2+b^2+c^2) is large.
-        # enough.
-
-        cond = 1 + 2 * a * b * c - (np.square(a)
-                                    + np.square(b) + np.square(c))
-
-        good_idx = np.where(cond > 1.0e-5)[0]
-
-        a = a[good_idx]
-        b = b[good_idx]
-        c = c[good_idx]
-        idx2 = idx2[good_idx]
-        idx3 = idx3[good_idx]
-        c_alpha = (a - b * c) / np.sqrt(1 - np.square(b)) / np.sqrt(1 - np.square(c))
-
-        # Fix the angles between c_ij(c_ji) and c_ik(c_jk) to be smaller than pi/2
-        # otherwise there will be an ambiguity between alpha and pi-alpha.
-        ind1 = (idx3 > n_theta / 2 + tol) | ((idx3 < -tol) & (idx3 > -n_theta / 2))
-        ind2 = (idx2 > n_theta / 2 + tol) | ((idx2 < -tol) & (idx2 > -n_theta / 2))
-        c_alpha[ind1 ^ ind2] = -c_alpha[ind1 ^ ind2]
-        aa = clmatrix[i, j] * 2 * np.pi / n_theta
-        bb = clmatrix[j, i] * 2 * np.pi / n_theta
+        # Calculate the cos values of rotation angles between i an j images for good k images
+        c_alpha, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
         alpha = np.arccos(c_alpha)
 
         # Convert the Euler angles with ZXZ conversion to rotation matrices
@@ -265,25 +242,13 @@ class CommLineSync(CLOrient3D):
         #
         # This function does the conversion simultaneously for N Euler angles.
 
-        ang1 = np.pi - bb
-        ang2 = alpha
-        ang3 = aa - np.pi
-        sa = np.sin(ang1)
-        ca = np.cos(ang1)
-        sb = np.sin(ang2)
-        cb = np.cos(ang2)
-        sc = np.sin(ang3)
-        cc = np.cos(ang3)
-
-        r[0, 0, good_idx] = cc * ca - sc * cb * sa
-        r[0, 1, good_idx] = -cc * sa - sc * cb * ca
-        r[0, 2, good_idx] = sc * sb
-        r[1, 0, good_idx] = sc * ca + cc * cb * sa
-        r[1, 1, good_idx] = -sa * sc + cc * cb * ca
-        r[1, 2, good_idx] = -cc * sb
-        r[2, 0, good_idx] = sb * sa
-        r[2, 1, good_idx] = sb * ca
-        r[2, 2, good_idx] = cb
+        angles = np.zeros((alpha.shape[0], 3))
+        angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
+        angles[:, 1] = alpha
+        angles[:, 2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
+        r = Rotation.from_euler('ZXZ', angles).as_dcm()
+        r = np.swapaxes(r, 0, 2)
+        r = np.swapaxes(r, 0, 1)
 
         return r[:, :, good_idx]
 
@@ -333,50 +298,17 @@ class CommLineSync(CLOrient3D):
             cl_idx23 = clmatrix[j, k_list]
             cl_idx32 = clmatrix[k_list, j]
 
+            # Prepare the theta values from the differences of common line indices
             # C1, C2, and C3 are unit circles of image i, j, and k
-            # theta1 is the angle on C1 created by its intersection with C3 and C2.
-            # theta2 is the angle on C2 created by its intersection with C1 and C3.
-            # theta3 is the angle on C3 created by its intersection with C2 and C1.
-            theta1 = (cl_idx13 - cl_idx12) * 2 * np.pi / n_theta
-            theta2 = (cl_idx21 - cl_idx23) * 2 * np.pi / n_theta
-            theta3 = (cl_idx32 - cl_idx31) * 2 * np.pi / n_theta
+            # cl_diff1 is for the angle on C1 created by its intersection with C3 and C2.
+            # cl_diff2 is for the angle on C2 created by its intersection with C1 and C3.
+            # cl_diff3 is for the angle on C3 created by its intersection with C2 and C1.
+            cl_diff1 = cl_idx13 - cl_idx12
+            cl_diff2 = cl_idx21 - cl_idx23
+            cl_diff3 = cl_idx32 - cl_idx31
+            # Calculate the cos values of rotation angles between i an j images for good k images
+            cos_phi2, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
 
-            c1 = np.cos(theta1)
-            c2 = np.cos(theta2)
-            c3 = np.cos(theta3)
-
-            # Each common-line corresponds to a point on the unit sphere. Denote the
-            # coordinates of these points by (Pix, Piy Piz), and put them in the matrix
-            #   M=[ P1x  P2x  P3x ;
-            #       P1y  P2y  P3y ;
-            #       P1z  P2z  P3z ].
-            #
-            # Then the matrix
-            #   C=[  1  c1  c2 ;
-            #       c1   1  c3 ;
-            #       c2  c3   1 ],
-            # where c1, c2, c3 are given above, is given by C = M.T @ M.
-            # For the points P1, P2, and P3 to form a triangle on the unit sphere, a
-            # necessary and sufficient condition is for C to be positive definite. This
-            # is equivalent to
-            #       1+2*c1*c2*c3-(c1^2+c2^2+c3^2) > 0.
-            # However, this may result in a triangle that is too flat, that is, the
-            # angle between the projections is very close to zero. We therefore use the
-            # condition below
-            #       1+2*c1*c2*c3-(c1^2+c2^2+c3^2) > 1.0e-5.
-            # This ensures that the smallest singular value (which is actually
-            # controlled by the determinant of C) is big enough, so the matrix is far
-            # from singular. This condition is equivalent to computing the singular
-            # values of C, followed by checking that the smallest one is big enough.
-            cond = 1 + 2 * c1 * c2 * c3 - (
-                    np.square(c1) + np.square(c2) + np.square(c3))
-
-            good_idx = np.where(cond > 1e-5)[0]
-
-            # Calculated cos values of angle between i and j images
-            cos_phi2 = (c3[good_idx] - c1[good_idx] *
-                        c2[good_idx]) / (np.sin(theta1[good_idx])
-                                         * np.sin(theta2[good_idx]))
             if np.any(np.abs(cos_phi2) - 1 > 1e-12):
                 logger.warning(f'Globally Consistent Angular Reconstruction (GCAR) exists'
                                f' numerical problem: abs(cos_phi2) > 1, with the'
@@ -419,3 +351,70 @@ class CommLineSync(CLOrient3D):
             good_k = inds[idx]
 
         return good_k.astype('int')
+
+    def _get_cos_phis(self, cl_diff1, cl_diff2, cl_diff3, n_theta):
+        """
+        Calculate cos values of rotation angles between i and j images
+
+        Given C1, C2, and C3 are unit circles of image i, j, and k, compute
+        resulting cos values of rotation angles between i an j images when both
+        of them are intersecting with k.
+
+        :param cl_diff1: Difference of common line indices on C1 created by
+            its intersection with C3 and C2
+        :param cl_diff2: Difference of common line indices on C2 created by
+            its intersection with C1 and C3
+        :param cl_diff3: Difference of common line indices on C3 created by
+            its intersection with C2 and C1
+        :param n_theta: The number of points in the theta direction (common lines)
+        :return: cos values of rotation angles between i and j images
+            and indices for good k
+        """
+
+        # Calculate the theta values from the differences of common line indices
+        # C1, C2, and C3 are unit circles of image i, j, and k
+        # theta1 is the angle on C1 created by its intersection with C3 and C2.
+        # theta2 is the angle on C2 created by its intersection with C1 and C3.
+        # theta3 is the angle on C3 created by its intersection with C2 and C1.
+        theta1 = cl_diff1 * 2 * np.pi / n_theta
+        theta2 = cl_diff2 * 2 * np.pi / n_theta
+        theta3 = cl_diff3 * 2 * np.pi / n_theta
+
+        c1 = np.cos(theta1)
+        c2 = np.cos(theta2)
+        c3 = np.cos(theta3)
+
+        # Each common-line corresponds to a point on the unit sphere. Denote the
+        # coordinates of these points by (Pix, Piy Piz), and put them in the matrix
+        #   M=[ P1x  P2x  P3x ;
+        #       P1y  P2y  P3y ;
+        #       P1z  P2z  P3z ].
+        #
+        # Then the matrix
+        #   C=[  1  c1  c2 ;
+        #       c1   1  c3 ;
+        #       c2  c3   1 ],
+        # where c1, c2, c3 are given above, is given by C = M.T @ M.
+        # For the points P1, P2, and P3 to form a triangle on the unit sphere, a
+        # necessary and sufficient condition is for C to be positive definite. This
+        # is equivalent to
+        #       1+2*c1*c2*c3-(c1^2+c2^2+c3^2) > 0.
+        # However, this may result in a triangle that is too flat, that is, the
+        # angle between the projections is very close to zero. We therefore use the
+        # condition below
+        #       1+2*c1*c2*c3-(c1^2+c2^2+c3^2) > 1.0e-5.
+        # This ensures that the smallest singular value (which is actually
+        # controlled by the determinant of C) is big enough, so the matrix is far
+        # from singular. This condition is equivalent to computing the singular
+        # values of C, followed by checking that the smallest one is big enough.
+
+        cond = 1 + 2 * c1 * c2 * c3 - (
+                np.square(c1) + np.square(c2) + np.square(c3))
+
+        good_idx = np.where(cond > 1e-5)[0]
+
+        # Calculated cos values of angle between i and j images
+        cos_phi2 = (c3[good_idx] - c1[good_idx] *
+                    c2[good_idx]) / (np.sin(theta1[good_idx])
+                                     * np.sin(theta2[good_idx]))
+        return cos_phi2, good_idx
