@@ -174,17 +174,21 @@ class CommLineSync(CLOrient3D):
 
         good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
 
-        rots, good_rotations = self._rotratio_eulerangle_vec(
-            clmatrix, i, j, good_k, n_theta)
+        rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
 
-        if len(good_rotations) > 0:
+        if rots.shape[2] > 0:
             rot_mean = np.mean(rots, 2)
             rot_block = rots[:2, :2]
             diff = rot_block - rot_mean[:2, :2, np.newaxis]
             err = np.linalg.norm(diff) / np.linalg.norm(rot_block)
             if err > tol:
+                # This means that images i and j have inconsistent rotations.
+                # simply pass it as Matlab code.
                 pass
         else:
+            # This for the case that images i and j correspond to the same
+            # viewing direction and differ only by in-plane rotation.
+            # Simply put to zero as Matlab code.
             rot_mean = np.zeros((3, 3))
 
         # return the rotation matrix in X and Y
@@ -281,7 +285,7 @@ class CommLineSync(CLOrient3D):
         r[2, 1, good_idx] = sb * ca
         r[2, 2, good_idx] = cb
 
-        return r, good_idx
+        return r[:, :, good_idx]
 
     def _vote_ij(self, clmatrix, n_theta, i, j, k_list):
         """
