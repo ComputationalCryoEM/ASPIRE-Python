@@ -1,8 +1,7 @@
 import logging
 import numpy as np
 
-import scipy.sparse as sps
-import scipy.sparse.linalg as spsl
+import scipy.sparse as sparse
 
 from aspire.orientation import CLOrient3D
 from aspire.utils import ensure
@@ -43,10 +42,10 @@ class CommLineSync(CLOrient3D):
 
         S = self.syncmatrix
         sz = S.shape
-        ensure(sz[0] == sz[1], 'clmatrix must be a square matrix.')
-        ensure(sz[0] % 2 == 0, 'clmatrix must be a square matrix of size 2Kx2K.')
+        ensure(sz[0] == sz[1], 'syncmatrix must be a square matrix.')
+        ensure(sz[0] % 2 == 0, 'syncmatrix must be a square matrix of size 2Kx2K.')
 
-        n_check = sz[0] // 2
+        n_img = sz[0] // 2
 
         # S is a 2Kx2K matrix (K=n_check), containing KxK blocks of size 2x2.
         # The [i,j] block is given by [r11 r12; r12 r22], where
@@ -59,7 +58,7 @@ class CommLineSync(CLOrient3D):
         # combinations of the column space of S, namely, W^{T}.
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
-        d, v = sps.linalg.eigs(S, 10)
+        d, v = sparse.linalg.eigs(S, 10)
         d = np.real(d)
         sort_idx = np.argsort(-d)
         v = np.real(v[:, sort_idx[:3]])
@@ -68,8 +67,8 @@ class CommLineSync(CLOrient3D):
         # are a linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
         # column 1 of all rotation matrices. Similarly, the even rows of V,
         # denoted, V2, are linear combinations of R_{i}^{1}, i=1,...,K.
-        v1 = v[:2*n_check:2].T.copy()
-        v2 = v[1:2*n_check:2].T.copy()
+        v1 = v[:2*n_img:2].T.copy()
+        v2 = v[1:2*n_img:2].T.copy()
 
         # We look for a linear transformation (3 x 3 matrix) A such that
         # A*V1'=R1 and A*V2=R2 are the columns of the rotations matrices.
@@ -81,9 +80,9 @@ class CommLineSync(CLOrient3D):
         # Actually, there are only 6 unknown variables, because A'*A is symmetric.
 
         # Obtain 3*K equations in 9 variables (3 x 3 matrix entries).
-        equations = np.zeros((3*n_check, 9))
+        equations = np.zeros((3*n_img, 9))
         for i in range(3):
-            for j in range(3):
+            for j in range(i, 3):
                 equations[0::3, 3*i+j] = v1[i] * v1[j]
                 equations[1::3, 3*i+j] = v2[i] * v2[j]
                 equations[2::3, 3*i+j] = v1[i] * v2[j]
@@ -93,27 +92,22 @@ class CommLineSync(CLOrient3D):
         truncated_equations = equations[:, [0, 1, 2, 4, 5, 8]]
 
         # b = [1 1 0 1 1 0 ...]' is the right hand side vector
-        b = np.ones(3 * n_check)
+        b = np.ones(3 * n_img)
         b[2::3] = 0
 
         # Find the least squares approximation of A'*A in vector form
-        ata_vec = np.linalg.lstsq(truncated_equations, b, rcond=None)[0]
+        ATA_vec = np.linalg.lstsq(truncated_equations, b, rcond=None)[0]
 
         # Construct the matrix A'*A from the vectorized matrix.
-        ata = np.zeros((3, 3))
-        ata[0, 0] = ata_vec[0]
-        ata[0, 1] = ata_vec[1]
-        ata[0, 2] = ata_vec[2]
-        ata[1, 0] = ata_vec[1]
-        ata[1, 1] = ata_vec[3]
-        ata[1, 2] = ata_vec[4]
-        ata[2, 0] = ata_vec[2]
-        ata[2, 1] = ata_vec[4]
-        ata[2, 2] = ata_vec[5]
+        ATA = np.zeros((3, 3))
+        upper_mask = np.triu(np.full((3, 3), True))
+        ATA[upper_mask] = ATA_vec
+        lower_mask = np.tril(np.full((3, 3), True))
+        ATA[lower_mask] = ATA.T[lower_mask]
 
         # The Cholesky decomposition of A'*A gives A
         # numpy returns lower, matlab upper
-        a = np.linalg.cholesky(ata)
+        a = np.linalg.cholesky(ATA)
 
         # Recover the rotations. The first two columns of all rotation
         # matrices are given by unmixing V1 and V2 using A. The third
@@ -122,7 +116,7 @@ class CommLineSync(CLOrient3D):
         r2 = np.dot(a, v2)
         r3 = np.cross(r1, r2, axis=0)
 
-        rotations = np.empty((n_check, 3, 3))
+        rotations = np.empty((n_img, 3, 3))
         rotations[:, :, 0] = r1.T
         rotations[:, :, 1] = r2.T
         rotations[:, :, 2] = r3.T
@@ -145,33 +139,30 @@ class CommLineSync(CLOrient3D):
         clmatrix = self.clmatrix
 
         sz = clmatrix.shape
-        ell = self.n_theta
+        n_theta = self.n_theta
 
-        if sz[0] != sz[1]:
-            raise ValueError('clmatrix must be a square matrix.')
+        ensure(sz[0] == sz[1], 'clmatrix must be a square matrix.')
 
-        k = sz[0]
-        s = np.eye(2 * k)
+        n_img = sz[0]
+        S = np.eye(2 * n_img)
 
-        for i in range(k - 1):
-            stmp = np.zeros((2, 2, k))
-            for j in range(i + 1, k):
-                stmp[:, :, j] = self._syncmatrix_ij_vote(
-                    clmatrix, i, j, np.arange(k), ell)
+        # Build Synchronization matrix from the rotation blocks in X and Y
+        for i in range(n_img - 1):
+            for j in range(i + 1, n_img):
+                rot_block = self._syncmatrix_ij_vote(
+                    clmatrix, i, j, np.arange(n_img), n_theta)
+                S[2 * i:2 * (i + 1), 2 * j:2 * (j + 1)] = rot_block
+                S[2 * j:2 * (j + 1), 2 * i:2 * (i + 1)] = rot_block.T
 
-            for j in range(i + 1, k):
-                r22 = stmp[:, :, j]
-                s[2 * i:2 * (i + 1), 2 * j:2 * (j + 1)] = r22
-                s[2 * j:2 * (j + 1), 2 * i:2 * (i + 1)] = r22.T
-
-        self.syncmatrix = s
+        self.syncmatrix = S
 
     def _syncmatrix_ij_vote(self, clmatrix, i, j, k_list, n_theta):
         """
         Compute the (i,j) rotation block of the synchronization matrix using voting method
 
-        Given the common lines matrix `clmatrix` and a list of images specified in klist
-        and the number of common lines n_theta.
+        Given the common lines matrix `clmatrix`, a list of images specified in k_list
+        and the number of common lines n_theta, find the (i, j) rotation block (in X and Y)
+        of the synchronization matrix.
         :param clmatrix: The common lines matrix
         :param i: The i image
         :param j: The j image
@@ -181,25 +172,26 @@ class CommLineSync(CLOrient3D):
         """
         tol = 1e-12
 
-        good_k, _, _ = self._vote_ij(clmatrix, n_theta, i, j, k_list)
+        good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
 
-        rs, good_rotations = self._rotratio_eulerangle_vec(
+        rots, good_rotations = self._rotratio_eulerangle_vec(
             clmatrix, i, j, good_k, n_theta)
 
         if len(good_rotations) > 0:
-            rk = np.mean(rs, 2)
-            tmp_r = rs[:2, :2]
-            diff = tmp_r - rk[:2, :2, np.newaxis]
-            err = np.linalg.norm(diff) / np.linalg.norm(tmp_r)
+            rot_mean = np.mean(rots, 2)
+            rot_block = rots[:2, :2]
+            diff = rot_block - rot_mean[:2, :2, np.newaxis]
+            err = np.linalg.norm(diff) / np.linalg.norm(rot_block)
             if err > tol:
                 pass
         else:
-            rk = np.zeros((3, 3))
+            rot_mean = np.zeros((3, 3))
 
-        r22 = rk[:2, :2]
+        # return the rotation matrix in X and Y
+        r22 = rot_mean[:2, :2]
         return r22
 
-    def _rotratio_eulerangle_vec(self, cl, i, j, good_k, n_theta):
+    def _rotratio_eulerangle_vec(self, clmatrix, i, j, good_k, n_theta):
         """
         Compute the rotation that takes image i to image j
 
@@ -219,9 +211,9 @@ class CommLineSync(CLOrient3D):
 
         tol = 1e-12
 
-        idx1 = cl[good_k, j] - cl[good_k, i]    #  theta3
-        idx2 = cl[j, good_k] - cl[j, i]         # -theta2
-        idx3 = cl[i, good_k] - cl[i, j]         #  theta1
+        idx1 = clmatrix[good_k, j] - clmatrix[good_k, i]    #  theta3
+        idx2 = clmatrix[j, good_k] - clmatrix[j, i]         # -theta2
+        idx3 = clmatrix[i, good_k] - clmatrix[i, j]         #  theta1
 
         a = np.cos(2 * np.pi * idx1 / n_theta)  # c3
         b = np.cos(2 * np.pi * idx2 / n_theta)  # c2
@@ -234,7 +226,7 @@ class CommLineSync(CLOrient3D):
 
         cond = 1 + 2 * a * b * c - (np.square(a)
                                     + np.square(b) + np.square(c))
-        too_small_idx = np.where(cond <= 1.0e-5)[0]
+
         good_idx = np.where(cond > 1.0e-5)[0]
 
         a = a[good_idx]
@@ -246,14 +238,11 @@ class CommLineSync(CLOrient3D):
 
         # Fix the angles between c_ij(c_ji) and c_ik(c_jk) to be smaller than pi/2
         # otherwise there will be an ambiguity between alpha and pi-alpha.
-        ind1 = np.logical_or(idx3 > n_theta / 2 + tol,
-                             np.logical_and(idx3 < -tol, idx3 > -n_theta / 2))
-        ind2 = np.logical_or(idx2 > n_theta / 2 + tol,
-                             np.logical_and(idx2 < -tol, idx2 > -n_theta / 2))
-        c_alpha[np.logical_xor(ind1, ind2)] = -c_alpha[np.logical_xor(ind1, ind2)]
-
-        aa = cl[i, j] * 2 * np.pi / n_theta
-        bb = cl[j, i] * 2 * np.pi / n_theta
+        ind1 = (idx3 > n_theta / 2 + tol) | ((idx3 < -tol) & (idx3 > -n_theta / 2))
+        ind2 = (idx2 > n_theta / 2 + tol) | ((idx2 < -tol) & (idx2 > -n_theta / 2))
+        c_alpha[ind1 ^ ind2] = -c_alpha[ind1 ^ ind2]
+        aa = clmatrix[i, j] * 2 * np.pi / n_theta
+        bb = clmatrix[j, i] * 2 * np.pi / n_theta
         alpha = np.arccos(c_alpha)
 
         # Convert the Euler angles with ZXZ conversion to rotation matrices
@@ -292,9 +281,6 @@ class CommLineSync(CLOrient3D):
         r[2, 1, good_idx] = sb * ca
         r[2, 2, good_idx] = cb
 
-        if len(too_small_idx) > 0:
-            r[:, :, too_small_idx] = 0
-
         return r, good_idx
 
     def _vote_ij(self, clmatrix, n_theta, i, j, k_list):
@@ -310,52 +296,46 @@ class CommLineSync(CLOrient3D):
         :param j: The j image
         :param k_list: The list of images for the third image for voting algorithm
         :return:  good_k, the list of all third images in the peak of the histogram
-            corresponding to the pair of images (i,j); alpha, the estimated angle
-            between them; and the rotation matrix that takes image i to image j
-            for good index of k.
+            corresponding to the pair of images (i,j)
         """
-        # Parameters used to compute the smoothed angle histogram.
-        ntics = 60
-        x = np.linspace(0, 180, ntics, True)
 
-        # Angle between i and i induced by each third image k.
-        # The second column is the cosine of that angle,
-        # The first column is the index l in k_list of the image that
-        # creates that angle.
-        phis = np.zeros((len(k_list), 2))
-        rejected = np.zeros(len(k_list))
+        # Angle between i and j induced by each third image k.
+        phis = np.zeros(len(k_list))
+        # the index l in k_list of the image that creates that angle.
+        inds = np.zeros(len(k_list))
+
         idx = 0
-        rej_idx = 0
+
+        if i == j or clmatrix[i, j] == -1:
+            return []
+
         if i != j and clmatrix[i, j] != -1:
             # Some of the entries in clmatrix may be zero if we cleared
             # them due to small correlation, or if for each image
             # we compute intersections with only some of the other images.
-            # l_idx=clmatrix[[i j k],[i j k]]
             #
             # Note that as long as the diagonal of the common lines matrix is
-            # zero, the conditions (i != j) && (j != k) are not needed, since
-            # if i == j then clmatrix[i, k] == 0 and similarly for i == k or
+            # -1, the conditions (i != j) && (j != k) are not needed, since
+            # if i == j then clmatrix[i, k] == -1 and similarly for i == k or
             # j == k. Thus, the previous voting code (from the JSB paper) is
             # correct even though it seems that we should test also that
             # (i != j) && (i != k) && (j != k), and only (i != j) && (i != k)
             #  as tested there.
+            cl_idx12 = clmatrix[i, j]
+            cl_idx21 = clmatrix[j, i]
+            k_list = k_list[(k_list != i) & (clmatrix[i, k_list] != -1) & (clmatrix[j, k_list] != -1)]
+            cl_idx13 = clmatrix[i, k_list]
+            cl_idx31 = clmatrix[k_list, i]
+            cl_idx23 = clmatrix[j, k_list]
+            cl_idx32 = clmatrix[k_list, j]
 
-            l_idx12 = clmatrix[i, j]
-            l_idx21 = clmatrix[j, i]
-            k_list = k_list[np.logical_and(
-                np.logical_and(k_list != i, clmatrix[i, k_list] != -1), clmatrix[j, k_list] != -1)]
-
-            l_idx13 = clmatrix[i, k_list]
-            l_idx31 = clmatrix[k_list, i]
-            l_idx23 = clmatrix[j, k_list]
-            l_idx32 = clmatrix[k_list, j]
-
+            # C1, C2, and C3 are unit circles of image i, j, and k
             # theta1 is the angle on C1 created by its intersection with C3 and C2.
             # theta2 is the angle on C2 created by its intersection with C1 and C3.
             # theta3 is the angle on C3 created by its intersection with C2 and C1.
-            theta1 = (l_idx13 - l_idx12) * 2 * np.pi / n_theta
-            theta2 = (l_idx21 - l_idx23) * 2 * np.pi / n_theta
-            theta3 = (l_idx32 - l_idx31) * 2 * np.pi / n_theta
+            theta1 = (cl_idx13 - cl_idx12) * 2 * np.pi / n_theta
+            theta2 = (cl_idx21 - cl_idx23) * 2 * np.pi / n_theta
+            theta3 = (cl_idx32 - cl_idx31) * 2 * np.pi / n_theta
 
             c1 = np.cos(theta1)
             c2 = np.cos(theta2)
@@ -371,8 +351,8 @@ class CommLineSync(CLOrient3D):
             #   C=[  1  c1  c2 ;
             #       c1   1  c3 ;
             #       c2  c3   1 ],
-            # where c1,c2,c3 are given above, is given by C = M.T @ M.
-            # For the points P1,P2, and P3 to form a triangle on the unit sphere, a
+            # where c1, c2, c3 are given above, is given by C = M.T @ M.
+            # For the points P1, P2, and P3 to form a triangle on the unit sphere, a
             # necessary and sufficient condition is for C to be positive definite. This
             # is equivalent to
             #       1+2*c1*c2*c3-(c1^2+c2^2+c3^2) > 0.
@@ -388,45 +368,41 @@ class CommLineSync(CLOrient3D):
                     np.square(c1) + np.square(c2) + np.square(c3))
 
             good_idx = np.where(cond > 1e-5)[0]
-            bad_idx = np.where(cond <= 1e-5)[0]
 
+            # Calculated cos values of angle between i and j images
             cos_phi2 = (c3[good_idx] - c1[good_idx] *
                         c2[good_idx]) / (np.sin(theta1[good_idx])
                                          * np.sin(theta2[good_idx]))
-            check_idx = np.where(np.abs(cos_phi2) > 1)[0]
             if np.any(np.abs(cos_phi2) - 1 > 1e-12):
-                logger.warning(f'Globally Consistent Angular Reconstruction(GCAR) exists'
-                               ' numerical problem: abs(cos_phi2) >1, with the '
-                               ' difference of {np.abs(cos_phi2)-1}.')
-            elif len(check_idx) == 0:
-                cos_phi2[check_idx] = np.sign(cos_phi2[check_idx])
-
-            phis[:idx + len(good_idx), 0] = cos_phi2
-            phis[:idx + len(good_idx), 1] = k_list[good_idx]
+                logger.warning(f'Globally Consistent Angular Reconstruction (GCAR) exists'
+                               f' numerical problem: abs(cos_phi2) > 1, with the'
+                               f' difference of {np.abs(cos_phi2)-1}.')
+            cos_phi2 = np.clip(cos_phi2, -1, 1)
+            phis[:len(good_idx)] = cos_phi2
+            inds[:len(good_idx)] = k_list[good_idx]
             idx += len(good_idx)
 
-            rejected[: rej_idx + len(bad_idx)] = k_list[bad_idx]
-            rej_idx += len(bad_idx)
-
         phis = phis[:idx]
-        rejected = rejected[:rej_idx]
-
+        if phis.shape[0] == 0:
+                return []
+       
         good_k = []
-        peakh = -1
-        alpha = []
-
         if idx > 0:
-            # Compute the histogram of the angles between images i and j.
-            angles = np.arccos(phis[:, 0]) * 180 / np.pi
+            # Parameters used to compute the smoothed angle histogram.
+            ntics = 60
+            angles_grid = np.linspace(0, 180, ntics, True)
+            # Get angles between images i and j for computing the histogram
+            angles = np.arccos(phis[:]) * 180 / np.pi
             # Angles that are up to 10 degrees apart are considered
             # similar. This sigma ensures that the width of the density
             # estimation kernel is roughly 10 degrees. For 15 degrees, the
             # value of the kernel is negligible.
             sigma = 3.0
 
-            tmp = np.add.outer(np.square(angles), np.square(x))
-            h = np.sum(np.exp((2 * np.multiply.outer(angles, x)
-                               - tmp) / (2 * sigma ** 2)), 0)
+            # Compute the histogram of the angles between images i and j
+            squared_values = np.add.outer(np.square(angles), np.square(angles_grid))
+            angles_hist = np.sum(np.exp((2 * np.multiply.outer(angles, angles_grid)
+                               - squared_values) / (2 * sigma ** 2)), 0)
 
             # We assume that at the location of the peak we get the true angle
             # between images i and j. Find all third images k, that induce an
@@ -434,10 +410,8 @@ class CommLineSync(CLOrient3D):
             # Even for debugging, don't put a value that is smaller than two
             # tics, since the peak might move a little bit due to wrong k images
             # that accidentally fall near the peak.
-            peak_idx = h.argmax()
-            peakh = h[peak_idx]
-            idx = np.where(np.abs(angles - x[peak_idx]) < 360 / ntics)[0]
-            good_k = phis[idx, 1]
-            alpha = phis[idx, 0]
+            peak_idx = angles_hist.argmax()
+            idx = np.where(np.abs(angles - angles_grid[peak_idx]) < 360 / ntics)[0]
+            good_k = inds[idx]
 
-        return good_k.astype('int'), peakh, alpha
+        return good_k.astype('int')
