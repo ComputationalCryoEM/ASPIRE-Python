@@ -202,7 +202,7 @@ class CLOrient3D:
         self.skipmatrix = skipstack
         self.shifts_1d = shifts_1d
 
-    def estimate_shifts(self, memory_factor=10000):
+    def estimate_shifts(self, equations_factor=1, max_memory=10000):
         """
         Estimate 2D shifts in images
 
@@ -210,29 +210,29 @@ class CLOrient3D:
         equations to `Ax = b`. `A` on the left-hand side is a parse matrix representing
         precomputed coefficients of shift equations; and on the right-side, `b` is
         estimated 1D shifts along the theta direction between two Fourier rays (one in
-        one in image i and one in image j).  Each row of shift equations contains four
+        image i and the other in image j).  Each row of shift equations contains four
         non-zeros (as it involves exactly four unknowns).
-
-        :param memory_factor: If there are N images and N_check selected to check
+        :param equations_factor: The factor to rescale the number of shift equations
+            (=1 in default)
+        :param max_memory: If there are N images and N_check selected to check
             for common lines, then the exact system of equations solved for the shifts
             is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. If `memory_factor` between 0 and 1, then
-            it is the fraction of equation to retain. That is, the system of
-            equations solved will be of size 2N x N*(N_ckeck-1)/2*`memory_factor`.
-            If `memory_factor` is larger than 100, then the number of
-            equations is estimated in such a way that the memory used by the equations
-            is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
-            The code will generate an error if `memory_factor` is between 1 and 100. If
-            `memory_factor` is `None`, the shift equations will be generated exactly
-            from the common line matrix instead of estimated rotation matrices.
+            This may be too big if N is large. If `max_memory` is not None (in megabytes),
+            then the algorithm will use `equations_factor` times the total number of
+            equations if the resulting total number of memory requirements is less
+            than `max_memory`; otherwise it will reduce the number of equations to
+            fit in `max_memory`. If `max_memory` is `None`, the shift equations
+            will be generated exactly from the common line matrix instead of estimated
+            rotation matrices.
         """
 
-        if memory_factor is None:
+        if max_memory is None:
             # Obtain exact shift equations from common-lines matrix
             shift_equations, shift_b = self._get_shift_equations_exact()
         else:
             # Generate approximated shift equations from estimated rotations
-            shift_equations, shift_b = self._get_shift_equations_approx(memory_factor)
+            shift_equations, shift_b = self._get_shift_equations_approx(
+                equations_factor, max_memory)
 
         est_shifts = sparse.linalg.lsqr(shift_equations, shift_b)[0]
         est_shifts = est_shifts.reshape((2, self.n_img), order='F')
@@ -247,9 +247,9 @@ class CLOrient3D:
         construct the equations for determining the 2D shift (in x and y)
         of each image. The shift equations are represented using a sparse matrix,
         since each row in the system contains four non-zeros (as it involves
-        exactly four unknowns). Using this shift equations as the left side
-        and the estimated 1D shifts ( between its two Fourier rays one in image
-        i and one in image j) from all common lines as the right-hand side,
+        exactly four unknowns). Using this shift equations as the left-hand side
+        and the estimated 1D shifts ( between its two Fourier rays, one in image
+        i and the other in image j) from all common lines as the right-hand side,
         the 2D shifts can be computed by solves the least-squares method.
 
         :return; The left and right-hand side of shift equations
@@ -326,33 +326,31 @@ class CLOrient3D:
 
         return shift_equations, shift_b
 
-    def _get_shift_equations_approx(self, memory_factor=10000):
+    def _get_shift_equations_approx(self, equations_factor=1, max_memory=10000):
         """
         Generate approximated shift equations from estimated rotations
 
         The function computes the common lines from the estimated rotations,
         and then, for each common line, estimates the 1D shift between its two
-        Fourier rays (one in image i and one in image j). Using the common
+        Fourier rays (one in image i and the other in image j). Using the common
         lines and the 1D shifts, shift equations are generated randomly based
         on a memory factor and represented by sparse matrix.
 
         This function processes the (Fourier transformed) images exactly as the
         `build_clmatrix` function.
 
-        :param memory_factor: If there are N images and N_check selected to check
+        :param equations_factor: The factor to rescale the number of shift equations
+            (=1 in default)
+        :param max_memory: If there are N images and N_check selected to check
             for common lines, then the exact system of equations solved for the shifts
             is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. If `memory_factor` between 0 and 1, then
-            it is the fraction of equation to retain. That is, the system of
-            equations solved will be of size 2N x N*(N_ckeck-1)/2*`memory_factor`.
-            If `memory_factor` is larger than 100, then the number of
-            equations is estimated in such a way that the memory used by the equations
-            is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
-            The code will generate an error if `memory_factor` is between 1 and 100.
-        """
+            This may be too big if N is large. The algorithm will use `equations_factor`
+            times the total number of equations if the resulting total number of
+            memory requirements is less than `max_memory` (in megabytes); otherwise it
+            will reduce the number of equations to fit in `max_memory`.
 
-        if memory_factor < 0 or (memory_factor > 1 and memory_factor < 100):
-            logger.error('Subsampling factor must be between 0 and 1 or larger than 100.')
+        :return; The left and right-hand side of shift equations
+        """
 
         n_theta_half = self.n_theta // 2
         n_img = self.n_img
@@ -361,7 +359,8 @@ class CLOrient3D:
         pf = self.pf.copy()
 
         # Estimate number of equations that will be used to calculate the shifts
-        n_equations = self._estimate_num_shift_equations(n_img, memory_factor)
+        n_equations = self._estimate_num_shift_equations(
+            n_img, equations_factor, max_memory)
         # Allocate local variables for estimating 2D shifts based on the estimated number
         # of equations. The shift equations are represented using a sparse matrix,
         # since each row in the system contains four non-zeros (as it involves
@@ -454,22 +453,22 @@ class CLOrient3D:
 
         return shift_equations, shift_b
 
-    def _estimate_num_shift_equations(self, n_img, memory_factor):
+    def _estimate_num_shift_equations(self, n_img, equations_factor=1, max_memory=10000):
         """
         Estimate total number of shift equations in images
 
         The function computes total number of shift equations based on
         number of images and preselected memory factor.
         :param n_img:  The total number of input images
-        :param memory_factor: If there are N images and N_check selected to check
+        :param equations_factor: The factor to rescale the number of shift equations
+            (=1 in default)
+        :param max_memory: If there are N images and N_check selected to check
             for common lines, then the exact system of equations solved for the shifts
             is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. If `memory_factor` between 0 and 1, then
-            it is the fraction of equation to retain. That is, the system of
-            equations solved will be of size 2N x N*(N_ckeck-1)/2*`memory_factor`.
-            If `memory_factor` is larger than 100, then the number of
-            equations is estimated in such a way that the memory used by the equations
-            is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
+            This may be too big if N is large. The algorithm will use `equations_factor`
+            times the total number of equations if the resulting total number of
+            memory requirements is less than `max_memory` (in megabytes); otherwise it
+            will reduce the number of equations to fit in `max_memory`.
         :return: Estimated number of shift equations
         """
         # Number of equations that will be used to estimation the shifts
@@ -477,15 +476,12 @@ class CLOrient3D:
         # Estimated memory requirements for the full system of equation.
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
-        memory_total = n_equations_total * 2 * n_img * np.dtype('float64').itemsize
-
-        if memory_factor <= 1:
-            # Number of equations that will be used to estimation the shifts
-            n_equations = int(np.ceil(n_equations_total * memory_factor))
+        memory_total = equations_factor * (
+                n_equations_total * 2 * n_img * np.dtype('float64').itemsize)
+        if memory_total < (max_memory * 10 ** 6):
+            n_equations = n_equations_total
         else:
-            # By how much we need to subsample the system of equations in order to
-            # use roughly memory factor MB.
-            subsampling_factor = (memory_factor * 10 ** 6) / memory_total
+            subsampling_factor = (max_memory * 10 ** 6) / memory_total
             subsampling_factor = min(1.0, subsampling_factor)
             n_equations = int(np.ceil(n_equations_total * subsampling_factor))
 
