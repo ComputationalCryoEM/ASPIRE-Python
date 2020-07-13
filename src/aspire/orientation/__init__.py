@@ -35,7 +35,7 @@ class CLOrient3D:
         self.n_theta = n_theta
         self.n_check = n_check
         self.clmatrix = None
-        self.corrmatrix = None
+        self.skipmatrix = None
         self.shifts_1d = None
 
         self.rotations = None
@@ -118,16 +118,13 @@ class CLOrient3D:
         # starts from 0 instead of 1 as Matlab version. -1 means
         # there is no common line such as clstack[i,i].
         clstack = -np.ones((n_img, n_img))
-        # corrstack defines the correlation of the common line
-        # between image i and j. Since corrstack is symmetric,
-        # only above the diagonal entries are necessary.
-        # corrstack[i, j] measures how ''common'' is the between
+        # skipstack[i, j] measures how ''common'' is the between
         # image i and j. Small value means high-similarity.
-        # Note that this definition is opposite to the traditional
-        # definition of correlation because we will use
-        # corrstack[i, j] = 0 to represent that there is no need to
-        # check common line lines between i and j.
-        corrstack = np.zeros((n_img, n_img))
+        # we will use skipstack[i, j] = 0 (including i=j) to
+        # represent that there is no need to check common line
+        # between i and j. Since stack is symmetric,
+        # only above the diagonal entries are necessary.
+        skipstack = np.zeros((n_img, n_img))
 
         # Allocate variables used for shift estimation
 
@@ -162,9 +159,10 @@ class CLOrient3D:
             p1_imag = np.imag(p1)
 
             # build the subset of j images if n_check < n_img
-            n2 = min(n_img - i, n_check)
-            subset_j = np.sort(np.random.choice(n_img - i - 1, n2 - 1,
+            num_j = min(n_img - i, n_check)
+            subset_j = np.sort(np.random.choice(n_img - i - 1, num_j - 1,
                                                  replace=False) + i + 1)
+
             for j in subset_j:
                 p2_flipped = np.conj(pf[j])
 
@@ -191,33 +189,36 @@ class CLOrient3D:
                         cl2 = cl2_2 + n_theta_half
                         sval = sval2
                     sval = 2 * sval
-                    if sval > corrstack[i, j]:
+                    if sval > skipstack[i, j]:
                         clstack[i, j] = cl1
                         clstack[j, i] = cl2
-                        corrstack[i, j] = sval
+                        skipstack[i, j] = sval
                         shifts_1d[i, j] = shifts[shift]
 
-        mask = corrstack != 0
-        corrstack[mask] = 1 - corrstack[mask]
+        mask = (skipstack != 0)
+        skipstack[mask] = 1 - skipstack[mask]
 
         self.clmatrix = clstack
-        self.corrmatrix = corrstack
+        self.skipmatrix = skipstack
         self.shifts_1d = shifts_1d
 
     def estimate_shifts(self, memory_factor=10000):
         """
         Estimate 2D shifts in images
 
-        This function computes 2D shifts by solving the least-squares equations to
-        `Ax = b`, using precomputed shift equations represented by sparse matrix of `A`
-        and 1D shifts of `b`.
+        This function computes 2D shifts in x, y of images by solving the least-squares
+        equations to `Ax = b`. `A` on the left-hand side is a parse matrix representing
+        precomputed coefficients of shift equations; and on the right-side, `b` is
+        estimated 1D shifts along the theta direction between two Fourier rays (one in
+        one in image i and one in image j).  Each row of shift equations contains four
+        non-zeros (as it involves exactly four unknowns).
 
-        :param memory_factor: If there are N images, then the exact system of
-            equations solved for the shifts is of size 2N x N(N-1)/2 (2N
-            unknowns and N(N-1)/2 equations). This may be too big if N is
-            large. If `memory_factor` between 0 and 1, then it is the
-            fraction of equation to retain. That is, the system of
-            equations solved will be of size 2N x N*(N-1)/2*`memory_factor`.
+        :param memory_factor: If there are N images and N_check selected to check
+            for common lines, then the exact system of equations solved for the shifts
+            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
+            This may be too big if N is large. If `memory_factor` between 0 and 1, then
+            it is the fraction of equation to retain. That is, the system of
+            equations solved will be of size 2N x N*(N_ckeck-1)/2*`memory_factor`.
             If `memory_factor` is larger than 100, then the number of
             equations is estimated in such a way that the memory used by the equations
             is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
@@ -255,7 +256,7 @@ class CLOrient3D:
         """
 
         clstack = self.clmatrix
-        corrstack = self.corrmatrix
+        skipstack = self.skipmatrix
         shifts_1d = self.shifts_1d
 
         n_img = self.n_img
@@ -293,11 +294,11 @@ class CLOrient3D:
         dtheta = np.pi / n_theta_half
 
         # Go through common lines between [i, j] pairs of projections based on the
-        # corrstack values created when build the common lines matrix.
+        # skipstack values created when build the common lines matrix.
         for i in range(n_img - 1):
             for j in range(i + 1, n_img):
                 # skip j image without correlation
-                if corrstack[i, j] == 0:
+                if skipstack[i, j] == 0:
                     continue
                 # Create a shift equation for the projections pair (i, j).
                 idx = np.arange(4 * shift_equation_idx, 4 * shift_equation_idx + 4)
@@ -316,7 +317,7 @@ class CLOrient3D:
                 shift_equation_idx += 1
 
         # Only use the non-zero elements and build sparse matrix
-        mask = shift_eq != 0
+        mask = (shift_eq != 0)
         shift_eq = shift_eq[mask]
         shift_i = shift_i[mask]
         shift_j = shift_j[mask]
@@ -338,12 +339,12 @@ class CLOrient3D:
         This function processes the (Fourier transformed) images exactly as the
         `build_clmatrix` function.
 
-        :param memory_factor: If there are N projections, then the system of
-            equations solved for the shifts is of size 2N x N(N-1)/2 (2N
-            unknowns and N(N-1)/2 equations). This may be too big if N is
-            large. If `memory_factor` between 0 and 1, then it is the
-            fraction of equation to retain. That is, the system of
-            equations solved will be of size 2N x N*(N-1)/2*`memory_factor`.
+        :param memory_factor: If there are N images and N_check selected to check
+            for common lines, then the exact system of equations solved for the shifts
+            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
+            This may be too big if N is large. If `memory_factor` between 0 and 1, then
+            it is the fraction of equation to retain. That is, the system of
+            equations solved will be of size 2N x N*(N_ckeck-1)/2*`memory_factor`.
             If `memory_factor` is larger than 100, then the number of
             equations is estimated in such a way that the memory used by the equations
             is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
@@ -385,16 +386,14 @@ class CLOrient3D:
         d_theta = np.pi / n_theta_half
         # pf = self._apply_filter_and_norm(pf, r_max, h)
         # Generate two index lists for [i, j] pairs of images
-        idx_i, idx_j = self._generate_index_pairs()
-        # Select random pairs based on the size of n_equations
-        rp = np.random.choice(np.arange(len(idx_j)), size=n_equations, replace=False)
+        idx_i, idx_j = self._generate_index_pairs(n_equations)
 
         # Go through all shift equations in the size of n_equations
         # Iterate over the common lines pairs and for each pair find the 1D
         # relative shift between the two Fourier lines in the pair.
         for shift_eq_idx in range(n_equations):
-            i = idx_i[rp[shift_eq_idx]]
-            j = idx_j[rp[shift_eq_idx]]
+            i = idx_i[shift_eq_idx]
+            j = idx_j[shift_eq_idx]
             # get the common line indices based on the rotations from i and j images
             c_ij, c_ji = self._get_cl_indices(rotations, i, j, n_theta_half)
 
@@ -462,20 +461,19 @@ class CLOrient3D:
         The function computes total number of shift equations based on
         number of images and preselected memory factor.
         :param n_img:  The total number of input images
-        :param memory_factor: If there are N projections, then the system of
-            equations solved for the shifts is of size 2N x N(N-1)/2 (2N
-            unknowns and N(N-1)/2 equations). This may be too big if N is
-            large. If `memory_factor` between 0 and 1, then it is the
-            fraction of equation to retain. That is, the system of
-            equations solved will be of size 2N x N*(N-1)/2*`memory_factor`.
+        :param memory_factor: If there are N images and N_check selected to check
+            for common lines, then the exact system of equations solved for the shifts
+            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
+            This may be too big if N is large. If `memory_factor` between 0 and 1, then
+            it is the fraction of equation to retain. That is, the system of
+            equations solved will be of size 2N x N*(N_ckeck-1)/2*`memory_factor`.
             If `memory_factor` is larger than 100, then the number of
             equations is estimated in such a way that the memory used by the equations
             is roughly `memory_factor megabytes`. Default is 10000 (use all equations).
-            The code will generate an error if `memory_factor` is between 1 and 100.
         :return: Estimated number of shift equations
         """
         # Number of equations that will be used to estimation the shifts
-        n_equations_total = int(np.ceil(n_img * (n_img - 1) / 2))
+        n_equations_total = int(np.ceil(n_img * (self.n_check - 1) / 2))
         # Estimated memory requirements for the full system of equation.
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
@@ -484,7 +482,6 @@ class CLOrient3D:
         if memory_factor <= 1:
             # Number of equations that will be used to estimation the shifts
             n_equations = int(np.ceil(n_equations_total * memory_factor))
-            # n_equations = int(np.ceil(n_img * (n_img - 1) * memory_factor / 2))
         else:
             # By how much we need to subsample the system of equations in order to
             # use roughly memory factor MB.
@@ -528,7 +525,7 @@ class CLOrient3D:
         h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
         return shifts, shift_phases, h
 
-    def _generate_index_pairs(self):
+    def _generate_index_pairs(self, n_equations):
         """
         Generate two index lists for [i, j] pairs of images
         """
@@ -540,7 +537,11 @@ class CLOrient3D:
             idx_j.extend(tmp_j)
         idx_i = np.array(idx_i, dtype='int')
         idx_j = np.array(idx_j, dtype='int')
-        return idx_i, idx_j
+
+        # Select random pairs based on the size of n_equations
+        rp = np.random.choice(np.arange(len(idx_j)), size=n_equations, replace=False)
+
+        return idx_i[rp], idx_j[rp]
 
     def _get_cl_indices(self, rotations, i, j, n_theta):
         """
