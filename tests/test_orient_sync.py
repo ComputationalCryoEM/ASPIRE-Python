@@ -14,7 +14,6 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class OrientSyncTestCase(TestCase):
     def setUp(self):
-
         L = 32
         n = 64
         C = 1

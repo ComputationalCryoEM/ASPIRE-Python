@@ -79,18 +79,16 @@ class CommLineSync(CLOrient3D):
         # V1 * A'*A V2' = 0
         # These are 3*K linear equations for 9 matrix entries of A'*A
         # Actually, there are only 6 unknown variables, because A'*A is symmetric.
-
-        # Obtain 3*K equations in 9 variables (3 x 3 matrix entries).
-        equations = np.zeros((3*n_img, 9))
+        # So we will truncate from 9 variables to 6 variables corresponding
+        # to the upper half of the matrix A'*A
+        truncated_equations = np.zeros((3*n_img, 6))
+        k = 0
         for i in range(3):
             for j in range(i, 3):
-                equations[0::3, 3*i+j] = v1[i] * v1[j]
-                equations[1::3, 3*i+j] = v2[i] * v2[j]
-                equations[2::3, 3*i+j] = v1[i] * v2[j]
-
-        # Truncate from 9 variables to 6 variables corresponding
-        # to the upper half of the matrix A'*A
-        truncated_equations = equations[:, [0, 1, 2, 4, 5, 8]]
+                truncated_equations[0::3, k] = v1[i] * v1[j]
+                truncated_equations[1::3, k] = v2[i] * v2[j]
+                truncated_equations[2::3, k] = v1[i] * v2[j]
+                k += 1
 
         # b = [1 1 0 1 1 0 ...]' is the right hand side vector
         b = np.ones(3 * n_img)
@@ -184,6 +182,11 @@ class CommLineSync(CLOrient3D):
             err = np.linalg.norm(diff) / np.linalg.norm(rot_block)
             if err > tol:
                 # This means that images i and j have inconsistent rotations.
+                # The original Matlab code tried to print out the information
+                # on inconsistent rotations but was commented out and do nothing,
+                # probably due to the fact that it will print out a lot of
+                # inconsistent rotations if the resolution or number of images
+                # are not enough.
                 # Simply pass it as Matlab code.
                 pass
         else:
@@ -273,82 +276,76 @@ class CommLineSync(CLOrient3D):
         # the index l in k_list of the image that creates that angle.
         inds = np.zeros(len(k_list))
 
-        idx = 0
-
         if i == j or clmatrix[i, j] == -1:
             return []
 
-        if i != j and clmatrix[i, j] != -1:
-            # Some of the entries in clmatrix may be zero if we cleared
-            # them due to small correlation, or if for each image
-            # we compute intersections with only some of the other images.
-            #
-            # Note that as long as the diagonal of the common lines matrix is
-            # -1, the conditions (i != j) && (j != k) are not needed, since
-            # if i == j then clmatrix[i, k] == -1 and similarly for i == k or
-            # j == k. Thus, the previous voting code (from the JSB paper) is
-            # correct even though it seems that we should test also that
-            # (i != j) && (i != k) && (j != k), and only (i != j) && (i != k)
-            #  as tested there.
-            cl_idx12 = clmatrix[i, j]
-            cl_idx21 = clmatrix[j, i]
-            k_list = k_list[(k_list != i) & (clmatrix[i, k_list] != -1) & (clmatrix[j, k_list] != -1)]
-            cl_idx13 = clmatrix[i, k_list]
-            cl_idx31 = clmatrix[k_list, i]
-            cl_idx23 = clmatrix[j, k_list]
-            cl_idx32 = clmatrix[k_list, j]
+        # Some of the entries in clmatrix may be zero if we cleared
+        # them due to small correlation, or if for each image
+        # we compute intersections with only some of the other images.
+        #
+        # Note that as long as the diagonal of the common lines matrix is
+        # -1, the conditions (i != j) && (j != k) are not needed, since
+        # if i == j then clmatrix[i, k] == -1 and similarly for i == k or
+        # j == k. Thus, the previous voting code (from the JSB paper) is
+        # correct even though it seems that we should test also that
+        # (i != j) && (i != k) && (j != k), and only (i != j) && (i != k)
+        #  as tested there.
+        cl_idx12 = clmatrix[i, j]
+        cl_idx21 = clmatrix[j, i]
+        k_list = k_list[(k_list != i) & (clmatrix[i, k_list] != -1) & (clmatrix[j, k_list] != -1)]
+        cl_idx13 = clmatrix[i, k_list]
+        cl_idx31 = clmatrix[k_list, i]
+        cl_idx23 = clmatrix[j, k_list]
+        cl_idx32 = clmatrix[k_list, j]
 
-            # Prepare the theta values from the differences of common line indices
-            # C1, C2, and C3 are unit circles of image i, j, and k
-            # cl_diff1 is for the angle on C1 created by its intersection with C3 and C2.
-            # cl_diff2 is for the angle on C2 created by its intersection with C1 and C3.
-            # cl_diff3 is for the angle on C3 created by its intersection with C2 and C1.
-            cl_diff1 = cl_idx13 - cl_idx12
-            cl_diff2 = cl_idx21 - cl_idx23
-            cl_diff3 = cl_idx32 - cl_idx31
-            # Calculate the cos values of rotation angles between i an j images for good k images
-            cos_phi2, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
+        # Prepare the theta values from the differences of common line indices
+        # C1, C2, and C3 are unit circles of image i, j, and k
+        # cl_diff1 is for the angle on C1 created by its intersection with C3 and C2.
+        # cl_diff2 is for the angle on C2 created by its intersection with C1 and C3.
+        # cl_diff3 is for the angle on C3 created by its intersection with C2 and C1.
+        cl_diff1 = cl_idx13 - cl_idx12
+        cl_diff2 = cl_idx21 - cl_idx23
+        cl_diff3 = cl_idx32 - cl_idx31
+        # Calculate the cos values of rotation angles between i an j images for good k images
+        cos_phi2, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
 
-            if np.any(np.abs(cos_phi2) - 1 > 1e-12):
-                logger.warning(f'Globally Consistent Angular Reconstruction (GCAR) exists'
-                               f' numerical problem: abs(cos_phi2) > 1, with the'
-                               f' difference of {np.abs(cos_phi2)-1}.')
-            cos_phi2 = np.clip(cos_phi2, -1, 1)
-            phis[:len(good_idx)] = cos_phi2
-            inds[:len(good_idx)] = k_list[good_idx]
-            idx += len(good_idx)
+        if np.any(np.abs(cos_phi2) - 1 > 1e-12):
+            logger.warning(f'Globally Consistent Angular Reconstruction (GCAR) exists'
+                            f' numerical problem: abs(cos_phi2) > 1, with the'
+                            f' difference of {np.abs(cos_phi2)-1}.')
+        cos_phi2 = np.clip(cos_phi2, -1, 1)
+        phis[:len(good_idx)] = cos_phi2
+        inds[:len(good_idx)] = k_list[good_idx]
 
-        phis = phis[:idx]
+        phis = phis[:len(good_idx)]
         if phis.shape[0] == 0:
                 return []
-       
-        good_k = []
-        if idx > 0:
-            # Parameters used to compute the smoothed angle histogram.
-            ntics = 60
-            angles_grid = np.linspace(0, 180, ntics, True)
-            # Get angles between images i and j for computing the histogram
-            angles = np.arccos(phis[:]) * 180 / np.pi
-            # Angles that are up to 10 degrees apart are considered
-            # similar. This sigma ensures that the width of the density
-            # estimation kernel is roughly 10 degrees. For 15 degrees, the
-            # value of the kernel is negligible.
-            sigma = 3.0
 
-            # Compute the histogram of the angles between images i and j
-            squared_values = np.add.outer(np.square(angles), np.square(angles_grid))
-            angles_hist = np.sum(np.exp((2 * np.multiply.outer(angles, angles_grid)
-                               - squared_values) / (2 * sigma ** 2)), 0)
+        # Parameters used to compute the smoothed angle histogram.
+        ntics = 60
+        angles_grid = np.linspace(0, 180, ntics, True)
+        # Get angles between images i and j for computing the histogram
+        angles = np.arccos(phis[:]) * 180 / np.pi
+        # Angles that are up to 10 degrees apart are considered
+        # similar. This sigma ensures that the width of the density
+        # estimation kernel is roughly 10 degrees. For 15 degrees, the
+        # value of the kernel is negligible.
+        sigma = 3.0
 
-            # We assume that at the location of the peak we get the true angle
-            # between images i and j. Find all third images k, that induce an
-            # angle between i and j that is at most 10 off the true angle.
-            # Even for debugging, don't put a value that is smaller than two
-            # tics, since the peak might move a little bit due to wrong k images
-            # that accidentally fall near the peak.
-            peak_idx = angles_hist.argmax()
-            idx = np.where(np.abs(angles - angles_grid[peak_idx]) < 360 / ntics)[0]
-            good_k = inds[idx]
+        # Compute the histogram of the angles between images i and j
+        squared_values = np.add.outer(np.square(angles), np.square(angles_grid))
+        angles_hist = np.sum(np.exp((2 * np.multiply.outer(angles, angles_grid)
+                                     - squared_values) / (2 * sigma ** 2)), 0)
+
+        # We assume that at the location of the peak we get the true angle
+        # between images i and j. Find all third images k, that induce an
+        # angle between i and j that is at most 10 off the true angle.
+        # Even for debugging, don't put a value that is smaller than two
+        # tics, since the peak might move a little bit due to wrong k images
+        # that accidentally fall near the peak.
+        peak_idx = angles_hist.argmax()
+        idx = np.where(np.abs(angles - angles_grid[peak_idx]) < 360 / ntics)[0]
+        good_k = inds[idx]
 
         return good_k.astype('int')
 
@@ -410,7 +407,6 @@ class CommLineSync(CLOrient3D):
 
         cond = 1 + 2 * c1 * c2 * c3 - (
                 np.square(c1) + np.square(c2) + np.square(c3))
-
         good_idx = np.where(cond > 1e-5)[0]
 
         # Calculated cos values of angle between i and j images
