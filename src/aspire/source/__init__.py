@@ -375,9 +375,9 @@ class ImageSource:
         # Invalidate images
         self._im = None
 
-    def reverse_contrast(self, batch_size=512):
+    def invert_contrast(self, batch_size=512):
         """
-        Reverse the global contrast of images
+        invert the global contrast of images
 
         Check if all images in a stack should be globally phase flipped so that
         the molecule corresponds to brighter pixels and the background corresponds
@@ -406,14 +406,17 @@ class ImageSource:
         # Calculate mean values in batch_size
         signal_mean = 0.0
         noise_mean = 0.0
+
         for i in range(0, self.n, batch_size):
             images = self.images(i, batch_size).asnumpy()
             signal = (images * np.expand_dims(signal_mask, 2))
             noise = (images * np.expand_dims(noise_mask, 2))
-            signal_denominator = self.n * np.sum(signal_mask)
-            noise_denominator = self.n * np.sum(noise_mask)
-            signal_mean += np.sum(signal) / signal_denominator
-            noise_mean += np.sum(noise) / noise_denominator
+            signal_mean += np.sum(signal)
+            noise_mean += np.sum(noise)
+        signal_denominator = self.n * np.sum(signal_mask)
+        noise_denominator = self.n * np.sum(noise_mask)
+        signal_mean /= signal_denominator
+        noise_mean /= noise_denominator
 
         if signal_mean < noise_mean:
             logger.info('Need to reverse contrast')
@@ -452,7 +455,7 @@ class ImageSource:
             images = self.images(start=i, num=batch_size).asnumpy()
             images_masked = (images * np.expand_dims(mask, 2))
             mean += np.sum(images_masked)
-            variance += np.sum(np.abs(images_masked**2))
+            variance += np.sum(np.abs(images_masked ** 2))
         denominator = self.n * np.sum(mask)
         mean /= denominator
         variance /= denominator

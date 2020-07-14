@@ -56,11 +56,10 @@ imgs_wt = source.images(start=0, num=num_imgs).asnumpy()
 source.save(starfile_out, batch_size=512, save_mode='single', overwrite=False)
 
 logger.info('Reverse the global density contrast')
-starfile_out = f'{data_folder}/preprocess/shiny_2sets_reverse_contrast.star'
-source.reverse_contrast()
+starfile_out = f'{data_folder}/preprocess/shiny_2sets_invert_contrast.star'
+source.invert_contrast()
 imgs_rc = source.images(start=0, num=num_imgs).asnumpy()
 source.save(starfile_out, batch_size=512, save_mode='single', overwrite=False)
-
 
 # plot the first images
 idm = 0
@@ -89,4 +88,3 @@ plt.imshow(imgs_rc[..., idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('contrast reverse')
 plt.show()
-
