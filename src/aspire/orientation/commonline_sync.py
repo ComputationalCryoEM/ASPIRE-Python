@@ -271,11 +271,6 @@ class CommLineSync(CLOrient3D):
             corresponding to the pair of images (i,j)
         """
 
-        # Angle between i and j induced by each third image k.
-        phis = np.zeros(len(k_list))
-        # the index l in k_list of the image that creates that angle.
-        inds = np.zeros(len(k_list))
-
         if i == j or clmatrix[i, j] == -1:
             return []
 
@@ -314,10 +309,12 @@ class CommLineSync(CLOrient3D):
                             f' numerical problem: abs(cos_phi2) > 1, with the'
                             f' difference of {np.abs(cos_phi2)-1}.')
         cos_phi2 = np.clip(cos_phi2, -1, 1)
-        phis[:len(good_idx)] = cos_phi2
-        inds[:len(good_idx)] = k_list[good_idx]
 
-        phis = phis[:len(good_idx)]
+        # Store angles between i and j induced by each third image k.
+        phis = cos_phi2
+        # Sore good indices of l in k_list of the image that creates that angle.
+        inds = k_list[good_idx]
+
         if phis.shape[0] == 0:
                 return []
 
