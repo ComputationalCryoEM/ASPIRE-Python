@@ -428,7 +428,7 @@ class ImageSource:
         # Invalidate images
         self._im = None
 
-    def normalize_background(self, radius=None, batch_size=512):
+    def normalize_background(self, radius=1.0, batch_size=512):
         """
         Normalize the images by the noise background
 
@@ -436,16 +436,15 @@ class ImageSource:
         and scaling the image density by the standard deviation of background.
         From the implementation level, we modify the `ImageSource` in-place by
         appending the `Reduce` and `Multiple` filters to the generation pipeline.
-
+        :param radius: Radius cutoff to be considered as background (in image size)
         :param batch_size: Batch size of images to query.
         :return: On return, the `ImageSource` object has been modified in place.
         """
-        logger.info('Normalize background on source object')
         L = self.L
-        radius = L // 2 if radius is None else radius
-
+        radius = 1.0 if radius is None else radius
+        logger.info(f'Normalize background on source object with radius size of {radius}')
         grid = grid_2d(L)
-        mask = grid['r'] > (radius / L)
+        mask = (grid['r'] > radius)
 
         mean = 0.0
         variance = 0.0
