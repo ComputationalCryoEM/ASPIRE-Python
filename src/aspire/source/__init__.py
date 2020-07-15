@@ -393,15 +393,10 @@ class ImageSource:
 
         logger.info('Apply contrast reverse on source object')
         L = self.L
-        image_center = (L + 1) / 2
-        coor_mat_m, coor_mat_n = np.meshgrid(np.arange(1, L + 1), np.arange(1, L + 1))
-
-        distance_from_center = np.sqrt((coor_mat_m - image_center) ** 2
-                                       + (coor_mat_n - image_center) ** 2)
-
-        # Get mask indices of signal and noise samples assuming molecule is around the center
-        signal_mask = distance_from_center < round(L / 4)
-        noise_mask = distance_from_center > round(L / 2 * 0.8)
+        grid = grid_2d(L, shifted=True)
+        # Get mask indices of signal and noise samples assuming molecule
+        signal_mask = (grid['r'] < 0.5)
+        noise_mask = (grid['r'] > 0.8)
 
         # Calculate mean values in batch_size
         signal_mean = 0.0
