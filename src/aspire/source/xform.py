@@ -189,14 +189,14 @@ class Add(Xform):
     """
     def __init__(self, mean):
         """
-        Initialize a Shift Xform using a Numpy array of shift values.
-        :param shifts: An ndarray of shape (n, 2)
+        Initialize a Add Xform using a Numpy array of mean values.
+        :param mean: An ndarray of shape (n,)
         """
         super().__init__()
         self.mean = mean
 
     def _forward(self, im, indices):
-        return im + self.mean
+        return im + self.mean[indices]
 
 
 class FlipXform(Xform):

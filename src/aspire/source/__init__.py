@@ -426,42 +426,59 @@ class ImageSource:
         # Invalidate images
         self._im = None
 
-    def normalize_background(self, radius=1.0, batch_size=512):
+    def normalize_background(self, bg_radius=1.0, do_ramp=True, batch_size=512):
         """
         Normalize the images by the noise background
 
         This is done by shifting the image density by the mean value of background
         and scaling the image density by the standard deviation of background.
         From the implementation level, we modify the `ImageSource` in-place by
-        appending the `Reduce` and `Multiple` filters to the generation pipeline.
-        :param radius: Radius cutoff to be considered as background (in image size)
+        appending the `Add` and `Multiple` filters to the generation pipeline.
+        :param do_ramp: When it is `True`, fit a ramping background to the data
+            and subtract. Namely perform normalization based on values from each image.
+            Otherwise, a constant background level from all images is used.
+        :param bg_radius: Radius cutoff to be considered as background (in image size)
         :param batch_size: Batch size of images to query.
         :return: On return, the `ImageSource` object has been modified in place.
         """
         L = self.L
-        radius = 1.0 if radius is None else radius
-        logger.info(f'Normalize background on source object with radius size of {radius}')
+        bg_radius = 1.0 if bg_radius is None else bg_radius
+        logger.info(f'Normalize background on source object with radius size of {bg_radius}')
         grid = grid_2d(L)
-        mask = (grid['r'] > radius)
+        mask = (grid['r'] > bg_radius)
 
-        mean = 0.0
-        variance = 0.0
-        for i in range(0, self.n, batch_size):
-            images = self.images(start=i, num=batch_size).asnumpy()
-            images_masked = (images * np.expand_dims(mask, 2))
-            mean += np.sum(images_masked)
-            variance += np.sum(np.abs(images_masked ** 2))
+        if do_ramp:
+            first_moment = np.zeros(self.n)
+            second_moment = np.zeros(self.n)
+            for i in range(0, self.n, batch_size):
+                images = self.images(start=i, num=batch_size).asnumpy()
+                images_masked = (images * np.expand_dims(mask, 2))
+                first_moment[i:i+images.shape[2]] = np.sum(images_masked, axis=(0, 1))
+                second_moment[i:i+images.shape[2]] = np.sum(images_masked ** 2, axis=(0, 1))
+            denominator = np.sum(mask)
+        else:
+            first_moment = 0.0
+            second_moment = 0.0
+            for i in range(0, self.n, batch_size):
+                images = self.images(start=i, num=batch_size).asnumpy()
+                images_masked = (images * np.expand_dims(mask, 2))
+                first_moment += np.sum(images_masked)
+                second_moment += np.sum(images_masked ** 2)
+            denominator = self.n * np.sum(mask)
 
-        denominator = self.n * np.sum(mask)
-        mean /= denominator
-        variance /= denominator
+        first_moment /= denominator
+        second_moment /= denominator
+        mean = first_moment
+        variance = second_moment - mean**2
         std = np.sqrt(variance)
 
-        logger.info('Adding Reduce Xform to end of generation pipeline')
+        if not do_ramp:
+            mean = mean*np.ones(self.n)
+            std = std*np.ones(self.n)
+        logger.info('Adding Add Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Add(-mean))
-        scale_factor = std * np.ones(self.n)
         logger.info('Adding Scaling Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(Multiply(scale_factor))
+        self.generation_pipeline.add_xform(Multiply(std))
 
         # Invalidate images
         self._im = None
