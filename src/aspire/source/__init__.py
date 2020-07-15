@@ -8,7 +8,7 @@ from scipy.spatial.transform import Rotation as R
 from aspire.image import Image
 from aspire.io.starfile import save_star
 from aspire.source.xform import (Downsample, FilterXform, FlipXform, LinearIndexedXform,
-                                 LinearPipeline, Multiply, Pipeline, Reduce, Shift)
+                                 LinearPipeline, Multiply, Pipeline, Add, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filters import (MultiplicativeFilter, PowerFilter)
@@ -451,12 +451,14 @@ class ImageSource:
             images_masked = (images * np.expand_dims(mask, 2))
             mean += np.sum(images_masked)
             variance += np.sum(np.abs(images_masked ** 2))
+
         denominator = self.n * np.sum(mask)
         mean /= denominator
         variance /= denominator
         std = np.sqrt(variance)
+
         logger.info('Adding Reduce Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(Reduce(mean))
+        self.generation_pipeline.add_xform(Add(-mean))
         scale_factor = std * np.ones(self.n)
         logger.info('Adding Scaling Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Multiply(scale_factor))

@@ -150,26 +150,6 @@ class Shift(LinearXform):
         return im.shift(-self.shifts[indices])
 
 
-class Reduce(LinearXform):
-    """
-    A Xform that reduce the density of a stack of 2D images (in the form of an Image object)
-    by offsetting a number.
-    """
-    def __init__(self, mean):
-        """
-        Initialize a Shift Xform using a Numpy array of shift values.
-        :param shifts: An ndarray of shape (n, 2)
-        """
-        super().__init__()
-        self.mean = mean
-
-    def _forward(self, im, indices):
-        return im - self.mean
-
-    def _adjoint(self, im, indices):
-        return im + self.mean
-
-
 class Downsample(LinearXform):
     """
     A Xform that downsamples an Image object to a resolution specified by this Xform's resolution.
@@ -200,6 +180,23 @@ class FilterXform(SymmetricXform):
 
     def _forward(self, im, indices):
         return im.filter(self.filter)
+
+
+class Add(Xform):
+    """
+    A Xform that add the density of a stack of 2D images (in the form of an Image object)
+    by offsetting a number.
+    """
+    def __init__(self, mean):
+        """
+        Initialize a Shift Xform using a Numpy array of shift values.
+        :param shifts: An ndarray of shape (n, 2)
+        """
+        super().__init__()
+        self.mean = mean
+
+    def _forward(self, im, indices):
+        return im + self.mean
 
 
 class FlipXform(Xform):
@@ -328,6 +325,7 @@ def _apply_xform(xform, im, indices, adjoint=False):
     A simple global function (i.e. not a method) that is capable of being cached by joblib.Memory object's `cache`
     method.
     """
+    # Extract the short xfrom name for the long string
     xform_name = str(xform).split()[0].split('.')[-1]
     if not adjoint:
         logger.info('  Applying ' + xform_name)
