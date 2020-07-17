@@ -199,7 +199,7 @@ class CLOrient3D:
         skipstack[mask] = 1 - skipstack[mask]
 
         self.clmatrix = clstack
-        self.skipmatrix = skipstack
+        self.skipstack = skipstack
         self.shifts_1d = shifts_1d
 
     def estimate_shifts(self, equations_factor=1, max_memory=10000):
@@ -211,7 +211,15 @@ class CLOrient3D:
         precomputed coefficients of shift equations; and on the right-side, `b` is
         estimated 1D shifts along the theta direction between two Fourier rays (one in
         image i and the other in image j).  Each row of shift equations contains four
-        non-zeros (as it involves exactly four unknowns).
+        unknowns, shifts in x, y for a pair of images. The detailed implementation
+        can be found in the book chapter as below:
+        Y. Shkolnisky and A. Singer,
+        Center of Mass Operators for CryoEM - Theory and Implementation,
+        Modeling Nanoscale Imaging in Electron Microscopy,
+        T. Vogt, W. Dahmen, and P. Binev (Eds.)
+        Nanostructure Science and Technology Series,
+        Springer, 2012, pp. 147–177
+
         :param equations_factor: The factor to rescale the number of shift equations
             (=1 in default)
         :param max_memory: If there are N images and N_check selected to check
@@ -226,105 +234,13 @@ class CLOrient3D:
             rotation matrices.
         """
 
-        if max_memory is None:
-            # Obtain exact shift equations from common-lines matrix
-            shift_equations, shift_b = self._get_shift_equations_exact()
-        else:
-            # Generate approximated shift equations from estimated rotations
-            shift_equations, shift_b = self._get_shift_equations_approx(
-                equations_factor, max_memory)
+        # Generate approximated shift equations from estimated rotations
+        shift_equations, shift_b = self._get_shift_equations_approx(equations_factor, max_memory)
 
         est_shifts = sparse.linalg.lsqr(shift_equations, shift_b)[0]
         est_shifts = est_shifts.reshape((2, self.n_img), order='F')
 
         return est_shifts
-
-    def _get_shift_equations_exact(self):
-        """
-        Obtain exact shift equations from common-lines matrix
-
-        Based on the estimated common-line from common-lines matrix,
-        construct the equations for determining the 2D shift (in x and y)
-        of each image. The shift equations are represented using a sparse matrix,
-        since each row in the system contains four non-zeros (as it involves
-        exactly four unknowns). Using this shift equations as the left-hand side
-        and the estimated 1D shifts ( between its two Fourier rays, one in image
-        i and the other in image j) from all common lines as the right-hand side,
-        the 2D shifts can be computed by solves the least-squares method.
-
-        :return; The left and right-hand side of shift equations
-        """
-
-        clstack = self.clmatrix
-        skipstack = self.skipmatrix
-        shifts_1d = self.shifts_1d
-
-        n_img = self.n_img
-        n_check = self.n_check
-
-        if self.n_theta % 2 == 1:
-            logger.error('n_theta must be even')
-        n_theta_half = self.n_theta // 2
-
-        # Allocate variables used for shift estimation
-
-        # Based on the estimated common-lines, construct the equations
-        # for determining the 2D shift of each image. The shift equations
-        # are represented using a sparse matrix, since each row in the
-        # system contains four non-zeros (as it involves exactly four unknowns).
-        # The variables below are used to construct this sparse system.
-        # The k'th non-zero element of the equations matrix is stored as
-        # index (shift_i[k],shift_j[k]).
-
-        # Row index for sparse equations system
-        shift_i = np.zeros(4 * n_img * n_check)
-        #  Column index for sparse equations system
-        shift_j = np.zeros(4 * n_img * n_check)
-        # The coefficients of the center estimation system ordered
-        # as a single vector.
-        shift_eq = np.zeros(4 * n_img * n_check)
-        # shift_equations_map[k1,k2] is the index of the equation for
-        # the common line between images i and j.
-        shift_equations_map = np.zeros((n_img, n_img))
-        # The equation number we are currently processing
-        shift_equation_idx = 0
-        # Right hand side of the system
-        shift_b = np.zeros(n_img * (n_img - 1) // 2)
-        # Not 2*pi/n_theta, since we divided n_theta by 2 to take rays of length 2*n_r-1.
-        dtheta = np.pi / n_theta_half
-
-        # Go through common lines between [i, j] pairs of projections based on the
-        # skipstack values created when build the common lines matrix.
-        for i in range(n_img - 1):
-            for j in range(i + 1, n_img):
-                # skip j image without correlation
-                if skipstack[i, j] == 0:
-                    continue
-                # Create a shift equation for the projections pair (i, j).
-                idx = np.arange(4 * shift_equation_idx, 4 * shift_equation_idx + 4)
-                shift_alpha = clstack[i, j] * dtheta
-                shift_beta = clstack[j, i] * dtheta
-                shift_i[idx] = shift_equation_idx
-                shift_j[idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
-                shift_b[shift_equation_idx] = shifts_1d[i, j]
-
-                # Compute the coefficients of the current equation.
-                coeffs = np.array([np.sin(shift_alpha), np.cos(shift_alpha),
-                                   -np.sin(shift_beta), -np.cos(shift_beta)])
-                shift_eq[idx] = coeffs if shift_beta < np.pi else -1 * coeffs
-
-                shift_equations_map[i, j] = shift_equation_idx
-                shift_equation_idx += 1
-
-        # Only use the non-zero elements and build sparse matrix
-        mask = (shift_eq != 0)
-        shift_eq = shift_eq[mask]
-        shift_i = shift_i[mask]
-        shift_j = shift_j[mask]
-        shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
-                                            shape=(shift_equation_idx, 2 * n_img))
-
-        return shift_equations, shift_b
 
     def _get_shift_equations_approx(self, equations_factor=1, max_memory=10000):
         """
