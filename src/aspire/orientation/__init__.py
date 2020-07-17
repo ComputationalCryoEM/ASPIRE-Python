@@ -35,7 +35,6 @@ class CLOrient3D:
         self.n_theta = n_theta
         self.n_check = n_check
         self.clmatrix = None
-        self.skipmatrix = None
         self.shifts_1d = None
 
         self.rotations = None
@@ -112,19 +111,19 @@ class CLOrient3D:
         pf = self.pf.copy()
 
         # Allocate local variables for return
-        # clstack represents the common lines matrix.
-        # Namely, clstack[i,j] contains the index in image i of
+        # clmatrix represents the common lines matrix.
+        # Namely, clmatrix[i,j] contains the index in image i of
         # the common line with image j. Note the common line index
         # starts from 0 instead of 1 as Matlab version. -1 means
-        # there is no common line such as clstack[i,i].
-        clstack = -np.ones((n_img, n_img))
-        # skipstack[i, j] measures how ''common'' is the between
+        # there is no common line such as clmatrix[i,i].
+        clmatrix = -np.ones((n_img, n_img))
+        # cl_dist[i, j] measures how ''common'' is the between
         # image i and j. Small value means high-similarity.
-        # we will use skipstack[i, j] = 0 (including i=j) to
+        # we will use cl_dist[i, j] = -1 (including i=j) to
         # represent that there is no need to check common line
         # between i and j. Since stack is symmetric,
         # only above the diagonal entries are necessary.
-        skipstack = np.zeros((n_img, n_img))
+        cl_dist = -np.ones((n_img, n_img))
 
         # Allocate variables used for shift estimation
 
@@ -159,9 +158,9 @@ class CLOrient3D:
             p1_imag = np.imag(p1)
 
             # build the subset of j images if n_check < n_img
-            num_j = min(n_img - i, n_check)
-            subset_j = np.sort(np.random.choice(n_img - i - 1, num_j - 1,
-                                                 replace=False) + i + 1)
+            n_remaining = n_img - i - 1
+            n_j = min(n_remaining,  n_check)
+            subset_j = np.sort(np.random.choice(n_remaining, n_j, replace=False) + i + 1)
 
             for j in subset_j:
                 p2_flipped = np.conj(pf[j])
@@ -189,17 +188,16 @@ class CLOrient3D:
                         cl2 = cl2_2 + n_theta_half
                         sval = sval2
                     sval = 2 * sval
-                    if sval > skipstack[i, j]:
-                        clstack[i, j] = cl1
-                        clstack[j, i] = cl2
-                        skipstack[i, j] = sval
+                    if sval > cl_dist[i, j]:
+                        clmatrix[i, j] = cl1
+                        clmatrix[j, i] = cl2
+                        cl_dist[i, j] = sval
                         shifts_1d[i, j] = shifts[shift]
 
-        mask = (skipstack != 0)
-        skipstack[mask] = 1 - skipstack[mask]
+        mask = (cl_dist != -1)
+        cl_dist[mask] = 1 - cl_dist[mask]
 
-        self.clmatrix = clstack
-        self.skipstack = skipstack
+        self.clmatrix = clmatrix
         self.shifts_1d = shifts_1d
 
     def estimate_shifts(self, equations_factor=1, max_memory=10000):
