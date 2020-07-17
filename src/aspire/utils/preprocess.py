@@ -305,119 +305,32 @@ def vol2img(volume, rots, L=None, dtype=None):
     return np.real(im)
 
 
-def fuzzy_mask1d(L, r0, risetime, origin=None):
+def fuzzy_mask(L, r0, risetime, origin=None):
     """
-    Create a centered 1D object of radius r0
+    Create a centered 1D to 3D object of radius r0
 
     Made with an error function with effective rise time.
     :param L: The size of image
     :param r0: The specified radius
     :param risetime: The rise time for `erf` function
     :param origin: The coordinates of origin
-    :return: The desired 1D fuzzy mask
+    :return: The desired fuzzy mask
     """
-
     if isinstance(L, int):
-        L = np.array([L])
-
+        L = np.array(L)
     if isinstance(r0, int):
-        r0 = np.array([r0])
+        r0 = np.array(r0)
 
-    center = np.floor(L / 2) + 1
-    k = 1.782 / risetime
-
+    center = np.floor(L / 2)
     if origin is None:
         origin = center
         origin = origin.astype('int')
 
-    r = np.abs(np.arange(1 - origin[0], L - origin[0] + 1))
-
-    m = 0.5 * (1 - erf(k * (r - r0[0])))
-
-    return m
-
-
-def fuzzy_mask2d(L, r0, risetime, origin=None):
-    """
-    Create a centered 2D object of radius r0
-
-    Made with an error function with effective rise time.
-    :param L: The size of image
-    :param r0: The specified radius
-    :param risetime: The rise time for `erf` function
-    :param origin: The coordinates of origin
-    :return: The desired 2D fuzzy mask
-    """
-
-    if isinstance(L, int):
-        L = np.array([L])
-
-    if isinstance(r0, int):
-        r0 = np.array([r0])
-
-    center = np.floor(L / 2) + 1
+    grids = [np.arange(1-org, ell - org + 1) for ell, org in zip(L, origin)]
+    XYZ = np.meshgrid(*grids, indexing='ij')
+    XYZ_sq = [X ** 2 for X in XYZ]
+    R = np.sqrt(np.add(*XYZ_sq))
     k = 1.782 / risetime
-
-    if origin is None:
-        origin = center
-        origin = origin.astype('int')
-    if len(L) == 1:
-        grid = np.arange(1 - origin[0], L[0] - origin[0] + 1)
-        x, y = np.meshgrid(grid, grid, indexing='ij')
-    else:
-        grid0 = np.arange(1 - origin[0], L[0] - origin[0] + 1)
-        grid1 = np.arange(1 - origin[1], L[1] - origin[1] + 1)
-        x, y = np.meshgrid(grid0, grid1, indexing='ij')
-
-    if len(r0) < 2:
-        r = np.sqrt(np.square(x) + np.square(y))
-    else:
-        r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1]))
-
-    m = 0.5 * (1 - erf(k * (r - r0[0])))
-
-    return m
-
-
-def fuzzy_mask3d(L, r0, risetime, origin=None):
-    """
-    Create a centered 3D object of radius r0
-
-    Made with an error function with effective rise time.
-    :param L: The size of image
-    :param r0: The specified radius
-    :param risetime: The rise time for `erf` function
-    :param origin: The coordinates of origin
-    :return: The desired 3D fuzzy mask
-    """
-
-    if isinstance(L, int):
-        L = np.array([L])
-
-    if isinstance(r0, int):
-        r0 = np.array([r0])
-
-    center = np.floor(L / 2) + 1
-    k = 1.782 / risetime
-
-    if origin is None:
-        origin = center
-        origin = origin.astype('int')
-    if len(L) == 1:
-        grid = np.arange(1 - origin[0], L[0] - origin[0] + 1)
-        x, y, z = np.meshgrid(grid, grid, grid, indexing='ij')
-    else:
-        grid0 = np.arange(1 - origin[0], L[0] - origin[0] + 1)
-        grid1 = np.arange(1 - origin[1], L[1] - origin[1] + 1)
-        grid2 = np.arange(1 - origin[2], L[2] - origin[2] + 1)
-        x, y, z = np.meshgrid(grid0, grid1, grid2, indexing='ij')
-
-    if len(r0) < 3:
-        r = np.sqrt(np.square(x) + np.square(y) + np.square(z))
-    else:
-        r = np.sqrt(np.square(x) + np.square(y * r0[0] / r0[1])
-                    + np.square(z * r0[0] / r0[2]))
-
-    m = 0.5 * (1 - erf(k * (r - r0[0])))
+    m = 0.5 * (1 - erf(k * (R - r0[0])))
 
     return m
