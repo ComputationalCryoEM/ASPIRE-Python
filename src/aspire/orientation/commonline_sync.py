@@ -177,18 +177,17 @@ class CommLineSync(CLOrient3D):
 
         if rots.shape[2] > 0:
             rot_mean = np.mean(rots, 2)
-            rot_block = rots[:2, :2]
-            diff = rot_block - rot_mean[:2, :2, np.newaxis]
-            err = np.linalg.norm(diff) / np.linalg.norm(rot_block)
-            if err > tol:
-                # This means that images i and j have inconsistent rotations.
-                # The original Matlab code tried to print out the information
-                # on inconsistent rotations but was commented out and do nothing,
-                # probably due to the fact that it will print out a lot of
-                # inconsistent rotations if the resolution or number of images
-                # are not enough.
-                # Simply pass it as Matlab code.
-                pass
+            # The error to mean value can be calculated as
+            #    rot_block = rots[:2, :2]
+            #    diff = rot_block - rot_mean[:2, :2, np.newaxis]
+            #    err = np.linalg.norm(diff) / np.linalg.norm(rot_block)
+            # if err > tol, this means that images i and j have inconsistent
+            # rotations. The original Matlab code tried to print out the information
+            # on inconsistent rotations but was commented out and do nothing,
+            # probably due to the fact that it will print out a lot of
+            # inconsistent rotations if the resolution or number of images
+            # are not enough. We choose to pass it as Matlab code.
+
         else:
             # This for the case that images i and j correspond to the same
             # viewing direction and differ only by in-plane rotation.
@@ -341,9 +340,8 @@ class CommLineSync(CLOrient3D):
         # tics, since the peak might move a little bit due to wrong k images
         # that accidentally fall near the peak.
         peak_idx = angles_hist.argmax()
-        idx = np.where(np.abs(angles - angles_grid[peak_idx]) < 360 / ntics)[0]
+        idx = (np.abs(angles - angles_grid[peak_idx]) < 360 / ntics)
         good_k = inds[idx]
-
         return good_k.astype('int')
 
     def _get_cos_phis(self, cl_diff1, cl_diff2, cl_diff3, n_theta):
@@ -404,7 +402,7 @@ class CommLineSync(CLOrient3D):
 
         cond = 1 + 2 * c1 * c2 * c3 - (
                 np.square(c1) + np.square(c2) + np.square(c3))
-        good_idx = np.where(cond > 1e-5)[0]
+        good_idx = np.nonzero(cond > 1e-5)[0]
 
         # Calculated cos values of angle between i and j images
         cos_phi2 = (c3[good_idx] - c1[good_idx] *
