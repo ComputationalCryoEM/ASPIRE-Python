@@ -478,7 +478,7 @@ class ImageSource:
         logger.info('Adding Add Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Add(-mean))
         logger.info('Adding Scaling Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(Multiply(std))
+        self.generation_pipeline.add_xform(Multiply(1/std))
 
         # Invalidate images
         self._im = None

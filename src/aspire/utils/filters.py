@@ -214,7 +214,6 @@ class ScalarFilter(Filter):
         return self.value * np.ones_like(omega)
 
     def scale(self, c):
-        # TODO: Is this a bug?
         pass
 
 
