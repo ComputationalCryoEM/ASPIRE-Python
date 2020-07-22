@@ -55,7 +55,7 @@ class CommLineSync(CLOrient3D):
         # rotations R_{1},...,R_{K}, S is decomposed as S=W^{T}W where
         # W=(R_{1}^{1},R_{1}^{2},...,R_{K}^{1},R_{K}^{2}), where R_{j}^{k}
         # the k column of R_{j}. Therefore, S is a rank-3 matrix, and thus, it
-        # three eigenvectors that correspond to non-zero eigenvealues, are linear
+        # three eigenvectors that correspond to non-zero eigenvalues, are linear
         # combinations of the column space of S, namely, W^{T}.
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
@@ -99,9 +99,9 @@ class CommLineSync(CLOrient3D):
 
         # Construct the matrix A'*A from the vectorized matrix.
         ATA = np.zeros((3, 3))
-        upper_mask = np.triu(np.full((3, 3), True))
+        upper_mask = np.triu_indices(3)
         ATA[upper_mask] = ATA_vec
-        lower_mask = np.tril(np.full((3, 3), True))
+        lower_mask = np.tril_indices(3)
         ATA[lower_mask] = ATA.T[lower_mask]
 
         # The Cholesky decomposition of A'*A gives A
@@ -175,11 +175,11 @@ class CommLineSync(CLOrient3D):
 
         rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
 
-        if rots.shape[2] > 0:
-            rot_mean = np.mean(rots, 2)
+        if rots.shape[0] > 0:
+            rot_mean = np.mean(rots, 0)
             # The error to mean value can be calculated as
             #    rot_block = rots[:2, :2]
-            #    diff = rot_block - rot_mean[:2, :2, np.newaxis]
+            #    diff = rot_block - rot_mean[np.newaxis, :2, :2]
             #    err = np.linalg.norm(diff) / np.linalg.norm(rot_block)
             # if err > tol, this means that images i and j have inconsistent
             # rotations. The original Matlab code tried to print out the information
@@ -249,10 +249,8 @@ class CommLineSync(CLOrient3D):
         angles[:, 1] = alpha
         angles[:, 2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
         r = Rotation.from_euler('ZXZ', angles).as_dcm()
-        r = np.swapaxes(r, 0, 2)
-        r = np.swapaxes(r, 0, 1)
-
-        return r[:, :, good_idx]
+        
+        return r[good_idx, :, :]
 
     def _vote_ij(self, clmatrix, n_theta, i, j, k_list):
         """
