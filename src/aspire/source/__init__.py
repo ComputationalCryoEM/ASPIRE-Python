@@ -463,13 +463,10 @@ class ImageSource:
         im = im.shift(-self.offsets[all_idx, :])
         im = self.eval_filters(im, start=start, num=num).asnumpy()
 
-        L = im.shape[1]
-        n = im.shape[0]
-        im_f = np.empty((L,L,n))
-        for k in range(n):
-            im_f[:, :, k] = im[k]
-        # TODO: xxx convert method to C order
-        vol = im_backproject(im_f, self.rots[start:start+num, :, :])
+        # GBW, this class should pass around Images if you ask me...
+        vol = Volume.from_backprojection(Image(im), self.rots[start:start+num, :, :])
+        # and this should return Volumes, for now try to repro
+        vol = vol[0]
 
         return vol
 

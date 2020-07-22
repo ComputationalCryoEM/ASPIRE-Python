@@ -54,7 +54,7 @@ class Volume:
 
     def __add__(self, other):
         return Volume(self.data + other.data)
-        
+
     def __sub__(self, other):
         return Volume(self.data - other.data)
 
@@ -93,12 +93,12 @@ class Volume:
             #XXXX pts_rot = m_reshape(pts_rot, (3, L, L, num_rots))
         return pts_rot
 
-        
+
     def project(self, vol_idx, rot_matrices):
         data = self[vol_idx]
-        
+
         n = rot_matrices.shape[0]
-        
+
         pts_rot = rotated_grids(self.resolution, rot_matrices)
 
         # TODO: come back and convert this method internally to C order
@@ -108,13 +108,13 @@ class Volume:
 
         im_f = (1./self.resolution *
                 Plan(self.volume_shape, pts_rot).transform(data))
-        
+
         im_f = m_reshape(im_f, (self.resolution, self.resolution, -1))
 
         if self.resolution % 2 == 0:
             im_f[0, :, :] = 0
             im_f[:, 0, :] = 0
-        
+
 
         im = centered_ifft2_F(im_f)
         im_c = np.swapaxes(im, 0, -1)
@@ -135,7 +135,7 @@ class Volume:
         assert resolution**3 == vec.shape[1]
         data = m_reshape(vec, (N,) + (resolution,)*3)
         return Volume(data)
-    
+
     @staticmethod
     def from_backprojection(im, rot_matrices):
         """
@@ -146,20 +146,23 @@ class Volume:
 
         :return: Volume instance corresonding to the backprojected images.
         """
-        
+
         L = im.res
-        
+
         ensure(im.n_images == rot_matrices.shape[0],
                "Number of rotation matrices must match the number of images")
 
         pts_rot = rotated_grids(L, rot_matrices)
         pts_rot = m_reshape(pts_rot, (3, -1))
 
-        im_f = centered_fft2_F(im) / (L**2)
+        im_f = centered_fft2_C(im.data) / (L**2)
         if L % 2 == 0:
-            im_f[0, :, :] = 0
             im_f[:, 0, :] = 0
-        im_f = m_flatten(im_f)
+            im_f[:, :, 0] = 0
+
+        # yikes
+        im_f = np.swapaxes(im_f, -2, -1)
+        im_f = im_f.flatten()
 
         plan = Plan(
             sz=(L, L, L),
