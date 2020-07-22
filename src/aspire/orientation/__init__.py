@@ -485,9 +485,6 @@ class CLOrient3D:
         if c_ji < 0:
             c_ji += 2 * n_theta
 
-        c_ij = int(c_ij)
-        c_ji = int(c_ji)
-
         return c_ij, c_ji
 
     def _apply_filter_and_norm(self, subscripts, pf,  r_max, h):

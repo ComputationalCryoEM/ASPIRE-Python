@@ -349,7 +349,7 @@ def common_line_from_rots(r1, r2, ell):
     ell_ij = alpha_ij * ell / (2 * np.pi)
     ell_ji = alpha_ji * ell / (2 * np.pi)
 
-    ell_ij = np.mod(np.round(ell_ij), ell)
-    ell_ji = np.mod(np.round(ell_ji), ell)
+    ell_ij = int(np.mod(np.round(ell_ij), ell))
+    ell_ji = int(np.mod(np.round(ell_ji), ell))
 
     return ell_ij, ell_ji
