@@ -127,11 +127,11 @@ class CLOrient3D:
         # starts from 0 instead of 1 as Matlab version. -1 means
         # there is no common line such as clmatrix[i,i].
         clmatrix = -np.ones((n_img, n_img))
-        # cl_dist[i, j] measures how ''common'' is the between
-        # image i and j. Small value means high-similarity.
-        # we will use cl_dist[i, j] = -1 (including i=j) to
+        # When cl_dist[i, j] is not -1, it stores the maximum value
+        # of correlation between image i and j for all possible 1D shifts.
+        # We will use cl_dist[i, j] = -1 (including j<=i) to
         # represent that there is no need to check common line
-        # between i and j. Since stack is symmetric,
+        # between i and j. Since it is symmetric,
         # only above the diagonal entries are necessary.
         cl_dist = -np.ones((n_img, n_img))
 
@@ -204,9 +204,6 @@ class CLOrient3D:
                         cl_dist[i, j] = sval
                         shifts_1d[i, j] = shifts[shift]
 
-        mask = (cl_dist != -1)
-        cl_dist[mask] = 1 - cl_dist[mask]
-
         self.clmatrix = clmatrix
         self.shifts_1d = shifts_1d
 
@@ -215,7 +212,7 @@ class CLOrient3D:
         Estimate 2D shifts in images
 
         This function computes 2D shifts in x, y of images by solving the least-squares
-        equations to `Ax = b`. `A` on the left-hand side is a parse matrix representing
+        equations to `Ax = b`. `A` on the left-hand side is a sparse matrix representing
         precomputed coefficients of shift equations; and on the right-side, `b` is
         estimated 1D shifts along the theta direction between two Fourier rays (one in
         image i and the other in image j).  Each row of shift equations contains four
