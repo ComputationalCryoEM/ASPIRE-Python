@@ -136,6 +136,39 @@ class Volume:
         data = m_reshape(vec, (N,) + (resolution,)*3)
         return Volume(data)
     
+    @staticmethod
+    def from_backprojection(im, rot_matrices):
+        """
+        Backproject images along rotation
+        :param im: An Image (stack) to backproject.
+        :param rot_matrices: An n-by-3-by-3 array of rotation matrices \
+        corresponding to viewing directions.
+
+        :return: Volume instance corresonding to the backprojected images.
+        """
+        
+        L = im.res
+        
+        ensure(im.n_images == rot_matrices.shape[0],
+               "Number of rotation matrices must match the number of images")
+
+        pts_rot = rotated_grids(L, rot_matrices)
+        pts_rot = m_reshape(pts_rot, (3, -1))
+
+        im_f = centered_fft2_F(im) / (L**2)
+        if L % 2 == 0:
+            im_f[0, :, :] = 0
+            im_f[:, 0, :] = 0
+        im_f = m_flatten(im_f)
+
+        plan = Plan(
+            sz=(L, L, L),
+            fourier_pts=pts_rot
+        )
+        vol = np.real(plan.adjoint(im_f)) / L
+
+        return Volume(vol)
+
     def shift(self):
         raise NotImplementedError
 
@@ -174,25 +207,6 @@ class FBBasisVolume(BasisVolume):
 
 
 # TODO: The following functions likely all need to be moved inside the Volume class
-def vol_project(vol, rot_matrices):
-    L = vol.shape[1]
-    n = rot_matrices.shape[0]
-    pts_rot = rotated_grids(L, rot_matrices)
-
-    # TODO: rotated_grids might as well give us correctly shaped array in the first place
-    pts_rot = m_reshape(pts_rot, (3, L**2*n))
-
-    im_f = 1./L * Plan(vol.shape, pts_rot).transform(vol)
-    im_f = m_reshape(im_f, (L, L, -1))
-
-    if L % 2 == 0:
-        im_f[0, :, :] = 0
-        im_f[:, 0, :] = 0
-
-    im = centered_ifft2_F(im_f)
-
-    return np.real(im)
-
 
 def rotated_grids(L, rot_matrices):
     """

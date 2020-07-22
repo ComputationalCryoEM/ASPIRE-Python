@@ -13,7 +13,6 @@ from aspire.utils.matlab_compat import Random, rand, randi, randn
 from aspire.utils.matrix import (acorr, ainner, anorm, make_symmat, vec_to_vol,
                                  vecmat_to_volmat, vol_to_vec)
 from aspire.volume import Volume
-from aspire.volume import vol_project
 
 logger = logging.getLogger(__name__)
 
