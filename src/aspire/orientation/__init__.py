@@ -205,7 +205,7 @@ class CLOrient3D:
         self.clmatrix = clmatrix
         self.shifts_1d = shifts_1d
 
-    def estimate_shifts(self, equations_factor=1, max_memory=10000):
+    def estimate_shifts(self, equations_factor=1, max_memory=4000):
         """
         Estimate 2D shifts in images
 
@@ -228,13 +228,10 @@ class CLOrient3D:
         :param max_memory: If there are N images and N_check selected to check
             for common lines, then the exact system of equations solved for the shifts
             is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. If `max_memory` is not None (in megabytes),
-            then the algorithm will use `equations_factor` times the total number of
-            equations if the resulting total number of memory requirements is less
-            than `max_memory`; otherwise it will reduce the number of equations to
-            fit in `max_memory`. If `max_memory` is `None`, the shift equations
-            will be generated exactly from the common line matrix instead of estimated
-            rotation matrices.
+            This may be too big if N is large. The algorithm will use `equations_factor`
+            times the total number of equations if the resulting total number of memory
+            requirements is less than `max_memory` (in megabytes); otherwise it will
+            reduce the number of equations by approximation to fit in `max_memory`.
         """
 
         # Generate approximated shift equations from estimated rotations
@@ -245,7 +242,7 @@ class CLOrient3D:
 
         return est_shifts
 
-    def _get_shift_equations_approx(self, equations_factor=1, max_memory=10000):
+    def _get_shift_equations_approx(self, equations_factor=1, max_memory=4000):
         """
         Generate approximated shift equations from estimated rotations
 
@@ -371,7 +368,7 @@ class CLOrient3D:
 
         return shift_equations, shift_b
 
-    def _estimate_num_shift_equations(self, n_img, equations_factor=1, max_memory=10000):
+    def _estimate_num_shift_equations(self, n_img, equations_factor=1, max_memory=4000):
         """
         Estimate total number of shift equations in images
 
