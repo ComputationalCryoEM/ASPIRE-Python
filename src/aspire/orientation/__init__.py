@@ -291,10 +291,10 @@ class CLOrient3D:
         # this sparse system. The k'th non-zero element of the equations matrix
         # is stored at index (shift_i(k),shift_i(k)). Note the last n_equations
         # elements are used to store the right side of Ax = b.
-        shift_i = np.zeros(4 * n_equations)
-        shift_j = np.zeros(4 * n_equations)
-        shift_eq = np.zeros(4 * n_equations)
-        shift_b = np.zeros(n_equations)
+        shift_i = np.zeros(4 * n_equations, dtype=np.float64)
+        shift_j = np.zeros(4 * n_equations, dtype=np.float64)
+        shift_eq = np.zeros(4 * n_equations, dtype=np.float64)
+        shift_b = np.zeros(n_equations, dtype=np.float64)
 
         # Prepare the shift phases to try and generate filter for common-line detection
         # The shift phases are pre-defined in a range of max_shift that can be
@@ -371,7 +371,8 @@ class CLOrient3D:
 
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
-                                            shape=(n_equations, 2 * n_img))
+                                            shape=(n_equations, 2 * n_img),
+                                            dtype=np.float64)
 
         return shift_equations, shift_b
 
