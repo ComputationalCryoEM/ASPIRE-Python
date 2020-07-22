@@ -45,7 +45,6 @@ class OrientSyncTestCase(TestCase):
         self.orient_est.syncmatrix_vote()
         self.orient_est.estimate_rotations()
         self.est_rots = self.orient_est.rotations
-        np.random.seed(0)
         self.est_shifts = self.orient_est.estimate_shifts()
 
     def tearDown(self):
