@@ -48,7 +48,7 @@ class CLSyncVoting(CLOrient3D):
 
         n_img = sz[0] // 2
 
-        # S is a 2Kx2K matrix (K=n_check), containing KxK blocks of size 2x2.
+        # S is a 2Kx2K matrix (K=n_img), containing KxK blocks of size 2x2.
         # The [i,j] block is given by [r11 r12; r12 r22], where
         # r_{kl}=<R_{i}^{k},R_{j}^{l}>, k,l=1,2, namely, the dot product of
         # column k of R_{i} and columns l of R_{j}. Thus, given the true
@@ -349,6 +349,15 @@ class CLSyncVoting(CLOrient3D):
         Given C1, C2, and C3 are unit circles of image i, j, and k, compute
         resulting cos values of rotation angles between i an j images when both
         of them are intersecting with k.
+
+        To ensure that the smallest singular value is big enough, controlled by
+        the determinant of the matrix,
+           C=[  1  c1  c2 ;
+               c1   1  c3 ;
+               c2  c3   1 ],
+        we therefore use the condition below
+               1+2*c1*c2*c3-(c1^2+c2^2+c3^2) > 1.0e-5,
+        so the matrix is far from singular.
 
         :param cl_diff1: Difference of common line indices on C1 created by
             its intersection with C3 and C2
