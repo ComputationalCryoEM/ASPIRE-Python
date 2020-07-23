@@ -314,7 +314,7 @@ def get_aligned_rotations(rots, Q_mat, flag):
 
 def get_rots_mse(rots_reg, rots_ref):
     """
-    calculate MSE between the estimated orientations to reference ones.
+    Calculate MSE between the estimated orientations to reference ones.
 
     :param rots_reg: The estimated rotations after alignment in the form of
         a n-by-3-by-3 array.
@@ -324,13 +324,14 @@ def get_rots_mse(rots_reg, rots_ref):
     ensure(rots_reg.shape == rots_ref.shape,
            'Two sets of rotations must have same dimensions.')
     K = rots_reg.shape[0]
-    diff = np.zeros((K, 1))
+
+    diff = np.zeros(K)
     mse = 0
     for k in range(K):
         diff[k] = norm(rots_reg[k, :, :] - rots_ref[k, :, :], ord='fro')
-        mse = mse + diff[k]**2
+        mse += diff[k]**2
     mse = mse/K
-    return mse[0]
+    return mse
 
 
 def common_line_from_rots(r1, r2, ell):
