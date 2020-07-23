@@ -10,7 +10,7 @@ from aspire.utils import ensure
 logger = logging.getLogger(__name__)
 
 
-class CommLineSync(CLOrient3D):
+class CLSyncVoting(CLOrient3D):
     """
     Define a class to estimate 3D orientations using synchronization matrix and voting method.
 

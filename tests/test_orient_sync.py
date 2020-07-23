@@ -6,7 +6,7 @@ from unittest import TestCase
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
-from aspire.orientation.commonline_sync import CommLineSync
+from aspire.orientation.commonline_sync import CLSyncVoting
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -40,7 +40,7 @@ class OrientSyncTestCase(TestCase):
             filters=filters
         )
 
-        self.orient_est = CommLineSync(sim, L//2, 36)
+        self.orient_est = CLSyncVoting(sim, L // 2, 36)
         self.orient_est.build_clmatrix()
         self.orient_est.syncmatrix_vote()
         self.orient_est.estimate_rotations()

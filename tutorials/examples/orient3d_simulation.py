@@ -15,7 +15,7 @@ from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.preprocess import downsample
 from aspire.utils.coor_trans import (register_rotations,
                                      get_aligned_rotations, get_rots_mse)
-from aspire.orientation.commonline_sync import CommLineSync
+from aspire.orientation.commonline_sync import CLSyncVoting
 
 logger = logging.getLogger('aspire')
 
@@ -71,7 +71,7 @@ rots_true = sim.rots
 
 # Initialize an orientation estimation object and perform view angle estimation
 logger.info('Estimate rotation angles using synchronization matrix and voting method.')
-orient_est = CommLineSync(sim, n_theta=36)
+orient_est = CLSyncVoting(sim, n_theta=36)
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
 
