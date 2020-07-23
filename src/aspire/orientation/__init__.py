@@ -100,15 +100,10 @@ class CLOrient3D:
         src.rots = self.rotations
         return src
 
-    def build_clmatrix(self, np_seed=0):
+    def build_clmatrix(self):
         """
         Build common-lines matrix from Fourier stack of 2D images
-
-        :param np_seed: The random number seed for Numpy
         """
-
-        # set random number seed for Numpy
-        np.random.seed(np_seed)
 
         n_img = self.n_img
         n_check = self.n_check
@@ -207,7 +202,7 @@ class CLOrient3D:
         self.clmatrix = clmatrix
         self.shifts_1d = shifts_1d
 
-    def estimate_shifts(self, equations_factor=1, max_memory=4000, np_seed=0):
+    def estimate_shifts(self, equations_factor=1, max_memory=4000):
         """
         Estimate 2D shifts in images
 
@@ -234,12 +229,7 @@ class CLOrient3D:
             times the total number of equations if the resulting total number of memory
             requirements is less than `max_memory` (in megabytes); otherwise it will
             reduce the number of equations by approximation to fit in `max_memory`.
-        :param np_seed: The random number seed for Numpy
-        :return : The estimated 2D shifts
         """
-
-        # set random number seed for Numpy
-        np.random.seed(np_seed)
 
         # Generate approximated shift equations from estimated rotations
         shift_equations, shift_b = self._get_shift_equations_approx(equations_factor, max_memory)
