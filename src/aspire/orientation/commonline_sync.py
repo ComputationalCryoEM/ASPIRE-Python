@@ -59,10 +59,10 @@ class CLSyncVoting(CLOrient3D):
         # combinations of the column space of S, namely, W^{T}.
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
-        d, v = sparse.linalg.eigs(S, 10)
-        d = np.real(d)
+        d, v = sparse.linalg.eigsh(S, 10)
+        logger.info(f'Top 10 eigenvalues from synchronization voting matrix: {d}')
         sort_idx = np.argsort(-d)
-        v = np.real(v[:, sort_idx[:3]])
+        v = v[:, sort_idx[:3]]
 
         # According to the structure of W^{T} above, the odd rows of V, denoted V1,
         # are a linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
@@ -143,17 +143,17 @@ class CLSyncVoting(CLOrient3D):
         ensure(sz[0] == sz[1], 'clmatrix must be a square matrix.')
 
         n_img = sz[0]
-        S = np.eye(2 * n_img)
+        S = np.eye(2 * n_img).reshape(n_img, 2, n_img, 2)
 
         # Build Synchronization matrix from the rotation blocks in X and Y
         for i in range(n_img - 1):
             for j in range(i + 1, n_img):
                 rot_block = self._syncmatrix_ij_vote(
                     clmatrix, i, j, np.arange(n_img), n_theta)
-                S[2 * i:2 * (i + 1), 2 * j:2 * (j + 1)] = rot_block
-                S[2 * j:2 * (j + 1), 2 * i:2 * (i + 1)] = rot_block.T
+                S[i, :, j, :] = rot_block
+                S[j, :, i, :] = rot_block.T
 
-        self.syncmatrix = S
+        self.syncmatrix = S.reshape(2 * n_img, 2 * n_img)
 
     def _syncmatrix_ij_vote(self, clmatrix, i, j, k_list, n_theta):
         """
