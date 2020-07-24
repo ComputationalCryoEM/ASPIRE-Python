@@ -44,10 +44,6 @@ class cuFINufftPlan(Plan):
         self._adjoint_plan = cufinufft(1, self.sz, 1, self.epsilon, ntransforms=self.ntransforms,
                                        dtype=self.dtype)
 
-    def __del__(self):
-        for plan in [self._transform_plan, self._adjoint_plan]:
-            plan.destroy()
-
     def transform(self, signal):
 
         assert signal.dtype == self.dtype or signal.dtype == self.complex_dtype
@@ -63,7 +59,7 @@ class cuFINufftPlan(Plan):
         result_gpu = gpuarray.GPUArray((self.ntransforms, self.num_pts), dtype=self.complex_dtype, order='C')
 
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts.astype(self.dtype))
-        self._transform_plan.set_nu_pts(self.num_pts, *fourier_pts_gpu)
+        self._transform_plan.set_pts(self.num_pts, *fourier_pts_gpu)
 
         # move to init or something, check handles 1,2,3 d (I think it unrolls okay)
         self._transform_plan.execute(result_gpu, signal_gpu)
@@ -87,7 +83,7 @@ class cuFINufftPlan(Plan):
         result_gpu = gpuarray.GPUArray((*self.sz, self.ntransforms), dtype=self.complex_dtype, order='F')
 
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
-        self._adjoint_plan.set_nu_pts(self.num_pts, *fourier_pts_gpu)
+        self._adjoint_plan.set_pts(self.num_pts, *fourier_pts_gpu)
 
         self._adjoint_plan.execute(signal_gpu, result_gpu)
 
