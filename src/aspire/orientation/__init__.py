@@ -233,10 +233,15 @@ class CLOrient3D:
 
         # Generate approximated shift equations from estimated rotations
         shift_equations, shift_b = self._get_shift_equations_approx(equations_factor, max_memory)
+        print(f'shift_equations with shape of {shift_equations.shape}')
+        print(f'{shift_equations}')
+        print(f'shift_b with shape of {shift_b.shape}')
+        print(f'{shift_b}')
 
         est_shifts = sparse.linalg.lsqr(shift_equations, shift_b)[0]
         est_shifts = est_shifts.reshape((2, self.n_img), order='F')
-
+        print(f'est_shifts with the shape of {est_shifts.shape}')
+        print(f'est_shifts = {est_shifts}')
         return est_shifts
 
     def _get_shift_equations_approx(self, equations_factor=1, max_memory=4000):
