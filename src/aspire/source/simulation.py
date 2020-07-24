@@ -63,9 +63,9 @@ class Simulation(ImageSource):
             for n in range(self.C):
                 _vols.append(self.vols[:,:,:,n])
             self.vols = Volume(np.array(_vols))
-            #xxx okay hereprint("vols[0]", self.vols[0])
-            
+
         else:
+            assert isinstance(vols, Volume)
             self.vols = vols
 
         self.seed = seed
@@ -144,8 +144,7 @@ class Simulation(ImageSource):
 
             im_k = self.vols.project(vol_idx=k-1,
                                      rot_matrices=rot)
-            #Volume.project should return C order
-            im[idx_k, :, :] = im_k
+            im[idx_k, :, :] = im_k.asnumpy()
 
         return Image(im)
 
@@ -160,7 +159,7 @@ class Simulation(ImageSource):
 
         im = self.eval_filters(im, start=start, num=num, indices=indices)
         im = im.shift(self.offsets[indices, :])
-        
+
         im *= self.amplitudes[indices].reshape(len(indices), 1, 1)
 
         if enable_noise and self.noise_adder is not None:
@@ -189,7 +188,7 @@ class Simulation(ImageSource):
 
         coords = EV @ V.T
 
-        res = vols - Volume.from_vec(coords.T @ EV)        
+        res = vols - Volume.from_vec(coords.T @ EV)
         res_norms = anorm(res.data, (1, 2, 3))
         res_inners = mean_vol.to_vec() @ res.to_vec().T
 
@@ -201,7 +200,7 @@ class Simulation(ImageSource):
     def covar_true(self):
         eigs_true, lamdbas_true = self.eigs()
         eigs_true = Volume(eigs_true).to_vec()
-        
+
         covar_true = eigs_true.T @ lamdbas_true @ eigs_true
         covar_true = vecmat_to_volmat(covar_true)
 
@@ -222,7 +221,7 @@ class Simulation(ImageSource):
         vols_c = np.swapaxes(vols_c, -3, -2)
         vols_c = np.swapaxes(vols_c, 0, -1)
 
-        
+
         p = np.ones(C) / C
         vols_c = vol_to_vec(vols_c)
         Q, R = qr(vols_c, mode='economic')
@@ -342,12 +341,12 @@ class Simulation(ImageSource):
         coords_true = coords_true[states]
         res_norms = res_norms[states]
         res_inners = res_inners[:, states]
-                
+
         mean_eigs_inners = (mean_vol.to_vec() @ eig_vols.to_vec().T).item()
         coords_err = coords_true - coords_est
 
         err = np.hypot(res_norms, coords_err)
-        
+
         mean_vol_norm2 = anorm(mean_vol) ** 2
         norm_true = np.sqrt(coords_true**2 + mean_vol_norm2 + 2*res_inners + 2*mean_eigs_inners * coords_true)
         norm_true = np.hypot(res_norms, norm_true)

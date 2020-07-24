@@ -1,6 +1,7 @@
 import numpy as np
 
-from aspire.nufft import Plan
+from aspire.image import Image
+from aspire.nfft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2_C, centered_ifft2_C
@@ -101,7 +102,7 @@ class Volume:
 
         pts_rot = rotated_grids(self.resolution, rot_matrices)
 
-        # TODO: come back and convert this method internally to C order
+        # TODO: RCOPT come back and convert these methods internally to C order
         ## TODO: rotated_grids might as well give us correctly shaped array in the first place,
         #  yea... this and the related code look real funny to me.
         pts_rot = m_reshape(pts_rot, (3, self.resolution**2*n))
@@ -120,7 +121,7 @@ class Volume:
         im_c = np.swapaxes(im, 0, -1)
         im_c = np.swapaxes(im_c, -2, -1)
 
-        return np.real(im_c)
+        return Image(np.real(im_c))
 
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""

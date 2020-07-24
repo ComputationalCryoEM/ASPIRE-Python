@@ -283,7 +283,13 @@ class ImageSource:
         raise NotImplementedError('Subclasses should implement this and return an Image object')
 
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
+        if not isinstance(im_orig, Image):
+            logger.warn(f"eval_filters passed {type(im_orig)} instead of Image instance")
+            # for now just convert it
+            im = Image(im_orig)
+
         im = im_orig.copy()
+
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
@@ -484,7 +490,7 @@ class ImageSource:
 
         im = vol.project(0, self.rots[all_idx, :, :])
         im = self.eval_filters(im, start, num)
-        im = Image(im).shift(self.offsets[all_idx, :])
+        im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
 

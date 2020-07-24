@@ -4,6 +4,7 @@ from scipy.fftpack import fft2, ifft2, ifftshift
 from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import lstsq
 
+from aspire.utils.matrix import anorm
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2_C, centered_ifft2_C
@@ -97,12 +98,16 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
 
 class Image:
     def __init__(self, data):
+
+        assert isinstance(data, np.ndarray), "Image should be instantiated with an ndarray"
+
         if data.ndim == 2:
             data = data[np.newaxis, :, :]
 
         ensure(data.shape[1] == data.shape[2], 'Only square ndarrays are supported.')
 
         self.data = data
+        self.ndim = self.data.ndim
         self.dtype = self.data.dtype
         self.shape = self.data.shape
         self.n_images = self.shape[0]
@@ -115,13 +120,25 @@ class Image:
         self.data[key] = value
 
     def __add__(self, other):
-        return Image(self.data + other.data)
+        if isinstance(other, Image):
+            other = other.data
+
+        return Image(self.data + other)
 
     def __sub__(self, other):
-        return Image(self.data - other.data)
+        if isinstance(other, Image):
+            other = other.data
 
-    def __mul__(self, amplitudes):
-        return Image(self.data * amplitudes)
+        return Image(self.data - other)
+
+    def __mul__(self, other):
+        if isinstance(other, Image):
+            other = other.data
+
+        return Image(self.data * other)
+
+    def sqrt(self):
+        return np.sqrt(self.data)
 
     def __repr__(self):
         return f'{self.n_images} images of size {self.res}x{self.res}'
@@ -217,7 +234,6 @@ class Image:
         TODO: This implementation is slower than _im_translate2
         """
         im = self.data
-        n_im = im.shape[0]
 
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
@@ -225,10 +241,9 @@ class Image:
 
         ensure(shifts.shape[-1] == 2, "shifts must be nx2")
 
-        ensure(n_shifts == 1 or n_shifts == n_im, "number of shifts must be 1 or match the number of images")
-        ensure(im.shape[1] == im.shape[2], "images must be square")
+        ensure(n_shifts == 1 or n_shifts == self.n_images, "number of shifts must be 1 or match the number of images")
 
-        L = im.shape[1]
+        L = self.res
         im_f = fft2(im, axes=(1, 2))
         grid_1d = ifftshift(np.ceil(np.arange(-L/2, L/2))) * 2 * np.pi / L
         om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
@@ -237,7 +252,7 @@ class Image:
         #phase_shifts_y = np.broadcast_to(-shifts[:, 1], (n_shifts, L, L))
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
         phase_shifts_y = -shifts[:, 1].reshape((n_shifts, 1, 1))
-        
+
         phase_shifts = (om_x[np.newaxis, :, :] * phase_shifts_x) + (om_y[np.newaxis, :, :] * phase_shifts_y)
 
         mult_f = np.exp(-1j * phase_shifts)
@@ -246,6 +261,15 @@ class Image:
         im_translated = np.real(im_translated)
 
         return im_translated
+
+    def norm(self):
+        return anorm(self.data)
+
+    @property
+    def size(self):
+        # probably not needed, transition
+        return np.size(self.data)
+
 
 
 class CartesianImage(Image):
