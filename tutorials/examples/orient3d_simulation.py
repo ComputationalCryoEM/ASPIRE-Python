@@ -24,8 +24,9 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), '../data/')
 logger.info('This script illustrates orientation estimation using '
             'synchronization matrix and voting method')
 
-# Set the sizes of images 64 x 64
+# Set the sizes of images
 img_size = 33
+
 # Set the total number of images generated from the 3D map
 num_imgs = 128
 
