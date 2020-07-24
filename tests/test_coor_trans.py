@@ -39,18 +39,18 @@ class UtilsTestCase(TestCase):
     def testQrand(self):
         results = np.load(os.path.join(DATA_DIR, 'rand_quaternions32.npy'))
         quaternions32 = qrand(32, seed=0)
-        self.assertTrue(np.allclose(results, quaternions32, atol=1e-7))
+        self.assertTrue(np.allclose(results, quaternions32))
 
     def testQ2Rot(self):
         results = np.load(os.path.join(DATA_DIR, 'rand_rot_matrices32.npy'))
         quaternions32 = qrand(32, seed=0)
         rot_matrices32 = q_to_rot(quaternions32)
-        self.assertTrue(np.allclose(np.moveaxis(results, 2, 0), rot_matrices32, atol=1e-7))
+        self.assertTrue(np.allclose(np.moveaxis(results, 2, 0), rot_matrices32))
 
     def testQrandRots(self):
         results = np.load(os.path.join(DATA_DIR, 'rand_rot_matrices32.npy'))
         rot_matrices32 = qrand_rots(32, seed=0)
-        self.assertTrue(np.allclose(np.moveaxis(results, 2, 0), rot_matrices32, atol=1e-7))
+        self.assertTrue(np.allclose(np.moveaxis(results, 2, 0), rot_matrices32))
 
     def testRegisterRots(self):
         angles = uniform_random_angles(32, seed=0)
