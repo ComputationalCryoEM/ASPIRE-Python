@@ -4,7 +4,7 @@ import numpy as np
 import pycuda.autoinit
 import pycuda.driver as cuda
 import pycuda.gpuarray as gpuarray
-from cufinufftpy import cufinufft
+from cufinufft import cufinufft
 
 from aspire.nfft import Plan
 from aspire.utils import ensure

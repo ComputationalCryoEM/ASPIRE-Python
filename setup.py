@@ -56,7 +56,7 @@ setup(
     #   for example gpu packages which may not install for all users,
     #   or developer tools that are handy but not required for users.
     extras_require = {
-        'gpu': ['pycuda', 'cupy', 'cufinufftpy>=1.0'],
+        'gpu': ['pycuda', 'cupy', 'cufinufft>=1.0'],
         'dev': ['bumpversion', 'flake8', 'isort', 'pyflakes', 'pydocstyle', 'snakeviz'],
     },
 
