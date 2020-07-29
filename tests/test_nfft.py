@@ -412,25 +412,17 @@ class SimTestCase(TestCase):
     def testAdjointMany0_32(self):
         self._testAdjointMany('cufinufft', np.float32)
 
-    # The following tests should raise because finufftpy is currently hard coded to doubles.
-    #   We can have the old behavior and cast, but should write some logging code.
-    #   For now I think maybe better to error.  Even in this unittest file we load data in singles
-    #   and comingle with doubles...
     def testTransformMany1_32(self):
-        with pytest.raises(AssertionError):
-            self._testTransformMany('finufft', np.float32)
+        self._testTransformMany('finufft', np.float32)
 
     def testTransform1_32(self):
-        with pytest.raises(AssertionError):
-            self._testTransform('finufft', np.float32)
+        self._testTransform('finufft', np.float32)
 
     def testAdjoint1_32(self):
-        with pytest.raises(AssertionError):
-            self._testAdjoint('finufft', np.float32)
+        self._testAdjoint('finufft', np.float32)
 
     def testAdjointMany1_32(self):
-        with pytest.raises(AssertionError):
-            self._testAdjointMany('finufft', np.float32)
+        self._testAdjointMany('finufft', np.float32)
 
     def testTransform2_32(self):
         self._testTransform('pynfft', np.float32)

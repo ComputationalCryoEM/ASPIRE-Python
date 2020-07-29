@@ -1,7 +1,11 @@
+import logging
 import numpy as np
 import finufftpy
 from aspire.nfft import Plan
 from aspire.utils import ensure
+
+
+logger = logging.getLogger(__name__)
 
 
 class FINufftPlan(Plan):
@@ -27,9 +31,33 @@ class FINufftPlan(Plan):
         self.sz = sz
         self.dim = len(sz)
 
-        # TODO: Currently finufftpy is hardcoded as doubles only right now
         self.dtype = fourier_pts.dtype
-        assert self.dtype == np.float64, 'finufftpy is hardcoded to doubles.'
+
+        # TODO: Currently/historically finufftpy is hardcoded as doubles only (inside the binding layer).
+        #       This has been changed in their GuruV2 work,
+        #         and an updated package should be released and integrated very soon.
+        #       The following casting business is only to facilitate the transition.
+        #       I don't want to send one precision in and get a different one out.
+        #         We have enough code that does that already.
+        #         (Potentially anything that used this, for example).
+        #       I would error, but I know a bunch of code ASPIRE wants to work,
+        #         the cov2d tutorial for example, would fail and require hacks to run
+        #         if I was strict about dtypes rn.
+        #       I would rather deal with that in other, more targeted PRs.
+        #       This preserves the legacy behavior of admitting singles,
+        #         but I will correct it slightly, to return the precision given as input.
+        #       This approach should contain the hacks here to a single place on the edge,
+        #         instead of spread through the code. ASPIRE code should focus on being
+        #         internally consistent.
+        #       Admittedly not ideal, but ignoring these problems wasn't sustainable.
+
+        self.cast_output = False
+        if self.dtype != np.float64:
+            logger.info('This version of finufftpy is hardcoded to doubles internally'
+                        '  casting input to doubles, results cast back to singles.')
+            self.cast_output = True
+            self.dtype = np.float64
+
 
         # TODO: Replace with ASPIRE util once merged in
         if self.dtype == np.float64:
@@ -81,6 +109,8 @@ class FINufftPlan(Plan):
 
         if result_code != 0:
             raise RuntimeError(f'FINufft transform failed. Result code {result_code}')
+        if self.cast_output:
+            result = result.astype(np.complex64)
 
         return result
 
@@ -111,5 +141,8 @@ class FINufftPlan(Plan):
         )
         if result_code != 0:
             raise RuntimeError(f'FINufft adjoint failed. Result code {result_code}')
+
+        if self.cast_output:
+            result = result.astype(np.complex64)
 
         return result
