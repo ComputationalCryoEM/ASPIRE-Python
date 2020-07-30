@@ -129,7 +129,19 @@ class FINufftPlan(Plan):
         if self.many:
             res_shape = (*self.sz, self.ntransforms)
 
+        # result = np.zeros(res_shape, order='F', dtype=self.complex_dtype)
         result = np.zeros(res_shape, order='F', dtype=self.complex_dtype)
+
+        # FINUFFT is F order at this time. The bindings
+        # will pickup the fact `signal` is C_Contiguous,
+        # and transpose the data; we just need to transpose
+        # the indices.  I think the next release addresses this.
+        #   Note in the 2020 hackathon this was changed directly in FFB,
+        #   which worked because GPU arrays just need the pointer anyway...
+        #   This is a quirk of this version of FINUFFT, and
+        #   so probably belongs here at the edge,
+        #   away from other implementations.
+        signal = signal.reshape(signal.shape[::-1])
 
         result_code = self.adjoint_function(
             *self.fourier_pts,
