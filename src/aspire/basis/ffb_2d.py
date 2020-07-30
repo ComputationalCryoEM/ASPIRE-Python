@@ -10,6 +10,7 @@ from aspire.basis.fb_2d import FBBasis2D
 from aspire.nfft import anufft3, nufft3
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
+from aspire.utils.misc import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class FFBBasis2D(FBBasis2D):
 
         Gaussian quadrature points and weights are also generated.
         The sampling criterion requires n_r=4*c*R and n_theta= 16*c*R.
-        
+
         """
         n_r = int(np.ceil(4 * self.rcut * self.kcut))
         r, w = lgwt(n_r, 0.0, self.kcut)
@@ -160,9 +161,10 @@ class FFBBasis2D(FBBasis2D):
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
         freqs = m_reshape(self._precomp["freqs"], (2, n_r * n_theta))
-        x = np.zeros((self.sz[0], self.sz[1], n_data), dtype=v.dtype)
-        for isample in range(0, n_data):
-            x[..., isample] = 2*np.real(anufft3(pf[:, isample], 2 * pi * freqs, self.sz))
+
+        # TODO: Address axis swapping once C major in memory.
+        pfc = np.swapaxes(pf, 0, 1)
+        x = 2 * anufft3(pfc, 2 * pi * freqs, self.sz, real=True, many=n_data)
 
         # return the x with the first two dimensions of self.sz
         x = roll_dim(x, sz_roll)
@@ -190,10 +192,11 @@ class FFBBasis2D(FBBasis2D):
         # number of 2D image samples
         n_data = np.size(x, 2)
 
-        pf = np.zeros((n_r*n_theta, n_data), dtype=complex)
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        for isample in range(0, n_data):
-            pf[..., isample] = nufft3(x[..., isample], 2 * pi * freqs, self.sz)
+        pfc = np.zeros((n_data, n_r*n_theta), dtype=complex_type(x.dtype))
+        pfc[:, :] = nufft3(x, 2 * pi * freqs, self.sz, many=n_data)
+        pf = pfc.T
+
         pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
 
         # Recover "negative" frequencies from "positive" half plane.
