@@ -384,12 +384,6 @@ class SimTestCase(TestCase):
         batch = np.empty((many, *self.recip_space_plane.shape), dtype=complex_dtype)
         for i in range(many):
             batch[i] = self.recip_space_plane
-        # Note, at least at the outer the binding layer, finufft wants the batches in C storage, but with F index shape.
-        #  Maybe it was trying to match aspire?
-        # Im not sure if this quirk is at a particular layer (python, outer c++ etc) yet;
-        # would like to track down and make coherent.
-        # For now, we hack to store it in memory as I understand and just lie about the indexing to python.
-        batch = batch.reshape(batch.shape[::-1])
 
         # test adjoint
         result = plan.adjoint(batch)
