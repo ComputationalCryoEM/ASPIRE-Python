@@ -79,6 +79,17 @@ class FINufftPlan(Plan):
 
 
     def transform(self, signal):
+        """
+        Compute the NUFFT transform using this plan instance.
+
+        :param signal: Signal to be transformed. For a single transform,
+        this should be a a 1, 2, or 3D array matching the plan `sz`.
+        For a batch, signal should have shape `(*sz, many)`.
+
+        :returns: Transformed signal of shape `num_pts` or
+        `(many, num_pts)`.
+        """
+
         sig_shape = signal.shape
         if self.many:
             sig_shape = signal.shape[:-1]         # order...
@@ -115,6 +126,15 @@ class FINufftPlan(Plan):
         return result
 
     def adjoint(self, signal):
+        """
+        Compute the NUFFT adjoint using this plan instance.
+
+        :param signal: Signal to be transformed. For a single transform,
+        this should be a a 1D array of len `num_pts`.
+        For a batch, signal should have shape `(many, num_pts)`.
+
+        :returns: Transformed signal `(sz)` or `(sz, many)`.
+        """
 
         epsilon = max(self.epsilon, np.finfo(signal.dtype).eps)
 
