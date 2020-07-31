@@ -6,6 +6,7 @@ from unittest.case import SkipTest
 
 from aspire.nfft import backend_available
 from aspire.nfft import Plan
+from aspire.utils.misc import complex_type
 
 
 import os.path
@@ -337,7 +338,8 @@ class SimTestCase(TestCase):
         plan = Plan(self.plane.shape, self.fourier_pts[0:2].astype(dtype),
                     backend=backend, many=many)
 
-        ## Note, this is how (cu)finufft wants it, F storage.
+        # Note, this is how (cu)finufft transform wants it for now.
+        # Can be refactored as part of row major cleanup.
         batch = np.empty((*self.plane.shape, many), dtype)
         for i in range(many):
             batch[:,:,i] = self.plane
@@ -351,11 +353,7 @@ class SimTestCase(TestCase):
         if not backend_available(backend):
             raise SkipTest
 
-        # TODO: replace with our util when that gets merged in
-        if dtype == np.float64:
-            complex_dtype = np.complex128
-        elif dtype == np.float32:
-            complex_dtype = np.complex64
+        complex_dtype = complex_type(dtype)
 
         atol = 1e-8    # Numpy default
         if dtype == np.float32:
@@ -363,7 +361,7 @@ class SimTestCase(TestCase):
 
         plan = Plan(self.vol.shape, self.fourier_pts.astype(dtype), backend=backend)
 
-        # test adjoint
+        # Test Adjoint
         result = plan.adjoint(self.recip_space.astype(complex_dtype))
 
         self.assertTrue(np.allclose(result, self.adjoint_vol, atol=atol))
@@ -372,11 +370,7 @@ class SimTestCase(TestCase):
         if not backend_available(backend):
             raise SkipTest
 
-        # TODO: replace with our util when that gets merged in
-        if dtype == np.float64:
-            complex_dtype = np.complex128
-        elif dtype == np.float32:
-            complex_dtype = np.complex64
+        complex_dtype = complex_type(dtype)
 
         plan = Plan(self.plane.shape, self.fourier_pts[0:2].astype(dtype),
                     backend=backend, many=many)
@@ -385,7 +379,7 @@ class SimTestCase(TestCase):
         for i in range(many):
             batch[i] = self.recip_space_plane
 
-        # test adjoint
+        # Test Adjoint
         result = plan.adjoint(batch)
 
         for r in range(many):
@@ -435,12 +429,13 @@ class SimTestCase(TestCase):
 
     def testAdjoint0_64(self):
         # cufinufft 3D of this type currently does not support doubles,
+        # It may require refactoring of the low level algorithm at a
+        # future date.
         #   This should raise.
         with pytest.raises(TypeError):
             self._testAdjoint('cufinufft', np.float64)
 
     def testAdjointMany0_64(self):
-        # Many test is 2D and should run in both double/singles.
         self._testAdjointMany('cufinufft', np.float64)
 
     def testTransform1_64(self):
@@ -457,7 +452,3 @@ class SimTestCase(TestCase):
 
     def testAdjoint2_64(self):
         self._testAdjoint('pynfft', np.float64)
-
-
-
-

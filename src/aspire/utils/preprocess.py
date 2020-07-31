@@ -279,7 +279,7 @@ def vol2img(volume, rots, L=None, dtype=None):
     num_rots = rots.shape[0]
     pts = np.pi * np.vstack([grid2d['x'].flatten('F'), grid2d['y'].flatten('F'), np.zeros(num_pts)])
 
-    # tsk tsk Issue #148
+    # TODO: Issue #148
     pts_rot = np.zeros((3, num_pts, num_rots), dtype)
 
     for i in range(num_rots):
