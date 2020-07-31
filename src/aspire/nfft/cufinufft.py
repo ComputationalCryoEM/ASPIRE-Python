@@ -1,5 +1,6 @@
 from ctypes import c_int
 
+import logging
 import numpy as np
 import pycuda.autoinit
 import pycuda.driver as cuda
@@ -9,9 +10,21 @@ from cufinufft import cufinufft
 from aspire.nfft import Plan
 from aspire.utils import ensure
 
+logger = logging.getLogger(__name__)
 
 class cuFINufftPlan(Plan):
     def __init__(self, sz, fourier_pts, epsilon=1e-15, many=0, **kwargs):
+        """
+        A plan for non-uniform FFT (3D)
+
+        :param sz: A tuple indicating the geometry of the signal
+        :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
+            arranged as a 3-by-K array. These need to be in the range [-pi, pi] in each dimension.
+        :param epsilon: The desired precision of the NUFFT
+        :param many: Optional integer indicating if you would like to compute a batch of `many`
+        transforms.  Implies vol_f.shape is (..., `many`). Defaults to 0 which disables batching.
+        """
+
         # Passing "many" expects one large higher dimensional array.
         #   Set some housekeeping variables so we can discern how to handle the dims later.
         self.many = False
@@ -33,7 +46,10 @@ class cuFINufftPlan(Plan):
 
         self.sz = sz
         self.dim = len(sz)
-        # TODO: Things get messed up unless we ensure a 'C' ordering here - investigate why
+        # TODO: Following the row major conversion, this should no longer happen.
+        if fourier_pts.flags.f_contiguous:
+            logger.warning('cufinufft has caught an F_CONTIGUOUS array,'
+                           ' `fourier_pts` will be copied to C_CONTIGUOUS.')
         self.fourier_pts = np.asarray(np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order='C', dtype=self.dtype)
         self.num_pts = fourier_pts.shape[1]
         self.epsilon = max(epsilon, np.finfo(self.dtype).eps)
@@ -45,6 +61,16 @@ class cuFINufftPlan(Plan):
                                        dtype=self.dtype)
 
     def transform(self, signal):
+        """
+        Compute the NUFFT transform using this plan instance.
+
+        :param signal: Signal to be transformed. For a single transform,
+        this should be a a 1, 2, or 3D array matching the plan `sz`.
+        For a batch, signal should have shape `(*sz, many)`.
+
+        :returns: Transformed signal of shape `num_pts` or
+        `(many, num_pts)`.
+        """
 
         assert signal.dtype == self.dtype or signal.dtype == self.complex_dtype
 
@@ -53,6 +79,7 @@ class cuFINufftPlan(Plan):
             sig_shape = signal.shape[:-1]         # order...
         ensure(sig_shape == self.sz, f'Signal to be transformed must have shape {self.sz}')
 
+        # Note that it would be nice to address this ordering enforcement after the C major conversions.
         signal_gpu = gpuarray.to_gpu(signal.astype(self.complex_dtype, copy=False, order='F'))
 
         # This ordering situation is a little strange, but it works.
@@ -72,6 +99,15 @@ class cuFINufftPlan(Plan):
         return result
 
     def adjoint(self, signal):
+        """
+        Compute the NUFFT adjoint using this plan instance.
+
+        :param signal: Signal to be transformed. For a single transform,
+        this should be a a 1D array of len `num_pts`.
+        For a batch, signal should have shape `(many, num_pts)`.
+
+        :returns: Transformed signal `(sz)` or `(sz, many)`.
+        """
 
         assert signal.dtype == self.complex_dtype or signal.dtype == self.dtype
         if self.dim == 3 and self.dtype == np.float64:
@@ -79,7 +115,7 @@ class cuFINufftPlan(Plan):
 
         signal_gpu = gpuarray.to_gpu(signal.astype(self.complex_dtype, copy=False, order='C'))
 
-        # This ordering situation is a little strange, but it works.
+        # Note that it would be nice to address this ordering enforcement after the C major conversions.
         result_gpu = gpuarray.GPUArray((*self.sz, self.ntransforms), dtype=self.complex_dtype, order='F')
 
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
