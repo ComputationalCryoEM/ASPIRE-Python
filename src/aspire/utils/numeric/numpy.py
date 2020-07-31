@@ -1,6 +1,9 @@
 import numpy as np
 import pyfftw
 
+from threading import Lock
+
+mutex = Lock()
 
 class Numpy:
 
@@ -8,9 +11,19 @@ class Numpy:
 
     @staticmethod
     def fft2(a, axes=(0, 1)):
+        a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
         b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        cls = pyfftw.FFTW(pyfftw.empty_aligned(a.shape, dtype='complex128'), b, axes=axes, direction='FFTW_FORWARD')
-        cls(a, b)
+        # GBW, I don't believe this pyfftw is actually threadsafe.
+        #   Holding mutex here, I have not been able to reproduce the spurious
+        #   segmentation fault on Linux.
+        #   This still allows threading in the other areas of invoking code,
+        #   presumably the parts which are IO bound...
+        mutex.acquire()
+        try:
+            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD')
+            cls(a, b)
+        finally:
+            mutex.release()
         return b
 
     @staticmethod
