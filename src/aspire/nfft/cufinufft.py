@@ -88,7 +88,6 @@ class cuFINufftPlan(Plan):
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts.astype(self.dtype))
         self._transform_plan.set_pts(self.num_pts, *fourier_pts_gpu)
 
-        # move to init or something, check handles 1,2,3 d (I think it unrolls okay)
         self._transform_plan.execute(result_gpu, signal_gpu)
 
         result = result_gpu.get()
@@ -119,6 +118,7 @@ class cuFINufftPlan(Plan):
         result_gpu = gpuarray.GPUArray((*self.sz, self.ntransforms), dtype=self.complex_dtype, order='F')
 
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
+
         self._adjoint_plan.set_pts(self.num_pts, *fourier_pts_gpu)
 
         self._adjoint_plan.execute(signal_gpu, result_gpu)

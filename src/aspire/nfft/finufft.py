@@ -3,6 +3,7 @@ import numpy as np
 import finufftpy
 from aspire.nfft import Plan
 from aspire.utils import ensure
+from aspire.utils.misc import complex_type
 
 
 logger = logging.getLogger(__name__)
@@ -58,12 +59,7 @@ class FINufftPlan(Plan):
             self.cast_output = True
             self.dtype = np.float64
 
-
-        # TODO: Replace with ASPIRE util once merged in
-        if self.dtype == np.float64:
-            self.complex_dtype = np.complex128
-        elif self.dtype == np.float32:
-            self.complex_dtype = np.complex64
+        self.complex_dtype = complex_type(self.dtype)
 
         # TODO: Things get messed up unless we ensure a 'C' ordering here - investigate why
         self.fourier_pts = np.asarray(np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi,
@@ -149,7 +145,6 @@ class FINufftPlan(Plan):
         if self.many:
             res_shape = (*self.sz, self.ntransforms)
 
-        # result = np.zeros(res_shape, order='F', dtype=self.complex_dtype)
         result = np.zeros(res_shape, order='F', dtype=self.complex_dtype)
 
         # FINUFFT is F order at this time. The bindings
