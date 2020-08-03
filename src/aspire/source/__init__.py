@@ -3,6 +3,7 @@ from copy import copy
 
 import numpy as np
 import pandas as pd
+from scipy.linalg import lstsq
 from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image
@@ -426,7 +427,8 @@ class ImageSource:
         # Invalidate images
         self._im = None
 
-    def normalize_background(self, bg_radius=1.0, do_ramp=True, batch_size=512):
+    def normalize_background(self, bg_radius=1.0, single_img=True, do_ramp=True,
+                             batch_size=512):
         """
         Normalize the images by the noise background
 
@@ -434,24 +436,44 @@ class ImageSource:
         and scaling the image density by the standard deviation of background.
         From the implementation level, we modify the `ImageSource` in-place by
         appending the `Add` and `Multiple` filters to the generation pipeline.
+
+        :param bg_radius: Radius cutoff to be considered as background (in image size)
+        :param single_img: When it is `True`, normalize background based on the mean
+            and std values from corresponding individual images.
         :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
-        :param bg_radius: Radius cutoff to be considered as background (in image size)
         :param batch_size: Batch size of images to query.
         :return: On return, the `ImageSource` object has been modified in place.
         """
-        L = self.L
-        bg_radius = 1.0 if bg_radius is None else bg_radius
+
         logger.info(f'Normalize background on source object with radius size of {bg_radius}')
+        L = self.L
         grid = grid_2d(L)
         mask = (grid['r'] > bg_radius)
 
         if do_ramp:
+            # Create matrices and reshape the background mask
+            # for fitting a ramping background
+            ramp_mask = np.vstack((grid['x'][mask].flatten(),
+                                   grid['y'][mask].flatten(),
+                                   np.ones(grid['y'][mask].flatten().size))).T
+            ramp_all = np.vstack((grid['x'].flatten(), grid['y'].flatten(),
+                                  np.ones(L*L))).T
+            mask_reshape = mask.reshape((L*L))
+
+        if single_img:
             first_moment = np.zeros(self.n)
             second_moment = np.zeros(self.n)
             for i in range(0, self.n, batch_size):
                 images = self.images(start=i, num=batch_size).asnumpy()
+                if do_ramp:
+                    # Fit a ramping background
+                    images = images.reshape((L*L, -1))
+                    coeff = lstsq(ramp_mask, images[mask_reshape])[0]
+                    images = images - ramp_all @ coeff
+                    images = images.reshape((L, L, -1))
+
                 images_masked = (images * np.expand_dims(mask, 2))
                 first_moment[i:i+images.shape[2]] = np.sum(images_masked, axis=(0, 1))
                 second_moment[i:i+images.shape[2]] = np.sum(images_masked ** 2, axis=(0, 1))
@@ -461,7 +483,13 @@ class ImageSource:
             second_moment = 0.0
             for i in range(0, self.n, batch_size):
                 images = self.images(start=i, num=batch_size).asnumpy()
-                images_masked = (images * np.expand_dims(mask, 2))
+                if do_ramp:
+                    # Fit a ramping background
+                    images = images.reshape((L*L, -1))
+                    coeff = lstsq(ramp_mask, images[mask_reshape])[0]
+                    images = images - np.product(ramp_all, coeff)
+                    images = images.reshape((L, L, -1))
+                images_masked = images[mask, :]
                 first_moment += np.sum(images_masked)
                 second_moment += np.sum(images_masked ** 2)
             denominator = self.n * np.sum(mask)
@@ -472,7 +500,7 @@ class ImageSource:
         variance = second_moment - mean**2
         std = np.sqrt(variance)
 
-        if not do_ramp:
+        if not single_img:
             mean = mean*np.ones(self.n)
             std = std*np.ones(self.n)
         logger.info('Adding Add Xform to end of generation pipeline')
