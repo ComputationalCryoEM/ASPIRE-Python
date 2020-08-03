@@ -36,7 +36,7 @@ noise_filter = ScalarFilter(dim=2, value=noise_variance)
 
 # Specify the CTF parameters not used for this example
 # but necessary for initializing the simulation object
-pixel_size = 5*65/33             # Pixel size of the images (in angstroms).
+pixel_size = 5*65/img_size       # Pixel size of the images (in angstroms).
 voltage = 200                    # Voltage (in KV)
 defocus_min = 1.5e4              # Minimum defocus value (in angstroms).
 defocus_max = 2.5e4              # Maximum defocus value (in angstroms).
