@@ -145,7 +145,7 @@ def anufft3(vol_f, fourier_pts, sz, real=False, many=0):
 
     Selects best availble package from `nfft` `backends` configuration list.
 
-    :paran vol_f: Array representing the signal(s) to be transformed.
+    :paran vol_f: Array representing the signal(s) in Fourier space to be transformed.
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
     :param sz: A tuple indicating the geometry of the signal.
@@ -168,7 +168,7 @@ def nufft3(vol_f, fourier_pts, sz, real=False, many=0):
 
     Selects best availble package from `nfft` `backends` configuration list.
 
-    :paran vol_f: Array representing the signal(s) to be transformed.
+    :paran vol_f: Array representing the signal(s) in real space to be transformed.
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
     :param sz: A tuple indicating the geometry of the signal.
