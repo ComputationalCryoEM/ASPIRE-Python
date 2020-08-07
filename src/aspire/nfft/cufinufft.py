@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 class cuFINufftPlan(Plan):
     def __init__(self, sz, fourier_pts, epsilon=1e-15, many=0, **kwargs):
         """
-        A plan for non-uniform FFT (3D)
+        A plan for non-uniform FFT in 2D or 3D.
 
         :param sz: A tuple indicating the geometry of the signal
         :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
-            arranged as a 3-by-K array. These need to be in the range [-pi, pi] in each dimension.
+            arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
         :param epsilon: The desired precision of the NUFFT
         :param many: Optional integer indicating if you would like to compute a batch of `many`
         transforms.  Implies vol_f.shape is (..., `many`). Defaults to 0 which disables batching.
