@@ -52,6 +52,7 @@ pip install -e .
 ```
 
 If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.6.
+Please see the full documentation for details.
 
 You may optionally install additional packages:
 
