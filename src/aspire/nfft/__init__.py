@@ -86,7 +86,7 @@ def check_backends(raise_errors=True):
     backends = OrderedDict((k, _try_backend(k)) for k in config.nfft.backends)
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
-        logger.error(f'Selected NFFT backend = {default_backend}.')
+        logger.info(f'Selected NFFT backend = {default_backend}.')
         default_plan_class = backends[default_backend]
     except StopIteration:
         msg = "No usable NFFT backend detected."
