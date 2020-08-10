@@ -4,7 +4,6 @@ import os
 import mrcfile
 import numpy as np
 from box import Box
-from console_progressbar import ProgressBar
 from numpy import mean, meshgrid
 from numpy.core.multiarray import zeros
 from numpy.fft import fft, fft2, fftn, fftshift, ifft, ifft2, ifftn, ifftshift

@@ -2,7 +2,6 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import progressbar
 import pycuda.gpuarray as gpuarray
 import skcuda.linalg as linalg
 import skcuda.misc as misc
@@ -79,7 +78,7 @@ class EM:
         # compute the terms that do not depend on the shifts
         const_elms = self.calc_e_step_const_elms(const_terms)
 
-        for shift_x in progressbar.progressbar(self.em_params['shifts']):
+        for shift_x in tqdm(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
 
                 if shift_y < shift_x:
@@ -133,7 +132,7 @@ class EM:
         W_shifts_marg = np.zeros((self.n_images, self.converter.get_num_prolates()), np.complex64)
         self.c_avg = np.zeros_like(self.c_avg)
         non_neg_freqs = self.converter.get_non_neg_freq_inds()
-        for shift_x in progressbar.progressbar(self.em_params['shifts']):
+        for shift_x in tqdm(self.em_params['shifts']):
             for shift_y in self.em_params['shifts']:
 
                 if shift_y < shift_x:
