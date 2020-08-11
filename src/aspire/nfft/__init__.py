@@ -135,7 +135,7 @@ class Plan:
             return super(Plan, cls).__new__(cls)
 
 
-def anufft3(sig_f, fourier_pts, sz, real=False, many=0):
+def anufft3(sig_f, fourier_pts, sz, real=False, ntransforms=1):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT Adjoint.
     Dimension is based on the dimension of fourier_pts and checked against sig_f.
@@ -147,18 +147,18 @@ def anufft3(sig_f, fourier_pts, sz, real=False, many=0):
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
     :param sz: A tuple indicating the geometry of the signal.
     :param real: Optional Bool indicating if you would like only the real components, Defaults False.
-    :param many: Optional integer indicating if you would like to compute a batch of `many`
-    transforms.  Implies sig_f.shape is (..., `many`). Defaults to 0 which disables batching.
+    :param ntransforms: Optional integer indicating if you would like to compute a batch of `ntransforms`
+    transforms.  Implies sig_f.shape is (..., `ntransforms`). Defaults to 1 which disables batching.
     :return: The Non Uniform FFT adjoint transform.
 
     """
 
-    plan = Plan(sz=sz, fourier_pts=fourier_pts, many=many)
+    plan = Plan(sz=sz, fourier_pts=fourier_pts, ntransforms=ntransforms)
     adjoint = plan.adjoint(sig_f)
     return np.real(adjoint) if real else adjoint
 
 
-def nufft3(sig_f, fourier_pts, sz, real=False, many=0):
+def nufft3(sig_f, fourier_pts, sz, real=False, ntransforms=1):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT
     Dimension is based on the dimension of fourier_pts and checked against sig_f.
@@ -170,12 +170,12 @@ def nufft3(sig_f, fourier_pts, sz, real=False, many=0):
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
     :param sz: A tuple indicating the geometry of the signal.
     :param real: Optional Bool indicating if you would like only the real components, Defaults False.
-    :param many: Optional integer indicating if you would like to compute a batch of `many`
-    transforms.  Implies sig_f.shape is (..., `many`). Defaults to 0 which disables batching.
+    :param ntransforms: Optional integer indicating if you would like to compute a batch of `ntransforms`
+    transforms.  Implies sig_f.shape is (..., `ntransforms`). Defaults to 1 which disables batching.
     :return: The Non Uniform FFT transform.
 
     """
 
-    plan = Plan(sz=sz, fourier_pts=fourier_pts, many=many)
+    plan = Plan(sz=sz, fourier_pts=fourier_pts, ntransforms=ntransforms)
     transform = plan.transform(sig_f)
     return np.real(transform) if real else transform

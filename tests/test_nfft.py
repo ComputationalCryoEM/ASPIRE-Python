@@ -331,22 +331,22 @@ class SimTestCase(TestCase):
         result = plan.transform(self.vol.astype(dtype))
         self.assertTrue(np.allclose(result, self.recip_space))
 
-    def _testTransformMany(self, backend, dtype, many=3):
+    def _testTransformMany(self, backend, dtype, ntransforms=3):
         if not backend_available(backend):
             raise SkipTest
 
         plan = Plan(self.plane.shape, self.fourier_pts[0:2].astype(dtype),
-                    backend=backend, many=many)
+                    backend=backend, ntransforms=ntransforms)
 
         # Note, this is how (cu)finufft transform wants it for now.
         # Can be refactored as part of row major cleanup.
-        batch = np.empty((*self.plane.shape, many), dtype)
-        for i in range(many):
+        batch = np.empty((*self.plane.shape, ntransforms), dtype)
+        for i in range(ntransforms):
             batch[:,:,i] = self.plane
 
         result = plan.transform(batch)
 
-        for r in range(many):
+        for r in range(ntransforms):
             self.assertTrue(np.allclose(result[r], self.recip_space_plane))
 
     def _testAdjoint(self, backend, dtype):
@@ -366,23 +366,23 @@ class SimTestCase(TestCase):
 
         self.assertTrue(np.allclose(result, self.adjoint_vol, atol=atol))
 
-    def _testAdjointMany(self, backend, dtype, many=2):
+    def _testAdjointMany(self, backend, dtype, ntransforms=2):
         if not backend_available(backend):
             raise SkipTest
 
         complex_dtype = complex_type(dtype)
 
         plan = Plan(self.plane.shape, self.fourier_pts[0:2].astype(dtype),
-                    backend=backend, many=many)
+                    backend=backend, ntransforms=ntransforms)
 
-        batch = np.empty((many, *self.recip_space_plane.shape), dtype=complex_dtype)
-        for i in range(many):
+        batch = np.empty((ntransforms, *self.recip_space_plane.shape), dtype=complex_dtype)
+        for i in range(ntransforms):
             batch[i] = self.recip_space_plane
 
         # Test Adjoint
         result = plan.adjoint(batch)
 
-        for r in range(many):
+        for r in range(ntransforms):
             self.assertTrue(np.allclose(result[:,:,r], self.adjoint_plane))
 
     # TODO: This list could be done better, as some sort of matrix
