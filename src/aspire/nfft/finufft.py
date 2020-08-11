@@ -85,7 +85,10 @@ class FINufftPlan(Plan):
         """
 
         sig_shape = signal.shape
-        if self.ntransforms > 1:
+        res_shape = self.num_pts
+        # Note, there is a corner case for ntransforms == 1.
+        if self.ntransforms > 1 or (
+                self.ntransforms == 1 and len(signal.shape) == self.dim + 1):
             ensure(len(signal.shape) == self.dim + 1,
                    f"For multiple transforms, {self.dim}D signal should be"
                    f" a {self.ntransforms} element stack of {self.sz}.")
@@ -94,6 +97,7 @@ class FINufftPlan(Plan):
                    f" should match ntransforms {self.ntransforms}.")
 
             sig_shape = signal.shape[:-1]         # order...
+            res_shape = (self.ntransforms, self.num_pts)
 
         ensure(sig_shape == self.sz, f'Signal frame to be transformed must have shape {self.sz}')
 
@@ -105,10 +109,6 @@ class FINufftPlan(Plan):
         # (x,       c, isign, eps, f, ...)
         # Where f is a Fortran-order ndarray of the appropriate dimensions
         # We form these function signatures here by tuple-unpacking
-
-        res_shape = self.num_pts
-        if self.ntransforms > 1:
-            res_shape = (self.ntransforms, self.num_pts)
 
         result = np.zeros(res_shape, dtype=self.complex_dtype)
 
@@ -148,7 +148,9 @@ class FINufftPlan(Plan):
         # We form these function signatures here by tuple-unpacking
 
         res_shape = self.sz
-        if self.ntransforms > 1:
+        # Note, there is a corner case for ntransforms == 1.
+        if self.ntransforms > 1 or (
+                self.ntransforms == 1 and len(signal.shape) == 2):
             ensure(len(signal.shape) == 2,    # Stack and num_pts
                    f"For multiple {self.dim}D adjoints, signal should be"
                    f" a {self.ntransforms} element stack of {self.num_pts}.")
