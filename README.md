@@ -75,5 +75,5 @@ Once ASPIRE is installed, make sure the unit tests run correctly on your platfor
 
 ```
 cd /path/to/git/clone/folder
-pytest tests
+pytest
 ```
