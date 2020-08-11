@@ -25,11 +25,14 @@ This does not require checking out source code.
 If you are interested in checking out and working with the source code, running tests, or a different flavor of install,
 then skip to the next section now instead.
 
-Once ``conda`` is installed and available on the path, create and activate the environment using:
+Once ``conda`` is installed and available on the path, we can create a fresh ``conda`` environment.
+Here we have chosen to name it ``aspire_env``, but you may choose any name you like so long as that name is used consistently in the following step.
+After creating the environment, we activate it.
+Finally, we install the ``aspire`` package inside the activated environment. This should install all supporting Python software required.
 
 ::
 
-   conda create -n aspire_env python=3.6 pip
+   conda create --name aspire_env python=3.6 pip
    conda activate aspire_env
    pip install aspire
 
@@ -44,20 +47,28 @@ Alternative Developer Installations
 
 Developers are expected to be able to manage their own code and environments.
 However, for consistency and newcomers, we recommend the following procedure using `conda`.
+Note that here the name ``aspire_dev`` was chosen, but you may chose any name for the ``conda`` environment.
+Some people use different environment names for different features,
+but this is personal preference and will largely depend on what type of changes you are making.
+For example, if you are making changes to dependent package versions for testing,
+you would probably want to keep that in a seperate environment.
 
 ::
 
    # Acquire the code.
-   git clone git@github.com:ComputationalCryoEM/ASPIRE-Python.git
+   git clone -b develop https://github.com/ComputationalCryoEM/ASPIRE-Python
    cd ASPIRE-Python
 
    # Create's the conda environment and installs base dependencies.
    conda env create -f environment.yml --name aspire_dev
 
+   # Activate the environment
+   conda activate aspire_dev
+
    # Command to install the aspire package in a locally editable way:
    pip install -e .
 
-We recommend using ``conda`` or a ``virutalenv`` environment managing solutions because ASPIRE may have conflicts or change installed versions of Python packages on your system.
+We recommend using ``conda`` or a ``virtualenv`` environment managing solutions because ASPIRE may have conflicts or change installed versions of Python packages on your system.
 
 Again, we recommend the above for consistency and safety.
 However, ASPIRE is a ``pip`` package,
