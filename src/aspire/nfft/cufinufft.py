@@ -55,6 +55,12 @@ class cuFINufftPlan(Plan):
         self._adjoint_plan = cufinufft(1, self.sz, 1, self.epsilon, ntransforms=self.ntransforms,
                                        dtype=self.dtype)
 
+        # Note I store self.fourier_pts_gpu so the GPUArrray life is tied to instance,
+        #  instead of this method.
+        self.fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
+        self._transform_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
+        self._adjoint_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
+
     def transform(self, signal):
         """
         Compute the NUFFT transform using this plan instance.
@@ -91,9 +97,6 @@ class cuFINufftPlan(Plan):
 
         # This ordering situation is a little strange, but it works.
         result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype, order='C')
-
-        fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts.astype(self.dtype))
-        self._transform_plan.set_pts(self.num_pts, *fourier_pts_gpu)
 
         self._transform_plan.execute(result_gpu, signal_gpu)
 
@@ -133,10 +136,6 @@ class cuFINufftPlan(Plan):
 
         # Note that it would be nice to address this ordering enforcement after the C major conversions.
         result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype, order='F')
-
-        fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
-
-        self._adjoint_plan.set_pts(self.num_pts, *fourier_pts_gpu)
 
         self._adjoint_plan.execute(signal_gpu, result_gpu)
 
