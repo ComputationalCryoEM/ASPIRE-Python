@@ -193,8 +193,7 @@ class FFBBasis2D(FBBasis2D):
         n_data = np.size(x, 2)
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pfc = np.zeros((n_data, n_r*n_theta), dtype=complex_type(x.dtype))
-        pfc[:, :] = nufft3(x, 2 * pi * freqs, self.sz, many=n_data)
+        pfc = nufft3(x, 2 * pi * freqs, self.sz, many=n_data)
         pf = pfc.T
 
         pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))

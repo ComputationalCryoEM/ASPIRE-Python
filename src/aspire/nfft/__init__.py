@@ -57,7 +57,6 @@ def check_backends(raise_errors=True):
                 plan_class = cuFINufftPlan
             except Exception as e:
                 msg = str(e)
-                pass
 
         elif backend == "finufft":
             try:
@@ -66,7 +65,6 @@ def check_backends(raise_errors=True):
                 plan_class = FINufftPlan
             except Exception as e:
                 msg = str(e)
-                pass
 
         elif backend == "pynfft":
             try:
@@ -75,7 +73,6 @@ def check_backends(raise_errors=True):
                 plan_class = PyNfftPlan
             except Exception as e:
                 msg = str(e)
-                pass
 
         if plan_class is None:
             logger.info(f"NFFT backend {backend} not usable:\n\t{msg}")
@@ -138,47 +135,47 @@ class Plan:
             return super(Plan, cls).__new__(cls)
 
 
-def anufft3(vol_f, fourier_pts, sz, real=False, many=0):
+def anufft3(sig_f, fourier_pts, sz, real=False, many=0):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT Adjoint.
-    Dimension is based on the dimension of fourier_pts and checked against vol_f.
+    Dimension is based on the dimension of fourier_pts and checked against sig_f.
 
-    Selects best availble package from `nfft` `backends` configuration list.
+    Selects best available package from `nfft` `backends` configuration list.
 
-    :paran vol_f: Array representing the signal(s) in Fourier space to be transformed.
+    :param sig_f: Array representing the signal(s) in Fourier space to be transformed.
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
     :param sz: A tuple indicating the geometry of the signal.
     :param real: Optional Bool indicating if you would like only the real components, Defaults False.
     :param many: Optional integer indicating if you would like to compute a batch of `many`
-    transforms.  Implies vol_f.shape is (..., `many`). Defaults to 0 which disables batching.
+    transforms.  Implies sig_f.shape is (..., `many`). Defaults to 0 which disables batching.
     :return: The Non Uniform FFT adjoint transform.
 
     """
 
     plan = Plan(sz=sz, fourier_pts=fourier_pts, many=many)
-    adjoint = plan.adjoint(vol_f)
+    adjoint = plan.adjoint(sig_f)
     return np.real(adjoint) if real else adjoint
 
 
-def nufft3(vol_f, fourier_pts, sz, real=False, many=0):
+def nufft3(sig_f, fourier_pts, sz, real=False, many=0):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT
-    Dimension is based on the dimension of fourier_pts and checked against vol_f.
+    Dimension is based on the dimension of fourier_pts and checked against sig_f.
 
-    Selects best availble package from `nfft` `backends` configuration list.
+    Selects best available package from `nfft` `backends` configuration list.
 
-    :paran vol_f: Array representing the signal(s) in real space to be transformed.
+    :param sig_f: Array representing the signal(s) in real space to be transformed.
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
     :param sz: A tuple indicating the geometry of the signal.
     :param real: Optional Bool indicating if you would like only the real components, Defaults False.
     :param many: Optional integer indicating if you would like to compute a batch of `many`
-    transforms.  Implies vol_f.shape is (..., `many`). Defaults to 0 which disables batching.
+    transforms.  Implies sig_f.shape is (..., `many`). Defaults to 0 which disables batching.
     :return: The Non Uniform FFT transform.
 
     """
 
     plan = Plan(sz=sz, fourier_pts=fourier_pts, many=many)
-    transform = plan.transform(vol_f)
+    transform = plan.transform(sig_f)
     return np.real(transform) if real else transform
