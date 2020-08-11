@@ -27,7 +27,7 @@ jobs:
   - bash: |
       source activate myEnvironment
       python setup.py install
-      pytest tests
+      pytest
     displayName: pytest
 
 - job:
@@ -52,7 +52,7 @@ jobs:
   - bash: |
       source activate myEnvironment
       python setup.py install
-      pytest tests
+      pytest
     displayName: pytest
 
 - job:
@@ -82,7 +82,7 @@ jobs:
   - bash: |
       source activate myEnvironment
       python setup.py install
-      pytest tests
+      pytest
     displayName: pytest
 
 - job:
@@ -112,7 +112,7 @@ jobs:
   - bash: |
       source activate myEnvironment
       python setup.py install
-      pytest tests
+      pytest
     displayName: pytest
 
 - job:
@@ -137,7 +137,7 @@ jobs:
   - script: |
       call activate myEnvironment
       python setup.py install
-      pytest tests
+      pytest
     displayName: pytest
 
 - job:
@@ -162,5 +162,5 @@ jobs:
   - script: |
       call activate myEnvironment
       python setup.py install
-      pytest tests
+      pytest
     displayName: pytest
