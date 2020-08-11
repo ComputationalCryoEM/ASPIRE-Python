@@ -70,7 +70,10 @@ class cuFINufftPlan(Plan):
         assert signal.dtype == self.dtype or signal.dtype == self.complex_dtype
 
         sig_shape = signal.shape
-        if self.ntransforms > 1:
+        res_shape = self.num_pts
+        # Note, there is a corner case for ntransforms == 1.
+        if self.ntransforms > 1 or (
+                self.ntransforms == 1 and len(signal.shape) == self.dim + 1):
             ensure(len(signal.shape) == self.dim + 1,
                    f"For multiple transforms, {self.dim}D signal should be"
                    f" a {self.ntransforms} element stack of {self.sz}.")
@@ -79,6 +82,7 @@ class cuFINufftPlan(Plan):
                    f" should match ntransforms {self.ntransforms}.")
 
             sig_shape = signal.shape[:-1]         # order...
+            res_shape = (self.ntransforms, self.num_pts)
 
         ensure(sig_shape == self.sz, f'Signal frame to be transformed must have shape {self.sz}')
 
@@ -86,7 +90,7 @@ class cuFINufftPlan(Plan):
         signal_gpu = gpuarray.to_gpu(signal.astype(self.complex_dtype, copy=False, order='F'))
 
         # This ordering situation is a little strange, but it works.
-        result_gpu = gpuarray.GPUArray((self.ntransforms, self.num_pts), dtype=self.complex_dtype, order='C')
+        result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype, order='C')
 
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts.astype(self.dtype))
         self._transform_plan.set_pts(self.num_pts, *fourier_pts_gpu)
@@ -94,9 +98,6 @@ class cuFINufftPlan(Plan):
         self._transform_plan.execute(result_gpu, signal_gpu)
 
         result = result_gpu.get()
-
-        if not self.ntransforms > 1:
-            result = result[0]
 
         return result
 
@@ -116,18 +117,22 @@ class cuFINufftPlan(Plan):
             # Note, this is a known internal limitation of cufinufft algorithm at this time.
             raise TypeError('Currently the 3d1 sub-problem method is singles only.')
 
-        if self.ntransforms > 1:
+        res_shape = self.sz
+        # Note, there is a corner case for ntransforms == 1.
+        if self.ntransforms > 1 or (
+                self.ntransforms == 1 and len(signal.shape) == 2):
             ensure(len(signal.shape) == 2,    # Stack and num_pts
                    f"For multiple {self.dim}D adjoints, signal should be"
                    f" a {self.ntransforms} element stack of {self.num_pts}.")
             ensure(signal.shape[0] == self.ntransforms,
                    "For multiple transforms, signal stack length"
                    f" should match ntransforms {self.ntransforms}.")
+            res_shape = (*self.sz, self.ntransforms)
 
         signal_gpu = gpuarray.to_gpu(signal.astype(self.complex_dtype, copy=False, order='C'))
 
         # Note that it would be nice to address this ordering enforcement after the C major conversions.
-        result_gpu = gpuarray.GPUArray((*self.sz, self.ntransforms), dtype=self.complex_dtype, order='F')
+        result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype, order='F')
 
         fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
 
@@ -136,8 +141,5 @@ class cuFINufftPlan(Plan):
         self._adjoint_plan.execute(signal_gpu, result_gpu)
 
         result = result_gpu.get()
-
-        if not self.ntransforms > 1:
-            result = result[..., 0]
 
         return result
