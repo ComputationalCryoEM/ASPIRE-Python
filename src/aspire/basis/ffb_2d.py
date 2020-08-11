@@ -164,7 +164,7 @@ class FFBBasis2D(FBBasis2D):
 
         # TODO: Address axis swapping once C major in memory.
         pfc = np.swapaxes(pf, 0, 1)
-        x = 2 * anufft3(pfc, 2 * pi * freqs, self.sz, real=True, many=n_data)
+        x = 2 * anufft3(pfc, 2 * pi * freqs, self.sz, real=True, ntransforms=n_data)
 
         # return the x with the first two dimensions of self.sz
         x = roll_dim(x, sz_roll)
@@ -193,7 +193,7 @@ class FFBBasis2D(FBBasis2D):
         n_data = np.size(x, 2)
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pfc = nufft3(x, 2 * pi * freqs, self.sz, many=n_data)
+        pfc = nufft3(x, 2 * pi * freqs, self.sz, ntransforms=n_data)
         pf = pfc.T
 
         pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))

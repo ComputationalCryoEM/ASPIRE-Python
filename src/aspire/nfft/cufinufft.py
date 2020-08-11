@@ -13,7 +13,7 @@ from aspire.utils import ensure
 logger = logging.getLogger(__name__)
 
 class cuFINufftPlan(Plan):
-    def __init__(self, sz, fourier_pts, epsilon=1e-15, many=0, **kwargs):
+    def __init__(self, sz, fourier_pts, epsilon=1e-15, ntransforms=1, **kwargs):
         """
         A plan for non-uniform FFT in 2D or 3D.
 
@@ -21,17 +21,12 @@ class cuFINufftPlan(Plan):
         :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
         :param epsilon: The desired precision of the NUFFT
-        :param many: Optional integer indicating if you would like to compute a batch of `many`
-        transforms.  Implies vol_f.shape is (..., `many`). Defaults to 0 which disables batching.
+        :param ntransforms: Optional integer indicating if you would like to compute a batch of `ntransforms`
+        transforms.  Implies vol_f.shape is (..., `ntransforms`). Defaults to 0 which disables batching.
         """
 
-        # Passing "many" expects one large higher dimensional array.
-        #   Set some housekeeping variables so we can discern how to handle the dims later.
-        self.many = False
-        self.ntransforms = 1
-        if many != 0:
-            self.many = True
-            self.ntransforms = many
+        # Passing "ntransforms" > 1 expects one large higher dimensional array later.
+        self.ntransforms = ntransforms
 
         # Basic dtype passthough.
         dtype = fourier_pts.dtype
@@ -66,18 +61,26 @@ class cuFINufftPlan(Plan):
 
         :param signal: Signal to be transformed. For a single transform,
         this should be a a 1, 2, or 3D array matching the plan `sz`.
-        For a batch, signal should have shape `(*sz, many)`.
+        For a batch, signal should have shape `(*sz, ntransforms)`.
 
         :returns: Transformed signal of shape `num_pts` or
-        `(many, num_pts)`.
+        `(ntransforms, num_pts)`.
         """
 
         assert signal.dtype == self.dtype or signal.dtype == self.complex_dtype
 
         sig_shape = signal.shape
-        if self.many:
+        if self.ntransforms > 1:
+            ensure(len(signal.shape) == self.dim + 1,
+                   f"For multiple transforms, {self.dim}D signal should be"
+                   f" a {self.ntransforms} element stack of {self.sz}.")
+            ensure(signal.shape[-1] == self.ntransforms,
+                   "For multiple transforms, signal stack length"
+                   f" should match ntransforms {self.ntransforms}.")
+
             sig_shape = signal.shape[:-1]         # order...
-        ensure(sig_shape == self.sz, f'Signal to be transformed must have shape {self.sz}')
+
+        ensure(sig_shape == self.sz, f'Signal frame to be transformed must have shape {self.sz}')
 
         # Note that it would be nice to address this ordering enforcement after the C major conversions.
         signal_gpu = gpuarray.to_gpu(signal.astype(self.complex_dtype, copy=False, order='F'))
@@ -92,7 +95,7 @@ class cuFINufftPlan(Plan):
 
         result = result_gpu.get()
 
-        if not self.many:
+        if not self.ntransforms > 1:
             result = result[0]
 
         return result
@@ -103,14 +106,23 @@ class cuFINufftPlan(Plan):
 
         :param signal: Signal to be transformed. For a single transform,
         this should be a a 1D array of len `num_pts`.
-        For a batch, signal should have shape `(many, num_pts)`.
+        For a batch, signal should have shape `(ntransforms, num_pts)`.
 
-        :returns: Transformed signal `(sz)` or `(sz, many)`.
+        :returns: Transformed signal `(sz)` or `(sz, ntransforms)`.
         """
 
         assert signal.dtype == self.complex_dtype or signal.dtype == self.dtype
         if self.dim == 3 and self.dtype == np.float64:
+            # Note, this is a known internal limitation of cufinufft algorithm at this time.
             raise TypeError('Currently the 3d1 sub-problem method is singles only.')
+
+        if self.ntransforms > 1:
+            ensure(len(signal.shape) == 2,    # Stack and num_pts
+                   f"For multiple {self.dim}D adjoints, signal should be"
+                   f" a {self.ntransforms} element stack of {self.num_pts}.")
+            ensure(signal.shape[0] == self.ntransforms,
+                   "For multiple transforms, signal stack length"
+                   f" should match ntransforms {self.ntransforms}.")
 
         signal_gpu = gpuarray.to_gpu(signal.astype(self.complex_dtype, copy=False, order='C'))
 
@@ -125,7 +137,7 @@ class cuFINufftPlan(Plan):
 
         result = result_gpu.get()
 
-        if not self.many:
-            result = result[...,0]
+        if not self.ntransforms > 1:
+            result = result[..., 0]
 
         return result
