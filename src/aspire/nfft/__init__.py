@@ -135,46 +135,54 @@ class Plan:
             return super(Plan, cls).__new__(cls)
 
 
-def anufft3(sig_f, fourier_pts, sz, real=False, ntransforms=1):
+def anufft3(sig_f, fourier_pts, sz, real=False):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT Adjoint.
     Dimension is based on the dimension of fourier_pts and checked against sig_f.
 
     Selects best available package from `nfft` `backends` configuration list.
 
-    :param sig_f: Array representing the signal(s) in Fourier space to be transformed.
+    :param sig_f: Array representing the signal(s) in Fourier space to be transformed. \
+    sig_f either matches length of fourier_pts or sig_f.shape is stack of (`ntransforms`, ...).
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
     :param sz: A tuple indicating the geometry of the signal.
     :param real: Optional Bool indicating if you would like only the real components, Defaults False.
-    :param ntransforms: Optional integer indicating if you would like to compute a batch of `ntransforms`
-    transforms.  Implies sig_f.shape is (..., `ntransforms`). Defaults to 1 which disables batching.
     :return: The Non Uniform FFT adjoint transform.
 
     """
+
+    dim = len(sz)
+    ntransforms = 1
+    if len(sig_f.shape) == 2:
+        ntransforms = sig_f.shape[0]
 
     plan = Plan(sz=sz, fourier_pts=fourier_pts, ntransforms=ntransforms)
     adjoint = plan.adjoint(sig_f)
     return np.real(adjoint) if real else adjoint
 
 
-def nufft3(sig_f, fourier_pts, sz, real=False, ntransforms=1):
+def nufft3(sig_f, fourier_pts, sz, real=False):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT
     Dimension is based on the dimension of fourier_pts and checked against sig_f.
 
     Selects best available package from `nfft` `backends` configuration list.
 
-    :param sig_f: Array representing the signal(s) in real space to be transformed.
+    :param sig_f: Array representing the signal(s) in real space to be transformed. \
+    sig_f either matches `sz` or sig_f.shape is stack of (..., `ntransforms`).
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
     :param sz: A tuple indicating the geometry of the signal.
     :param real: Optional Bool indicating if you would like only the real components, Defaults False.
-    :param ntransforms: Optional integer indicating if you would like to compute a batch of `ntransforms`
-    transforms.  Implies sig_f.shape is (..., `ntransforms`). Defaults to 1 which disables batching.
     :return: The Non Uniform FFT transform.
 
     """
+
+    dim = len(sz)
+    ntransforms = 1
+    if len(sig_f.shape) == dim + 1:
+        ntransforms = sig_f.shape[-1]
 
     plan = Plan(sz=sz, fourier_pts=fourier_pts, ntransforms=ntransforms)
     transform = plan.transform(sig_f)
