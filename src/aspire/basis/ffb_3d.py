@@ -263,7 +263,7 @@ class FFBBasis3D(FBBasis3D):
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
         pf = np.zeros((n_theta*n_phi*n_r, n_data), dtype=complex)
         for isample in range(0, n_data):
-            pf[..., isample] = nufft3(x[..., isample], self._precomp['fourier_pts'], self.sz)
+            pf[..., isample] = nufft3(x[..., isample], self._precomp['fourier_pts'])
 
         pf = m_reshape(pf, (n_theta, n_phi*n_r*n_data))
 
