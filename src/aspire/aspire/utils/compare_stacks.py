@@ -1,5 +1,5 @@
 import numpy as np
-from console_progressbar import ProgressBar
+from tqdm import tqdm
 
 from aspire.aspire.common.config import AspireConfig
 from aspire.aspire.common.logger import logger
@@ -42,13 +42,10 @@ def compare_stacks(stack1, stack2, verbose=None, max_error=None):
     if num_of_images == 0:
         logger.warning('stacks are empty!')
 
-    if verbose == 1:
-        pb = ProgressBar(total=100, prefix='comparing:', suffix='completed', decimals=0, length=100,
-                         fill='%')
-
     relative_err = 0
     accumulated_err = 0
-    for i in range(num_of_images):
+    skip_progress_bar = verbose < 1
+    for i in tqdm(range(num_of_images), disable=skip_progress_bar):
 
         err = np.linalg.norm(stack1[i] - stack2[i])/np.linalg.norm(stack1[i])
         accumulated_err += err
@@ -61,14 +58,9 @@ def compare_stacks(stack1, stack2, verbose=None, max_error=None):
 
         if verbose == 0:
             continue
-
-        elif verbose == 1:
-            pb.print_progress_bar((i + 1) / num_of_images * 100)
-
         elif verbose == 2 and (i+1) % 100 == 0:
             logger.info(f'Finished comparing {i+1}/{num_of_images} projections. '
                         f'Relative error so far: {relative_err}')
-
         elif verbose == 3:
             logger.info(f'Difference between projections ({i+1}) <> ({i+1}): {err}')
 

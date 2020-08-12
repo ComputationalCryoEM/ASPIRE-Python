@@ -88,7 +88,8 @@ class Picker:
         im = im[:side_length, :side_length]
 
         size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
-        im = np.array(Image.fromarray(im).resize(size, Image.BICUBIC))
+
+        im = np.array(Image.fromarray(im).resize(size, Image.BICUBIC), dtype=np.float64)
 
         im = signal.correlate(
             im,
@@ -99,7 +100,7 @@ class Picker:
             'same'
         )
 
-        return im.astype('double')
+        return im
 
     def query_score(self, show_progress=True):
         """Calculates score for each query image.

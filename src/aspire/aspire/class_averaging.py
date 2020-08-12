@@ -10,7 +10,6 @@ import scipy.optimize as optim
 import scipy.sparse as sps
 import scipy.sparse.linalg as spsl
 import scipy.special as sp
-from console_progressbar import ProgressBar
 from numpy.polynomial.legendre import leggauss
 
 import aspire.data
@@ -617,11 +616,8 @@ def bessel_ns_radial(bandlimit, support_size, x):
     phi_ns = np.zeros((len(x), len(angular_freqs)))
     phi = {}
 
-    pb = ProgressBar(total=100, prefix='bessel_ns_radial', suffix='completed',
-                     decimals=0, length=100, fill='%')
     angular_freqs_length = len(angular_freqs)
-    for i in range(angular_freqs_length):
-        pb.print_progress_bar((i + 1) / angular_freqs_length * 100)
+    for i in tqdm(range(angular_freqs_length)):
         r0 = x * r_ns[i] / bandlimit
         f = sp.jv(angular_freqs[i], r0)
         # probably the square and the sqrt not needed
@@ -656,10 +652,7 @@ def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
     coeff_pos_k = []
     pos_k = []
 
-    pb = ProgressBar(total=100, prefix='fbcoeff_nfft', suffix='completed',
-                     decimals=0, length=100, fill='%')
-    for i in range(num_threads):
-        pb.print_progress_bar((i + 1) / num_threads * 100)
+    for i in tqdm(range(num_threads)):
         curr_images = split_images[i]
         # start_pixel = orig - support_size
         # end_pixel = orig + support_size
@@ -671,10 +664,7 @@ def fbcoeff_nfft(split_images, support_size, basis, sample_points, num_threads):
 
     pos_k = np.concatenate(pos_k, axis=2)
 
-    pb = ProgressBar(total=100, prefix='appending', suffix='completed',
-                     decimals=0, length=100, fill='%')
-    for i in range(max_angular_freqs + 1):
-        pb.print_progress_bar((i + 1) / (max_angular_freqs + 1) * 100)
+    for i in tqdm(range(max_angular_freqs + 1)):
         coeff_pos_k.append(np.einsum('ki, k, kj -> ij', phi_ns[i], w, pos_k[:, i]))
 
     return coeff_pos_k
@@ -782,10 +772,7 @@ def spca_whole(coeff, var_hat):
     mean_coeff = np.mean(coeff[0], axis=1)
     lr = len(coeff)
 
-    pb = ProgressBar(total=100, prefix='spca_whole', suffix='completed',
-                     decimals=0, length=100, fill='%')
-    for i in range(max_ang_freq + 1):
-        pb.print_progress_bar((i + 1) / (max_ang_freq + 1) * 100)
+    for i in tqdm(range(max_ang_freq + 1)):
         tmp = coeff[i]
         if i == 0:
             tmp = (tmp.T - mean_coeff).T
@@ -1100,10 +1087,7 @@ class ClassAverages:
         ang_freqs = []
         rad_freqs = []
         vec_d = []
-        pb = ProgressBar(total=100, prefix='compute_spca(1/2)', suffix='completed',
-                         decimals=0, length=100, fill='%')
-        for i in range(len(d)):
-            pb.print_progress_bar((i + 1) / len(d) * 100)
+        for i in tqdm(range(len(d))):
             if len(d[i]) != 0:
                 ang_freqs.extend(np.ones(len(d[i]), dtype='int') * i)
                 rad_freqs.extend(np.arange(len(d[i])) + 1)
@@ -1120,11 +1104,8 @@ class ClassAverages:
         rad_freqs = rad_freqs[sorted_indices]
 
         s_coeff = np.zeros((len(d), num_images), dtype='complex128')
-        pb = ProgressBar(total=100, prefix='spca_coeff', suffix='completed',
-                         decimals=0, length=100, fill='%')
 
-        for i in range(len(d)):
-            pb.print_progress_bar((i + 1) / len(d) * 100)
+        for i in tqdm(range(len(d))):
             s_coeff[i] = spca_coeff[ang_freqs[i]][rad_freqs[i] - 1]
 
         fn = ift_fb(support_size, bandlimit)
@@ -1132,11 +1113,7 @@ class ClassAverages:
         eig_im = np.zeros((np.square(2 * support_size), len(d)), dtype='complex128')
 
         # TODO it might be possible to do this faster
-        pb = ProgressBar(total=100, prefix='compute_spca(2/2)', suffix='completed',
-                         decimals=0, length=100, fill='%')
-
-        for i in range(len(d)):
-            pb.print_progress_bar((i + 1) / len(d) * 100)
+        for i in tqdm(range(len(d))):
             tmp = fn[ang_freqs[i]]
             tmp = tmp.reshape((int(np.square(2 * support_size)), tmp.shape[2]), order='F')
             eig_im[:, i] = np.dot(tmp, u[ang_freqs[i]][:, rad_freqs[i] - 1])
