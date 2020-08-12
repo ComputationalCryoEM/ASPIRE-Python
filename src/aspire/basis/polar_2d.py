@@ -130,7 +130,7 @@ class PolarBasis2D(Basis):
         pf = np.empty((self.nrad * half_size, nimgs), dtype=out_type)
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
-            pf[..., isample] = nufft3(x[..., isample], self.freqs, self.sz)
+            pf[..., isample] = nufft3(x[..., isample], self.freqs)
 
         pf = m_reshape(pf, (self.nrad, half_size, nimgs))
         v = np.concatenate((pf, pf.conj()), axis=1)

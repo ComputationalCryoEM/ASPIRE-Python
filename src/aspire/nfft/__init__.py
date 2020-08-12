@@ -162,7 +162,7 @@ def anufft3(sig_f, fourier_pts, sz, real=False):
     return np.real(adjoint) if real else adjoint
 
 
-def nufft3(sig_f, fourier_pts, sz, real=False):
+def nufft3(sig_f, fourier_pts, real=False):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT
     Dimension is based on the dimension of fourier_pts and checked against sig_f.
@@ -173,15 +173,23 @@ def nufft3(sig_f, fourier_pts, sz, real=False):
     sig_f either matches `sz` or sig_f.shape is stack of (..., `ntransforms`).
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.
-    :param sz: A tuple indicating the geometry of the signal.
     :param real: Optional Bool indicating if you would like only the real components, Defaults False.
     :return: The Non Uniform FFT transform.
 
     """
 
-    dim = len(sz)
+    # Unpack the dimension of the signal
+    #   Note, infer dimension from fourier_pts because signal might be a stack.
+    dimension = fourier_pts.shape[0]
+
+    # Unpack the resolution of the signal
+    resolution = sig_f.shape[0]
+
+    # Construct tuple describing geometry of signal
+    sz = (resolution,) * dimension
+
     ntransforms = 1
-    if len(sig_f.shape) == dim + 1:
+    if len(sig_f.shape) == dimension + 1:
         ntransforms = sig_f.shape[-1]
 
     plan = Plan(sz=sz, fourier_pts=fourier_pts, ntransforms=ntransforms)

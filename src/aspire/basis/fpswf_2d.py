@@ -295,8 +295,8 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         images_nufft = np.zeros((m, num_images), dtype='complex128')
         for i in range(start, finish):
-            images_nufft[:, i - start] = nufft3(images[..., i], 2 * pi * x.T,
-                                                (n, n))
+            images_nufft[:, i - start] = nufft3(images[..., i], 2 * pi * x.T)
+
         return images_nufft
 
     def _pswf_integration(self, images_nufft):
