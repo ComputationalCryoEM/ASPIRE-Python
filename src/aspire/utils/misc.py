@@ -69,6 +69,25 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
 
     # TODO: Find a better place for this functionality other than in utils
     """
+
+    if not isinstance(mean_vol, Volume):
+        logger.warning('src_wiener_coords mean_vol should be a Volume instance. Correcting for now.')
+        if len(mean_vol.shape) == 4 and mean_vol.shape[3] != 1:
+            logger.error('Cannot naively convert to Volume instance. Please change calling code.')
+        mean_vol = Volume(mean_vol)
+
+
+    if not isinstance(eig_vols, Volume):
+        logger.warning('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
+        # s = eig_vols.shape
+        # if len(s) == 4:
+        #     eig_vols_c = np.empty((s[3], s[0], s[1], s[2]), dtype=eig_vols.dtype)
+        #     for i in range(s[3]):
+        #         eig_vols_c[i] = eig_vols[..., i]
+        #     eig_vols = eig_vols_c
+        print(eig_vols.shape)
+        eig_vols = Volume(eig_vols)
+
     k = eig_vols.N
     if lambdas is None:
         lambdas = np.eye(k)
@@ -86,7 +105,7 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
         Q_vecs = mat_to_vec(Qs)
 
 
-        # ugh
+        # ugh RCOPT
         ims = np.swapaxes(ims.data, 1, 2)
         ims = np.swapaxes(ims, 0, 2)
         im_vecs = mat_to_vec(ims)

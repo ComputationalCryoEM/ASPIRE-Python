@@ -176,7 +176,7 @@ class Simulation(ImageSource):
         if mean_vol is None:
             mean_vol = self.mean_true()
         if eig_vols is None:
-            eig_vols = Volume(self.eigs()[0])
+            eig_vols = self.eigs()[0]
 
         assert isinstance(mean_vol, Volume)
         assert isinstance(eig_vols, Volume)
@@ -199,7 +199,7 @@ class Simulation(ImageSource):
 
     def covar_true(self):
         eigs_true, lamdbas_true = self.eigs()
-        eigs_true = Volume(eigs_true).to_vec()
+        eigs_true = eigs_true.to_vec()
 
         covar_true = eigs_true.T @ lamdbas_true @ eigs_true
         covar_true = vecmat_to_volmat(covar_true)
@@ -216,15 +216,10 @@ class Simulation(ImageSource):
         """
         C = self.C
         vols_c = self.vols - self.mean_true()
-        #xxx convert vols_c and rest of this later
-
-        vols_c = np.swapaxes(vols_c, -3, -2)
-        vols_c = np.swapaxes(vols_c, 0, -1)
-
 
         p = np.ones(C) / C
-        vols_c = vol_to_vec(vols_c)
-        Q, R = qr(vols_c, mode='economic')
+        # RCOPT, we may be able to do better here if we dig in.
+        Q, R = qr(vols_c.to_vec().T, mode='economic')
 
         # Rank is at most C-1, so remove last vector
         Q = Q[:, :-1]
@@ -237,10 +232,10 @@ class Simulation(ImageSource):
         w = w[::-1]
         eigs_true = np.flip(eigs_true, axis=-1)
 
-        eigs_true = np.swapaxes(eigs_true, -3, -2)
-        eigs_true = np.swapaxes(eigs_true, 0, -1)
+        # RCOPT
+        eigs_true = np.moveaxis(eigs_true, -1, 0)
 
-        return eigs_true, np.diag(w)
+        return Volume(eigs_true), np.diag(w)
 
     # TODO: Too many eval_* methods doing similar things - encapsulate somehow?
 
@@ -294,8 +289,7 @@ class Simulation(ImageSource):
         """
         eigs_true, lambdas_true = self.eigs()
 
-        #B = vol_to_vec(eigs_est).T @ vol_to_vec(eigs_true)
-        B = vol_to_vec(eigs_est).T @  Volume(eigs_true).to_vec().T
+        B = eigs_est.to_vec() @ eigs_true.to_vec().T
         norm_true = anorm(lambdas_true)
         norm_est = anorm(lambdas_est)
 
@@ -333,6 +327,8 @@ class Simulation(ImageSource):
             by `eig_vols`.
         :return:
         """
+        assert isinstance(mean_vol, Volume)
+        assert isinstance(eig_vols, Volume)
         coords_true, res_norms, res_inners = self.vol_coords(mean_vol, eig_vols)
 
         # 0-indexed states vector

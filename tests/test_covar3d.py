@@ -133,7 +133,7 @@ class Covar3DTestCase(TestCase):
 
         # Eigenvalues and their corresponding eigenvectors are returned in descending order
         # We take the highest C-1 entries, since C-1 is the rank of the population covariance matrix.
-        eigs_est_trunc = eigs_est[:, :, :, :C-1]
+        eigs_est_trunc = Volume(np.moveaxis(eigs_est[:, :, :, :C-1], -1, 0))
         lambdas_est_trunc = lambdas_est[:C-1, :C-1]
 
         metrics = self.sim.eval_eigs(eigs_est_trunc, lambdas_est_trunc)
@@ -147,10 +147,11 @@ class Covar3DTestCase(TestCase):
 
         C = 2
 
-        # TODO, alter ref
-        eigs_est_trunc = np.swapaxes(eigs_est[:, :, :, :C-1], 0, -1)
-        eigs_est_trunc = np.swapaxes(eigs_est_trunc, 1, -1)
-        eigs_est_trunc = np.swapaxes(eigs_est_trunc, 2, -1)
+        # TODO, alter refs after RCOPT complete
+        eigs_est_trunc = np.moveaxis(eigs_est[:, :, :, :C-1], -1, 0)
+        # eigs_est_trunc = np.swapaxes(eigs_est[:, :, :, :C-1], 0, -1)
+        # eigs_est_trunc = np.swapaxes(eigs_est_trunc, 1, -1)
+        # eigs_est_trunc = np.swapaxes(eigs_est_trunc, 2, -1)
 
         eigs_est_trunc = Volume(eigs_est_trunc)
         lambdas_est_trunc = lambdas_est[:C-1, :C-1]

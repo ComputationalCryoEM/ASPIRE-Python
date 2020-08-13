@@ -16,6 +16,7 @@ from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import Random
 from aspire.utils.matrix import eigs
 from aspire.utils.misc import src_wiener_coords
+from aspire.volume import Volume
 
 logger = logging.getLogger('aspire')
 
@@ -47,7 +48,7 @@ logger.info(f'Noise Variance = {noise_variance}')
 # L-by-L-by-L array.
 
 mean_estimator = MeanEstimator(sim, basis)
-mean_est = mean_estimator.estimate()
+mean_est = Volume(mean_estimator.estimate())
 
 # Passing in a mean_kernel argument to the following constructor speeds up some calculations
 covar_estimator = CovarianceEstimator(sim, basis, mean_kernel=mean_estimator.kernel)
@@ -60,11 +61,18 @@ covar_est = covar_estimator.estimate(mean_est, noise_variance)
 
 eigs_est, lambdas_est = eigs(covar_est, num_eigs)
 
+# Eigs should probably return a Volume, for now hack it.
+s = eigs_est.shape
+eigs_est_c = np.empty((s[3], s[0], s[1], s[2]), dtype=eigs_est.dtype)
+for i in range(s[3]):
+    eigs_est_c[i] = eigs_est[..., i]
+eigs_est = Volume(eigs_est_c)
+
 
 # Truncate the eigendecomposition. Since we know the true rank of the
 # covariance matrix, we enforce it here.
 
-eigs_est_trunc = eigs_est[:, :, :, :num_vols-1]
+eigs_est_trunc = Volume(eigs_est[:num_vols-1]) # hrmm not very convenient
 lambdas_est_trunc = lambdas_est[:num_vols-1, :num_vols-1]
 
 # Estimate the coordinates in the eigenbasis. Given the images, we find the
