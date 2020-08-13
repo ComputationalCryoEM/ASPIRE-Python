@@ -295,23 +295,17 @@ class RotCov2D:
         coeffs_est = np.zeros_like(coeffs)
 
         for k in np.unique(ctf_idx[:]):
-            #print('k', k)
             coeff_k = coeffs[ctf_idx == k]
-            #print('coeff_k', coeff_k.shape) # xxx, okay, this transposed from orig code
             ctf_fb_k = ctf_fb[k]
-            #print('ctf_fb_k', ctf_fb_k[0])
             ctf_fb_k_t = ctf_fb_k.T
             sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
-            #print('sig_covar_coeff[0]', sig_covar_coeff[0])
 
             sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
-            #print('sig_noise_covar_coeff[0]', sig_noise_covar_coeff[0])
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
-            #print('mean_coeff_k', mean_coeff_k)
 
             coeff_est_k = coeff_k - mean_coeff_k[np.newaxis, :]
-            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T) #xxx
+            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T)
             coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
             coeff_est_k = coeff_est_k.T + mean_coeff[np.newaxis, :]
             coeffs_est[ctf_idx == k] = coeff_est_k

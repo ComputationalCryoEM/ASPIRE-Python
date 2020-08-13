@@ -43,7 +43,7 @@ class Volume:
         self.volume_shape = self.data.shape[1:]
 
     def __getitem__(self, item):
-        # this is one reason why you might want Volume and VolumeStack classes...xxx
+        # this is one reason why you might want Volume and VolumeStack classes...
         #return Volume(self.data[item])
         return self.data[item]
 
@@ -90,8 +90,7 @@ class Volume:
         pts_rot = np.zeros((3, num_pts, num_rots))
         for i in range(num_rots):
             pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
-
-            #XXXX pts_rot = m_reshape(pts_rot, (3, L, L, num_rots))
+            #Note, previously pts_rot = m_reshape(pts_rot, (3, L, L, num_rots))
         return pts_rot
 
 
@@ -126,7 +125,7 @@ class Volume:
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
         return m_reshape(self.data, (self.N,) + (self.resolution**3,))
-        #XXX reshape?
+        #XXX reshape/flatten?
 
     @staticmethod
     def from_vec(vec):

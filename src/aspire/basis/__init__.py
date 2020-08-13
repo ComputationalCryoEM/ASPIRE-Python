@@ -185,7 +185,7 @@ class Basis:
         v = np.zeros((self.count, n_data), dtype=x.dtype)
 
         for isample in range(0, n_data):
-            b = self.evaluate_t(x[..., isample]).T #XXX
+            b = self.evaluate_t(x[..., isample]).T
             # TODO: need check the initial condition x0 can improve the results or not.
             v[..., isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:

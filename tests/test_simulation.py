@@ -131,11 +131,9 @@ class SimTestCase(TestCase):
         self.assertTrue(np.allclose(result['corr'], 0.8405347287741631, atol=1e-4))
 
     def testSimulationEvalCoords(self):
-        # xxx cleanup
-        mean_est = np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy'))
-        mean_est = Volume(mean_est)
-        eigs_est = np.load(os.path.join(DATA_DIR, 'eigs_est_8_8_8_1.npy'))
-        eigs_est = Volume(eigs_est[..., 0])
+        mean_est = Volume(np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy')))
+        eigs_est = Volume(np.load(os.path.join(DATA_DIR, 'eigs_est_8_8_8_1.npy'))[..., 0])
+
         clustered_coords_est = np.load(os.path.join(DATA_DIR, 'clustered_coords_est.npy'))
 
         result = self.sim.eval_coords(mean_est, eigs_est, clustered_coords_est)

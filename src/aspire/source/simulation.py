@@ -248,7 +248,7 @@ class Simulation(ImageSource):
 
         err = anorm(vol_true - vol_est)
         rel_err = err / norm_true
-        # xxx ugh gross
+        # RCOPT
         corr = acorr(vol_true.data, vol_est.data)
 
         return {
