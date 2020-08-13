@@ -392,7 +392,7 @@ class ImageSource:
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
-        logger.info('Apply contrast reverse on source object')
+        logger.info('Apply contrast inversion on source object')
         L = self.L
         grid = grid_2d(L, shifted=True)
         # Get mask indices of signal and noise samples assuming molecule
@@ -405,8 +405,8 @@ class ImageSource:
 
         for i in range(0, self.n, batch_size):
             images = self.images(i, batch_size).asnumpy()
-            signal = (images * np.expand_dims(signal_mask, 2))
-            noise = (images * np.expand_dims(noise_mask, 2))
+            signal = images * np.expand_dims(signal_mask, 2)
+            noise = images * np.expand_dims(noise_mask, 2)
             signal_mean += np.sum(signal)
             noise_mean += np.sum(noise)
         signal_denominator = self.n * np.sum(signal_mask)
@@ -415,10 +415,10 @@ class ImageSource:
         noise_mean /= noise_denominator
 
         if signal_mean < noise_mean:
-            logger.info('Need to reverse contrast')
+            logger.info('Need to invert contrast')
             scale_factor = -1.0 * np.ones(self.n)
         else:
-            logger.info('No need to reverse contrast')
+            logger.info('No need to invert contrast')
             scale_factor = 1.0 * np.ones(self.n)
 
         logger.info('Adding Scaling Xform to end of generation pipeline')
