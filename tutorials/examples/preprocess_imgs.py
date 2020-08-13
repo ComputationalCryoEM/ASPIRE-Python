@@ -36,11 +36,11 @@ noise_filter = ScalarFilter(dim=2, value=noise_variance)
 
 # Specify the CTF parameters not used for this example
 # but necessary for initializing the simulation object
-pixel_size = 5*65/img_size       # Pixel size of the images (in angstroms).
+pixel_size = 5 * 65 / img_size   # Pixel size of the images (in angstroms)
 voltage = 200                    # Voltage (in KV)
-defocus_min = 1.5e4              # Minimum defocus value (in angstroms).
-defocus_max = 2.5e4              # Maximum defocus value (in angstroms).
-defocus_ct = 7                   # Number of defocus groups.
+defocus_min = 1.5e4              # Minimum defocus value (in angstroms)
+defocus_max = 2.5e4              # Maximum defocus value (in angstroms)
+defocus_ct = 7                   # Number of defocus groups
 Cs = 2.0                         # Spherical aberration
 alpha = 0.1                      # Amplitude contrast
 
@@ -49,7 +49,7 @@ logger.info('Initialize simulation object and CTF filters.')
 CTF_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
            for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-# Load the map file of a 70S Ribosome and downsample the 3D map to desired resolution.
+# Load the map file of a 70S ribosome and downsample the 3D map to desired resolution.
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
 logger.info(f'Load 3D map from mrc file, {infile}')
 vols = infile.data
@@ -61,7 +61,7 @@ logger.info(f'Downsample map to a resolution of {img_size} x {img_size} x {img_s
 vols = downsample(vols, (img_size,) * 3) * 1.0e5
 
 # Create a simulation object with specified filters and the downsampled 3D map
-logger.info('Use downsampled map to creat simulation object.')
+logger.info('Use downsampled map to create simulation object.')
 source = Simulation(
     L=img_size,
     n=num_imgs,
@@ -72,24 +72,24 @@ source = Simulation(
 )
 
 logger.info('Obtain original images.')
-imgs_od = source.images(start=0, num=10).asnumpy()
+imgs_od = source.images(start=0, num=1).asnumpy()
 
 logger.info('Perform phase flip to input images.')
 source.phase_flip()
-imgs_pf = source.images(start=0, num=10).asnumpy()
+imgs_pf = source.images(start=0, num=1).asnumpy()
 
 logger.info('Normalize images to background noise.')
 source.normalize_background()
-imgs_nb = source.images(start=0, num=10).asnumpy()
+imgs_nb = source.images(start=0, num=1).asnumpy()
 
 logger.info('Whiten noise of images')
 noise_estimator = WhiteNoiseEstimator(source)
 source.whiten(noise_estimator.filter)
-imgs_wt = source.images(start=0, num=10).asnumpy()
+imgs_wt = source.images(start=0, num=1).asnumpy()
 
 logger.info('Invert the global density contrast if need')
 source.invert_contrast()
-imgs_rc = source.images(start=0, num=10).asnumpy()
+imgs_rc = source.images(start=0, num=1).asnumpy()
 
 
 # plot the first images
@@ -120,4 +120,3 @@ plt.imshow(imgs_rc[..., idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('invert contrast')
 plt.show()
-
