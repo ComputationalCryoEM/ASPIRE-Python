@@ -4,7 +4,7 @@ import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
-from aspire.utils.filters import PowerFilter, ZeroFilter, LambdaFilter
+from aspire.utils.filters import LambdaFilter, PowerFilter, ZeroFilter
 from aspire.utils.matlab_compat import randn
 
 logger = logging.getLogger(__name__)
@@ -185,18 +185,18 @@ class FilterXform(SymmetricXform):
 class Add(Xform):
     """
     A Xform that add the density of a stack of 2D images (in the form of an Image object)
-    by offsetting a number.
+    by an offset value.
     """
-    def __init__(self, mean):
+    def __init__(self, addend):
         """
-        Initialize a Add Xform using a Numpy array of mean values.
-        :param mean: An ndarray of shape (n,)
+        Initialize an Add Xform using a Numpy array of predefined values.
+        :param addend: An ndarray of shape (n,)
         """
         super().__init__()
-        self.mean = mean
+        self.addend = addend
 
     def _forward(self, im, indices):
-        return im + self.mean[indices]
+        return im + self.addend[indices]
 
 
 class FlipXform(Xform):
