@@ -7,7 +7,7 @@ import pycuda.driver as cuda
 import pycuda.gpuarray as gpuarray
 from cufinufft import cufinufft
 
-from aspire.nfft import Plan
+from aspire.nufft import Plan
 from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)

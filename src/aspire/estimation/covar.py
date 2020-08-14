@@ -13,7 +13,7 @@ from aspire.estimation import Estimator
 from aspire.estimation.kernel import FourierKernel
 from aspire.estimation.mean import MeanEstimator
 from aspire.image import Image
-from aspire.nfft import anufft3
+from aspire.nufft import anufft3
 from aspire.utils import ensure
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_reshape

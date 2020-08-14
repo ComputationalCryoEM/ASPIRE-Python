@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import finufftpy
-from aspire.nfft import Plan
+from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.misc import complex_type
 

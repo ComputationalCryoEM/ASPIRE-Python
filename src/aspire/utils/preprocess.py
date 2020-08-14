@@ -6,7 +6,7 @@ from scipy.fftpack import (fft, fft2, fftn, fftshift, ifft, ifft2, ifftn,
                            ifftshift)
 from scipy.interpolate import RegularGridInterpolator
 
-from aspire.nfft import Plan
+from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
 from aspire.utils.fft import (centered_fft1, centered_fft2, centered_fft3,

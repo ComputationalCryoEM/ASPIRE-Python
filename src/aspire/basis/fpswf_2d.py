@@ -9,7 +9,7 @@ from scipy.special import jn
 
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
-from aspire.nfft import nufft3
+from aspire.nufft import nufft3
 
 logger = logging.getLogger(__name__)
 

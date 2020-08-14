@@ -4,8 +4,8 @@ import pytest
 from unittest import TestCase, skipUnless
 from unittest.case import SkipTest
 
-from aspire.nfft import backend_available
-from aspire.nfft import Plan
+from aspire.nufft import backend_available
+from aspire.nufft import Plan
 from aspire.utils.misc import complex_type
 
 

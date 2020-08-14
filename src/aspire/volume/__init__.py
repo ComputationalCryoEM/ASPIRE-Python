@@ -1,6 +1,6 @@
 import numpy as np
 
-from aspire.nfft import Plan
+from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2, centered_ifft2

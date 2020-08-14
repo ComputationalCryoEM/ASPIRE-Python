@@ -5,7 +5,7 @@ from scipy.fftpack import fft2
 
 from aspire.estimation import Estimator
 from aspire.estimation.kernel import FourierKernel
-from aspire.nfft import anufft3
+from aspire.nufft import anufft3
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 from aspire.volume import rotated_grids

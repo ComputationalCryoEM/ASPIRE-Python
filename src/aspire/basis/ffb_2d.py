@@ -7,7 +7,7 @@ from scipy.special import jv
 
 from aspire.basis.basis_utils import lgwt
 from aspire.basis.fb_2d import FBBasis2D
-from aspire.nfft import anufft3, nufft3
+from aspire.nufft import anufft3, nufft3
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.misc import complex_type

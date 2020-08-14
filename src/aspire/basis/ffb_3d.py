@@ -5,7 +5,7 @@ from numpy import pi
 
 from aspire.basis.basis_utils import lgwt, norm_assoc_legendre, sph_bessel
 from aspire.basis.fb_3d import FBBasis3D
-from aspire.nfft import anufft3, nufft3
+from aspire.nufft import anufft3, nufft3
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
 
