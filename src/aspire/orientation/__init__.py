@@ -234,7 +234,9 @@ class CLOrient3D:
         # Generate approximated shift equations from estimated rotations
         shift_equations, shift_b = self._get_shift_equations_approx(equations_factor, max_memory)
 
-        est_shifts = sparse.linalg.lsqr(shift_equations, shift_b)[0]
+        # Solve the linear equation
+        # Negative sign comes from using -i conversion of Fourier transformation
+        est_shifts = sparse.linalg.lsqr(shift_equations, -shift_b)[0]
         est_shifts = est_shifts.reshape((2, self.n_img), order='F')
 
         return est_shifts
