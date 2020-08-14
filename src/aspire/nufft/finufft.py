@@ -9,7 +9,7 @@ from aspire.utils.misc import complex_type
 logger = logging.getLogger(__name__)
 
 
-class FINufftPlan(Plan):
+class FinufftPlan(Plan):
     def __init__(self, sz, fourier_pts, epsilon=1e-15, ntransforms=1, **kwargs):
         """
         A plan for non-uniform FFT in 2D or 3D.

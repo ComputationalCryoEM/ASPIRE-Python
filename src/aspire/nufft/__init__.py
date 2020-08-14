@@ -53,16 +53,16 @@ def check_backends(raise_errors=True):
                 # Note we expect the cu library is in LD path.
                 #   That is managed by pip if using a wheel,
                 #   or the user if they have built from source.
-                from aspire.nufft.cufinufft import cuFINufftPlan
-                plan_class = cuFINufftPlan
+                from aspire.nufft.cufinufft import CufinufftPlan
+                plan_class = CufinufftPlan
             except Exception as e:
                 msg = str(e)
 
         elif backend == "finufft":
             try:
                 from finufftpy import nufft1d1
-                from aspire.nufft.finufft import FINufftPlan
-                plan_class = FINufftPlan
+                from aspire.nufft.finufft import FinufftPlan
+                plan_class = FinufftPlan
             except Exception as e:
                 msg = str(e)
 
