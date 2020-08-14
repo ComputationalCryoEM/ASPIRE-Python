@@ -375,7 +375,7 @@ def im_backproject(im, rot_matrices, half_pixel=False):
             im_f[:, 0] = 0
 
     im_f = im_f.flatten('F')
-    vol = anufft3(im_f, pts_rot, [resolution] * 3)
+    vol = anufft(im_f, pts_rot, [resolution] * 3)
     vol = vol.real
     return vol
 
@@ -473,7 +473,7 @@ def cryo_mean_kernel_f(resolution, params, mean_est_opt=None):
     # Reshape inputs into appropriate sizes and apply adjoint NUFFT
     pts_rot = pts_rot.reshape((3, -1), order='F')
     filt = filt.flatten('F')
-    mean_kernel = anufft3(filt, pts_rot, [2 * resolution] * 3)
+    mean_kernel = anufft(filt, pts_rot, [2 * resolution] * 3)
     mean_kernel /= n * resolution ** 2
 
     # Ensure symmetric kernel
@@ -1443,7 +1443,7 @@ def cart2pol(x, y, z=None):
     return th, r, z
 
 
-def anufft3(vol_f, fourier_pts, sz):
+def anufft(vol_f, fourier_pts, sz):
     if len(sz) != 3:
         raise ValueError('sz must be 3')
     if len(fourier_pts.shape) != 2:

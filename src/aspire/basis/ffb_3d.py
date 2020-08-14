@@ -5,7 +5,7 @@ from numpy import pi
 
 from aspire.basis.basis_utils import lgwt, norm_assoc_legendre, sph_bessel
 from aspire.basis.fb_3d import FBBasis3D
-from aspire.nufft import anufft3, nufft3
+from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
 
@@ -234,7 +234,7 @@ class FFBBasis3D(FBBasis3D):
         freqs = m_reshape(self._precomp['fourier_pts'], (3, n_r * n_theta*n_phi, -1))
         x = np.zeros((self.sz[0], self.sz[1], self.sz[2], n_data), dtype=v.dtype)
         for isample in range(0, n_data):
-            x[..., isample] = np.real(anufft3(pf[:, isample], freqs, self.sz))
+            x[..., isample] = np.real(anufft(pf[:, isample], freqs, self.sz))
 
         # return the x with the first three dimensions of self.sz
         x = roll_dim(x, sz_roll)
@@ -263,7 +263,7 @@ class FFBBasis3D(FBBasis3D):
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
         pf = np.zeros((n_theta*n_phi*n_r, n_data), dtype=complex)
         for isample in range(0, n_data):
-            pf[..., isample] = nufft3(x[..., isample], self._precomp['fourier_pts'])
+            pf[..., isample] = nufft(x[..., isample], self._precomp['fourier_pts'])
 
         pf = m_reshape(pf, (n_theta, n_phi*n_r*n_data))
 

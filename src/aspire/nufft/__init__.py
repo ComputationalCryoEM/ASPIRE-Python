@@ -135,7 +135,7 @@ class Plan:
             return super(Plan, cls).__new__(cls)
 
 
-def anufft3(sig_f, fourier_pts, sz, real=False):
+def anufft(sig_f, fourier_pts, sz, real=False):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT Adjoint.
     Dimension is based on the dimension of fourier_pts and checked against sig_f.
@@ -162,7 +162,7 @@ def anufft3(sig_f, fourier_pts, sz, real=False):
     return np.real(adjoint) if real else adjoint
 
 
-def nufft3(sig_f, fourier_pts, real=False):
+def nufft(sig_f, fourier_pts, real=False):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT
     Dimension is based on the dimension of fourier_pts and checked against sig_f.

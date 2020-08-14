@@ -13,7 +13,7 @@ from aspire.estimation import Estimator
 from aspire.estimation.kernel import FourierKernel
 from aspire.estimation.mean import MeanEstimator
 from aspire.image import Image
-from aspire.nufft import anufft3
+from aspire.nufft import anufft
 from aspire.utils import ensure
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_reshape
@@ -67,7 +67,7 @@ class CovarianceEstimator(Estimator):
 
             # TODO: Numpy has got to have a functional shortcut to avoid looping like this!
             for j in range(batch_n):
-                factors[:, :, :, j] = anufft3(weights[:, j], pts_rot[:, :, j], (_2L, _2L, _2L), real=True)
+                factors[:, :, :, j] = anufft(weights[:, j], pts_rot[:, :, j], (_2L, _2L, _2L), real=True)
 
             factors = vol_to_vec(factors)
             kernel += vecmat_to_volmat(factors @ factors.T) / (n * L**8)
