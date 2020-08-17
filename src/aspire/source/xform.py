@@ -224,6 +224,30 @@ class FlipXform(Xform):
         return Image(im_out)
 
 
+class LambdaXform(Xform):
+    """
+    A `Xform` that applies a predefined function to a stack of 2D images (as an Image object).
+    """
+    def __init__(self, lambda_fun, *args, **kwargs):
+        """
+        Initialize the `LambdaXform` using a lambda function
+
+        :param lambda_fun: Predefine lambda function
+        :param *args: Positional arguments
+        :param **kwargs: Keyword arguments
+        """
+        super().__init__()
+        self.lambda_fun = lambda_fun
+        self.args = args
+        self.kwargs = kwargs
+
+    def _forward(self, im, indices):
+        im_in = im.asnumpy()
+        im_out = self.lambda_fun(im_in, *self.args, **self.kwargs)
+
+        return Image(im_out)
+
+
 class NoiseAdder(Xform):
     """
     A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
@@ -326,7 +350,8 @@ def _apply_xform(xform, im, indices, adjoint=False):
     method.
     """
     # Extract the short xfrom name for the long string
-    xform_name = str(xform).split()[0].split('.')[-1]
+    # xform_name = str(xform).split()[0].split('.')[-1]
+    xform_name = xform.__class__.__name__
     if not adjoint:
         logger.info('  Applying ' + xform_name)
         return xform.forward(im, indices=indices)
