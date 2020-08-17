@@ -7,6 +7,7 @@ from scipy.special import jv
 
 from aspire.basis.basis_utils import lgwt
 from aspire.basis.fb_2d import FBBasis2D
+from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
@@ -168,20 +169,20 @@ class FFBBasis2D(FBBasis2D):
 
         # return the x with the first two dimensions of self.sz
         x = roll_dim(x, sz_roll)
+
+        # XXX, GBW, I think this might return an Image in the future, RCOPT?
         return x
 
     def evaluate_t(self, x):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
-        :param x: The coefficient array in the standard 2D coordinate basis to be
-            evaluated. The first two dimensions must equal `self.sz`.
+        :param x: The Image instance representing coefficient array in the \
+        standard 2D coordinate basis to be evaluated.
         :return v: The evaluation of the coefficient array `v` in the FB basis.
             This is an array of vectors whose first dimension equals `self.count`
             and whose remaining dimensions correspond to higher dimensions of `x`.
         """
-        if x.ndim == 2:
-            x = x[np.newaxis, :, :]
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
@@ -189,13 +190,20 @@ class FFBBasis2D(FBBasis2D):
         freqs = np.reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # number of 2D image samples
-        n_data = x.shape[0]
+        if isinstance(x, Image):
+            n_images = x.n_images
+            x_data = x.data
+        else:
+            logger.warning(f'{self.__class__.__name__}::evaluate_t'
+                           'passed numpy array instead of Image.')
+            x_data = x
+            if x.ndim == 2:
+                x_data = x_data[np.newaxis, :, :]
+            n_images = x_data.shape[0]
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pfc = nufft(x, 2 * pi * freqs)
-        pf = pfc.T
-
-        pf = np.reshape(pf, (n_data, n_r, n_theta))
+        pf = nufft(x_data, 2 * pi * freqs)
+        pf = np.reshape(pf, (n_images, n_r, n_theta))
 
         # Recover "negative" frequencies from "positive" half plane.
         pf = np.concatenate((pf, pf.conjugate()), axis=2)
@@ -209,7 +217,7 @@ class FFBBasis2D(FBBasis2D):
         pf = 2 * pi / (2 * n_theta) * fft(pf, 2*n_theta, 2)
 
         # This only makes it easier to slice the array later.
-        v = np.zeros((n_data, self.count), dtype=x.dtype)
+        v = np.zeros((n_images, self.count), dtype=x.dtype)
 
         # go through each basis function and find the corresponding coefficient
         ind = 0

@@ -1,7 +1,7 @@
 import numpy as np
 
 from aspire.image import Image
-from aspire.nfft import Plan
+from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2_C, centered_ifft2_C

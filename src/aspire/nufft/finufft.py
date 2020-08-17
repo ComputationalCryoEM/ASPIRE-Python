@@ -92,12 +92,14 @@ class FinufftPlan(Plan):
             ensure(len(signal.shape) == self.dim + 1,
                    f"For multiple transforms, {self.dim}D signal should be"
                    f" a {self.ntransforms} element stack of {self.sz}.")
-            ensure(signal.shape[-1] == self.ntransforms,
+            ensure(signal.shape[0] == self.ntransforms,
                    "For multiple transforms, signal stack length"
                    f" should match ntransforms {self.ntransforms}.")
 
-            sig_shape = signal.shape[:-1]         # order...
+            sig_shape = signal.shape[1:]
             res_shape = (self.ntransforms, self.num_pts)
+            # See signature note below, this should change in gv2
+            signal = np.moveaxis(signal, 0, -1)
 
         ensure(sig_shape == self.sz, f'Signal frame to be transformed must have shape {self.sz}')
 

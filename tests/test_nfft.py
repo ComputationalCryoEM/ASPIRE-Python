@@ -340,9 +340,9 @@ class SimTestCase(TestCase):
 
         # Note, this is how (cu)finufft transform wants it for now.
         # Can be refactored as part of row major cleanup.
-        batch = np.empty((*self.plane.shape, ntransforms), dtype)
+        batch = np.empty((ntransforms, *self.plane.shape), dtype)
         for i in range(ntransforms):
-            batch[:,:,i] = self.plane
+            batch[i] = self.plane
 
         result = plan.transform(batch)
 
