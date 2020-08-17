@@ -63,16 +63,13 @@ class Cov2DTestCase(TestCase):
         self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in self.filters]
 
         self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
-        #okay print('self.imgs_ctf_clean', self.imgs_ctf_clean[0])
 
         power_clean = anorm(self.imgs_ctf_clean)**2/np.size(self.imgs_ctf_clean)
         self.noise_var = power_clean/SNR
-        # okay print('self.noise_var', self.noise_var)
-        # sigh, this is awful
+        # RCOPT
         R = np.swapaxes(randn(L, L, n, seed=0), 0, 1)
         R = np.swapaxes(R, -1, 0)
         self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var) * R
-        # okay, see horrorshow work above, print('self.imgs_ctf_noise', self.imgs_ctf_noise[0])
 
         self.cov2d = RotCov2D(self.basis)
         self.coeff_clean = self.basis.evaluate_t(self.imgs_clean)
@@ -117,8 +114,7 @@ class Cov2DTestCase(TestCase):
 
     def test06GetCWFCoeffs(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff.npy'))
-        results = results.T # transpose?
-        print('QQQ', self.coeff)
+        results = results.T # RCOPT transpose?
 
         self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                    noise_var=self.noise_var)
@@ -126,13 +122,13 @@ class Cov2DTestCase(TestCase):
 
     def test07GetCWFCoeffsIdentityCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
-        results = results.T # transpose?
+        results = results.T # RCOPT transpose?
 
         self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF))
 
     def test08GetCWFCoeffsClean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))
-        results = results.T # transpose?
+        results = results.T # RCOPT transpose?
         self.coeff_cwf_clean = self.cov2d.get_cwf_coeffs(self.coeff_clean, noise_var=0)
         self.assertTrue(np.allclose(results, self.coeff_cwf_clean))

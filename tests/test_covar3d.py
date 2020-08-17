@@ -149,11 +149,8 @@ class Covar3DTestCase(TestCase):
 
         # TODO, alter refs after RCOPT complete
         eigs_est_trunc = np.moveaxis(eigs_est[:, :, :, :C-1], -1, 0)
-        # eigs_est_trunc = np.swapaxes(eigs_est[:, :, :, :C-1], 0, -1)
-        # eigs_est_trunc = np.swapaxes(eigs_est_trunc, 1, -1)
-        # eigs_est_trunc = np.swapaxes(eigs_est_trunc, 2, -1)
-
         eigs_est_trunc = Volume(eigs_est_trunc)
+        
         lambdas_est_trunc = lambdas_est[:C-1, :C-1]
 
         # Estimate the coordinates in the eigenbasis. Given the images, we find the coordinates in the basis that

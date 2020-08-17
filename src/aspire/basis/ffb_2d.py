@@ -183,35 +183,18 @@ class FFBBasis2D(FBBasis2D):
         if x.ndim == 2:
             x = x[np.newaxis, :, :]
 
-        # sanity check
-        # x_ = np.empty((*x.shape[1:], x.shape[0]))
-        # for n, i in enumerate(x):
-        #     x_[..., n] = i
-        # x = x_
-        
-        # ensure the first two dimensions with size of self.sz
-        #x, sz_roll = unroll_dim(x, self.ndim + 1)
-        #x = m_reshape(x, (self.sz[0], self.sz[1], -1))
-
-        # print('x.shape', x.shape)
-        # print('x[0]', x[0])
-        # okay
-        
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
         n_r = np.size(self._precomp["freqs"], 1)
         freqs = np.reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # number of 2D image samples
-        #n_data = np.size(x, 2)
         n_data = x.shape[0]
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
         pfc = nufft(x, 2 * pi * freqs)
         pf = pfc.T
 
-        #print('pf[0]', pf[0])
-        #pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
         pf = np.reshape(pf, (n_data, n_r, n_theta))
 
         # Recover "negative" frequencies from "positive" half plane.
@@ -233,10 +216,7 @@ class FFBBasis2D(FBBasis2D):
         idx = ind + np.arange(self.k_max[0])
         mask = self._indices["ells"] == 0
 
-        #print('QQQ1', self._precomp["radial"][:, idx].shape) # 4, 8 
-        #print('QQQ2', pf[:, :, 0].real.shape) # 32, 8
         v[:, mask] = pf[:, :, 0].real @ self._precomp["radial"][:, idx] 
-        #v = m_reshape(v, (self.count, -1))
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -262,5 +242,4 @@ class FFBBasis2D(FBBasis2D):
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
         # return v coefficients with the first dimension of self.count
-        #v = roll_dim(v, sz_roll)
         return v

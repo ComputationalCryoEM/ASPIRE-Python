@@ -464,14 +464,13 @@ class ImageSource:
         num = im.n_images
 
         all_idx = np.arange(start, min(start + num, self.n))
-        #im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
         im = self.eval_filters(im, start=start, num=num).asnumpy()
 
-        # GBW, this class should pass around Images if you ask me...
+        # GBW, this class might be better off passing around Images
         vol = Volume.from_backprojection(Image(im), self.rots[start:start+num, :, :])
-        # and this should return Volumes, for now try to repro
+        # and this should return Volumes, for now just try to repro
         vol = vol[0]
 
         return vol
