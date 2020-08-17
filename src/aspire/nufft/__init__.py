@@ -53,23 +53,23 @@ def check_backends(raise_errors=True):
                 # Note we expect the cu library is in LD path.
                 #   That is managed by pip if using a wheel,
                 #   or the user if they have built from source.
-                from aspire.nfft.cufinufft import cuFINufftPlan
-                plan_class = cuFINufftPlan
+                from aspire.nufft.cufinufft import CufinufftPlan
+                plan_class = CufinufftPlan
             except Exception as e:
                 msg = str(e)
 
         elif backend == "finufft":
             try:
                 from finufftpy import nufft1d1
-                from aspire.nfft.finufft import FINufftPlan
-                plan_class = FINufftPlan
+                from aspire.nufft.finufft import FinufftPlan
+                plan_class = FinufftPlan
             except Exception as e:
                 msg = str(e)
 
         elif backend == "pynfft":
             try:
                 from pynfft.nfft import NFFT
-                from aspire.nfft.pynfft import PyNfftPlan
+                from aspire.nufft.pynfft import PyNfftPlan
                 plan_class = PyNfftPlan
             except Exception as e:
                 msg = str(e)
@@ -135,7 +135,7 @@ class Plan:
             return super(Plan, cls).__new__(cls)
 
 
-def anufft3(sig_f, fourier_pts, sz, real=False):
+def anufft(sig_f, fourier_pts, sz, real=False):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT Adjoint.
     Dimension is based on the dimension of fourier_pts and checked against sig_f.
@@ -162,7 +162,7 @@ def anufft3(sig_f, fourier_pts, sz, real=False):
     return np.real(adjoint) if real else adjoint
 
 
-def nufft3(sig_f, fourier_pts, real=False):
+def nufft(sig_f, fourier_pts, real=False):
     """
     Wrapper for 1, 2, and 3 dimensional Non Uniform FFT
     Dimension is based on the dimension of fourier_pts and checked against sig_f.

@@ -7,12 +7,12 @@ import pycuda.driver as cuda
 import pycuda.gpuarray as gpuarray
 from cufinufft import cufinufft
 
-from aspire.nfft import Plan
+from aspire.nufft import Plan
 from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)
 
-class cuFINufftPlan(Plan):
+class CufinufftPlan(Plan):
     def __init__(self, sz, fourier_pts, epsilon=1e-15, ntransforms=1, **kwargs):
         """
         A plan for non-uniform FFT in 2D or 3D.

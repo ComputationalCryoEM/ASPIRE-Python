@@ -7,7 +7,7 @@ from scipy.special import jv
 
 from aspire.basis.basis_utils import lgwt
 from aspire.basis.fb_2d import FBBasis2D
-from aspire.nfft import anufft3, nufft3
+from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.misc import complex_type
@@ -164,7 +164,7 @@ class FFBBasis2D(FBBasis2D):
 
         # TODO: Address axis swapping once C major in memory.
         pfc = np.swapaxes(pf, 0, 1)
-        x = 2 * anufft3(pfc, 2 * pi * freqs, self.sz, real=True)
+        x = 2 * anufft(pfc, 2 * pi * freqs, self.sz, real=True)
 
         # return the x with the first two dimensions of self.sz
         x = roll_dim(x, sz_roll)
@@ -193,7 +193,7 @@ class FFBBasis2D(FBBasis2D):
         n_data = np.size(x, 2)
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pfc = nufft3(x, 2 * pi * freqs)
+        pfc = nufft(x, 2 * pi * freqs)
         pf = pfc.T
 
         pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
