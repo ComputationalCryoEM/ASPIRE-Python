@@ -871,9 +871,14 @@ class SimTestCase(TestCase):
             ntransforms=ntransforms,
         )
 
+        atol = 1e-8  # Numpy default
+        if dtype == np.float32:
+            atol = 1e-5
+
         batch = np.empty(
             (ntransforms, *self.recip_space_plane.shape), dtype=complex_dtype
         )
+
         for i in range(ntransforms):
             batch[i] = self.recip_space_plane
 
@@ -881,7 +886,7 @@ class SimTestCase(TestCase):
         result = plan.adjoint(batch)
 
         for r in range(ntransforms):
-            self.assertTrue(np.allclose(result[r], self.adjoint_plane))
+            self.assertTrue(np.allclose(result[r], self.adjoint_plane, atol=atol))
 
     # TODO: This list could be done better, as some sort of matrix
     #    once there are no raise exceptions, but more pressing things...
