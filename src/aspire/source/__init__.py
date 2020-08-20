@@ -3,10 +3,11 @@ from copy import copy
 
 import numpy as np
 import pandas as pd
-from scipy.linalg import lstsq
+
 from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image
+from aspire.image import normalize_bg
 from aspire.io.starfile import save_star
 from aspire.source.xform import (Downsample, FilterXform, FlipXform,
                                  LambdaXform, LinearIndexedXform, LinearPipeline,
@@ -14,7 +15,6 @@ from aspire.source.xform import (Downsample, FilterXform, FlipXform,
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filters import (MultiplicativeFilter, PowerFilter)
-from aspire.utils.matrix import do_ramping
 from aspire.volume import im_backproject, vol_project
 
 logger = logging.getLogger(__name__)
@@ -429,8 +429,7 @@ class ImageSource:
         # Invalidate images
         self._im = None
 
-    def normalize_background(self, bg_radius=1.0, do_ramp=True,
-                             batch_size=512):
+    def normalize_background(self, bg_radius=1.0, do_ramp=True):
         """
         Normalize the images by the noise background
 
@@ -443,41 +442,13 @@ class ImageSource:
         :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
-        :param batch_size: Batch size of images to query.
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
-        logger.info(f'Normalize background on source object with radius size of {bg_radius}')
-
-        if do_ramp:
-            # Fit ramping background and apply the normalization from background
-            self.generation_pipeline.add_xform(LambdaXform(do_ramping, bg_radius=bg_radius))
-            logger.info('Adding do_ramp LambdaXform to end of generation pipeline')
-        else:
-            # Only apply normalization from background
-            L = self.L
-            grid = grid_2d(L)
-            mask = (grid['r'] > bg_radius)
-
-            first_moment = np.zeros(self.n)
-            second_moment = np.zeros(self.n)
-            for i in range(0, self.n, batch_size):
-                images = self.images(start=i, num=batch_size).asnumpy()
-                images_masked = (images * np.expand_dims(mask, 2))
-                first_moment[i:i+images.shape[2]] = np.sum(images_masked, axis=(0, 1))
-                second_moment[i:i+images.shape[2]] = np.sum(images_masked ** 2, axis=(0, 1))
-
-            denominator = np.sum(mask)
-            first_moment /= denominator
-            second_moment /= denominator
-            mean = first_moment
-            variance = second_moment - mean**2
-            std = np.sqrt(variance)
-
-            logger.info('Adding Add Xform to end of generation pipeline')
-            self.generation_pipeline.add_xform(Add(-mean))
-            logger.info('Adding Scaling Xform to end of generation pipeline')
-            self.generation_pipeline.add_xform(Multiply(1/std))
+        logger.info(f'Normalize background on source object with radius '
+                    f'size of {bg_radius} and do_ramp of {do_ramp}')
+        self.generation_pipeline.add_xform(
+            LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp))
 
         # Invalidate images
         self._im = None

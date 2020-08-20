@@ -8,7 +8,6 @@ from scipy.linalg import eigh
 from scipy.linalg import lstsq
 
 from aspire.utils import ensure
-from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matlab_compat import m_reshape
 
 SQRT2 = np.sqrt(2)
@@ -410,47 +409,3 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
     shrinked_covar *= noise_var
 
     return shrinked_covar
-
-
-def do_ramping(imgs, bg_radius=1.0):
-    """
-    Fit ramping backgrounds and apply to a stack of images
-
-    :param imgs: A stack of images in L-by-L-by-N array
-    :param bg_radius: Radius cutoff to be considered as background (in image size)
-    :return: The modified images
-    """
-    L = imgs.shape[1]
-    grid = grid_2d(L)
-    mask = (grid['r'] > bg_radius)
-
-    # Create matrices and reshape the background mask
-    # for fitting a ramping background
-    ramp_mask = np.vstack((grid['x'][mask].flatten(),
-                           grid['y'][mask].flatten(),
-                           np.ones(grid['y'][mask].flatten().size))).T
-    ramp_all = np.vstack((grid['x'].flatten(), grid['y'].flatten(),
-                          np.ones(L*L))).T
-    mask_reshape = mask.reshape((L*L))
-    imgs = imgs.reshape((L*L, -1))
-
-    # Fit a ramping background and apply to images
-    coeff = lstsq(ramp_mask, imgs[mask_reshape])[0]
-    imgs = imgs - ramp_all @ coeff
-    imgs = imgs.reshape((L, L, -1))
-
-    # Apply mask images and calculate mean and std values of background
-    imgs_masked = (imgs * np.expand_dims(mask, 2))
-    denominator = np.sum(mask)
-    first_moment = np.sum(imgs_masked, axis=(0, 1))/denominator
-    second_moment = np.sum(imgs_masked ** 2, axis=(0, 1))/denominator
-    mean = first_moment
-    variance = second_moment - mean**2
-    std = np.sqrt(variance)
-
-    # Normalize the images by background
-    imgs -= mean
-    imgs /= std
-
-    return imgs
-
