@@ -94,7 +94,6 @@ h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in filters]
 # Apply the CTF to the clean images.
 logger.info('Apply CTF filters to clean images.')
 imgs_ctf_clean = Image(sim.eval_filters(imgs_clean))
-sim.cache(imgs_ctf_clean)
 
 # imgs_ctf_clean is an Image object. Convert to numpy array for subsequent statements
 imgs_ctf_clean = imgs_ctf_clean.asnumpy()
