@@ -27,9 +27,6 @@ img_size = 33
 # Set the total number of images generated from the 3D map
 num_imgs = 512
 
-# Set the number of 3D maps
-num_maps = 1
-
 # Set the noise variance and build the noise filter
 noise_variance = 4e-1
 noise_filter = ScalarFilter(dim=2, value=noise_variance)
@@ -66,7 +63,7 @@ source = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    C=num_maps,
+    C=vols.shape[-1],
     filters=CTF_filters,
     noise_filter=noise_filter
 )
