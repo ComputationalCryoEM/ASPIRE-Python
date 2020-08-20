@@ -90,7 +90,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
             Otherwise, a constant background level from all images is used.
     :return: The modified images
     """
-    L = imgs.shape[1]
+    L = imgs.shape[0]
     grid = grid_2d(L)
     mask = (grid['r'] > bg_radius)
 
@@ -119,11 +119,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     variance = second_moment - mean**2
     std = np.sqrt(variance)
 
-    # Normalize the images by background
-    imgs -= mean
-    imgs /= std
-
-    return imgs
+    return (imgs-mean)/std
 
 
 class Image:
