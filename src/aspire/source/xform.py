@@ -329,6 +329,13 @@ class Pipeline(Xform):
         """
         self.xforms.extend(xforms)
 
+    def reset(self):
+        """
+        Reset the pipeline by removing all `Xform`s.
+        :return: None
+        """
+        self.xforms = []
+
     def _forward(self, im, indices):
         memory = Memory(location=self.memory, verbose=0)
         _apply_transform_cached = memory.cache(_apply_xform)

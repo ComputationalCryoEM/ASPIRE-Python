@@ -91,8 +91,8 @@ class ImageSource:
         self.n = n
         self.dtype = dtype
 
-        # The private attribute '_im' can be cached by calling this object's cache() method explicitly
-        self._im = None
+        # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
+        self._cached_im = None
 
         if metadata is None:
             self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
@@ -306,11 +306,10 @@ class ImageSource:
 
         return h
 
-    def cache(self, im=None):
+    def cache(self):
         logger.info('Caching source images')
-        if im is None:
-            im = self.images(start=0, num=np.inf)
-        self._im = im
+        self._cached_im = self.images(start=0, num=np.inf)
+        self.generation_pipeline.reset()
 
     def images(self, start, num, *args, **kwargs):
         """
@@ -323,13 +322,13 @@ class ImageSource:
         """
         indices = np.arange(start, min(start + num, self.n))
 
-        if self._im is not None:
+        if self._cached_im is not None:
             logger.info(f'Loading images from cache')
-            im = Image(self._im[:, :, indices])
+            im = Image(self._cached_im[:, :, indices])
         else:
             im = self._images(indices=indices, *args, **kwargs)
-            im = self.generation_pipeline.forward(im, indices=indices)
 
+        im = self.generation_pipeline.forward(im, indices=indices)
         logger.info(f'Loaded {len(indices)} images')
         return im
 
@@ -345,8 +344,6 @@ class ImageSource:
         self.offsets /= ds_factor
 
         self.L = L
-        # Invalidate images
-        self._im = None
 
     def whiten(self, noise_filter):
         """
@@ -367,8 +364,6 @@ class ImageSource:
 
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
-        # Invalidate images
-        self._im = None
 
     def im_backward(self, im, start):
         """
@@ -430,9 +425,9 @@ class ArrayImageSource(ImageSource):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         """
         super().__init__(L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None)
-        self._im = im
+        self._cached_im = im
 
     def _images(self, start=0, num=np.inf, indices=None):
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
-        return self._im[indices]
+        return self._cached_im[indices]
