@@ -48,12 +48,11 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
         self.angles = angles
-        self.C = C
         if vols is None:
-            self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
+            self.vols = self._gaussian_blob_vols(L=self.L, C=C, seed=seed)
         else:
             self.vols = vols
-
+        self.C = self.vols.shape[-1]
         self.seed = seed
 
         self.noise_adder = None
