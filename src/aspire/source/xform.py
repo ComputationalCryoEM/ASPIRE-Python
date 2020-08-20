@@ -349,14 +349,11 @@ def _apply_xform(xform, im, indices, adjoint=False):
     A simple global function (i.e. not a method) that is capable of being cached by joblib.Memory object's `cache`
     method.
     """
-    # Extract the short xfrom name for the long string
-    # xform_name = str(xform).split()[0].split('.')[-1]
-    xform_name = xform.__class__.__name__
     if not adjoint:
-        logger.info('  Applying ' + xform_name)
+        logger.info('  Applying ' + str(xform))
         return xform.forward(im, indices=indices)
     else:
-        logger.info('  Applying Adjoint ' + xform_name)
+        logger.info('  Applying Adjoint ' + str(xform))
         return xform.adjoint(im, indices=indices)
 
 
