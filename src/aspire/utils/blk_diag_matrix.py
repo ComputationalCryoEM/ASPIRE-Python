@@ -861,9 +861,7 @@ def filter_to_fb_mat(h_fun, fbasis):
         rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
         fb_vals = np.zeros_like(rmat)
         for ik in range(0, k_max):
-            fb_vals[:, ik] = jv(ell, rmat[:, ik])
-        fb_nrms = 1/np.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
-        fb_vals = fb_vals/fb_nrms
+            fb_vals[:, ik] = fbasis.jv_norm[ell][ik]
         h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
             h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1))

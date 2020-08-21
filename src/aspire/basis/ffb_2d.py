@@ -36,6 +36,7 @@ class FFBBasis2D(FBBasis2D):
         # set cutoff values
         self.rcut = self.nres / 2
         self.kcut = 0.5
+        self.jv_norm = []
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()
@@ -66,6 +67,7 @@ class FFBBasis2D(FBBasis2D):
         radial = np.zeros(shape=(np.sum(self.k_max), n_r))
         ind_radial = 0
         for ell in range(0, self.ell_max + 1):
+            jv_ell = []
             for k in range(1, self.k_max[ell] + 1):
                 radial[ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
                 # NOTE: We need to remove the factor due to the discretization here
@@ -73,6 +75,8 @@ class FFBBasis2D(FBBasis2D):
                 nrm = 1 / (np.sqrt(np.prod(self.sz))) * self.basis_norm_2d(ell, k)
                 radial[ind_radial] /= nrm
                 ind_radial += 1
+            # Save precomputed jv values after normalization
+            self.jv_norm.append(jv_ell)
 
         n_theta = np.ceil(16 * self.kcut * self.rcut)
         n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
