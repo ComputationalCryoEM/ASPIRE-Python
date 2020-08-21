@@ -40,7 +40,6 @@ class SimTestCase(TestCase):
 
     def testSimulationImages(self):
         images = self.sim.clean_images(0, 512).asnumpy()
-        ref = np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy'))
         self.assertTrue(np.allclose(images, np.load(os.path.join(DATA_DIR, 'sim_clean_images.npy')), rtol=1e-2))
 
     def testSimulationImagesNoisy(self):

@@ -104,14 +104,14 @@ class Image:
         if data.ndim == 2:
             data = data[np.newaxis, :, :]
 
-        ensure(data.shape[1] == data.shape[2], 'Only square ndarrays are supported.')
-
         self.data = data
         self.ndim = self.data.ndim
         self.dtype = self.data.dtype
         self.shape = self.data.shape
         self.n_images = self.shape[0]
         self.res = self.shape[1]
+
+        ensure(data.shape[1] == data.shape[2], 'Only square ndarrays are supported.')
 
     def __getitem__(self, item):
         return self.data[item]

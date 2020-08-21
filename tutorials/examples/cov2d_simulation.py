@@ -154,11 +154,9 @@ logger.info('Get the CWF coefficients of noising images.')
 coeff_est = cov2d.get_cwf_coeffs(coeff_noise, h_ctf_fb, h_idx,
                                  mean_coeff=mean_coeff_est,
                                  covar_coeff=covar_coeff_est, noise_var=noise_var)
-coeff_est = coeff_est.T # RCOPT
 
 # Convert Fourier-Bessel coefficients back into 2D images
 imgs_est = ffbbasis.evaluate(coeff_est)
-imgs_est = np.swapaxes(imgs_est.T, -2, -1) # RCOPT this transposes XY... not sure best way to handle that change globally (it related to F2C for stack...).
 imgs_est = Image(imgs_est) # eventually evaluate should return an Image, hack for now
 
 

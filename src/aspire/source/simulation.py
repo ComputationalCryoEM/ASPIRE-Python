@@ -58,7 +58,6 @@ class Simulation(ImageSource):
         if vols is None:
             self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
             #XXX HACK UNTIL _gaussian_blob_vols CONVERTED
-#            _vols = [Volume(self.L)]*self.C
             _vols = []
             for n in range(self.C):
                 _vols.append(self.vols[:,:,:,n])

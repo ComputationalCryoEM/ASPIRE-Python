@@ -75,7 +75,7 @@ class Estimator:
             batch_mean_b = self.src.im_backward(im, i) / self.n
             mean_b += batch_mean_b.astype(self.as_type)
 
-        res = self.basis.evaluate_t(mean_b)
+        res = self.basis.evaluate_t(mean_b.T) # RCOPT
         logger.info(f'Determined adjoint mappings. Shape = {res.shape}')
         return res
 
@@ -118,8 +118,8 @@ class Estimator:
         """
         if kernel is None:
             kernel = self.kernel
-        vol = self.basis.evaluate(vol_coeff).squeeze()
+        vol = self.basis.evaluate(vol_coeff).T.squeeze()  # RCOPT
         vol = kernel.convolve_volume(vol)
-        vol = self.basis.evaluate_t(vol)
+        vol = self.basis.evaluate_t(vol.T)   #RCOPT
 
         return vol

@@ -34,7 +34,7 @@ class PreprocessTestCase(TestCase):
 
     def test03Vol2img(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_down8_imgs32.npy'))
-        vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy'))
+        vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy')).T # #RCOPT
         vols = vols[..., np.newaxis]
         rots = qrand_rots(32, seed=0)
         imgs_clean = vol2img(vols[..., 0], rots)

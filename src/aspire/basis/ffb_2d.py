@@ -102,6 +102,7 @@ class FFBBasis2D(FBBasis2D):
             coordinate basis. This is an array whose first two dimensions equal `self.sz`
             and the remaining dimensions correspond to dimensions two and higher of `v`.
         """
+        v = v.T # RCOPT
         # make should the first dimension of v is self.count
         v, sz_roll = unroll_dim(v, 2)
         v = m_reshape(v, (self.count, -1))
@@ -164,14 +165,16 @@ class FFBBasis2D(FBBasis2D):
         freqs = m_reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # TODO: Address axis swapping once C major in memory.
-        pfc = np.swapaxes(pf, 0, 1)
+        pfc = pf.T
         x = 2 * anufft(pfc, 2 * pi * freqs, self.sz, real=True)
 
         # return the x with the first two dimensions of self.sz
+        # RCOPT, come back and unravel these two commands (roll_dim is part of the matlab compat tools that use m_...)
+        x = x.T
         x = roll_dim(x, sz_roll)
 
         # XXX, GBW, I think this might return an Image in the future, RCOPT?
-        return x
+        return x.T
 
     def evaluate_t(self, x):
         """

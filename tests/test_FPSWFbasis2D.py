@@ -16,7 +16,7 @@ class FPSWFBasis2DTestCase(TestCase):
         pass
 
     def testFPSWFBasis2DEvaluate_t(self):
-        images = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy'))
+        images = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy')).T #RCOPT
         result = self.basis.evaluate_t(images)
         coeffs = np.load(os.path.join(DATA_DIR, 'fpswf2d_vcoeffs_out_8_8.npy'))
         # make sure both real and imaginary parts are consistent.

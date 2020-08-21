@@ -95,7 +95,7 @@ class Volume:
 
 
     def project(self, vol_idx, rot_matrices):
-        data = self[vol_idx]
+        data = self[vol_idx].T  #RCOPT
 
         n = rot_matrices.shape[0]
 
@@ -103,7 +103,6 @@ class Volume:
 
         # TODO: RCOPT come back and convert these methods internally to C order
         ## TODO: rotated_grids might as well give us correctly shaped array in the first place,
-        #  yea... this and the related code look real funny to me.
         pts_rot = m_reshape(pts_rot, (3, self.resolution**2*n))
 
         im_f = (1./self.resolution *

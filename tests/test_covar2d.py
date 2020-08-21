@@ -44,7 +44,7 @@ class Cov2DTestCase(TestCase):
             dtype='double'
         )
 
-        vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
+        vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')).T # RCOPT
         vols = vols[np.newaxis, ...]
         vols = downsample(vols, (L*np.ones(3, dtype=int)))
         sim.vols = vols
@@ -53,10 +53,10 @@ class Cov2DTestCase(TestCase):
         # use new methods to generate random rotations and clean images
         sim.rots = qrand_rots(n, seed=0)
         self.imgs_clean = vol2img_F(vols[0], sim.rots)
-        # XXX hack for testing purposes (need to rewrite vol2img later)
-        self.imgs_clean = np.array([self.imgs_clean[..., i] for i in range(self.imgs_clean.shape[-1])])
-        
-        
+        # RCOPT hack for testing purposes (need to replace vol2img (project?) later)
+        # should probably be using Volume and Image...
+        self.imgs_clean = self.imgs_clean.T
+
 
         self.h_idx = np.array([filters.index(f) for f in sim.filters])
         self.filters = filters
@@ -66,9 +66,7 @@ class Cov2DTestCase(TestCase):
 
         power_clean = anorm(self.imgs_ctf_clean)**2/np.size(self.imgs_ctf_clean)
         self.noise_var = power_clean/SNR
-        # RCOPT
-        R = np.swapaxes(randn(L, L, n, seed=0), 0, 1)
-        R = np.swapaxes(R, -1, 0)
+        R = randn(L, L, n, seed=0).T # RCOPT
         self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var) * R
 
         self.cov2d = RotCov2D(self.basis)
