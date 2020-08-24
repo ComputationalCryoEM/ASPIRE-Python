@@ -43,7 +43,6 @@ setup(
         'pyfftw',
         'python-box',
         'pytest',
-	'pytest-random-order',
         'pytest-cov',
         'python-box',
         'scipy==1.3.0',
@@ -58,7 +57,8 @@ setup(
     #   or developer tools that are handy but not required for users.
     extras_require = {
         'gpu': ['pycuda', 'cupy', 'cufinufft>=1.0'],
-        'dev': ['bumpversion', 'flake8', 'isort', 'pyflakes', 'pydocstyle', 'snakeviz'],
+        'dev': ['bumpversion', 'flake8', 'isort', 'pyflakes', 'pydocstyle',
+                'pytest-random-order', 'snakeviz'],
     },
 
     package_dir={'': 'src'},
