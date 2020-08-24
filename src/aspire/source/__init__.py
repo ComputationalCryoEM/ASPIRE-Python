@@ -284,7 +284,7 @@ class ImageSource:
 
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
         if not isinstance(im_orig, Image):
-            logger.warn(f"eval_filters passed {type(im_orig)} instead of Image instance")
+            logger.warning(f"eval_filters passed {type(im_orig)} instead of Image instance")
             # for now just convert it
             im = Image(im_orig)
 
