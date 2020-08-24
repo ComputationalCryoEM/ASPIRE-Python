@@ -5,7 +5,6 @@ from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2_C, centered_ifft2_C
-from aspire.utils.fft import centered_fft2_F, centered_ifft2_F
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 
@@ -108,18 +107,18 @@ class Volume:
         im_f = (1./self.resolution *
                 Plan(self.volume_shape, pts_rot).transform(data))
 
-        im_f = m_reshape(im_f, (self.resolution, self.resolution, -1))
+        im_f = im_f.reshape(-1, self.resolution, self.resolution)
 
         if self.resolution % 2 == 0:
-            im_f[0, :, :] = 0
             im_f[:, 0, :] = 0
+            im_f[:, :, 0] = 0
 
+        im_f = centered_ifft2_C(im_f)
 
-        im = centered_ifft2_F(im_f)
-        im_c = np.swapaxes(im, 0, -1)
-        im_c = np.swapaxes(im_c, -2, -1)
+        # Looks like we still need to transpose the image axis here for repro
+        im_f = np.swapaxes(im_f, -2, -1)         # RCOPT
 
-        return Image(np.real(im_c))
+        return Image(np.real(im_f))
 
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
@@ -229,32 +228,3 @@ def rotated_grids(L, rot_matrices):
 
     pts_rot = m_reshape(pts_rot, (3, L, L, num_rots))
     return pts_rot
-
-
-def im_backproject(im, rot_matrices):
-    """
-    Backproject images along rotation
-    :param im: An L-by-L-by-n array of images to backproject.
-    :param rot_matrices: An n-by-3-by-3 array of rotation matrices corresponding to viewing directions.
-    :return: An L-by-L-by-L volumes corresponding to the sum of the backprojected images.
-    """
-    L, _, n = im.shape
-    ensure(L == im.shape[1], "im must be LxLxK")
-    ensure(n == rot_matrices.shape[0], "Number of rotation matrices must match the number of images")
-
-    pts_rot = rotated_grids(L, rot_matrices)
-    pts_rot = m_reshape(pts_rot, (3, -1))
-
-    im_f = centered_fft2_F(im) / (L**2)
-    if L % 2 == 0:
-        im_f[0, :, :] = 0
-        im_f[:, 0, :] = 0
-    im_f = m_flatten(im_f)
-
-    plan = Plan(
-        sz=(L, L, L),
-        fourier_pts=pts_rot
-    )
-    vol = np.real(plan.adjoint(im_f)) / L
-
-    return vol

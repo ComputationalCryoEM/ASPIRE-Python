@@ -16,7 +16,6 @@ from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filters import MultiplicativeFilter, PowerFilter
 from aspire.volume import Volume
-from aspire.volume import im_backproject
 
 logger = logging.getLogger(__name__)
 

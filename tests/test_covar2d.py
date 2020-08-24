@@ -12,8 +12,8 @@ from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import randn
 from aspire.utils.matrix import anorm
-from aspire.utils.preprocess_C import downsample, vol2img
-from aspire.utils.preprocess import vol2img as vol2img_F
+from aspire.utils.preprocess_C import downsample
+from aspire.utils.preprocess import vol2img as vol2img
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -52,7 +52,7 @@ class Cov2DTestCase(TestCase):
         self.basis = FFBBasis2D((L, L))
         # use new methods to generate random rotations and clean images
         sim.rots = qrand_rots(n, seed=0)
-        self.imgs_clean = vol2img_F(vols[0], sim.rots)
+        self.imgs_clean = vol2img(vols[0], sim.rots)
         # RCOPT hack for testing purposes (need to replace vol2img (project?) later)
         # should probably be using Volume and Image...
         self.imgs_clean = self.imgs_clean.T

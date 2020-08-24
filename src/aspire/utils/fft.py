@@ -39,6 +39,7 @@ def centered_ifft2_C(x):
     return x
 
 
+# Note, deprecated, only used in preprocess
 def centered_ifft2_F(x):
     """
     Calculate a centered, two-dimensional inverse FFT
@@ -59,6 +60,7 @@ def centered_fft2_C(x):
     return x
 
 
+# Note, deprecated, only used in preprocess
 def centered_fft2_F(x):
     x = ifftshift(ifftshift(x, 0), 1)
     x = fft2(x, axes=(0, 1))
@@ -66,6 +68,7 @@ def centered_fft2_F(x):
     return x
 
 
+# Note, deprecated, only used in preprocess
 def centered_ifft3_F(x):
     """
     Calculate a centered, three-dimensional inverse FFT
@@ -78,7 +81,7 @@ def centered_ifft3_F(x):
     x = fftshift(fftshift(fftshift(x, 0), 1), 2)
     return x
 
-
+# Note, deprecated, only used in preprocess
 def centered_fft3_F(x):
     x = ifftshift(ifftshift(ifftshift(x, 0), 1), 2)
     x = fftn(x, axes=(0, 1, 2))
