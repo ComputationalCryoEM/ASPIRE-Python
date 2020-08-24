@@ -186,22 +186,20 @@ class FFBBasis2D(FBBasis2D):
             and whose remaining dimensions correspond to higher dimensions of `x`.
         """
 
+        if not isinstance(x, Image):
+            logger.warning(f'{self.__class__.__name__}::evaluate_t'
+                           ' passed numpy array instead of Image.'
+                           ' Converting, in future this will raise error.')
+            x = Image(x)
+
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
         n_r = np.size(self._precomp["freqs"], 1)
         freqs = np.reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # number of 2D image samples
-        if isinstance(x, Image):
-            n_images = x.n_images
-            x_data = x.data
-        else:
-            logger.warning(f'{self.__class__.__name__}::evaluate_t'
-                           'passed numpy array instead of Image.')
-            x_data = x
-            if x.ndim == 2:
-                x_data = x_data[np.newaxis, :, :]
-            n_images = x_data.shape[0]
+        n_images = x.n_images
+        x_data = x.data
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
         pf = nufft(x_data, 2 * pi * freqs)
@@ -226,7 +224,7 @@ class FFBBasis2D(FBBasis2D):
         idx = ind + np.arange(self.k_max[0])
         mask = self._indices["ells"] == 0
 
-        v[:, mask] = pf[:, :, 0].real @ self._precomp["radial"][:, idx] 
+        v[:, mask] = pf[:, :, 0].real @ self._precomp["radial"][:, idx]
         ind = ind + np.size(idx)
 
         ind_pos = ind
