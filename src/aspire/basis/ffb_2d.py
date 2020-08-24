@@ -10,7 +10,6 @@ from aspire.basis.fb_2d import FBBasis2D
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.misc import complex_type
 
 logger = logging.getLogger(__name__)
@@ -99,13 +98,12 @@ class FFBBasis2D(FBBasis2D):
         :param v: A coefficient vector (or an array of coefficient vectors)
             in FB basis to be evaluated. The first dimension must equal `self.count`.
         :return x: The evaluation of the coefficient vector(s) `x` in standard 2D
-            coordinate basis. This is an array whose first two dimensions equal `self.sz`
-            and the remaining dimensions correspond to dimensions two and higher of `v`.
+            coordinate basis. This is Image instance with resolution of `self.sz`
+            and the first dimension correspond to remaining dimension of `v`.
         """
-        v = v.T # RCOPT
-        # make should the first dimension of v is self.count
-        v, sz_roll = unroll_dim(v, 2)
-        v = m_reshape(v, (self.count, -1))
+
+        # Transpose here once, instead of several times below  #RCOPT
+        v = v.reshape(-1, self.count).T
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
@@ -168,12 +166,10 @@ class FFBBasis2D(FBBasis2D):
         pfc = pf.T
         x = 2 * anufft(pfc, 2 * pi * freqs, self.sz, real=True)
 
-        # return the x with the first two dimensions of self.sz
-        # RCOPT, come back and unravel these two commands (roll_dim is part of the matlab compat tools that use m_...)
-        x = x.T
-        x = roll_dim(x, sz_roll)
+        # Return X as Image instancewith the last two dimensions as *self.sz
+        x = x.reshape(-1, *self.sz)
 
-        return Image(x.T)
+        return Image(x)
 
     def evaluate_t(self, x):
         """
