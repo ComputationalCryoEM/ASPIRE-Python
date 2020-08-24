@@ -209,8 +209,7 @@ class Simulation(ImageSource):
         """
         Eigendecomposition of volume covariance matrix of simulation
         :return: A 2-tuple:
-            eigs_true: The eigenvectors of the volume covariance matrix in the form of an (C-1)-by-L-by-L-by-Larray,
-            where C is the number of distinct states in the simulation
+            eigs_true: The eigenvectors of the volume covariance matrix in the form of Volume instance.
             lambdas_true: The eigenvalues of the covariance matrix in the form of a (C-1)-by-(C-1) diagonal matrix.
         """
         C = self.C
