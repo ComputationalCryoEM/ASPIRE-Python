@@ -173,8 +173,7 @@ class FFBBasis2D(FBBasis2D):
         x = x.T
         x = roll_dim(x, sz_roll)
 
-        # XXX, GBW, I think this might return an Image in the future, RCOPT?
-        return x.T
+        return Image(x.T)
 
     def evaluate_t(self, x):
         """

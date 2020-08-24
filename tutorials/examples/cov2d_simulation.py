@@ -157,8 +157,6 @@ coeff_est = cov2d.get_cwf_coeffs(coeff_noise, h_ctf_fb, h_idx,
 
 # Convert Fourier-Bessel coefficients back into 2D images
 imgs_est = ffbbasis.evaluate(coeff_est)
-imgs_est = Image(imgs_est) # eventually evaluate should return an Image, hack for now
-
 
 # Evaluate the results
 # Calculate the difference between the estimated covariance and the "true"

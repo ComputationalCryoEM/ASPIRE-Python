@@ -71,7 +71,7 @@ class FFBBasis2DTestCase(TestCase):
         result = self.basis.evaluate(v)
 
         self.assertTrue(np.allclose(
-            result,
+            result.asnumpy(), # Result of evaluate is an Image after RCOPT
             np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_out_8_8.npy')).T #RCOPT
         ))
 
