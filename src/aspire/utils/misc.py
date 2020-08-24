@@ -99,8 +99,7 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
 
 
         # RCOPT
-        ims = np.swapaxes(ims.data, 1, 2)
-        ims = np.swapaxes(ims, 0, 2)
+        ims = np.moveaxis(ims.data, 0, 2)
         im_vecs = mat_to_vec(ims)
 
         for j in range(batch_n):
