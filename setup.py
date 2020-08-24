@@ -43,6 +43,7 @@ setup(
         'pyfftw',
         'python-box',
         'pytest',
+	'pytest-random-order',
         'pytest-cov',
         'python-box',
         'scipy==1.3.0',
