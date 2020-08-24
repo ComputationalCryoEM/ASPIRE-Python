@@ -8,6 +8,7 @@ from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
 from aspire.estimation.kernel import FourierKernel
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +55,13 @@ class Estimator:
         raise NotImplementedError('Subclasses must implement the compute_kernel method')
 
     def estimate(self, b_coeff=None, tol=None):
+        """ Return an estimate as a Volume instance. """
         if b_coeff is None:
             b_coeff = self.src_backward()
         est_coeff = self.conj_grad(b_coeff, tol=tol)
         est = self.basis.evaluate(est_coeff)
 
-        return est
+        return Volume(est)
 
     def src_backward(self):
         """

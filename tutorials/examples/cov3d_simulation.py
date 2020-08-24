@@ -48,7 +48,7 @@ logger.info(f'Noise Variance = {noise_variance}')
 # L-by-L-by-L array.
 
 mean_estimator = MeanEstimator(sim, basis)
-mean_est = Volume(mean_estimator.estimate())
+mean_est = mean_estimator.estimate()
 
 # Passing in a mean_kernel argument to the following constructor speeds up some calculations
 covar_estimator = CovarianceEstimator(sim, basis, mean_kernel=mean_estimator.kernel)
