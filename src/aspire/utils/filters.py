@@ -11,7 +11,7 @@ from aspire.utils.matlab_compat import m_reshape
 
 
 class Filter:
-    def __init__(self, dim=2, radial=False):
+    def __init__(self, dim=None, radial=False):
         self.dim = dim
         self.radial = radial
         self._scale = 1  # If needed, modified through the scale() method
@@ -29,9 +29,7 @@ class Filter:
         """
         if omega.ndim == 1:
             ensure(self.radial, f'Cannot evaluate a non-radial filter on 1D input array.')
-        elif omega.ndim == 2:
-            ensure(omega.shape[0] == self.dim, f'Omega must be of size {self.dim} x n')
-
+        self.dim = omega.shape[0]
         if self.radial:
             if omega.ndim > 1:
                 omega = np.sqrt(np.sum(omega ** 2, axis=0))
@@ -190,7 +188,7 @@ class ArrayFilter(Filter):
 
 
 class ScalarFilter(Filter):
-    def __init__(self, dim=2, value=1):
+    def __init__(self, dim=None, value=1):
         super().__init__(dim=dim, radial=True)
         self.value = value
 
@@ -206,12 +204,12 @@ class ScalarFilter(Filter):
 
 
 class ZeroFilter(ScalarFilter):
-    def __init__(self, dim=2):
+    def __init__(self, dim=None):
         super().__init__(dim=dim, value=0)
 
 
 class IdentityFilter(ScalarFilter):
-    def __init__(self, dim=2):
+    def __init__(self, dim=None):
         super().__init__(dim=dim, value=1)
 
 
