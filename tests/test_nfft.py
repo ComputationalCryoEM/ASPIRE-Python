@@ -429,12 +429,7 @@ class SimTestCase(TestCase):
         self._testTransformMany('finufft', np.float64)
 
     def testAdjoint0_64(self):
-        # cufinufft 3D of this type currently does not support doubles,
-        # It may require refactoring of the low level algorithm at a
-        # future date.
-        #   This should raise.
-        with pytest.raises(TypeError):
-            self._testAdjoint('cufinufft', np.float64)
+        self._testAdjoint('cufinufft', np.float64)
 
     def testAdjointMany0_64(self):
         self._testAdjointMany('cufinufft', np.float64)

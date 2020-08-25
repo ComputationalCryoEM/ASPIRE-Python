@@ -53,8 +53,16 @@ class CufinufftPlan(Plan):
         self._transform_plan = cufinufft(2, self.sz, -1, self.epsilon, ntransforms=self.ntransforms,
                                          dtype=self.dtype)
 
+        self.adjoint_opts = None
+        if self.dtype is np.float64 and self.dim==3 and self.epsilon < 1E3:
+            # Note this is an algorithmic implementation dictacted by shmem.
+            logger.info('Converting cufinufft gpu_method=1 from default of 2 for 3D1 transform,'
+                        f'to support computation in double precision with tol={self.epsilon}.')
+            self.adjoint_opts = cufinufft.default_opts(nufft_type=1, dim=self.dim)
+            self.adjoint_opts.gpu_method = 1
+
         self._adjoint_plan = cufinufft(1, self.sz, 1, self.epsilon, ntransforms=self.ntransforms,
-                                       dtype=self.dtype)
+                                       dtype=self.dtype, opts=self.adjoint_opts)
 
         # Note I store self.fourier_pts_gpu so the GPUArrray life is tied to instance,
         #  instead of this method.
@@ -122,10 +130,6 @@ class CufinufftPlan(Plan):
                 signal.dtype == self.dtype):
             logger.warning('Incorrect dtypes passed to (a)nufft.'
                            ' In the future this will be an error.')
-
-        if self.dim == 3 and self.dtype == np.float64:
-            # Note, this is a known internal limitation of cufinufft algorithm at this time.
-            raise TypeError('Currently the 3d1 sub-problem method is singles only.')
 
         res_shape = self.sz
         # Note, there is a corner case for ntransforms == 1.
