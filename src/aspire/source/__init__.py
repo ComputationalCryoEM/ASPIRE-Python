@@ -417,6 +417,9 @@ class ArrayImageSource(ImageSource):
     An `ImageSource` object that holds a reference to an underlying `Image` object (a thin wrapper on an ndarray)
     representing images. It does not produce its images on the fly, but keeps them in memory. As such, it should not be
     used where large Image objects are involved, but can be used in situations where API conformity is desired.
+
+    Note that this class does not provide an `_images` method, since it populates the `_cached_im` attribute which,
+    if available, is consulted directly by the parent class, bypassing `_images`.
     """
     def __init__(self, im, metadata=None):
         """
@@ -426,8 +429,3 @@ class ArrayImageSource(ImageSource):
         """
         super().__init__(L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None)
         self._cached_im = im
-
-    def _images(self, start=0, num=np.inf, indices=None):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
-        return self._cached_im[indices]
