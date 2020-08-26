@@ -456,7 +456,7 @@ class ImageSource:
     def im_backward(self, im, start):
         """
         Apply adjoint mapping to set of images
-        :param im: An L-by-L-by-n array of images to which we wish to apply the adjoint of the forward model.
+        :param im: An Image instance to which we wish to apply the adjoint of the forward model.
         :param start: Start index of image to consider
         :return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.
         """
@@ -465,11 +465,9 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
-        im = self.eval_filters(im, start=start, num=num).asnumpy()
+        im = self.eval_filters(im, start=start, num=num)
 
-        # GBW, this class might be better off passing around Images
-        vol = Volume.from_backprojection(Image(im), self.rots[start:start+num, :, :])
-        # and this should return Volumes, for now just try to repro
+        vol = Volume.from_backprojection(im, self.rots[start:start+num, :, :])
         vol = vol[0]
 
         return vol

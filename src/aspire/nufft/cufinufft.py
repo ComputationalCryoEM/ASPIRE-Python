@@ -55,7 +55,7 @@ class CufinufftPlan(Plan):
 
         self.adjoint_opts = None
         if self.dtype is np.float64 and self.dim==3 and self.epsilon < 1E3:
-            # Note this is an algorithmic implementation dictacted by shmem.
+            # Note this is an algorithmic implementation dictated by shmem.
             logger.info('Converting cufinufft gpu_method=1 from default of 2 for 3D1 transform,'
                         f'to support computation in double precision with tol={self.epsilon}.')
             self.adjoint_opts = cufinufft.default_opts(nufft_type=1, dim=self.dim)

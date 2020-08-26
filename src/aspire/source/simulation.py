@@ -57,12 +57,8 @@ class Simulation(ImageSource):
         self.C = C
         if vols is None:
             self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
-            #XXX HACK UNTIL _gaussian_blob_vols CONVERTED
-            _vols = []
-            for n in range(self.C):
-                _vols.append(self.vols[:,:,:,n])
-            self.vols = Volume(np.array(_vols))
-
+            #TODO: convert _gaussian_blob_vols to C order
+            self.vols = Volume(np.moveaxis(self.vols, 3, 0))
         else:
             assert isinstance(vols, Volume)
             self.vols = vols
@@ -128,7 +124,7 @@ class Simulation(ImageSource):
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :return: An ndarray of shape (num, L, L), L being the size of each image.
+        :return: An Image instance.
         """
         if indices is None:
             indices = np.arange(start, min(start+num, self.n))

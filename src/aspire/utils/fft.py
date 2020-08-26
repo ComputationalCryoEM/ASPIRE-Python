@@ -54,6 +54,13 @@ def centered_ifft2_F(x):
 
 
 def centered_fft2_C(x):
+    """
+    Calculate a centered, two-dimensional inverse FFT
+    :param x: The two-dimensional signal to be transformed.
+        The inverse FFT is only applied along the last two dimensions.
+    :return: The centered inverse Fourier transform of x.
+    """
+
     x = ifftshift(ifftshift(x, -2), -1)
     x = fft2(x, axes=(-2, -1))
     x = fftshift(fftshift(x, -2), -1)
@@ -92,7 +99,7 @@ def centered_ifft3_C(x):
     """
     Calculate a centered, three-dimensional inverse FFT
     :param x: The three-dimensional signal to be transformed.
-        The inverse FFT is only applied along the first three dimensions.
+        The inverse FFT is only applied along the last three dimensions.
     :return: The centered inverse Fourier transform of x.
     """
     x = ifftshift(ifftshift(ifftshift(x, -3), -2), -1)

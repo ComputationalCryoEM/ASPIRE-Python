@@ -166,7 +166,7 @@ class FFBBasis2D(FBBasis2D):
         pfc = pf.T
         x = 2 * anufft(pfc, 2 * pi * freqs, self.sz, real=True)
 
-        # Return X as Image instancewith the last two dimensions as *self.sz
+        # Return X as Image instance with the last two dimensions as *self.sz
         x = x.reshape(-1, *self.sz)
 
         return Image(x)
@@ -178,14 +178,13 @@ class FFBBasis2D(FBBasis2D):
         :param x: The Image instance representing coefficient array in the \
         standard 2D coordinate basis to be evaluated.
         :return v: The evaluation of the coefficient array `v` in the FB basis.
-            This is an array of vectors whose first dimension equals `self.count`
-            and whose remaining dimensions correspond to higher dimensions of `x`.
+            This is an array of vectors whose last dimension equals `self.count`
+            and whose first dimensions correspond to `x.n_images`.
         """
 
         if not isinstance(x, Image):
             logger.warning(f'{self.__class__.__name__}::evaluate_t'
-                           ' passed numpy array instead of Image.'
-                           ' Converting, in future this will raise error.')
+                           ' passed numpy array instead of Image.')
             x = Image(x)
 
         # get information on polar grids from precomputed data

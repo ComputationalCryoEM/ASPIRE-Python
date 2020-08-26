@@ -74,24 +74,9 @@ class Volume:
 
     #     return res
 
+    # # TODO: Open issue for fixing rotated_grids wholesale
     def _rotated_grids(self, rot_matrices):
-        """
-        Generate rotated Fourier grids in 3D from rotation matrices
-
-        :param rot_matrices: An array of size k-by-3-by-3 containing K rotation matrices
-        :return: A set of rotated Fourier grids in three dimensions as specified by the rotation matrices.
-        Frequencies are in the range [-pi, pi].
-        """
-        grid2d = grid_2d(L)
-        num_pts = self.resolution ** 2
-        num_rots = rot_matrices.shape[0]
-        pts = np.pi * np.vstack([grid2d['x'].flatten('F'), grid2d['y'].flatten('F'), np.zeros(num_pts)])
-        pts_rot = np.zeros((3, num_pts, num_rots))
-        for i in range(num_rots):
-            pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
-            #Note, previously pts_rot = m_reshape(pts_rot, (3, L, L, num_rots))
-        return pts_rot
-
+        raise NotImplementedError('Method not currently implemented')
 
     def project(self, vol_idx, rot_matrices):
         data = self[vol_idx].T  #RCOPT
