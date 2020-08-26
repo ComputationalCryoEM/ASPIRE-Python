@@ -4,7 +4,7 @@ from aspire.image import Image
 from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.fft import centered_fft2_C, centered_ifft2_C
+from aspire.utils.fft import centered_fft2, centered_ifft2
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 
@@ -98,7 +98,7 @@ class Volume:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
-        im_f = centered_ifft2_C(im_f)
+        im_f = centered_ifft2(im_f)
 
         # Looks like we still need to transpose the image axis here for repro
         im_f = np.swapaxes(im_f, -2, -1)         # RCOPT
@@ -138,7 +138,7 @@ class Volume:
         pts_rot = rotated_grids(L, rot_matrices)
         pts_rot = m_reshape(pts_rot, (3, -1))
 
-        im_f = centered_fft2_C(im.data) / (L**2)
+        im_f = centered_fft2(im.data) / (L**2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0

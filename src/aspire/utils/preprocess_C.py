@@ -9,8 +9,8 @@ from scipy.interpolate import RegularGridInterpolator
 from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
-from aspire.utils.fft import (centered_fft1, centered_fft2_C, centered_fft3_C,
-                              centered_ifft1, centered_ifft2_C, centered_ifft3_C)
+from aspire.utils.fft import (centered_fft1, centered_fft2, centered_fft3,
+                              centered_ifft1, centered_ifft2, centered_ifft3)
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)

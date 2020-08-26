@@ -7,7 +7,7 @@ from scipy.linalg import lstsq
 from aspire.utils.matrix import anorm
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.fft import centered_fft2_C, centered_ifft2_C
+from aspire.utils.fft import centered_fft2, centered_ifft2
 
 
 # TODO: The implementation of these functions should move directly inside the appropriate Image methods that call them.
@@ -182,7 +182,7 @@ class Image:
         x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
 
         mask = (np.abs(grid['x']) < ds_res / self.res) & (np.abs(grid['y']) < ds_res / self.res)
-        im = np.real(centered_ifft2_C(centered_fft2_C(self.data) *
+        im = np.real(centered_ifft2(centered_fft2(self.data) *
                                     np.expand_dims(mask, 0)))
 
         for s in range(im_ds.shape[0]):
@@ -205,12 +205,12 @@ class Image:
         """
         filter_values = filter.evaluate_grid(self.res)
 
-        im_f = centered_fft2_C(self.data)
+        im_f = centered_fft2(self.data)
         if im_f.ndim > filter_values.ndim:
             im_f = np.expand_dims(filter_values, 0) * im_f
         else:
             im_f = filter_values * im_f
-        im = centered_ifft2_C(im_f)
+        im = centered_ifft2(im_f)
         im = np.real(im)
 
         return Image(im)
