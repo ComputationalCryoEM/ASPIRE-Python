@@ -375,8 +375,6 @@ class ImageSource:
         logger.info('Perform phase flip on source object')
         logger.info('Adding Phase Flip Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FlipXform(self.filters))
-        # Invalidate images
-        self._im = None
 
     def invert_contrast(self, batch_size=512):
         """
@@ -426,9 +424,6 @@ class ImageSource:
         logger.info('Adding Scaling Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
-        # Invalidate images
-        self._im = None
-
     def normalize_background(self, bg_radius=1.0, do_ramp=True):
         """
         Normalize the images by the noise background
@@ -449,9 +444,6 @@ class ImageSource:
                     f'size of {bg_radius} and do_ramp of {do_ramp}')
         self.generation_pipeline.add_xform(
             LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp))
-
-        # Invalidate images
-        self._im = None
 
     def im_backward(self, im, start):
         """
