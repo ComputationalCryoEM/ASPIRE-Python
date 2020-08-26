@@ -29,7 +29,10 @@ class Filter:
         """
         if omega.ndim == 1:
             ensure(self.radial, f'Cannot evaluate a non-radial filter on 1D input array.')
-        self.dim = omega.shape[0]
+        elif omega.ndim == 2 and self.dim:
+            ensure(omega.shape[0] == self.dim,
+                   f'Omega must be of size {self.dim} x n')
+
         if self.radial:
             if omega.ndim > 1:
                 omega = np.sqrt(np.sum(omega ** 2, axis=0))
