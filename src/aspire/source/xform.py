@@ -4,7 +4,7 @@ import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
-from aspire.utils.filters import PowerFilter, ZeroFilter
+from aspire.utils.filters import LambdaFilter, PowerFilter, ZeroFilter
 from aspire.utils.matlab_compat import randn
 
 logger = logging.getLogger(__name__)
@@ -180,6 +180,72 @@ class FilterXform(SymmetricXform):
 
     def _forward(self, im, indices):
         return im.filter(self.filter)
+
+
+class Add(Xform):
+    """
+    A Xform that add the density of a stack of 2D images (in the form of an Image object)
+    by an offset value.
+    """
+    def __init__(self, addend):
+        """
+        Initialize an Add Xform using a Numpy array of predefined values.
+        :param addend: An ndarray of shape (n,)
+        """
+        super().__init__()
+        self.addend = addend
+
+    def _forward(self, im, indices):
+        return im + self.addend[indices]
+
+
+class FlipXform(Xform):
+    """
+    A `Xform` that applies phase flip to a stack of 2D images (as an Image object).
+    """
+    def __init__(self, filters):
+        """
+        Initialize the `FlipXform` using CTF `Filter` objects
+        :param filters: CTF filters of images
+        """
+        super().__init__()
+        self.filters = filters
+
+    def _forward(self, im, indices):
+        unique_filters = set(self.filters[indices])
+        im_in = im.asnumpy()
+        im_out = np.zeros_like(im_in)
+        for f in unique_filters:
+            idx_k = np.where(self.filters[indices] == f)[0]
+            flip_filter = LambdaFilter(f, np.sign)
+            if len(idx_k) > 0:
+                im_out[:, :, idx_k] = Image(im_in[:, :, idx_k]).filter(flip_filter).asnumpy()
+
+        return Image(im_out)
+
+
+class LambdaXform(Xform):
+    """
+    A `Xform` that applies a predefined function to a stack of 2D images (as an Image object).
+    """
+    def __init__(self, lambda_fun, *args, **kwargs):
+        """
+        Initialize the `LambdaXform` using a lambda function
+
+        :param lambda_fun: Predefine lambda function
+        :param *args: Positional arguments
+        :param **kwargs: Keyword arguments
+        """
+        super().__init__()
+        self.lambda_fun = lambda_fun
+        self.args = args
+        self.kwargs = kwargs
+
+    def _forward(self, im, indices):
+        im_in = im.asnumpy()
+        im_out = self.lambda_fun(im_in, *self.args, **self.kwargs)
+
+        return Image(im_out)
 
 
 class NoiseAdder(Xform):

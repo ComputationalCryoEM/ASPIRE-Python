@@ -5,6 +5,7 @@ Utilties for arrays/n-dimensional matrices.
 import numpy as np
 from numpy.linalg import eig
 from scipy.linalg import eigh
+from scipy.linalg import lstsq
 
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
