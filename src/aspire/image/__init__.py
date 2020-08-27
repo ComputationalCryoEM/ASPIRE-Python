@@ -57,14 +57,14 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     """
     Normalize backgrounds and apply to a stack of images
 
-    :param imgs: A stack of images in L-by-L-by-N array
+    :param imgs: A stack of images in N-by-L-by-L array
     :param bg_radius: Radius cutoff to be considered as background (in image size)
     :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
     :return: The modified images
     """
-    L = imgs.shape[0]
+    L = imgs.shape[-1]
     grid = grid_2d(L)
     mask = (grid['r'] > bg_radius)
 
@@ -77,23 +77,23 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
         ramp_all = np.vstack((grid['x'].flatten(), grid['y'].flatten(),
                           np.ones(L*L))).T
         mask_reshape = mask.reshape((L*L))
-        imgs = imgs.reshape((L*L, -1))
+        imgs = imgs.reshape((-1, L*L))
 
         # Fit a ramping background and apply to images
-        coeff = lstsq(ramp_mask, imgs[mask_reshape])[0]
-        imgs = imgs - ramp_all @ coeff
-        imgs = imgs.reshape((L, L, -1))
+        coeff = lstsq(ramp_mask, imgs[:, mask_reshape].T)[0] #RCOPT
+        imgs = imgs - (ramp_all @ coeff).T  #RCOPT
+        imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
-    imgs_masked = (imgs * np.expand_dims(mask, 2))
+    imgs_masked = imgs * mask
     denominator = np.sum(mask)
-    first_moment = np.sum(imgs_masked, axis=(0, 1))/denominator
-    second_moment = np.sum(imgs_masked ** 2, axis=(0, 1))/denominator
-    mean = first_moment
-    variance = second_moment - mean**2
+    first_moment = np.sum(imgs_masked, axis=(1, 2))/denominator
+    second_moment = np.sum(imgs_masked ** 2, axis=(1, 2))/denominator
+    mean = first_moment.reshape(-1, 1, 1)
+    variance = second_moment.reshape(-1, 1, 1) - mean**2
     std = np.sqrt(variance)
 
-    return (imgs-mean)/std
+    return (imgs - mean) / std
 
 
 class Image:

@@ -219,7 +219,7 @@ class FlipXform(Xform):
             idx_k = np.where(self.filters[indices] == f)[0]
             flip_filter = LambdaFilter(f, np.sign)
             if len(idx_k) > 0:
-                im_out[:, :, idx_k] = Image(im_in[:, :, idx_k]).filter(flip_filter).asnumpy()
+                im_out[idx_k] = Image(im_in[idx_k]).filter(flip_filter).asnumpy()
 
         return Image(im_out)
 
@@ -331,7 +331,7 @@ class IndexedXform(Xform):
             # Apply the transformation to the selected indices in the Image object
             if len(im_data_indices) > 0:
                 fn_handle = getattr(xform, which)
-                im_data[:, :, im_data_indices] = fn_handle(Image(im[:, :, im_data_indices])).asnumpy()
+                im_data[im_data_indices] = fn_handle(Image(im[im_data_indices])).asnumpy()
 
         return Image(im_data)
 

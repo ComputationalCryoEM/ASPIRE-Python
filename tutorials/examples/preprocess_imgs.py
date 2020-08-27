@@ -12,6 +12,7 @@ from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import (RadialCTFFilter, ScalarFilter)
 from aspire.utils.preprocess import downsample
+from aspire.volume import Volume
 
 
 logger = logging.getLogger('aspire')
@@ -56,6 +57,7 @@ vols = vols[..., np.newaxis]
 # by 1.0e5 time for a better graph view
 logger.info(f'Downsample map to a resolution of {img_size} x {img_size} x {img_size}')
 vols = downsample(vols, (img_size,) * 3) * 1.0e5
+vols = Volume(np.moveaxis(vols, -1, 0)) # RCOPT
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to create simulation object.')
@@ -63,7 +65,7 @@ source = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    C=vols.shape[-1],
+    C=vols.N,
     filters=CTF_filters,
     noise_filter=noise_filter
 )
@@ -93,27 +95,27 @@ imgs_rc = source.images(start=0, num=1).asnumpy()
 logger.info('Plot first image from each preprocess steps')
 idm = 0
 plt.subplot(2, 3, 1)
-plt.imshow(imgs_od[..., idm], cmap='gray')
+plt.imshow(imgs_od[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('original image')
 
 plt.subplot(2, 3, 2)
-plt.imshow(imgs_pf[..., idm], cmap='gray')
+plt.imshow(imgs_pf[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('phase flip')
 
 plt.subplot(2, 3, 4)
-plt.imshow(imgs_nb[..., idm], cmap='gray')
+plt.imshow(imgs_nb[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('normalize background')
 
 plt.subplot(2, 3, 5)
-plt.imshow(imgs_wt[..., idm], cmap='gray')
+plt.imshow(imgs_wt[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('noise whitening')
 
 plt.subplot(2, 3, 6)
-plt.imshow(imgs_rc[..., idm], cmap='gray')
+plt.imshow(imgs_rc[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('invert contrast')
 plt.show()
