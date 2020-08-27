@@ -13,7 +13,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
 class OrientSyncTestCase(TestCase):
-    def setUp(self):
+
+    # This function only run once
+    @classmethod
+    def setUpClass(cls):
         L = 32
         n = 64
         pixel_size = 5
@@ -24,6 +27,7 @@ class OrientSyncTestCase(TestCase):
         Cs = 2.0
         alpha = 0.1
 
+        np.random.seed(0)
         filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=Cs, alpha=alpha) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
@@ -31,20 +35,21 @@ class OrientSyncTestCase(TestCase):
         vols = vols[..., np.newaxis]
         vols = downsample(vols, (L*np.ones(3, dtype=int)))
 
-        sim = Simulation(
+        cls.sim = Simulation(
             L=L,
             n=n,
             vols=vols,
             filters=filters
         )
 
-        self.orient_est = CLSyncVoting(sim, L // 2, 36)
-        self.orient_est.build_clmatrix()
-        self.orient_est.syncmatrix_vote()
-        self.orient_est.estimate_rotations()
-        self.est_rots = self.orient_est.rotations
+        cls.orient_est = CLSyncVoting(cls.sim, L // 2, 36)
+        cls.orient_est.build_clmatrix()
+        cls.orient_est.syncmatrix_vote()
         np.random.seed(0)
-        self.est_shifts = self.orient_est.estimate_shifts()
+        cls.orient_est.estimate_rotations()
+        cls.est_rots = cls.orient_est.rotations
+        np.random.seed(0)
+        cls.est_shifts = cls.orient_est.estimate_shifts()
 
     def tearDown(self):
         pass
