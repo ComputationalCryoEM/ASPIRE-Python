@@ -59,8 +59,6 @@ class Cov2DTestCase(TestCase):
 
         self.imgs_ctf_clean = sim.eval_filters(self.imgs_clean)
 
-        sim.cache(self.imgs_ctf_clean)
-
         power_clean = anorm(self.imgs_ctf_clean)**2/np.size(self.imgs_ctf_clean)
         self.noise_var = power_clean/SNR
         self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var)*randn(L, L, n, seed=0)

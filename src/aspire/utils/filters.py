@@ -108,6 +108,19 @@ class PowerFilter(Filter):
         return self._filter.evaluate(omega) ** self._power
 
 
+class LambdaFilter(Filter):
+    """
+    A Filter object to evaluate lambda function of a regular `Filter`.
+    """
+    def __init__(self, filter, f):
+        self._filter = filter
+        self._f = f
+        super().__init__(dim=filter.dim, radial=filter.radial)
+
+    def _evaluate(self, omega):
+        return self._f(self._filter.evaluate(omega))
+
+
 class MultiplicativeFilter(Filter):
     """
     A Filter object that returns the product of the evaluation of its individual filters
@@ -201,7 +214,6 @@ class ScalarFilter(Filter):
         return self.value * np.ones_like(omega)
 
     def scale(self, c):
-        # TODO: Is this a bug?
         pass
 
 

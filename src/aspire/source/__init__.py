@@ -3,15 +3,18 @@ from copy import copy
 
 import numpy as np
 import pandas as pd
+
 from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image
+from aspire.image import normalize_bg
 from aspire.io.starfile import save_star
-from aspire.source.xform import (Downsample, FilterXform, LinearIndexedXform,
-                                 LinearPipeline, Multiply, Pipeline, Shift)
+from aspire.source.xform import (Downsample, FilterXform, FlipXform,
+                                 LambdaXform, LinearIndexedXform, LinearPipeline,
+                                 Multiply, Pipeline, Add, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import MultiplicativeFilter, PowerFilter
+from aspire.utils.filters import (MultiplicativeFilter, PowerFilter)
 from aspire.volume import im_backproject, vol_project
 
 logger = logging.getLogger(__name__)
@@ -91,8 +94,8 @@ class ImageSource:
         self.n = n
         self.dtype = dtype
 
-        # The private attribute '_im' can be cached by calling this object's cache() method explicitly
-        self._im = None
+        # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
+        self._cached_im = None
 
         if metadata is None:
             self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
@@ -306,11 +309,10 @@ class ImageSource:
 
         return h
 
-    def cache(self, im=None):
+    def cache(self):
         logger.info('Caching source images')
-        if im is None:
-            im = self.images(start=0, num=np.inf)
-        self._im = im
+        self._cached_im = self.images(start=0, num=np.inf)
+        self.generation_pipeline.reset()
 
     def images(self, start, num, *args, **kwargs):
         """
@@ -323,13 +325,13 @@ class ImageSource:
         """
         indices = np.arange(start, min(start + num, self.n))
 
-        if self._im is not None:
+        if self._cached_im is not None:
             logger.info(f'Loading images from cache')
-            im = Image(self._im[:, :, indices])
+            im = Image(self._cached_im[:, :, indices])
         else:
             im = self._images(indices=indices, *args, **kwargs)
-            im = self.generation_pipeline.forward(im, indices=indices)
 
+        im = self.generation_pipeline.forward(im, indices=indices)
         logger.info(f'Loaded {len(indices)} images')
         return im
 
@@ -345,8 +347,6 @@ class ImageSource:
         self.offsets /= ds_factor
 
         self.L = L
-        # Invalidate images
-        self._im = None
 
     def whiten(self, noise_filter):
         """
@@ -367,8 +367,83 @@ class ImageSource:
 
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
-        # Invalidate images
-        self._im = None
+
+    def phase_flip(self):
+        """
+        Perform phase flip to images in the source object using CTF information
+        """
+        logger.info('Perform phase flip on source object')
+        logger.info('Adding Phase Flip Xform to end of generation pipeline')
+        self.generation_pipeline.add_xform(FlipXform(self.filters))
+
+    def invert_contrast(self, batch_size=512):
+        """
+        invert the global contrast of images
+
+        Check if all images in a stack should be globally phase flipped so that
+        the molecule corresponds to brighter pixels and the background corresponds
+        to darker pixels. This is done by comparing the mean in a small circle
+        around the origin (supposed to correspond to the molecule) with the mean
+        of the noise, and making sure that the mean of the molecule is larger.
+        From the implementation level, we modify the `ImageSource` in-place by
+        appending a `Multiple` filter to the generation pipeline.
+
+        :param batch_size: Batch size of images to query.
+        :return: On return, the `ImageSource` object has been modified in place.
+        """
+
+        logger.info('Apply contrast inversion on source object')
+        L = self.L
+        grid = grid_2d(L, shifted=True)
+        # Get mask indices of signal and noise samples assuming molecule
+        signal_mask = (grid['r'] < 0.5)
+        noise_mask = (grid['r'] > 0.8)
+
+        # Calculate mean values in batch_size
+        signal_mean = 0.0
+        noise_mean = 0.0
+
+        for i in range(0, self.n, batch_size):
+            images = self.images(i, batch_size).asnumpy()
+            signal = images * np.expand_dims(signal_mask, 2)
+            noise = images * np.expand_dims(noise_mask, 2)
+            signal_mean += np.sum(signal)
+            noise_mean += np.sum(noise)
+        signal_denominator = self.n * np.sum(signal_mask)
+        noise_denominator = self.n * np.sum(noise_mask)
+        signal_mean /= signal_denominator
+        noise_mean /= noise_denominator
+
+        if signal_mean < noise_mean:
+            logger.info('Need to invert contrast')
+            scale_factor = -1.0 * np.ones(self.n)
+        else:
+            logger.info('No need to invert contrast')
+            scale_factor = 1.0 * np.ones(self.n)
+
+        logger.info('Adding Scaling Xform to end of generation pipeline')
+        self.generation_pipeline.add_xform(Multiply(scale_factor))
+
+    def normalize_background(self, bg_radius=1.0, do_ramp=True):
+        """
+        Normalize the images by the noise background
+
+        This is done by shifting the image density by the mean value of background
+        and scaling the image density by the standard deviation of background.
+        From the implementation level, we modify the `ImageSource` in-place by
+        appending the `Add` and `Multiple` filters to the generation pipeline.
+
+        :param bg_radius: Radius cutoff to be considered as background (in image size)
+        :param do_ramp: When it is `True`, fit a ramping background to the data
+            and subtract. Namely perform normalization based on values from each image.
+            Otherwise, a constant background level from all images is used.
+        :return: On return, the `ImageSource` object has been modified in place.
+        """
+
+        logger.info(f'Normalize background on source object with radius '
+                    f'size of {bg_radius} and do_ramp of {do_ramp}')
+        self.generation_pipeline.add_xform(
+            LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp))
 
     def im_backward(self, im, start):
         """
@@ -422,6 +497,9 @@ class ArrayImageSource(ImageSource):
     An `ImageSource` object that holds a reference to an underlying `Image` object (a thin wrapper on an ndarray)
     representing images. It does not produce its images on the fly, but keeps them in memory. As such, it should not be
     used where large Image objects are involved, but can be used in situations where API conformity is desired.
+
+    Note that this class does not provide an `_images` method, since it populates the `_cached_im` attribute which,
+    if available, is consulted directly by the parent class, bypassing `_images`.
     """
     def __init__(self, im, metadata=None):
         """
@@ -430,9 +508,4 @@ class ArrayImageSource(ImageSource):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         """
         super().__init__(L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None)
-        self._im = im
-
-    def _images(self, start=0, num=np.inf, indices=None):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
-        return self._im[indices]
+        self._cached_im = im

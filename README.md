@@ -36,29 +36,23 @@ Note that this step installs the base `aspire` package for you to work with, but
 For developers
 --------------
 
-After cloning this repo, the simplest option is to use Anaconda 64-bit for your platform, and use the provided `environment.yml` file to build a Conda environment to run ASPIRE. This is very similar to above except you will be based off of your local checkout.
+After cloning this repo, the simplest option is to use Anaconda 64-bit for your platform, and use the provided `environment.yml` file to build a Conda environment to run ASPIRE. This is very similar to above except you will be based off of your local checkout, and you are free to rename `aspire_dev` used in the commands below. The `pip` line will install aspire in a locally editable mode, and is equivalent to `python setup.py develop`:
 
 ```
 cd /path/to/git/clone/folder
+
+# Create's the conda environment and installs base dependencies.
 conda env create -f environment.yml --name aspire_dev
+
+# Enable the environment
 conda activate aspire_dev
-```
 
-If you prefer not to use Anaconda, or want to manage environments yourself, you can simply use `pip` with Python >= 3.6.
-
-To install in a locally editable mode, equivalent to `python setup.py develop`  (probably what you want):
-
-```
-cd /path/to/git/clone/folder
+# Install the aspire package in a locally editable way:
 pip install -e .
 ```
 
-To install into the currently active environment's site packages:
-
-```
-cd /path/to/git/clone/folder
-pip install .
-```
+If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.6.
+Please see the full documentation for details.
 
 You may optionally install additional packages:
 

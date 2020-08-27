@@ -7,7 +7,7 @@ from scipy.fftpack import (fft, fft2, fftn, fftshift, ifft, ifft2, ifftn,
 from scipy.interpolate import RegularGridInterpolator
 from scipy.special import erf
 
-from aspire.nfft import Plan
+from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
 from aspire.utils.fft import (centered_fft1, centered_fft2, centered_fft3,
@@ -280,7 +280,8 @@ def vol2img(volume, rots, L=None, dtype=None):
     num_rots = rots.shape[0]
     pts = np.pi * np.vstack([grid2d['x'].flatten('F'), grid2d['y'].flatten('F'), np.zeros(num_pts)])
 
-    pts_rot = np.zeros((3, num_pts, num_rots))
+    # TODO: Issue #148
+    pts_rot = np.zeros((3, num_pts, num_rots), dtype)
 
     for i in range(num_rots):
         pts_rot[:, :, i] = rots[i, :, :].T @ pts

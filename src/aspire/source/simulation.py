@@ -37,7 +37,13 @@ class Simulation(ImageSource):
             min_, max_ = 2./3, 3./2
             amplitudes = min_ + rand(n, seed=seed) * (max_ - min_)
 
-        states = states or randi(C, n, seed=seed)
+        if vols is None:
+            self.vols = self._gaussian_blob_vols(L=self.L, C=C, seed=seed)
+        else:
+            self.vols = vols
+        self.C = self.vols.shape[-1]
+
+        states = states or randi(self.C, n, seed=seed)
         angles = angles or uniform_random_angles(n, seed=seed)
 
         self.states = states
@@ -48,12 +54,6 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
         self.angles = angles
-        self.C = C
-        if vols is None:
-            self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
-        else:
-            self.vols = vols
-
         self.seed = seed
 
         self.noise_adder = None

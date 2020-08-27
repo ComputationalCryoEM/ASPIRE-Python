@@ -2,7 +2,7 @@ import logging
 import numpy as np
 
 from aspire.basis import Basis
-from aspire.nfft import anufft3, nufft3
+from aspire.nufft import anufft, nufft
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
@@ -98,7 +98,7 @@ class PolarBasis2D(Basis):
         x = np.empty((self.sz[0], self.sz[1], nimgs), dtype=self.dtype)
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
-            x[..., isample] = np.real(anufft3(v[:, isample], self.freqs, self.sz))
+            x[..., isample] = np.real(anufft(v[:, isample], self.freqs, self.sz))
 
         # return coefficients whose first two dimensions equal to self.sz
         x = roll_dim(x, sz_roll)
@@ -130,7 +130,7 @@ class PolarBasis2D(Basis):
         pf = np.empty((self.nrad * half_size, nimgs), dtype=out_type)
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
-            pf[..., isample] = nufft3(x[..., isample], self.freqs, self.sz)
+            pf[..., isample] = nufft(x[..., isample], self.freqs)
 
         pf = m_reshape(pf, (self.nrad, half_size, nimgs))
         v = np.concatenate((pf, pf.conj()), axis=1)

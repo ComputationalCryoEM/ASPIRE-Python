@@ -2,6 +2,7 @@ import mrcfile
 import numpy as np
 from scipy.fftpack import fft2, ifft2, ifftshift
 from scipy.interpolate import RegularGridInterpolator
+from scipy.linalg import lstsq
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
@@ -78,6 +79,49 @@ def _im_translate2(im, shifts):
     return im_translated
 
 
+def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
+    """
+    Normalize backgrounds and apply to a stack of images
+
+    :param imgs: A stack of images in L-by-L-by-N array
+    :param bg_radius: Radius cutoff to be considered as background (in image size)
+    :param do_ramp: When it is `True`, fit a ramping background to the data
+            and subtract. Namely perform normalization based on values from each image.
+            Otherwise, a constant background level from all images is used.
+    :return: The modified images
+    """
+    L = imgs.shape[0]
+    grid = grid_2d(L)
+    mask = (grid['r'] > bg_radius)
+
+    if do_ramp:
+        # Create matrices and reshape the background mask
+        # for fitting a ramping background
+        ramp_mask = np.vstack((grid['x'][mask].flatten(),
+                           grid['y'][mask].flatten(),
+                           np.ones(grid['y'][mask].flatten().size))).T
+        ramp_all = np.vstack((grid['x'].flatten(), grid['y'].flatten(),
+                          np.ones(L*L))).T
+        mask_reshape = mask.reshape((L*L))
+        imgs = imgs.reshape((L*L, -1))
+
+        # Fit a ramping background and apply to images
+        coeff = lstsq(ramp_mask, imgs[mask_reshape])[0]
+        imgs = imgs - ramp_all @ coeff
+        imgs = imgs.reshape((L, L, -1))
+
+    # Apply mask images and calculate mean and std values of background
+    imgs_masked = (imgs * np.expand_dims(mask, 2))
+    denominator = np.sum(mask)
+    first_moment = np.sum(imgs_masked, axis=(0, 1))/denominator
+    second_moment = np.sum(imgs_masked ** 2, axis=(0, 1))/denominator
+    mean = first_moment
+    variance = second_moment - mean**2
+    std = np.sqrt(variance)
+
+    return (imgs-mean)/std
+
+
 class Image:
     def __init__(self, data):
         ensure(data.shape[0] == data.shape[1], 'Only square ndarrays are supported.')
@@ -117,8 +161,10 @@ class Image:
     def shift(self, shifts):
         """
         Translate image by shifts. This method returns a new Image.
+
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
-            Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
+            Alternatively, it can be a column vector of length 2, in which case
+            the same shifts is applied to each image.
         :return: The Image translated by the shifts, with periodic boundaries.
         """
         if shifts.ndim == 1:
@@ -130,7 +176,9 @@ class Image:
     def downsample(self, ds_res):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
-        :param ds_res: int - new resolution, should be <= the current resolution of this Image
+
+        :param ds_res: int - new resolution, should be <= the current resolution
+            of this Image
         :return: The downsampled Image object.
         """
         grid = grid_2d(self.res)
@@ -158,7 +206,8 @@ class Image:
 
     def filter(self, filter):
         """
-        Apply a `Filter` object to the Image. This method returns a new Image.
+        Apply a `Filter` object to the Image and returns a new Image.
+
         :param filter: An object of type `Filter`.
         :return: A new filtered `Image` object.
         """

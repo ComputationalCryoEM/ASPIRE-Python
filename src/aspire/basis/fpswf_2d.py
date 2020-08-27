@@ -9,7 +9,7 @@ from scipy.special import jn
 
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
-from aspire.nfft import nufft3
+from aspire.nufft import nufft
 
 logger = logging.getLogger(__name__)
 
@@ -295,8 +295,8 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         images_nufft = np.zeros((m, num_images), dtype='complex128')
         for i in range(start, finish):
-            images_nufft[:, i - start] = nufft3(images[..., i], 2 * pi * x.T,
-                                                (n, n))
+            images_nufft[:, i - start] = nufft(images[..., i], 2 * pi * x.T)
+
         return images_nufft
 
     def _pswf_integration(self, images_nufft):

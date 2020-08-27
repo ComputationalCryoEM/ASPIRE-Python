@@ -5,7 +5,7 @@ from scipy.fftpack import fft2
 
 from aspire.estimation import Estimator
 from aspire.estimation.kernel import FourierKernel
-from aspire.nfft import anufft3
+from aspire.nufft import anufft
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 from aspire.volume import rotated_grids
@@ -33,7 +33,7 @@ class MeanEstimator(Estimator):
             pts_rot = m_reshape(pts_rot, (3, -1))
             weights = m_flatten(weights)
 
-            kernel += 1 / (self.n * self.L ** 4) * anufft3(weights, pts_rot, (_2L, _2L, _2L), real=True)
+            kernel += 1 / (self.n * self.L ** 4) * anufft(weights, pts_rot, (_2L, _2L, _2L), real=True)
 
         # Ensure symmetric kernel
         kernel[0, :, :] = 0
