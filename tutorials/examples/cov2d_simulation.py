@@ -99,7 +99,6 @@ h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in filters]
 # Apply the CTF to the clean images.
 logger.info('Apply CTF filters to clean images.')
 imgs_ctf_clean = sim.eval_filters(imgs_clean)
-sim.cache(imgs_ctf_clean)
 
 # Apply the noise at the desired singal-noise ratio to the filtered clean images
 logger.info('Apply noise filters to clean images.')
