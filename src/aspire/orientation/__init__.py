@@ -35,7 +35,6 @@ class CLOrient3D:
         self.n_theta = n_theta
         self.n_check = n_check
         self.clmatrix = None
-        self.shifts_1d = None
 
         self.rotations = None
 
@@ -281,8 +280,7 @@ class CLOrient3D:
         # since each row in the system contains four non-zeros (as it involves
         # exactly four unknowns). The variables below are used to construct
         # this sparse system. The k'th non-zero element of the equations matrix
-        # is stored at index (shift_i(k),shift_i(k)). Note the last n_equations
-        # elements are used to store the right side of Ax = b.
+        # is stored at index (shift_i(k),shift_j(k)).
         shift_i = np.zeros(4 * n_equations, dtype=np.float64)
         shift_j = np.zeros(4 * n_equations, dtype=np.float64)
         shift_eq = np.zeros(4 * n_equations, dtype=np.float64)
@@ -394,7 +392,7 @@ class CLOrient3D:
         memory_total = equations_factor * (
                 n_equations_total * 2 * n_img * np.dtype('float64').itemsize)
         if memory_total < (max_memory * 10 ** 6):
-            n_equations = n_equations_total
+            n_equations = int(np.ceil(equations_factor * n_equations_total))
         else:
             subsampling_factor = (max_memory * 10 ** 6) / memory_total
             subsampling_factor = min(1.0, subsampling_factor)
