@@ -169,7 +169,6 @@ class CLSyncVoting(CLOrient3D):
         :param n_theta: The number of points in the theta direction (common lines)
         :return: The (i,j) rotation block of the synchronization matrix
         """
-        tol = 1e-12
 
         good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
 
@@ -229,21 +228,6 @@ class CLSyncVoting(CLOrient3D):
         alpha = np.arccos(c_alpha)
 
         # Convert the Euler angles with ZXZ conversion to rotation matrices
-        # Euler angle (a,b,c) to rotation
-        # ra = [  ca,  -sa,   0;
-        #         sa,   ca,   0;
-        #          0,    0,   1]
-        # rb = [   1,    0,   0;
-        #          0,   cb, -sb;
-        #          0,   sb,  cb]
-        # rc = [  cc,  -sc,   0;
-        #         sc,   cc,   0;
-        #          0,    0,   1]
-        # orthm = rc*rb*ra
-        # ca is short for cos(a) and sa is for sin(a).
-        #
-        # This function does the conversion simultaneously for N Euler angles.
-
         angles = np.zeros((alpha.shape[0], 3))
         angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
         angles[:, 1] = alpha
