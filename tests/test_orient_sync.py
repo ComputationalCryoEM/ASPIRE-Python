@@ -16,7 +16,6 @@ class OrientSyncTestCase(TestCase):
     def setUp(self):
         L = 32
         n = 64
-        C = 1
         pixel_size = 5
         voltage = 200
         defocus_min = 1.5e4
@@ -36,7 +35,6 @@ class OrientSyncTestCase(TestCase):
             L=L,
             n=n,
             vols=vols,
-            C=C,
             filters=filters
         )
 

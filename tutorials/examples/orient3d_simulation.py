@@ -30,15 +30,12 @@ img_size = 33
 # Set the total number of images generated from the 3D map
 num_imgs = 128
 
-# Set the number of 3D maps
-num_maps = 1
-
 # Specify the CTF parameters not used for this example
 # but necessary for initializing the simulation object
-pixel_size = 5                   # Pixel size of the images (in angstroms).
+pixel_size = 5                   # Pixel size of the images (in angstroms)
 voltage = 200                    # Voltage (in KV)
-defocus_min = 1.5e4              # Minimum defocus value (in angstroms).
-defocus_max = 2.5e4              # Maximum defocus value (in angstroms).
+defocus_min = 1.5e4              # Minimum defocus value (in angstroms)
+defocus_max = 2.5e4              # Maximum defocus value (in angstroms)
 defocus_ct = 7                   # Number of defocus groups.
 Cs = 2.0                         # Spherical aberration
 alpha = 0.1                      # Amplitude contrast
@@ -63,7 +60,6 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    C=num_maps,
     filters=filters
 )
 
@@ -75,9 +71,6 @@ logger.info('Estimate rotation angles using synchronization matrix and voting me
 orient_est = CLSyncVoting(sim, n_theta=36)
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
-
-# Save the estimated rotation matrices to a new ImageSource object
-sim_new = orient_est.save_rotations()
 
 # Get register rotations after performing global alignment
 Q_mat, flag = register_rotations(rots_est, rots_true)
