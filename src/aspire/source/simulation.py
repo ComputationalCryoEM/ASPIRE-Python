@@ -39,9 +39,12 @@ class Simulation(ImageSource):
 
         if vols is None:
             self.vols = self._gaussian_blob_vols(L=self.L, C=C, seed=seed)
+            #TODO: convert _gaussian_blob_vols to C order
+            self.vols = Volume(np.moveaxis(self.vols, 3, 0))
         else:
+            assert isinstance(vols, Volume)
             self.vols = vols
-        self.C = self.vols.shape[-1]
+        self.C = self.vols.shape[0]
 
         states = states or randi(self.C, n, seed=seed)
         angles = angles or uniform_random_angles(n, seed=seed)
@@ -54,14 +57,6 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
         self.angles = angles
-        self.C = C
-        if vols is None:
-            self.vols = self._gaussian_blob_vols(L=self.L, C=self.C, seed=seed)
-            #TODO: convert _gaussian_blob_vols to C order
-            self.vols = Volume(np.moveaxis(self.vols, 3, 0))
-        else:
-            assert isinstance(vols, Volume)
-            self.vols = vols
 
         self.seed = seed
 
