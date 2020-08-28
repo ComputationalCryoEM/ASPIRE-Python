@@ -159,8 +159,9 @@ class FBBasis2D(Basis):
             This is an array whose first dimensions equal `self.z` and the remaining
             dimensions correspond to dimensions two and higher of `v`.
         """
-        v = v.T #RCOPT
-        v, sz_roll = unroll_dim(v, 2)
+
+        # Transpose here once, instead of several times below  #RCOPT
+        v = v.reshape(-1, self.count).T
 
         r_idx = self.basis_coords['r_idx']
         ang_idx = self.basis_coords['ang_idx']
@@ -189,10 +190,9 @@ class FBBasis2D(Basis):
 
             ind_radial += len(idx_radial)
 
-        x = m_reshape(x, self.sz + x.shape[1:])
-        x = roll_dim(x, sz_roll)
+        x = x.reshape(-1, *self.sz) # RCOPT
 
-        return x.T #RCOPT
+        return x
 
     def evaluate_t(self, v):
         """
