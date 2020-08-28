@@ -72,11 +72,11 @@ class FBBasis2DTestCase(TestCase):
 
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'fbbasis_evaluation_8_8.npy'))
+            np.load(os.path.join(DATA_DIR, 'fbbasis_evaluation_8_8.npy')).T  #RCOPT
         ))
 
     def testFBBasis2DEvaluate_t(self):
-        v = np.load(os.path.join(DATA_DIR, 'fbbasis_coefficients_8_8.npy'))
+        v = np.load(os.path.join(DATA_DIR, 'fbbasis_coefficients_8_8.npy')).T  #RCOPT
         result = self.basis.evaluate_t(v)
         self.assertTrue(np.allclose(
             result,
@@ -91,7 +91,7 @@ class FBBasis2DTestCase(TestCase):
         ))
 
     def testFBBasis2DExpand(self):
-        v = np.load(os.path.join(DATA_DIR, 'fbbasis_coefficients_8_8.npy'))
+        v = np.load(os.path.join(DATA_DIR, 'fbbasis_coefficients_8_8.npy')).T #RCOPT
         result = self.basis.expand(v)
         self.assertTrue(np.allclose(
             result,

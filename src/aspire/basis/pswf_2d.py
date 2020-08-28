@@ -141,6 +141,8 @@ class PSWFBasis2D(Basis):
             to be evaluated.
         :return : The evaluation of the coefficient array in the PSWF basis.
         """
+        images = images.T  #RCOPT
+
         images_shape = images.shape
 
         images_shape = (images_shape + (1,)) if len(images_shape) == 2 else images_shape
@@ -149,7 +151,7 @@ class PSWFBasis2D(Basis):
 
         flattened_images = flattened_images[self._disk_mask_vec, :]
         coefficients = self.samples_conj_transpose.dot(flattened_images)
-        return coefficients
+        return coefficients.T
 
     def evaluate(self, coefficients):
         """
@@ -160,6 +162,8 @@ class PSWFBasis2D(Basis):
         :return : The evaluation of the coefficient vector(s) in standard 2D
             coordinate basis.
         """
+        coefficients = coefficients.T #RCOPT
+
         # if we got only one vector
         if len(coefficients.shape) == 1:
             coefficients = coefficients[:, np.newaxis]
@@ -173,7 +177,7 @@ class PSWFBasis2D(Basis):
         images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
         images[self._disk_mask, :] = flatten_images
         images = np.transpose(images, axes=(1, 0, 2))
-        return np.real(images)
+        return np.real(images).T #RCOPT
 
     def _init_pswf_func2d(self, c, eps):
         """
