@@ -6,6 +6,7 @@ import scipy.sparse as sparse
 
 from aspire.orientation import CLOrient3D
 from aspire.utils import ensure
+from aspire.utils.matlab_compat import top_eigenvectors
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,11 @@ class CLSyncVoting(CLOrient3D):
         d, v = sparse.linalg.eigsh(S, 10)
         logger.info(f'Top 10 eigenvalues from synchronization voting matrix: {d}')
         sort_idx = np.argsort(-d)
-        v = v[:, sort_idx[:3]]
+
+        # Only need the top 3 eigen-vectors. But there is an ambiguous sign problem.
+        # We need to rescale the eigenvectors to fix it and make consistent
+        # with the Matlab version.
+        v = top_eigenvectors(v, sort_idx[:3])
 
         # According to the structure of W^{T} above, the odd rows of V, denoted V1,
         # are a linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of

@@ -84,7 +84,7 @@ class Random:
             random_states.append(np.random.get_state())
 
             seed = self.seed
-            # 5489 is the default seed used by MATLAB for seed 0 !
+            # 5489 is the default seed used by M   ATLAB for seed 0 !
             if seed == 0:
                 seed = 5489
 
@@ -94,3 +94,21 @@ class Random:
     def __exit__(self, *args):
         if self.seed is not None:
             np.random.set_state(random_states.pop())
+
+
+def top_eigenvectors(v, sort_idx):
+    """
+    Obtain the top eigenvectors and rescale them to fix the sign problem
+
+    :param v: The eigenvectors with each column representing one eigenvector
+    :param sort_idx: The list of sorted indices based on eigenvalues
+    :return:  The eigenvectors consistent with the sorted indices
+    """
+    v = v[:, sort_idx]
+    # Find component index of maximum absolute value of each eigenvector
+    ind_max = np.argmax(np.absolute(v), axis=0)
+    # Rescale eigenvector based on sign from the component with the
+    # maximum absolute value
+    signs = np.array([np.sign(v[ind_max[k], k]) for k in range(len(sort_idx))])
+
+    return v * signs

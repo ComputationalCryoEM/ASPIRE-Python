@@ -27,7 +27,6 @@ class OrientSyncTestCase(TestCase):
         Cs = 2.0
         alpha = 0.1
 
-        np.random.seed(0)
         filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=Cs, alpha=alpha) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
@@ -45,7 +44,6 @@ class OrientSyncTestCase(TestCase):
         cls.orient_est = CLSyncVoting(cls.sim, L // 2, 36)
         cls.orient_est.build_clmatrix()
         cls.orient_est.syncmatrix_vote()
-        np.random.seed(0)
         cls.orient_est.estimate_rotations()
         cls.est_rots = cls.orient_est.rotations
         np.random.seed(0)
