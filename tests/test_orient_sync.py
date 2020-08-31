@@ -14,9 +14,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class OrientSyncTestCase(TestCase):
 
-    # This function only run once
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         L = 32
         n = 64
         pixel_size = 5
@@ -34,40 +32,41 @@ class OrientSyncTestCase(TestCase):
         vols = vols[..., np.newaxis]
         vols = downsample(vols, (L*np.ones(3, dtype=int)))
 
-        cls.sim = Simulation(
+        sim = Simulation(
             L=L,
             n=n,
             vols=vols,
             filters=filters
         )
 
-        cls.orient_est = CLSyncVoting(cls.sim, L // 2, 36)
-        cls.orient_est.build_clmatrix()
-        cls.orient_est.syncmatrix_vote()
-        cls.orient_est.estimate_rotations()
-        cls.est_rots = cls.orient_est.rotations
-        np.random.seed(0)
-        cls.est_shifts = cls.orient_est.estimate_shifts()
+        self.orient_est = CLSyncVoting(sim, L // 2, 36)
 
     def tearDown(self):
         pass
 
-    def test01BuildCLmatrix(self):
+    def testBuildCLmatrix(self):
+        self.orient_est.build_clmatrix()
         results = np.load(os.path.join(DATA_DIR, 'orient_est_clmatrix.npy'),
                           allow_pickle=True)
         self.assertTrue(np.allclose(results, self.orient_est.clmatrix))
 
-    def test02SyncMatrixVote(self):
+    def testSyncMatrixVote(self):
+        self.orient_est.syncmatrix_vote()
         results = np.load(os.path.join(DATA_DIR, 'orient_est_smatrix.npy'),
                           allow_pickle=True)
         self.assertTrue(np.allclose(results, self.orient_est.syncmatrix))
 
-    def test03EstRotations(self):
+    def testEstRotations(self):
+        self.orient_est.estimate_rotations()
         results = np.load(os.path.join(DATA_DIR, 'orient_est_rots.npy'),
                           allow_pickle=True)
         self.assertTrue(np.allclose(results, self.orient_est.rotations))
 
-    def test04EstShifts(self):
+    def testEstShifts(self):
+        # need to rerun explicitly the estimation of rotations
+        self.orient_est.estimate_rotations()
+        np.random.seed(0)
+        self.est_shifts = self.orient_est.estimate_shifts()
         results = np.load(os.path.join(DATA_DIR, 'orient_est_shifts.npy'),
                           allow_pickle=True)
         self.assertTrue(np.allclose(results, self.est_shifts))
