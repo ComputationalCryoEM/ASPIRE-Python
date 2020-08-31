@@ -3,10 +3,11 @@ import numpy as np
 
 from unittest import TestCase
 
+from aspire.orientation.commonline_sync import CLSyncVoting
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.matlab_compat import Random
 from aspire.utils.preprocess import downsample
-from aspire.orientation.commonline_sync import CLSyncVoting
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -46,27 +47,23 @@ class OrientSyncTestCase(TestCase):
 
     def testBuildCLmatrix(self):
         self.orient_est.build_clmatrix()
-        results = np.load(os.path.join(DATA_DIR, 'orient_est_clmatrix.npy'),
-                          allow_pickle=True)
+        results = np.load(os.path.join(DATA_DIR, 'orient_est_clmatrix.npy'))
         self.assertTrue(np.allclose(results, self.orient_est.clmatrix))
 
     def testSyncMatrixVote(self):
         self.orient_est.syncmatrix_vote()
-        results = np.load(os.path.join(DATA_DIR, 'orient_est_smatrix.npy'),
-                          allow_pickle=True)
+        results = np.load(os.path.join(DATA_DIR, 'orient_est_smatrix.npy'))
         self.assertTrue(np.allclose(results, self.orient_est.syncmatrix))
 
     def testEstRotations(self):
         self.orient_est.estimate_rotations()
-        results = np.load(os.path.join(DATA_DIR, 'orient_est_rots.npy'),
-                          allow_pickle=True)
+        results = np.load(os.path.join(DATA_DIR, 'orient_est_rots.npy'))
         self.assertTrue(np.allclose(results, self.orient_est.rotations))
 
     def testEstShifts(self):
         # need to rerun explicitly the estimation of rotations
         self.orient_est.estimate_rotations()
-        np.random.seed(0)
-        self.est_shifts = self.orient_est.estimate_shifts()
-        results = np.load(os.path.join(DATA_DIR, 'orient_est_shifts.npy'),
-                          allow_pickle=True)
+        with Random(0):
+            self.est_shifts = self.orient_est.estimate_shifts()
+        results = np.load(os.path.join(DATA_DIR, 'orient_est_shifts.npy'))
         self.assertTrue(np.allclose(results, self.est_shifts))
