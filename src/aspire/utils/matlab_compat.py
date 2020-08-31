@@ -84,7 +84,7 @@ class Random:
             random_states.append(np.random.get_state())
 
             seed = self.seed
-            # 5489 is the default seed used by M   ATLAB for seed 0 !
+            # 5489 is the default seed used by MATLAB for seed 0 !
             if seed == 0:
                 seed = 5489
 
