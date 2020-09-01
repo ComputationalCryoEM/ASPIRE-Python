@@ -6,6 +6,8 @@ directly by the caller).
 """
 
 import numpy as np
+import scipy.sparse as sparse
+
 from scipy.special import erfinv
 
 SQRT2 = np.sqrt(2)
@@ -96,19 +98,24 @@ class Random:
             np.random.set_state(random_states.pop())
 
 
-def top_eigenvectors(v, sort_idx):
+def m_eigsh(*args, **kwargs):
     """
-    Obtain the top eigenvectors and rescale them to fix the sign problem
+    A Wrapper function to fix sign problem of eigen-vectors
 
-    :param v: The eigenvectors with each column representing one eigenvector
-    :param sort_idx: The list of sorted indices based on eigenvalues
-    :return:  The eigenvectors consistent with the sorted indices
+    There is an ambiguous sign problem for the eigenvectors from
+    scipy.sparse.linalg.eigsh function. We need to rescale the
+    eigenvectors and make consistent with the Matlab version.
+
+    :param *args: Positional arguments
+    :param **kwargs: Keyword arguments
+    :return: Eigenvalues and eigenvectors
     """
-    v = v[:, sort_idx]
+
+    d, v = sparse.linalg.eigsh(*args, **kwargs)
     # Find component index of maximum absolute value of each eigenvector
     ind_max = np.argmax(np.absolute(v), axis=0)
     # Rescale eigenvector based on sign from the component with the
     # maximum absolute value
-    signs = np.array([np.sign(v[ind_max[k], k]) for k in range(len(sort_idx))])
+    signs = np.array([np.sign(v[ind_max[k], k]) for k in range(len(d))])
 
-    return v * signs
+    return d, v * signs

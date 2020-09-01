@@ -2,11 +2,10 @@ import logging
 import numpy as np
 
 from scipy.spatial.transform import Rotation
-import scipy.sparse as sparse
 
 from aspire.orientation import CLOrient3D
 from aspire.utils import ensure
-from aspire.utils.matlab_compat import top_eigenvectors
+from aspire.utils.matlab_compat import m_eigsh
 
 logger = logging.getLogger(__name__)
 
@@ -60,15 +59,12 @@ class CLSyncVoting(CLOrient3D):
         # combinations of the column space of S, namely, W^{T}.
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
-        d, v = sparse.linalg.eigsh(S, 10)
+        d, v = m_eigsh(S, 10)
         logger.info(f'Top 10 eigenvalues from synchronization voting matrix: {d}')
         sort_idx = np.argsort(-d)
 
-        # Only need the top 3 eigen-vectors. But there is an ambiguous sign problem.
-        # We need to rescale the eigenvectors to fix it and make consistent
-        # with the Matlab version.
-        v = top_eigenvectors(v, sort_idx[:3])
-
+        # Only need the top 3 eigen-vectors.
+        v = v[:, sort_idx[:3]]
         # According to the structure of W^{T} above, the odd rows of V, denoted V1,
         # are a linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
         # column 1 of all rotation matrices. Similarly, the even rows of V,
