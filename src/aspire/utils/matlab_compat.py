@@ -98,13 +98,13 @@ class Random:
             np.random.set_state(random_states.pop())
 
 
-def m_eigsh(*args, **kwargs):
+def stable_eigsh(*args, **kwargs):
     """
     A Wrapper function to fix sign problem of eigen-vectors
 
     There is an ambiguous sign problem for the eigenvectors from
     scipy.sparse.linalg.eigsh function. We need to rescale the
-    eigenvectors and make consistent with the Matlab version.
+    eigenvectors and make them consistent for repeated runs.
 
     :param *args: Positional arguments
     :param **kwargs: Keyword arguments

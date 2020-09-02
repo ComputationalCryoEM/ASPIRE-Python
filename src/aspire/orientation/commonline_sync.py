@@ -5,7 +5,7 @@ from scipy.spatial.transform import Rotation
 
 from aspire.orientation import CLOrient3D
 from aspire.utils import ensure
-from aspire.utils.matlab_compat import m_eigsh
+from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class CLSyncVoting(CLOrient3D):
         # combinations of the column space of S, namely, W^{T}.
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
-        d, v = m_eigsh(S, 10)
+        d, v = stable_eigsh(S, 10)
         logger.info(f'Top 10 eigenvalues from synchronization voting matrix: {d}')
         sort_idx = np.argsort(-d)
 
