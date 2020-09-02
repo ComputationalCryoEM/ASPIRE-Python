@@ -5,6 +5,7 @@ import numpy as np
 from scipy.fftpack import (fft, fft2, fftn, fftshift, ifft, ifft2, ifftn,
                            ifftshift)
 from scipy.interpolate import RegularGridInterpolator
+from scipy.special import erf
 
 from aspire.nufft import Plan
 from aspire.utils import ensure
@@ -303,3 +304,29 @@ def vol2img(volume, rots, L=None, dtype=None):
         im = im * m_reshape(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y'])/(2*lv)), (lv, lv, 1))
 
     return np.real(im)
+
+
+def fuzzy_mask(L, r0, risetime, origin=None):
+    """
+    Create a centered 1D to 3D fuzzy mask of radius r0
+
+    Made with an error function with effective rise time.
+    :param L: The sizes of image in tuple structure
+    :param r0: The specified radius
+    :param risetime: The rise time for `erf` function
+    :param origin: The coordinates of origin
+    :return: The desired fuzzy mask
+    """
+
+    center = [sz // 2 + 1 for sz in L]
+    if origin is None:
+        origin = center
+
+    grids = [np.arange(1-org, ell - org + 1) for ell, org in zip(L, origin)]
+    XYZ = np.meshgrid(*grids, indexing='ij')
+    XYZ_sq = [X ** 2 for X in XYZ]
+    R = np.sqrt(np.sum(XYZ_sq, axis=0))
+    k = 1.782 / risetime
+    m = 0.5 * (1 - erf(k * (R - r0)))
+
+    return m

@@ -1,11 +1,11 @@
 import logging
 
-from aspire.orientation import Orient3D
+from aspire.orientation import CLOrient3D
 
 logger = logging.getLogger(__name__)
 
 
-class CommLineGCAR(Orient3D):
+class CommLineGCAR(CLOrient3D):
     """
     Define a derived class to estimate 3D orientations using Globally Consistent Angular Reconstitution described
     as below:
