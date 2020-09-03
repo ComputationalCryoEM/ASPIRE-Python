@@ -16,6 +16,7 @@ from aspire.utils.preprocess import downsample
 from aspire.utils.coor_trans import (register_rotations,
                                      get_aligned_rotations, get_rots_mse)
 from aspire.orientation.commonline_sync import CLSyncVoting
+from aspire.volume import Volume
 
 logger = logging.getLogger('aspire')
 
@@ -53,6 +54,7 @@ infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
 vols = infile.data
 vols = vols[..., np.newaxis]
 vols = downsample(vols, (img_size,) * 3)
+vols = Volume(vols[..., 0]) # RCOPT
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to creat simulation object.')
