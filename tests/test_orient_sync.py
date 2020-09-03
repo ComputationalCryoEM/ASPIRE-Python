@@ -8,6 +8,7 @@ from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import Random
 from aspire.utils.preprocess import downsample
+from aspire.volume import Volume
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -32,6 +33,7 @@ class OrientSyncTestCase(TestCase):
         vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
         vols = vols[..., np.newaxis]
         vols = downsample(vols, (L*np.ones(3, dtype=int)))
+        vols = Volume(np.moveaxis(vols, -1, 0)) #RCOPT
 
         sim = Simulation(
             L=L,
