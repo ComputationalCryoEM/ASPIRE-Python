@@ -31,7 +31,7 @@ class PolarBasis2DTestCase(TestCase):
              -1.54969139e-02, -1.66229153e-02, -2.07389259e-02,  6.64060546e-03],
             [ 0.00000000e+00,  0.00000000e+00,  5.20080934e-03, -1.06788196e-02,
              -1.14761672e-02, -1.27443126e-02, -1.15563484e-02,  0.00000000e+00]
-        ]).T #RCOPT
+        ]).T[np.newaxis,:,:] #RCOPT
 
         pf = self.basis.evaluate_t(x)
         result = np.array(
@@ -100,7 +100,6 @@ class PolarBasis2DTestCase(TestCase):
               0.38243133-6.66608316e-18j,  0.31313975-1.82190396e-01j,
               0.14075481+5.85637416e-02j, -0.15198775+1.02156797e-01j]
         )
-
         self.assertTrue(np.allclose(pf, result))
 
     def testPolarBasis2DEvaluate(self):
@@ -210,6 +209,6 @@ class PolarBasis2DTestCase(TestCase):
 
         x_t = self.basis.evaluate(x)
         y = np.random.randn(np.prod(self.basis.sz))
-        y_t = self.basis.evaluate_t(m_reshape(y, self.basis.sz))
+        y_t = self.basis.evaluate_t(m_reshape(y, self.basis.sz)[np.newaxis,:]) # RCOPT
         self.assertTrue(np.isclose(np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),))),
                                    np.dot(y_t, x)))

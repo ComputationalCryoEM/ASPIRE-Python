@@ -119,24 +119,20 @@ class PolarBasis2D(Basis):
             logger.error(f' Input data type, {x.dtype}, is not consistent with'
                          f' the defined in the class.')
 
-        # ensure the first two dimensions with size of self.sz
-        x, sz_roll = unroll_dim(x, self.ndim + 1)
-        nimgs = x.shape[2]
+        nimgs = x.shape[0]
 
         half_size = self.ntheta // 2
 
         # get consistent complex type from the real type of x
         out_type = complex_type(x.dtype)
-        pf = np.empty((self.nrad * half_size, nimgs), dtype=out_type)
+        pf = np.empty((nimgs, self.nrad * half_size), dtype=out_type)
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
-            pf[..., isample] = nufft(x[..., isample], self.freqs)
+            pf[isample] = nufft(x[isample], self.freqs)
 
-        pf = m_reshape(pf, (self.nrad, half_size, nimgs))
+        pf = np.reshape(pf, (nimgs, self.nrad, half_size))
         v = np.concatenate((pf, pf.conj()), axis=1)
 
-        # return v coefficients with the first dimension size of self.count
-        v = m_reshape(v, (self.nrad * self.ntheta, nimgs))
-        v = roll_dim(v, sz_roll)
-
+        # return v coefficients with the last dimension size of self.count
+        v = v.reshape(nimgs, -1)
         return v
