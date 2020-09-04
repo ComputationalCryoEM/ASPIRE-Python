@@ -77,3 +77,6 @@ Q_mat, flag = register_rotations(rots_est, rots_true)
 regrot = get_aligned_rotations(rots_est, Q_mat, flag)
 mse_reg = get_rots_mse(regrot, rots_true)
 logger.info(f'MSE deviation of the estimated rotations using register_rotations : {mse_reg}')
+
+# Basic Check
+assert mse_reg < 0.06
