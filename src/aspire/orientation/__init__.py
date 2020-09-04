@@ -54,7 +54,7 @@ class CLOrient3D:
         self.max_shift = math.ceil(config.orient.max_shift * self.n_res)
         self.shift_step = config.orient.shift_step
 
-        imgs = self.src.images(start=0, num=np.inf).asnumpy()
+        imgs = self.src.images(start=0, num=np.inf)
 
         # Obtain coefficients in polar Fourier basis for input 2D images
         self.basis = PolarBasis2D((self.n_res, self.n_res), self.n_rad, self.n_theta)

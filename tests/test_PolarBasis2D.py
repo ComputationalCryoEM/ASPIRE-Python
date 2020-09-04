@@ -3,6 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis.polar_2d import PolarBasis2D
+from aspire.image import Image
 from aspire.utils.matlab_compat import m_reshape
 
 
@@ -14,7 +15,7 @@ class PolarBasis2DTestCase(TestCase):
         pass
 
     def testPolarBasis2DEvaluate_t(self):
-        x = np.array([
+        x = Image(np.array([
             [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
              -1.08106869e-17,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
             [ 0.00000000e+00,  0.00000000e+00, -6.40456062e-03, -3.32961020e-03,
@@ -31,7 +32,7 @@ class PolarBasis2DTestCase(TestCase):
              -1.54969139e-02, -1.66229153e-02, -2.07389259e-02,  6.64060546e-03],
             [ 0.00000000e+00,  0.00000000e+00,  5.20080934e-03, -1.06788196e-02,
              -1.14761672e-02, -1.27443126e-02, -1.15563484e-02,  0.00000000e+00]
-        ]).T[np.newaxis,:,:] #RCOPT
+        ]).T) #RCOPT
 
         pf = self.basis.evaluate_t(x)
         result = np.array(
@@ -190,7 +191,7 @@ class PolarBasis2DTestCase(TestCase):
               10.87648517, 10.60647963,  9.11026567,  8.53250276]]
         ).T #RCOPT
 
-        self.assertTrue(np.allclose(x, result))
+        self.assertTrue(np.allclose(x.asnumpy(), result))
 
     def testPolarBasis2DAdjoint(self):
         # The evaluate function should be the adjoint operator of evaluate_t.
@@ -207,8 +208,8 @@ class PolarBasis2DTestCase(TestCase):
 
         x = m_reshape(x, (self.basis.nrad * self.basis.ntheta,))
 
-        x_t = self.basis.evaluate(x)
+        x_t = self.basis.evaluate(x).asnumpy()
         y = np.random.randn(np.prod(self.basis.sz))
-        y_t = self.basis.evaluate_t(m_reshape(y, self.basis.sz)[np.newaxis,:]) # RCOPT
+        y_t = self.basis.evaluate_t(Image(m_reshape(y, self.basis.sz)[np.newaxis,:])) # RCOPT
         self.assertTrue(np.isclose(np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),))),
                                    np.dot(y_t, x)))
