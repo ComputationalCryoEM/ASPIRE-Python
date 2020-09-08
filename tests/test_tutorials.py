@@ -5,8 +5,13 @@ Discover and run tutorial scripts as unit tests.
 import os
 import pytest
 import subprocess
+import sys
 
 from pathlib import Path
+
+pytestmark = pytest.mark.skipif(
+    sys.platform != 'linux',
+    reason='Tutorials with graphics are currently executed for Linux only.')
 
 # Define path to tutorial scripts
 tutorials_dir = os.path.join(
@@ -31,6 +36,7 @@ def test_tutorials(filename):
     """
 
     # Acquire the environment, unset display for pyplot.
+    #   This allows the tutorials to run w/o graphics for Linux platforms.
     env = os.environ
     env['DISPLAY'] = ''
 
