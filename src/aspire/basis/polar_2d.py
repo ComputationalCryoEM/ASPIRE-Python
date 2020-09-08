@@ -98,7 +98,7 @@ class PolarBasis2D(Basis):
         x = np.empty((nimgs, self.sz[0], self.sz[1]), dtype=self.dtype)
         # TODO: need to include the implementation of the many framework in Finufft.
         for isample in range(0, nimgs):
-            x[isample, ... ] = np.real(anufft(v[:, isample], self.freqs, self.sz))
+            x[isample, ...] = np.real(anufft(v[:, isample], self.freqs, self.sz))
 
         return Image(x)
 

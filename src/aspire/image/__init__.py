@@ -248,8 +248,6 @@ class Image:
         grid_1d = ifftshift(np.ceil(np.arange(-L/2, L/2))) * 2 * np.pi / L
         om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
 
-        #phase_shifts_x = np.broadcast_to(-shifts[:, 0], (n_shifts, L, L))
-        #phase_shifts_y = np.broadcast_to(-shifts[:, 1], (n_shifts, L, L))
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
         phase_shifts_y = -shifts[:, 1].reshape((n_shifts, 1, 1))
 

@@ -244,5 +244,4 @@ class FFBBasis2D(FBBasis2D):
 
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
-        # return v coefficients with the first dimension of self.count
         return v
