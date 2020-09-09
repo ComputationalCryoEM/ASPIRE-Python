@@ -48,8 +48,8 @@ fb_meanmax = np.mean(np.max(abs(fb_images - org_images), axis=2))
 logger.info(f'Mean value of maximum differences between FB estimated images and original images: {fb_meanmax}')
 
 # Calculate the normalized RMSE of the FB estimated images
-nrmse_ims = anorm(fb_images - org_images) / anorm(org_images)
-logger.info(f'FB estimated images normalized RMSE: {nrmse_ims}')
+fb_nrmse_ims = anorm(fb_images - org_images) / anorm(org_images)
+logger.info(f'FB estimated images normalized RMSE: {fb_nrmse_ims}')
 
 # plot the first images using the normal FB method
 plt.subplot(3, 4, 1)
@@ -82,8 +82,8 @@ ffb_meanmax = np.mean(np.max(abs(ffb_images - org_images), axis=2))
 logger.info(f'Mean value of maximum differences between FFB estimated images and original images: {ffb_meanmax}')
 
 # Calculate the normalized RMSE of the estimated images
-nrmse_ims = anorm(ffb_images - org_images) / anorm(org_images)
-logger.info(f'FFB Estimated images normalized RMSE: {nrmse_ims}')
+ffb_nrmse_ims = anorm(ffb_images - org_images) / anorm(org_images)
+logger.info(f'FFB Estimated images normalized RMSE: {ffb_nrmse_ims}')
 
 # plot the first images using the fast FB method
 plt.subplot(3, 4, 2)
@@ -116,8 +116,8 @@ pswf_meanmax = np.mean(np.max(abs(pswf_images - org_images), axis=2))
 logger.info(f'Mean value of maximum differences between PSWF estimated images and original images: {pswf_meanmax}')
 
 # Calculate the normalized RMSE of the estimated images
-nrmse_ims = anorm(pswf_images - org_images) / anorm(org_images)
-logger.info(f'PSWF Estimated images normalized RMSE: {nrmse_ims}')
+pswf_nrmse_ims = anorm(pswf_images - org_images) / anorm(org_images)
+logger.info(f'PSWF Estimated images normalized RMSE: {pswf_nrmse_ims}')
 
 # plot the first images using the direct PSWF method
 plt.subplot(3, 4, 3)
@@ -150,8 +150,8 @@ fpswf_meanmax = np.mean(np.max(abs(fpswf_images - org_images), axis=2))
 logger.info(f'Mean value of maximum differences between FPSWF estimated images and original images: {fpswf_meanmax}')
 
 # Calculate the normalized RMSE of the estimated images
-nrmse_ims = anorm(fpswf_images - org_images) / anorm(org_images)
-logger.info(f'FPSWF Estimated images normalized RMSE: {nrmse_ims}')
+fpswf_nrmse_ims = anorm(fpswf_images - org_images) / anorm(org_images)
+logger.info(f'FPSWF Estimated images normalized RMSE: {fpswf_nrmse_ims}')
 
 # plot the first images using the fast PSWF method
 plt.subplot(3, 4, 4)
@@ -164,3 +164,9 @@ plt.subplot(3, 4, 12)
 plt.imshow(np.real(org_images[..., 0] - fpswf_images[..., 0]), cmap='gray')
 plt.title('Differences')
 plt.show()
+
+# Basic Check
+assert fb_nrmse_ims < 0.025
+assert ffb_nrmse_ims < 0.025
+assert pswf_nrmse_ims < 0.025
+assert fpswf_nrmse_ims < 0.025

@@ -121,3 +121,8 @@ logger.info(f'Eigendecomposition (rel. error) = {eigs_perf["rel_err"]}')
 logger.info(f'Clustering (accuracy) = {clustering_accuracy}')
 logger.info(f'Coordinates (mean rel. error) = {coords_perf["rel_err"]}')
 logger.info(f'Coordinates (mean correlation) = {np.mean(coords_perf["corr"])}')
+
+# Basic Check
+assert covar_perf["rel_err"] <= 0.60
+assert np.mean(coords_perf["corr"]) >= 0.98
+assert clustering_accuracy >= 0.99

@@ -191,3 +191,6 @@ plt.imshow(imgs_est[..., idm] - imgs_clean[..., idm], cmap='gray')
 plt.colorbar()
 plt.title('Clean-Estimated')
 plt.show()
+
+# Basic Check
+assert nrmse_ims < 0.25
