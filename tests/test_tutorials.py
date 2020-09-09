@@ -9,6 +9,9 @@ import sys
 
 from pathlib import Path
 
+# Note pytestmark is a global variable
+#   https://docs.pytest.org/en/stable/example/markers.html\
+#    #marking-whole-classes-or-modules
 pytestmark = pytest.mark.skipif(
     sys.platform != 'linux',
     reason='Tutorials with graphics are currently executed for Linux only.')
