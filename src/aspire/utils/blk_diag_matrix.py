@@ -837,10 +837,9 @@ def filter_to_fb_mat(h_fun, fbasis):
     if not isinstance(fbasis, FFBBasis2D):
         raise NotImplementedError('Currently only fast FB method is supported')
     # Set same dimensions as basis object
-    n_k = int(np.ceil(4 * fbasis.rcut * fbasis.kcut))
-    n_theta = np.ceil(16 * fbasis.kcut * fbasis.rcut)
-    n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
-
+    n_k = fbasis.n_r
+    n_theta = fbasis.n_theta
+    
     # get 2D grid in polar coordinate
     k_vals, wts = lgwt(n_k, 0, 0.5)
     k, theta = np.meshgrid(

@@ -36,6 +36,9 @@ class FFBBasis2D(FBBasis2D):
         # set cutoff values
         self.rcut = self.nres / 2
         self.kcut = 0.5
+        self.n_r = int(np.ceil(4 * self.rcut * self.kcut))
+        n_theta = np.ceil(16 * self.kcut * self.rcut)
+        self.n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
         self.jv_norm = []
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
@@ -61,7 +64,8 @@ class FFBBasis2D(FBBasis2D):
         The sampling criterion requires n_r=4*c*R and n_theta= 16*c*R.
 
         """
-        n_r = int(np.ceil(4 * self.rcut * self.kcut))
+        n_r = self.n_r
+        n_theta = self.n_theta
         r, w = lgwt(n_r, 0.0, self.kcut)
 
         radial = np.zeros(shape=(np.sum(self.k_max), n_r))
@@ -77,9 +81,6 @@ class FFBBasis2D(FBBasis2D):
                 ind_radial += 1
             # Save precomputed jv values after normalization
             self.jv_norm.append(jv_ell)
-
-        n_theta = np.ceil(16 * self.kcut * self.rcut)
-        n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
 
         # Only calculate "positive" frequencies in one half-plane.
         freqs_x = m_reshape(r, (n_r, 1)) @ m_reshape(
