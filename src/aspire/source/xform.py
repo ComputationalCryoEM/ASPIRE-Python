@@ -82,6 +82,13 @@ class Xform:
         """
         return Xform.XformActiveContextManager(self, active=False)
 
+    def __str__(self):
+        """
+        Show class name of Xform
+        :return: A string of class name
+        """
+        return self.__class__.__name__
+
 
 class LinearXform(Xform):
     """
@@ -165,6 +172,14 @@ class Downsample(LinearXform):
         # TODO: Implement upsampling with zero-padding
         raise NotImplementedError('Adjoint of downsampling not implemented yet.')
 
+    def __str__(self):
+        """
+        Show class name and related downsample resolution
+        :return: A string of class name and related information
+        """
+        return (self.__class__.__name__ + ' at resolution of '
+                + str(self.resolution))
+
 
 class FilterXform(SymmetricXform):
     """
@@ -180,6 +195,14 @@ class FilterXform(SymmetricXform):
 
     def _forward(self, im, indices):
         return im.filter(self.filter)
+
+    def __str__(self):
+        """
+        Show class name and related filter name
+        :return: A string of class name and related information
+        """
+        return (self.__class__.__name__ + ' with filter of '
+                + str(self.filter))
 
 
 class Add(Xform):
@@ -223,6 +246,14 @@ class FlipXform(Xform):
 
         return Image(im_out)
 
+    def __str__(self):
+        """
+        Show class name and related filter name
+        :return: A string of class name and related information
+        """
+        return (self.__class__.__name__ + ' with filters of '
+                + str(self.filters[0]))
+
 
 class LambdaXform(Xform):
     """
@@ -246,6 +277,14 @@ class LambdaXform(Xform):
         im_out = self.lambda_fun(im_in, *self.args, **self.kwargs)
 
         return Image(im_out)
+
+    def __str__(self):
+        """
+        Show class name and related lambda function name
+        :return: A string of class name and related information
+        """
+        return (self.__class__.__name__ + ' with function of '
+                + self.lambda_fun.__name__)
 
 
 class NoiseAdder(Xform):
