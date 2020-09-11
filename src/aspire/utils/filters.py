@@ -19,6 +19,13 @@ class Filter:
     def __mul__(self, other):
         return MultiplicativeFilter(self, other)
 
+    def __str__(self):
+        """
+        Show class name of Filter
+        :return: A string of class name
+        """
+        return self.__class__.__name__
+
     def evaluate(self, omega):
         """
         Evaluate the filter at specified frequencies.
