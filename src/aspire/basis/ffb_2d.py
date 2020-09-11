@@ -63,15 +63,15 @@ class FFBBasis2D(FBBasis2D):
         n_r = int(np.ceil(4 * self.rcut * self.kcut))
         r, w = lgwt(n_r, 0.0, self.kcut)
 
-        radial = np.zeros(shape=(n_r, np.sum(self.k_max)))
+        radial = np.zeros(shape=(np.sum(self.k_max), n_r))
         ind_radial = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[:, ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
+                radial[ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
                 # NOTE: We need to remove the factor due to the discretization here
                 # since it is already included in our quadrature weights
                 nrm = 1 / (np.sqrt(np.prod(self.sz))) * self.basis_norm_2d(ell, k)
-                radial[:, ind_radial] /= nrm
+                radial[ind_radial] /= nrm
                 ind_radial += 1
 
         n_theta = np.ceil(16 * self.kcut * self.rcut)
@@ -102,25 +102,24 @@ class FFBBasis2D(FBBasis2D):
             and the first dimension correspond to remaining dimension of `v`.
         """
 
-        # Transpose here once, instead of several times below  #RCOPT
-        v = v.reshape(-1, self.count).T
+        v = v.reshape(-1, self.count)
+
+        # number of 2D image samples
+        n_data = v.shape[0]
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
         n_r = np.size(self._precomp["freqs"], 1)
 
-        # number of 2D image samples
-        n_data = np.size(v, 1)
-
         # go through  each basis function and find corresponding coefficient
-        pf = np.zeros((n_r, 2 * n_theta, n_data), dtype=np.complex)
+        pf = np.zeros((n_data, 2 * n_theta, n_r), dtype=np.complex)
         mask = self._indices["ells"] == 0
 
         ind = 0
 
         idx = ind + np.arange(self.k_max[0])
 
-        pf[:, 0, :] = self._precomp["radial"][:, idx] @ v[mask, ...]
+        pf[:, 0, :] = v[:, mask] @ self._precomp["radial"][idx]
 
         ind = ind + np.size(idx)
 
@@ -131,12 +130,12 @@ class FFBBasis2D(FBBasis2D):
             idx_pos = ind_pos + np.arange(self.k_max[ell])
             idx_neg = idx_pos + self.k_max[ell]
 
-            v_ell = (v[idx_pos, :] - 1j * v[idx_neg, :]) / 2.0
+            v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0
 
             if np.mod(ell, 2) == 1:
                 v_ell = 1j * v_ell
 
-            pf_ell = self._precomp["radial"][:, idx] @ v_ell
+            pf_ell = v_ell @ self._precomp["radial"][idx]
             pf[:, ell, :] = pf_ell
 
             if np.mod(ell, 2) == 0:
@@ -155,16 +154,15 @@ class FFBBasis2D(FBBasis2D):
         pf = pf[:, 0:hsize, :]
 
         for i_r in range(0, n_r):
-            pf[i_r, ...] = pf[i_r, ...] * (
+            pf[..., i_r] = pf[..., i_r] * (
                     self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
-        pf = m_reshape(pf, (n_r * n_theta, n_data))
+
+        pf = np.reshape(pf, (n_data, n_r * n_theta))
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
         freqs = m_reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
-        # TODO: Address axis swapping once C major in memory.
-        pfc = pf.T
-        x = 2 * anufft(pfc, 2 * pi * freqs, self.sz, real=True)
+        x = 2 * anufft(pf, 2 * pi * freqs, self.sz, real=True)
 
         # Return X as Image instance with the last two dimensions as *self.sz
         x = x.reshape(-1, *self.sz)
@@ -219,7 +217,7 @@ class FFBBasis2D(FBBasis2D):
         idx = ind + np.arange(self.k_max[0])
         mask = self._indices["ells"] == 0
 
-        v[:, mask] = pf[:, :, 0].real @ self._precomp["radial"][:, idx]
+        v[:, mask] = pf[:, :, 0].real @ self._precomp["radial"][idx].T
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -228,7 +226,7 @@ class FFBBasis2D(FBBasis2D):
             idx_pos = ind_pos + np.arange(self.k_max[ell])
             idx_neg = idx_pos + self.k_max[ell]
 
-            v_ell = pf[:, :, ell] @ self._precomp["radial"][:, idx]
+            v_ell = pf[:, :, ell] @ self._precomp["radial"][idx].T
 
             if np.mod(ell, 2) == 0:
                 v_pos = np.real(v_ell)
