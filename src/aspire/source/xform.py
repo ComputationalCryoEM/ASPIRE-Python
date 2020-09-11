@@ -133,7 +133,25 @@ class Multiply(SymmetricXform):
         self.multipliers = factor
 
     def _forward(self, im, indices):
-        return im * self.multipliers[indices]
+        if self.multipliers.size == 1:
+            im_new = im * self.multipliers
+        else:
+            im_new = im * self.multipliers[indices]
+
+        return im_new
+
+    def __str__(self):
+        """
+        Show class name and related scaling information
+        :return: A string of class name and related information
+        """
+        if self.multipliers.size == 1:
+            str_out = (self.__class__.__name__ + ' by same number of '
+                       + str(self.multipliers))
+        else:
+            str_out = self.__class__.__name__ + ' by difference numbers'
+
+        return str_out
 
 
 class Shift(LinearXform):
@@ -151,10 +169,33 @@ class Shift(LinearXform):
         self.n = shifts.shape[0]
 
     def _forward(self, im, indices):
-        return im.shift(self.shifts[indices])
+        if self.n == 1:
+            im_new = im.shift(self.shifts)
+        else:
+            im_new = im.shift(self.shifts[indices])
+
+        return im_new
 
     def _adjoint(self, im, indices):
-        return im.shift(-self.shifts[indices])
+        if self.n == 1:
+            im_new = im.shift(-self.shifts)
+        else:
+            im_new = im.shift(-self.shifts[indices])
+
+        return im_new
+
+    def __str__(self):
+        """
+        Show class name and related shift information
+        :return: A string of class name and related information
+        """
+        if self.n == 1:
+            str_out = (self.__class__.__name__ + ' by same number of '
+                       + str(self.shifts))
+        else:
+            str_out = self.__class__.__name__ + ' by difference numbers'
+
+        return str_out
 
 
 class Downsample(LinearXform):
@@ -219,7 +260,25 @@ class Add(Xform):
         self.addend = addend
 
     def _forward(self, im, indices):
-        return im + self.addend[indices]
+        if self.addend.size == 1:
+            im_new = im + self.addend
+        else:
+            im_new = im + self.addend[indices]
+
+        return im_new
+
+    def __str__(self):
+        """
+        Show class name and related Add information
+        :return: A string of class name and related information
+        """
+        if self.addend.size == 1:
+            str_out = (self.__class__.__name__ + ' with same number of '
+                       + str(self.addend))
+        else:
+            str_out = self.__class__.__name__ + ' with different numbers'
+
+        return str_out
 
 
 class FlipXform(Xform):
