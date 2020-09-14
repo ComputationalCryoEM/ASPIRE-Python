@@ -6,6 +6,7 @@ from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2, centered_ifft2
 from aspire.utils.matlab_compat import m_flatten, m_reshape
+from aspire.utils.preprocess_C import downsample
 
 
 class Volume:
@@ -58,13 +59,13 @@ class Volume:
     def __sub__(self, other):
         return Volume(self.data - other.data)
 
-    # def __mul__(self, other):
-    #     if isinstance(other, Volume):
-    #         res = Volume(self.data * other.data)
-    #     else:
-    #         res = Volume(self.data * other)
+    def __mul__(self, other):
+        if isinstance(other, Volume):
+            res = Volume(self.data * other.data)
+        else:
+            res = Volume(self.data * other)
 
-    #     return res
+        return res
 
     # def __truediv__(self, other):
     #     if isinstance(other, Volume):
@@ -154,6 +155,9 @@ class Volume:
         vol = np.real(plan.adjoint(im_f)) / L
 
         return Volume(vol)
+
+    def downsample(self, szout, mask=None):
+        return Volume(downsample(self.data, szout, mask))
 
     def shift(self):
         raise NotImplementedError

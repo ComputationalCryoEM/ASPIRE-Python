@@ -11,7 +11,6 @@ import os
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import (RadialCTFFilter, ScalarFilter)
-from aspire.utils.preprocess_F import downsample
 from aspire.volume import Volume
 
 
@@ -50,14 +49,12 @@ CTF_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1
 # Load the map file of a 70S ribosome and downsample the 3D map to desired resolution.
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
 logger.info(f'Load 3D map from mrc file, {infile}')
-vols = infile.data
-vols = vols[..., np.newaxis]
+vols = Volume(infile.data)
 
 # Downsample the volume to a desired resolution and increase density
 # by 1.0e5 time for a better graph view
 logger.info(f'Downsample map to a resolution of {img_size} x {img_size} x {img_size}')
-vols = downsample(vols, (img_size,) * 3) * 1.0e5
-vols = Volume(np.moveaxis(vols, -1, 0)) # RCOPT
+vols = vols.downsample((img_size,) * 3) * 1.0e5
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to create simulation object.')

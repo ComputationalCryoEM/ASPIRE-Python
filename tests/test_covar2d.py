@@ -12,8 +12,8 @@ from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import randn
 from aspire.utils.matrix import anorm
-from aspire.utils.preprocess_C import downsample
 from aspire.utils.preprocess_F import vol2img as vol2img
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -44,9 +44,8 @@ class Cov2DTestCase(TestCase):
             dtype='double'
         )
 
-        vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')).T # RCOPT
-        vols = vols[np.newaxis, ...]
-        vols = downsample(vols, (L*np.ones(3, dtype=int)))
+        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')).T) # RCOPT
+        vols = vols.downsample((L*np.ones(3, dtype=int)))
         sim.vols = vols
 
         self.basis = FFBBasis2D((L, L))

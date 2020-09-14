@@ -22,7 +22,6 @@ from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import randn
 from aspire.utils.matrix import anorm
-from aspire.utils.preprocess_F import downsample
 from aspire.volume import Volume
 
 logger = logging.getLogger('aspire')
@@ -62,12 +61,8 @@ filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
 logger.info(f'Load 3D map and downsample 3D map to desired grids '
             f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
-vols = infile.data
-
-# RCOPT, will look at downsample after rebasing Junchao's work
-vols = vols[..., np.newaxis]
-vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
-vols = Volume(vols[..., 0])
+vols = Volume(infile.data)
+vols = vols.downsample((img_size*np.ones(3, dtype=int)))
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to creat simulation object.')

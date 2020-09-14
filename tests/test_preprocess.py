@@ -5,7 +5,8 @@ import numpy as np
 from scipy.fftpack import fftn, fftshift
 
 from aspire.utils.coor_trans import qrand_rots
-from aspire.utils.preprocess_F import crop_pad, downsample, fuzzy_mask, vol2img
+from aspire.utils.preprocess_F import crop_pad, fuzzy_mask, vol2img
+from aspire.utils.preprocess_C import downsample
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -26,9 +27,9 @@ class PreprocessTestCase(TestCase):
 
     def test02Downsample(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy'))
-        results = results[..., np.newaxis]
+        results = results[np.newaxis, ...]
         vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
-        vols = vols[..., np.newaxis]
+        vols = vols[np.newaxis, ...]
         vols = downsample(vols, (8, 8, 8))
         self.assertTrue(np.allclose(results, vols, atol=1e-7))
 
