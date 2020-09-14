@@ -83,10 +83,6 @@ class Xform:
         return Xform.XformActiveContextManager(self, active=False)
 
     def __str__(self):
-        """
-        Show class name of Xform
-        :return: A string of class name
-        """
         return self.__class__.__name__
 
 
@@ -141,10 +137,6 @@ class Multiply(SymmetricXform):
         return im_new
 
     def __str__(self):
-        """
-        Show class name and related scaling information
-        :return: A string of class name and related information
-        """
         if self.multipliers.size == 1:
             str_out = (self.__class__.__name__ + ' by same number of '
                        + str(self.multipliers))
@@ -185,10 +177,6 @@ class Shift(LinearXform):
         return im_new
 
     def __str__(self):
-        """
-        Show class name and related shift information
-        :return: A string of class name and related information
-        """
         if self.n == 1:
             str_out = (self.__class__.__name__ + ' by same number of '
                        + str(self.shifts))
@@ -214,10 +202,6 @@ class Downsample(LinearXform):
         raise NotImplementedError('Adjoint of downsampling not implemented yet.')
 
     def __str__(self):
-        """
-        Show class name and related downsample resolution
-        :return: A string of class name and related information
-        """
         return (self.__class__.__name__ + ' at resolution of '
                 + str(self.resolution))
 
@@ -238,10 +222,6 @@ class FilterXform(SymmetricXform):
         return im.filter(self.filter)
 
     def __str__(self):
-        """
-        Show class name and related filter name
-        :return: A string of class name and related information
-        """
         return (self.__class__.__name__ + ' with filter of '
                 + str(self.filter))
 
@@ -268,10 +248,6 @@ class Add(Xform):
         return im_new
 
     def __str__(self):
-        """
-        Show class name and related Add information
-        :return: A string of class name and related information
-        """
         if self.addend.size == 1:
             str_out = (self.__class__.__name__ + ' with same number of '
                        + str(self.addend))
@@ -306,10 +282,6 @@ class FlipXform(Xform):
         return Image(im_out)
 
     def __str__(self):
-        """
-        Show class name and related filter name
-        :return: A string of class name and related information
-        """
         return (self.__class__.__name__ + ' with filters of '
                 + str(self.filters[0]))
 
@@ -338,10 +310,6 @@ class LambdaXform(Xform):
         return Image(im_out)
 
     def __str__(self):
-        """
-        Show class name and related lambda function name
-        :return: A string of class name and related information
-        """
         return (self.__class__.__name__ + ' with function of '
                 + self.lambda_fun.__name__)
 
