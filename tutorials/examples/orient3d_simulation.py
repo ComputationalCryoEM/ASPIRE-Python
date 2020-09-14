@@ -12,7 +12,7 @@ import mrcfile
 from aspire.source.simulation import Simulation
 
 from aspire.utils.filters import RadialCTFFilter
-from aspire.utils.preprocess import downsample
+from aspire.utils.preprocess_F import downsample
 from aspire.utils.coor_trans import (register_rotations,
                                      get_aligned_rotations, get_rots_mse)
 from aspire.orientation.commonline_sync import CLSyncVoting

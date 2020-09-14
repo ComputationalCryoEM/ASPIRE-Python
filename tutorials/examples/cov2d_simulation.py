@@ -22,7 +22,7 @@ from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import randn
 from aspire.utils.matrix import anorm
-from aspire.utils.preprocess import downsample
+from aspire.utils.preprocess_F import downsample
 from aspire.volume import Volume
 
 logger = logging.getLogger('aspire')

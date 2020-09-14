@@ -7,7 +7,7 @@ from aspire.orientation.commonline_sync import CLSyncVoting
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import Random
-from aspire.utils.preprocess import downsample
+from aspire.utils.preprocess_F import downsample
 from aspire.volume import Volume
 
 import os.path

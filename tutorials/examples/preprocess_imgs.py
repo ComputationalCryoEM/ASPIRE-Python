@@ -11,7 +11,7 @@ import os
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import (RadialCTFFilter, ScalarFilter)
-from aspire.utils.preprocess import downsample
+from aspire.utils.preprocess_F import downsample
 from aspire.volume import Volume
 
 

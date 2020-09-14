@@ -5,7 +5,7 @@ import numpy as np
 from scipy.fftpack import fftn, fftshift
 
 from aspire.utils.coor_trans import qrand_rots
-from aspire.utils.preprocess import crop_pad, downsample, fuzzy_mask, vol2img
+from aspire.utils.preprocess_F import crop_pad, downsample, fuzzy_mask, vol2img
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 

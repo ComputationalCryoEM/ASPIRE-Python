@@ -13,7 +13,7 @@ from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import randn
 from aspire.utils.matrix import anorm
 from aspire.utils.preprocess_C import downsample
-from aspire.utils.preprocess import vol2img as vol2img
+from aspire.utils.preprocess_F import vol2img as vol2img
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
