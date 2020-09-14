@@ -422,10 +422,10 @@ class ImageSource:
 
         if signal_mean < noise_mean:
             logger.info('Need to invert contrast')
-            scale_factor = np.array(-1.0)
+            scale_factor = -1.0
         else:
             logger.info('No need to invert contrast')
-            scale_factor = np.array(1.0)
+            scale_factor = 1.0
 
         logger.info('Adding Scaling Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Multiply(scale_factor))

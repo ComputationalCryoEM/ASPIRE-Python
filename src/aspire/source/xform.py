@@ -130,7 +130,7 @@ class Multiply(SymmetricXform):
         :param factor: An ndarray of scalar factors to use for amplitude multiplication.
         """
         super().__init__()
-        self.multipliers = factor
+        self.multipliers = np.array(factor)
 
     def _forward(self, im, indices):
         if self.multipliers.size == 1:
@@ -165,7 +165,7 @@ class Shift(LinearXform):
         :param shifts: An ndarray of shape (n, 2)
         """
         super().__init__()
-        self.shifts = shifts
+        self.shifts = np.array(shifts)
         self.n = shifts.shape[0]
 
     def _forward(self, im, indices):
@@ -257,7 +257,7 @@ class Add(Xform):
         :param addend: An ndarray of shape (n,)
         """
         super().__init__()
-        self.addend = addend
+        self.addend = np.array(addend)
 
     def _forward(self, im, indices):
         if self.addend.size == 1:
