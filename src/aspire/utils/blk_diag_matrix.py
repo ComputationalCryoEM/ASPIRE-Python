@@ -855,20 +855,16 @@ def filter_to_fb_mat(h_fun, fbasis):
     # Represent 1D function values in fbasis
     h_fb = BlkDiagMatrix.empty(2 * fbasis.ell_max + 1, dtype=fbasis.dtype)
     ind_ell = 0
-    ind_radial = 0
     for ell in range(0, fbasis.ell_max+1):
         k_max = fbasis.k_max[ell]
         rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
         fb_vals = np.zeros_like(rmat)
-        for ik in range(0, k_max):
-            # filters use different normalized factors
-            if ell == 0:
-                fb_vals[:, ik] = fbasis._precomp['radial'][:,
-                                 ind_radial] * np.sqrt(2*np.pi)
-            else:
-                fb_vals[:, ik] = fbasis._precomp['radial'][:,
-                                 ind_radial]*np.sqrt(np.pi)
-            ind_radial += 1
+        ind_radial = np.sum(fbasis.k_max[0:ell])
+        fb_vals[:, 0:k_max] = fbasis._precomp['radial'][:,
+                              ind_radial:ind_radial + k_max] * np.sqrt(np.pi)
+        if ell == 0:
+            fb_vals *= np.sqrt(2)
+
         h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
             h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1))
