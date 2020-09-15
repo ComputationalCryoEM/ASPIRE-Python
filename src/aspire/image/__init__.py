@@ -1,3 +1,4 @@
+import logging
 import mrcfile
 import numpy as np
 from scipy.fftpack import fft2, ifft2, ifftshift
@@ -9,6 +10,7 @@ from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2, centered_ifft2
 
+logger = logging.getLogger(__name__)
 
 # TODO: The implementation of these functions should move directly inside the appropriate Image methods that call them.
 
@@ -22,21 +24,23 @@ def _im_translate2(im, shifts):
 
     TODO: This implementation has been moved here from aspire.aspire.abinitio and is faster than _im_translate.
     """
+
+    if not isinstance(im, Image):
+        logger.warning("_im_translate2 expects an Image, attempting to convert array.")
+        im = Image(im)
+
     if shifts.ndim == 1:
         shifts = shifts[np.newaxis, :]
-    n_im = im.shape[0]
+
     n_shifts = shifts.shape[0]
 
     if shifts.shape[1] != 2:
         raise ValueError('Input `shifts` must be of size n-by-2')
 
-    if n_shifts != 1 and n_shifts != n_im:
+    if n_shifts != 1 and n_shifts != im.n_images:
         raise ValueError('The number of shifts must be 1 or match the number of images')
 
-    if im.shape[1] != im.shape[2]:
-        raise ValueError('Images must be square')
-
-    resolution = im.shape[1]
+    resolution = im.res
     grid = np.fft.ifftshift(np.ceil(np.arange(-resolution / 2, resolution / 2)))
     om_y, om_x = np.meshgrid(grid, grid)
     phase_shifts = (np.einsum('ij, k -> ijk', om_x, shifts[:,0]) +
@@ -46,11 +50,11 @@ def _im_translate2(im, shifts):
     phase_shifts /= resolution
 
     mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
-    im_f = np.fft.fft2(im)
+    im_f = np.fft.fft2(im.asnumpy())
     im_translated_f = im_f * mult_f
     im_translated = np.real(np.fft.ifft2(im_translated_f))
 
-    return im_translated
+    return Image(im_translated)
 
 
 def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
@@ -161,8 +165,7 @@ class Image:
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
 
-        im_translated = self._im_translate(shifts)
-        return Image(im_translated)
+        return self._im_translate(shifts)
 
     def downsample(self, ds_res):
         """
@@ -258,7 +261,7 @@ class Image:
         im_translated = ifft2(im_translated_f, axes=(1, 2))
         im_translated = np.real(im_translated)
 
-        return im_translated
+        return Image(im_translated)
 
     def norm(self):
         return anorm(self.data)

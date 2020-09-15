@@ -36,9 +36,9 @@ class ImageTestCase(TestCase):
         # 'Shifting' an Image corresponds to a 'roll' of a numpy array - again, note the negated signs and the axes
         im3 = np.roll(self.im.asnumpy()[0], -shifts, axis=(0,1))
 
-        self.assertTrue(np.allclose(im.asnumpy(), im1))
-        self.assertTrue(np.allclose(im1, im2))
-        self.assertTrue(np.allclose(im1[0, :, :], im3))
+        self.assertTrue(np.allclose(im.asnumpy(), im1.asnumpy()))
+        self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
+        self.assertTrue(np.allclose(im1.asnumpy()[0, :, :], im3))
 
 
     def testArrayImageSource(self):
