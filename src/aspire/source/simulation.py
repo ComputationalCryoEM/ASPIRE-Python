@@ -39,12 +39,11 @@ class Simulation(ImageSource):
 
         if vols is None:
             self.vols = self._gaussian_blob_vols(L=self.L, C=C, seed=seed)
-            #TODO: convert _gaussian_blob_vols to C order
-            self.vols = Volume(np.moveaxis(self.vols, 3, 0))
         else:
             assert isinstance(vols, Volume)
             self.vols = vols
-        self.C = self.vols.shape[0]
+
+        self.C = self.vols.N
 
         states = states or randi(self.C, n, seed=seed)
         angles = angles or uniform_random_angles(n, seed=seed)
@@ -73,7 +72,7 @@ class Simulation(ImageSource):
         :param K: The number of blobs
         :param alpha: A scale factor of the blob widths
 
-        :return: A volume array of size L x L x L x C containing the C Gaussian blob volumes.
+        :return: A Volume instance containing C Gaussian blob volumes.
         """
 
         def gaussian_blobs(K, alpha):
@@ -90,11 +89,11 @@ class Simulation(ImageSource):
             return Q, D, mu
 
         with Random(seed):
-            vols = np.zeros(shape=(L, L, L, C)).astype(self.dtype)
+            vols = np.zeros(shape=(C, L, L, L)).astype(self.dtype)
             for k in range(C):
                 Q, D, mu = gaussian_blobs(K, alpha)
-                vols[:, :, :, k] = self.eval_gaussian_blobs(L, Q, D, mu)
-            return vols
+                vols[k] = self.eval_gaussian_blobs(L, Q, D, mu)
+            return Volume(vols)
 
     def eval_gaussian_blobs(self, L, Q, D, mu):
         g = grid_3d(L)

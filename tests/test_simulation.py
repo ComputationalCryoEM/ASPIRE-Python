@@ -26,7 +26,8 @@ class SimTestCase(TestCase):
 
     def testGaussianBlob(self):
         blobs = self.sim.vols.data
-        self.assertTrue(np.allclose(blobs, np.load(os.path.join(DATA_DIR, 'sim_blobs.npy'))))
+        ref = np.load(os.path.join(DATA_DIR, 'sim_blobs.npy'))
+        self.assertTrue(np.allclose(blobs, ref))
 
     def testSimulationRots(self):
         self.assertTrue(np.allclose(
