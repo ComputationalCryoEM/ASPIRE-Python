@@ -39,20 +39,6 @@ def centered_ifft2(x):
     return x
 
 
-# Note, deprecated, only used in preprocess
-def centered_ifft2_F(x):
-    """
-    Calculate a centered, two-dimensional inverse FFT
-    :param x: The two-dimensional signal to be transformed.
-        The inverse FFT is only applied along the first two dimensions.
-    :return: The centered inverse Fourier transform of x.
-    """
-    x = ifftshift(ifftshift(x, 0), 1)
-    x = ifft2(x, axes=(0, 1))
-    x = fftshift(fftshift(x, 0), 1)
-    return x
-
-
 def centered_fft2(x):
     """
     Calculate a centered, two-dimensional inverse FFT
@@ -66,34 +52,6 @@ def centered_fft2(x):
     x = fftshift(fftshift(x, -2), -1)
     return x
 
-
-# Note, deprecated, only used in preprocess
-def centered_fft2_F(x):
-    x = ifftshift(ifftshift(x, 0), 1)
-    x = fft2(x, axes=(0, 1))
-    x = fftshift(fftshift(x, 0), 1)
-    return x
-
-
-# Note, deprecated, only used in preprocess
-def centered_ifft3_F(x):
-    """
-    Calculate a centered, three-dimensional inverse FFT
-    :param x: The three-dimensional signal to be transformed.
-        The inverse FFT is only applied along the first three dimensions.
-    :return: The centered inverse Fourier transform of x.
-    """
-    x = ifftshift(ifftshift(ifftshift(x, 0), 1), 2)
-    x = ifftn(x, axes=(0, 1, 2))
-    x = fftshift(fftshift(fftshift(x, 0), 1), 2)
-    return x
-
-# Note, deprecated, only used in preprocess
-def centered_fft3_F(x):
-    x = ifftshift(ifftshift(ifftshift(x, 0), 1), 2)
-    x = fftn(x, axes=(0, 1, 2))
-    x = fftshift(fftshift(fftshift(x, 0), 1), 2)
-    return x
 
 def centered_ifft3(x):
     """
