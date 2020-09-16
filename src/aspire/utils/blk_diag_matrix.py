@@ -839,6 +839,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     # Set same dimensions as basis object
     n_k = fbasis.n_r
     n_theta = fbasis.n_theta
+    radial = fbasis.get_radial()
     
     # get 2D grid in polar coordinate
     k_vals, wts = lgwt(n_k, 0, 0.5)
@@ -860,8 +861,8 @@ def filter_to_fb_mat(h_fun, fbasis):
         rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
         fb_vals = np.zeros_like(rmat)
         ind_radial = np.sum(fbasis.k_max[0:ell])
-        fb_vals[:, 0:k_max] = fbasis._precomp['radial'][:,
-                              ind_radial:ind_radial + k_max] * np.sqrt(np.pi)
+        fb_vals[:, 0:k_max] = (radial[:, ind_radial:ind_radial + k_max]
+                               * np.sqrt(np.pi))
         if ell == 0:
             fb_vals *= np.sqrt(2)
 
