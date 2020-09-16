@@ -63,7 +63,7 @@ class RotCov2D:
         covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
         ell = 0
         mask = self.basis._indices["ells"] == ell
-        coeff_ell = coeffs[..., mask] - mean_coeff[np.newaxis, mask]
+        coeff_ell = coeffs[..., mask] - mean_coeff[mask]
         covar_ell = np.array(coeff_ell.T @ coeff_ell/coeffs.shape[0])
         covar_coeff.append(covar_ell)
 
@@ -79,19 +79,18 @@ class RotCov2D:
                 covar_coeff.append(covar_ell_diag)
                 covar_coeff.append(covar_ell_diag)
             else:
-                covar_ell_off = np.array((coeffs[:, mask_pos] @ coeffs[:, mask_neg] /
+                covar_ell_off = np.array((coeffs[:, mask_pos] @ coeffs[:, mask_neg].T /
                                           coeffs.shape[0] -
                                           coeffs[:, mask_pos].T @ coeffs[:, mask_neg]) /
                                          (2 * coeffs.shape[0] ))
 
-                hsize = covar_ell_diag.shape[1]
+                hsize = covar_ell_diag.shape[0]
                 covar_coeff_blk = np.zeros((2 * hsize, 2 * hsize))
 
-                fsize = covar_coeff_blk.shape[1]
-                covar_coeff_blk[0:hsize, 0:hsize] = covar_ell_diag[0:hsize, 0:hsize]
-                covar_coeff_blk[hsize:fsize, hsize:fsize] = covar_ell_diag[0:hsize, 0:hsize]
-                covar_coeff_blk[0:hsize, hsize:fsize] = covar_ell_off[0:hsize, 0:hsize]
-                covar_coeff_blk[hsize:fsize, 0:hsize] = covar_ell_off.T[0:hsize, 0:hsize]
+                covar_coeff_blk[:hsize, :hsize] = covar_ell_diag[:hsize, :hsize]
+                covar_coeff_blk[hsize:, hsize:] = covar_ell_diag[:hsize, :hsize]
+                covar_coeff_blk[:hsize, hsize:] = covar_ell_off[:hsize, :hsize]
+                covar_coeff_blk[hsize:, :hsize] = covar_ell_off.T[:hsize, :hsize]
                 covar_coeff.append(covar_coeff_blk)
 
         return covar_coeff
@@ -304,10 +303,10 @@ class RotCov2D:
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
 
-            coeff_est_k = coeff_k - mean_coeff_k[np.newaxis, :]
+            coeff_est_k = coeff_k - mean_coeff_k
             coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T)
             coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
-            coeff_est_k = coeff_est_k.T + mean_coeff[np.newaxis, :]
+            coeff_est_k = coeff_est_k.T + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
         return coeffs_est
@@ -360,7 +359,6 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
         else:
             logger.info(f'Represent CTF filters in FB basis')
-            # unique_filters = list(set(src.filters))
             unique_filters = list(OrderedDict.fromkeys(src.filters))
             self.ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
@@ -635,10 +633,10 @@ class BatchedRotCov2D(RotCov2D):
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
 
-            coeff_est_k = coeff_k - mean_coeff_k[:, np.newaxis]
+            coeff_est_k = coeff_k - mean_coeff_k
             coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
             coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
-            coeff_est_k = coeff_est_k + mean_coeff[:, np.newaxis]
+            coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[:, ctf_idx == k] = coeff_est_k
 
         return coeffs_est
