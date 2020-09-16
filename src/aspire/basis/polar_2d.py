@@ -77,8 +77,8 @@ class PolarBasis2D(Basis):
         :param v: A coefficient vector (or an array of coefficient vectors)
             in polar Fourier basis to be evaluated. The first dimension must equal to
             `self.count`.
-        :return x: Image instance in standard 2D coordinate basis with \
-        resolution of `self.sz`.
+        :return x: Image instance in standard 2D coordinate basis with
+            resolution of `self.sz`.
         """
         if self.dtype != real_type(v.dtype):
             logger.error(f'Input data type, {v.dtype}, is not consistent with'
@@ -106,10 +106,10 @@ class PolarBasis2D(Basis):
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
-        :param x: The Image instance representing coefficient array in the \
+        :param x: The Image instance representing coefficient array in the
         standard 2D coordinate basis to be evaluated.
-        :return v: The evaluation of the coefficient array `v` in the polar \
-        Fourier grid. This is an array of vectors whose first dimension \
+        :return v: The evaluation of the coefficient array `v` in the polar
+        Fourier grid. This is an array of vectors whose first dimension
         corresponds to x.n_images, and last dimension equals `self.count`.
         """
 

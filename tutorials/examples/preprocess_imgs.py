@@ -62,7 +62,6 @@ source = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    C=vols.N,
     filters=CTF_filters,
     noise_filter=noise_filter
 )

@@ -1,7 +1,7 @@
 import numpy as np
 
 from aspire.image import Image
-from aspire.nufft import Plan
+from aspire.nufft import anufft, nufft
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2, centered_ifft2
@@ -36,7 +36,7 @@ class Volume:
                'Only cubed ndarrays are supported.')
 
         self.data = data
-        self.N = self.data.shape[0]
+        self.n_vols = self.data.shape[0]
         self.dtype = self.data.dtype
         self.resolution = self.data.shape[1]
         self.shape = self.data.shape
@@ -51,13 +51,23 @@ class Volume:
         self.data[key] = value
 
     def __len__(self):
-        return self.N
+        return self.n_vols
 
     def __add__(self, other):
-        return Volume(self.data + other.data)
+        if isinstance(other, Volume):
+            res = Volume(self.data + other.data)
+        else:
+            res = Volume(self.data + other)
+
+        return res
 
     def __sub__(self, other):
-        return Volume(self.data - other.data)
+        if isinstance(other, Volume):
+            res = Volume(self.data - other.data)
+        else:
+            res = Volume(self.data - other)
+
+        return res
 
     def __mul__(self, other):
         if isinstance(other, Volume):
@@ -66,14 +76,6 @@ class Volume:
             res = Volume(self.data * other)
 
         return res
-
-    # def __truediv__(self, other):
-    #     if isinstance(other, Volume):
-    #         res = Volume(self.data / other.data)
-    #     else:
-    #         res = Volume(self.data / other)
-
-    #     return res
 
     # # TODO: Open issue for fixing rotated_grids wholesale
     def _rotated_grids(self, rot_matrices):
@@ -90,8 +92,7 @@ class Volume:
         ## TODO: rotated_grids might as well give us correctly shaped array in the first place,
         pts_rot = m_reshape(pts_rot, (3, self.resolution**2*n))
 
-        im_f = (1./self.resolution *
-                Plan(self.volume_shape, pts_rot).transform(data))
+        im_f = nufft(data, pts_rot) / self.resolution
 
         im_f = im_f.reshape(-1, self.resolution, self.resolution)
 
@@ -108,7 +109,7 @@ class Volume:
 
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
-        return m_reshape(self.data, (self.N,) + (self.resolution**3,))
+        return m_reshape(self.data, (self.n_vols,) + (self.resolution**3,))
         #XXX reshape/flatten?
 
     @staticmethod
@@ -148,15 +149,14 @@ class Volume:
         im_f = np.swapaxes(im_f, -2, -1)
         im_f = im_f.flatten()
 
-        plan = Plan(
-            sz=(L, L, L),
-            fourier_pts=pts_rot
-        )
-        vol = np.real(plan.adjoint(im_f)) / L
+        vol = anufft(im_f, pts_rot, (L, L, L), real=True) / L
 
         return Volume(vol)
 
     def downsample(self, szout, mask=None):
+        if isinstance(szout, int):
+            szout = (szout,)*3
+
         return Volume(downsample(self.data, szout, mask))
 
     def shift(self):

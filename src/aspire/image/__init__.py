@@ -17,16 +17,17 @@ logger = logging.getLogger(__name__)
 def _im_translate2(im, shifts):
     """
     Translate image by shifts
-    :param im: An array of size n-by-L-by-L-by-n containing images to be translated.
+    :param im: An Image instance to be translated.
     :param shifts: An array of size n-by-2 specifying the shifts in pixels.
         Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
-    :return: The images translated by the shifts
+    :return: An Image instance translated by the shifts.
 
     TODO: This implementation has been moved here from aspire.aspire.abinitio and is faster than _im_translate.
     """
 
     if not isinstance(im, Image):
-        logger.warning("_im_translate2 expects an Image, attempting to convert array.")
+        logger.warning("_im_translate2 expects an Image, attempting to convert array."
+                       "Expects array of size n-by-L-by-L.")
         im = Image(im)
 
     if shifts.ndim == 1:

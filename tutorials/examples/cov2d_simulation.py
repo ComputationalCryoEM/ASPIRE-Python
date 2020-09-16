@@ -62,7 +62,7 @@ logger.info(f'Load 3D map and downsample 3D map to desired grids '
             f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
 vols = Volume(infile.data)
-vols = vols.downsample((img_size*np.ones(3, dtype=int)))
+vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to creat simulation object.')

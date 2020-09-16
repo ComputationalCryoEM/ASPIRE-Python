@@ -277,8 +277,6 @@ class ImageSource:
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
         :return: A 3D volume of images of size L x L x n
         """
-        # GBW, why would the base class not implement this and just have interested sublasses
-        # overload it?
         raise NotImplementedError('Subclasses should implement this and return an Image object')
 
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
@@ -482,7 +480,7 @@ class ImageSource:
             amplitude.
         """
         all_idx = np.arange(start, min(start + num, self.n))
-        assert vol.N == 1, "vol_forward expects a single volume, not a stack"
+        assert vol.n_vols == 1, "vol_forward expects a single volume, not a stack"
 
         im = vol.project(0, self.rots[all_idx, :, :])
         im = self.eval_filters(im, start, num)

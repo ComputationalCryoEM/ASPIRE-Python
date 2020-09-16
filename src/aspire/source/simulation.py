@@ -43,7 +43,7 @@ class Simulation(ImageSource):
             assert isinstance(vols, Volume)
             self.vols = vols
 
-        self.C = self.vols.N
+        self.C = self.vols.n_vols
 
         states = states or randi(self.C, n, seed=seed)
         angles = angles or uniform_random_angles(n, seed=seed)

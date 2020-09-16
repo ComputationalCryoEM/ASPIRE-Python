@@ -218,7 +218,6 @@ def vol2img(volume, rots, L=None, dtype=None):
 
     im_f = Plan(volume.shape, -pts_rot).transform(volume)
 
-    #im_f = m_reshape(im_f, (lv, lv, -1))
     im_f = im_f.reshape((-1, lv, lv))
 
     if lv % 2 == 0:
@@ -228,7 +227,6 @@ def vol2img(volume, rots, L=None, dtype=None):
 
     im = centered_ifft2(im_f)
     if lv % 2 == 0:
-        #im = im * m_reshape(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y'])/(2*lv)), (lv, lv, 1))
         im = im * np.reshape(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y'])/(2*lv)), (1, lv, lv))
 
     return np.real(im)

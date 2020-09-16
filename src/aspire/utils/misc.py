@@ -81,7 +81,7 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
         logger.warning('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
         eig_vols = Volume(eig_vols)
 
-    k = eig_vols.N
+    k = eig_vols.n_vols
     if lambdas is None:
         lambdas = np.eye(k)
 
@@ -125,7 +125,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     """
     ims = np.zeros((k, n, sim.L, sim.L), dtype=vols.dtype)
     for ell in range(k):
-        ims[ell, :, :, :] = sim.vol_forward(Volume(vols[ell]), s, n).asnumpy()
+        ims[ell] = sim.vol_forward(Volume(vols[ell]), s, n).asnumpy()
 
     ims = np.swapaxes(ims, 1, 3)
     ims = np.swapaxes(ims, 0, 2)
