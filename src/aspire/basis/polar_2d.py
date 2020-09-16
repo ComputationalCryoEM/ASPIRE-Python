@@ -7,7 +7,7 @@ from aspire.nufft import anufft, nufft
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
-from aspire.utils.misc import real_type, complex_type
+from aspire.utils.misc import real_type
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ class PolarBasis2D(Basis):
         Evaluate coefficients in standard 2D coordinate basis from those in polar Fourier basis
 
         :param v: A coefficient vector (or an array of coefficient vectors)
-            in polar Fourier basis to be evaluated. The first dimension must equal to
+            in polar Fourier basis to be evaluated. The last dimension must equal to
             `self.count`.
         :return x: Image instance in standard 2D coordinate basis with
             resolution of `self.sz`.
@@ -84,21 +84,18 @@ class PolarBasis2D(Basis):
             logger.error(f'Input data type, {v.dtype}, is not consistent with'
                          f' the defined in the class.')
 
-        v, sz_roll = unroll_dim(v, 2)
-        nimgs = v.shape[1]
+        v = v.reshape(-1, self.ntheta, self.nrad)
+
+        nimgs = v.shape[0]
 
         half_size = self.ntheta // 2
-
-        v = m_reshape(v, (self.nrad, self.ntheta, nimgs))
 
         v = (v[:, :half_size, :]
              + v[:, half_size:, :].conj())
 
-        v = m_reshape(v, (self.nrad*half_size, nimgs))
-        x = np.empty((nimgs, self.sz[0], self.sz[1]), dtype=self.dtype)
-        # TODO: need to include the implementation of the many framework in Finufft.
-        for isample in range(0, nimgs):
-            x[isample, ...] = np.real(anufft(v[:, isample], self.freqs, self.sz))
+        v = v.reshape(nimgs, self.nrad*half_size)
+
+        x =  anufft(v, self.freqs, self.sz, real=True)
 
         return Image(x)
 
@@ -123,14 +120,9 @@ class PolarBasis2D(Basis):
 
         half_size = self.ntheta // 2
 
-        # get consistent complex type from the real type of x
-        out_type = complex_type(x.dtype)
-        pf = np.empty((nimgs, self.nrad * half_size), dtype=out_type)
-        # TODO: need to include the implementation of the many framework in Finufft.
-        for isample in range(0, nimgs):
-            pf[isample] = nufft(x[isample], self.freqs)
+        pf = nufft(x.asnumpy(), self.freqs)
 
-        pf = np.reshape(pf, (nimgs, self.nrad, half_size))
+        pf = pf.reshape((nimgs, self.nrad, half_size))
         v = np.concatenate((pf, pf.conj()), axis=1)
 
         # return v coefficients with the last dimension size of self.count
