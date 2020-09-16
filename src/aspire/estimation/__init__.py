@@ -120,7 +120,7 @@ class Estimator:
         """
         if kernel is None:
             kernel = self.kernel
-        vol = self.basis.evaluate(vol_coeff).T.squeeze()  # RCOPT
+        vol = self.basis.evaluate(vol_coeff).T # RCOPT
         vol = kernel.convolve_volume(vol)
         vol = self.basis.evaluate_t(vol.T)   #RCOPT
 
