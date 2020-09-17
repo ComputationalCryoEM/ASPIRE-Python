@@ -141,7 +141,7 @@ class RelionSource(ImageSource):
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
-            data = arr[df['__mrc_index'] - 1, :, :].T
+            data = np.moveaxis(arr[df['__mrc_index'] - 1, :, :], -2, -1)
 
             return df.index, data
 
@@ -163,8 +163,7 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                for idx in  data_indices-start:
-                    im[idx, :, :] = data[:, :, idx]
+                im[data_indices-start] = data[data_indices-start]
 
         logger.info(f'Loading {len(indices)} images complete')
 
