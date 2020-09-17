@@ -411,8 +411,8 @@ class ImageSource:
 
         for i in range(0, self.n, batch_size):
             images = self.images(i, batch_size).asnumpy()
-            signal = images * np.expand_dims(signal_mask, 0)
-            noise = images * np.expand_dims(noise_mask, 0)
+            signal = images * signal_mask
+            noise = images * noise_mask
             signal_mean += np.sum(signal)
             noise_mean += np.sum(noise)
         signal_denominator = self.n * np.sum(signal_mask)

@@ -186,8 +186,7 @@ class Image:
         x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
 
         mask = (np.abs(grid['x']) < ds_res / self.res) & (np.abs(grid['y']) < ds_res / self.res)
-        im = np.real(centered_ifft2(centered_fft2(self.data) *
-                                    np.expand_dims(mask, 0)))
+        im = np.real(centered_ifft2(centered_fft2(self.data) * mask))
 
         for s in range(im_ds.shape[0]):
             interpolator = RegularGridInterpolator(
@@ -211,7 +210,7 @@ class Image:
 
         im_f = centered_fft2(self.data)
         if im_f.ndim > filter_values.ndim:
-            im_f = np.expand_dims(filter_values, 0) * im_f
+            im_f *= filter_values
         else:
             im_f = filter_values * im_f
         im = centered_ifft2(im_f)

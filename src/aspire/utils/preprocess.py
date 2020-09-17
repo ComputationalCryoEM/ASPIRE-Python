@@ -222,8 +222,8 @@ def vol2img(volume, rots, L=None, dtype=None):
 
     if lv % 2 == 0:
         pts_rot = m_reshape(pts_rot, (3, lv, lv, num_rots))
-        im_f = im_f * np.exp(1j*np.sum(pts_rot, 0)/2).T
-        im_f = im_f * np.expand_dims(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y']-1)/(2*lv)), 0)
+        im_f *= np.exp(1j*np.sum(pts_rot, 0)/2).T
+        im_f *= np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y']-1)/(2*lv))
 
     im = centered_ifft2(im_f)
     if lv % 2 == 0:
