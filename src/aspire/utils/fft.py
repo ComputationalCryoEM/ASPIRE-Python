@@ -33,9 +33,9 @@ def centered_ifft2(x):
         The inverse FFT is only applied along the last two dimensions.
     :return: The centered inverse Fourier transform of x.
     """
-    x = ifftshift(ifftshift(x, -2), -1)
+    x = ifftshift(x, axes=(-2, -1))
     x = ifft2(x, axes=(-2, -1))
-    x = fftshift(fftshift(x, -2), -1)
+    x = fftshift(x, axes=(-2, -1))
     return x
 
 
@@ -47,9 +47,9 @@ def centered_fft2(x):
     :return: The centered inverse Fourier transform of x.
     """
 
-    x = ifftshift(ifftshift(x, -2), -1)
+    x = ifftshift(x, axes=(-2, -1))
     x = fft2(x, axes=(-2, -1))
-    x = fftshift(fftshift(x, -2), -1)
+    x = fftshift(x, axes=(-2, -1))
     return x
 
 
@@ -67,9 +67,9 @@ def centered_ifft3(x):
 
 
 def centered_fft3(x):
-    x = ifftshift(ifftshift(ifftshift(x, -3), -2), -1)
+    x = ifftshift(x, axes=(-3, -2, -1))
     x = fftn(x, axes=(-3, -2, -1))
-    x = fftshift(fftshift(fftshift(x, -3), -2), -1)
+    x = fftshift(x, axes=(-3, -2, -1))
     return x
 
 
