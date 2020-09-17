@@ -82,9 +82,8 @@ class Volume:
 
         n = rot_matrices.shape[0]
 
-        pts_rot = rotated_grids(self.resolution, rot_matrices)
+        pts_rot = np.moveaxis(rotated_grids(self.resolution, rot_matrices), 1, 2)
 
-        # TODO: RCOPT come back and convert these methods internally to C order
         ## TODO: rotated_grids might as well give us correctly shaped array in the first place,
         pts_rot = m_reshape(pts_rot, (3, self.resolution**2*n))
 
@@ -97,9 +96,6 @@ class Volume:
             im_f[:, :, 0] = 0
 
         im_f = centered_ifft2(im_f)
-
-        # Looks like we still need to transpose the image axis here for repro
-        im_f = np.swapaxes(im_f, -2, -1)         # RCOPT
 
         return Image(np.real(im_f))
 
