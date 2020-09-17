@@ -84,7 +84,7 @@ class ApplePickerTestCase(TestCase):
         apple_picker = Apple()
 
         with importlib_resources.path(tests.saved_test_data, 'sample.mrc') as mrc_path:
-            centers_found = apple_picker.process_micrograph(mrc_path)
+            centers_found = apple_picker.process_micrograph(mrc_path, create_jpg=True)
             for center_found in centers_found:
                 _x, _y = tuple(center_found)
                 if (_x, _y) not in centers:
