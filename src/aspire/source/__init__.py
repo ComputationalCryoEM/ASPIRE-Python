@@ -465,8 +465,7 @@ class ImageSource:
         im = im.shift(-self.offsets[all_idx, :])
         im = self.eval_filters(im, start=start, num=num)
 
-        vol = Volume.from_backprojection(im, self.rots[start:start+num, :, :])
-        vol = vol[0]
+        vol = im.backprojection(self.rots[start:start+num, :, :])[0]
 
         return vol
 

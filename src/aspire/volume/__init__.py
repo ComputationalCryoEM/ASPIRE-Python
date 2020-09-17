@@ -1,11 +1,11 @@
 import numpy as np
 
-from aspire.image import Image
-from aspire.nufft import anufft, nufft
+import aspire.image
+from aspire.nufft import nufft
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2, centered_ifft2
-from aspire.utils.matlab_compat import m_flatten, m_reshape
+from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.preprocess import downsample
 
 
@@ -97,7 +97,7 @@ class Volume:
 
         im_f = centered_ifft2(im_f)
 
-        return Image(np.real(im_f))
+        return aspire.image.Image(np.real(im_f))
 
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
@@ -112,38 +112,6 @@ class Volume:
         assert resolution**3 == vec.shape[1]
         data = m_reshape(vec, (N,) + (resolution,)*3)
         return Volume(data)
-
-    @staticmethod
-    def from_backprojection(im, rot_matrices):
-        """
-        Backproject images along rotation
-        :param im: An Image (stack) to backproject.
-        :param rot_matrices: An n-by-3-by-3 array of rotation matrices \
-        corresponding to viewing directions.
-
-        :return: Volume instance corresonding to the backprojected images.
-        """
-
-        L = im.res
-
-        ensure(im.n_images == rot_matrices.shape[0],
-               "Number of rotation matrices must match the number of images")
-
-        pts_rot = rotated_grids(L, rot_matrices)
-        pts_rot = m_reshape(pts_rot, (3, -1))
-
-        im_f = centered_fft2(im.data) / (L**2)
-        if L % 2 == 0:
-            im_f[:, 0, :] = 0
-            im_f[:, :, 0] = 0
-
-        # yikes
-        im_f = np.swapaxes(im_f, -2, -1)
-        im_f = im_f.flatten()
-
-        vol = anufft(im_f, pts_rot, (L, L, L), real=True) / L
-
-        return Volume(vol)
 
     def downsample(self, szout, mask=None):
         if isinstance(szout, int):
