@@ -84,7 +84,7 @@ class Volume:
 
         pts_rot = np.moveaxis(rotated_grids(self.resolution, rot_matrices), 1, 2)
 
-        ## TODO: rotated_grids might as well give us correctly shaped array in the first place,
+        ## TODO: rotated_grids might as well give us correctly shaped array in the first place
         pts_rot = m_reshape(pts_rot, (3, self.resolution**2*n))
 
         im_f = nufft(data, pts_rot) / self.resolution
