@@ -77,10 +77,6 @@ class Volume:
 
         return res
 
-    # # TODO: Open issue for fixing rotated_grids wholesale
-    def _rotated_grids(self, rot_matrices):
-        raise NotImplementedError('Method not currently implemented')
-
     def project(self, vol_idx, rot_matrices):
         data = self[vol_idx].T  #RCOPT
 
