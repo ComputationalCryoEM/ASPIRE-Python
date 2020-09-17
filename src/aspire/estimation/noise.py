@@ -116,7 +116,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         noise_psd_est = np.zeros((self.L, self.L)).astype(self.src.dtype)
         for i in range(0, self.n, self.batchSize):
             images = self.src.images(i, self.batchSize).asnumpy()
-            images_masked = (images * np.expand_dims(mask, 0))
+            images_masked = images * mask
 
             _denominator = self.n * np.sum(mask)
             mean_est += np.sum(images_masked) / _denominator
