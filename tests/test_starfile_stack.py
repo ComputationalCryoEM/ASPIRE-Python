@@ -64,7 +64,7 @@ class StarFileTestCase(TestCase):
         first_image = image_stack[0]
         self.assertTrue(np.allclose(
             first_image,
-            np.load(os.path.join(DATA_DIR, 'starfile_image_0.npy'))
+            np.load(os.path.join(DATA_DIR, 'starfile_image_0.npy')).T # RCOPT
         ))
 
     def testMetadata(self):
@@ -83,6 +83,6 @@ class StarFileTestCase(TestCase):
         first_whitened_image = self.src.images(0, 1)[0]
         self.assertTrue(np.allclose(
             first_whitened_image,
-            np.load(os.path.join(DATA_DIR, 'starfile_image_0_whitened.npy')),
+            np.load(os.path.join(DATA_DIR, 'starfile_image_0_whitened.npy')).T, # RCOPT
             atol=1e-6
         ))

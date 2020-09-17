@@ -141,7 +141,7 @@ class RelionSource(ImageSource):
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
-            data = np.moveaxis(arr[df['__mrc_index'] - 1, :, :], -2, -1)
+            data = arr[df['__mrc_index'] - 1, :, :]
 
             return df.index, data
 
