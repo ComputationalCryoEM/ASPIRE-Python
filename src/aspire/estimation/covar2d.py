@@ -85,13 +85,13 @@ class RotCov2D:
                                          (2 * coeffs.shape[0] ))
 
                 hsize = covar_ell_diag.shape[0]
-                covar_coeff_blk = np.zeros((2 * hsize, 2 * hsize))
+                covar_coeff_blk = np.zeros((2, hsize, 2, hsize))
 
-                covar_coeff_blk[:hsize, :hsize] = covar_ell_diag[:hsize, :hsize]
-                covar_coeff_blk[hsize:, hsize:] = covar_ell_diag[:hsize, :hsize]
-                covar_coeff_blk[:hsize, hsize:] = covar_ell_off[:hsize, :hsize]
-                covar_coeff_blk[hsize:, :hsize] = covar_ell_off.T[:hsize, :hsize]
-                covar_coeff.append(covar_coeff_blk)
+                covar_coeff_blk[0:2, :, 0:2, :] = covar_ell_diag[:hsize, :hsize]
+                covar_coeff_blk[0, :, 1, :] = covar_ell_off[:hsize, :hsize]
+                covar_coeff_blk[1, :, 0, :] = covar_ell_off.T[:hsize, :hsize]
+
+                covar_coeff.append(covar_coeff_blk.reshape(2 * hsize, 2 * hsize))
 
         return covar_coeff
 
