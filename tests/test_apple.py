@@ -5,6 +5,9 @@ import tests.saved_test_data
 
 from aspire.apple.apple import Apple
 
+import os.path
+DATA_DIR = os.path.dirname(__file__)
+
 
 class ApplePickerTestCase(TestCase):
     def setUp(self):
@@ -82,7 +85,7 @@ class ApplePickerTestCase(TestCase):
         }
 
         apple_picker = Apple()
-
+        apple_picker.output_dir = DATA_DIR
         with importlib_resources.path(tests.saved_test_data, 'sample.mrc') as mrc_path:
             centers_found = apple_picker.process_micrograph(mrc_path, create_jpg=True)
             for center_found in centers_found:
