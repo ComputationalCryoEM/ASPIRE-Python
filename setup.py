@@ -41,6 +41,7 @@ setup(
         'numpydoc==0.7.0',
         'pandas==0.25.3',
         'pyfftw',
+        'pillow',
         'python-box',
         'pytest',
         'pytest-cov',
