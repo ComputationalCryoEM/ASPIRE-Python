@@ -138,15 +138,14 @@ class FFBBasis3D(FBBasis3D):
         Evaluate coefficients in standard 3D coordinate basis from those in 3D FB basis
 
         :param v: A coefficient vector (or an array of coefficient vectors) in FB basis
-            to be evaluated. The first dimension must equal `self.count`.
+            to be evaluated. The last dimension must equal `self.count`.
         :return x: The evaluation of the coefficient vector(s) `x` in standard 3D
-            coordinate basis. This is an array whose first three dimensions equal
-            `self.sz` and the remaining dimensions correspond to dimensions two and
-            higher of `v`.
+            coordinate basis. This is an array whose last three dimensions equal
+            `self.sz` and the remaining dimensions correspond to `v`.
         """
-        # make should the first dimension of v is self.count
-        v, sz_roll = unroll_dim(v, 2)
-        v = m_reshape(v, (self.count, -1))
+        # roll dimensions of v
+        sz_roll = v.shape[:-1]
+        v = v.reshape((-1, self.count))
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp['ang_theta_wtd'], 0)
@@ -154,7 +153,7 @@ class FFBBasis3D(FBBasis3D):
         n_r = np.size(self._precomp['radial_wtd'], 0)
 
         # number of 3D image samples
-        n_data = np.size(v, 1)
+        n_data = v.shape[0]
 
         u_even = np.zeros((n_r, int(2*self.ell_max+1), n_data, int(
             np.floor(self.ell_max/2)+1)), dtype=v.dtype)
@@ -169,7 +168,7 @@ class FFBBasis3D(FBBasis3D):
 
             ind = self._indices['ells'] == ell
 
-            v_ell = m_reshape(v[ind, :], (k_max_ell, (2*ell+1)*n_data))
+            v_ell = m_reshape(v[:, ind].T, (k_max_ell, (2*ell+1)*n_data))
             v_ell = radial_wtd @ v_ell
             v_ell = m_reshape(v_ell, (n_r, 2*ell+1, n_data))
 
@@ -232,12 +231,13 @@ class FFBBasis3D(FBBasis3D):
 
         # perform inverse non-uniformly FFT transformation back to 3D rectangular coordinates
         freqs = m_reshape(self._precomp['fourier_pts'], (3, n_r * n_theta*n_phi, -1))
-        x = np.zeros((self.sz[0], self.sz[1], self.sz[2], n_data), dtype=v.dtype)
+        x = np.zeros((n_data, self.sz[0], self.sz[1], self.sz[2]), dtype=v.dtype)
         for isample in range(0, n_data):
-            x[..., isample] = np.real(anufft(pf[:, isample], freqs, self.sz))
+            x[isample] = np.real(anufft(pf[:, isample], freqs, self.sz))
 
-        # return the x with the first three dimensions of self.sz
-        x = roll_dim(x, sz_roll)
+        # Roll, return the x with the last three dimensions as self.sz
+        # Higher dimensions should be like v.
+        x = x.reshape((*sz_roll, *self.sz))
         return x
 
     def evaluate_t(self, x):
@@ -245,27 +245,27 @@ class FFBBasis3D(FBBasis3D):
         Evaluate coefficient in FB basis from those in standard 3D coordinate basis
 
         :param x: The coefficient array in the standard 3D coordinate basis
-            to be evaluated. The first three dimensions must equal `self.sz`.
+            to be evaluated. The last three dimensions must equal `self.sz`.
         :return v: The evaluation of the coefficient array `v` in the FB basis.
-            This is an array of vectors whose first dimension equals
+            This is an array of vectors whose last dimension equals
             `self.count` and whose remaining dimensions correspond to higher
             dimensions of `x`.
         """
-        # ensure the first three dimensions with size of self.sz
-        x, sz_roll = unroll_dim(x, self.ndim + 1)
-        x = m_reshape(x, (self.sz[0], self.sz[1], self.sz[2], -1))
+        # roll dimensions
+        sz_roll = x.shape[:-3]
+        x = x.reshape((-1, *self.sz))
 
-        n_data = np.size(x, 3)
+        n_data = x.shape[0]
         n_r = np.size(self._precomp['radial_wtd'], 0)
         n_phi = np.size(self._precomp['ang_phi_wtd_even'][0], 0)
         n_theta = np.size(self._precomp['ang_theta_wtd'], 0)
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pf = np.zeros((n_theta*n_phi*n_r, n_data), dtype=complex)
+        pf = np.zeros((n_data, n_theta*n_phi*n_r), dtype=complex)
         for isample in range(0, n_data):
-            pf[..., isample] = nufft(x[..., isample], self._precomp['fourier_pts'])
+            pf[isample] = nufft(x[isample], self._precomp['fourier_pts'])
 
-        pf = m_reshape(pf, (n_theta, n_phi*n_r*n_data))
+        pf = m_reshape(pf.T, (n_theta, n_phi*n_r*n_data))
 
         # evaluate the theta parts
         u_even = self._precomp['ang_theta_wtd'].T @ np.real(pf)
@@ -316,7 +316,7 @@ class FFBBasis3D(FBBasis3D):
         w_odd = np.transpose(w_odd, (1, 2, 3, 0))
 
         # evaluate the radial parts
-        v = np.zeros((self.count, n_data), dtype=x.dtype)
+        v = np.zeros((n_data, self.count), dtype=x.dtype)
         for ell in range(0, self.ell_max+1):
             k_max_ell = self.k_max[ell]
             radial_wtd = self._precomp['radial_wtd'][:, 0:k_max_ell, ell]
@@ -334,6 +334,9 @@ class FFBBasis3D(FBBasis3D):
 
             # TODO: Fix this to avoid lookup each time.
             ind = self._indices['ells'] == ell
-            v[ind, :] = v_ell
-        v = roll_dim(v, sz_roll)
+            v[:, ind] = v_ell.T
+
+        # Roll dimensions, last dimension should be self.count,
+        # Higher dimensions like x.
+        v = v.reshape((*sz_roll, self.count))
         return v
