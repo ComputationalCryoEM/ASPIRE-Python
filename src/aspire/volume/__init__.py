@@ -35,45 +35,53 @@ class Volume:
         ensure(data.shape[1] == data.shape[2] == data.shape[3],
                'Only cubed ndarrays are supported.')
 
-        self.data = data
-        self.n_vols = self.data.shape[0]
-        self.dtype = self.data.dtype
-        self.resolution = self.data.shape[1]
-        self.shape = self.data.shape
-        self.volume_shape = self.data.shape[1:]
+        self._data = data
+        self.n_vols = self._data.shape[0]
+        self.dtype = self._data.dtype
+        self.resolution = self._data.shape[1]
+        self.shape = self._data.shape
+        self.volume_shape = self._data.shape[1:]
+
+    def asnumpy(self):
+        """
+        Return volume as a (n_vols, resolution, resolution, resolution) array.
+
+        :return: ndarray
+        """
+        return self._data
 
     def __getitem__(self, item):
         # this is one reason why you might want Volume and VolumeStack classes...
-        #return Volume(self.data[item])
-        return self.data[item]
+        #return Volume(self._data[item])
+        return self._data[item]
 
     def __setitem__(self, key, value):
-        self.data[key] = value
+        self._data[key] = value
 
     def __len__(self):
         return self.n_vols
 
     def __add__(self, other):
         if isinstance(other, Volume):
-            res = Volume(self.data + other.data)
+            res = Volume(self._data + other.asnumpy())
         else:
-            res = Volume(self.data + other)
+            res = Volume(self._data + other)
 
         return res
 
     def __sub__(self, other):
         if isinstance(other, Volume):
-            res = Volume(self.data - other.data)
+            res = Volume(self._data - other.asnumpy())
         else:
-            res = Volume(self.data - other)
+            res = Volume(self._data - other)
 
         return res
 
     def __mul__(self, other):
         if isinstance(other, Volume):
-            res = Volume(self.data * other.data)
+            res = Volume(self._data * other.asnumpy())
         else:
-            res = Volume(self.data * other)
+            res = Volume(self._data * other)
 
         return res
 
@@ -101,7 +109,7 @@ class Volume:
 
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
-        return m_reshape(self.data, (self.n_vols,) + (self.resolution**3,))
+        return m_reshape(self._data, (self.n_vols,) + (self.resolution**3,))
         #XXX reshape/flatten?
 
     @staticmethod
@@ -132,8 +140,8 @@ class Volume:
         :return: Volume instance.
         """
 
-        vol_t = np.empty_like(self.data)
-        for n,v in enumerate(self.data):
+        vol_t = np.empty_like(self._data)
+        for n,v in enumerate(self._data):
             vol_t[n] = v.T
 
         return Volume(vol_t)
@@ -155,13 +163,13 @@ class Volume:
         :return: ndarray
         """
 
-        return self.data.flatten()
+        return self._data.flatten()
 
     def downsample(self, szout, mask=None):
         if isinstance(szout, int):
             szout = (szout,)*3
 
-        return Volume(downsample(self.data, szout, mask))
+        return Volume(downsample(self._data, szout, mask))
 
     def shift(self):
         raise NotImplementedError

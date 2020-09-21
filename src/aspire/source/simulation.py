@@ -178,7 +178,7 @@ class Simulation(ImageSource):
         coords = EV @ V.T
 
         res = vols - Volume.from_vec(coords.T @ EV)
-        res_norms = anorm(res.data, (1, 2, 3))
+        res_norms = anorm(res.asnumpy(), (1, 2, 3))
         res_inners = mean_vol.to_vec() @ res.to_vec().T
 
         return coords.squeeze(), res_norms, res_inners
@@ -237,7 +237,7 @@ class Simulation(ImageSource):
         err = anorm(vol_true - vol_est)
         rel_err = err / norm_true
         # RCOPT
-        corr = acorr(vol_true.data, vol_est.data)
+        corr = acorr(vol_true.asnumpy(), vol_est.asnumpy())
 
         return {
             'err': err,
