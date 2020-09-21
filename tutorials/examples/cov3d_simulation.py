@@ -53,7 +53,6 @@ mean_est = mean_estimator.estimate()
 # Passing in a mean_kernel argument to the following constructor speeds up some calculations
 covar_estimator = CovarianceEstimator(sim, basis, mean_kernel=mean_estimator.kernel)
 covar_est = covar_estimator.estimate(mean_est, noise_variance)
-covar_est = covar_est.T # RCOPT
 
 
 # Extract the top eigenvectors and eigenvalues of the covariance estimate.
