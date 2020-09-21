@@ -173,7 +173,6 @@ class Basis:
 
         x = x.reshape((-1, *self.sz))
 
-        #x, sz_roll = unroll_dim(x, self.ndim + 1)
         ensure(x.shape[-self.ndim:] == self.sz,
                f'Last {self.ndim} dimensions of x must match {self.sz}.')
 
