@@ -68,8 +68,8 @@ class CovarianceEstimator(Estimator):
             for j in range(batch_n):
                 factors[j] = anufft(weights[j], pts_rot[j], (_2L, _2L, _2L), real=True)
 
-            factors = vol_to_vec(np.moveaxis(factors, 0, -1))
-            kernel += vecmat_to_volmat(factors @ factors.T) / (n * L**8)
+            factors = Volume(factors).to_vec()
+            kernel += vecmat_to_volmat(factors.T @ factors) / (n * L**8)
 
         # Ensure symmetric kernel
         kernel[0, :, :, :, :, :] = 0

@@ -110,7 +110,6 @@ class Volume:
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
         return m_reshape(self._data, (self.n_vols,) + (self.resolution**3,))
-        #XXX reshape/flatten?
 
     @staticmethod
     def from_vec(vec):

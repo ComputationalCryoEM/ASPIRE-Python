@@ -106,7 +106,6 @@ class RotCov2D:
         :return: The mean value vector for all images.
         """
 
-
         if coeffs.size == 0:
             raise RuntimeError('The coefficients need to be calculated!')
 
