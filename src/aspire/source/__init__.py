@@ -174,7 +174,7 @@ class ImageSource:
         """
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        return self._rotations.as_dcm()
+        return self._rotations.as_matrix()
 
     @angles.setter
     def angles(self, values):
@@ -193,7 +193,7 @@ class ImageSource:
         :param values: Rotation matrices as a n x 3 x 3 array
         :return: None
         """
-        self._rotations = R.from_dcm(values)
+        self._rotations = R.from_matrix(values)
         self.set_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi'], self._rotations.as_euler('ZYZ', degrees=True))
 
     def set_metadata(self, metadata_fields, values, indices=None):
