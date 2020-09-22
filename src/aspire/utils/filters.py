@@ -82,8 +82,8 @@ class DualFilter(Filter):
     """
     A Filter object that is dual to origin one, namely g(w)=f(-w)
     """
-    def __init__(self, filter):
-        self._filter = filter
+    def __init__(self, filter_in):
+        self._filter = filter_in
         super().__init__()
 
     def evaluate(self, omega):

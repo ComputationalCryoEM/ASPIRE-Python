@@ -102,8 +102,8 @@ class SimTestCase(TestCase):
         ))
 
     def testDualFilter(self):
-        filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
-        result = filter.evaluate(-self.omega)
-        dual_filter = filter.dual()
+        ctf_filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
+        result = ctf_filter.evaluate(-self.omega)
+        dual_filter = ctf_filter.dual()
         dual_result = dual_filter.evaluate(self.omega)
         self.assertTrue(np.allclose(result, dual_result))
