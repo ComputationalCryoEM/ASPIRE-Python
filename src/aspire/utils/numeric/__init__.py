@@ -1,4 +1,7 @@
+import logging
 from aspire import config
+
+logger = logging.getLogger(__name__)
 
 if config.common.cupy:
     from .cupy import Cupy as NumericClass
@@ -7,11 +10,13 @@ else:
 
 xp = NumericClass()
 
-if config.common.normal_fft == 0:
+if config.common.normal_fft == 'pyfftw':
     from .pyfftw_fft import PyfftwFFT as FFTClass
-elif config.common.normal_fft == 1:
+elif config.common.normal_fft == 'cupy':
     from .cupy_fft import CupyFFT as FFTClass
-else:
+elif config.common.normal_fft == 'scipy':
     from .scipy_fft import ScipyFFT as FFTClass
+else:
+    logger.error(f'FFT selection, {config.common.normal_fft}, not implemented.')
 
 fft = FFTClass()
