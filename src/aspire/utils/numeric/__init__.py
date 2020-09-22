@@ -10,11 +10,11 @@ else:
 
 xp = NumericClass()
 
-if config.common.normal_fft == 'pyfftw':
+if config.common.fft == 'pyfftw':
     from .pyfftw_fft import PyfftwFFT as FFTClass
-elif config.common.normal_fft == 'cupy':
+elif config.common.fft == 'cupy':
     from .cupy_fft import CupyFFT as FFTClass
-elif config.common.normal_fft == 'scipy':
+elif config.common.fft == 'scipy':
     from .scipy_fft import ScipyFFT as FFTClass
 else:
     logger.error(f'FFT selection, {config.common.normal_fft}, not implemented.')
