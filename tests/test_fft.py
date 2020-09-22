@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from aspire.utils.numeric import xp
-from aspire.utils.numeric import custom_fft
+from aspire.utils.numeric import fft
 
 
 class ConfigTest(TestCase):
@@ -13,28 +13,28 @@ class ConfigTest(TestCase):
 
     def testFft(self):
         a = xp.random.random((100))
-        b = custom_fft.fft(a)
-        c = custom_fft.ifft(b)
+        b = fft.fft(a)
+        c = fft.ifft(b)
 
         self.assertTrue(xp.allclose(a, c))
 
     def testFft2(self):
         a = xp.random.random((100, 100))
-        b = custom_fft.fft2(a)
-        c = custom_fft.ifft2(b)
+        b = fft.fft2(a)
+        c = fft.ifft2(b)
 
         self.assertTrue(xp.allclose(a, c))
 
     def testFftn(self):
         a = xp.random.random((50, 50, 50))
-        b = custom_fft.fftn(a, axes=(0, 1, 2))
-        c = custom_fft.ifftn(b, axes=(0, 1, 2))
+        b = fft.fftn(a, axes=(0, 1, 2))
+        c = fft.ifftn(b, axes=(0, 1, 2))
 
         self.assertTrue(xp.allclose(a, c))
 
     def testShift(self):
         a = xp.random.random((100))
-        b = custom_fft.ifftshift(a)
-        c = custom_fft.fftshift(b)
+        b = fft.ifftshift(a)
+        c = fft.fftshift(b)
 
         self.assertTrue(xp.allclose(a, c))

@@ -14,4 +14,4 @@ elif config.common.normal_fft == 1:
 else:
     from .scipy_fft import ScipyFFT as FFTClass
 
-custom_fft = FFTClass()
+fft = FFTClass()

@@ -1,6 +1,6 @@
 import numpy as np
 
-from aspire.utils.numeric import custom_fft
+from aspire.utils.numeric import fft
 from aspire.utils.numeric import xp
 
 
@@ -222,18 +222,18 @@ class PickerHelper:
         
         filt = xp.ones((query_size, query_size)) / (query_size * query_size)
         filt = xp.pad(filt, (0, img.shape[0]-1), 'constant', constant_values=(0, 0))
-        filt_freq = custom_fft.fft2(filt, axes=(0, 1))
+        filt_freq = fft.fft2(filt, axes=(0, 1))
 
         pad_img = xp.pad(img, (0, query_size - 1), 'constant', constant_values=(0, 0))
-        img_freq = custom_fft.fft2(pad_img, axes=(0, 1))
+        img_freq = fft.fft2(pad_img, axes=(0, 1))
 
         mean_freq = xp.multiply(img_freq, filt_freq)
-        mean_all = custom_fft.ifft2(mean_freq, axes=(0, 1)).real
+        mean_all = fft.ifft2(mean_freq, axes=(0, 1)).real
 
         pad_img_square = np.square(pad_img)
-        img_var_freq = custom_fft.fft2(pad_img_square, axes=(0, 1))
+        img_var_freq = fft.fft2(pad_img_square, axes=(0, 1))
         var_freq = xp.multiply(img_var_freq, filt_freq)
-        var_all = custom_fft.ifft2(var_freq, axes=(0, 1))
+        var_all = fft.ifft2(var_freq, axes=(0, 1))
         var_all = var_all.real - xp.power(mean_all, 2)
         std_all = xp.sqrt(xp.maximum(0, var_all))
 
