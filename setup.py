@@ -45,7 +45,7 @@ setup(
         'pytest',
         'pytest-cov',
         'python-box',
-        'scipy==1.3.0',
+        'scipy==1.4.0',
         'scikit-learn',
         'scikit-image==0.14.0',
         'sphinxcontrib-bibtex',
