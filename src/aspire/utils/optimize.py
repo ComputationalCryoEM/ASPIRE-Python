@@ -94,7 +94,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     default_init = {'x': None, 'p': None}
     init = fill_struct(default_init, init)
     if init['x'] is None:
-        x = np.zeros(b.shape)
+        x = np.zeros(b.shape, dtype=b.dtype)
     else:
         x = init['x']
 
@@ -112,7 +112,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         r = r-a_x
         s = cg_opt['preconditioner'](r)
     else:
-        a_x = np.zeros(x.shape)
+        a_x = np.zeros(x.shape, dtype=b.dtype)
 
     obj = (np.real(np.sum(x.conj() * a_x, -1)
             - 2 * np.real(np.sum(np.conj(b * x), -1))))
@@ -140,7 +140,6 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
 
         a_p = a_fun(p)
         old_gamma = np.real(np.sum(s.conj() * r, -1))
-
         alpha = old_gamma / np.real(np.sum(p.conj() * a_p, -1))
         x += alpha[..., np.newaxis] * p
         a_x += alpha[..., np.newaxis] * a_p
