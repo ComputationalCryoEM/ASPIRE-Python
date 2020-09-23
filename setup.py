@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name='aspire',
-    version='0.5.28',
+    version='0.6.0',
     description='Algorithms for Single Particle Reconstruction',
     long_description=read('README.md'),
     long_description_content_type='text/markdown',
