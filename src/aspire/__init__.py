@@ -7,7 +7,7 @@ from aspire.exceptions import handle_exception
 from aspire.utils.config import Config
 
 # version in maj.min.bld format
-__version__ = '0.5.28'
+__version__ = '0.6.0'
 
 logging.config.dictConfig({
     "version": 1,
