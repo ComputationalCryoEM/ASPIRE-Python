@@ -4,7 +4,7 @@ import os
 from concurrent import futures
 
 import numpy as np
-from scipy import misc
+from PIL import Image
 from tqdm import tqdm
 
 from aspire import config
@@ -113,10 +113,9 @@ class Apple:
         particle_image = None
         if create_jpg and self.output_dir is not None:
             particle_image = self.particle_image(picker.original_im, picker.particle_size, centers)
-            misc.imsave(
-                os.path.join(self.output_dir, os.path.splitext(os.path.basename(picker.filename))[0] + '_result.jpg'),
-                particle_image
-            )
+            image_out = Image.fromarray((particle_image).astype(np.uint8))
+            filename_out = os.path.splitext(os.path.basename(picker.filename))[0] + '_result.jpg'
+            image_out.save(os.path.join(self.output_dir, filename_out))
 
         if return_centers:
             return centers
