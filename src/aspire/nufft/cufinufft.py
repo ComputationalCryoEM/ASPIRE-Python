@@ -45,6 +45,7 @@ class CufinufftPlan(Plan):
         if fourier_pts.flags.f_contiguous:
             logger.warning('cufinufft has caught an F_CONTIGUOUS array,'
                            ' `fourier_pts` will be copied to C_CONTIGUOUS.')
+        # TODO: maybe replace with ascontiguousarray
         self.fourier_pts = np.asarray(np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order='C', dtype=self.dtype)
         self.num_pts = fourier_pts.shape[1]
         self.epsilon = max(epsilon, np.finfo(self.dtype).eps)
@@ -52,8 +53,16 @@ class CufinufftPlan(Plan):
         self._transform_plan = cufinufft(2, self.sz, -1, self.epsilon, ntransforms=self.ntransforms,
                                          dtype=self.dtype)
 
+        self.adjoint_opts = None
+        if self.dtype is np.float64 and self.dim==3 and self.epsilon < 1E3:
+            # Note this is an algorithmic implementation dictated by shmem.
+            logger.info('Converting cufinufft gpu_method=1 from default of 2 for 3D1 transform,'
+                        f'to support computation in double precision with tol={self.epsilon}.')
+            self.adjoint_opts = cufinufft.default_opts(nufft_type=1, dim=self.dim)
+            self.adjoint_opts.gpu_method = 1
+
         self._adjoint_plan = cufinufft(1, self.sz, 1, self.epsilon, ntransforms=self.ntransforms,
-                                       dtype=self.dtype)
+                                       dtype=self.dtype, opts=self.adjoint_opts)
 
         # Note I store self.fourier_pts_gpu so the GPUArrray life is tied to instance,
         #  instead of this method.
@@ -73,7 +82,10 @@ class CufinufftPlan(Plan):
         `(ntransforms, num_pts)`.
         """
 
-        assert signal.dtype == self.dtype or signal.dtype == self.complex_dtype
+        if not (signal.dtype == self.dtype or
+                signal.dtype == self.complex_dtype):
+            logger.warning('Incorrect dtypes passed to (a)nufft.'
+                           ' In the future this will be an error.')
 
         sig_shape = signal.shape
         res_shape = self.num_pts
@@ -83,20 +95,19 @@ class CufinufftPlan(Plan):
             ensure(len(signal.shape) == self.dim + 1,
                    f"For multiple transforms, {self.dim}D signal should be"
                    f" a {self.ntransforms} element stack of {self.sz}.")
-            ensure(signal.shape[-1] == self.ntransforms,
+            ensure(signal.shape[0] == self.ntransforms,
                    "For multiple transforms, signal stack length"
                    f" should match ntransforms {self.ntransforms}.")
 
-            sig_shape = signal.shape[:-1]         # order...
+            sig_shape = signal.shape[1:]         # order...
             res_shape = (self.ntransforms, self.num_pts)
 
         ensure(sig_shape == self.sz, f'Signal frame to be transformed must have shape {self.sz}')
 
-        # Note that it would be nice to address this ordering enforcement after the C major conversions.
-        signal_gpu = gpuarray.to_gpu(signal.astype(self.complex_dtype, copy=False, order='F'))
+        signal_gpu = gpuarray.to_gpu(
+            np.ascontiguousarray(signal, dtype=self.complex_dtype))
 
-        # This ordering situation is a little strange, but it works.
-        result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype, order='C')
+        result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype)
 
         self._transform_plan.execute(result_gpu, signal_gpu)
 
@@ -115,10 +126,10 @@ class CufinufftPlan(Plan):
         :returns: Transformed signal `(sz)` or `(sz, ntransforms)`.
         """
 
-        assert signal.dtype == self.complex_dtype or signal.dtype == self.dtype
-        if self.dim == 3 and self.dtype == np.float64:
-            # Note, this is a known internal limitation of cufinufft algorithm at this time.
-            raise TypeError('Currently the 3d1 sub-problem method is singles only.')
+        if not (signal.dtype == self.complex_dtype or
+                signal.dtype == self.dtype):
+            logger.warning('Incorrect dtypes passed to (a)nufft.'
+                           ' In the future this will be an error.')
 
         res_shape = self.sz
         # Note, there is a corner case for ntransforms == 1.
@@ -130,12 +141,12 @@ class CufinufftPlan(Plan):
             ensure(signal.shape[0] == self.ntransforms,
                    "For multiple transforms, signal stack length"
                    f" should match ntransforms {self.ntransforms}.")
-            res_shape = (*self.sz, self.ntransforms)
+            res_shape = (self.ntransforms, *self.sz)
 
-        signal_gpu = gpuarray.to_gpu(signal.astype(self.complex_dtype, copy=False, order='C'))
+        signal_gpu = gpuarray.to_gpu(
+            np.ascontiguousarray(signal, dtype=self.complex_dtype))
 
-        # Note that it would be nice to address this ordering enforcement after the C major conversions.
-        result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype, order='F')
+        result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype)
 
         self._adjoint_plan.execute(signal_gpu, result_gpu)
 

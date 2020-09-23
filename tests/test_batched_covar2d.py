@@ -1,4 +1,5 @@
 import os
+from collections import OrderedDict
 from unittest import TestCase
 
 import numpy as np
@@ -32,7 +33,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
         basis = FFBBasis2D((L, L))
 
-        unique_filters = list(set(src.filters))
+        unique_filters = list(OrderedDict.fromkeys(src.filters))
         ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
 
         ctf_fb = [f.fb_mat(basis) for f in unique_filters]

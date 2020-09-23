@@ -20,7 +20,7 @@ from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import (make_symmat, symmat_to_vec_iso,
                                  vec_to_symmat_iso, vecmat_to_volmat,
                                  vol_to_vec, volmat_to_vecmat)
-from aspire.volume import rotated_grids
+from aspire.volume import rotated_grids, Volume
 
 logger = logging.getLogger(__name__)
 
@@ -59,18 +59,17 @@ class CovarianceEstimator(Estimator):
                 weights[:, 0, :] = 0
 
             # TODO: This is where this differs from MeanEstimator
-            pts_rot = m_reshape(pts_rot, (3, L**2, -1))
-            weights = m_reshape(weights, (L**2, -1))
+            pts_rot = np.moveaxis(pts_rot, -1, 0).reshape(-1, 3, L**2)
+            weights = weights.T.reshape((-1, L**2))
 
-            batch_n = weights.shape[-1]
-            factors = np.zeros((_2L, _2L, _2L, batch_n), dtype=self.as_type)
+            batch_n = weights.shape[0]
+            factors = np.zeros((batch_n, _2L, _2L, _2L), dtype=self.as_type)
 
-            # TODO: Numpy has got to have a functional shortcut to avoid looping like this!
             for j in range(batch_n):
-                factors[:, :, :, j] = anufft(weights[:, j], pts_rot[:, :, j], (_2L, _2L, _2L), real=True)
+                factors[j] = anufft(weights[j], pts_rot[j], (_2L, _2L, _2L), real=True)
 
-            factors = vol_to_vec(factors)
-            kernel += vecmat_to_volmat(factors @ factors.T) / (n * L**8)
+            factors = Volume(factors).to_vec()
+            kernel += vecmat_to_volmat(factors.T @ factors) / (n * L**8)
 
         # Ensure symmetric kernel
         kernel[0, :, :, :, :, :] = 0
@@ -92,7 +91,7 @@ class CovarianceEstimator(Estimator):
         logger.info('Running Covariance Estimator')
         b_coeff = self.src_backward(mean_vol, noise_variance)
         est_coeff = self.conj_grad(b_coeff, tol=tol)
-        covar_est = self.basis.mat_evaluate(est_coeff)
+        covar_est = self.basis.mat_evaluate(est_coeff).T
         covar_est = vecmat_to_volmat(
             make_symmat(
                 volmat_to_vecmat(covar_est)
@@ -165,15 +164,15 @@ class CovarianceEstimator(Estimator):
 
         for i in range(0, self.n, self.batch_size):
             im = self.src.images(i, self.batch_size)
-            batch_n = im.shape[-1]
+            batch_n = im.n_images
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 
-            im_centered_b = np.zeros((self.L, self.L, self.L, batch_n), dtype=self.as_type)
+            im_centered_b = np.zeros((batch_n, self.L, self.L, self.L), dtype=self.as_type)
             for j in range(batch_n):
-                im_centered_b[:, :, :, j] = self.src.im_backward(Image(im_centered[:, :, j]), i+j)
-            im_centered_b = vol_to_vec(im_centered_b)
+                im_centered_b[j] = self.src.im_backward(Image(im_centered[j]), i+j)
+            im_centered_b = Volume(im_centered_b).to_vec()
 
-            covar_b += vecmat_to_volmat(im_centered_b @ im_centered_b.T) / self.n
+            covar_b += vecmat_to_volmat(im_centered_b.T @ im_centered_b) / self.n
 
         covar_b_coeff = self.basis.mat_evaluate_t(covar_b)
         return self._shrink(covar_b_coeff, noise_variance, shrink_method)

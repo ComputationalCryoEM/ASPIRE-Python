@@ -101,6 +101,9 @@ class FPSWFBasis2D(PSWFBasis2D):
             to be evaluated.
         :return : The evaluation of the coefficient array in the PSWF basis.
         """
+
+        images = np.moveaxis(images, 0, -1)  # RCOPT
+
         # start and finish are for the threads option in the future
         images_shape = images.shape
         start = 0
@@ -118,7 +121,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         nfft_res = self._compute_nfft_potts(images_disk, start, finish)
         coefficients = self._pswf_integration(nfft_res)
 
-        return coefficients
+        return coefficients.T  # RCOPT
 
     def evaluate(self, coefficients):
         """
@@ -129,6 +132,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         :return : The evaluation of the coefficient vector(s) in standard 2D
             coordinate basis.
         """
+
+        coefficients = coefficients.T  # RCOPT
+
         # if we got only one vector
         if len(coefficients.shape) == 1:
             coefficients = coefficients.reshape((len(coefficients), 1))
@@ -142,7 +148,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
         images[self._disk_mask, :] = flatten_images
         # TODO: no need to switch x and y any more, need to make consistent with direct method
-        return np.real(images)
+        return np.real(images).T # RCOPT
 
     def _generate_pswf_quad(self, n, bandlimit, phi_approximate_error, lambda_max, epsilon):
         """

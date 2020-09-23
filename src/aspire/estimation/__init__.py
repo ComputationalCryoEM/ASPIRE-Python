@@ -8,6 +8,7 @@ from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
 from aspire.estimation.kernel import FourierKernel
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +55,13 @@ class Estimator:
         raise NotImplementedError('Subclasses must implement the compute_kernel method')
 
     def estimate(self, b_coeff=None, tol=None):
+        """ Return an estimate as a Volume instance. """
         if b_coeff is None:
             b_coeff = self.src_backward()
         est_coeff = self.conj_grad(b_coeff, tol=tol)
         est = self.basis.evaluate(est_coeff)
 
-        return est
+        return Volume(est)
 
     def src_backward(self):
         """
@@ -75,7 +77,7 @@ class Estimator:
             batch_mean_b = self.src.im_backward(im, i) / self.n
             mean_b += batch_mean_b.astype(self.as_type)
 
-        res = self.basis.evaluate_t(mean_b)
+        res = self.basis.evaluate_t(mean_b.T) # RCOPT
         logger.info(f'Determined adjoint mappings. Shape = {res.shape}')
         return res
 
@@ -118,8 +120,8 @@ class Estimator:
         """
         if kernel is None:
             kernel = self.kernel
-        vol = self.basis.evaluate(vol_coeff).squeeze()
+        vol = self.basis.evaluate(vol_coeff).T # RCOPT
         vol = kernel.convolve_volume(vol)
-        vol = self.basis.evaluate_t(vol)
+        vol = self.basis.evaluate_t(vol.T)   #RCOPT
 
         return vol

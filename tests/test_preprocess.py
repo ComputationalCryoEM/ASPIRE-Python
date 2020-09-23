@@ -26,18 +26,17 @@ class PreprocessTestCase(TestCase):
 
     def test02Downsample(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy'))
-        results = results[..., np.newaxis]
+        results = results[np.newaxis, ...]
         vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
-        vols = vols[..., np.newaxis]
+        vols = vols[np.newaxis, ...]
         vols = downsample(vols, (8, 8, 8))
         self.assertTrue(np.allclose(results, vols, atol=1e-7))
 
     def test03Vol2img(self):
-        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_down8_imgs32.npy'))
-        vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy'))
-        vols = vols[..., np.newaxis]
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_down8_imgs32.npy')).T # RCOPT
+        vol = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy')).T # RCOPT
         rots = qrand_rots(32, seed=0)
-        imgs_clean = vol2img(vols[..., 0], rots)
+        imgs_clean = vol2img(vol, rots)
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
     def test04FuzzyMask(self):

@@ -25,7 +25,8 @@ class SimTestCase(TestCase):
         self.vol = np.load(os.path.join(DATA_DIR, 'nfft_volume.npy'))
 
         # Setup a 2D slice for testing 2d many
-        self.plane = self.vol[0]
+        self.plane = self.vol[0].T    # RCOPT
+        self.vol = self.vol.T    # RCOPT
 
         self.recip_space = np.array([-0.05646675 + 1.503746j, 1.677600 + 0.6610926j, 0.9124417 - 0.7394574j, -0.9136836 - 0.5491410j])
 
@@ -290,7 +291,7 @@ class SimTestCase(TestCase):
                               [-4.83278354e-01+5.35405301e-01j, -1.14268550e+00+3.88782017e-01j,
                                1.39982381e+00-4.72811154e-01j, -4.80945951e-01-1.21118001e-01j,
                                -5.62945787e-01+8.74090053e-01j,  5.55461782e-01-1.32420148e+00j,
-                               9.47476817e-01+1.33834936e+00j, -3.28600548e+00-1.08079454e+00j]]])
+                               9.47476817e-01+1.33834936e+00j, -3.28600548e+00-1.08079454e+00j]]]).T    # RCOPT
 
         self.adjoint_plane = np.array([
             [0.28276817+0.15660023j, -0.21264103+0.1325063j, -0.00666806-0.1822552j,
@@ -317,7 +318,7 @@ class SimTestCase(TestCase):
             [-0.05256636-0.00471347j,  0.01359614-0.04566816j,  0.04580664+0.01237401j,
              -0.01350782+0.06196736j, -0.09008373-0.0351467j,   0.08978393-0.11075246j,
              0.09570568+0.1731567j,  -0.25950948+0.02134457j]
-        ], dtype=np.complex128)
+        ], dtype=np.complex128).T    # RCOPT
 
 
     def tearDown(self):
@@ -340,9 +341,9 @@ class SimTestCase(TestCase):
 
         # Note, this is how (cu)finufft transform wants it for now.
         # Can be refactored as part of row major cleanup.
-        batch = np.empty((*self.plane.shape, ntransforms), dtype)
+        batch = np.empty((ntransforms, *self.plane.shape), dtype)
         for i in range(ntransforms):
-            batch[:,:,i] = self.plane
+            batch[i] = self.plane
 
         result = plan.transform(batch)
 
@@ -383,7 +384,7 @@ class SimTestCase(TestCase):
         result = plan.adjoint(batch)
 
         for r in range(ntransforms):
-            self.assertTrue(np.allclose(result[:,:,r], self.adjoint_plane))
+            self.assertTrue(np.allclose(result[r], self.adjoint_plane))
 
     # TODO: This list could be done better, as some sort of matrix
     #    once there are no raise exceptions, but more pressing things...
@@ -428,12 +429,7 @@ class SimTestCase(TestCase):
         self._testTransformMany('finufft', np.float64)
 
     def testAdjoint0_64(self):
-        # cufinufft 3D of this type currently does not support doubles,
-        # It may require refactoring of the low level algorithm at a
-        # future date.
-        #   This should raise.
-        with pytest.raises(TypeError):
-            self._testAdjoint('cufinufft', np.float64)
+        self._testAdjoint('cufinufft', np.float64)
 
     def testAdjointMany0_64(self):
         self._testAdjointMany('cufinufft', np.float64)

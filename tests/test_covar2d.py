@@ -12,7 +12,8 @@ from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import randn
 from aspire.utils.matrix import anorm
-from aspire.utils.preprocess import downsample, vol2img
+from aspire.utils.preprocess import vol2img
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -43,15 +44,14 @@ class Cov2DTestCase(TestCase):
             dtype='double'
         )
 
-        vols = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))
-        vols = vols[..., np.newaxis]
-        vols = downsample(vols, (L*np.ones(3, dtype=int)))
+        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')).T) # RCOPT
+        vols = vols.downsample((L*np.ones(3, dtype=int)))
         sim.vols = vols
 
         self.basis = FFBBasis2D((L, L))
         # use new methods to generate random rotations and clean images
         sim.rots = qrand_rots(n, seed=0)
-        self.imgs_clean = vol2img(vols[..., 0], sim.rots)
+        self.imgs_clean = vol2img(vols[0], sim.rots)
 
         self.h_idx = np.array([filters.index(f) for f in sim.filters])
         self.filters = filters
@@ -61,7 +61,8 @@ class Cov2DTestCase(TestCase):
 
         power_clean = anorm(self.imgs_ctf_clean)**2/np.size(self.imgs_ctf_clean)
         self.noise_var = power_clean/SNR
-        self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var)*randn(L, L, n, seed=0)
+        R = randn(L, L, n, seed=0).T # RCOPT
+        self.imgs_ctf_noise = self.imgs_ctf_clean + np.sqrt(self.noise_var) * R
 
         self.cov2d = RotCov2D(self.basis)
         self.coeff_clean = self.basis.evaluate_t(self.imgs_clean)
@@ -78,10 +79,9 @@ class Cov2DTestCase(TestCase):
     def test02GetCovar(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covar.npy'), allow_pickle=True)
         self.covar_coeff = self.cov2d._get_covar(self.coeff_clean)
-        im = 0
-        for mat in results[0].tolist():
+
+        for im, mat in enumerate(results[0].tolist()):
             self.assertTrue(np.allclose(mat, self.covar_coeff[im]))
-            im += 1
 
     def test03GetMeanCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_meanctf.npy'))
@@ -92,10 +92,8 @@ class Cov2DTestCase(TestCase):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf.npy'), allow_pickle=True)
         self.covar_coeff_ctf = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                     noise_var=self.noise_var)
-        im = 0
-        for mat in results.tolist():
+        for im, mat in enumerate(results.tolist()):
             self.assertTrue(np.allclose(mat, self.covar_coeff_ctf[im]))
-            im += 1
 
     def test05GetCovarCTFShrink(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'), allow_pickle=True)
@@ -103,23 +101,27 @@ class Cov2DTestCase(TestCase):
                      'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64'}
         self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                            noise_var=self.noise_var, covar_est_opt=covar_opt)
-        im = 0
-        for mat in results.tolist():
+
+        for im, mat in enumerate(results.tolist()):
             self.assertTrue(np.allclose(mat, self.covar_coeff_ctf_shrink[im]))
-            im += 1
 
     def test06GetCWFCoeffs(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff.npy'))
+        results = results.T # RCOPT transpose?
+
         self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                    noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf))
 
     def test07GetCWFCoeffsIdentityCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
+        results = results.T # RCOPT transpose?
+
         self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF))
 
     def test08GetCWFCoeffsClean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))
+        results = results.T # RCOPT transpose?
         self.coeff_cwf_clean = self.cov2d.get_cwf_coeffs(self.coeff_clean, noise_var=0)
         self.assertTrue(np.allclose(results, self.coeff_cwf_clean))

@@ -160,18 +160,21 @@ class Basis:
         This is a similar function to evaluate_t but with more accuracy by using
         the cg optimizing of linear equation, Ax=b.
 
-        :param x: An array whose first two or three dimensions are to be expanded
+        :param x: An array whose last two or three dimensions are to be expanded
             the desired basis. These dimensions must equal `self.sz`.
         :return : The coefficients of `v` expanded in the desired basis.
-            The first dimension of `v` is with size of `count` and the
-            second and higher dimensions of the return value correspond to
-            those higher dimensions of `x`.
+            The last dimension of `v` is with size of `count` and the
+            first dimensions of the return value correspond to
+            those first dimensions of `x`.
 
         """
         # ensure the first dimensions with size of self.sz
-        x, sz_roll = unroll_dim(x, self.ndim + 1)
-        ensure(x.shape[:self.ndim] == self.sz,
-               f'First {self.ndim} dimensions of x must match {self.sz}.')
+        sz_roll = x.shape[:-self.ndim]
+
+        x = x.reshape((-1, *self.sz))
+
+        ensure(x.shape[-self.ndim:] == self.sz,
+               f'Last {self.ndim} dimensions of x must match {self.sz}.')
 
         operator = LinearOperator(shape=(self.count, self.count),
                                   matvec=lambda v: self.evaluate_t(self.evaluate(v)))
@@ -181,16 +184,16 @@ class Basis:
         logger.info('Expanding array in basis')
 
         # number of image samples
-        n_data = np.size(x, self.ndim)
-        v = np.zeros((self.count, n_data), dtype=x.dtype)
+        n_data = x.shape[0]
+        v = np.zeros((n_data, self.count), dtype=x.dtype)
 
         for isample in range(0, n_data):
-            b = self.evaluate_t(x[..., isample])
+            b = self.evaluate_t(x[isample]).T
             # TODO: need check the initial condition x0 can improve the results or not.
-            v[..., isample], info = cg(operator, b, tol=tol, atol=0)
+            v[isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
                 raise RuntimeError('Unable to converge!')
 
-        # return v coefficients with the first dimension of self.count
-        v = roll_dim(v, sz_roll)
+        # return v coefficients with the last dimension of self.count
+        v = v.reshape((-1, *sz_roll))
         return v

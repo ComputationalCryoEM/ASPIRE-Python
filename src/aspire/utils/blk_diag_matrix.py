@@ -605,7 +605,7 @@ class BlkDiagMatrix:
         """
 
         rows = self.partition[:, 0]
-        if sum(rows) != np.size(Y, 0):
+        if sum(rows) != Y.shape[0]:
             raise RuntimeError('Sizes of `self` and `Y` are not compatible.')
 
         vector = False

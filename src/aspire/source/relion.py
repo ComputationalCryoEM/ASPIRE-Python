@@ -141,7 +141,7 @@ class RelionSource(ImageSource):
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
-            data = arr[df['__mrc_index'] - 1, :, :].T
+            data = arr[df['__mrc_index'] - 1, :, :]
 
             return df.index, data
 
@@ -150,7 +150,7 @@ class RelionSource(ImageSource):
             n_workers = cpu_count() - 1
 
         df = self._metadata.loc[indices]
-        im = np.empty((self._original_resolution, self._original_resolution, len(indices)))
+        im = np.empty((len(indices), self._original_resolution, self._original_resolution))
 
         groups = df.groupby('__mrc_filepath')
         n_workers = min(n_workers, len(groups))
@@ -163,7 +163,7 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                im[:, :, data_indices-start] = data
+                im[data_indices-start] = data[data_indices-start]
 
         logger.info(f'Loading {len(indices)} images complete')
 

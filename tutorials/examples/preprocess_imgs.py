@@ -11,7 +11,7 @@ import os
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import (RadialCTFFilter, ScalarFilter)
-from aspire.utils.preprocess import downsample
+from aspire.volume import Volume
 
 
 logger = logging.getLogger('aspire')
@@ -49,13 +49,12 @@ CTF_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1
 # Load the map file of a 70S ribosome and downsample the 3D map to desired resolution.
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
 logger.info(f'Load 3D map from mrc file, {infile}')
-vols = infile.data
-vols = vols[..., np.newaxis]
+vols = Volume(infile.data)
 
 # Downsample the volume to a desired resolution and increase density
 # by 1.0e5 time for a better graph view
 logger.info(f'Downsample map to a resolution of {img_size} x {img_size} x {img_size}')
-vols = downsample(vols, (img_size,) * 3) * 1.0e5
+vols = vols.downsample((img_size,) * 3) * 1.0e5
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to create simulation object.')
@@ -63,7 +62,6 @@ source = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    C=vols.shape[-1],
     filters=CTF_filters,
     noise_filter=noise_filter
 )
@@ -93,27 +91,27 @@ imgs_rc = source.images(start=0, num=1).asnumpy()
 logger.info('Plot first image from each preprocess steps')
 idm = 0
 plt.subplot(2, 3, 1)
-plt.imshow(imgs_od[..., idm], cmap='gray')
+plt.imshow(imgs_od[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('original image')
 
 plt.subplot(2, 3, 2)
-plt.imshow(imgs_pf[..., idm], cmap='gray')
+plt.imshow(imgs_pf[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('phase flip')
 
 plt.subplot(2, 3, 4)
-plt.imshow(imgs_nb[..., idm], cmap='gray')
+plt.imshow(imgs_nb[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('normalize background')
 
 plt.subplot(2, 3, 5)
-plt.imshow(imgs_wt[..., idm], cmap='gray')
+plt.imshow(imgs_wt[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('noise whitening')
 
 plt.subplot(2, 3, 6)
-plt.imshow(imgs_rc[..., idm], cmap='gray')
+plt.imshow(imgs_rc[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('invert contrast')
 plt.show()

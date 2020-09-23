@@ -19,9 +19,9 @@ class Xform:
     Xform objects usually set up data structures that are typically *larger* than the depth of the Image
     object that they expect to encounter during any invocation of `forward` or `adjoint`.
 
-    At runtime, it gets an Image object (a thin wrapper on a L x L x n ndarray),
+    At runtime, it gets an Image object (a thin wrapper on a n x L x L ndarray),
     as well as numeric `indices` (a numpy array of index values) that correspond to index values (the 'window') of
-    the incoming Image object within the context of all images (i.e. an Image object of L x L x N, where N represents
+    the incoming Image object within the context of all images (i.e. an Image object of N x L x L, where N represents
     the number of total images that can ever pass through this Xform.
 
     At runtime, The Xform object may choose to ignore `indices` altogether (e.g. a Xform that downsamples all incoming
@@ -219,7 +219,7 @@ class FlipXform(Xform):
             idx_k = np.where(self.filters[indices] == f)[0]
             flip_filter = LambdaFilter(f, np.sign)
             if len(idx_k) > 0:
-                im_out[:, :, idx_k] = Image(im_in[:, :, idx_k]).filter(flip_filter).asnumpy()
+                im_out[idx_k] = Image(im_in[idx_k]).filter(flip_filter).asnumpy()
 
         return Image(im_out)
 
@@ -271,8 +271,8 @@ class NoiseAdder(Xform):
             # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
             random_seed = self.seed + 191 * (idx + 1)
             im_s = randn(2 * im.res, 2 * im.res, seed=random_seed)
-            im_s = Image(im_s).filter(self.noise_filter)[:, :, 0]
-            im[:, :, i] += im_s[:im.res, :im.res]
+            im_s = Image(im_s).filter(self.noise_filter)[0]
+            im[i] += im_s[:im.res, :im.res]
 
         return im
 
@@ -331,7 +331,7 @@ class IndexedXform(Xform):
             # Apply the transformation to the selected indices in the Image object
             if len(im_data_indices) > 0:
                 fn_handle = getattr(xform, which)
-                im_data[:, :, im_data_indices] = fn_handle(Image(im[:, :, im_data_indices])).asnumpy()
+                im_data[im_data_indices] = fn_handle(Image(im[im_data_indices])).asnumpy()
 
         return Image(im_data)
 

@@ -3,6 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis.polar_2d import PolarBasis2D
+from aspire.image import Image
 from aspire.utils.matlab_compat import m_reshape
 
 
@@ -14,7 +15,7 @@ class PolarBasis2DTestCase(TestCase):
         pass
 
     def testPolarBasis2DEvaluate_t(self):
-        x = np.array([
+        x = Image(np.array([
             [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
              -1.08106869e-17,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
             [ 0.00000000e+00,  0.00000000e+00, -6.40456062e-03, -3.32961020e-03,
@@ -31,7 +32,7 @@ class PolarBasis2DTestCase(TestCase):
              -1.54969139e-02, -1.66229153e-02, -2.07389259e-02,  6.64060546e-03],
             [ 0.00000000e+00,  0.00000000e+00,  5.20080934e-03, -1.06788196e-02,
              -1.14761672e-02, -1.27443126e-02, -1.15563484e-02,  0.00000000e+00]
-        ])
+        ]).T) #RCOPT
 
         pf = self.basis.evaluate_t(x)
         result = np.array(
@@ -100,7 +101,6 @@ class PolarBasis2DTestCase(TestCase):
               0.38243133-6.66608316e-18j,  0.31313975-1.82190396e-01j,
               0.14075481+5.85637416e-02j, -0.15198775+1.02156797e-01j]
         )
-
         self.assertTrue(np.allclose(pf, result))
 
     def testPolarBasis2DEvaluate(self):
@@ -189,9 +189,9 @@ class PolarBasis2DTestCase(TestCase):
               17.69291969, 15.06781768, 10.4669263 , 10.2082326 ],
              [ 5.26532858,  9.60999648, 12.68642275, 12.42354237,
               10.87648517, 10.60647963,  9.11026567,  8.53250276]]
-        )
+        ).T #RCOPT
 
-        self.assertTrue(np.allclose(x, result))
+        self.assertTrue(np.allclose(x.asnumpy(), result))
 
     def testPolarBasis2DAdjoint(self):
         # The evaluate function should be the adjoint operator of evaluate_t.
@@ -208,8 +208,8 @@ class PolarBasis2DTestCase(TestCase):
 
         x = m_reshape(x, (self.basis.nrad * self.basis.ntheta,))
 
-        x_t = self.basis.evaluate(x)
+        x_t = self.basis.evaluate(x).asnumpy()
         y = np.random.randn(np.prod(self.basis.sz))
-        y_t = self.basis.evaluate_t(m_reshape(y, self.basis.sz))
+        y_t = self.basis.evaluate_t(Image(m_reshape(y, self.basis.sz)[np.newaxis,:])) # RCOPT
         self.assertTrue(np.isclose(np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),))),
                                    np.dot(y_t, x)))

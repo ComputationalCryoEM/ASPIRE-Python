@@ -183,14 +183,14 @@ def nufft(sig_f, fourier_pts, real=False):
     dimension = fourier_pts.shape[0]
 
     # Unpack the resolution of the signal
-    resolution = sig_f.shape[0]
+    resolution = sig_f.shape[1]
 
     # Construct tuple describing geometry of signal
     sz = (resolution,) * dimension
 
     ntransforms = 1
     if len(sig_f.shape) == dimension + 1:
-        ntransforms = sig_f.shape[-1]
+        ntransforms = sig_f.shape[0]
 
     plan = Plan(sz=sz, fourier_pts=fourier_pts, ntransforms=ntransforms)
     transform = plan.transform(sig_f)

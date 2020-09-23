@@ -25,42 +25,51 @@ def centered_fft1(x):
     x = fftshift(x, 0)
     return x
 
+
 def centered_ifft2(x):
     """
     Calculate a centered, two-dimensional inverse FFT
     :param x: The two-dimensional signal to be transformed.
-        The inverse FFT is only applied along the first two dimensions.
+        The inverse FFT is only applied along the last two dimensions.
     :return: The centered inverse Fourier transform of x.
     """
-    x = ifftshift(ifftshift(x, 0), 1)
-    x = ifft2(x, axes=(0, 1))
-    x = fftshift(fftshift(x, 0), 1)
+    x = ifftshift(x, axes=(-2, -1))
+    x = ifft2(x, axes=(-2, -1))
+    x = fftshift(x, axes=(-2, -1))
     return x
 
 
 def centered_fft2(x):
-    x = ifftshift(ifftshift(x, 0), 1)
-    x = fft2(x, axes=(0, 1))
-    x = fftshift(fftshift(x, 0), 1)
+    """
+    Calculate a centered, two-dimensional inverse FFT
+    :param x: The two-dimensional signal to be transformed.
+        The inverse FFT is only applied along the last two dimensions.
+    :return: The centered inverse Fourier transform of x.
+    """
+
+    x = ifftshift(x, axes=(-2, -1))
+    x = fft2(x, axes=(-2, -1))
+    x = fftshift(x, axes=(-2, -1))
     return x
+
 
 def centered_ifft3(x):
     """
     Calculate a centered, three-dimensional inverse FFT
     :param x: The three-dimensional signal to be transformed.
-        The inverse FFT is only applied along the first three dimensions.
+        The inverse FFT is only applied along the last three dimensions.
     :return: The centered inverse Fourier transform of x.
     """
-    x = ifftshift(ifftshift(ifftshift(x, 0), 1), 2)
-    x = ifftn(x, axes=(0, 1, 2))
-    x = fftshift(fftshift(fftshift(x, 0), 1), 2)
+    x = ifftshift(ifftshift(ifftshift(x, -3), -2), -1)
+    x = ifftn(x, axes=(-3, -2, -1))
+    x = fftshift(fftshift(fftshift(x, -3), -2), -1)
     return x
 
 
 def centered_fft3(x):
-    x = ifftshift(ifftshift(ifftshift(x, 0), 1), 2)
-    x = fftn(x, axes=(0, 1, 2))
-    x = fftshift(fftshift(fftshift(x, 0), 1), 2)
+    x = ifftshift(x, axes=(-3, -2, -1))
+    x = fftn(x, axes=(-3, -2, -1))
+    x = fftshift(x, axes=(-3, -2, -1))
     return x
 
 

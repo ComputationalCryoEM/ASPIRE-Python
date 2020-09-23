@@ -7,9 +7,9 @@ from scipy.special import jv
 
 from aspire.basis.basis_utils import lgwt
 from aspire.basis.fb_2d import FBBasis2D
+from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.misc import complex_type
 
 logger = logging.getLogger(__name__)
@@ -63,15 +63,15 @@ class FFBBasis2D(FBBasis2D):
         n_r = int(np.ceil(4 * self.rcut * self.kcut))
         r, w = lgwt(n_r, 0.0, self.kcut)
 
-        radial = np.zeros(shape=(n_r, np.sum(self.k_max)))
+        radial = np.zeros(shape=(np.sum(self.k_max), n_r))
         ind_radial = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[:, ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
+                radial[ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
                 # NOTE: We need to remove the factor due to the discretization here
                 # since it is already included in our quadrature weights
                 nrm = 1 / (np.sqrt(np.prod(self.sz))) * self.basis_norm_2d(ell, k)
-                radial[:, ind_radial] /= nrm
+                radial[ind_radial] /= nrm
                 ind_radial += 1
 
         n_theta = np.ceil(16 * self.kcut * self.rcut)
@@ -96,31 +96,31 @@ class FFBBasis2D(FBBasis2D):
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
         :param v: A coefficient vector (or an array of coefficient vectors)
-            in FB basis to be evaluated. The first dimension must equal `self.count`.
+            in FB basis to be evaluated. The last dimension must equal `self.count`.
         :return x: The evaluation of the coefficient vector(s) `x` in standard 2D
-            coordinate basis. This is an array whose first two dimensions equal `self.sz`
-            and the remaining dimensions correspond to dimensions two and higher of `v`.
+            coordinate basis. This is Image instance with resolution of `self.sz`
+            and the first dimension correspond to remaining dimension of `v`.
         """
-        # make should the first dimension of v is self.count
-        v, sz_roll = unroll_dim(v, 2)
-        v = m_reshape(v, (self.count, -1))
+
+        sz_roll = v.shape[:-1]
+        v = v.reshape(-1, self.count)
+
+        # number of 2D image samples
+        n_data = v.shape[0]
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
         n_r = np.size(self._precomp["freqs"], 1)
 
-        # number of 2D image samples
-        n_data = np.size(v, 1)
-
         # go through  each basis function and find corresponding coefficient
-        pf = np.zeros((n_r, 2 * n_theta, n_data), dtype=np.complex)
+        pf = np.zeros((n_data, 2 * n_theta, n_r), dtype=np.complex)
         mask = self._indices["ells"] == 0
 
         ind = 0
 
         idx = ind + np.arange(self.k_max[0])
 
-        pf[:, 0, :] = self._precomp["radial"][:, idx] @ v[mask, ...]
+        pf[:, 0, :] = v[:, mask] @ self._precomp["radial"][idx]
 
         ind = ind + np.size(idx)
 
@@ -131,12 +131,12 @@ class FFBBasis2D(FBBasis2D):
             idx_pos = ind_pos + np.arange(self.k_max[ell])
             idx_neg = idx_pos + self.k_max[ell]
 
-            v_ell = (v[idx_pos, :] - 1j * v[idx_neg, :]) / 2.0
+            v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0
 
             if np.mod(ell, 2) == 1:
                 v_ell = 1j * v_ell
 
-            pf_ell = self._precomp["radial"][:, idx] @ v_ell
+            pf_ell = v_ell @ self._precomp["radial"][idx]
             pf[:, ell, :] = pf_ell
 
             if np.mod(ell, 2) == 0:
@@ -155,70 +155,70 @@ class FFBBasis2D(FBBasis2D):
         pf = pf[:, 0:hsize, :]
 
         for i_r in range(0, n_r):
-            pf[i_r, ...] = pf[i_r, ...] * (
+            pf[..., i_r] = pf[..., i_r] * (
                     self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
-        pf = m_reshape(pf, (n_r * n_theta, n_data))
+
+        pf = np.reshape(pf, (n_data, n_r * n_theta))
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
         freqs = m_reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
-        # TODO: Address axis swapping once C major in memory.
-        pfc = np.swapaxes(pf, 0, 1)
-        x = 2 * anufft(pfc, 2 * pi * freqs, self.sz, real=True)
+        x = 2 * anufft(pf, 2 * pi * freqs, self.sz, real=True)
 
-        # return the x with the first two dimensions of self.sz
-        x = roll_dim(x, sz_roll)
-        return x
+        # Return X as Image instance with the last two dimensions as *self.sz
+        x = x.reshape((*sz_roll, *self.sz))
+
+        return Image(x)
 
     def evaluate_t(self, x):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
-        :param x: The coefficient array in the standard 2D coordinate basis to be
-            evaluated. The first two dimensions must equal `self.sz`.
+        :param x: The Image instance representing coefficient array in the
+        standard 2D coordinate basis to be evaluated.
         :return v: The evaluation of the coefficient array `v` in the FB basis.
-            This is an array of vectors whose first dimension equals `self.count`
-            and whose remaining dimensions correspond to higher dimensions of `x`.
+            This is an array of vectors whose last dimension equals `self.count`
+            and whose first dimension correspond to `x.n_images`.
         """
-        # ensure the first two dimensions with size of self.sz
-        x, sz_roll = unroll_dim(x, self.ndim + 1)
-        x = m_reshape(x, (self.sz[0], self.sz[1], -1))
+
+        if not isinstance(x, Image):
+            logger.warning(f'{self.__class__.__name__}::evaluate_t'
+                           ' passed numpy array instead of Image.')
+            x = Image(x)
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
         n_r = np.size(self._precomp["freqs"], 1)
-        freqs = m_reshape(self._precomp["freqs"], new_shape=(2, n_r * n_theta))
+        freqs = np.reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # number of 2D image samples
-        n_data = np.size(x, 2)
+        n_images = x.n_images
+        x_data = x.data
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pfc = nufft(x, 2 * pi * freqs)
-        pf = pfc.T
-
-        pf = m_reshape(pf, new_shape=(n_r, n_theta, n_data))
+        pf = nufft(x_data, 2 * pi * freqs)
+        pf = np.reshape(pf, (n_images, n_r, n_theta))
 
         # Recover "negative" frequencies from "positive" half plane.
-        pf = np.concatenate((pf, pf.conjugate()), axis=1)
+        pf = np.concatenate((pf, pf.conjugate()), axis=2)
 
         # evaluate radial integral using the Gauss-Legendre quadrature rule
         for i_r in range(0, n_r):
-            pf[i_r, ...] = pf[i_r, ...] * (
+            pf[:, i_r, :] = pf[:, i_r, :] * (
                     self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
 
         #  1D FFT on the angular dimension for each concentric circle
-        pf = 2 * pi / (2 * n_theta) * fft(pf, 2*n_theta, 1)
+        pf = 2 * pi / (2 * n_theta) * fft(pf, 2*n_theta, 2)
 
         # This only makes it easier to slice the array later.
-        v = np.zeros((self.count, n_data), dtype=x.dtype)
+        v = np.zeros((n_images, self.count), dtype=x.dtype)
 
         # go through each basis function and find the corresponding coefficient
         ind = 0
         idx = ind + np.arange(self.k_max[0])
         mask = self._indices["ells"] == 0
 
-        v[mask, :] = self._precomp["radial"][:, idx].T @ pf[:, 0, :].real
-        v = m_reshape(v, (self.count, -1))
+        v[:, mask] = pf[:, :, 0].real @ self._precomp["radial"][idx].T
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -227,7 +227,7 @@ class FFBBasis2D(FBBasis2D):
             idx_pos = ind_pos + np.arange(self.k_max[ell])
             idx_neg = idx_pos + self.k_max[ell]
 
-            v_ell = self._precomp["radial"][:, idx].T @ pf[:, ell, :]
+            v_ell = pf[:, :, ell] @ self._precomp["radial"][idx].T
 
             if np.mod(ell, 2) == 0:
                 v_pos = np.real(v_ell)
@@ -236,13 +236,11 @@ class FFBBasis2D(FBBasis2D):
                 v_pos = np.imag(v_ell)
                 v_neg = np.real(v_ell)
 
-            v[idx_pos, :] = v_pos
-            v[idx_neg, :] = v_neg
+            v[:, idx_pos] = v_pos
+            v[:, idx_neg] = v_neg
 
             ind = ind + np.size(idx)
 
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
-        # return v coefficients with the first dimension of self.count
-        v = roll_dim(v, sz_roll)
         return v

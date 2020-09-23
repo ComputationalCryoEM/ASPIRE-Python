@@ -2,11 +2,12 @@ import logging
 import numpy as np
 
 from aspire.basis import Basis
+from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
-from aspire.utils.misc import real_type, complex_type
+from aspire.utils.misc import real_type
 
 logger = logging.getLogger(__name__)
 
@@ -74,69 +75,56 @@ class PolarBasis2D(Basis):
         Evaluate coefficients in standard 2D coordinate basis from those in polar Fourier basis
 
         :param v: A coefficient vector (or an array of coefficient vectors)
-            in polar Fourier basis to be evaluated. The first dimension must equal to
+            in polar Fourier basis to be evaluated. The last dimension must equal to
             `self.count`.
-        :return x: The evaluation of the coefficient vector(s) `x` in standard 2D
-            coordinate basis. This is an array whose first two dimensions equal `self.sz`
-            and the remaining dimensions correspond to dimensions two and higher of `v`.
+        :return x: Image instance in standard 2D coordinate basis with
+            resolution of `self.sz`.
         """
         if self.dtype != real_type(v.dtype):
             logger.error(f'Input data type, {v.dtype}, is not consistent with'
                          f' the defined in the class.')
 
-        v, sz_roll = unroll_dim(v, 2)
-        nimgs = v.shape[1]
+        v = v.reshape(-1, self.ntheta, self.nrad)
+
+        nimgs = v.shape[0]
 
         half_size = self.ntheta // 2
-
-        v = m_reshape(v, (self.nrad, self.ntheta, nimgs))
 
         v = (v[:, :half_size, :]
              + v[:, half_size:, :].conj())
 
-        v = m_reshape(v, (self.nrad*half_size, nimgs))
-        x = np.empty((self.sz[0], self.sz[1], nimgs), dtype=self.dtype)
-        # TODO: need to include the implementation of the many framework in Finufft.
-        for isample in range(0, nimgs):
-            x[..., isample] = np.real(anufft(v[:, isample], self.freqs, self.sz))
+        v = v.reshape(nimgs, self.nrad*half_size)
 
-        # return coefficients whose first two dimensions equal to self.sz
-        x = roll_dim(x, sz_roll)
+        x =  anufft(v, self.freqs, self.sz, real=True)
 
-        return x
+        return Image(x)
 
     def evaluate_t(self, x):
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
-        :param x: The coefficient array in the standard 2D coordinate basis to be
-            evaluated. The first two dimensions must equal `self.sz`.
-        :return v: The evaluation of the coefficient array `v` in the polar Fourier grid.
-            This is an array of vectors whose first dimension is `self.count` and
-            whose remaining dimensions correspond to higher dimensions of `x`.
+        :param x: The Image instance representing coefficient array in the
+        standard 2D coordinate basis to be evaluated.
+        :return v: The evaluation of the coefficient array `v` in the polar
+        Fourier grid. This is an array of vectors whose first dimension
+        corresponds to x.n_images, and last dimension equals `self.count`.
         """
+
+        assert isinstance(x, Image)
+
         if self.dtype != x.dtype:
             logger.error(f' Input data type, {x.dtype}, is not consistent with'
                          f' the defined in the class.')
 
-        # ensure the first two dimensions with size of self.sz
-        x, sz_roll = unroll_dim(x, self.ndim + 1)
-        nimgs = x.shape[2]
+        nimgs = x.n_images
 
         half_size = self.ntheta // 2
 
-        # get consistent complex type from the real type of x
-        out_type = complex_type(x.dtype)
-        pf = np.empty((self.nrad * half_size, nimgs), dtype=out_type)
-        # TODO: need to include the implementation of the many framework in Finufft.
-        for isample in range(0, nimgs):
-            pf[..., isample] = nufft(x[..., isample], self.freqs)
+        pf = nufft(x.asnumpy(), self.freqs)
 
-        pf = m_reshape(pf, (self.nrad, half_size, nimgs))
+        pf = pf.reshape((nimgs, self.nrad, half_size))
         v = np.concatenate((pf, pf.conj()), axis=1)
 
-        # return v coefficients with the first dimension size of self.count
-        v = m_reshape(v, (self.nrad * self.ntheta, nimgs))
-        v = roll_dim(v, sz_roll)
-
+        # return v coefficients with the last dimension size of self.count
+        v = v.reshape(nimgs, -1)
         return v

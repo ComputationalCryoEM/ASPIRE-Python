@@ -22,7 +22,7 @@ from aspire.utils.coor_trans import qrand_rots
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import randn
 from aspire.utils.matrix import anorm
-from aspire.utils.preprocess import downsample, vol2img
+from aspire.volume import Volume
 
 logger = logging.getLogger('aspire')
 
@@ -61,9 +61,8 @@ filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
 logger.info(f'Load 3D map and downsample 3D map to desired grids '
             f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
-vols = infile.data
-vols = vols[..., np.newaxis]
-vols = downsample(vols, (img_size*np.ones(3, dtype=int)))
+vols = Volume(infile.data)
+vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to creat simulation object.')
@@ -83,7 +82,8 @@ ffbbasis = FFBBasis2D((img_size, img_size))
 # To be consistent with the Matlab version in the numbers, we need to use the statements as below:
 logger.info('Generate random distributed rotation angles and obtain corresponding 2D clean images.')
 rots = qrand_rots(num_imgs, seed=0)
-imgs_clean = vol2img(sim.vols[..., 0], rots)
+imgs_clean = sim.vols.project(0, rots)
+
 
 # Assign the CTF information and index for each image
 h_idx = np.array([filters.index(f) for f in sim.filters])
@@ -93,16 +93,13 @@ h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in filters]
 
 # Apply the CTF to the clean images.
 logger.info('Apply CTF filters to clean images.')
-imgs_ctf_clean = Image(sim.eval_filters(imgs_clean))
-
-# imgs_ctf_clean is an Image object. Convert to numpy array for subsequent statements
-imgs_ctf_clean = imgs_ctf_clean.asnumpy()
+imgs_ctf_clean = sim.eval_filters(imgs_clean)
 
 # Apply the noise at the desired singal-noise ratio to the filtered clean images
 logger.info('Apply noise filters to clean images.')
-power_clean = anorm(imgs_ctf_clean)**2/np.size(imgs_ctf_clean)
+power_clean = imgs_ctf_clean.norm() ** 2 / imgs_ctf_clean.size
 noise_var = power_clean/sn_ratio
-imgs_noise = imgs_ctf_clean + np.sqrt(noise_var)*randn(img_size, img_size, num_imgs, seed=0)
+imgs_noise = imgs_ctf_clean + np.sqrt(noise_var)*randn(num_imgs, img_size, img_size, seed=0)
 
 # Expand the images, both clean and noisy, in the Fourier-Bessel basis. This
 # can be done exactly (that is, up to numerical precision) using the
@@ -166,8 +163,7 @@ diff_mean = anorm(mean_coeff_est-mean_coeff)/anorm(mean_coeff)
 diff_covar = covar_coeff_diff.norm() / covar_coeff.norm()
 
 # Calculate the normalized RMSE of the estimated images.
-nrmse_ims = anorm(imgs_est-imgs_clean)/anorm(imgs_clean)
-
+nrmse_ims = (imgs_est - imgs_clean).norm() / imgs_clean.norm()
 logger.info(f'Deviation of the noisy mean estimate: {diff_mean}')
 logger.info(f'Deviation of the noisy covariance estimate: {diff_covar}')
 logger.info(f'Estimated images normalized RMSE: {nrmse_ims}')
@@ -175,19 +171,19 @@ logger.info(f'Estimated images normalized RMSE: {nrmse_ims}')
 # plot the first images at different stages
 idm = 0
 plt.subplot(2, 2, 1)
-plt.imshow(-imgs_noise[..., idm], cmap='gray')
+plt.imshow(-imgs_noise[idm], cmap='gray')
 plt.colorbar()
 plt.title('Noise')
 plt.subplot(2, 2, 2)
-plt.imshow(imgs_clean[..., idm], cmap='gray')
+plt.imshow(imgs_clean[idm], cmap='gray')
 plt.colorbar()
 plt.title('Clean')
 plt.subplot(2, 2, 3)
-plt.imshow(imgs_est[..., idm], cmap='gray')
+plt.imshow(imgs_est[idm], cmap='gray')
 plt.colorbar()
 plt.title('Estimated')
 plt.subplot(2, 2, 4)
-plt.imshow(imgs_est[..., idm] - imgs_clean[..., idm], cmap='gray')
+plt.imshow(imgs_est[idm] - imgs_clean[idm], cmap='gray')
 plt.colorbar()
 plt.title('Clean-Estimated')
 plt.show()

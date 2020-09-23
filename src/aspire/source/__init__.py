@@ -14,8 +14,8 @@ from aspire.source.xform import (Downsample, FilterXform, FlipXform,
                                  Multiply, Pipeline, Add, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import (MultiplicativeFilter, PowerFilter)
-from aspire.volume import im_backproject, vol_project
+from aspire.utils.filters import MultiplicativeFilter, PowerFilter
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -280,7 +280,13 @@ class ImageSource:
         raise NotImplementedError('Subclasses should implement this and return an Image object')
 
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
+        if not isinstance(im_orig, Image):
+            logger.warning(f"eval_filters passed {type(im_orig)} instead of Image instance")
+            # for now just convert it
+            im = Image(im_orig)
+
         im = im_orig.copy()
+
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
@@ -288,7 +294,7 @@ class ImageSource:
         for f in unique_filters:
             idx_k = np.where(self.filters[indices] == f)[0]
             if len(idx_k) > 0:
-                im[:, :, idx_k] = Image(im[:, :, idx_k]).filter(f).asnumpy()
+                im[idx_k] = Image(im[idx_k]).filter(f).asnumpy()
 
         return im
 
@@ -327,7 +333,7 @@ class ImageSource:
 
         if self._cached_im is not None:
             logger.info(f'Loading images from cache')
-            im = Image(self._cached_im[:, :, indices])
+            im = Image(self._cached_im[indices, :, :])
         else:
             im = self._images(indices=indices, *args, **kwargs)
 
@@ -405,8 +411,8 @@ class ImageSource:
 
         for i in range(0, self.n, batch_size):
             images = self.images(i, batch_size).asnumpy()
-            signal = images * np.expand_dims(signal_mask, 2)
-            noise = images * np.expand_dims(noise_mask, 2)
+            signal = images * signal_mask
+            noise = images * noise_mask
             signal_mean += np.sum(signal)
             noise_mean += np.sum(noise)
         signal_denominator = self.n * np.sum(signal_mask)
@@ -448,34 +454,37 @@ class ImageSource:
     def im_backward(self, im, start):
         """
         Apply adjoint mapping to set of images
-        :param im: An L-by-L-by-n array of images to which we wish to apply the adjoint of the forward model.
+        :param im: An Image instance to which we wish to apply the adjoint of the forward model.
         :param start: Start index of image to consider
         :return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.
         """
-        num = im.shape[-1]
+        num = im.n_images
 
         all_idx = np.arange(start, min(start + num, self.n))
-        im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
+        im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
-        im = self.eval_filters(im, start=start, num=num).asnumpy()
-        vol = im_backproject(im, self.rots[start:start+num, :, :])
+        im = self.eval_filters(im, start=start, num=num)
+
+        vol = im.backproject(self.rots[start:start+num, :, :])[0]
 
         return vol
 
     def vol_forward(self, vol, start, num):
         """
         Apply forward image model to volume
-        :param vol: A volume of size L-by-L-by-L.
+        :param vol: A volume instance.
         :param start: Start index of image to consider
         :param num: Number of images to consider
         :return: The images obtained from volume by projecting, applying CTFs, translating, and multiplying by the
             amplitude.
         """
         all_idx = np.arange(start, min(start + num, self.n))
-        im = vol_project(vol, self.rots[all_idx, :, :])
+        assert vol.n_vols == 1, "vol_forward expects a single volume, not a stack"
+
+        im = vol.project(0, self.rots[all_idx, :, :])
         im = self.eval_filters(im, start, num)
-        im = Image(im).shift(self.offsets[all_idx, :])
-        im *= np.broadcast_to(self.amplitudes[all_idx], (self.L, self.L, len(all_idx)))
+        im = im.shift(self.offsets[all_idx, :])
+        im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
 
     def save(self, starfile_filepath, batch_size=512, save_mode=None, overwrite=False):

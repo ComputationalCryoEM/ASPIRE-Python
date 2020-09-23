@@ -23,7 +23,7 @@ logger.info('This script illustrates different image expansion methods in ASPIRE
 
 # Load the images from NumPy array, 10 images of 70S Ribosome with size 129 x 129
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data')
-org_images = np.load(os.path.join(DATA_DIR, 'example_data_np_array.npy'))
+org_images = np.load(os.path.join(DATA_DIR, 'example_data_np_array.npy')).T
 
 # Set the sizes of images 129×129
 img_size = 129
@@ -53,13 +53,13 @@ logger.info(f'FB estimated images normalized RMSE: {fb_nrmse_ims}')
 
 # plot the first images using the normal FB method
 plt.subplot(3, 4, 1)
-plt.imshow(np.real(org_images[..., 0]), cmap='gray')
+plt.imshow(np.real(org_images[0]), cmap='gray')
 plt.title('Original')
 plt.subplot(3, 4, 5)
-plt.imshow(np.real(fb_images[..., 0]), cmap='gray')
+plt.imshow(np.real(fb_images[0]), cmap='gray')
 plt.title('FB Image')
 plt.subplot(3, 4, 9)
-plt.imshow(np.real(org_images[..., 0] - fb_images[..., 0]), cmap='gray')
+plt.imshow(np.real(org_images[0] - fb_images[0]), cmap='gray')
 plt.title('Differences')
 
 # Specify the fast FB basis method for expanding the 2D images
@@ -78,22 +78,23 @@ ffb_images = ffb_basis.evaluate(ffb_coeffs)
 logger.info('Finish reconstruction of images from fast FB expansion coefficients.')
 
 # Calculate the mean value of maximum differences between the fast FB estimated images to the original images
-ffb_meanmax = np.mean(np.max(abs(ffb_images - org_images), axis=2))
+diff = (ffb_images - org_images).asnumpy()
+ffb_meanmax = np.mean(np.max(abs(diff), axis=2))
 logger.info(f'Mean value of maximum differences between FFB estimated images and original images: {ffb_meanmax}')
 
 # Calculate the normalized RMSE of the estimated images
-ffb_nrmse_ims = anorm(ffb_images - org_images) / anorm(org_images)
+ffb_nrmse_ims = anorm(diff) / anorm(org_images)
 logger.info(f'FFB Estimated images normalized RMSE: {ffb_nrmse_ims}')
 
 # plot the first images using the fast FB method
 plt.subplot(3, 4, 2)
-plt.imshow(np.real(org_images[..., 0]), cmap='gray')
+plt.imshow(np.real(org_images[0]), cmap='gray')
 plt.title('Original')
 plt.subplot(3, 4, 6)
-plt.imshow(np.real(ffb_images[..., 0]), cmap='gray')
+plt.imshow(np.real(ffb_images[0]), cmap='gray')
 plt.title('FFB Image')
 plt.subplot(3, 4, 10)
-plt.imshow(np.real(org_images[..., 0] - ffb_images[..., 0]), cmap='gray')
+plt.imshow(np.real(org_images[0] - ffb_images[0]), cmap='gray')
 plt.title('Differences')
 
 # Specify the direct PSWF basis method for expanding the 2D images
@@ -121,13 +122,13 @@ logger.info(f'PSWF Estimated images normalized RMSE: {pswf_nrmse_ims}')
 
 # plot the first images using the direct PSWF method
 plt.subplot(3, 4, 3)
-plt.imshow(np.real(org_images[..., 0]), cmap='gray')
+plt.imshow(np.real(org_images[0]), cmap='gray')
 plt.title('Original')
 plt.subplot(3, 4, 7)
-plt.imshow(np.real(pswf_images[..., 0]), cmap='gray')
+plt.imshow(np.real(pswf_images[0]), cmap='gray')
 plt.title('PSWF Image')
 plt.subplot(3, 4, 11)
-plt.imshow(np.real(org_images[..., 0] - pswf_images[..., 0]), cmap='gray')
+plt.imshow(np.real(org_images[0] - pswf_images[0]), cmap='gray')
 plt.title('Differences')
 
 # Specify the fast FPSWF basis method for expanding the 2D images
@@ -146,7 +147,7 @@ fpswf_images = fpswf_basis.evaluate(fpswf_coeffs)
 logger.info('Finish reconstruction of images from fast PSWF expansion coefficients.')
 
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
-fpswf_meanmax = np.mean(np.max(abs(fpswf_images - org_images), axis=2))
+fpswf_meanmax = np.mean(np.max(abs(fpswf_images - org_images), axis=0))
 logger.info(f'Mean value of maximum differences between FPSWF estimated images and original images: {fpswf_meanmax}')
 
 # Calculate the normalized RMSE of the estimated images
@@ -155,13 +156,13 @@ logger.info(f'FPSWF Estimated images normalized RMSE: {fpswf_nrmse_ims}')
 
 # plot the first images using the fast PSWF method
 plt.subplot(3, 4, 4)
-plt.imshow(np.real(org_images[..., 0]), cmap='gray')
+plt.imshow(np.real(org_images[0]), cmap='gray')
 plt.title('Original')
 plt.subplot(3, 4, 8)
-plt.imshow(np.real(fpswf_images[..., 0]), cmap='gray')
+plt.imshow(np.real(fpswf_images[0]), cmap='gray')
 plt.title('FPSWF Image')
 plt.subplot(3, 4, 12)
-plt.imshow(np.real(org_images[..., 0] - fpswf_images[..., 0]), cmap='gray')
+plt.imshow(np.real(org_images[0] - fpswf_images[0]), cmap='gray')
 plt.title('Differences')
 plt.show()
 

@@ -92,11 +92,11 @@ class FinufftPlan(Plan):
             ensure(len(signal.shape) == self.dim + 1,
                    f"For multiple transforms, {self.dim}D signal should be"
                    f" a {self.ntransforms} element stack of {self.sz}.")
-            ensure(signal.shape[-1] == self.ntransforms,
+            ensure(signal.shape[0] == self.ntransforms,
                    "For multiple transforms, signal stack length"
                    f" should match ntransforms {self.ntransforms}.")
 
-            sig_shape = signal.shape[:-1]         # order...
+            sig_shape = signal.shape[1:]
             res_shape = (self.ntransforms, self.num_pts)
 
         ensure(sig_shape == self.sz, f'Signal frame to be transformed must have shape {self.sz}')
@@ -117,7 +117,7 @@ class FinufftPlan(Plan):
             result,
             -1,
             epsilon,
-            signal
+            signal.T  # RCOPT, currently F ordered, should change in gv2
         )
 
         if result_code != 0:
@@ -157,9 +157,9 @@ class FinufftPlan(Plan):
             ensure(signal.shape[0] == self.ntransforms,
                    "For multiple transforms, signal stack length"
                    f" should match ntransforms {self.ntransforms}.")
-            res_shape = (*self.sz, self.ntransforms)
+            res_shape = (self.ntransforms, *self.sz, )
 
-        result = np.zeros(res_shape, order='F', dtype=self.complex_dtype)
+        result = np.zeros(res_shape, dtype=self.complex_dtype)
 
         # FINUFFT is F order at this time. The bindings
         # will pickup the fact `signal` is C_Contiguous,

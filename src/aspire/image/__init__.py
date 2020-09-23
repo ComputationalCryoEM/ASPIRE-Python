@@ -1,96 +1,78 @@
+import logging
 import mrcfile
 import numpy as np
 from scipy.fftpack import fft2, ifft2, ifftshift
 from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import lstsq
 
+import aspire.volume
+from aspire.nufft import anufft
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
+from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.matrix import anorm
 from aspire.utils.fft import centered_fft2, centered_ifft2
 
+logger = logging.getLogger(__name__)
 
 # TODO: The implementation of these functions should move directly inside the appropriate Image methods that call them.
-def _im_translate(im, shifts):
-    """
-    Translate image by shifts
-    :param im: An array of size L-by-L-by-n containing images to be translated.
-    :param shifts: An array of size n-by-2 specifying the shifts in pixels.
-        Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
-    :return: The images translated by the shifts, with periodic boundaries.
-
-    TODO: This implementation is slower than _im_translate2
-    """
-    n_im = im.shape[-1]
-    n_shifts = shifts.shape[0]
-
-    ensure(shifts.shape[-1] == 2, "shifts must be nx2")
-    ensure(n_shifts == 1 or n_shifts == n_im, "number of shifts must be 1 or match the number of images")
-    ensure(im.shape[0] == im.shape[1], "images must be square")
-
-    L = im.shape[0]
-    im_f = fft2(im, axes=(0, 1))
-    grid_1d = ifftshift(np.ceil(np.arange(-L/2, L/2))) * 2 * np.pi / L
-    om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
-
-    phase_shifts_x = np.broadcast_to(-shifts[:, 0], (L, L, n_shifts))
-    phase_shifts_y = np.broadcast_to(-shifts[:, 1], (L, L, n_shifts))
-    phase_shifts = (om_x[:, :, np.newaxis] * phase_shifts_x) + (om_y[:, :, np.newaxis] * phase_shifts_y)
-
-    mult_f = np.exp(-1j * phase_shifts)
-    im_translated_f = im_f * mult_f
-    im_translated = ifft2(im_translated_f, axes=(0, 1))
-    im_translated = np.real(im_translated)
-
-    return im_translated
-
 
 def _im_translate2(im, shifts):
     """
     Translate image by shifts
-    :param im: An array of size L-by-L-by-n containing images to be translated.
-    :param shifts: An array of size 2-by-n specifying the shifts in pixels.
-        Alternatively, it can be a column vector of length 2, in which case the same shifts is applied to each image.
-    :return: The images translated by the shifts
+    :param im: An Image instance to be translated.
+    :param shifts: An array of size n-by-2 specifying the shifts in pixels.
+        Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
+    :return: An Image instance translated by the shifts.
 
     TODO: This implementation has been moved here from aspire.aspire.abinitio and is faster than _im_translate.
     """
-    n_im = im.shape[2]
-    n_shifts = shifts.shape[1]
 
-    if shifts.shape[0] != 2:
-        raise ValueError('Input `shifts` must be of size 2-by-n')
+    if not isinstance(im, Image):
+        logger.warning("_im_translate2 expects an Image, attempting to convert array."
+                       "Expects array of size n-by-L-by-L.")
+        im = Image(im)
 
-    if n_shifts != 1 and n_shifts != n_im:
+    if shifts.ndim == 1:
+        shifts = shifts[np.newaxis, :]
+
+    n_shifts = shifts.shape[0]
+
+    if shifts.shape[1] != 2:
+        raise ValueError('Input `shifts` must be of size n-by-2')
+
+    if n_shifts != 1 and n_shifts != im.n_images:
         raise ValueError('The number of shifts must be 1 or match the number of images')
 
-    if im.shape[0] != im.shape[1]:
-        raise ValueError('Images must be square')
-
-    resolution = im.shape[1]
+    resolution = im.res
     grid = np.fft.ifftshift(np.ceil(np.arange(-resolution / 2, resolution / 2)))
     om_y, om_x = np.meshgrid(grid, grid)
-    phase_shifts = np.einsum('ij, k -> ijk', om_x, shifts[0]) + np.einsum('ij, k -> ijk', om_y, shifts[1])
+    phase_shifts = (np.einsum('ij, k -> ijk', om_x, shifts[:,0]) +
+                    np.einsum('ij, k -> ijk', om_y, shifts[:,1]))
+    # TODO: figure out how why the result of einsum requires reshape
+    phase_shifts = phase_shifts.reshape(n_shifts, resolution, resolution)
     phase_shifts /= resolution
 
     mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
-    im_f = np.fft.fft2(im, axes=(0, 1))
+    im_f = np.fft.fft2(im.asnumpy())
     im_translated_f = im_f * mult_f
-    im_translated = np.real(np.fft.ifft2(im_translated_f, axes=(0, 1)))
-    return im_translated
+    im_translated = np.real(np.fft.ifft2(im_translated_f))
+
+    return Image(im_translated)
 
 
 def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     """
     Normalize backgrounds and apply to a stack of images
 
-    :param imgs: A stack of images in L-by-L-by-N array
+    :param imgs: A stack of images in N-by-L-by-L array
     :param bg_radius: Radius cutoff to be considered as background (in image size)
     :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
     :return: The modified images
     """
-    L = imgs.shape[0]
+    L = imgs.shape[-1]
     grid = grid_2d(L)
     mask = (grid['r'] > bg_radius)
 
@@ -103,36 +85,41 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
         ramp_all = np.vstack((grid['x'].flatten(), grid['y'].flatten(),
                           np.ones(L*L))).T
         mask_reshape = mask.reshape((L*L))
-        imgs = imgs.reshape((L*L, -1))
+        imgs = imgs.reshape((-1, L*L))
 
         # Fit a ramping background and apply to images
-        coeff = lstsq(ramp_mask, imgs[mask_reshape])[0]
-        imgs = imgs - ramp_all @ coeff
-        imgs = imgs.reshape((L, L, -1))
+        coeff = lstsq(ramp_mask, imgs[:, mask_reshape].T)[0] #RCOPT
+        imgs = imgs - (ramp_all @ coeff).T  #RCOPT
+        imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
-    imgs_masked = (imgs * np.expand_dims(mask, 2))
+    imgs_masked = imgs * mask
     denominator = np.sum(mask)
-    first_moment = np.sum(imgs_masked, axis=(0, 1))/denominator
-    second_moment = np.sum(imgs_masked ** 2, axis=(0, 1))/denominator
-    mean = first_moment
-    variance = second_moment - mean**2
+    first_moment = np.sum(imgs_masked, axis=(1, 2))/denominator
+    second_moment = np.sum(imgs_masked ** 2, axis=(1, 2))/denominator
+    mean = first_moment.reshape(-1, 1, 1)
+    variance = second_moment.reshape(-1, 1, 1) - mean**2
     std = np.sqrt(variance)
 
-    return (imgs-mean)/std
+    return (imgs - mean) / std
 
 
 class Image:
     def __init__(self, data):
-        ensure(data.shape[0] == data.shape[1], 'Only square ndarrays are supported.')
+
+        assert isinstance(data, np.ndarray), "Image should be instantiated with an ndarray"
+
         if data.ndim == 2:
-            data = data[:, :, np.newaxis]
+            data = data[np.newaxis, :, :]
 
         self.data = data
+        self.ndim = self.data.ndim
         self.dtype = self.data.dtype
         self.shape = self.data.shape
-        self.n_images = self.shape[-1]
-        self.res = self.shape[0]
+        self.n_images = self.shape[0]
+        self.res = self.shape[1]
+
+        ensure(data.shape[1] == data.shape[2], 'Only square ndarrays are supported.')
 
     def __getitem__(self, item):
         return self.data[item]
@@ -141,13 +128,25 @@ class Image:
         self.data[key] = value
 
     def __add__(self, other):
-        return Image(self.data + other.data)
+        if isinstance(other, Image):
+            other = other.data
+
+        return Image(self.data + other)
 
     def __sub__(self, other):
-        return Image(self.data - other.data)
+        if isinstance(other, Image):
+            other = other.data
 
-    def __mul__(self, amplitudes):
-        return Image(self.data * amplitudes)
+        return Image(self.data - other)
+
+    def __mul__(self, other):
+        if isinstance(other, Image):
+            other = other.data
+
+        return Image(self.data * other)
+
+    def sqrt(self):
+        return np.sqrt(self.data)
 
     def __repr__(self):
         return f'{self.n_images} images of size {self.res}x{self.res}'
@@ -170,8 +169,7 @@ class Image:
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
 
-        im_translated = _im_translate(self.data, shifts)
-        return Image(im_translated)
+        return self._im_translate(shifts)
 
     def downsample(self, ds_res):
         """
@@ -184,23 +182,23 @@ class Image:
         grid = grid_2d(self.res)
         grid_ds = grid_2d(ds_res)
 
-        im_ds = np.zeros((ds_res, ds_res, self.n_images)).astype(self.dtype)
+        im_ds = np.zeros((self.n_images, ds_res, ds_res), dtype=self.dtype)
 
         # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
         res_by_2 = self.res / 2
         x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
 
         mask = (np.abs(grid['x']) < ds_res / self.res) & (np.abs(grid['y']) < ds_res / self.res)
-        im = np.real(centered_ifft2(centered_fft2(self.data) * np.expand_dims(mask, 2)))
+        im = np.real(centered_ifft2(centered_fft2(self.data) * mask))
 
-        for s in range(im_ds.shape[-1]):
+        for s in range(im_ds.shape[0]):
             interpolator = RegularGridInterpolator(
                 (x, y),
-                im[:, :, s],
+                im[s],
                 bounds_error=False,
                 fill_value=0
             )
-            im_ds[:, :, s] = interpolator(np.dstack([grid_ds['x'], grid_ds['y']]))
+            im_ds[s] = interpolator(np.dstack([grid_ds['x'], grid_ds['y']]))
 
         return Image(im_ds)
 
@@ -215,7 +213,7 @@ class Image:
 
         im_f = centered_fft2(self.data)
         if im_f.ndim > filter_values.ndim:
-            im_f = np.expand_dims(filter_values, 2) * im_f
+            im_f *= filter_values
         else:
             im_f = filter_values * im_f
         im = centered_ifft2(im_f)
@@ -228,9 +226,84 @@ class Image:
 
     def save(self, mrcs_filepath, overwrite=False):
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
-            # change back to the original input format (the image index first)
-            # for the consistency with reading
-            mrc.set_data(np.swapaxes(self.data.astype('float32'), 0, 2))
+            # original input format (the image index first)
+            mrc.set_data(self.data.astype('float32'))
+
+    def _im_translate(self, shifts):
+        """
+        Translate image by shifts
+        :param im: An array of size n-by-L-by-L containing images to be translated.
+        :param shifts: An array of size n-by-2 specifying the shifts in pixels.
+            Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
+        :return: The images translated by the shifts, with periodic boundaries.
+
+        TODO: This implementation is slower than _im_translate2
+        """
+        im = self.data
+
+        if shifts.ndim == 1:
+            shifts = shifts[np.newaxis, :]
+        n_shifts = shifts.shape[0]
+
+        ensure(shifts.shape[-1] == 2, "shifts must be nx2")
+
+        ensure(n_shifts == 1 or n_shifts == self.n_images, "number of shifts must be 1 or match the number of images")
+
+        L = self.res
+        im_f = fft2(im, axes=(1, 2))
+        grid_1d = ifftshift(np.ceil(np.arange(-L/2, L/2))) * 2 * np.pi / L
+        om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
+
+        phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
+        phase_shifts_y = -shifts[:, 1].reshape((n_shifts, 1, 1))
+
+        phase_shifts = (om_x[np.newaxis, :, :] * phase_shifts_x) + (om_y[np.newaxis, :, :] * phase_shifts_y)
+
+        mult_f = np.exp(-1j * phase_shifts)
+        im_translated_f = im_f * mult_f
+        im_translated = ifft2(im_translated_f, axes=(1, 2))
+        im_translated = np.real(im_translated)
+
+        return Image(im_translated)
+
+    def norm(self):
+        return anorm(self.data)
+
+    @property
+    def size(self):
+        # probably not needed, transition
+        return np.size(self.data)
+
+    def backproject(self, rot_matrices):
+        """
+        Backproject images along rotation
+        :param im: An Image (stack) to backproject.
+        :param rot_matrices: An n-by-3-by-3 array of rotation matrices \
+        corresponding to viewing directions.
+
+        :return: Volume instance corresonding to the backprojected images.
+        """
+
+        L = self.res
+
+        ensure(self.n_images == rot_matrices.shape[0],
+               "Number of rotation matrices must match the number of images")
+
+        ## TODO: rotated_grids might as well give us correctly shaped array in the first place
+        pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
+        pts_rot = np.moveaxis(pts_rot, 1, 2)
+        pts_rot = m_reshape(pts_rot, (3, -1))
+
+        im_f = centered_fft2(self.data) / (L**2)
+        if L % 2 == 0:
+            im_f[:, 0, :] = 0
+            im_f[:, :, 0] = 0
+
+        im_f = im_f.flatten()
+
+        vol = anufft(im_f, pts_rot, (L, L, L), real=True) / L
+
+        return aspire.volume.Volume(vol)
 
 
 class CartesianImage(Image):

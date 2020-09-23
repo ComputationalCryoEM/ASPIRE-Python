@@ -154,12 +154,14 @@ class FBBasis2D(Basis):
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
         :param v: A coefficient vector (or an array of coefficient vectors) to
-            be evaluated. The first dimension must equal `self.count`.
+            be evaluated. The last dimension must equal `self.count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
-            This is an array whose first dimensions equal `self.z` and the remaining
-            dimensions correspond to dimensions two and higher of `v`.
+            This is an array whose last dimensions equal `self.sz` and the remaining
+            dimensions correspond to first dimensions of `v`.
         """
-        v, sz_roll = unroll_dim(v, 2)
+
+        # Transpose here once, instead of several times below  #RCOPT
+        v = v.reshape(-1, self.count).T
 
         r_idx = self.basis_coords['r_idx']
         ang_idx = self.basis_coords['ang_idx']
@@ -188,8 +190,7 @@ class FBBasis2D(Basis):
 
             ind_radial += len(idx_radial)
 
-        x = m_reshape(x, self.sz + x.shape[1:])
-        x = roll_dim(x, sz_roll)
+        x = x.T.reshape(-1, *self.sz) # RCOPT
 
         return x
 
@@ -197,13 +198,15 @@ class FBBasis2D(Basis):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
-        :param v: The coefficient array to be evaluated. The first dimensions
+        :param v: The coefficient array to be evaluated. The last dimensions
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual basis
-            of `basis`. This is an array of vectors whose first dimension equals
-             `self.count` and whose remaining dimensions correspond to
-             higher dimensions of `v`.
+            of `basis`. This is an array of vectors whose last dimension equals
+             `self.count` and whose first dimensions correspond to
+             first dimensions of `v`.
         """
+        v = v.T  #RCOPT
+
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim:])))
 
@@ -235,4 +238,4 @@ class FBBasis2D(Basis):
             ind_radial += len(idx_radial)
 
         v = roll_dim(v, sz_roll)
-        return v
+        return v.T  # RCOPT

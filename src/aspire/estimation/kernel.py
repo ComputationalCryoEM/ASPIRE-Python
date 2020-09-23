@@ -128,31 +128,17 @@ class FourierKernel(Kernel):
         # Note from MATLAB code:
         # Order is important here.  It's about 20% faster to run from 1 through 6 compared with 6 through 1.
         # TODO: Experiment with scipy order; try overwrite_x argument
-        x = fft(x, N_ker, 0, overwrite_x=True)
-        x = fft(x, N_ker, 1, overwrite_x=True)
-        x = fft(x, N_ker, 2, overwrite_x=True)
-        x = fft(x, N_ker, 3, overwrite_x=True)
-        x = fft(x, N_ker, 4, overwrite_x=True)
-        x = fft(x, N_ker, 5, overwrite_x=True)
+        for i in range(6):
+            x = fft(x, N_ker, i, overwrite_x=True)
 
         x *= kernel_f
 
-        x = ifft(x, None, 5, overwrite_x=True)
-        x = x[:, :, :, :, :, :N]
-        x = ifft(x, None, 4, overwrite_x=True)
-        x = x[:, :, :, :, :N, :]
-        x = ifft(x, None, 3, overwrite_x=True)
-        x = x[:, :, :, :N, :, :]
-        x = ifft(x, None, 2, overwrite_x=True)
-        x = x[:, :, :N, :, :, :]
-        x = ifft(x, None, 1, overwrite_x=True)
-        x = x[:, :N, :, :, :, :]
-        x = ifft(x, None, 0, overwrite_x=True)
-        x = x[:N, :, :, :, :, :]
+        indices = list(range(N))
+        for i in range(5, -1, -1):
+            x = ifft(x, None, i, overwrite_x=True)
+            x = x.take(indices, axis=i)
 
-        x = np.real(x)
-
-        return x
+        return np.real(x)
 
     def toeplitz(self, L=None):
         """

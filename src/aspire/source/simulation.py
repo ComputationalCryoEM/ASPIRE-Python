@@ -12,7 +12,7 @@ from aspire.utils.filters import ZeroFilter
 from aspire.utils.matlab_compat import Random, rand, randi, randn
 from aspire.utils.matrix import (acorr, ainner, anorm, make_symmat, vec_to_vol,
                                  vecmat_to_volmat, vol_to_vec)
-from aspire.volume import vol_project
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,10 @@ class Simulation(ImageSource):
         if vols is None:
             self.vols = self._gaussian_blob_vols(L=self.L, C=C, seed=seed)
         else:
+            assert isinstance(vols, Volume)
             self.vols = vols
-        self.C = self.vols.shape[-1]
+
+        self.C = self.vols.n_vols
 
         states = states or randi(self.C, n, seed=seed)
         angles = angles or uniform_random_angles(n, seed=seed)
@@ -54,6 +56,7 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
         self.angles = angles
+
         self.seed = seed
 
         self.noise_adder = None
@@ -69,7 +72,7 @@ class Simulation(ImageSource):
         :param K: The number of blobs
         :param alpha: A scale factor of the blob widths
 
-        :return: A volume array of size L x L x L x C containing the C Gaussian blob volumes.
+        :return: A Volume instance containing C Gaussian blob volumes.
         """
 
         def gaussian_blobs(K, alpha):
@@ -86,11 +89,11 @@ class Simulation(ImageSource):
             return Q, D, mu
 
         with Random(seed):
-            vols = np.zeros(shape=(L, L, L, C)).astype(self.dtype)
+            vols = np.zeros(shape=(C, L, L, L)).astype(self.dtype)
             for k in range(C):
                 Q, D, mu = gaussian_blobs(K, alpha)
-                vols[:, :, :, k] = self.eval_gaussian_blobs(L, Q, D, mu)
-            return vols
+                vols[k] = self.eval_gaussian_blobs(L, Q, D, mu)
+            return Volume(vols)
 
     def eval_gaussian_blobs(self, L, Q, D, mu):
         g = grid_3d(L)
@@ -115,22 +118,23 @@ class Simulation(ImageSource):
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :return: An ndarray of shape (L, L, num), L being the size of each image.
+        :return: An Image instance.
         """
         if indices is None:
             indices = np.arange(start, min(start+num, self.n))
 
-        im = np.zeros((self.L, self.L, len(indices)))
+        im = np.zeros((len(indices), self.L, self.L))
 
         states = self.states[indices]
         unique_states = np.unique(states)
         for k in unique_states:
-            vol_k = self.vols[:, :, :, k-1]
             idx_k = np.where(states == k)[0]
             rot = self.rots[indices[idx_k], :, :]
 
-            im_k = vol_project(vol_k, rot)
-            im[:, :, idx_k] = im_k
+            im_k = self.vols.project(vol_idx=k-1,
+                                     rot_matrices=rot)
+            im[idx_k, :, :] = im_k.asnumpy()
+
         return Image(im)
 
     def clean_images(self, start=0, num=np.inf, indices=None):
@@ -141,9 +145,11 @@ class Simulation(ImageSource):
             indices = np.arange(start, min(start+num, self.n))
 
         im = self.projections(start=start, num=num, indices=indices)
+
         im = self.eval_filters(im, start=start, num=num, indices=indices)
         im = im.shift(self.offsets[indices, :])
-        im *= np.broadcast_to(self.amplitudes[indices], (self.L, self.L, len(indices)))
+
+        im *= self.amplitudes[indices].reshape(len(indices), 1, 1)
 
         if enable_noise and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
@@ -152,8 +158,8 @@ class Simulation(ImageSource):
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
         Coordinates of simulation volumes in a given basis
-        :param mean_vol: A mean volume in the form of an L-by-L-by-L array (default `mean_true`).
-        :param eig_vols: A set of eigenvolumes in an L-by-L-by-L-by-K array (default `eigs`).
+        :param mean_vol: A mean volume in the form of a Volume Instance (default `mean_true`).
+        :param eig_vols: A set of k volumes in a Volume instance (default `eigs`).
         :return:
         """
         if mean_vol is None:
@@ -161,21 +167,30 @@ class Simulation(ImageSource):
         if eig_vols is None:
             eig_vols = self.eigs()[0]
 
-        vols = self.vols - np.expand_dims(mean_vol, 3)
-        coords = vol_to_vec(eig_vols).T @ vol_to_vec(vols)
-        res = vols - vec_to_vol(vol_to_vec(eig_vols) @ coords)
-        res_norms = anorm(res, (0, 1, 2))
-        res_inners = vol_to_vec(mean_vol).T @ vol_to_vec(res)
+        assert isinstance(mean_vol, Volume)
+        assert isinstance(eig_vols, Volume)
+
+        vols = self.vols - mean_vol    # note, broadcast
+
+        V = vols.to_vec()
+        EV = eig_vols.to_vec()
+
+        coords = EV @ V.T
+
+        res = vols - Volume.from_vec(coords.T @ EV)
+        res_norms = anorm(res.asnumpy(), (1, 2, 3))
+        res_inners = mean_vol.to_vec() @ res.to_vec().T
 
         return coords.squeeze(), res_norms, res_inners
 
     def mean_true(self):
-        return np.mean(self.vols, 3)
+        return Volume(np.mean(self.vols, 0))
 
     def covar_true(self):
         eigs_true, lamdbas_true = self.eigs()
-        eigs_true = vol_to_vec(eigs_true)
-        covar_true = eigs_true @ lamdbas_true @ eigs_true.T
+        eigs_true = eigs_true.to_vec()
+
+        covar_true = eigs_true.T @ lamdbas_true @ eigs_true
         covar_true = vecmat_to_volmat(covar_true)
 
         return covar_true
@@ -184,15 +199,15 @@ class Simulation(ImageSource):
         """
         Eigendecomposition of volume covariance matrix of simulation
         :return: A 2-tuple:
-            eigs_true: The eigenvectors of the volume covariance matrix in the form of an L-by-L-by-L-by-(C-1) array,
-            where C is the number of distinct states in the simulation
+            eigs_true: The eigenvectors of the volume covariance matrix in the form of Volume instance.
             lambdas_true: The eigenvalues of the covariance matrix in the form of a (C-1)-by-(C-1) diagonal matrix.
         """
         C = self.C
-        vols_c = self.vols - np.expand_dims(self.mean_true(), 3)
+        vols_c = self.vols - self.mean_true()
+
         p = np.ones(C) / C
-        vols_c = vol_to_vec(vols_c)
-        Q, R = qr(vols_c, mode='economic')
+        # RCOPT, we may be able to do better here if we dig in.
+        Q, R = qr(vols_c.to_vec().T, mode='economic')
 
         # Rank is at most C-1, so remove last vector
         Q = Q[:, :-1]
@@ -205,7 +220,10 @@ class Simulation(ImageSource):
         w = w[::-1]
         eigs_true = np.flip(eigs_true, axis=-1)
 
-        return eigs_true, np.diag(w)
+        # RCOPT
+        eigs_true = np.moveaxis(eigs_true, -1, 0)
+
+        return Volume(eigs_true), np.diag(w)
 
     # TODO: Too many eval_* methods doing similar things - encapsulate somehow?
 
@@ -218,7 +236,8 @@ class Simulation(ImageSource):
 
         err = anorm(vol_true - vol_est)
         rel_err = err / norm_true
-        corr = acorr(vol_true, vol_est)
+        # RCOPT
+        corr = acorr(vol_true.asnumpy(), vol_est.asnumpy())
 
         return {
             'err': err,
@@ -258,7 +277,7 @@ class Simulation(ImageSource):
         """
         eigs_true, lambdas_true = self.eigs()
 
-        B = vol_to_vec(eigs_est).T @ vol_to_vec(eigs_true)
+        B = eigs_est.to_vec() @ eigs_true.to_vec().T
         norm_true = anorm(lambdas_true)
         norm_est = anorm(lambdas_est)
 
@@ -290,12 +309,14 @@ class Simulation(ImageSource):
     def eval_coords(self, mean_vol, eig_vols, coords_est):
         """
         Evaluate coordinate estimation
-        :param mean_vol: A mean volume in the form of an L-by-L-by-L array.
-        :param eig_vols: A set of eigenvolumes in an L-by-L-by-L-by-K array.
+        :param mean_vol: A mean volume in the form of a Volume instance.
+        :param eig_vols: A set of eigenvolumes in an Volume instance.
         :param coords_est: The estimated coordinates in the affine space defined centered at `mean_vol` and spanned
             by `eig_vols`.
         :return:
         """
+        assert isinstance(mean_vol, Volume)
+        assert isinstance(eig_vols, Volume)
         coords_true, res_norms, res_inners = self.vol_coords(mean_vol, eig_vols)
 
         # 0-indexed states vector
@@ -303,12 +324,13 @@ class Simulation(ImageSource):
 
         coords_true = coords_true[states]
         res_norms = res_norms[states]
-        res_inners = res_inners[states]
+        res_inners = res_inners[:, states]
 
-        mean_eigs_inners = (vol_to_vec(mean_vol).T @ vol_to_vec(eig_vols)).item()
+        mean_eigs_inners = (mean_vol.to_vec() @ eig_vols.to_vec().T).item()
         coords_err = coords_true - coords_est
 
         err = np.hypot(res_norms, coords_err)
+
         mean_vol_norm2 = anorm(mean_vol) ** 2
         norm_true = np.sqrt(coords_true**2 + mean_vol_norm2 + 2*res_inners + 2*mean_eigs_inners * coords_true)
         norm_true = np.hypot(res_norms, norm_true)

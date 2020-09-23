@@ -60,8 +60,8 @@ class CLSyncVoting(CLOrient3D):
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
         d, v = stable_eigsh(S, 10)
-        logger.info(f'Top 10 eigenvalues from synchronization voting matrix: {d}')
         sort_idx = np.argsort(-d)
+        logger.info(f'Top 10 eigenvalues from synchronization voting matrix: {d[sort_idx]}')
 
         # Only need the top 3 eigen-vectors.
         v = v[:, sort_idx[:3]]
