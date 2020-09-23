@@ -861,8 +861,8 @@ def filter_to_fb_mat(h_fun, fbasis):
         rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
         fb_vals = np.zeros_like(rmat)
         ind_radial = np.sum(fbasis.k_max[0:ell])
-        fb_vals[:, 0:k_max] = (radial[:, ind_radial:ind_radial + k_max]
-                               * np.sqrt(np.pi))
+        fb_vals[:, 0:k_max] = (radial[ind_radial:ind_radial + k_max]
+                               * np.sqrt(np.pi)).T
         if ell == 0:
             fb_vals *= np.sqrt(2)
 
