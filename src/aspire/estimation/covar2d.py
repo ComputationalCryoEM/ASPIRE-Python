@@ -1,7 +1,7 @@
 import logging
+from collections import OrderedDict
 
 import numpy as np
-from collections import OrderedDict
 from numpy.linalg import inv
 from scipy.linalg import solve, sqrtm
 

@@ -20,7 +20,7 @@ from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import (make_symmat, symmat_to_vec_iso,
                                  vec_to_symmat_iso, vecmat_to_volmat,
                                  vol_to_vec, volmat_to_vecmat)
-from aspire.volume import rotated_grids, Volume
+from aspire.volume import Volume, rotated_grids
 
 logger = logging.getLogger(__name__)
 

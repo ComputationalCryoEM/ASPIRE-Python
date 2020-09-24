@@ -2,6 +2,7 @@
 Miscellaneous Utilities that have no better place (yet).
 """
 import logging
+
 import numpy as np
 from numpy.linalg import qr, solve
 

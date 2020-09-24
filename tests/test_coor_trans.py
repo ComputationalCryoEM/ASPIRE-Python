@@ -4,11 +4,9 @@ from unittest import TestCase
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from aspire.utils.coor_trans import (grid_2d, grid_3d, q_to_rot, qrand,
-                                     qrand_rots, register_rotations,
-                                     uniform_random_angles, get_aligned_rotations)
-
-from aspire.utils.coor_trans import grid_3d, uniform_random_angles
+from aspire.utils.coor_trans import (get_aligned_rotations, grid_2d, grid_3d,
+                                     q_to_rot, qrand, qrand_rots,
+                                     register_rotations, uniform_random_angles)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
