@@ -17,6 +17,6 @@ elif config.common.fft == 'cupy':
 elif config.common.fft == 'scipy':
     from .scipy_fft import ScipyFFT as FFTClass
 else:
-    logger.error(f'FFT selection, {config.common.normal_fft}, not implemented.')
+    raise RuntimeError(f'FFT selection {config.common.fft}, not implemented.')
 
 fft = FFTClass()
