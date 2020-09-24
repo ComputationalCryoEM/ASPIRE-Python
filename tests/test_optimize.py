@@ -1,6 +1,8 @@
+from unittest import TestCase
+
 import numpy as np
 from numpy.random import random
-from unittest import TestCase
+
 from aspire.utils.optimize import conj_grad
 
 

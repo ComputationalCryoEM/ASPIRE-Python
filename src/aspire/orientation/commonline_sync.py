@@ -1,6 +1,6 @@
 import logging
-import numpy as np
 
+import numpy as np
 from scipy.spatial.transform import Rotation
 
 from aspire.orientation import CLOrient3D

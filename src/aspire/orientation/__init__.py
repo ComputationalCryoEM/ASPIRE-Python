@@ -1,10 +1,10 @@
 import logging
 import math
+
 import numpy as np
 import scipy.sparse as sparse
 
 from aspire import config
-
 from aspire.basis.polar_2d import PolarBasis2D
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import common_line_from_rots

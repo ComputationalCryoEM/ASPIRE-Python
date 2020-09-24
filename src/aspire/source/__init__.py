@@ -3,15 +3,13 @@ from copy import copy
 
 import numpy as np
 import pandas as pd
-
 from scipy.spatial.transform import Rotation as R
 
-from aspire.image import Image
-from aspire.image import normalize_bg
+from aspire.image import Image, normalize_bg
 from aspire.io.starfile import save_star
-from aspire.source.xform import (Downsample, FilterXform, FlipXform,
-                                 LambdaXform, LinearIndexedXform, LinearPipeline,
-                                 Multiply, Pipeline, Add, Shift)
+from aspire.source.xform import (Add, Downsample, FilterXform, FlipXform,
+                                 LambdaXform, LinearIndexedXform,
+                                 LinearPipeline, Multiply, Pipeline, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filters import MultiplicativeFilter, PowerFilter
