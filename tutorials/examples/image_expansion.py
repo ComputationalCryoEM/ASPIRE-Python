@@ -25,7 +25,7 @@ logger.info('This script illustrates different image expansion methods in ASPIRE
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data')
 org_images = np.load(os.path.join(DATA_DIR, 'example_data_np_array.npy')).T
 
-# Set the sizes of images 129×129
+# Set the sizes of images (129, 129)
 img_size = 129
 
 # Specify the normal FB basis method for expanding the 2D image
