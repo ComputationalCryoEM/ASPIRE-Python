@@ -30,6 +30,10 @@ class Simulation(ImageSource):
         """
         super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
+        # We need to keep track of the original resolution we were initialized with,
+        # to be able to generate projections of volumes later, when we are asked to supply images.
+        self._original_L = L
+
         if offsets is None:
             offsets = L / 16 * randn(2, n, seed=seed).T
 
@@ -123,7 +127,7 @@ class Simulation(ImageSource):
         if indices is None:
             indices = np.arange(start, min(start+num, self.n))
 
-        im = np.zeros((len(indices), self.L, self.L))
+        im = np.zeros((len(indices), self._original_L, self._original_L))
 
         states = self.states[indices]
         unique_states = np.unique(states)
