@@ -3,15 +3,13 @@ from copy import copy
 
 import numpy as np
 import pandas as pd
-
 from scipy.spatial.transform import Rotation as R
 
-from aspire.image import Image
-from aspire.image import normalize_bg
+from aspire.image import Image, normalize_bg
 from aspire.io.starfile import save_star
-from aspire.source.xform import (Downsample, FilterXform, FlipXform,
-                                 LambdaXform, LinearIndexedXform, LinearPipeline,
-                                 Multiply, Pipeline, Add, Shift)
+from aspire.source.xform import (Add, Downsample, FilterXform, FlipXform,
+                                 LambdaXform, LinearIndexedXform,
+                                 LinearPipeline, Multiply, Pipeline, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filters import MultiplicativeFilter, PowerFilter
@@ -174,7 +172,7 @@ class ImageSource:
         """
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        return self._rotations.as_dcm()
+        return self._rotations.as_matrix()
 
     @angles.setter
     def angles(self, values):
@@ -193,7 +191,7 @@ class ImageSource:
         :param values: Rotation matrices as a n x 3 x 3 array
         :return: None
         """
-        self._rotations = R.from_dcm(values)
+        self._rotations = R.from_matrix(values)
         self.set_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi'], self._rotations.as_euler('ZYZ', degrees=True))
 
     def set_metadata(self, metadata_fields, values, indices=None):

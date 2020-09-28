@@ -3,11 +3,11 @@ Discover and run tutorial scripts as unit tests.
 """
 
 import os
-import pytest
 import subprocess
 import sys
-
 from pathlib import Path
+
+import pytest
 
 # Note pytestmark is a global variable
 #   https://docs.pytest.org/en/stable/example/markers.html\

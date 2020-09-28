@@ -1,10 +1,10 @@
 import logging
 import math
+
 import numpy as np
 import scipy.sparse as sparse
 
 from aspire import config
-
 from aspire.basis.polar_2d import PolarBasis2D
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import common_line_from_rots
@@ -147,7 +147,7 @@ class CLOrient3D:
         # Note that only use half of each ray
         pf = self._apply_filter_and_norm('ijk, i -> ijk', pf, r_max, h)
 
-        # change dimensions of axes to n_img × n_rad/2 × n_theta/2
+        # change dimensions of axes to (n_img, n_rad/2, n_theta/2)
         pf = pf.transpose((2, 1, 0))
 
         # Search for common lines between [i, j] pairs of images.

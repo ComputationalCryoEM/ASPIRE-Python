@@ -7,7 +7,6 @@ directly by the caller).
 
 import numpy as np
 import scipy.sparse as sparse
-
 from scipy.special import erfinv
 
 SQRT2 = np.sqrt(2)

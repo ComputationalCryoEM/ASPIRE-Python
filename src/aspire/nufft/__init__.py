@@ -61,6 +61,7 @@ def check_backends(raise_errors=True):
         elif backend == "finufft":
             try:
                 from finufftpy import nufft1d1
+
                 from aspire.nufft.finufft import FinufftPlan
                 plan_class = FinufftPlan
             except Exception as e:
@@ -69,6 +70,7 @@ def check_backends(raise_errors=True):
         elif backend == "pynfft":
             try:
                 from pynfft.nfft import NFFT
+
                 from aspire.nufft.pynfft import PyNfftPlan
                 plan_class = PyNfftPlan
             except Exception as e:

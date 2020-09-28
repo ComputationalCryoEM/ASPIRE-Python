@@ -1,6 +1,6 @@
+import logging
 from ctypes import c_int
 
-import logging
 import numpy as np
 import pycuda.autoinit
 import pycuda.driver as cuda

@@ -3,16 +3,16 @@ This script illustrates the preprocess steps before starting the pipeline of
 reconstructing 3D map using the simulated 2D images.
 """
 import logging
+import os
+
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
-import os
 
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import (RadialCTFFilter, ScalarFilter)
+from aspire.utils.filters import RadialCTFFilter, ScalarFilter
 from aspire.volume import Volume
-
 
 logger = logging.getLogger('aspire')
 

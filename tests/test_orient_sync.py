@@ -1,7 +1,8 @@
 import os
-import numpy as np
-
+import os.path
 from unittest import TestCase
+
+import numpy as np
 
 from aspire.orientation.commonline_sync import CLSyncVoting
 from aspire.source.simulation import Simulation
@@ -9,7 +10,6 @@ from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import Random
 from aspire.volume import Volume
 
-import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
