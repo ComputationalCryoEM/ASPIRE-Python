@@ -128,9 +128,12 @@ class BlkDiagMatrixTestCase(TestCase):
         d = self.blk_a.apply(coeffm)
         self.allallfunc(res, d)
 
+        # Here we are checking that the ndim 2 case distributes as described.
+        # Specifically d = A.apply([[r0], ... [ri]])
+        # should be equivalent to e = [A.apply(r0), ... A.apply(ri)].
         e = np.empty((m, k))
         for i in range(k):
-            e[:, i] = self.blk_a.apply(coeffm[:, 0] + i)
+            e[:, i] = self.blk_a.apply(coeffm[:, i])
         self.allallfunc(e, d)
 
     def testBlkDiagMatrixMatMult(self):
