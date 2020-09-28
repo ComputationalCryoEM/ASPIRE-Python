@@ -15,31 +15,31 @@ class BlkDiagMatrixTestCase(TestCase):
         self.blk_partition = [(i, i) for i in range(self.num_blks, 0, -1)]
 
         n = np.sum(np.prod(np.array(self.blk_partition), axis=1))
-        self.Flat = np.arange(n)
-        self.RevFlat = self.Flat[::-1].copy()
+        self.flat = np.arange(n)
+        self.revflat = self.flat[::-1].copy()
 
         ind = 0
-        Zeros = []
-        Ones = []
-        Eyes = []
+        zeros = []
+        ones = []
+        eyes = []
         A = []
         B = []
         for blk_shp in self.blk_partition:
-            Zeros.append(np.zeros(blk_shp))
-            Ones.append(np.ones(blk_shp))
-            Eyes.append(np.eye(blk_shp[0]))
+            zeros.append(np.zeros(blk_shp))
+            ones.append(np.ones(blk_shp))
+            eyes.append(np.eye(blk_shp[0]))
 
             offt = np.prod(blk_shp)
-            A.append(self.Flat[ind:  ind + offt].reshape(blk_shp))
-            B.append(self.RevFlat[ind:  ind + offt].reshape(blk_shp))
+            A.append(self.flat[ind:  ind + offt].reshape(blk_shp))
+            B.append(self.revflat[ind:  ind + offt].reshape(blk_shp))
 
             ind += offt
 
         self.blk_a = BlkDiagMatrix.from_list(A)
         self.blk_b = BlkDiagMatrix.from_list(B)
-        self.blk_zeros = BlkDiagMatrix.from_list(Zeros)
-        self.blk_ones = BlkDiagMatrix.from_list(Ones)
-        self.blk_eyes = BlkDiagMatrix.from_list(Eyes)
+        self.blk_zeros = BlkDiagMatrix.from_list(zeros)
+        self.blk_ones = BlkDiagMatrix.from_list(ones)
+        self.blk_eyes = BlkDiagMatrix.from_list(eyes)
 
     def tearDown(self):
         pass
