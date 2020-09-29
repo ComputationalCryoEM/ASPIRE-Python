@@ -1,14 +1,14 @@
-from scipy import fftpack
+import scipy.fft as spfft
 
 
 class ScipyFFT:
 
-    fft = staticmethod(fftpack.fft)
-    ifft = staticmethod(fftpack.ifft)
-    fft2 = staticmethod(fftpack.fft2)
-    ifft2 = staticmethod(fftpack.ifft2)
-    fftn = staticmethod(fftpack.fftn)
-    ifftn = staticmethod(fftpack.ifftn)
+    fft = staticmethod(spfft.fft)
+    ifft = staticmethod(spfft.ifft)
+    fft2 = staticmethod(spfft.fft2)
+    ifft2 = staticmethod(spfft.ifft2)
+    fftn = staticmethod(spfft.fftn)
+    ifftn = staticmethod(spfft.ifftn)
 
-    fftshift = staticmethod(fftpack.fftshift)
-    ifftshift = staticmethod(fftpack.ifftshift)
+    fftshift = staticmethod(spfft.fftshift)
+    ifftshift = staticmethod(spfft.ifftshift)
