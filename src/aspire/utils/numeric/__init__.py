@@ -10,13 +10,17 @@ else:
 
 xp = NumericClass()
 
-if config.common.fft == 'pyfftw':
-    from .pyfftw_fft import PyfftwFFT as FFTClass
-elif config.common.fft == 'cupy':
-    from .cupy_fft import CupyFFT as FFTClass
-elif config.common.fft == 'scipy':
-    from .scipy_fft import ScipyFFT as FFTClass
-else:
-    raise RuntimeError(f'FFT selection {config.common.fft}, not implemented.')
 
-fft = FFTClass()
+def fft_class(which):
+    if which == 'pyfftw':
+        from .pyfftw_fft import PyfftwFFT as FFTClass
+    elif which == 'cupy':
+        from .cupy_fft import CupyFFT as FFTClass
+    elif which == 'scipy':
+        from .scipy_fft import ScipyFFT as FFTClass
+    else:
+        raise RuntimeError(f'Invalid selection for fft class: {which}')
+    return FFTClass
+
+
+fft = fft_class(config.common.fft)
