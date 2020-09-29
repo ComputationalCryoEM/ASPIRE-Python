@@ -1,4 +1,5 @@
 import logging
+
 import mrcfile
 import numpy as np
 from scipy.fftpack import fft2, ifft2, ifftshift
@@ -9,9 +10,9 @@ import aspire.volume
 from aspire.nufft import anufft
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
+from aspire.utils.fft import centered_fft2, centered_ifft2
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import anorm
-from aspire.utils.fft import centered_fft2, centered_ifft2
 
 logger = logging.getLogger(__name__)
 

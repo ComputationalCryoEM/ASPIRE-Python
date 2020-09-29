@@ -32,8 +32,9 @@ class RelionSource(ImageSource):
         column_types = {name: cls.metadata_fields.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 
-        _index, df['__mrc_filename'] = df['_rlnImageName'].str.split('@', 1).str
-        df['__mrc_index'] = pd.to_numeric(_index)
+        df[['__mrc_index', '__mrc_filename']] = (
+            df['_rlnImageName'].str.split('@', 1, expand=True))
+        df['__mrc_index'] = pd.to_numeric(df['__mrc_index'])
 
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself

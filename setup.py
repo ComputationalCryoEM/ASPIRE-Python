@@ -7,20 +7,9 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-def get_version():
-    """
-    Get package version (without import the package, which may or may not work)
-    :return: version info in maj.min.bld.0 format
-    """
-    version_dict = {}
-    exec(open("src/aspire/version.py").read(), version_dict)
-    return version_dict['version']
-
-
 setup(
     name='aspire',
-    version=get_version(),
-
+    version='0.6.0',
     description='Algorithms for Single Particle Reconstruction',
     long_description=read('README.md'),
     long_description_content_type='text/markdown',
@@ -46,7 +35,7 @@ setup(
         'pytest',
         'pytest-cov',
         'python-box',
-        'scipy==1.3.0',
+        'scipy==1.4.0',
         'scikit-learn',
         'scikit-image==0.14.0',
         'sphinxcontrib-bibtex',

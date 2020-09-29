@@ -1,6 +1,6 @@
 import logging
-import numpy as np
 
+import numpy as np
 from scipy.spatial.transform import Rotation
 
 from aspire.orientation import CLOrient3D
@@ -233,7 +233,7 @@ class CLSyncVoting(CLOrient3D):
         angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
         angles[:, 1] = alpha
         angles[:, 2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
-        r = Rotation.from_euler('ZXZ', angles).as_dcm()
+        r = Rotation.from_euler('ZXZ', angles).as_matrix()
         
         return r[good_idx, :, :]
 

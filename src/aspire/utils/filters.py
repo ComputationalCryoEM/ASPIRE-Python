@@ -1,3 +1,4 @@
+
 import inspect
 
 import numpy as np
@@ -72,6 +73,21 @@ class Filter:
         h = m_reshape(h, grid2d['x'].shape)
 
         return h
+
+    def dual(self):
+        return DualFilter(self)
+
+
+class DualFilter(Filter):
+    """
+    A Filter object that is dual to origin one, namely g(w)=f(-w)
+    """
+    def __init__(self, filter_in):
+        self._filter = filter_in
+        super().__init__()
+
+    def evaluate(self, omega):
+        return self._filter.evaluate(-omega)
 
 
 class FunctionFilter(Filter):

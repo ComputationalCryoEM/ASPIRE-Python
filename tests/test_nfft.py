@@ -1,15 +1,13 @@
-import numpy as np
-import pytest
-
+import os.path
 from unittest import TestCase, skipUnless
 from unittest.case import SkipTest
 
-from aspire.nufft import backend_available
-from aspire.nufft import Plan
+import numpy as np
+import pytest
+
+from aspire.nufft import Plan, backend_available
 from aspire.utils.misc import complex_type
 
-
-import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 

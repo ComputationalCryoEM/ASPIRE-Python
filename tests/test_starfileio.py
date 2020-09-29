@@ -2,9 +2,9 @@ import os.path
 from unittest import TestCase
 
 import importlib_resources
-import tests.saved_test_data
 from pandas import DataFrame
 
+import tests.saved_test_data
 from aspire.io.starfile import StarFile, StarFileBlock
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')

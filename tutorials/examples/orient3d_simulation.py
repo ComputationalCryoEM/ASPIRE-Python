@@ -3,18 +3,17 @@ This script illustrates the estimation of orientation angles using synchronizati
 matrix and voting method, based on simulated data projected from a 3D CryoEM map.
 """
 
-import os
 import logging
-import numpy as np
+import os
 
 import mrcfile
+import numpy as np
 
-from aspire.source.simulation import Simulation
-
-from aspire.utils.filters import RadialCTFFilter
-from aspire.utils.coor_trans import (register_rotations,
-                                     get_aligned_rotations, get_rots_mse)
 from aspire.orientation.commonline_sync import CLSyncVoting
+from aspire.source.simulation import Simulation
+from aspire.utils.coor_trans import (get_aligned_rotations, get_rots_mse,
+                                     register_rotations)
+from aspire.utils.filters import RadialCTFFilter
 from aspire.volume import Volume
 
 logger = logging.getLogger('aspire')

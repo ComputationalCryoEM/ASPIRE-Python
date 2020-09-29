@@ -1,10 +1,11 @@
 import logging
-import numpy as np
+
 import finufftpy
+import numpy as np
+
 from aspire.nufft import Plan
 from aspire.utils import ensure
 from aspire.utils.misc import complex_type
-
 
 logger = logging.getLogger(__name__)
 

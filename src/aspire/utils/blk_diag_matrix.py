@@ -837,10 +837,10 @@ def filter_to_fb_mat(h_fun, fbasis):
     if not isinstance(fbasis, FFBBasis2D):
         raise NotImplementedError('Currently only fast FB method is supported')
     # Set same dimensions as basis object
-    n_k = int(np.ceil(4 * fbasis.rcut * fbasis.kcut))
-    n_theta = np.ceil(16 * fbasis.kcut * fbasis.rcut)
-    n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
-
+    n_k = fbasis.n_r
+    n_theta = fbasis.n_theta
+    radial = fbasis.get_radial()
+    
     # get 2D grid in polar coordinate
     k_vals, wts = lgwt(n_k, 0, 0.5)
     k, theta = np.meshgrid(
@@ -855,22 +855,24 @@ def filter_to_fb_mat(h_fun, fbasis):
 
     # Represent 1D function values in fbasis
     h_fb = BlkDiagMatrix.empty(2 * fbasis.ell_max + 1, dtype=fbasis.dtype)
-    ind = 0
+    ind_ell = 0
     for ell in range(0, fbasis.ell_max+1):
         k_max = fbasis.k_max[ell]
         rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
         fb_vals = np.zeros_like(rmat)
-        for ik in range(0, k_max):
-            fb_vals[:, ik] = jv(ell, rmat[:, ik])
-        fb_nrms = 1/np.sqrt(2)*abs(jv(ell+1, fbasis.r0[0:k_max, ell].T))/2
-        fb_vals = fb_vals/fb_nrms
+        ind_radial = np.sum(fbasis.k_max[0:ell])
+        fb_vals[:, 0:k_max] = (radial[ind_radial:ind_radial + k_max]
+                               * np.sqrt(np.pi)).T
+        if ell == 0:
+            fb_vals *= np.sqrt(2)
+
         h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
             h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1))
-        h_fb[ind] = h_fb_ell
-        ind += 1
+        h_fb[ind_ell] = h_fb_ell
+        ind_ell += 1
         if ell > 0:
-            h_fb[ind] = h_fb[ind-1]
-            ind += 1
+            h_fb[ind_ell] = h_fb[ind_ell-1]
+            ind_ell += 1
 
     return h_fb

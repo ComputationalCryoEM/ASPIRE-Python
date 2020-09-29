@@ -34,9 +34,9 @@ def get_full_version():
 
     """
     import aspire
-    from aspire.version import version
 
-    rev = ''
+    full_version = aspire.__version__
+    rev = None
     try:
         path = aspire.__path__[0]
         if os.path.isdir(path):
@@ -46,14 +46,11 @@ def get_full_version():
             except (FileNotFoundError, subprocess.CalledProcessError):
                 # no git or not a git repo? assume 'src'
                 rev = 'src'
-        else:
-            # We're very likely running as a package
-            rev = ''
     except:  # nopep8
         # Something unexpected happened - rev number defaults to 'x'
         rev = 'x'
 
-    if rev == '':
-        return version
-    else:
-        return f'{version}.{rev}'
+    if rev is not None:
+        full_version += f'.{rev}'
+
+    return full_version
