@@ -4,6 +4,7 @@ Miscellaneous Utilities that have no better place (yet).
 import logging
 
 import numpy as np
+from itertools import chain, combinations
 from numpy.linalg import qr, solve
 
 from aspire.utils.matrix import mat_to_vec, vec_to_mat
@@ -130,7 +131,7 @@ def qr_vols_forward(sim, s, n, vols, k):
 
     ims = np.swapaxes(ims, 1, 3)
     ims = np.swapaxes(ims, 0, 2)
-    
+
     Q_vecs = np.zeros((sim.L**2, k, n), dtype=vols.dtype)
     Rs = np.zeros((k, k, n), dtype=vols.dtype)
 
@@ -140,3 +141,15 @@ def qr_vols_forward(sim, s, n, vols, k):
     Qs = vec_to_mat(Q_vecs)
 
     return Qs, Rs
+
+def powerset(iterable):
+    """
+    Generate all subsets of an iterable. Example:
+
+    powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
+
+    :return: Generator covering all subsets of iterable.
+    """
+
+    s = list(iterable)
+    return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))

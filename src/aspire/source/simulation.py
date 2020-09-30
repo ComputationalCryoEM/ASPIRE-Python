@@ -218,8 +218,7 @@ class Simulation(ImageSource):
 
         # Arrange in descending order (flip column order in eigenvector matrix)
         w = w[::-1]
-        # TODO: Implement flip for Volume class so we don't want to access _data.
-        eigs_true._data = np.flip(eigs_true, axis=0)
+        eigs_true = eigs_true.flip()
 
         return eigs_true, np.diag(w)
 

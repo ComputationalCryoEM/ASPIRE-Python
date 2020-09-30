@@ -3,6 +3,7 @@ from unittest import TestCase
 import numpy as np
 import os
 
+from aspire.utils.misc import powerset
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -136,6 +137,18 @@ class VolumeTestCase(TestCase):
         result = self.vols_1.flatten()
         self.assertTrue(np.all(result == self.data_1.flatten()))
         self.assertTrue(isinstance(result, np.ndarray))
+
+    def testFlip(self):
+        # Test over all sane axis.
+        for axis in powerset(range(4)):
+            if not axis:
+                # test default
+                result = self.vols_1.flip()
+                axis = 0
+            else:
+                result = self.vols_1.flip(axis)
+            self.assertTrue(np.all(result == np.flip(self.data_1, axis)))
+            self.assertTrue(isinstance(result, Volume))
 
     def testDownsample(self):
         # Data files re-used from test_preprocess

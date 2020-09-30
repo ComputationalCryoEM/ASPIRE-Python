@@ -173,6 +173,18 @@ class Volume:
 
         return self._data.flatten()
 
+    def flip(self, axis=0):
+        """
+        Flip volume stack data along axis using numpy.flip
+
+        :param axis: Optionally specify axis as integer or tuple.
+        Defaults to axis=0.
+
+        :return: Volume instance.
+        """
+
+        return Volume(np.flip(self._data, axis))
+
     def downsample(self, szout, mask=None):
         if isinstance(szout, int):
             szout = (szout,)*3
