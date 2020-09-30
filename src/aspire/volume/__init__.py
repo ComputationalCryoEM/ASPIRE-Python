@@ -69,6 +69,9 @@ class Volume:
 
         return res
 
+    def __radd__(self, otherL):
+        return self + otherL
+
     def __sub__(self, other):
         if isinstance(other, Volume):
             res = Volume(self._data - other.asnumpy())
@@ -77,6 +80,9 @@ class Volume:
 
         return res
 
+    def __rsub__(self, otherL):
+        return Volume(otherL - self._data)
+
     def __mul__(self, other):
         if isinstance(other, Volume):
             res = Volume(self._data * other.asnumpy())
@@ -84,6 +90,9 @@ class Volume:
             res = Volume(self._data * other)
 
         return res
+
+    def __rmul__(self, otherL):
+        return self * otherL
 
     def project(self, vol_idx, rot_matrices):
         data = self[vol_idx].T  #RCOPT
@@ -109,7 +118,7 @@ class Volume:
 
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
-        return m_reshape(self._data, (self.n_vols,) + (self.resolution**3,))
+        return self._data.reshape((self.n_vols, self.resolution**3))
 
     @staticmethod
     def from_vec(vec):
@@ -123,12 +132,12 @@ class Volume:
         if vec.ndim ==1:
             vec = vec[np.newaxis, :]
 
-        N = vec.shape[0]
+        n_vols = vec.shape[0]
 
         resolution = round(vec.shape[1] ** (1/3))
-        assert resolution**3 == vec.shape[1]
+        assert resolution ** 3 == vec.shape[1]
 
-        data = m_reshape(vec, (N,) + (resolution,)*3)
+        data = vec.reshape((n_vols, resolution, resolution, resolution))
 
         return Volume(data)
 
