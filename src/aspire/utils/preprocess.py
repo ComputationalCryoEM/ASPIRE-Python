@@ -4,14 +4,10 @@ import math
 import numpy as np
 from scipy.fftpack import (fft, fft2, fftn, fftshift, ifft, ifft2, ifftn,
                            ifftshift)
-from scipy.interpolate import RegularGridInterpolator
 from scipy.special import erf
 
-from aspire.nufft import Plan
 from aspire.utils import ensure
-from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
-from aspire.utils.fft import centered_fft3, centered_ifft2, centered_ifft3
-from aspire.utils.matlab_compat import m_reshape
+
 
 logger = logging.getLogger(__name__)
 
@@ -161,75 +157,6 @@ def downsample(insamples, szout, mask=None):
         raise RuntimeError('Number of dimensions > 3 for input objects.')
 
     return outsamples
-
-def vol2img(volume, rots, L=None, dtype=None):
-    """
-    Generate 2D images from the input volume and rotation angles
-
-    The function handles odd and even-sized arrays correctly. The center of
-    an odd array is taken to be at (n+1)/2, and an even array is n/2+1.
-    :param volume: A 3D volume objects.
-    :param rots: A n-by-3-by-3 array of rotation angles.
-    :param L: The output size of 2D images.
-    :return: An array consists of 2D images.
-    """
-
-    if L is None:
-        L = np.size(volume, 0)
-    if dtype is None:
-        dtype = volume.dtype
-
-    lv = np.size(volume, 0)
-    if L > lv+1:
-        # Note I tried to help this branch a little (basic errors),
-        #   but it still doesn't seem to work...
-
-        # For compatibility with gen_projections, allow one pixel aliasing.
-        # More precisely, it should be N>nv, however, by using nv+1 the
-        # results match those of gen_projections.
-        if np.mod(L-lv, 2)==1:
-            raise RuntimeError('Upsampling from odd to even sizes or vice versa is '
-                               'currently not supported')
-        dL = (L-lv) // 2
-        fv = centered_fft3(volume)
-        padded_volume = np.zeros((L, L, L), dtype=dtype)
-        padded_volume[dL+1:dL+lv+1, dL+1:dL+lv+1, dL+1:dL+lv+1] = fv
-        volume = centered_ifft3(padded_volume)
-        ensure(np.linalg.norm(np.imag(volume[:]))/np.linalg.norm(volume[:]) < 1.0e-5,
-               "The image part of volume is related large (>1.0e-5).")
-        #  The new volume size
-        lv = L
-
-    grid2d = grid_2d(lv, shifted=True, normalized=False)
-
-    num_pts = lv**2
-    num_rots = rots.shape[0]
-    pts = np.pi * np.vstack([grid2d['x'].flatten('F'), grid2d['y'].flatten('F'), np.zeros(num_pts)])
-
-    # TODO: Issue #148
-    pts_rot = np.zeros((3, num_pts, num_rots), dtype)
-
-    for i in range(num_rots):
-        pts_rot[:, :, i] = rots[i, :, :].T @ pts
-
-    pts_rot = m_reshape(pts_rot, (3, lv**2*num_rots))
-
-    pts_rot = -2*pts_rot/lv
-
-    im_f = Plan(volume.shape, -pts_rot).transform(volume)
-
-    im_f = im_f.reshape((-1, lv, lv))
-
-    if lv % 2 == 0:
-        pts_rot = m_reshape(pts_rot, (3, lv, lv, num_rots))
-        im_f *= np.exp(1j*np.sum(pts_rot, 0)/2).T
-        im_f *= np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y']-1)/(2*lv))
-
-    im = centered_ifft2(im_f)
-    if lv % 2 == 0:
-        im = im * np.reshape(np.exp(2*np.pi*1j*(grid2d['x'] +grid2d['y'])/(2*lv)), (1, lv, lv))
-
-    return np.real(im)
 
 
 def fuzzy_mask(L, r0, risetime, origin=None):
