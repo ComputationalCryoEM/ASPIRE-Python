@@ -30,9 +30,9 @@ class Cov2DTestCase(TestCase):
         filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')))
+        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))) # RCOPT
         vols = vols.downsample((L*np.ones(3, dtype=int)))*1.0e3
-
+        # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
         sim = Simulation(
             n=n,
             L=L,
