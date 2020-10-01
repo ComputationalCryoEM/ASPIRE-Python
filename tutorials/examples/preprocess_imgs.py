@@ -107,9 +107,9 @@ plt.colorbar(orientation='horizontal')
 plt.title('phase flip')
 
 plt.subplot(2, 3, 3)
-plt.imshow(imgs_ds[..., idm], cmap='gray')
+plt.imshow(imgs_ds[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
-plt.title('down sample')
+plt.title('downsample')
 
 plt.subplot(2, 3, 4)
 plt.imshow(imgs_nb[idm], cmap='gray')
