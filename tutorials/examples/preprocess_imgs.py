@@ -73,6 +73,12 @@ logger.info('Perform phase flip to input images.')
 source.phase_flip()
 imgs_pf = source.images(start=0, num=1).asnumpy()
 
+max_resolution = 15
+logger.info(f'Downsample resolution to {max_resolution} X {max_resolution}')
+if max_resolution < source.L:
+    source.downsample(max_resolution)
+imgs_ds = source.images(start=0, num=1).asnumpy()
+
 logger.info('Normalize images to background noise.')
 source.normalize_background()
 imgs_nb = source.images(start=0, num=1).asnumpy()
@@ -99,6 +105,11 @@ plt.subplot(2, 3, 2)
 plt.imshow(imgs_pf[idm], cmap='gray')
 plt.colorbar(orientation='horizontal')
 plt.title('phase flip')
+
+plt.subplot(2, 3, 3)
+plt.imshow(imgs_ds[idm], cmap='gray')
+plt.colorbar(orientation='horizontal')
+plt.title('downsample')
 
 plt.subplot(2, 3, 4)
 plt.imshow(imgs_nb[idm], cmap='gray')

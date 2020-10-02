@@ -43,4 +43,4 @@ def test_tutorials(filename):
     env = os.environ
     env['DISPLAY'] = ''
 
-    subprocess.check_call(['python', filename], env=env)
+    subprocess.check_call([sys.executable, filename], env=env)
