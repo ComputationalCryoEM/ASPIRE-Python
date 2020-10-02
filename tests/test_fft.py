@@ -18,7 +18,7 @@ class ConfigTest(TestCase):
     def testFft2(self):
         for fft in fft_classes:
             a = np.random.random((100, 100))
-            b = fft.fft2(a, workers=None)
+            b = fft.fft2(a, workers=-1)
             c = fft.ifft2(b)
 
             self.assertTrue(np.allclose(a, c))
