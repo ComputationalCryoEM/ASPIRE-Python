@@ -49,11 +49,11 @@ class FFBBasis2D(FBBasis2D):
         # generate 1D indices for basis functions
         self._indices = self.indices()
 
-        # precompute the basis functions in 2D grids
-        self._precomp = self._precomp()
-
         # get normalized factors
         self._norms = self.norms()
+
+        # precompute the basis functions in 2D grids
+        self._precomp = self._precomp()
 
     def _precomp(self):
         """
@@ -74,7 +74,8 @@ class FFBBasis2D(FBBasis2D):
                 radial[ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
                 # NOTE: We need to remove the factor due to the discretization here
                 # since it is already included in our quadrature weights
-                nrm = 1 / (np.sqrt(np.prod(self.sz))) * self.basis_norm_2d(ell, k)
+                # Only normalized by the radial part of basis function
+                nrm = 1 / (np.sqrt(np.prod(self.sz))) * self._norms[0][ind_radial]
                 radial[ind_radial] /= nrm
                 ind_radial += 1
 
@@ -127,8 +128,9 @@ class FFBBasis2D(FBBasis2D):
 
         idx = ind + np.arange(self.k_max[0])
 
-        pf[:, 0, :] = v[:, mask] @ self._precomp["radial"][idx]
-
+        # include the normalization factor of angular part into radial part
+        radial_norm = self._precomp["radial"] / np.expand_dims(self._norms[1], 1)
+        pf[:, 0, :] = v[:, mask] @ radial_norm[idx]
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -143,7 +145,7 @@ class FFBBasis2D(FBBasis2D):
             if np.mod(ell, 2) == 1:
                 v_ell = 1j * v_ell
 
-            pf_ell = v_ell @ self._precomp["radial"][idx]
+            pf_ell = v_ell @ radial_norm[idx]
             pf[:, ell, :] = pf_ell
 
             if np.mod(ell, 2) == 0:
@@ -225,7 +227,9 @@ class FFBBasis2D(FBBasis2D):
         idx = ind + np.arange(self.k_max[0])
         mask = self._indices["ells"] == 0
 
-        v[:, mask] = pf[:, :, 0].real @ self._precomp["radial"][idx].T
+        # include the normalization factor of angular part into radial part
+        radial_norm = self._precomp["radial"] / np.expand_dims(self._norms[1], 1)
+        v[:, mask] = pf[:, :, 0].real @ radial_norm[idx].T
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -234,7 +238,7 @@ class FFBBasis2D(FBBasis2D):
             idx_pos = ind_pos + np.arange(self.k_max[ell])
             idx_neg = idx_pos + self.k_max[ell]
 
-            v_ell = pf[:, :, ell] @ self._precomp["radial"][idx].T
+            v_ell = pf[:, :, ell] @ radial_norm[idx].T
 
             if np.mod(ell, 2) == 0:
                 v_pos = np.real(v_ell)
