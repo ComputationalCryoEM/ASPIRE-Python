@@ -54,8 +54,8 @@ ctf_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1
 logger.info(f'Load 3D map and downsample 3D map to desired grids '
             f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
-vols = Volume(infile.data)
-vols = vols.downsample(img_size)*1.0e3
+vols = Volume(infile.data/np.max(infile.data))
+vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info('Use downsampled map to creat simulation object.')
