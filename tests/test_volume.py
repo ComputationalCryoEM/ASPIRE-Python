@@ -1,7 +1,8 @@
+import os
 from unittest import TestCase
 
 import numpy as np
-import os
+from scipy.spatial.transform import Rotation
 
 from aspire.utils.misc import powerset
 from aspire.volume import Volume
@@ -92,7 +93,31 @@ class VolumeTestCase(TestCase):
         self.assertTrue(isinstance(result, Volume))
 
     def testProject(self):
-        pass
+        # Create a stack of rotations to test.
+        r_stack = np.empty((12, 3, 3))
+        for r, ax in enumerate(['x', 'y', 'z']):
+            r_stack[r] = Rotation.from_euler(ax, 0).as_matrix()
+            # We'll consider the multiples of pi/2.
+            r_stack[r + 3] = Rotation.from_euler(ax, np.pi / 2).as_matrix()
+            r_stack[r + 6] = Rotation.from_euler(ax, np.pi).as_matrix()
+            r_stack[r + 9] = Rotation.from_euler(ax, 3 * np.pi / 2).as_matrix()
+
+        # Project a Volume with all the test rotations
+        vol_id = 1  # select a volume from Volume stack
+        img_stack = self.vols_1.project(vol_id, r_stack)
+
+        for r in range(len(r_stack)):
+            # Get result of test projection at center of Image.
+            prj_along_axis = img_stack[r][21, 21]
+
+            # For Volume, take mean along the axis of rotation.
+            vol_along_axis = np.mean(self.vols_1[vol_id], axis=r % 3)
+            # Volume is uncentered, take the mean of a 2x2 window.
+            vol_along_axis = np.mean(vol_along_axis[20:22, 20:22])
+
+            # The projection and Volume should be equivalent
+            #  centered along the rotation axis for multiples of pi/2.
+            self.assertTrue(np.allclose(vol_along_axis, prj_along_axis))
 
     def to_vec(self):
         """ Compute the to_vec method and compare. """
