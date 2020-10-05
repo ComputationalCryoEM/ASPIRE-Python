@@ -1,9 +1,20 @@
 from threading import Lock
 import os
 import pyfftw
-import pyfftw.interfaces.scipy_fftpack as pyfft
+import pyfftw.interfaces.scipy_fftpack as scipy_fft
 
 mutex = Lock()
+
+_cpu_count = os.cpu_count()
+
+
+def _workers(workers):
+    if workers in (None, 0):
+        raise ValueError('Workers must be specified')
+    if workers < 0 or workers > _cpu_count:
+        workers = _cpu_count
+
+    return workers
 
 
 class PyfftwFFT:
@@ -19,12 +30,8 @@ class PyfftwFFT:
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
             b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-            if workers == -1:
-                threads = os.cpu_count()
-            else:
-                threads = workers
             cls = pyfftw.FFTW(a_, b, axes=(axis,), direction='FFTW_FORWARD',
-                              threads=threads)
+                              threads=_workers(workers))
             cls(a, b)
         finally:
             mutex.release()
@@ -38,12 +45,8 @@ class PyfftwFFT:
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
             b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-            if workers == -1:
-                threads = os.cpu_count()
-            else:
-                threads = workers
             cls = pyfftw.FFTW(a_, b, axes=(axis,), direction='FFTW_BACKWARD',
-                              threads=threads)
+                              threads=_workers(workers))
             cls(a, b)
         finally:
             mutex.release()
@@ -63,12 +66,8 @@ class PyfftwFFT:
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
             b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-            if workers == -1:
-                threads = os.cpu_count()
-            else:
-                threads = workers
             cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD',
-                              threads=threads)
+                              threads=_workers(workers))
             cls(a, b)
         finally:
             mutex.release()
@@ -82,12 +81,8 @@ class PyfftwFFT:
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
             b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-            if workers == -1:
-                threads = os.cpu_count()
-            else:
-                threads = workers
             cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_BACKWARD',
-                              threads=threads)
+                              threads=_workers(workers))
             cls(a, b)
         finally:
             mutex.release()
@@ -101,12 +96,8 @@ class PyfftwFFT:
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
             b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-            if workers == -1:
-                threads = os.cpu_count()
-            else:
-                threads = workers
             cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD',
-                              threads=threads)
+                              threads=_workers(workers))
             cls(a, b)
         finally:
             mutex.release()
@@ -120,12 +111,8 @@ class PyfftwFFT:
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
             b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-            if workers == -1:
-                threads = os.cpu_count()
-            else:
-                threads = workers
             cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_BACKWARD',
-                              threads=threads)
+                              threads=_workers(workers))
             cls(a, b)
         finally:
             mutex.release()
@@ -134,8 +121,8 @@ class PyfftwFFT:
 
     @staticmethod
     def fftshift(a, axes=None):
-        return pyfft.fftshift(a, axes=axes)
+        return scipy_fft.fftshift(a, axes=axes)
 
     @staticmethod
     def ifftshift(a, axes=None):
-        return pyfft.ifftshift(a, axes=axes)
+        return scipy_fft.ifftshift(a, axes=axes)
