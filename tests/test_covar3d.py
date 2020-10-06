@@ -72,9 +72,7 @@ class Covar3DTestCase(TestCase):
         # In our case (in order) - the LinearOperator and 'b' (the RHS of the linear system)
         op, b = cg.call_args[0]
 
-        #  BUG?
-        #XXXX GBW, I'm not sure what happens here.... comment for now, maybe see if anyone remembers...
-        #self.assertTrue(np.allclose(b, op(cg_return_value), atol=1e-5))
+        self.assertTrue(np.allclose(b, op(cg_return_value), atol=1e-5))
 
         self.assertTrue(np.allclose(
             np.array([
@@ -87,7 +85,7 @@ class Covar3DTestCase(TestCase):
                 [0.00000000e+00, -2.60699879e-02, -1.84686293e-02,  1.30268283e-01,  1.36522253e-01,  8.11090183e-02,  3.50443711e-02, -1.21283276e-02],
                 [0.00000000e+00,  0.00000000e+00,  6.67517637e-02,  1.12721933e-01, -8.87693429e-03,  2.99613531e-02,  4.14024319e-02,  0.00000000e+00]
             ]),
-            covar_est[4, :, :, 4, 4, 4].T, # RCOPT
+            covar_est[4, 4, 4, :, :, 4], # RCOPT
             atol=1e-4
         ))
 
@@ -110,7 +108,7 @@ class Covar3DTestCase(TestCase):
                 [0.00000000e+00, -2.60699879e-02, -1.84686293e-02,  1.30268283e-01,  1.36522253e-01,  8.11090183e-02,  3.50443711e-02, -1.21283276e-02],
                 [0.00000000e+00,  0.00000000e+00,  6.67517637e-02,  1.12721933e-01, -8.87693429e-03,  2.99613531e-02,  4.14024319e-02,  0.00000000e+00]
             ]),
-            covar_est[4, :, :, 4, 4, 4].T, # RCOPT
+            covar_est[4, 4, 4, :, :, 4], # RCOPT
             atol=1e-4
         ))
 
