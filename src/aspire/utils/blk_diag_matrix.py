@@ -573,7 +573,7 @@ class BlkDiagMatrix:
         non-diagonal blocks.
         """
 
-        return block_diag(self.data)
+        return block_diag(*self.data)
 
     @property
     def partition(self):

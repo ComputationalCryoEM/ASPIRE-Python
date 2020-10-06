@@ -13,27 +13,36 @@ class BlkDiagMatrixTestCase(TestCase):
         self.num_blks = 10
 
         self.blk_partition = [(i, i) for i in range(self.num_blks, 0, -1)]
+        self.dense_shape = np.sum(self.blk_partition, axis=0)
 
         n = np.sum(np.prod(np.array(self.blk_partition), axis=1))
         self.flat = np.arange(n)
         self.revflat = self.flat[::-1].copy()
 
+        diag_ind = np.array([0, 0])
         ind = 0
         zeros = []
         ones = []
         eyes = []
         A = []
         B = []
+        self.dense = np.zeros(self.dense_shape)
         for blk_shp in self.blk_partition:
             zeros.append(np.zeros(blk_shp))
             ones.append(np.ones(blk_shp))
             eyes.append(np.eye(blk_shp[0]))
 
             offt = np.prod(blk_shp)
-            A.append(self.flat[ind:  ind + offt].reshape(blk_shp))
+            blk = self.flat[ind:  ind + offt].reshape(blk_shp)
+            A.append(blk)
             B.append(self.revflat[ind:  ind + offt].reshape(blk_shp))
 
             ind += offt
+
+            # Also build a dense array.
+            self.dense[diag_ind[0]:diag_ind[0] + blk_shp[0],
+                       diag_ind[1]:diag_ind[1] + blk_shp[1]] = blk
+            diag_ind += blk_shp
 
         self.blk_a = BlkDiagMatrix.from_list(A)
         self.blk_b = BlkDiagMatrix.from_list(B)
@@ -303,3 +312,25 @@ class BlkDiagMatrixTestCase(TestCase):
         # assign inf value
         blk_nan[0][0] = np.nan
         self.assertFalse(blk_nan.isfinite)
+
+    def testBlkDiagMatrixDense(self):
+        """ Test we correctly compute the right shape and array. """
+        self.assertTrue(np.allclose(self.dense, self.blk_a.dense()))
+
+    def testBlkDiagMatrixArith(self):
+        """
+        Compute a sequence of operations on `BlkDiagMatrix`
+        and numpy arrays independently then compare.
+        """
+
+        inputs = [(self.blk_a.dense(),  self.blk_b.dense()),
+                  (self.blk_a, self.blk_b)]
+
+        # Note we intentionally skip scalar add/sub operations because,
+        #   the equivalent numpy operations would require masking.
+        results = []
+        for A,B in inputs:
+            res =  abs(A @ B) * 0.5 - (B @ B.T)**2
+            results.append(res)
+
+        self.assertTrue(np.allclose(results[0], results[1].dense()))
