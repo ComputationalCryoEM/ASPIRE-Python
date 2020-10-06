@@ -2,8 +2,7 @@
 This script illustrates the covariance Wiener filtering functionality of the
 ASPIRE, implemented by estimating the covariance of the unfiltered
 images in a Fourier-Bessel basis and applying the Wiener filter induced by
-that covariance matrix. The results can be reproduced exactly to the Matlab version
-if the same methods of generating random numbers are used.
+that covariance matrix.
 """
 
 import logging
@@ -15,12 +14,8 @@ import numpy as np
 
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.estimation.covar2d import RotCov2D
-from aspire.image import Image
 from aspire.source.simulation import Simulation
-from aspire.utils.blk_diag_matrix import BlkDiagMatrix
-from aspire.utils.coor_trans import qrand_rots
-from aspire.utils.filters import RadialCTFFilter
-from aspire.utils.matlab_compat import randn
+from aspire.utils.filters import (RadialCTFFilter, ScalarFilter)
 from aspire.utils.matrix import anorm
 from aspire.volume import Volume
 
@@ -35,33 +30,31 @@ img_size = 64
 # Set the total number of images generated from the 3D map
 num_imgs = 1024
 
-# Set the number of 3D maps
-num_maps = 1
-
-# Set the signal-noise ratio
-sn_ratio = 1
+# Set the noise variance and build the noise filter
+# It might be better to select a signal noise ratio
+# and initial noise inside the Simulation class.
+noise_var = 1.3957e-4
+noise_filter = ScalarFilter(dim=2, value=noise_var)
 
 # Specify the CTF parameters
-pixel_size = 5                   # Pixel size of the images (in angstroms).
+pixel_size = 5*65/img_size       # Pixel size of the images (in angstroms)
 voltage = 200                    # Voltage (in KV)
-defocus_min = 1.5e4              # Minimum defocus value (in angstroms).
-defocus_max = 2.5e4              # Maximum defocus value (in angstroms).
+defocus_min = 1.5e4              # Minimum defocus value (in angstroms)
+defocus_max = 2.5e4              # Maximum defocus value (in angstroms)
 defocus_ct = 7                   # Number of defocus groups.
 Cs = 2.0                         # Spherical aberration
 alpha = 0.1                      # Amplitude contrast
 
 logger.info('Initialize simulation object and CTF filters.')
 # Create filters
-filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
+ctf_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
            for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-# Load the map file of a 70S Ribosome and downsample the 3D map to desired resolution.
-# The downsampling should be done by the internal function of sim object in future.
-# Below we use alternative implementation to obtain the exact result with Matlab version.
+# Load the map file of a 70S Ribosome
 logger.info(f'Load 3D map and downsample 3D map to desired grids '
             f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
-vols = Volume(infile.data)
+vols = Volume(infile.data/np.max(infile.data))
 vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
@@ -70,36 +63,32 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    C=num_maps,
-    filters=filters
+    filters=ctf_filters,
+    offsets=0.0,
+    amplitudes=1.0,
+    dtype='double',
+    noise_filter=noise_filter
 )
 
 # Specify the fast FB basis method for expending the 2D images
 ffbbasis = FFBBasis2D((img_size, img_size))
 
-# Generate 2D clean images from input 3D map. The following statement can be used from the sim object:
-# imgs_clean = sim.clean_images(start=0, num=num_imgs)
-# To be consistent with the Matlab version in the numbers, we need to use the statements as below:
-logger.info('Generate random distributed rotation angles and obtain corresponding 2D clean images.')
-rots = qrand_rots(num_imgs, seed=0)
-imgs_clean = sim.vols.project(0, rots)
-
-
 # Assign the CTF information and index for each image
-h_idx = np.array([filters.index(f) for f in sim.filters])
+h_idx = np.array([ctf_filters.index(f) for f in sim.filters])
 
 # Evaluate CTF in the 8X8 FB basis
-h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in filters]
+h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in ctf_filters]
 
-# Apply the CTF to the clean images.
+# Get clean images from projections of 3D map.
 logger.info('Apply CTF filters to clean images.')
-imgs_ctf_clean = sim.eval_filters(imgs_clean)
+imgs_clean = sim.projections()
+imgs_ctf_clean = sim.clean_images()
+power_clean = imgs_ctf_clean.norm()**2/imgs_ctf_clean.size
+sn_ratio = power_clean/noise_var
+logger.info(f'Signal to noise ratio is {sn_ratio}.')
 
-# Apply the noise at the desired singal-noise ratio to the filtered clean images
-logger.info('Apply noise filters to clean images.')
-power_clean = imgs_ctf_clean.norm() ** 2 / imgs_ctf_clean.size
-noise_var = power_clean/sn_ratio
-imgs_noise = imgs_ctf_clean + np.sqrt(noise_var)*randn(num_imgs, img_size, img_size, seed=0)
+# get noisy images after apply CTF and noise filters
+imgs_noise = sim.images(start=0, num=num_imgs)
 
 # Expand the images, both clean and noisy, in the Fourier-Bessel basis. This
 # can be done exactly (that is, up to numerical precision) using the
