@@ -11,8 +11,16 @@ _cpu_count = os.cpu_count()
 def _workers(workers):
     if workers in (None, 0):
         raise ValueError('Workers must be specified')
-    if workers < 0 or workers > _cpu_count:
-        workers = _cpu_count
+
+    if workers < 0:
+        # Borrow the idea from scipy for negative values of workers.
+        # When workers is -1, we use all available threads.
+        # Otherwise, (-workers-1) will be saved for other tasks.
+        if workers >= -_cpu_count:
+            workers += 1 + _cpu_count
+        else:
+            raise ValueError(f'Workers value out of range; got {workers}, '
+                             f'must not be less than {-_cpu_count}')
 
     return workers
 
