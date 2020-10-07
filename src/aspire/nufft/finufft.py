@@ -81,7 +81,7 @@ class FinufftPlan(Plan):
         `(ntransforms, num_pts)`.
         """
 
-        sig_shape = signal.shape
+        sig_frame_shape = signal.shape
         # Note, there is a corner case for ntransforms == 1.
         if self.ntransforms > 1 or (
             self.ntransforms == 1 and len(signal.shape) == self.dim + 1
@@ -97,12 +97,14 @@ class FinufftPlan(Plan):
                 f" should match ntransforms {self.ntransforms}.",
             )
 
-            sig_shape = signal.shape[1:]
+            sig_frame_shape = signal.shape[1:]
 
-        ensure(
-            sig_shape == self.sz,
-            f"Signal frame to be transformed must have shape {self.sz}",
-        )
+            # finufft expects signal.ndim == dim for ntransforms = 1.
+            if self.ntransforms == 1:
+                signal = signal.reshape(self.sz)
+
+        ensure(sig_frame_shape == self.sz,
+               f'Signal frame to be transformed must have shape {self.sz}')
 
         result = self._transform_plan.execute(signal)
 
@@ -131,6 +133,10 @@ class FinufftPlan(Plan):
                 "For multiple transforms, signal stack length"
                 f" should match ntransforms {self.ntransforms}.",
             )
+
+            # finufft is expecting flat array for 1D case.
+            if self.ntransforms == 1:
+                signal = signal.reshape(self.num_pts)
 
         result = self._adjoint_plan.execute(signal)
 

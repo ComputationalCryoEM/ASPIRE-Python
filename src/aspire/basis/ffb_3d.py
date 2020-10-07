@@ -269,7 +269,7 @@ class FFBBasis3D(FBBasis3D):
         pf = m_reshape(pf, (n_theta * n_phi * n_r, n_data))
 
         # perform inverse non-uniformly FFT transformation back to 3D rectangular coordinates
-        freqs = m_reshape(self._precomp["fourier_pts"], (3, n_r * n_theta * n_phi, -1))
+        freqs = m_reshape(self._precomp['fourier_pts'], (3, n_r * n_theta*n_phi))
         x = np.zeros((n_data, self.sz[0], self.sz[1], self.sz[2]), dtype=v.dtype)
         for isample in range(0, n_data):
             x[isample] = np.real(anufft(pf[:, isample], freqs, self.sz))
