@@ -4,8 +4,8 @@ from unittest import TestCase
 import numpy as np
 from scipy.fftpack import fftn, fftshift
 
-from aspire.utils.coor_trans import qrand_rots
-from aspire.utils.preprocess import crop_pad, downsample, fuzzy_mask, vol2img
+from aspire.utils.preprocess import crop_pad, downsample, fuzzy_mask
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -33,10 +33,11 @@ class PreprocessTestCase(TestCase):
         self.assertTrue(np.allclose(results, vols, atol=1e-7))
 
     def test03Vol2img(self):
-        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_down8_imgs32.npy')).T # RCOPT
-        vol = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy')).T # RCOPT
-        rots = qrand_rots(32, seed=0)
-        imgs_clean = vol2img(vol, rots)
+        results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_down8_imgs32.npy'))
+        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy')))
+        rots = np.load(os.path.join(DATA_DIR, 'rand_rot_matrices32.npy'))
+        rots = np.moveaxis(rots, 2, 0)
+        imgs_clean = vols.project(0, rots).asnumpy()
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
     def test04FuzzyMask(self):

@@ -10,7 +10,7 @@ from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.filters import ZeroFilter
 from aspire.utils.matlab_compat import Random, rand, randi, randn
-from aspire.utils.matrix import (acorr, ainner, anorm, make_symmat, vec_to_vol,
+from aspire.utils.matrix import (acorr, ainner, anorm, make_symmat,
                                  vecmat_to_volmat, vol_to_vec)
 from aspire.volume import Volume
 
@@ -29,6 +29,10 @@ class Simulation(ImageSource):
         :param angles: A 3-by-n array of rotation angles
         """
         super().__init__(L=L, n=n, dtype=dtype, memory=memory)
+
+        # We need to keep track of the original resolution we were initialized with,
+        # to be able to generate projections of volumes later, when we are asked to supply images.
+        self._original_L = L
 
         if offsets is None:
             offsets = L / 16 * randn(2, n, seed=seed).T
@@ -123,7 +127,7 @@ class Simulation(ImageSource):
         if indices is None:
             indices = np.arange(start, min(start+num, self.n))
 
-        im = np.zeros((len(indices), self.L, self.L))
+        im = np.zeros((len(indices), self._original_L, self._original_L))
 
         states = self.states[indices]
         unique_states = np.unique(states)
@@ -188,7 +192,7 @@ class Simulation(ImageSource):
 
     def covar_true(self):
         eigs_true, lamdbas_true = self.eigs()
-        eigs_true = eigs_true.to_vec()
+        eigs_true = eigs_true.T.to_vec()
 
         covar_true = eigs_true.T @ lamdbas_true @ eigs_true
         covar_true = vecmat_to_volmat(covar_true)
@@ -214,16 +218,13 @@ class Simulation(ImageSource):
         R = R[:-1, :]
 
         w, v = eigh(make_symmat(R @ np.diag(p) @ R.T))
-        eigs_true = vec_to_vol(Q @ v)
+        eigs_true = Volume.from_vec((Q @ v).T)
 
         # Arrange in descending order (flip column order in eigenvector matrix)
         w = w[::-1]
-        eigs_true = np.flip(eigs_true, axis=-1)
+        eigs_true = eigs_true.flip()
 
-        # RCOPT
-        eigs_true = np.moveaxis(eigs_true, -1, 0)
-
-        return Volume(eigs_true), np.diag(w)
+        return eigs_true, np.diag(w)
 
     # TODO: Too many eval_* methods doing similar things - encapsulate somehow?
 

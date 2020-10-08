@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from aspire import __version__
 from aspire.utils import get_full_version
+from aspire.utils.misc import powerset
 
 
 class UtilsTestCase(TestCase):
@@ -34,3 +35,8 @@ class UtilsTestCase(TestCase):
         p_mock.side_effect = RuntimeError
 
         self.assertTrue(get_full_version() == __version__ + '.x')
+
+    def testPowerset(self):
+        ref = sorted([(), (1,), (2,), (3,), (1,2), (1,3), (2,3), (1,2,3)])
+        s = range(1, 4)
+        self.assertTrue(sorted(list(powerset(s))) == ref)
