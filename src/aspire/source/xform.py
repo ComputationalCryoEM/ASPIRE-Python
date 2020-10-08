@@ -429,7 +429,7 @@ class Pipeline(Xform):
         self.active = True
 
     def __str__(self):
-        return '\n'.join([f'{xform}' for xform in self.xforms])
+        return 'Apply pipeline: ' + ' '.join([f'{xform}' for xform in self.xforms])
 
     def add_xform(self, xform):
         """
