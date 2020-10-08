@@ -43,9 +43,9 @@ class FBBasis2DTestCase(TestCase):
         ))
 
     def testFBBasis2DNorms(self):
-        norms = self.basis.norms()
+        radial_norms, angular_norms = self.basis.norms()
         self.assertTrue(np.allclose(
-            norms[0]*norms[1],
+            radial_norms * angular_norms,
             [
                 3.68065992303471, 2.41241466684800, 1.92454669738088, 1.64809729313301, 2.01913617828263,
                 1.50455726188833, 1.25183461029289, 1.70284654929000, 1.36051054373844, 1.16529703804363,

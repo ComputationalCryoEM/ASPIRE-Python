@@ -50,7 +50,7 @@ class FFBBasis2D(FBBasis2D):
         self._indices = self.indices()
 
         # get normalized factors
-        self._norms = self.norms()
+        self.radial_norms, self.angular_norms = self.norms()
 
         # precompute the basis functions in 2D grids
         self._precomp = self._precomp()
@@ -75,7 +75,7 @@ class FFBBasis2D(FBBasis2D):
                 # NOTE: We need to remove the factor due to the discretization here
                 # since it is already included in our quadrature weights
                 # Only normalized by the radial part of basis function
-                nrm = 1 / (np.sqrt(np.prod(self.sz))) * self._norms[0][ind_radial]
+                nrm = 1 / (np.sqrt(np.prod(self.sz))) * self.radial_norms[ind_radial]
                 radial[ind_radial] /= nrm
                 ind_radial += 1
 
@@ -129,7 +129,7 @@ class FFBBasis2D(FBBasis2D):
         idx = ind + np.arange(self.k_max[0])
 
         # include the normalization factor of angular part into radial part
-        radial_norm = self._precomp["radial"] / np.expand_dims(self._norms[1], 1)
+        radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
         pf[:, 0, :] = v[:, mask] @ radial_norm[idx]
         ind = ind + np.size(idx)
 
@@ -228,7 +228,7 @@ class FFBBasis2D(FBBasis2D):
         mask = self._indices["ells"] == 0
 
         # include the normalization factor of angular part into radial part
-        radial_norm = self._precomp["radial"] / np.expand_dims(self._norms[1], 1)
+        radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
         v[:, mask] = pf[:, :, 0].real @ radial_norm[idx].T
         ind = ind + np.size(idx)
 

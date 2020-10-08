@@ -62,7 +62,7 @@ class FBBasis2D(Basis):
         self._indices = self.indices()
 
         # get normalized factors
-        self._norms = self.norms()
+        self.radial_norms, self.angular_norms = self.norms()
 
         # precompute the basis functions in 2D grids
         self._precomp = self._precomp()
@@ -112,7 +112,7 @@ class FBBasis2D(Basis):
             for k in range(1, self.k_max[ell] + 1):
                 # Only normalized by the radial part of basis function
                 radial[:, ind_radial] = (jv(ell, self.r0[k - 1, ell] * r_unique)
-                                         / self._norms[0][ind_radial])
+                                         / self.radial_norms[ind_radial])
                 ind_radial += 1
 
             sgns = (1,) if ell == 0 else (1, -1)
@@ -130,16 +130,17 @@ class FBBasis2D(Basis):
         """
         Calculate the normalized factors of basis functions
         """
-        norms = np.zeros((2, np.sum(self.k_max)))
+        radial_norms = np.zeros(np.sum(self.k_max))
+        angular_norms = np.zeros(np.sum(self.k_max))
         norm_fn = self.basis_norm_2d
 
         i = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                norms[:, i] = norm_fn(ell, k)
+                radial_norms[i], angular_norms[i] = norm_fn(ell, k)
                 i += 1
 
-        return norms
+        return radial_norms, angular_norms
 
     def basis_norm_2d(self, ell, k):
         """
@@ -180,7 +181,7 @@ class FBBasis2D(Basis):
             idx_radial = ind_radial + np.arange(0, k_max)
 
             # include the normalization factor of angular part
-            ang_nrms = self._norms[1][idx_radial]
+            ang_nrms = self.angular_norms[idx_radial]
             radial = self._precomp['radial'][:, idx_radial]
             radial = radial / ang_nrms
 
@@ -228,7 +229,7 @@ class FBBasis2D(Basis):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
             # include the normalization factor of angular part
-            ang_nrms = self._norms[1][idx_radial]
+            ang_nrms = self.angular_norms[idx_radial]
             radial = self._precomp['radial'][:, idx_radial]
             radial = radial / ang_nrms
 
