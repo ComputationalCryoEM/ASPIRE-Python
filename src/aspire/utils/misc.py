@@ -85,11 +85,14 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
     """
 
     if not isinstance(mean_vol, Volume):
-        logger.warning('src_wiener_coords mean_vol should be a Volume instance. Correcting for now.')
+        logger.warning('src_wiener_coords mean_vol should be a Volume instance. Attempt correction.')
         if len(mean_vol.shape) == 4 and mean_vol.shape[3] != 1:
-            logger.error('Cannot naively convert to Volume instance. Please change calling code.')
-        mean_vol = Volume(mean_vol)
+            msg = (f'Cannot naively convert {mean_vol.shape} to Volume instance.'
+                   'Please change calling code.')
+            logger.error(msg)
+            raise RuntimeError(msg)
 
+        mean_vol = Volume(mean_vol)
 
     if not isinstance(eig_vols, Volume):
         logger.warning('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
