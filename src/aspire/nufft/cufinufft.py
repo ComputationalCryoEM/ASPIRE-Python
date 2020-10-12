@@ -41,9 +41,8 @@ class CufinufftPlan(Plan):
 
         self.sz = sz
         self.dim = len(sz)
-        # TODO: Following the row major conversion, this should no longer happen.
-        if fourier_pts.flags.f_contiguous:
-            logger.warning('cufinufft has caught an F_CONTIGUOUS array,'
+        if not fourier_pts.flags.c_contiguous:
+            logger.debug('cufinufft has caught a non C_CONTIGUOUS array,'
                            ' `fourier_pts` will be copied to C_CONTIGUOUS.')
         # TODO: maybe replace with ascontiguousarray
         self.fourier_pts = np.asarray(np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order='C', dtype=self.dtype)
