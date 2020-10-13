@@ -36,7 +36,7 @@ class OrientSyncTestCase(TestCase):
             L=L,
             n=n,
             vols=vols,
-            filters=filters
+            filters_typ=filters
         )
 
         self.orient_est = CLSyncVoting(sim, L // 2, 36)

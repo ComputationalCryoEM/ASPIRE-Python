@@ -129,6 +129,8 @@ class RelionSource(ImageSource):
             metadata=metadata,
             memory=memory
         )
+        self.filters_typ = filters
+        self.filters_idx = filter_indices
 
     def __str__(self):
         return f'RelionSource ({self.n} images of size {self.L}x{self.L})'

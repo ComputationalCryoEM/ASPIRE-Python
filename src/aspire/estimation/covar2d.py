@@ -351,15 +351,15 @@ class BatchedRotCov2D(RotCov2D):
             from aspire.basis.ffb_2d import FFBBasis2D
             self.basis = FFBBasis2D((src.L, src.L))
 
-        if src.filters is None:
+        if src.filters_typ is None:
             logger.info(f'CTF filters are not included in Cov2D denoising')
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
             self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
         else:
             logger.info(f'Represent CTF filters in FB basis')
-            unique_filters = list(OrderedDict.fromkeys(src.filters))
-            self.ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
+            unique_filters = src.filters_typ
+            self.ctf_idx = src.filters_idx
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
 
     def _calc_rhs(self):

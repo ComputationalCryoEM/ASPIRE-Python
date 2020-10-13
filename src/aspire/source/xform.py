@@ -203,21 +203,21 @@ class FlipXform(Xform):
     """
     A `Xform` that applies phase flip to a stack of 2D images (as an Image object).
     """
-    def __init__(self, filters):
+    def __init__(self, filters_typ, filters_idx):
         """
         Initialize the `FlipXform` using CTF `Filter` objects
         :param filters: CTF filters of images
         """
         super().__init__()
-        self.filters = filters
+        self.filters_typ = filters_typ
+        self.filters_idx = filters_idx
 
     def _forward(self, im, indices):
-        unique_filters = set(self.filters[indices])
         im_in = im.asnumpy()
         im_out = np.zeros_like(im_in)
-        for f in unique_filters:
-            idx_k = np.where(self.filters[indices] == f)[0]
-            flip_filter = LambdaFilter(f, np.sign)
+        for f_ind in range(len(self.filters_typ)):
+            idx_k = np.where(self.filters_idx[indices] == f_ind)[0]
+            flip_filter = LambdaFilter(self.filters_typ[f_ind], np.sign)
             if len(idx_k) > 0:
                 im_out[idx_k] = Image(im_in[idx_k]).filter(flip_filter).asnumpy()
 

@@ -37,7 +37,7 @@ class Cov2DTestCase(TestCase):
             n=n,
             L=L,
             vols=vols,
-            filters=filters,
+            filters_typ=filters,
             offsets=0.0,
             amplitudes=1.0,
             dtype='double',
@@ -46,7 +46,7 @@ class Cov2DTestCase(TestCase):
 
         self.basis = FFBBasis2D((L, L))
 
-        self.h_idx = np.array([filters.index(f) for f in sim.filters])
+        self.h_idx = sim.filters_idx
         self.filters = filters
         self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in self.filters]
 

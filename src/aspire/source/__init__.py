@@ -91,6 +91,8 @@ class ImageSource:
         self.L = L
         self.n = n
         self.dtype = dtype
+        self.filters_typ = None
+        self.filters_idx = None
 
         # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
         self._cached_im = None
@@ -288,11 +290,10 @@ class ImageSource:
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
-        unique_filters = set(self.filters)
-        for f in unique_filters:
-            idx_k = np.where(self.filters[indices] == f)[0]
+        for f_ind in range(len(self.filters_typ)):
+            idx_k = np.where(self.filters_idx[indices] == f_ind)[0]
             if len(idx_k) > 0:
-                im[idx_k] = Image(im[idx_k]).filter(f).asnumpy()
+                im[idx_k] = Image(im[idx_k]).filter(self.filters_typ[f_ind]).asnumpy()
 
         return im
 
@@ -300,16 +301,16 @@ class ImageSource:
         grid2d = grid_2d(L)
         omega = np.pi * np.vstack((grid2d['x'].flatten(), grid2d['y'].flatten()))
 
-        h = np.empty((omega.shape[-1], len(self.filters)))
-        for f in set(self.filters):
-            idx_k = np.where(self.filters == f)[0]
+        h = np.empty((omega.shape[-1], len(self.filters_idx)))
+        for f_ind in range(len(self.filters_typ)):
+            idx_k = np.where(self.filters_idx == f_ind)[0]
             if len(idx_k) > 0:
-                filter_values = f.evaluate(omega)
+                filter_values = self.filters_typ[f_ind].evaluate(omega)
                 if power != 1:
                     filter_values **= power
                 h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
-        h = np.reshape(h, grid2d['x'].shape + (len(self.filters),))
+        h = np.reshape(h, grid2d['x'].shape + (len(self.filters_idx),))
 
         return h
 
@@ -346,8 +347,8 @@ class ImageSource:
         self.generation_pipeline.add_xform(Downsample(resolution=L))
 
         ds_factor = self.L / L
-        for f in set(self.filters):
-            f.scale(ds_factor)
+        for f_ind in range(len(self.filters_typ)):
+            self.filters_typ[f_ind].scale(ds_factor)
         self.offsets /= ds_factor
 
         self.L = L
@@ -363,12 +364,10 @@ class ImageSource:
         whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
         logger.info('Transforming all CTF Filters into Multiplicative Filters')
-        unique_filters = set(self.filters)
-        for f in unique_filters:
-            f_new = copy(f)
-            f.__class__ = MultiplicativeFilter
-            f.__init__(f_new, whiten_filter)
-
+        for f_ind in range(len(self.filters_typ)):
+            f_new = copy(self.filters_typ[f_ind])
+            self.filters_typ[f_ind].__class__ = MultiplicativeFilter
+            self.filters_typ[f_ind].__init__(f_new, whiten_filter)
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
@@ -378,7 +377,8 @@ class ImageSource:
         """
         logger.info('Perform phase flip on source object')
         logger.info('Adding Phase Flip Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(FlipXform(self.filters))
+        self.generation_pipeline.add_xform(FlipXform(self.filters_typ,
+                                                     self.filters_idx))
 
     def invert_contrast(self, batch_size=512):
         """
