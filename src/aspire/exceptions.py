@@ -1,3 +1,4 @@
+import logging
 import platform
 import struct
 import subprocess
@@ -8,6 +9,8 @@ import traceback
 def handle_exception(exc_type, exc_value, exc_traceback):
     """
     Handle any top-level unhandled exception.
+    Tries to gather and log additional context information,
+    then re-raises.
 
     :param exc_type: Exception type object
     :param exc_value: Exception value object (an instance of type exc_type)
@@ -44,18 +47,28 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     # Walk through all traceback objects (oldest call -> most recent call), capturing frame/local variable information.
     lines.append('Exception Details (most recent call last)')
     frame_generator = traceback.walk_tb(exc_traceback)
-    stack_summary = traceback.StackSummary.extract(frame_generator, capture_locals=True)
+
+    try:
+        stack_summary = traceback.StackSummary.extract(frame_generator, capture_locals=True)
+    except Exception as e:
+        # The above code, while more informative, doesn't always work.
+        # When it doesn't try something simpler.
+        stack_summary = traceback.StackSummary.extract(frame_generator, capture_locals=False)
+
     frame_strings = stack_summary.format()
     for s in frame_strings:
         lines.extend(s.split('\n'))
 
     try:
         with open('aspire.err.log', 'w') as f:
-            f.write('\n'.join(lines))
+            f.write('\n'.join(lines) + '\n')
     except:  # nopep8
         pass
 
     try:
+        # send to logger
+        logging.critical(f'{exc_value}\nTraceback:\n'
+                         f'{"".join(traceback.format_tb(exc_traceback))}')
         # re-raise the exception we got for the caller.
         raise exc_value
     finally:
