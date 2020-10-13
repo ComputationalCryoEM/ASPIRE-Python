@@ -491,7 +491,11 @@ class CLOrient3D:
         :param h: common lines filter
         :return: filtered and normalized i images
         """
-        np.einsum(subscripts, pf, h, out=pf)
+
+        # Note if we'd rather not have the dtype and casting args,
+        #   we can control h.dtype instead.
+        np.einsum(subscripts, pf, h, out=pf,
+                  dtype=pf.dtype, casting='same_kind')
         pf[r_max - 1:r_max + 2] = 0
         pf /= np.linalg.norm(pf, axis=0)
 

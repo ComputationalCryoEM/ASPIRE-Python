@@ -29,6 +29,9 @@ logger.info('This script illustrates 2D covariance Wiener filtering functionalit
 img_size = 64
 # Set the total number of images generated from the 3D map
 num_imgs = 1024
+# Set dtype for this experiment
+dtype = np.float32
+logger.info(f'Simulation running in {dtype} precision.')
 
 # Set the noise variance and build the noise filter
 # It might be better to select a signal noise ratio
@@ -54,7 +57,8 @@ ctf_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1
 logger.info(f'Load 3D map and downsample 3D map to desired grids '
             f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
-vols = Volume(infile.data/np.max(infile.data))
+# We prefer that our various arrays have consistent dtype.
+vols = Volume(infile.data.astype(dtype)/np.max(infile.data))
 vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
@@ -66,12 +70,12 @@ sim = Simulation(
     unique_filters=ctf_filters,
     offsets=0.0,
     amplitudes=1.0,
-    dtype='double',
+    dtype=dtype,
     noise_filter=noise_filter
 )
 
 # Specify the fast FB basis method for expending the 2D images
-ffbbasis = FFBBasis2D((img_size, img_size))
+ffbbasis = FFBBasis2D((img_size, img_size), dtype=dtype)
 
 # Assign the CTF information and index for each image
 h_idx = sim.filter_indices

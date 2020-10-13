@@ -37,9 +37,10 @@ class Basis:
         self.count = 0
         self.ell_max = ell_max
         self.ndim = ndim
-        self.dtype = dtype
-        if self.dtype != np.float64:
-            raise NotImplementedError("Currently only implemented for default double (np.float64) type")
+        self.dtype = np.dtype(dtype)
+        if self.dtype not in (np.float32, np.float64):
+            raise NotImplementedError(
+                "Currently only implemented for float32 and float64 types")
 
         self._build()
 
@@ -72,7 +73,8 @@ class Basis:
 
         max_num_zeros = max(len(z) for z in zeros)
         for i, z in enumerate(zeros):
-            zeros[i] = np.hstack((z, np.zeros(max_num_zeros - len(z))))
+            zeros[i] = np.hstack((z, np.zeros(max_num_zeros - len(z),
+                                              dtype=self.dtype)))
 
         self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1))
 

@@ -90,7 +90,7 @@ class ImageSource:
         """
         self.L = L
         self.n = n
-        self.dtype = dtype
+        self.dtype = np.dtype(dtype)
 
         # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
         self._cached_im = None
@@ -162,14 +162,14 @@ class ImageSource:
         """
         :return: Rotation angles in radians, as a n x 3 array
         """
-        return self._rotations.as_euler()
+        return self._rotations.as_euler().astype(self.dtype)
 
     @property
     def rots(self):
         """
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        return self._rotations.as_matrix()
+        return self._rotations.as_matrix().astype(self.dtype)
 
     @angles.setter
     def angles(self, values):
@@ -323,7 +323,7 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        indices = np.arange(start, min(start + num, self.n))
+        indices = np.arange(start, min(start + num, self.n), dtype=np.int)
 
         if self._cached_im is not None:
             logger.info(f'Loading images from cache')

@@ -5,7 +5,7 @@ import numpy as np
 
 from aspire.nufft import Plan
 from aspire.utils import ensure
-from aspire.utils.misc import complex_type
+from aspire.utils.types import complex_type, dtype_legacy_string
 
 logger = logging.getLogger(__name__)
 

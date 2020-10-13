@@ -10,55 +10,8 @@ from numpy.linalg import qr, solve
 from aspire.utils.matrix import mat_to_vec, vec_to_mat
 from aspire.volume import Volume
 
+
 logger = logging.getLogger(__name__)
-
-
-def real_type(complextype):
-    """
-    Get Numpy real type from corresponding complex type
-
-    :param complextype: Numpy complex type
-    :return realtype: Numpy real type
-    """
-    complextype = np.dtype(complextype)
-    realtype = None
-    if complextype == np.complex64:
-        realtype = np.float32
-    elif complextype == np.complex128:
-        realtype = np.float64
-    elif complextype in (np.float32, np.float64):
-        logger.debug(f'Corresponding type is already real {complextype}.')
-        realtype = complextype
-    else:
-        msg = f'Corresponding real type is not defined for {complextype}.'
-        logger.error(msg)
-        raise TypeError(msg)
-
-    return realtype
-
-
-def complex_type(realtype):
-    """
-    Get Numpy complex type from corresponding real type
-
-    :param realtype: Numpy real type
-    :return complextype: Numpy complex type
-    """
-    realtype = np.dtype(realtype)
-    complextype = None
-    if realtype == np.float32:
-        complextype = np.complex64
-    elif realtype == np.float64:
-        complextype = np.complex128
-    elif realtype in (np.complex64, np.complex128):
-        logger.debug(f'Corresponding type is already complex {realtype}.')
-        complextype = realtype
-    else:
-        msg = f'Corresponding complex type is not defined for {realtype}.'
-        logger.error(msg)
-        raise TypeError(msg)
-
-    return complextype
 
 
 def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_size=512):

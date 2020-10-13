@@ -203,7 +203,7 @@ def num_besselj_zeros(ell, r):
     return len(r0), r0
 
 
-def unique_coords_nd(N, ndim, shifted=False, normalized=True):
+def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float64):
     """
     Generate unique polar coordinates from 2D or 3D rectangular coordinates.
     :param N: length size of a square or cube.
@@ -216,7 +216,7 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True):
     ensure(N > 0, 'Number of grid points should be greater than 0.')
 
     if ndim == 2:
-        grid = grid_2d(N, shifted=shifted, normalized=normalized)
+        grid = grid_2d(N, shifted=shifted, normalized=normalized, dtype=dtype)
         mask = grid['r'] <= 1
 
         # Minor differences in r/theta/phi values are unimportant for the purpose
@@ -233,7 +233,7 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True):
         ang_unique, ang_idx = np.unique(phi, return_inverse=True)
 
     else:
-        grid = grid_3d(N, shifted=shifted, normalized=normalized)
+        grid = grid_3d(N, shifted=shifted, normalized=normalized, dtype=dtype)
         mask = grid['r'] <= 1
 
         # In Numpy, elements in the indexed array are always iterated and returned in row-major (C-style) order.
@@ -262,7 +262,7 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True):
     }
 
 
-def lgwt(ndeg, a, b):
+def lgwt(ndeg, a, b, dtype=np.float64):
     """
     Compute Legendre-Gauss quadrature
 
@@ -288,7 +288,7 @@ def lgwt(ndeg, a, b):
     x = scale_factor * x + shift
     w = scale_factor * w
 
-    return x, w
+    return x.astype(dtype), w.astype(dtype)
 
 
 def d_decay_approx_fun(a, b, c, d):

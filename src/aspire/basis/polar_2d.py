@@ -8,7 +8,7 @@ from aspire.nufft import anufft, nufft
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
-from aspire.utils.misc import real_type
+from aspire.utils.types import real_type
 
 logger = logging.getLogger(__name__)
 
