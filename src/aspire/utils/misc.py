@@ -8,36 +8,10 @@ from itertools import chain, combinations
 import numpy as np
 from numpy.linalg import qr, solve
 
-# This import style is to avoid circular dependency on Volume.
-import aspire.volume
 from aspire.utils.matrix import mat_to_vec, vec_to_mat
-
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
-
-
-def dtype_legacy_string(dtype):
-    """
-    Get legacy dtype string from corresponding numpy dtype.
-
-    :param dtype: Numpy dtype
-    :return: string
-    """
-
-    dtype_to_string_map = {
-        "float32": "single",
-        "float64": "double",
-        "complex128": "complex",
-    }
-
-    dtype_str = dtype_to_string_map.get(str(dtype))
-
-    if not dtype_str:
-        msg = f"Corresponding dtype {str(dtype)} is not defined."
-        logger.error(msg)
-        raise TypeError(msg)
-
-    return dtype_str
 
 
 def src_wiener_coords(
@@ -65,7 +39,7 @@ def src_wiener_coords(
     # TODO: Find a better place for this functionality other than in utils
     """
 
-    if not isinstance(mean_vol, aspire.volume.Volume):
+    if not isinstance(mean_vol, Volume):
         logger.debug('src_wiener_coords mean_vol should be a Volume instance. Attempt correction.')
         if len(mean_vol.shape) == 4 and mean_vol.shape[3] != 1:
             msg = (
@@ -75,11 +49,11 @@ def src_wiener_coords(
             logger.error(msg)
             raise RuntimeError(msg)
 
-        mean_vol = aspire.volume.Volume(mean_vol)
+        mean_vol = Volume(mean_vol)
 
-    if not isinstance(eig_vols, aspire.volume.Volume):
+    if not isinstance(eig_vols, Volume):
         logger.warning('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
-        eig_vols = aspire.volume.Volume(eig_vols)
+        eig_vols = Volume(eig_vols)
 
     if not sim.dtype == mean_vol.dtype == eig_vols.dtype:
         logger.warning(
@@ -132,7 +106,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     """
     ims = np.zeros((k, n, sim.L, sim.L), dtype=vols.dtype)
     for ell in range(k):
-        ims[ell] = sim.vol_forward(aspire.volume.Volume(vols[ell]), s, n).asnumpy()
+        ims[ell] = sim.vol_forward(Volume(vols[ell]), s, n).asnumpy()
 
     ims = np.swapaxes(ims, 1, 3)
     ims = np.swapaxes(ims, 0, 2)
