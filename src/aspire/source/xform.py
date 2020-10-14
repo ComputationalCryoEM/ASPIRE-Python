@@ -209,15 +209,15 @@ class FlipXform(Xform):
         :param filters: CTF filters of images
         """
         super().__init__()
-        self.filters_typ = filters_typ
-        self.filters_idx = filters_idx
+        self.unique_filters = filters_typ
+        self.filter_indices = filters_idx
 
     def _forward(self, im, indices):
         im_in = im.asnumpy()
         im_out = np.zeros_like(im_in)
-        for f_ind in range(len(self.filters_typ)):
-            idx_k = np.where(self.filters_idx[indices] == f_ind)[0]
-            flip_filter = LambdaFilter(self.filters_typ[f_ind], np.sign)
+        for f_ind in range(len(self.unique_filters)):
+            idx_k = np.where(self.filter_indices[indices] == f_ind)[0]
+            flip_filter = LambdaFilter(self.unique_filters[f_ind], np.sign)
             if len(idx_k) > 0:
                 im_out[idx_k] = Image(im_in[idx_k]).filter(flip_filter).asnumpy()
 

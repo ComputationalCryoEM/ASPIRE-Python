@@ -27,7 +27,7 @@ class Cov2DTestCase(TestCase):
         self.noise_var = 1.3957e-4
         noise_filter = ScalarFilter(dim=2, value=self.noise_var)
 
-        filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1) for d in
+        unique_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
         vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))) # RCOPT
@@ -37,7 +37,7 @@ class Cov2DTestCase(TestCase):
             n=n,
             L=L,
             vols=vols,
-            filters_typ=filters,
+            filters_typ=unique_filters,
             offsets=0.0,
             amplitudes=1.0,
             dtype='double',
@@ -46,9 +46,8 @@ class Cov2DTestCase(TestCase):
 
         self.basis = FFBBasis2D((L, L))
 
-        self.h_idx = sim.filters_idx
-        self.filters = filters
-        self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in self.filters]
+        self.h_idx = sim.filter_indices
+        self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in unique_filters]
 
         self.imgs_clean = sim.projections()
         self.imgs_ctf_clean = sim.clean_images()

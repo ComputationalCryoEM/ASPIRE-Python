@@ -55,16 +55,13 @@ class Simulation(ImageSource):
 
         self.states = states
 
-        self.filters_typ = filters_typ
-        self.filters_idx = filters_idx
+        self.unique_filters = filters_typ
+
+        # Create filter indices and fill the metadata based on unique filters
         if filters_typ:
             if filters_idx is None:
-                self.filters_idx = randi(len(filters_typ), n, seed=seed) - 1
-                self._metadata['__filter_indices'] = self.filters_idx
-            else:
-                self.filters_idx = filters_idx
-                self._metadata['__filter_indices'] = filters_idx
-            self._metadata['__filter'] = [filters_typ[i] for i in self.filters_idx]
+                filters_idx = randi(len(filters_typ), n, seed=seed) - 1
+            self.filter_indices = filters_idx
 
         self.offsets = offsets
         self.amplitudes = amplitudes

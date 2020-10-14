@@ -33,8 +33,8 @@ class BatchedRotCov2DTestCase(TestCase):
 
         basis = FFBBasis2D((L, L))
 
-        unique_filters = src.filters_typ
-        ctf_idx = src.filters_idx
+        unique_filters = src.unique_filters
+        ctf_idx = src.filter_indices
 
         ctf_fb = [f.fb_mat(basis) for f in unique_filters]
 
