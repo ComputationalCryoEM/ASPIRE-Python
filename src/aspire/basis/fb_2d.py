@@ -61,11 +61,11 @@ class FBBasis2D(Basis):
         # generate 1D indices for basis functions
         self._indices = self.indices()
 
+        # get normalized factors
+        self.radial_norms, self.angular_norms = self.norms()
+
         # precompute the basis functions in 2D grids
         self._precomp = self._precomp()
-
-        # get normalized factors
-        self._norms = self.norms()
 
     def indices(self):
         """
@@ -110,7 +110,9 @@ class FBBasis2D(Basis):
 
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[:, ind_radial] = jv(ell, self.r0[k - 1, ell] * r_unique)
+                # Only normalized by the radial part of basis function
+                radial[:, ind_radial] = (jv(ell, self.r0[k - 1, ell] * r_unique)
+                                         / self.radial_norms[ind_radial])
                 ind_radial += 1
 
             sgns = (1,) if ell == 0 else (1, -1)
@@ -128,26 +130,28 @@ class FBBasis2D(Basis):
         """
         Calculate the normalized factors of basis functions
         """
-        norms = np.zeros(np.sum(self.k_max))
+        radial_norms = np.zeros(np.sum(self.k_max))
+        angular_norms = np.zeros(np.sum(self.k_max))
         norm_fn = self.basis_norm_2d
 
         i = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                norms[i] = norm_fn(ell, k)
+                radial_norms[i], angular_norms[i] = norm_fn(ell, k)
                 i += 1
 
-        return norms
+        return radial_norms, angular_norms
 
     def basis_norm_2d(self, ell, k):
         """
-        Calculate the normalized factor of a specified basis function
+        Calculate the normalized factors from radial and angular parts of a specified basis function
         """
-        result = np.abs(jv(ell + 1, self.r0[k - 1, ell])) * np.sqrt(np.pi / 2.) * self.nres / 2.
+        rad_norm = np.abs(jv(ell + 1, self.r0[k - 1, ell])) * np.sqrt(1 / 2.) * self.nres / 2.
+        ang_norm = np.sqrt(np.pi)
         if ell == 0:
-            result *= np.sqrt(2)
+            ang_norm *= np.sqrt(2)
 
-        return result
+        return rad_norm, ang_norm
 
     def evaluate(self, v):
         """
@@ -175,9 +179,11 @@ class FBBasis2D(Basis):
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
-            nrms = self._norms[idx_radial]
+
+            # include the normalization factor of angular part
+            ang_nrms = self.angular_norms[idx_radial]
             radial = self._precomp['radial'][:, idx_radial]
-            radial = radial / nrms
+            radial = radial / ang_nrms
 
             sgns = (1,) if ell == 0 else (1, -1)
             for _ in sgns:
@@ -222,9 +228,10 @@ class FBBasis2D(Basis):
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
-            nrms = self._norms[idx_radial]
+            # include the normalization factor of angular part
+            ang_nrms = self.angular_norms[idx_radial]
             radial = self._precomp['radial'][:, idx_radial]
-            radial = radial / nrms
+            radial = radial / ang_nrms
 
             sgns = (1,) if ell == 0 else (1, -1)
             for _ in sgns:

@@ -82,6 +82,9 @@ class Xform:
         """
         return Xform.XformActiveContextManager(self, active=False)
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 class LinearXform(Xform):
     """
@@ -120,13 +123,23 @@ class Multiply(SymmetricXform):
     def __init__(self, factor):
         """
         Initialize a Multiply Xform using specified factors
-        :param factor: An ndarray of scalar factors to use for amplitude multiplication.
+        :param factor: A float/int or an ndarray of scalar factors to use for amplitude multiplication.
         """
         super().__init__()
-        self.multipliers = factor
+        self.multipliers = np.array(factor)
 
     def _forward(self, im, indices):
-        return im * self.multipliers[indices]
+        if self.multipliers.size == 1:  # if we have a scalar multiplier
+            im_new = im * self.multipliers
+        else:
+            im_new = im * self.multipliers[indices]
+
+        return im_new
+
+    def __str__(self):
+        if self.multipliers.size == 1:
+            return f'Multiply ({self.multipliers})'
+        return 'Multiply (multiple)'
 
 
 class Shift(LinearXform):
@@ -137,17 +150,31 @@ class Shift(LinearXform):
     def __init__(self, shifts):
         """
         Initialize a Shift Xform using a Numpy array of shift values.
-        :param shifts: An ndarray of shape (n, 2)
+        :param shifts: An ndarray of shape (2) or (n, 2)
         """
         super().__init__()
-        self.shifts = shifts
-        self.n = shifts.shape[0]
+        self.shifts = np.array(shifts)
 
     def _forward(self, im, indices):
-        return im.shift(self.shifts[indices])
+        if self.shifts.ndim == 1:
+            im_new = im.shift(self.shifts)
+        else:
+            im_new = im.shift(self.shifts[indices])
+
+        return im_new
 
     def _adjoint(self, im, indices):
-        return im.shift(-self.shifts[indices])
+        if self.shifts.ndim == 1:
+            im_new = im.shift(-self.shifts)
+        else:
+            im_new = im.shift(-self.shifts[indices])
+
+        return im_new
+
+    def __str__(self):
+        if self.shifts.ndim == 1:
+            return f'Shift ({self.shifts})'
+        return 'Shift (multiple)'
 
 
 class Downsample(LinearXform):
@@ -162,8 +189,11 @@ class Downsample(LinearXform):
         return im.downsample(self.resolution)
 
     def _adjoint(self, im, indices):
-        # TODO: Implement upsampling with zero-padding
+        # TODO: Implement up-sampling with zero-padding
         raise NotImplementedError('Adjoint of downsampling not implemented yet.')
+
+    def __str__(self):
+        return f'Downsample (Resolution {self.resolution})'
 
 
 class FilterXform(SymmetricXform):
@@ -181,6 +211,9 @@ class FilterXform(SymmetricXform):
     def _forward(self, im, indices):
         return im.filter(self.filter)
 
+    def __str__(self):
+        return f'FilterXform ({self.filter})'
+
 
 class Add(Xform):
     """
@@ -190,13 +223,23 @@ class Add(Xform):
     def __init__(self, addend):
         """
         Initialize an Add Xform using a Numpy array of predefined values.
-        :param addend: An ndarray of shape (n,)
+        :param addend: An float/int or an ndarray of shape (n,)
         """
         super().__init__()
-        self.addend = addend
+        self.addend = np.array(addend)
 
     def _forward(self, im, indices):
-        return im + self.addend[indices]
+        if self.addend.size == 1:
+            im_new = im + self.addend
+        else:
+            im_new = im + self.addend[indices]
+
+        return im_new
+
+    def __str__(self):
+        if self.addend.size == 1:
+            return f'Add ({self.addend})'
+        return 'Add (multiple)'
 
 
 class FlipXform(Xform):
@@ -223,6 +266,9 @@ class FlipXform(Xform):
 
         return Image(im_out)
 
+    def __str__(self):
+        return f'FlipXform ({self.filters[0]})'
+
 
 class LambdaXform(Xform):
     """
@@ -246,6 +292,9 @@ class LambdaXform(Xform):
         im_out = self.lambda_fun(im_in, *self.args, **self.kwargs)
 
         return Image(im_out)
+
+    def __str__(self):
+        return f'LambdaXform ({self.lambda_fun.__name__})'
 
 
 class NoiseAdder(Xform):
@@ -378,6 +427,9 @@ class Pipeline(Xform):
         self.xforms = xforms or []
         self.memory = memory
         self.active = True
+
+    def __str__(self):
+        return 'Apply pipeline: ' + ' '.join([f'{xform}' for xform in self.xforms])
 
     def add_xform(self, xform):
         """
