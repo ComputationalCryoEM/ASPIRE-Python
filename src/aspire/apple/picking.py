@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from aspire import config
 from aspire.apple.helper import PickerHelper
+from aspire.utils.numeric import fft
 from aspire.utils.numeric import xp
 
 logger = logging.getLogger(__name__)
@@ -120,7 +121,7 @@ class Picker:
         query_box = PickerHelper.extract_query(micro_img, self.query_size // 2)
         logger.info('Extracting query images complete')
 
-        query_box = xp.conj(xp.fft2(query_box, axes=(2, 3)))
+        query_box = xp.conj(fft.fft2(query_box, axes=(2, 3)))
 
         reference_box = PickerHelper.extract_references(micro_img, self.query_size, self.container_size)
 
@@ -128,9 +129,9 @@ class Picker:
         conv_map = xp.zeros((reference_size, query_box.shape[0], query_box.shape[1]))
 
         def _work(index):
-            reference_box_i = xp.fft2(reference_box[index], axes=(0, 1))
+            reference_box_i = fft.fft2(reference_box[index], axes=(0, 1))
             window_t = xp.multiply(reference_box_i, query_box)
-            cc = xp.ifft2(window_t, axes=(2, 3))
+            cc = fft.ifft2(window_t, axes=(2, 3))
             return index, cc.real.max((2, 3)) - cc.real.mean((2, 3))
 
         n_works = reference_size
