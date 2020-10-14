@@ -37,7 +37,7 @@ class Cov2DTestCase(TestCase):
             n=n,
             L=L,
             vols=vols,
-            filters_typ=unique_filters,
+            unique_filters=unique_filters,
             offsets=0.0,
             amplitudes=1.0,
             dtype='double',

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class Simulation(ImageSource):
     def __init__(self, L=8, n=1024, vols=None, states=None,
-                 filters_typ=None, filters_idx=None,
+                 unique_filters=None, filter_indices=None,
                  offsets=None, amplitudes=None, dtype='single', C=2,
                  angles=None, seed=0, memory=None, noise_filter=None):
         """
@@ -55,13 +55,13 @@ class Simulation(ImageSource):
 
         self.states = states
 
-        self.unique_filters = filters_typ
+        self.unique_filters = unique_filters
 
         # Create filter indices and fill the metadata based on unique filters
-        if filters_typ:
-            if filters_idx is None:
-                filters_idx = randi(len(filters_typ), n, seed=seed) - 1
-            self.filter_indices = filters_idx
+        if unique_filters:
+            if filter_indices is None:
+                filter_indices = randi(len(unique_filters), n, seed=seed) - 1
+            self.filter_indices = filter_indices
 
         self.offsets = offsets
         self.amplitudes = amplitudes

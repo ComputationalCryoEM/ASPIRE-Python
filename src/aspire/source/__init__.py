@@ -107,7 +107,6 @@ class ImageSource:
                 )
 
         self.unique_filters = None
-        self.filter_indices = None
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
     @property
@@ -116,7 +115,7 @@ class ImageSource:
 
     @states.setter
     def states(self, values):
-        self.set_metadata('_rlnClassNumber', values)
+        return self.set_metadata('_rlnClassNumber', values)
 
     @property
     def filter_indices(self):
@@ -128,21 +127,19 @@ class ImageSource:
         if indices is None:
             filter_values = np.nan
         else:
-            filter_values = np.array([(
-                getattr(self.unique_filters[i], 'voltage', np.nan),
-                getattr(self.unique_filters[i], 'defocus_u', np.nan),
-                getattr(self.unique_filters[i], 'defocus_v', np.nan),
-                getattr(self.unique_filters[i], 'defocus_ang', np.nan),
-                getattr(self.unique_filters[i], 'Cs', np.nan),
-                getattr(self.unique_filters[i], 'alpha', np.nan)
-            ) for i in indices])
+            attribute_list = ('voltage', 'defocus_u', 'defocus_v',
+                              'defocus_ang', 'Cs', 'alpha')
+            filter_values = np.zeros((len(indices), len(attribute_list)))
+            for i, filt in enumerate(self.unique_filters):
+                filter_values[indices == i] = [getattr(filt, attribute, np.nan)
+                                               for attribute in attribute_list]
 
         self.set_metadata(
             ['_rlnVoltage', '_rlnDefocusU', '_rlnDefocusV', '_rlnDefocusAngle',
              '_rlnSphericalAberration', '_rlnAmplitudeContrast'],
             filter_values
         )
-        self.set_metadata(['__filter_indices'], indices)
+        return self.set_metadata(['__filter_indices'], indices)
 
     @property
     def offsets(self):
@@ -150,7 +147,7 @@ class ImageSource:
 
     @offsets.setter
     def offsets(self, values):
-        self.set_metadata(['_rlnOriginX', '_rlnOriginY'], values)
+        return self.set_metadata(['_rlnOriginX', '_rlnOriginY'], values)
 
     @property
     def amplitudes(self):
@@ -158,7 +155,7 @@ class ImageSource:
 
     @amplitudes.setter
     def amplitudes(self, values):
-        self.set_metadata('_rlnAmplitude', values)
+        return self.set_metadata('_rlnAmplitude', values)
 
     @property
     def angles(self):
@@ -288,10 +285,10 @@ class ImageSource:
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
-        for f_ind in range(len(self.unique_filters)):
-            idx_k = np.where(self.filter_indices[indices] == f_ind)[0]
+        for i, filt in enumerate(self.unique_filters):
+            idx_k = np.where(self.filter_indices[indices] == i)[0]
             if len(idx_k) > 0:
-                im[idx_k] = Image(im[idx_k]).filter(self.unique_filters[f_ind]).asnumpy()
+                im[idx_k] = Image(im[idx_k]).filter(filt).asnumpy()
 
         return im
 
@@ -300,10 +297,10 @@ class ImageSource:
         omega = np.pi * np.vstack((grid2d['x'].flatten(), grid2d['y'].flatten()))
 
         h = np.empty((omega.shape[-1], len(self.filter_indices)))
-        for f_ind in range(len(self.unique_filters)):
-            idx_k = np.where(self.filter_indices == f_ind)[0]
+        for i, filt in enumerate(self.unique_filters):
+            idx_k = np.where(self.filter_indices == i)[0]
             if len(idx_k) > 0:
-                filter_values = self.unique_filters[f_ind].evaluate(omega)
+                filter_values = filt.evaluate(omega)
                 if power != 1:
                     filter_values **= power
                 h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
@@ -345,8 +342,8 @@ class ImageSource:
         self.generation_pipeline.add_xform(Downsample(resolution=L))
 
         ds_factor = self.L / L
-        for f_ind in range(len(self.unique_filters)):
-            self.unique_filters[f_ind].scale(ds_factor)
+        for f in self.unique_filters:
+            f.scale(ds_factor)
         self.offsets /= ds_factor
 
         self.L = L
@@ -362,10 +359,10 @@ class ImageSource:
         whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
         logger.info('Transforming all CTF Filters into Multiplicative Filters')
-        for f_ind in range(len(self.unique_filters)):
-            f_new = copy(self.unique_filters[f_ind])
-            self.unique_filters[f_ind].__class__ = MultiplicativeFilter
-            self.unique_filters[f_ind].__init__(f_new, whiten_filter)
+        for filt in self.unique_filters:
+            f_new = copy(filt)
+            filt.__class__ = MultiplicativeFilter
+            filt.__init__(f_new, whiten_filter)
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
