@@ -267,7 +267,7 @@ class FlipXform(Xform):
         return Image(im_out)
 
     def __str__(self):
-        return f'FlipXform ({self.filters[0]})'
+        return f'FlipXform ({self.unique_filters[0]})'
 
 
 class LambdaXform(Xform):
