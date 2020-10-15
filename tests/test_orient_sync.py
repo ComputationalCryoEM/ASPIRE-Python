@@ -25,11 +25,12 @@ class OrientSyncTestCase(TestCase):
         defocus_ct = 7
         Cs = 2.0
         alpha = 0.1
+        self.dtype = np.float32
 
         filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=Cs, alpha=alpha) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')))
+        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')).astype(self.dtype))
         vols = vols.downsample((L*np.ones(3, dtype=int)))
 
         sim = Simulation(
@@ -37,7 +38,7 @@ class OrientSyncTestCase(TestCase):
             n=n,
             vols=vols,
             unique_filters=filters,
-            dtype='double'
+            dtype=self.dtype
         )
 
         self.orient_est = CLSyncVoting(sim, L // 2, 36)

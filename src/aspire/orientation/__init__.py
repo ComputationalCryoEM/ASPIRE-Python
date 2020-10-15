@@ -29,6 +29,8 @@ class CLOrient3D:
             a random subset of n_check images is used.
         """
         self.src = src
+        # Note dtype is inferred from self.src
+        self.dtype = self.src.dtype
         self.n_img = src.n
         self.n_res = self.src.L
         self.n_rad = n_rad
@@ -57,7 +59,9 @@ class CLOrient3D:
         imgs = self.src.images(start=0, num=np.inf)
 
         # Obtain coefficients in polar Fourier basis for input 2D images
-        self.basis = PolarBasis2D((self.n_res, self.n_res), self.n_rad, self.n_theta)
+        self.basis = PolarBasis2D((self.n_res, self.n_res),
+                                  self.n_rad, self.n_theta,
+                                  dtype=self.dtype)
         self.pf = self.basis.evaluate_t(imgs)
         self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad).T # RCOPT
 
@@ -284,10 +288,10 @@ class CLOrient3D:
         # exactly four unknowns). The variables below are used to construct
         # this sparse system. The k'th non-zero element of the equations matrix
         # is stored at index (shift_i(k),shift_j(k)).
-        shift_i = np.zeros(4 * n_equations, dtype=np.float64)
-        shift_j = np.zeros(4 * n_equations, dtype=np.float64)
-        shift_eq = np.zeros(4 * n_equations, dtype=np.float64)
-        shift_b = np.zeros(n_equations, dtype=np.float64)
+        shift_i = np.zeros(4 * n_equations, dtype=self.dtype)
+        shift_j = np.zeros(4 * n_equations, dtype=self.dtype)
+        shift_eq = np.zeros(4 * n_equations, dtype=self.dtype)
+        shift_b = np.zeros(n_equations, dtype=self.dtype)
 
         # Prepare the shift phases to try and generate filter for common-line detection
         # The shift phases are pre-defined in a range of max_shift that can be
@@ -363,6 +367,7 @@ class CLOrient3D:
             shift_eq[idx] = -1 * coeffs if is_pf_j_flipped else coeffs
 
         # create sparse matrix object only containing non-zero elements
+        # Note, this line is particularly sensitive to precision
         shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
                                             shape=(n_equations, 2 * n_img),
                                             dtype=np.float64)
