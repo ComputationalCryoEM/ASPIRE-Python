@@ -14,7 +14,7 @@ from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter, ScalarFilter
 from aspire.volume import Volume
 
-logger = logging.getLogger('aspire')
+logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data/')
 

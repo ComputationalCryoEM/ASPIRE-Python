@@ -16,7 +16,7 @@ from aspire.utils.coor_trans import (get_aligned_rotations, get_rots_mse,
 from aspire.utils.filters import RadialCTFFilter
 from aspire.volume import Volume
 
-logger = logging.getLogger('aspire')
+logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data/')
 

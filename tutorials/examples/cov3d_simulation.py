@@ -18,7 +18,7 @@ from aspire.utils.matrix import eigs
 from aspire.utils.misc import src_wiener_coords
 from aspire.volume import Volume
 
-logger = logging.getLogger('aspire')
+logger = logging.getLogger(__name__)
 
 # Specify parameters
 num_vols = 2           # number of volumes

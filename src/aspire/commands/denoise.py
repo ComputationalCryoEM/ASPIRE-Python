@@ -8,7 +8,7 @@ from aspire.estimation.noise import (AnisotropicNoiseEstimator,
                                      WhiteNoiseEstimator)
 from aspire.source.relion import RelionSource
 
-logger = logging.getLogger('aspire')
+logger = logging.getLogger(__name__)
 
 
 @click.command()

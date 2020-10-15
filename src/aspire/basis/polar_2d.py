@@ -82,8 +82,10 @@ class PolarBasis2D(Basis):
             resolution of `self.sz`.
         """
         if self.dtype != real_type(v.dtype):
-            logger.error(f'Input data type, {v.dtype}, is not consistent with'
-                         f' the defined in the class.')
+            msg = (f'Input data type, {v.dtype}, is not consistent with'
+                   ' type defined in the class {self.dtype}.')
+            logger.error(msg)
+            raise TypeError(msg)
 
         v = v.reshape(-1, self.ntheta, self.nrad)
 
@@ -114,8 +116,10 @@ class PolarBasis2D(Basis):
         assert isinstance(x, Image)
 
         if self.dtype != x.dtype:
-            logger.error(f' Input data type, {x.dtype}, is not consistent with'
-                         f' the defined in the class.')
+            msg = (f'Input data type, {x.dtype}, is not consistent with'
+                   ' type defined in the class {self.dtype}.')
+            logger.error(msg)
+            raise TypeError(msg)
 
         nimgs = x.n_images
 
