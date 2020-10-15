@@ -56,6 +56,7 @@ def complex_type(realtype):
 
     return complextype
 
+
 def dtype_legacy_string(dtype):
     """
     Get legacy dtype string from corresponding numpy dtype.

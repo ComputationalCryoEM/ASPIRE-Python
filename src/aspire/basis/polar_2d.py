@@ -83,7 +83,7 @@ class PolarBasis2D(Basis):
         """
         if self.dtype != real_type(v.dtype):
             msg = (f'Input data type, {v.dtype}, is not consistent with'
-                   ' type defined in the class {self.dtype}.')
+                   f' type defined in the class {self.dtype}.')
             logger.error(msg)
             raise TypeError(msg)
 
@@ -117,7 +117,7 @@ class PolarBasis2D(Basis):
 
         if self.dtype != x.dtype:
             msg = (f'Input data type, {x.dtype}, is not consistent with'
-                   ' type defined in the class {self.dtype}.')
+                   f' type defined in the class {self.dtype}.')
             logger.error(msg)
             raise TypeError(msg)
 

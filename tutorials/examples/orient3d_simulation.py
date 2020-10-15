@@ -58,7 +58,8 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    unique_filters=filters
+    unique_filters=filters,
+    dtype=np.float64
 )
 
 logger.info('Get true rotation angles generated randomly by the simulation object.')
