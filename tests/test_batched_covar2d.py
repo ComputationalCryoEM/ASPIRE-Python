@@ -14,6 +14,7 @@ class BatchedRotCov2DTestCase(TestCase):
     def setUp(self):
         n = 32
         L = 8
+        self.dtype = np.float64
 
         noise_var = 0.1848
 
@@ -29,9 +30,9 @@ class BatchedRotCov2DTestCase(TestCase):
                    for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
         # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
-        src = Simulation(L, n, unique_filters=filters, dtype='double')
+        src = Simulation(L, n, unique_filters=filters, self.dtype)
 
-        basis = FFBBasis2D((L, L))
+        basis = FFBBasis2D((L, L), dtype=self.dtype)
 
         unique_filters = src.unique_filters
         ctf_idx = src.filter_indices
@@ -39,7 +40,7 @@ class BatchedRotCov2DTestCase(TestCase):
         ctf_fb = [f.fb_mat(basis) for f in unique_filters]
 
         im = src.images(0, src.n)
-        coeff = basis.evaluate_t(im.data).astype(src.dtype)
+        coeff = basis.evaluate_t(im.data)
 
         cov2d = RotCov2D(basis)
         bcov2d = BatchedRotCov2D(src, basis, batch_size=7)

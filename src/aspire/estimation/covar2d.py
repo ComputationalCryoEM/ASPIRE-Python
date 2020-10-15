@@ -27,6 +27,7 @@ class RotCov2D:
         constructor of an object for 2D covariance analysis
         """
         self.basis = basis
+        self.dtype = self.basis.dtype
         ensure(basis.ndim == 2, 'Only two-dimensional basis functions are needed.')
 
     def _get_mean(self, coeffs):
@@ -334,6 +335,7 @@ class BatchedRotCov2D(RotCov2D):
         self.src = src
         self.basis = basis
         self.batch_size = batch_size
+        self.dtype = self.src.dtype
 
         self.b_mean = None
         self.b_covar = None
@@ -348,7 +350,7 @@ class BatchedRotCov2D(RotCov2D):
 
         if self.basis is None:
             from aspire.basis.ffb_2d import FFBBasis2D
-            self.basis = FFBBasis2D((src.L, src.L))
+            self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
         if src.unique_filters is None:
             logger.info(f'CTF filters are not included in Cov2D denoising')

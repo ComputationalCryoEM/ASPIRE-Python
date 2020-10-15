@@ -72,7 +72,7 @@ def grid_1d(n, shifted=False, normalized=True):
     }
 
 
-def grid_2d(n, shifted=False, normalized=True, dtype=np.float64):
+def grid_2d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate two dimensional grid.
 
@@ -103,7 +103,7 @@ def grid_2d(n, shifted=False, normalized=True, dtype=np.float64):
     }
 
 
-def grid_3d(n, shifted=False, normalized=True, dtype=np.float64):
+def grid_3d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate three dimensional grid.
 
@@ -139,7 +139,7 @@ def grid_3d(n, shifted=False, normalized=True, dtype=np.float64):
     }
 
 
-def uniform_random_angles(n, seed=None, dtype=np.float64):
+def uniform_random_angles(n, seed=None, dtype=np.float32):
     """
     Generate random 3D rotation angles
     :param n: The number of rotation angles to generate

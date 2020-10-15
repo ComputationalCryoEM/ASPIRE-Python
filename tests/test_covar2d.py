@@ -15,6 +15,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class Cov2DTestCase(TestCase):
     def setUp(self):
+        self.dtype = np.float64
 
         L = 8
         n = 32
@@ -30,7 +31,7 @@ class Cov2DTestCase(TestCase):
         unique_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))) # RCOPT
+        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')).astype(self.dtype)) # RCOPT
         vols = vols.downsample((L*np.ones(3, dtype=int)))*1.0e3
         # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
         sim = Simulation(
@@ -40,11 +41,11 @@ class Cov2DTestCase(TestCase):
             unique_filters=unique_filters,
             offsets=0.0,
             amplitudes=1.0,
-            dtype='double',
+            dtype=self.dtype,
             noise_filter=noise_filter
         )
 
-        self.basis = FFBBasis2D((L, L))
+        self.basis = FFBBasis2D((L, L), dtype=self.dtype)
 
         self.h_idx = sim.filter_indices
         self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in unique_filters]

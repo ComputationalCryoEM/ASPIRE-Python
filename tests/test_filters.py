@@ -12,6 +12,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class SimTestCase(TestCase):
     def setUp(self):
+        self.dtype = np.float64
         # A 2 x 256 ndarray of spatial frequencies
         self.omega = np.load(os.path.join(DATA_DIR, 'omega_2_256.npy'))
 
@@ -65,7 +66,7 @@ class SimTestCase(TestCase):
 
     def testRadialCTFFilterGrid(self):
         filter = RadialCTFFilter(defocus=2.5e4)
-        result = filter.evaluate_grid(8)
+        result = filter.evaluate_grid(8, dtype=self.dtype)
 
         self.assertEqual(result.shape, (8, 8))
         self.assertTrue(np.allclose(
@@ -79,12 +80,13 @@ class SimTestCase(TestCase):
                 [ 0.833250206225063,   0.004814348317439,  -0.999286510416273,  -0.633095739808868,  -0.368890743119366,  -0.633095739808868,  -0.999286510416273,   0.004814348317439],
                 [ 0.063120922443392,   0.799934516166400,  -0.573061561512667,  -0.999286510416273,  -0.963805291282899,  -0.999286510416273,  -0.573061561512667,   0.799934516166400],
                 [-0.995184514498978,   0.626977423649552,   0.799934516166400,   0.004814348317439,  -0.298096205735759,   0.004814348317439,   0.799934516166400,   0.626977423649552]
-            ])
+            ]),
+            atol = 1e-6 if self.dtype == np.float32 else 1e-8
         ))
 
     def testRadialCTFFilterMultiplierGrid(self):
         filter = RadialCTFFilter(defocus=2.5e4) * RadialCTFFilter(defocus=2.5e4)
-        result = filter.evaluate_grid(8)
+        result = filter.evaluate_grid(8, dtype=self.dtype)
 
         self.assertEqual(result.shape, (8, 8))
         self.assertTrue(np.allclose(
@@ -98,7 +100,8 @@ class SimTestCase(TestCase):
                 [ 0.833250206225063,   0.004814348317439,  -0.999286510416273,  -0.633095739808868,  -0.368890743119366,  -0.633095739808868,  -0.999286510416273,   0.004814348317439],
                 [ 0.063120922443392,   0.799934516166400,  -0.573061561512667,  -0.999286510416273,  -0.963805291282899,  -0.999286510416273,  -0.573061561512667,   0.799934516166400],
                 [-0.995184514498978,   0.626977423649552,   0.799934516166400,   0.004814348317439,  -0.298096205735759,   0.004814348317439,   0.799934516166400,   0.626977423649552]
-            ])**2
+            ])**2,
+            atol = 1e-6 if self.dtype == np.float32 else 1e-8
         ))
 
     def testDualFilter(self):

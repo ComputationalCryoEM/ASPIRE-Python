@@ -25,7 +25,7 @@ class FBBasis2D(Basis):
     """
 
     # TODO: Methods that return dictionaries should return useful objects instead
-    def __init__(self, size, ell_max=None, dtype=np.float64):
+    def __init__(self, size, ell_max=None, dtype=np.float32):
         """
         Initialize an object for the 2D Fourier-Bessel basis class
 

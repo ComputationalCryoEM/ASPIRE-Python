@@ -10,7 +10,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class FFBBasis2DTestCase(TestCase):
     def setUp(self):
-        self.basis = FFBBasis2D((8, 8))
+        self.dtype = np.float64  # Required for convergence of this test
+        self.basis = FFBBasis2D((8, 8), dtype=self.dtype)
 
     def tearDown(self):
         pass

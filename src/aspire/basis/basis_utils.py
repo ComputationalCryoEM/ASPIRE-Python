@@ -101,7 +101,7 @@ def norm_assoc_legendre(j, m, x):
         # Beware of using just np.prod in the denominator here
         # Unless we use float64, values in the denominator > 13! will be incorrect
         try:
-            y = np.sqrt((2 * j + 1) / (2*np.prod(range(j - m + 1, j + m + 1), dtype='float64'))) * y
+            y = np.sqrt((2 * j + 1) / (2*np.prod(range(j - m + 1, j + m + 1), dtype=np.float64))) * y
         except RuntimeWarning:
             print('debug')
     return y
@@ -125,7 +125,7 @@ def real_sph_harmonic(j, m, theta, phi):
     # Beware of using just np.prod in the denominator here
     # Unless we use float64, values in the denominator > 13! will be incorrect
     try:
-        y = np.sqrt((2 * j + 1) / (4 * pi) / np.prod(range(j - abs_m + 1, j + abs_m + 1), dtype='float64')) * y
+        y = np.sqrt((2 * j + 1) / (4 * pi) / np.prod(range(j - abs_m + 1, j + abs_m + 1), dtype=np.float64)) * y
     except RuntimeWarning:
         print('debug')
 
@@ -203,7 +203,7 @@ def num_besselj_zeros(ell, r):
     return len(r0), r0
 
 
-def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float64):
+def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate unique polar coordinates from 2D or 3D rectangular coordinates.
     :param N: length size of a square or cube.
@@ -262,7 +262,7 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float64):
     }
 
 
-def lgwt(ndeg, a, b, dtype=np.float64):
+def lgwt(ndeg, a, b, dtype=np.float32):
     """
     Compute Legendre-Gauss quadrature
 

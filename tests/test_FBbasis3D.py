@@ -10,7 +10,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class FBBasis3DTestCase(TestCase):
     def setUp(self):
-        self.basis = FBBasis3D((8, 8, 8))
+        self.dtype = np.float64
+        self.basis = FBBasis3D((8, 8, 8), dtype=self.dtype)
 
     def tearDown(self):
         pass
@@ -96,7 +97,7 @@ class FBBasis3DTestCase(TestCase):
                  5.05955256e-04,   2.66936132e-06,   2.24934884e-03,   6.70529439e-04,
                  4.81121742e-04,  -6.40789745e-05,  -3.35915672e-04,  -7.98651783e-04,
                 -9.82705453e-04,   6.46337066e-05
-            ]
+              ], dtype = self.dtype
         )
         result = self.basis.evaluate(coeffs)
 
@@ -107,7 +108,7 @@ class FBBasis3DTestCase(TestCase):
 
     def testFBBasis3DEvaluate_t(self):
         v = np.load(os.path.join(DATA_DIR, 'hbbasis_coefficients_8_8_8.npy'))
-        result = self.basis.evaluate_t(v)
+        result = self.basis.evaluate_t(v.astype(self.dtype))
         self.assertTrue(np.allclose(
             result,
             [
@@ -141,7 +142,7 @@ class FBBasis3DTestCase(TestCase):
 
     def testFBBasis3DExpand(self):
         v = np.load(os.path.join(DATA_DIR, 'hbbasis_coefficients_8_8_8.npy'))
-        result = self.basis.expand(v)
+        result = self.basis.expand(v.astype(self.dtype))
         self.assertTrue(np.allclose(
             result,
             [
