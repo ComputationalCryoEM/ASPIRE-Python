@@ -18,7 +18,7 @@ class PolarBasis2D(Basis):
     Define a derived class for polar Fourier representation for 2D images
     """
 
-    def __init__(self, size, nrad=None, ntheta=None):
+    def __init__(self, size, nrad=None, ntheta=None, dtype=np.float32):
         """
         Initialize an object for the 2D polar Fourier grid class
 
@@ -41,7 +41,7 @@ class PolarBasis2D(Basis):
             # try to use the same number as Fast FB basis
             self.ntheta = 8 * self.nrad
 
-        super().__init__(size)
+        super().__init__(size, dtype=dtype)
 
     def _build(self):
         """

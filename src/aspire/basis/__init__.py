@@ -16,7 +16,7 @@ class Basis:
     Define a base class for expanding 2D particle images and 3D structure volumes
 
     """
-    def __init__(self, size, ell_max=None, dtype=np.float64):
+    def __init__(self, size, ell_max=None, dtype=np.float32):
         """
         Initialize an object for the base of basis class
 
