@@ -6,7 +6,7 @@ from aspire.source import ImageSource
 
 
 class MrcStack(ImageSource):
-    def __init__(self, filepath, dtype=np.float64):
+    def __init__(self, filepath, dtype=np.float32):
         self.im = Micrograph(filepath, square=True).im
 
         super().__init__(
