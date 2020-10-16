@@ -4,8 +4,9 @@ import aspire.image
 from aspire.nufft import nufft
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.fft import centered_fft2, centered_ifft2
 from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.numeric import fft
+from aspire.utils.numeric import xp
 from aspire.utils.preprocess import downsample
 
 
@@ -112,7 +113,7 @@ class Volume:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
-        im_f = centered_ifft2(im_f)
+        im_f = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
 
         return aspire.image.Image(np.real(im_f))
 
