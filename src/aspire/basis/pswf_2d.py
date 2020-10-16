@@ -7,6 +7,7 @@ from aspire.basis.basis_utils import (d_decay_approx_fun, k_operator, lgwt,
                                       t_radial_part_mat, t_x_derivative_mat,
                                       t_x_mat)
 from aspire.basis.pswf_utils import BNMatrix
+from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class PSWFBasis2D(Basis):
         and approximation of two-dimensional bandlimited functions", Appl.
         Comput. Harmon. Anal. 22, 235-256 (2007).
     """
-    def __init__(self, size, gamma_trunc=1.0, beta=1.0):
+    def __init__(self, size, gamma_trunc=1.0, beta=1.0, dtype=np.float32):
         """
         Initialize an object for 2D PSWF basis expansion using direct method
 
@@ -41,12 +42,13 @@ class PSWFBasis2D(Basis):
             In general, the bandlimit is c = beta*pi*(size[0]//2), therefore for
             the default value beta = 1 there is no oversampling assumed. This
             parameter controls the bandlimit of the PSWFs.
+        :param dtype: Internal ndarray datatype.
         """
 
         self.rcut = size[0] // 2
         self.gmcut = gamma_trunc
         self.beta = beta
-        super().__init__(size)
+        super().__init__(size, dtype=dtype)
 
     def _build(self):
         """
@@ -174,7 +176,8 @@ class PSWFBasis2D(Basis):
             self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero]))
 
         n_images = int(flatten_images.shape[1])
-        images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
+        images = np.zeros((self._image_height, self._image_height, n_images)).astype(
+            complex_type(self.dtype))
         images[self._disk_mask, :] = flatten_images
         images = np.transpose(images, axes=(1, 0, 2))
         return np.real(images).T #RCOPT
@@ -252,7 +255,7 @@ class PSWFBasis2D(Basis):
             pswf_n_n_mat = (phase_part * r_radial_part_mat.T)
 
             out_mat.extend(pswf_n_n_mat)
-        out_mat = np.array(out_mat).T
+        out_mat = np.array(out_mat, dtype=complex_type(self.dtype)).T
         return out_mat
 
     def pswf_func2d(self, big_n, n, bandlimit, phi_approximate_error, r, w):

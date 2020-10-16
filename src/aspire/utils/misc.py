@@ -51,6 +51,12 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
         logger.debug('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
         eig_vols = Volume(eig_vols)
 
+    if not sim.dtype == mean_vol.dtype == eig_vols.dtype:
+        logger.warning('Inconsistent types in src_wiener_coords'
+                       f' sim {sim.dtype},'
+                       f' mean_vol {mean_vol.dtype},'
+                       f' eig_vols {eig_vols.dtype}')
+
     k = eig_vols.n_vols
     if lambdas is None:
         lambdas = np.eye(k)

@@ -23,19 +23,22 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 class Covar3DTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.dtype = np.float32
         cls.sim = Simulation(
             n=1024,
-            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
-        )
-        basis = FBBasis3D((8, 8, 8))
+            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+            dtype=cls.dtype)
+        basis = FBBasis3D((8, 8, 8), dtype=cls.dtype)
         cls.noise_variance = 0.0030762743633643615
 
-        cls.mean_estimator = MeanEstimator(cls.sim, basis)
-        cls.mean_est = Volume(np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy')))
+        cls.mean_estimator = MeanEstimator(cls.sim, basis, dtype=cls.dtype)
+        cls.mean_est = Volume(
+            np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy')).astype(
+                cls.dtype))
 
         # Passing in a mean_kernel argument to the following constructor speeds up some calculations
-        cls.covar_estimator = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='none')
-        cls.covar_estimator_with_preconditioner = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='circulant')
+        cls.covar_estimator = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='none', dtype=cls.dtype)
+        cls.covar_estimator_with_preconditioner = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='circulant', dtype=cls.dtype)
 
     def tearDown(self):
         pass
@@ -143,7 +146,8 @@ class Covar3DTestCase(TestCase):
         self.assertAlmostEqual(0.85473300555263432, metrics['corr'], places=4)
 
     def testClustering(self):
-        covar_est = np.load(os.path.join(DATA_DIR, 'covar_8_8_8_8_8_8.npy'))
+        covar_est = np.load(
+            os.path.join(DATA_DIR, 'covar_8_8_8_8_8_8.npy')).astype(self.dtype)
         eigs_est, lambdas_est = eigs(covar_est, 16)
 
         C = 2

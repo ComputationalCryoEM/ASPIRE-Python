@@ -45,7 +45,7 @@ class CovarianceEstimator(Estimator):
         L = self.L
         _2L = 2 * self.L
 
-        kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.as_type)
+        kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = self.src.eval_filter_grid(self.L, power=2)
 
         for i in tqdm(range(0, n, self.batch_size)):
@@ -63,7 +63,7 @@ class CovarianceEstimator(Estimator):
             weights = weights.T.reshape((-1, L**2))
 
             batch_n = weights.shape[0]
-            factors = np.zeros((batch_n, _2L, _2L, _2L), dtype=self.as_type)
+            factors = np.zeros((batch_n, _2L, _2L, _2L), dtype=self.dtype)
 
             for j in range(batch_n):
                 factors[j] = anufft(weights[j], pts_rot[j], (_2L, _2L, _2L), real=True)
@@ -160,14 +160,14 @@ class CovarianceEstimator(Estimator):
         :return: The sum of the outer products of the mean-subtracted images in `src`, corrected by the expected noise
         contribution and expressed as coefficients of `basis`.
         """
-        covar_b = np.zeros((self.L, self.L, self.L, self.L, self.L, self.L), dtype=self.as_type)
+        covar_b = np.zeros((self.L, self.L, self.L, self.L, self.L, self.L), dtype=self.dtype)
 
         for i in range(0, self.n, self.batch_size):
             im = self.src.images(i, self.batch_size)
             batch_n = im.n_images
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 
-            im_centered_b = np.zeros((batch_n, self.L, self.L, self.L), dtype=self.as_type)
+            im_centered_b = np.zeros((batch_n, self.L, self.L, self.L), dtype=self.dtype)
             for j in range(batch_n):
                 im_centered_b[j] = self.src.im_backward(Image(im_centered[j]), i+j)
             im_centered_b = Volume(im_centered_b).to_vec()

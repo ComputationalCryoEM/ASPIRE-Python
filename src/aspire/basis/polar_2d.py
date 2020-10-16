@@ -63,7 +63,7 @@ class PolarBasis2D(Basis):
         dtheta = 2 * np.pi / self.ntheta
 
         # only need half size of ntheta
-        freqs = np.zeros((2, self.nrad * self.ntheta // 2))
+        freqs = np.zeros((2, self.nrad * self.ntheta // 2), dtype=self.dtype)
         for i in range(self.ntheta // 2):
             freqs[0, i * self.nrad: (i + 1) * self.nrad] = np.arange(self.nrad) * np.sin(i * dtheta)
             freqs[1, i * self.nrad: (i + 1) * self.nrad] = np.arange(self.nrad) * np.cos(i * dtheta)

@@ -53,7 +53,7 @@ class FinufftPlan(Plan):
 
         self.cast_output = False
         if self.dtype != np.float64:
-            logger.info('This version of finufftpy is hardcoded to doubles internally'
+            logger.debug('This version of finufftpy is hardcoded to doubles internally'
                         '  casting input to doubles, results cast back to singles.')
             self.cast_output = True
             self.dtype = np.float64

@@ -29,7 +29,9 @@ org_images = np.load(os.path.join(DATA_DIR, 'example_data_np_array.npy')).T
 img_size = 129
 
 # Specify the normal FB basis method for expanding the 2D image
-fb_basis = FBBasis2D((img_size, img_size))
+# Note, we'll set the Basis dtype to be the same as the `org_images` data,
+#  as good practice.
+fb_basis = FBBasis2D((img_size, img_size), dtype=org_images.dtype)
 
 # Get the expansion coefficients based on FB basis
 logger.info('Start normal FB expansion of original images.')
@@ -63,7 +65,9 @@ plt.imshow(np.real(org_images[0] - fb_images[0]), cmap='gray')
 plt.title('Differences')
 
 # Specify the fast FB basis method for expanding the 2D images
-ffb_basis = FFBBasis2D((img_size, img_size))
+# Note, we'll set the Basis dtype to be the same as the `org_image` data,
+#  as good practice.
+ffb_basis = FFBBasis2D((img_size, img_size), dtype=org_images.dtype)
 
 # Get the expansion coefficients based on fast FB basis
 logger.info('start fast FB expansion of original images.')
@@ -98,7 +102,9 @@ plt.imshow(np.real(org_images[0] - ffb_images[0]), cmap='gray')
 plt.title('Differences')
 
 # Specify the direct PSWF basis method for expanding the 2D images
-pswf_basis = PSWFBasis2D((img_size, img_size))
+# Note, we'll set the Basis dtype to be the same as the `org_images` data,
+#  as good practice.
+pswf_basis = PSWFBasis2D((img_size, img_size), dtype=org_images.dtype)
 
 # Get the expansion coefficients based on direct PSWF basis
 logger.info('Start direct PSWF expansion of original images.')
@@ -132,7 +138,9 @@ plt.imshow(np.real(org_images[0] - pswf_images[0]), cmap='gray')
 plt.title('Differences')
 
 # Specify the fast FPSWF basis method for expanding the 2D images
-fpswf_basis = FPSWFBasis2D((img_size, img_size))
+# Note, we'll set the Basis dtype to be the same as the `org_images` data,
+#  as good practice.
+fpswf_basis = FPSWFBasis2D((img_size, img_size), dtype=org_images.dtype)
 
 # Get the expansion coefficients based on fast PSWF basis
 logger.info('Start fast PSWF expansion of original images.')
