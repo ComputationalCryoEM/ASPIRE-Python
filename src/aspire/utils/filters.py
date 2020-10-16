@@ -1,4 +1,4 @@
-
+import copy
 import inspect
 
 import numpy as np
@@ -223,7 +223,9 @@ class ArrayFilter(Filter):
         return result
 
     def scale(self, c):
-        self._scale *= c
+        new_filter = copy.copy(self)
+        new_filter._scale = self._scale * c
+        return new_filter
 
 
 class ScalarFilter(Filter):
@@ -305,7 +307,9 @@ class CTFFilter(Filter):
         return h.squeeze()
 
     def scale(self, c=1):
-        self.pixel_size *= c
+        new_filter = copy.copy(self)
+        new_filter.pixel_size = self.pixel_size * c
+        return new_filter
 
 
 class RadialCTFFilter(CTFFilter):
