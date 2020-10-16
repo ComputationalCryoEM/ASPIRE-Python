@@ -215,4 +215,5 @@ class PolarBasis2DTestCase(TestCase):
         y = np.random.randn(np.prod(self.basis.sz)).astype(self.dtype)
         y_t = self.basis.evaluate_t(Image(m_reshape(y, self.basis.sz)[np.newaxis,:])) # RCOPT
         self.assertTrue(np.isclose(np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),))),
-                                   np.dot(y_t, x)))
+                                   np.dot(y_t, x),
+                                   atol = 1e-6 if self.dtype == np.float32 else 1e-8))
