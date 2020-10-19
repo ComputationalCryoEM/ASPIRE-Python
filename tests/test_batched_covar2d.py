@@ -125,3 +125,25 @@ class BatchedRotCov2DTestCase(TestCase):
         covar_nbcov2d = nbcov2d.get_covar()
 
         self.assertTrue(self.blk_diag_allclose(covar_bcov2d, covar_nbcov2d))
+
+    def test06(self):
+        noise_var = 0.1848
+
+        # Calculate CWF coefficients using Cov2D base class
+        mean_bcov2d = self.bcov2d.get_mean()
+        covar_bcov2d = self.bcov2d.get_covar(noise_var=noise_var)
+        coeff_bcov2d = self.bcov2d.get_cwf_coeffs(
+            self.coeff, self.ctf_fb, self.ctf_idx,
+            mean_coeff=mean_bcov2d, covar_coeff=covar_bcov2d,
+            noise_var=noise_var)
+
+        # Calculate CWF coefficients using Batched Cov2D class
+        nbcov2d = BatchedRotCov2D(self.src)
+        mean_nbcov2d = nbcov2d.get_mean()
+        covar_nbcov2d = nbcov2d.get_covar(noise_var=noise_var)
+
+        coeff_nbcov2d = nbcov2d.get_cwf_coeffs(
+            self.coeff, self.ctf_fb, self.ctf_idx, mean_nbcov2d, covar_nbcov2d,
+            noise_var=noise_var)
+
+        self.assertTrue(self.blk_diag_allclose(coeff_bcov2d, coeff_nbcov2d))
