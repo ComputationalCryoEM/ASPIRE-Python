@@ -58,10 +58,10 @@ class BatchedRotCov2DTestCase(TestCase):
     def tearDown(self):
         pass
 
-    def blk_diag_allclose(self, blk_diag_a, blk_diag_b):
+    def blk_diag_allclose(self, blk_diag_a, blk_diag_b, atol=1e-8):
         close = True
         for blk_a, blk_b in zip(blk_diag_a, blk_diag_b):
-            close = (close and np.allclose(blk_a, blk_b))
+            close = (close and np.allclose(blk_a, blk_b, atol=atol))
         return close
 
     def test01(self):
@@ -77,8 +77,15 @@ class BatchedRotCov2DTestCase(TestCase):
         mean_bcov2d = self.bcov2d.get_mean()
         covar_bcov2d = self.bcov2d.get_covar(noise_var=noise_var)
 
-        self.assertTrue(np.allclose(mean_cov2d, mean_bcov2d))
-        self.assertTrue(self.blk_diag_allclose(covar_cov2d, covar_bcov2d))
+        self.assertTrue(np.allclose(
+            mean_cov2d,
+            mean_bcov2d,
+            atol=1e-5 if self.dtype == np.float32 else 1e-8))
+
+        self.assertTrue(self.blk_diag_allclose(
+            covar_cov2d,
+            covar_bcov2d,
+            atol=1e-5 if self.dtype == np.float32 else 1e-8))
 
     def test02(self):
         # Make sure it works with zero mean (pure second moment).
@@ -98,7 +105,10 @@ class BatchedRotCov2DTestCase(TestCase):
 
         covar_bcov2d = self.bcov2d.get_covar()
 
-        self.assertTrue(self.blk_diag_allclose(covar_cov2d, covar_bcov2d))
+        self.assertTrue(self.blk_diag_allclose(
+            covar_cov2d,
+            covar_bcov2d,
+            atol = 1e-6 if self.dtype == np.float32 else 1e-8))
 
     def test04(self):
         # Make sure it properly shrinks the right-hand side if specified.
@@ -125,7 +135,10 @@ class BatchedRotCov2DTestCase(TestCase):
         covar_bcov2d = self.bcov2d.get_covar()
         covar_nbcov2d = nbcov2d.get_covar()
 
-        self.assertTrue(self.blk_diag_allclose(covar_bcov2d, covar_nbcov2d))
+        self.assertTrue(self.blk_diag_allclose(
+            covar_bcov2d,
+            covar_nbcov2d,
+            atol = 1e-6 if self.dtype == np.float32 else 1e-8))
 
     def test06(self):
         noise_var = 0.1848
