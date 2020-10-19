@@ -104,7 +104,7 @@ class FBBasis3DTestCase(TestCase):
         self.assertTrue(np.allclose(
             result,
             np.load(os.path.join(DATA_DIR, 'hbbasis_evaluation_8_8_8.npy')),
-            atol = 1e-6 if self.dtype == np.float32 else 1e-8
+            atol=1e-6 if self.dtype == np.float32 else 1e-8
         ))
 
     def testFBBasis3DEvaluate_t(self):
@@ -139,7 +139,7 @@ class FBBasis3DTestCase(TestCase):
                  4.81121742e-04,  -6.40789745e-05,  -3.35915672e-04,  -7.98651783e-04,
                 -9.82705453e-04,   6.46337066e-05
             ],
-            atol = 1e-6 if self.dtype == np.float32 else 1e-8
+            atol=1e-6 if self.dtype == np.float32 else 1e-8
         ))
 
     def testFBBasis3DExpand(self):
@@ -162,5 +162,5 @@ class FBBasis3DTestCase(TestCase):
                 +0.00051144, +0.00004805, +0.00250166, +0.00059104, +0.00066592, +0.00019188, -0.00079074, -0.00068995,
                 -0.00087668, +0.00052913
             ],
-            atol = 1e-6 if self.dtype == np.float32 else 1e-8
+            atol=1e-6 if self.dtype == np.float32 else 1e-8
         ))

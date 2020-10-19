@@ -91,5 +91,5 @@ class FFBBasis2DTestCase(TestCase):
         self.assertTrue(np.allclose(
             result,
             np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_exp_8_8.npy'))[..., 0],
-            atol = 1e-6 if self.dtype == np.float32 else 1e-8
+            atol=1e-6 if self.dtype == np.float32 else 1e-8
         ))

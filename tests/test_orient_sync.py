@@ -57,7 +57,7 @@ class OrientSyncTestCase(TestCase):
         self.assertTrue(np.allclose(
             results,
             self.orient_est.syncmatrix,
-            atol=1e-5 if self.dtype==np.float32 else 1e-8))
+            atol=1e-5 if self.dtype == np.float32 else 1e-8))
 
     def testEstRotations(self):
         self.orient_est.estimate_rotations()
@@ -65,7 +65,7 @@ class OrientSyncTestCase(TestCase):
         self.assertTrue(np.allclose(
             results,
             self.orient_est.rotations,
-            atol=1e-5 if self.dtype==np.float32 else 1e-8))
+            atol=1e-5 if self.dtype == np.float32 else 1e-8))
 
     def testEstShifts(self):
         # need to rerun explicitly the estimation of rotations

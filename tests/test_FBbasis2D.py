@@ -75,7 +75,7 @@ class FBBasis2DTestCase(TestCase):
         self.assertTrue(np.allclose(
             result,
             np.load(os.path.join(DATA_DIR, 'fbbasis_evaluation_8_8.npy')).T,  #RCOPT
-            atol = 1e-6 if self.dtype==np.float32 else 1e-8
+            atol=1e-6 if self.dtype == np.float32 else 1e-8
         ))
 
     def testFBBasis2DEvaluate_t(self):
@@ -91,7 +91,7 @@ class FBBasis2DTestCase(TestCase):
                  0.02407385,  0.00376325,  0.00081128,  0.00951368, -0.00557536,  0.01087579,
                  0.00255393, -0.00525156,  -0.00839695,  0.00802198
             ],
-            atol = 1e-6 if self.dtype==np.float32 else 1e-8
+            atol=1e-6 if self.dtype == np.float32 else 1e-8
         ))
 
     def testFBBasis2DExpand(self):
@@ -107,5 +107,5 @@ class FBBasis2DTestCase(TestCase):
                 0.02370661,  0.00488806,  0.00147871,   0.00763376,  -0.00560620,  0.01051651,
                 0.00330510, -0.00348652, -0.00042323,   0.01404841
             ],
-            atol = 1e-6 if self.dtype==np.float32 else 1e-8
+            atol=1e-6 if self.dtype == np.float32 else 1e-8
         ))

@@ -108,7 +108,7 @@ class BatchedRotCov2DTestCase(TestCase):
         self.assertTrue(self.blk_diag_allclose(
             covar_cov2d,
             covar_bcov2d,
-            atol = 1e-6 if self.dtype == np.float32 else 1e-8))
+            atol=1e-6 if self.dtype == np.float32 else 1e-8))
 
     def test04(self):
         # Make sure it properly shrinks the right-hand side if specified.
@@ -138,7 +138,7 @@ class BatchedRotCov2DTestCase(TestCase):
         self.assertTrue(self.blk_diag_allclose(
             covar_bcov2d,
             covar_nbcov2d,
-            atol = 1e-6 if self.dtype == np.float32 else 1e-8))
+            atol=1e-6 if self.dtype == np.float32 else 1e-8))
 
     def test06(self):
         noise_var = 0.1848

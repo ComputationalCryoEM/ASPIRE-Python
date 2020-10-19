@@ -354,9 +354,9 @@ class SimTestCase(TestCase):
 
         complex_dtype = complex_type(dtype)
 
-        atol = 1e-8    # Numpy default
+        atol=1e-8    # Numpy default
         if dtype == np.float32:
-            atol = 1e-5
+            atol=1e-5
 
         plan = Plan(self.vol.shape, self.fourier_pts.astype(dtype), backend=backend)
 
