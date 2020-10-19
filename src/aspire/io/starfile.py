@@ -203,7 +203,7 @@ def save_star(image_source, starfile_filepath, batch_size=1024, save_mode=None, 
                     num = i_end - i_start
                     logger.info(f'Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}')
                     mrc.data[i_start:i_end, :, :] = image_source.images(
-                        start=i_start, num=num).data.astype('float32')
+                        start=i_start, num=num).data.astype(np.float32)
             mrc.close()
 
         else:

@@ -202,7 +202,7 @@ class PSWFBasis2D(Basis):
 
         m = 0
         n = int(np.ceil(2 * c / np.pi))
-        r, w = lgwt(n, 0, 1)
+        r, w = lgwt(n, 0, 1, dtype=self.dtype)
 
         cons = c / 2 / np.pi
         while True:

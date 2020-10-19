@@ -398,7 +398,7 @@ class CLOrient3D:
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
         memory_total = equations_factor * (
-                n_equations_total * 2 * n_img * np.dtype('float64').itemsize)
+                n_equations_total * 2 * n_img * self.dtype.itemsize)
         if memory_total < (max_memory * 10 ** 6):
             n_equations = int(np.ceil(equations_factor * n_equations_total))
         else:

@@ -11,7 +11,7 @@ class BNMatrix:
       two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
     """
 
-    def __init__(self, big_n, band_limit, approx_length, dtype = np.float32):
+    def __init__(self, big_n, band_limit, approx_length, dtype=np.float32):
         """
         Initial an object to compute the B_N matrix ( with elements of b^N_mn).
 

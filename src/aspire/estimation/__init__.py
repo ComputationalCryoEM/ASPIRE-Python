@@ -26,8 +26,8 @@ class Estimator:
 
         if not self.src.dtype == self.basis.dtype == self.dtype:
             # TODO: Decide if this should simply infer from src or basis.
-            #   It wasn't cleaner which one should be source of truth.
-            #   Leaning towards `src`.
+            #   It wasn't clear which one should be source of truth,
+            #   but I was leaning towards `src`.
             logger.warning(f'Inconsistent types in {self.dtype} Estimator.'
                            f' basis: {self.basis.dtype}'
                            f' src: {self.src.dtype}')

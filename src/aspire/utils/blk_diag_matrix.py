@@ -842,7 +842,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     radial = fbasis.get_radial()
     
     # get 2D grid in polar coordinate
-    k_vals, wts = lgwt(n_k, 0, 0.5)
+    k_vals, wts = lgwt(n_k, 0, 0.5, dtype=fbasis.dtype)
     k, theta = np.meshgrid(
         k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing='ij')
 

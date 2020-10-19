@@ -32,6 +32,7 @@ class MeanEstimator(Estimator):
 
             pts_rot = m_reshape(pts_rot, (3, -1))
             weights = m_flatten(weights)
+
             kernel += 1 / (self.n * self.L ** 4) * anufft(weights, pts_rot, (_2L, _2L, _2L), real=True)
 
         # Ensure symmetric kernel

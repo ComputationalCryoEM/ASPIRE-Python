@@ -229,7 +229,7 @@ class Image:
     def save(self, mrcs_filepath, overwrite=False):
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
-            mrc.set_data(self.data.astype('float32'))
+            mrc.set_data(self.data.astype(np.float32))
 
     def _im_translate(self, shifts):
         """
