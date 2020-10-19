@@ -11,7 +11,7 @@ class BNMatrix:
       two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
     """
 
-    def __init__(self, big_n, band_limit, approx_length):
+    def __init__(self, big_n, band_limit, approx_length, dtype = np.float32):
         """
         Initial an object to compute the B_N matrix ( with elements of b^N_mn).
 
@@ -20,8 +20,10 @@ class BNMatrix:
         :param approx_length: The approximated length represented by n.
         """
 
+        self.dtype = np.dtype(dtype)
+
         k = np.arange(1, approx_length, dtype=float)
-        self.diagonal = np.ones(approx_length)
+        self.diagonal = np.ones(approx_length, dtype=self.dtype)
         self.diagonal[0] = self._generate_bn_mat_b_n_on_diagonal(big_n, 0, band_limit)
         # BN matrix is a symmetric tridiagonal matrix
         self.diagonal[1:] = self._generate_bn_mat_b_n_on_diagonal(big_n, k, band_limit)
@@ -48,7 +50,8 @@ class BNMatrix:
         # We need to rescale the eigenvectors to fix the sign problem and make consistent with
         # the Matlab version.
         a = np.argmax(np.absolute(v), axis=0)
-        b = np.array([np.sign(v[a[k], k]) for k in range(len(v))])
+        b = np.array([np.sign(v[a[k], k]) for k in range(len(v))],
+                     dtype=self.dtype)
         v = v * b
 
         return v, w
@@ -65,7 +68,7 @@ class BNMatrix:
         off_diagonal = self.off_diagonal
         m = len(diagonal)
 
-        mat = np.zeros((m, m))
+        mat = np.zeros((m, m), dtype=self.dtype)
         mat[0, 0] = diagonal[0]
 
         for i in range(m - 1):

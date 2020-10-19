@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class Simulation(ImageSource):
     def __init__(self, L=8, n=1024, vols=None, states=None,
                  unique_filters=None, filter_indices=None,
-                 offsets=None, amplitudes=None, dtype='single', C=2,
+                 offsets=None, amplitudes=None, dtype=np.float32, C=2,
                  angles=None, seed=0, memory=None, noise_filter=None):
         """
         A Cryo-EM simulation
@@ -52,7 +52,7 @@ class Simulation(ImageSource):
             logger.warning(
                 f'{self.__class__.__name__}'
                 f' vols.dtype {self.vols.dtype} != self.dtype {self.dtype}.')
-            # TODO: decide if should just warn, raise, or convert here.
+            # TODO: Decide if should just warn, raise, or convert here.
 
         self.C = self.vols.n_vols
 

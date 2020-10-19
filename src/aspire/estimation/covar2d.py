@@ -370,9 +370,9 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        zero_coeff = np.zeros((basis.count,))
+        zero_coeff = np.zeros((basis.count,), dtype=self.dtype)
 
-        b_mean = [np.zeros(basis.count) for _ in ctf_fb]
+        b_mean = [np.zeros(basis.count, dtype=self.dtype) for _ in ctf_fb]
 
         b_covar = BlkDiagMatrix.zeros_like(ctf_fb[0])
 

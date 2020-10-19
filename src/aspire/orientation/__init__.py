@@ -127,14 +127,14 @@ class CLOrient3D:
         # the common line with image j. Note the common line index
         # starts from 0 instead of 1 as Matlab version. -1 means
         # there is no common line such as clmatrix[i,i].
-        clmatrix = -np.ones((n_img, n_img))
+        clmatrix = -np.ones((n_img, n_img), dtype=self.dtype)
         # When cl_dist[i, j] is not -1, it stores the maximum value
         # of correlation between image i and j for all possible 1D shifts.
         # We will use cl_dist[i, j] = -1 (including j<=i) to
         # represent that there is no need to check common line
         # between i and j. Since it is symmetric,
         # only above the diagonal entries are necessary.
-        cl_dist = -np.ones((n_img, n_img))
+        cl_dist = -np.ones((n_img, n_img), dtype=self.dtype)
 
         # Allocate variables used for shift estimation
 

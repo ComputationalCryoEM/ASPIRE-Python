@@ -68,10 +68,10 @@ class FourierKernel(Kernel):
         mult_shape[dim] = N
         mult_shape = tuple(mult_shape)
 
-        mult = m_reshape((np.arange(N)/N), mult_shape)
+        mult = m_reshape((np.arange(N, dtype=self.dtype)/N), mult_shape)
         kernel_circ = mult * top
 
-        mult = m_reshape((np.arange(N, 0, -1)/N), mult_shape)
+        mult = m_reshape((np.arange(N, 0, -1, dtype=self.dtype)/N), mult_shape)
         kernel_circ += mult * bottom
 
         return fftshift(kernel_circ, dim)

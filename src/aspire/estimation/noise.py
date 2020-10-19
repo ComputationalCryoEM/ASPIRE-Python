@@ -12,19 +12,20 @@ logger = logging.getLogger(__name__)
 # TODO: Implement correct hierarchy and DRY
 
 class NoiseEstimator:
-    pass
+    """
+    Noise Estimator base class.
+    """
 
-
-class WhiteNoiseEstimator(NoiseEstimator):
     def __init__(self, src, bgRadius=1, batchSize=512):
         """
-        A White Noise Estimator
         Any additional args/kwargs are passed on to the Source's 'images' method
         :param src: A Source object which can give us images on demand
         :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
         :param batchSize:  The size of the batches in which to compute the variance estimate
         """
+
         self.src = src
+        self.dtype = self.src.dtype
         self.L = src.L
         self.n = src.n
         self.bgRadius = bgRadius
@@ -36,7 +37,20 @@ class WhiteNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise variance of the images.
         """
-        return self.filter.evaluate(np.zeros((2, 1))).item()
+        raise NotImplementedError(
+            'Subclasses implement the `estimate` method.')
+
+
+class WhiteNoiseEstimator(NoiseEstimator):
+    """
+    White Noise Estimator.
+    """
+
+    def estimate(self):
+        """
+        :return: The estimated noise variance of the images.
+        """
+        return self.filter.evaluate(np.zeros((2, 1), dtype=self.dtype)).item()
 
     def _create_filter(self, noise_variance=None):
         """
@@ -56,7 +70,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
         # Run estimate using saved parameters
-        g2d = grid_2d(self.L)
+        g2d = grid_2d(self.L, dtype=self.dtype)
         mask = g2d['r'] >= self.bgRadius
 
         first_moment = 0
@@ -72,21 +86,9 @@ class WhiteNoiseEstimator(NoiseEstimator):
 
 
 class AnisotropicNoiseEstimator(NoiseEstimator):
-    def __init__(self, src, bgRadius=1, batchSize=512):
-        """
-        A White Noise Estimator
-        :param src: A Source object which can give us images on demand
-        :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
-        :param batchSize:  The size of the batches in which to compute the variance estimate
-        TODO: A base class NoiseEstimator should be instantiated using any object that can furnish images.
-        """
-        self.src = src
-        self.L = src.L
-        self.n = src.n
-        self.bgRadius = bgRadius
-        self.batchSize = batchSize
-
-        self.filter = self._create_filter()
+    """
+    Anisotropic White Noise Estimator.
+    """
 
     def estimate(self):
         """
