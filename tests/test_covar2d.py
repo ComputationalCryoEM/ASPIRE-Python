@@ -15,7 +15,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class Cov2DTestCase(TestCase):
     def setUp(self):
-        self.dtype = np.float64
+        self.dtype = np.float32
 
         L = 8
         n = 32
@@ -88,7 +88,7 @@ class Cov2DTestCase(TestCase):
     def testGetCovarCTFShrink(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'))
         covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64'}
+                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float32'}
         self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                            noise_var=self.noise_var, covar_est_opt=covar_opt)
 
@@ -99,12 +99,14 @@ class Cov2DTestCase(TestCase):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff.npy'))
         self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                    noise_var=self.noise_var)
-        self.assertTrue(np.allclose(results, self.coeff_cwf))
+        self.assertTrue(np.allclose(results, self.coeff_cwf,
+                                    atol=1e-6 if self.dtype==np.float32 else 1e-8))
 
     def testGetCWFCoeffsIdentityCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
         self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
-        self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF))
+        self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF,
+                                    atol=1e-6 if self.dtype==np.float32 else 1e-8))
 
     def testGetCWFCoeffsClean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))

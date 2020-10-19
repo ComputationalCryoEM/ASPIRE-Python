@@ -108,14 +108,20 @@ class CovarianceEstimator(Estimator):
         if regularizer > 0:
             kernel += regularizer
 
-        operator = LinearOperator((N, N), matvec=partial(self.apply_kernel, kernel=kernel, packed=True))
+        operator = LinearOperator(
+            (N, N),
+            matvec=partial(self.apply_kernel, kernel=kernel, packed=True),
+            dtype=self.dtype)
         if self.precond_kernel is None:
             M = None
         else:
             precond_kernel = self.precond_kernel
             if regularizer > 0:
                 precond_kernel += regularizer
-            M = LinearOperator((N, N), matvec=partial(self.apply_kernel, kernel=precond_kernel, packed=True))
+            M = LinearOperator(
+                (N, N),
+                matvec=partial(self.apply_kernel, kernel=precond_kernel, packed=True),
+                dtype=self.dtype)
 
         tol = tol or config.covar.cg_tol
         target_residual = tol * norm(b_coeff)

@@ -10,7 +10,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class FFBBasis2DTestCase(TestCase):
     def setUp(self):
-        self.dtype = np.float64  # Required for convergence of this test
+        self.dtype = np.float32  # Required for convergence of this test
         self.basis = FFBBasis2D((8, 8), dtype=self.dtype)
 
     def tearDown(self):
@@ -67,7 +67,7 @@ class FFBBasis2DTestCase(TestCase):
                  2.37066082e-02,   4.88805735e-03,   1.47870707e-03,   7.63376018e-03,
                 -5.60619559e-03,   1.05165081e-02,   3.30510143e-03,  -3.48652120e-03,
                 -4.23228797e-04,   1.40484061e-02
-              ]
+              ], dtype=self.dtype
         )
         result = self.basis.evaluate(v)
 
@@ -78,7 +78,7 @@ class FFBBasis2DTestCase(TestCase):
 
     def testFFBBasis2DEvaluate_t(self):
         x = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy')).T #RCOPT
-        result = self.basis.evaluate_t(x)
+        result = self.basis.evaluate_t(x.astype(self.dtype))
 
         self.assertTrue(np.allclose(
             result,
@@ -87,8 +87,9 @@ class FFBBasis2DTestCase(TestCase):
 
     def testFFBBasis2DExpand(self):
         x = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy')).T #RCOPT
-        result = self.basis.expand(x)
+        result = self.basis.expand(x.astype(self.dtype))
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_exp_8_8.npy'))[..., 0]
+            np.load(os.path.join(DATA_DIR, 'ffbbasis2d_vcoeff_out_exp_8_8.npy'))[..., 0],
+            atol = 1e-6 if self.dtype == np.float32 else 1e-8
         ))

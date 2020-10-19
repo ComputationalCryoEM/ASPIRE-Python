@@ -97,14 +97,19 @@ class Estimator:
         if regularizer > 0:
             kernel += regularizer
 
-        operator = LinearOperator((n, n), matvec=partial(self.apply_kernel, kernel=kernel))
+        operator = LinearOperator((n, n),
+                                  matvec=partial(self.apply_kernel,kernel=kernel),
+                                  dtype=self.dtype)
         if self.precond_kernel is None:
             M = None
         else:
             precond_kernel = self.precond_kernel
             if regularizer > 0:
                 precond_kernel += regularizer
-            M = LinearOperator((n, n), matvec=partial(self.apply_kernel, kernel=precond_kernel))
+            M = LinearOperator(
+                (n, n),
+                matvec=partial(self.apply_kernel, kernel=precond_kernel),
+                dtype=self.dtype)
 
         tol = tol or config.mean.cg_tol
         target_residual = tol * norm(b_coeff)

@@ -14,7 +14,7 @@ class BatchedRotCov2DTestCase(TestCase):
     def setUp(self):
         n = 32
         L = 8
-        self.dtype = np.float64
+        self.dtype = np.float32
 
         noise_var = 0.1848
 
@@ -108,7 +108,7 @@ class BatchedRotCov2DTestCase(TestCase):
                          'iter_callback': [],
                          'store_iterates': False,
                          'rel_tolerance': 1e-12,
-                         'precision': 'float64'}
+                         'precision': 'float32'}
 
         covar_cov2d = self.cov2d.get_covar(self.coeff, ctf_fb=self.ctf_fb,
                                            ctf_idx=self.ctf_idx,

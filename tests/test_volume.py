@@ -15,7 +15,7 @@ class VolumeTestCase(TestCase):
     def setUp(self):
         self.n = n = 3
         self.res = res = 42
-        self.data_1 = np.arange(n * res ** 3, dtype=np.float64).reshape(
+        self.data_1 = np.arange(n * res ** 3, dtype=np.float32).reshape(
             n, res, res, res)
         self.data_2 = 123 * self.data_1.copy()
         self.vols_1 = Volume(self.data_1)
@@ -40,7 +40,7 @@ class VolumeTestCase(TestCase):
         self.vols_1[k] = self.random_data
 
         # Assert we have updated the kth volume
-        self.assertTrue(np.all(self.vols_1[k] == self.random_data))
+        self.assertTrue(np.allclose(self.vols_1[k], self.random_data))
 
         # Assert the other volumes are not updated.
         inds = np.arange(self.n) != k

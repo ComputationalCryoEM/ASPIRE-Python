@@ -10,7 +10,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class FBBasis2DTestCase(TestCase):
     def setUp(self):
-        self.dtype = np.float64
+        self.dtype = np.float32
         self.basis = FBBasis2D((8, 8), dtype=self.dtype)
 
     def tearDown(self):
@@ -67,18 +67,20 @@ class FBBasis2DTestCase(TestCase):
                  2.37066082e-02,   4.88805735e-03,   1.47870707e-03,   7.63376018e-03,
                 -5.60619559e-03,   1.05165081e-02,   3.30510143e-03,  -3.48652120e-03,
                 -4.23228797e-04,   1.40484061e-02
-              ]
+              ],
+            dtype=self.dtype
         )
         result = self.basis.evaluate(coeffs)
 
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'fbbasis_evaluation_8_8.npy')).T  #RCOPT
+            np.load(os.path.join(DATA_DIR, 'fbbasis_evaluation_8_8.npy')).T,  #RCOPT
+            atol = 1e-6 if self.dtype==np.float32 else 1e-8
         ))
 
     def testFBBasis2DEvaluate_t(self):
         v = np.load(os.path.join(DATA_DIR, 'fbbasis_coefficients_8_8.npy')).T  #RCOPT
-        result = self.basis.evaluate_t(v)
+        result = self.basis.evaluate_t(v.astype(self.dtype))
         self.assertTrue(np.allclose(
             result,
             [
@@ -88,12 +90,13 @@ class FBBasis2DTestCase(TestCase):
                  0.00753342,  0.00604493,  0.00024362, -0.01711248, -0.01387371,  0.00112805,
                  0.02407385,  0.00376325,  0.00081128,  0.00951368, -0.00557536,  0.01087579,
                  0.00255393, -0.00525156,  -0.00839695,  0.00802198
-            ]
+            ],
+            atol = 1e-6 if self.dtype==np.float32 else 1e-8
         ))
 
     def testFBBasis2DExpand(self):
         v = np.load(os.path.join(DATA_DIR, 'fbbasis_coefficients_8_8.npy')).T #RCOPT
-        result = self.basis.expand(v)
+        result = self.basis.expand(v.astype(self.dtype))
         self.assertTrue(np.allclose(
             result,
             [
@@ -103,5 +106,6 @@ class FBBasis2DTestCase(TestCase):
                 0.00749155,  0.00618865, -0.00081327,  -0.01307157,  -0.01441606,  0.00290380,
                 0.02370661,  0.00488806,  0.00147871,   0.00763376,  -0.00560620,  0.01051651,
                 0.00330510, -0.00348652, -0.00042323,   0.01404841
-            ]
+            ],
+            atol = 1e-6 if self.dtype==np.float32 else 1e-8
         ))

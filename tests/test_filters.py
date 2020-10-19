@@ -12,7 +12,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class SimTestCase(TestCase):
     def setUp(self):
-        self.dtype = np.float64
+        self.dtype = np.float32
         # A 2 x 256 ndarray of spatial frequencies
         self.omega = np.load(os.path.join(DATA_DIR, 'omega_2_256.npy'))
 

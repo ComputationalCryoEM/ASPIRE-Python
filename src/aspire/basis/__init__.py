@@ -178,8 +178,11 @@ class Basis:
         ensure(x.shape[-self.ndim:] == self.sz,
                f'Last {self.ndim} dimensions of x must match {self.sz}.')
 
-        operator = LinearOperator(shape=(self.count, self.count),
-                                  matvec=lambda v: self.evaluate_t(self.evaluate(v)))
+        # TODO: Determine why this cast is needed.
+        operator = LinearOperator(
+            shape=(self.count, self.count),
+            matvec=lambda v: self.evaluate_t(self.evaluate(v)),
+            dtype=self.dtype)
 
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
         tol = 10*np.finfo(x.dtype).eps

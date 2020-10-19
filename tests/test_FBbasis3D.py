@@ -10,7 +10,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class FBBasis3DTestCase(TestCase):
     def setUp(self):
-        self.dtype = np.float64
+        self.dtype = np.float32
         self.basis = FBBasis3D((8, 8, 8), dtype=self.dtype)
 
     def tearDown(self):
@@ -103,7 +103,8 @@ class FBBasis3DTestCase(TestCase):
 
         self.assertTrue(np.allclose(
             result,
-            np.load(os.path.join(DATA_DIR, 'hbbasis_evaluation_8_8_8.npy'))
+            np.load(os.path.join(DATA_DIR, 'hbbasis_evaluation_8_8_8.npy')),
+            atol = 1e-6 if self.dtype == np.float32 else 1e-8
         ))
 
     def testFBBasis3DEvaluate_t(self):
@@ -137,7 +138,8 @@ class FBBasis3DTestCase(TestCase):
                  5.05955256e-04,   2.66936132e-06,   2.24934884e-03,   6.70529439e-04,
                  4.81121742e-04,  -6.40789745e-05,  -3.35915672e-04,  -7.98651783e-04,
                 -9.82705453e-04,   6.46337066e-05
-            ]
+            ],
+            atol = 1e-6 if self.dtype == np.float32 else 1e-8
         ))
 
     def testFBBasis3DExpand(self):
@@ -159,5 +161,6 @@ class FBBasis3DTestCase(TestCase):
                 -0.00231911, -0.00025819, -0.00086808, -0.00074656, +0.00110445, +0.00285573, -0.00014959, +0.00093241,
                 +0.00051144, +0.00004805, +0.00250166, +0.00059104, +0.00066592, +0.00019188, -0.00079074, -0.00068995,
                 -0.00087668, +0.00052913
-            ]
+            ],
+            atol = 1e-6 if self.dtype == np.float32 else 1e-8
         ))
