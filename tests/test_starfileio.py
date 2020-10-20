@@ -1,11 +1,17 @@
+import importlib_resources
+import numpy as np
 import os.path
+
+from os.path import splitext
+from pandas import DataFrame
+from scipy import misc
 from unittest import TestCase
 
-import importlib_resources
-from pandas import DataFrame
-
 import tests.saved_test_data
-from aspire.io.starfile import StarFile, StarFileBlock
+from aspire.image import Image
+from aspire.source import ArrayImageSource
+from aspire.source.mrcstack import MrcStack
+from aspire.io.starfile import StarFile, StarFileBlock, save_star
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -14,6 +20,10 @@ class StarFileTestCase(TestCase):
     def setUp(self):
         with importlib_resources.path(tests.saved_test_data, 'sample.star') as path:
             self.starfile = StarFile(path)
+
+        # Independent Image object for testing Image source methods
+        self.im = Image(misc.face(gray=True).astype('float64')[:768, :768])
+        self.img_src = ArrayImageSource(self.im)
 
     def tearDown(self):
         pass
@@ -75,3 +85,30 @@ class StarFileTestCase(TestCase):
         self.assertEqual(self.starfile, self.starfile2)
 
         os.remove('sample_saved.star')
+
+    def testSaveStar(self):
+        test_path = 'sample_save_star.star'
+        mrc_path = splitext(test_path)[0] + '_0_0.mrcs'
+
+        try:
+            # Save some data using the wrapper.
+            #save_star(self.img_src, test_path, save_mode='single')
+            save_star(self.img_src, test_path)
+
+            # Read it back using the class.
+            starfile2 = StarFile(test_path)
+            # Check we get expected filename?or?
+
+            # Use something else to read the data file then...
+            saved_data = MrcStack(mrc_path).im.data
+
+            # Compare
+            self.assertTrue(np.allclose(self.im.data, saved_data))
+
+        finally:
+            # Cleanup
+            if os.path.exists(test_path):
+                os.remove(test_path)
+
+            if os.path.exists(mrc_path):
+                os.remove(mrc_path)
