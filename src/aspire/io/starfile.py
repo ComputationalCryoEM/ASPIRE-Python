@@ -187,24 +187,37 @@ def save_star(image_source, starfile_filepath, batch_size=1024, save_mode=None, 
 
     with open(starfile_filepath, 'w') as f:
         if save_mode == 'single':
-            # save all images into one single mrc file
-            mrcs_filename = os.path.splitext(os.path.basename(starfile_filepath)
-                                            )[0] + f'_{0}_{image_source.n-1}.mrcs'
-            mrcs_filepath = os.path.join(
-                os.path.dirname(starfile_filepath),
-                mrcs_filename
-            )
-            df['_rlnImageName'][0: image_source.n] = pd.Series(['{0:06}@{1}'.format(j + 1, mrcs_filepath)
-                                                                for j in range(image_source.n)])
-            with mrcfile.new_mmap(mrcs_filepath, shape=(image_source.n, image_source.L,
-                                                        image_source.L), mrc_mode=2, overwrite=overwrite) as mrc:
+            # Save all images into one single mrc file
+
+            # First, construct name for mrc file
+            fdir = os.path.dirname(starfile_filepath)
+            fname = os.path.basename(starfile_filepath)
+            fstem = os.path.splitext(fname)[0]
+            mrcs_filename = f'{fstem}_{0}_{image_source.n-1}.mrcs'
+            mrcs_filepath = os.path.join(fdir, mrcs_filename)
+
+            # Then set name in dataframe for the StarFile
+            df['_rlnImageName'][0: image_source.n] = pd.Series(
+                [f'{j + 1:06}@{mrcs_filename}' for j in range(image_source.n)])
+
+            # Open new MRC file
+            with mrcfile.new_mmap(
+                    mrcs_filepath,
+                    shape=(image_source.n, image_source.L, image_source.L),
+                    mrc_mode=2,
+                    overwrite=overwrite) as mrc:
+
+                # Loop over source setting data into mrc file
                 for i_start in np.arange(0, image_source.n, batch_size):
                     i_end = min(image_source.n, i_start + batch_size)
                     num = i_end - i_start
                     logger.info(f'Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}')
-                    mrc.data[i_start:i_end, :, :] = image_source.images(
+                    mrc.data[i_start:i_end] = image_source.images(
                         start=i_start, num=num).data.astype('float32')
-            mrc.close()
+
+                # To be safe, explicitly set the header
+                #   before the mrc file context closes.
+                mrc.update_header_from_data()
 
         else:
             # save all images into multiple mrc files in batch size
