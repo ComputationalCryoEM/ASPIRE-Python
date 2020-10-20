@@ -164,7 +164,7 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                im[data_indices-start] = data[data_indices-start]
+                im[data_indices-start] = data
 
         logger.info(f'Loading {len(indices)} images complete')
 
