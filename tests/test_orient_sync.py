@@ -73,4 +73,7 @@ class OrientSyncTestCase(TestCase):
         with Random(0):
             self.est_shifts = self.orient_est.estimate_shifts()
         results = np.load(os.path.join(DATA_DIR, 'orient_est_shifts.npy'))
-        self.assertTrue(np.allclose(results, self.est_shifts))
+        self.assertTrue(np.allclose(
+            results,
+            self.est_shifts,
+            atol=1e-6 if self.dtype == np.float32 else 1e-8))

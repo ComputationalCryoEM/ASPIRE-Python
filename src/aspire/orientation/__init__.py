@@ -240,9 +240,12 @@ class CLOrient3D:
         # Generate approximated shift equations from estimated rotations
         shift_equations, shift_b = self._get_shift_equations_approx(equations_factor, max_memory)
 
-        # Solve the linear equation
+        # Solve the linear equation, optionally printing numerical debug details.
+        show = False
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            show = True
         # Negative sign comes from using -i conversion of Fourier transformation
-        est_shifts = sparse.linalg.lsqr(shift_equations, -shift_b)[0]
+        est_shifts = sparse.linalg.lsqr(shift_equations, -shift_b, show=show)[0]
         est_shifts = est_shifts.reshape((2, self.n_img), order='F')
 
         return est_shifts
@@ -367,10 +370,9 @@ class CLOrient3D:
             shift_eq[idx] = -1 * coeffs if is_pf_j_flipped else coeffs
 
         # create sparse matrix object only containing non-zero elements
-        # Note, this line is particularly sensitive to precision
         shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
                                             shape=(n_equations, 2 * n_img),
-                                            dtype=np.float64)
+                                            dtype=self.dtype)
 
         return shift_equations, shift_b
 
