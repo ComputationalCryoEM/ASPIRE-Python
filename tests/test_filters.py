@@ -6,6 +6,7 @@ import numpy as np
 from aspire.utils.filters import (CTFFilter, FunctionFilter, IdentityFilter,
                                   PowerFilter, RadialCTFFilter, ScalarFilter,
                                   ZeroFilter)
+from aspire.utils.types import utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -81,7 +82,7 @@ class SimTestCase(TestCase):
                 [ 0.063120922443392,   0.799934516166400,  -0.573061561512667,  -0.999286510416273,  -0.963805291282899,  -0.999286510416273,  -0.573061561512667,   0.799934516166400],
                 [-0.995184514498978,   0.626977423649552,   0.799934516166400,   0.004814348317439,  -0.298096205735759,   0.004814348317439,   0.799934516166400,   0.626977423649552]
             ]),
-            atol=1e-6 if self.dtype == np.float32 else 1e-8
+            atol=utest_tolerance(self.dtype)
         ))
 
     def testRadialCTFFilterMultiplierGrid(self):
@@ -101,7 +102,7 @@ class SimTestCase(TestCase):
                 [ 0.063120922443392,   0.799934516166400,  -0.573061561512667,  -0.999286510416273,  -0.963805291282899,  -0.999286510416273,  -0.573061561512667,   0.799934516166400],
                 [-0.995184514498978,   0.626977423649552,   0.799934516166400,   0.004814348317439,  -0.298096205735759,   0.004814348317439,   0.799934516166400,   0.626977423649552]
             ])**2,
-            atol=1e-6 if self.dtype == np.float32 else 1e-8
+            atol=utest_tolerance(self.dtype)
         ))
 
     def testDualFilter(self):

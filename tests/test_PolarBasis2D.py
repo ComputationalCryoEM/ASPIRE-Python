@@ -6,6 +6,7 @@ from aspire.basis.polar_2d import PolarBasis2D
 from aspire.image import Image
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.types import complex_type
+from aspire.utils.types import utest_tolerance
 
 class PolarBasis2DTestCase(TestCase):
     def setUp(self):
@@ -216,4 +217,4 @@ class PolarBasis2DTestCase(TestCase):
         y_t = self.basis.evaluate_t(Image(m_reshape(y, self.basis.sz)[np.newaxis,:])) # RCOPT
         self.assertTrue(np.isclose(np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),))),
                                    np.dot(y_t, x),
-                                   atol=1e-6 if self.dtype == np.float32 else 1e-8))
+                                   atol=utest_tolerance(self.dtype)))

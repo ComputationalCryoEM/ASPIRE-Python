@@ -76,7 +76,7 @@ class MeanEstimatorTestCase(TestCase):
                  4.81121742e-04,  -6.40789745e-05,  -3.35915672e-04,  -7.98651783e-04,
                 -9.82705453e-04,   6.46337066e-05
             ],
-            atol=1e-6 if self.dtype == np.float32 else 1e-8
+            atol=1e-6
         ))
 
     def testOptimize1(self):

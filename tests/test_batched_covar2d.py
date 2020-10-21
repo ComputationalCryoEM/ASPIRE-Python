@@ -8,7 +8,7 @@ from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.estimation.covar2d import BatchedRotCov2D, RotCov2D
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
-
+from aspire.utils.types import utest_tolerance
 
 class BatchedRotCov2DTestCase(TestCase):
     def setUp(self):
@@ -80,12 +80,12 @@ class BatchedRotCov2DTestCase(TestCase):
         self.assertTrue(np.allclose(
             mean_cov2d,
             mean_bcov2d,
-            atol=1e-5 if self.dtype == np.float32 else 1e-8))
+            atol=utest_tolerance(self.dtype)))
 
         self.assertTrue(self.blk_diag_allclose(
             covar_cov2d,
             covar_bcov2d,
-            atol=1e-5 if self.dtype == np.float32 else 1e-8))
+            atol=utest_tolerance(self.dtype)))
 
     def test02(self):
         # Make sure it works with zero mean (pure second moment).
@@ -108,7 +108,7 @@ class BatchedRotCov2DTestCase(TestCase):
         self.assertTrue(self.blk_diag_allclose(
             covar_cov2d,
             covar_bcov2d,
-            atol=1e-6 if self.dtype == np.float32 else 1e-8))
+            atol=utest_tolerance(self.dtype)))
 
     def test04(self):
         # Make sure it properly shrinks the right-hand side if specified.
@@ -138,7 +138,7 @@ class BatchedRotCov2DTestCase(TestCase):
         self.assertTrue(self.blk_diag_allclose(
             covar_bcov2d,
             covar_nbcov2d,
-            atol=1e-6 if self.dtype == np.float32 else 1e-8))
+            atol=utest_tolerance(self.dtype)))
 
     def test06(self):
         noise_var = 0.1848

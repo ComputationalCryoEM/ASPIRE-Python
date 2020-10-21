@@ -78,3 +78,21 @@ def dtype_legacy_string(dtype):
         raise TypeError(msg)
 
     return dtype_str
+
+
+def utest_tolerance(dtype):
+    """
+    Return ASPIRE tolerance for unit tests based on `dtype`.
+    """
+
+    if dtype == np.float64:
+        # Use default np.allclose atol
+        tol = 1e-8
+    elif dtype == np.float32:
+        tol = 1e-5
+    else:
+        msg = f'utest_tolerance not implemented for dtype: {dtype}.'
+        logger.error(msg)
+        raise TypeError(msg)
+
+    return tol

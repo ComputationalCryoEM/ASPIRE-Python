@@ -8,6 +8,7 @@ from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.estimation.covar2d import RotCov2D
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter, ScalarFilter
+from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -100,13 +101,13 @@ class Cov2DTestCase(TestCase):
         self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                    noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf,
-                                    atol=1e-6 if self.dtype == np.float32 else 1e-8))
+                                    atol=utest_tolerance(self.dtype)))
 
     def testGetCWFCoeffsIdentityCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
         self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
         self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF,
-                                    atol=1e-6 if self.dtype == np.float32 else 1e-8))
+                                    atol=utest_tolerance(self.dtype)))
 
     def testGetCWFCoeffsClean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))
