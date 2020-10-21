@@ -7,12 +7,12 @@ from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image, normalize_bg
 from aspire.io.starfile import save_star
-from aspire.source.xform import (Add, Downsample, FilterXform, FlipXform,
-                                 LambdaXform, LinearIndexedXform,
+from aspire.source.xform import (Add, Downsample, FilterXform,
+                                 IndexedXform, LambdaXform, LinearIndexedXform,
                                  LinearPipeline, Multiply, Pipeline, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import MultiplicativeFilter, PowerFilter
+from aspire.utils.filters import (LambdaFilter, MultiplicativeFilter, PowerFilter)
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -370,8 +370,10 @@ class ImageSource:
         """
         logger.info('Perform phase flip on source object')
         logger.info('Adding Phase Flip Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(FlipXform(self.unique_filters,
-                                                     self.filter_indices))
+        unique_xforms = [FilterXform(LambdaFilter(f, np.sign))
+                         for f in self.unique_filters]
+        self.generation_pipeline.add_xform(IndexedXform(unique_xforms,
+                                                        self.filter_indices))
 
     def invert_contrast(self, batch_size=512):
         """
