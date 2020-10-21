@@ -51,8 +51,8 @@ class Simulation(ImageSource):
         if self.vols.dtype != self.dtype:
             logger.warning(
                 f'{self.__class__.__name__}'
-                f' vols.dtype {self.vols.dtype} != self.dtype {self.dtype}.')
-            # TODO: Decide if should just warn, raise, or convert here.
+                f' vols.dtype {self.vols.dtype} != self.dtype {self.dtype}.'
+                ' In the future this will raise an error.')
 
         self.C = self.vols.n_vols
 

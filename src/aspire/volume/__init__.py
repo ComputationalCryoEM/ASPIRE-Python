@@ -103,8 +103,8 @@ class Volume:
             logger.warning(
                 f'{self.__class__.__name__}'
                 f' rot_matrices.dtype {rot_matrices.dtype}'
-                f' != self.dtype {self.dtype}.')
-            # TODO: decide if should just warn, raise, or convert here.
+                f' != self.dtype {self.dtype}.'
+                ' In the future this will raise an error.')
 
         data = self[vol_idx].T  #RCOPT
 
