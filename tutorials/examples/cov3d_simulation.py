@@ -30,7 +30,7 @@ num_eigs = 16          # number of eigen-vectors to keep
 sim = Simulation(
     n=num_imgs,
     C=num_vols,
-    filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
+    unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
 )
 
 # Specify the normal FB basis method for expending the 2D images

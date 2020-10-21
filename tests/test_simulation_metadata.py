@@ -20,7 +20,7 @@ class SimTestCase(TestCase):
         self.sim = MySimulation(
             n=1024,
             L=8,
-            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
+            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
         )
 
     def tearDown(self):

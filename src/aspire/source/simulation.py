@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class Simulation(ImageSource):
-    def __init__(self, L=8, n=1024, vols=None, states=None, filters=None,
+    def __init__(self, L=8, n=1024, vols=None, states=None,
+                 unique_filters=None, filter_indices=None,
                  offsets=None, amplitudes=None, dtype='single', C=2,
                  angles=None, seed=0, memory=None, noise_filter=None):
         """
@@ -53,10 +54,15 @@ class Simulation(ImageSource):
         angles = angles or uniform_random_angles(n, seed=seed)
 
         self.states = states
-        if filters is not None:
-            self.filters = np.take(filters, randi(len(filters), n, seed=seed) - 1)
-        else:
-            self.filters = None
+
+        self.unique_filters = unique_filters
+
+        # Create filter indices and fill the metadata based on unique filters
+        if unique_filters:
+            if filter_indices is None:
+                filter_indices = randi(len(unique_filters), n, seed=seed) - 1
+            self.filter_indices = filter_indices
+
         self.offsets = offsets
         self.amplitudes = amplitudes
         self.angles = angles

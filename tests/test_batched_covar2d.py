@@ -29,12 +29,12 @@ class BatchedRotCov2DTestCase(TestCase):
                    for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
         # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
-        src = Simulation(L, n, filters=filters, dtype='double')
+        src = Simulation(L, n, unique_filters=filters, dtype='double')
 
         basis = FFBBasis2D((L, L))
 
-        unique_filters = list(OrderedDict.fromkeys(src.filters))
-        ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
+        unique_filters = src.unique_filters
+        ctf_idx = src.filter_indices
 
         ctf_fb = [f.fb_mat(basis) for f in unique_filters]
 
