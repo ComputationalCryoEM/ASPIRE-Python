@@ -359,10 +359,8 @@ class ImageSource:
         whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
         logger.info('Transforming all CTF Filters into Multiplicative Filters')
-        for filt in self.unique_filters:
-            f_new = copy(filt)
-            filt.__class__ = MultiplicativeFilter
-            filt.__init__(f_new, whiten_filter)
+        self.unique_filters = [MultiplicativeFilter(f, whiten_filter)
+                               for f in self.unique_filters]
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
