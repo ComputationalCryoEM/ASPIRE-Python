@@ -163,4 +163,6 @@ class BatchedRotCov2DTestCase(TestCase):
         self.assertTrue(self.blk_diag_allclose(
             coeff_bcov2d,
             coeff_nbcov2d,
-            atol=utest_tolerance(self.dtype)))
+            # Note, the Batched class has reduced resolution,
+            #  compared to the non batched method.
+            atol=10 * utest_tolerance(self.dtype)))
