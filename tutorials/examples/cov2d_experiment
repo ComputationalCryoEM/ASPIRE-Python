@@ -1,0 +1,52 @@
+"""
+This script illustrates denoising 2D images using batched Cov2D class
+from experime dataset and outputing to mrcs file.
+"""
+
+import logging
+
+from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.denoising.denoiser_cov2d import DenoiserCov2D
+from aspire.estimation.noise import AnisotropicNoiseEstimator
+from aspire.source.relion import RelionSource
+
+logger = logging.getLogger('aspire')
+
+# Set input path and files and initialize other parameters
+data_folder = '/tigress/junchaox/CryoEMdata/empiar10028'
+starfile_in = '/tigress/junchaox/CryoEMdata/empiar10028/shiny_2sets_shift.star'
+starfile_out = '/tigress/junchaox/CryoEMdata/empiar10028/Denoise/particles_denoise.star'
+pixel_size = 1.34
+max_rows = 1024
+max_resolution = 60
+
+# Create a source object for 2D images
+logger.info(f'Read in images from {starfile_in} and preprocess the images.')
+source = RelionSource(
+    starfile_in,
+    data_folder,
+    pixel_size=pixel_size,
+    max_rows=max_rows
+)
+
+# Downsample the images
+logger.info(f'Set the resolution to {max_resolution} X {max_resolution}')
+if max_resolution < source.L:
+    source.downsample(max_resolution)
+
+# Specify the fast FB basis method for expending the 2D images
+basis = FFBBasis2D((max_resolution, max_resolution))
+
+# Estimate the noise of images
+logger.info(f'Estimate the noise of images using anisotropic method')
+noise_estimator = AnisotropicNoiseEstimator(source)
+
+# Whiten the noise of images
+logger.info(f'Whiten the noise of images from the noise estimator')
+source.whiten(noise_estimator.filter)
+var_noise = noise_estimator.estimate()
+
+logger.info(f'Denoise the images using batched cov2D method.')
+denoiser = DenoiserCov2D(source, basis, var_noise)
+denoised_src = denoiser.denoise(batch_size=512)
+denoised_src.save(starfile_out, batch_size=512, save_mode='single', overwrite=False)
