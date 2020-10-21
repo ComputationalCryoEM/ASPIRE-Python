@@ -88,7 +88,7 @@ class Cov2DTestCase(TestCase):
     def testGetCovarCTFShrink(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'))
         covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float32'}
+                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': self.dtype}
         self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                            noise_var=self.noise_var, covar_est_opt=covar_opt)
 

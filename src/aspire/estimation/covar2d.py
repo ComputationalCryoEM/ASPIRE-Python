@@ -162,9 +162,15 @@ class RotCov2D:
         def identity(x):
             return x
 
-        default_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                             'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
-                             'preconditioner': identity}
+        default_est_opt = {
+            'shrinker': 'None',
+            'verbose': 0,
+            'max_iter': 250,
+            'iter_callback': [],
+            'store_iterates': False,
+            'rel_tolerance': 1e-12,
+            'precision': self.dtype,
+            'preconditioner': identity}
 
         covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 

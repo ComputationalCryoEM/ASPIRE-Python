@@ -118,7 +118,7 @@ class BatchedRotCov2DTestCase(TestCase):
                          'iter_callback': [],
                          'store_iterates': False,
                          'rel_tolerance': 1e-12,
-                         'precision': 'float32'}
+                         'precision': self.dtype}
 
         covar_cov2d = self.cov2d.get_covar(self.coeff, ctf_fb=self.ctf_fb,
                                            ctf_idx=self.ctf_idx,

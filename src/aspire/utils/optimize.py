@@ -86,9 +86,15 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
 
     def identity(input_x):
         return input_x
-    default_opt = {'verbose': 0, 'max_iter': 50, 'iter_callback': [],
-                   'store_iterates': False, 'rel_tolerance': 1e-15,
-                   'precision': 'float64', 'preconditioner': identity}
+    default_opt = {
+        'verbose': 0,
+        'max_iter': 50,
+        'iter_callback': [],
+        'store_iterates': False,
+        'rel_tolerance': 1e-15,
+        'precision': b.dtype,
+        'preconditioner': identity}
+
     cg_opt = fill_struct(cg_opt, default_opt)
 
     default_init = {'x': None, 'p': None}
