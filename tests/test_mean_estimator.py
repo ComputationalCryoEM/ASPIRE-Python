@@ -21,9 +21,9 @@ class MeanEstimatorTestCase(TestCase):
         )
         basis = FBBasis3D((8, 8, 8), dtype=self.dtype)
         self.estimator = MeanEstimator(
-            sim, basis, preconditioner='none', dtype=self.dtype)
+            sim, basis, preconditioner='none')
         self.estimator_with_preconditioner = MeanEstimator(
-            sim, basis, preconditioner='circulant', dtype=self.dtype)
+            sim, basis, preconditioner='circulant')
 
     def tearDown(self):
         pass

@@ -31,14 +31,14 @@ class Covar3DTestCase(TestCase):
         basis = FBBasis3D((8, 8, 8), dtype=cls.dtype)
         cls.noise_variance = 0.0030762743633643615
 
-        cls.mean_estimator = MeanEstimator(cls.sim, basis, dtype=cls.dtype)
+        cls.mean_estimator = MeanEstimator(cls.sim, basis)
         cls.mean_est = Volume(
             np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy')).astype(
                 cls.dtype))
 
         # Passing in a mean_kernel argument to the following constructor speeds up some calculations
-        cls.covar_estimator = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='none', dtype=cls.dtype)
-        cls.covar_estimator_with_preconditioner = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='circulant', dtype=cls.dtype)
+        cls.covar_estimator = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='none')
+        cls.covar_estimator_with_preconditioner = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='circulant')
 
     def tearDown(self):
         pass

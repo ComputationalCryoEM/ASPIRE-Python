@@ -14,23 +14,19 @@ logger = logging.getLogger(__name__)
 
 
 class Estimator:
-    def __init__(self, src, basis, dtype=np.float32, batch_size=512, preconditioner='circulant'):
+    def __init__(self, src, basis, batch_size=512, preconditioner='circulant'):
         self.src = src
         self.basis = basis
-        self.dtype = np.dtype(dtype)
+        self.dtype = self.src.dtype
         self.batch_size = batch_size
         self.preconditioner = preconditioner
 
         self.L = src.L
         self.n = src.n
 
-        if not self.src.dtype == self.basis.dtype == self.dtype:
-            # TODO: Decide if this should simply infer from src or basis.
-            #   It wasn't clear which one should be source of truth,
-            #   but I was leaning towards `src`.
+        if not self.dtype == self.basis.dtype:
             logger.warning(f'Inconsistent types in {self.dtype} Estimator.'
-                           f' basis: {self.basis.dtype}'
-                           f' src: {self.src.dtype}')
+                           f' basis: {self.basis.dtype}')
 
         """
         An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
