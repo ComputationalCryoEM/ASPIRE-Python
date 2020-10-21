@@ -30,7 +30,7 @@ class BatchedRotCov2DTestCase(TestCase):
                    for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
         # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
-        src = Simulation(L, n, unique_filters=filters, self.dtype)
+        src = Simulation(L, n, unique_filters=filters, dtype=self.dtype)
 
         basis = FFBBasis2D((L, L), dtype=self.dtype)
 
@@ -160,4 +160,7 @@ class BatchedRotCov2DTestCase(TestCase):
             self.coeff, self.ctf_fb, self.ctf_idx, mean_nbcov2d, covar_nbcov2d,
             noise_var=noise_var)
 
-        self.assertTrue(self.blk_diag_allclose(coeff_bcov2d, coeff_nbcov2d))
+        self.assertTrue(self.blk_diag_allclose(
+            coeff_bcov2d,
+            coeff_nbcov2d,
+            atol=utest_tolerance(self.dtype)))
