@@ -89,7 +89,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
     def test02(self):
         # Make sure it works with zero mean (pure second moment).
-        zero_coeff = np.zeros((self.basis.count,))
+        zero_coeff = np.zeros((self.basis.count,), dtype=self.dtype)
 
         covar_cov2d = self.cov2d.get_covar(self.coeff, mean_coeff=zero_coeff,
                                       ctf_fb=self.ctf_fb, ctf_idx=self.ctf_idx)
