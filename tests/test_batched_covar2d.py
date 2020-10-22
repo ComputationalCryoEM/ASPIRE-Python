@@ -1,4 +1,5 @@
 import os
+import pytest
 from collections import OrderedDict
 from unittest import TestCase
 
@@ -143,6 +144,7 @@ class BatchedRotCov2DTestCase(TestCase):
             covar_nbcov2d,
             atol=utest_tolerance(self.dtype)))
 
+    @pytest.mark.skip(reason="Currently debugging resolution issue 307 for batched mode.")
     def test06(self):
         noise_var = 0.1848
 
@@ -168,4 +170,4 @@ class BatchedRotCov2DTestCase(TestCase):
             coeff_nbcov2d,
             # Note, the Batched class has reduced resolution,
             #  compared to the non batched method.
-            atol=1000 * utest_tolerance(self.dtype)))
+            atol=utest_tolerance(self.dtype)))
