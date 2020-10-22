@@ -96,7 +96,10 @@ class BatchedRotCov2DTestCase(TestCase):
 
         covar_bcov2d = self.bcov2d.get_covar(mean_coeff=zero_coeff)
 
-        self.assertTrue(self.blk_diag_allclose(covar_cov2d, covar_bcov2d))
+        self.assertTrue(self.blk_diag_allclose(
+            covar_cov2d,
+            covar_bcov2d,
+            atol=utest_tolerance(self.dtype)))
 
     def test03(self):
         # Make sure it automatically calls get_mean if needed.
