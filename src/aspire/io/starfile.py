@@ -6,6 +6,8 @@ import mrcfile
 import numpy as np
 import pandas as pd
 
+from aspire.io.mrc import MrcStats
+
 logger = logging.getLogger(__name__)
 
 
@@ -207,17 +209,29 @@ def save_star(image_source, starfile_filepath, batch_size=1024, save_mode=None, 
                     mrc_mode=2,
                     overwrite=overwrite) as mrc:
 
+                stats = MrcStats()
                 # Loop over source setting data into mrc file
                 for i_start in np.arange(0, image_source.n, batch_size):
                     i_end = min(image_source.n, i_start + batch_size)
                     num = i_end - i_start
                     logger.info(f'Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}')
-                    mrc.data[i_start:i_end] = image_source.images(
+                    datum = image_source.images(
                         start=i_start, num=num).data.astype('float32')
+
+                    # Assign to mrcfile
+                    mrc.data[i_start:i_end] = datum
+
+                    # Accumulate stats
+                    stats.push(datum)
 
                 # To be safe, explicitly set the header
                 #   before the mrc file context closes.
                 mrc.update_header_from_data()
+
+                # Also write out updated statistics for this mrc.
+                #   This should be an optimization over mrc.update_header_stats
+                #   for large arrays.
+                stats.update_header(mrc)
 
         else:
             # save all images into multiple mrc files in batch size
