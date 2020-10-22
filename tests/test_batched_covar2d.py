@@ -165,4 +165,4 @@ class BatchedRotCov2DTestCase(TestCase):
             coeff_nbcov2d,
             # Note, the Batched class has reduced resolution,
             #  compared to the non batched method.
-            atol=10 * utest_tolerance(self.dtype)))
+            atol=100 * utest_tolerance(self.dtype)))
