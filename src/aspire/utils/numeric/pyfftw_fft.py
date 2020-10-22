@@ -3,6 +3,9 @@ import os
 import pyfftw
 import pyfftw.interfaces.scipy_fftpack as scipy_fft
 
+from aspire.utils.numeric.fft import FFT
+
+
 mutex = Lock()
 
 _cpu_count = os.cpu_count()
@@ -25,103 +28,7 @@ def _workers(workers):
     return workers
 
 
-def _fft(a, axis=-1, workers=-1):
-    mutex.acquire()
-
-    try:
-        a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        cls = pyfftw.FFTW(a_, b, axes=(axis,), direction='FFTW_FORWARD',
-                          threads=_workers(workers))
-        cls(a, b)
-    finally:
-        mutex.release()
-
-    return b
-
-
-def _ifft(a, axis=-1, workers=-1):
-    mutex.acquire()
-
-    try:
-        a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        cls = pyfftw.FFTW(a_, b, axes=(axis,), direction='FFTW_BACKWARD',
-                          threads=_workers(workers))
-        cls(a, b)
-    finally:
-        mutex.release()
-
-    return b
-
-
-def _fft2(a, axes=(-2, -1), workers=-1):
-    # This is called by ApplePicker unit test using ThreadPoolExecutor.
-    #   I don't believe this pyfftw call is actually threadsafe.
-    #   Holding mutex here, I have not been able to reproduce the spurious
-    #   segmentation fault on Linux.
-    #   This still allows threading in the other areas of invoking code,
-    #   presumably the parts which are IO bound.
-    mutex.acquire()
-
-    try:
-        a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD',
-                          threads=_workers(workers))
-        cls(a, b)
-    finally:
-        mutex.release()
-
-    return b
-
-
-def _ifft2(a, axes=(-2, -1), workers=-1):
-    mutex.acquire()
-
-    try:
-        a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_BACKWARD',
-                          threads=_workers(workers))
-        cls(a, b)
-    finally:
-        mutex.release()
-
-    return b
-
-
-def _fftn(a, axes=None, workers=-1):
-    mutex.acquire()
-
-    try:
-        a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD',
-                          threads=_workers(workers))
-        cls(a, b)
-    finally:
-        mutex.release()
-
-    return b
-
-
-def _ifftn(a, axes=None, workers=-1):
-    mutex.acquire()
-
-    try:
-        a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        b = pyfftw.empty_aligned(a.shape, dtype='complex128')
-        cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_BACKWARD',
-                          threads=_workers(workers))
-        cls(a, b)
-    finally:
-        mutex.release()
-
-    return b
-
-
-class PyfftwFFT:
+class PyfftwFFT(FFT):
     """
     Define a unified wrapper class for PyFFT functions
 
@@ -129,27 +36,99 @@ class PyfftwFFT:
     """
     @staticmethod
     def fft(a, axis=-1, workers=-1):
-        return _fft(a, axis=axis, workers=workers)
+        mutex.acquire()
+
+        try:
+            a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            b = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            cls = pyfftw.FFTW(a_, b, axes=(axis,), direction='FFTW_FORWARD',
+                              threads=_workers(workers))
+            cls(a, b)
+        finally:
+            mutex.release()
+
+        return b
 
     @staticmethod
     def ifft(a, axis=-1, workers=-1):
-        return _ifft(a, axis=axis, workers=workers)
+        mutex.acquire()
+
+        try:
+            a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            b = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            cls = pyfftw.FFTW(a_, b, axes=(axis,), direction='FFTW_BACKWARD',
+                              threads=_workers(workers))
+            cls(a, b)
+        finally:
+            mutex.release()
+
+        return b
 
     @staticmethod
     def fft2(a, axes=(-2, -1), workers=-1):
-        return _fft2(a, axes=axes, workers=workers)
+        # This is called by ApplePicker unit test using ThreadPoolExecutor.
+        #   I don't believe this pyfftw call is actually threadsafe.
+        #   Holding mutex here, I have not been able to reproduce the spurious
+        #   segmentation fault on Linux.
+        #   This still allows threading in the other areas of invoking code,
+        #   presumably the parts which are IO bound.
+        mutex.acquire()
+
+        try:
+            a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            b = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD',
+                              threads=_workers(workers))
+            cls(a, b)
+        finally:
+            mutex.release()
+
+        return b
 
     @staticmethod
     def ifft2(a, axes=(-2, -1), workers=-1):
-        return _ifft2(a, axes=axes, workers=workers)
+        mutex.acquire()
+
+        try:
+            a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            b = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_BACKWARD',
+                              threads=_workers(workers))
+            cls(a, b)
+        finally:
+            mutex.release()
+
+        return b
 
     @staticmethod
     def fftn(a, axes=None, workers=-1):
-        return _fftn(a, axes=axes, workers=workers)
+        mutex.acquire()
+
+        try:
+            a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            b = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD',
+                              threads=_workers(workers))
+            cls(a, b)
+        finally:
+            mutex.release()
+
+        return b
 
     @staticmethod
     def ifftn(a, axes=None, workers=-1):
-        return _ifftn(a, axes=axes, workers=workers)
+        mutex.acquire()
+
+        try:
+            a_ = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            b = pyfftw.empty_aligned(a.shape, dtype='complex128')
+            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_BACKWARD',
+                              threads=_workers(workers))
+            cls(a, b)
+        finally:
+            mutex.release()
+
+        return b
 
     @staticmethod
     def fftshift(a, axes=None):
@@ -158,39 +137,3 @@ class PyfftwFFT:
     @staticmethod
     def ifftshift(a, axes=None):
         return scipy_fft.ifftshift(a, axes=axes)
-
-    @staticmethod
-    def centered_fft(a, axis=-1, workers=-1):
-        a = scipy_fft.ifftshift(a, axes=axis)
-        b = _fft(a, axis=axis, workers=workers)
-        return scipy_fft.fftshift(b, axes=axis)
-
-    @staticmethod
-    def centered_ifft(a, axis=-1, workers=-1):
-        a = scipy_fft.ifftshift(a, axes=axis)
-        b = _ifft(a, axis=axis, workers=workers)
-        return scipy_fft.fftshift(b, axes=axis)
-
-    @staticmethod
-    def centered_fft2(a, axes=(-2, -1), workers=-1):
-        a = scipy_fft.ifftshift(a, axes=axes)
-        b = _fft2(a, axes=axes, workers=workers)
-        return scipy_fft.fftshift(b, axes=axes)
-
-    @staticmethod
-    def centered_ifft2(a, axes=(-2, -1), workers=-1):
-        a = scipy_fft.ifftshift(a, axes=axes)
-        b = _ifft2(a, axes=axes, workers=workers)
-        return scipy_fft.fftshift(b, axes=axes)
-
-    @staticmethod
-    def centered_fftn(a, axes=None, workers=-1):
-        a = scipy_fft.ifftshift(a, axes=axes)
-        b = _fftn(a, axes=axes, workers=workers)
-        return scipy_fft.fftshift(b, axes=axes)
-
-    @staticmethod
-    def centered_ifftn(a, axes=None, workers=-1):
-        a = scipy_fft.ifftshift(a, axes=axes)
-        b = _ifftn(a, axes=axes, workers=workers)
-        return scipy_fft.fftshift(b, axes=axes)

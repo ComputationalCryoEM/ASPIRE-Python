@@ -11,7 +11,7 @@ else:
 xp = NumericClass()
 
 
-def fft_class(which):
+def fft_object(which):
     if which == 'pyfftw':
         from .pyfftw_fft import PyfftwFFT as FFTClass
     elif which == 'cupy':
@@ -20,7 +20,7 @@ def fft_class(which):
         from .scipy_fft import ScipyFFT as FFTClass
     else:
         raise RuntimeError(f'Invalid selection for fft class: {which}')
-    return FFTClass
+    return FFTClass()
 
 
-fft = fft_class(config.common.fft)
+fft = fft_object(config.common.fft)

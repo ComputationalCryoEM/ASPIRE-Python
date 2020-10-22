@@ -1,7 +1,9 @@
 import scipy as sp
 
+from aspire.utils.numeric.fft import FFT
 
-class ScipyFFT:
+
+class ScipyFFT(FFT):
     """
     Define a unified wrapper class for Scipy FFT functions
 
@@ -38,45 +40,3 @@ class ScipyFFT:
     @staticmethod
     def ifftshift(x, axes=None):
         return sp.fft.ifftshift(x, axes=axes)
-
-    @staticmethod
-    def centered_ifft(x, axis=-1, workers=-1):
-        x = sp.fft.ifftshift(x, axes=axis)
-        x = sp.fft.ifft(x, axis=axis, workers=workers)
-        x = sp.fft.fftshift(x, axes=axis)
-        return x
-
-    @staticmethod
-    def centered_fft(x, axis=-1, workers=-1):
-        x = sp.fft.ifftshift(x, axes=axis)
-        x = sp.fft.fft(x, axis=axis, workers=workers)
-        x = sp.fft.fftshift(x, axes=axis)
-        return x
-
-    @staticmethod
-    def centered_ifft2(x, axes=(-2, -1), workers=-1):
-        x = sp.fft.ifftshift(x, axes=axes)
-        x = sp.fft.ifft2(x, axes=axes, workers=workers)
-        x = sp.fft.fftshift(x, axes=axes)
-        return x
-
-    @staticmethod
-    def centered_fft2(x, axes=(-2, -1), workers=-1):
-        x = sp.fft.ifftshift(x, axes=axes)
-        x = sp.fft.fft2(x, axes=axes, workers=workers)
-        x = sp.fft.fftshift(x, axes=axes)
-        return x
-
-    @staticmethod
-    def centered_ifftn(x, axes=None, workers=-1):
-        x = sp.fft.ifftshift(x, axes=axes)
-        x = sp.fft.ifftn(x, axes=axes, workers=workers)
-        x = sp.fft.fftshift(x, axes=axes)
-        return x
-
-    @staticmethod
-    def centered_fftn(x, axes=None, workers=-1):
-        x = sp.fft.ifftshift(x, axes=axes)
-        x = sp.fft.fftn(x, axes=axes, workers=workers)
-        x = sp.fft.fftshift(x, axes=axes)
-        return x
