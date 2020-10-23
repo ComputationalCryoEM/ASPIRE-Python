@@ -10,13 +10,14 @@ from aspire.utils.matlab_compat import m_reshape
 # A list of random states, used as a stack
 random_states = []
 
+
 def choice(*args, **kwargs):
     """
     Wraps numpy random.choice call in ASPIRE Random context.
     """
     seed = None
-    if 'seed' in kwargs:
-        seed = kwargs.pop('seed')
+    if "seed" in kwargs:
+        seed = kwargs.pop("seed")
 
     with Random(seed):
         return np.random.choice(*args, **kwargs)
@@ -34,7 +35,7 @@ def randi(i_max, size, seed=None):
     :return: A np array
     """
     with Random(seed):
-        return np.ceil(i_max * np.random.random(size=size)).astype('int')
+        return np.ceil(i_max * np.random.random(size=size)).astype("int")
 
 
 def randn(*args, **kwargs):
@@ -42,8 +43,8 @@ def randn(*args, **kwargs):
     Calls rand and applies inverse transform sampling to the output.
     """
     seed = None
-    if 'seed' in kwargs:
-        seed = kwargs.pop('seed')
+    if "seed" in kwargs:
+        seed = kwargs.pop("seed")
 
     with Random(seed):
         uniform = np.random.rand(*args, **kwargs)
@@ -54,8 +55,25 @@ def randn(*args, **kwargs):
 
 
 def rand(size, seed=None):
+    """
+    Note this is for MATLAB repro (see m_reshape).
+
+    Other uses prefer use of `random`.
+    """
     with Random(seed):
         return m_reshape(np.random.random(np.prod(size)), size)
+
+
+def random(*args, **kwargs):
+    """
+    Wraps numpy.random.random with ASPIRE Random context manager.
+    """
+    seed = None
+    if "seed" in kwargs:
+        seed = kwargs.pop("seed")
+
+    with Random(seed):
+        return np.random.random(*args, **kwargs)
 
 
 class Random:
@@ -63,6 +81,7 @@ class Random:
     A context manager that pushes a random seed to the stack for reproducible results,
     and pops it on exit.
     """
+
     def __init__(self, seed=None):
         self.seed = seed
 
