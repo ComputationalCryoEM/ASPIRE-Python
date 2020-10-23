@@ -34,8 +34,7 @@ class PyfftwFFT(FFT):
 
     To be consistent with Scipy FFT, not all arguments are included.
     """
-    @staticmethod
-    def fft(a, axis=-1, workers=-1):
+    def fft(self, a, axis=-1, workers=-1):
         mutex.acquire()
 
         try:
@@ -49,8 +48,7 @@ class PyfftwFFT(FFT):
 
         return b
 
-    @staticmethod
-    def ifft(a, axis=-1, workers=-1):
+    def ifft(self, a, axis=-1, workers=-1):
         mutex.acquire()
 
         try:
@@ -64,8 +62,7 @@ class PyfftwFFT(FFT):
 
         return b
 
-    @staticmethod
-    def fft2(a, axes=(-2, -1), workers=-1):
+    def fft2(self, a, axes=(-2, -1), workers=-1):
         # This is called by ApplePicker unit test using ThreadPoolExecutor.
         #   I don't believe this pyfftw call is actually threadsafe.
         #   Holding mutex here, I have not been able to reproduce the spurious
@@ -85,8 +82,7 @@ class PyfftwFFT(FFT):
 
         return b
 
-    @staticmethod
-    def ifft2(a, axes=(-2, -1), workers=-1):
+    def ifft2(self, a, axes=(-2, -1), workers=-1):
         mutex.acquire()
 
         try:
@@ -100,8 +96,7 @@ class PyfftwFFT(FFT):
 
         return b
 
-    @staticmethod
-    def fftn(a, axes=None, workers=-1):
+    def fftn(self, a, axes=None, workers=-1):
         mutex.acquire()
 
         try:
@@ -115,8 +110,7 @@ class PyfftwFFT(FFT):
 
         return b
 
-    @staticmethod
-    def ifftn(a, axes=None, workers=-1):
+    def ifftn(self, a, axes=None, workers=-1):
         mutex.acquire()
 
         try:
@@ -130,10 +124,8 @@ class PyfftwFFT(FFT):
 
         return b
 
-    @staticmethod
-    def fftshift(a, axes=None):
+    def fftshift(self, a, axes=None):
         return scipy_fft.fftshift(a, axes=axes)
 
-    @staticmethod
-    def ifftshift(a, axes=None):
+    def ifftshift(self, a, axes=None):
         return scipy_fft.ifftshift(a, axes=axes)
