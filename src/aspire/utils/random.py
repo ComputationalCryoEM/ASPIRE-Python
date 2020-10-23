@@ -10,6 +10,18 @@ from aspire.utils.matlab_compat import m_reshape
 # A list of random states, used as a stack
 random_states = []
 
+def choice(*args, **kwargs):
+    """
+    Wraps numpy random.choice call in ASPIRE Random context.
+    """
+    seed = None
+    if 'seed' in kwargs:
+        seed = kwargs.pop('seed')
+
+    with Random(seed):
+        return np.random.choice(*args, **kwargs)
+
+
 def randi(i_max, size, seed=None):
     """
     A MATLAB compatible randi implementation that returns numbers from a discrete uniform distribution.
