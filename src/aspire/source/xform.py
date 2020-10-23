@@ -126,8 +126,7 @@ class Multiply(SymmetricXform):
         self.multipliers = factor
 
     def _forward(self, im, indices):
-        n = self.multipliers[indices].shape[0]
-        return Image(self.multipliers[indices].reshape(n, 1, 1)*im.data)
+        return im * self.multipliers[indices][:, np.newaxis, np.newaxis]
 
 
 class Shift(LinearXform):
