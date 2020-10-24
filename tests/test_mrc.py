@@ -13,7 +13,8 @@ class MrcStatsTestCase(TestCase):
     def setUp(self):
         # Create dummy data
         self.n = n = 100
-        self.a = a = np.arange(n*n).reshape((n, n))
+        # Note, integers will overflow on windows, use floats.
+        self.a = a = np.arange(n * n).reshape((n, n)).astype(np.float32)
 
         # Create stats instance
         self.stats = MrcStats()
@@ -98,7 +99,9 @@ class MrcStatsTestCase(TestCase):
                 mrc.header.time = epoch
 
             # Our homebrew and mrcfile files should now match to the bit.
-            self.assertTrue(filecmp.cmp(files[0], files[1]))
+            filecmp.clear_cache()  # clear any previous attempts
+            # Shallow=False is important to ensure we check file contents.
+            self.assertTrue(filecmp.cmp(files[0], files[1], shallow=False))
 
         finally:
             # Cleanup
