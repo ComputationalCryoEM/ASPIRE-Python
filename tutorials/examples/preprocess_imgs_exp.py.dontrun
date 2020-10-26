@@ -1,4 +1,4 @@
-#!/usr/bin/env  python3.6
+#!/usr/bin/env  python
 """
 This script illustrates how to preprocess experimental CryoEM images
 before starting the pipeline of reconstructing 3D map.
@@ -11,18 +11,18 @@ from aspire.estimation.noise import WhiteNoiseEstimator
 
 
 # Set input path and files and initialize other parameters
-data_folder = '/path/to/untarred/empiar/dataset/'
+DATA_FOLDER = '/path/to/untarred/empiar/dataset/'
 STARFILE_IN = '/path/to/untarred/empiar/dataset/input.star'
-pixel_size = 1.34
-num_imgs = 100
+PIXEL_SIZE = 1.34
+NUM_IMGS = 100
 
 print('This script illustrates how to preprocess experimental CryoEM images')
 print(f'Read in images from {STARFILE_IN} and preprocess the images')
 source = RelionSource(
     STARFILE_IN,
-    data_folder,
-    pixel_size=pixel_size,
-    max_rows=num_imgs
+    DATA_FOLDER,
+    pixel_size=PIXEL_SIZE,
+    max_rows=NUM_IMGS
 )
 
 # number of images to extract for plotting
