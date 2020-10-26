@@ -15,7 +15,6 @@ class Filter:
     def __init__(self, dim=None, radial=False):
         self.dim = dim
         self.radial = radial
-        self._scale = 1  # If needed, modified through the scale() method
 
     def __mul__(self, other):
         return MultiplicativeFilter(self, other)
@@ -63,14 +62,15 @@ class Filter:
         """
         return filter_to_fb_mat(self.evaluate, fbasis)
 
-    def scale(self, c):
+    def scale(self, c=1):
         """
         Scale filter by a constant factor
         :param c: The scaling factor. For c < 1, it dilates the filter(s) in frequency, while for c > 1,
             it compresses (default 1).
-        :return: On return, attributes of the calling object are properly adjusted in place to effect scaling.
+        :return: On return, a ScaledFilter object with new parameters
         """
-        raise NotImplementedError('Subclasses should implement this method')
+        new_filter = copy.copy(self)
+        return ScaledFilter(new_filter, c)
 
     def evaluate_grid(self, L, *args, **kwargs):
         grid2d = grid_2d(L)
@@ -163,6 +163,26 @@ class MultiplicativeFilter(Filter):
         return res
 
 
+class ScaledFilter(Filter):
+    """
+    A Filter object that is composed of a regular `Filter` object, but evaluates it to scale omega.
+    """
+    def __init__(self, filt, scale):
+        self._filter = filt
+        self._scale = scale
+        super().__init__(dim=filt.dim, radial=filt.radial)
+
+    def _evaluate(self, omega):
+        return self._filter.evaluate(omega/self._scale)
+
+    def __str__(self):
+        """
+        Show class name of ScaledFilter and related information
+        :return: A string of class name and related information
+        """
+        return f'{self.__class__.__name__} scales {str(self._filter)} by {self._scale}'
+
+
 class ArrayFilter(Filter):
     def __init__(self, xfer_fn_array):
         """
@@ -197,7 +217,7 @@ class ArrayFilter(Filter):
     def _evaluate(self, omega):
         sz = self.sz
         # TODO: This part could do with some documentation - not intuitive!
-        omega = omega / self._scale
+        omega = omega
         temp = np.array(sz)[:, np.newaxis]
         omega = (omega/(2 * np.pi)) * temp
         omega += np.floor(temp/2) + 1
@@ -221,11 +241,6 @@ class ArrayFilter(Filter):
         # Result is 1 x np.prod(sz) in shape; convert to a 1-d vector
         result = np.squeeze(result, 0)
         return result
-
-    def scale(self, c):
-        new_filter = copy.copy(self)
-        new_filter._scale = self._scale * c
-        return new_filter
 
 
 class ScalarFilter(Filter):
@@ -307,7 +322,7 @@ class CTFFilter(Filter):
         return h.squeeze()
 
     def scale(self, c=1):
-        new_filter = copy.copy(self)
+        new_filter = ScaledFilter(copy.copy(self), c)
         new_filter.pixel_size = self.pixel_size * c
         return new_filter
 
