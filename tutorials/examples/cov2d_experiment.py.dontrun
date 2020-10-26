@@ -1,4 +1,4 @@
-#!/usr/bin/env  python3.6
+#!/usr/bin/env  python
 """
 This script illustrates denoising 2D images using batched Cov2D class
 from experime dataset and outputing to mrcs file.
@@ -11,29 +11,29 @@ from aspire.source.relion import RelionSource
 
 
 # Set input path and files and initialize other parameters
-data_folder = '/path/to/untarred/empiar/dataset/'
-starfile_in = '/path/to/untarred/empiar/dataset/input.star'
-starfile_out = '/path/to/output/ouput.star'
-pixel_size = 1.34
-max_rows = 1024
-max_resolution = 60
+DATA_FOLDER = '/path/to/untarred/empiar/dataset/'
+STARFILE_IN = '/path/to/untarred/empiar/dataset/input.star'
+STARFILE_OUT = '/path/to/output/ouput.star'
+PIXEL_SIZE = 1.34
+MAX_ROWS = 1024
+MAX_RESOLUTION = 60
 
 # Create a source object for 2D images
-print(f'Read in images from {starfile_in} and preprocess the images.')
+print(f'Read in images from {STARFILE_IN} and preprocess the images.')
 source = RelionSource(
-    starfile_in,
-    data_folder,
-    pixel_size=pixel_size,
-    max_rows=max_rows
+    STARFILE_IN,
+    DATA_FOLDER,
+    pixel_size=PIXEL_SIZE,
+    max_rows=MAX_ROWS
 )
 
 # Downsample the images
-print(f'Set the resolution to {max_resolution} X {max_resolution}')
-if max_resolution < source.L:
-    source.downsample(max_resolution)
+print(f'Set the resolution to {MAX_RESOLUTION} X {MAX_RESOLUTION}')
+if MAX_RESOLUTION < source.L:
+    source.downsample(MAX_RESOLUTION)
 
 # Specify the fast FB basis method for expending the 2D images
-basis = FFBBasis2D((max_resolution, max_resolution))
+basis = FFBBasis2D((MAX_RESOLUTION, MAX_RESOLUTION))
 
 # Estimate the noise of images
 print(f'Estimate the noise of images using anisotropic method')
@@ -47,4 +47,4 @@ var_noise = noise_estimator.estimate()
 print(f'Denoise the images using batched cov2D method.')
 denoiser = DenoiserCov2D(source, basis, var_noise)
 denoised_src = denoiser.denoise(batch_size=512)
-denoised_src.save(starfile_out, batch_size=512, save_mode='single', overwrite=False)
+denoised_src.save(STARFILE_OUT, batch_size=512, save_mode='single', overwrite=False)
