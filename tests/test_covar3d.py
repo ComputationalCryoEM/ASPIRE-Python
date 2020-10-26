@@ -25,7 +25,7 @@ class Covar3DTestCase(TestCase):
     def setUpClass(cls):
         cls.sim = Simulation(
             n=1024,
-            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
+            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
         )
         basis = FBBasis3D((8, 8, 8))
         cls.noise_variance = 0.0030762743633643615

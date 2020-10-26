@@ -202,8 +202,8 @@ def save_star(image_source, starfile_filepath, batch_size=1024, save_mode=None, 
                     i_end = min(image_source.n, i_start + batch_size)
                     num = i_end - i_start
                     logger.info(f'Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}')
-                    mrc.data[i_start:i_end, :, :] = np.swapaxes(image_source.images(
-                        start=i_start, num=num).data.astype('float32'), 0, 2)
+                    mrc.data[i_start:i_end, :, :] = image_source.images(
+                        start=i_start, num=num).data.astype('float32')
             mrc.close()
 
         else:

@@ -242,34 +242,6 @@ class Add(Xform):
         return 'Add (multiple)'
 
 
-class FlipXform(Xform):
-    """
-    A `Xform` that applies phase flip to a stack of 2D images (as an Image object).
-    """
-    def __init__(self, filters):
-        """
-        Initialize the `FlipXform` using CTF `Filter` objects
-        :param filters: CTF filters of images
-        """
-        super().__init__()
-        self.filters = filters
-
-    def _forward(self, im, indices):
-        unique_filters = set(self.filters[indices])
-        im_in = im.asnumpy()
-        im_out = np.zeros_like(im_in)
-        for f in unique_filters:
-            idx_k = np.where(self.filters[indices] == f)[0]
-            flip_filter = LambdaFilter(f, np.sign)
-            if len(idx_k) > 0:
-                im_out[idx_k] = Image(im_in[idx_k]).filter(flip_filter).asnumpy()
-
-        return Image(im_out)
-
-    def __str__(self):
-        return f'FlipXform ({self.filters[0]})'
-
-
 class LambdaXform(Xform):
     """
     A `Xform` that applies a predefined function to a stack of 2D images (as an Image object).
