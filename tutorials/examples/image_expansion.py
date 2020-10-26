@@ -16,7 +16,7 @@ from aspire.basis.fpswf_2d import FPSWFBasis2D
 from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.utils.matrix import anorm
 
-logger = logging.getLogger('aspire')
+logger = logging.getLogger(__name__)
 
 
 logger.info('This script illustrates different image expansion methods in ASPIRE package.')

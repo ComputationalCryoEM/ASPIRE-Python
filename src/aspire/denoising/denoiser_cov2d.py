@@ -4,7 +4,6 @@ from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.denoising import Denoiser
 from aspire.denoising.denoised_src import DenoisedImageSource
 from aspire.estimation.covar2d import BatchedRotCov2D
-from aspire.image import Image
 from aspire.utils.optimize import fill_struct
 
 logger = logging.getLogger(__name__)
@@ -79,7 +78,6 @@ class DenoiserCov2D(Denoiser):
 
         # Convert Fourier-Bessel coefficients back into 2D images
         logger.info(f'Converting Cov2D coefficients back to 2D images')
-        imgs_estim = self.basis.evaluate(coeffs_estim)
-        imgs_denoised = Image(imgs_estim)
+        imgs_denoised = self.basis.evaluate(coeffs_estim)
 
         return imgs_denoised

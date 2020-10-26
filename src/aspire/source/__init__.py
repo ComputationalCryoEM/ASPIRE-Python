@@ -7,12 +7,12 @@ from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image, normalize_bg
 from aspire.io.starfile import save_star
-from aspire.source.xform import (Add, Downsample, FilterXform, FlipXform,
-                                 LambdaXform, LinearIndexedXform,
+from aspire.source.xform import (Add, Downsample, FilterXform,
+                                 IndexedXform, LambdaXform, LinearIndexedXform,
                                  LinearPipeline, Multiply, Pipeline, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import MultiplicativeFilter, PowerFilter
+from aspire.utils.filters import (LambdaFilter, MultiplicativeFilter, PowerFilter)
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -106,6 +106,7 @@ class ImageSource:
                     degrees=True
                 )
 
+        self.unique_filters = None
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
     @property
@@ -117,32 +118,28 @@ class ImageSource:
         return self.set_metadata('_rlnClassNumber', values)
 
     @property
-    def filters(self):
-        return self.get_metadata('__filter')
-
-    @filters.setter
-    def filters(self, values):
-        self.set_metadata('__filter', values)
-        if values is None:
-            new_values = np.nan
-        else:
-            new_values = np.array([(
-                getattr(f, 'voltage', np.nan),
-                getattr(f, 'defocus_u', np.nan),
-                getattr(f, 'defocus_v', np.nan),
-                getattr(f, 'defocus_ang', np.nan),
-                getattr(f, 'Cs', np.nan),
-                getattr(f, 'alpha', np.nan)
-            ) for f in values])
-
-        self.set_metadata(
-            ['_rlnVoltage', '_rlnDefocusU', '_rlnDefocusV', '_rlnDefocusAngle', '_rlnSphericalAberration', '_rlnAmplitudeContrast'],
-            new_values
-        )
-
-    @property
     def filter_indices(self):
         return self.get_metadata('__filter_indices')
+
+    @filter_indices.setter
+    def filter_indices(self, indices):
+        # create metadata of filters for all images
+        if indices is None:
+            filter_values = np.nan
+        else:
+            attribute_list = ('voltage', 'defocus_u', 'defocus_v',
+                              'defocus_ang', 'Cs', 'alpha')
+            filter_values = np.zeros((len(indices), len(attribute_list)))
+            for i, filt in enumerate(self.unique_filters):
+                filter_values[indices == i] = [getattr(filt, attribute, np.nan)
+                                               for attribute in attribute_list]
+
+        self.set_metadata(
+            ['_rlnVoltage', '_rlnDefocusU', '_rlnDefocusV', '_rlnDefocusAngle',
+             '_rlnSphericalAberration', '_rlnAmplitudeContrast'],
+            filter_values
+        )
+        return self.set_metadata(['__filter_indices'], indices)
 
     @property
     def offsets(self):
@@ -288,11 +285,10 @@ class ImageSource:
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
-        unique_filters = set(self.filters)
-        for f in unique_filters:
-            idx_k = np.where(self.filters[indices] == f)[0]
+        for i, filt in enumerate(self.unique_filters):
+            idx_k = np.where(self.filter_indices[indices] == i)[0]
             if len(idx_k) > 0:
-                im[idx_k] = Image(im[idx_k]).filter(f).asnumpy()
+                im[idx_k] = Image(im[idx_k]).filter(filt).asnumpy()
 
         return im
 
@@ -300,16 +296,16 @@ class ImageSource:
         grid2d = grid_2d(L)
         omega = np.pi * np.vstack((grid2d['x'].flatten(), grid2d['y'].flatten()))
 
-        h = np.empty((omega.shape[-1], len(self.filters)))
-        for f in set(self.filters):
-            idx_k = np.where(self.filters == f)[0]
+        h = np.empty((omega.shape[-1], len(self.filter_indices)))
+        for i, filt in enumerate(self.unique_filters):
+            idx_k = np.where(self.filter_indices == i)[0]
             if len(idx_k) > 0:
-                filter_values = f.evaluate(omega)
+                filter_values = filt.evaluate(omega)
                 if power != 1:
                     filter_values **= power
                 h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
-        h = np.reshape(h, grid2d['x'].shape + (len(self.filters),))
+        h = np.reshape(h, grid2d['x'].shape + (len(self.filter_indices),))
 
         return h
 
@@ -346,7 +342,7 @@ class ImageSource:
         self.generation_pipeline.add_xform(Downsample(resolution=L))
 
         ds_factor = self.L / L
-        for f in set(self.filters):
+        for f in self.unique_filters:
             f.scale(ds_factor)
         self.offsets /= ds_factor
 
@@ -363,12 +359,8 @@ class ImageSource:
         whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
         logger.info('Transforming all CTF Filters into Multiplicative Filters')
-        unique_filters = set(self.filters)
-        for f in unique_filters:
-            f_new = copy(f)
-            f.__class__ = MultiplicativeFilter
-            f.__init__(f_new, whiten_filter)
-
+        self.unique_filters = [MultiplicativeFilter(f, whiten_filter)
+                               for f in self.unique_filters]
         logger.info('Adding Whitening Filter Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
@@ -378,7 +370,10 @@ class ImageSource:
         """
         logger.info('Perform phase flip on source object')
         logger.info('Adding Phase Flip Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(FlipXform(self.filters))
+        unique_xforms = [FilterXform(LambdaFilter(f, np.sign))
+                         for f in self.unique_filters]
+        self.generation_pipeline.add_xform(IndexedXform(unique_xforms,
+                                                        self.filter_indices))
 
     def invert_contrast(self, batch_size=512):
         """
@@ -420,10 +415,10 @@ class ImageSource:
 
         if signal_mean < noise_mean:
             logger.info('Need to invert contrast')
-            scale_factor = -1.0 * np.ones(self.n)
+            scale_factor = -1.0
         else:
             logger.info('No need to invert contrast')
-            scale_factor = 1.0 * np.ones(self.n)
+            scale_factor = 1.0
 
         logger.info('Adding Scaling Xform to end of generation pipeline')
         self.generation_pipeline.add_xform(Multiply(scale_factor))

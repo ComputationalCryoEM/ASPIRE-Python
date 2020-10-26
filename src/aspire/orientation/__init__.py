@@ -62,7 +62,10 @@ class CLOrient3D:
         self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad).T # RCOPT
 
         if self.n_theta % 2 == 1:
-            logger.error('n_theta must be even')
+            msg = 'n_theta must be even'
+            logger.error(msg)
+            raise NotImplementedError(msg)
+
         n_theta_half = self.n_theta // 2
 
         # The first two dimension of pf is of size n_rad x n_theta. We will convert pf
@@ -105,7 +108,10 @@ class CLOrient3D:
         n_check = self.n_check
 
         if self.n_theta % 2 == 1:
-            logger.error('n_theta must be even')
+            msg = 'n_theta must be even'
+            logger.error(msg)
+            raise NotImplementedError(msg)
+
         n_theta_half = self.n_theta // 2
 
         # need to do a copy to prevent modifying self.pf for other functions

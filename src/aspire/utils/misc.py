@@ -26,8 +26,14 @@ def real_type(complextype):
         realtype = np.float32
     elif complextype == np.complex128:
         realtype = np.float64
+    elif complextype in (np.float32, np.float64):
+        logger.debug(f'Corresponding type is already real {complextype}.')
+        realtype = complextype
     else:
-        logger.error('Corresponding real type is not defined.')
+        msg = f'Corresponding real type is not defined for {complextype}.'
+        logger.error(msg)
+        raise TypeError(msg)
+
     return realtype
 
 
@@ -44,8 +50,14 @@ def complex_type(realtype):
         complextype = np.complex64
     elif realtype == np.float64:
         complextype = np.complex128
+    elif realtype in (np.complex64, np.complex128):
+        logger.debug(f'Corresponding type is already complex {realtype}.')
+        complextype = realtype
     else:
-        logger.error('Corresponding complex type is not defined')
+        msg = f'Corresponding complex type is not defined for {realtype}.'
+        logger.error(msg)
+        raise TypeError(msg)
+
     return complextype
 
 
@@ -73,14 +85,17 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
     """
 
     if not isinstance(mean_vol, Volume):
-        logger.warning('src_wiener_coords mean_vol should be a Volume instance. Correcting for now.')
+        logger.debug('src_wiener_coords mean_vol should be a Volume instance. Attempt correction.')
         if len(mean_vol.shape) == 4 and mean_vol.shape[3] != 1:
-            logger.error('Cannot naively convert to Volume instance. Please change calling code.')
+            msg = (f'Cannot naively convert {mean_vol.shape} to Volume instance.'
+                   'Please change calling code.')
+            logger.error(msg)
+            raise RuntimeError(msg)
+
         mean_vol = Volume(mean_vol)
 
-
     if not isinstance(eig_vols, Volume):
-        logger.warning('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
+        logger.debug('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
         eig_vols = Volume(eig_vols)
 
     k = eig_vols.n_vols
