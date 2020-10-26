@@ -25,7 +25,7 @@ class PreprocessPLTestCase(TestCase):
         self.sim = Simulation(
             L=self.L,
             n=self.n,
-            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
             noise_filter=self.noise_filter
         )
         self.imgs_org = self.sim.images(start=0, num=self.n).asnumpy()
@@ -81,14 +81,14 @@ class PreprocessPLTestCase(TestCase):
             L=8,
             n=128,
             vols=vols1,
-            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
             noise_filter=noise_filter
         )
         sim2 = Simulation(
             L=8,
             n=128,
             vols=vols2,
-            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
             noise_filter=noise_filter
         )
 
