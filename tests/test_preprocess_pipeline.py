@@ -72,33 +72,15 @@ class PreprocessPLTestCase(TestCase):
         self.assertTrue(np.abs(corr_coef[0, 1]) < 1e-1)
 
     def testInvertContrast(self):
-        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')))
-        vols1 = vols.downsample((8*np.ones(3, dtype=int)))
-        vols2 = -1.0*vols1
-        noise_var = 1.3957e-4
-        noise_filter = ScalarFilter(dim=2, value=noise_var)
-        sim1 = Simulation(
-            L=8,
-            n=128,
-            vols=vols1,
-            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-            noise_filter=noise_filter
-        )
-        sim2 = Simulation(
-            L=8,
-            n=128,
-            vols=vols2,
-            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
-            noise_filter=noise_filter
-        )
-
+        sim1 = self.sim
         imgs1 = sim1.images(start=0, num=128).asnumpy()
-        # need to set the negative images to the second simulation object
-        sim2._cached_im = -imgs1
-
         sim1.invert_contrast()
-        sim2.invert_contrast()
         imgs1_rc = sim1.images(start=0, num=128).asnumpy()
+        # need to set the negative images to the second simulation object
+        sim2 = self.sim
+        sim2.cache()
+        sim2._cached_im = -imgs1
+        sim2.invert_contrast()
         imgs2_rc = sim2.images(start=0, num=128).asnumpy()
 
         # all images should be the same after inverting contract
