@@ -67,10 +67,9 @@ class Filter:
         Scale filter by a constant factor
         :param c: The scaling factor. For c < 1, it dilates the filter(s) in frequency, while for c > 1,
             it compresses (default 1).
-        :return: On return, a ScaledFilter object with new parameters
+        :return: A ScaledFilter object
         """
-        new_filter = copy.copy(self)
-        return ScaledFilter(new_filter, c)
+        return ScaledFilter(self, c)
 
     def evaluate_grid(self, L, *args, **kwargs):
         grid2d = grid_2d(L)
@@ -165,10 +164,10 @@ class MultiplicativeFilter(Filter):
 
 class ScaledFilter(Filter):
     """
-    A Filter object that is composed of a regular `Filter` object, but evaluates it to scale omega.
+    A Filter object that is composed of a regular `Filter` object, but evaluates it on a scaled omega.
     """
     def __init__(self, filt, scale):
-        self._filter = filt
+        self._filter = copy.copy(filt)
         self._scale = scale
         super().__init__(dim=filt.dim, radial=filt.radial)
 
@@ -180,7 +179,7 @@ class ScaledFilter(Filter):
         Show class name of ScaledFilter and related information
         :return: A string of class name and related information
         """
-        return f'{self.__class__.__name__} scales {str(self._filter)} by {self._scale}'
+        return f'ScaledFilter (scales {self._filter} by {self._scale})'
 
 
 class ArrayFilter(Filter):
@@ -217,7 +216,6 @@ class ArrayFilter(Filter):
     def _evaluate(self, omega):
         sz = self.sz
         # TODO: This part could do with some documentation - not intuitive!
-        omega = omega
         temp = np.array(sz)[:, np.newaxis]
         omega = (omega/(2 * np.pi)) * temp
         omega += np.floor(temp/2) + 1
@@ -322,9 +320,9 @@ class CTFFilter(Filter):
         return h.squeeze()
 
     def scale(self, c=1):
-        new_filter = ScaledFilter(copy.copy(self), c)
-        new_filter.pixel_size = self.pixel_size * c
-        return new_filter
+        new_ctf_filter = copy.copy(self)
+        new_ctf_filter.pixel_size = self.pixel_size * c
+        return new_ctf_filter
 
 
 class RadialCTFFilter(CTFFilter):
