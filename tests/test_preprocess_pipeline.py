@@ -4,11 +4,11 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.estimation.noise import WhiteNoiseEstimator
+from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filters import RadialCTFFilter, ScalarFilter
-from aspire.utils.matrix import anorm
-from aspire.volume import Volume
+
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -25,27 +25,28 @@ class PreprocessPLTestCase(TestCase):
         self.sim = Simulation(
             L=self.L,
             n=self.n,
-            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+            unique_filters=[RadialCTFFilter(defocus=d)
+                            for d in np.linspace(1.5e4, 2.5e4, 7)],
             noise_filter=self.noise_filter
         )
-        self.imgs_org = self.sim.images(start=0, num=self.n).asnumpy()
+        self.imgs_org = self.sim.images(start=0, num=self.n)
 
     def testPhaseFlip(self):
         self.sim.phase_flip()
-        imgs_pf = self.sim.images(start=0, num=self.n).asnumpy()
+        imgs_pf = self.sim.images(start=0, num=self.n)
 
         # check energy conservation
-        self.assertTrue(anorm(self.imgs_org), anorm(imgs_pf))
+        self.assertTrue(self.imgs_org.norm(), imgs_pf.norm())
 
     def testDownsample(self):
         max_resolution = 8
         self.sim.downsample(max_resolution)
-        imgs_ds = self.sim.images(start=0, num=self.n).asnumpy()
+        imgs_ds = self.sim.images(start=0, num=self.n)
 
         # check resolution
         self.assertTrue(max_resolution, imgs_ds.shape[1])
         # check energy conservation after downsample
-        self.assertTrue(anorm(self.imgs_org), anorm(imgs_ds))
+        self.assertTrue(self.imgs_org.norm(), imgs_ds.norm())
 
     def testNormBackground(self):
         bg_radius = 1.0
@@ -56,7 +57,7 @@ class PreprocessPLTestCase(TestCase):
         new_mean = np.mean(imgs_nb[:, mask])
         new_variance = np.var(imgs_nb[:, mask])
 
-        # new mean of noise should close to zero and 1 for variance
+        # new mean of noise should be close to zero and variance should be close to 1
         self.assertTrue(new_mean < 1e-7 and abs(new_variance-1) < 1e-7)
 
     def testWhiten(self):
@@ -68,20 +69,18 @@ class PreprocessPLTestCase(TestCase):
         corr_coef = np.corrcoef(imgs_wt[:, self.L-1, self.L-1],
                                 imgs_wt[:, self.L-2, self.L-1])
 
-        # correlation should be low
-        self.assertTrue(np.abs(corr_coef[0, 1]) < 1e-1)
+        # correlation matrix should be close to identity
+        self.assertTrue(np.allclose(np.eye(2), corr_coef, atol=1e-1))
 
     def testInvertContrast(self):
         sim1 = self.sim
-        imgs1 = sim1.images(start=0, num=128).asnumpy()
+        imgs1 = sim1.images(start=0, num=128)
         sim1.invert_contrast()
-        imgs1_rc = sim1.images(start=0, num=128).asnumpy()
+        imgs1_rc = sim1.images(start=0, num=128)
         # need to set the negative images to the second simulation object
-        sim2 = self.sim
-        sim2.cache()
-        sim2._cached_im = -imgs1
+        sim2 = ArrayImageSource(-imgs1)
         sim2.invert_contrast()
-        imgs2_rc = sim2.images(start=0, num=128).asnumpy()
+        imgs2_rc = sim2.images(start=0, num=128)
 
-        # all images should be the same after inverting contract
-        self.assertTrue(np.allclose(imgs1_rc, imgs2_rc))
+        # all images should be the same after inverting contrast
+        self.assertTrue(np.allclose(imgs1_rc.asnumpy(), imgs2_rc.asnumpy()))
