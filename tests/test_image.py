@@ -13,9 +13,9 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 class ImageTestCase(TestCase):
     def setUp(self):
         # numpy array for top-level functions that directly expect it
-        self.im_np = misc.face(gray=True).astype('float64')[np.newaxis, :768, :768]
+        self.im_np = misc.face(gray=True).astype(np.float64)[np.newaxis, :768, :768]
         # Independent Image object for testing Image methods
-        self.im = Image(misc.face(gray=True).astype('float64')[:768, :768])
+        self.im = Image(misc.face(gray=True).astype(np.float64)[:768, :768])
 
     def tearDown(self):
         pass

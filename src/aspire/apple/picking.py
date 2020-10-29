@@ -90,6 +90,7 @@ class Picker:
 
         size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
 
+        # Note, float64 required for signal.correlate call accuracy.
         im = np.array(Image.fromarray(im).resize(size, Image.BICUBIC), dtype=np.float64)
 
         im = signal.correlate(

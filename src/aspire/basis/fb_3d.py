@@ -20,7 +20,7 @@ class FBBasis3D(Basis):
     # TODO: Methods that return dictionaries should return useful objects instead
 
     """
-    def __init__(self, size, ell_max=None):
+    def __init__(self, size, ell_max=None, dtype=np.float32):
         """
         Initialize an object for the 3D Fourier-Bessel basis class
 
@@ -35,7 +35,7 @@ class FBBasis3D(Basis):
         ensure(ndim == 3, 'Only three-dimensional basis functions are supported.')
         ensure(len(set(size)) == 1, 'Only cubic domains are supported.')
 
-        super().__init__(size, ell_max)
+        super().__init__(size, ell_max, dtype=dtype)
 
     def _build(self):
         """
@@ -52,7 +52,7 @@ class FBBasis3D(Basis):
         self.count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
 
         # obtain a 3D grid to represent basis functions
-        self.basis_coords = unique_coords_nd(self.nres, self.ndim)
+        self.basis_coords = unique_coords_nd(self.nres, self.ndim, dtype=self.dtype)
 
         # generate 1D indices for basis functions
         self._indices = self.indices()
@@ -67,9 +67,9 @@ class FBBasis3D(Basis):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count)
-        indices_ms = np.zeros(self.count)
-        indices_ks = np.zeros(self.count)
+        indices_ells = np.zeros(self.count, dtype=np.int)
+        indices_ms = np.zeros(self.count, dtype=np.int)
+        indices_ks = np.zeros(self.count, dtype=np.int)
 
         ind = 0
         for ell in range(self.ell_max + 1):
@@ -98,8 +98,10 @@ class FBBasis3D(Basis):
         ind_radial = 0
         ind_ang = 0
 
-        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)))
-        ang = np.zeros(shape=(ang_unique.shape[-1], (self.ell_max + 1) ** 2))
+        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)),
+                          dtype=self.dtype)
+        ang = np.zeros(shape=(ang_unique.shape[-1], (self.ell_max + 1) ** 2),
+                       dtype=self.dtype)
 
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
@@ -119,7 +121,7 @@ class FBBasis3D(Basis):
         """
         Calculate the normalized factors of basis functions
         """
-        norms = np.zeros(np.sum(self.k_max))
+        norms = np.zeros(np.sum(self.k_max), dtype=self.dtype)
         norm_fn = self.basis_norm_3d
 
         i = 0
@@ -156,7 +158,7 @@ class FBBasis3D(Basis):
         ind_radial = 0
         ind_ang = 0
 
-        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])))
+        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=self.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
@@ -201,7 +203,7 @@ class FBBasis3D(Basis):
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])))
+        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=self.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)

@@ -27,6 +27,7 @@ class RotCov2D:
         constructor of an object for 2D covariance analysis
         """
         self.basis = basis
+        self.dtype = self.basis.dtype
         ensure(basis.ndim == 2, 'Only two-dimensional basis functions are needed.')
 
     def _get_mean(self, coeffs):
@@ -161,9 +162,15 @@ class RotCov2D:
         def identity(x):
             return x
 
-        default_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                             'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
-                             'preconditioner': identity}
+        default_est_opt = {
+            'shrinker': 'None',
+            'verbose': 0,
+            'max_iter': 250,
+            'iter_callback': [],
+            'store_iterates': False,
+            'rel_tolerance': 1e-12,
+            'precision': self.dtype,
+            'preconditioner': identity}
 
         covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
@@ -334,6 +341,7 @@ class BatchedRotCov2D(RotCov2D):
         self.src = src
         self.basis = basis
         self.batch_size = batch_size
+        self.dtype = self.src.dtype
 
         self.b_mean = None
         self.b_covar = None
@@ -348,7 +356,7 @@ class BatchedRotCov2D(RotCov2D):
 
         if self.basis is None:
             from aspire.basis.ffb_2d import FFBBasis2D
-            self.basis = FFBBasis2D((src.L, src.L))
+            self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
         if src.unique_filters is None:
             logger.info(f'CTF filters are not included in Cov2D denoising')
@@ -368,9 +376,9 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        zero_coeff = np.zeros((basis.count,))
+        zero_coeff = np.zeros((basis.count,), dtype=self.dtype)
 
-        b_mean = [np.zeros(basis.count) for _ in ctf_fb]
+        b_mean = [np.zeros(basis.count, dtype=self.dtype) for _ in ctf_fb]
 
         b_covar = BlkDiagMatrix.zeros_like(ctf_fb[0])
 

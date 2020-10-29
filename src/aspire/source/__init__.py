@@ -7,12 +7,12 @@ from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image, normalize_bg
 from aspire.io.starfile import save_star
-from aspire.source.xform import (Add, Downsample, FilterXform, FlipXform,
-                                 LambdaXform, LinearIndexedXform,
+from aspire.source.xform import (Add, Downsample, FilterXform,
+                                 IndexedXform, LambdaXform, LinearIndexedXform,
                                  LinearPipeline, Multiply, Pipeline, Shift)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import MultiplicativeFilter, PowerFilter
+from aspire.utils.filters import (LambdaFilter, MultiplicativeFilter, PowerFilter)
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ class ImageSource:
         """
         self.L = L
         self.n = n
-        self.dtype = dtype
+        self.dtype = np.dtype(dtype)
 
         # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
         self._cached_im = None
@@ -162,14 +162,14 @@ class ImageSource:
         """
         :return: Rotation angles in radians, as a n x 3 array
         """
-        return self._rotations.as_euler()
+        return self._rotations.as_euler().astype(self.dtype)
 
     @property
     def rots(self):
         """
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        return self._rotations.as_matrix()
+        return self._rotations.as_matrix().astype(self.dtype)
 
     @angles.setter
     def angles(self, values):
@@ -293,10 +293,11 @@ class ImageSource:
         return im
 
     def eval_filter_grid(self, L, power=1):
-        grid2d = grid_2d(L)
+        grid2d = grid_2d(L, dtype=self.dtype)
         omega = np.pi * np.vstack((grid2d['x'].flatten(), grid2d['y'].flatten()))
 
-        h = np.empty((omega.shape[-1], len(self.filter_indices)))
+        h = np.empty((omega.shape[-1], len(self.filter_indices)),
+                     dtype=self.dtype)
         for i, filt in enumerate(self.unique_filters):
             idx_k = np.where(self.filter_indices == i)[0]
             if len(idx_k) > 0:
@@ -323,7 +324,7 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        indices = np.arange(start, min(start + num, self.n))
+        indices = np.arange(start, min(start + num, self.n), dtype=np.int)
 
         if self._cached_im is not None:
             logger.info(f'Loading images from cache')
@@ -369,8 +370,10 @@ class ImageSource:
         """
         logger.info('Perform phase flip on source object')
         logger.info('Adding Phase Flip Xform to end of generation pipeline')
-        self.generation_pipeline.add_xform(FlipXform(self.unique_filters,
-                                                     self.filter_indices))
+        unique_xforms = [FilterXform(LambdaFilter(f, np.sign))
+                         for f in self.unique_filters]
+        self.generation_pipeline.add_xform(IndexedXform(unique_xforms,
+                                                        self.filter_indices))
 
     def invert_contrast(self, batch_size=512):
         """
@@ -470,6 +473,9 @@ class ImageSource:
         """
         all_idx = np.arange(start, min(start + num, self.n))
         assert vol.n_vols == 1, "vol_forward expects a single volume, not a stack"
+
+        if vol.dtype != self.dtype:
+            logger.warning(f'Volume.dtype {vol.dtype} inconsistent with {self.dtype}')
 
         im = vol.project(0, self.rots[all_idx, :, :])
         im = self.eval_filters(im, start, num)

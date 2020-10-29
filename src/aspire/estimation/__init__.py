@@ -14,15 +14,19 @@ logger = logging.getLogger(__name__)
 
 
 class Estimator:
-    def __init__(self, src, basis, as_type='single', batch_size=512, preconditioner='circulant'):
+    def __init__(self, src, basis, batch_size=512, preconditioner='circulant'):
         self.src = src
         self.basis = basis
-        self.as_type = as_type
+        self.dtype = self.src.dtype
         self.batch_size = batch_size
         self.preconditioner = preconditioner
 
         self.L = src.L
         self.n = src.n
+
+        if not self.dtype == self.basis.dtype:
+            logger.warning(f'Inconsistent types in {self.dtype} Estimator.'
+                           f' basis: {self.basis.dtype}')
 
         """
         An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
@@ -70,12 +74,12 @@ class Estimator:
         :return: The adjoint mapping applied to the images, averaged over the whole dataset and expressed
             as coefficients of `basis`.
         """
-        mean_b = np.zeros((self.L, self.L, self.L), dtype=self.as_type)
+        mean_b = np.zeros((self.L, self.L, self.L), dtype=self.dtype)
 
         for i in range(0, self.n, self.batch_size):
             im = self.src.images(i, self.batch_size)
             batch_mean_b = self.src.im_backward(im, i) / self.n
-            mean_b += batch_mean_b.astype(self.as_type)
+            mean_b += batch_mean_b.astype(self.dtype)
 
         res = self.basis.evaluate_t(mean_b.T) # RCOPT
         logger.info(f'Determined adjoint mappings. Shape = {res.shape}')
@@ -89,14 +93,19 @@ class Estimator:
         if regularizer > 0:
             kernel += regularizer
 
-        operator = LinearOperator((n, n), matvec=partial(self.apply_kernel, kernel=kernel))
+        operator = LinearOperator((n, n),
+                                  matvec=partial(self.apply_kernel,kernel=kernel),
+                                  dtype=self.dtype)
         if self.precond_kernel is None:
             M = None
         else:
             precond_kernel = self.precond_kernel
             if regularizer > 0:
                 precond_kernel += regularizer
-            M = LinearOperator((n, n), matvec=partial(self.apply_kernel, kernel=precond_kernel))
+            M = LinearOperator(
+                (n, n),
+                matvec=partial(self.apply_kernel, kernel=precond_kernel),
+                dtype=self.dtype)
 
         tol = tol or config.mean.cg_tol
         target_residual = tol * norm(b_coeff)

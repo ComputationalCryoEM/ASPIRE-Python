@@ -23,6 +23,9 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), '../data/')
 logger.info('This script illustrates orientation estimation using '
             'synchronization matrix and voting method')
 
+# Define a precision for this experiment
+dtype = np.float32
+
 # Set the sizes of images
 img_size = 33
 
@@ -49,7 +52,7 @@ filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
 logger.info(f'Load 3D map and downsample 3D map to desired grids '
             f'of {img_size} x {img_size} x {img_size}.')
 infile = mrcfile.open(os.path.join(DATA_DIR, 'clean70SRibosome_vol_65p.mrc'))
-vols = Volume(infile.data)
+vols = Volume(infile.data.astype(dtype))
 vols = vols.downsample((img_size,) * 3)
 
 # Create a simulation object with specified filters and the downsampled 3D map
@@ -58,7 +61,8 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    unique_filters=filters
+    unique_filters=filters,
+    dtype=dtype
 )
 
 logger.info('Get true rotation angles generated randomly by the simulation object.')
