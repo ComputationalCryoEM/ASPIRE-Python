@@ -63,7 +63,7 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    filters=ctf_filters,
+    unique_filters=ctf_filters,
     offsets=0.0,
     amplitudes=1.0,
     dtype='double',
@@ -74,7 +74,7 @@ sim = Simulation(
 ffbbasis = FFBBasis2D((img_size, img_size))
 
 # Assign the CTF information and index for each image
-h_idx = np.array([ctf_filters.index(f) for f in sim.filters])
+h_idx = sim.filter_indices
 
 # Evaluate CTF in the 8X8 FB basis
 h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in ctf_filters]

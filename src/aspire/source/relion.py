@@ -118,9 +118,6 @@ class RelionSource(ImageSource):
                 )
             )
 
-        metadata['__filter'] = [filters[i] for i in filter_indices]
-        metadata['__filter_indices'] = filter_indices
-
         ImageSource.__init__(
             self,
             L=L,
@@ -129,6 +126,8 @@ class RelionSource(ImageSource):
             metadata=metadata,
             memory=memory
         )
+        self.unique_filters = filters
+        self.filter_indices = filter_indices
 
     def __str__(self):
         return f'RelionSource ({self.n} images of size {self.L}x{self.L})'
@@ -164,7 +163,7 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                im[data_indices-start] = data[data_indices-start]
+                im[data_indices-start] = data
 
         logger.info(f'Loading {len(indices)} images complete')
 
