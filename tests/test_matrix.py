@@ -208,7 +208,7 @@ class MatrixTestCase(TestCase):
             [1,  5,  9,  13],
             [2,  6, 10,  14],
             [3,  7, 11,  15]
-        ], dtype='float64')
+        ], dtype=np.float32)
 
         # Make 2 copies depthwise
         m = np.dstack((m, m))
@@ -300,7 +300,7 @@ class MatrixTestCase(TestCase):
             [10, 10],
             [11, 11],
             [15, 15]
-        ], dtype='float64')
+        ], dtype=np.float32)
 
         m = vec_to_symmat_iso(v)
         self.assertTrue(

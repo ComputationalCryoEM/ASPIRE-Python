@@ -13,6 +13,7 @@ from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import anorm
 from aspire.utils.numeric import fft
 from aspire.utils.numeric import xp
+from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +230,7 @@ class Image:
     def save(self, mrcs_filepath, overwrite=False):
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
-            mrc.set_data(self.data.astype('float32'))
+            mrc.set_data(self.data.astype(np.float32))
 
     def _im_translate(self, shifts):
         """
@@ -250,17 +251,21 @@ class Image:
         ensure(shifts.shape[-1] == 2, "shifts must be nx2")
 
         ensure(n_shifts == 1 or n_shifts == self.n_images, "number of shifts must be 1 or match the number of images")
+        # Cast shifts to this instance's internal dtype
+        shifts = shifts.astype(self.dtype)
 
         L = self.res
         im_f = xp.asnumpy(fft.fft2(xp.asarray(im), axes=(1, 2)))
-        grid_1d = xp.asnumpy(fft.ifftshift(xp.asarray(np.ceil(np.arange(-L/2, L/2))))) * 2 * np.pi / L
+        grid_1d = xp.asnumpy(fft.ifftshift(xp.asarray(np.ceil(
+            np.arange(-L/2, L/2,dtype=self.dtype))))) * 2 * np.pi / L
+
         om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
 
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
         phase_shifts_y = -shifts[:, 1].reshape((n_shifts, 1, 1))
 
-        phase_shifts = (om_x[np.newaxis, :, :] * phase_shifts_x) + (om_y[np.newaxis, :, :] * phase_shifts_y)
-
+        phase_shifts = (om_x[np.newaxis, :, :] * phase_shifts_x +
+                        om_y[np.newaxis, :, :] * phase_shifts_y)
         mult_f = np.exp(-1j * phase_shifts)
         im_translated_f = im_f * mult_f
         im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f), axes=(1, 2)))

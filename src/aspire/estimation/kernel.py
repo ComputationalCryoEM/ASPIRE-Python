@@ -21,7 +21,7 @@ class FourierKernel(Kernel):
         self.ndim = kernel.ndim
         self.kernel = kernel
         self.M = kernel.shape[0]
-        self.as_type = kernel.dtype
+        self.dtype = kernel.dtype
 
         # TODO: `centered` should be populated based on how the object is constructed, not explicitly
         self._centered = centered
@@ -68,10 +68,10 @@ class FourierKernel(Kernel):
         mult_shape[dim] = N
         mult_shape = tuple(mult_shape)
 
-        mult = m_reshape((np.arange(N)/N), mult_shape)
+        mult = m_reshape((np.arange(N, dtype=self.dtype)/N), mult_shape)
         kernel_circ = mult * top
 
-        mult = m_reshape((np.arange(N, 0, -1)/N), mult_shape)
+        mult = m_reshape((np.arange(N, 0, -1, dtype=self.dtype)/N), mult_shape)
         kernel_circ += mult * bottom
 
         return fftshift(kernel_circ, dim)
@@ -150,7 +150,7 @@ class FourierKernel(Kernel):
         if L is None:
             L = int(self.M/2)
 
-        A = np.eye(L**3, dtype=self.as_type)
+        A = np.eye(L**3, dtype=self.dtype)
         for i in range(L**3):
             A[:, i] = np.real(vol_to_vec(self.convolve_volume(vec_to_vol(A[:, i]))))
 

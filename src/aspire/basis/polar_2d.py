@@ -8,7 +8,7 @@ from aspire.nufft import anufft, nufft
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import roll_dim, unroll_dim
-from aspire.utils.misc import real_type
+from aspire.utils.types import real_type
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class PolarBasis2D(Basis):
     Define a derived class for polar Fourier representation for 2D images
     """
 
-    def __init__(self, size, nrad=None, ntheta=None):
+    def __init__(self, size, nrad=None, ntheta=None, dtype=np.float32):
         """
         Initialize an object for the 2D polar Fourier grid class
 
@@ -41,7 +41,7 @@ class PolarBasis2D(Basis):
             # try to use the same number as Fast FB basis
             self.ntheta = 8 * self.nrad
 
-        super().__init__(size)
+        super().__init__(size, dtype=dtype)
 
     def _build(self):
         """
@@ -63,7 +63,7 @@ class PolarBasis2D(Basis):
         dtheta = 2 * np.pi / self.ntheta
 
         # only need half size of ntheta
-        freqs = np.zeros((2, self.nrad * self.ntheta // 2))
+        freqs = np.zeros((2, self.nrad * self.ntheta // 2), dtype=self.dtype)
         for i in range(self.ntheta // 2):
             freqs[0, i * self.nrad: (i + 1) * self.nrad] = np.arange(self.nrad) * np.sin(i * dtheta)
             freqs[1, i * self.nrad: (i + 1) * self.nrad] = np.arange(self.nrad) * np.cos(i * dtheta)
@@ -82,8 +82,10 @@ class PolarBasis2D(Basis):
             resolution of `self.sz`.
         """
         if self.dtype != real_type(v.dtype):
-            logger.error(f'Input data type, {v.dtype}, is not consistent with'
-                         f' the defined in the class.')
+            msg = (f'Input data type, {v.dtype}, is not consistent with'
+                   f' type defined in the class {self.dtype}.')
+            logger.error(msg)
+            raise TypeError(msg)
 
         v = v.reshape(-1, self.ntheta, self.nrad)
 
@@ -114,8 +116,10 @@ class PolarBasis2D(Basis):
         assert isinstance(x, Image)
 
         if self.dtype != x.dtype:
-            logger.error(f' Input data type, {x.dtype}, is not consistent with'
-                         f' the defined in the class.')
+            msg = (f'Input data type, {x.dtype}, is not consistent with'
+                   f' type defined in the class {self.dtype}.')
+            logger.error(msg)
+            raise TypeError(msg)
 
         nimgs = x.n_images
 

@@ -13,13 +13,17 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class MeanEstimatorTestCase(TestCase):
     def setUp(self):
+        self.dtype = np.float32
         sim = Simulation(
             n=1024,
-            filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
+            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+            dtype=self.dtype
         )
-        basis = FBBasis3D((8, 8, 8))
-        self.estimator = MeanEstimator(sim, basis, preconditioner='none')
-        self.estimator_with_preconditioner = MeanEstimator(sim, basis, preconditioner='circulant')
+        basis = FBBasis3D((8, 8, 8), dtype=self.dtype)
+        self.estimator = MeanEstimator(
+            sim, basis, preconditioner='none')
+        self.estimator_with_preconditioner = MeanEstimator(
+            sim, basis, preconditioner='circulant')
 
     def tearDown(self):
         pass
@@ -71,7 +75,8 @@ class MeanEstimatorTestCase(TestCase):
                  5.05955256e-04,   2.66936132e-06,   2.24934884e-03,   6.70529439e-04,
                  4.81121742e-04,  -6.40789745e-05,  -3.35915672e-04,  -7.98651783e-04,
                 -9.82705453e-04,   6.46337066e-05
-            ]
+            ],
+            atol=1e-6
         ))
 
     def testOptimize1(self):

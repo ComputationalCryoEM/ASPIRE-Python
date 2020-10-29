@@ -18,8 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class Simulation(ImageSource):
-    def __init__(self, L=8, n=1024, vols=None, states=None, filters=None,
-                 offsets=None, amplitudes=None, dtype='single', C=2,
+    def __init__(self, L=8, n=1024, vols=None, states=None,
+                 unique_filters=None, filter_indices=None,
+                 offsets=None, amplitudes=None, dtype=np.float32, C=2,
                  angles=None, seed=0, memory=None, noise_filter=None):
         """
         A Cryo-EM simulation
@@ -35,11 +36,11 @@ class Simulation(ImageSource):
         self._original_L = L
 
         if offsets is None:
-            offsets = L / 16 * randn(2, n, seed=seed).T
+            offsets = L / 16 * randn(2, n, seed=seed).astype(dtype).T
 
         if amplitudes is None:
             min_, max_ = 2./3, 3./2
-            amplitudes = min_ + rand(n, seed=seed) * (max_ - min_)
+            amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
             self.vols = self._gaussian_blob_vols(L=self.L, C=C, seed=seed)
@@ -47,16 +48,27 @@ class Simulation(ImageSource):
             assert isinstance(vols, Volume)
             self.vols = vols
 
+        if self.vols.dtype != self.dtype:
+            logger.warning(
+                f'{self.__class__.__name__}'
+                f' vols.dtype {self.vols.dtype} != self.dtype {self.dtype}.'
+                ' In the future this will raise an error.')
+
         self.C = self.vols.n_vols
 
         states = states or randi(self.C, n, seed=seed)
-        angles = angles or uniform_random_angles(n, seed=seed)
+        angles = angles or uniform_random_angles(n, seed=seed, dtype=self.dtype)
 
         self.states = states
-        if filters is not None:
-            self.filters = np.take(filters, randi(len(filters), n, seed=seed) - 1)
-        else:
-            self.filters = None
+
+        self.unique_filters = unique_filters
+
+        # Create filter indices and fill the metadata based on unique filters
+        if unique_filters:
+            if filter_indices is None:
+                filter_indices = randi(len(unique_filters), n, seed=seed) - 1
+            self.filter_indices = filter_indices
+
         self.offsets = offsets
         self.amplitudes = amplitudes
         self.angles = angles
@@ -100,8 +112,9 @@ class Simulation(ImageSource):
             return Volume(vols)
 
     def eval_gaussian_blobs(self, L, Q, D, mu):
-        g = grid_3d(L)
-        coords = np.array([g['x'].flatten(), g['y'].flatten(), g['z'].flatten()])
+        g = grid_3d(L, dtype=self.dtype)
+        coords = np.array([g['x'].flatten(), g['y'].flatten(), g['z'].flatten()],
+                          dtype=self.dtype)
 
         K = Q.shape[-1]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(self.dtype)
@@ -127,7 +140,8 @@ class Simulation(ImageSource):
         if indices is None:
             indices = np.arange(start, min(start+num, self.n))
 
-        im = np.zeros((len(indices), self._original_L, self._original_L))
+        im = np.zeros((len(indices), self._original_L, self._original_L),
+                      dtype=self.dtype)
 
         states = self.states[indices]
         unique_states = np.unique(states)
@@ -146,17 +160,18 @@ class Simulation(ImageSource):
 
     def _images(self, start=0, num=np.inf, indices=None, enable_noise=True):
         if indices is None:
-            indices = np.arange(start, min(start+num, self.n))
+            indices = np.arange(start, min(start+num, self.n), dtype=np.int)
 
         im = self.projections(start=start, num=num, indices=indices)
 
         im = self.eval_filters(im, start=start, num=num, indices=indices)
         im = im.shift(self.offsets[indices, :])
 
-        im *= self.amplitudes[indices].reshape(len(indices), 1, 1)
+        im *= self.amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
 
         if enable_noise and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
+
         return im
 
     def vol_coords(self, mean_vol=None, eig_vols=None):

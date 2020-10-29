@@ -8,6 +8,7 @@ from aspire.orientation.commonline_sync import CLSyncVoting
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import Random
+from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -25,18 +26,20 @@ class OrientSyncTestCase(TestCase):
         defocus_ct = 7
         Cs = 2.0
         alpha = 0.1
+        self.dtype = np.float32
 
         filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=Cs, alpha=alpha) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')))
+        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')).astype(self.dtype))
         vols = vols.downsample((L*np.ones(3, dtype=int)))
 
         sim = Simulation(
             L=L,
             n=n,
             vols=vols,
-            filters=filters
+            unique_filters=filters,
+            dtype=self.dtype
         )
 
         self.orient_est = CLSyncVoting(sim, L // 2, 36)
@@ -52,12 +55,18 @@ class OrientSyncTestCase(TestCase):
     def testSyncMatrixVote(self):
         self.orient_est.syncmatrix_vote()
         results = np.load(os.path.join(DATA_DIR, 'orient_est_smatrix.npy'))
-        self.assertTrue(np.allclose(results, self.orient_est.syncmatrix))
+        self.assertTrue(np.allclose(
+            results,
+            self.orient_est.syncmatrix,
+            atol=1e-5 if self.dtype == np.float32 else 1e-8))
 
     def testEstRotations(self):
         self.orient_est.estimate_rotations()
         results = np.load(os.path.join(DATA_DIR, 'orient_est_rots.npy'))
-        self.assertTrue(np.allclose(results, self.orient_est.rotations))
+        self.assertTrue(np.allclose(
+            results,
+            self.orient_est.rotations,
+            atol=1e-5 if self.dtype == np.float32 else 1e-8))
 
     def testEstShifts(self):
         # need to rerun explicitly the estimation of rotations
@@ -65,4 +74,7 @@ class OrientSyncTestCase(TestCase):
         with Random(0):
             self.est_shifts = self.orient_est.estimate_shifts()
         results = np.load(os.path.join(DATA_DIR, 'orient_est_shifts.npy'))
-        self.assertTrue(np.allclose(results, self.est_shifts))
+        self.assertTrue(np.allclose(
+            results,
+            self.est_shifts,
+            atol=utest_tolerance(self.dtype)))

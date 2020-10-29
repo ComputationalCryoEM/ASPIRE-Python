@@ -10,12 +10,15 @@ from aspire.utils.numeric import xp
 
 
 class Micrograph:
-    def __init__(self, filepath, margin=None, shrink_factor=None, square=False, gauss_filter_size=None, gauss_filter_sigma=None):
+    def __init__(self, filepath, margin=None, shrink_factor=None, square=False,
+                 gauss_filter_size=None, gauss_filter_sigma=None,
+                 dtype=np.float32):
         self.filepath = filepath
         self.shrink_factor = shrink_factor
         self.square = square
         self.gauss_filter_size = gauss_filter_size
         self.gauss_filter_sigma = gauss_filter_sigma
+        self.dtype = np.dtype(dtype)
 
         # Attributes populated by the time this constructor returns
         # A 2-D ndarray if loading a MRC file, a 3-D ndarray if loading a MRCS file,
@@ -36,7 +39,7 @@ class Micrograph:
 
     def _read(self):
         with mrcfile.open(self.filepath) as mrc:
-            im = mrc.data.astype('double')
+            im = mrc.data.astype(self.dtype)
 
         # NOTE: For multiple mrc files, mrcfile returns an ndarray with
         # (shape n_images, height, width)

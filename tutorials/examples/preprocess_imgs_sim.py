@@ -14,7 +14,7 @@ from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter, ScalarFilter
 from aspire.volume import Volume
 
-logger = logging.getLogger('aspire')
+logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data/')
 
@@ -43,7 +43,7 @@ alpha = 0.1                      # Amplitude contrast
 
 logger.info('Initialize simulation object and CTF filters.')
 # Create CTF filters
-CTF_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
+ctf_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
            for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
 
 # Load the map file of a 70S ribosome and downsample the 3D map to desired resolution.
@@ -62,7 +62,7 @@ source = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    filters=CTF_filters,
+    unique_filters=ctf_filters,
     noise_filter=noise_filter
 )
 

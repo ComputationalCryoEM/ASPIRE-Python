@@ -56,12 +56,12 @@ def crop_pad(mat, n, fill_value=None):
         mat = np.reshape(mat, [mat.size, 1])  # force a column vector
         ns = math.floor(mat.size / 2) - math.floor(n / 2)  # shift term for scaling down
         if ns >= 0:  # cropping
-            return mat[ns: ns + n].astype('float32')
+            return mat[ns: ns + n].astype(np.float32)
 
         else:  # padding
             result_mat = fill_value * np.ones([n, 1], dtype=complex)
             result_mat[-ns: mat.size - ns] = mat
-            return result_mat.astype('float32')
+            return result_mat.astype(np.float32)
 
     elif num_dimensions == 2:  # mat is 2D image
         mat_x, mat_y = mat.shape
@@ -72,13 +72,14 @@ def crop_pad(mat, n, fill_value=None):
 
         if start_x >= 0 and start_y >= 0:  # cropping
             start_x, start_y = math.floor(start_x), math.floor(start_y)
-            return mat[start_x: start_x + int(n), start_y: start_y + int(n)].astype('float32')
+            return mat[start_x: start_x + int(n),
+                       start_y: start_y + int(n)].astype(np.float32)
 
         elif start_x < 0 and start_y < 0:  # padding
             start_x, start_y = math.floor(start_x), math.floor(start_y)
             result_mat = fill_value * np.ones([n, n], dtype=complex)
             result_mat[-start_x: mat_x - start_x, -start_y: mat_y - start_y] = mat
-            return result_mat.astype('float32')
+            return result_mat.astype(np.float32)
 
         else:
             raise RuntimeError("Can't crop and pad simultaneously!")
@@ -102,7 +103,7 @@ def crop_pad(mat, n, fill_value=None):
                        -ns[1]: from_shape[2] - ns[1],
                        -ns[2]: from_shape[2] - ns[2]] = mat
 
-            return result_mat.astype('float32')
+            return result_mat.astype(np.float32)
 
         else:
             raise RuntimeError("Can't crop and pad simultaneously!")

@@ -57,8 +57,8 @@ class FFBBasis3D(FBBasis3D):
         n_theta = int(2*self.sz[0])
         n_phi = int(self.ell_max+1)
 
-        r, wt_r = lgwt(n_r, 0.0, self.kcut)
-        z, wt_z = lgwt(n_phi, -1, 1)
+        r, wt_r = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
+        z, wt_z = lgwt(n_phi, -1, 1, dtype=self.dtype)
         r = m_reshape(r, (n_r, 1))
         wt_r = m_reshape(wt_r, (n_r, 1))
         z = m_reshape(z, (n_phi, 1))
@@ -69,7 +69,8 @@ class FFBBasis3D(FBBasis3D):
         theta = m_reshape(theta, (n_theta, 1))
 
         # evaluate basis function in the radial dimension
-        radial_wtd = np.zeros(shape=(n_r, np.max(self.k_max), self.ell_max+1))
+        radial_wtd = np.zeros(shape=(n_r, np.max(self.k_max), self.ell_max+1),
+                              dtype=self.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max_ell = self.k_max[ell]
             rmat = r * self.r0[0:k_max_ell, ell].T / self.kcut

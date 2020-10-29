@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 
 import aspire.image
@@ -8,6 +9,9 @@ from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.numeric import fft
 from aspire.utils.numeric import xp
 from aspire.utils.preprocess import downsample
+
+
+logger = logging.getLogger(__name__)
 
 
 class Volume:
@@ -96,6 +100,13 @@ class Volume:
         return self * otherL
 
     def project(self, vol_idx, rot_matrices):
+        if rot_matrices.dtype != self.dtype:
+            logger.warning(
+                f'{self.__class__.__name__}'
+                f' rot_matrices.dtype {rot_matrices.dtype}'
+                f' != self.dtype {self.dtype}.'
+                ' In the future this will raise an error.')
+
         data = self[vol_idx].T  #RCOPT
 
         n = rot_matrices.shape[0]
@@ -240,11 +251,13 @@ def rotated_grids(L, rot_matrices):
         Frequencies are in the range [-pi, pi].
     """
     # TODO: Flattening and reshaping at end may not be necessary!
-    grid2d = grid_2d(L)
+    grid2d = grid_2d(L, dtype=rot_matrices.dtype)
     num_pts = L**2
     num_rots = rot_matrices.shape[0]
-    pts = np.pi * np.vstack([grid2d['x'].flatten('F'), grid2d['y'].flatten('F'), np.zeros(num_pts)])
-    pts_rot = np.zeros((3, num_pts, num_rots))
+    pts = np.pi * np.vstack([grid2d['x'].flatten('F'),
+                             grid2d['y'].flatten('F'),
+                             np.zeros(num_pts, dtype=rot_matrices.dtype)])
+    pts_rot = np.zeros((3, num_pts, num_rots), dtype=rot_matrices.dtype)
     for i in range(num_rots):
         pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
 

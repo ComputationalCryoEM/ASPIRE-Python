@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 import numpy as np
 from numpy.linalg import inv
@@ -28,6 +27,7 @@ class RotCov2D:
         constructor of an object for 2D covariance analysis
         """
         self.basis = basis
+        self.dtype = self.basis.dtype
         ensure(basis.ndim == 2, 'Only two-dimensional basis functions are needed.')
 
     def _get_mean(self, coeffs):
@@ -162,9 +162,15 @@ class RotCov2D:
         def identity(x):
             return x
 
-        default_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                             'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
-                             'preconditioner': identity}
+        default_est_opt = {
+            'shrinker': 'None',
+            'verbose': 0,
+            'max_iter': 250,
+            'iter_callback': [],
+            'store_iterates': False,
+            'rel_tolerance': 1e-12,
+            'precision': self.dtype,
+            'preconditioner': identity}
 
         covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
@@ -303,9 +309,9 @@ class RotCov2D:
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
 
             coeff_est_k = coeff_k - mean_coeff_k
-            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T)
-            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
-            coeff_est_k = coeff_est_k.T + mean_coeff
+            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
+            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+            coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
         return coeffs_est
@@ -335,6 +341,7 @@ class BatchedRotCov2D(RotCov2D):
         self.src = src
         self.basis = basis
         self.batch_size = batch_size
+        self.dtype = self.src.dtype
 
         self.b_mean = None
         self.b_covar = None
@@ -349,17 +356,17 @@ class BatchedRotCov2D(RotCov2D):
 
         if self.basis is None:
             from aspire.basis.ffb_2d import FFBBasis2D
-            self.basis = FFBBasis2D((src.L, src.L))
+            self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
-        if src.filters is None:
+        if src.unique_filters is None:
             logger.info(f'CTF filters are not included in Cov2D denoising')
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
             self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
         else:
             logger.info(f'Represent CTF filters in FB basis')
-            unique_filters = list(OrderedDict.fromkeys(src.filters))
-            self.ctf_idx = np.array([unique_filters.index(f) for f in src.filters])
+            unique_filters = src.unique_filters
+            self.ctf_idx = src.filter_indices
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
 
     def _calc_rhs(self):
@@ -369,9 +376,9 @@ class BatchedRotCov2D(RotCov2D):
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx
 
-        zero_coeff = np.zeros((basis.count,))
+        zero_coeff = np.zeros((basis.count,), dtype=self.dtype)
 
-        b_mean = [np.zeros(basis.count) for _ in ctf_fb]
+        b_mean = [np.zeros(basis.count, dtype=self.dtype) for _ in ctf_fb]
 
         b_covar = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
@@ -624,7 +631,7 @@ class BatchedRotCov2D(RotCov2D):
         coeffs_est = np.zeros_like(coeffs)
 
         for k in np.unique(ctf_idx[:]):
-            coeff_k = coeffs[:, ctf_idx == k]
+            coeff_k = coeffs[ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
             sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
@@ -633,9 +640,9 @@ class BatchedRotCov2D(RotCov2D):
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
 
             coeff_est_k = coeff_k - mean_coeff_k
-            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k)
-            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k)
+            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
+            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
             coeff_est_k = coeff_est_k + mean_coeff
-            coeffs_est[:, ctf_idx == k] = coeff_est_k
+            coeffs_est[ctf_idx == k] = coeff_est_k
 
         return coeffs_est

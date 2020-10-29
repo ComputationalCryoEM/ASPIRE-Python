@@ -72,7 +72,7 @@ def grid_1d(n, shifted=False, normalized=True):
     }
 
 
-def grid_2d(n, shifted=False, normalized=True):
+def grid_2d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate two dimensional grid.
 
@@ -81,10 +81,10 @@ def grid_2d(n, shifted=False, normalized=True):
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :return: the rectangular and polar coordinates of all grid points.
     """
-    grid = np.ceil(np.arange(-n/2, n/2))
+    grid = np.ceil(np.arange(-n/2, n/2, dtype=dtype))
 
     if shifted and n % 2 == 0:
-        grid = np.arange(-n/2+1/2, n/2+1/2)
+        grid = np.arange(-n/2+1/2, n/2+1/2, dtype=dtype)
 
     if normalized:
         if shifted and n % 2 == 0:
@@ -103,7 +103,7 @@ def grid_2d(n, shifted=False, normalized=True):
     }
 
 
-def grid_3d(n, shifted=False, normalized=True):
+def grid_3d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate three dimensional grid.
 
@@ -112,10 +112,10 @@ def grid_3d(n, shifted=False, normalized=True):
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :return: the rectangular and spherical coordinates of all grid points.
     """
-    grid = np.ceil(np.arange(-n/2, n/2))
+    grid = np.ceil(np.arange(-n/2, n/2, dtype=dtype))
 
     if shifted and n % 2 == 0:
-        grid = np.arange(-n/2+1/2, n/2+1/2)
+        grid = np.arange(-n/2+1/2, n/2+1/2, dtype=dtype)
 
     if normalized:
         if shifted and n % 2 == 0:
@@ -139,7 +139,7 @@ def grid_3d(n, shifted=False, normalized=True):
     }
 
 
-def uniform_random_angles(n, seed=None):
+def uniform_random_angles(n, seed=None, dtype=np.float32):
     """
     Generate random 3D rotation angles
     :param n: The number of rotation angles to generate
@@ -153,7 +153,7 @@ def uniform_random_angles(n, seed=None):
             np.arccos(2 * np.random.random(n) - 1),
             np.random.random(n) * 2 * np.pi
         ))
-    return angles
+    return angles.astype(dtype)
 
 
 def register_rotations(rots, rots_ref):
@@ -198,8 +198,8 @@ def register_rotations(rots, rots_ref):
     # if we got the reflected one. In any case, one of them should be
     # orthogonal.
 
-    err1 = norm(Q1 @ Q1.T - np.eye(3), ord='fro')
-    err2 = norm(Q2 @ Q2.T - np.eye(3), ord='fro')
+    err1 = norm(Q1 @ Q1.T - np.eye(3, dtype=rots.dtype), ord='fro')
+    err2 = norm(Q2 @ Q2.T - np.eye(3, dtype=rots.dtype), ord='fro')
 
     # In any case, enforce the registering matrix O to be a rotation.
     if err1 < err2:
@@ -277,6 +277,9 @@ def common_line_from_rots(r1, r2, ell):
     :param ell: The total number of common lines.
     :return: The common line indices for both first and second rotations.
     """
+
+    assert r1.dtype == r2.dtype, 'Ambiguous dtypes'
+
     ut = np.dot(r2, r1.T)
     alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
     alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
