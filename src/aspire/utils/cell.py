@@ -10,10 +10,9 @@ class Cell2D:
     Define a base class of Cell to perform similar cell functions in MATLAB.
 
     """
-    def __init__(self, rows, cols, dtype=None):
+    def __init__(self, rows, cols, dtype=np.float32):
 
-        if dtype is None:
-            dtype = 'double'
+        self.dtype=np.dtype(dtype)
         self.dtype = dtype
         self.rows = rows
         self.cols = cols
@@ -28,7 +27,8 @@ class Cell2D:
         self.cell_list = []
         for i in range(0, np.size(rows)):
             for j in range(0, np.size(cols)):
-                self.cell_list.append(np.zeros((rows[i], cols[j]), dtype=dtype))
+                self.cell_list.append(
+                    np.zeros((rows[i], cols[j]), dtype=self.dtype))
 
     def mat2cell(self, mat, rows, cols):
         if np.sum(rows) != np.size(mat, 0) or np.sum(cols) != np.size(mat, 1):

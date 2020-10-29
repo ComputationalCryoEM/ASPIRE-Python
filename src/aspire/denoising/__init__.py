@@ -14,7 +14,7 @@ class Denoiser:
         :param src: The source object of 2D images with metadata
         """
         self.src = src
-
+        self.dtype = src.dtype
         self.nimg = src.n
 
     def denoise(self):

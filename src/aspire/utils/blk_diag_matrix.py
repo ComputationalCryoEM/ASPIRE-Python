@@ -32,7 +32,7 @@ class BlkDiagMatrix:
     #   blk_y = scalar_a + ( scalar_b * blk_x)
     __array_ufunc__ = None
 
-    def __init__(self, partition, dtype=np.float64):
+    def __init__(self, partition, dtype=np.float32):
         """
         Instantiate a BlkDiagMatrix.
 
@@ -40,7 +40,7 @@ class BlkDiagMatrix:
          in the form of a `nblock`-element list storing all shapes of
          diagonal matrix blocks, where `partition[i]` corresponds to
          the shape (number of rows and columns) of the `i` matrix block.
-        :param dtype: Datatype for blocks, defaults to np.float64.
+        :param dtype: Datatype for blocks, defaults to np.float32.
         :return: BlkDiagMatrix instance.
         """
 
@@ -678,7 +678,7 @@ class BlkDiagMatrix:
         return True
 
     @staticmethod
-    def empty(nblocks, dtype=np.float64):
+    def empty(nblocks, dtype=np.float32):
         """
         Instantiate an empty BlkDiagMatrix with `nblocks`, where each
         data block is initially None with size (0,0).
@@ -698,7 +698,7 @@ class BlkDiagMatrix:
         return BlkDiagMatrix(partition, dtype=dtype)
 
     @staticmethod
-    def zeros(blk_partition, dtype=np.float64):
+    def zeros(blk_partition, dtype=np.float32):
         """
         Build a BlkDiagMatrix zeros matrix.
 
@@ -718,7 +718,7 @@ class BlkDiagMatrix:
         return A
 
     @staticmethod
-    def ones(blk_partition, dtype=np.float64):
+    def ones(blk_partition, dtype=np.float32):
         """
         Build a BlkDiagMatrix ones matrix.
 
@@ -738,7 +738,7 @@ class BlkDiagMatrix:
         return A
 
     @staticmethod
-    def eye(blk_partition, dtype=np.float64):
+    def eye(blk_partition, dtype=np.float32):
         """
         Build a BlkDiagMatrix eye (identity) matrix
 
@@ -793,7 +793,7 @@ class BlkDiagMatrix:
         return BlkDiagMatrix.zeros(A.partition, dtype=dtype)
 
     @staticmethod
-    def from_list(blk_diag, dtype=np.float64):
+    def from_list(blk_diag, dtype=np.float32):
         """
         Convert full from python list representation into BlkDiagMatrix.
 
@@ -842,7 +842,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     radial = fbasis.get_radial()
     
     # get 2D grid in polar coordinate
-    k_vals, wts = lgwt(n_k, 0, 0.5)
+    k_vals, wts = lgwt(n_k, 0, 0.5, dtype=fbasis.dtype)
     k, theta = np.meshgrid(
         k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing='ij')
 

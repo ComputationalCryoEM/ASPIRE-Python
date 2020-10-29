@@ -8,6 +8,7 @@ from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.estimation.covar2d import RotCov2D
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter, ScalarFilter
+from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -15,6 +16,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 class Cov2DTestCase(TestCase):
     def setUp(self):
+        self.dtype = np.float32
 
         L = 8
         n = 32
@@ -30,7 +32,7 @@ class Cov2DTestCase(TestCase):
         unique_filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1) for d in
                    np.linspace(defocus_min, defocus_max, defocus_ct)]
 
-        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy'))) # RCOPT
+        vols = Volume(np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')).astype(self.dtype)) # RCOPT
         vols = vols.downsample((L*np.ones(3, dtype=int)))*1.0e3
         # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
         sim = Simulation(
@@ -40,11 +42,11 @@ class Cov2DTestCase(TestCase):
             unique_filters=unique_filters,
             offsets=0.0,
             amplitudes=1.0,
-            dtype='double',
+            dtype=self.dtype,
             noise_filter=noise_filter
         )
 
-        self.basis = FFBBasis2D((L, L))
+        self.basis = FFBBasis2D((L, L), dtype=self.dtype)
 
         self.h_idx = sim.filter_indices
         self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in unique_filters]
@@ -87,7 +89,7 @@ class Cov2DTestCase(TestCase):
     def testGetCovarCTFShrink(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_covarctf_shrink.npy'))
         covar_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64'}
+                     'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': self.dtype}
         self.covar_coeff_ctf_shrink = self.cov2d.get_covar(self.coeff, self.h_ctf_fb, self.h_idx,
                                                            noise_var=self.noise_var, covar_est_opt=covar_opt)
 
@@ -98,12 +100,14 @@ class Cov2DTestCase(TestCase):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff.npy'))
         self.coeff_cwf = self.cov2d.get_cwf_coeffs(self.coeff, self.h_ctf_fb, self.h_idx,
                                                    noise_var=self.noise_var)
-        self.assertTrue(np.allclose(results, self.coeff_cwf))
+        self.assertTrue(np.allclose(results, self.coeff_cwf,
+                                    atol=utest_tolerance(self.dtype)))
 
     def testGetCWFCoeffsIdentityCTF(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_noCTF.npy'))
         self.coeff_cwf_noCTF = self.cov2d.get_cwf_coeffs(self.coeff, noise_var=self.noise_var)
-        self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF))
+        self.assertTrue(np.allclose(results, self.coeff_cwf_noCTF,
+                                    atol=utest_tolerance(self.dtype)))
 
     def testGetCWFCoeffsClean(self):
         results = np.load(os.path.join(DATA_DIR, 'clean70SRibosome_cov2d_cwf_coeff_clean.npy'))

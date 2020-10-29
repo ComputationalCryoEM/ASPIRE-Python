@@ -144,7 +144,7 @@ class CLSyncVoting(CLOrient3D):
         ensure(sz[0] == sz[1], 'clmatrix must be a square matrix.')
 
         n_img = sz[0]
-        S = np.eye(2 * n_img).reshape(n_img, 2, n_img, 2)
+        S = np.eye(2 * n_img, dtype=self.dtype).reshape(n_img, 2, n_img, 2)
 
         # Build Synchronization matrix from the rotation blocks in X and Y
         for i in range(n_img - 1):

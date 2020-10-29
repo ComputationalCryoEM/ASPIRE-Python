@@ -25,7 +25,7 @@ class FBBasis2D(Basis):
     """
 
     # TODO: Methods that return dictionaries should return useful objects instead
-    def __init__(self, size, ell_max=None):
+    def __init__(self, size, ell_max=None, dtype=np.float32):
         """
         Initialize an object for the 2D Fourier-Bessel basis class
 
@@ -40,7 +40,7 @@ class FBBasis2D(Basis):
         ndim = len(size)
         ensure(ndim == 2, 'Only two-dimensional basis functions are supported.')
         ensure(len(set(size)) == 1, 'Only square domains are supported.')
-        super().__init__(size, ell_max)
+        super().__init__(size, ell_max, dtype=dtype)
 
     def _build(self):
         """
@@ -56,7 +56,7 @@ class FBBasis2D(Basis):
         self.count = self.k_max[0] + sum(2 * self.k_max[1:])
 
         # obtain a 2D grid to represent basis functions
-        self.basis_coords = unique_coords_nd(self.nres, self.ndim)
+        self.basis_coords = unique_coords_nd(self.nres, self.ndim, dtype=self.dtype)
 
         # generate 1D indices for basis functions
         self._indices = self.indices()
@@ -71,9 +71,9 @@ class FBBasis2D(Basis):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count)
-        indices_ks = np.zeros(self.count)
-        indices_sgns = np.zeros(self.count)
+        indices_ells = np.zeros(self.count, dtype=np.int)
+        indices_ks = np.zeros(self.count, dtype=np.int)
+        indices_sgns = np.zeros(self.count, dtype=np.int)
 
         i = 0
         for ell in range(self.ell_max + 1):
@@ -105,8 +105,10 @@ class FBBasis2D(Basis):
         ind_radial = 0
         ind_ang = 0
 
-        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)))
-        ang = np.zeros(shape=(ang_unique.shape[-1], 2 * self.ell_max + 1))
+        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)),
+                          dtype=self.dtype)
+        ang = np.zeros(shape=(ang_unique.shape[-1], 2 * self.ell_max + 1),
+                       dtype=self.dtype)
 
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
@@ -130,8 +132,8 @@ class FBBasis2D(Basis):
         """
         Calculate the normalized factors of basis functions
         """
-        radial_norms = np.zeros(np.sum(self.k_max))
-        angular_norms = np.zeros(np.sum(self.k_max))
+        radial_norms = np.zeros(np.sum(self.k_max), dtype=self.dtype)
+        angular_norms = np.zeros(np.sum(self.k_max), dtype=self.dtype)
         norm_fn = self.basis_norm_2d
 
         i = 0
@@ -164,6 +166,11 @@ class FBBasis2D(Basis):
             dimensions correspond to first dimensions of `v`.
         """
 
+        if v.dtype != self.dtype:
+            logger.warning(
+                f'{self.__class__.__name__}::evaluate'
+                f' Inconsistent dtypes v: {v.dtype} self: {self.dtype}')
+
         # Transpose here once, instead of several times below  #RCOPT
         v = v.reshape(-1, self.count).T
 
@@ -175,10 +182,11 @@ class FBBasis2D(Basis):
         ind_radial = 0
         ind_ang = 0
 
-        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])))
+        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])),
+                     dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
-            idx_radial = ind_radial + np.arange(0, k_max)
+            idx_radial = ind_radial + np.arange(0, k_max, dtype=np.int)
 
             # include the normalization factor of angular part
             ang_nrms = self.angular_norms[idx_radial]
@@ -189,7 +197,7 @@ class FBBasis2D(Basis):
             for _ in sgns:
                 ang = self._precomp['ang'][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
-                idx = ind + np.arange(0, k_max)
+                idx = ind + np.arange(0, k_max, dtype=np.int)
                 x[mask] += ang_radial @ v[idx]
                 ind += len(idx)
                 ind_ang += 1
@@ -211,6 +219,12 @@ class FBBasis2D(Basis):
              `self.count` and whose first dimensions correspond to
              first dimensions of `v`.
         """
+
+        if v.dtype != self.dtype:
+            logger.warning(
+                f'{self.__class__.__name__}::evaluate_t'
+                f' Inconsistent dtypes v: {v.dtype} self: {self.dtype}')
+
         v = v.T  #RCOPT
 
         x, sz_roll = unroll_dim(v, self.ndim + 1)
@@ -224,7 +238,8 @@ class FBBasis2D(Basis):
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])))
+        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])),
+                     dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
