@@ -167,7 +167,7 @@ class ScaledFilter(Filter):
     A Filter object that is composed of a regular `Filter` object, but evaluates it on a scaled omega.
     """
     def __init__(self, filt, scale):
-        self._filter = copy.copy(filt)
+        self._filter = filt
         self._scale = scale
         super().__init__(dim=filt.dim, radial=filt.radial)
 
@@ -320,9 +320,10 @@ class CTFFilter(Filter):
         return h.squeeze()
 
     def scale(self, c=1):
-        new_ctf_filter = copy.copy(self)
-        new_ctf_filter.pixel_size = self.pixel_size * c
-        return new_ctf_filter
+        return CTFFilter(pixel_size=self.pixel_size*c,
+                         voltage=self.voltage, defocus_u=self.defocus_u,
+                         defocus_v=self.defocus_v, defocus_ang=self.defocus_ang,
+                         Cs=self.Cs, alpha=self.alpha, B=self.B)
 
 
 class RadialCTFFilter(CTFFilter):
