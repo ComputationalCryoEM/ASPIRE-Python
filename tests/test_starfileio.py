@@ -4,15 +4,18 @@ import os.path
 
 from itertools import zip_longest
 from os.path import splitext
+from unittest import TestCase
+
+import importlib_resources
+import numpy as np
 from pandas import DataFrame
 from scipy import misc
-from unittest import TestCase
 
 import tests.saved_test_data
 from aspire.image import Image
+from aspire.io.starfile import StarFile, StarFileBlock, save_star
 from aspire.source import ArrayImageSource
 from aspire.source.mrcstack import MrcStack
-from aspire.io.starfile import StarFile, StarFileBlock, save_star
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
