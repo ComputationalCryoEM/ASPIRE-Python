@@ -36,17 +36,26 @@ class PreprocessPLTestCase(TestCase):
         imgs_pf = self.sim.images(start=0, num=self.n)
 
         # check energy conservation
-        self.assertTrue(self.imgs_org.norm(), imgs_pf.norm())
+        self.assertTrue(np.allclose(self.imgs_org.norm(), imgs_pf.norm()))
 
     def testDownsample(self):
-        max_resolution = 8
-        self.sim.downsample(max_resolution)
-        imgs_ds = self.sim.images(start=0, num=self.n)
+        sim = Simulation(
+            L=self.L,
+            n=self.n,
+            offsets=0.0,
+            amplitudes=1.0,
+            unique_filters=[RadialCTFFilter(defocus=d)
+                            for d in np.linspace(1.5e4, 2.5e4, 7)],
+        )
+        imgs_org = sim.images(start=0, num=self.n)
+        max_resolution = 32
+        sim.downsample(max_resolution)
+        imgs_ds = sim.images(start=0, num=self.n)
 
         # check resolution
-        self.assertTrue(max_resolution, imgs_ds.shape[1])
+        self.assertTrue(np.allclose(max_resolution, imgs_ds.shape[1]))
         # check energy conservation after downsample
-        self.assertTrue(self.imgs_org.norm(), imgs_ds.norm())
+        self.assertTrue(np.allclose(imgs_org.norm(), imgs_ds.norm()))
 
     def testNormBackground(self):
         bg_radius = 1.0
