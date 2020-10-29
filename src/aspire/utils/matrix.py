@@ -353,7 +353,7 @@ def eigs(A, k):
     A = m_reshape(A, (sig_len, sig_len))
 
     dtype = A.dtype
-    w, v = eigh(A.astype('float64'), eigvals=(sig_len-1-k+1, sig_len-1))
+    w, v = eigh(A.astype(np.float64), eigvals=(sig_len-1-k+1, sig_len-1))
 
     # Arrange in descending order (flip column order in eigenvector matrix) and typecast to proper type
     w = w[::-1].astype(dtype)

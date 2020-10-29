@@ -1,9 +1,13 @@
+import numpy as np
+
+from pytest import raises
 from unittest import TestCase
 from unittest.mock import patch
 
 from aspire import __version__
 from aspire.utils import get_full_version
 from aspire.utils.misc import powerset
+from aspire.utils.types import utest_tolerance
 
 
 class UtilsTestCase(TestCase):
@@ -40,3 +44,9 @@ class UtilsTestCase(TestCase):
         ref = sorted([(), (1,), (2,), (3,), (1,2), (1,3), (2,3), (1,2,3)])
         s = range(1, 4)
         self.assertTrue(sorted(list(powerset(s))) == ref)
+
+    def testGetTestTol(self):
+        self.assertEqual(1e-8, utest_tolerance(np.float64))
+        self.assertEqual(1e-5, utest_tolerance(np.float32))
+        with raises(TypeError):
+            utest_tolerance(np.int)

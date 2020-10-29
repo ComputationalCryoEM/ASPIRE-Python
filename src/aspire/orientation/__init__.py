@@ -29,6 +29,8 @@ class CLOrient3D:
             a random subset of n_check images is used.
         """
         self.src = src
+        # Note dtype is inferred from self.src
+        self.dtype = self.src.dtype
         self.n_img = src.n
         self.n_res = self.src.L
         self.n_rad = n_rad
@@ -57,7 +59,9 @@ class CLOrient3D:
         imgs = self.src.images(start=0, num=np.inf)
 
         # Obtain coefficients in polar Fourier basis for input 2D images
-        self.basis = PolarBasis2D((self.n_res, self.n_res), self.n_rad, self.n_theta)
+        self.basis = PolarBasis2D((self.n_res, self.n_res),
+                                  self.n_rad, self.n_theta,
+                                  dtype=self.dtype)
         self.pf = self.basis.evaluate_t(imgs)
         self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad).T # RCOPT
 
@@ -123,14 +127,14 @@ class CLOrient3D:
         # the common line with image j. Note the common line index
         # starts from 0 instead of 1 as Matlab version. -1 means
         # there is no common line such as clmatrix[i,i].
-        clmatrix = -np.ones((n_img, n_img))
+        clmatrix = -np.ones((n_img, n_img), dtype=self.dtype)
         # When cl_dist[i, j] is not -1, it stores the maximum value
         # of correlation between image i and j for all possible 1D shifts.
         # We will use cl_dist[i, j] = -1 (including j<=i) to
         # represent that there is no need to check common line
         # between i and j. Since it is symmetric,
         # only above the diagonal entries are necessary.
-        cl_dist = -np.ones((n_img, n_img))
+        cl_dist = -np.ones((n_img, n_img), dtype=self.dtype)
 
         # Allocate variables used for shift estimation
 
@@ -236,9 +240,12 @@ class CLOrient3D:
         # Generate approximated shift equations from estimated rotations
         shift_equations, shift_b = self._get_shift_equations_approx(equations_factor, max_memory)
 
-        # Solve the linear equation
+        # Solve the linear equation, optionally printing numerical debug details.
+        show = False
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            show = True
         # Negative sign comes from using -i conversion of Fourier transformation
-        est_shifts = sparse.linalg.lsqr(shift_equations, -shift_b)[0]
+        est_shifts = sparse.linalg.lsqr(shift_equations, -shift_b, show=show)[0]
         est_shifts = est_shifts.reshape((2, self.n_img), order='F')
 
         return est_shifts
@@ -284,10 +291,10 @@ class CLOrient3D:
         # exactly four unknowns). The variables below are used to construct
         # this sparse system. The k'th non-zero element of the equations matrix
         # is stored at index (shift_i(k),shift_j(k)).
-        shift_i = np.zeros(4 * n_equations, dtype=np.float64)
-        shift_j = np.zeros(4 * n_equations, dtype=np.float64)
-        shift_eq = np.zeros(4 * n_equations, dtype=np.float64)
-        shift_b = np.zeros(n_equations, dtype=np.float64)
+        shift_i = np.zeros(4 * n_equations, dtype=self.dtype)
+        shift_j = np.zeros(4 * n_equations, dtype=self.dtype)
+        shift_eq = np.zeros(4 * n_equations, dtype=self.dtype)
+        shift_b = np.zeros(n_equations, dtype=self.dtype)
 
         # Prepare the shift phases to try and generate filter for common-line detection
         # The shift phases are pre-defined in a range of max_shift that can be
@@ -365,7 +372,7 @@ class CLOrient3D:
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix((shift_eq, (shift_i, shift_j)),
                                             shape=(n_equations, 2 * n_img),
-                                            dtype=np.float64)
+                                            dtype=self.dtype)
 
         return shift_equations, shift_b
 
@@ -393,7 +400,7 @@ class CLOrient3D:
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
         memory_total = equations_factor * (
-                n_equations_total * 2 * n_img * np.dtype('float64').itemsize)
+                n_equations_total * 2 * n_img * self.dtype.itemsize)
         if memory_total < (max_memory * 10 ** 6):
             n_equations = int(np.ceil(equations_factor * n_equations_total))
         else:
@@ -491,7 +498,11 @@ class CLOrient3D:
         :param h: common lines filter
         :return: filtered and normalized i images
         """
-        np.einsum(subscripts, pf, h, out=pf)
+
+        # Note if we'd rather not have the dtype and casting args,
+        #   we can control h.dtype instead.
+        np.einsum(subscripts, pf, h, out=pf,
+                  dtype=pf.dtype, casting='same_kind')
         pf[r_max - 1:r_max + 2] = 0
         pf /= np.linalg.norm(pf, axis=0)
 

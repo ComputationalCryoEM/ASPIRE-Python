@@ -72,8 +72,8 @@ class Filter:
         """
         raise NotImplementedError('Subclasses should implement this method')
 
-    def evaluate_grid(self, L, *args, **kwargs):
-        grid2d = grid_2d(L)
+    def evaluate_grid(self, L, dtype=np.float32, *args, **kwargs):
+        grid2d = grid_2d(L, dtype=dtype)
         omega = np.pi * np.vstack((grid2d['x'].flatten('F'), grid2d['y'].flatten('F')))
         h = self.evaluate(omega, *args, **kwargs)
 

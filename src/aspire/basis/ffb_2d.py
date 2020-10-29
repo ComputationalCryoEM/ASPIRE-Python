@@ -10,7 +10,7 @@ from aspire.basis.fb_2d import FBBasis2D
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.misc import complex_type
+from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +65,9 @@ class FFBBasis2D(FBBasis2D):
         """
         n_r = self.n_r
         n_theta = self.n_theta
-        r, w = lgwt(n_r, 0.0, self.kcut)
+        r, w = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
 
-        radial = np.zeros(shape=(np.sum(self.k_max), n_r))
+        radial = np.zeros(shape=(np.sum(self.k_max), n_r), dtype=self.dtype)
         ind_radial = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
@@ -81,9 +81,11 @@ class FFBBasis2D(FBBasis2D):
 
         # Only calculate "positive" frequencies in one half-plane.
         freqs_x = m_reshape(r, (n_r, 1)) @ m_reshape(
-            np.cos(np.arange(n_theta) * 2 * pi / (2 * n_theta)), (1, n_theta))
+            np.cos(np.arange(n_theta, dtype=self.dtype) *
+                   2 * pi / (2 * n_theta)), (1, n_theta))
         freqs_y = m_reshape(r, (n_r, 1)) @ m_reshape(
-            np.sin(np.arange(n_theta) * 2 * pi / (2 * n_theta)), (1, n_theta))
+            np.sin(np.arange(n_theta, dtype=self.dtype) *
+                   2 * pi / (2 * n_theta)), (1, n_theta))
         freqs = np.vstack((freqs_x[np.newaxis, ...], freqs_y[np.newaxis, ...]))
 
         return {
@@ -110,6 +112,11 @@ class FFBBasis2D(FBBasis2D):
             and the first dimension correspond to remaining dimension of `v`.
         """
 
+        if v.dtype != self.dtype:
+            logger.debug(
+                f'{self.__class__.__name__}::evaluate'
+                f' Inconsistent dtypes v: {v.dtype} self: {self.dtype}')
+
         sz_roll = v.shape[:-1]
         v = v.reshape(-1, self.count)
 
@@ -121,12 +128,13 @@ class FFBBasis2D(FBBasis2D):
         n_r = np.size(self._precomp["freqs"], 1)
 
         # go through  each basis function and find corresponding coefficient
-        pf = np.zeros((n_data, 2 * n_theta, n_r), dtype=np.complex)
+        pf = np.zeros((n_data, 2 * n_theta, n_r),
+                      dtype=complex_type(self.dtype))
         mask = self._indices["ells"] == 0
 
         ind = 0
 
-        idx = ind + np.arange(self.k_max[0])
+        idx = ind + np.arange(self.k_max[0], dtype=np.int)
 
         # include the normalization factor of angular part into radial part
         radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
@@ -136,8 +144,8 @@ class FFBBasis2D(FBBasis2D):
         ind_pos = ind
 
         for ell in range(1, self.ell_max + 1):
-            idx = ind + np.arange(self.k_max[ell])
-            idx_pos = ind_pos + np.arange(self.k_max[ell])
+            idx = ind + np.arange(self.k_max[ell], dtype=np.int)
+            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=np.int)
             idx_neg = idx_pos + self.k_max[ell]
 
             v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0
@@ -189,6 +197,11 @@ class FFBBasis2D(FBBasis2D):
             This is an array of vectors whose last dimension equals `self.count`
             and whose first dimension correspond to `x.n_images`.
         """
+
+        if x.dtype != self.dtype:
+            logger.warning(
+                f'{self.__class__.__name__}::evaluate_t'
+                f' Inconsistent dtypes v: {x.dtype} self: {self.dtype}')
 
         if not isinstance(x, Image):
             logger.warning(f'{self.__class__.__name__}::evaluate_t'

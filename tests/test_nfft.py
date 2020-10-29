@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from aspire.nufft import Plan, backend_available
-from aspire.utils.misc import complex_type
+from aspire.utils.types import complex_type
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
@@ -354,9 +354,9 @@ class SimTestCase(TestCase):
 
         complex_dtype = complex_type(dtype)
 
-        atol = 1e-8    # Numpy default
+        atol=1e-8    # Numpy default
         if dtype == np.float32:
-            atol = 1e-5
+            atol=1e-5
 
         plan = Plan(self.vol.shape, self.fourier_pts.astype(dtype), backend=backend)
 

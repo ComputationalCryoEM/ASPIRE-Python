@@ -13,7 +13,7 @@ class DiracBasis(Basis):
     """
     Define a derived class for Dirac basis
     """
-    def __init__(self, sz, mask=None):
+    def __init__(self, sz, mask=None, dtype=np.float32):
         """
         Initialize an object for Dirac basis
         :param sz: The shape of the vectors for which to define the basis.
@@ -24,7 +24,7 @@ class DiracBasis(Basis):
             mask = np.full(sz, True)
         self._mask = m_flatten(mask)
 
-        super().__init__(sz)
+        super().__init__(sz, dtype=dtype)
 
     def _build(self):
         """
@@ -45,7 +45,7 @@ class DiracBasis(Basis):
             dimensions correspond to dimensions two and higher of `v`.
         """
         v, sz_roll = unroll_dim(v, 2)
-        x = np.zeros(shape=(self._sz_prod,) + v.shape[1:])
+        x = np.zeros(shape=(self._sz_prod,) + v.shape[1:], dtype=self.dtype)
         x[self._mask, ...] = v
         x = m_reshape(x, self.sz + x.shape[1:])
         x = roll_dim(x, sz_roll)
@@ -65,7 +65,7 @@ class DiracBasis(Basis):
         """
         x, sz_roll = unroll_dim(x, self.ndim + 1)
         x = m_reshape(x, new_shape=(self._sz_prod,) + x.shape[self.ndim:])
-        v = np.zeros(shape=(self.count, ) + x.shape[1:])
+        v = np.zeros(shape=(self.count, ) + x.shape[1:], dtype=self.dtype)
         v = x[self._mask, ...]
         v = roll_dim(v, sz_roll)
 

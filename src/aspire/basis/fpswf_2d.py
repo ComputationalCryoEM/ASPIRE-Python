@@ -10,6 +10,7 @@ from scipy.special import jn
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.nufft import nufft
+from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         two-dimensional bandlimited functions", Appl. Comput. Harmon. Anal. 22, 235-256 (2007).
     """
 
-    def __init__(self, size, gamma_truncation=1.0, beta=1.0):
+    def __init__(self, size, gamma_truncation=1.0, beta=1.0, dtype=np.float32):
         """
         Initialize an object for 2D prolate spheroidal wave function (PSWF) basis expansion using fast method.
 
@@ -43,8 +44,9 @@ class FPSWFBasis2D(PSWFBasis2D):
             In general, the bandlimit is c = beta*pi*(size[0]//2), therefore for
             the default value beta = 1 there is no oversampling assumed. This
             parameter controls the bandlimit of the PSWFs.
+        :param dtype: Internal ndarray datatype.
         """
-        super().__init__(size, gamma_truncation, beta)
+        super().__init__(size, gamma_truncation, beta, dtype=dtype)
 
     def _build(self):
         """
@@ -145,7 +147,8 @@ class FPSWFBasis2D(PSWFBasis2D):
             self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero])))
 
         n_images = int(flatten_images.shape[1])
-        images = np.zeros((self._image_height, self._image_height, n_images)).astype('complex')
+        images = np.zeros((self._image_height, self._image_height, n_images)).astype(
+            complex_type(self.dtype))
         images[self._disk_mask, :] = flatten_images
         # TODO: no need to switch x and y any more, need to make consistent with direct method
         return np.real(images).T # RCOPT
@@ -188,7 +191,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         Generate Gaussian quadrature points and weights for the radical parts of 2D PSWFs
         """
-        x, w = lgwt(20 * n, 0, 1)
+        x, w = lgwt(20 * n, 0, 1, dtype=self.dtype)
 
         big_n = 0
 
@@ -299,7 +302,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         m = x.shape[0]
 
-        images_nufft = np.zeros((m, num_images), dtype='complex128')
+        images_nufft = np.zeros((m, num_images), dtype=complex_type(self.dtype))
         for i in range(start, finish):
             images_nufft[:, i - start] = nufft(images[..., i], 2 * pi * x.T)
 
@@ -311,7 +314,8 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         num_images = images_nufft.shape[1]
         n_max_float = float(self.n_max) / 2
-        r_n_eval_mat = np.zeros((len(self.radial_quad_pts), self.n_max, num_images), dtype='complex128')
+        r_n_eval_mat = np.zeros((len(self.radial_quad_pts), self.n_max, num_images),
+                                dtype=complex_type(self.dtype))
 
         for i in range(len(self.radial_quad_pts)):
             curr_r_mat = images_nufft[self.r_quad_indices[i]: self.r_quad_indices[i] + self.num_angular_pts[i], :]
@@ -323,7 +327,8 @@ class FPSWFBasis2D(PSWFBasis2D):
                                                            1))[:self.n_max, :]
 
         r_n_eval_mat = r_n_eval_mat.reshape((len(self.radial_quad_pts) * self.n_max, num_images), order='F')
-        coeff_vec_quad = np.zeros((len(self.ang_freqs), num_images), dtype='complex128')
+        coeff_vec_quad = np.zeros((len(self.ang_freqs), num_images),
+                                  dtype=complex_type(self.dtype))
         m = len(self.pswf_radial_quad)
         for i in range(self.n_max):
             coeff_vec_quad[self.indices_for_n[i] + np.arange(self.numel_for_n[i]), :] =\

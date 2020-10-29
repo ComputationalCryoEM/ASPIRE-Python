@@ -4,6 +4,7 @@ from collections import OrderedDict
 import numpy as np
 
 from aspire import config
+from aspire.utils.types import complex_type, real_type
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,16 @@ def anufft(sig_f, fourier_pts, sz, real=False):
 
     """
 
+    if fourier_pts.dtype != real_type(sig_f.dtype):
+        logger.warning('anufft passed inconsistent dtypes.'
+                       f' fourier_pts: {fourier_pts.dtype}'
+                       f' forcing precision of signal data: {sig_f.dtype}.')
+        fourier_pts = fourier_pts.astype(real_type(sig_f.dtype))
+
+    if sig_f.dtype != complex_type(sig_f.dtype):
+        logger.debug('anufft passed real_type for signal, converting')
+        sig_f = sig_f.astype(complex_type(sig_f.dtype))
+
     dim = len(sz)
     ntransforms = 1
     if len(sig_f.shape) == 2:
@@ -179,6 +190,16 @@ def nufft(sig_f, fourier_pts, real=False):
     :return: The Non Uniform FFT transform.
 
     """
+
+    if fourier_pts.dtype != real_type(sig_f.dtype):
+        logger.warning('nufft passed inconsistent dtypes.'
+                       f' fourier_pts: {fourier_pts.dtype}'
+                       f' forcing precision of signal data: {sig_f.dtype}.')
+        fourier_pts = fourier_pts.astype(real_type(sig_f.dtype))
+
+    if sig_f.dtype != complex_type(sig_f.dtype):
+        logger.debug('nufft passed real_type for signal, converting')
+        sig_f = sig_f.astype(complex_type(sig_f.dtype))
 
     # Unpack the dimension of the signal
     #   Note, infer dimension from fourier_pts because signal might be a stack.
