@@ -68,7 +68,8 @@ class SimTestCase(TestCase):
         # a corresponding scaling in omega
         filt2 = ScaledFilter(filt1, scale_value)
         result2 = filt2.evaluate(self.omega*scale_value)
-        self.assertTrue(np.allclose(result1, result2))
+        self.assertTrue(np.allclose(
+            result1, result2, atol=utest_tolerance(self.dtype)))
 
     def testCTFScale(self):
         filt = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
@@ -78,7 +79,8 @@ class SimTestCase(TestCase):
         # scaling a CTFFilter scales the pixel size which cancels out
         # a corresponding scaling in omega
         result2 = filt.evaluate(self.omega*scale_value)
-        self.assertTrue(np.allclose(result1, result2))
+        self.assertTrue(np.allclose(
+            result1, result2, atol=utest_tolerance(self.dtype)))
 
     def testRadialCTFFilter(self):
         filter = RadialCTFFilter(defocus=2.5e4)
