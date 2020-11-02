@@ -10,9 +10,17 @@ from aspire.utils.numeric import xp
 
 
 class Micrograph:
-    def __init__(self, filepath, margin=None, shrink_factor=None,
-                 square=False, gauss_filter_size=None, gauss_filter_sigma=None,
-                 permissive=False, dtype=np.float32):
+    def __init__(
+        self,
+        filepath,
+        margin=None,
+        shrink_factor=None,
+        square=False,
+        gauss_filter_size=None,
+        gauss_filter_sigma=None,
+        permissive=False,
+        dtype=np.float32,
+    ):
         self.filepath = filepath
         self.shrink_factor = shrink_factor
         self.square = square
@@ -32,28 +40,42 @@ class Micrograph:
         if margin is None:
             t = r = b = l = None
         elif isinstance(margin, (tuple, list)):
-            ensure(len(margin)==4, 'If specifying margins a a tuple/list, specify the top/right/bottom/left margins.')
+            ensure(
+                len(margin) == 4,
+                "If specifying margins a a tuple/list, specify the top/right/bottom/left margins.",
+            )
             t, r, b, l = margin
         else:  # assume scalar
             t = r = b = l = int(margin)
-        self.margin_top, self.margin_right, self.margin_bottom, self.margin_left = t, r, b, l
+        self.margin_top, self.margin_right, self.margin_bottom, self.margin_left = (
+            t,
+            r,
+            b,
+            l,
+        )
 
     def _read(self):
         with mrcfile.open(self.filepath, permissive=self.permissive) as mrc:
             im = mrc.data
             if im.dtype != self.dtype:
                 logger.info(
-                    f'Micrograph read casting {self.filepath}'
-                    f' data to {self.dtype} from {im.dtype}.')
+                    f"Micrograph read casting {self.filepath}"
+                    f" data to {self.dtype} from {im.dtype}."
+                )
                 im = im.astype(self.dtype)
 
         # NOTE: For multiple mrc files, mrcfile returns an ndarray with
         # (shape n_images, height, width)
 
         # Discard outer pixels
-        im = im[...,
-            self.margin_top: -self.margin_bottom if self.margin_bottom is not None else None,
-            self.margin_left: -self.margin_right if self.margin_right is not None else None
+        im = im[
+            ...,
+            self.margin_top : -self.margin_bottom
+            if self.margin_bottom is not None
+            else None,
+            self.margin_left : -self.margin_right
+            if self.margin_right is not None
+            else None,
         ]
 
         if self.square:
@@ -61,14 +83,18 @@ class Micrograph:
             im = im[..., :side_length, :side_length]
 
         if self.shrink_factor is not None:
-            size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
+            size = tuple(
+                (np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int)
+            )
             im = np.array(PILImage.fromarray(im).resize(size, PILImage.BICUBIC))
 
         if self.gauss_filter_size is not None:
             im = signal.correlate(
                 im,
-                Micrograph.gaussian_filter(self.gauss_filter_size, self.gauss_filter_sigma),
-                'same'
+                Micrograph.gaussian_filter(
+                    self.gauss_filter_size, self.gauss_filter_sigma
+                ),
+                "same",
             )
 
         self.im = Image(im)
@@ -83,10 +109,14 @@ class Micrograph:
             std: sigma value in filter.
         """
 
-        y, x = xp.mgrid[-(size_filter - 1) // 2: (size_filter - 1) // 2 + 1,
-               -(size_filter - 1) // 2: (size_filter - 1) // 2 + 1]
+        y, x = xp.mgrid[
+            -(size_filter - 1) // 2 : (size_filter - 1) // 2 + 1,
+            -(size_filter - 1) // 2 : (size_filter - 1) // 2 + 1,
+        ]
 
-        response = xp.exp(-xp.square(x) - xp.square(y) / (2 * (std ** 2))) / (xp.sqrt(2 * xp.pi) * std)
-        response[response < xp.finfo('float').eps] = 0
+        response = xp.exp(-xp.square(x) - xp.square(y) / (2 * (std ** 2))) / (
+            xp.sqrt(2 * xp.pi) * std
+        )
+        response[response < xp.finfo("float").eps] = 0
 
         return xp.asnumpy(response / response.sum())  # Normalize so sum is 1

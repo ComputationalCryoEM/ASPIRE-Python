@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class Estimator:
-    def __init__(self, src, basis, batch_size=512, preconditioner='circulant'):
+    def __init__(self, src, basis, batch_size=512, preconditioner="circulant"):
         self.src = src
         self.basis = basis
         self.dtype = self.src.dtype
@@ -25,8 +25,10 @@ class Estimator:
         self.n = src.n
 
         if not self.dtype == self.basis.dtype:
-            logger.warning(f'Inconsistent types in {self.dtype} Estimator.'
-                           f' basis: {self.basis.dtype}')
+            logger.warning(
+                f"Inconsistent types in {self.dtype} Estimator."
+                f" basis: {self.basis.dtype}"
+            )
 
         """
         An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
@@ -40,15 +42,17 @@ class Estimator:
     def __getattr__(self, name):
         """Lazy attributes instantiated on first-access"""
 
-        if name == 'kernel':
-            logger.info('Computing kernel')
+        if name == "kernel":
+            logger.info("Computing kernel")
             kernel = self.kernel = self.compute_kernel()
             return kernel
 
-        elif name == 'precond_kernel':
-            if self.preconditioner == 'circulant':
-                logger.info('Computing Preconditioner kernel')
-                precond_kernel = self.precond_kernel = FourierKernel(1. / self.kernel.circularize(), centered=True)
+        elif name == "precond_kernel":
+            if self.preconditioner == "circulant":
+                logger.info("Computing Preconditioner kernel")
+                precond_kernel = self.precond_kernel = FourierKernel(
+                    1.0 / self.kernel.circularize(), centered=True
+                )
             else:
                 precond_kernel = self.precond_kernel = None
             return precond_kernel
@@ -56,7 +60,7 @@ class Estimator:
         return super(Estimator, self).__getattr__(name)
 
     def compute_kernel(self):
-        raise NotImplementedError('Subclasses must implement the compute_kernel method')
+        raise NotImplementedError("Subclasses must implement the compute_kernel method")
 
     def estimate(self, b_coeff=None, tol=None):
         """ Return an estimate as a Volume instance. """
@@ -81,8 +85,8 @@ class Estimator:
             batch_mean_b = self.src.im_backward(im, i) / self.n
             mean_b += batch_mean_b.astype(self.dtype)
 
-        res = self.basis.evaluate_t(mean_b.T) # RCOPT
-        logger.info(f'Determined adjoint mappings. Shape = {res.shape}')
+        res = self.basis.evaluate_t(mean_b.T)  # RCOPT
+        logger.info(f"Determined adjoint mappings. Shape = {res.shape}")
         return res
 
     def conj_grad(self, b_coeff, tol=None):
@@ -93,9 +97,9 @@ class Estimator:
         if regularizer > 0:
             kernel += regularizer
 
-        operator = LinearOperator((n, n),
-                                  matvec=partial(self.apply_kernel,kernel=kernel),
-                                  dtype=self.dtype)
+        operator = LinearOperator(
+            (n, n), matvec=partial(self.apply_kernel, kernel=kernel), dtype=self.dtype
+        )
         if self.precond_kernel is None:
             M = None
         else:
@@ -105,18 +109,23 @@ class Estimator:
             M = LinearOperator(
                 (n, n),
                 matvec=partial(self.apply_kernel, kernel=precond_kernel),
-                dtype=self.dtype)
+                dtype=self.dtype,
+            )
 
         tol = tol or config.mean.cg_tol
         target_residual = tol * norm(b_coeff)
 
         def cb(xk):
-            logger.info(f'Delta {norm(b_coeff - self.apply_kernel(xk))} (target {target_residual})')
+            logger.info(
+                f"Delta {norm(b_coeff - self.apply_kernel(xk))} (target {target_residual})"
+            )
 
-        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol, atol=0)
+        x, info = scipy.sparse.linalg.cg(
+            operator, b_coeff, M=M, callback=cb, tol=tol, atol=0
+        )
 
         if info != 0:
-            raise RuntimeError('Unable to converge!')
+            raise RuntimeError("Unable to converge!")
         return x
 
     def apply_kernel(self, vol_coeff, kernel=None):
@@ -129,8 +138,8 @@ class Estimator:
         """
         if kernel is None:
             kernel = self.kernel
-        vol = self.basis.evaluate(vol_coeff).T # RCOPT
+        vol = self.basis.evaluate(vol_coeff).T  # RCOPT
         vol = kernel.convolve_volume(vol)
-        vol = self.basis.evaluate_t(vol.T)   #RCOPT
+        vol = self.basis.evaluate_t(vol.T)  # RCOPT
 
         return vol

@@ -4,14 +4,15 @@ import numpy as np
 from aspire import config
 from aspire.utils.numeric import fft_class
 
-fft_backends = ['scipy', 'pyfftw']
+fft_backends = ["scipy", "pyfftw"]
 numeric_classes = [np, np]
 
 # Create Cupy fft backend if Cupy is enabled and lib exits.
 if config.common.cupy:
     try:
         import cupy as cp
-        fft_backends.append('cupy')
+
+        fft_backends.append("cupy")
         numeric_classes.append(cp)
     except ImportError:
         pass

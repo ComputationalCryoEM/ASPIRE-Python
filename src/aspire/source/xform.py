@@ -34,6 +34,7 @@ class Xform:
         This inner class allows us to temporarily enable/disable a Xform object, by tweaking its `active`
         attribute on enter/exit.
         """
+
         def __init__(self, xform, active):
             self.xform = xform
             self.active = active
@@ -66,7 +67,9 @@ class Xform:
         return self._forward(im, indices=indices)
 
     def _forward(self, im, indices):
-        raise NotImplementedError('Subclasses must implement the _forward method applicable to im/indices.')
+        raise NotImplementedError(
+            "Subclasses must implement the _forward method applicable to im/indices."
+        )
 
     def enabled(self):
         """
@@ -90,6 +93,7 @@ class LinearXform(Xform):
     """
     A LinearXform is a Xform that additionally provides an `adjoint` method, similar to the `forward` method.
     """
+
     def adjoint(self, im, indices=None):
         """
         Apply adjoint transformation for this Xform object to an Image object.
@@ -104,13 +108,16 @@ class LinearXform(Xform):
         return self._adjoint(im, indices=indices)
 
     def _adjoint(self, im, indices):
-        raise NotImplementedError('Subclasses must implement the _adjoint method applicable to im/indices.')
+        raise NotImplementedError(
+            "Subclasses must implement the _adjoint method applicable to im/indices."
+        )
 
 
 class SymmetricXform(LinearXform):
     """
     A Symmetric Xform is a LinearXform where the forward/adjoint operations are identical.
     """
+
     def _adjoint(self, im, indices=None):
         return self._forward(im, indices)
 
@@ -120,6 +127,7 @@ class Multiply(SymmetricXform):
     A Xform that changes the amplitudes of a stack of 2D images (in the form of an Image object) by multiplying all
     pixels of a single 2D  image by a constant factor.
     """
+
     def __init__(self, factor):
         """
         Initialize a Multiply Xform using specified factors
@@ -138,8 +146,8 @@ class Multiply(SymmetricXform):
 
     def __str__(self):
         if self.multipliers.size == 1:
-            return f'Multiply ({self.multipliers})'
-        return 'Multiply (multiple)'
+            return f"Multiply ({self.multipliers})"
+        return "Multiply (multiple)"
 
 
 class Shift(LinearXform):
@@ -147,6 +155,7 @@ class Shift(LinearXform):
     A Xform that shifts pixels of a stack of 2D images (in the form of an Image object)by offsetting all pixels of a
     single 2D image by constant x/y offsets.
     """
+
     def __init__(self, shifts):
         """
         Initialize a Shift Xform using a Numpy array of shift values.
@@ -173,14 +182,15 @@ class Shift(LinearXform):
 
     def __str__(self):
         if self.shifts.ndim == 1:
-            return f'Shift ({self.shifts})'
-        return 'Shift (multiple)'
+            return f"Shift ({self.shifts})"
+        return "Shift (multiple)"
 
 
 class Downsample(LinearXform):
     """
     A Xform that downsamples an Image object to a resolution specified by this Xform's resolution.
     """
+
     def __init__(self, resolution):
         self.resolution = resolution
         super().__init__()
@@ -190,16 +200,17 @@ class Downsample(LinearXform):
 
     def _adjoint(self, im, indices):
         # TODO: Implement up-sampling with zero-padding
-        raise NotImplementedError('Adjoint of downsampling not implemented yet.')
+        raise NotImplementedError("Adjoint of downsampling not implemented yet.")
 
     def __str__(self):
-        return f'Downsample (Resolution {self.resolution})'
+        return f"Downsample (Resolution {self.resolution})"
 
 
 class FilterXform(SymmetricXform):
     """
     A `Xform` that applies a single `Filter` object to a stack of 2D images (as an Image object).
     """
+
     def __init__(self, filter):
         """
         Initialize the Filter `Xform` using a `Filter` object
@@ -212,7 +223,7 @@ class FilterXform(SymmetricXform):
         return im.filter(self.filter)
 
     def __str__(self):
-        return f'FilterXform ({self.filter})'
+        return f"FilterXform ({self.filter})"
 
 
 class Add(Xform):
@@ -220,6 +231,7 @@ class Add(Xform):
     A Xform that add the density of a stack of 2D images (in the form of an Image object)
     by an offset value.
     """
+
     def __init__(self, addend):
         """
         Initialize an Add Xform using a Numpy array of predefined values.
@@ -238,14 +250,15 @@ class Add(Xform):
 
     def __str__(self):
         if self.addend.size == 1:
-            return f'Add ({self.addend})'
-        return 'Add (multiple)'
+            return f"Add ({self.addend})"
+        return "Add (multiple)"
 
 
 class LambdaXform(Xform):
     """
     A `Xform` that applies a predefined function to a stack of 2D images (as an Image object).
     """
+
     def __init__(self, lambda_fun, *args, **kwargs):
         """
         Initialize the `LambdaXform` using a lambda function
@@ -266,13 +279,14 @@ class LambdaXform(Xform):
         return Image(im_out)
 
     def __str__(self):
-        return f'LambdaXform ({self.lambda_fun.__name__})'
+        return f"LambdaXform ({self.lambda_fun.__name__})"
 
 
 class NoiseAdder(Xform):
     """
     A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
     """
+
     def __init__(self, seed=0, noise_filter=None):
         """
         Initialize the random state of this NoiseAdder using specified values.
@@ -293,7 +307,7 @@ class NoiseAdder(Xform):
             random_seed = self.seed + 191 * (idx + 1)
             im_s = randn(2 * im.res, 2 * im.res, seed=random_seed)
             im_s = Image(im_s).filter(self.noise_filter)[0]
-            im[i] += im_s[:im.res, :im.res]
+            im[i] += im_s[: im.res, : im.res]
 
         return im
 
@@ -307,6 +321,7 @@ class IndexedXform(Xform):
     of its unique Xform objects, so that calls to individual Xform objects within it is minimized, and equals the
     number of unique Xforms found.
     """
+
     def __init__(self, unique_xforms, indices=None):
         if indices is None:
             indices = np.arange(0, len(unique_xforms))
@@ -337,7 +352,9 @@ class IndexedXform(Xform):
         :return: An Image object as a result of applying forward or adjoint transformation to `im`.
         """
         # Ensure that we will be able to apply all transformers to the image
-        assert self.n_indices >= im.n_images, f'Can process Image object of max depth {self.n_indices}. Got {im.n_images}.'
+        assert (
+            self.n_indices >= im.n_images
+        ), f"Can process Image object of max depth {self.n_indices}. Got {im.n_images}."
 
         im_data = np.empty_like(im.asnumpy())
 
@@ -352,17 +369,19 @@ class IndexedXform(Xform):
             # Apply the transformation to the selected indices in the Image object
             if len(im_data_indices) > 0:
                 fn_handle = getattr(xform, which)
-                im_data[im_data_indices] = fn_handle(Image(im[im_data_indices])).asnumpy()
+                im_data[im_data_indices] = fn_handle(
+                    Image(im[im_data_indices])
+                ).asnumpy()
 
         return Image(im_data)
 
     def _forward(self, im, indices):
-        return self._indexed_operation(im, indices, 'forward')
+        return self._indexed_operation(im, indices, "forward")
 
 
 class LinearIndexedXform(IndexedXform, LinearXform):
     def _adjoint(self, im, indices):
-        return self._indexed_operation(im, indices, 'adjoint')
+        return self._indexed_operation(im, indices, "adjoint")
 
 
 def _apply_xform(xform, im, indices, adjoint=False):
@@ -371,10 +390,10 @@ def _apply_xform(xform, im, indices, adjoint=False):
     method.
     """
     if not adjoint:
-        logger.info('  Applying ' + str(xform))
+        logger.info("  Applying " + str(xform))
         return xform.forward(im, indices=indices)
     else:
-        logger.info('  Applying Adjoint ' + str(xform))
+        logger.info("  Applying Adjoint " + str(xform))
         return xform.adjoint(im, indices=indices)
 
 
@@ -389,11 +408,12 @@ class Pipeline(Xform):
     are performed repeatedly (especially during development while setting up these pipelines) on any Image/Xform pair.
     This caching uses `joblib.Memory` object behind the scenes, but is disabled by default.
     """
+
     def __init__(self, xforms=None, memory=None):
         """
         Initialize a `Pipeline` with `Xform` objects.
         :param xforms: An iterable of Xform objects to use in the Pipeline.
-        :param memory: None for no caching (default), or the location of a directory to use to cache steps of the 
+        :param memory: None for no caching (default), or the location of a directory to use to cache steps of the
             pipeline.
         """
         self.xforms = xforms or []
@@ -401,7 +421,7 @@ class Pipeline(Xform):
         self.active = True
 
     def __str__(self):
-        return 'Apply pipeline: ' + ' '.join([f'{xform}' for xform in self.xforms])
+        return "Apply pipeline: " + " ".join([f"{xform}" for xform in self.xforms])
 
     def add_xform(self, xform):
         """
@@ -430,10 +450,10 @@ class Pipeline(Xform):
         memory = Memory(location=self.memory, verbose=0)
         _apply_transform_cached = memory.cache(_apply_xform)
 
-        logger.info('Applying forward transformations in pipeline')
+        logger.info("Applying forward transformations in pipeline")
         for xform in self.xforms:
             im = _apply_transform_cached(xform, im, indices, False)
-        logger.info('All forward transformations applied')
+        logger.info("All forward transformations applied")
 
         return im
 
@@ -443,9 +463,9 @@ class LinearPipeline(Pipeline, LinearXform):
         memory = Memory(location=self.memory, verbose=0)
         _apply_transform_cached = memory.cache(_apply_xform)
 
-        logger.info('Applying adjoint transformations in pipeline')
+        logger.info("Applying adjoint transformations in pipeline")
         for xform in self.xforms[::-1]:
             im = _apply_transform_cached(xform, im, indices, True)
-        logger.info('All adjoint transformations applied')
+        logger.info("All adjoint transformations applied")
 
         return im

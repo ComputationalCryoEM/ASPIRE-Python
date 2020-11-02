@@ -10,18 +10,37 @@ from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.filters import ZeroFilter
 from aspire.utils.matlab_compat import Random, rand, randi, randn
-from aspire.utils.matrix import (acorr, ainner, anorm, make_symmat,
-                                 vecmat_to_volmat, vol_to_vec)
+from aspire.utils.matrix import (
+    acorr,
+    ainner,
+    anorm,
+    make_symmat,
+    vecmat_to_volmat,
+    vol_to_vec,
+)
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
 
 class Simulation(ImageSource):
-    def __init__(self, L=8, n=1024, vols=None, states=None,
-                 unique_filters=None, filter_indices=None,
-                 offsets=None, amplitudes=None, dtype=np.float32, C=2,
-                 angles=None, seed=0, memory=None, noise_filter=None):
+    def __init__(
+        self,
+        L=8,
+        n=1024,
+        vols=None,
+        states=None,
+        unique_filters=None,
+        filter_indices=None,
+        offsets=None,
+        amplitudes=None,
+        dtype=np.float32,
+        C=2,
+        angles=None,
+        seed=0,
+        memory=None,
+        noise_filter=None,
+    ):
         """
         A Cryo-EM simulation
         Other than the base class attributes, it has:
@@ -39,7 +58,7 @@ class Simulation(ImageSource):
             offsets = L / 16 * randn(2, n, seed=seed).astype(dtype).T
 
         if amplitudes is None:
-            min_, max_ = 2./3, 3./2
+            min_, max_ = 2.0 / 3, 3.0 / 2
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
@@ -50,9 +69,10 @@ class Simulation(ImageSource):
 
         if self.vols.dtype != self.dtype:
             logger.warning(
-                f'{self.__class__.__name__}'
-                f' vols.dtype {self.vols.dtype} != self.dtype {self.dtype}.'
-                ' In the future this will raise an error.')
+                f"{self.__class__.__name__}"
+                f" vols.dtype {self.vols.dtype} != self.dtype {self.dtype}."
+                " In the future this will raise an error."
+            )
 
         self.C = self.vols.n_vols
 
@@ -77,7 +97,7 @@ class Simulation(ImageSource):
 
         self.noise_adder = None
         if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
-            logger.info(f'Appending a NoiseAdder to generation pipeline')
+            logger.info(f"Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
@@ -113,19 +133,22 @@ class Simulation(ImageSource):
 
     def eval_gaussian_blobs(self, L, Q, D, mu):
         g = grid_3d(L, dtype=self.dtype)
-        coords = np.array([g['x'].flatten(), g['y'].flatten(), g['z'].flatten()],
-                          dtype=self.dtype)
+        coords = np.array(
+            [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=self.dtype
+        )
 
         K = Q.shape[-1]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(self.dtype)
 
         for k in range(K):
             coords_k = coords - mu[:, k, np.newaxis]
-            coords_k = Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
+            coords_k = (
+                Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
+            )
 
-            vol += np.exp(-0.5 * np.sum(np.abs(coords_k)**2, axis=0))
+            vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
 
-        vol = np.reshape(vol, g['x'].shape)
+        vol = np.reshape(vol, g["x"].shape)
 
         return vol
 
@@ -138,10 +161,11 @@ class Simulation(ImageSource):
         :return: An Image instance.
         """
         if indices is None:
-            indices = np.arange(start, min(start+num, self.n))
+            indices = np.arange(start, min(start + num, self.n))
 
-        im = np.zeros((len(indices), self._original_L, self._original_L),
-                      dtype=self.dtype)
+        im = np.zeros(
+            (len(indices), self._original_L, self._original_L), dtype=self.dtype
+        )
 
         states = self.states[indices]
         unique_states = np.unique(states)
@@ -149,8 +173,7 @@ class Simulation(ImageSource):
             idx_k = np.where(states == k)[0]
             rot = self.rots[indices[idx_k], :, :]
 
-            im_k = self.vols.project(vol_idx=k-1,
-                                     rot_matrices=rot)
+            im_k = self.vols.project(vol_idx=k - 1, rot_matrices=rot)
             im[idx_k, :, :] = im_k.asnumpy()
 
         return Image(im)
@@ -160,7 +183,7 @@ class Simulation(ImageSource):
 
     def _images(self, start=0, num=np.inf, indices=None, enable_noise=True):
         if indices is None:
-            indices = np.arange(start, min(start+num, self.n), dtype=np.int)
+            indices = np.arange(start, min(start + num, self.n), dtype=np.int)
 
         im = self.projections(start=start, num=num, indices=indices)
 
@@ -189,7 +212,7 @@ class Simulation(ImageSource):
         assert isinstance(mean_vol, Volume)
         assert isinstance(eig_vols, Volume)
 
-        vols = self.vols - mean_vol    # note, broadcast
+        vols = self.vols - mean_vol  # note, broadcast
 
         V = vols.to_vec()
         EV = eig_vols.to_vec()
@@ -226,7 +249,7 @@ class Simulation(ImageSource):
 
         p = np.ones(C) / C
         # RCOPT, we may be able to do better here if we dig in.
-        Q, R = qr(vols_c.to_vec().T, mode='economic')
+        Q, R = qr(vols_c.to_vec().T, mode="economic")
 
         # Rank is at most C-1, so remove last vector
         Q = Q[:, :-1]
@@ -255,11 +278,7 @@ class Simulation(ImageSource):
         # RCOPT
         corr = acorr(vol_true.asnumpy(), vol_est.asnumpy())
 
-        return {
-            'err': err,
-            'rel_err': rel_err,
-            'corr': corr
-        }
+        return {"err": err, "rel_err": rel_err, "corr": corr}
 
     def eval_covar(self, covar_est):
         covar_true = self.covar_true()
@@ -278,11 +297,7 @@ class Simulation(ImageSource):
         rel_err = err / norm_true
         corr = acorr(volmat_true, volmat_est)
 
-        return {
-            'err': err,
-            'rel_err': rel_err,
-            'corr': corr
-        }
+        return {"err": err, "rel_err": rel_err, "corr": corr}
 
     def eval_eigs(self, eigs_est, lambdas_est):
         """
@@ -304,11 +319,7 @@ class Simulation(ImageSource):
 
         # TODO: Determine Principal Angles and return as a dict value
 
-        return {
-            'err': err,
-            'rel_err': rel_err,
-            'corr': corr
-        }
+        return {"err": err, "rel_err": rel_err, "corr": corr}
 
     def eval_clustering(self, vol_idx):
         """
@@ -316,9 +327,11 @@ class Simulation(ImageSource):
         :param vol_idx: Indexes of the volumes determined (0-indexed)
         :return: Accuracy [0-1] in terms of proportion of correctly assigned labels
         """
-        ensure(len(vol_idx) == self.n, f'Need {self.n} vol indexes to evaluate clustering')
+        ensure(
+            len(vol_idx) == self.n, f"Need {self.n} vol indexes to evaluate clustering"
+        )
         # Remember that `states` is 1-indexed while vol_idx is 0-indexed
-        correctly_classified = np.sum(self.states-1 == vol_idx)
+        correctly_classified = np.sum(self.states - 1 == vol_idx)
 
         return correctly_classified / self.n
 
@@ -348,17 +361,25 @@ class Simulation(ImageSource):
         err = np.hypot(res_norms, coords_err)
 
         mean_vol_norm2 = anorm(mean_vol) ** 2
-        norm_true = np.sqrt(coords_true**2 + mean_vol_norm2 + 2*res_inners + 2*mean_eigs_inners * coords_true)
+        norm_true = np.sqrt(
+            coords_true ** 2
+            + mean_vol_norm2
+            + 2 * res_inners
+            + 2 * mean_eigs_inners * coords_true
+        )
         norm_true = np.hypot(res_norms, norm_true)
 
         rel_err = err / norm_true
-        inner = mean_vol_norm2 + mean_eigs_inners * (coords_true + coords_est) + coords_true * coords_est + res_inners
-        norm_est = np.sqrt(coords_est**2 + mean_vol_norm2 + 2*mean_eigs_inners*coords_est)
+        inner = (
+            mean_vol_norm2
+            + mean_eigs_inners * (coords_true + coords_est)
+            + coords_true * coords_est
+            + res_inners
+        )
+        norm_est = np.sqrt(
+            coords_est ** 2 + mean_vol_norm2 + 2 * mean_eigs_inners * coords_est
+        )
 
         corr = inner / (norm_true * norm_est)
 
-        return {
-            'err': err,
-            'rel_err': rel_err,
-            'corr': corr
-        }
+        return {"err": err, "rel_err": rel_err, "corr": corr}

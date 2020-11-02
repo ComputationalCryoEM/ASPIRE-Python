@@ -28,7 +28,7 @@ class RotCov2D:
         """
         self.basis = basis
         self.dtype = self.basis.dtype
-        ensure(basis.ndim == 2, 'Only two-dimensional basis functions are needed.')
+        ensure(basis.ndim == 2, "Only two-dimensional basis functions are needed.")
 
     def _get_mean(self, coeffs):
         """
@@ -38,14 +38,14 @@ class RotCov2D:
         :return: The mean value vector for all images.
         """
         if coeffs.size == 0:
-            raise RuntimeError('The coefficients need to be calculated first!')
+            raise RuntimeError("The coefficients need to be calculated first!")
         mask = self.basis._indices["ells"] == 0
         mean_coeff = np.zeros(self.basis.count, dtype=coeffs.dtype)
         mean_coeff[mask] = np.mean(coeffs[..., mask], axis=0)
 
         return mean_coeff
 
-    def _get_covar(self, coeffs, mean_coeff=None,  do_refl=True):
+    def _get_covar(self, coeffs, mean_coeff=None, do_refl=True):
         """
         Calculate the covariance matrix from the expansion coefficients without CTF information.
 
@@ -55,7 +55,7 @@ class RotCov2D:
         :return: The covariance matrix of coefficients for all images.
         """
         if coeffs.size == 0:
-            raise RuntimeError('The coefficients need to be calculated first!')
+            raise RuntimeError("The coefficients need to be calculated first!")
         if mean_coeff is None:
             mean_coeff = self._get_mean(coeffs)
 
@@ -64,25 +64,35 @@ class RotCov2D:
         ell = 0
         mask = self.basis._indices["ells"] == ell
         coeff_ell = coeffs[..., mask] - mean_coeff[mask]
-        covar_ell = np.array(coeff_ell.T @ coeff_ell/coeffs.shape[0])
+        covar_ell = np.array(coeff_ell.T @ coeff_ell / coeffs.shape[0])
         covar_coeff.append(covar_ell)
 
-        for ell in range(1, self.basis.ell_max+1):
+        for ell in range(1, self.basis.ell_max + 1):
             mask = self.basis._indices["ells"] == ell
-            mask_pos = [mask[i] and (self.basis._indices['sgns'][i] == +1) for i in range(len(mask))]
-            mask_neg = [mask[i] and (self.basis._indices['sgns'][i] == -1) for i in range(len(mask))]
-            covar_ell_diag = (np.array(coeffs[:, mask_pos].T @ coeffs[:, mask_pos] +
-                                       coeffs[:, mask_neg].T @ coeffs[:, mask_neg]) /
-                              (2 * coeffs.shape[0]))
+            mask_pos = [
+                mask[i] and (self.basis._indices["sgns"][i] == +1)
+                for i in range(len(mask))
+            ]
+            mask_neg = [
+                mask[i] and (self.basis._indices["sgns"][i] == -1)
+                for i in range(len(mask))
+            ]
+            covar_ell_diag = np.array(
+                coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
+                + coeffs[:, mask_neg].T @ coeffs[:, mask_neg]
+            ) / (2 * coeffs.shape[0])
 
             if do_refl:
                 covar_coeff.append(covar_ell_diag)
                 covar_coeff.append(covar_ell_diag)
             else:
-                covar_ell_off = np.array((coeffs[:, mask_pos] @ coeffs[:, mask_neg].T /
-                                          coeffs.shape[0] -
-                                          coeffs[:, mask_pos].T @ coeffs[:, mask_neg]) /
-                                         (2 * coeffs.shape[0] ))
+                covar_ell_off = np.array(
+                    (
+                        coeffs[:, mask_pos] @ coeffs[:, mask_neg].T / coeffs.shape[0]
+                        - coeffs[:, mask_pos].T @ coeffs[:, mask_neg]
+                    )
+                    / (2 * coeffs.shape[0])
+                )
 
                 hsize = covar_ell_diag.shape[0]
                 covar_coeff_blk = np.zeros((2, hsize, 2, hsize))
@@ -107,7 +117,7 @@ class RotCov2D:
         """
 
         if coeffs.size == 0:
-            raise RuntimeError('The coefficients need to be calculated!')
+            raise RuntimeError("The coefficients need to be calculated!")
 
         # should assert we require none or both...
         if (ctf_fb is None) or (ctf_idx is None):
@@ -130,8 +140,16 @@ class RotCov2D:
         mean_coeff = A.solve(b)
         return mean_coeff
 
-    def get_covar(self, coeffs, ctf_fb=None, ctf_idx=None, mean_coeff=None,
-                  do_refl=True, noise_var=1, covar_est_opt=None):
+    def get_covar(
+        self,
+        coeffs,
+        ctf_fb=None,
+        ctf_idx=None,
+        mean_coeff=None,
+        do_refl=True,
+        noise_var=1,
+        covar_est_opt=None,
+    ):
         """
         Calculate the covariance matrix from the expansion coefficients and CTF information.
 
@@ -153,7 +171,7 @@ class RotCov2D:
         """
 
         if coeffs.size == 0:
-            raise RuntimeError('The coefficients need to be calculated!')
+            raise RuntimeError("The coefficients need to be calculated!")
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
@@ -163,14 +181,15 @@ class RotCov2D:
             return x
 
         default_est_opt = {
-            'shrinker': 'None',
-            'verbose': 0,
-            'max_iter': 250,
-            'iter_callback': [],
-            'store_iterates': False,
-            'rel_tolerance': 1e-12,
-            'precision': self.dtype,
-            'preconditioner': identity}
+            "shrinker": "None",
+            "verbose": 0,
+            "max_iter": 250,
+            "iter_callback": [],
+            "store_iterates": False,
+            "rel_tolerance": 1e-12,
+            "precision": self.dtype,
+            "preconditioner": identity,
+        }
 
         covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
@@ -195,7 +214,7 @@ class RotCov2D:
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
             covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
-            b_coeff +=  weight * (ctf_fb_k_t @ covar_coeff_k @ ctf_fb_k)
+            b_coeff += weight * (ctf_fb_k_t @ covar_coeff_k @ ctf_fb_k)
 
             ctf_fb_k_sq = ctf_fb_k_t @ ctf_fb_k
             b_noise += weight * ctf_fb_k_sq
@@ -203,11 +222,16 @@ class RotCov2D:
             A[k] = np.sqrt(weight) * ctf_fb_k_sq
             M += A[k]
 
-        if covar_est_opt['shrinker'] == 'None':
+        if covar_est_opt["shrinker"] == "None":
             b = b_coeff - noise_var * b_noise
         else:
-            b = self.shrink_covar_backward(b_coeff, b_noise, np.size(coeffs, 1),
-                                           noise_var, covar_est_opt['shrinker'])
+            b = self.shrink_covar_backward(
+                b_coeff,
+                b_noise,
+                np.size(coeffs, 1),
+                noise_var,
+                covar_est_opt["shrinker"],
+            )
 
         # RCOPT okay, this looks like a big batch, come back later
 
@@ -217,7 +241,7 @@ class RotCov2D:
 
         def precond_fun(S, x):
             p = np.size(S, 0)
-            ensure(np.size(x) == p*p, 'The sizes of S and x are not consistent.')
+            ensure(np.size(x) == p * p, "The sizes of S and x are not consistent.")
             x = m_reshape(x, (p, p))
             y = S @ x @ S
             y = m_reshape(y, (p ** 2,))
@@ -228,7 +252,7 @@ class RotCov2D:
             x = m_reshape(x, (p, p))
             y = np.zeros_like(x)
             for k in range(0, len(A)):
-                    y = y + A[k] @ x @ A[k].T
+                y = y + A[k] @ x @ A[k].T
             y = m_reshape(y, (p ** 2,))
             return y
 
@@ -262,12 +286,20 @@ class RotCov2D:
             S = sqrtm(b_noise[ell])
             # from Matlab b_ell = S \ b_ell /S
             b_ell = solve(S, b_ell) @ inv(S)
-            b_ell = shrink_covar(b_ell, noise_var, p/n, shrinker)
+            b_ell = shrink_covar(b_ell, noise_var, p / n, shrinker)
             b_ell = S @ b_ell @ S
             b_out[ell] = b_ell
         return b_out
 
-    def get_cwf_coeffs(self, coeffs, ctf_fb=None, ctf_idx=None, mean_coeff=None, covar_coeff=None, noise_var=1):
+    def get_cwf_coeffs(
+        self,
+        coeffs,
+        ctf_fb=None,
+        ctf_idx=None,
+        mean_coeff=None,
+        covar_coeff=None,
+        noise_var=1,
+    ):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
 
@@ -287,7 +319,9 @@ class RotCov2D:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
         if covar_coeff is None:
-            covar_coeff = self.get_covar(coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var)
+            covar_coeff = self.get_covar(
+                coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var
+            )
 
         # should be none or both
         if (ctf_fb is None) or (ctf_idx is None):
@@ -356,15 +390,16 @@ class BatchedRotCov2D(RotCov2D):
 
         if self.basis is None:
             from aspire.basis.ffb_2d import FFBBasis2D
+
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
         if src.unique_filters is None:
-            logger.info(f'CTF filters are not included in Cov2D denoising')
+            logger.info(f"CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
             self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
         else:
-            logger.info(f'Represent CTF filters in FB basis')
+            logger.info(f"Represent CTF filters in FB basis")
             unique_filters = src.unique_filters
             self.ctf_idx = src.filter_indices
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
@@ -463,24 +498,27 @@ class BatchedRotCov2D(RotCov2D):
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
             mean_coeff_k = ctf_fb_k_t.apply(mean_coeff_k)
 
-            mean_coeff_k = mean_coeff_k[:partition[0][0]]
-            b_mean_k = b_mean[k][:partition[0][0]]
+            mean_coeff_k = mean_coeff_k[: partition[0][0]]
+            b_mean_k = b_mean[k][: partition[0][0]]
 
-            correction = (np.outer(mean_coeff_k, b_mean_k)
-                          + np.outer(b_mean_k, mean_coeff_k)
-                          - weight * np.outer(mean_coeff_k, mean_coeff_k))
+            correction = (
+                np.outer(mean_coeff_k, b_mean_k)
+                + np.outer(b_mean_k, mean_coeff_k)
+                - weight * np.outer(mean_coeff_k, mean_coeff_k)
+            )
 
             b_covar[0] -= correction
 
         return b_covar
 
     def _noise_correct_covar_rhs(self, b_covar, b_noise, noise_var, shrinker):
-        if shrinker == 'None':
+        if shrinker == "None":
             b_noise = -noise_var * b_noise
             b_covar += b_noise
         else:
-            b_covar = self.shrink_covar_backward(b_covar, b_noise, self.src.n,
-                                                 noise_var, shrinker)
+            b_covar = self.shrink_covar_backward(
+                b_covar, b_noise, self.src.n, noise_var, shrinker
+            )
 
         return b_covar
 
@@ -489,10 +527,10 @@ class BatchedRotCov2D(RotCov2D):
 
         def precond_fun(S, x):
             p = np.size(S, 0)
-            ensure(np.size(x) == p*p, 'The sizes of S and x are not consistent.')
+            ensure(np.size(x) == p * p, "The sizes of S and x are not consistent.")
             x = m_reshape(x, (p, p))
             y = S @ x @ S
-            y = m_reshape(y, (p**2,))
+            y = m_reshape(y, (p ** 2,))
             return y
 
         def apply(A, x):
@@ -500,8 +538,8 @@ class BatchedRotCov2D(RotCov2D):
             x = m_reshape(x, (p, p))
             y = np.zeros_like(x)
             for k in range(0, len(A)):
-                    y = y + A[k] @ x @ A[k].T
-            y = m_reshape(y, (p**2,))
+                y = y + A[k] @ x @ A[k].T
+            y = m_reshape(y, (p ** 2,))
             return y
 
         cg_opt = covar_est_opt
@@ -514,7 +552,7 @@ class BatchedRotCov2D(RotCov2D):
             p = np.size(A_ell[0], 0)
             b_ell = m_reshape(b_covar[ell], (p ** 2,))
             S = inv(M[ell])
-            cg_opt['preconditioner'] = lambda x: precond_fun(S, x)
+            cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
             covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
@@ -574,9 +612,16 @@ class BatchedRotCov2D(RotCov2D):
         def identity(x):
             return x
 
-        default_est_opt = {'shrinker': 'None', 'verbose': 0, 'max_iter': 250, 'iter_callback': [],
-                             'store_iterates': False, 'rel_tolerance': 1e-12, 'precision': 'float64',
-                             'preconditioner': identity}
+        default_est_opt = {
+            "shrinker": "None",
+            "verbose": 0,
+            "max_iter": 250,
+            "iter_callback": [],
+            "store_iterates": False,
+            "rel_tolerance": 1e-12,
+            "precision": "float64",
+            "preconditioner": identity,
+        }
 
         covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
@@ -592,15 +637,19 @@ class BatchedRotCov2D(RotCov2D):
         b_covar = self.b_covar
 
         b_covar = self._mean_correct_covar_rhs(b_covar, self.b_mean, mean_coeff)
-        b_covar = self._noise_correct_covar_rhs(b_covar, self.A_mean, noise_var,
-                                                covar_est_opt['shrinker'])
+        b_covar = self._noise_correct_covar_rhs(
+            b_covar, self.A_mean, noise_var, covar_est_opt["shrinker"]
+        )
 
-        covar_coeff = self._solve_covar(self.A_covar, b_covar, self.M_covar,
-                                        covar_est_opt)
+        covar_coeff = self._solve_covar(
+            self.A_covar, b_covar, self.M_covar, covar_est_opt
+        )
 
         return covar_coeff
 
-    def get_cwf_coeffs(self, coeffs, ctf_fb, ctf_idx, mean_coeff, covar_coeff, noise_var=1):
+    def get_cwf_coeffs(
+        self, coeffs, ctf_fb, ctf_idx, mean_coeff, covar_coeff, noise_var=1
+    ):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
 

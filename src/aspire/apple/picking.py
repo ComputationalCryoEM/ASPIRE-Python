@@ -6,8 +6,12 @@ import mrcfile
 import numpy as np
 from PIL import Image
 from scipy import ndimage, signal
-from scipy.ndimage import (binary_dilation, binary_erosion, binary_fill_holes,
-                           center_of_mass)
+from scipy.ndimage import (
+    binary_dilation,
+    binary_erosion,
+    binary_fill_holes,
+    center_of_mass,
+)
 from sklearn import preprocessing, svm
 from tqdm import tqdm
 
@@ -21,8 +25,20 @@ logger = logging.getLogger(__name__)
 
 class Picker:
     """ This class does the actual picking with help from PickerHelper class. """
-    def __init__(self, particle_size, max_size, min_size, query_size, tau1, tau2, moa,
-                 container_size, filename, output_directory):
+
+    def __init__(
+        self,
+        particle_size,
+        max_size,
+        min_size,
+        query_size,
+        tau1,
+        tau2,
+        moa,
+        container_size,
+        filename,
+        output_directory,
+    ):
 
         self.particle_size = int(particle_size / 2)
         self.max_size = int(max_size / 2)
@@ -46,24 +62,39 @@ class Picker:
         Initialize a classifier model for the Picker object base on configuration values.
         """
 
-        logger.info(f'Classifier model desired = {config.apple.model}')
-        if config.apple.model == 'gaussian_mixture':
+        logger.info(f"Classifier model desired = {config.apple.model}")
+        if config.apple.model == "gaussian_mixture":
             from sklearn.mixture import GaussianMixture
+
             self.model = GaussianMixture(n_components=2)
-        elif config.apple.model == 'gaussian_naive_bayes':
+        elif config.apple.model == "gaussian_naive_bayes":
             from sklearn.naive_bayes import GaussianNB
+
             self.model = GaussianNB()
-        elif config.apple.model == 'xgboost':
+        elif config.apple.model == "xgboost":
             import xgboost as xgb
-            self.model = xgb.XGBClassifier(objective='binary:hinge', learning_rate=0.1,
-                                           max_depth=6, n_estimators=10, method='gpu_hist')
-        elif config.apple.model == 'thunder_svm':
+
+            self.model = xgb.XGBClassifier(
+                objective="binary:hinge",
+                learning_rate=0.1,
+                max_depth=6,
+                n_estimators=10,
+                method="gpu_hist",
+            )
+        elif config.apple.model == "thunder_svm":
             import thundersvm
-            self.model = thundersvm.SVC(kernel=config.apple.svm.kernel, gamma=config.apple.svm.gamma)
+
+            self.model = thundersvm.SVC(
+                kernel=config.apple.svm.kernel, gamma=config.apple.svm.gamma
+            )
         else:
-            logger.info('Using SVM Classifier')
-            self.model = svm.SVC(C=1, kernel=config.apple.svm_kernel, gamma=config.apple.svm_gamma,
-                                 class_weight='balanced')
+            logger.info("Using SVM Classifier")
+            self.model = svm.SVC(
+                C=1,
+                kernel=config.apple.svm_kernel,
+                gamma=config.apple.svm_gamma,
+                class_weight="balanced",
+            )
 
     def read_mrc(self):
         """Gets and preprocesses micrograph.
@@ -74,14 +105,14 @@ class Picker:
             Micrograph image.
         """
 
-        with mrcfile.open(self.filename, mode='r+', permissive=True) as mrc:
-            im = mrc.data.astype('float')
+        with mrcfile.open(self.filename, mode="r+", permissive=True) as mrc:
+            im = mrc.data.astype("float")
         self.original_im = im
 
         # Discard outer pixels
         im = im[
-            config.apple.mrc_margin_top: -config.apple.mrc_margin_bottom,
-            config.apple.mrc_margin_left: -config.apple.mrc_margin_right
+            config.apple.mrc_margin_top : -config.apple.mrc_margin_bottom,
+            config.apple.mrc_margin_left : -config.apple.mrc_margin_right,
         ]
 
         # Make square
@@ -96,10 +127,9 @@ class Picker:
         im = signal.correlate(
             im,
             PickerHelper.gaussian_filter(
-                config.apple.mrc_gauss_filter_size,
-                config.apple.mrc_gauss_filter_sigma
+                config.apple.mrc_gauss_filter_size, config.apple.mrc_gauss_filter_sigma
             ),
-            'same'
+            "same",
         )
 
         return im
@@ -118,13 +148,15 @@ class Picker:
         """
 
         micro_img = xp.asarray(self.im)
-        logger.info('Extracting query images')
+        logger.info("Extracting query images")
         query_box = PickerHelper.extract_query(micro_img, self.query_size // 2)
-        logger.info('Extracting query images complete')
+        logger.info("Extracting query images complete")
 
         query_box = xp.conj(fft.fft2(query_box, axes=(2, 3)))
 
-        reference_box = PickerHelper.extract_references(micro_img, self.query_size, self.container_size)
+        reference_box = PickerHelper.extract_references(
+            micro_img, self.query_size, self.container_size
+        )
 
         reference_size = PickerHelper.reference_size(micro_img, self.container_size)
         conv_map = xp.zeros((reference_size, query_box.shape[0], query_box.shape[1]))
@@ -160,7 +192,9 @@ class Picker:
 
         min_val = xp.min(conv_map)
         max_val = xp.max(conv_map)
-        thresh = min_val + (max_val - min_val) / config.apple.response_thresh_norm_factor
+        thresh = (
+            min_val + (max_val - min_val) / config.apple.response_thresh_norm_factor
+        )
         return xp.asnumpy(xp.sum(conv_map >= thresh, axis=2))
 
     def run_svm(self, score):
@@ -182,9 +216,13 @@ class Picker:
         micro_img = xp.asarray(self.im)
         particle_windows = np.floor(self.tau1)
         non_noise_windows = np.ceil(self.tau2)
-        bw_mask_p, bw_mask_n = Picker.get_maps(self, score, micro_img, particle_windows, non_noise_windows)
+        bw_mask_p, bw_mask_n = Picker.get_maps(
+            self, score, micro_img, particle_windows, non_noise_windows
+        )
 
-        x, y = PickerHelper.get_training_set(micro_img, bw_mask_p, bw_mask_n, self.query_size)
+        x, y = PickerHelper.get_training_set(
+            micro_img, bw_mask_p, bw_mask_n, self.query_size
+        )
         x = xp.asnumpy(x)
         y = xp.asnumpy(y)
 
@@ -198,14 +236,18 @@ class Picker:
         mean_all = xp.asnumpy(mean_all)
         std_all = xp.asnumpy(std_all)
 
-        mean_all = mean_all[self.query_size - 1:-(self.query_size - 1),
-                            self.query_size - 1:-(self.query_size - 1)]
+        mean_all = mean_all[
+            self.query_size - 1 : -(self.query_size - 1),
+            self.query_size - 1 : -(self.query_size - 1),
+        ]
 
-        std_all = std_all[self.query_size - 1:-(self.query_size - 1),
-                          self.query_size - 1:-(self.query_size - 1)]
+        std_all = std_all[
+            self.query_size - 1 : -(self.query_size - 1),
+            self.query_size - 1 : -(self.query_size - 1),
+        ]
 
-        mean_all = np.reshape(mean_all, (np.prod(mean_all.shape), 1), 'F')
-        std_all = np.reshape(std_all, (np.prod(std_all.shape), 1), 'F')
+        mean_all = np.reshape(mean_all, (np.prod(mean_all.shape), 1), "F")
+        std_all = np.reshape(std_all, (np.prod(std_all.shape), 1), "F")
         cls_input = np.concatenate((mean_all, std_all), axis=1)
         cls_input = scaler.transform(cls_input)
 
@@ -213,7 +255,9 @@ class Picker:
         segmentation = classifier.predict(cls_input)
 
         _segmentation_shape = int(np.sqrt(segmentation.shape[0]))
-        segmentation = np.reshape(segmentation, (_segmentation_shape, _segmentation_shape), 'F')
+        segmentation = np.reshape(
+            segmentation, (_segmentation_shape, _segmentation_shape), "F"
+        )
 
         return segmentation.copy()
 
@@ -232,22 +276,29 @@ class Picker:
             segmentation[0:100, 0:100] = np.zeros((100, 100))
 
         segmentation = binary_fill_holes(segmentation)
-        y, x = np.ogrid[-self.min_size:self.min_size+1, -self.min_size:self.min_size+1]
-        element = x*x+y*y <= self.min_size * self.min_size
+        y, x = np.ogrid[
+            -self.min_size : self.min_size + 1, -self.min_size : self.min_size + 1
+        ]
+        element = x * x + y * y <= self.min_size * self.min_size
         segmentation_e = binary_erosion(segmentation, element)
 
-        y, x = np.ogrid[-self.max_size:self.max_size+1, -self.max_size:self.max_size+1]
-        element = x*x+y*y <= self.max_size * self.max_size
+        y, x = np.ogrid[
+            -self.max_size : self.max_size + 1, -self.max_size : self.max_size + 1
+        ]
+        element = x * x + y * y <= self.max_size * self.max_size
         segmentation_o = binary_erosion(segmentation, element)
-        segmentation_o = np.reshape(segmentation_o,
-                                    (segmentation_o.shape[0], segmentation_o.shape[1], 1), 'F')
+        segmentation_o = np.reshape(
+            segmentation_o, (segmentation_o.shape[0], segmentation_o.shape[1], 1), "F"
+        )
 
         size_const, _ = ndimage.label(segmentation_e, np.ones((3, 3)))
-        size_const = np.reshape(size_const, (size_const.shape[0], size_const.shape[1], 1), 'F')
-        labels = np.unique(size_const*segmentation_o)
+        size_const = np.reshape(
+            size_const, (size_const.shape[0], size_const.shape[1], 1), "F"
+        )
+        labels = np.unique(size_const * segmentation_o)
         idx = np.where(labels != 0)
         labels = np.take(labels, idx)
-        labels = np.reshape(labels, (1, 1, np.prod(labels.shape)), 'F')
+        labels = np.reshape(labels, (1, 1, np.prod(labels.shape)), "F")
 
         matrix1 = np.repeat(size_const, labels.shape[2], 2)
         matrix2 = np.repeat(labels, matrix1.shape[0], 0)
@@ -268,17 +319,22 @@ class Picker:
         Args:
             segmentation: Segmentation of the micrograph into noise and particle projections.
         """
-        segmentation = segmentation[self.query_size // 2 - 1:-self.query_size // 2,
-                                    self.query_size // 2 - 1:-self.query_size // 2]
+        segmentation = segmentation[
+            self.query_size // 2 - 1 : -self.query_size // 2,
+            self.query_size // 2 - 1 : -self.query_size // 2,
+        ]
         labeled_segments, _ = ndimage.label(segmentation, np.ones((3, 3)))
         values, repeats = np.unique(labeled_segments, return_counts=True)
 
         values_to_remove = np.where(repeats > self.max_size ** 2)
         values = np.take(values, values_to_remove)
-        values = np.reshape(values, (1, 1, np.prod(values.shape)), 'F')
+        values = np.reshape(values, (1, 1, np.prod(values.shape)), "F")
 
-        labeled_segments = np.reshape(labeled_segments, (labeled_segments.shape[0],
-                                                         labeled_segments.shape[1], 1), 'F')
+        labeled_segments = np.reshape(
+            labeled_segments,
+            (labeled_segments.shape[0], labeled_segments.shape[1], 1),
+            "F",
+        )
         matrix1 = np.repeat(labeled_segments, values.shape[2], 2)
         matrix2 = np.repeat(values, matrix1.shape[0], 0)
         matrix2 = np.repeat(matrix2, matrix1.shape[1], 1)
@@ -289,21 +345,23 @@ class Picker:
         segmentation[np.where(matrix4 == 1)] = 0
         labeled_segments, _ = ndimage.label(segmentation, np.ones((3, 3)))
 
-        max_val = np.amax(np.reshape(labeled_segments, (np.prod(labeled_segments.shape))))
+        max_val = np.amax(
+            np.reshape(labeled_segments, (np.prod(labeled_segments.shape)))
+        )
         center = center_of_mass(segmentation, labeled_segments, np.arange(1, max_val))
         center = np.rint(center)
 
         img = np.zeros((segmentation.shape[0], segmentation.shape[1]))
         img[center[:, 0].astype(int), center[:, 1].astype(int)] = 1
-        y, x = np.ogrid[-self.moa:self.moa+1, -self.moa:self.moa+1]
-        element = x*x+y*y <= self.moa * self.moa
+        y, x = np.ogrid[-self.moa : self.moa + 1, -self.moa : self.moa + 1]
+        element = x * x + y * y <= self.moa * self.moa
         img = binary_dilation(img, structure=element)
         labeled_img, _ = ndimage.label(img, np.ones((3, 3)))
         values, repeats = np.unique(labeled_img, return_counts=True)
         y = np.where(repeats == np.count_nonzero(element))
         y = np.array(y)
         y = y.astype(int)
-        y = np.reshape(y, (np.prod(y.shape)), 'F')
+        y = np.reshape(y, (np.prod(y.shape)), "F")
         y -= 1
         center = center[y, :]
 
@@ -324,10 +382,16 @@ class Picker:
             basename = os.path.basename(self.filename)
             name_str, ext = os.path.splitext(basename)
 
-            applepick_path = os.path.join(self.output_directory, "{}_applepick.star".format(name_str))
+            applepick_path = os.path.join(
+                self.output_directory, "{}_applepick.star".format(name_str)
+            )
             with open(applepick_path, "w") as f:
-                np.savetxt(f, ["data_root\n\nloop_\n_rlnCoordinateX #1\n_rlnCoordinateY #2"], fmt='%s')
-                np.savetxt(f, center, fmt='%d %d')
+                np.savetxt(
+                    f,
+                    ["data_root\n\nloop_\n_rlnCoordinateX #1\n_rlnCoordinateY #2"],
+                    fmt="%s",
+                )
+                np.savetxt(f, center, fmt="%d %d")
 
         return center
 
@@ -344,7 +408,7 @@ class Picker:
         particles = particle_windows.astype(int)
         non_noise = non_noise_windows.astype(int)
 
-        idx = np.argsort(-np.reshape(score, (np.prod(score.shape)), 'F'))
+        idx = np.argsort(-np.reshape(score, (np.prod(score.shape)), "F"))
         x, y = np.unravel_index(idx, score.shape)
         bw_mask_p = np.zeros((micro_img.shape[0], micro_img.shape[1]))
         qs = self.query_size // 2
@@ -355,10 +419,14 @@ class Picker:
         end_col_idx = np.minimum(begin_col_idx + self.query_size, bw_mask_p.shape[1])
 
         for j in range(particles):
-            bw_mask_p[begin_row_idx[j]:end_row_idx[j], begin_col_idx[j]:end_col_idx[j]] = 1
+            bw_mask_p[
+                begin_row_idx[j] : end_row_idx[j], begin_col_idx[j] : end_col_idx[j]
+            ] = 1
 
         bw_mask_n = np.copy(bw_mask_p)
         for j in range(particles, non_noise):
-            bw_mask_n[begin_row_idx[j]:end_row_idx[j], begin_col_idx[j]:end_col_idx[j]] = 1
+            bw_mask_n[
+                begin_row_idx[j] : end_row_idx[j], begin_col_idx[j] : end_col_idx[j]
+            ] = 1
 
         return bw_mask_p, bw_mask_n

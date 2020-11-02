@@ -23,6 +23,7 @@ class CLSyncVoting(CLOrient3D):
     Detecting Consistent Common Lines in Cryo-EM by Voting,
     Journal of Structural Biology, 169, 312-322 (2010).
     """
+
     def __init__(self, src, n_rad=None, n_theta=None):
         """
         Initialize an object for estimating 3D orientations using synchronization matrix
@@ -43,8 +44,8 @@ class CLSyncVoting(CLOrient3D):
 
         S = self.syncmatrix
         sz = S.shape
-        ensure(sz[0] == sz[1], 'syncmatrix must be a square matrix.')
-        ensure(sz[0] % 2 == 0, 'syncmatrix must be a square matrix of size 2Kx2K.')
+        ensure(sz[0] == sz[1], "syncmatrix must be a square matrix.")
+        ensure(sz[0] % 2 == 0, "syncmatrix must be a square matrix of size 2Kx2K.")
 
         n_img = sz[0] // 2
 
@@ -61,7 +62,9 @@ class CLSyncVoting(CLOrient3D):
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
         d, v = stable_eigsh(S, 10)
         sort_idx = np.argsort(-d)
-        logger.info(f'Top 10 eigenvalues from synchronization voting matrix: {d[sort_idx]}')
+        logger.info(
+            f"Top 10 eigenvalues from synchronization voting matrix: {d[sort_idx]}"
+        )
 
         # Only need the top 3 eigen-vectors.
         v = v[:, sort_idx[:3]]
@@ -69,8 +72,8 @@ class CLSyncVoting(CLOrient3D):
         # are a linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
         # column 1 of all rotation matrices. Similarly, the even rows of V,
         # denoted, V2, are linear combinations of R_{i}^{1}, i=1,...,K.
-        v1 = v[:2*n_img:2].T.copy()
-        v2 = v[1:2*n_img:2].T.copy()
+        v1 = v[: 2 * n_img : 2].T.copy()
+        v2 = v[1 : 2 * n_img : 2].T.copy()
 
         # We look for a linear transformation (3 x 3 matrix) A such that
         # A*V1'=R1 and A*V2=R2 are the columns of the rotations matrices.
@@ -82,7 +85,7 @@ class CLSyncVoting(CLOrient3D):
         # Actually, there are only 6 unknown variables, because A'*A is symmetric.
         # So we will truncate from 9 variables to 6 variables corresponding
         # to the upper half of the matrix A'*A
-        truncated_equations = np.zeros((3*n_img, 6))
+        truncated_equations = np.zeros((3 * n_img, 6))
         k = 0
         for i in range(3):
             for j in range(i, 3):
@@ -123,7 +126,7 @@ class CLSyncVoting(CLOrient3D):
         # Make sure that we got rotations by enforcing R to be
         # a rotation (in case the error is large)
         u, _, v = np.linalg.svd(rotations)
-        np.einsum('ijk, ikl -> ijl', u, v, out=rotations)
+        np.einsum("ijk, ikl -> ijl", u, v, out=rotations)
 
         self.rotations = rotations
 
@@ -141,7 +144,7 @@ class CLSyncVoting(CLOrient3D):
         sz = clmatrix.shape
         n_theta = self.n_theta
 
-        ensure(sz[0] == sz[1], 'clmatrix must be a square matrix.')
+        ensure(sz[0] == sz[1], "clmatrix must be a square matrix.")
 
         n_img = sz[0]
         S = np.eye(2 * n_img, dtype=self.dtype).reshape(n_img, 2, n_img, 2)
@@ -150,7 +153,8 @@ class CLSyncVoting(CLOrient3D):
         for i in range(n_img - 1):
             for j in range(i + 1, n_img):
                 rot_block = self._syncmatrix_ij_vote(
-                    clmatrix, i, j, np.arange(n_img), n_theta)
+                    clmatrix, i, j, np.arange(n_img), n_theta
+                )
                 S[i, :, j, :] = rot_block
                 S[j, :, i, :] = rot_block.T
 
@@ -220,9 +224,9 @@ class CLSyncVoting(CLOrient3D):
         # cl_diff1 is for the angle on C1 created by its intersection with C3 and C2.
         # cl_diff2 is for the angle on C2 created by its intersection with C1 and C3.
         # cl_diff3 is for the angle on C3 created by its intersection with C2 and C1.
-        cl_diff1 = clmatrix[i, good_k] - clmatrix[i, j]         # for theta1
-        cl_diff2 = clmatrix[j, good_k] - clmatrix[j, i]         # for - theta2
-        cl_diff3 = clmatrix[good_k, j] - clmatrix[good_k, i]    # for theta3
+        cl_diff1 = clmatrix[i, good_k] - clmatrix[i, j]  # for theta1
+        cl_diff2 = clmatrix[j, good_k] - clmatrix[j, i]  # for - theta2
+        cl_diff3 = clmatrix[good_k, j] - clmatrix[good_k, i]  # for theta3
 
         # Calculate the cos values of rotation angles between i an j images for good k images
         c_alpha, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
@@ -233,8 +237,8 @@ class CLSyncVoting(CLOrient3D):
         angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
         angles[:, 1] = alpha
         angles[:, 2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
-        r = Rotation.from_euler('ZXZ', angles).as_matrix()
-        
+        r = Rotation.from_euler("ZXZ", angles).as_matrix()
+
         return r[good_idx, :, :]
 
     def _vote_ij(self, clmatrix, n_theta, i, j, k_list):
@@ -269,7 +273,9 @@ class CLSyncVoting(CLOrient3D):
         #  as tested there.
         cl_idx12 = clmatrix[i, j]
         cl_idx21 = clmatrix[j, i]
-        k_list = k_list[(k_list != i) & (clmatrix[i, k_list] != -1) & (clmatrix[j, k_list] != -1)]
+        k_list = k_list[
+            (k_list != i) & (clmatrix[i, k_list] != -1) & (clmatrix[j, k_list] != -1)
+        ]
         cl_idx13 = clmatrix[i, k_list]
         cl_idx31 = clmatrix[k_list, i]
         cl_idx23 = clmatrix[j, k_list]
@@ -287,9 +293,11 @@ class CLSyncVoting(CLOrient3D):
         cos_phi2, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
 
         if np.any(np.abs(cos_phi2) - 1 > 1e-12):
-            logger.warning(f'Globally Consistent Angular Reconstruction (GCAR) exists'
-                            f' numerical problem: abs(cos_phi2) > 1, with the'
-                            f' difference of {np.abs(cos_phi2)-1}.')
+            logger.warning(
+                f"Globally Consistent Angular Reconstruction (GCAR) exists"
+                f" numerical problem: abs(cos_phi2) > 1, with the"
+                f" difference of {np.abs(cos_phi2)-1}."
+            )
         cos_phi2 = np.clip(cos_phi2, -1, 1)
 
         # Store angles between i and j induced by each third image k.
@@ -298,7 +306,7 @@ class CLSyncVoting(CLOrient3D):
         inds = k_list[good_idx]
 
         if phis.shape[0] == 0:
-                return []
+            return []
 
         # Parameters used to compute the smoothed angle histogram.
         ntics = 60
@@ -313,8 +321,13 @@ class CLSyncVoting(CLOrient3D):
 
         # Compute the histogram of the angles between images i and j
         squared_values = np.add.outer(np.square(angles), np.square(angles_grid))
-        angles_hist = np.sum(np.exp((2 * np.multiply.outer(angles, angles_grid)
-                                     - squared_values) / (2 * sigma ** 2)), 0)
+        angles_hist = np.sum(
+            np.exp(
+                (2 * np.multiply.outer(angles, angles_grid) - squared_values)
+                / (2 * sigma ** 2)
+            ),
+            0,
+        )
 
         # We assume that at the location of the peak we get the true angle
         # between images i and j. Find all third images k, that induce an
@@ -323,9 +336,9 @@ class CLSyncVoting(CLOrient3D):
         # tics, since the peak might move a little bit due to wrong k images
         # that accidentally fall near the peak.
         peak_idx = angles_hist.argmax()
-        idx = (np.abs(angles - angles_grid[peak_idx]) < 360 / ntics)
+        idx = np.abs(angles - angles_grid[peak_idx]) < 360 / ntics
         good_k = inds[idx]
-        return good_k.astype('int')
+        return good_k.astype("int")
 
     def _get_cos_phis(self, cl_diff1, cl_diff2, cl_diff3, n_theta):
         """
@@ -392,12 +405,11 @@ class CLSyncVoting(CLOrient3D):
         # from singular. This condition is equivalent to computing the singular
         # values of C, followed by checking that the smallest one is big enough.
 
-        cond = 1 + 2 * c1 * c2 * c3 - (
-                np.square(c1) + np.square(c2) + np.square(c3))
+        cond = 1 + 2 * c1 * c2 * c3 - (np.square(c1) + np.square(c2) + np.square(c3))
         good_idx = np.nonzero(cond > 1e-5)[0]
 
         # Calculated cos values of angle between i and j images
-        cos_phi2 = (c3[good_idx] - c1[good_idx] *
-                    c2[good_idx]) / (np.sin(theta1[good_idx])
-                                     * np.sin(theta2[good_idx]))
+        cos_phi2 = (c3[good_idx] - c1[good_idx] * c2[good_idx]) / (
+            np.sin(theta1[good_idx]) * np.sin(theta2[good_idx])
+        )
         return cos_phi2, good_idx

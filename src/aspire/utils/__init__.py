@@ -42,15 +42,23 @@ def get_full_version():
         if os.path.isdir(path):
             # We have a package folder where we can get git information
             try:
-                rev = subprocess.check_output(['git', 'describe', '--tags', '--always', '--dirty'], stderr=subprocess.STDOUT, cwd=path).decode('utf-8').strip()
+                rev = (
+                    subprocess.check_output(
+                        ["git", "describe", "--tags", "--always", "--dirty"],
+                        stderr=subprocess.STDOUT,
+                        cwd=path,
+                    )
+                    .decode("utf-8")
+                    .strip()
+                )
             except (FileNotFoundError, subprocess.CalledProcessError):
                 # no git or not a git repo? assume 'src'
-                rev = 'src'
+                rev = "src"
     except:  # nopep8
         # Something unexpected happened - rev number defaults to 'x'
-        rev = 'x'
+        rev = "x"
 
     if rev is not None:
-        full_version += f'.{rev}'
+        full_version += f".{rev}"
 
     return full_version

@@ -17,4 +17,4 @@ if __name__ == "__main__":
         for command in commands:
             main.add_command(command)
 
-    main.main(prog_name='aspire')
+    main.main(prog_name="aspire")

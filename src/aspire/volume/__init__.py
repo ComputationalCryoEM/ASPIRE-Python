@@ -17,6 +17,7 @@ class Volume:
     """
     Volume is an N x L x L x L array, along with associated utility methods.
     """
+
     def __init__(self, data):
         """
         Create a volume initialized with data.
@@ -32,12 +33,15 @@ class Volume:
         if data.ndim == 3:
             data = data[np.newaxis, :, :, :]
 
-        ensure(data.ndim == 4,
-               'Volume data should be ndarray with shape NxLxLxL'
-               ' or LxLxL.')
+        ensure(
+            data.ndim == 4,
+            "Volume data should be ndarray with shape NxLxLxL" " or LxLxL.",
+        )
 
-        ensure(data.shape[1] == data.shape[2] == data.shape[3],
-               'Only cubed ndarrays are supported.')
+        ensure(
+            data.shape[1] == data.shape[2] == data.shape[3],
+            "Only cubed ndarrays are supported.",
+        )
 
         self._data = data
         self.n_vols = self._data.shape[0]
@@ -56,7 +60,7 @@ class Volume:
 
     def __getitem__(self, item):
         # this is one reason why you might want Volume and VolumeStack classes...
-        #return Volume(self._data[item])
+        # return Volume(self._data[item])
         return self._data[item]
 
     def __setitem__(self, key, value):
@@ -101,19 +105,20 @@ class Volume:
     def project(self, vol_idx, rot_matrices):
         if rot_matrices.dtype != self.dtype:
             logger.warning(
-                f'{self.__class__.__name__}'
-                f' rot_matrices.dtype {rot_matrices.dtype}'
-                f' != self.dtype {self.dtype}.'
-                ' In the future this will raise an error.')
+                f"{self.__class__.__name__}"
+                f" rot_matrices.dtype {rot_matrices.dtype}"
+                f" != self.dtype {self.dtype}."
+                " In the future this will raise an error."
+            )
 
-        data = self[vol_idx].T  #RCOPT
+        data = self[vol_idx].T  # RCOPT
 
         n = rot_matrices.shape[0]
 
         pts_rot = np.moveaxis(rotated_grids(self.resolution, rot_matrices), 1, 2)
 
         ## TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = m_reshape(pts_rot, (3, self.resolution**2*n))
+        pts_rot = m_reshape(pts_rot, (3, self.resolution ** 2 * n))
 
         im_f = nufft(data, pts_rot) / self.resolution
 
@@ -129,7 +134,7 @@ class Volume:
 
     def to_vec(self):
         """ Returns an N x resolution ** 3 array."""
-        return self._data.reshape((self.n_vols, self.resolution**3))
+        return self._data.reshape((self.n_vols, self.resolution ** 3))
 
     @staticmethod
     def from_vec(vec):
@@ -140,12 +145,12 @@ class Volume:
         :return: Volume instance.
         """
 
-        if vec.ndim ==1:
+        if vec.ndim == 1:
             vec = vec[np.newaxis, :]
 
         n_vols = vec.shape[0]
 
-        resolution = round(vec.shape[1] ** (1/3))
+        resolution = round(vec.shape[1] ** (1 / 3))
         assert resolution ** 3 == vec.shape[1]
 
         data = vec.reshape((n_vols, resolution, resolution, resolution))
@@ -160,7 +165,7 @@ class Volume:
         """
 
         vol_t = np.empty_like(self._data)
-        for n,v in enumerate(self._data):
+        for n, v in enumerate(self._data):
             vol_t[n] = v.T
 
         return Volume(vol_t)
@@ -198,7 +203,7 @@ class Volume:
 
     def downsample(self, szout, mask=None):
         if isinstance(szout, int):
-            szout = (szout,)*3
+            szout = (szout,) * 3
 
         return Volume(downsample(self._data, szout, mask))
 
@@ -241,6 +246,7 @@ class FBBasisVolume(BasisVolume):
 
 # TODO: The following functions likely all need to be moved inside the Volume class
 
+
 def rotated_grids(L, rot_matrices):
     """
     Generate rotated Fourier grids in 3D from rotation matrices
@@ -251,11 +257,15 @@ def rotated_grids(L, rot_matrices):
     """
     # TODO: Flattening and reshaping at end may not be necessary!
     grid2d = grid_2d(L, dtype=rot_matrices.dtype)
-    num_pts = L**2
+    num_pts = L ** 2
     num_rots = rot_matrices.shape[0]
-    pts = np.pi * np.vstack([grid2d['x'].flatten('F'),
-                             grid2d['y'].flatten('F'),
-                             np.zeros(num_pts, dtype=rot_matrices.dtype)])
+    pts = np.pi * np.vstack(
+        [
+            grid2d["x"].flatten("F"),
+            grid2d["y"].flatten("F"),
+            np.zeros(num_pts, dtype=rot_matrices.dtype),
+        ]
+    )
     pts_rot = np.zeros((3, num_pts, num_rots), dtype=rot_matrices.dtype)
     for i in range(num_rots):
         pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts

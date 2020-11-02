@@ -17,9 +17,14 @@ from aspire.nufft import anufft
 from aspire.utils import ensure
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.matrix import (make_symmat, symmat_to_vec_iso,
-                                 vec_to_symmat_iso, vecmat_to_volmat,
-                                 vol_to_vec, volmat_to_vecmat)
+from aspire.utils.matrix import (
+    make_symmat,
+    symmat_to_vec_iso,
+    vec_to_symmat_iso,
+    vecmat_to_volmat,
+    vol_to_vec,
+    volmat_to_vecmat,
+)
 from aspire.volume import Volume, rotated_grids
 
 logger = logging.getLogger(__name__)
@@ -27,14 +32,14 @@ logger = logging.getLogger(__name__)
 
 class CovarianceEstimator(Estimator):
     def __init__(self, *args, **kwargs):
-        if 'mean_kernel' in kwargs:
-            self.mean_kernel = kwargs.pop('mean_kernel')
+        if "mean_kernel" in kwargs:
+            self.mean_kernel = kwargs.pop("mean_kernel")
         super().__init__(*args, **kwargs)
 
     def __getattr__(self, name):
         """Lazy attributes instantiated on first-access"""
 
-        if name == 'mean_kernel':
+        if name == "mean_kernel":
             mean_kernel = self.mean_kernel = MeanEstimator(self.src, self.basis).kernel
             return mean_kernel
         return super(CovarianceEstimator, self).__getattr__(name)
@@ -59,8 +64,8 @@ class CovarianceEstimator(Estimator):
                 weights[:, 0, :] = 0
 
             # TODO: This is where this differs from MeanEstimator
-            pts_rot = np.moveaxis(pts_rot, -1, 0).reshape(-1, 3, L**2)
-            weights = weights.T.reshape((-1, L**2))
+            pts_rot = np.moveaxis(pts_rot, -1, 0).reshape(-1, 3, L ** 2)
+            weights = weights.T.reshape((-1, L ** 2))
 
             batch_n = weights.shape[0]
             factors = np.zeros((batch_n, _2L, _2L, _2L), dtype=self.dtype)
@@ -69,7 +74,7 @@ class CovarianceEstimator(Estimator):
                 factors[j] = anufft(weights[j], pts_rot[j], (_2L, _2L, _2L), real=True)
 
             factors = Volume(factors).to_vec()
-            kernel += vecmat_to_volmat(factors.T @ factors) / (n * L**8)
+            kernel += vecmat_to_volmat(factors.T @ factors) / (n * L ** 8)
 
         # Ensure symmetric kernel
         kernel[0, :, :, :, :, :] = 0
@@ -79,7 +84,7 @@ class CovarianceEstimator(Estimator):
         kernel[:, :, :, :, 0, :] = 0
         kernel[:, :, :, :, :, 0] = 0
 
-        logger.info('Computing non-centered Fourier Transform')
+        logger.info("Computing non-centered Fourier Transform")
         kernel = mdim_ifftshift(kernel, range(0, 6))
         kernel_f = fftn(kernel)
         # Kernel is always symmetric in spatial domain and therefore real in Fourier
@@ -88,15 +93,11 @@ class CovarianceEstimator(Estimator):
         return FourierKernel(kernel_f, centered=False)
 
     def estimate(self, mean_vol, noise_variance, tol=None):
-        logger.info('Running Covariance Estimator')
+        logger.info("Running Covariance Estimator")
         b_coeff = self.src_backward(mean_vol, noise_variance)
         est_coeff = self.conj_grad(b_coeff, tol=tol)
         covar_est = self.basis.mat_evaluate(est_coeff)
-        covar_est = vecmat_to_volmat(
-            make_symmat(
-                volmat_to_vecmat(covar_est)
-            )
-        )
+        covar_est = vecmat_to_volmat(make_symmat(volmat_to_vecmat(covar_est)))
         return covar_est
 
     def conj_grad(self, b_coeff, tol=None):
@@ -111,7 +112,8 @@ class CovarianceEstimator(Estimator):
         operator = LinearOperator(
             (N, N),
             matvec=partial(self.apply_kernel, kernel=kernel, packed=True),
-            dtype=self.dtype)
+            dtype=self.dtype,
+        )
         if self.precond_kernel is None:
             M = None
         else:
@@ -121,18 +123,23 @@ class CovarianceEstimator(Estimator):
             M = LinearOperator(
                 (N, N),
                 matvec=partial(self.apply_kernel, kernel=precond_kernel, packed=True),
-                dtype=self.dtype)
+                dtype=self.dtype,
+            )
 
         tol = tol or config.covar.cg_tol
         target_residual = tol * norm(b_coeff)
 
         def cb(xk):
-            logger.info(f'Delta {norm(b_coeff - self.apply_kernel(xk, packed=True))} (target {target_residual})')
+            logger.info(
+                f"Delta {norm(b_coeff - self.apply_kernel(xk, packed=True))} (target {target_residual})"
+            )
 
-        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol, atol=0)
+        x, info = scipy.sparse.linalg.cg(
+            operator, b_coeff, M=M, callback=cb, tol=tol, atol=0
+        )
 
         if info != 0:
-            raise RuntimeError('Unable to converge!')
+            raise RuntimeError("Unable to converge!")
         return vec_to_symmat_iso(x)
 
     def apply_kernel(self, coeff, kernel=None, packed=False):
@@ -153,9 +160,7 @@ class CovarianceEstimator(Estimator):
             coeff = vec_to_symmat_iso(coeff)
 
         result = self.basis.mat_evaluate_t(
-            kernel.convolve_volume_matrix(
-                self.basis.mat_evaluate(coeff)
-            )
+            kernel.convolve_volume_matrix(self.basis.mat_evaluate(coeff))
         )
         return symmat_to_vec_iso(result) if packed else result
 
@@ -166,16 +171,20 @@ class CovarianceEstimator(Estimator):
         :return: The sum of the outer products of the mean-subtracted images in `src`, corrected by the expected noise
         contribution and expressed as coefficients of `basis`.
         """
-        covar_b = np.zeros((self.L, self.L, self.L, self.L, self.L, self.L), dtype=self.dtype)
+        covar_b = np.zeros(
+            (self.L, self.L, self.L, self.L, self.L, self.L), dtype=self.dtype
+        )
 
         for i in range(0, self.n, self.batch_size):
             im = self.src.images(i, self.batch_size)
             batch_n = im.n_images
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 
-            im_centered_b = np.zeros((batch_n, self.L, self.L, self.L), dtype=self.dtype)
+            im_centered_b = np.zeros(
+                (batch_n, self.L, self.L, self.L), dtype=self.dtype
+            )
             for j in range(batch_n):
-                im_centered_b[j] = self.src.im_backward(Image(im_centered[j]), i+j)
+                im_centered_b[j] = self.src.im_backward(Image(im_centered[j]), i + j)
             im_centered_b = Volume(im_centered_b).to_vec()
 
             covar_b += vecmat_to_volmat(im_centered_b.T @ im_centered_b) / self.n
@@ -191,12 +200,15 @@ class CovarianceEstimator(Estimator):
         :param method: One of None/'frobenius_norm'/'operator_norm'/'soft_threshold'
         :return: Shrunk covariance matrix
         """
-        ensure(method in (None, 'frobenius_norm', 'operator_norm', 'soft_threshold'), 'Unsupported shrink method')
+        ensure(
+            method in (None, "frobenius_norm", "operator_norm", "soft_threshold"),
+            "Unsupported shrink method",
+        )
 
         An = self.basis.mat_evaluate_t(self.mean_kernel.toeplitz())
         if method is None:
             covar_b_coeff -= noise_variance * An
         else:
-            raise NotImplementedError('Only default shrink method supported.')
+            raise NotImplementedError("Only default shrink method supported.")
 
         return covar_b_coeff

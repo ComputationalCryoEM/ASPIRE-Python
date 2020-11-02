@@ -16,6 +16,7 @@ class Basis:
     Define a base class for expanding 2D particle images and 3D structure volumes
 
     """
+
     def __init__(self, size, ell_max=None, dtype=np.float32):
         """
         Initialize an object for the base of basis class
@@ -40,7 +41,8 @@ class Basis:
         self.dtype = np.dtype(dtype)
         if self.dtype not in (np.float32, np.float64):
             raise NotImplementedError(
-                "Currently only implemented for float32 and float64 types")
+                "Currently only implemented for float32 and float64 types"
+            )
 
         self._build()
 
@@ -58,7 +60,9 @@ class Basis:
 
         # generate zeros of Bessel functions for each ell
         for ell in range(upper_bound):
-            _n, _zeros = num_besselj_zeros(ell + (self.ndim - 2) / 2, self.nres * np.pi / 2)
+            _n, _zeros = num_besselj_zeros(
+                ell + (self.ndim - 2) / 2, self.nres * np.pi / 2
+            )
             if _n == 0:
                 break
             else:
@@ -73,8 +77,9 @@ class Basis:
 
         max_num_zeros = max(len(z) for z in zeros)
         for i, z in enumerate(zeros):
-            zeros[i] = np.hstack((z, np.zeros(max_num_zeros - len(z),
-                                              dtype=self.dtype)))
+            zeros[i] = np.hstack(
+                (z, np.zeros(max_num_zeros - len(z), dtype=self.dtype))
+            )
 
         self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1))
 
@@ -82,25 +87,25 @@ class Basis:
         """
         Build the internal data structure to represent basis
         """
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def indices(self):
         """
         Create the indices for each basis function
         """
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def _precomp(self):
         """
         Precompute the basis functions at defined sample points
         """
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def norms(self):
         """
         Calculate the normalized factors of basis functions
         """
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def evaluate(self, v):
         """
@@ -112,7 +117,7 @@ class Basis:
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def evaluate_t(self, v):
         """
@@ -125,7 +130,7 @@ class Basis:
             This is an array of vectors whose first dimension equals `self.count`
             and whose remaining dimensions correspond to higher dimensions of `v`.
         """
-        raise NotImplementedError('Subclasses should implement this')
+        raise NotImplementedError("Subclasses should implement this")
 
     def mat_evaluate(self, V):
         """
@@ -171,21 +176,24 @@ class Basis:
 
         """
         # ensure the first dimensions with size of self.sz
-        sz_roll = x.shape[:-self.ndim]
+        sz_roll = x.shape[: -self.ndim]
 
         x = x.reshape((-1, *self.sz))
 
-        ensure(x.shape[-self.ndim:] == self.sz,
-               f'Last {self.ndim} dimensions of x must match {self.sz}.')
+        ensure(
+            x.shape[-self.ndim :] == self.sz,
+            f"Last {self.ndim} dimensions of x must match {self.sz}.",
+        )
 
         operator = LinearOperator(
             shape=(self.count, self.count),
             matvec=lambda v: self.evaluate_t(self.evaluate(v)),
-            dtype=self.dtype)
+            dtype=self.dtype,
+        )
 
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
-        tol = 10*np.finfo(x.dtype).eps
-        logger.info('Expanding array in basis')
+        tol = 10 * np.finfo(x.dtype).eps
+        logger.info("Expanding array in basis")
 
         # number of image samples
         n_data = x.shape[0]
@@ -196,7 +204,7 @@ class Basis:
             # TODO: need check the initial condition x0 can improve the results or not.
             v[isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
-                raise RuntimeError('Unable to converge!')
+                raise RuntimeError("Unable to converge!")
 
         # return v coefficients with the last dimension of self.count
         v = v.reshape((-1, *sz_roll))

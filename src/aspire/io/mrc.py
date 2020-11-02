@@ -11,9 +11,9 @@ class MrcStats:
 
         self.amin = np.inf
         self.amax = -np.inf
-        self.asum = 0.
+        self.asum = 0.0
         self.asize = 0
-        self.asum2 = 0.
+        self.asum2 = 0.0
 
     def push(self, array_slice):
         """

@@ -47,7 +47,7 @@ def randi(i_max, size, seed=None):
     :return: A np array
     """
     with Random(seed):
-        return np.ceil(i_max * np.random.random(size=size)).astype('int')
+        return np.ceil(i_max * np.random.random(size=size)).astype("int")
 
 
 def randn(*args, **kwargs):
@@ -55,8 +55,8 @@ def randn(*args, **kwargs):
     Calls rand and applies inverse transform sampling to the output.
     """
     seed = None
-    if 'seed' in kwargs:
-        seed = kwargs.pop('seed')
+    if "seed" in kwargs:
+        seed = kwargs.pop("seed")
 
     with Random(seed):
         uniform = np.random.rand(*args, **kwargs)
@@ -76,6 +76,7 @@ class Random:
     A context manager that pushes a random seed to the stack for reproducible results,
     and pops it on exit.
     """
+
     def __init__(self, seed=None):
         self.seed = seed
 

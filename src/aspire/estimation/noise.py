@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: Implement correct hierarchy and DRY
 
+
 class NoiseEstimator:
     """
     Noise Estimator base class.
@@ -37,8 +38,7 @@ class NoiseEstimator:
         """
         :return: The estimated noise variance of the images.
         """
-        raise NotImplementedError(
-            'Subclasses implement the `estimate` method.')
+        raise NotImplementedError("Subclasses implement the `estimate` method.")
 
 
 class WhiteNoiseEstimator(NoiseEstimator):
@@ -58,9 +58,9 @@ class WhiteNoiseEstimator(NoiseEstimator):
         :return: The estimated noise power spectral distribution (PSD) of the images in the form of a filter object.
         """
         if noise_variance is None:
-            logger.info(f'Determining Noise variance in batches of {self.batchSize}')
+            logger.info(f"Determining Noise variance in batches of {self.batchSize}")
             noise_variance = self._estimate_noise_variance()
-            logger.info(f'Noise variance = {noise_variance}')
+            logger.info(f"Noise variance = {noise_variance}")
         return ScalarFilter(dim=2, value=noise_variance)
 
     def _estimate_noise_variance(self):
@@ -71,7 +71,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         """
         # Run estimate using saved parameters
         g2d = grid_2d(self.L, dtype=self.dtype)
-        mask = g2d['r'] >= self.bgRadius
+        mask = g2d["r"] >= self.bgRadius
 
         first_moment = 0
         second_moment = 0
@@ -81,8 +81,8 @@ class WhiteNoiseEstimator(NoiseEstimator):
 
             _denominator = self.n * np.sum(mask)
             first_moment += np.sum(images_masked) / _denominator
-            second_moment += np.sum(np.abs(images_masked**2)) / _denominator
-        return second_moment - first_moment**2
+            second_moment += np.sum(np.abs(images_masked ** 2)) / _denominator
+        return second_moment - first_moment ** 2
 
 
 class AnisotropicNoiseEstimator(NoiseEstimator):
@@ -112,7 +112,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         """
         # Run estimate using saved parameters
         g2d = grid_2d(self.L)
-        mask = g2d['r'] >= self.bgRadius
+        mask = g2d["r"] >= self.bgRadius
 
         mean_est = 0
         noise_psd_est = np.zeros((self.L, self.L)).astype(self.src.dtype)
@@ -123,9 +123,9 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
             _denominator = self.n * np.sum(mask)
             mean_est += np.sum(images_masked) / _denominator
             im_masked_f = centered_fft2(images_masked)
-            noise_psd_est += np.sum(np.abs(im_masked_f**2), axis=0) / _denominator
+            noise_psd_est += np.sum(np.abs(im_masked_f ** 2), axis=0) / _denominator
 
         mid = self.L // 2
-        noise_psd_est[mid, mid] -= mean_est**2
+        noise_psd_est[mid, mid] -= mean_est ** 2
 
         return noise_psd_est

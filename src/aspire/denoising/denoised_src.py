@@ -24,7 +24,7 @@ class DenoisedImageSource(ImageSource):
         :param denoiser: A Denoiser object for specifying a method for denoising
         """
 
-        super().__init__(src.L, src. n, dtype=src.dtype, metadata=src._metadata.copy())
+        super().__init__(src.L, src.n, dtype=src.dtype, metadata=src._metadata.copy())
         self._im = None
         self.denoiser = denoiser
 
@@ -45,7 +45,7 @@ class DenoisedImageSource(ImageSource):
 
         im = np.empty((self.L, self.L, len(indices)))
 
-        logger.info(f'Loading {len(indices)} images complete')
+        logger.info(f"Loading {len(indices)} images complete")
         for istart in range(start, end, batch_size):
             imgs_denoised = self.denoiser.images(istart, batch_size)
             im = imgs_denoised.data

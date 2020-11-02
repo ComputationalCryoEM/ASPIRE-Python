@@ -26,12 +26,15 @@ class FFBBasis2D(FBBasis2D):
     IEEE Transactions on Computational Imaging, 2 (1), pp. 1-12 (2016).​
 
     """
+
     def _build(self):
         """
         Build the internal data structure to 2D Fourier-Bessel basis
         """
-        logger.info('Expanding 2D image in a frequency-domain Fourier–Bessel'
-                    ' basis using the fast method.')
+        logger.info(
+            "Expanding 2D image in a frequency-domain Fourier–Bessel"
+            " basis using the fast method."
+        )
 
         # set cutoff values
         self.rcut = self.nres / 2
@@ -81,25 +84,22 @@ class FFBBasis2D(FBBasis2D):
 
         # Only calculate "positive" frequencies in one half-plane.
         freqs_x = m_reshape(r, (n_r, 1)) @ m_reshape(
-            np.cos(np.arange(n_theta, dtype=self.dtype) *
-                   2 * pi / (2 * n_theta)), (1, n_theta))
+            np.cos(np.arange(n_theta, dtype=self.dtype) * 2 * pi / (2 * n_theta)),
+            (1, n_theta),
+        )
         freqs_y = m_reshape(r, (n_r, 1)) @ m_reshape(
-            np.sin(np.arange(n_theta, dtype=self.dtype) *
-                   2 * pi / (2 * n_theta)), (1, n_theta))
+            np.sin(np.arange(n_theta, dtype=self.dtype) * 2 * pi / (2 * n_theta)),
+            (1, n_theta),
+        )
         freqs = np.vstack((freqs_x[np.newaxis, ...], freqs_y[np.newaxis, ...]))
 
-        return {
-            'gl_nodes': r,
-            'gl_weights': w,
-            'radial': radial,
-            'freqs': freqs
-        }
+        return {"gl_nodes": r, "gl_weights": w, "radial": radial, "freqs": freqs}
 
     def get_radial(self):
         """
         Return precomputed radial part
         """
-        return self._precomp['radial']
+        return self._precomp["radial"]
 
     def evaluate(self, v):
         """
@@ -114,8 +114,9 @@ class FFBBasis2D(FBBasis2D):
 
         if v.dtype != self.dtype:
             logger.debug(
-                f'{self.__class__.__name__}::evaluate'
-                f' Inconsistent dtypes v: {v.dtype} self: {self.dtype}')
+                f"{self.__class__.__name__}::evaluate"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
 
         sz_roll = v.shape[:-1]
         v = v.reshape(-1, self.count)
@@ -128,8 +129,7 @@ class FFBBasis2D(FBBasis2D):
         n_r = np.size(self._precomp["freqs"], 1)
 
         # go through  each basis function and find corresponding coefficient
-        pf = np.zeros((n_data, 2 * n_theta, n_r),
-                      dtype=complex_type(self.dtype))
+        pf = np.zeros((n_data, 2 * n_theta, n_r), dtype=complex_type(self.dtype))
         mask = self._indices["ells"] == 0
 
         ind = 0
@@ -173,7 +173,8 @@ class FFBBasis2D(FBBasis2D):
 
         for i_r in range(0, n_r):
             pf[..., i_r] = pf[..., i_r] * (
-                    self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
+                self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r]
+            )
 
         pf = np.reshape(pf, (n_data, n_r * n_theta))
 
@@ -200,12 +201,15 @@ class FFBBasis2D(FBBasis2D):
 
         if x.dtype != self.dtype:
             logger.warning(
-                f'{self.__class__.__name__}::evaluate_t'
-                f' Inconsistent dtypes v: {x.dtype} self: {self.dtype}')
+                f"{self.__class__.__name__}::evaluate_t"
+                f" Inconsistent dtypes v: {x.dtype} self: {self.dtype}"
+            )
 
         if not isinstance(x, Image):
-            logger.warning(f'{self.__class__.__name__}::evaluate_t'
-                           ' passed numpy array instead of Image.')
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate_t"
+                " passed numpy array instead of Image."
+            )
             x = Image(x)
 
         # get information on polar grids from precomputed data
@@ -227,10 +231,11 @@ class FFBBasis2D(FBBasis2D):
         # evaluate radial integral using the Gauss-Legendre quadrature rule
         for i_r in range(0, n_r):
             pf[:, i_r, :] = pf[:, i_r, :] * (
-                    self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
+                self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r]
+            )
 
         #  1D FFT on the angular dimension for each concentric circle
-        pf = 2 * pi / (2 * n_theta) * fft(pf, 2*n_theta, 2)
+        pf = 2 * pi / (2 * n_theta) * fft(pf, 2 * n_theta, 2)
 
         # This only makes it easier to slice the array later.
         v = np.zeros((n_images, self.count), dtype=x.dtype)

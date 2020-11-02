@@ -7,17 +7,17 @@ from scipy.spatial.transform import Rotation
 from aspire.utils.misc import powerset
 from aspire.volume import Volume
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
+DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class VolumeTestCase(TestCase):
-
     def setUp(self):
         self.dtype = np.float32
         self.n = n = 3
         self.res = res = 42
         self.data_1 = np.arange(n * res ** 3, dtype=self.dtype).reshape(
-            n, res, res, res)
+            n, res, res, res
+        )
         self.data_2 = 123 * self.data_1.copy()
         self.vols_1 = Volume(self.data_1)
         self.vols_2 = Volume(self.data_2)
@@ -96,7 +96,7 @@ class VolumeTestCase(TestCase):
     def testProject(self):
         # Create a stack of rotations to test.
         r_stack = np.empty((12, 3, 3), dtype=self.dtype)
-        for r, ax in enumerate(['x', 'y', 'z']):
+        for r, ax in enumerate(["x", "y", "z"]):
             r_stack[r] = Rotation.from_euler(ax, 0).as_matrix()
             # We'll consider the multiples of pi/2.
             r_stack[r + 3] = Rotation.from_euler(ax, np.pi / 2).as_matrix()
@@ -178,11 +178,9 @@ class VolumeTestCase(TestCase):
 
     def testDownsample(self):
         # Data files re-used from test_preprocess
-        vols = Volume(
-            np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol.npy')))
+        vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
 
-        resv = Volume(
-            np.load(os.path.join(DATA_DIR, 'clean70SRibosome_vol_down8.npy')))
+        resv = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
 
         result = vols.downsample((8, 8, 8))
         self.assertTrue(np.allclose(result, resv))
