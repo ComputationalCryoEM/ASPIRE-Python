@@ -1,5 +1,4 @@
 import logging
-from copy import copy
 
 import numpy as np
 import pandas as pd
@@ -8,21 +7,15 @@ from scipy.spatial.transform import Rotation as R
 from aspire.image import Image, normalize_bg
 from aspire.io.starfile import save_star
 from aspire.source.xform import (
-    Add,
     Downsample,
     FilterXform,
-    IndexedXform,
     LambdaXform,
-    LinearIndexedXform,
-    LinearPipeline,
     Multiply,
     Pipeline,
-    Shift,
 )
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filters import LambdaFilter, MultiplicativeFilter, PowerFilter
-from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,3 @@
-import os
-from collections import OrderedDict
 from unittest import TestCase
 
 import numpy as np

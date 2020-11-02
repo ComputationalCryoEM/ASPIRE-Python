@@ -3,7 +3,6 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.image import Image
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 

@@ -4,7 +4,7 @@ import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
-from aspire.utils.filters import LambdaFilter, PowerFilter, ZeroFilter
+from aspire.utils.filters import PowerFilter, ZeroFilter
 from aspire.utils.matlab_compat import randn
 
 logger = logging.getLogger(__name__)

@@ -62,7 +62,7 @@ def check_backends(raise_errors=True):
 
         elif backend == "finufft":
             try:
-                from finufftpy import nufft1d1
+                from finufftpy import nufft1d1    # noqa: F401
 
                 from aspire.nufft.finufft import FinufftPlan
 
@@ -72,7 +72,7 @@ def check_backends(raise_errors=True):
 
         elif backend == "pynfft":
             try:
-                from pynfft.nfft import NFFT
+                from pynfft.nfft import NFFT    # noqa: F401
 
                 from aspire.nufft.pynfft import PyNfftPlan
 

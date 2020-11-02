@@ -7,7 +7,6 @@ from aspire.basis.basis_utils import lgwt, norm_assoc_legendre, sph_bessel
 from aspire.basis.fb_3d import FBBasis3D
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.utils.matrix import roll_dim, unroll_dim
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,6 @@ from aspire import config
 from aspire.basis.polar_2d import PolarBasis2D
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import common_line_from_rots
-from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,6 @@ block diagonal matrices as used by ASPIRE.
 import numpy as np
 from numpy.linalg import norm, solve
 from scipy.linalg import block_diag
-from scipy.special import jv
 
 from aspire.basis.basis_utils import lgwt
 from aspire.basis.ffb_2d import FFBBasis2D

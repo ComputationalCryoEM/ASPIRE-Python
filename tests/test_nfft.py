@@ -1,9 +1,7 @@
 import os.path
-from unittest import TestCase, skipUnless
 from unittest.case import SkipTest
 
 import numpy as np
-import pytest
 
 from aspire.nufft import Plan, backend_available
 from aspire.utils.types import complex_type

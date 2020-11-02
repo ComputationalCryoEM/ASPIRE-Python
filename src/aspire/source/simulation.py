@@ -16,7 +16,6 @@ from aspire.utils.matrix import (
     anorm,
     make_symmat,
     vecmat_to_volmat,
-    vol_to_vec,
 )
 from aspire.volume import Volume
 

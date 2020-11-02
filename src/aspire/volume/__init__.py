@@ -6,7 +6,7 @@ import aspire.image
 from aspire.nufft import nufft
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.fft import centered_fft2, centered_ifft2
+from aspire.utils.fft import centered_ifft2
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.preprocess import downsample
 
