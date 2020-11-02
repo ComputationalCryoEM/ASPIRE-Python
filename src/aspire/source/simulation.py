@@ -10,13 +10,7 @@ from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.filters import ZeroFilter
 from aspire.utils.matlab_compat import Random, rand, randi, randn
-from aspire.utils.matrix import (
-    acorr,
-    ainner,
-    anorm,
-    make_symmat,
-    vecmat_to_volmat,
-)
+from aspire.utils.matrix import acorr, ainner, anorm, make_symmat, vecmat_to_volmat
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
