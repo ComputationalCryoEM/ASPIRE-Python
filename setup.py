@@ -45,7 +45,7 @@ setup(
     #   or developer tools that are handy but not required for users.
     extras_require = {
         'gpu': ['pycuda', 'cupy', 'cufinufft>=1.0'],
-        'dev': ['bumpversion', 'flake8', 'isort', 'pyflakes', 'pydocstyle',
+        'dev': ['black', 'bumpversion', 'flake8', 'isort', 'pyflakes', 'pydocstyle',
                 'pytest-random-order', 'snakeviz'],
     },
 
