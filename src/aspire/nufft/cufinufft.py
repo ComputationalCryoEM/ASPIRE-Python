@@ -1,9 +1,9 @@
 import logging
 
 import numpy as np
-import pycuda.autoinit    # noqa: F401
-import pycuda.driver as cuda    # noqa: F401
-import pycuda.gpuarray as gpuarray    # noqa: F401
+import pycuda.autoinit  # noqa: F401
+import pycuda.driver as cuda  # noqa: F401
+import pycuda.gpuarray as gpuarray  # noqa: F401
 from cufinufft import cufinufft
 
 from aspire.nufft import Plan
