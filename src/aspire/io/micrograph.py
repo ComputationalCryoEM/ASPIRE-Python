@@ -38,20 +38,20 @@ class Micrograph:
 
     def _init_margins(self, margin):
         if margin is None:
-            t = r = b = l = None
+            t = r = b = left = None
         elif isinstance(margin, (tuple, list)):
             ensure(
                 len(margin) == 4,
                 "If specifying margins a a tuple/list, specify the top/right/bottom/left margins.",
             )
-            t, r, b, l = margin
+            t, r, b, left = margin
         else:  # assume scalar
-            t = r = b = l = int(margin)
+            t = r = b = left = int(margin)
         self.margin_top, self.margin_right, self.margin_bottom, self.margin_left = (
             t,
             r,
             b,
-            l,
+            left,
         )
 
     def _read(self):
