@@ -314,7 +314,7 @@ class Image:
             "Number of rotation matrices must match the number of images",
         )
 
-        ## TODO: rotated_grids might as well give us correctly shaped array in the first place
+        # TODO: rotated_grids might as well give us correctly shaped array in the first place
         pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
         pts_rot = np.moveaxis(pts_rot, 1, 2)
         pts_rot = m_reshape(pts_rot, (3, -1))

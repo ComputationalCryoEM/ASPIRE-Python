@@ -9,6 +9,7 @@ from aspire.io.starfile import save_star
 from aspire.source.xform import (
     Downsample,
     FilterXform,
+    IndexedXform,
     LambdaXform,
     Multiply,
     Pipeline,

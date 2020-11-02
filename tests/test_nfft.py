@@ -1,4 +1,5 @@
 import os.path
+from unittest import TestCase
 from unittest.case import SkipTest
 
 import numpy as np

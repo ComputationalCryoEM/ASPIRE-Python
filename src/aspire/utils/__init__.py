@@ -54,7 +54,7 @@ def get_full_version():
             except (FileNotFoundError, subprocess.CalledProcessError):
                 # no git or not a git repo? assume 'src'
                 rev = "src"
-    except:  # nopep8
+    except:  # nopep8  # noqa: E722
         # Something unexpected happened - rev number defaults to 'x'
         rev = "x"
 
