@@ -372,7 +372,6 @@ class FPSWFBasis2D(PSWFBasis2D):
         Perform NuFFT transform for images in rectangular coordinates
         """
         x = self.us_fft_pts
-        n = images.shape[0]
         num_images = finish - start
 
         m = x.shape[0]

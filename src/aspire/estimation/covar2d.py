@@ -449,7 +449,6 @@ class BatchedRotCov2D(RotCov2D):
 
     def _calc_op(self):
         src = self.src
-        basis = self.basis
 
         ctf_fb = self.ctf_fb
         ctf_idx = self.ctf_idx

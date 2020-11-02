@@ -170,7 +170,6 @@ def anufft(sig_f, fourier_pts, sz, real=False):
         logger.debug("anufft passed real_type for signal, converting")
         sig_f = sig_f.astype(complex_type(sig_f.dtype))
 
-    dim = len(sz)
     ntransforms = 1
     if len(sig_f.shape) == 2:
         ntransforms = sig_f.shape[0]

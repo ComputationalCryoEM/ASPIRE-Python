@@ -132,7 +132,6 @@ class FourierKernel(Kernel):
         )
 
         # TODO from MATLAB code: Deal with rolled dimensions
-        is_singleton = len(shape) == 6
         N_ker = kernel_f.shape[0]
 
         # Note from MATLAB code:
