@@ -1,0 +1,25 @@
+include *.md
+include *.rst
+include *.yml
+include .bumpversion.cfg
+include .isort.cfg
+include CODEOWNERS
+include LICENSE
+include pytest.ini
+include tox.ini
+recursive-include docs *.bat
+recursive-include docs *.bib
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-include tests *.mrc
+recursive-include tests *.mrcs
+recursive-include tests *.npy
+recursive-include tests *.py
+recursive-include tests *.star
+recursive-include tutorials *.dontrun
+recursive-include tutorials *.ipynb
+recursive-include tutorials *.mat
+recursive-include tutorials *.mrc
+recursive-include tutorials *.npy
+recursive-include tutorials *.py

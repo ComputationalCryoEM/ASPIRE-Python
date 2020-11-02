@@ -10,6 +10,8 @@ def read(fname):
 setup(
     name="aspire",
     version="0.6.0",
+    data_files=[('', ['src/aspire/config.ini']),
+                ('', ['src/aspire/logging.conf'])],
     description="Algorithms for Single Particle Reconstruction",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
@@ -47,6 +49,7 @@ setup(
         "dev": [
             "black",
             "bumpversion",
+            "check-manifest",
             "flake8",
             "isort",
             "pyflakes",
