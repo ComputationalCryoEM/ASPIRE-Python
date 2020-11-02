@@ -2,6 +2,8 @@ include *.md
 include *.rst
 include *.yml
 include .bumpversion.cfg
+include .flake8
+include .git-blame-ignore-revs
 include .isort.cfg
 include CODEOWNERS
 include LICENSE
