@@ -2,14 +2,13 @@
 Miscellaneous Utilities that have no better place (yet).
 """
 import logging
+from itertools import chain, combinations
 
 import numpy as np
-from itertools import chain, combinations
 from numpy.linalg import qr, solve
 
 from aspire.utils.matrix import mat_to_vec, vec_to_mat
 from aspire.volume import Volume
-
 
 logger = logging.getLogger(__name__)
 

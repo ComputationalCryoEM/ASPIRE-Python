@@ -1,5 +1,6 @@
-from threading import Lock
 import os
+from threading import Lock
+
 import pyfftw
 import pyfftw.interfaces.scipy_fftpack as scipy_fft
 

@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 
 import aspire.image
@@ -8,7 +9,6 @@ from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_fft2, centered_ifft2
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.preprocess import downsample
-
 
 logger = logging.getLogger(__name__)
 

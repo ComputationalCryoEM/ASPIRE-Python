@@ -1,7 +1,6 @@
 import numpy as np
 
-from aspire.utils.numeric import fft
-from aspire.utils.numeric import xp
+from aspire.utils.numeric import fft, xp
 
 
 class PickerHelper:

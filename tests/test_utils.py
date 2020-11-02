@@ -1,8 +1,8 @@
-import numpy as np
-
-from pytest import raises
 from unittest import TestCase
 from unittest.mock import patch
+
+import numpy as np
+from pytest import raises
 
 from aspire import __version__
 from aspire.utils import get_full_version

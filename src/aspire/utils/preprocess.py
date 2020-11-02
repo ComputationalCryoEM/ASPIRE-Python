@@ -7,7 +7,6 @@ from scipy.special import erf
 
 from aspire.utils import ensure
 
-
 logger = logging.getLogger(__name__)
 
 
