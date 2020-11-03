@@ -139,7 +139,7 @@ class PSWFBasis2D(Basis):
 
         self.samples = self._evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
         self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype("float")
-        self.rad_freqs = np.concatenate([range(1, l + 1) for l in max_ns]).astype(
+        self.rad_freqs = np.concatenate([range(1, i + 1) for i in max_ns]).astype(
             "float"
         )
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn

@@ -132,9 +132,9 @@ class StarFile:
                     StarFileBlock(loops, name=block_name, properties=properties)
                 )
 
-            logger.info(f"StarFile parse complete")
+            logger.info("StarFile parse complete")
 
-        logger.info(f"Initializing StarFile object from data")
+        logger.info("Initializing StarFile object from data")
         self.init_from_blocks(blocks)
         logger.info(f"Created <{self}>")
 

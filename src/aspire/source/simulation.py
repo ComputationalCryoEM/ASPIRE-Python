@@ -90,7 +90,7 @@ class Simulation(ImageSource):
 
         self.noise_adder = None
         if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
-            logger.info(f"Appending a NoiseAdder to generation pipeline")
+            logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):

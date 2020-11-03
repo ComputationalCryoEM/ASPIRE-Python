@@ -77,19 +77,19 @@ def denoise(
     # Estimate the noise of images
     noise_estimator = None
     if noise_type == "Isotropic":
-        logger.info(f"Estimate the noise of images using isotropic method")
+        logger.info("Estimate the noise of images using isotropic method")
         noise_estimator = WhiteNoiseEstimator(source)
     else:
-        logger.info(f"Estimate the noise of images using anisotropic method")
+        logger.info("Estimate the noise of images using anisotropic method")
         noise_estimator = AnisotropicNoiseEstimator(source)
 
     # Whiten the noise of images
-    logger.info(f"Whiten the noise of images from the noise estimator")
+    logger.info("Whiten the noise of images from the noise estimator")
     source.whiten(noise_estimator.filter)
     var_noise = noise_estimator.estimate()
 
     if denoise_method == "CWF":
-        logger.info(f"Denoise the images using CWF cov2D method.")
+        logger.info("Denoise the images using CWF cov2D method.")
         denoiser = DenoiserCov2D(source, basis, var_noise)
         denoised_src = denoiser.denoise(batch_size=512)
         denoised_src.save(

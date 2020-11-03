@@ -394,12 +394,12 @@ class BatchedRotCov2D(RotCov2D):
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
         if src.unique_filters is None:
-            logger.info(f"CTF filters are not included in Cov2D denoising")
+            logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
             self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
         else:
-            logger.info(f"Represent CTF filters in FB basis")
+            logger.info("Represent CTF filters in FB basis")
             unique_filters = src.unique_filters
             self.ctf_idx = src.filter_indices
             self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]

@@ -361,7 +361,7 @@ class ImageSource:
         indices = np.arange(start, min(start + num, self.n), dtype=np.int)
 
         if self._cached_im is not None:
-            logger.info(f"Loading images from cache")
+            logger.info("Loading images from cache")
             im = Image(self._cached_im[indices, :, :])
         else:
             im = self._images(indices=indices, *args, **kwargs)
