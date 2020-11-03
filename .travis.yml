@@ -23,10 +23,7 @@ install:
   - source activate test-environment
   - pip install -e .[dev]
   
-script: pytest --random-order --cov=aspire tests
-
-after_success:
-  - coveralls
+script: tox -v
 
 before_deploy:
   - cd docs && sphinx-apidoc -f -o ./source ../src -H Modules && make html && touch build/html/.nojekyll

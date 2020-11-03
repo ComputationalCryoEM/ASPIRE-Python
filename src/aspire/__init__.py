@@ -25,7 +25,6 @@ Path(config.logging.log_dir).mkdir(parents=True, exist_ok=True)
 # Generates file name details and opens log file defined in config file.
 # The default is to use the current time stamp provided in the dictionary,
 #   but that is not required if a user wishes to customize logging config.
-assert os.path.exists(os.path.join(os.path.dirname(__file__), "logging.conf")), os.path.join(os.path.dirname(__file__), "logging.conf")
 logging.config.fileConfig(
     os.path.join(os.path.dirname(__file__), "logging.conf"),
     defaults={
