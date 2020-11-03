@@ -199,7 +199,7 @@ class RotCov2D:
         b_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
         b_noise = BlkDiagMatrix.zeros_like(ctf_fb[0])
         A = []
-        for k in range(len(ctf_fb)):
+        for _ in range(len(ctf_fb)):
             A.append(BlkDiagMatrix.zeros_like(ctf_fb[0]))
 
         M = BlkDiagMatrix.zeros_like(ctf_fb[0])

@@ -163,7 +163,7 @@ class StarFile:
         return all(b1 == b2 for b1, b2 in zip(self.blocks, other.blocks))
 
     def save(self, f):
-        for i, block in enumerate(self):
+        for block in self:
             f.write(f"data_{block.name}\n\n")
             if block.properties is not None:
                 for k, v in block.properties.items():

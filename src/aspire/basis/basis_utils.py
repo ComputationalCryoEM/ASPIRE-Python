@@ -109,7 +109,7 @@ def norm_assoc_legendre(j, m, x):
                 * y
             )
         except RuntimeWarning:
-            print("debug")
+            logger.error("debug")
     return y
 
 
@@ -140,7 +140,7 @@ def real_sph_harmonic(j, m, theta, phi):
             * y
         )
     except RuntimeWarning:
-        print("debug")
+        logger.error("debug")
 
     if m < 0:
         y = np.sqrt(2) * np.sin(abs_m * phi) * y

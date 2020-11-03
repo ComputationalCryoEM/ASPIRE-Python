@@ -146,12 +146,12 @@ class BlkDiagMatrix:
 
         if np.any(self.partition != other.partition):
             # be helpful and find the first one as an example
-            for i, (a, b) in enumerate(zip(self.partition, other.partition)):
+            for _i, (a, b) in enumerate(zip(self.partition, other.partition)):
                 if a != b:
                     break
             raise RuntimeError(
                 "Block i={} of BlkDiagMatrix instances are "
-                "not same shape {} {}".format(i, a, b)
+                "not same shape {} {}".format(_i, a, b)
             )
 
     def __check_dtype_compatible(self, other):

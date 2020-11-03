@@ -167,7 +167,7 @@ class FBBasis3D(Basis):
             radial = self._precomp["radial"][:, idx_radial]
             radial = radial / nrms
 
-            for m in range(-ell, ell + 1):
+            for _ in range(-ell, ell + 1):
                 ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
@@ -214,7 +214,7 @@ class FBBasis3D(Basis):
             radial = self._precomp["radial"][:, idx_radial]
             radial = radial / nrms
 
-            for m in range(-ell, ell + 1):
+            for _ in range(-ell, ell + 1):
                 ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
