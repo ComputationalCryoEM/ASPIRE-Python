@@ -60,6 +60,7 @@ setup(
             "pydocstyle",
             "pytest-random-order",
             "snakeviz",
+            "tox",
         ],
     },
     package_dir={"": "src"},
