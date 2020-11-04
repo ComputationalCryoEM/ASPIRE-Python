@@ -231,7 +231,7 @@ class FFBBasis2D(FBBasis2D):
                     self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r])
 
         #  1D FFT on the angular dimension for each concentric circle
-        pf = 2 * pi / (2 * n_theta) * xp.asnumpy(fft.fft(xp.asarray(pf), axis=2))
+        pf = 2 * pi / (2 * n_theta) * xp.asnumpy(fft.fft(xp.asarray(pf)))
 
         # This only makes it easier to slice the array later.
         v = np.zeros((n_images, self.count), dtype=x.dtype)

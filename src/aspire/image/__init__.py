@@ -255,7 +255,7 @@ class Image:
         shifts = shifts.astype(self.dtype)
 
         L = self.res
-        im_f = xp.asnumpy(fft.fft2(xp.asarray(im), axes=(1, 2)))
+        im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))
         grid_1d = xp.asnumpy(fft.ifftshift(xp.asarray(np.ceil(
             np.arange(-L/2, L/2,dtype=self.dtype))))) * 2 * np.pi / L
 
@@ -268,7 +268,7 @@ class Image:
                         om_y[np.newaxis, :, :] * phase_shifts_y)
         mult_f = np.exp(-1j * phase_shifts)
         im_translated_f = im_f * mult_f
-        im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f), axes=(1, 2)))
+        im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f)))
         im_translated = np.real(im_translated)
 
         return Image(im_translated)
