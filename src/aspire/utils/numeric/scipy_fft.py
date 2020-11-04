@@ -1,6 +1,6 @@
 import scipy as sp
 
-from aspire.utils.numeric.fft import FFT
+from aspire.utils.numeric.base_fft import FFT
 
 
 class ScipyFFT(FFT):

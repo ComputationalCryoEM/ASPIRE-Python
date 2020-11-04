@@ -1,6 +1,6 @@
 import cupy as cp
 
-from aspire.utils.numeric.fft import FFT
+from aspire.utils.numeric.base_fft import FFT
 
 
 class CupyFFT(FFT):

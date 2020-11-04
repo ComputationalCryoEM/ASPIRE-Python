@@ -3,7 +3,7 @@ import os
 import pyfftw
 import pyfftw.interfaces.scipy_fftpack as scipy_fft
 
-from aspire.utils.numeric.fft import FFT
+from aspire.utils.numeric.base_fft import FFT
 from aspire.utils.types import complex_type
 
 mutex = Lock()
