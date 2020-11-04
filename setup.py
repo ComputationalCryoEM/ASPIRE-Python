@@ -1,6 +1,6 @@
 import os
 
-from setuptools import find_namespace_packages, setup
+from setuptools import setup
 
 
 def read(fname):
@@ -41,6 +41,7 @@ setup(
         "scipy==1.4.0",
         "scikit-learn",
         "scikit-image==0.14.0",
+        "setuptools>=0.41",
         "sphinxcontrib-bibtex",
         "sphinx-rtd-theme>=0.4.2",
         "tqdm",
@@ -64,7 +65,7 @@ setup(
         ],
     },
     package_dir={"": "src"},
-    packages=find_namespace_packages(where="src"),
+    packages=["aspire"],
     package_data={"aspire": ["config.ini"], "aspire.data": ["*.*"]},
     zip_safe=True,
     test_suite="tests",
