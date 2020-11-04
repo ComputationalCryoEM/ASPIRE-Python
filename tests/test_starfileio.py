@@ -1,7 +1,5 @@
-import importlib_resources
-import numpy as np
 import os.path
-
+import tempfile
 from itertools import zip_longest
 from os.path import splitext
 from unittest import TestCase
@@ -56,8 +54,14 @@ class StarFileTestCase(TestCase):
         self.im_stack = Image(im_stack)
         self.img_src_stack = ArrayImageSource(self.im_stack)
 
+        # Create a tmpdir object for this test instance
+        self._tmpdir = tempfile.TemporaryDirectory()
+        # Get the directory from the name attribute of the instance
+        self.tmpdir = self._tmpdir.name
+
     def tearDown(self):
-        pass
+        # Destroy the tmpdir instance and contents
+        self._tmpdir.cleanup()
 
     def testLength(self):
         # StarFile is an iterable that gives us blocks.
@@ -124,121 +128,87 @@ class StarFileTestCase(TestCase):
         os.remove('sample_saved.star')
 
     def testSaveStar(self):
-        test_path = 'sample_save_star.star'
+        test_path = os.path.join(self.tmpdir, 'sample_save_star.star')
         mrc_path = splitext(test_path)[0] + '_0_0.mrcs'
 
-        try:
-            # Save some data using the wrapper.
-            save_star(self.img_src, test_path)
+        # Save some data using the wrapper.
+        save_star(self.img_src, test_path)
 
-            # Can we read it back using the class?
-            _ = StarFile(test_path)
+        # Can we read it back using the class?
+        _ = StarFile(test_path)
 
-            # Read the data file
-            saved_data = MrcStack(mrc_path).im.data
+        # Read the data file
+        saved_data = MrcStack(mrc_path).im.data
 
-            # Compare
-            self.assertTrue(np.allclose(
-                self.im.data,
-                saved_data))
-
-        finally:
-            # Cleanup
-            if os.path.exists(test_path):
-                os.remove(test_path)
-
-            if os.path.exists(mrc_path):
-                os.remove(mrc_path)
+        # Compare
+        self.assertTrue(np.allclose(
+            self.im.data,
+            saved_data))
 
     def testSaveStarSingle(self):
-        test_path = 'sample_save_single.star'
+        test_path = os.path.join(self.tmpdir, 'sample_save_single.star')
         mrc_path = splitext(test_path)[0] + '_0_0.mrcs'
 
-        try:
-            # Save some data using the wrapper.
-            save_star(self.img_src, test_path, save_mode='single')
+        # Save some data using the wrapper.
+        save_star(self.img_src, test_path, save_mode='single')
 
-            # Can we read it back using the class?
-            _ = StarFile(test_path)
+        # Can we read it back using the class?
+        _ = StarFile(test_path)
 
-            # Read the data file.
-            saved_data = MrcStack(mrc_path).im.data
+        # Read the data file.
+        saved_data = MrcStack(mrc_path).im.data
 
-            # Compare
-            self.assertTrue(np.allclose(
-                self.im.data,
-                saved_data))
-
-        finally:
-            # Cleanup
-            if os.path.exists(test_path):
-                os.remove(test_path)
-
-            if os.path.exists(mrc_path):
-                os.remove(mrc_path)
+        # Compare
+        self.assertTrue(np.allclose(
+            self.im.data,
+            saved_data))
 
     def testSaveStarStack(self):
-        test_path = 'sample_save_stack.star'
+        test_path = os.path.join(self.tmpdir, 'sample_save_stack.star')
         cleanup_files = [test_path]
         batch_size = 2
 
-        try:
-            # Save some data using the wrapper.
-            save_star(self.img_src_stack, test_path, batch_size=batch_size)
+        # Save some data using the wrapper.
+        save_star(self.img_src_stack, test_path, batch_size=batch_size)
 
-            # Can we read it back using the class?
-            _ = StarFile(test_path)
+        # Can we read it back using the class?
+        _ = StarFile(test_path)
 
-            # Loop over the stack of files
-            for itr in grouper(range(self.n), batch_size):
-                grp = list(filter(None.__ne__, itr))
+        # Loop over the stack of files
+        for itr in grouper(range(self.n), batch_size):
+            grp = list(filter(None.__ne__, itr))
 
-                # Parse fname
-                mrc_path = (splitext(test_path)[0] +
-                            f'_{min(grp)}_{max(grp)}.mrcs')
-                cleanup_files.append(mrc_path)
-
-                # Read the data file.
-                saved_data = MrcStack(mrc_path).im.data
-
-                # Compare
-                self.assertTrue(np.allclose(
-                    self.im_stack[min(grp):max(grp)+1],
-                    saved_data))
-
-        finally:
-            # Cleanup
-            for fn in cleanup_files:
-                if os.path.exists(fn):
-                    os.remove(fn)
-
-    def testSaveStarSingleStack(self):
-        test_path = 'sample_save_single_stack.star'
-        mrc_path = (splitext(test_path)[0] +
-                    f'_0_{self.im_stack.n_images-1}.mrcs')
-
-        try:
-            # Save some data using the wrapper.
-            save_star(self.img_src_stack,
-                      test_path,
-                      batch_size=2,
-                      save_mode='single')
-
-            # Can we read it back using the class?
-            _ = StarFile(test_path)
+            # Parse fname
+            mrc_path = (splitext(test_path)[0] +
+                        f'_{min(grp)}_{max(grp)}.mrcs')
+            cleanup_files.append(mrc_path)
 
             # Read the data file.
             saved_data = MrcStack(mrc_path).im.data
 
             # Compare
             self.assertTrue(np.allclose(
-                self.im_stack.data,
+                self.im_stack[min(grp):max(grp)+1],
                 saved_data))
 
-        finally:
-            # Cleanup
-            if os.path.exists(test_path):
-                os.remove(test_path)
+    def testSaveStarSingleStack(self):
+        test_path = os.path.join(self.tmpdir, 'sample_save_single_stack.star')
+        mrc_path = (splitext(test_path)[0] +
+                    f'_0_{self.im_stack.n_images-1}.mrcs')
 
-            if os.path.exists(mrc_path):
-                os.remove(mrc_path)
+        # Save some data using the wrapper.
+        save_star(self.img_src_stack,
+                  test_path,
+                  batch_size=2,
+                  save_mode='single')
+
+        # Can we read it back using the class?
+        _ = StarFile(test_path)
+
+        # Read the data file.
+        saved_data = MrcStack(mrc_path).im.data
+
+        # Compare
+        self.assertTrue(np.allclose(
+            self.im_stack.data,
+            saved_data))
