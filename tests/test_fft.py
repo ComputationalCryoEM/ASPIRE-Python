@@ -56,6 +56,7 @@ class ConfigTest(TestCase):
             for nworkers in (-1, 1, 2):
                 a = xp.random.random(100)
                 b = fft.centered_fft(a, workers=nworkers)
+                self.assertTrue(b[50], np.sum(a))
                 c = fft.centered_ifft(b, workers=nworkers)
                 self.assertTrue(xp.allclose(a, c))
 
@@ -64,6 +65,7 @@ class ConfigTest(TestCase):
             for nworkers in (-1, 1, 2):
                 a = xp.random.random((100, 100))
                 b = fft.centered_fft2(a, workers=nworkers)
+                self.assertTrue(b[50][50], np.sum(a))
                 c = fft.centered_ifft2(b, workers=nworkers)
                 self.assertTrue(xp.allclose(a, c))
 
@@ -72,5 +74,6 @@ class ConfigTest(TestCase):
             for nworkers in (-1, 1, 2):
                 a = xp.random.random((50, 50, 50))
                 b = fft.centered_fftn(a, axes=(0, 1, 2), workers=nworkers)
+                self.assertTrue(b[25][25][25], np.sum(a))
                 c = fft.centered_ifftn(b, axes=(0, 1, 2), workers=nworkers)
                 self.assertTrue(xp.allclose(a, c))
