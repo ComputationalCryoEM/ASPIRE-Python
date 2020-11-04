@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def read(fname):
@@ -65,7 +65,7 @@ setup(
         ],
     },
     package_dir={"": "src"},
-    packages=["aspire"],
+    packages=find_packages(where="src"),
     package_data={"aspire": ["config.ini"], "aspire.data": ["*.*"]},
     zip_safe=True,
     test_suite="tests",
