@@ -5,7 +5,7 @@ import numpy as np
 
 from aspire.utils.filters import (CTFFilter, FunctionFilter, IdentityFilter,
                                   PowerFilter, RadialCTFFilter, ScalarFilter,
-                                  ZeroFilter)
+                                  ScaledFilter, ZeroFilter)
 from aspire.utils.types import utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
@@ -59,6 +59,28 @@ class SimTestCase(TestCase):
         filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
         result = filter.evaluate(self.omega)
         self.assertEqual(result.shape, (256,))
+
+    def testScaledFilter(self):
+        filt1 = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
+        scale_value = 2.5
+        result1 = filt1.evaluate(self.omega)
+        # ScaledFilter scales the pixel size which cancels out
+        # a corresponding scaling in omega
+        filt2 = ScaledFilter(filt1, scale_value)
+        result2 = filt2.evaluate(self.omega*scale_value)
+        self.assertTrue(np.allclose(
+            result1, result2, atol=utest_tolerance(self.dtype)))
+
+    def testCTFScale(self):
+        filt = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
+        result1 = filt.evaluate(self.omega)
+        scale_value = 2.5
+        filt = filt.scale(scale_value)
+        # scaling a CTFFilter scales the pixel size which cancels out
+        # a corresponding scaling in omega
+        result2 = filt.evaluate(self.omega*scale_value)
+        self.assertTrue(np.allclose(
+            result1, result2, atol=utest_tolerance(self.dtype)))
 
     def testRadialCTFFilter(self):
         filter = RadialCTFFilter(defocus=2.5e4)
