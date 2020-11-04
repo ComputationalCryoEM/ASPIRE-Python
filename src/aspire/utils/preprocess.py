@@ -138,26 +138,43 @@ def downsample(insamples, szout, mask=None):
         # stack of one dimension objects
 
         for idata in range(ndata):
-            insamples_fft = crop_pad(xp.asnumpy(fft.fftshift(
-                fft.fft(xp.asarray(insamples[idata])))), L_out)*mask
-            outsamples[idata] = np.real(xp.asnumpy(fft.ifft(
-                fft.ifftshift(xp.asarray(insamples_fft))))*(L_out / L_in))
+            insamples_fft = crop_pad(xp.asnumpy(
+                fft.fftshift(
+                    fft.fft(xp.asarray(insamples[idata]))
+                )
+            ), L_out)*mask
+            outsamples[idata] = np.real(xp.asnumpy(
+                fft.ifft(
+                    fft.ifftshift(xp.asarray(insamples_fft))
+                )
+            )*(L_out / L_in))
 
     elif insamples.ndim == 3:
         # stack of two dimension objects
         for idata in range(ndata):
-            insamples_fft = crop_pad(xp.asnumpy(fft.fftshift(
-                fft.fft2(xp.asarray(insamples[idata])))), L_out)*mask
-            outsamples[idata] = np.real(xp.asnumpy(fft.ifft2(
-                fft.ifftshift(xp.asarray(insamples_fft)))) * (L_out**2/L_in**2))
+            insamples_fft = crop_pad(xp.asnumpy(
+                fft.fftshift(
+                    fft.fft2(xp.asarray(insamples[idata]))
+                )
+            ), L_out)*mask
+            outsamples[idata] = np.real(xp.asnumpy(
+                fft.ifft2(
+                    fft.ifftshift(xp.asarray(insamples_fft))
+                )
+            ) * (L_out**2/L_in**2))
 
     elif insamples.ndim == 4:
         # stack of three dimension objects
         for idata in range(ndata):
-            insamples_fft = crop_pad(xp.asnumpy(fft.fftshift(
-                fft.fftn(xp.asarray(insamples[idata]), axes=(0, 1, 2)))), L_out)*mask
-            outsamples[idata] = np.real(xp.asnumpy(fft.ifftn(
-                fft.ifftshift(xp.asarray(insamples_fft)), axes=(0, 1, 2))) * (L_out**3/L_in**3))
+            insamples_fft = crop_pad(xp.asnumpy(
+                fft.fftshift(
+                    fft.fftn(xp.asarray(insamples[idata]), axes=(0, 1, 2))
+                )
+            ), L_out)*mask
+            outsamples[idata] = np.real(xp.asnumpy(
+                fft.ifftn(
+                    fft.ifftshift(xp.asarray(insamples_fft)), axes=(0, 1, 2))
+            ) * (L_out**3/L_in**3))
 
     else:
         raise RuntimeError('Number of dimensions > 3 for input objects.')
