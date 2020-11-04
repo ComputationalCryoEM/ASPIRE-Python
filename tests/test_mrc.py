@@ -1,5 +1,6 @@
 import filecmp
 import os
+import tempfile
 from datetime import datetime
 from unittest import TestCase
 
@@ -70,14 +71,16 @@ class MrcStatsTestCase(TestCase):
             self.stats.arms))
 
     def testUpdate(self):
-        mrcs_filepath = 'test.mrc'
-        files = (f'{mrcs_filepath}.1',
-                 f'{mrcs_filepath}.2')
+        # Create a tmpdir in a context. Cleans up on exit.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create two filenames in our tmpdir
+            mrcs_filepath = os.path.join(tmpdir, 'test.mrc')
+            files = (f'{mrcs_filepath}.1',
+                     f'{mrcs_filepath}.2')
 
-        # Note below we will fix the time to avoid racy unit tests.
-        epoch = datetime(1970, 1, 1).strftime('%Y-%m-%d %H:%M:%S')
+            # Note below we will fix the time to avoid racy unit tests.
+            epoch = datetime(1970, 1, 1).strftime('%Y-%m-%d %H:%M:%S')
 
-        try:
             with mrcfile.new_mmap(
                     files[0],
                     shape=(self.n, self.n),
@@ -102,9 +105,3 @@ class MrcStatsTestCase(TestCase):
             filecmp.clear_cache()  # clear any previous attempts
             # Shallow=False is important to ensure we check file contents.
             self.assertTrue(filecmp.cmp(files[0], files[1], shallow=False))
-
-        finally:
-            # Cleanup
-            for fn in files:
-                if os.path.exists(fn):
-                    os.remove(fn)
