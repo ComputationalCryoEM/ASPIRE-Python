@@ -22,6 +22,17 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 # From itertools standard recipes
 def grouper(iterable, n, fillvalue=None):
+    """
+    Collect data into fixed-length chunks or blocks.
+
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+
+    :param iterable: Iterable object to split into chunks
+    :param n: Size of each chunk
+    :param fillvalue: Value to tail fill if iterable not exact multiple of n
+    :return: iterator over chunks of length n
+    """
+
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
 
