@@ -10,14 +10,15 @@ from aspire.utils.numeric import xp
 
 
 class Micrograph:
-    def __init__(self, filepath, margin=None, shrink_factor=None, square=False,
-                 gauss_filter_size=None, gauss_filter_sigma=None,
-                 dtype=np.float32):
+    def __init__(self, filepath, margin=None, shrink_factor=None,
+                 square=False, gauss_filter_size=None, gauss_filter_sigma=None,
+                 permissive=False, dtype=np.float32):
         self.filepath = filepath
         self.shrink_factor = shrink_factor
         self.square = square
         self.gauss_filter_size = gauss_filter_size
         self.gauss_filter_sigma = gauss_filter_sigma
+        self.permissive = permissive
         self.dtype = np.dtype(dtype)
 
         # Attributes populated by the time this constructor returns
@@ -38,12 +39,16 @@ class Micrograph:
         self.margin_top, self.margin_right, self.margin_bottom, self.margin_left = t, r, b, l
 
     def _read(self):
-        with mrcfile.open(self.filepath) as mrc:
-            im = mrc.data.astype(self.dtype)
+        with mrcfile.open(self.filepath, permissive=self.permissive) as mrc:
+            im = mrc.data
+            if im.dtype != self.dtype:
+                logger.info(
+                    f'Micrograph read casting {self.filepath}'
+                    f' data to {self.dtype} from {im.dtype}.')
+                im = im.astype(self.dtype)
 
         # NOTE: For multiple mrc files, mrcfile returns an ndarray with
         # (shape n_images, height, width)
-        # TODO: check all of these handle C ordered im data (currently unused).
 
         # Discard outer pixels
         im = im[...,
@@ -53,7 +58,7 @@ class Micrograph:
 
         if self.square:
             side_length = min(im.shape[-2], im.shape[-1])
-            im = im[:side_length, :side_length]
+            im = im[..., :side_length, :side_length]
 
         if self.shrink_factor is not None:
             size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))

@@ -343,8 +343,7 @@ class ImageSource:
         self.generation_pipeline.add_xform(Downsample(resolution=L))
 
         ds_factor = self.L / L
-        for f in self.unique_filters:
-            f.scale(ds_factor)
+        self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
         self.offsets /= ds_factor
 
         self.L = L
