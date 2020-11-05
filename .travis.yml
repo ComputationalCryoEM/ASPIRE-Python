@@ -2,6 +2,9 @@ sudo: required
 language: python
 python:
   - "3.6"
+  - "3.7"
+  - "3.8"
+  - "3.9"
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -22,7 +25,7 @@ install:
   - conda env create -n test-environment -f environment.yml
   - source activate test-environment
   - pip install -e .[dev]
-  
+
 script: tox -v
 
 before_deploy:
