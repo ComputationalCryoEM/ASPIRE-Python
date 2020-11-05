@@ -5,15 +5,19 @@ python:
   - "3.7"
   - "3.8"
   - "3.9"
+env:
+  matrix:
+    - TOXENV=py36-stable
+    - TOXENV=py37-stable
+    - TOXENV=py38-stable
+    - TOXENV=py39-stable
+    - TOXENV=py36-dev
+    - TOXENV=py37-dev
+    - TOXENV=py38-dev
+    - TOXENV=py39-dev
 install:
   - sudo apt-get update
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -23,11 +27,7 @@ install:
   - conda info -a
   - pip install -U tox
 
-  # - conda env create -n test-environment -f environment.yml
-  # - source activate test-environment
-  # - pip install -e .[dev]
-
-script: tox -v
+script: tox -v -e $TOXENV
 
 before_deploy:
   - cd docs && sphinx-apidoc -f -o ./source ../src -H Modules && make html && touch build/html/.nojekyll
