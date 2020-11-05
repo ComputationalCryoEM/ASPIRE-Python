@@ -5,7 +5,7 @@ from unittest.case import SkipTest
 import numpy as np
 
 from aspire.nufft import Plan, backend_available
-from aspire.utils.types import complex_type
+from aspire.utils.types import complex_type, utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -847,16 +847,14 @@ class SimTestCase(TestCase):
 
         complex_dtype = complex_type(dtype)
 
-        atol = 1e-8  # Numpy default
-        if dtype == np.float32:
-            atol = 1e-5
-
         plan = Plan(self.vol.shape, self.fourier_pts.astype(dtype), backend=backend)
 
         # Test Adjoint
         result = plan.adjoint(self.recip_space.astype(complex_dtype))
 
-        self.assertTrue(np.allclose(result, self.adjoint_vol, atol=atol))
+        self.assertTrue(
+            np.allclose(result, self.adjoint_vol, atol=utest_tolerance(dtype))
+        )
 
     def _testAdjointMany(self, backend, dtype, ntransforms=2):
         if not backend_available(backend):
@@ -871,14 +869,9 @@ class SimTestCase(TestCase):
             ntransforms=ntransforms,
         )
 
-        atol = 1e-8  # Numpy default
-        if dtype == np.float32:
-            atol = 1e-5
-
         batch = np.empty(
             (ntransforms, *self.recip_space_plane.shape), dtype=complex_dtype
         )
-
         for i in range(ntransforms):
             batch[i] = self.recip_space_plane
 
@@ -886,7 +879,9 @@ class SimTestCase(TestCase):
         result = plan.adjoint(batch)
 
         for r in range(ntransforms):
-            self.assertTrue(np.allclose(result[r], self.adjoint_plane, atol=atol))
+            self.assertTrue(
+                np.allclose(result[r], self.adjoint_plane, atol=utest_tolerance(dtype))
+            )
 
     # TODO: This list could be done better, as some sort of matrix
     #    once there are no raise exceptions, but more pressing things...
