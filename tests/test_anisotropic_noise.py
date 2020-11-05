@@ -6,6 +6,7 @@ import numpy as np
 from aspire.estimation.noise import AnisotropicNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.types import utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -17,6 +18,7 @@ class SimTestCase(TestCase):
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
+            dtype="single",
         )
 
     def tearDown(self):
@@ -116,4 +118,10 @@ class SimTestCase(TestCase):
     def testAnisotropicNoiseVariance(self):
         noise_estimator = AnisotropicNoiseEstimator(self.sim, batchSize=512)
         noise_variance = noise_estimator.estimate()
-        self.assertAlmostEqual(0.04534846544265747, noise_variance)
+        self.assertTrue(
+            np.allclose(
+                0.04534846544265747,
+                noise_variance,
+                atol=utest_tolerance(self.sim.dtype),
+            )
+        )
