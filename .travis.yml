@@ -7,6 +7,7 @@ python:
   - "3.9"
 install:
   - sudo apt-get update
+  - sudo apt-get install tox
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -22,9 +23,9 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda env create -n test-environment -f environment.yml
-  - source activate test-environment
-  - pip install -e .[dev]
+  # - conda env create -n test-environment -f environment.yml
+  # - source activate test-environment
+  # - pip install -e .[dev]
 
 script: tox -v
 
