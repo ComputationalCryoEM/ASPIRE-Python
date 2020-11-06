@@ -3,17 +3,21 @@ language: python
 matrix:
   include:
     - python: 3.6
-      env: TOXENV=clean,py36-stable,coveralls,report
-      env: TOXENV=py36-dev
+      env:
+        - TOXENV=clean,py36-stable,coveralls,report
+        - TOXENV=py36-dev
     - python: 3.7
-      env: TOXENV=py37-stable
-      env: TOXENV=py37-dev
+      env:
+        - TOXENV=py37-stable
+        - TOXENV=py37-dev
     - python: 3.8
-      env: TOXENV=py38-stable
-      env: TOXENV=py38-dev
+      env:
+        - TOXENV=py38-stable
+        - TOXENV=py38-dev
     - python: 3.9
-      env: TOXENV=py39-stable
-      env: TOXENV=py39-dev
+      env:
+        - TOXENV=py39-stable
+#        - TOXENV=py39-dev
     - env: TOXENV=check
     - env: TOXENV=docs
 install:
