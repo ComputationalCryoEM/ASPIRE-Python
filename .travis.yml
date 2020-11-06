@@ -14,10 +14,11 @@ matrix:
       env:
         - TOXENV=py38-stable
         - TOXENV=py38-dev
-    - python: 3.9
-      env:
-        - TOXENV=py39-stable
-#        - TOXENV=py39-dev
+    # Some 3.9 depends are not yet avail, 11/06/2020.
+    # - python: 3.9
+    #   env:
+    #     - TOXENV=py39-stable
+    #     - TOXENV=py39-dev
     - env: TOXENV=check
     - env: TOXENV=docs
 install:

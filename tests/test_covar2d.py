@@ -76,7 +76,8 @@ class Cov2DTestCase(TestCase):
     def testGetCovar(self):
         results = np.load(
             os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covar.npy"),
-            allow_pickle=True)
+            allow_pickle=True,
+        )
         self.covar_coeff = self.cov2d._get_covar(self.coeff_clean)
 
         for im, mat in enumerate(results.tolist()):
@@ -90,7 +91,8 @@ class Cov2DTestCase(TestCase):
     def testGetCovarCTF(self):
         results = np.load(
             os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covarctf.npy"),
-            allow_pickle=True)
+            allow_pickle=True,
+        )
         self.covar_coeff_ctf = self.cov2d.get_covar(
             self.coeff, self.h_ctf_fb, self.h_idx, noise_var=self.noise_var
         )
@@ -100,7 +102,7 @@ class Cov2DTestCase(TestCase):
     def testGetCovarCTFShrink(self):
         results = np.load(
             os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covarctf_shrink.npy"),
-            allow_pickle=True
+            allow_pickle=True,
         )
         covar_opt = {
             "shrinker": "frobenius_norm",
