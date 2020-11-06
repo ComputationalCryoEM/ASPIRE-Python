@@ -1,3 +1,5 @@
+import logging
+
 import mrcfile
 import numpy as np
 from PIL import Image as PILImage
@@ -7,6 +9,8 @@ from aspire import config
 from aspire.image import Image
 from aspire.utils import ensure
 from aspire.utils.numeric import xp
+
+logger = logging.getLogger(__name__)
 
 
 class Micrograph:
