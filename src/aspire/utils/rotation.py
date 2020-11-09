@@ -99,21 +99,20 @@ class Rotation:
         self._rotations = sp_rot.from_euler(
             self.rot_seq, values.astype(self.dtype), degrees=True)
 
-    @staticmethod
-    def register_rotations(rots, rots_ref):
+    def register_rotations(self, rots_ref):
         """
         Register estimated orientations to reference ones.
 
         Finds the orthogonal transformation that best aligns the estimated rotations
         to the reference rotations.
 
-        :param rots: The rotations to be aligned in the form of a n-by-3-by-3 array.
-        :param rots_ref: The reference rotations to which we would like to align in
-            the form of a n-by-3-by-3 array.
+        :param rots_ref: The reference Rotation object to which we would like to align
+            with data matrices in the form of a n-by-3-by-3 array.
         :return: o_mat, optimal orthogonal 3x3 matrix to align the two sets;
                 flag, flag==1 then J conjugacy is required and 0 is not.
         """
-
+        rots = self.data
+        rots_ref = rots_ref.rot_matrices.astype(self.dtype)
         ensure(rots.shape == rots_ref.shape,
                'Two sets of rotations must have same dimensions.')
         K = rots.shape[0]
@@ -159,22 +158,18 @@ class Rotation:
 
         return Q_mat, flag
 
-    @staticmethod
-    def get_aligned_rotations(rots, Q_mat, flag):
+    def get_aligned_rotations(self, Q_mat, flag):
         """
-        Get aligned rotation matrices to reference ones.
+        Get aligned Rotation object to reference ones.
 
         Calculated aligned rotation matrices from the orthogonal transformation
         that best aligns the estimated rotations to the reference rotations.
 
-
-        :param rots: The reference rotations to which we would like to align in
-            the form of a n-by-3-by-3 array.
         :param Q_mat:  optimal orthogonal 3x3 transformation matrix
         :param flag:  flag==1 then J conjugacy is required and 0 is not
-        :return: regrot, aligned rotation matrices
+        :return: regrot, aligned Rotation object
         """
-
+        rots = self.data
         K = rots.shape[0]
 
         # Reflection matrix
@@ -186,19 +181,22 @@ class Rotation:
             if flag == 1:
                 R = J @ R @ J
             regrot[k, :, :] = Q_mat.T @ R
-
-        return regrot
+        aligned_rots = copy.copy(self)
+        aligned_rots.rot_matrices = regrot
+        return aligned_rots
 
     @staticmethod
     def get_rots_mse(rots_reg, rots_ref):
         """
         Calculate MSE between the estimated orientations to reference ones.
 
-        :param rots_reg: The estimated rotations after alignment in the form of
-            a n-by-3-by-3 array.
-        :param rots_ref: The reference rotations.
+        :param rots_reg: The estimated Rotation object after alignment
+             with data matrices in the form of a n-by-3-by-3 array.
+        :param rots_ref: The reference Rotation object.
         :return: The MSE value between two sets of rotations.
         """
+        rots_reg = rots_reg.rot_matrices
+        rots_ref = rots_ref.rot_matrices
         ensure(rots_reg.shape == rots_ref.shape,
                'Two sets of rotations must have same dimensions.')
         K = rots_reg.shape[0]

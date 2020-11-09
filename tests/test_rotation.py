@@ -37,12 +37,11 @@ class UtilsTestCase(TestCase):
                             atol=utest_tolerance(self.dtype)))
 
     def testRegisterRots(self):
-        rots_ref = self.rot_obj.rot_matrices
         q_ang = [[45, 45, 45]]
         q_mat = sp_rot.from_euler('ZYZ', q_ang, degrees=True).as_matrix()[0]
         flag = 0
-        regrots_ref = Rotation.get_aligned_rotations(rots_ref, q_mat, flag)
-        q_mat_est, flag_est = Rotation.register_rotations(rots_ref, regrots_ref)
+        regrots_ref = self.rot_obj.get_aligned_rotations(q_mat, flag)
+        q_mat_est, flag_est = self.rot_obj.register_rotations(regrots_ref)
 
         self.assertTrue(np.allclose(flag_est, flag)
                         and np.allclose(q_mat_est, q_mat))
