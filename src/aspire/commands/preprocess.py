@@ -24,22 +24,22 @@ logger = logging.getLogger(__name__)
 @click.option('--max_resolution', default=16, type=int,
               help='Resolution of downsampled images read from starfile')
 @click.option('--normalize_background', default=True,
-              help='Normalize images to background noise or not')
+              help='Whether to normalize images to background noise')
 @click.option('--whiten_noise', default=True,
-              help='whiten background noise')
+              help='Whiten background noise')
 @click.option('--invert_contrast', default=True,
               help='Invert the contrast of images so molecules are shown in white')
 @click.option('--batch_size', default=512,
-              help='batch size to perform pipeline so that not crash memory')
+              help='Batch size to load images from .mrc files.')
 @click.option('--save_mode', default='single',
               help='Option to save mrc file, if not single, saved to multiply files in batch size')
 @click.option('--overwrite', default=False,
-              help='Option to overwrite output mrc files')
+              help='Whether to overwrite mrc files if they already exist')
 def preprocess(data_folder, starfile_in, starfile_out, pixel_size, max_rows,
                flip_phase, max_resolution, normalize_background, whiten_noise,
                invert_contrast, batch_size, save_mode, overwrite):
     """
-    Preprocess the ram images and output desired images for future analysis
+    Preprocess the raw images and output desired images for future analysis
     """
     # Create a source object for 2D images
     logger.info('This script illustrates how to preprocess experimental CryoEM images')
