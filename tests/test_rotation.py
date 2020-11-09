@@ -3,36 +3,38 @@ import numpy as np
 
 from scipy.spatial.transform import Rotation as sp_rot
 from aspire.utils.rotation import Rotation
+from aspire.utils.types import utest_tolerance
 
 
 class UtilsTestCase(TestCase):
     def setUp(self):
-        self.rot_obj = Rotation(32, seed=0, seq='ZYZ')
+        self.dtype = np.float32
+        self.rot_obj = Rotation(32, seed=0, seq='ZYZ', dtype=self.dtype)
         self.angles = self.rot_obj.angles
 
     def testRotMatrices(self):
-        rots_ref = sp_rot.from_euler('ZYZ', self.angles).as_matrix()
-        print(rots_ref[1])
-        print(self.rot_obj.rot_matrices[1])
+        rots_ref = sp_rot.from_euler('ZYZ', self.angles, degrees=True).as_matrix()
         self.assertTrue(np.allclose(self.rot_obj.rot_matrices, rots_ref))
 
     def testRotAngles(self):
         rot = sp_rot.from_matrix(self.rot_obj.rot_matrices)
-        angles = rot.as_euler(self.rot_obj.rot_seq)
+        angles = rot.as_euler(self.rot_obj.rot_seq, degrees=True)
         self.assertTrue(np.allclose(self.rot_obj.angles, angles))
 
-    def TestTranspose(self):
+    def testTranspose(self):
         rot_mat = self.rot_obj.rot_matrices
         rot_mat_t = self.rot_obj.T
         for i in range(self.rot_obj.num_rots):
-            self.assertTrue(np.allclose(rot_mat_t[i], rot_mat.T[i]))
+            self.assertTrue(np.allclose(rot_mat_t[i], rot_mat[i].T))
 
-    def TestMultiplication(self):
-        rot_obj_t =  Rotation(32, seed=0, seq='ZYZ')
+    def testMultiplication(self):
+        rot_obj_t = Rotation(32, seed=0, seq='ZYZ')
         rot_obj_t.rot_matrices = self.rot_obj.T
-        result = np.allclose(self.rot_obj*rot_obj_t)
+        result = self.rot_obj*rot_obj_t
         for i in range(self.rot_obj.num_rots):
-            self.assertTrue(np.allclose(np.eye(3), result[i]))
+            self.assertTrue(
+                np.allclose(np.eye(3), result[i],
+                            atol=utest_tolerance(self.dtype)))
 
     def testRegisterRots(self):
         rots_ref = self.rot_obj.rot_matrices
