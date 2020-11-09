@@ -13,46 +13,43 @@ from aspire.utils.matlab_compat import Random
 
 
 class Rotation:
-    """
-    Define a Customized Rotation class
-    """
 
     def __init__(self, num_rots, seed=None, seq='ZYZ',
-                 angles=None, degrees=False, dtype=np.float32):
+                 angles=None, dtype=np.float32):
         """
         Initialize a Rotation object
 
         :param num_rots: Total number of rotation sets
-        :param seed: Seed for initializing random rotations
+        :param seed: Seed for initializing random rotations.
+            If None, numpy.random will continue previous state.
         :param seq:  Sequence of order applying Euler angles
-        :param angles: Euler angles to generate rotation matrices
-        :param degrees: Whether Euler angles in degrees or not
-        :param dtype:   data type for angles and rotation matrices
+        :param angles: Euler angles (in degrees) to generate rotation matrices.
+            If None, uniformly distributed angles will be generated.
+        :param dtype: data type for angles and rotation matrices
         """
         self.rot_seq = seq
-        self.degrees = degrees
         self.dtype = np.dtype(dtype)
         if angles:
             ensure(num_rots == angles.shape[0],
                    'Number of rotation matrices should equal to '
                    'number of sets of Euler angles.')
-            self.angles = angles
+            self.angles = angles.astype(self.dtype)
         else:
             self.angles = self._uniform_random_angles(
-                num_rots, seed=seed).astype(self.dtype)
+                num_rots, seed=seed)
         self.num_rots = num_rots
 
-        self.data = self.rot_matrices.astype(self.dtype)
+        self.data = self.rot_matrices
         self.shape = (num_rots, 3, 3)
 
     def _uniform_random_angles(self, n, seed=None):
         """
-        Generate random 3D rotation angles
+        Generate random 3D rotation angles in degrees
 
         :param n: The number of rotation angles to generate
         :param seed: Random integer seed to use. If None,
             the current random state is used.
-        :return: A n-by-3 ndarray of rotation angles
+        :return: A n-by-3 ndarray of rotation angles in degrees
         """
         # Generate random rotation angles, in radians
         angles = np.zeros((n, 3), dtype=self.dtype)
@@ -62,14 +59,15 @@ class Rotation:
                 np.arccos(2 * np.random.random(n) - 1),
                 np.random.random(n) * 2 * np.pi
             ))
-        return angles
+        # Return random rotation angles in degrees
+        return np.rad2deg(angles).astype(self.dtype)
 
     @property
     def rot_matrices(self):
         """
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        return self._rotations.as_matrix()
+        return self._rotations.as_matrix().astype(self.dtype)
 
     @rot_matrices.setter
     def rot_matrices(self, values):
@@ -79,25 +77,27 @@ class Rotation:
         :param values: Rotation matrices as a n x 3 x 3 array
         :return: None
         """
-        self._rotations = sp_rot.from_matrix(values)
-        self.data = values.astyp(self.dtype)
+        self._rotations = sp_rot.from_matrix(values.astype(self.dtype))
+        self.data = values.astype(self.dtype)
 
     @property
     def angles(self):
         """
-        :return: Rotation angles in radians, as a n x 3 array
+        :return: Rotation angles in degrees, as a n x 3 array
         """
-        return self._rotations.as_euler(self.rot_seq)
+        return self._rotations.as_euler(self.rot_seq, degrees=True
+                                        ).astype(self.dtype)
 
     @angles.setter
     def angles(self, values):
         """
-        Set rotation angles
+        Set rotation angles in degrees
 
-        :param values: Rotation angles in radians, as a n x 3 array
+        :param values: Rotation angles in degrees, as a n x 3 array
         :return: None
         """
-        self._rotations = sp_rot.from_euler(self.rot_seq, values)
+        self._rotations = sp_rot.from_euler(
+            self.rot_seq, values.astype(self.dtype), degrees=True)
 
     @staticmethod
     def register_rotations(rots, rots_ref):
