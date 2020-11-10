@@ -12,17 +12,17 @@ logger = logging.getLogger(__name__)
 @click.option('--data_folder', default=None,
               help='Path to data folder')
 @click.option('--starfile_in', required=True,
-              help='Path to input starfile relative to data folder')
+              help='Path to input STAR file relative to data folder')
 @click.option('--starfile_out', required=True,
-              help='Path to output starfile relative to data folder')
+              help='Path to output STAR file relative to data folder')
 @click.option('--pixel_size', default=1, type=float,
-              help='Pixel size of images in starfile')
+              help='Pixel size of images in STAR file')
 @click.option('--max_rows', default=None, type=int,
-              help='Max. no. of image rows to read from starfile')
+              help='Max number of image rows to read from STAR file')
 @click.option('--flip_phase', default=True,
-              help='perform phase flip or not')
+              help='Perform phase flip or not')
 @click.option('--max_resolution', default=16, type=int,
-              help='Resolution of downsampled images read from starfile')
+              help='Resolution for downsampling images read from STAR file')
 @click.option('--normalize_background', default=True,
               help='Whether to normalize images to background noise')
 @click.option('--whiten_noise', default=True,
@@ -30,11 +30,11 @@ logger = logging.getLogger(__name__)
 @click.option('--invert_contrast', default=True,
               help='Invert the contrast of images so molecules are shown in white')
 @click.option('--batch_size', default=512,
-              help='Batch size to load images from .mrc files.')
+              help='Batch size to load images from MRC files.')
 @click.option('--save_mode', default='single',
-              help='Option to save mrc file, if not single, saved to multiply files in batch size')
+              help='Option to save MRC file, if not single, saved to multiple files in batch size')
 @click.option('--overwrite', default=False,
-              help='Whether to overwrite mrc files if they already exist')
+              help='Whether to overwrite MRC files if they already exist')
 def preprocess(data_folder, starfile_in, starfile_out, pixel_size, max_rows,
                flip_phase, max_resolution, normalize_background, whiten_noise,
                invert_contrast, batch_size, save_mode, overwrite):
@@ -42,7 +42,7 @@ def preprocess(data_folder, starfile_in, starfile_out, pixel_size, max_rows,
     Preprocess the raw images and output desired images for future analysis
     """
     # Create a source object for 2D images
-    logger.info('This script illustrates how to preprocess experimental CryoEM images')
+    logger.info('This script preprocesses experimental CryoEM images')
     logger.info(f'Read in images from {starfile_in} and preprocess the images.')
     source = RelionSource(
         starfile_in,
