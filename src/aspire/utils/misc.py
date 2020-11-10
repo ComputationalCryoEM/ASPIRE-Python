@@ -2,19 +2,20 @@
 Miscellaneous Utilities that have no better place (yet).
 """
 import logging
+from itertools import chain, combinations
 
 import numpy as np
-from itertools import chain, combinations
 from numpy.linalg import qr, solve
 
 from aspire.utils.matrix import mat_to_vec, vec_to_mat
 from aspire.volume import Volume
 
-
 logger = logging.getLogger(__name__)
 
 
-def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_size=512):
+def src_wiener_coords(
+    sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_size=512
+):
     """
     Calculate coordinates using Wiener filter
     :param sim: A simulation object containing the images whose coordinates we want.
@@ -38,24 +39,32 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
     """
 
     if not isinstance(mean_vol, Volume):
-        logger.debug('src_wiener_coords mean_vol should be a Volume instance. Attempt correction.')
+        logger.debug(
+            "src_wiener_coords mean_vol should be a Volume instance. Attempt correction."
+        )
         if len(mean_vol.shape) == 4 and mean_vol.shape[3] != 1:
-            msg = (f'Cannot naively convert {mean_vol.shape} to Volume instance.'
-                   'Please change calling code.')
+            msg = (
+                f"Cannot naively convert {mean_vol.shape} to Volume instance."
+                "Please change calling code."
+            )
             logger.error(msg)
             raise RuntimeError(msg)
 
         mean_vol = Volume(mean_vol)
 
     if not isinstance(eig_vols, Volume):
-        logger.debug('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
+        logger.debug(
+            "src_wiener_coords eig_vols should be a Volume instance. Correcting for now."
+        )
         eig_vols = Volume(eig_vols)
 
     if not sim.dtype == mean_vol.dtype == eig_vols.dtype:
-        logger.warning('Inconsistent types in src_wiener_coords'
-                       f' sim {sim.dtype},'
-                       f' mean_vol {mean_vol.dtype},'
-                       f' eig_vols {eig_vols.dtype}')
+        logger.warning(
+            "Inconsistent types in src_wiener_coords"
+            f" sim {sim.dtype},"
+            f" mean_vol {mean_vol.dtype},"
+            f" eig_vols {eig_vols.dtype}"
+        )
 
     k = eig_vols.n_vols
     if lambdas is None:
@@ -73,7 +82,6 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
 
         Q_vecs = mat_to_vec(Qs)
 
-
         # RCOPT
         ims = np.moveaxis(ims.data, 0, 2)
         im_vecs = mat_to_vec(ims)
@@ -83,7 +91,7 @@ def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_
             covar_im = (Rs[:, :, j] @ lambdas @ Rs[:, :, j].T) + covar_noise
             xx = solve(covar_im, im_coords)
             im_coords = lambdas @ Rs[:, :, j].T @ xx
-            coords[:, i+j] = im_coords
+            coords[:, i + j] = im_coords
 
     return coords
 
@@ -106,7 +114,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     ims = np.swapaxes(ims, 1, 3)
     ims = np.swapaxes(ims, 0, 2)
 
-    Q_vecs = np.zeros((sim.L**2, k, n), dtype=vols.dtype)
+    Q_vecs = np.zeros((sim.L ** 2, k, n), dtype=vols.dtype)
     Rs = np.zeros((k, k, n), dtype=vols.dtype)
 
     im_vecs = mat_to_vec(ims)
@@ -115,6 +123,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     Qs = vec_to_mat(Q_vecs)
 
     return Qs, Rs
+
 
 def powerset(iterable):
     """

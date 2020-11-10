@@ -1,14 +1,13 @@
 import logging
 
 import numpy as np
-from scipy.sparse.linalg import LinearOperator, cg
 from scipy.special import jv
 
 from aspire.basis import Basis
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.utils.matrix import im_to_vec, roll_dim, unroll_dim, vec_to_im
+from aspire.utils.matrix import roll_dim, unroll_dim
 
 logger = logging.getLogger(__name__)
 
@@ -38,16 +37,18 @@ class FBBasis2D(Basis):
         """
 
         ndim = len(size)
-        ensure(ndim == 2, 'Only two-dimensional basis functions are supported.')
-        ensure(len(set(size)) == 1, 'Only square domains are supported.')
+        ensure(ndim == 2, "Only two-dimensional basis functions are supported.")
+        ensure(len(set(size)) == 1, "Only square domains are supported.")
         super().__init__(size, ell_max, dtype=dtype)
 
     def _build(self):
         """
         Build the internal data structure to 2D Fourier-Bessel basis
         """
-        logger.info('Expanding 2D images in a spatial-domain Fourier–Bessel'
-                    ' basis using the direct method.')
+        logger.info(
+            "Expanding 2D images in a spatial-domain Fourier–Bessel"
+            " basis using the direct method."
+        )
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()
@@ -88,33 +89,31 @@ class FBBasis2D(Basis):
 
                 i += len(rng)
 
-        return {
-            'ells': indices_ells,
-            'ks': indices_ks,
-            'sgns': indices_sgns
-        }
+        return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
 
     def _precomp(self):
         """
         Precompute the basis functions at defined sample points
         """
 
-        r_unique = self.basis_coords['r_unique']
-        ang_unique = self.basis_coords['ang_unique']
+        r_unique = self.basis_coords["r_unique"]
+        ang_unique = self.basis_coords["ang_unique"]
 
         ind_radial = 0
         ind_ang = 0
 
-        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)),
-                          dtype=self.dtype)
-        ang = np.zeros(shape=(ang_unique.shape[-1], 2 * self.ell_max + 1),
-                       dtype=self.dtype)
+        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)), dtype=self.dtype)
+        ang = np.zeros(
+            shape=(ang_unique.shape[-1], 2 * self.ell_max + 1), dtype=self.dtype
+        )
 
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
                 # Only normalized by the radial part of basis function
-                radial[:, ind_radial] = (jv(ell, self.r0[k - 1, ell] * r_unique)
-                                         / self.radial_norms[ind_radial])
+                radial[:, ind_radial] = (
+                    jv(ell, self.r0[k - 1, ell] * r_unique)
+                    / self.radial_norms[ind_radial]
+                )
                 ind_radial += 1
 
             sgns = (1,) if ell == 0 else (1, -1)
@@ -123,10 +122,7 @@ class FBBasis2D(Basis):
                 ang[:, ind_ang] = fn(ell * ang_unique)
                 ind_ang += 1
 
-        return {
-            'radial': radial,
-            'ang': ang
-        }
+        return {"radial": radial, "ang": ang}
 
     def norms(self):
         """
@@ -148,7 +144,12 @@ class FBBasis2D(Basis):
         """
         Calculate the normalized factors from radial and angular parts of a specified basis function
         """
-        rad_norm = np.abs(jv(ell + 1, self.r0[k - 1, ell])) * np.sqrt(1 / 2.) * self.nres / 2.
+        rad_norm = (
+            np.abs(jv(ell + 1, self.r0[k - 1, ell]))
+            * np.sqrt(1 / 2.0)
+            * self.nres
+            / 2.0
+        )
         ang_norm = np.sqrt(np.pi)
         if ell == 0:
             ang_norm *= np.sqrt(2)
@@ -168,34 +169,34 @@ class FBBasis2D(Basis):
 
         if v.dtype != self.dtype:
             logger.warning(
-                f'{self.__class__.__name__}::evaluate'
-                f' Inconsistent dtypes v: {v.dtype} self: {self.dtype}')
+                f"{self.__class__.__name__}::evaluate"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
 
         # Transpose here once, instead of several times below  #RCOPT
         v = v.reshape(-1, self.count).T
 
-        r_idx = self.basis_coords['r_idx']
-        ang_idx = self.basis_coords['ang_idx']
-        mask = m_flatten(self.basis_coords['mask'])
+        r_idx = self.basis_coords["r_idx"]
+        ang_idx = self.basis_coords["ang_idx"]
+        mask = m_flatten(self.basis_coords["mask"])
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])),
-                     dtype=v.dtype)
+        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max, dtype=np.int)
 
             # include the normalization factor of angular part
             ang_nrms = self.angular_norms[idx_radial]
-            radial = self._precomp['radial'][:, idx_radial]
+            radial = self._precomp["radial"][:, idx_radial]
             radial = radial / ang_nrms
 
             sgns = (1,) if ell == 0 else (1, -1)
             for _ in sgns:
-                ang = self._precomp['ang'][:, ind_ang]
+                ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, k_max, dtype=np.int)
                 x[mask] += ang_radial @ v[idx]
@@ -204,7 +205,7 @@ class FBBasis2D(Basis):
 
             ind_radial += len(idx_radial)
 
-        x = x.T.reshape(-1, *self.sz) # RCOPT
+        x = x.T.reshape(-1, *self.sz)  # RCOPT
 
         return x
 
@@ -222,35 +223,37 @@ class FBBasis2D(Basis):
 
         if v.dtype != self.dtype:
             logger.warning(
-                f'{self.__class__.__name__}::evaluate_t'
-                f' Inconsistent dtypes v: {v.dtype} self: {self.dtype}')
+                f"{self.__class__.__name__}::evaluate_t"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
 
-        v = v.T  #RCOPT
+        v = v.T  # RCOPT
 
         x, sz_roll = unroll_dim(v, self.ndim + 1)
-        x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim:])))
+        x = m_reshape(
+            x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
+        )
 
-        r_idx = self.basis_coords['r_idx']
-        ang_idx = self.basis_coords['ang_idx']
-        mask = m_flatten(self.basis_coords['mask'])
+        r_idx = self.basis_coords["r_idx"]
+        ang_idx = self.basis_coords["ang_idx"]
+        mask = m_flatten(self.basis_coords["mask"])
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])),
-                     dtype=v.dtype)
+        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
             # include the normalization factor of angular part
             ang_nrms = self.angular_norms[idx_radial]
-            radial = self._precomp['radial'][:, idx_radial]
+            radial = self._precomp["radial"][:, idx_radial]
             radial = radial / ang_nrms
 
             sgns = (1,) if ell == 0 else (1, -1)
             for _ in sgns:
-                ang = self._precomp['ang'][:, ind_ang]
+                ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, k_max)
                 v[idx] = ang_radial.T @ x[mask]

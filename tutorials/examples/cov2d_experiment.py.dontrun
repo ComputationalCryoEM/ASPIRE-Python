@@ -9,7 +9,6 @@ from aspire.denoising.denoiser_cov2d import DenoiserCov2D
 from aspire.estimation.noise import AnisotropicNoiseEstimator
 from aspire.source.relion import RelionSource
 
-
 # Set input path and files and initialize other parameters
 DATA_FOLDER = '/path/to/untarred/empiar/dataset/'
 STARFILE_IN = '/path/to/untarred/empiar/dataset/input.star'

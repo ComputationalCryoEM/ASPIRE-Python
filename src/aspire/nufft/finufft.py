@@ -24,9 +24,9 @@ class FinufftPlan(Plan):
         """
 
         self.ntransforms = ntransforms
-        manystr = ''
+        manystr = ""
         if self.ntransforms > 1:
-            manystr = 'many'
+            manystr = "many"
 
         self.sz = sz
         self.dim = len(sz)
@@ -53,25 +53,27 @@ class FinufftPlan(Plan):
 
         self.cast_output = False
         if self.dtype != np.float64:
-            logger.debug('This version of finufftpy is hardcoded to doubles internally'
-                        '  casting input to doubles, results cast back to singles.')
+            logger.debug(
+                "This version of finufftpy is hardcoded to doubles internally"
+                "  casting input to doubles, results cast back to singles."
+            )
             self.cast_output = True
             self.dtype = np.float64
 
         self.complex_dtype = complex_type(self.dtype)
 
         # TODO: Things get messed up unless we ensure a 'C' ordering here - investigate why
-        self.fourier_pts = np.asarray(np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi,
-                                      order='C', dtype=self.dtype)
+        self.fourier_pts = np.asarray(
+            np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order="C", dtype=self.dtype
+        )
         self.num_pts = fourier_pts.shape[1]
         self.epsilon = epsilon
 
         # Get a handle on the appropriate 1d/2d/3d forward transform function in finufftpy
-        self.transform_function = getattr(finufftpy, f'nufft{self.dim}d2{manystr}')
+        self.transform_function = getattr(finufftpy, f"nufft{self.dim}d2{manystr}")
 
         # Get a handle on the appropriate 1d/2d/3d adjoint function in finufftpy
-        self.adjoint_function = getattr(finufftpy, f'nufft{self.dim}d1{manystr}')
-
+        self.adjoint_function = getattr(finufftpy, f"nufft{self.dim}d1{manystr}")
 
     def transform(self, signal):
         """
@@ -89,18 +91,26 @@ class FinufftPlan(Plan):
         res_shape = self.num_pts
         # Note, there is a corner case for ntransforms == 1.
         if self.ntransforms > 1 or (
-                self.ntransforms == 1 and len(signal.shape) == self.dim + 1):
-            ensure(len(signal.shape) == self.dim + 1,
-                   f"For multiple transforms, {self.dim}D signal should be"
-                   f" a {self.ntransforms} element stack of {self.sz}.")
-            ensure(signal.shape[0] == self.ntransforms,
-                   "For multiple transforms, signal stack length"
-                   f" should match ntransforms {self.ntransforms}.")
+            self.ntransforms == 1 and len(signal.shape) == self.dim + 1
+        ):
+            ensure(
+                len(signal.shape) == self.dim + 1,
+                f"For multiple transforms, {self.dim}D signal should be"
+                f" a {self.ntransforms} element stack of {self.sz}.",
+            )
+            ensure(
+                signal.shape[0] == self.ntransforms,
+                "For multiple transforms, signal stack length"
+                f" should match ntransforms {self.ntransforms}.",
+            )
 
             sig_shape = signal.shape[1:]
             res_shape = (self.ntransforms, self.num_pts)
 
-        ensure(sig_shape == self.sz, f'Signal frame to be transformed must have shape {self.sz}')
+        ensure(
+            sig_shape == self.sz,
+            f"Signal frame to be transformed must have shape {self.sz}",
+        )
 
         epsilon = max(self.epsilon, np.finfo(signal.dtype).eps)
 
@@ -118,11 +128,11 @@ class FinufftPlan(Plan):
             result,
             -1,
             epsilon,
-            signal.T  # RCOPT, currently F ordered, should change in gv2
+            signal.T,  # RCOPT, currently F ordered, should change in gv2
         )
 
         if result_code != 0:
-            raise RuntimeError(f'FINufft transform failed. Result code {result_code}')
+            raise RuntimeError(f"FINufft transform failed. Result code {result_code}")
         if self.cast_output:
             result = result.astype(np.complex64)
 
@@ -150,15 +160,21 @@ class FinufftPlan(Plan):
 
         res_shape = self.sz
         # Note, there is a corner case for ntransforms == 1.
-        if self.ntransforms > 1 or (
-                self.ntransforms == 1 and len(signal.shape) == 2):
-            ensure(len(signal.shape) == 2,    # Stack and num_pts
-                   f"For multiple {self.dim}D adjoints, signal should be"
-                   f" a {self.ntransforms} element stack of {self.num_pts}.")
-            ensure(signal.shape[0] == self.ntransforms,
-                   "For multiple transforms, signal stack length"
-                   f" should match ntransforms {self.ntransforms}.")
-            res_shape = (self.ntransforms, *self.sz, )
+        if self.ntransforms > 1 or (self.ntransforms == 1 and len(signal.shape) == 2):
+            ensure(
+                len(signal.shape) == 2,  # Stack and num_pts
+                f"For multiple {self.dim}D adjoints, signal should be"
+                f" a {self.ntransforms} element stack of {self.num_pts}.",
+            )
+            ensure(
+                signal.shape[0] == self.ntransforms,
+                "For multiple transforms, signal stack length"
+                f" should match ntransforms {self.ntransforms}.",
+            )
+            res_shape = (
+                self.ntransforms,
+                *self.sz,
+            )
 
         result = np.zeros(res_shape, dtype=self.complex_dtype)
 
@@ -174,15 +190,10 @@ class FinufftPlan(Plan):
         signal = signal.reshape(signal.shape[::-1])
 
         result_code = self.adjoint_function(
-            *self.fourier_pts,
-            signal,
-            1,
-            epsilon,
-            *self.sz,
-            result
+            *self.fourier_pts, signal, 1, epsilon, *self.sz, result
         )
         if result_code != 0:
-            raise RuntimeError(f'FINufft adjoint failed. Result code {result_code}')
+            raise RuntimeError(f"FINufft adjoint failed. Result code {result_code}")
 
         if self.cast_output:
             result = result.astype(np.complex64)

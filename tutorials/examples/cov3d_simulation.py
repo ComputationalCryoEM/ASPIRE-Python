@@ -21,16 +21,16 @@ from aspire.volume import Volume
 logger = logging.getLogger(__name__)
 
 # Specify parameters
-num_vols = 2           # number of volumes
-img_size = 8           # image size in square
-num_imgs = 1024        # number of images
-num_eigs = 16          # number of eigen-vectors to keep
+num_vols = 2  # number of volumes
+img_size = 8  # image size in square
+num_imgs = 1024  # number of images
+num_eigs = 16  # number of eigen-vectors to keep
 
 # Create a simulation object with specified filters
 sim = Simulation(
     n=num_imgs,
     C=num_vols,
-    unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
+    unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
 )
 
 # Specify the normal FB basis method for expending the 2D images
@@ -39,7 +39,7 @@ basis = FBBasis3D((img_size, img_size, img_size))
 # Estimate the noise variance. This is needed for the covariance estimation step below.
 noise_estimator = WhiteNoiseEstimator(sim, batchSize=500)
 noise_variance = noise_estimator.estimate()
-logger.info(f'Noise Variance = {noise_variance}')
+logger.info(f"Noise Variance = {noise_variance}")
 
 
 # Estimate the mean. This uses conjugate gradient on the normal equations for
@@ -72,13 +72,15 @@ eigs_est = Volume(eigs_est_c)
 # Truncate the eigendecomposition. Since we know the true rank of the
 # covariance matrix, we enforce it here.
 
-eigs_est_trunc = Volume(eigs_est[:num_vols-1]) # hrmm not very convenient
-lambdas_est_trunc = lambdas_est[:num_vols-1, :num_vols-1]
+eigs_est_trunc = Volume(eigs_est[: num_vols - 1])  # hrmm not very convenient
+lambdas_est_trunc = lambdas_est[: num_vols - 1, : num_vols - 1]
 
 # Estimate the coordinates in the eigenbasis. Given the images, we find the
 # coordinates in the basis that minimize the mean squared error, given the
 # (estimated) covariances of the volumes and the noise process.
-coords_est = src_wiener_coords(sim, mean_est, eigs_est_trunc, lambdas_est_trunc, noise_variance)
+coords_est = src_wiener_coords(
+    sim, mean_est, eigs_est_trunc, lambdas_est_trunc, noise_variance
+)
 
 # Cluster the coordinates using k-means. Again, we know how many volumes
 # we expect, so we can use this parameter here. Typically, one would take
@@ -116,7 +118,7 @@ coords_perf = sim.eval_coords(mean_est, eigs_est_trunc, clustered_coords_est)
 
 # Output estimated covariance spectrum.
 
-logger.info(f'Population Covariance Spectrum = {np.diag(lambdas_est)}')
+logger.info(f"Population Covariance Spectrum = {np.diag(lambdas_est)}")
 
 
 # Output performance results.
@@ -126,7 +128,7 @@ logger.info(f'Mean (correlation) = {mean_perf["corr"]}')
 logger.info(f'Covariance (rel. error) = {covar_perf["rel_err"]}')
 logger.info(f'Covariance (correlation) = {covar_perf["corr"]}')
 logger.info(f'Eigendecomposition (rel. error) = {eigs_perf["rel_err"]}')
-logger.info(f'Clustering (accuracy) = {clustering_accuracy}')
+logger.info(f"Clustering (accuracy) = {clustering_accuracy}")
 logger.info(f'Coordinates (mean rel. error) = {coords_perf["rel_err"]}')
 logger.info(f'Coordinates (mean correlation) = {np.mean(coords_perf["corr"])}')
 

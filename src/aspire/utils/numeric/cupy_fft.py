@@ -7,6 +7,7 @@ class CupyFFT:
 
     To be consistent with Scipy and Pyfftw, not all arguments are included.
     """
+
     @staticmethod
     def fft(x, axis=-1, workers=-1):
         return cp.fft.fft(x, axis=axis)
@@ -20,7 +21,7 @@ class CupyFFT:
         return cp.fft.fft2(x, axes=axes)
 
     @staticmethod
-    def ifft2(x,  axes=(-2, -1), workers=-1):
+    def ifft2(x, axes=(-2, -1), workers=-1):
         return cp.fft.ifft2(x, axes=axes)
 
     @staticmethod
@@ -28,7 +29,7 @@ class CupyFFT:
         return cp.fft.fftn(x, axes=axes)
 
     @staticmethod
-    def ifftn(x,  axes=None, workers=-1):
+    def ifftn(x, axes=None, workers=-1):
         return cp.fft.ifft2(x, axes=axes)
 
     @staticmethod

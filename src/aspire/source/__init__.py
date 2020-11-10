@@ -1,5 +1,4 @@
 import logging
-from copy import copy
 
 import numpy as np
 import pandas as pd
@@ -7,13 +6,17 @@ from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image, normalize_bg
 from aspire.io.starfile import save_star
-from aspire.source.xform import (Add, Downsample, FilterXform,
-                                 IndexedXform, LambdaXform, LinearIndexedXform,
-                                 LinearPipeline, Multiply, Pipeline, Shift)
+from aspire.source.xform import (
+    Downsample,
+    FilterXform,
+    IndexedXform,
+    LambdaXform,
+    Multiply,
+    Pipeline,
+)
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import (LambdaFilter, MultiplicativeFilter, PowerFilter)
-from aspire.volume import Volume
+from aspire.utils.filters import LambdaFilter, MultiplicativeFilter, PowerFilter
 
 logger = logging.getLogger(__name__)
 
@@ -43,41 +46,41 @@ class ImageSource:
     additional columns are available when read, and they default to the pandas data type 'object'.
     """
     metadata_fields = {
-        '_rlnVoltage': float,
-        '_rlnDefocusU': float,
-        '_rlnDefocusV': float,
-        '_rlnDefocusAngle': float,
-        '_rlnSphericalAberration': float,
-        '_rlnDetectorPixelSize': float,
-        '_rlnCtfFigureOfMerit': float,
-        '_rlnMagnification': float,
-        '_rlnAmplitudeContrast': float,
-        '_rlnImageName': str,
-        '_rlnOriginalName': str,
-        '_rlnCtfImage': str,
-        '_rlnCoordinateX': float,
-        '_rlnCoordinateY': float,
-        '_rlnCoordinateZ': float,
-        '_rlnNormCorrection': float,
-        '_rlnMicrographName': str,
-        '_rlnGroupName': str,
-        '_rlnGroupNumber': str,
-        '_rlnOriginX': float,
-        '_rlnOriginY': float,
-        '_rlnAngleRot': float,
-        '_rlnAngleTilt': float,
-        '_rlnAnglePsi': float,
-        '_rlnClassNumber': int,
-        '_rlnLogLikeliContribution': float,
-        '_rlnRandomSubset': int,
-        '_rlnParticleName': str,
-        '_rlnOriginalParticleName': str,
-        '_rlnNrOfSignificantSamples': float,
-        '_rlnNrOfFrames': int,
-        '_rlnMaxValueProbDistribution': float
+        "_rlnVoltage": float,
+        "_rlnDefocusU": float,
+        "_rlnDefocusV": float,
+        "_rlnDefocusAngle": float,
+        "_rlnSphericalAberration": float,
+        "_rlnDetectorPixelSize": float,
+        "_rlnCtfFigureOfMerit": float,
+        "_rlnMagnification": float,
+        "_rlnAmplitudeContrast": float,
+        "_rlnImageName": str,
+        "_rlnOriginalName": str,
+        "_rlnCtfImage": str,
+        "_rlnCoordinateX": float,
+        "_rlnCoordinateY": float,
+        "_rlnCoordinateZ": float,
+        "_rlnNormCorrection": float,
+        "_rlnMicrographName": str,
+        "_rlnGroupName": str,
+        "_rlnGroupNumber": str,
+        "_rlnOriginX": float,
+        "_rlnOriginY": float,
+        "_rlnAngleRot": float,
+        "_rlnAngleTilt": float,
+        "_rlnAnglePsi": float,
+        "_rlnClassNumber": int,
+        "_rlnLogLikeliContribution": float,
+        "_rlnRandomSubset": int,
+        "_rlnParticleName": str,
+        "_rlnOriginalParticleName": str,
+        "_rlnNrOfSignificantSamples": float,
+        "_rlnNrOfFrames": int,
+        "_rlnMaxValueProbDistribution": float,
     }
 
-    def __init__(self, L, n, dtype='double', metadata=None, memory=None):
+    def __init__(self, L, n, dtype="double", metadata=None, memory=None):
         """
         A Cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
 
@@ -99,11 +102,13 @@ class ImageSource:
             self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
         else:
             self._metadata = metadata
-            if self.has_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']):
+            if self.has_metadata(["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]):
                 self._rotations = R.from_euler(
-                    'ZYZ',
-                    self.get_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']),
-                    degrees=True
+                    "ZYZ",
+                    self.get_metadata(
+                        ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
+                    ),
+                    degrees=True,
                 )
 
         self.unique_filters = None
@@ -111,15 +116,15 @@ class ImageSource:
 
     @property
     def states(self):
-        return self.get_metadata('_rlnClassNumber')
+        return self.get_metadata("_rlnClassNumber")
 
     @states.setter
     def states(self, values):
-        return self.set_metadata('_rlnClassNumber', values)
+        return self.set_metadata("_rlnClassNumber", values)
 
     @property
     def filter_indices(self):
-        return self.get_metadata('__filter_indices')
+        return self.get_metadata("__filter_indices")
 
     @filter_indices.setter
     def filter_indices(self, indices):
@@ -127,35 +132,48 @@ class ImageSource:
         if indices is None:
             filter_values = np.nan
         else:
-            attribute_list = ('voltage', 'defocus_u', 'defocus_v',
-                              'defocus_ang', 'Cs', 'alpha')
+            attribute_list = (
+                "voltage",
+                "defocus_u",
+                "defocus_v",
+                "defocus_ang",
+                "Cs",
+                "alpha",
+            )
             filter_values = np.zeros((len(indices), len(attribute_list)))
             for i, filt in enumerate(self.unique_filters):
-                filter_values[indices == i] = [getattr(filt, attribute, np.nan)
-                                               for attribute in attribute_list]
+                filter_values[indices == i] = [
+                    getattr(filt, attribute, np.nan) for attribute in attribute_list
+                ]
 
         self.set_metadata(
-            ['_rlnVoltage', '_rlnDefocusU', '_rlnDefocusV', '_rlnDefocusAngle',
-             '_rlnSphericalAberration', '_rlnAmplitudeContrast'],
-            filter_values
+            [
+                "_rlnVoltage",
+                "_rlnDefocusU",
+                "_rlnDefocusV",
+                "_rlnDefocusAngle",
+                "_rlnSphericalAberration",
+                "_rlnAmplitudeContrast",
+            ],
+            filter_values,
         )
-        return self.set_metadata(['__filter_indices'], indices)
+        return self.set_metadata(["__filter_indices"], indices)
 
     @property
     def offsets(self):
-        return self.get_metadata(['_rlnOriginX', '_rlnOriginY'], default_value=0.)
+        return self.get_metadata(["_rlnOriginX", "_rlnOriginY"], default_value=0.0)
 
     @offsets.setter
     def offsets(self, values):
-        return self.set_metadata(['_rlnOriginX', '_rlnOriginY'], values)
+        return self.set_metadata(["_rlnOriginX", "_rlnOriginY"], values)
 
     @property
     def amplitudes(self):
-        return self.get_metadata('_rlnAmplitude', default_value=1.)
+        return self.get_metadata("_rlnAmplitude", default_value=1.0)
 
     @amplitudes.setter
     def amplitudes(self, values):
-        return self.set_metadata('_rlnAmplitude', values)
+        return self.set_metadata("_rlnAmplitude", values)
 
     @property
     def angles(self):
@@ -178,8 +196,10 @@ class ImageSource:
         :param values: Rotation angles in radians, as a n x 3 array
         :return: None
         """
-        self._rotations = R.from_euler('ZYZ', values)
-        self.set_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi'], np.rad2deg(values))
+        self._rotations = R.from_euler("ZYZ", values)
+        self.set_metadata(
+            ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
+        )
 
     @rots.setter
     def rots(self, values):
@@ -189,7 +209,10 @@ class ImageSource:
         :return: None
         """
         self._rotations = R.from_matrix(values)
-        self.set_metadata(['_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi'], self._rotations.as_euler('ZYZ', degrees=True))
+        self.set_metadata(
+            ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
+            self._rotations.as_euler("ZYZ", degrees=True),
+        )
 
     def set_metadata(self, metadata_fields, values, indices=None):
         """
@@ -213,7 +236,9 @@ class ImageSource:
         for metadata_field in metadata_fields:
             series = df[metadata_field]
             if metadata_field not in self._metadata.columns:
-                self._metadata = self._metadata.merge(series, how='left', left_index=True, right_index=True)
+                self._metadata = self._metadata.merge(
+                    series, how="left", left_index=True, right_index=True
+                )
             else:
                 self._metadata[metadata_field] = series
 
@@ -246,20 +271,26 @@ class ImageSource:
         # which messes with our logic. This behavior will change in pandas 0.21.0.
         # See https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#indexing-with-list-with-missing-labels-is-deprecated
         # We deal with the situation in a slightly verbose manner as follows.
-        missing_columns = [col for col in metadata_fields if col not in self._metadata.columns]
+        missing_columns = [
+            col for col in metadata_fields if col not in self._metadata.columns
+        ]
         if len(missing_columns) == 0:
             result = self._metadata.loc[indices, metadata_fields]
         else:
             if default_value is not None:
-                right = pd.DataFrame(default_value, columns=missing_columns, index=indices)
-                found_columns = [col for col in metadata_fields if col not in missing_columns]
+                right = pd.DataFrame(
+                    default_value, columns=missing_columns, index=indices
+                )
+                found_columns = [
+                    col for col in metadata_fields if col not in missing_columns
+                ]
                 if len(found_columns) > 0:
                     left = self._metadata.loc[indices, found_columns]
                     result = left.join(right)
                 else:
                     result = right
             else:
-                raise RuntimeError('Missing columns and no default value provided')
+                raise RuntimeError("Missing columns and no default value provided")
 
         return result.to_numpy().squeeze()
 
@@ -272,11 +303,15 @@ class ImageSource:
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
         :return: A 3D volume of images of size L x L x n
         """
-        raise NotImplementedError('Subclasses should implement this and return an Image object')
+        raise NotImplementedError(
+            "Subclasses should implement this and return an Image object"
+        )
 
     def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
         if not isinstance(im_orig, Image):
-            logger.warning(f"eval_filters passed {type(im_orig)} instead of Image instance")
+            logger.warning(
+                f"eval_filters passed {type(im_orig)} instead of Image instance"
+            )
             # for now just convert it
             im = Image(im_orig)
 
@@ -294,10 +329,9 @@ class ImageSource:
 
     def eval_filter_grid(self, L, power=1):
         grid2d = grid_2d(L, dtype=self.dtype)
-        omega = np.pi * np.vstack((grid2d['x'].flatten(), grid2d['y'].flatten()))
+        omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
 
-        h = np.empty((omega.shape[-1], len(self.filter_indices)),
-                     dtype=self.dtype)
+        h = np.empty((omega.shape[-1], len(self.filter_indices)), dtype=self.dtype)
         for i, filt in enumerate(self.unique_filters):
             idx_k = np.where(self.filter_indices == i)[0]
             if len(idx_k) > 0:
@@ -306,12 +340,12 @@ class ImageSource:
                     filter_values **= power
                 h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
-        h = np.reshape(h, grid2d['x'].shape + (len(self.filter_indices),))
+        h = np.reshape(h, grid2d["x"].shape + (len(self.filter_indices),))
 
         return h
 
     def cache(self):
-        logger.info('Caching source images')
+        logger.info("Caching source images")
         self._cached_im = self.images(start=0, num=np.inf)
         self.generation_pipeline.reset()
 
@@ -327,18 +361,21 @@ class ImageSource:
         indices = np.arange(start, min(start + num, self.n), dtype=np.int)
 
         if self._cached_im is not None:
-            logger.info(f'Loading images from cache')
+            logger.info("Loading images from cache")
             im = Image(self._cached_im[indices, :, :])
         else:
             im = self._images(indices=indices, *args, **kwargs)
 
         im = self.generation_pipeline.forward(im, indices=indices)
-        logger.info(f'Loaded {len(indices)} images')
+        logger.info(f"Loaded {len(indices)} images")
         return im
 
     def downsample(self, L):
-        ensure(L <= self.L, "Max desired resolution should be less than the current resolution")
-        logger.info(f'Setting max. resolution of source = {L}')
+        ensure(
+            L <= self.L,
+            "Max desired resolution should be less than the current resolution",
+        )
+        logger.info(f"Setting max. resolution of source = {L}")
 
         self.generation_pipeline.add_xform(Downsample(resolution=L))
 
@@ -358,22 +395,25 @@ class ImageSource:
         logger.info("Whitening source object")
         whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
-        logger.info('Transforming all CTF Filters into Multiplicative Filters')
-        self.unique_filters = [MultiplicativeFilter(f, whiten_filter)
-                               for f in self.unique_filters]
-        logger.info('Adding Whitening Filter Xform to end of generation pipeline')
+        logger.info("Transforming all CTF Filters into Multiplicative Filters")
+        self.unique_filters = [
+            MultiplicativeFilter(f, whiten_filter) for f in self.unique_filters
+        ]
+        logger.info("Adding Whitening Filter Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
     def phase_flip(self):
         """
         Perform phase flip to images in the source object using CTF information
         """
-        logger.info('Perform phase flip on source object')
-        logger.info('Adding Phase Flip Xform to end of generation pipeline')
-        unique_xforms = [FilterXform(LambdaFilter(f, np.sign))
-                         for f in self.unique_filters]
-        self.generation_pipeline.add_xform(IndexedXform(unique_xforms,
-                                                        self.filter_indices))
+        logger.info("Perform phase flip on source object")
+        logger.info("Adding Phase Flip Xform to end of generation pipeline")
+        unique_xforms = [
+            FilterXform(LambdaFilter(f, np.sign)) for f in self.unique_filters
+        ]
+        self.generation_pipeline.add_xform(
+            IndexedXform(unique_xforms, self.filter_indices)
+        )
 
     def invert_contrast(self, batch_size=512):
         """
@@ -391,12 +431,12 @@ class ImageSource:
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
-        logger.info('Apply contrast inversion on source object')
+        logger.info("Apply contrast inversion on source object")
         L = self.L
         grid = grid_2d(L, shifted=True)
         # Get mask indices of signal and noise samples assuming molecule
-        signal_mask = (grid['r'] < 0.5)
-        noise_mask = (grid['r'] > 0.8)
+        signal_mask = grid["r"] < 0.5
+        noise_mask = grid["r"] > 0.8
 
         # Calculate mean values in batch_size
         signal_mean = 0.0
@@ -414,13 +454,13 @@ class ImageSource:
         noise_mean /= noise_denominator
 
         if signal_mean < noise_mean:
-            logger.info('Need to invert contrast')
+            logger.info("Need to invert contrast")
             scale_factor = -1.0
         else:
-            logger.info('No need to invert contrast')
+            logger.info("No need to invert contrast")
             scale_factor = 1.0
 
-        logger.info('Adding Scaling Xform to end of generation pipeline')
+        logger.info("Adding Scaling Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
     def normalize_background(self, bg_radius=1.0, do_ramp=True):
@@ -439,10 +479,13 @@ class ImageSource:
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
-        logger.info(f'Normalize background on source object with radius '
-                    f'size of {bg_radius} and do_ramp of {do_ramp}')
+        logger.info(
+            f"Normalize background on source object with radius "
+            f"size of {bg_radius} and do_ramp of {do_ramp}"
+        )
         self.generation_pipeline.add_xform(
-            LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp))
+            LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp)
+        )
 
     def im_backward(self, im, start):
         """
@@ -458,7 +501,7 @@ class ImageSource:
         im = im.shift(-self.offsets[all_idx, :])
         im = self.eval_filters(im, start=start, num=num)
 
-        vol = im.backproject(self.rots[start:start+num, :, :])[0]
+        vol = im.backproject(self.rots[start : start + num, :, :])[0]
 
         return vol
 
@@ -475,7 +518,7 @@ class ImageSource:
         assert vol.n_vols == 1, "vol_forward expects a single volume, not a stack"
 
         if vol.dtype != self.dtype:
-            logger.warning(f'Volume.dtype {vol.dtype} inconsistent with {self.dtype}')
+            logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
         im = vol.project(0, self.rots[all_idx, :, :])
         im = self.eval_filters(im, start, num)
@@ -493,8 +536,13 @@ class ImageSource:
         """
         logger.info("save images")
 
-        save_star(self, starfile_filepath, batch_size=batch_size, save_mode=save_mode,
-                  overwrite=overwrite)
+        save_star(
+            self,
+            starfile_filepath,
+            batch_size=batch_size,
+            save_mode=save_mode,
+            overwrite=overwrite,
+        )
 
 
 class ArrayImageSource(ImageSource):
@@ -506,11 +554,14 @@ class ArrayImageSource(ImageSource):
     Note that this class does not provide an `_images` method, since it populates the `_cached_im` attribute which,
     if available, is consulted directly by the parent class, bypassing `_images`.
     """
+
     def __init__(self, im, metadata=None):
         """
         Initialize from an `Image` object
         :param im: An `Image` object representing image data served up by this `ImageSource`
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         """
-        super().__init__(L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None)
+        super().__init__(
+            L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None
+        )
         self._cached_im = im

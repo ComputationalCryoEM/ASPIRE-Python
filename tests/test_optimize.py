@@ -11,12 +11,12 @@ class OptimizeTestCase(TestCase):
         # Generate real and complex A matrices from random numbers
         rand_mat = random((4, 4))
         self.A = rand_mat @ rand_mat.T
-        rand_mat_comp = random((4, 4)) + random((4, 4))*1j
+        rand_mat_comp = random((4, 4)) + random((4, 4)) * 1j
         self.A_comp = rand_mat_comp @ rand_mat_comp.T.conjugate()
 
         # Generate real and complex x vectors from random numbers
         self.b = random(4)
-        self.b_comp = random(4) + random(4)*1j
+        self.b_comp = random(4) + random(4) * 1j
 
     def testConjGradReal(self):
         x_est, _, _ = conj_grad(lambda x: self.A @ x, self.b)

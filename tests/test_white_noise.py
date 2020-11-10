@@ -7,14 +7,16 @@ from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
+DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class SimTestCase(TestCase):
     def setUp(self):
         self.sim = Simulation(
             n=1024,
-            unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)]
+            unique_filters=[
+                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
+            ],
         )
 
     def tearDown(self):
