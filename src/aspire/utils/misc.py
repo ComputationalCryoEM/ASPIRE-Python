@@ -1,6 +1,7 @@
 """
 Miscellaneous Utilities that have no better place (yet).
 """
+import hashlib
 import logging
 from itertools import chain, combinations
 
@@ -136,3 +137,21 @@ def powerset(iterable):
 
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+
+
+def sha256sum(filename):
+    """
+    Return sha256 hash of filename.
+
+    :param filename: path to file
+    :return: sha256 hash as hex
+    """
+
+    h = hashlib.sha256()
+    b = bytearray(128 * 1024)
+    mv = memoryview(b)
+    with open(filename, "rb", buffering=0) as f:
+        for n in iter(lambda: f.readinto(mv), 0):
+            h.update(mv[:n])
+
+    return h.hexdigest()
