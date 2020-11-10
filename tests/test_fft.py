@@ -6,7 +6,7 @@ from aspire import config
 from aspire.utils.numeric import fft_object
 
 fft_backends = ["scipy", "pyfftw"]
-numeric_classes = [np, np]
+numeric_modules = [np, np]
 
 # Create Cupy fft backend if Cupy is enabled and lib exits.
 if config.common.cupy:
@@ -14,7 +14,7 @@ if config.common.cupy:
         import cupy as cp
 
         fft_backends.append("cupy")
-        numeric_classes.append(cp)
+        numeric_modules.append(cp)
     except ImportError:
         pass
 
