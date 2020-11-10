@@ -13,9 +13,9 @@ from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
-from aspire.utils.random import Random
 from aspire.utils.matrix import eigs
 from aspire.utils.misc import src_wiener_coords
+from aspire.utils.random import Random
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)

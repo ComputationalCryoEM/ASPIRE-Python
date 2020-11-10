@@ -7,7 +7,7 @@ from numpy.linalg import norm
 from scipy.linalg import svd
 
 from aspire.utils import ensure
-from aspire.utils.random import Random, randn
+from aspire.utils.random import Random
 
 
 def cart2pol(x, y):
