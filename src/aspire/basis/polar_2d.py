@@ -6,8 +6,6 @@ from aspire.basis import Basis
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils import ensure
-from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.matrix import roll_dim, unroll_dim
 from aspire.utils.types import real_type
 
 logger = logging.getLogger(__name__)
@@ -29,8 +27,8 @@ class PolarBasis2D(Basis):
         """
 
         ndim = len(size)
-        ensure(ndim == 2, 'Only two-dimensional grids are supported.')
-        ensure(len(set(size)) == 1, 'Only square domains are supported.')
+        ensure(ndim == 2, "Only two-dimensional grids are supported.")
+        ensure(len(set(size)) == 1, "Only square domains are supported.")
 
         self.nrad = nrad
         if nrad is None:
@@ -47,7 +45,7 @@ class PolarBasis2D(Basis):
         """
         Build the internal data structure to 2D polar Fourier grid
         """
-        logger.info('Represent 2D image in a polar Fourier grid')
+        logger.info("Represent 2D image in a polar Fourier grid")
 
         self.count = self.nrad * self.ntheta
         self._sz_prod = self.sz[0] * self.sz[1]
@@ -65,8 +63,12 @@ class PolarBasis2D(Basis):
         # only need half size of ntheta
         freqs = np.zeros((2, self.nrad * self.ntheta // 2), dtype=self.dtype)
         for i in range(self.ntheta // 2):
-            freqs[0, i * self.nrad: (i + 1) * self.nrad] = np.arange(self.nrad) * np.sin(i * dtheta)
-            freqs[1, i * self.nrad: (i + 1) * self.nrad] = np.arange(self.nrad) * np.cos(i * dtheta)
+            freqs[0, i * self.nrad : (i + 1) * self.nrad] = np.arange(
+                self.nrad
+            ) * np.sin(i * dtheta)
+            freqs[1, i * self.nrad : (i + 1) * self.nrad] = np.arange(
+                self.nrad
+            ) * np.cos(i * dtheta)
 
         freqs *= omega0
         return freqs
@@ -82,8 +84,10 @@ class PolarBasis2D(Basis):
             resolution of `self.sz`.
         """
         if self.dtype != real_type(v.dtype):
-            msg = (f'Input data type, {v.dtype}, is not consistent with'
-                   f' type defined in the class {self.dtype}.')
+            msg = (
+                f"Input data type, {v.dtype}, is not consistent with"
+                f" type defined in the class {self.dtype}."
+            )
             logger.error(msg)
             raise TypeError(msg)
 
@@ -93,12 +97,11 @@ class PolarBasis2D(Basis):
 
         half_size = self.ntheta // 2
 
-        v = (v[:, :half_size, :]
-             + v[:, half_size:, :].conj())
+        v = v[:, :half_size, :] + v[:, half_size:, :].conj()
 
-        v = v.reshape(nimgs, self.nrad*half_size)
+        v = v.reshape(nimgs, self.nrad * half_size)
 
-        x =  anufft(v, self.freqs, self.sz, real=True)
+        x = anufft(v, self.freqs, self.sz, real=True)
 
         return Image(x)
 
@@ -116,8 +119,10 @@ class PolarBasis2D(Basis):
         assert isinstance(x, Image)
 
         if self.dtype != x.dtype:
-            msg = (f'Input data type, {x.dtype}, is not consistent with'
-                   f' type defined in the class {self.dtype}.')
+            msg = (
+                f"Input data type, {x.dtype}, is not consistent with"
+                f" type defined in the class {self.dtype}."
+            )
             logger.error(msg)
             raise TypeError(msg)
 

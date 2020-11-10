@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class MeanEstimator(Estimator):
-
     def compute_kernel(self):
         _2L = 2 * self.L
         kernel = np.zeros((_2L, _2L, _2L), dtype=self.dtype)
@@ -33,14 +32,18 @@ class MeanEstimator(Estimator):
             pts_rot = m_reshape(pts_rot, (3, -1))
             weights = m_flatten(weights)
 
-            kernel += 1 / (self.n * self.L ** 4) * anufft(weights, pts_rot, (_2L, _2L, _2L), real=True)
+            kernel += (
+                1
+                / (self.n * self.L ** 4)
+                * anufft(weights, pts_rot, (_2L, _2L, _2L), real=True)
+            )
 
         # Ensure symmetric kernel
         kernel[0, :, :] = 0
         kernel[:, 0, :] = 0
         kernel[:, :, 0] = 0
 
-        logger.info('Computing non-centered Fourier Transform')
+        logger.info("Computing non-centered Fourier Transform")
         kernel = mdim_ifftshift(kernel, range(0, 3))
         kernel_f = fft2(kernel, axes=(0, 1, 2))
         kernel_f = np.real(kernel_f)

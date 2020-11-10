@@ -1,5 +1,6 @@
-from threading import Lock
 import os
+from threading import Lock
+
 import pyfftw
 import pyfftw.interfaces.scipy_fftpack as scipy_fft
 
@@ -13,7 +14,7 @@ _cpu_count = os.cpu_count()
 
 def _workers(workers):
     if workers in (None, 0):
-        raise ValueError('Workers must be specified')
+        raise ValueError("Workers must be specified")
 
     if workers < 0:
         # Borrow the idea from scipy for negative values of workers.
@@ -22,8 +23,10 @@ def _workers(workers):
         if workers >= -_cpu_count:
             workers += 1 + _cpu_count
         else:
-            raise ValueError(f'Workers value out of range; got {workers}, '
-                             f'must not be less than {-_cpu_count}')
+            raise ValueError(
+                f"Workers value out of range; got {workers}, "
+                f"must not be less than {-_cpu_count}"
+            )
 
     return workers
 
@@ -41,8 +44,9 @@ class PyfftwFFT(FFT):
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
-            cls = pyfftw.FFTW(a_, b, axes=(axis,), direction='FFTW_FORWARD',
-                              threads=_workers(workers))
+            cls = pyfftw.FFTW(
+                a_, b, axes=(axis,), direction="FFTW_FORWARD", threads=_workers(workers)
+            )
             cls(a, b)
         finally:
             mutex.release()
@@ -56,8 +60,13 @@ class PyfftwFFT(FFT):
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
-            cls = pyfftw.FFTW(a_, b, axes=(axis,), direction='FFTW_BACKWARD',
-                              threads=_workers(workers))
+            cls = pyfftw.FFTW(
+                a_,
+                b,
+                axes=(axis,),
+                direction="FFTW_BACKWARD",
+                threads=_workers(workers),
+            )
             cls(a, b)
         finally:
             mutex.release()
@@ -77,8 +86,9 @@ class PyfftwFFT(FFT):
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
-            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD',
-                              threads=_workers(workers))
+            cls = pyfftw.FFTW(
+                a_, b, axes=axes, direction="FFTW_FORWARD", threads=_workers(workers)
+            )
             cls(a, b)
         finally:
             mutex.release()
@@ -92,8 +102,9 @@ class PyfftwFFT(FFT):
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
-            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_BACKWARD',
-                              threads=_workers(workers))
+            cls = pyfftw.FFTW(
+                a_, b, axes=axes, direction="FFTW_BACKWARD", threads=_workers(workers)
+            )
             cls(a, b)
         finally:
             mutex.release()
@@ -107,8 +118,9 @@ class PyfftwFFT(FFT):
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
-            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_FORWARD',
-                              threads=_workers(workers))
+            cls = pyfftw.FFTW(
+                a_, b, axes=axes, direction="FFTW_FORWARD", threads=_workers(workers)
+            )
             cls(a, b)
         finally:
             mutex.release()
@@ -122,8 +134,9 @@ class PyfftwFFT(FFT):
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
-            cls = pyfftw.FFTW(a_, b, axes=axes, direction='FFTW_BACKWARD',
-                              threads=_workers(workers))
+            cls = pyfftw.FFTW(
+                a_, b, axes=axes, direction="FFTW_BACKWARD", threads=_workers(workers)
+            )
             cls(a, b)
         finally:
             mutex.release()

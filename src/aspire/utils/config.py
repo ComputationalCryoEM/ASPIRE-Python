@@ -18,7 +18,7 @@ def config_override(args, config=None):
                 old_values[section_name][k] = v
 
         for k, v in args.items():
-            section_name, key_name = k.split('.')
+            section_name, key_name = k.split(".")
             section = getattr(config, section_name)
             setattr(section, key_name, type(old_values[section_name][key_name])(v))
         yield args
@@ -35,6 +35,7 @@ class ConfigSection:
     that tries to infer the types of values, and makes them available as attributes
     Currently int/float/str are supported.
     """
+
     def __init__(self, section_proxy):
         self.d = {}  # key value dict where the value is typecast to int/float/str
         for k, v in section_proxy.items():
@@ -44,8 +45,8 @@ class ConfigSection:
                 try:
                     v = float(v)
                 except ValueError:
-                    if ',' in v:
-                        v = [t.strip() for t in v.split(',')]
+                    if "," in v:
+                        v = [t.strip() for t in v.split(",")]
                     self.d[k] = v
                 else:
                     self.d[k] = v
@@ -53,13 +54,13 @@ class ConfigSection:
                 self.d[k] = v
 
     def __setattr__(self, key, value):
-        if key == 'd':
+        if key == "d":
             return super().__setattr__(key, value)
         else:
             self.d[key] = value
 
     def __getattr__(self, item):
-        if item != 'd':
+        if item != "d":
             return self.d[item]
 
     def items(self):
@@ -68,7 +69,7 @@ class ConfigSection:
 
 class Config:
     def __init__(self, ini_string=None):
-        self.config = configparser.ConfigParser(inline_comment_prefixes='#')
+        self.config = configparser.ConfigParser(inline_comment_prefixes="#")
         self.init_from_string(ini_string)
 
     def init_from_string(self, ini_string):

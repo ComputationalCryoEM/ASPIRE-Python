@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: The implementation of these functions should move directly inside the appropriate Image methods that call them.
 
+
 def _im_translate2(im, shifts):
     """
     Translate image by shifts
@@ -31,8 +32,10 @@ def _im_translate2(im, shifts):
     """
 
     if not isinstance(im, Image):
-        logger.warning("_im_translate2 expects an Image, attempting to convert array."
-                       "Expects array of size n-by-L-by-L.")
+        logger.warning(
+            "_im_translate2 expects an Image, attempting to convert array."
+            "Expects array of size n-by-L-by-L."
+        )
         im = Image(im)
 
     if shifts.ndim == 1:
@@ -41,16 +44,17 @@ def _im_translate2(im, shifts):
     n_shifts = shifts.shape[0]
 
     if shifts.shape[1] != 2:
-        raise ValueError('Input `shifts` must be of size n-by-2')
+        raise ValueError("Input `shifts` must be of size n-by-2")
 
     if n_shifts != 1 and n_shifts != im.n_images:
-        raise ValueError('The number of shifts must be 1 or match the number of images')
+        raise ValueError("The number of shifts must be 1 or match the number of images")
 
     resolution = im.res
     grid = xp.asnumpy(fft.ifftshift(xp.asarray(np.ceil(np.arange(-resolution / 2, resolution / 2)))))
     om_y, om_x = np.meshgrid(grid, grid)
-    phase_shifts = (np.einsum('ij, k -> ijk', om_x, shifts[:,0]) +
-                    np.einsum('ij, k -> ijk', om_y, shifts[:,1]))
+    phase_shifts = np.einsum("ij, k -> ijk", om_x, shifts[:, 0]) + np.einsum(
+        "ij, k -> ijk", om_y, shifts[:, 1]
+    )
     # TODO: figure out how why the result of einsum requires reshape
     phase_shifts = phase_shifts.reshape(n_shifts, resolution, resolution)
     phase_shifts /= resolution
@@ -76,31 +80,36 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     """
     L = imgs.shape[-1]
     grid = grid_2d(L)
-    mask = (grid['r'] > bg_radius)
+    mask = grid["r"] > bg_radius
 
     if do_ramp:
         # Create matrices and reshape the background mask
         # for fitting a ramping background
-        ramp_mask = np.vstack((grid['x'][mask].flatten(),
-                           grid['y'][mask].flatten(),
-                           np.ones(grid['y'][mask].flatten().size))).T
-        ramp_all = np.vstack((grid['x'].flatten(), grid['y'].flatten(),
-                          np.ones(L*L))).T
-        mask_reshape = mask.reshape((L*L))
-        imgs = imgs.reshape((-1, L*L))
+        ramp_mask = np.vstack(
+            (
+                grid["x"][mask].flatten(),
+                grid["y"][mask].flatten(),
+                np.ones(grid["y"][mask].flatten().size),
+            )
+        ).T
+        ramp_all = np.vstack(
+            (grid["x"].flatten(), grid["y"].flatten(), np.ones(L * L))
+        ).T
+        mask_reshape = mask.reshape((L * L))
+        imgs = imgs.reshape((-1, L * L))
 
         # Fit a ramping background and apply to images
-        coeff = lstsq(ramp_mask, imgs[:, mask_reshape].T)[0] #RCOPT
-        imgs = imgs - (ramp_all @ coeff).T  #RCOPT
+        coeff = lstsq(ramp_mask, imgs[:, mask_reshape].T)[0]  # RCOPT
+        imgs = imgs - (ramp_all @ coeff).T  # RCOPT
         imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
     imgs_masked = imgs * mask
     denominator = np.sum(mask)
-    first_moment = np.sum(imgs_masked, axis=(1, 2))/denominator
-    second_moment = np.sum(imgs_masked ** 2, axis=(1, 2))/denominator
+    first_moment = np.sum(imgs_masked, axis=(1, 2)) / denominator
+    second_moment = np.sum(imgs_masked ** 2, axis=(1, 2)) / denominator
     mean = first_moment.reshape(-1, 1, 1)
-    variance = second_moment.reshape(-1, 1, 1) - mean**2
+    variance = second_moment.reshape(-1, 1, 1) - mean ** 2
     std = np.sqrt(variance)
 
     return (imgs - mean) / std
@@ -109,7 +118,9 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
 class Image:
     def __init__(self, data):
 
-        assert isinstance(data, np.ndarray), "Image should be instantiated with an ndarray"
+        assert isinstance(
+            data, np.ndarray
+        ), "Image should be instantiated with an ndarray"
 
         if data.ndim == 2:
             data = data[np.newaxis, :, :]
@@ -121,7 +132,7 @@ class Image:
         self.n_images = self.shape[0]
         self.res = self.shape[1]
 
-        ensure(data.shape[1] == data.shape[2], 'Only square ndarrays are supported.')
+        ensure(data.shape[1] == data.shape[2], "Only square ndarrays are supported.")
 
     def __getitem__(self, item):
         return self.data[item]
@@ -151,7 +162,7 @@ class Image:
         return np.sqrt(self.data)
 
     def __repr__(self):
-        return f'{self.n_images} images of size {self.res}x{self.res}'
+        return f"{self.n_images} images of size {self.res}x{self.res}"
 
     def asnumpy(self):
         return self.data
@@ -196,12 +207,9 @@ class Image:
 
         for s in range(im_ds.shape[0]):
             interpolator = RegularGridInterpolator(
-                (x, y),
-                im[s],
-                bounds_error=False,
-                fill_value=0
+                (x, y), im[s], bounds_error=False, fill_value=0
             )
-            im_ds[s] = interpolator(np.dstack([grid_ds['x'], grid_ds['y']]))
+            im_ds[s] = interpolator(np.dstack([grid_ds["x"], grid_ds["y"]]))
 
         return Image(im_ds)
 
@@ -250,7 +258,10 @@ class Image:
 
         ensure(shifts.shape[-1] == 2, "shifts must be nx2")
 
-        ensure(n_shifts == 1 or n_shifts == self.n_images, "number of shifts must be 1 or match the number of images")
+        ensure(
+            n_shifts == 1 or n_shifts == self.n_images,
+            "number of shifts must be 1 or match the number of images",
+        )
         # Cast shifts to this instance's internal dtype
         shifts = shifts.astype(self.dtype)
 
@@ -264,8 +275,10 @@ class Image:
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
         phase_shifts_y = -shifts[:, 1].reshape((n_shifts, 1, 1))
 
-        phase_shifts = (om_x[np.newaxis, :, :] * phase_shifts_x +
-                        om_y[np.newaxis, :, :] * phase_shifts_y)
+        phase_shifts = (
+            om_x[np.newaxis, :, :] * phase_shifts_x
+            + om_y[np.newaxis, :, :] * phase_shifts_y
+        )
         mult_f = np.exp(-1j * phase_shifts)
         im_translated_f = im_f * mult_f
         im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f)))
@@ -293,10 +306,12 @@ class Image:
 
         L = self.res
 
-        ensure(self.n_images == rot_matrices.shape[0],
-               "Number of rotation matrices must match the number of images")
+        ensure(
+            self.n_images == rot_matrices.shape[0],
+            "Number of rotation matrices must match the number of images",
+        )
 
-        ## TODO: rotated_grids might as well give us correctly shaped array in the first place
+        # TODO: rotated_grids might as well give us correctly shaped array in the first place
         pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
         pts_rot = np.moveaxis(pts_rot, 1, 2)
         pts_rot = m_reshape(pts_rot, (3, -1))

@@ -10,6 +10,7 @@ class CommLineSDP(CLOrient3D):
     Class to estimate 3D orientations using Semi-Definite Programming
     :cite:`DBLP:journals/siamis/SingerS11`
     """
+
     def __init__(self, src):
         """
         constructor of an object for estimating 3D orientations

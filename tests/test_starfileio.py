@@ -15,7 +15,7 @@ from aspire.io.starfile import StarFile, StarFileBlock, save_star
 from aspire.source import ArrayImageSource
 from aspire.source.mrcstack import MrcStack
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
+DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 # From itertools standard recipes
@@ -37,13 +37,12 @@ def grouper(iterable, n, fillvalue=None):
 
 class StarFileTestCase(TestCase):
     def setUp(self):
-        with importlib_resources.path(tests.saved_test_data,
-                                      'sample.star') as path:
+        with importlib_resources.path(tests.saved_test_data, "sample.star") as path:
             self.starfile = StarFile(path)
 
         # Independent Image object for testing Image source methods
         L = 768
-        self.im = Image(misc.face(gray=True).astype('float64')[:L, :L])
+        self.im = Image(misc.face(gray=True).astype("float64")[:L, :L])
         self.img_src = ArrayImageSource(self.im)
 
         # We also want to flex the stack logic.
@@ -84,52 +83,50 @@ class StarFileTestCase(TestCase):
         # Indexing a StarFile with a string gives us a block with that name
         #   ("data_<name>" in starfile).
         # In our case the block at index 1 has name 'planetary'
-        block1 = self.starfile['planetary']
+        block1 = self.starfile["planetary"]
         # This block has a two 'loops'.
         self.assertEqual(2, len(block1))
 
     def testBlockProperties(self):
         # A StarFileBlock may have attributes that were read from the
         #   starfile key=>value pairs.
-        block0 = self.starfile['general']
+        block0 = self.starfile["general"]
         # Note that no typecasting is performed
-        self.assertEqual(block0._three, '3')
+        self.assertEqual(block0._three, "3")
 
     def testLoop(self):
         loop = self.starfile[1][0]
         self.assertIsInstance(loop, DataFrame)
 
     def testData1(self):
-        df = self.starfile['planetary'][0]
+        df = self.starfile["planetary"][0]
         self.assertEqual(8, len(df))
         self.assertEqual(4, len(df.columns))
         # Note that no typecasting of values is performed at io.StarFile level
-        self.assertEqual('1', df[df['_name'] == 'Earth'].iloc[0]['_gravity'])
+        self.assertEqual("1", df[df["_name"] == "Earth"].iloc[0]["_gravity"])
 
     def testData2(self):
-        df = self.starfile['planetary'][1]
+        df = self.starfile["planetary"][1]
         self.assertEqual(3, len(df))
         self.assertEqual(2, len(df.columns))
         # Missing values in a loop default to ''
-        self.assertEqual(
-            '',
-            df[df['_name'] == 'Earth'].iloc[0]['_discovered_year'])
+        self.assertEqual("", df[df["_name"] == "Earth"].iloc[0]["_discovered_year"])
 
     def testSave(self):
         # Save the StarFile object to disk,
         #   read it back, and check for equality.
         # Note that __eq__ is supported for StarFile/StarFileBlock classes
 
-        with open('sample_saved.star', 'w') as f:
+        with open("sample_saved.star", "w") as f:
             self.starfile.save(f)
-        self.starfile2 = StarFile('sample_saved.star')
+        self.starfile2 = StarFile("sample_saved.star")
         self.assertEqual(self.starfile, self.starfile2)
 
-        os.remove('sample_saved.star')
+        os.remove("sample_saved.star")
 
     def testSaveStar(self):
-        test_path = os.path.join(self.tmpdir, 'sample_save_star.star')
-        mrc_path = splitext(test_path)[0] + '_0_0.mrcs'
+        test_path = os.path.join(self.tmpdir, "sample_save_star.star")
+        mrc_path = splitext(test_path)[0] + "_0_0.mrcs"
 
         # Save some data using the wrapper.
         save_star(self.img_src, test_path)
@@ -141,16 +138,14 @@ class StarFileTestCase(TestCase):
         saved_data = MrcStack(mrc_path).im.data
 
         # Compare
-        self.assertTrue(np.allclose(
-            self.im.data,
-            saved_data))
+        self.assertTrue(np.allclose(self.im.data, saved_data))
 
     def testSaveStarSingle(self):
-        test_path = os.path.join(self.tmpdir, 'sample_save_single.star')
-        mrc_path = splitext(test_path)[0] + '_0_0.mrcs'
+        test_path = os.path.join(self.tmpdir, "sample_save_single.star")
+        mrc_path = splitext(test_path)[0] + "_0_0.mrcs"
 
         # Save some data using the wrapper.
-        save_star(self.img_src, test_path, save_mode='single')
+        save_star(self.img_src, test_path, save_mode="single")
 
         # Can we read it back using the class?
         _ = StarFile(test_path)
@@ -159,12 +154,10 @@ class StarFileTestCase(TestCase):
         saved_data = MrcStack(mrc_path).im.data
 
         # Compare
-        self.assertTrue(np.allclose(
-            self.im.data,
-            saved_data))
+        self.assertTrue(np.allclose(self.im.data, saved_data))
 
     def testSaveStarStack(self):
-        test_path = os.path.join(self.tmpdir, 'sample_save_stack.star')
+        test_path = os.path.join(self.tmpdir, "sample_save_stack.star")
         cleanup_files = [test_path]
         batch_size = 2
 
@@ -179,28 +172,23 @@ class StarFileTestCase(TestCase):
             grp = list(filter(None.__ne__, itr))
 
             # Parse fname
-            mrc_path = (splitext(test_path)[0] +
-                        f'_{min(grp)}_{max(grp)}.mrcs')
+            mrc_path = splitext(test_path)[0] + f"_{min(grp)}_{max(grp)}.mrcs"
             cleanup_files.append(mrc_path)
 
             # Read the data file.
             saved_data = MrcStack(mrc_path).im.data
 
             # Compare
-            self.assertTrue(np.allclose(
-                self.im_stack[min(grp):max(grp)+1],
-                saved_data))
+            self.assertTrue(
+                np.allclose(self.im_stack[min(grp) : max(grp) + 1], saved_data)
+            )
 
     def testSaveStarSingleStack(self):
-        test_path = os.path.join(self.tmpdir, 'sample_save_single_stack.star')
-        mrc_path = (splitext(test_path)[0] +
-                    f'_0_{self.im_stack.n_images-1}.mrcs')
+        test_path = os.path.join(self.tmpdir, "sample_save_single_stack.star")
+        mrc_path = splitext(test_path)[0] + f"_0_{self.im_stack.n_images-1}.mrcs"
 
         # Save some data using the wrapper.
-        save_star(self.img_src_stack,
-                  test_path,
-                  batch_size=2,
-                  save_mode='single')
+        save_star(self.img_src_stack, test_path, batch_size=2, save_mode="single")
 
         # Can we read it back using the class?
         _ = StarFile(test_path)
@@ -209,6 +197,4 @@ class StarFileTestCase(TestCase):
         saved_data = MrcStack(mrc_path).im.data
 
         # Compare
-        self.assertTrue(np.allclose(
-            self.im_stack.data,
-            saved_data))
+        self.assertTrue(np.allclose(self.im_stack.data, saved_data))

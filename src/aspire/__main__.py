@@ -11,10 +11,10 @@ if __name__ == "__main__":
     # @click.option('--debug/--no-debug', default=False, help="Default is --no-debug.")
     # @click.option('-v', '--verbosity', default=0, help='Verbosity level (0-3).')
 
-    for importer, modname, ispkg in pkgutil.iter_modules(aspire.commands.__path__):
+    for importer, modname, _ in pkgutil.iter_modules(aspire.commands.__path__):
         module = importer.find_module(modname).load_module(modname)
         commands = [v for v in module.__dict__.values() if isinstance(v, Command)]
         for command in commands:
             main.add_command(command)
 
-    main.main(prog_name='aspire')
+    main.main(prog_name="aspire")

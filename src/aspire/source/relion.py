@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class RelionSource(ImageSource):
-
     @classmethod
     def starfile2df(cls, filepath, data_folder=None, max_rows=None):
         if data_folder is not None:
@@ -32,20 +31,32 @@ class RelionSource(ImageSource):
         column_types = {name: cls.metadata_fields.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 
-        df[['__mrc_index', '__mrc_filename']] = (
-            df['_rlnImageName'].str.split('@', 1, expand=True))
-        df['__mrc_index'] = pd.to_numeric(df['__mrc_index'])
+        df[["__mrc_index", "__mrc_filename"]] = df["_rlnImageName"].str.split(
+            "@", 1, expand=True
+        )
+        df["__mrc_index"] = pd.to_numeric(df["__mrc_index"])
 
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself
-        df['__mrc_filepath'] = df['__mrc_filename'].apply(lambda filename: os.path.join(data_folder, filename))
+        df["__mrc_filepath"] = df["__mrc_filename"].apply(
+            lambda filename: os.path.join(data_folder, filename)
+        )
 
         if max_rows is None:
             return df
         else:
             return df.iloc[:max_rows]
 
-    def __init__(self, filepath, data_folder=None, pixel_size=1, B=0, n_workers=-1, max_rows=None, memory=None):
+    def __init__(
+        self,
+        filepath,
+        data_folder=None,
+        pixel_size=1,
+        B=0,
+        n_workers=-1,
+        max_rows=None,
+        memory=None,
+    ):
         """
         Load STAR file at given filepath
         :param filepath: Absolute or relative path to STAR file
@@ -60,7 +71,7 @@ class RelionSource(ImageSource):
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         """
-        logger.debug(f'Creating ImageSource from STAR file at path {filepath}')
+        logger.debug(f"Creating ImageSource from STAR file at path {filepath}")
 
         self.pixel_size = pixel_size
         self.B = B
@@ -70,37 +81,42 @@ class RelionSource(ImageSource):
 
         n = len(metadata)
         if n == 0:
-            raise RuntimeError('No mrcs files found for starfile!')
+            raise RuntimeError("No mrcs files found for starfile!")
 
         # Peek into the first image and populate some attributes
-        first_mrc_filepath = metadata.loc[0]['__mrc_filepath']
+        first_mrc_filepath = metadata.loc[0]["__mrc_filepath"]
         mrc = mrcfile.open(first_mrc_filepath)
 
         # Get the 'mode' (data type) - TODO: There's probably a more direct way to do this.
         mode = int(mrc.header.mode)
-        dtypes = {0: 'int8', 1: 'int16', 2: 'float32', 6: 'uint16'}
-        ensure(mode in dtypes, f'Only modes={list(dtypes.keys())} in MRC files are supported for now.')
+        dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
+        ensure(
+            mode in dtypes,
+            f"Only modes={list(dtypes.keys())} in MRC files are supported for now.",
+        )
         dtype = dtypes[mode]
 
         shape = mrc.data.shape
         ensure(shape[1] == shape[2], "Only square images are supported")
         L = shape[1]
-        logger.debug(f'Image size = {L}x{L}')
+        logger.debug(f"Image size = {L}x{L}")
 
         # Save original image resolution that we expect to use when we start reading actual data
         self._original_resolution = L
 
         filter_params, filter_indices = np.unique(
-            metadata[[
-                '_rlnVoltage',
-                '_rlnDefocusU',
-                '_rlnDefocusV',
-                '_rlnDefocusAngle',
-                '_rlnSphericalAberration',
-                '_rlnAmplitudeContrast'
-            ]].values,
+            metadata[
+                [
+                    "_rlnVoltage",
+                    "_rlnDefocusU",
+                    "_rlnDefocusV",
+                    "_rlnDefocusAngle",
+                    "_rlnSphericalAberration",
+                    "_rlnAmplitudeContrast",
+                ]
+            ].values,
             return_inverse=True,
-            axis=0
+            axis=0,
         )
 
         filters = []
@@ -114,34 +130,29 @@ class RelionSource(ImageSource):
                     defocus_ang=row[3] * np.pi / 180,  # degrees to radians
                     Cs=row[4],
                     alpha=row[5],
-                    B=B
+                    B=B,
                 )
             )
 
         ImageSource.__init__(
-            self,
-            L=L,
-            n=n,
-            dtype=dtype,
-            metadata=metadata,
-            memory=memory
+            self, L=L, n=n, dtype=dtype, metadata=metadata, memory=memory
         )
         self.unique_filters = filters
         self.filter_indices = filter_indices
 
     def __str__(self):
-        return f'RelionSource ({self.n} images of size {self.L}x{self.L})'
+        return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
 
     def _images(self, start=0, num=np.inf, indices=None):
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
         else:
             start = indices.min()
-        logger.info(f'Loading {len(indices)} images from STAR file')
+        logger.info(f"Loading {len(indices)} images from STAR file")
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
-            data = arr[df['__mrc_index'] - 1, :, :]
+            data = arr[df["__mrc_index"] - 1, :, :]
 
             return df.index, data
 
@@ -150,9 +161,11 @@ class RelionSource(ImageSource):
             n_workers = cpu_count() - 1
 
         df = self._metadata.loc[indices]
-        im = np.empty((len(indices), self._original_resolution, self._original_resolution))
+        im = np.empty(
+            (len(indices), self._original_resolution, self._original_resolution)
+        )
 
-        groups = df.groupby('__mrc_filepath')
+        groups = df.groupby("__mrc_filepath")
         n_workers = min(n_workers, len(groups))
 
         with futures.ThreadPoolExecutor(n_workers) as executor:
@@ -163,8 +176,8 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                im[data_indices-start] = data
+                im[data_indices - start] = data
 
-        logger.info(f'Loading {len(indices)} images complete')
+        logger.info(f"Loading {len(indices)} images complete")
 
         return Image(im)

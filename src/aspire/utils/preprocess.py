@@ -43,42 +43,45 @@ def crop_pad(mat, n, fill_value=None):
     num_dimensions = len(mat.shape)
 
     if num_dimensions not in [1, 2, 3]:
-        raise RuntimeError("cropping/padding failed! number of dimensions is too big!"
-                           f" ({num_dimensions} while max is 3).")
+        raise RuntimeError(
+            "cropping/padding failed! number of dimensions is too big!"
+            f" ({num_dimensions} while max is 3)."
+        )
 
     if num_dimensions == 2 and 1 in mat.shape:
         num_dimensions = 1
 
     if fill_value is None:
-            fill_value = 0.0
+        fill_value = 0.0
 
     if num_dimensions == 1:  # mat is a vector for 1D object
         mat = np.reshape(mat, [mat.size, 1])  # force a column vector
         ns = math.floor(mat.size / 2) - math.floor(n / 2)  # shift term for scaling down
         if ns >= 0:  # cropping
-            return mat[ns: ns + n].astype(np.float32)
+            return mat[ns : ns + n].astype(np.float32)
 
         else:  # padding
             result_mat = fill_value * np.ones([n, 1], dtype=complex)
-            result_mat[-ns: mat.size - ns] = mat
+            result_mat[-ns : mat.size - ns] = mat
             return result_mat.astype(np.float32)
 
     elif num_dimensions == 2:  # mat is 2D image
         mat_x, mat_y = mat.shape
         # start_x = math.floor(mat_x / 2) - math.floor(n / 2)
-        start_x = mat_x / 2 - n / 2       # shift term for scaling down
+        start_x = mat_x / 2 - n / 2  # shift term for scaling down
         # start_y = math.floor(mat_y / 2) - math.floor(n / 2)
-        start_y = mat_y / 2 - n / 2       # shift term for scaling down
+        start_y = mat_y / 2 - n / 2  # shift term for scaling down
 
         if start_x >= 0 and start_y >= 0:  # cropping
             start_x, start_y = math.floor(start_x), math.floor(start_y)
-            return mat[start_x: start_x + int(n),
-                       start_y: start_y + int(n)].astype(np.float32)
+            return mat[start_x : start_x + int(n), start_y : start_y + int(n)].astype(
+                np.float32
+            )
 
         elif start_x < 0 and start_y < 0:  # padding
             start_x, start_y = math.floor(start_x), math.floor(start_y)
             result_mat = fill_value * np.ones([n, n], dtype=complex)
-            result_mat[-start_x: mat_x - start_x, -start_y: mat_y - start_y] = mat
+            result_mat[-start_x : mat_x - start_x, -start_y : mat_y - start_y] = mat
             return result_mat.astype(np.float32)
 
         else:
@@ -90,18 +93,24 @@ def crop_pad(mat, n, fill_value=None):
         to_shape = np.array((n, n, n))
 
         ns = np.floor(from_shape / 2) - np.floor(to_shape / 2)
-        ns, to_shape = ns.astype(int), to_shape.astype(int)  # can't slice later with float
+        ns, to_shape = ns.astype(int), to_shape.astype(
+            int
+        )  # can't slice later with float
 
-        if np.all(ns >= 0):   # crop
-            return mat[ns[0]: ns[0]+to_shape[0],
-                       ns[1]: ns[1]+to_shape[1],
-                       ns[2]: ns[2]+to_shape[2]]
+        if np.all(ns >= 0):  # crop
+            return mat[
+                ns[0] : ns[0] + to_shape[0],
+                ns[1] : ns[1] + to_shape[1],
+                ns[2] : ns[2] + to_shape[2],
+            ]
 
-        elif np.all(ns <= 0): # pad
+        elif np.all(ns <= 0):  # pad
             result_mat = fill_value * np.ones([n, n, n], dtype=complex)
-            result_mat[-ns[0]: from_shape[0] - ns[0],
-                       -ns[1]: from_shape[2] - ns[1],
-                       -ns[2]: from_shape[2] - ns[2]] = mat
+            result_mat[
+                -ns[0] : from_shape[0] - ns[0],
+                -ns[1] : from_shape[2] - ns[1],
+                -ns[2] : from_shape[2] - ns[2],
+            ] = mat
 
             return result_mat.astype(np.float32)
 
@@ -121,8 +130,10 @@ def downsample(insamples, szout, mask=None):
     :return: An array consists of the blurred and downsampled objects.
     """
 
-    ensure(insamples.ndim-1 == np.size(szout),
-           'The number of downsampling dimensions is not the same as that of objects.')
+    ensure(
+        insamples.ndim - 1 == np.size(szout),
+        "The number of downsampling dimensions is not the same as that of objects.",
+    )
 
     L_in = insamples.shape[1]
     L_out = szout[0]
@@ -177,7 +188,7 @@ def downsample(insamples, szout, mask=None):
             ) * (L_out**3/L_in**3))
 
     else:
-        raise RuntimeError('Number of dimensions > 3 for input objects.')
+        raise RuntimeError("Number of dimensions > 3 for input objects.")
 
     return outsamples
 
@@ -198,8 +209,8 @@ def fuzzy_mask(L, r0, risetime, origin=None):
     if origin is None:
         origin = center
 
-    grids = [np.arange(1-org, ell - org + 1) for ell, org in zip(L, origin)]
-    XYZ = np.meshgrid(*grids, indexing='ij')
+    grids = [np.arange(1 - org, ell - org + 1) for ell, org in zip(L, origin)]
+    XYZ = np.meshgrid(*grids, indexing="ij")
     XYZ_sq = [X ** 2 for X in XYZ]
     R = np.sqrt(np.sum(XYZ_sq, axis=0))
     k = 1.782 / risetime

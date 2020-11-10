@@ -6,9 +6,8 @@ before starting the pipeline of reconstructing 3D map.
 
 import matplotlib.pyplot as plt
 
-from aspire.source.relion import RelionSource
 from aspire.estimation.noise import WhiteNoiseEstimator
-
+from aspire.source.relion import RelionSource
 
 # Set input path and files and initialize other parameters
 DATA_FOLDER = '/path/to/untarred/empiar/dataset/'

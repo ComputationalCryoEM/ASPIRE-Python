@@ -1,4 +1,3 @@
-import copy
 import inspect
 
 import numpy as np
@@ -35,10 +34,11 @@ class Filter:
         :return: The value of the filter at the specified frequencies.
         """
         if omega.ndim == 1:
-            ensure(self.radial, f'Cannot evaluate a non-radial filter on 1D input array.')
+            ensure(
+                self.radial, "Cannot evaluate a non-radial filter on 1D input array."
+            )
         elif omega.ndim == 2 and self.dim:
-            ensure(omega.shape[0] == self.dim,
-                   f'Omega must be of size {self.dim} x n')
+            ensure(omega.shape[0] == self.dim, f"Omega must be of size {self.dim} x n")
 
         if self.radial:
             if omega.ndim > 1:
@@ -54,7 +54,7 @@ class Filter:
         return h
 
     def _evaluate(self, omega):
-        raise NotImplementedError('Subclasses should implement this method')
+        raise NotImplementedError("Subclasses should implement this method")
 
     def fb_mat(self, fbasis):
         """
@@ -73,10 +73,10 @@ class Filter:
 
     def evaluate_grid(self, L, dtype=np.float32, *args, **kwargs):
         grid2d = grid_2d(L, dtype=dtype)
-        omega = np.pi * np.vstack((grid2d['x'].flatten('F'), grid2d['y'].flatten('F')))
+        omega = np.pi * np.vstack((grid2d["x"].flatten("F"), grid2d["y"].flatten("F")))
         h = self.evaluate(omega, *args, **kwargs)
 
-        h = m_reshape(h, grid2d['x'].shape)
+        h = m_reshape(h, grid2d["x"].shape)
 
         return h
 
@@ -88,6 +88,7 @@ class DualFilter(Filter):
     """
     A Filter object that is dual to origin one, namely g(w)=f(-w)
     """
+
     def __init__(self, filter_in):
         self._filter = filter_in
         super().__init__()
@@ -101,6 +102,7 @@ class FunctionFilter(Filter):
     A Filter object that is instantiated directly using a 1D or 2D function, which is then directly used for evaluating
     the filter.
     """
+
     def __init__(self, f, dim=None):
         n_args = len(inspect.signature(f).parameters)
         assert n_args in (1, 2), "Only 1D or 2D functions are supported"
@@ -122,6 +124,7 @@ class PowerFilter(Filter):
     """
     A Filter object that is composed of a regular `Filter` object, but evaluates it to a specified power.
     """
+
     def __init__(self, filter, power=1):
         self._filter = filter
         self._power = power
@@ -135,6 +138,7 @@ class LambdaFilter(Filter):
     """
     A Filter object to evaluate lambda function of a regular `Filter`.
     """
+
     def __init__(self, filter, f):
         self._filter = filter
         self._f = f
@@ -148,11 +152,9 @@ class MultiplicativeFilter(Filter):
     """
     A Filter object that returns the product of the evaluation of its individual filters
     """
+
     def __init__(self, *args):
-        super().__init__(
-            dim=args[0].dim,
-            radial=all(c.radial for c in args)
-        )
+        super().__init__(dim=args[0].dim, radial=all(c.radial for c in args))
         self._components = args
 
     def _evaluate(self, omega):
@@ -166,20 +168,21 @@ class ScaledFilter(Filter):
     """
     A Filter object that is composed of a regular `Filter` object, but evaluates it on a scaled omega.
     """
+
     def __init__(self, filt, scale):
         self._filter = filt
         self._scale = scale
         super().__init__(dim=filt.dim, radial=filt.radial)
 
     def _evaluate(self, omega):
-        return self._filter.evaluate(omega/self._scale)
+        return self._filter.evaluate(omega / self._scale)
 
     def __str__(self):
         """
         Show class name of ScaledFilter and related information
         :return: A string of class name and related information
         """
-        return f'ScaledFilter (scales {self._filter} by {self._scale})'
+        return f"ScaledFilter (scales {self._filter} by {self._scale})"
 
 
 class ArrayFilter(Filter):
@@ -202,14 +205,18 @@ class ArrayFilter(Filter):
         if dim == 1:
             # If we have a vector of even length, then append the first element to the last
             if xfer_fn_array.shape[0] % 2 == 0:
-                xfer_fn_array = np.concatenate((xfer_fn_array, np.array([xfer_fn_array[0]])))
+                xfer_fn_array = np.concatenate(
+                    (xfer_fn_array, np.array([xfer_fn_array[0]]))
+                )
         elif dim == 2:
             # If we have a 2d array with an even number of rows, append the first row reversed at the bottom
             if xfer_fn_array.shape[0] % 2 == 0:
                 xfer_fn_array = np.vstack((xfer_fn_array, xfer_fn_array[0, ::-1]))
             # If we have a 2d array with an even number of columns, append the first column reversed at the right
             if xfer_fn_array.shape[1] % 2 == 0:
-                xfer_fn_array = np.hstack((xfer_fn_array, xfer_fn_array[::-1, 0][:, np.newaxis]))
+                xfer_fn_array = np.hstack(
+                    (xfer_fn_array, xfer_fn_array[::-1, 0][:, np.newaxis])
+                )
 
         self.xfer_fn_array = xfer_fn_array
 
@@ -217,23 +224,18 @@ class ArrayFilter(Filter):
         sz = self.sz
         # TODO: This part could do with some documentation - not intuitive!
         temp = np.array(sz)[:, np.newaxis]
-        omega = (omega/(2 * np.pi)) * temp
-        omega += np.floor(temp/2) + 1
+        omega = (omega / (2 * np.pi)) * temp
+        omega += np.floor(temp / 2) + 1
 
         # Emulating the behavior of interpn(V,X1q,X2q,X3q,...) in MATLAB
-        _input_pts = tuple(list(range(1, x+1)) for x in self.xfer_fn_array.shape)
+        _input_pts = tuple(list(range(1, x + 1)) for x in self.xfer_fn_array.shape)
         interpolator = RegularGridInterpolator(
-            _input_pts,
-            self.xfer_fn_array,
-            bounds_error=False,
-            fill_value=0
+            _input_pts, self.xfer_fn_array, bounds_error=False, fill_value=0
         )
         result = interpolator(
             # Split omega into input arrays and stack depth-wise because that's how
             # the interpolator wants it
-            np.dstack(
-                np.split(omega, len(sz))
-            )
+            np.dstack(np.split(omega, len(sz)))
         )
 
         # Result is 1 x np.prod(sz) in shape; convert to a 1-d vector
@@ -247,7 +249,7 @@ class ScalarFilter(Filter):
         self.value = value
 
     def __repr__(self):
-        return f'Scalar Filter (dim={self.dim}, value={self.value})'
+        return f"Scalar Filter (dim={self.dim}, value={self.value})"
 
     def _evaluate(self, omega):
         return self.value * np.ones_like(omega)
@@ -267,8 +269,17 @@ class IdentityFilter(ScalarFilter):
 
 
 class CTFFilter(Filter):
-    def __init__(self, pixel_size=10, voltage=200, defocus_u=15000, defocus_v=15000, defocus_ang=0, Cs=2.26,
-                 alpha=0.07, B=0):
+    def __init__(
+        self,
+        pixel_size=10,
+        voltage=200,
+        defocus_u=15000,
+        defocus_v=15000,
+        defocus_ang=0,
+        Cs=2.26,
+        alpha=0.07,
+        B=0,
+    ):
         """
         A CTF (Contrast Transfer Function) Filter
 
@@ -307,12 +318,12 @@ class CTFFilter(Filter):
         defocus[ind_nz] = self.defocus_mean + self.defocus_diff * np.cos(2 * angles_nz)
 
         c2 = -np.pi * self.wavelength * defocus
-        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength**3
+        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength ** 3
 
-        r2 = om_x**2 + om_y**2
-        r4 = r2**2
-        gamma = c2*r2 + c4*r4
-        h = np.sqrt(1 - self.alpha**2) * np.sin(gamma) - self.alpha * np.cos(gamma)
+        r2 = om_x ** 2 + om_y ** 2
+        r4 = r2 ** 2
+        gamma = c2 * r2 + c4 * r4
+        h = np.sqrt(1 - self.alpha ** 2) * np.sin(gamma) - self.alpha * np.cos(gamma)
 
         if self.B:
             h *= np.exp(-self.B * r2)
@@ -320,13 +331,29 @@ class CTFFilter(Filter):
         return h.squeeze()
 
     def scale(self, c=1):
-        return CTFFilter(pixel_size=self.pixel_size*c,
-                         voltage=self.voltage, defocus_u=self.defocus_u,
-                         defocus_v=self.defocus_v, defocus_ang=self.defocus_ang,
-                         Cs=self.Cs, alpha=self.alpha, B=self.B)
+        return CTFFilter(
+            pixel_size=self.pixel_size * c,
+            voltage=self.voltage,
+            defocus_u=self.defocus_u,
+            defocus_v=self.defocus_v,
+            defocus_ang=self.defocus_ang,
+            Cs=self.Cs,
+            alpha=self.alpha,
+            B=self.B,
+        )
 
 
 class RadialCTFFilter(CTFFilter):
-    def __init__(self, pixel_size=10, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0):
-        super().__init__(pixel_size=pixel_size, voltage=voltage, defocus_u=defocus, defocus_v=defocus, defocus_ang=0,
-                         Cs=Cs, alpha=alpha, B=B)
+    def __init__(
+        self, pixel_size=10, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
+    ):
+        super().__init__(
+            pixel_size=pixel_size,
+            voltage=voltage,
+            defocus_u=defocus,
+            defocus_v=defocus,
+            defocus_ang=0,
+            Cs=Cs,
+            alpha=alpha,
+            B=B,
+        )

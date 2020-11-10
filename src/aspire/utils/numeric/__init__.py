@@ -1,4 +1,5 @@
 import logging
+
 from aspire import config
 
 logger = logging.getLogger(__name__)
@@ -14,9 +15,9 @@ xp = NumericClass()
 def fft_object(which):
     if which == 'pyfftw':
         from .pyfftw_fft import PyfftwFFT as FFTClass
-    elif which == 'cupy':
+    elif which == "cupy":
         from .cupy_fft import CupyFFT as FFTClass
-    elif which == 'scipy':
+    elif which == "scipy":
         from .scipy_fft import ScipyFFT as FFTClass
     else:
         raise RuntimeError(f'Invalid selection for fft class: {which}')

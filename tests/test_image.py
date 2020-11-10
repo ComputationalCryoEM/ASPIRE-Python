@@ -7,7 +7,7 @@ from scipy import misc
 from aspire.image import Image, _im_translate2
 from aspire.source import ArrayImageSource
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
+DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class ImageTestCase(TestCase):
@@ -34,12 +34,11 @@ class ImageTestCase(TestCase):
 
         # Pure numpy 'shifting'
         # 'Shifting' an Image corresponds to a 'roll' of a numpy array - again, note the negated signs and the axes
-        im3 = np.roll(self.im.asnumpy()[0], -shifts, axis=(0,1))
+        im3 = np.roll(self.im.asnumpy()[0], -shifts, axis=(0, 1))
 
         self.assertTrue(np.allclose(im.asnumpy(), im1.asnumpy()))
         self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
         self.assertTrue(np.allclose(im1.asnumpy()[0, :, :], im3))
-
 
     def testArrayImageSource(self):
         # An Image can be wrapped in an ArrayImageSource when we need to deal with ImageSource objects.

@@ -1,16 +1,16 @@
 import logging
-from ctypes import c_int
 
 import numpy as np
-import pycuda.autoinit
-import pycuda.driver as cuda
-import pycuda.gpuarray as gpuarray
+import pycuda.autoinit  # noqa: F401
+import pycuda.driver as cuda  # noqa: F401
+import pycuda.gpuarray as gpuarray  # noqa: F401
 from cufinufft import cufinufft
 
 from aspire.nufft import Plan
 from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)
+
 
 class CufinufftPlan(Plan):
     def __init__(self, sz, fourier_pts, epsilon=1e-15, ntransforms=1, **kwargs):
@@ -42,26 +42,40 @@ class CufinufftPlan(Plan):
         self.sz = sz
         self.dim = len(sz)
         if not fourier_pts.flags.c_contiguous:
-            logger.debug('cufinufft has caught a non C_CONTIGUOUS array,'
-                           ' `fourier_pts` will be copied to C_CONTIGUOUS.')
+            logger.debug(
+                "cufinufft has caught a non C_CONTIGUOUS array,"
+                " `fourier_pts` will be copied to C_CONTIGUOUS."
+            )
         # TODO: maybe replace with ascontiguousarray
-        self.fourier_pts = np.asarray(np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order='C', dtype=self.dtype)
+        self.fourier_pts = np.asarray(
+            np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order="C", dtype=self.dtype
+        )
         self.num_pts = fourier_pts.shape[1]
         self.epsilon = max(epsilon, np.finfo(self.dtype).eps)
 
-        self._transform_plan = cufinufft(2, self.sz, -1, self.epsilon, ntransforms=self.ntransforms,
-                                         dtype=self.dtype)
+        self._transform_plan = cufinufft(
+            2, self.sz, -1, self.epsilon, ntransforms=self.ntransforms, dtype=self.dtype
+        )
 
         self.adjoint_opts = None
-        if self.dtype is np.float64 and self.dim==3 and self.epsilon < 1E3:
+        if self.dtype is np.float64 and self.dim == 3 and self.epsilon < 1e3:
             # Note this is an algorithmic implementation dictated by shmem.
-            logger.info('Converting cufinufft gpu_method=1 from default of 2 for 3D1 transform,'
-                        f'to support computation in double precision with tol={self.epsilon}.')
+            logger.info(
+                "Converting cufinufft gpu_method=1 from default of 2 for 3D1 transform,"
+                f"to support computation in double precision with tol={self.epsilon}."
+            )
             self.adjoint_opts = cufinufft.default_opts(nufft_type=1, dim=self.dim)
             self.adjoint_opts.gpu_method = 1
 
-        self._adjoint_plan = cufinufft(1, self.sz, 1, self.epsilon, ntransforms=self.ntransforms,
-                                       dtype=self.dtype, opts=self.adjoint_opts)
+        self._adjoint_plan = cufinufft(
+            1,
+            self.sz,
+            1,
+            self.epsilon,
+            ntransforms=self.ntransforms,
+            dtype=self.dtype,
+            opts=self.adjoint_opts,
+        )
 
         # Note I store self.fourier_pts_gpu so the GPUArrray life is tied to instance,
         #  instead of this method.
@@ -81,30 +95,40 @@ class CufinufftPlan(Plan):
         `(ntransforms, num_pts)`.
         """
 
-        if not (signal.dtype == self.dtype or
-                signal.dtype == self.complex_dtype):
-            logger.warning('Incorrect dtypes passed to (a)nufft.'
-                           ' In the future this will be an error.')
+        if not (signal.dtype == self.dtype or signal.dtype == self.complex_dtype):
+            logger.warning(
+                "Incorrect dtypes passed to (a)nufft."
+                " In the future this will be an error."
+            )
 
         sig_shape = signal.shape
         res_shape = self.num_pts
         # Note, there is a corner case for ntransforms == 1.
         if self.ntransforms > 1 or (
-                self.ntransforms == 1 and len(signal.shape) == self.dim + 1):
-            ensure(len(signal.shape) == self.dim + 1,
-                   f"For multiple transforms, {self.dim}D signal should be"
-                   f" a {self.ntransforms} element stack of {self.sz}.")
-            ensure(signal.shape[0] == self.ntransforms,
-                   "For multiple transforms, signal stack length"
-                   f" should match ntransforms {self.ntransforms}.")
+            self.ntransforms == 1 and len(signal.shape) == self.dim + 1
+        ):
+            ensure(
+                len(signal.shape) == self.dim + 1,
+                f"For multiple transforms, {self.dim}D signal should be"
+                f" a {self.ntransforms} element stack of {self.sz}.",
+            )
+            ensure(
+                signal.shape[0] == self.ntransforms,
+                "For multiple transforms, signal stack length"
+                f" should match ntransforms {self.ntransforms}.",
+            )
 
-            sig_shape = signal.shape[1:]         # order...
+            sig_shape = signal.shape[1:]  # order...
             res_shape = (self.ntransforms, self.num_pts)
 
-        ensure(sig_shape == self.sz, f'Signal frame to be transformed must have shape {self.sz}')
+        ensure(
+            sig_shape == self.sz,
+            f"Signal frame to be transformed must have shape {self.sz}",
+        )
 
         signal_gpu = gpuarray.to_gpu(
-            np.ascontiguousarray(signal, dtype=self.complex_dtype))
+            np.ascontiguousarray(signal, dtype=self.complex_dtype)
+        )
 
         result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype)
 
@@ -125,25 +149,30 @@ class CufinufftPlan(Plan):
         :returns: Transformed signal `(sz)` or `(sz, ntransforms)`.
         """
 
-        if not (signal.dtype == self.complex_dtype or
-                signal.dtype == self.dtype):
-            logger.warning('Incorrect dtypes passed to (a)nufft.'
-                           ' In the future this will be an error.')
+        if not (signal.dtype == self.complex_dtype or signal.dtype == self.dtype):
+            logger.warning(
+                "Incorrect dtypes passed to (a)nufft."
+                " In the future this will be an error."
+            )
 
         res_shape = self.sz
         # Note, there is a corner case for ntransforms == 1.
-        if self.ntransforms > 1 or (
-                self.ntransforms == 1 and len(signal.shape) == 2):
-            ensure(len(signal.shape) == 2,    # Stack and num_pts
-                   f"For multiple {self.dim}D adjoints, signal should be"
-                   f" a {self.ntransforms} element stack of {self.num_pts}.")
-            ensure(signal.shape[0] == self.ntransforms,
-                   "For multiple transforms, signal stack length"
-                   f" should match ntransforms {self.ntransforms}.")
+        if self.ntransforms > 1 or (self.ntransforms == 1 and len(signal.shape) == 2):
+            ensure(
+                len(signal.shape) == 2,  # Stack and num_pts
+                f"For multiple {self.dim}D adjoints, signal should be"
+                f" a {self.ntransforms} element stack of {self.num_pts}.",
+            )
+            ensure(
+                signal.shape[0] == self.ntransforms,
+                "For multiple transforms, signal stack length"
+                f" should match ntransforms {self.ntransforms}.",
+            )
             res_shape = (self.ntransforms, *self.sz)
 
         signal_gpu = gpuarray.to_gpu(
-            np.ascontiguousarray(signal, dtype=self.complex_dtype))
+            np.ascontiguousarray(signal, dtype=self.complex_dtype)
+        )
 
         result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype)
 

@@ -3,8 +3,8 @@ Miscellaneous utilities for common data type operations.
 """
 
 import logging
-import numpy as np
 
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,10 @@ def real_type(complextype):
     elif complextype == np.complex128:
         realtype = np.float64
     elif complextype in (np.float32, np.float64):
-        logger.debug(f'Corresponding type is already real {complextype}.')
+        logger.debug(f"Corresponding type is already real {complextype}.")
         realtype = complextype
     else:
-        msg = f'Corresponding real type is not defined for {complextype}.'
+        msg = f"Corresponding real type is not defined for {complextype}."
         logger.error(msg)
         raise TypeError(msg)
 
@@ -47,10 +47,10 @@ def complex_type(realtype):
     elif realtype == np.float64:
         complextype = np.complex128
     elif realtype in (np.complex64, np.complex128):
-        logger.debug(f'Corresponding type is already complex {realtype}.')
+        logger.debug(f"Corresponding type is already complex {realtype}.")
         complextype = realtype
     else:
-        msg = f'Corresponding complex type is not defined for {realtype}.'
+        msg = f"Corresponding complex type is not defined for {realtype}."
         logger.error(msg)
         raise TypeError(msg)
 
@@ -65,15 +65,16 @@ def dtype_legacy_string(dtype):
     :return: string
     """
 
-    dtype_to_string_map = {'float32': 'single',
-                           'float64': 'double',
-                           'complex128': 'complex',
-                           }
+    dtype_to_string_map = {
+        "float32": "single",
+        "float64": "double",
+        "complex128": "complex",
+    }
 
     dtype_str = dtype_to_string_map.get(str(dtype))
 
     if not dtype_str:
-        msg = f'Corresponding dtype {str(dtype)} is not defined.'
+        msg = f"Corresponding dtype {str(dtype)} is not defined."
         logger.error(msg)
         raise TypeError(msg)
 
@@ -91,7 +92,7 @@ def utest_tolerance(dtype):
     elif dtype == np.float32:
         tol = 1e-5
     else:
-        msg = f'utest_tolerance not implemented for dtype: {dtype}.'
+        msg = f"utest_tolerance not implemented for dtype: {dtype}."
         logger.error(msg)
         raise TypeError(msg)
 

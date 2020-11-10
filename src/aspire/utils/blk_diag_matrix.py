@@ -6,7 +6,6 @@ block diagonal matrices as used by ASPIRE.
 import numpy as np
 from numpy.linalg import norm, solve
 from scipy.linalg import block_diag
-from scipy.special import jv
 
 from aspire.basis.basis_utils import lgwt
 from aspire.basis.ffb_2d import FFBBasis2D
@@ -77,8 +76,7 @@ class BlkDiagMatrix:
         """
         String represention describing instance.
         """
-        return "BlkDiagMatrix({}, {})".format(
-            repr(self.nblocks), repr(self.dtype))
+        return "BlkDiagMatrix({}, {})".format(repr(self.nblocks), repr(self.dtype))
 
     def copy(self):
         """
@@ -148,12 +146,13 @@ class BlkDiagMatrix:
 
         if np.any(self.partition != other.partition):
             # be helpful and find the first one as an example
-            for i, (a, b) in enumerate(zip(self.partition, other.partition)):
+            for _i, (a, b) in enumerate(zip(self.partition, other.partition)):
                 if a != b:
                     break
             raise RuntimeError(
-                'Block i={} of BlkDiagMatrix instances are '
-                'not same shape {} {}'.format(i, a, b))
+                "Block i={} of BlkDiagMatrix instances are "
+                "not same shape {} {}".format(_i, a, b)
+            )
 
     def __check_dtype_compatible(self, other):
         """
@@ -163,10 +162,11 @@ class BlkDiagMatrix:
         """
 
         if self.dtype != other.dtype:
-            raise RuntimeError('BlkDiagMatrix received different types,'
-                               ' {} and {}.  Please validate and cast'
-                               ' as appropriate.'.format(
-                                   self.dtype, other.dtype))
+            raise RuntimeError(
+                "BlkDiagMatrix received different types,"
+                " {} and {}.  Please validate and cast"
+                " as appropriate.".format(self.dtype, other.dtype)
+            )
 
     def __check_compatible(self, other):
         """
@@ -178,11 +178,13 @@ class BlkDiagMatrix:
         if not isinstance(other, BlkDiagMatrix):
             raise NotImplementedError(
                 "Currently BlkDiagMatrix only interfaces "
-                "with its own instances, got {}".format(repr(other)))
+                "with its own instances, got {}".format(repr(other))
+            )
 
         if len(self) != len(other):
-            raise RuntimeError('Number of blocks {} {} are not equal.'.format(
-                len(self), len(other)))
+            raise RuntimeError(
+                "Number of blocks {} {} are not equal.".format(len(self), len(other))
+            )
 
         self.__check_size_compatible(other)
         self.__check_dtype_compatible(other)
@@ -369,8 +371,8 @@ class BlkDiagMatrix:
         if not isinstance(other, BlkDiagMatrix):
             raise RuntimeError(
                 "Attempt BlkDiagMatrix matrix multiplication "
-                "(matmul,@) of non BlkDiagMatrix {}, try (*,mul)".format(
-                    repr(other)))
+                "(matmul,@) of non BlkDiagMatrix {}, try (*,mul)".format(repr(other))
+            )
 
         self.__check_compatible(other)
 
@@ -413,13 +415,16 @@ class BlkDiagMatrix:
         """
 
         if isinstance(val, BlkDiagMatrix):
-            raise RuntimeError("Attempt numeric multiplication (*,mul) of two "
-                               "BlkDiagMatrix instances, try (matmul,@).")
+            raise RuntimeError(
+                "Attempt numeric multiplication (*,mul) of two "
+                "BlkDiagMatrix instances, try (matmul,@)."
+            )
 
         elif not self._is_scalar_type(val):
-            raise RuntimeError("Attempt numeric multiplication (*,mul) of a "
-                               "BlkDiagMatrix and {}.".format(
-                                   type(val)))
+            raise RuntimeError(
+                "Attempt numeric multiplication (*,mul) of a "
+                "BlkDiagMatrix and {}.".format(type(val))
+            )
 
         if inplace:
             for i in range(self.nblocks):
@@ -606,7 +611,7 @@ class BlkDiagMatrix:
 
         rows = self.partition[:, 0]
         if sum(rows) != Y.shape[0]:
-            raise RuntimeError('Sizes of `self` and `Y` are not compatible.')
+            raise RuntimeError("Sizes of `self` and `Y` are not compatible.")
 
         vector = False
         if np.ndim(Y) == 1:
@@ -640,15 +645,18 @@ class BlkDiagMatrix:
         cols = self.partition[:, 1]
 
         if np.sum(cols) != np.size(X, 0):
-            raise RuntimeError(
-                'Sizes of matrix `self` and `X` are not compatible.')
+            raise RuntimeError("Sizes of matrix `self` and `X` are not compatible.")
 
         vector = False
         if np.ndim(X) == 1:
             X = X[:, np.newaxis]
             vector = True
 
-        rows = np.array([np.size(X, 1), ])
+        rows = np.array(
+            [
+                np.size(X, 1),
+            ]
+        )
         cellarray = Cell2D(cols, rows, dtype=X.dtype)
         x_cell = cellarray.mat2cell(X, cols, rows)
         Y = []
@@ -671,9 +679,10 @@ class BlkDiagMatrix:
         """
 
         if shp[0] != shp[1]:
-            raise NotImplementedError("Currently BlkDiagMatrix only supports"
-                                      " square blocks.  Received {}".format(
-                                          shp))
+            raise NotImplementedError(
+                "Currently BlkDiagMatrix only supports"
+                " square blocks.  Received {}".format(shp)
+            )
 
         return True
 
@@ -835,41 +844,43 @@ def filter_to_fb_mat(h_fun, fbasis):
     """
 
     if not isinstance(fbasis, FFBBasis2D):
-        raise NotImplementedError('Currently only fast FB method is supported')
+        raise NotImplementedError("Currently only fast FB method is supported")
     # Set same dimensions as basis object
     n_k = fbasis.n_r
     n_theta = fbasis.n_theta
     radial = fbasis.get_radial()
-    
+
     # get 2D grid in polar coordinate
     k_vals, wts = lgwt(n_k, 0, 0.5, dtype=fbasis.dtype)
     k, theta = np.meshgrid(
-        k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing='ij')
+        k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
+    )
 
     # Get function values in polar 2D grid and average out angle contribution
     omegax = k * np.cos(theta)
     omegay = k * np.sin(theta)
-    omega = 2 * np.pi * np.vstack((omegax.flatten('C'), omegay.flatten('C')))
+    omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
     h_vals2d = h_fun(omega).reshape(n_k, n_theta)
-    h_vals = np.sum(h_vals2d, axis=1)/n_theta
+    h_vals = np.sum(h_vals2d, axis=1) / n_theta
 
     # Represent 1D function values in fbasis
     h_fb = BlkDiagMatrix.empty(2 * fbasis.ell_max + 1, dtype=fbasis.dtype)
     ind_ell = 0
-    for ell in range(0, fbasis.ell_max+1):
+    for ell in range(0, fbasis.ell_max + 1):
         k_max = fbasis.k_max[ell]
-        rmat = 2*k_vals.reshape(n_k, 1)*fbasis.r0[0:k_max, ell].T
+        rmat = 2 * k_vals.reshape(n_k, 1) * fbasis.r0[0:k_max, ell].T
         fb_vals = np.zeros_like(rmat)
         ind_radial = np.sum(fbasis.k_max[0:ell])
-        fb_vals[:, 0:k_max] = radial[ind_radial:ind_radial + k_max].T
+        fb_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T
 
-        h_fb_vals = fb_vals*h_vals.reshape(n_k, 1)
+        h_fb_vals = fb_vals * h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
-            h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1))
+            h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1)
+        )
         h_fb[ind_ell] = h_fb_ell
         ind_ell += 1
         if ell > 0:
-            h_fb[ind_ell] = h_fb[ind_ell-1]
+            h_fb[ind_ell] = h_fb[ind_ell - 1]
             ind_ell += 1
 
     return h_fb

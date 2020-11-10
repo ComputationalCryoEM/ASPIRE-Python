@@ -1,18 +1,20 @@
 from unittest import TestCase
+
 import numpy as np
 
 from aspire import config
 from aspire.utils.numeric import fft_object
 
-fft_backends = ['scipy', 'pyfftw']
-numeric_modules = [np, np]
+fft_backends = ["scipy", "pyfftw"]
+numeric_classes = [np, np]
 
 # Create Cupy fft backend if Cupy is enabled and lib exits.
 if config.common.cupy:
     try:
         import cupy as cp
-        fft_backends.append('cupy')
-        numeric_modules.append(cp)
+
+        fft_backends.append("cupy")
+        numeric_classes.append(cp)
     except ImportError:
         pass
 
