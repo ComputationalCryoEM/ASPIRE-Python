@@ -1,4 +1,4 @@
-import filecmp
+import logging
 import os
 import tempfile
 from datetime import datetime
@@ -8,6 +8,9 @@ import mrcfile
 import numpy as np
 
 from aspire.io.mrc import MrcStats
+from aspire.utils.misc import sha256sum
+
+logger = logging.getLogger(__name__)
 
 
 class MrcStatsTestCase(TestCase):
@@ -63,6 +66,8 @@ class MrcStatsTestCase(TestCase):
 
             # Note below we will fix the time to avoid racy unit tests.
             epoch = datetime(1970, 1, 1).strftime("%Y-%m-%d %H:%M:%S")
+            # The time is also packed into the label by mrcfile package.
+            label = "{0:40s}{1:>39s} ".format("Created by aspire unit test", epoch)
 
             with mrcfile.new_mmap(
                 files[0], shape=(self.n, self.n), mrc_mode=2, overwrite=True
@@ -72,6 +77,7 @@ class MrcStatsTestCase(TestCase):
                 mrc.update_header_from_data()
                 self.stats.update_header(mrc)
                 mrc.header.time = epoch
+                mrc.header.label[0] = label
 
             with mrcfile.new_mmap(
                 files[1], shape=(self.n, self.n), mrc_mode=2, overwrite=True
@@ -79,8 +85,13 @@ class MrcStatsTestCase(TestCase):
 
                 mrc.set_data(self.a.astype(np.float32))
                 mrc.header.time = epoch
+                mrc.header.label[0] = label
 
             # Our homebrew and mrcfile files should now match to the bit.
-            filecmp.clear_cache()  # clear any previous attempts
-            # Shallow=False is important to ensure we check file contents.
-            self.assertTrue(filecmp.cmp(files[0], files[1], shallow=False))
+            comparison = sha256sum(files[0]) == sha256sum(files[1])
+            # Expected hash:
+            # 71355fa0bcd5b989ff88166962ea5d2b78ea032933bd6fda41fbdcc1c6d1a009
+            logging.debug(f"sha256(file0): {sha256sum(files[0])}")
+            logging.debug(f"sha256(file1): {sha256sum(files[1])}")
+
+            self.assertTrue(comparison)
