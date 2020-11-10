@@ -13,7 +13,6 @@ setup(
     data_files=[
         ("", ["src/aspire/config.ini"]),
         ("", ["src/aspire/logging.conf"]),
-        ("data", ["src/aspire/data/bessel.npy"]),
     ],
     include_package_data=True,
     description="Algorithms for Single Particle Reconstruction",
@@ -66,7 +65,7 @@ setup(
     },
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    package_data={"aspire": ["config.ini"], "aspire.data": ["*.*"]},
+    package_data={"aspire": ["config.ini"]},
     zip_safe=True,
     test_suite="tests",
     classifiers=[
