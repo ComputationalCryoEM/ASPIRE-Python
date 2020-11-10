@@ -39,8 +39,8 @@ class SimTestCase(TestCase):
         self.vol = np.load(os.path.join(DATA_DIR, "nfft_volume.npy"))
 
         # Setup a 2D slice for testing 2d many
-        self.plane = self.vol[0].T  # RCOPT
-        self.vol = self.vol.T  # RCOPT
+        self.plane = self.vol[0]
+        self.vol = self.vol
 
         self.recip_space = np.array(
             [
@@ -720,7 +720,7 @@ class SimTestCase(TestCase):
                     ],
                 ],
             ]
-        ).T  # RCOPT
+        )
 
         self.adjoint_plane = np.array(
             [
@@ -806,7 +806,7 @@ class SimTestCase(TestCase):
                 ],
             ],
             dtype=np.complex128,
-        ).T  # RCOPT
+        )
 
     def tearDown(self):
         pass
@@ -825,7 +825,7 @@ class SimTestCase(TestCase):
 
         plan = Plan(
             self.plane.shape,
-            self.fourier_pts[0:2].astype(dtype),
+            self.fourier_pts[:2].astype(dtype),
             backend=backend,
             ntransforms=ntransforms,
         )
@@ -864,7 +864,7 @@ class SimTestCase(TestCase):
 
         plan = Plan(
             self.plane.shape,
-            self.fourier_pts[0:2].astype(dtype),
+            self.fourier_pts[:2].astype(dtype),
             backend=backend,
             ntransforms=ntransforms,
         )

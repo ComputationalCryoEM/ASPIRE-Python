@@ -63,11 +63,8 @@ class FinufftPlan(Plan):
             dtype=self.dtype_str,
         )
 
-        # FINUFFT expects column major signal data,
-        #   but we don't want to transpose large arrays.
-        #   We instead reverse the references to the points axes.
-        self._transform_plan.setpts(*self.fourier_pts[::-1])
-        self._adjoint_plan.setpts(*self.fourier_pts[::-1])
+        self._transform_plan.setpts(*self.fourier_pts)
+        self._adjoint_plan.setpts(*self.fourier_pts)
 
     def transform(self, signal):
         """
