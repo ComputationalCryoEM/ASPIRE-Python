@@ -65,7 +65,7 @@ setup(
     },
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    package_data={"aspire": ["config.ini"], "aspire.data": ["*.*"]},
+    package_data={"aspire": ["config.ini"]},
     zip_safe=True,
     test_suite="tests",
     classifiers=[
