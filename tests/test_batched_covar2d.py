@@ -1,12 +1,11 @@
 from unittest import TestCase
 
 import numpy as np
-import pytest
 
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.estimation.covar2d import BatchedRotCov2D, RotCov2D
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter
+from aspire.utils.filters import RadialCTFFilter, ScalarFilter
 from aspire.utils.types import utest_tolerance
 
 
@@ -15,8 +14,9 @@ class BatchedRotCov2DTestCase(TestCase):
         n = 32
         L = 8
         self.dtype = np.float32
-
-        self.noise_var = 0.1848
+        noise_var = 0.1848
+        noise_filter = ScalarFilter(dim=2, value=noise_var)
+        self.noise_var = noise_var
 
         pixel_size = 5
         voltage = 200
@@ -30,7 +30,9 @@ class BatchedRotCov2DTestCase(TestCase):
         ]
 
         # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
-        src = Simulation(L, n, unique_filters=filters, dtype=self.dtype)
+        src = Simulation(
+            L, n, unique_filters=filters, dtype=self.dtype, noise_filter=noise_filter
+        )
 
         basis = FFBBasis2D((L, L), dtype=self.dtype)
 
@@ -157,14 +159,18 @@ class BatchedRotCov2DTestCase(TestCase):
             )
         )
 
-    @pytest.mark.skip(
-        reason="Currently debugging resolution issue 307 for batched mode."
-    )
     def test06(self):
-
         # Calculate CWF coefficients using Cov2D base class
-        mean_bcov2d = self.bcov2d.get_mean()
-        covar_bcov2d = self.bcov2d.get_covar(noise_var=self.noise_var)
+        mean_bcov2d = self.cov2d.get_mean(
+            self.coeff, ctf_fb=self.ctf_fb, ctf_idx=self.ctf_idx
+        )
+        covar_bcov2d = self.cov2d.get_covar(
+            self.coeff,
+            ctf_fb=self.ctf_fb,
+            ctf_idx=self.ctf_idx,
+            noise_var=self.noise_var,
+        )
+
         coeff_bcov2d = self.bcov2d.get_cwf_coeffs(
             self.coeff,
             self.ctf_fb,
@@ -187,7 +193,6 @@ class BatchedRotCov2DTestCase(TestCase):
             covar_nbcov2d,
             noise_var=self.noise_var,
         )
-
         self.assertTrue(
             self.blk_diag_allclose(
                 coeff_bcov2d,
