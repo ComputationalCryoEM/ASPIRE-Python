@@ -103,8 +103,10 @@ class FinufftPlan(Plan):
             if self.ntransforms == 1:
                 signal = signal.reshape(self.sz)
 
-        ensure(sig_frame_shape == self.sz,
-               f'Signal frame to be transformed must have shape {self.sz}')
+        ensure(
+            sig_frame_shape == self.sz,
+            f"Signal frame to be transformed must have shape {self.sz}",
+        )
 
         result = self._transform_plan.execute(signal)
 

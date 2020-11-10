@@ -40,7 +40,9 @@ def src_wiener_coords(
     """
 
     if not isinstance(mean_vol, Volume):
-        logger.debug('src_wiener_coords mean_vol should be a Volume instance. Attempt correction.')
+        logger.debug(
+            "src_wiener_coords mean_vol should be a Volume instance. Attempt correction."
+        )
         if len(mean_vol.shape) == 4 and mean_vol.shape[3] != 1:
             msg = (
                 f"Cannot naively convert {mean_vol.shape} to Volume instance."
@@ -52,7 +54,9 @@ def src_wiener_coords(
         mean_vol = Volume(mean_vol)
 
     if not isinstance(eig_vols, Volume):
-        logger.warning('src_wiener_coords eig_vols should be a Volume instance. Correcting for now.')
+        logger.warning(
+            "src_wiener_coords eig_vols should be a Volume instance. Correcting for now."
+        )
         eig_vols = Volume(eig_vols)
 
     if not sim.dtype == mean_vol.dtype == eig_vols.dtype:
