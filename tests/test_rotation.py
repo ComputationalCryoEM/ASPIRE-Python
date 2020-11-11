@@ -8,24 +8,26 @@ from aspire.utils.types import utest_tolerance
 
 class UtilsTestCase(TestCase):
     def setUp(self):
-        self.dtype = np.float32
-        self.rot_obj = Rotation(32, seed=0, seq='ZYZ', dtype=self.dtype)
-        self.angles = self.rot_obj.angles
+        self.rot_obj = Rotation(32, seed=0, dtype=np.float32)
 
     def testRotMatrices(self):
-        rots_ref = sp_rot.from_euler('ZYZ', self.angles, degrees=True).as_matrix()
+        rots_ref = sp_rot.from_euler(
+            'ZYZ', self.rot_obj.angles, degrees=True
+        ).as_matrix().astype(self.rot_obj.dtype)
         self.assertTrue(np.allclose(self.rot_obj.rot_matrices, rots_ref))
 
     def testRotAngles(self):
         rot = sp_rot.from_matrix(self.rot_obj.rot_matrices)
-        angles = rot.as_euler(self.rot_obj.rot_seq, degrees=True)
+        angles = rot.as_euler(
+            self.rot_obj.rot_seq, degrees=True).astype(self.rot_obj.dtype)
         self.assertTrue(np.allclose(self.rot_obj.angles, angles))
 
     def testTranspose(self):
         rot_mat = self.rot_obj.rot_matrices
         rot_mat_t = self.rot_obj.T
-        for i in range(self.rot_obj.num_rots):
-            self.assertTrue(np.allclose(rot_mat_t[i], rot_mat[i].T))
+        self.assertTrue(
+            np.allclose(rot_mat_t, np.transpose(rot_mat, (0, 2, 1)))
+        )
 
     def testMultiplication(self):
         rot_obj_t = Rotation(32, seed=0, seq='ZYZ')
@@ -34,7 +36,7 @@ class UtilsTestCase(TestCase):
         for i in range(self.rot_obj.num_rots):
             self.assertTrue(
                 np.allclose(np.eye(3), result[i],
-                            atol=utest_tolerance(self.dtype)))
+                            atol=utest_tolerance(self.rot_obj.dtype)))
 
     def testRegisterRots(self):
         q_ang = [[45, 45, 45]]
