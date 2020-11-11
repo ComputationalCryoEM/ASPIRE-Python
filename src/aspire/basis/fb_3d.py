@@ -1,14 +1,12 @@
 import logging
 
 import numpy as np
-from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.basis import Basis
-from aspire.basis.basis_utils import (real_sph_harmonic, sph_bessel,
-                                      unique_coords_nd)
+from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.utils.matrix import roll_dim, unroll_dim, vec_to_vol, vol_to_vec
+from aspire.utils.matrix import roll_dim, unroll_dim
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +18,8 @@ class FBBasis3D(Basis):
     # TODO: Methods that return dictionaries should return useful objects instead
 
     """
-    def __init__(self, size, ell_max=None):
+
+    def __init__(self, size, ell_max=None, dtype=np.float32):
         """
         Initialize an object for the 3D Fourier-Bessel basis class
 
@@ -32,18 +31,20 @@ class FBBasis3D(Basis):
             below the Nyquist frequency (default Inf).
         """
         ndim = len(size)
-        ensure(ndim == 3, 'Only three-dimensional basis functions are supported.')
-        ensure(len(set(size)) == 1, 'Only cubic domains are supported.')
+        ensure(ndim == 3, "Only three-dimensional basis functions are supported.")
+        ensure(len(set(size)) == 1, "Only cubic domains are supported.")
 
-        super().__init__(size, ell_max)
+        super().__init__(size, ell_max, dtype=dtype)
 
     def _build(self):
         """
         Build the internal data structure for 3D Fourier-Bessel basis
         """
 
-        logger.info('Expanding 3D map in a spatial-domain Fourier–Bessel'
-                    ' basis using the direct method.')
+        logger.info(
+            "Expanding 3D map in a spatial-domain Fourier–Bessel"
+            " basis using the direct method."
+        )
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()
@@ -52,7 +53,7 @@ class FBBasis3D(Basis):
         self.count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
 
         # obtain a 3D grid to represent basis functions
-        self.basis_coords = unique_coords_nd(self.nres, self.ndim)
+        self.basis_coords = unique_coords_nd(self.nres, self.ndim, dtype=self.dtype)
 
         # generate 1D indices for basis functions
         self._indices = self.indices()
@@ -67,9 +68,9 @@ class FBBasis3D(Basis):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count)
-        indices_ms = np.zeros(self.count)
-        indices_ks = np.zeros(self.count)
+        indices_ells = np.zeros(self.count, dtype=np.int)
+        indices_ms = np.zeros(self.count, dtype=np.int)
+        indices_ks = np.zeros(self.count, dtype=np.int)
 
         ind = 0
         for ell in range(self.ell_max + 1):
@@ -82,24 +83,22 @@ class FBBasis3D(Basis):
 
                 ind += len(ks)
 
-        return {
-            'ells': indices_ells,
-            'ms': indices_ms,
-            'ks': indices_ks
-        }
+        return {"ells": indices_ells, "ms": indices_ms, "ks": indices_ks}
 
     def _precomp(self):
         """
         Precompute the basis functions at defined sample points
         """
-        r_unique = self.basis_coords['r_unique']
-        ang_unique = self.basis_coords['ang_unique']
+        r_unique = self.basis_coords["r_unique"]
+        ang_unique = self.basis_coords["ang_unique"]
 
         ind_radial = 0
         ind_ang = 0
 
-        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)))
-        ang = np.zeros(shape=(ang_unique.shape[-1], (self.ell_max + 1) ** 2))
+        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)), dtype=self.dtype)
+        ang = np.zeros(
+            shape=(ang_unique.shape[-1], (self.ell_max + 1) ** 2), dtype=self.dtype
+        )
 
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
@@ -107,19 +106,18 @@ class FBBasis3D(Basis):
                 ind_radial += 1
 
             for m in range(-ell, ell + 1):
-                ang[:, ind_ang] = real_sph_harmonic(ell, m, ang_unique[0, :], ang_unique[1, :])
+                ang[:, ind_ang] = real_sph_harmonic(
+                    ell, m, ang_unique[0, :], ang_unique[1, :]
+                )
                 ind_ang += 1
 
-        return {
-            'radial': radial,
-            'ang': ang
-        }
+        return {"radial": radial, "ang": ang}
 
     def norms(self):
         """
         Calculate the normalized factors of basis functions
         """
-        norms = np.zeros(np.sum(self.k_max))
+        norms = np.zeros(np.sum(self.k_max), dtype=self.dtype)
         norm_fn = self.basis_norm_3d
 
         i = 0
@@ -134,8 +132,11 @@ class FBBasis3D(Basis):
         """
         Calculate the normalized factor of a specified basis function.
         """
-        return np.abs(sph_bessel(ell + 1, self.r0[k - 1, ell]
-                                 )) /np.sqrt(2) * np.sqrt((self.nres / 2) ** 3)
+        return (
+            np.abs(sph_bessel(ell + 1, self.r0[k - 1, ell]))
+            / np.sqrt(2)
+            * np.sqrt((self.nres / 2) ** 3)
+        )
 
     def evaluate(self, v):
         """
@@ -148,24 +149,26 @@ class FBBasis3D(Basis):
         """
         v, sz_roll = unroll_dim(v, 2)
 
-        r_idx = self.basis_coords['r_idx']
-        ang_idx = self.basis_coords['ang_idx']
-        mask = m_flatten(self.basis_coords['mask'])
+        r_idx = self.basis_coords["r_idx"]
+        ang_idx = self.basis_coords["ang_idx"]
+        mask = m_flatten(self.basis_coords["mask"])
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])))
+        x = np.zeros(
+            shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=self.dtype
+        )
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
             nrms = self._norms[idx_radial]
-            radial = self._precomp['radial'][:, idx_radial]
+            radial = self._precomp["radial"][:, idx_radial]
             radial = radial / nrms
 
-            for m in range(-ell, ell + 1):
-                ang = self._precomp['ang'][:, ind_ang]
+            for _ in range(-ell, ell + 1):
+                ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
                 x[mask] += ang_radial @ v[idx]
@@ -191,26 +194,28 @@ class FBBasis3D(Basis):
             to higher dimensions of `v`.
         """
         x, sz_roll = unroll_dim(v, self.ndim + 1)
-        x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim:])))
+        x = m_reshape(
+            x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
+        )
 
-        r_idx = self.basis_coords['r_idx']
-        ang_idx = self.basis_coords['ang_idx']
-        mask = m_flatten(self.basis_coords['mask'])
+        r_idx = self.basis_coords["r_idx"]
+        ang_idx = self.basis_coords["ang_idx"]
+        mask = m_flatten(self.basis_coords["mask"])
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])))
+        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=self.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
             nrms = self._norms[idx_radial]
-            radial = self._precomp['radial'][:, idx_radial]
+            radial = self._precomp["radial"][:, idx_radial]
             radial = radial / nrms
 
-            for m in range(-ell, ell + 1):
-                ang = self._precomp['ang'][:, ind_ang]
+            for _ in range(-ell, ell + 1):
+                ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
                 v[idx] = np.real(ang_radial.T @ x[mask])

@@ -33,15 +33,17 @@ class BlkDiagMatrixTestCase(TestCase):
             eyes.append(np.eye(blk_shp[0]))
 
             offt = np.prod(blk_shp)
-            blk = self.flat[ind:  ind + offt].reshape(blk_shp)
+            blk = self.flat[ind : ind + offt].reshape(blk_shp)
             A.append(blk)
-            B.append(self.revflat[ind:  ind + offt].reshape(blk_shp))
+            B.append(self.revflat[ind : ind + offt].reshape(blk_shp))
 
             ind += offt
 
             # Also build a dense array.
-            self.dense[diag_ind[0]:diag_ind[0] + blk_shp[0],
-                       diag_ind[1]:diag_ind[1] + blk_shp[1]] = blk
+            self.dense[
+                diag_ind[0] : diag_ind[0] + blk_shp[0],
+                diag_ind[1] : diag_ind[1] + blk_shp[1],
+            ] = blk
             diag_ind += blk_shp
 
         self.blk_a = BlkDiagMatrix.from_list(A)
@@ -97,8 +99,7 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(blk_eye, self.blk_eyes)
 
     def testBlkDiagMatrixAdd(self):
-        result = [np.add(*tup)
-                  for tup in zip(self.blk_a, self.blk_b)]
+        result = [np.add(*tup) for tup in zip(self.blk_a, self.blk_b)]
 
         blk_c = self.blk_a + self.blk_b
         self.allallfunc(result, blk_c)
@@ -107,8 +108,7 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(result, blk_c)
 
     def testBlkDiagMatrixSub(self):
-        result = [np.subtract(*tup)
-                  for tup in zip(self.blk_a, self.blk_b)]
+        result = [np.subtract(*tup) for tup in zip(self.blk_a, self.blk_b)]
 
         blk_c = self.blk_a - self.blk_b
         self.allallfunc(result, blk_c)
@@ -126,7 +126,7 @@ class BlkDiagMatrixTestCase(TestCase):
         res = np.empty_like(coeffm)
         for b, blk in enumerate(self.blk_a):
             col = self.blk_a.partition[b, 1]
-            res[ind: ind + col, :] = blk @ coeffm[ind: ind + col, :]
+            res[ind : ind + col, :] = blk @ coeffm[ind : ind + col, :]
             ind += col
 
         # Check ndim 1 case
@@ -155,36 +155,36 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(blk_c, result)
 
     def testBlkDiagMatrixScalarMult(self):
-        result = [blk * 42. for blk in self.blk_a]
+        result = [blk * 42.0 for blk in self.blk_a]
 
-        blk_c = self.blk_a * 42.
+        blk_c = self.blk_a * 42.0
         self.allallfunc(blk_c, result)
 
         # also test right multiply
-        blk_c = 42. * self.blk_a
+        blk_c = 42.0 * self.blk_a
         self.allallfunc(blk_c, result)
 
     def testBlkDiagMatrixScalarAdd(self):
-        result = [blk + 42. for blk in self.blk_a]
+        result = [blk + 42.0 for blk in self.blk_a]
 
-        blk_c = self.blk_a + 42.
+        blk_c = self.blk_a + 42.0
         self.allallfunc(blk_c, result)
 
         # and test the right add
-        blk_c = 42. + self.blk_a
+        blk_c = 42.0 + self.blk_a
         self.allallfunc(blk_c, result)
 
     def testBlkDiagMatrixScalarSub(self):
-        result_1 = [blk - 42. for blk in self.blk_a]
+        result_1 = [blk - 42.0 for blk in self.blk_a]
 
         # a-b = -1*(b-a)
         result_2 = [-1 * x for x in result_1]
 
-        blk_c = self.blk_a - 42.
+        blk_c = self.blk_a - 42.0
         self.allallfunc(blk_c, result_1)
 
         # and test the right sub
-        blk_c = 42. - self.blk_a
+        blk_c = 42.0 - self.blk_a
         self.allallfunc(blk_c, result_2)
 
     def testBlkDiagMatrixDeepCopy(self):
@@ -196,19 +196,21 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(blk_a_copy_2, self.blk_a)
 
         # change a copy, test that copy is changed
-        blk_a_copy_1 *= 2.
-        self.allallfunc(blk_a_copy_1, self.blk_a,
-                        func=lambda x, y: not np.allclose(x, y))
-        self.allallfunc(blk_a_copy_1, blk_a_copy_2,
-                        func=lambda x, y: not np.allclose(x, y))
+        blk_a_copy_1 *= 2.0
+        self.allallfunc(
+            blk_a_copy_1, self.blk_a, func=lambda x, y: not np.allclose(x, y)
+        )
+        self.allallfunc(
+            blk_a_copy_1, blk_a_copy_2, func=lambda x, y: not np.allclose(x, y)
+        )
 
         # and blk_a is unchanged
         self.allallfunc(blk_a_copy_2, self.blk_a)
 
     def testBlkDiagMatrixInPlace(self):
         """ Tests sequence of in place optimized arithmetic (add, sub, mul) """
-        _ = [x + x + 10. for x in self.blk_a]
-        _ = [np.ones(x.shape) * 5. for x in self.blk_a]
+        _ = [x + x + 10.0 for x in self.blk_a]
+        _ = [np.ones(x.shape) * 5.0 for x in self.blk_a]
 
         # make a block diagonal object to mutate
         blk_c = self.blk_a.copy()
@@ -220,12 +222,12 @@ class BlkDiagMatrixTestCase(TestCase):
         blk_c += self.blk_a
         self.allallid(blk_c, id0)
 
-        blk_c += 10.
+        blk_c += 10.0
         self.allallid(blk_c, id0)
 
         blk_a5 = BlkDiagMatrix.ones(self.blk_partition)
         id1 = [id(x) for x in blk_a5]
-        blk_a5 *= 5.
+        blk_a5 *= 5.0
         self.allallid(blk_a5, id1)
 
         blk_c -= blk_a5
@@ -254,7 +256,7 @@ class BlkDiagMatrixTestCase(TestCase):
         res = np.empty_like(coeffm)
         for b, blk in enumerate(B):
             col = self.blk_a.partition[b, 1]
-            res[ind: ind + col, :] = solve(blk, coeffm[ind: ind + col, :])
+            res[ind : ind + col, :] = solve(blk, coeffm[ind : ind + col, :])
             ind += col
 
         coeff_est = B.solve(coeffm)
@@ -266,7 +268,7 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(blk_c, self.blk_a.T)
 
         blk_aaT = (self.blk_a @ self.blk_a).T
-        blk_aTaT = (self.blk_a.T @ self.blk_a.T)
+        blk_aTaT = self.blk_a.T @ self.blk_a.T
         self.allallfunc(blk_aaT, blk_aTaT)
 
     def testBlkDiagMatrixNeg(self):
@@ -285,7 +287,7 @@ class BlkDiagMatrixTestCase(TestCase):
     def testBlkDiagMatrixPow(self):
         result = [blk ** 2 for blk in self.blk_a]
 
-        blk_c = self.blk_a ** 2.
+        blk_c = self.blk_a ** 2.0
         self.allallfunc(blk_c, result)
 
         # In place power
@@ -323,14 +325,13 @@ class BlkDiagMatrixTestCase(TestCase):
         and numpy arrays independently then compare.
         """
 
-        inputs = [(self.blk_a.dense(),  self.blk_b.dense()),
-                  (self.blk_a, self.blk_b)]
+        inputs = [(self.blk_a.dense(), self.blk_b.dense()), (self.blk_a, self.blk_b)]
 
         # Note we intentionally skip scalar add/sub operations because,
         #   the equivalent numpy operations would require masking.
         results = []
-        for A,B in inputs:
-            res =  abs(A @ B) * 0.5 - (B @ B.T)**2
+        for A, B in inputs:
+            res = abs(A @ B) * 0.5 - (B @ B.T) ** 2
             results.append(res)
 
         self.assertTrue(np.allclose(results[0], results[1].dense()))

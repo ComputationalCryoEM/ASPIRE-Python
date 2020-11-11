@@ -4,6 +4,7 @@ from collections import OrderedDict
 import numpy as np
 
 from aspire import config
+from aspire.utils.types import complex_type, real_type
 
 logger = logging.getLogger(__name__)
 
@@ -54,24 +55,27 @@ def check_backends(raise_errors=True):
                 #   That is managed by pip if using a wheel,
                 #   or the user if they have built from source.
                 from aspire.nufft.cufinufft import CufinufftPlan
+
                 plan_class = CufinufftPlan
             except Exception as e:
                 msg = str(e)
 
         elif backend == "finufft":
             try:
-                from finufftpy import nufft1d1
+                from finufftpy import nufft1d1  # noqa: F401
 
                 from aspire.nufft.finufft import FinufftPlan
+
                 plan_class = FinufftPlan
             except Exception as e:
                 msg = str(e)
 
         elif backend == "pynfft":
             try:
-                from pynfft.nfft import NFFT
+                from pynfft.nfft import NFFT  # noqa: F401
 
                 from aspire.nufft.pynfft import PyNfftPlan
+
                 plan_class = PyNfftPlan
             except Exception as e:
                 msg = str(e)
@@ -85,7 +89,7 @@ def check_backends(raise_errors=True):
     backends = OrderedDict((k, _try_backend(k)) for k in config.nfft.backends)
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
-        logger.info(f'Selected NFFT backend = {default_backend}.')
+        logger.info(f"Selected NFFT backend = {default_backend}.")
         default_plan_class = backends[default_backend]
     except StopIteration:
         msg = "No usable NFFT backend detected."
@@ -122,11 +126,11 @@ class Plan:
     # TODO: move common functionality up the hierarchy
     def __new__(cls, *args, **kwargs):
         if cls is Plan:
-            if 'backend' in kwargs:
-                if backend_available(kwargs['backend']):
-                    return super(Plan, cls).__new__(backends[kwargs['backend']])
+            if "backend" in kwargs:
+                if backend_available(kwargs["backend"]):
+                    return super(Plan, cls).__new__(backends[kwargs["backend"]])
                 else:
-                    raise RuntimeError('Requested backend unavailable')
+                    raise RuntimeError("Requested backend unavailable")
             else:
                 # If a Plan was constructed as a generic Plan(), use the default (best) Plan class
                 if default_plan_class is None:
@@ -154,7 +158,18 @@ def anufft(sig_f, fourier_pts, sz, real=False):
 
     """
 
-    dim = len(sz)
+    if fourier_pts.dtype != real_type(sig_f.dtype):
+        logger.warning(
+            "anufft passed inconsistent dtypes."
+            f" fourier_pts: {fourier_pts.dtype}"
+            f" forcing precision of signal data: {sig_f.dtype}."
+        )
+        fourier_pts = fourier_pts.astype(real_type(sig_f.dtype))
+
+    if sig_f.dtype != complex_type(sig_f.dtype):
+        logger.debug("anufft passed real_type for signal, converting")
+        sig_f = sig_f.astype(complex_type(sig_f.dtype))
+
     ntransforms = 1
     if len(sig_f.shape) == 2:
         ntransforms = sig_f.shape[0]
@@ -179,6 +194,18 @@ def nufft(sig_f, fourier_pts, real=False):
     :return: The Non Uniform FFT transform.
 
     """
+
+    if fourier_pts.dtype != real_type(sig_f.dtype):
+        logger.warning(
+            "nufft passed inconsistent dtypes."
+            f" fourier_pts: {fourier_pts.dtype}"
+            f" forcing precision of signal data: {sig_f.dtype}."
+        )
+        fourier_pts = fourier_pts.astype(real_type(sig_f.dtype))
+
+    if sig_f.dtype != complex_type(sig_f.dtype):
+        logger.debug("nufft passed real_type for signal, converting")
+        sig_f = sig_f.astype(complex_type(sig_f.dtype))
 
     # Unpack the dimension of the signal
     #   Note, infer dimension from fourier_pts because signal might be a stack.

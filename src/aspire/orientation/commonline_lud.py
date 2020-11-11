@@ -12,6 +12,7 @@ class CommLineLUD(CLOrient3D):
     SIAM J. Imaging Sciences, 6, 2450-2483 (2013).
 
     """
+
     def __init__(self, src):
         """
         constructor of an object for estimating 3D orientations

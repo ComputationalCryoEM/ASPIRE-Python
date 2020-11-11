@@ -13,6 +13,7 @@ class DenoiserCov2D(Denoiser):
     """
     Define a derived class for denoising 2D images using Cov2D method
     """
+
     def __init__(self, src, basis, var_noise):
         """
         Initialize an object for denoising 2D images using Cov2D method
@@ -24,7 +25,7 @@ class DenoiserCov2D(Denoiser):
         super().__init__(src)
         self.var_noise = var_noise
         if not isinstance(basis, FFBBasis2D):
-            raise NotImplementedError('Currently only fast FB method is supported')
+            raise NotImplementedError("Currently only fast FB method is supported")
         self.basis = basis
         self.cov2d = None
         self.mean_est = None
@@ -41,17 +42,27 @@ class DenoiserCov2D(Denoiser):
 
         # Initialize the rotationally invariant covariance matrix of 2D images
         # A fixed batch size is used to go through each image
-        self.cov2d = BatchedRotCov2D(self.src, self.basis, batch_size=batch_size)
+        self.cov2d = BatchedRotCov2D(
+            self.src, self.basis, batch_size=batch_size, dtype=self.dtype
+        )
 
-        default_opt = {'shrinker': 'frobenius_norm', 'verbose': 0, 'max_iter': 250,
-            'iter_callback': [], 'store_iterates': False, 'rel_tolerance': 1e-12,
-            'precision': 'float64'}
+        default_opt = {
+            "shrinker": "frobenius_norm",
+            "verbose": 0,
+            "max_iter": 250,
+            "iter_callback": [],
+            "store_iterates": False,
+            "rel_tolerance": 1e-12,
+            "precision": self.dtype,
+        }
+
         covar_opt = fill_struct(covar_opt, default_opt)
         # Calculate the mean and covariance for the rotationally invariant covariance matrix of 2D images
         self.mean_est = self.cov2d.get_mean()
 
-        self.covar_est = self.cov2d.get_covar(noise_var=self.var_noise, mean_coeff=self.mean_est,
-                                           covar_est_opt=covar_opt)
+        self.covar_est = self.cov2d.get_covar(
+            noise_var=self.var_noise, mean_coeff=self.mean_est, covar_est_opt=covar_opt
+        )
 
         return DenoisedImageSource(self.src, self)
 
@@ -70,14 +81,20 @@ class DenoiserCov2D(Denoiser):
         img_end = min(istart + batch_size, src.n)
         imgs_noise = src.images(img_start, batch_size)
         coeffs_noise = self.basis.evaluate_t(imgs_noise.data)
-        logger.info(f'Estimating Cov2D coefficients for images from {img_start} to {img_end-1}')
-        coeffs_estim = self.cov2d.get_cwf_coeffs(coeffs_noise, self.cov2d.ctf_fb,
-                                                 self.cov2d.ctf_idx[img_start:img_end],
-                                                 mean_coeff=self.mean_est, covar_coeff=self.covar_est,
-                                                 noise_var=self.var_noise)
+        logger.info(
+            f"Estimating Cov2D coefficients for images from {img_start} to {img_end-1}"
+        )
+        coeffs_estim = self.cov2d.get_cwf_coeffs(
+            coeffs_noise,
+            self.cov2d.ctf_fb,
+            self.cov2d.ctf_idx[img_start:img_end],
+            mean_coeff=self.mean_est,
+            covar_coeff=self.covar_est,
+            noise_var=self.var_noise,
+        )
 
         # Convert Fourier-Bessel coefficients back into 2D images
-        logger.info(f'Converting Cov2D coefficients back to 2D images')
+        logger.info("Converting Cov2D coefficients back to 2D images")
         imgs_denoised = self.basis.evaluate(coeffs_estim)
 
         return imgs_denoised

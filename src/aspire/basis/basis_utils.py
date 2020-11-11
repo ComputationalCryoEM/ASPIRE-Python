@@ -45,7 +45,7 @@ def besselj_newton(nu, z0, max_iter=10):
         fp = jv(nu - 1, z) - nu * f / z
 
         # Update zeros
-        dz = - f / fp
+        dz = -f / fp
         z = z + dz
 
         # Check for convergence
@@ -95,15 +95,21 @@ def norm_assoc_legendre(j, m, x):
 
     if m < 0:
         m = -m
-        y = (-1)**m * norm_assoc_legendre(j, m, x)
+        y = (-1) ** m * norm_assoc_legendre(j, m, x)
     else:
         y = lpmv(m, j, x)
         # Beware of using just np.prod in the denominator here
         # Unless we use float64, values in the denominator > 13! will be incorrect
         try:
-            y = np.sqrt((2 * j + 1) / (2*np.prod(range(j - m + 1, j + m + 1), dtype='float64'))) * y
+            y = (
+                np.sqrt(
+                    (2 * j + 1)
+                    / (2 * np.prod(range(j - m + 1, j + m + 1), dtype=np.float64))
+                )
+                * y
+            )
         except RuntimeWarning:
-            print('debug')
+            logger.error("debug")
     return y
 
 
@@ -125,9 +131,16 @@ def real_sph_harmonic(j, m, theta, phi):
     # Beware of using just np.prod in the denominator here
     # Unless we use float64, values in the denominator > 13! will be incorrect
     try:
-        y = np.sqrt((2 * j + 1) / (4 * pi) / np.prod(range(j - abs_m + 1, j + abs_m + 1), dtype='float64')) * y
+        y = (
+            np.sqrt(
+                (2 * j + 1)
+                / (4 * pi)
+                / np.prod(range(j - abs_m + 1, j + abs_m + 1), dtype=np.float64)
+            )
+            * y
+        )
     except RuntimeWarning:
-        print('debug')
+        logger.error("debug")
 
     if m < 0:
         y = np.sqrt(2) * np.sin(abs_m * phi) * y
@@ -138,17 +151,19 @@ def real_sph_harmonic(j, m, theta, phi):
 
 
 def besselj_zeros(nu, k):
-    ensure(k >= 3, 'k must be >= 3')
-    ensure(0 <= nu <= 1e7, 'nu must be between 0 and 1e7')
+    ensure(k >= 3, "k must be >= 3")
+    ensure(0 <= nu <= 1e7, "nu must be between 0 and 1e7")
 
     z = np.zeros(k)
 
     # Guess first zeros using powers of nu
-    c0 = np.array([
-        [0.1701, -0.6563, 1.0355, 1.8558],
-        [0.1608, -1.0189, 3.1348, 3.2447],
-        [-0.2005, -1.2542, 5.7249, 4.3817]
-    ])
+    c0 = np.array(
+        [
+            [0.1701, -0.6563, 1.0355, 1.8558],
+            [0.1608, -1.0189, 3.1348, 3.2447],
+            [-0.2005, -1.2542, 5.7249, 4.3817],
+        ]
+    )
     z0 = nu + c0 @ ((nu + 1) ** np.array([[-1, -2 / 3, -1 / 3, 1 / 3]]).T)
 
     # refine guesses
@@ -163,7 +178,7 @@ def besselj_zeros(nu, k):
         j = min(j, k - n)
 
         # Use last 3 zeros to predict spacing for next j zeros
-        r = diff(z[n - 3:n]) - pi
+        r = diff(z[n - 3 : n]) - pi
         if (r[0] * r[1]) > 0 and (r[0] / r[1]) > 1:
             p = log(r[0] / r[1]) / log(1 - 1 / (n - 1))
             t = np.array(np.arange(1, j + 1), ndmin=2).T / (n - 1)
@@ -173,14 +188,16 @@ def besselj_zeros(nu, k):
 
         # Guess and refine
         z0 = z[n - 1] + np.cumsum(dz)
-        z[n: n + j] = besselj_newton(nu, z0)
+        z[n : n + j] = besselj_newton(nu, z0)
 
         # Check to see that the sequence of zeros makes sense
-        ensure(check_besselj_zeros(nu, z[n - 2: n + j]),
-               "Unable to properly estimate Bessel function zeros.")
+        ensure(
+            check_besselj_zeros(nu, z[n - 2 : n + j]),
+            "Unable to properly estimate Bessel function zeros.",
+        )
 
         # Check how far off we are
-        err = (z[n: n + j] - z0) / np.diff(z[n - 1: n + j])
+        err = (z[n : n + j] - z0) / np.diff(z[n - 1 : n + j])
 
         n = n + j
         if max(abs(err)) < err_tol:
@@ -203,7 +220,7 @@ def num_besselj_zeros(ell, r):
     return len(r0), r0
 
 
-def unique_coords_nd(N, ndim, shifted=False, normalized=True):
+def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate unique polar coordinates from 2D or 3D rectangular coordinates.
     :param N: length size of a square or cube.
@@ -212,12 +229,14 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True):
     :param normalized: normalize the grid or not.
     :return: The unique polar coordinates in 2D or 3D
     """
-    ensure(ndim in (2, 3), 'Only two- or three-dimensional basis functions are supported.')
-    ensure(N > 0, 'Number of grid points should be greater than 0.')
+    ensure(
+        ndim in (2, 3), "Only two- or three-dimensional basis functions are supported."
+    )
+    ensure(N > 0, "Number of grid points should be greater than 0.")
 
     if ndim == 2:
-        grid = grid_2d(N, shifted=shifted, normalized=normalized)
-        mask = grid['r'] <= 1
+        grid = grid_2d(N, shifted=shifted, normalized=normalized, dtype=dtype)
+        mask = grid["r"] <= 1
 
         # Minor differences in r/theta/phi values are unimportant for the purpose
         # of this function, so round off before proceeding
@@ -226,15 +245,15 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True):
         # However, it always searches in row-major order, unlike MATLAB (column-major),
         # with no options to change the search order. The results we'll be getting back are thus not comparable.
         # We transpose the appropriate ndarrays before applying the mask to obtain the same behavior as MATLAB.
-        r = grid['r'].T[mask].round(5)
-        phi = grid['phi'].T[mask].round(5)
+        r = grid["r"].T[mask].round(5)
+        phi = grid["phi"].T[mask].round(5)
 
         r_unique, r_idx = np.unique(r, return_inverse=True)
         ang_unique, ang_idx = np.unique(phi, return_inverse=True)
 
     else:
-        grid = grid_3d(N, shifted=shifted, normalized=normalized)
-        mask = grid['r'] <= 1
+        grid = grid_3d(N, shifted=shifted, normalized=normalized, dtype=dtype)
+        mask = grid["r"] <= 1
 
         # In Numpy, elements in the indexed array are always iterated and returned in row-major (C-style) order.
         # To emulate a behavior where iteration happens in Fortran order, we swap axes 0 and 2 of both the array
@@ -246,23 +265,25 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True):
         # so we round off before proceeding.
 
         mask_ = np.swapaxes(mask, 0, 2)
-        r = np.swapaxes(grid['r'], 0, 2)[mask_].round(5)
-        theta = np.swapaxes(grid['theta'], 0, 2)[mask_].round(5)
-        phi = np.swapaxes(grid['phi'], 0, 2)[mask_].round(5)
+        r = np.swapaxes(grid["r"], 0, 2)[mask_].round(5)
+        theta = np.swapaxes(grid["theta"], 0, 2)[mask_].round(5)
+        phi = np.swapaxes(grid["phi"], 0, 2)[mask_].round(5)
 
         r_unique, r_idx = np.unique(r, return_inverse=True)
-        ang_unique, ang_idx = np.unique(np.vstack([theta, phi]), axis=1, return_inverse=True)
+        ang_unique, ang_idx = np.unique(
+            np.vstack([theta, phi]), axis=1, return_inverse=True
+        )
 
     return {
-        'r_unique': r_unique,
-        'ang_unique': ang_unique,
-        'r_idx': r_idx,
-        'ang_idx': ang_idx,
-        'mask': mask
+        "r_unique": r_unique,
+        "ang_unique": ang_unique,
+        "r_idx": r_idx,
+        "ang_idx": ang_idx,
+        "mask": mask,
     }
 
 
-def lgwt(ndeg, a, b):
+def lgwt(ndeg, a, b, dtype=np.float32):
     """
     Compute Legendre-Gauss quadrature
 
@@ -288,7 +309,7 @@ def lgwt(ndeg, a, b):
     x = scale_factor * x + shift
     w = scale_factor * w
 
-    return x, w
+    return x.astype(dtype), w.astype(dtype)
 
 
 def d_decay_approx_fun(a, b, c, d):
@@ -321,7 +342,11 @@ def p_n(n, alpha, beta, x):
 
     for i in range(2, n + 1):
         c1 = 2 * i * (i + alpha_p_beta) * (2 * i + alpha_p_beta - 2)
-        c2 = (2 * i + alpha_p_beta) * (2 * i + alpha_p_beta - 1) * (2 * i + alpha_p_beta - 2)
+        c2 = (
+            (2 * i + alpha_p_beta)
+            * (2 * i + alpha_p_beta - 1)
+            * (2 * i + alpha_p_beta - 2)
+        )
         c3 = (2 * i + alpha_p_beta - 1) * alpha_p_beta * alpha_m_beta
         c4 = -2 * (i - 1 + alpha) * (i - 1 + beta) * (2 * i + alpha_p_beta)
         v[:, i] = ((c3 + c2 * x) * v[:, i - 1] + c4 * v[:, i - 2]) / c1
@@ -332,27 +357,35 @@ def t_x_mat(x, n, j, approx_length):
     a = np.power(x, n + 0.5)
     b = np.sqrt(2 * (2 * j + n + 1))
     c = p_n(approx_length - 1, n, 0, 1 - 2 * np.square(x))
-    return np.einsum('i,j,ij->ij', a, b, c)
+    return np.einsum("i,j,ij->ij", a, b, c)
 
 
 def t_x_mat_dot(x, n, j, approx_length):
     #  x need to be a matrix instead of a vector in t_x_mat
     return np.power(x, n + 0.5).dot(np.sqrt(2 * (2 * j + n + 1))) * p_n(
-        approx_length - 1, n, 0, 1 - 2 * np.square(x))
+        approx_length - 1, n, 0, 1 - 2 * np.square(x)
+    )
 
 
 def t_x_derivative_mat(t1, t2, x, big_n, range_array, approx_length):
     return -2 * (big_n + range_array + 1) * np.outer(
-        np.power(x, big_n + 1.5), t2) * np.column_stack(
-        (np.zeros(len(x)), p_n(approx_length - 2, big_n + 1, 1, t1))) + (big_n + 0.5) * np.outer(
-        np.power(x, big_n - 0.5), t2) * p_n(approx_length - 1, big_n, 0, t1)
+        np.power(x, big_n + 1.5), t2
+    ) * np.column_stack(
+        (np.zeros(len(x)), p_n(approx_length - 2, big_n + 1, 1, t1))
+    ) + (
+        big_n + 0.5
+    ) * np.outer(
+        np.power(x, big_n - 0.5), t2
+    ) * p_n(
+        approx_length - 1, big_n, 0, t1
+    )
 
 
 def t_radial_part_mat(x, n, j, m):
     a = np.power(x, n)
     b = np.sqrt(2 * (2 * j + n + 1))
     c = p_n(m - 1, n, 0, 1 - 2 * np.square(x))
-    return np.einsum('i,j,ij->ij', a, b, c)
+    return np.einsum("i,j,ij->ij", a, b, c)
 
 
 def k_operator(nu, x):

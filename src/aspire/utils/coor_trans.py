@@ -7,7 +7,7 @@ from numpy.linalg import norm
 from scipy.linalg import svd
 
 from aspire.utils import ensure
-from aspire.utils.matlab_compat import Random, randn
+from aspire.utils.random import Random
 
 
 def cart2pol(x, y):
@@ -52,27 +52,24 @@ def grid_1d(n, shifted=False, normalized=True):
     :return: the rectangular and polar coordinates of all grid points.
     """
 
-    grid = np.ceil(np.arange(-n/2, n/2))
+    grid = np.ceil(np.arange(-n / 2, n / 2))
 
     if shifted and n % 2 == 0:
-        grid = np.arange(-n/2+1/2, n/2+1/2)
+        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2)
 
     if normalized:
         if shifted and n % 2 == 0:
-            grid = grid / (n/2-1/2)
+            grid = grid / (n / 2 - 1 / 2)
         else:
-            grid = grid / (n/2)
+            grid = grid / (n / 2)
 
     x = np.meshgrid(grid)
     r = x
 
-    return {
-        'x': x,
-        'r': r
-    }
+    return {"x": x, "r": r}
 
 
-def grid_2d(n, shifted=False, normalized=True):
+def grid_2d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate two dimensional grid.
 
@@ -81,29 +78,24 @@ def grid_2d(n, shifted=False, normalized=True):
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :return: the rectangular and polar coordinates of all grid points.
     """
-    grid = np.ceil(np.arange(-n/2, n/2))
+    grid = np.ceil(np.arange(-n / 2, n / 2, dtype=dtype))
 
     if shifted and n % 2 == 0:
-        grid = np.arange(-n/2+1/2, n/2+1/2)
+        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
 
     if normalized:
         if shifted and n % 2 == 0:
-            grid = grid / (n/2-1/2)
+            grid = grid / (n / 2 - 1 / 2)
         else:
-            grid = grid / (n/2)
+            grid = grid / (n / 2)
 
-    x, y = np.meshgrid(grid, grid, indexing='ij')
+    x, y = np.meshgrid(grid, grid, indexing="ij")
     phi, r = cart2pol(x, y)
 
-    return {
-        'x': x,
-        'y': y,
-        'phi': phi,
-        'r': r
-    }
+    return {"x": x, "y": y, "phi": phi, "r": r}
 
 
-def grid_3d(n, shifted=False, normalized=True):
+def grid_3d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate three dimensional grid.
 
@@ -112,34 +104,27 @@ def grid_3d(n, shifted=False, normalized=True):
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :return: the rectangular and spherical coordinates of all grid points.
     """
-    grid = np.ceil(np.arange(-n/2, n/2))
+    grid = np.ceil(np.arange(-n / 2, n / 2, dtype=dtype))
 
     if shifted and n % 2 == 0:
-        grid = np.arange(-n/2+1/2, n/2+1/2)
+        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
 
     if normalized:
         if shifted and n % 2 == 0:
-            grid = grid / (n/2-1/2)
+            grid = grid / (n / 2 - 1 / 2)
         else:
-            grid = grid / (n/2)
+            grid = grid / (n / 2)
 
-    x, y, z = np.meshgrid(grid, grid, grid, indexing='ij')
+    x, y, z = np.meshgrid(grid, grid, grid, indexing="ij")
     phi, theta, r = cart2sph(x, y, z)
 
     # TODO: Should this theta adjustment be moved inside cart2sph?
-    theta = np.pi/2 - theta
+    theta = np.pi / 2 - theta
 
-    return {
-        'x': x,
-        'y': y,
-        'z': z,
-        'phi': phi,
-        'theta': theta,
-        'r': r
-    }
+    return {"x": x, "y": y, "z": z, "phi": phi, "theta": theta, "r": r}
 
 
-def uniform_random_angles(n, seed=None):
+def uniform_random_angles(n, seed=None, dtype=np.float32):
     """
     Generate random 3D rotation angles
     :param n: The number of rotation angles to generate
@@ -148,12 +133,14 @@ def uniform_random_angles(n, seed=None):
     """
     # Generate random rotation angles, in radians
     with Random(seed):
-        angles = np.column_stack((
-            np.random.random(n) * 2 * np.pi,
-            np.arccos(2 * np.random.random(n) - 1),
-            np.random.random(n) * 2 * np.pi
-        ))
-    return angles
+        angles = np.column_stack(
+            (
+                np.random.random(n) * 2 * np.pi,
+                np.arccos(2 * np.random.random(n) - 1),
+                np.random.random(n) * 2 * np.pi,
+            )
+        )
+    return angles.astype(dtype)
 
 
 def register_rotations(rots, rots_ref):
@@ -170,8 +157,9 @@ def register_rotations(rots, rots_ref):
             flag, flag==1 then J conjugacy is required and 0 is not.
     """
 
-    ensure(rots.shape == rots_ref.shape,
-           'Two sets of rotations must have same dimensions.')
+    ensure(
+        rots.shape == rots_ref.shape, "Two sets of rotations must have same dimensions."
+    )
     K = rots.shape[0]
 
     # Reflection matrix
@@ -198,8 +186,8 @@ def register_rotations(rots, rots_ref):
     # if we got the reflected one. In any case, one of them should be
     # orthogonal.
 
-    err1 = norm(Q1 @ Q1.T - np.eye(3), ord='fro')
-    err2 = norm(Q2 @ Q2.T - np.eye(3), ord='fro')
+    err1 = norm(Q1 @ Q1.T - np.eye(3, dtype=rots.dtype), ord="fro")
+    err2 = norm(Q2 @ Q2.T - np.eye(3, dtype=rots.dtype), ord="fro")
 
     # In any case, enforce the registering matrix O to be a rotation.
     if err1 < err2:
@@ -255,16 +243,18 @@ def get_rots_mse(rots_reg, rots_ref):
     :param rots_ref: The reference rotations.
     :return: The MSE value between two sets of rotations.
     """
-    ensure(rots_reg.shape == rots_ref.shape,
-           'Two sets of rotations must have same dimensions.')
+    ensure(
+        rots_reg.shape == rots_ref.shape,
+        "Two sets of rotations must have same dimensions.",
+    )
     K = rots_reg.shape[0]
 
     diff = np.zeros(K)
     mse = 0
     for k in range(K):
-        diff[k] = norm(rots_reg[k, :, :] - rots_ref[k, :, :], ord='fro')
-        mse += diff[k]**2
-    mse = mse/K
+        diff[k] = norm(rots_reg[k, :, :] - rots_ref[k, :, :], ord="fro")
+        mse += diff[k] ** 2
+    mse = mse / K
     return mse
 
 
@@ -277,6 +267,9 @@ def common_line_from_rots(r1, r2, ell):
     :param ell: The total number of common lines.
     :return: The common line indices for both first and second rotations.
     """
+
+    assert r1.dtype == r2.dtype, "Ambiguous dtypes"
+
     ut = np.dot(r2, r1.T)
     alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
     alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
