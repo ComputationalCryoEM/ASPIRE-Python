@@ -5,7 +5,7 @@ import numpy as np
 
 from aspire.nufft import Plan
 from aspire.utils import ensure
-from aspire.utils.types import complex_type, dtype_legacy_string
+from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,6 @@ class FinufftPlan(Plan):
         self.dim = len(sz)
 
         self.dtype = fourier_pts.dtype
-        self.dtype_str = dtype_legacy_string(self.dtype)
 
         self.complex_dtype = complex_type(self.dtype)
 
@@ -52,7 +51,7 @@ class FinufftPlan(Plan):
             n_modes_or_dim=self.sz,
             eps=self.epsilon,
             n_trans=self.ntransforms,
-            dtype=self.dtype_str,
+            dtype=self.dtype,
         )
 
         self._adjoint_plan = finufft.Plan(
@@ -60,7 +59,7 @@ class FinufftPlan(Plan):
             n_modes_or_dim=self.sz,
             eps=self.epsilon,
             n_trans=self.ntransforms,
-            dtype=self.dtype_str,
+            dtype=self.dtype,
         )
 
         self._transform_plan.setpts(*self.fourier_pts)
