@@ -3,19 +3,18 @@ Define a Rotation Class for customized rotation operations used by ASPIRE.
 """
 
 import copy
+
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import svd
 from scipy.spatial.transform import Rotation as sp_rot
 
 from aspire.utils import ensure
-from aspire.utils.matlab_compat import Random
+from aspire.utils.random import Random
 
 
 class Rotation:
-
-    def __init__(self, num_rots, seed=None, seq='ZYZ',
-                 angles=None, dtype=np.float32):
+    def __init__(self, num_rots, seed=None, seq="ZYZ", angles=None, dtype=np.float32):
         """
         Initialize a Rotation object
 
@@ -30,13 +29,14 @@ class Rotation:
         self.rot_seq = seq
         self.dtype = np.dtype(dtype)
         if angles:
-            ensure(num_rots == angles.shape[0],
-                   'Number of rotation matrices should equal to '
-                   'number of sets of Euler angles.')
+            ensure(
+                num_rots == angles.shape[0],
+                "Number of rotation matrices should equal to "
+                "number of sets of Euler angles.",
+            )
             self.angles = angles.astype(self.dtype)
         else:
-            self.angles = self._uniform_random_angles(
-                num_rots, seed=seed)
+            self.angles = self._uniform_random_angles(num_rots, seed=seed)
         self.num_rots = num_rots
 
         self.data = self.rot_matrices
@@ -46,7 +46,9 @@ class Rotation:
         """
         String representation.
         """
-        return f'Rotation object with matrices[{self.num_rots}, 3, 3] of {self.dtype} type'
+        return (
+            f"Rotation object with matrices[{self.num_rots}, 3, 3] of {self.dtype} type"
+        )
 
     def __len__(self):
         return self.num_rots
@@ -62,7 +64,7 @@ class Rotation:
             other = other.data
             output = self.data @ other.data
         else:
-            output = self.data*other
+            output = self.data * other
         return output
 
     def _uniform_random_angles(self, n, seed=None):
@@ -77,11 +79,13 @@ class Rotation:
         # Generate random rotation angles, in radians
         angles = np.zeros((n, 3), dtype=self.dtype)
         with Random(seed):
-            angles = np.column_stack((
-                np.random.random(n) * 2 * np.pi,
-                np.arccos(2 * np.random.random(n) - 1),
-                np.random.random(n) * 2 * np.pi
-            ))
+            angles = np.column_stack(
+                (
+                    np.random.random(n) * 2 * np.pi,
+                    np.arccos(2 * np.random.random(n) - 1),
+                    np.random.random(n) * 2 * np.pi,
+                )
+            )
         # Return random rotation angles in degrees
         return np.rad2deg(angles).astype(self.dtype)
 
@@ -108,8 +112,7 @@ class Rotation:
         """
         :return: Rotation angles in degrees, as a n x 3 array
         """
-        return self._rotations.as_euler(self.rot_seq, degrees=True
-                                        ).astype(self.dtype)
+        return self._rotations.as_euler(self.rot_seq, degrees=True).astype(self.dtype)
 
     @angles.setter
     def angles(self, values):
@@ -120,7 +123,8 @@ class Rotation:
         :return: None
         """
         self._rotations = sp_rot.from_euler(
-            self.rot_seq, values.astype(self.dtype), degrees=True)
+            self.rot_seq, values.astype(self.dtype), degrees=True
+        )
 
     @property
     def T(self):
@@ -154,8 +158,10 @@ class Rotation:
         """
         rots = self.data
         rots_ref = rots_ref.rot_matrices.astype(self.dtype)
-        ensure(rots.shape == rots_ref.shape,
-               'Two sets of rotations must have same dimensions.')
+        ensure(
+            rots.shape == rots_ref.shape,
+            "Two sets of rotations must have same dimensions.",
+        )
         K = rots.shape[0]
 
         # Reflection matrix
@@ -182,8 +188,8 @@ class Rotation:
         # if we got the reflected one. In any case, one of them should be
         # orthogonal.
 
-        err1 = norm(Q1 @ Q1.T - np.eye(3), ord='fro')
-        err2 = norm(Q2 @ Q2.T - np.eye(3), ord='fro')
+        err1 = norm(Q1 @ Q1.T - np.eye(3), ord="fro")
+        err2 = norm(Q2 @ Q2.T - np.eye(3), ord="fro")
 
         # In any case, enforce the registering matrix O to be a rotation.
         if err1 < err2:
@@ -238,14 +244,16 @@ class Rotation:
         """
         rots_reg = rots_reg.rot_matrices
         rots_ref = rots_ref.rot_matrices
-        ensure(rots_reg.shape == rots_ref.shape,
-               'Two sets of rotations must have same dimensions.')
+        ensure(
+            rots_reg.shape == rots_ref.shape,
+            "Two sets of rotations must have same dimensions.",
+        )
         K = rots_reg.shape[0]
 
         diff = np.zeros(K)
         mse = 0
         for k in range(K):
-            diff[k] = norm(rots_reg[k, :, :] - rots_ref[k, :, :], ord='fro')
+            diff[k] = norm(rots_reg[k, :, :] - rots_ref[k, :, :], ord="fro")
             mse += diff[k] ** 2
         mse = mse / K
         return mse
