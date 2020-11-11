@@ -21,7 +21,7 @@ class Rotation:
 
         :param num_rots: Total number of rotation sets
         :param seed: Seed for initializing random rotations.
-            If None, numpy.random will continue previous state.
+            If None, the random generator is not re-seeded.
         :param seq:  Sequence of order applying Euler angles
         :param angles: Euler angles (in degrees) to generate rotation matrices.
             If None, uniformly distributed angles will be generated.
@@ -41,6 +41,29 @@ class Rotation:
 
         self.data = self.rot_matrices
         self.shape = (num_rots, 3, 3)
+
+    def __str__(self):
+        """
+        String representation.
+        """
+        return f'Rotation object with matrices[{self.num_rots}, 3, 3] of {self.dtype} type'
+
+    def __len__(self):
+        return self.num_rots
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __mul__(self, other):
+        if isinstance(other, Rotation):
+            other = other.data
+            output = self.data @ other.data
+        else:
+            output = self.data*other
+        return output
 
     def _uniform_random_angles(self, n, seed=None):
         """
@@ -98,6 +121,24 @@ class Rotation:
         """
         self._rotations = sp_rot.from_euler(
             self.rot_seq, values.astype(self.dtype), degrees=True)
+
+    @property
+    def T(self):
+        """
+        Shortcut to get full set of transposed rotation matrices
+        """
+        return self.transpose()
+
+    def transpose(self):
+        """
+        Apply transpose operation to all rotation matrices
+
+        :return: The set of transposed matrices
+        """
+        return np.transpose(self.data, axes=(0, 2, 1))
+
+    def asnumpy(self):
+        return self.data
 
     def register_rotations(self, rots_ref):
         """
@@ -230,58 +271,3 @@ class Rotation:
         ell_ji = int(np.mod(np.round(ell_ji), ell))
 
         return ell_ij, ell_ji
-
-    def __getitem__(self, item):
-        return self.data[item]
-
-    def __setitem__(self, key, value):
-        self.data[key] = value
-
-    def __mul__(self, other):
-        if isinstance(other, Rotation):
-            other = other.data
-            output = np.zeros_like(other)
-            for i in range(self.num_rots):
-                output[i] = np.matmul(self.data[i], other[i])
-        else:
-            output = self.data*other
-        return output
-
-    @property
-    def T(self):
-        """
-        Shortcut to get full set of transposed rotation matrices
-        """
-        return self.transpose()
-
-    def transpose(self):
-        """
-        Apply transpose operation to all rotation matrices
-
-        :return: The set of transposed matrices
-        """
-        T = np.zeros((self.num_rots, 3, 3), dtype=self.dtype)
-        for i in range(self.num_rots):
-            T[i] = self.data[i].T
-        return T
-
-    def __str__(self):
-        """
-        String representation.
-        """
-        return f'Rotation object with matrices[{self.num_rots}, 3, 3] of {self.dtype} type'
-
-    def copy(self):
-        """
-        Returns a copy of `self`.
-
-        :return Rotation object like self
-        """
-
-        return copy.copy(self)
-
-    def __len__(self):
-        return self.num_rots
-
-    def asnumpy(self):
-        return self.data
