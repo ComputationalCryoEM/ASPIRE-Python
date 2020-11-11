@@ -37,6 +37,7 @@ class PyfftwFFT(FFT):
 
     To be consistent with Scipy FFT, not all arguments are included.
     """
+
     def fft(self, a, axis=-1, workers=-1):
         mutex.acquire()
 

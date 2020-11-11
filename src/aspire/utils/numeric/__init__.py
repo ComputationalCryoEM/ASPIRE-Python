@@ -13,14 +13,14 @@ xp = NumericClass()
 
 
 def fft_object(which):
-    if which == 'pyfftw':
+    if which == "pyfftw":
         from .pyfftw_fft import PyfftwFFT as FFTClass
     elif which == "cupy":
         from .cupy_fft import CupyFFT as FFTClass
     elif which == "scipy":
         from .scipy_fft import ScipyFFT as FFTClass
     else:
-        raise RuntimeError(f'Invalid selection for fft class: {which}')
+        raise RuntimeError(f"Invalid selection for fft class: {which}")
     return FFTClass()
 
 

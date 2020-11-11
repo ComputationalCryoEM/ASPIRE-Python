@@ -7,8 +7,7 @@ from aspire.nufft import nufft
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.numeric import fft
-from aspire.utils.numeric import xp
+from aspire.utils.numeric import fft, xp
 from aspire.utils.preprocess import downsample
 
 logger = logging.getLogger(__name__)

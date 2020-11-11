@@ -9,8 +9,7 @@ from aspire.basis.fb_2d import FBBasis2D
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.numeric import fft
-from aspire.utils.numeric import xp
+from aspire.utils.numeric import fft, xp
 from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)

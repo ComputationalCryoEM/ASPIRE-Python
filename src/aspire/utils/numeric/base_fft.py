@@ -1,4 +1,3 @@
-
 class FFT:
     """
     Define a customized interface for FFT functions
@@ -8,28 +7,28 @@ class FFT:
     """
 
     def fft(self, x, axis=-1, workers=-1):
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def ifft(self, x, axis=-1, workers=-1):
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def fft2(self, x, axes=(-2, -1), workers=-1):
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
-    def ifft2(self, x,  axes=(-2, -1), workers=-1):
-        raise NotImplementedError('subclasses must implement this')
+    def ifft2(self, x, axes=(-2, -1), workers=-1):
+        raise NotImplementedError("subclasses must implement this")
 
     def fftn(self, x, axes=None, workers=-1):
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
-    def ifftn(self, x,  axes=None, workers=-1):
-        raise NotImplementedError('subclasses must implement this')
+    def ifftn(self, x, axes=None, workers=-1):
+        raise NotImplementedError("subclasses must implement this")
 
     def fftshift(self, x, axes=None):
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def ifftshift(self, x, axes=None):
-        raise NotImplementedError('subclasses must implement this')
+        raise NotImplementedError("subclasses must implement this")
 
     def centered_ifft(self, x, axis=-1, workers=-1):
         x = self.ifftshift(x, axes=axis)

@@ -11,9 +11,7 @@ from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import anorm
-from aspire.utils.numeric import fft
-from aspire.utils.numeric import xp
-from aspire.utils.types import complex_type
+from aspire.utils.numeric import fft, xp
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +48,9 @@ def _im_translate2(im, shifts):
         raise ValueError("The number of shifts must be 1 or match the number of images")
 
     resolution = im.res
-    grid = xp.asnumpy(fft.ifftshift(xp.asarray(np.ceil(np.arange(-resolution / 2, resolution / 2)))))
+    grid = xp.asnumpy(
+        fft.ifftshift(xp.asarray(np.ceil(np.arange(-resolution / 2, resolution / 2))))
+    )
     om_y, om_x = np.meshgrid(grid, grid)
     phase_shifts = np.einsum("ij, k -> ijk", om_x, shifts[:, 0]) + np.einsum(
         "ij, k -> ijk", om_y, shifts[:, 1]
@@ -201,9 +201,16 @@ class Image:
         res_by_2 = self.res / 2
         x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
 
-        mask = (np.abs(grid['x']) < ds_res / self.res) & (np.abs(grid['y']) < ds_res / self.res)
-        im = np.real(xp.asnumpy(fft.centered_ifft2(
-            fft.centered_fft2(xp.asarray(self.data)) * xp.asarray(mask))))
+        mask = (np.abs(grid["x"]) < ds_res / self.res) & (
+            np.abs(grid["y"]) < ds_res / self.res
+        )
+        im = np.real(
+            xp.asnumpy(
+                fft.centered_ifft2(
+                    fft.centered_fft2(xp.asarray(self.data)) * xp.asarray(mask)
+                )
+            )
+        )
 
         for s in range(im_ds.shape[0]):
             interpolator = RegularGridInterpolator(
@@ -267,10 +274,18 @@ class Image:
 
         L = self.res
         im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))
-        grid_1d = xp.asnumpy(fft.ifftshift(xp.asarray(np.ceil(
-            np.arange(-L/2, L/2,dtype=self.dtype))))) * 2 * np.pi / L
+        grid_1d = (
+            xp.asnumpy(
+                fft.ifftshift(
+                    xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
+                )
+            )
+            * 2
+            * np.pi
+            / L
+        )
 
-        om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing='ij')
+        om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing="ij")
 
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
         phase_shifts_y = -shifts[:, 1].reshape((n_shifts, 1, 1))
@@ -316,7 +331,7 @@ class Image:
         pts_rot = np.moveaxis(pts_rot, 1, 2)
         pts_rot = m_reshape(pts_rot, (3, -1))
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L**2)
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L ** 2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
