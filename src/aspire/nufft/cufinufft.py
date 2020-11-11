@@ -41,15 +41,16 @@ class CufinufftPlan(Plan):
 
         self.sz = sz
         self.dim = len(sz)
+
         if not fourier_pts.flags.c_contiguous:
             logger.debug(
                 "cufinufft has caught a non C_CONTIGUOUS array,"
                 " `fourier_pts` will be copied to C_CONTIGUOUS."
             )
-        # TODO: maybe replace with ascontiguousarray
-        self.fourier_pts = np.asarray(
-            np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, order="C", dtype=self.dtype
+        self.fourier_pts = np.ascontiguousarray(
+            np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, dtype=self.dtype
         )
+
         self.num_pts = fourier_pts.shape[1]
         self.epsilon = max(epsilon, np.finfo(self.dtype).eps)
 
@@ -77,11 +78,16 @@ class CufinufftPlan(Plan):
             opts=self.adjoint_opts,
         )
 
-        # Note I store self.fourier_pts_gpu so the GPUArrray life is tied to instance,
-        #  instead of this method.
+        # Note, I store self.fourier_pts_gpu so the GPUArrray life
+        #   is tied to instance, instead of this method.
         self.fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
-        self._transform_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
-        self._adjoint_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
+
+        # Note, cufinufft expects column major signal data,
+        #   but we don't want to transpose large arrays.
+        #   We instead reverse the references to the points axes.
+        #   This is identical to what is done for FINUFFT.
+        self._transform_plan.set_pts(self.num_pts, *self.fourier_pts_gpu[::-1])
+        self._adjoint_plan.set_pts(self.num_pts, *self.fourier_pts_gpu[::-1])
 
     def transform(self, signal):
         """
