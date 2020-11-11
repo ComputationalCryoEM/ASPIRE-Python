@@ -9,8 +9,8 @@ from aspire.source.xform import NoiseAdder
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.filters import ZeroFilter
-from aspire.utils.matlab_compat import Random, rand, randi, randn
 from aspire.utils.matrix import acorr, ainner, anorm, make_symmat, vecmat_to_volmat
+from aspire.utils.random import Random, rand, randi, randn
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,8 @@ class Simulation(ImageSource):
         """
         super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
+        self.seed = seed
+
         # We need to keep track of the original resolution we were initialized with,
         # to be able to generate projections of volumes later, when we are asked to supply images.
         self._original_L = L
@@ -55,7 +57,7 @@ class Simulation(ImageSource):
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
-            self.vols = self._gaussian_blob_vols(L=self.L, C=C, seed=seed)
+            self.vols = self._gaussian_blob_vols(L=self.L, C=C)
         else:
             assert isinstance(vols, Volume)
             self.vols = vols
@@ -86,14 +88,12 @@ class Simulation(ImageSource):
         self.amplitudes = amplitudes
         self.angles = angles
 
-        self.seed = seed
-
         self.noise_adder = None
         if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
-    def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, seed=None):
+    def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1):
         """
         Generate Gaussian blob volumes
         :param L: The size of the volumes
@@ -117,7 +117,7 @@ class Simulation(ImageSource):
 
             return Q, D, mu
 
-        with Random(seed):
+        with Random(self.seed):
             vols = np.zeros(shape=(C, L, L, L)).astype(self.dtype)
             for k in range(C):
                 Q, D, mu = gaussian_blobs(K, alpha)
