@@ -8,6 +8,7 @@ from aspire import config
 from aspire.basis.polar_2d import PolarBasis2D
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import common_line_from_rots
+from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
 
@@ -172,9 +173,7 @@ class CLOrient3D:
             # build the subset of j images if n_check < n_img
             n_remaining = n_img - i - 1
             n_j = min(n_remaining, n_check)
-            subset_j = np.sort(
-                np.random.choice(n_remaining, n_j, replace=False) + i + 1
-            )
+            subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
 
             for j in subset_j:
                 p2_flipped = np.conj(pf[j])
@@ -478,7 +477,7 @@ class CLOrient3D:
         idx_j = np.array(idx_j, dtype="int")
 
         # Select random pairs based on the size of n_equations
-        rp = np.random.choice(np.arange(len(idx_j)), size=n_equations, replace=False)
+        rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)
 
         return idx_i[rp], idx_j[rp]
 

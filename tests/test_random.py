@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from aspire.utils.matlab_compat import randi
+from aspire.utils.random import randi
 
 
 class UtilsRandomTestCase(TestCase):

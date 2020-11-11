@@ -35,6 +35,7 @@ class SimTestCase(TestCase):
             ]
         )
 
+        # Note this data was stored as order=F
         self.vol = np.load(os.path.join(DATA_DIR, "nfft_volume.npy"))
 
         # Setup a 2D slice for testing 2d many
