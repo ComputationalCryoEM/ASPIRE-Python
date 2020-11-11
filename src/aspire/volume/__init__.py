@@ -271,4 +271,4 @@ def rotated_grids(L, rot_matrices):
         pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
 
     pts_rot = m_reshape(pts_rot, (3, L, L, num_rots))
-    return pts_rot
+    return pts_rot[::-1]

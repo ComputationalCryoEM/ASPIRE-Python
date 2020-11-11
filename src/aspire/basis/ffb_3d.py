@@ -138,9 +138,9 @@ class FFBBasis3D(FBBasis3D):
             * pi
             * np.vstack(
                 (
-                    fourier_x[np.newaxis, ...],
-                    fourier_y[np.newaxis, ...],
                     fourier_z[np.newaxis, ...],
+                    fourier_y[np.newaxis, ...],
+                    fourier_x[np.newaxis, ...],
                 )
             )
         )
