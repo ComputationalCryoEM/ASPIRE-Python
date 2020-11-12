@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.orientation.commonline_sync import CLSyncVoting
+from aspire.abinitio import CLSyncVoting
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.random import Random

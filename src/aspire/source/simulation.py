@@ -4,8 +4,8 @@ import numpy as np
 from scipy.linalg import eigh, qr
 
 from aspire.image import Image
+from aspire.image.xform import NoiseAdder
 from aspire.source import ImageSource
-from aspire.source.xform import NoiseAdder
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.filters import ZeroFilter

@@ -1,6 +1,6 @@
 import logging
 
-from aspire.orientation import CLOrient3D
+from aspire.abinitio import CLOrient3D
 
 logger = logging.getLogger(__name__)
 

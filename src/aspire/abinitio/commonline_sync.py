@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from aspire.orientation import CLOrient3D
+from aspire.abinitio import CLOrient3D
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import stable_eigsh
 

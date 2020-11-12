@@ -9,7 +9,7 @@ import os
 import mrcfile
 import numpy as np
 
-from aspire.orientation.commonline_sync import CLSyncVoting
+from aspire.abinitio import CLSyncVoting
 from aspire.source.simulation import Simulation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
