@@ -1,5 +1,7 @@
 sudo: required
 language: python
+# manylinux2010 wheels are not found on xenial
+distro: bionic
 matrix:
   include:
     - python: 3.6
