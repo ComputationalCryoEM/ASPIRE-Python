@@ -4,9 +4,9 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
 from aspire.utils import ensure
-from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.em import voltage_to_wavelength
+from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 from aspire.utils.matlab_compat import m_reshape
 
 

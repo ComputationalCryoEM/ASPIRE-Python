@@ -828,4 +828,3 @@ class BlkDiagMatrix:
             A.data[i] = np.array(blk_diag[i], dtype=dtype)
 
         return A
-

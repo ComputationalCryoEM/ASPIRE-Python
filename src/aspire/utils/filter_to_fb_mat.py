@@ -1,9 +1,8 @@
 import numpy as np
 
 from aspire.basis import FFBBasis2D
-from aspire.utils.blk_diag_matrix import BlkDiagMatrix
-
 from aspire.basis.basis_utils import lgwt
+from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 
 
 def filter_to_fb_mat(h_fun, fbasis):
