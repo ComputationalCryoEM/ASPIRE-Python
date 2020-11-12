@@ -7,7 +7,7 @@ import logging
 import numpy as np
 from scipy.cluster.vq import kmeans2
 
-from aspire.basis.fb_3d import FBBasis3D
+from aspire.basis import FBBasis3D
 from aspire.estimation.covar import CovarianceEstimator
 from aspire.estimation.mean import MeanEstimator
 from aspire.estimation.noise import WhiteNoiseEstimator

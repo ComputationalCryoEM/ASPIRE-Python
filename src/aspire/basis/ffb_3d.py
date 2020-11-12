@@ -4,7 +4,7 @@ import numpy as np
 from numpy import pi
 
 from aspire.basis.basis_utils import lgwt, norm_assoc_legendre, sph_bessel
-from aspire.basis.fb_3d import FBBasis3D
+from aspire.basis import FBBasis3D
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 

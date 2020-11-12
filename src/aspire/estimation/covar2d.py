@@ -389,7 +389,7 @@ class BatchedRotCov2D(RotCov2D):
         src = self.src
 
         if self.basis is None:
-            from aspire.basis.ffb_2d import FFBBasis2D
+            from aspire.basis import FFBBasis2D
 
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 

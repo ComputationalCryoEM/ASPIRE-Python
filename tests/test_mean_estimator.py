@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.basis.fb_3d import FBBasis3D
+from aspire.basis import FBBasis3D
 from aspire.estimation.mean import MeanEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter

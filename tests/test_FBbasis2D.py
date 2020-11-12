@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.basis.fb_2d import FBBasis2D
+from aspire.basis import FBBasis2D
 from aspire.utils.types import utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")

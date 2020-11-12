@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
-from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.basis import FFBBasis2D
 from aspire.estimation.covar2d import BatchedRotCov2D, RotCov2D
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter

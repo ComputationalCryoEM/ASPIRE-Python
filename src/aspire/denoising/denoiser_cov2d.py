@@ -1,6 +1,6 @@
 import logging
 
-from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.basis import FFBBasis2D
 from aspire.denoising import Denoiser
 from aspire.denoising.denoised_src import DenoisedImageSource
 from aspire.estimation.covar2d import BatchedRotCov2D

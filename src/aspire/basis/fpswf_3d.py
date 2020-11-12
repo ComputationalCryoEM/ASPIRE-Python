@@ -1,5 +1,5 @@
-from aspire.basis.pswf_3d import PSWF3D
+from aspire.basis import PSWFBasis3D
 
 
-class FPSWF3D(PSWF3D):
+class FPSWFBasis3D(PSWFBasis3D):
     pass
