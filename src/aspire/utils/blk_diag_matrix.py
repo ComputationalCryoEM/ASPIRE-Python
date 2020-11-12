@@ -7,8 +7,8 @@ import numpy as np
 from numpy.linalg import norm, solve
 from scipy.linalg import block_diag
 
-from aspire.basis.basis_utils import lgwt
 from aspire.basis import FFBBasis2D
+from aspire.basis.basis_utils import lgwt
 from aspire.utils.cell import Cell2D
 
 

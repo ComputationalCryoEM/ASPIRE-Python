@@ -9,11 +9,9 @@ from scipy.sparse.linalg import LinearOperator
 from tqdm import tqdm
 
 from aspire import config
-from aspire.estimation import Estimator
-from aspire.estimation.kernel import FourierKernel
-from aspire.estimation.mean import MeanEstimator
 from aspire.image import Image
 from aspire.nufft import anufft
+from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import ensure
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matrix import (

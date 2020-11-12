@@ -8,8 +8,8 @@ import pytest
 from scipy.cluster.vq import kmeans2
 
 from aspire.basis import FBBasis3D
-from aspire.estimation.covar import CovarianceEstimator
-from aspire.estimation.mean import MeanEstimator
+from aspire.covariance import CovarianceEstimator
+from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matrix import eigs

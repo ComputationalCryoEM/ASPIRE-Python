@@ -6,7 +6,7 @@ from experime dataset and outputing to mrcs file.
 
 from aspire.basis import FFBBasis2D
 from aspire.denoising.denoiser_cov2d import DenoiserCov2D
-from aspire.estimation.noise import AnisotropicNoiseEstimator
+from aspire.noise import AnisotropicNoiseEstimator
 from aspire.source.relion import RelionSource
 
 # Set input path and files and initialize other parameters

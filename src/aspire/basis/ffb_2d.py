@@ -5,8 +5,8 @@ from numpy import pi
 from scipy.fftpack import fft, ifft
 from scipy.special import jv
 
-from aspire.basis.basis_utils import lgwt
 from aspire.basis import FBBasis2D
+from aspire.basis.basis_utils import lgwt
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_reshape

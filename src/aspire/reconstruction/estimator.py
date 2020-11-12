@@ -7,7 +7,7 @@ from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
-from aspire.estimation.kernel import FourierKernel
+from aspire.reconstruction.kernel import FourierKernel
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)

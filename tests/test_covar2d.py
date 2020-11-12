@@ -5,7 +5,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis import FFBBasis2D
-from aspire.estimation.covar2d import RotCov2D
+from aspire.covariance import RotCov2D
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter, ScalarFilter
 from aspire.utils.types import utest_tolerance

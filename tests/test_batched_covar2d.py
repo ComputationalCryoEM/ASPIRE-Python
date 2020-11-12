@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from aspire.basis import FFBBasis2D
-from aspire.estimation.covar2d import BatchedRotCov2D, RotCov2D
+from aspire.covariance import BatchedRotCov2D, RotCov2D
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.types import utest_tolerance

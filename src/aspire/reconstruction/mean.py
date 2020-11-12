@@ -3,9 +3,8 @@ import logging
 import numpy as np
 from scipy.fftpack import fft2
 
-from aspire.estimation import Estimator
-from aspire.estimation.kernel import FourierKernel
 from aspire.nufft import anufft
+from aspire.reconstruction import Estimator, FourierKernel
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 from aspire.volume import rotated_grids
