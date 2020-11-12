@@ -3,8 +3,8 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.estimation.covar2d import BatchedRotCov2D
 from aspire.denoising.denoiser_cov2d import DenoiserCov2D
+from aspire.estimation.covar2d import BatchedRotCov2D
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import RadialCTFFilter, ScalarFilter
 
@@ -24,11 +24,14 @@ class BatchedRotCov2DTestCase(TestCase):
         defocus_max = 2.5e4
         defocus_ct = 7
 
-        filters = [RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
-                   for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
+        filters = [
+            RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
+            for d in np.linspace(defocus_min, defocus_max, defocus_ct)
+        ]
 
-        src = Simulation(L, n, unique_filters=filters, dtype=self.dtype,
-                         noise_filter=noise_filter)
+        src = Simulation(
+            L, n, unique_filters=filters, dtype=self.dtype, noise_filter=noise_filter
+        )
 
         basis = FFBBasis2D((L, L), dtype=self.dtype)
 
@@ -44,15 +47,20 @@ class BatchedRotCov2DTestCase(TestCase):
         self.denoised_src = self.denoisor.denoise(batch_size=7)
         self.src = src
         self.basis = basis
-        self.covar_est_opt = {'shrinker': 'frobenius_norm', 'verbose': 0,
-                              'max_iter': 250, 'iter_callback': [],
-                              'store_iterates': False, 'rel_tolerance': 1e-12,
-                              'precision': self.dtype}
+        self.covar_est_opt = {
+            "shrinker": "frobenius_norm",
+            "verbose": 0,
+            "max_iter": 250,
+            "iter_callback": [],
+            "store_iterates": False,
+            "rel_tolerance": 1e-12,
+            "precision": self.dtype,
+        }
 
     def blk_diag_allclose(self, blk_diag_a, blk_diag_b, atol=1e-8):
         close = True
         for blk_a, blk_b in zip(blk_diag_a, blk_diag_b):
-            close = (close and np.allclose(blk_a, blk_b, atol=atol))
+            close = close and np.allclose(blk_a, blk_b, atol=atol)
         return close
 
     def testMean(self):
@@ -62,22 +70,31 @@ class BatchedRotCov2DTestCase(TestCase):
         self.assertTrue(np.allclose(mean_denoisor, mean_bcov2d))
 
     def testCovar(self):
-        covar_bcov2d = self.bcov2d.get_covar(noise_var=self.noise_var,
-                                             covar_est_opt=self.covar_est_opt)
+        covar_bcov2d = self.bcov2d.get_covar(
+            noise_var=self.noise_var, covar_est_opt=self.covar_est_opt
+        )
         covar_denoisor = self.denoisor.covar_est
 
         self.assertTrue(self.blk_diag_allclose(covar_denoisor, covar_bcov2d))
 
     def testCWFCeoffs(self):
         mean_bcov2d = self.bcov2d.get_mean()
-        covar_bcov2d = self.bcov2d.get_covar(noise_var=self.noise_var,
-                                             covar_est_opt=self.covar_est_opt)
+        covar_bcov2d = self.bcov2d.get_covar(
+            noise_var=self.noise_var, covar_est_opt=self.covar_est_opt
+        )
         coeffs_bcov2d = self.bcov2d.get_cwf_coeffs(
-            self.coeff, self.ctf_fb, self.ctf_idx,
-            mean_coeff=mean_bcov2d, covar_coeff=covar_bcov2d,
-            noise_var=self.noise_var)
+            self.coeff,
+            self.ctf_fb,
+            self.ctf_idx,
+            mean_coeff=mean_bcov2d,
+            covar_coeff=covar_bcov2d,
+            noise_var=self.noise_var,
+        )
         imgs_denoised_bcov2d = self.basis.evaluate(coeffs_bcov2d)
         imgs_denoised_denoisor = self.denoised_src.images(0, self.src.n)
 
-        self.assertTrue(np.allclose(imgs_denoised_bcov2d.asnumpy(),
-                                    imgs_denoised_denoisor.asnumpy()))
+        self.assertTrue(
+            np.allclose(
+                imgs_denoised_bcov2d.asnumpy(), imgs_denoised_denoisor.asnumpy()
+            )
+        )
