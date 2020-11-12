@@ -6,7 +6,7 @@ import mrcfile
 import numpy as np
 import pandas as pd
 
-from aspire.io.mrc import MrcStats
+from aspire.storage import MrcStats
 
 logger = logging.getLogger(__name__)
 

@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 
 from aspire.image import Image
-from aspire.io.starfile import StarFile
 from aspire.source import ImageSource
+from aspire.storage import StarFile
 from aspire.utils import ensure
 from aspire.utils.filters import CTFFilter
 

@@ -1,8 +1,8 @@
 import numpy as np
 
 from aspire.image import Image
-from aspire.io.micrograph import Micrograph
 from aspire.source import ImageSource
+from aspire.storage import Micrograph
 
 
 class MrcStack(ImageSource):
