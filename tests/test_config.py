@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from aspire.utils.config import Config, config_override
+from aspire.config import Config, config_override
 
 
 class ConfigTest(TestCase):

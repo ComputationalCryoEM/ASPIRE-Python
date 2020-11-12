@@ -7,8 +7,8 @@ from scipy import signal
 
 from aspire import config
 from aspire.image import Image
+from aspire.numeric import xp
 from aspire.utils import ensure
-from aspire.utils.numeric import xp
 
 logger = logging.getLogger(__name__)
 

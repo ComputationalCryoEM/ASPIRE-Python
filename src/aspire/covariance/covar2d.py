@@ -4,8 +4,8 @@ import numpy as np
 from numpy.linalg import inv
 from scipy.linalg import solve, sqrtm
 
+from aspire.operators import BlkDiagMatrix
 from aspire.utils import ensure
-from aspire.utils.blk_diag_matrix import BlkDiagMatrix
 from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import shrink_covar
