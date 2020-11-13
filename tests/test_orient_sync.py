@@ -5,8 +5,8 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
+from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter
 from aspire.utils.random import Random
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume

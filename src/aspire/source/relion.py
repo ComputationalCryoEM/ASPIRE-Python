@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 
 from aspire.image import Image
+from aspire.operators import CTFFilter
 from aspire.source import ImageSource
 from aspire.storage import StarFile
 from aspire.utils import ensure
-from aspire.utils.filters import CTFFilter
 
 logger = logging.getLogger(__name__)
 

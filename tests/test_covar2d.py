@@ -6,8 +6,8 @@ import numpy as np
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
+from aspire.operators import RadialCTFFilter, ScalarFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter, ScalarFilter
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 

@@ -4,7 +4,7 @@ import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
-from aspire.utils.filters import PowerFilter, ZeroFilter
+from aspire.operators import PowerFilter, ZeroFilter
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -214,7 +214,7 @@ class FilterXform(SymmetricXform):
     def __init__(self, filter):
         """
         Initialize the Filter `Xform` using a `Filter` object
-        :param filter: An object of type `aspire.utils.filters.Filter`
+        :param filter: An object of type `aspire.operators.Filter`
         """
         super().__init__()
         self.filter = filter
@@ -291,7 +291,7 @@ class NoiseAdder(Xform):
         """
         Initialize the random state of this NoiseAdder using specified values.
         :param seed: The random seed used to generate white noise
-        :param noise_filter: An optional aspire.utils.filters.Filter object to use to filter the generated white noise.
+        :param noise_filter: An optional aspire.operators.Filter object to use to filter the generated white noise.
             By default, a ZeroFilter is used, generating no noise.
         """
         super().__init__()

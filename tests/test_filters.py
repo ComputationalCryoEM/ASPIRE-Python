@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.utils.filters import (
+from aspire.operators import (
     CTFFilter,
     FunctionFilter,
     IdentityFilter,
