@@ -5,10 +5,10 @@ from numpy.linalg import inv
 from scipy.linalg import solve, sqrtm
 
 from aspire.operators import BlkDiagMatrix, RadialCTFFilter
+from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import shrink_covar
-from aspire.utils.optimize import conj_grad, fill_struct
 
 logger = logging.getLogger(__name__)
 

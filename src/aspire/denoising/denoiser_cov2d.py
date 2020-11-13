@@ -4,7 +4,7 @@ from aspire.basis import FFBBasis2D
 from aspire.covariance import BatchedRotCov2D
 from aspire.denoising import Denoiser
 from aspire.denoising.denoised_src import DenoisedImageSource
-from aspire.utils.optimize import fill_struct
+from aspire.optimization import fill_struct
 
 logger = logging.getLogger(__name__)
 
