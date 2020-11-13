@@ -1,3 +1,4 @@
+from .misc import ensure, get_full_version, powerset, sha256sum  # isort:skip
 from .matrix import (
     acorr,
     ainner,
@@ -20,5 +21,4 @@ from .matrix import (
     vol_to_vec,
     volmat_to_vecmat,
 )
-from .misc import ensure, get_full_version, powerset, sha256sum
 from .types import complex_type, real_type, utest_tolerance
