@@ -8,7 +8,7 @@ from aspire.covariance import BatchedRotCov2D
 from aspire.denoising import Denoiser
 from aspire.denoising.denoised_src import DenoisedImageSource
 from aspire.optimization import fill_struct
-from aspire.utils.matrix import mat_to_vec
+from aspire.utils import mat_to_vec
 from aspire.volume import Volume, qr_vols_forward
 
 logger = logging.getLogger(__name__)

@@ -16,7 +16,7 @@ from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
 from aspire.operators import RadialCTFFilter, ScalarFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.matrix import anorm
+from aspire.utils import anorm
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)

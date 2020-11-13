@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.basis import FBBasis2D, FFBBasis2D, FPSWFBasis2D, PSWFBasis2D
-from aspire.utils.matrix import anorm
+from aspire.utils import anorm
 
 logger = logging.getLogger(__name__)
 

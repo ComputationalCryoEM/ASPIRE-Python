@@ -4,9 +4,8 @@ import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.basis.basis_utils import num_besselj_zeros
-from aspire.utils import ensure
+from aspire.utils import ensure, mdim_mat_fun_conj
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.matrix import mdim_mat_fun_conj
 
 logger = logging.getLogger(__name__)
 

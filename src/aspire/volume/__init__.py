@@ -5,11 +5,10 @@ from numpy.linalg import qr
 
 import aspire.image
 from aspire.nufft import nufft
-from aspire.utils import ensure
+from aspire.utils import ensure, mat_to_vec, vec_to_mat
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.fft import centered_ifft2
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.matrix import mat_to_vec, vec_to_mat
 
 logger = logging.getLogger(__name__)
 

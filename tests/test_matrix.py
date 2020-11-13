@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.utils.matrix import (
+from aspire.utils import (
     im_to_vec,
     mat_to_vec,
     roll_dim,

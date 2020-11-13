@@ -13,7 +13,7 @@ from aspire.denoising import src_wiener_coords
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
-from aspire.utils.matrix import eigs
+from aspire.utils import eigs
 from aspire.utils.random import Random
 from aspire.volume import Volume
 

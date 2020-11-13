@@ -1,16 +1,76 @@
 import logging
 
 import numpy as np
-from numpy.linalg import inv
+from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
 from aspire.operators import BlkDiagMatrix, RadialCTFFilter
 from aspire.optimization import conj_grad, fill_struct
-from aspire.utils import ensure
+from aspire.utils import ensure, make_symmat
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.matrix import shrink_covar
 
 logger = logging.getLogger(__name__)
+
+
+def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
+    """
+    Shrink the covariance matrix
+    :param covar_in: An input covariance matrix
+    :param noise_var: The estimated variance of noise
+    :param gamma: An input parameter to specify the maximum values of eigen values to be neglected.
+    :param shrinker: An input parameter to select different shrinking methods.
+    :return: The shrinked covariance matrix
+    """
+
+    if shrinker is None:
+        shrinker = "frobenius_norm"
+    ensure(
+        shrinker in ("frobenius_norm", "operator_norm", "soft_threshold"),
+        "Unsupported shrink method",
+    )
+
+    covar = covar_in / noise_var
+
+    lambs, eig_vec = eig(make_symmat(covar))
+
+    lambda_max = (1 + np.sqrt(gamma)) ** 2
+
+    lambs[lambs < lambda_max] = 0
+
+    if shrinker == "operator_norm":
+        lambdas = lambs[lambs > lambda_max]
+        lambdas = (
+            1
+            / 2
+            * (lambdas - gamma + 1 + np.sqrt((lambdas - gamma + 1) ** 2 - 4 * lambdas))
+            - 1
+        )
+        lambs[lambs > lambda_max] = lambdas
+    elif shrinker == "frobenius_norm":
+        lambdas = lambs[lambs > lambda_max]
+        lambdas = (
+            1
+            / 2
+            * (lambdas - gamma + 1 + np.sqrt((lambdas - gamma + 1) ** 2 - 4 * lambdas))
+            - 1
+        )
+        c = np.divide(
+            (1 - np.divide(gamma, lambdas ** 2)), (1 + np.divide(gamma, lambdas))
+        )
+        lambdas = lambdas * c
+        lambs[lambs > lambda_max] = lambdas
+    else:
+        # for the case of shrinker == 'soft_threshold'
+        lambdas = lambs[lambs > lambda_max]
+        lambs[lambs > lambda_max] = lambdas - lambda_max
+
+    diag_lambs = np.zeros_like(covar)
+    np.fill_diagonal(diag_lambs, lambs)
+
+    shrinked_covar = eig_vec @ diag_lambs @ eig_vec.conj().T
+    shrinked_covar *= noise_var
+
+    return shrinked_covar
 
 
 class RotCov2D:
