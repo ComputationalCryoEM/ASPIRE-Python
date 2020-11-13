@@ -1,6 +1,8 @@
 import os.path
 import subprocess
 
+from .types import complex_type, real_type, utest_tolerance
+
 
 def ensure(cond, error_message=None):
     """
