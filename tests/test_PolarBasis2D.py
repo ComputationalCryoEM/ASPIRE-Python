@@ -16,6 +16,8 @@ class PolarBasis2DTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.basis = PolarBasis2D((8, 8), 4, 32, dtype=self.dtype)
+        # Note, in practice we got a degenerate random array around 1%
+        #   of the time, so we fix a seed for the randn calls.
         self.seed = 8675309
 
     def tearDown(self):
