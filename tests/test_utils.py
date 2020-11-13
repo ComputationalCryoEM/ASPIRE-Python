@@ -5,8 +5,7 @@ import numpy as np
 from pytest import raises
 
 from aspire import __version__
-from aspire.utils import get_full_version
-from aspire.utils.misc import powerset
+from aspire.utils import get_full_version, powerset
 from aspire.utils.types import utest_tolerance
 
 
