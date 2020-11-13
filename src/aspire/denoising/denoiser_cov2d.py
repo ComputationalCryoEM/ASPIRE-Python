@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from numpy.linalg import qr, solve
+from numpy.linalg import solve
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import BatchedRotCov2D

@@ -7,8 +7,6 @@ import os.path
 import subprocess
 from itertools import chain, combinations
 
-import numpy as np
-
 logger = logging.getLogger(__name__)
 
 
