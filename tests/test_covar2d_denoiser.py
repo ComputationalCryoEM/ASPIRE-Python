@@ -13,40 +13,31 @@ class BatchedRotCov2DTestCase(TestCase):
     def setUp(self):
         n = 32
         L = 8
-        self.dtype = np.float32
+        dtype = np.float32
 
-        self.noise_var = 0.1848
-        noise_filter = ScalarFilter(dim=2, value=self.noise_var)
-
-        pixel_size = 5
-        voltage = 200
-        defocus_min = 1.5e4
-        defocus_max = 2.5e4
-        defocus_ct = 7
-
+        noise_var = 0.1848
+        noise_filter = ScalarFilter(dim=2, value=noise_var)
         filters = [
-            RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
-            for d in np.linspace(defocus_min, defocus_max, defocus_ct)
+            RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
+            for d in np.linspace(1.5e4, 2.5e4, 7)
         ]
 
         src = Simulation(
-            L, n, unique_filters=filters, dtype=self.dtype, noise_filter=noise_filter
+            L, n, unique_filters=filters, dtype=dtype, noise_filter=noise_filter
         )
-
-        basis = FFBBasis2D((L, L), dtype=self.dtype)
-
-        unique_filters = src.unique_filters
-        self.ctf_idx = src.filter_indices
-        self.ctf_fb = [f.fb_mat(basis) for f in unique_filters]
-
         im = src.images(0, src.n)
-        self.coeff = basis.evaluate_t(im)
 
-        self.bcov2d = BatchedRotCov2D(src, basis, batch_size=7)
-        self.denoisor = DenoiserCov2D(src, basis, self.noise_var)
+        self.dtype = dtype
+        self.basis = FFBBasis2D((L, L), dtype=self.dtype)
+        self.noise_var = noise_var
+        self.noise_filter = noise_filter
+        self.ctf_idx = src.filter_indices
+        self.ctf_fb = [f.fb_mat(self.basis) for f in src.unique_filters]
+        self.coeff = self.basis.evaluate_t(im)
+        self.bcov2d = BatchedRotCov2D(src, self.basis, batch_size=7)
+        self.denoisor = DenoiserCov2D(src, self.basis, self.noise_var)
         self.denoised_src = self.denoisor.denoise(batch_size=7)
-        self.src = src
-        self.basis = basis
+
         self.covar_est_opt = {
             "shrinker": "frobenius_norm",
             "verbose": 0,
@@ -91,10 +82,43 @@ class BatchedRotCov2DTestCase(TestCase):
             noise_var=self.noise_var,
         )
         imgs_denoised_bcov2d = self.basis.evaluate(coeffs_bcov2d)
-        imgs_denoised_denoisor = self.denoised_src.images(0, self.src.n)
+        imgs_denoised_denoisor = self.denoised_src.images(0, self.denoised_src.n)
 
         self.assertTrue(
             np.allclose(
                 imgs_denoised_bcov2d.asnumpy(), imgs_denoised_denoisor.asnumpy()
             )
         )
+
+    def testMSE(self):
+        # need larger numbers of images and higher resolution for good MSE
+        img_size = 64
+        num_imgs = 1024
+
+        # Create filters
+        ctf_filters = [
+            RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
+            for d in np.linspace(1.5e4, 2.5e4, 7)
+        ]
+
+        # set simulation object
+        sim = Simulation(
+            L=img_size,
+            n=num_imgs,
+            unique_filters=ctf_filters,
+            offsets=0.0,
+            amplitudes=1.0,
+            dtype=self.dtype,
+            noise_filter=self.noise_filter,
+        )
+        imgs_clean = sim.projections()
+
+        # Specify the fast FB basis method for expending the 2D images
+        ffbbasis = FFBBasis2D((img_size, img_size), dtype=self.dtype)
+        denoisor = DenoiserCov2D(sim, ffbbasis, self.noise_var)
+        denoised_src = denoisor.denoise(batch_size=64)
+        imgs_denoised = denoised_src.images(0, num_imgs)
+        # Calculate the normalized RMSE of the estimated images.
+        nrmse_ims = (imgs_denoised - imgs_clean).norm() / imgs_clean.norm()
+
+        self.assertTrue(nrmse_ims < 0.25)
