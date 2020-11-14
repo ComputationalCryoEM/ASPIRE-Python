@@ -32,7 +32,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(rot_mat_t, np.transpose(rot_mat, (0, 2, 1))))
 
     def testMultiplication(self):
-        rot_obj_t = Rotation(32, seed=0, seq="ZYZ")
+        rot_obj_t = Rotation(32, seed=0)
         rot_obj_t.rot_matrices = self.rot_obj.T
         result = self.rot_obj * rot_obj_t
         for i in range(self.rot_obj.num_rots):

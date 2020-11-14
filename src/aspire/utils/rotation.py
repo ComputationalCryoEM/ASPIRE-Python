@@ -61,7 +61,6 @@ class Rotation:
 
     def __mul__(self, other):
         if isinstance(other, Rotation):
-            other = other.data
             output = self.data @ other.data
         else:
             output = self.data * other
