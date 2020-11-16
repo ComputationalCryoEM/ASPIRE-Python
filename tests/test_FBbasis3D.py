@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis import FBBasis3D
-from aspire.utils.types import utest_tolerance
+from aspire.utils import utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 

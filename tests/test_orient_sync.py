@@ -7,8 +7,8 @@ import numpy as np
 from aspire.abinitio import CLSyncVoting
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
+from aspire.utils import utest_tolerance
 from aspire.utils.random import Random
-from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")

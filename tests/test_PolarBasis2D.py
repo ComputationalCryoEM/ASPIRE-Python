@@ -4,8 +4,8 @@ import numpy as np
 
 from aspire.basis import PolarBasis2D
 from aspire.image import Image
+from aspire.utils import complex_type, utest_tolerance
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.types import complex_type, utest_tolerance
 
 
 class PolarBasis2DTestCase(TestCase):

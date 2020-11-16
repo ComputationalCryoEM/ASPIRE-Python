@@ -7,7 +7,7 @@ from aspire.basis import FFBBasis2D
 from aspire.covariance import BatchedRotCov2D, RotCov2D
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.types import utest_tolerance
+from aspire.utils import utest_tolerance
 
 
 class BatchedRotCov2DTestCase(TestCase):
