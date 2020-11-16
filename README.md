@@ -58,9 +58,9 @@ You may optionally install additional packages:
 
 ```
 # Additional GPU packages (reqires CUDA)
-pip install -e .[gpu]
+pip install -e ".[gpu]"
 # Additional developer tools
-pip install -e .[dev]
+pip install -e ".[dev]"
 ```
 
 ### Make sure everything works
