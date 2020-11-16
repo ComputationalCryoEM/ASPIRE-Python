@@ -1,9 +1,9 @@
 import logging
+
 import numpy as np
 
 from aspire.io.starfile import StarFile, StarFileBlock
 from aspire.source import ImageSource
-
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class OrientEstSource(ImageSource):
         :param orient_method: object specifying orientation estimation method
         """
 
-        super().__init__(src.L, src. n, dtype=src.dtype, metadata=src._metadata.copy())
+        super().__init__(src.L, src.n, dtype=src.dtype, metadata=src._metadata.copy())
         self._im = None
         self.orient_method = orient_method
         self.rots = orient_method.rotations
@@ -35,8 +35,10 @@ class OrientEstSource(ImageSource):
         :param indices: The indices of images to return.
         :return: an `Image` object.
         """
-        raise NotImplementedError(f'Orientation estimation did not change the images.'
-                                  f'Please use original ImageSource object.')
+        raise NotImplementedError(
+            "Orientation estimation did not change the images."
+            "Please use original ImageSource object."
+        )
 
     def save(self, starfile_filepath):
         """
@@ -48,10 +50,16 @@ class OrientEstSource(ImageSource):
 
         df = self._metadata.copy()
         # Drop any column that doesn't start with a *single* underscore
-        df = df.drop([str(col) for col in df.columns
-                      if not col.startswith('_') or col.startswith('__')], axis=1)
+        df = df.drop(
+            [
+                str(col)
+                for col in df.columns
+                if not col.startswith("_") or col.startswith("__")
+            ],
+            axis=1,
+        )
 
-        with open(starfile_filepath, 'w') as f:
+        with open(starfile_filepath, "w") as f:
             # initial the star file object and save it
             starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
             starfile.save(f)
