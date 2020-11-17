@@ -162,7 +162,8 @@ class RelionSource(ImageSource):
 
         df = self._metadata.loc[indices]
         im = np.empty(
-            (len(indices), self._original_resolution, self._original_resolution)
+            (len(indices), self._original_resolution, self._original_resolution),
+            dtype=self.dtype,
         )
 
         groups = df.groupby("__mrc_filepath")
