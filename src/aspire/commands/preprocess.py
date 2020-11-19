@@ -79,7 +79,6 @@ def preprocess(
     Preprocess the raw images and output desired images for future analysis
     """
     # Create a source object for 2D images
-    logger.info("This script preprocesses experimental CryoEM images")
     logger.info(f"Read in images from {starfile_in} and preprocess the images.")
     source = RelionSource(
         starfile_in, data_folder, pixel_size=pixel_size, max_rows=max_rows
