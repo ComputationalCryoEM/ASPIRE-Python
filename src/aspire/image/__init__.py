@@ -204,13 +204,10 @@ class Image:
         mask = (np.abs(grid["x"]) < ds_res / self.res) & (
             np.abs(grid["y"]) < ds_res / self.res
         )
-        im = np.real(
-            xp.asnumpy(
-                fft.centered_ifft2(
-                    fft.centered_fft2(xp.asarray(self.data)) * xp.asarray(mask)
-                )
-            )
+        im_shifted = fft.centered_ifft2(
+            fft.centered_fft2(xp.asarray(self.data)) * xp.asarray(mask)
         )
+        im = np.real(xp.asnumpy(im_shifted))
 
         for s in range(im_ds.shape[0]):
             interpolator = RegularGridInterpolator(
@@ -274,16 +271,10 @@ class Image:
 
         L = self.res
         im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))
-        grid_1d = (
-            xp.asnumpy(
-                fft.ifftshift(
-                    xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
-                )
-            )
-            * 2
-            * np.pi
-            / L
+        grid_shifted = fft.ifftshift(
+            xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
         )
+        grid_1d = xp.asnumpy(grid_shifted) * 2 * np.pi / L
 
         om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing="ij")
 

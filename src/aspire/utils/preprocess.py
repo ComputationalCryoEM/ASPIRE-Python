@@ -148,13 +148,11 @@ def downsample(insamples, szout, mask=None):
         # stack of one dimension objects
 
         for idata in range(ndata):
-            imsample_shifted = fft.fftshift(fft.fft(xp.asarray(insamples[idata])))
-            insamples_fft = crop_pad(imsample_shifted, L_out) * mask
+            insamples_shifted = fft.fftshift(fft.fft(xp.asarray(insamples[idata])))
+            insamples_fft = crop_pad(insamples_shifted, L_out) * mask
 
-            outsammples_shifted = fft.ifft(fft.ifftshift(xp.asarray(insamples_fft)))
-            outsamples[idata] = np.real(
-                xp.asnumpy(outsammples_shifted) * (L_out / L_in)
-            )
+            outsamples_shifted = fft.ifft(fft.ifftshift(xp.asarray(insamples_fft)))
+            outsamples[idata] = np.real(xp.asnumpy(outsamples_shifted) * (L_out / L_in))
 
     elif insamples.ndim == 3:
         # stack of two dimension objects
