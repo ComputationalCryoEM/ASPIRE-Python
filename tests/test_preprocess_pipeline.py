@@ -7,7 +7,12 @@ from aspire.estimation.noise import WhiteNoiseEstimator
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
 from aspire.utils.coor_trans import grid_2d, grid_3d
-from aspire.utils.filters import RadialCTFFilter, ScalarFilter
+from aspire.utils.filters import (
+    FunctionFilter,
+    PowerFilter,
+    RadialCTFFilter,
+    ScalarFilter,
+)
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -19,8 +24,10 @@ class PreprocessPLTestCase(TestCase):
         self.L = 64
         self.n = 128
 
-        self.noise_variance = 0.004
-        self.noise_filter = ScalarFilter(dim=2, value=self.noise_variance)
+        self.noise_filter = PowerFilter(
+            filter=FunctionFilter(lambda x, y: np.exp(-(x ** 2 + y ** 2) / 2)),
+            power=0.2,
+        )
 
         self.sim = Simulation(
             L=self.L,
