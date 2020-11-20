@@ -9,31 +9,41 @@ from aspire.utils.types import utest_tolerance
 
 class UtilsTestCase(TestCase):
     def setUp(self):
-        self.rot_obj = Rotation(32, seed=0, dtype=np.float32)
+        self.dtype = np.float32
+        self.num_rots = 32
+        self.rot_obj = Rotation(self.num_rots, seed=0, dtype=self.dtype)
+        self.angles = self.rot_obj.angles
+        self.matrices = self.rot_obj.matrices
 
     def testRotMatrices(self):
-        rots_ref = (
-            sp_rot.from_euler("ZYZ", self.rot_obj.angles, degrees=True)
-            .as_matrix()
-            .astype(self.rot_obj.dtype)
-        )
-        self.assertTrue(np.allclose(self.rot_obj.rot_matrices, rots_ref))
+        rot_ref = sp_rot.from_matrix(self.matrices)
+        matrices = rot_ref.as_matrix().astype(self.dtype)
+        self.assertTrue(np.allclose(self.matrices, matrices))
 
     def testRotAngles(self):
-        rot = sp_rot.from_matrix(self.rot_obj.rot_matrices)
-        angles = rot.as_euler(self.rot_obj.rot_seq, degrees=True).astype(
-            self.rot_obj.dtype
-        )
-        self.assertTrue(np.allclose(self.rot_obj.angles, angles))
+        rot_ref = sp_rot.from_euler("ZYZ", self.angles, degrees=False)
+        angles = rot_ref.as_euler("ZYZ", degrees=False).astype(self.dtype)
+        self.assertTrue(np.allclose(self.angles, angles))
+
+    def testFromMatrix(self):
+        rot_ref = sp_rot.from_matrix(self.matrices)
+        angles = rot_ref.as_euler("ZYZ", degrees=False).astype(self.dtype)
+        rot = Rotation(self.num_rots, matrices=self.matrices, dtype=self.dtype)
+        self.assertTrue(np.allclose(rot.angles, angles))
+
+    def testFromEuler(self):
+        rot_ref = sp_rot.from_euler("ZYZ", self.angles, degrees=False)
+        matrices = rot_ref.as_matrix().astype(self.dtype)
+        rot = Rotation(self.num_rots, angles=self.angles, dtype=self.dtype)
+        self.assertTrue(np.allclose(rot.matrices, matrices))
 
     def testTranspose(self):
-        rot_mat = self.rot_obj.rot_matrices
+        rot_mat = self.rot_obj.matrices
         rot_mat_t = self.rot_obj.T
         self.assertTrue(np.allclose(rot_mat_t, np.transpose(rot_mat, (0, 2, 1))))
 
     def testMultiplication(self):
-        rot_obj_t = Rotation(32, seed=0)
-        rot_obj_t.rot_matrices = self.rot_obj.T
+        rot_obj_t = Rotation(self.num_rots, matrices=self.rot_obj.T)
         result = self.rot_obj * rot_obj_t
         for i in range(self.rot_obj.num_rots):
             self.assertTrue(
@@ -43,10 +53,11 @@ class UtilsTestCase(TestCase):
             )
 
     def testRegisterRots(self):
-        q_ang = [[45, 45, 45]]
+        q_ang = [[45, 62, 97]]
         q_mat = sp_rot.from_euler("ZYZ", q_ang, degrees=True).as_matrix()[0]
-        flag = 0
-        regrots_ref = self.rot_obj.get_aligned_rotations(q_mat, flag)
-        q_mat_est, flag_est = self.rot_obj.register_rotations(regrots_ref)
-
-        self.assertTrue(np.allclose(flag_est, flag) and np.allclose(q_mat_est, q_mat))
+        for flag in [0, 1]:
+            regrots_ref = self.rot_obj.get_aligned_rotations(q_mat, flag)
+            q_mat_est, flag_est = self.rot_obj.register_rotations(regrots_ref)
+            self.assertTrue(
+                np.allclose(flag_est, flag) and np.allclose(q_mat_est, q_mat)
+            )

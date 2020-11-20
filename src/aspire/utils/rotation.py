@@ -14,116 +14,68 @@ from aspire.utils.random import Random
 
 
 class Rotation:
-    def __init__(self, num_rots, seed=None, seq="ZYZ", angles=None, dtype=np.float32):
+    def __init__(
+        self, num_rots, seed=None, angles=None, matrices=None, dtype=np.float32
+    ):
         """
-        Initialize a Rotation object
+         Initialize a Rotation object
 
-        :param num_rots: Total number of rotation sets
-        :param seed: Seed for initializing random rotations.
-            If None, the random generator is not re-seeded.
-        :param seq:  Sequence of order applying Euler angles
-        :param angles: Euler angles (in degrees) to generate rotation matrices.
-            If None, uniformly distributed angles will be generated.
-        :param dtype: data type for angles and rotation matrices
+         :param num_rots: Total number of rotation sets
+         :param seed: Seed for initializing random rotations.
+             If None, the random generator is not re-seeded.
+         :param angles: Euler angles (in radian) to generate rotation matrices.
+             If None, Predefined rotation matrices or uniformly
+             distributed angles will be used.
+        :param matrices: Rotation matrices to initialize Rotation object.
+             If None, Predefined or uniformly distributed angles
+             will be used.
+         :param dtype: data type for angles and rotation matrices
         """
-        self.rot_seq = seq
         self.dtype = np.dtype(dtype)
-        if angles:
+        self.num_rots = None
+        self.angles = None
+        self.matrices = None
+        self.shape = None
+        if angles is not None:
             ensure(
                 num_rots == angles.shape[0],
                 "Number of rotation matrices should equal to "
                 "number of sets of Euler angles.",
             )
-            self.angles = angles.astype(self.dtype)
+            self.from_euler(angles, dtype=dtype)
+        elif matrices is not None:
+            ensure(
+                num_rots == matrices.shape[0],
+                "Number of rotation matrices should equal to "
+                "number of input sets of matrices.",
+            )
+            self.from_matrix(matrices, dtype=dtype)
         else:
-            self.angles = self._uniform_random_angles(num_rots, seed=seed)
-        self.num_rots = num_rots
-
-        self.data = self.rot_matrices
-        self.shape = (num_rots, 3, 3)
+            self.num_rots = num_rots
+            angles = Rotation.uniform_random_angles(num_rots, dtype=dtype, seed=seed)
+            self.from_euler(angles, dtype=dtype)
 
     def __str__(self):
         """
         String representation.
         """
-        return (
-            f"Rotation object with matrices[{self.num_rots}, 3, 3] of {self.dtype} type"
-        )
+        return f"Rotation stack consisting of {self.num_rots} elements of {self.dtype} type"
 
     def __len__(self):
         return self.num_rots
 
     def __getitem__(self, item):
-        return self.data[item]
+        return self.matrices[item]
 
     def __setitem__(self, key, value):
-        self.data[key] = value
+        self.matrices[key] = value
 
     def __mul__(self, other):
         if isinstance(other, Rotation):
-            output = self.data @ other.data
+            output = self.matrices @ other.matrices
         else:
-            output = self.data * other
+            output = self.matrices * other
         return output
-
-    def _uniform_random_angles(self, n, seed=None):
-        """
-        Generate random 3D rotation angles in degrees
-
-        :param n: The number of rotation angles to generate
-        :param seed: Random integer seed to use. If None,
-            the current random state is used.
-        :return: A n-by-3 ndarray of rotation angles in degrees
-        """
-        # Generate random rotation angles, in radians
-        angles = np.zeros((n, 3), dtype=self.dtype)
-        with Random(seed):
-            angles = np.column_stack(
-                (
-                    np.random.random(n) * 2 * np.pi,
-                    np.arccos(2 * np.random.random(n) - 1),
-                    np.random.random(n) * 2 * np.pi,
-                )
-            )
-        # Return random rotation angles in degrees
-        return np.rad2deg(angles).astype(self.dtype)
-
-    @property
-    def rot_matrices(self):
-        """
-        :return: Rotation matrices as a n x 3 x 3 array
-        """
-        return self._rotations.as_matrix().astype(self.dtype)
-
-    @rot_matrices.setter
-    def rot_matrices(self, values):
-        """
-        Set rotation matrices
-
-        :param values: Rotation matrices as a n x 3 x 3 array
-        :return: None
-        """
-        self._rotations = sp_rot.from_matrix(values.astype(self.dtype))
-        self.data = values.astype(self.dtype)
-
-    @property
-    def angles(self):
-        """
-        :return: Rotation angles in degrees, as a n x 3 array
-        """
-        return self._rotations.as_euler(self.rot_seq, degrees=True).astype(self.dtype)
-
-    @angles.setter
-    def angles(self, values):
-        """
-        Set rotation angles in degrees
-
-        :param values: Rotation angles in degrees, as a n x 3 array
-        :return: None
-        """
-        self._rotations = sp_rot.from_euler(
-            self.rot_seq, values.astype(self.dtype), degrees=True
-        )
 
     @property
     def T(self):
@@ -138,10 +90,43 @@ class Rotation:
 
         :return: The set of transposed matrices
         """
-        return np.transpose(self.data, axes=(0, 2, 1))
+        return np.transpose(self.matrices, axes=(0, 2, 1))
 
     def asnumpy(self):
-        return self.data
+        """
+        :return: Rotation matrices as a n x 3 x 3 array
+        """
+        return self.matrices
+
+    def from_euler(self, values, dtype=np.float32):
+        """
+        build rotation object from Euler angles in degrees
+
+        :param dtype:  data type for rotational angles and matrices
+        :param values: Rotation angles in radians, as a n x 3 array
+        :return: None
+        """
+        self.dtype = np.dtype(dtype)
+        self.num_rots = values.shape[0]
+        rotations = sp_rot.from_euler("ZYZ", values.astype(dtype), degrees=False)
+        self.matrices = rotations.as_matrix().astype(dtype)
+        self.angles = rotations.as_euler("ZYZ", degrees=False).astype(dtype)
+        self.shape = (self.num_rots, 3, 3)
+
+    def from_matrix(self, values, dtype=np.float32):
+        """
+        build rotation object from rotational matrices
+
+        :param dtype:  data type for rotational angles and matrices
+        :param values: Rotation matrices, as a n x 3 x 3 array
+        :return: None
+        """
+        self.dtype = np.dtype(dtype)
+        self.num_rots = values.shape[0]
+        rotations = sp_rot.from_matrix(values.astype(dtype))
+        self.angles = rotations.as_euler("ZYZ", degrees=False).astype(dtype)
+        self.matrices = rotations.as_matrix().astype(dtype)
+        self.shape = (self.num_rots, 3, 3)
 
     def register_rotations(self, rots_ref):
         """
@@ -155,8 +140,8 @@ class Rotation:
         :return: o_mat, optimal orthogonal 3x3 matrix to align the two sets;
                 flag, flag==1 then J conjugacy is required and 0 is not.
         """
-        rots = self.data
-        rots_ref = rots_ref.rot_matrices.astype(self.dtype)
+        rots = self.matrices
+        rots_ref = rots_ref.matrices.astype(self.dtype)
         ensure(
             rots.shape == rots_ref.shape,
             "Two sets of rotations must have same dimensions.",
@@ -215,7 +200,7 @@ class Rotation:
         :param flag:  flag==1 then J conjugacy is required and 0 is not
         :return: regrot, aligned Rotation object
         """
-        rots = self.data
+        rots = self.matrices
         K = rots.shape[0]
 
         # Reflection matrix
@@ -228,7 +213,7 @@ class Rotation:
                 R = J @ R @ J
             regrot[k, :, :] = Q_mat.T @ R
         aligned_rots = copy.copy(self)
-        aligned_rots.rot_matrices = regrot
+        aligned_rots.matrices = regrot
         return aligned_rots
 
     @staticmethod
@@ -241,8 +226,8 @@ class Rotation:
         :param rots_ref: The reference Rotation object.
         :return: The MSE value between two sets of rotations.
         """
-        rots_reg = rots_reg.rot_matrices
-        rots_ref = rots_ref.rot_matrices
+        rots_reg = rots_reg.matrices
+        rots_ref = rots_ref.matrices
         ensure(
             rots_reg.shape == rots_ref.shape,
             "Two sets of rotations must have same dimensions.",
@@ -278,3 +263,25 @@ class Rotation:
         ell_ji = int(np.mod(np.round(ell_ji), ell))
 
         return ell_ij, ell_ji
+
+    @staticmethod
+    def uniform_random_angles(n, dtype=np.float32, seed=None):
+        """
+        Generate random 3D rotation angles in radians
+
+        :param n: The number of rotation angles to generate
+        :param seed: Random integer seed to use. If None,
+            the current random state is used.
+        :return: A n-by-3 ndarray of rotation angles in radians
+        """
+        # Generate random rotation angles, in radians
+        angles = np.zeros((n, 3), dtype=dtype)
+        with Random(seed):
+            angles = np.column_stack(
+                (
+                    np.random.random(n) * 2 * np.pi,
+                    np.arccos(2 * np.random.random(n) - 1),
+                    np.random.random(n) * 2 * np.pi,
+                )
+            )
+        return angles
