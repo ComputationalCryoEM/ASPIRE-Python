@@ -2,8 +2,6 @@
 Define a Rotation Class for customized rotation operations used by ASPIRE.
 """
 
-import copy
-
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import svd
@@ -74,7 +72,7 @@ class Rotation:
         if isinstance(other, Rotation):
             output = self.matrices @ other.matrices
         else:
-            output = self.matrices * other
+            output = self.matrices @ other
         return output
 
     @property
@@ -82,9 +80,9 @@ class Rotation:
         """
         Shortcut to get full set of transposed rotation matrices
         """
-        return self.transpose()
+        return self.invert()
 
-    def transpose(self):
+    def invert(self):
         """
         Apply transpose operation to all rotation matrices
 
