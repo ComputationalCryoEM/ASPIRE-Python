@@ -47,17 +47,31 @@ class UtilsTestCase(TestCase):
         result = self.rot_obj * rot_obj_t
         for i in range(self.rot_obj.num_rots):
             self.assertTrue(
-                np.allclose(
-                    np.eye(3), result[i], atol=utest_tolerance(self.rot_obj.dtype)
-                )
+                np.allclose(np.eye(3), result[i], atol=utest_tolerance(self.dtype))
             )
 
     def testRegisterRots(self):
-        q_ang = [[45, 62, 97]]
-        q_mat = sp_rot.from_euler("ZYZ", q_ang, degrees=True).as_matrix()[0]
+        q_ang = [np.random.random(3)]
+        q_mat = sp_rot.from_euler("ZYZ", q_ang, degrees=False).as_matrix()[0]
         for flag in [0, 1]:
-            regrots_ref = self.rot_obj.get_aligned_rotations(q_mat, flag)
-            q_mat_est, flag_est = self.rot_obj.register_rotations(regrots_ref)
+            regrots_ref = self.rot_obj.apply_registration(q_mat, flag)
+            q_mat_est, flag_est = self.rot_obj.find_registration(regrots_ref)
             self.assertTrue(
-                np.allclose(flag_est, flag) and np.allclose(q_mat_est, q_mat)
+                np.allclose(flag_est, flag)
+                and np.allclose(q_mat_est, q_mat, atol=utest_tolerance(self.dtype))
             )
+
+    def testMSE(self):
+        q_ang = [np.random.random(3)]
+        q_mat = sp_rot.from_euler("ZYZ", q_ang, degrees=False).as_matrix()[0]
+        for flag in [0, 1]:
+            regrots_ref = self.rot_obj.apply_registration(q_mat, flag)
+            mse = self.rot_obj.mse(regrots_ref)
+            print(mse)
+            self.assertTrue(mse < utest_tolerance(self.dtype))
+
+    def testCommonLines(self):
+        ell_ij, ell_ji = self.rot_obj.common_lines(8, 11, 360)
+        print(ell_ij)
+        print(ell_ji)
+        self.assertTrue(ell_ij == 235 and ell_ji == 284)

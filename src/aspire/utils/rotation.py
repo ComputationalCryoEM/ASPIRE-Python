@@ -52,7 +52,7 @@ class Rotation:
             self.from_matrix(matrices, dtype=dtype)
         else:
             self.num_rots = num_rots
-            angles = Rotation.uniform_random_angles(num_rots, dtype=dtype, seed=seed)
+            angles = Rotation.uniform_random_angles(num_rots, seed=seed, dtype=dtype)
             self.from_euler(angles, dtype=dtype)
 
     def __str__(self):
@@ -128,7 +128,7 @@ class Rotation:
         self.matrices = rotations.as_matrix().astype(dtype)
         self.shape = (self.num_rots, 3, 3)
 
-    def register_rotations(self, rots_ref):
+    def find_registration(self, rots_ref):
         """
         Register estimated orientations to reference ones.
 
@@ -189,7 +189,7 @@ class Rotation:
 
         return Q_mat, flag
 
-    def get_aligned_rotations(self, Q_mat, flag):
+    def apply_registration(self, Q_mat, flag):
         """
         Get aligned Rotation object to reference ones.
 
@@ -212,12 +212,21 @@ class Rotation:
             if flag == 1:
                 R = J @ R @ J
             regrot[k, :, :] = Q_mat.T @ R
-        aligned_rots = copy.copy(self)
-        aligned_rots.matrices = regrot
+        aligned_rots = Rotation(K, matrices=regrot)
         return aligned_rots
 
-    @staticmethod
-    def get_rots_mse(rots_reg, rots_ref):
+    def register(self, rots_ref):
+        """
+         Estimate global orientation and return an aligned Rotation object.
+
+        :param rots_ref: The reference Rotation object to which we would like
+            to align with data matrices in the form of a n-by-3-by-3 array.
+        :return: an aligned Rotation object
+        """
+        Q_mat, flag = self.find_registration(rots_ref)
+        return self.apply_registration(Q_mat, flag)
+
+    def mse(self, rots_ref):
         """
         Calculate MSE between the estimated orientations to reference ones.
 
@@ -226,7 +235,8 @@ class Rotation:
         :param rots_ref: The reference Rotation object.
         :return: The MSE value between two sets of rotations.
         """
-        rots_reg = rots_reg.matrices
+        aligned_rots = self.register(rots_ref)
+        rots_reg = aligned_rots.matrices
         rots_ref = rots_ref.matrices
         ensure(
             rots_reg.shape == rots_ref.shape,
@@ -242,16 +252,17 @@ class Rotation:
         mse = mse / K
         return mse
 
-    @staticmethod
-    def common_line_from_rots(r1, r2, ell):
+    def common_lines(self, i, j, ell):
         """
-        Compute the common line induced by rotation matrices r1 and r2.
+        Compute the common line induced by rotation matrices i and j.
 
-        :param r1: The first rotation matrix of 3-by-3 array.
-        :param r2: The second rotation matrix of 3-by-3 array.
+        :param i: The index of first rotation matrix of 3-by-3 array.
+        :param j: The index of second rotation matrix of 3-by-3 array.
         :param ell: The total number of common lines.
         :return: The common line indices for both first and second rotations.
         """
+        r1 = self.matrices[i]
+        r2 = self.matrices[j]
         ut = np.dot(r2, r1.T)
         alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
         alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
@@ -265,7 +276,11 @@ class Rotation:
         return ell_ij, ell_ji
 
     @staticmethod
-    def uniform_random_angles(n, dtype=np.float32, seed=None):
+    def uniform_random_angles(
+        n,
+        seed=None,
+        dtype=np.float32,
+    ):
         """
         Generate random 3D rotation angles in radians
 
