@@ -3,6 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 
+from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.utils.filters import IdentityFilter, RadialCTFFilter
 from aspire.utils.types import utest_tolerance

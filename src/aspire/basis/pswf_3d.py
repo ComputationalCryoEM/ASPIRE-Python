@@ -1,5 +1,5 @@
 from aspire.basis import Basis
 
 
-class PSWF3D(Basis):
+class PSWFBasis3D(Basis):
     pass

@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 
 from aspire import config
-from aspire.utils.types import complex_type, real_type
+from aspire.utils import complex_type, real_type
 
 logger = logging.getLogger(__name__)
 

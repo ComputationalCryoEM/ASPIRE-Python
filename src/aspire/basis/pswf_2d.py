@@ -12,7 +12,7 @@ from aspire.basis.basis_utils import (
     t_x_mat,
 )
 from aspire.basis.pswf_utils import BNMatrix
-from aspire.utils.types import complex_type
+from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
