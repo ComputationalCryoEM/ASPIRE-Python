@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from numpy.linalg import norm, solve
 
-from aspire.utils.blk_diag_matrix import BlkDiagMatrix
+from aspire.operators import BlkDiagMatrix
 
 
 class BlkDiagMatrixTestCase(TestCase):

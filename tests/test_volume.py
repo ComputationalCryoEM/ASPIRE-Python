@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from aspire.utils.misc import powerset
+from aspire.utils import powerset
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")

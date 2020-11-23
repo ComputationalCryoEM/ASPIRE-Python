@@ -3,8 +3,8 @@ from unittest import TestCase
 
 import numpy as np
 
+from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import IdentityFilter, RadialCTFFilter
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")

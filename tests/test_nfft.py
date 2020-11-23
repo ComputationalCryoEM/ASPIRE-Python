@@ -5,7 +5,7 @@ from unittest.case import SkipTest
 import numpy as np
 
 from aspire.nufft import Plan, backend_available
-from aspire.utils.types import complex_type
+from aspire.utils import complex_type
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 

@@ -4,9 +4,8 @@ import numpy as np
 
 from aspire.basis import Basis
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
-from aspire.utils import ensure
+from aspire.utils import ensure, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.utils.matrix import roll_dim, unroll_dim
 
 logger = logging.getLogger(__name__)
 
