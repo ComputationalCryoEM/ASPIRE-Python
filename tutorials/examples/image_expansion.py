@@ -10,11 +10,8 @@ import timeit
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire.basis.fb_2d import FBBasis2D
-from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.basis.fpswf_2d import FPSWFBasis2D
-from aspire.basis.pswf_2d import PSWFBasis2D
-from aspire.utils.matrix import anorm
+from aspire.basis import FBBasis2D, FFBBasis2D, FPSWFBasis2D, PSWFBasis2D
+from aspire.utils import anorm
 
 logger = logging.getLogger(__name__)
 

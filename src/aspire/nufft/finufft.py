@@ -4,8 +4,7 @@ import finufftpy
 import numpy as np
 
 from aspire.nufft import Plan
-from aspire.utils import ensure
-from aspire.utils.types import complex_type
+from aspire.utils import complex_type, ensure
 
 logger = logging.getLogger(__name__)
 
