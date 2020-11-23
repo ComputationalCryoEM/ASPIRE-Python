@@ -67,11 +67,8 @@ class UtilsTestCase(TestCase):
         for flag in [0, 1]:
             regrots_ref = self.rot_obj.apply_registration(q_mat, flag)
             mse = self.rot_obj.mse(regrots_ref)
-            print(mse)
             self.assertTrue(mse < utest_tolerance(self.dtype))
 
     def testCommonLines(self):
         ell_ij, ell_ji = self.rot_obj.common_lines(8, 11, 360)
-        print(ell_ij)
-        print(ell_ji)
         self.assertTrue(ell_ij == 235 and ell_ji == 284)
