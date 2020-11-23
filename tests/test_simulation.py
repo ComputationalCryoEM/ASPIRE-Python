@@ -5,7 +5,6 @@ import numpy as np
 
 from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import IdentityFilter, RadialCTFFilter
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
