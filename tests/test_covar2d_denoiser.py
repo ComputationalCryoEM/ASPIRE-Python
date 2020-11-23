@@ -31,6 +31,7 @@ class BatchedRotCov2DTestCase(TestCase):
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)
         self.noise_var = noise_var
         self.noise_filter = noise_filter
+        self.filters = filters
         self.ctf_idx = src.filter_indices
         self.ctf_fb = [f.fb_mat(self.basis) for f in src.unique_filters]
         self.coeff = self.basis.evaluate_t(im)
@@ -95,17 +96,11 @@ class BatchedRotCov2DTestCase(TestCase):
         img_size = 64
         num_imgs = 1024
 
-        # Create filters
-        ctf_filters = [
-            RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
-            for d in np.linspace(1.5e4, 2.5e4, 7)
-        ]
-
         # set simulation object
         sim = Simulation(
             L=img_size,
             n=num_imgs,
-            unique_filters=ctf_filters,
+            unique_filters=self.filters,
             offsets=0.0,
             amplitudes=1.0,
             dtype=self.dtype,
