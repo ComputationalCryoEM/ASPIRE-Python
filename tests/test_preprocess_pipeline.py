@@ -3,16 +3,16 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.estimation.noise import WhiteNoiseEstimator
-from aspire.source import ArrayImageSource
-from aspire.source.simulation import Simulation
-from aspire.utils.coor_trans import grid_2d, grid_3d
-from aspire.utils.filters import (
+from aspire.noise import WhiteNoiseEstimator
+from aspire.operators.filters import (
     FunctionFilter,
     PowerFilter,
     RadialCTFFilter,
     ScalarFilter,
 )
+from aspire.source import ArrayImageSource
+from aspire.source.simulation import Simulation
+from aspire.utils.coor_trans import grid_2d, grid_3d
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
