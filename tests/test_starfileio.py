@@ -11,9 +11,9 @@ from scipy import misc
 
 import tests.saved_test_data
 from aspire.image import Image
-from aspire.io.starfile import StarFile, StarFileBlock, save_star
 from aspire.source import ArrayImageSource
 from aspire.source.mrcstack import MrcStack
+from aspire.storage import StarFile, StarFileBlock, save_star
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 

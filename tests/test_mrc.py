@@ -7,7 +7,7 @@ from unittest import TestCase
 import mrcfile
 import numpy as np
 
-from aspire.io.mrc import MrcStats
+from aspire.storage import MrcStats
 from aspire.utils.misc import sha256sum
 
 logger = logging.getLogger(__name__)

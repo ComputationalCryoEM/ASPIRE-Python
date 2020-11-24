@@ -54,7 +54,7 @@ setup(
             "black",
             "bumpversion",
             "check-manifest",
-            "flake8",
+            "flake8>=3.7.0",
             "isort",
             "pyflakes",
             "pydocstyle",
