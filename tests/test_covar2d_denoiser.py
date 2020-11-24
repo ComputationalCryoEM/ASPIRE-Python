@@ -4,9 +4,9 @@ import numpy as np
 
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.denoising.denoiser_cov2d import DenoiserCov2D
-from aspire.estimation.covar2d import BatchedRotCov2D
+from aspire.covariance.covar2d import BatchedRotCov2D
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter, ScalarFilter
+from aspire.operators.filters import RadialCTFFilter, ScalarFilter
 
 
 class BatchedRotCov2DTestCase(TestCase):
