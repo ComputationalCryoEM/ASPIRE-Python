@@ -2,11 +2,11 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.estimation.covar2d import BatchedRotCov2D, RotCov2D
+from aspire.basis import FFBBasis2D
+from aspire.covariance import BatchedRotCov2D, RotCov2D
+from aspire.operators import RadialCTFFilter, ScalarFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter, ScalarFilter
-from aspire.utils.types import utest_tolerance
+from aspire.utils import utest_tolerance
 
 
 class BatchedRotCov2DTestCase(TestCase):

@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 
-from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.estimation.covar2d import RotCov2D
+from aspire.basis import FFBBasis2D
+from aspire.covariance import RotCov2D
+from aspire.operators import RadialCTFFilter, ScalarFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter, ScalarFilter
-from aspire.utils.matrix import anorm
+from aspire.utils import anorm
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)

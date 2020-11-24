@@ -39,7 +39,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
             .decode("utf8")
             .split("\n")
         )
-    except:  # nopep8  # noqa: E722
+    except Exception:  # nopep8  # noqa: E722
         pass
 
     lines.append("pip freeze output:")
@@ -49,7 +49,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
             .decode("utf8")
             .split("\n")
         )
-    except:  # nopep8  # noqa: E722
+    except Exception:  # nopep8  # noqa: E722
         pass
 
     # Walk through all traceback objects (oldest call -> most recent call), capturing frame/local variable information.
@@ -60,7 +60,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         stack_summary = traceback.StackSummary.extract(
             frame_generator, capture_locals=True
         )
-    except:  # nopep8  # noqa: E722
+    except Exception:  # nopep8  # noqa: E722
         # The above code, while more informative, doesn't always work.
         # When it doesn't try something simpler.
         stack_summary = traceback.StackSummary.extract(
@@ -74,7 +74,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     try:
         with open("aspire.err.log", "w") as f:
             f.write("\n".join(lines) + "\n")
-    except:  # nopep8  # noqa: E722
+    except Exception:  # nopep8  # noqa: E722
         pass
 
     try:
