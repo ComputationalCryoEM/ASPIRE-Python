@@ -64,10 +64,10 @@ class PolarBasis2D(Basis):
         for i in range(self.ntheta // 2):
             freqs[0, i * self.nrad : (i + 1) * self.nrad] = np.arange(
                 self.nrad
-            ) * np.sin(i * dtheta)
+            ) * np.cos(i * dtheta)
             freqs[1, i * self.nrad : (i + 1) * self.nrad] = np.arange(
                 self.nrad
-            ) * np.cos(i * dtheta)
+            ) * np.sin(i * dtheta)
 
         freqs *= omega0
         return freqs
