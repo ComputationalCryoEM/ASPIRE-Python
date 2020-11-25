@@ -71,9 +71,9 @@ class Rotation:
     def __mul__(self, other):
         if isinstance(other, Rotation):
             output = self.matrices @ other.matrices
-        else:
-            output = self.matrices @ other
-        return output
+        return Rotation(
+            output.shape[0], matrices=output, dtype=self.dtype
+        )
 
     @property
     def T(self):

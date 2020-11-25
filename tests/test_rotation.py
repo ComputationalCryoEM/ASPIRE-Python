@@ -44,13 +44,11 @@ class UtilsTestCase(TestCase):
 
     def testMultiplication(self):
         rot_obj_t = Rotation(self.num_rots, matrices=self.rot_obj.T)
-        result1 = self.rot_obj * rot_obj_t
-        result2 = self.rot_obj * rot_obj_t.matrices
-        for result in [result1, result2]:
-            for i in range(self.rot_obj.num_rots):
-                self.assertTrue(
-                    np.allclose(np.eye(3), result[i], atol=utest_tolerance(self.dtype))
-                )
+        result = (self.rot_obj * rot_obj_t).matrices
+        for i in range(self.rot_obj.num_rots):
+            self.assertTrue(
+                np.allclose(np.eye(3), result[i], atol=utest_tolerance(self.dtype))
+            )
 
     def testRegisterRots(self):
         q_ang = [np.random.random(3)]
