@@ -285,10 +285,10 @@ class Rotation:
         :param n: The number of rotation angles to generate
         :param seed: Random integer seed to use. If None,
             the current random state is used.
+        ::
         :return: A n-by-3 ndarray of rotation angles in radians
         """
         # Generate random rotation angles, in radians
-        angles = np.zeros((n, 3), dtype=dtype)
         with Random(seed):
             angles = np.column_stack(
                 (
@@ -296,5 +296,5 @@ class Rotation:
                     np.arccos(2 * np.random.random(n) - 1),
                     np.random.random(n) * 2 * np.pi,
                 )
-            )
+            ).astype(dtype=dtype)
         return angles

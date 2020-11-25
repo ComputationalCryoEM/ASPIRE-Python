@@ -51,7 +51,7 @@ class UtilsTestCase(TestCase):
             )
 
     def testRegisterRots(self):
-        q_ang = [np.random.random(3)]
+        q_ang = Rotation.uniform_random_angles(1, dtype=self.dtype)
         q_mat = sp_rot.from_euler("ZYZ", q_ang, degrees=False).as_matrix()[0]
         for flag in [0, 1]:
             regrots_ref = self.rot_obj.apply_registration(q_mat, flag)
