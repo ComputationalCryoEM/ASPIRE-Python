@@ -223,6 +223,7 @@ class FFBBasis2DTestCase(TestCase):
                 np.load(
                     os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_out_8_8.npy")
                 ).T,  # RCOPT
+                atol=utest_tolerance(self.dtype),
             )
         )
 

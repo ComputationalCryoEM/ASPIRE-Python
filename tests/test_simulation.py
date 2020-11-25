@@ -5,6 +5,7 @@ import numpy as np
 
 from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source.simulation import Simulation
+from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -52,6 +53,7 @@ class SimTestCase(TestCase):
                 images,
                 np.load(os.path.join(DATA_DIR, "sim_clean_images.npy")),
                 rtol=1e-2,
+                atol=utest_tolerance(self.sim.dtype),
             )
         )
 
@@ -62,6 +64,7 @@ class SimTestCase(TestCase):
                 images,
                 np.load(os.path.join(DATA_DIR, "sim_images_with_noise.npy")),
                 rtol=1e-2,
+                atol=utest_tolerance(self.sim.dtype),
             )
         )
 
@@ -74,6 +77,7 @@ class SimTestCase(TestCase):
                 images,
                 np.load(os.path.join(DATA_DIR, "sim_clean_images.npy")),
                 rtol=1e-2,
+                atol=utest_tolerance(self.sim.dtype),
             )
         )
 
