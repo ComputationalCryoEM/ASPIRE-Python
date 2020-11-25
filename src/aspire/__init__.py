@@ -6,8 +6,8 @@ from pathlib import Path
 from importlib_resources import read_text
 
 import aspire
+from aspire.config import Config
 from aspire.exceptions import handle_exception
-from aspire.utils.config import Config
 
 # version in maj.min.bld format
 __version__ = "0.6.0"

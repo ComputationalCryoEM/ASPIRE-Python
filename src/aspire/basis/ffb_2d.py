@@ -5,12 +5,12 @@ from numpy import pi
 from scipy.fftpack import fft, ifft
 from scipy.special import jv
 
+from aspire.basis import FBBasis2D
 from aspire.basis.basis_utils import lgwt
-from aspire.basis.fb_2d import FBBasis2D
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
+from aspire.utils import complex_type
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class FFBBasis2D(FBBasis2D):
             np.sin(np.arange(n_theta, dtype=self.dtype) * 2 * pi / (2 * n_theta)),
             (1, n_theta),
         )
-        freqs = np.vstack((freqs_x[np.newaxis, ...], freqs_y[np.newaxis, ...]))
+        freqs = np.vstack((freqs_y[np.newaxis, ...], freqs_x[np.newaxis, ...]))
 
         return {"gl_nodes": r, "gl_weights": w, "radial": radial, "freqs": freqs}
 

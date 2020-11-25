@@ -10,7 +10,7 @@ from scipy.special import jn
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.nufft import nufft
-from aspire.utils.types import complex_type
+from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.num_angular_pts = f
 
         # pre computing variables for forward
-        us_fft_pts = np.column_stack((self.quad_rule_pts_x, self.quad_rule_pts_y))
+        us_fft_pts = np.column_stack((self.quad_rule_pts_y, self.quad_rule_pts_x))
         us_fft_pts = self.bandlimit / (self.rcut * np.pi * 2) * us_fft_pts  # for pynfft
         (
             blk_r,

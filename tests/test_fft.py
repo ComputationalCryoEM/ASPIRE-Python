@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire import config
-from aspire.utils.numeric import fft_class
+from aspire.numeric import fft_class
 
 fft_backends = ["scipy", "pyfftw"]
 numeric_classes = [np, np]
