@@ -71,9 +71,7 @@ class Rotation:
     def __mul__(self, other):
         if isinstance(other, Rotation):
             output = self.matrices @ other.matrices
-        return Rotation(
-            output.shape[0], matrices=output, dtype=self.dtype
-        )
+        return Rotation(output.shape[0], matrices=output, dtype=self.dtype)
 
     @property
     def T(self):
@@ -88,7 +86,11 @@ class Rotation:
 
         :return: The set of transposed matrices
         """
-        return np.transpose(self.matrices, axes=(0, 2, 1))
+        return Rotation(
+            self.num_rots,
+            matrices=np.transpose(self.matrices, axes=(0, 2, 1)),
+            dtype=self.dtype,
+        )
 
     def asnumpy(self):
         """

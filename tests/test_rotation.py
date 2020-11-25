@@ -43,8 +43,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(rot_mat_t, np.transpose(rot_mat, (0, 2, 1))))
 
     def testMultiplication(self):
-        rot_obj_t = Rotation(self.num_rots, matrices=self.rot_obj.T)
-        result = (self.rot_obj * rot_obj_t).matrices
+        result = (self.rot_obj * self.rot_obj.T).matrices
         for i in range(self.rot_obj.num_rots):
             self.assertTrue(
                 np.allclose(np.eye(3), result[i], atol=utest_tolerance(self.dtype))
