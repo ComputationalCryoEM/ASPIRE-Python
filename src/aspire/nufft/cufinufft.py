@@ -82,12 +82,8 @@ class CufinufftPlan(Plan):
         #   is tied to instance, instead of this method.
         self.fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
 
-        # Note, cufinufft expects column major signal data,
-        #   but we don't want to transpose large arrays.
-        #   We instead reverse the references to the points axes.
-        #   This is identical to what is done for FINUFFT.
-        self._transform_plan.set_pts(self.num_pts, *self.fourier_pts_gpu[::-1])
-        self._adjoint_plan.set_pts(self.num_pts, *self.fourier_pts_gpu[::-1])
+        self._transform_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
+        self._adjoint_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
 
     def transform(self, signal):
         """

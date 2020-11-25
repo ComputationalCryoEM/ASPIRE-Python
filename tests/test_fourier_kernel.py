@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.estimation.kernel import FourierKernel
+from aspire.reconstruction import FourierKernel
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 

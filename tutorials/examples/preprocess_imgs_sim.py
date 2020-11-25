@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 
-from aspire.estimation.noise import WhiteNoiseEstimator
+from aspire.noise import WhiteNoiseEstimator
+from aspire.operators import RadialCTFFilter, ScalarFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter, ScalarFilter
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
