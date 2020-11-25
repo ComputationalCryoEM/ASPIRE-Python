@@ -87,7 +87,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.num_angular_pts = f
 
         # pre computing variables for forward
-        us_fft_pts = np.column_stack((self.quad_rule_pts_x, self.quad_rule_pts_y))
+        us_fft_pts = np.column_stack((self.quad_rule_pts_y, self.quad_rule_pts_x))
         us_fft_pts = self.bandlimit / (self.rcut * np.pi * 2) * us_fft_pts  # for pynfft
         (
             blk_r,

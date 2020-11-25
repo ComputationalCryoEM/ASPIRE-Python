@@ -57,30 +57,6 @@ def complex_type(realtype):
     return complextype
 
 
-def dtype_legacy_string(dtype):
-    """
-    Get legacy dtype string from corresponding numpy dtype.
-
-    :param dtype: Numpy dtype
-    :return: string
-    """
-
-    dtype_to_string_map = {
-        "float32": "single",
-        "float64": "double",
-        "complex128": "complex",
-    }
-
-    dtype_str = dtype_to_string_map.get(str(dtype))
-
-    if not dtype_str:
-        msg = f"Corresponding dtype {str(dtype)} is not defined."
-        logger.error(msg)
-        raise TypeError(msg)
-
-    return dtype_str
-
-
 def utest_tolerance(dtype):
     """
     Return ASPIRE tolerance for unit tests based on `dtype`.
