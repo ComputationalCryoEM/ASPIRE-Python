@@ -91,7 +91,7 @@ class FFBBasis2D(FBBasis2D):
             np.sin(np.arange(n_theta, dtype=self.dtype) * 2 * pi / (2 * n_theta)),
             (1, n_theta),
         )
-        freqs = np.vstack((freqs_x[np.newaxis, ...], freqs_y[np.newaxis, ...]))
+        freqs = np.vstack((freqs_y[np.newaxis, ...], freqs_x[np.newaxis, ...]))
 
         return {"gl_nodes": r, "gl_weights": w, "radial": radial, "freqs": freqs}
 

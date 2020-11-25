@@ -284,14 +284,14 @@ def rotated_grids(L, rot_matrices):
     :return: A set of rotated Fourier grids in three dimensions as specified by the rotation matrices.
         Frequencies are in the range [-pi, pi].
     """
-    # TODO: Flattening and reshaping at end may not be necessary!
+
     grid2d = grid_2d(L, dtype=rot_matrices.dtype)
     num_pts = L ** 2
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(
         [
-            grid2d["x"].flatten("F"),
-            grid2d["y"].flatten("F"),
+            grid2d["x"].flatten(),
+            grid2d["y"].flatten(),
             np.zeros(num_pts, dtype=rot_matrices.dtype),
         ]
     )
@@ -299,5 +299,7 @@ def rotated_grids(L, rot_matrices):
     for i in range(num_rots):
         pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
 
-    pts_rot = m_reshape(pts_rot, (3, L, L, num_rots))
-    return pts_rot
+    pts_rot = pts_rot.reshape((3, L, L, num_rots))
+
+    # Note we return grids as (Z, Y, X)
+    return pts_rot[::-1]

@@ -5,7 +5,7 @@ from unittest.case import SkipTest
 import numpy as np
 
 from aspire.nufft import Plan, backend_available
-from aspire.utils import complex_type
+from aspire.utils.types import complex_type, utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -39,8 +39,8 @@ class SimTestCase(TestCase):
         self.vol = np.load(os.path.join(DATA_DIR, "nfft_volume.npy"))
 
         # Setup a 2D slice for testing 2d many
-        self.plane = self.vol[0].T  # RCOPT
-        self.vol = self.vol.T  # RCOPT
+        self.plane = self.vol[0]
+        self.vol = self.vol
 
         self.recip_space = np.array(
             [
@@ -720,7 +720,7 @@ class SimTestCase(TestCase):
                     ],
                 ],
             ]
-        ).T  # RCOPT
+        )
 
         self.adjoint_plane = np.array(
             [
@@ -806,7 +806,7 @@ class SimTestCase(TestCase):
                 ],
             ],
             dtype=np.complex128,
-        ).T  # RCOPT
+        )
 
     def tearDown(self):
         pass
@@ -825,7 +825,7 @@ class SimTestCase(TestCase):
 
         plan = Plan(
             self.plane.shape,
-            self.fourier_pts[0:2].astype(dtype),
+            self.fourier_pts[:2].astype(dtype),
             backend=backend,
             ntransforms=ntransforms,
         )
@@ -847,16 +847,14 @@ class SimTestCase(TestCase):
 
         complex_dtype = complex_type(dtype)
 
-        atol = 1e-8  # Numpy default
-        if dtype == np.float32:
-            atol = 1e-5
-
         plan = Plan(self.vol.shape, self.fourier_pts.astype(dtype), backend=backend)
 
         # Test Adjoint
         result = plan.adjoint(self.recip_space.astype(complex_dtype))
 
-        self.assertTrue(np.allclose(result, self.adjoint_vol, atol=atol))
+        self.assertTrue(
+            np.allclose(result, self.adjoint_vol, atol=utest_tolerance(dtype))
+        )
 
     def _testAdjointMany(self, backend, dtype, ntransforms=2):
         if not backend_available(backend):
@@ -866,7 +864,7 @@ class SimTestCase(TestCase):
 
         plan = Plan(
             self.plane.shape,
-            self.fourier_pts[0:2].astype(dtype),
+            self.fourier_pts[:2].astype(dtype),
             backend=backend,
             ntransforms=ntransforms,
         )
@@ -881,7 +879,9 @@ class SimTestCase(TestCase):
         result = plan.adjoint(batch)
 
         for r in range(ntransforms):
-            self.assertTrue(np.allclose(result[r], self.adjoint_plane))
+            self.assertTrue(
+                np.allclose(result[r], self.adjoint_plane, atol=utest_tolerance(dtype))
+            )
 
     # TODO: This list could be done better, as some sort of matrix
     #    once there are no raise exceptions, but more pressing things...
