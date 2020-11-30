@@ -108,12 +108,6 @@ class Rotation:
             dtype=self.dtype,
         )
 
-    def asnumpy(self):
-        """
-        :return: Rotation matrices as a n x 3 x 3 array
-        """
-        return self.matrices
-
     def find_registration(self, rots_ref):
         """
         Register estimated orientations to reference ones.
