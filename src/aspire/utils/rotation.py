@@ -30,10 +30,10 @@ class Rotation:
          :param dtype: data type for angles and rotation matrices
         """
         self.dtype = np.dtype(dtype)
-        self.num_rots = None
+        self.num_rots = num_rots
         self.angles = None
         self.matrices = None
-        self.shape = None
+        self.shape = (self.num_rots, 3, 3)
         self._seq_order = "ZYZ"
 
         if angles is not None:
@@ -42,18 +42,31 @@ class Rotation:
                 "Number of rotation matrices should equal to "
                 "number of sets of Euler angles.",
             )
-            self.from_euler(angles, dtype=dtype)
+            rotations = sp_rot.from_euler(
+                self._seq_order, angles.astype(dtype), degrees=False
+            )
+            self.matrices = rotations.as_matrix().astype(dtype)
+            self.angles = rotations.as_euler(self._seq_order, degrees=False).astype(
+                dtype
+            )
+
         elif matrices is not None:
             ensure(
                 num_rots == matrices.shape[0],
                 "Number of rotation matrices should equal to "
                 "number of input sets of matrices.",
             )
-            self.from_matrix(matrices, dtype=dtype)
+            rotations = sp_rot.from_matrix(matrices.astype(dtype))
+            self.angles = rotations.as_euler(self._seq_order, degrees=False).astype(
+                dtype
+            )
+            self.matrices = rotations.as_matrix().astype(dtype)
+
         else:
-            self.num_rots = num_rots
             angles = Rotation.uniform_random_angles(num_rots, seed=seed, dtype=dtype)
-            self.from_euler(angles, dtype=dtype)
+            rot_obj = Rotation.from_euler(angles, dtype=dtype)
+            self.angles = rot_obj.angles
+            self.matrices = rot_obj.matrices
 
     def __str__(self):
         """
@@ -100,35 +113,27 @@ class Rotation:
         """
         return self.matrices
 
-    def from_euler(self, values, dtype=np.float32):
+    @staticmethod
+    def from_euler(values, dtype=np.float32):
         """
         build rotation object from Euler angles in radians
 
         :param dtype:  data type for rotational angles and matrices
         :param values: Rotation angles in radians, as a n x 3 array
-        :return: None
+        :return: new Rotation object
         """
-        self.dtype = np.dtype(dtype)
-        self.num_rots = values.shape[0]
-        rotations = sp_rot.from_euler( self._seq_order, values.astype(dtype), degrees=False)
-        self.matrices = rotations.as_matrix().astype(dtype)
-        self.angles = rotations.as_euler(self._seq_order, degrees=False).astype(dtype)
-        self.shape = (self.num_rots, 3, 3)
+        return Rotation(values.shape[0], angles=values, dtype=dtype)
 
-    def from_matrix(self, values, dtype=np.float32):
+    @staticmethod
+    def from_matrix(values, dtype=np.float32):
         """
         build rotation object from rotational matrices
 
         :param dtype:  data type for rotational angles and matrices
         :param values: Rotation matrices, as a n x 3 x 3 array
-        :return: None
+        :return: new Rotation object
         """
-        self.dtype = np.dtype(dtype)
-        self.num_rots = values.shape[0]
-        rotations = sp_rot.from_matrix(values.astype(dtype))
-        self.angles = rotations.as_euler( self._seq_order, degrees=False).astype(dtype)
-        self.matrices = rotations.as_matrix().astype(dtype)
-        self.shape = (self.num_rots, 3, 3)
+        return Rotation(values.shape[0], matrices=values, dtype=dtype)
 
     def find_registration(self, rots_ref):
         """
