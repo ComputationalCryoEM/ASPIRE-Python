@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 
 from aspire.image import Image
-from aspire.io.starfile import StarFile
+from aspire.operators import CTFFilter
 from aspire.source import ImageSource
+from aspire.storage import StarFile
 from aspire.utils import ensure
-from aspire.utils.filters import CTFFilter
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,8 @@ class RelionSource(ImageSource):
 
         df = self._metadata.loc[indices]
         im = np.empty(
-            (len(indices), self._original_resolution, self._original_resolution)
+            (len(indices), self._original_resolution, self._original_resolution),
+            dtype=self.dtype,
         )
 
         groups = df.groupby("__mrc_filepath")

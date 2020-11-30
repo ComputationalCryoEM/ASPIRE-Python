@@ -5,8 +5,7 @@ import pandas as pd
 from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image, normalize_bg
-from aspire.io.starfile import save_star
-from aspire.source.xform import (
+from aspire.image.xform import (
     Downsample,
     FilterXform,
     IndexedXform,
@@ -14,9 +13,10 @@ from aspire.source.xform import (
     Multiply,
     Pipeline,
 )
+from aspire.operators import LambdaFilter, MultiplicativeFilter, PowerFilter
+from aspire.storage import save_star
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.filters import LambdaFilter, MultiplicativeFilter, PowerFilter
 
 logger = logging.getLogger(__name__)
 

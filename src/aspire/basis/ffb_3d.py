@@ -3,8 +3,8 @@ import logging
 import numpy as np
 from numpy import pi
 
+from aspire.basis import FBBasis3D
 from aspire.basis.basis_utils import lgwt, norm_assoc_legendre, sph_bessel
-from aspire.basis.fb_3d import FBBasis3D
 from aspire.nufft import anufft, nufft
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
@@ -138,9 +138,9 @@ class FFBBasis3D(FBBasis3D):
             * pi
             * np.vstack(
                 (
-                    fourier_x[np.newaxis, ...],
-                    fourier_y[np.newaxis, ...],
                     fourier_z[np.newaxis, ...],
+                    fourier_y[np.newaxis, ...],
+                    fourier_x[np.newaxis, ...],
                 )
             )
         )
@@ -269,7 +269,7 @@ class FFBBasis3D(FBBasis3D):
         pf = m_reshape(pf, (n_theta * n_phi * n_r, n_data))
 
         # perform inverse non-uniformly FFT transformation back to 3D rectangular coordinates
-        freqs = m_reshape(self._precomp["fourier_pts"], (3, n_r * n_theta * n_phi, -1))
+        freqs = m_reshape(self._precomp["fourier_pts"], (3, n_r * n_theta * n_phi))
         x = np.zeros((n_data, self.sz[0], self.sz[1], self.sz[2]), dtype=v.dtype)
         for isample in range(0, n_data):
             x[isample] = np.real(anufft(pf[:, isample], freqs, self.sz))

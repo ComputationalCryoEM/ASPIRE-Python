@@ -2,7 +2,7 @@ import logging
 
 import click
 
-from aspire.orientation.commonline_sync import CLSyncVoting
+from aspire.abinitio import CLSyncVoting
 from aspire.source.relion import RelionSource
 
 logger = logging.getLogger(__name__)

@@ -24,7 +24,7 @@ setup(
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
-        "finufftpy",
+        "finufft",
         "importlib_resources>=1.0.2",
         "joblib",
         "jupyter",
@@ -54,7 +54,7 @@ setup(
             "black",
             "bumpversion",
             "check-manifest",
-            "flake8",
+            "flake8>=3.7.0",
             "isort",
             "pyflakes",
             "pydocstyle",

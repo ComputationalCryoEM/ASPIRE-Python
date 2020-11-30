@@ -4,11 +4,11 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.estimation.covar2d import RotCov2D
+from aspire.basis import FFBBasis2D
+from aspire.covariance import RotCov2D
+from aspire.operators import RadialCTFFilter, ScalarFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.filters import RadialCTFFilter, ScalarFilter
-from aspire.utils.types import utest_tolerance
+from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -151,4 +151,6 @@ class Cov2DTestCase(TestCase):
             os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coeff_clean.npy")
         )
         self.coeff_cwf_clean = self.cov2d.get_cwf_coeffs(self.coeff_clean, noise_var=0)
-        self.assertTrue(np.allclose(results, self.coeff_cwf_clean))
+        self.assertTrue(
+            np.allclose(results, self.coeff_cwf_clean, atol=utest_tolerance(self.dtype))
+        )

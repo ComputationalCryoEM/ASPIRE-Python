@@ -1,21 +1,38 @@
-sudo: required
 language: python
-matrix:
+
+# manylinux2010 wheels are not found on xenial
+dist: bionic
+
+os:
+  - linux
+
+arch:
+  - amd64
+
+stages:
+  - check
+  - test
+  - deploy
+
+jobs:
   include:
     - python: 3.6
-      env:
-        - TOXENV=clean,py36-stable,coveralls,report
-        - TOXENV=py36-dev
+      env: TOXENV=clean,py36-stable,coveralls,report
+    - python: 3.6
+      env: TOXENV=py36-dev
     - python: 3.7
-      env:
-        - TOXENV=py37-stable
-        - TOXENV=py37-dev
+      env: TOXENV=py37-stable
+    - python: 3.7
+      env: TOXENV=py37-dev
     - python: 3.8
-      env:
-        - TOXENV=py38-stable
-        - TOXENV=py38-dev
-    - env: TOXENV=check
-    - env: TOXENV=docs
+      env: TOXENV=py38-stable
+    - python: 3.8
+      env: TOXENV=py38-dev
+    - python: 3.6
+      env: TOXENV=check
+    - python: 3.6
+      env: TOXENV=docs
+
 install:
   - pip install -U tox tox-travis
 
