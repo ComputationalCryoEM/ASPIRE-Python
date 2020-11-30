@@ -34,6 +34,8 @@ class Rotation:
         self.angles = None
         self.matrices = None
         self.shape = None
+        self._seq_order = "ZYZ"
+
         if angles is not None:
             ensure(
                 num_rots == angles.shape[0],
@@ -100,7 +102,7 @@ class Rotation:
 
     def from_euler(self, values, dtype=np.float32):
         """
-        build rotation object from Euler angles in degrees
+        build rotation object from Euler angles in radians
 
         :param dtype:  data type for rotational angles and matrices
         :param values: Rotation angles in radians, as a n x 3 array
@@ -108,9 +110,9 @@ class Rotation:
         """
         self.dtype = np.dtype(dtype)
         self.num_rots = values.shape[0]
-        rotations = sp_rot.from_euler("ZYZ", values.astype(dtype), degrees=False)
+        rotations = sp_rot.from_euler( self._seq_order, values.astype(dtype), degrees=False)
         self.matrices = rotations.as_matrix().astype(dtype)
-        self.angles = rotations.as_euler("ZYZ", degrees=False).astype(dtype)
+        self.angles = rotations.as_euler(self._seq_order, degrees=False).astype(dtype)
         self.shape = (self.num_rots, 3, 3)
 
     def from_matrix(self, values, dtype=np.float32):
@@ -124,7 +126,7 @@ class Rotation:
         self.dtype = np.dtype(dtype)
         self.num_rots = values.shape[0]
         rotations = sp_rot.from_matrix(values.astype(dtype))
-        self.angles = rotations.as_euler("ZYZ", degrees=False).astype(dtype)
+        self.angles = rotations.as_euler( self._seq_order, degrees=False).astype(dtype)
         self.matrices = rotations.as_matrix().astype(dtype)
         self.shape = (self.num_rots, 3, 3)
 
