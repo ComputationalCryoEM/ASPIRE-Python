@@ -63,8 +63,9 @@ class Rotation:
             self.matrices = rotations.as_matrix().astype(dtype)
 
         else:
-            angles = Rotation.uniform_random_angles(num_rots, seed=seed, dtype=dtype)
-            rot_obj = Rotation.from_euler(angles, dtype=dtype)
+            rot_obj = Rotation.generate_random_rotations(
+                num_rots, seed=seed, dtype=dtype
+            )
             self.angles = rot_obj.angles
             self.matrices = rot_obj.matrices
 
@@ -112,28 +113,6 @@ class Rotation:
         :return: Rotation matrices as a n x 3 x 3 array
         """
         return self.matrices
-
-    @staticmethod
-    def from_euler(values, dtype=np.float32):
-        """
-        build rotation object from Euler angles in radians
-
-        :param dtype:  data type for rotational angles and matrices
-        :param values: Rotation angles in radians, as a n x 3 array
-        :return: new Rotation object
-        """
-        return Rotation(values.shape[0], angles=values, dtype=dtype)
-
-    @staticmethod
-    def from_matrix(values, dtype=np.float32):
-        """
-        build rotation object from rotational matrices
-
-        :param dtype:  data type for rotational angles and matrices
-        :param values: Rotation matrices, as a n x 3 x 3 array
-        :return: new Rotation object
-        """
-        return Rotation(values.shape[0], matrices=values, dtype=dtype)
 
     def find_registration(self, rots_ref):
         """
@@ -281,6 +260,46 @@ class Rotation:
         ell_ji = int(np.mod(np.round(ell_ji), ell))
 
         return ell_ij, ell_ji
+
+    @staticmethod
+    def from_euler(values, dtype=np.float32):
+        """
+        build rotation object from Euler angles in radians
+
+        :param dtype:  data type for rotational angles and matrices
+        :param values: Rotation angles in radians, as a n x 3 array
+        :return: new Rotation object
+        """
+        return Rotation(values.shape[0], angles=values, dtype=dtype)
+
+    @staticmethod
+    def from_matrix(values, dtype=np.float32):
+        """
+        build rotation object from rotational matrices
+
+        :param dtype:  data type for rotational angles and matrices
+        :param values: Rotation matrices, as a n x 3 x 3 array
+        :return: new Rotation object
+        """
+        return Rotation(values.shape[0], matrices=values, dtype=dtype)
+
+    @staticmethod
+    def generate_random_rotations(
+        n,
+        seed=None,
+        dtype=np.float32,
+    ):
+        """
+        Generate Rotation object with random 3D rotation matrices
+
+        :param n: The number of rotation matrices to generate
+        :param seed: Random integer seed to use. If None,
+            the current random state is used.
+        ::
+        :return: A new Rotation object
+        """
+        angles = Rotation.uniform_random_angles(n, seed=seed, dtype=dtype)
+        return Rotation.from_euler(angles, dtype=dtype)
 
     @staticmethod
     def uniform_random_angles(
