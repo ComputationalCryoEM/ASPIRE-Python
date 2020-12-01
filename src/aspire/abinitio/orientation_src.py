@@ -2,8 +2,8 @@ import logging
 
 import numpy as np
 
-from aspire.storage import StarFile, StarFileBlock
 from aspire.source import ImageSource
+from aspire.storage import StarFile, StarFileBlock
 
 logger = logging.getLogger(__name__)
 
