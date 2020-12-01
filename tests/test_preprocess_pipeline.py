@@ -68,6 +68,8 @@ class PreprocessPLTestCase(TestCase):
         sim.downsample(max_resolution)
         imgs_ds = sim.images(start=0, num=self.n)
 
+        # Check individual grid points
+        self.assertTrue(np.allclose(imgs_org[:, 32, 32], imgs_ds[:, 16, 16]))
         # check resolution
         self.assertTrue(np.allclose(max_resolution, imgs_ds.shape[1]))
         # check energy conservation after downsample
