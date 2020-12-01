@@ -3,13 +3,8 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.noise import WhiteNoiseEstimator
-from aspire.operators.filters import (
-    FunctionFilter,
-    PowerFilter,
-    RadialCTFFilter,
-    ScalarFilter,
-)
+from aspire.noise import AnisotropicNoiseEstimator
+from aspire.operators.filters import FunctionFilter, RadialCTFFilter, ScalarFilter
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
 from aspire.utils.coor_trans import grid_2d, grid_3d
@@ -24,10 +19,7 @@ class PreprocessPLTestCase(TestCase):
         self.L = 64
         self.n = 128
 
-        self.noise_filter = PowerFilter(
-            filter=FunctionFilter(lambda x, y: np.exp(-(x ** 2 + y ** 2) / 2)),
-            power=0.2,
-        )
+        self.noise_filter = FunctionFilter(lambda x, y: np.exp(-(x ** 2 + y ** 2) / 2))
 
         self.sim = Simulation(
             L=self.L,
@@ -96,7 +88,7 @@ class PreprocessPLTestCase(TestCase):
         self.assertTrue(new_mean < 1e-7 and abs(new_variance - 1) < 1e-7)
 
     def testWhiten(self):
-        noise_estimator = WhiteNoiseEstimator(self.sim)
+        noise_estimator = AnisotropicNoiseEstimator(self.sim)
         self.sim.whiten(noise_estimator.filter)
         imgs_wt = self.sim.images(start=0, num=self.n).asnumpy()
 
