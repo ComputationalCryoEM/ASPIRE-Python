@@ -16,7 +16,7 @@ from numpy import linalg as npla
 from scipy.optimize import linprog
 
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.io.micrograph import Micrograph
+from aspire.storage import Micrograph
 
 
 @numba.vectorize([numba.float64(numba.complex128), numba.float32(numba.complex64)])
