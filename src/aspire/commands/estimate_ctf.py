@@ -53,7 +53,10 @@ def estimate_ctf(
     corr,
     output_dir,
 ):
-
+    """
+    Given paramaters estimates CTF from experimental data
+    and returns CTF as a mrc file.
+    """
     dir_content = os.scandir(data_folder)
 
     mrc_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrc"]
