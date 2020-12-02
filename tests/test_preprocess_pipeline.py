@@ -7,6 +7,7 @@ from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter, ScalarFilter
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
+from aspire.utils import utest_tolerance
 from aspire.utils.coor_trans import grid_2d, grid_3d
 from aspire.volume import Volume
 
@@ -18,7 +19,7 @@ class PreprocessPLTestCase(TestCase):
 
         self.L = 64
         self.n = 128
-
+        self.dtype = np.float32
         self.noise_filter = FunctionFilter(lambda x, y: np.exp(-(x ** 2 + y ** 2) / 2))
 
         self.sim = Simulation(
@@ -28,6 +29,7 @@ class PreprocessPLTestCase(TestCase):
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_filter=self.noise_filter,
+            dtype=self.dtype,
         )
         self.imgs_org = self.sim.images(start=0, num=self.n)
 
@@ -60,6 +62,7 @@ class PreprocessPLTestCase(TestCase):
                 ScalarFilter(dim=2, value=1) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_filter=noise_filter,
+            dtype=self.dtype,
         )
         # get images before downsample
         imgs_org = sim.images(start=0, num=self.n)
@@ -69,12 +72,22 @@ class PreprocessPLTestCase(TestCase):
         imgs_ds = sim.images(start=0, num=self.n)
 
         # Check individual grid points
-        self.assertTrue(np.allclose(imgs_org[:, 32, 32], imgs_ds[:, 16, 16]))
+        self.assertTrue(
+            np.allclose(
+                imgs_org[:, 32, 32],
+                imgs_ds[:, 16, 16],
+                atol=utest_tolerance(self.dtype),
+            )
+        )
         # check resolution
         self.assertTrue(np.allclose(max_resolution, imgs_ds.shape[1]))
         # check energy conservation after downsample
         self.assertTrue(
-            np.allclose(imgs_org.norm(), self.L / max_resolution * imgs_ds.norm())
+            np.allclose(
+                imgs_org.norm(),
+                self.L / max_resolution * imgs_ds.norm(),
+                atol=utest_tolerance(self.dtype),
+            )
         )
 
     def testNormBackground(self):
