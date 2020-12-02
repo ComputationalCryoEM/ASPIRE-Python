@@ -28,6 +28,17 @@ class CtfEstimator:
     def __init__(
         self, pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers
     ):
+        """
+        Instantiate a CtfEstimator instance.
+
+        :param pixel_size: Size of the pixel in Angstrom.
+        :param cs: Spherical aberration.
+        :param amplitude_contrast: Amplitude contrast.
+        :param voltage: Voltage of electron microscope.
+        :param psd_size: Block size for PSD estimation.
+        :param num_tapers: Number of tapers to apply in PSD estimation.
+        :returns: CtfEstimator instance.
+        """
         self.pixel_size = pixel_size
         self.cs = cs
         self.amplitude_contrast = amplitude_contrast
@@ -49,15 +60,36 @@ class CtfEstimator:
         self.h = 0
 
     def set_df1(self, df):
+        """
+        Sets first defocus.
+
+        :param df: First defocus.
+        """
+
         self.defocus1 = df
 
     def set_df2(self, df):
+        """
+        Sets second defocus.
+
+        :param df: second defocus.
+        """
+
         self.defocus2 = df
 
-    def set_angle(self, df):
+    def set_angle(self, angle):
+        """
+        Sets angle.
+
+        :param angle: Angle in degrees.
+        """
+
         self.angle = df
 
     def generate_ctf(self):
+        """
+        Generates internal representation of the Contrast Transfer Function using parameters from this instance.
+        """
         astigmatism_angle = np.reshape(
             np.repeat(
                 self.angle, np.multiply(self.theta.shape[0], self.theta.shape[1])
@@ -92,6 +124,14 @@ class CtfEstimator:
         self.h = h
 
     def ctf_preprocess(self, micrograph, block_size):
+        """
+        Preprocess CTF of micrograph using block_size.
+
+        :param micrograph: Micrograph as numpy array. #NOTE looks like F order
+        :param blocksize: Size of the square blocks to partition micrograph.
+        :return: Numpy array of blocks.
+        """
+
         # verify block_size is even
         block_size = block_size - (block_size % 2)
 
@@ -121,6 +161,14 @@ class CtfEstimator:
         return block
 
     def ctf_tapers(self, N, R, L):
+        """
+
+        :param N:
+        :param R:
+        :param L:
+        :return:
+        """
+
         k, l = np.meshgrid(np.arange(N), np.arange(N))
 
         denom = np.pi * (k - l)
@@ -139,7 +187,13 @@ class CtfEstimator:
         return data_tapers
 
     def ctf_estimate_psd(self, blocks, tapers_1d, num_1d_tapers):
+        """
 
+        :param blocks:
+        :param tapers_1d:
+        :param num_1d_tapers:
+        :return: Numpy array.
+        """
         tapers_1d = tapers_1d.astype(np.complex128)
 
         blocks_mt_pre_fft = np.empty(blocks[0, :, :].shape, dtype="complex128")
@@ -176,6 +230,13 @@ class CtfEstimator:
         return thon_rings
 
     def ctf_elliptical_average(self, ffbbasis, thon_rings, k):
+        """
+
+        :param ffbbasis: FFBBasis instance.
+        :param thon_rings:
+        :param k:
+        :return: PSD and noise as 2-tuple of numpy arrays.
+        """
 
         coeffs_s = ffbbasis.evaluate_t(thon_rings)
         coeffs_n = coeffs_s.copy()
@@ -193,6 +254,12 @@ class CtfEstimator:
         return psd, noise
 
     def ctf_background_subtract_1d(self, thon_rings):
+        """
+
+        :param thon_rings:
+        :return: 2-tuple of numpy arrays
+        """
+
         # compute radial average
         center = thon_rings.shape[0] // 2
 
@@ -259,6 +326,16 @@ class CtfEstimator:
         return final_signal, final_background
 
     def ctf_opt1d(self, thon_rings, pixel_size, cs, lmbd, w, N):
+        """
+
+        :param thon_rings:
+        :param pixel_size:
+        :param cs:
+        :param lmbd:
+        :param w:
+        :param N:
+        :return: 2-tuple of numpy arrays
+        """
 
         center = N // 2
         [X, Y] = np.meshgrid(
@@ -310,6 +387,13 @@ class CtfEstimator:
         return avg_defocus, max_col
 
     def ctf_background_subtract_2d(self, signal, background_p1, max_col):
+        """
+
+        :param signal:
+        :param background_p1:
+        :param max_col:
+        :return: 2-tuple of numpy arrays.
+        """
 
         N = signal.shape[0]
         center = N // 2
@@ -334,6 +418,14 @@ class CtfEstimator:
         return signal, background
 
     def ctf_PCA(self, signal, pixel_size, g_min, g_max, w):
+        """
+
+        :param signal:
+        :param pixel_size:
+        :param g_min: Inverse of minimun resolution for PSD.
+        :param g_max: Inverse of maximum resolution for PSD.
+        :param w: ratio
+        """
 
         N = signal.shape[0]
         center = N // 2
@@ -392,7 +484,22 @@ class CtfEstimator:
         lmbd,
         cs,
     ):
+        """
 
+        :param signal:
+        :param df1:
+        :param df2:
+        :param angle_ast:
+        :param r:
+        :param theta:
+        :param pixel_size:
+        :param g_min:
+        :param g_max:
+        :param amplitude_contrast:
+        :param lmbd:
+        :param cs:
+        :return: tuple of
+        """
         angle_ast = angle_ast / 180 * np.pi
 
         # step size
@@ -542,6 +649,11 @@ class CtfEstimator:
         return df1, df2, angle_ast, p
 
     def ctf_locate_minima(self, signal):
+        """
+
+        :param signal:
+        :return: array of indices.
+        """
 
         N = signal.shape[0]
         center = N // 2
@@ -562,11 +674,13 @@ class CtfEstimator:
 
         return zero_cross_map
 
-    def ctf_solve_system(self, signal):
-        aa = 9
-        return aa
-
+    # Note, This doesn't actually use anything from the class.
+    # It is used in a solver loop of some sort, so it may not be correct
+    # to just use what is avail in the obj.
     def write_star(self, df1, df2, ang, cs, voltage, pixel_size, amp, name):
+        """
+        Writes starfile.
+        """
 
         if os.path.isdir("results") == False:
             os.mkdir("results")
