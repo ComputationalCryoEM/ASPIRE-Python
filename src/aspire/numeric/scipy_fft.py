@@ -1,41 +1,35 @@
 import scipy as sp
 
+from aspire.numeric.base_fft import FFT
 
-class ScipyFFT:
+
+class ScipyFFT(FFT):
     """
     Define a unified wrapper class for Scipy FFT functions
 
     To be consistent with Pyfftw, not all arguments are included.
     """
 
-    @staticmethod
-    def fft(x, axis=-1, workers=-1):
+    def fft(self, x, axis=-1, workers=-1):
         return sp.fft.fft(x, axis=axis, workers=workers)
 
-    @staticmethod
-    def ifft(x, axis=-1, workers=-1):
+    def ifft(self, x, axis=-1, workers=-1):
         return sp.fft.ifft(x, axis=axis, workers=workers)
 
-    @staticmethod
-    def fft2(x, axes=(-2, -1), workers=-1):
+    def fft2(self, x, axes=(-2, -1), workers=-1):
         return sp.fft.fft2(x, axes=axes, workers=workers)
 
-    @staticmethod
-    def ifft2(x, axes=(-2, -1), workers=-1):
+    def ifft2(self, x, axes=(-2, -1), workers=-1):
         return sp.fft.ifft2(x, axes=axes, workers=workers)
 
-    @staticmethod
-    def fftn(x, axes=None, workers=-1):
+    def fftn(self, x, axes=None, workers=-1):
         return sp.fft.fftn(x, axes=axes, workers=workers)
 
-    @staticmethod
-    def ifftn(x, axes=None, workers=-1):
-        return sp.fft.ifft2(x, axes=axes, workers=workers)
+    def ifftn(self, x, axes=None, workers=-1):
+        return sp.fft.ifftn(x, axes=axes, workers=workers)
 
-    @staticmethod
-    def fftshift(x, axes=None):
+    def fftshift(self, x, axes=None):
         return sp.fft.fftshift(x, axes=axes)
 
-    @staticmethod
-    def ifftshift(x, axes=None):
+    def ifftshift(self, x, axes=None):
         return sp.fft.ifftshift(x, axes=axes)
