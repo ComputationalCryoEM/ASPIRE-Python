@@ -2,7 +2,7 @@ import logging
 
 import click
 
-from aspire.estimation.noise import WhiteNoiseEstimator
+from aspire.noise import WhiteNoiseEstimator
 from aspire.source.relion import RelionSource
 
 logger = logging.getLogger(__name__)
