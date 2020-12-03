@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.basis.pswf_2d import PSWFBasis2D
+from aspire.basis import PSWFBasis2D
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 

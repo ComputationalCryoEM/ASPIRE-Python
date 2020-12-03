@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 from aspire import config
 from aspire.apple.helper import PickerHelper
-from aspire.utils.numeric import fft, xp
+from aspire.numeric import fft, xp
 
 logger = logging.getLogger(__name__)
 

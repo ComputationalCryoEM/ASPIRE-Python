@@ -2,15 +2,15 @@ import logging
 
 import numpy as np
 from numpy import pi
-from scipy.fftpack import fft, ifft
 from scipy.special import jv
 
+from aspire.basis import FBBasis2D
 from aspire.basis.basis_utils import lgwt
-from aspire.basis.fb_2d import FBBasis2D
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
+from aspire.numeric import fft, xp
+from aspire.utils import complex_type
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class FFBBasis2D(FBBasis2D):
             np.sin(np.arange(n_theta, dtype=self.dtype) * 2 * pi / (2 * n_theta)),
             (1, n_theta),
         )
-        freqs = np.vstack((freqs_x[np.newaxis, ...], freqs_y[np.newaxis, ...]))
+        freqs = np.vstack((freqs_y[np.newaxis, ...], freqs_x[np.newaxis, ...]))
 
         return {"gl_nodes": r, "gl_weights": w, "radial": radial, "freqs": freqs}
 
@@ -165,7 +165,7 @@ class FFBBasis2D(FBBasis2D):
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
         # 1D inverse FFT in the degree of polar angle
-        pf = 2 * pi * ifft(pf, axis=1, overwrite_x=True)
+        pf = 2 * pi * xp.asnumpy(fft.ifft(xp.asarray(pf), axis=1))
 
         # Only need "positive" frequencies.
         hsize = int(np.size(pf, 1) / 2)
@@ -235,7 +235,7 @@ class FFBBasis2D(FBBasis2D):
             )
 
         #  1D FFT on the angular dimension for each concentric circle
-        pf = 2 * pi / (2 * n_theta) * fft(pf, 2 * n_theta, 2)
+        pf = 2 * pi / (2 * n_theta) * xp.asnumpy(fft.fft(xp.asarray(pf)))
 
         # This only makes it easier to slice the array later.
         v = np.zeros((n_images, self.count), dtype=x.dtype)
