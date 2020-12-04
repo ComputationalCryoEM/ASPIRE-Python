@@ -20,7 +20,7 @@ setup(
     long_description_content_type="text/markdown",
     license="GPLv3",
     url="https://github.com/ComputationalCryoEM/ASPIRE-Python",
-    author="Joakim Anden, Yoel Shkolnisky, Itay Sason, Robbie Brook, Vineet Bansal, Junchao Xia",
+    author="Joakim Anden, Ayelet Heimowitz, Vineet Bansal, Robbie Brook, Itay Sason, Yoel Shkolnisky, Garrett Wright, Junchao Xia",
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
