@@ -42,10 +42,12 @@ class PreprocessPLTestCase(TestCase):
 
     def testDownsample(self):
         # generate a 3D map with density decays as Gaussian function
-        g3d = grid_3d(self.L)
+        g3d = grid_3d(self.L, dtype=self.dtype)
         coords = np.array([g3d["x"].flatten(), g3d["y"].flatten(), g3d["z"].flatten()])
         sigma = 0.2
-        vol = np.exp(-0.5 * np.sum(np.abs(coords / sigma) ** 2, axis=0))
+        vol = np.exp(-0.5 * np.sum(np.abs(coords / sigma) ** 2, axis=0)).astype(
+            self.dtype
+        )
         vol = np.reshape(vol, g3d["x"].shape)
         vols = Volume(vol)
 
@@ -84,8 +86,8 @@ class PreprocessPLTestCase(TestCase):
         # check energy conservation after downsample
         self.assertTrue(
             np.allclose(
-                imgs_org.norm(),
-                self.L / max_resolution * imgs_ds.norm(),
+                imgs_org.norm() / self.L,
+                imgs_ds.norm() / max_resolution,
                 atol=utest_tolerance(self.dtype),
             )
         )
