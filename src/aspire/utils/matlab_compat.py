@@ -6,12 +6,7 @@ directly by the caller).
 """
 
 import numpy as np
-from scipy.special import erfinv
-
-SQRT2 = np.sqrt(2)
-
-# A list of random states, used as a stack
-random_states = []
+import scipy.sparse as sparse
 
 
 def m_reshape(x, new_shape):
@@ -34,63 +29,24 @@ def m_flatten(x):
     return x.T.flatten()
 
 
-def randi(i_max, size, seed=None):
+def stable_eigsh(*args, **kwargs):
     """
-    A MATLAB compatible randi implementation that returns numbers from a discrete uniform distribution.
-    While a direct use of np.random.choice would be convenient, this doesn't seem to return results
-    identical to MATLAB.
+    A Wrapper function to fix sign problem of eigen-vectors
 
-    :param iMax: TODO
-    :param size: size of the resulting np array
-    :param seed: Random seed to use (None to apply no seed)
-    :return: A np array
+    There is an ambiguous sign problem for the eigenvectors from
+    scipy.sparse.linalg.eigsh function. We need to rescale the
+    eigenvectors and make them consistent for repeated runs.
+
+    :param *args: Positional arguments
+    :param **kwargs: Keyword arguments
+    :return: Eigenvalues and eigenvectors
     """
-    with Random(seed):
-        return np.ceil(i_max * np.random.random(size=size)).astype('int')
 
+    d, v = sparse.linalg.eigsh(*args, **kwargs)
+    # Find component index of maximum absolute value of each eigenvector
+    ind_max = np.argmax(np.absolute(v), axis=0)
+    # Rescale eigenvector based on sign from the component with the
+    # maximum absolute value
+    signs = np.array([np.sign(v[ind_max[k], k]) for k in range(len(d))])
 
-def randn(*args, **kwargs):
-    """
-    Calls rand and applies inverse transform sampling to the output.
-    """
-    seed = None
-    if 'seed' in kwargs:
-        seed = kwargs.pop('seed')
-
-    with Random(seed):
-        uniform = np.random.rand(*args, **kwargs)
-        result = SQRT2 * erfinv(2 * uniform - 1)
-        # TODO: Rearranging elements to get consistent behavior with MATLAB 'randn2'
-        result = m_reshape(result.flatten(), args)
-        return result
-
-
-def rand(size, seed=None):
-    with Random(seed):
-        return m_reshape(np.random.random(np.prod(size)), size)
-
-
-class Random:
-    """
-    A context manager that pushes a random seed to the stack for reproducible results,
-    and pops it on exit.
-    """
-    def __init__(self, seed=None):
-        self.seed = seed
-
-    def __enter__(self):
-        if self.seed is not None:
-            # Push current state on stack
-            random_states.append(np.random.get_state())
-
-            seed = self.seed
-            # 5489 is the default seed used by MATLAB for seed 0 !
-            if seed == 0:
-                seed = 5489
-
-            new_state = np.random.RandomState(seed)
-            np.random.set_state(new_state.get_state())
-
-    def __exit__(self, *args):
-        if self.seed is not None:
-            np.random.set_state(random_states.pop())
+    return d, v * signs

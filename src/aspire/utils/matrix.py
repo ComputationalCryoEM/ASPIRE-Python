@@ -7,10 +7,9 @@ from scipy.linalg import eigh
 
 from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
-from numpy.linalg import eig
 
 SQRT2 = np.sqrt(2)
-SQRT2_R = 1/SQRT2
+SQRT2_R = 1 / SQRT2
 
 
 def unroll_dim(X, dim):
@@ -20,7 +19,7 @@ def unroll_dim(X, dim):
     old_shape = X.shape
     new_shape = old_shape[:dim]
 
-    new_shape += (-1, )
+    new_shape += (-1,)
 
     Y = m_reshape(X, new_shape)
 
@@ -47,7 +46,7 @@ def im_to_vec(im):
     ensure(im.ndim >= 2, "Array should have at least 2 dimensions")
     ensure(shape[0] == shape[1], "Array should have first 2 dimensions identical")
 
-    return m_reshape(im, (shape[0]**2,) + (shape[2:]))
+    return m_reshape(im, (shape[0] ** 2,) + (shape[2:]))
 
 
 def vol_to_vec(X):
@@ -58,9 +57,12 @@ def vol_to_vec(X):
     """
     shape = X.shape
     ensure(X.ndim >= 3, "Array should have at least 3 dimensions")
-    ensure(shape[0] == shape[1] == shape[2], "Array should have first 3 dimensions identical")
+    ensure(
+        shape[0] == shape[1] == shape[2],
+        "Array should have first 3 dimensions identical",
+    )
 
-    return m_reshape(X, (shape[0]**3,) + (shape[3:]))
+    return m_reshape(X, (shape[0] ** 3,) + (shape[3:]))
 
 
 def vec_to_im(X):
@@ -70,8 +72,8 @@ def vec_to_im(X):
     :return: An N-by-N-by-... array.
     """
     shape = X.shape
-    N = round(shape[0]**(1/2))
-    ensure(N**2 == shape[0], "First dimension of X must be square")
+    N = round(shape[0] ** (1 / 2))
+    ensure(N ** 2 == shape[0], "First dimension of X must be square")
 
     return m_reshape(X, (N, N) + (shape[1:]))
 
@@ -83,8 +85,8 @@ def vec_to_vol(X):
     :return: An N-by-N-by-N-by-... array.
     """
     shape = X.shape
-    N = round(shape[0]**(1/3))
-    ensure(N**3 == shape[0], "First dimension of X must be cubic")
+    N = round(shape[0] ** (1 / 3))
+    ensure(N ** 3 == shape[0], "First dimension of X must be cubic")
 
     return m_reshape(X, (N, N, N) + (shape[1:]))
 
@@ -99,11 +101,11 @@ def vecmat_to_volmat(X):
     shape = X.shape
     ensure(X.ndim >= 2, "Array should have at least 2 dimensions")
 
-    L1 = round(shape[0]**(1/3))
-    L2 = round(shape[1]**(1/3))
+    L1 = round(shape[0] ** (1 / 3))
+    L2 = round(shape[1] ** (1 / 3))
 
-    ensure(L1**3 == shape[0], "First dimension of X must be cubic")
-    ensure(L2**3 == shape[1], "Second dimension of X must be cubic")
+    ensure(L1 ** 3 == shape[0], "First dimension of X must be cubic")
+    ensure(L2 ** 3 == shape[1], "Second dimension of X must be cubic")
 
     return m_reshape(X, (L1, L1, L1, L2, L2, L2) + (shape[2:]))
 
@@ -123,7 +125,7 @@ def volmat_to_vecmat(X):
     l1 = shape[0]
     l2 = shape[3]
 
-    return m_reshape(X, (l1**3, l2**3) + (shape[6:]))
+    return m_reshape(X, (l1 ** 3, l2 ** 3) + (shape[6:]))
 
 
 def mdim_mat_fun_conj(X, d1, d2, f):
@@ -140,17 +142,17 @@ def mdim_mat_fun_conj(X, d1, d2, f):
 
     TODO: Very complicated to wrap head around this one!
     """
-    X, sz_roll = unroll_dim(X, 2*d1 + 1)
+    X, sz_roll = unroll_dim(X, 2 * d1 + 1)
     X = f(X)
 
     # Swap the first d2 axes block of X with the next d1 axes block
-    X = np.moveaxis(X, list(range(d1+d2)), list(range(d1, d1+d2)) + list(range(d1)))
+    X = np.moveaxis(X, list(range(d1 + d2)), list(range(d1, d1 + d2)) + list(range(d1)))
 
     X = np.conj(X)
     X = f(X)
 
     # Swap the first d2 axes block of X with the next d2 axes block
-    X = np.moveaxis(X, list(range(2*d2)), list(range(d2, 2*d2)) + list(range(d2)))
+    X = np.moveaxis(X, list(range(2 * d2)), list(range(d2, 2 * d2)) + list(range(d2)))
 
     X = np.conj(X)
     X = roll_dim(X, sz_roll)
@@ -228,20 +230,25 @@ def vec_to_symmat(vec):
     """
     # TODO: Handle complex values in vec
     if np.iscomplex(vec).any():
-        raise NotImplementedError('Coming soon')
+        raise NotImplementedError("Coming soon")
 
     # M represents N(N+1)/2
     M = vec.shape[0]
     N = int(round(np.sqrt(2 * M + 0.25) - 0.5))
-    ensure((M == 0.5*N*(N+1)) and N != 0, "Vector must be of size N*(N+1)/2 for some N>0.")
+    ensure(
+        (M == 0.5 * N * (N + 1)) and N != 0,
+        "Vector must be of size N*(N+1)/2 for some N>0.",
+    )
 
     vec, sz_roll = unroll_dim(vec, 2)
     index_matrix = np.empty((N, N))
     i_upper = np.triu_indices_from(index_matrix)
-    index_matrix[i_upper] = np.arange(M)    # Incrementally populate upper triangle in row major order
+    index_matrix[i_upper] = np.arange(
+        M
+    )  # Incrementally populate upper triangle in row major order
     index_matrix.T[i_upper] = index_matrix[i_upper]  # Copy to lower triangle
 
-    mat = vec[index_matrix.flatten('F').astype('int')]
+    mat = vec[index_matrix.flatten("F").astype("int")]
     mat = m_reshape(mat, (N, N) + mat.shape[1:])
     mat = roll_dim(mat, sz_roll)
 
@@ -261,7 +268,7 @@ def mat_to_vec(mat, is_symmat=False):
         sz = mat.shape
         N = sz[0]
         ensure(sz[1] == N, "Matrix must be square")
-        return m_reshape(mat, (N**2,) + sz[2:])
+        return m_reshape(mat, (N ** 2,) + sz[2:])
     else:
         return symmat_to_vec(mat)
 
@@ -277,7 +284,7 @@ def vec_to_mat(vec, is_symmat=False):
     if not is_symmat:
         sz = vec.shape
         N = int(round(np.sqrt(sz[0])))
-        ensure(sz[0] == N**2, "Vector must represent square matrix.")
+        ensure(sz[0] == N ** 2, "Vector must represent square matrix.")
         return m_reshape(vec, (N, N) + sz[1:])
     else:
         return vec_to_symmat(vec)
@@ -300,8 +307,11 @@ def anorm(x, axes=None):
     :return: The Euclidean (l^2) norm of x along specified axes.
     """
     if axes is None:
-        axes = range(x.ndim)
-    return np.sqrt(ainner(x, x, axes))
+        norm = np.linalg.norm(x)
+    else:
+        axes = tuple(axes)  # Unrolls any generators, like `range`.
+        norm = np.sqrt(ainner(x, x, axes=axes))
+    return norm
 
 
 def acorr(x, y, axes=None):
@@ -329,9 +339,10 @@ def ainner(x, y, axes=None):
     """
     ensure(x.shape == y.shape, "The shapes of the inputs have to match")
 
-    if axes is None:
-        axes = range(x.ndim)
-    return np.tensordot(x, y, axes=(axes, axes))
+    if axes is not None:
+        axes = tuple(axes)  # Unrolls any generators, like `range`.
+
+    return np.sum(x * y, axis=axes)
 
 
 def eigs(A, k):
@@ -344,12 +355,12 @@ def eigs(A, k):
         V: An array of eigenvectors of size `sig_sz`-by-k.
         D: A matrix of size k-by-k containing the corresponding eigenvalues in the diagonals.
     """
-    sig_sz = A.shape[:int(A.ndim/2)]
+    sig_sz = A.shape[: int(A.ndim / 2)]
     sig_len = np.prod(sig_sz)
     A = m_reshape(A, (sig_len, sig_len))
 
     dtype = A.dtype
-    w, v = eigh(A.astype('float64'), eigvals=(sig_len-1-k+1, sig_len-1))
+    w, v = eigh(A.astype(np.float64), eigvals=(sig_len - 1 - k + 1, sig_len - 1))
 
     # Arrange in descending order (flip column order in eigenvector matrix) and typecast to proper type
     w = w[::-1].astype(dtype)
@@ -358,49 +369,3 @@ def eigs(A, k):
     v = m_reshape(v, sig_sz + (k,)).astype(dtype)
 
     return v, np.diag(w)
-
-
-def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
-    """
-    Shrink the covariance matrix
-    :param covar_in: An input covariance matrix
-    :param noise_var: The estimated variance of noise
-    :param gamma: An input parameter to specify the maximum values of eigen values to be neglected.
-    :param shrinker: An input parameter to select different shrinking methods.
-    :return: The shrinked covariance matrix
-    """
-
-    if shrinker is None:
-        shrinker = 'frobenius_norm'
-    ensure(shrinker in ('frobenius_norm', 'operator_norm', 'soft_threshold'), 'Unsupported shrink method')
-
-    covar = covar_in/noise_var
-
-    lambs, eig_vec = eig(make_symmat(covar))
-
-    lambda_max = (1+np.sqrt(gamma))**2
-
-    lambs[lambs < lambda_max] = 0
-
-    if shrinker == 'operator_norm':
-        lambdas = lambs[lambs>lambda_max]
-        lambdas = 1/2*(lambdas-gamma+1 + np.sqrt((lambdas-gamma+1)**2-4*lambdas))-1
-        lambs[lambs > lambda_max] = lambdas
-    elif shrinker == 'frobenius_norm':
-        lambdas = lambs[lambs>lambda_max]
-        lambdas = 1/2*(lambdas - gamma + 1 + np.sqrt((lambdas-gamma+1)**2-4*lambdas))-1
-        c = np.divide((1-np.divide(gamma, lambdas**2)), (1+np.divide(gamma, lambdas)))
-        lambdas = lambdas*c
-        lambs[lambs > lambda_max] = lambdas
-    else:
-        # for the case of shrinker == 'soft_threshold'
-        lambdas = lambs[lambs > lambda_max]
-        lambs[lambs > lambda_max] = lambdas-lambda_max
-
-    diag_lambs=np.zeros_like(covar)
-    np.fill_diagonal(diag_lambs, lambs)
-
-    shrinked_covar = eig_vec @ diag_lambs @eig_vec.conj().T
-    shrinked_covar *= noise_var
-
-    return shrinked_covar

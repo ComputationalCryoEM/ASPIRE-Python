@@ -1,14 +1,12 @@
 import logging
+
 import numpy as np
 from scipy.special import jv
-from scipy.sparse.linalg import LinearOperator, cg
 
-from aspire.utils import ensure
-from aspire.utils.matrix import roll_dim, unroll_dim, im_to_vec, vec_to_im
-from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.basis.basis_utils import unique_coords_nd
 from aspire.basis import Basis
-
+from aspire.basis.basis_utils import unique_coords_nd
+from aspire.utils import ensure, roll_dim, unroll_dim
+from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +23,7 @@ class FBBasis2D(Basis):
     """
 
     # TODO: Methods that return dictionaries should return useful objects instead
-    def __init__(self, size, ell_max=None):
+    def __init__(self, size, ell_max=None, dtype=np.float32):
         """
         Initialize an object for the 2D Fourier-Bessel basis class
 
@@ -38,16 +36,18 @@ class FBBasis2D(Basis):
         """
 
         ndim = len(size)
-        ensure(ndim == 2, 'Only two-dimensional basis functions are supported.')
-        ensure(len(set(size)) == 1, 'Only square domains are supported.')
-        super().__init__(size, ell_max)
+        ensure(ndim == 2, "Only two-dimensional basis functions are supported.")
+        ensure(len(set(size)) == 1, "Only square domains are supported.")
+        super().__init__(size, ell_max, dtype=dtype)
 
     def _build(self):
         """
         Build the internal data structure to 2D Fourier-Bessel basis
         """
-        logger.info('Expanding 2D images in a spatial-domain Fourier–Bessel'
-                    ' basis using the direct method.')
+        logger.info(
+            "Expanding 2D images in a spatial-domain Fourier–Bessel"
+            " basis using the direct method."
+        )
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
         self._getfbzeros()
@@ -56,24 +56,24 @@ class FBBasis2D(Basis):
         self.count = self.k_max[0] + sum(2 * self.k_max[1:])
 
         # obtain a 2D grid to represent basis functions
-        self.basis_coords = unique_coords_nd(self.nres, self.ndim)
+        self.basis_coords = unique_coords_nd(self.nres, self.ndim, dtype=self.dtype)
 
         # generate 1D indices for basis functions
         self._indices = self.indices()
 
+        # get normalized factors
+        self.radial_norms, self.angular_norms = self.norms()
+
         # precompute the basis functions in 2D grids
         self._precomp = self._precomp()
-
-        # get normalized factors
-        self._norms = self.norms()
 
     def indices(self):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count)
-        indices_ks = np.zeros(self.count)
-        indices_sgns = np.zeros(self.count)
+        indices_ells = np.zeros(self.count, dtype=np.int)
+        indices_ks = np.zeros(self.count, dtype=np.int)
+        indices_sgns = np.zeros(self.count, dtype=np.int)
 
         i = 0
         for ell in range(self.ell_max + 1):
@@ -88,29 +88,31 @@ class FBBasis2D(Basis):
 
                 i += len(rng)
 
-        return {
-            'ells': indices_ells,
-            'ks': indices_ks,
-            'sgns': indices_sgns
-        }
+        return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
 
     def _precomp(self):
         """
         Precompute the basis functions at defined sample points
         """
 
-        r_unique = self.basis_coords['r_unique']
-        ang_unique = self.basis_coords['ang_unique']
+        r_unique = self.basis_coords["r_unique"]
+        ang_unique = self.basis_coords["ang_unique"]
 
         ind_radial = 0
         ind_ang = 0
 
-        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)))
-        ang = np.zeros(shape=(ang_unique.shape[-1], 2 * self.ell_max + 1))
+        radial = np.zeros(shape=(len(r_unique), np.sum(self.k_max)), dtype=self.dtype)
+        ang = np.zeros(
+            shape=(ang_unique.shape[-1], 2 * self.ell_max + 1), dtype=self.dtype
+        )
 
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[:, ind_radial] = jv(ell, self.r0[k - 1, ell] * r_unique)
+                # Only normalized by the radial part of basis function
+                radial[:, ind_radial] = (
+                    jv(ell, self.r0[k - 1, ell] * r_unique)
+                    / self.radial_norms[ind_radial]
+                )
                 ind_radial += 1
 
             sgns = (1,) if ell == 0 else (1, -1)
@@ -119,77 +121,90 @@ class FBBasis2D(Basis):
                 ang[:, ind_ang] = fn(ell * ang_unique)
                 ind_ang += 1
 
-        return {
-            'radial': radial,
-            'ang': ang
-        }
+        return {"radial": radial, "ang": ang}
 
     def norms(self):
         """
         Calculate the normalized factors of basis functions
         """
-        norms = np.zeros(np.sum(self.k_max))
+        radial_norms = np.zeros(np.sum(self.k_max), dtype=self.dtype)
+        angular_norms = np.zeros(np.sum(self.k_max), dtype=self.dtype)
         norm_fn = self.basis_norm_2d
 
         i = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                norms[i] = norm_fn(ell, k)
+                radial_norms[i], angular_norms[i] = norm_fn(ell, k)
                 i += 1
 
-        return norms
+        return radial_norms, angular_norms
 
     def basis_norm_2d(self, ell, k):
         """
-        Calculate the normalized factor of a specified basis function
+        Calculate the normalized factors from radial and angular parts of a specified basis function
         """
-        result = np.abs(jv(ell + 1, self.r0[k - 1, ell])) * np.sqrt(np.pi / 2.) * self.nres / 2.
+        rad_norm = (
+            np.abs(jv(ell + 1, self.r0[k - 1, ell]))
+            * np.sqrt(1 / 2.0)
+            * self.nres
+            / 2.0
+        )
+        ang_norm = np.sqrt(np.pi)
         if ell == 0:
-            result *= np.sqrt(2)
+            ang_norm *= np.sqrt(2)
 
-        return result
+        return rad_norm, ang_norm
 
     def evaluate(self, v):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
         :param v: A coefficient vector (or an array of coefficient vectors) to
-            be evaluated. The first dimension must equal `self.count`.
+            be evaluated. The last dimension must equal `self.count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
-            This is an array whose first dimensions equal `self.z` and the remaining
-            dimensions correspond to dimensions two and higher of `v`.
+            This is an array whose last dimensions equal `self.sz` and the remaining
+            dimensions correspond to first dimensions of `v`.
         """
-        v, sz_roll = unroll_dim(v, 2)
 
-        r_idx = self.basis_coords['r_idx']
-        ang_idx = self.basis_coords['ang_idx']
-        mask = m_flatten(self.basis_coords['mask'])
+        if v.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
+
+        # Transpose here once, instead of several times below  #RCOPT
+        v = v.reshape(-1, self.count).T
+
+        r_idx = self.basis_coords["r_idx"]
+        ang_idx = self.basis_coords["ang_idx"]
+        mask = m_flatten(self.basis_coords["mask"])
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])))
+        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
-            idx_radial = ind_radial + np.arange(0, k_max)
-            nrms = self._norms[idx_radial]
-            radial = self._precomp['radial'][:, idx_radial]
-            radial = radial / nrms
+            idx_radial = ind_radial + np.arange(0, k_max, dtype=np.int)
+
+            # include the normalization factor of angular part
+            ang_nrms = self.angular_norms[idx_radial]
+            radial = self._precomp["radial"][:, idx_radial]
+            radial = radial / ang_nrms
 
             sgns = (1,) if ell == 0 else (1, -1)
             for _ in sgns:
-                ang = self._precomp['ang'][:, ind_ang]
+                ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
-                idx = ind + np.arange(0, k_max)
+                idx = ind + np.arange(0, k_max, dtype=np.int)
                 x[mask] += ang_radial @ v[idx]
                 ind += len(idx)
                 ind_ang += 1
 
             ind_radial += len(idx_radial)
 
-        x = m_reshape(x, self.sz + x.shape[1:])
-        x = roll_dim(x, sz_roll)
+        x = x.T.reshape(-1, *self.sz)  # RCOPT
 
         return x
 
@@ -197,35 +212,47 @@ class FBBasis2D(Basis):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
-        :param v: The coefficient array to be evaluated. The first dimensions
+        :param v: The coefficient array to be evaluated. The last dimensions
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual basis
-            of `basis`. This is an array of vectors whose first dimension equals
-             `self.count` and whose remaining dimensions correspond to
-             higher dimensions of `v`.
+            of `basis`. This is an array of vectors whose last dimension equals
+             `self.count` and whose first dimensions correspond to
+             first dimensions of `v`.
         """
-        x, sz_roll = unroll_dim(v, self.ndim + 1)
-        x = m_reshape(x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim:])))
 
-        r_idx = self.basis_coords['r_idx']
-        ang_idx = self.basis_coords['ang_idx']
-        mask = m_flatten(self.basis_coords['mask'])
+        if v.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate_t"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
+
+        v = v.T  # RCOPT
+
+        x, sz_roll = unroll_dim(v, self.ndim + 1)
+        x = m_reshape(
+            x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
+        )
+
+        r_idx = self.basis_coords["r_idx"]
+        ang_idx = self.basis_coords["ang_idx"]
+        mask = m_flatten(self.basis_coords["mask"])
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])))
+        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
-            nrms = self._norms[idx_radial]
-            radial = self._precomp['radial'][:, idx_radial]
-            radial = radial / nrms
+            # include the normalization factor of angular part
+            ang_nrms = self.angular_norms[idx_radial]
+            radial = self._precomp["radial"][:, idx_radial]
+            radial = radial / ang_nrms
 
             sgns = (1,) if ell == 0 else (1, -1)
             for _ in sgns:
-                ang = self._precomp['ang'][:, ind_ang]
+                ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, k_max)
                 v[idx] = ang_radial.T @ x[mask]
@@ -235,50 +262,4 @@ class FBBasis2D(Basis):
             ind_radial += len(idx_radial)
 
         v = roll_dim(v, sz_roll)
-        return v
-
-    def expand_t(self, v):
-        """
-        Expand array in dual basis
-
-        This is a similar function to `evaluate` but with more accuracy by
-         using the cg optimizing of linear equation, Ax=b.
-
-        If `v` is a matrix of size `basis.ct`-by-..., `B` is the change-of-basis
-        matrix of this basis, and `x` is a matrix of size `self.sz`-by-...,
-        the function calculates x = (B * B')^(-1) * B * v, where the rows of `B`
-        and columns of `x` are read as vectorized arrays.
-
-        :param v: An array whose first dimension is to be expanded in this
-            basis's dual. This dimension must be equal to `self.count`.
-        :return: The coefficients of `v` expanded in the dual of `basis`. If more
-            than one vector is supplied in `v`, the higher dimensions of the return
-            value correspond to second and higher dimensions of `v`.
-
-        .. seealso:: expand
-        """
-        ensure(v.shape[0] == self.count, f'First dimension of v must be {self.count}')
-
-        v, sz_roll = unroll_dim(v, 2)
-        b = im_to_vec(self.evaluate(v))
-
-        operator = LinearOperator(
-            shape=(self.nres ** 2, self.nres ** 2),
-            matvec=lambda x: im_to_vec(self.evaluate(self.evaluate_t(vec_to_im(x))))
-        )
-
-        # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
-        tol = 10 * np.finfo(v.dtype).eps
-        logger.info('Expanding array in dual basis')
-        v, info = cg(operator, b, tol=tol)
-
-        v = v[..., np.newaxis]
-
-        if info != 0:
-            raise RuntimeError('Unable to converge!')
-
-        v = roll_dim(v, sz_roll)
-        x = vec_to_im(v)
-
-        return x
-
+        return v.T  # RCOPT

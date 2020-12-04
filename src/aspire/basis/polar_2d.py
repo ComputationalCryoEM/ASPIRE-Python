@@ -1,11 +1,11 @@
 import logging
-import numpy as np
-import finufftpy
 
-from aspire.utils import ensure
-from aspire.utils.matrix import roll_dim, unroll_dim
-from aspire.utils.matlab_compat import m_reshape
+import numpy as np
+
 from aspire.basis import Basis
+from aspire.image import Image
+from aspire.nufft import anufft, nufft
+from aspire.utils import ensure, real_type
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ class PolarBasis2D(Basis):
     Define a derived class for polar Fourier representation for 2D images
     """
 
-    def __init__(self, size, nrad=None, ntheta=None):
+    def __init__(self, size, nrad=None, ntheta=None, dtype=np.float32):
         """
         Initialize an object for the 2D polar Fourier grid class
 
@@ -26,8 +26,8 @@ class PolarBasis2D(Basis):
         """
 
         ndim = len(size)
-        ensure(ndim == 2, 'Only two-dimensional grids are supported.')
-        ensure(len(set(size)) == 1, 'Only square domains are supported.')
+        ensure(ndim == 2, "Only two-dimensional grids are supported.")
+        ensure(len(set(size)) == 1, "Only square domains are supported.")
 
         self.nrad = nrad
         if nrad is None:
@@ -38,13 +38,13 @@ class PolarBasis2D(Basis):
             # try to use the same number as Fast FB basis
             self.ntheta = 8 * self.nrad
 
-        super().__init__(size)
+        super().__init__(size, dtype=dtype)
 
     def _build(self):
         """
         Build the internal data structure to 2D polar Fourier grid
         """
-        logger.info('Represent 2D image in a polar Fourier grid')
+        logger.info("Represent 2D image in a polar Fourier grid")
 
         self.count = self.nrad * self.ntheta
         self._sz_prod = self.sz[0] * self.sz[1]
@@ -59,10 +59,15 @@ class PolarBasis2D(Basis):
         omega0 = 2 * np.pi / (2 * self.nrad - 1)
         dtheta = 2 * np.pi / self.ntheta
 
-        freqs = np.zeros((2, self.nrad * self.ntheta))
-        for i in range(self.ntheta):
-            freqs[0, i * self.nrad: (i + 1) * self.nrad] = np.arange(self.nrad) * np.sin(i * dtheta)
-            freqs[1, i * self.nrad: (i + 1) * self.nrad] = np.arange(self.nrad) * np.cos(i * dtheta)
+        # only need half size of ntheta
+        freqs = np.zeros((2, self.nrad * self.ntheta // 2), dtype=self.dtype)
+        for i in range(self.ntheta // 2):
+            freqs[0, i * self.nrad : (i + 1) * self.nrad] = np.arange(
+                self.nrad
+            ) * np.cos(i * dtheta)
+            freqs[1, i * self.nrad : (i + 1) * self.nrad] = np.arange(
+                self.nrad
+            ) * np.sin(i * dtheta)
 
         freqs *= omega0
         return freqs
@@ -72,59 +77,63 @@ class PolarBasis2D(Basis):
         Evaluate coefficients in standard 2D coordinate basis from those in polar Fourier basis
 
         :param v: A coefficient vector (or an array of coefficient vectors)
-            in polar Fourier basis to be evaluated. The first dimension must equal to
+            in polar Fourier basis to be evaluated. The last dimension must equal to
             `self.count`.
-        :return x: The evaluation of the coefficient vector(s) `x` in standard 2D
-            coordinate basis. This is an array whose first two dimensions equal `self.sz`
-            and the remaining dimensions correspond to dimensions two and higher of `v`.
+        :return x: Image instance in standard 2D coordinate basis with
+            resolution of `self.sz`.
         """
-        v, sz_roll = unroll_dim(v, 2)
-        nimgs = v.shape[1]
+        if self.dtype != real_type(v.dtype):
+            msg = (
+                f"Input data type, {v.dtype}, is not consistent with"
+                f" type defined in the class {self.dtype}."
+            )
+            logger.error(msg)
+            raise TypeError(msg)
 
-        half_size = self.nrad * self.ntheta // 2
+        v = v.reshape(-1, self.ntheta, self.nrad)
 
-        v = m_reshape(v, (self.nrad, self.ntheta, nimgs))
+        nimgs = v.shape[0]
 
-        v = (v[:, :self.ntheta // 2, :]
-             + v[:, self.ntheta // 2:, :].conj())
+        half_size = self.ntheta // 2
 
-        v = m_reshape(v, (half_size, nimgs))
+        v = v[:, :half_size, :] + v[:, half_size:, :].conj()
 
-        # finufftpy require it to be aligned in fortran order
-        x = np.empty((self._sz_prod, nimgs), dtype='complex128', order='F')
-        finufftpy.nufft2d1many(self.freqs[0, :half_size],
-                               self.freqs[1, :half_size],
-                               v, 1, 1e-15, self.sz[0], self.sz[1], x)
-        x = m_reshape(x, (self.sz[0], self.sz[1], nimgs))
-        x = x.real
-        # return coefficients whose first two dimensions equal to self.sz
-        x = roll_dim(x, sz_roll)
+        v = v.reshape(nimgs, self.nrad * half_size)
 
-        return x
+        x = anufft(v, self.freqs, self.sz, real=True)
+
+        return Image(x)
 
     def evaluate_t(self, x):
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
-        :param x: The coefficient array in the standard 2D coordinate basis to be
-            evaluated. The first two dimensions must equal `self.sz`.
-        :return v: The evaluation of the coefficient array `v` in the polar Fourier grid.
-            This is an array of vectors whose first dimension is `self.count` and
-            whose remaining dimensions correspond to higher dimensions of `x`.
+        :param x: The Image instance representing coefficient array in the
+        standard 2D coordinate basis to be evaluated.
+        :return v: The evaluation of the coefficient array `v` in the polar
+        Fourier grid. This is an array of vectors whose first dimension
+        corresponds to x.n_images, and last dimension equals `self.count`.
         """
-        # ensure the first two dimensions with size of self.sz
-        x, sz_roll = unroll_dim(x, self.ndim + 1)
-        nimgs = x.shape[2]
 
-        # finufftpy require it to be aligned in fortran order
-        half_size = self.nrad * self.ntheta // 2
-        pf = np.empty((half_size, nimgs), dtype='complex128', order='F')
-        finufftpy.nufft2d2many(self.freqs[0, :half_size], self.freqs[1, :half_size], pf, 1, 1e-15, x)
-        pf = m_reshape(pf, (self.nrad, self.ntheta // 2, nimgs))
+        assert isinstance(x, Image)
+
+        if self.dtype != x.dtype:
+            msg = (
+                f"Input data type, {x.dtype}, is not consistent with"
+                f" type defined in the class {self.dtype}."
+            )
+            logger.error(msg)
+            raise TypeError(msg)
+
+        nimgs = x.n_images
+
+        half_size = self.ntheta // 2
+
+        pf = nufft(x.asnumpy(), self.freqs)
+
+        pf = pf.reshape((nimgs, self.nrad, half_size))
         v = np.concatenate((pf, pf.conj()), axis=1)
 
-        # return v coefficients with the first dimension size of self.count
-        v = m_reshape(v, (self.nrad * self.ntheta, nimgs))
-        v = roll_dim(v, sz_roll)
-
+        # return v coefficients with the last dimension size of self.count
+        v = v.reshape(nimgs, -1)
         return v

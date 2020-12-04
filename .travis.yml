@@ -1,32 +1,42 @@
-sudo: required
 language: python
-python:
-  - "3.6"
+
+# manylinux2010 wheels are not found on xenial
+dist: bionic
+
+os:
+  - linux
+
+arch:
+  - amd64
+
+stages:
+  - check
+  - test
+  - deploy
+
+jobs:
+  include:
+    - python: 3.6
+      env: TOXENV=clean,py36-stable,coveralls,report
+    - python: 3.6
+      env: TOXENV=py36-dev
+    - python: 3.7
+      env: TOXENV=py37-stable
+    - python: 3.7
+      env: TOXENV=py37-dev
+    - python: 3.8
+      env: TOXENV=py38-stable
+    - python: 3.8
+      env: TOXENV=py38-dev
+    - python: 3.6
+      env: TOXENV=check
+    - python: 3.6
+      env: TOXENV=docs
+
 install:
-  - sudo apt-get update
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
+  - pip install -U tox tox-travis
 
-  - conda env create -n test-environment -f environment.yml
-  - source activate test-environment
-  - python setup.py install
-  
-script: py.test --cov=aspire tests
-
-after_success:
-  - coveralls
+script: tox -v --skip-missing-interpreters false -e $TOXENV
 
 before_deploy:
   - cd docs && sphinx-apidoc -f -o ./source ../src -H Modules && make html && touch build/html/.nojekyll

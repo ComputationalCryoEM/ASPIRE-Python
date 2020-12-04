@@ -1,0 +1,49 @@
+#!/usr/bin/env  python
+"""
+This script illustrates denoising 2D images using batched Cov2D class
+from experime dataset and outputing to mrcs file.
+"""
+
+from aspire.basis import FFBBasis2D
+from aspire.denoising.denoiser_cov2d import DenoiserCov2D
+from aspire.noise import AnisotropicNoiseEstimator
+from aspire.source.relion import RelionSource
+
+# Set input path and files and initialize other parameters
+DATA_FOLDER = '/path/to/untarred/empiar/dataset/'
+STARFILE_IN = '/path/to/untarred/empiar/dataset/input.star'
+STARFILE_OUT = '/path/to/output/ouput.star'
+PIXEL_SIZE = 1.34
+MAX_ROWS = 1024
+MAX_RESOLUTION = 60
+
+# Create a source object for 2D images
+print(f'Read in images from {STARFILE_IN} and preprocess the images.')
+source = RelionSource(
+    STARFILE_IN,
+    DATA_FOLDER,
+    pixel_size=PIXEL_SIZE,
+    max_rows=MAX_ROWS
+)
+
+# Downsample the images
+print(f'Set the resolution to {MAX_RESOLUTION} X {MAX_RESOLUTION}')
+if MAX_RESOLUTION < source.L:
+    source.downsample(MAX_RESOLUTION)
+
+# Specify the fast FB basis method for expending the 2D images
+basis = FFBBasis2D((MAX_RESOLUTION, MAX_RESOLUTION))
+
+# Estimate the noise of images
+print(f'Estimate the noise of images using anisotropic method')
+noise_estimator = AnisotropicNoiseEstimator(source)
+
+# Whiten the noise of images
+print(f'Whiten the noise of images from the noise estimator')
+source.whiten(noise_estimator.filter)
+var_noise = noise_estimator.estimate()
+
+print(f'Denoise the images using batched cov2D method.')
+denoiser = DenoiserCov2D(source, basis, var_noise)
+denoised_src = denoiser.denoise(batch_size=512)
+denoised_src.save(STARFILE_OUT, batch_size=512, save_mode='single', overwrite=False)

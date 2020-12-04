@@ -1,84 +1,103 @@
 """
 Miscellaneous Utilities that have no better place (yet).
 """
+import hashlib
+import logging
+import os.path
+import subprocess
+from itertools import chain, combinations
 
-import numpy as np
-from numpy.linalg import qr, solve
-
-from aspire.utils.matrix import mat_to_vec, vec_to_mat
+logger = logging.getLogger(__name__)
 
 
-def src_wiener_coords(sim, mean_vol, eig_vols, lambdas=None, noise_var=0, batch_size=512):
+def ensure(cond, error_message=None):
     """
-    Calculate coordinates using Wiener filter
-    :param sim: A simulation object containing the images whose coordinates we want.
-    :param mean_vol: The mean volume of the source in an L-by-L-by-L array.
-    :param eig_vols: The eigenvolumes of the source in an L-by-L-by-L-by-K array.
-    :param lambdas: The eigenvalues in a K-by-K diagonal matrix (default `eye(K)`).
-    :param noise_var: The variance of the noise in the images (default 0).
-    :param batch_size: The size of the batches in which to compute the coordinates (default 512).
-    :return: A K-by-`src.n` array of coordinates corresponding to the Wiener filter coordinates of each image in sim.
+    assert statements in Python are sometimes optimized away by the compiler, and are for internal testing purposes.
+    For user-facing assertions, we use this simple wrapper to ensure conditions are met at relevant parts of the code.
 
-    The coordinates are obtained by the formula
-        alpha_s = eig_vols^T H_s ( y_s - P_s mean_vol ) ,
-
-    where P_s is the forward image mapping and y_s is the sth image,
-        H_s = Sigma * P_s^T ( P_s Sigma P_s^T + noise_var I )^(-1) ,
-
-    and Sigma is the covariance matrix eig_vols * lambdas * eig_vols^T.
-    Note that when noise_var is zero, this reduces to the projecting y_s onto the span of P_s eig_vols.
-
-    # TODO: Find a better place for this functionality other than in utils
+    :param cond: Condition to be ensured
+    :param error_message: An optional error message if condition is not met
+    :return: If condition is met, returns nothing, otherwise raises AssertionError
     """
-    k = eig_vols.shape[-1]
-    if lambdas is None:
-        lambdas = np.eye(k)
-
-    coords = np.zeros((k, sim.n))
-    covar_noise = noise_var * np.eye(k)
-
-    for i in range(0, sim.n, batch_size):
-        ims = sim.images(i, batch_size)
-        batch_n = ims.shape[-1]
-        ims -= sim.vol_forward(mean_vol, i, batch_n)
-
-        Qs, Rs = qr_vols_forward(sim, i, batch_n, eig_vols, k)
-
-        Q_vecs = mat_to_vec(Qs)
-        im_vecs = mat_to_vec(ims.asnumpy())
-
-        for j in range(batch_n):
-            im_coords = Q_vecs[:, :, j].T @ im_vecs[:, j]
-            covar_im = (Rs[:, :, j] @ lambdas @ Rs[:, :, j].T) + covar_noise
-            xx = solve(covar_im, im_coords)
-            im_coords = lambdas @ Rs[:, :, j].T @ xx
-            coords[:, i+j] = im_coords
-
-    return coords
+    if not cond:
+        raise AssertionError(error_message)
 
 
-def qr_vols_forward(sim, s, n, vols, k):
+def get_full_version():
     """
-    TODO: Write docstring
-    TODO: Find a better place for this!
-    :param sim:
-    :param s:
-    :param n:
-    :param vols:
-    :param k:
-    :return:
+    Get as much version information as we can, including git info (if applicable)
+    This method should never raise exceptions!
+
+    :return: A version number in the form:
+        <maj>.<min>.<bld>
+            If we're running as a package distributed through setuptools
+        <maj>.<min>.<bld>.<rev>
+            If we're running as a 'regular' python source folder, possibly locally modified
+
+            <rev> is one of:
+                'src': The package is running as a source folder
+                <git_tag> or <git_rev> or <git_rev>-dirty: A git tag or commit revision, possibly followed by a suffix
+                    '-dirty' if source is modified locally
+                'x':   The revision cannot be determined
+
     """
-    ims = np.zeros((sim.L, sim.L, n, k), dtype=vols.dtype)
-    for ell in range(k):
-        ims[:, :, :, ell] = sim.vol_forward(vols[:, :, :, ell], s, n).asnumpy()
+    import aspire
 
-    ims = np.swapaxes(ims, 2, 3)
-    Q_vecs = np.zeros((sim.L**2, k, n), dtype=vols.dtype)
-    Rs = np.zeros((k, k, n), dtype=vols.dtype)
+    full_version = aspire.__version__
+    rev = None
+    try:
+        path = aspire.__path__[0]
+        if os.path.isdir(path):
+            # We have a package folder where we can get git information
+            try:
+                rev = (
+                    subprocess.check_output(
+                        ["git", "describe", "--tags", "--always", "--dirty"],
+                        stderr=subprocess.STDOUT,
+                        cwd=path,
+                    )
+                    .decode("utf-8")
+                    .strip()
+                )
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                # no git or not a git repo? assume 'src'
+                rev = "src"
+    except Exception:  # nopep8  # noqa: E722
+        # Something unexpected happened - rev number defaults to 'x'
+        rev = "x"
 
-    im_vecs = mat_to_vec(ims)
-    for i in range(n):
-        Q_vecs[:, :, i], Rs[:, :, i] = qr(im_vecs[:, :, i])
-    Qs = vec_to_mat(Q_vecs)
+    if rev is not None:
+        full_version += f".{rev}"
 
-    return Qs, Rs
+    return full_version
+
+
+def powerset(iterable):
+    """
+    Generate all subsets of an iterable. Example:
+
+    powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
+
+    :return: Generator covering all subsets of iterable.
+    """
+
+    s = list(iterable)
+    return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+
+
+def sha256sum(filename):
+    """
+    Return sha256 hash of filename.
+
+    :param filename: path to file
+    :return: sha256 hash as hex
+    """
+
+    h = hashlib.sha256()
+    b = bytearray(128 * 1024)
+    mv = memoryview(b)
+    with open(filename, "rb", buffering=0) as f:
+        for n in iter(lambda: f.readinto(mv), 0):
+            h.update(mv[:n])
+
+    return h.hexdigest()
