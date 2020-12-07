@@ -84,6 +84,10 @@ class PreprocessPLTestCase(TestCase):
         # check resolution
         self.assertTrue(np.allclose(max_resolution, imgs_ds.shape[1]))
         # check energy conservation after downsample
+        delta = imgs_org.norm() / self.L - imgs_ds.norm() / max_resolution
+        print(imgs_org[0])
+        print(imgs_ds[0])
+        print(imgs_org.norm() / self.L, imgs_ds.norm() / max_resolution, delta)
         self.assertTrue(
             np.allclose(
                 imgs_org.norm() / self.L,
