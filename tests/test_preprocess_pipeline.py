@@ -92,7 +92,7 @@ class PreprocessPLTestCase(TestCase):
             np.allclose(
                 imgs_org.norm() / self.L,
                 imgs_ds.norm() / max_resolution,
-                atol=utest_tolerance(self.dtype),
+                atol=1.0e-4,
             )
         )
 
