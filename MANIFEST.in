@@ -16,15 +16,6 @@ recursive-include docs *.bib
 recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs Makefile
-recursive-include tests *.mrc
-recursive-include tests *.mrcs
-recursive-include tests *.npy
-recursive-include tests *.py
-recursive-include tests *.star
-recursive-include tutorials *.dontrun
-recursive-include tutorials *.ipynb
-recursive-include tutorials *.mat
-recursive-include tutorials *.mrc
-recursive-include tutorials *.npy
-recursive-include tutorials *.py
 prune docs/source
+prune tests
+prune tutorials
