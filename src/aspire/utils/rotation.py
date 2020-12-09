@@ -12,61 +12,37 @@ from aspire.utils.random import Random
 
 
 class Rotation:
-    def __init__(
-        self, num_rots, seed=None, angles=None, matrices=None, dtype=np.float32
-    ):
+    def __init__(self, num_rots, seed=None, matrices=None, dtype=np.float32):
         """
          Initialize a Rotation object
 
          :param num_rots: Total number of rotation sets
          :param seed: Seed for initializing random rotations.
              If None, the random generator is not re-seeded.
-         :param angles: Euler angles (in radian) to generate rotation matrices.
-             If None, Predefined rotation matrices or uniformly
-             distributed angles will be used.
         :param matrices: Rotation matrices to initialize Rotation object.
-             If None, Predefined or uniformly distributed angles
-             will be used.
-         :param dtype: data type for angles and rotation matrices
+             If None, matrices will be generated from uniformly
+             distributed angles.
+         :param dtype: data type for rotation matrices
         """
         self.dtype = np.dtype(dtype)
         self.num_rots = num_rots
-        self.angles = None
         self._matrices = None
         self.shape = (self.num_rots, 3, 3)
         self._seq_order = "ZYZ"
 
-        if angles is not None:
-            ensure(
-                num_rots == angles.shape[0],
-                "Number of rotation matrices should equal to "
-                "number of sets of Euler angles.",
-            )
-            rotations = sp_rot.from_euler(
-                self._seq_order, angles.astype(dtype), degrees=False
-            )
-            self._matrices = rotations.as_matrix().astype(dtype)
-            self.angles = rotations.as_euler(self._seq_order, degrees=False).astype(
-                dtype
-            )
-
-        elif matrices is not None:
+        if matrices is not None:
             ensure(
                 num_rots == matrices.shape[0],
                 "Number of rotation matrices should equal to "
                 "number of input sets of matrices.",
             )
             rotations = sp_rot.from_matrix(matrices.astype(dtype))
-            self.angles = rotations.as_euler(self._seq_order, degrees=False).astype(
-                dtype
-            )
             self._matrices = rotations.as_matrix().astype(dtype)
 
         else:
             rot_obj = Rotation.generate_random_rotations(
                 num_rots, seed=seed, dtype=dtype
             )
-            self.angles = rot_obj.angles
             self._matrices = rot_obj._matrices
 
     def __str__(self):
@@ -85,7 +61,7 @@ class Rotation:
         self._matrices[key] = value
 
     def __mul__(self, other):
-        output = self._matrices @ other._matrices
+        output = self._matrices @ other.matrices
         return Rotation(output.shape[0], matrices=output, dtype=self.dtype)
 
     @property
@@ -94,6 +70,14 @@ class Rotation:
         :return: Rotation matrices as a n x 3 x 3 array
         """
         return self._matrices
+
+    @property
+    def angles(self):
+        """
+        :return: Rotation matrices as a n x 3 x 3 array
+        """
+        rotations = sp_rot.from_matrix(self._matrices.astype(self.dtype))
+        return rotations.as_euler(self._seq_order, degrees=False).astype(self.dtype)
 
     def invert(self):
         """
@@ -120,7 +104,7 @@ class Rotation:
                 flag, flag==1 then J conjugacy is required and 0 is not.
         """
         rots = self._matrices
-        rots_ref = rots_ref._matrices.astype(self.dtype)
+        rots_ref = rots_ref.matrices.astype(self.dtype)
         ensure(
             rots.shape == rots_ref.shape,
             "Two sets of rotations must have same dimensions.",
@@ -215,8 +199,8 @@ class Rotation:
         :return: The MSE value between two sets of rotations.
         """
         aligned_rots = self.register(rots_ref)
-        rots_reg = aligned_rots._matrices
-        rots_ref = rots_ref._matrices
+        rots_reg = aligned_rots.matrices
+        rots_ref = rots_ref.matrices
         ensure(
             rots_reg.shape == rots_ref.shape,
             "Two sets of rotations must have same dimensions.",
@@ -263,7 +247,9 @@ class Rotation:
         :param values: Rotation angles in radians, as a n x 3 array
         :return: new Rotation object
         """
-        return Rotation(values.shape[0], angles=values, dtype=dtype)
+        rotations = sp_rot.from_euler("ZYZ", values.astype(dtype), degrees=False)
+        matrices = rotations.as_matrix().astype(dtype)
+        return Rotation(values.shape[0], matrices=matrices, dtype=dtype)
 
     @staticmethod
     def from_matrix(values, dtype=np.float32):
