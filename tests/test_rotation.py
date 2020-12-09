@@ -35,7 +35,7 @@ class UtilsTestCase(TestCase):
         rot_ref = sp_rot.from_euler("ZYZ", self.angles, degrees=False)
         matrices = rot_ref.as_matrix().astype(self.dtype)
         rot = Rotation(self.num_rots, angles=self.angles, dtype=self.dtype)
-        self.assertTrue(np.allclose(rot.matrices, matrices))
+        self.assertTrue(np.allclose(rot._matrices, matrices))
 
     def testInvert(self):
         rot_mat = self.rot_obj.matrices

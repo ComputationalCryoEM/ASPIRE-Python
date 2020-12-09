@@ -32,7 +32,7 @@ class Rotation:
         self.dtype = np.dtype(dtype)
         self.num_rots = num_rots
         self.angles = None
-        self.matrices = None
+        self._matrices = None
         self.shape = (self.num_rots, 3, 3)
         self._seq_order = "ZYZ"
 
@@ -45,7 +45,7 @@ class Rotation:
             rotations = sp_rot.from_euler(
                 self._seq_order, angles.astype(dtype), degrees=False
             )
-            self.matrices = rotations.as_matrix().astype(dtype)
+            self._matrices = rotations.as_matrix().astype(dtype)
             self.angles = rotations.as_euler(self._seq_order, degrees=False).astype(
                 dtype
             )
@@ -60,14 +60,14 @@ class Rotation:
             self.angles = rotations.as_euler(self._seq_order, degrees=False).astype(
                 dtype
             )
-            self.matrices = rotations.as_matrix().astype(dtype)
+            self._matrices = rotations.as_matrix().astype(dtype)
 
         else:
             rot_obj = Rotation.generate_random_rotations(
                 num_rots, seed=seed, dtype=dtype
             )
             self.angles = rot_obj.angles
-            self.matrices = rot_obj.matrices
+            self._matrices = rot_obj._matrices
 
     def __str__(self):
         """
@@ -79,14 +79,21 @@ class Rotation:
         return self.num_rots
 
     def __getitem__(self, item):
-        return self.matrices[item]
+        return self._matrices[item]
 
     def __setitem__(self, key, value):
-        self.matrices[key] = value
+        self._matrices[key] = value
 
     def __mul__(self, other):
-        output = self.matrices @ other.matrices
+        output = self._matrices @ other._matrices
         return Rotation(output.shape[0], matrices=output, dtype=self.dtype)
+
+    @property
+    def matrices(self):
+        """
+        :return: Rotation matrices as a n x 3 x 3 array
+        """
+        return self._matrices
 
     def invert(self):
         """
@@ -96,7 +103,7 @@ class Rotation:
         """
         return Rotation(
             self.num_rots,
-            matrices=np.transpose(self.matrices, axes=(0, 2, 1)),
+            matrices=np.transpose(self._matrices, axes=(0, 2, 1)),
             dtype=self.dtype,
         )
 
@@ -112,8 +119,8 @@ class Rotation:
         :return: o_mat, optimal orthogonal 3x3 matrix to align the two sets;
                 flag, flag==1 then J conjugacy is required and 0 is not.
         """
-        rots = self.matrices
-        rots_ref = rots_ref.matrices.astype(self.dtype)
+        rots = self._matrices
+        rots_ref = rots_ref._matrices.astype(self.dtype)
         ensure(
             rots.shape == rots_ref.shape,
             "Two sets of rotations must have same dimensions.",
@@ -172,7 +179,7 @@ class Rotation:
         :param flag:  flag==1 then J conjugacy is required and 0 is not
         :return: regrot, aligned Rotation object
         """
-        rots = self.matrices
+        rots = self._matrices
         K = rots.shape[0]
 
         # Reflection matrix
@@ -208,8 +215,8 @@ class Rotation:
         :return: The MSE value between two sets of rotations.
         """
         aligned_rots = self.register(rots_ref)
-        rots_reg = aligned_rots.matrices
-        rots_ref = rots_ref.matrices
+        rots_reg = aligned_rots._matrices
+        rots_ref = rots_ref._matrices
         ensure(
             rots_reg.shape == rots_ref.shape,
             "Two sets of rotations must have same dimensions.",
@@ -233,8 +240,8 @@ class Rotation:
         :param ell: The total number of common lines.
         :return: The common line indices for both first and second rotations.
         """
-        r1 = self.matrices[i]
-        r2 = self.matrices[j]
+        r1 = self._matrices[i]
+        r2 = self._matrices[j]
         ut = np.dot(r2, r1.T)
         alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
         alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
