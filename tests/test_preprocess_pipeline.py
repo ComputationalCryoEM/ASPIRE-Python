@@ -67,7 +67,19 @@ class PreprocessPLTestCase(TestCase):
             dtype=self.dtype,
         )
         # get images before downsample
+        print("Rotation:")
+        print(sim.rots[0])
+        imgs_clean = sim.projections()
+        print("Clean image:")
+        print(imgs_clean[0])
+        print("CTF indices:")
+        print(sim.filter_indices)
+        imgs_ctf_clean = sim.clean_images()
+        print("Clean image with CTF:")
+        print(imgs_ctf_clean[0])
         imgs_org = sim.images(start=0, num=self.n)
+        print("Noise image:")
+        print(imgs_org[0])
         # get images after downsample
         max_resolution = 32
         sim.downsample(max_resolution)
@@ -85,7 +97,7 @@ class PreprocessPLTestCase(TestCase):
         self.assertTrue(np.allclose(max_resolution, imgs_ds.shape[1]))
         # check energy conservation after downsample
         delta = imgs_org.norm() / self.L - imgs_ds.norm() / max_resolution
-        print(imgs_org[0])
+        print("Downsample image:")
         print(imgs_ds[0])
         print(imgs_org.norm() / self.L, imgs_ds.norm() / max_resolution, delta)
         self.assertTrue(
