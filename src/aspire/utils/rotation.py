@@ -281,26 +281,8 @@ class Rotation:
         :param n: The number of rotation matrices to generate
         :param seed: Random integer seed to use. If None,
             the current random state is used.
-        ::
+        :param dtype:  data type for rotational angles and matrices
         :return: A new Rotation object
-        """
-        angles = Rotation.uniform_random_angles(n, seed=seed, dtype=dtype)
-        return Rotation.from_euler(angles, dtype=dtype)
-
-    @staticmethod
-    def uniform_random_angles(
-        n,
-        seed=None,
-        dtype=np.float32,
-    ):
-        """
-        Generate random 3D rotation angles in radians
-
-        :param n: The number of rotation angles to generate
-        :param seed: Random integer seed to use. If None,
-            the current random state is used.
-        ::
-        :return: A n-by-3 ndarray of rotation angles in radians
         """
         # Generate random rotation angles, in radians
         with Random(seed):
@@ -311,4 +293,5 @@ class Rotation:
                     np.random.random(n) * 2 * np.pi,
                 )
             ).astype(dtype=dtype)
-        return angles
+
+        return Rotation.from_euler(angles, dtype=dtype)
