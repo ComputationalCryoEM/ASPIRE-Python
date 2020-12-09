@@ -85,16 +85,8 @@ class Rotation:
         self.matrices[key] = value
 
     def __mul__(self, other):
-        if isinstance(other, Rotation):
-            output = self.matrices @ other.matrices
+        output = self.matrices @ other.matrices
         return Rotation(output.shape[0], matrices=output, dtype=self.dtype)
-
-    @property
-    def T(self):
-        """
-        Shortcut to get full set of transposed rotation matrices
-        """
-        return self.invert()
 
     def invert(self):
         """
