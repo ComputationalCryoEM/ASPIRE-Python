@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.6.0",
+    version="0.6.1",
     data_files=[
         ("", ["src/aspire/config.ini"]),
         ("", ["src/aspire/logging.conf"]),
