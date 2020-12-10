@@ -4,20 +4,14 @@ Created on Sep 10, 2019
 @author: Ayelet Heimowitz, Amit Moscovich
 """
 import os
-import sys
-import time
 
-import mrcfile
 import numba
 import numpy as np
 import pyfftw
-import scipy.io as sio
 from numpy import linalg as npla
 from scipy.optimize import linprog
 
-from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.storage import Micrograph
-
+from aspire.image import Image
 
 @numba.vectorize([numba.float64(numba.complex128), numba.float32(numba.complex64)])
 def abs2(x):
@@ -84,7 +78,7 @@ class CtfEstimator:
         :param angle: Angle in degrees.
         """
 
-        self.angle = df
+        self.angle = angle
 
     def generate_ctf(self):
         """
@@ -226,8 +220,8 @@ class CtfEstimator:
         thon_rings = np.fft.fftshift(
             blocks_mt
         )  # max difference 10^-13, max relative difference 10^-14
-
-        return thon_rings
+        print('thon_rings', thon_rings)
+        return Image(thon_rings)
 
     def ctf_elliptical_average(self, ffbbasis, thon_rings, k):
         """
@@ -237,9 +231,10 @@ class CtfEstimator:
         :param k:
         :return: PSD and noise as 2-tuple of numpy arrays.
         """
-
-        coeffs_s = ffbbasis.evaluate_t(thon_rings)
+        #RCOPT, come back and change the indices for this method
+        coeffs_s = ffbbasis.evaluate_t(thon_rings).T
         coeffs_n = coeffs_s.copy()
+        print('coeffs_s.shape', coeffs_s.shape)
 
         coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 1)] = 0
         if k == 0:
@@ -248,8 +243,8 @@ class CtfEstimator:
         if k == 2:
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 0)] = 0
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
-            noise = ffbbasis.evaluate(coeffs_n)
-        psd = ffbbasis.evaluate(coeffs_s)
+            noise = ffbbasis.evaluate(coeffs_n.T)
+        psd = ffbbasis.evaluate(coeffs_s.T)
 
         return psd, noise
 
@@ -261,20 +256,21 @@ class CtfEstimator:
         """
 
         # compute radial average
-        center = thon_rings.shape[0] // 2
+        center = thon_rings.shape[-1] // 2
 
-        thon_rings = thon_rings[center:, center]
+        thon_rings = thon_rings[..., center, center:]
 
-        thon_rings = thon_rings[0 : 3 * thon_rings.shape[0] // 4]
-        element_no = thon_rings.shape[0]
+        thon_rings = thon_rings[..., 0 : 3 * thon_rings.shape[-1] // 4]
+        element_no = thon_rings.shape[-1]
 
-        final_signal = np.zeros((thon_rings.shape[0], 13))
-        final_background = np.ones((thon_rings.shape[0], 13))
+        final_signal = np.zeros((thon_rings.shape[-1], 13))
+        final_background = np.ones((thon_rings.shape[-1], 13))
 
         for m in range(1, 14):
-            signal = thon_rings[m:]
+            signal = thon_rings[..., m:]
             signal = np.ravel(signal)
             N = element_no - m
+            print("m, N, element_no", m, N, element_no)
 
             f = np.concatenate((np.ones((N)), -1 * np.ones((N))), axis=0)
             lb = np.concatenate((signal, -1 * np.inf * np.ones((N))), axis=0)
@@ -313,6 +309,7 @@ class CtfEstimator:
                 for i in range(signal.shape[0])
             ]
             x_bound = np.asarray(x_bound_lst, A.dtype)
+            print("x_bound.shape", x_bound.shape)
             x_bound = np.concatenate((x_bound[:, :2], x_bound[:, 2:]), axis=0)
 
             x = linprog(f, A_ub=A, b_ub=np.zeros((A.shape[0])), bounds=x_bound)
@@ -415,7 +412,7 @@ class CtfEstimator:
         signal = signal - background
         signal = np.where(signal < 0, 0, signal)
 
-        return signal, background
+        return signal, Image(background)
 
     def ctf_PCA(self, signal, pixel_size, g_min, g_max, w):
         """
@@ -516,6 +513,7 @@ class CtfEstimator:
             r, 4
         ) / 2 - amplitude_contrast * np.ones(r.shape)
 
+        print("signal.shape gd", signal.shape)
         N = signal.shape[1]
         center = N // 2
 
@@ -530,7 +528,7 @@ class CtfEstimator:
 
         a = a[valid_region[:, 0], valid_region[:, 1]]
         b = b[valid_region[:, 0], valid_region[:, 1]]
-        signal = signal[valid_region[:, 0], valid_region[:, 1]]
+        signal = signal[..., valid_region[:, 0], valid_region[:, 1]]
         r = r[valid_region[:, 0], valid_region[:, 1]]
         theta = theta[valid_region[:, 0], valid_region[:, 1]]
 
@@ -682,7 +680,7 @@ class CtfEstimator:
         Writes starfile.
         """
 
-        if os.path.isdir("results") == False:
+        if os.path.isdir("results") is False:
             os.mkdir("results")
 
         f = open("results/" + os.path.splitext(name)[0] + ".log", "w")
