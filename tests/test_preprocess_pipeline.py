@@ -50,6 +50,8 @@ class PreprocessPLTestCase(TestCase):
         )
         vol = np.reshape(vol, g3d["x"].shape)
         vols = Volume(vol)
+        print("volume:")
+        print(vols[0][16:49, 16:49, 16:49])
 
         # set noise to zero and CFT filters to unity for simulation object
         noise_var = 0
@@ -71,15 +73,15 @@ class PreprocessPLTestCase(TestCase):
         print(sim.rots[0])
         imgs_clean = sim.projections()
         print("Clean image:")
-        print(imgs_clean[0])
+        print(imgs_clean[0][16:49, 16:49])
         print("CTF indices:")
         print(sim.filter_indices)
         imgs_ctf_clean = sim.clean_images()
         print("Clean image with CTF:")
-        print(imgs_ctf_clean[0])
+        print(imgs_ctf_clean[0][16:49, 16:49])
         imgs_org = sim.images(start=0, num=self.n)
         print("Noise image:")
-        print(imgs_org[0])
+        print(imgs_org[0][16:49, 16:49])
         # get images after downsample
         max_resolution = 32
         sim.downsample(max_resolution)
@@ -98,7 +100,7 @@ class PreprocessPLTestCase(TestCase):
         # check energy conservation after downsample
         delta = imgs_org.norm() / self.L - imgs_ds.norm() / max_resolution
         print("Downsample image:")
-        print(imgs_ds[0])
+        print(imgs_ds[0][8:24, 8:24])
         print(imgs_org.norm() / self.L, imgs_ds.norm() / max_resolution, delta)
         self.assertTrue(
             np.allclose(
