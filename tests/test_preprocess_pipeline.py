@@ -9,6 +9,7 @@ from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
 from aspire.utils import utest_tolerance
 from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils.matrix import anorm
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -38,7 +39,12 @@ class PreprocessPLTestCase(TestCase):
         imgs_pf = self.sim.images(start=0, num=self.n)
 
         # check energy conservation
-        self.assertTrue(np.allclose(self.imgs_org.norm(), imgs_pf.norm()))
+        self.assertTrue(
+            np.allclose(
+                anorm(self.imgs_org.asnumpy(), axes=(1, 2)),
+                anorm(imgs_pf.asnumpy(), axes=(1, 2)),
+            )
+        )
 
     def testDownsample(self):
         # generate a 3D map with density decays as Gaussian function
@@ -86,8 +92,8 @@ class PreprocessPLTestCase(TestCase):
         # check energy conservation after downsample
         self.assertTrue(
             np.allclose(
-                imgs_org.norm() / self.L,
-                imgs_ds.norm() / max_resolution,
+                anorm(imgs_org.asnumpy(), axes=(1, 2)) / self.L,
+                anorm(imgs_ds.asnumpy(), axes=(1, 2)) / max_resolution,
                 atol=utest_tolerance(self.dtype),
             )
         )
