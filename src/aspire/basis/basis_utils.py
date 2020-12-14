@@ -8,7 +8,7 @@ import logging
 import numpy as np
 from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
-from scipy.special import jn, jv, lpmv
+from scipy.special import jn, jv, lpmv, sph_harm
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, grid_3d
@@ -126,26 +126,14 @@ def real_sph_harmonic(j, m, theta, phi):
     :return: The real spherical harmonics evaluated at the points (theta, phi).
     """
     abs_m = abs(m)
-    y = lpmv(abs_m, j, np.cos(theta))
 
-    # Beware of using just np.prod in the denominator here
-    # Unless we use float64, values in the denominator > 13! will be incorrect
-    try:
-        y = (
-            np.sqrt(
-                (2 * j + 1)
-                / (4 * pi)
-                / np.prod(range(j - abs_m + 1, j + abs_m + 1), dtype=np.float64)
-            )
-            * y
-        )
-    except RuntimeWarning:
-        logger.error("debug")
-
+    y = sph_harm(abs_m, j, phi, theta)
     if m < 0:
-        y = np.sqrt(2) * np.sin(abs_m * phi) * y
+        y = np.sqrt(2) * np.imag(y)
     elif m > 0:
-        y = np.sqrt(2) * np.cos(abs_m * phi) * y
+        y = np.sqrt(2) * np.real(y)
+    else:
+        y = np.real(y)
 
     return y
 

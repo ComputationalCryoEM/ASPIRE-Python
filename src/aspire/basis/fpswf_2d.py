@@ -3,13 +3,13 @@ import logging
 import numpy as np
 from numpy import pi
 from numpy.linalg import lstsq
-from scipy.fftpack import fft
 from scipy.optimize import least_squares
 from scipy.special import jn
 
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.nufft import nufft
+from aspire.numeric import fft, xp
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -400,7 +400,7 @@ class FPSWFBasis2D(PSWFBasis2D):
                 :,
             ]
             curr_r_mat = np.concatenate((curr_r_mat, np.conj(curr_r_mat)))
-            fft_plan = fft(curr_r_mat, curr_r_mat.shape[0], axis=0)
+            fft_plan = xp.asnumpy(fft.fft(xp.asarray(curr_r_mat), axis=0))
             angular_eval = fft_plan * self.quad_rule_radial_wts[i]
 
             r_n_eval_mat[i, :, :] = np.tile(
