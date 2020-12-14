@@ -153,7 +153,7 @@ class Volume:
 
         im_f = im_f.reshape(-1, self.resolution, self.resolution)
         print("nufft image:")
-        print(im_f[0][16:49, 16:49])
+        print(im_f[0])
 
         if self.resolution % 2 == 0:
             im_f[:, 0, :] = 0
