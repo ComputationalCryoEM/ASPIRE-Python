@@ -12,38 +12,17 @@ from aspire.utils.random import Random
 
 
 class Rotation:
-    def __init__(self, num_rots, seed=None, matrices=None, dtype=np.float32):
+    def __init__(self, matrices):
         """
          Initialize a Rotation object
 
-         :param num_rots: Total number of rotation sets
-         :param seed: Seed for initializing random rotations.
-             If None, the random generator is not re-seeded.
         :param matrices: Rotation matrices to initialize Rotation object.
-             If None, matrices will be generated from uniformly
-             distributed angles.
-         :param dtype: data type for rotation matrices
         """
-        self.dtype = np.dtype(dtype)
-        self.num_rots = num_rots
-        self._matrices = None
+        self.dtype = matrices.dtype
+        self.num_rots = matrices.shape[0]
+        self._matrices = matrices
         self.shape = (self.num_rots, 3, 3)
         self._seq_order = "ZYZ"
-
-        if matrices is not None:
-            ensure(
-                num_rots == matrices.shape[0],
-                "Number of rotation matrices should equal to "
-                "number of input sets of matrices.",
-            )
-            rotations = sp_rot.from_matrix(matrices.astype(dtype))
-            self._matrices = rotations.as_matrix().astype(dtype)
-
-        else:
-            rot_obj = Rotation.generate_random_rotations(
-                num_rots, seed=seed, dtype=dtype
-            )
-            self._matrices = rot_obj._matrices
 
     def __str__(self):
         """
@@ -62,7 +41,7 @@ class Rotation:
 
     def __mul__(self, other):
         output = self._matrices @ other.matrices
-        return Rotation(output.shape[0], matrices=output, dtype=self.dtype)
+        return Rotation(output)
 
     @property
     def matrices(self):
@@ -86,9 +65,7 @@ class Rotation:
         :return: The set of transposed matrices
         """
         return Rotation(
-            self.num_rots,
             matrices=np.transpose(self._matrices, axes=(0, 2, 1)),
-            dtype=self.dtype,
         )
 
     def find_registration(self, rots_ref):
@@ -175,7 +152,7 @@ class Rotation:
             if flag == 1:
                 R = J @ R @ J
             regrot[k, :, :] = Q_mat.T @ R
-        aligned_rots = Rotation(K, matrices=regrot)
+        aligned_rots = Rotation(regrot)
         return aligned_rots
 
     def register(self, rots_ref):
@@ -249,7 +226,7 @@ class Rotation:
         """
         rotations = sp_rot.from_euler("ZYZ", values.astype(dtype), degrees=False)
         matrices = rotations.as_matrix().astype(dtype)
-        return Rotation(values.shape[0], matrices=matrices, dtype=dtype)
+        return Rotation(matrices)
 
     @staticmethod
     def from_matrix(values, dtype=np.float32):
@@ -260,7 +237,7 @@ class Rotation:
         :param values: Rotation matrices, as a n x 3 x 3 array
         :return: new Rotation object
         """
-        return Rotation(values.shape[0], matrices=values, dtype=dtype)
+        return Rotation(values.astype(dtype))
 
     @staticmethod
     def generate_random_rotations(

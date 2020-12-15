@@ -11,7 +11,9 @@ class UtilsTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.num_rots = 32
-        self.rot_obj = Rotation(self.num_rots, seed=0, dtype=self.dtype)
+        self.rot_obj = Rotation.generate_random_rotations(
+            self.num_rots, seed=0, dtype=self.dtype
+        )
         self.angles = self.rot_obj.angles
         self.matrices = self.rot_obj.matrices
 
