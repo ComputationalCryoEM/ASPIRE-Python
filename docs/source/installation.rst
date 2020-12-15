@@ -1,14 +1,14 @@
 Installation
 ============
 
-ASPIRE runs on Python 3.6, and comes with an ``environment.yml`` to reconstruct a working Conda environment to run the package.
+ASPIRE is based on Python 3.6, and comes with an ``environment.yml`` for reconstructing a working Conda environment to run the package.
 The package is tested on Linux/Windows/Mac OS X. Pre-built binaries are available for all platform-specific components. No manual
 compilation should be needed.
 
 Install Conda
 *************
 
-You will need to install Conda for **Python3**, either
+To follow the suggested installation, you will need to install Conda for **Python3**, either
 `Anaconda <https://www.anaconda.com/download/#linux>`__ or
 `Miniconda <https://conda.io/miniconda.html>`__, click on the right
 distribution to view Conda's installation instructions.
@@ -70,16 +70,14 @@ you would probably want to keep that in a seperate environment.
 
 We recommend using ``conda`` or a ``virtualenv`` environment managing solutions because ASPIRE may have conflicts or change installed versions of Python packages on your system.
 
-Again, we recommend the above for consistency and safety.
+Again, we recommend the above for consistency.
 However, ASPIRE is a ``pip`` package,
-so you can attempt to install it using standard ``pip`` or ``setup.py`` commands.
-ASPIRE should generally be compatible with newer version of Python,
-and newer dependent packages, but this is still being tested.
-There are a few known issues.
-While we can try to help,
-you may be on your own for support of this method of installation.
+so you can attempt to install it using standard ``pip`` or ``setup.py`` commands.  There are methods such as ``pip --no-deps`` that can leave your other packages undisturbed, but this is left to the developer.
+ASPIRE should generally be compatible with newer version of Python, and newer dependent packages. We are currently testing 3.6, 3.7, 3.8 base Python as configured by ASPIRE, and with upgrading packages to the latest for each of those bases.
+If you encounter an issue with a custom pip install, we will try to help, but you may be on your own for support of this method of installation.
 
 ::
+
    # Standard pip site-packages installation command
    cd path/to/aspire-repo
    pip install .
@@ -88,7 +86,6 @@ you may be on your own for support of this method of installation.
    cd path/to/aspire-repo
    pip install -e .
 
-Note that we hope to have a better automated coverage of ``pip`` installations on recent major Python versions for future releases.
 
 Test the package
 ****************
@@ -98,9 +95,9 @@ Make sure all unit tests run correctly by doing:
 ::
 
     cd /path/to/git/clone/folder
-    pytest tests
+    pytest
 
-Tests currently take around 5 minutes to run.
+Tests currently take around 5 minutes to run, but this depends on your specific machine's resources.
 
 
 Generating Documentation

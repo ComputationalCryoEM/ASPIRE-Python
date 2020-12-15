@@ -5,9 +5,9 @@ from numpy.linalg import qr
 
 import aspire.image
 from aspire.nufft import nufft
+from aspire.numeric import fft, xp
 from aspire.utils import ensure, mat_to_vec, vec_to_mat
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.fft import centered_ifft2
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ class Volume:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
-        im_f = centered_ifft2(im_f)
+        im_f = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
 
         return aspire.image.Image(np.real(im_f))
 

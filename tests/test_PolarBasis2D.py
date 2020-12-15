@@ -1,3 +1,4 @@
+import logging
 from unittest import TestCase
 
 import numpy as np
@@ -6,12 +7,18 @@ from aspire.basis import PolarBasis2D
 from aspire.image import Image
 from aspire.utils import complex_type, utest_tolerance
 from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.random import randn
+
+logger = logging.getLogger(__name__)
 
 
 class PolarBasis2DTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.basis = PolarBasis2D((8, 8), 4, 32, dtype=self.dtype)
+        # Note, in practice we got a degenerate random array around 1%
+        #   of the time, so we fix a seed for the randn calls.
+        self.seed = 8675309
 
     def tearDown(self):
         pass
@@ -469,7 +476,7 @@ class PolarBasis2DTestCase(TestCase):
         # The evaluate function should be the adjoint operator of evaluate_t.
         # Namely, if A = evaluate, B = evaluate_t, and B=A^t, we will have
         # (y, A*x) = (A^t*y, x) = (B*y, x)
-        x = np.random.randn(self.basis.count).astype(self.dtype)
+        x = randn(self.basis.count, seed=self.seed).astype(self.dtype)
 
         x = m_reshape(x, (self.basis.nrad, self.basis.ntheta))
 
@@ -483,14 +490,15 @@ class PolarBasis2DTestCase(TestCase):
         x = m_reshape(x, (self.basis.nrad * self.basis.ntheta,))
 
         x_t = self.basis.evaluate(x).asnumpy()
-        y = np.random.randn(np.prod(self.basis.sz)).astype(self.dtype)
+        y = randn(np.prod(self.basis.sz), seed=self.seed).astype(self.dtype)
         y_t = self.basis.evaluate_t(
             Image(m_reshape(y, self.basis.sz)[np.newaxis, :])
         )  # RCOPT
-        self.assertTrue(
-            np.isclose(
-                np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),))),
-                np.dot(y_t, x),
-                atol=utest_tolerance(self.dtype),
-            )
+
+        lhs = np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),)))
+        rhs = np.real(np.dot(y_t, x))
+        logging.debug(
+            f"lhs: {lhs} rhs: {rhs} absdiff: {np.abs(lhs-rhs)} atol: {utest_tolerance(self.dtype)}"
         )
+
+        self.assertTrue(np.isclose(lhs, rhs, atol=utest_tolerance(self.dtype)))
