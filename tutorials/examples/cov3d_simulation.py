@@ -28,6 +28,7 @@ num_eigs = 16  # number of eigen-vectors to keep
 
 # Create a simulation object with specified filters
 sim = Simulation(
+    L=img_size,
     n=num_imgs,
     C=num_vols,
     unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
