@@ -18,10 +18,7 @@ class Rotation:
 
         :param matrices: Rotation matrices to initialize Rotation object.
         """
-        self.dtype = matrices.dtype
-        self.num_rots = matrices.shape[0]
         self._matrices = matrices
-        self.shape = (self.num_rots, 3, 3)
         self._seq_order = "ZYZ"
 
     def __str__(self):
@@ -31,7 +28,7 @@ class Rotation:
         return f"Rotation stack consisting of {self.num_rots} elements of {self.dtype} type"
 
     def __len__(self):
-        return self.num_rots
+        return self._matrices.shape[0]
 
     def __getitem__(self, item):
         return self._matrices[item]
@@ -42,6 +39,13 @@ class Rotation:
     def __mul__(self, other):
         output = self._matrices @ other.matrices
         return Rotation(output)
+
+    @property
+    def dtype(self):
+        """
+        :return: dtype of Rotation matrices
+        """
+        return self._matrices.dtype
 
     @property
     def matrices(self):

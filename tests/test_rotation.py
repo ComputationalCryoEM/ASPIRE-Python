@@ -46,7 +46,7 @@ class UtilsTestCase(TestCase):
 
     def testMultiplication(self):
         result = (self.rot_obj * self.rot_obj.invert()).matrices
-        for i in range(self.rot_obj.num_rots):
+        for i in range(len(self.rot_obj)):
             self.assertTrue(
                 np.allclose(np.eye(3), result[i], atol=utest_tolerance(self.dtype))
             )
