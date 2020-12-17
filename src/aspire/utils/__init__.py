@@ -21,4 +21,5 @@ from .matrix import (
     vol_to_vec,
     volmat_to_vecmat,
 )
+from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance
