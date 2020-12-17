@@ -34,7 +34,7 @@ jobs:
       env: TOXENV=docs
 
 install:
-  - pip install -U tox tox-travis
+  - pip install -U tox tox-travis sphinx
 
 script: tox -v --skip-missing-interpreters false -e $TOXENV
 
