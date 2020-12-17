@@ -156,6 +156,9 @@ class Image:
 
         return Image(self.data * other)
 
+    def __neg__(self):
+        return Image(-self.data)
+
     def sqrt(self):
         return np.sqrt(self.data)
 

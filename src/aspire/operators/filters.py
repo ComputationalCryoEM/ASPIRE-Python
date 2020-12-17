@@ -274,9 +274,6 @@ class ScalarFilter(Filter):
     def _evaluate(self, omega):
         return self.value * np.ones_like(omega)
 
-    def scale(self, c):
-        pass
-
 
 class ZeroFilter(ScalarFilter):
     def __init__(self, dim=None):
