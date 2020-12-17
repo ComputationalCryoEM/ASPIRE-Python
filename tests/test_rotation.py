@@ -3,8 +3,7 @@ from unittest import TestCase
 import numpy as np
 from scipy.spatial.transform import Rotation as sp_rot
 
-from aspire.utils.rotation import Rotation
-from aspire.utils.types import utest_tolerance
+from aspire.utils import Rotation, utest_tolerance
 
 
 class UtilsTestCase(TestCase):
