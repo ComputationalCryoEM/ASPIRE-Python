@@ -2,12 +2,15 @@
 """
 This script illustrates Cov3D analysis using experimental dataset
 """
+import numpy as np
 
 from aspire.basis import FBBasis3D
 from aspire.covariance import CovarianceEstimator
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source.relion import RelionSource
+from aspire.utils import eigs
+from aspire.volume import Volume
 
 # Set input path and files and initialize other parameters
 DATA_FOLDER = "/path/to/untarred/empiar/dataset/"
@@ -16,6 +19,9 @@ PIXEL_SIZE = 5.0
 MAX_ROWS = 1024
 MAX_RESOLUTION = 8
 CG_TOL = 1e-5
+
+# Set number of eigen-vectors to keep
+NUM_EIGS = 16
 
 # Create a source object for experimental 2D images with estimated rotation angles
 print(f"Read in images from {STARFILE} and preprocess the images.")
@@ -47,4 +53,14 @@ mean_est = mean_estimator.estimate()
 
 # Passing in a mean_kernel argument to the following constructor speeds up some calculations
 covar_estimator = CovarianceEstimator(source, basis, mean_kernel=mean_estimator.kernel)
-covar_estimator.estimate(mean_est, noise_variance, tol=CG_TOL)
+covar_est = covar_estimator.estimate(mean_est, noise_variance, tol=CG_TOL)
+
+# Extract the top eigenvectors and eigenvalues of the covariance estimate.
+eigs_est, lambdas_est = eigs(covar_est, NUM_EIGS)
+
+# Eigs should probably return a Volume, for now hack it.
+s = eigs_est.shape
+eigs_est_c = np.empty((s[3], s[0], s[1], s[2]), dtype=eigs_est.dtype)
+for i in range(s[3]):
+    eigs_est_c[i] = eigs_est[..., i]
+eigs_est = Volume(eigs_est_c)
