@@ -677,7 +677,7 @@ class BatchedRotCov2D(RotCov2D):
             "iter_callback": [],
             "store_iterates": False,
             "rel_tolerance": 1e-12,
-            "precision": "float64",
+            "precision": self.dtype,
             "preconditioner": identity,
         }
 
@@ -730,7 +730,7 @@ class BatchedRotCov2D(RotCov2D):
             covar_coeff = self.get_covar(noise_var=noise_var, mean_coeff=mean_coeff)
 
         if (ctf_fb is None) or (ctf_idx is None):
-            ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
+            ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
         noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
