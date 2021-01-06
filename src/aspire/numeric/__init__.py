@@ -4,12 +4,18 @@ from aspire import config
 
 logger = logging.getLogger(__name__)
 
-if config.common.cupy:
-    from .cupy import Cupy as NumericClass
-else:
-    from .numpy import Numpy as NumericClass
 
-xp = NumericClass()
+def numeric_object(which):
+    if which == "cupy":
+        from .cupy import Cupy as NumericClass
+    elif which == "numpy":
+        from .numpy import Numpy as NumericClass
+    else:
+        raise RuntimeError(f"Invalid selection for numeric module: {which}")
+    return NumericClass()
+
+
+xp = numeric_object(config.common.numeric)
 
 
 def fft_object(which):
