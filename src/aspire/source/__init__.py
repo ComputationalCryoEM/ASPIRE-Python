@@ -553,7 +553,7 @@ class ImageSource:
         )
         if save_images:
             logger.info("save images into MRCS file")
-            self._save_mrcs(
+            self._save_images(
                 starfile_filepath,
                 batch_size=batch_size,
                 save_mode=save_mode,
@@ -620,7 +620,7 @@ class ImageSource:
 
         self._metadata_updated = df
 
-    def _save_mrcs(
+    def _save_images(
         self, starfile_filepath, batch_size=512, save_mode=None, overwrite=False
     ):
 
