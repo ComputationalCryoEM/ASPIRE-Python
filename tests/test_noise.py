@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.noise import AnisotropicNoiseEstimator
+from aspire.noise import AnisotropicNoiseEstimator, IsotropicNoiseEstimator
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
@@ -27,6 +27,7 @@ class SimTestCase(TestCase):
     def testAnisotropicNoisePSD(self):
         noise_estimator = AnisotropicNoiseEstimator(self.sim, batchSize=512)
         noise_psd = noise_estimator.estimate_noise_psd()
+
         self.assertTrue(
             np.allclose(
                 noise_psd,
@@ -125,3 +126,27 @@ class SimTestCase(TestCase):
                 atol=utest_tolerance(self.sim.dtype),
             )
         )
+
+    def testIsotropicNoisePSD(self):
+        noise_estimator = IsotropicNoiseEstimator(self.sim, batchSize=512)
+        noise_psd = noise_estimator.estimate_noise_psd()
+        self.assertTrue(
+            np.allclose(
+                noise_psd,
+                [
+                    0.00035801,
+                    0.00047187,
+                    0.00243803,
+                    0.0088859,
+                    0.04539765,
+                    0.0088859,
+                    0.00243803,
+                    0.00047187,
+                ],
+            )
+        )
+
+    def testIsotropicNoiseVariance(self):
+        noise_estimator = IsotropicNoiseEstimator(self.sim, batchSize=512)
+        noise_variance = noise_estimator.estimate()
+        self.assertTrue(np.allclose(noise_variance, 0.045397654522337974))
