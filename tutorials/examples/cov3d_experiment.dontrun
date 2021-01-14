@@ -45,7 +45,7 @@ source.whiten(noise_estimator.filter)
 noise_variance = noise_estimator.estimate()
 print(f"Noise Variance = {noise_variance}")
 
-# Specify the fast FB basis method for expending the 2D images
+# Specify the fast FB basis method for expanding the 2D images
 basis = FBBasis3D((MAX_RESOLUTION, MAX_RESOLUTION, MAX_RESOLUTION), dtype=source.dtype)
 
 mean_estimator = MeanEstimator(source, basis, batch_size=512)
@@ -57,10 +57,10 @@ covar_est = covar_estimator.estimate(mean_est, noise_variance, tol=CG_TOL)
 
 # Extract the top eigenvectors and eigenvalues of the covariance estimate.
 eigs_est, lambdas_est = eigs(covar_est, NUM_EIGS)
+for i in range(NUM_EIGS):
+    print(f"Top {i}th eigen value: {lambdas_est[i, i]}")
 
 # Eigs should probably return a Volume, for now hack it.
-s = eigs_est.shape
-eigs_est_c = np.empty((s[3], s[0], s[1], s[2]), dtype=eigs_est.dtype)
-for i in range(s[3]):
-    eigs_est_c[i] = eigs_est[..., i]
+# move the last axis to the first
+eigs_est_c = np.moveaxis(eigs_est, -1, 0)
 eigs_est = Volume(eigs_est_c)
