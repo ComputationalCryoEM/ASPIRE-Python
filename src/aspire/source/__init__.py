@@ -557,7 +557,6 @@ class ImageSource:
         self.save_images(
             starfile_filepath,
             batch_size=batch_size,
-            save_mode=save_mode,
             overwrite=overwrite,
         )
 
@@ -630,9 +629,7 @@ class ImageSource:
 
         self._metadata_out = df
 
-    def save_images(
-        self, starfile_filepath, batch_size=512, save_mode=None, overwrite=False
-    ):
+    def save_images(self, starfile_filepath, batch_size=512, overwrite=False):
 
         """
         Save an ImageSource to MRCS files
@@ -647,13 +644,21 @@ class ImageSource:
         :return: None
         """
 
+        # get the save_mode from the file names
+        mrcs_filenames = [
+            self._metadata_out["_rlnImageName"][i].split("@")[1] for i in range(self.n)
+        ]
+        unique_filename = set(mrcs_filenames)
+        save_mode = None
+        if len(unique_filename) == 1:
+            save_mode = "single"
+
         if save_mode == "single":
             # Save all images into one single mrc file
 
             # First, construct name for mrc file
             fdir = os.path.dirname(starfile_filepath)
-            mrcs_filename = self._metadata_out["_rlnImageName"][0].split("@")[1]
-            mrcs_filepath = os.path.join(fdir, mrcs_filename)
+            mrcs_filepath = os.path.join(fdir, mrcs_filenames[0])
 
             # Open new MRC file
             with mrcfile.new_mmap(
@@ -694,11 +699,8 @@ class ImageSource:
                 i_end = min(self.n, i_start + batch_size)
                 num = i_end - i_start
 
-                mrcs_filename = self._metadata_out["_rlnImageName"][i_start].split(
-                    "@"
-                )[1]
                 mrcs_filepath = os.path.join(
-                    os.path.dirname(starfile_filepath), mrcs_filename
+                    os.path.dirname(starfile_filepath), mrcs_filenames[i_start]
                 )
 
                 logger.info(
