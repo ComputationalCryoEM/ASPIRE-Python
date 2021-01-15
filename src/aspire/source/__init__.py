@@ -533,39 +533,44 @@ class ImageSource:
         self,
         starfile_filepath,
         batch_size=512,
-        save_images=True,
         save_mode=None,
         overwrite=False,
     ):
         """
-        Save the output metedata to STAR file and/or images to MRCS file
+        Save the output metadata to STAR file and/or images to MRCS file
 
         :param starfile_filepath: Path to STAR file where we want to
             save metadata of image_source
         :param batch_size: Batch size of images to query.
-        :param save_images: Whether to save all images or not.
         :param save_mode: Whether to save all images in a single or multiple files in batch size.
         :param overwrite: Option to overwrite the output mrcs files.
         """
-        logger.info("save metedata into STAR file")
-        self._save_metadata(
-            starfile_filepath, batch_size=batch_size, save_mode=save_mode
+        logger.info("save metadata into STAR file")
+        self.save_metadata(
+            starfile_filepath,
+            save_images=True,
+            batch_size=batch_size,
+            save_mode=save_mode,
         )
-        if save_images:
-            logger.info("save images into MRCS file")
-            self._save_images(
-                starfile_filepath,
-                batch_size=batch_size,
-                save_mode=save_mode,
-                overwrite=overwrite,
-            )
 
-    def _save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
+        logger.info("save images into MRCS file")
+        self.save_images(
+            starfile_filepath,
+            batch_size=batch_size,
+            save_mode=save_mode,
+            overwrite=overwrite,
+        )
+
+    def save_metadata(
+        self, starfile_filepath, save_images=True, batch_size=512, save_mode=None
+    ):
         """
         Save updated metadata to a STAR file
 
         :param starfile_filepath: Path to STAR file where we want to
             save image_source
+        :param save_images: Whether to save all images or not.
+            If True, new file names and pathes need to be created.
         :param batch_size: Batch size of images to query from the
             `ImageSource` object. Every `batch_size` rows, entries are
             written to STAR file.
@@ -585,42 +590,47 @@ class ImageSource:
             axis=1,
         )
 
-        # Create a new column that we will be populating in the loop below
-        df["_rlnImageName"] = ""
+        if save_images:
+            # Create a new column that we will be populating in the loop below
+            # For
+            df["_rlnImageName"] = ""
 
-        with open(starfile_filepath, "w") as f:
-            if save_mode == "single":
-                # Save all images into one single mrc file
-                fname = os.path.basename(starfile_filepath)
-                fstem = os.path.splitext(fname)[0]
-                mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
+            with open(starfile_filepath, "w") as f:
+                if save_mode == "single":
+                    # Save all images into one single mrc file
+                    fname = os.path.basename(starfile_filepath)
+                    fstem = os.path.splitext(fname)[0]
+                    mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
 
-                # Then set name in dataframe for the StarFile
-                df["_rlnImageName"][0 : self.n] = pd.Series(
-                    [f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)]
-                )
-
-            else:
-                # save all images into multiple mrc files in batch size
-                for i_start in np.arange(0, self.n, batch_size):
-                    i_end = min(self.n, i_start + batch_size)
-                    num = i_end - i_start
-                    mrcs_filename = (
-                        os.path.splitext(os.path.basename(starfile_filepath))[0]
-                        + f"_{i_start}_{i_end-1}.mrcs"
+                    # Then set name in dataframe for the StarFile
+                    df["_rlnImageName"][0 : self.n] = pd.Series(
+                        [f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)]
                     )
 
-                    df["_rlnImageName"][i_start:i_end] = pd.Series(
-                        ["{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)]
-                    )
+                else:
+                    # save all images into multiple mrc files in batch size
+                    for i_start in np.arange(0, self.n, batch_size):
+                        i_end = min(self.n, i_start + batch_size)
+                        num = i_end - i_start
+                        mrcs_filename = (
+                            os.path.splitext(os.path.basename(starfile_filepath))[0]
+                            + f"_{i_start}_{i_end-1}.mrcs"
+                        )
 
-            # initial the star file object and save it
-            starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
-            starfile.save(f)
+                        df["_rlnImageName"][i_start:i_end] = pd.Series(
+                            [
+                                "{0:06}@{1}".format(j + 1, mrcs_filename)
+                                for j in range(num)
+                            ]
+                        )
+
+                # initial the star file object and save it
+                starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
+                starfile.save(f)
 
         self._metadata_updated = df
 
-    def _save_images(
+    def save_images(
         self, starfile_filepath, batch_size=512, save_mode=None, overwrite=False
     ):
 
