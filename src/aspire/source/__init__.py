@@ -115,7 +115,7 @@ class ImageSource:
 
         self.unique_filters = None
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
-        self._metadata_updated = None
+        self._metadata_out = None
 
     @property
     def states(self):
@@ -628,7 +628,7 @@ class ImageSource:
                 starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
                 starfile.save(f)
 
-        self._metadata_updated = df
+        self._metadata_out = df
 
     def save_images(
         self, starfile_filepath, batch_size=512, save_mode=None, overwrite=False
@@ -652,7 +652,7 @@ class ImageSource:
 
             # First, construct name for mrc file
             fdir = os.path.dirname(starfile_filepath)
-            mrcs_filename = self._metadata_updated["_rlnImageName"][0].split("@")[1]
+            mrcs_filename = self._metadata_out["_rlnImageName"][0].split("@")[1]
             mrcs_filepath = os.path.join(fdir, mrcs_filename)
 
             # Open new MRC file
@@ -694,7 +694,7 @@ class ImageSource:
                 i_end = min(self.n, i_start + batch_size)
                 num = i_end - i_start
 
-                mrcs_filename = self._metadata_updated["_rlnImageName"][i_start].split(
+                mrcs_filename = self._metadata_out["_rlnImageName"][i_start].split(
                     "@"
                 )[1]
                 mrcs_filepath = os.path.join(
