@@ -668,6 +668,17 @@ class BlkDiagMatrix:
 
         return Y
 
+    def check_psd_matrix(self):
+        """
+        Check the positive semidefinite property of all submatrices
+
+        :return: True if all matrices have non-negative eigenvalues.
+        """
+        eigenvalues = np.concatenate(
+            [np.linalg.eigvals(mat).flatten() for mat in self.data]
+        )
+        return np.alltrue(eigenvalues > 0.0)
+
     @staticmethod
     def __check_square(shp):
         """
