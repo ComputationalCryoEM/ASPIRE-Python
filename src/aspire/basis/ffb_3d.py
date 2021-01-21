@@ -267,12 +267,11 @@ class FFBBasis3D(FBBasis3D):
 
         pf = w_even + 1j * w_odd
         pf = m_reshape(pf, (n_theta * n_phi * n_r, n_data))
+        pf = np.moveaxis(pf, 0, -1)
 
         # perform inverse non-uniformly FFT transformation back to 3D rectangular coordinates
         freqs = m_reshape(self._precomp["fourier_pts"], (3, n_r * n_theta * n_phi))
-        x = np.zeros((n_data, self.sz[0], self.sz[1], self.sz[2]), dtype=v.dtype)
-        for isample in range(0, n_data):
-            x[isample] = np.real(anufft(pf[:, isample], freqs, self.sz))
+        x = anufft(pf, freqs, self.sz, real=True)
 
         # Roll, return the x with the last three dimensions as self.sz
         # Higher dimensions should be like v.
@@ -300,9 +299,7 @@ class FFBBasis3D(FBBasis3D):
         n_theta = np.size(self._precomp["ang_theta_wtd"], 0)
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pf = np.zeros((n_data, n_theta * n_phi * n_r), dtype=complex)
-        for isample in range(0, n_data):
-            pf[isample] = nufft(x[isample], self._precomp["fourier_pts"])
+        pf = nufft(x, self._precomp["fourier_pts"])
 
         pf = m_reshape(pf.T, (n_theta, n_phi * n_r * n_data))
 
