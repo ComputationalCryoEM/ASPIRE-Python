@@ -208,6 +208,7 @@ class RotCov2D:
         do_refl=True,
         noise_var=1,
         covar_est_opt=None,
+        make_psd=False,
     ):
         """
         Calculate the covariance matrix from the expansion coefficients and CTF information.
@@ -220,6 +221,7 @@ class RotCov2D:
         :param noise_var: The estimated variance of noise. The value should be zero for `coeffs`
             from clean images of simulation data.
         :param covar_est_opt: The optimization parameter list for obtaining the Cov2D matrix.
+        :param make_psd: If True, make the covariance matrix positive semidefinite
         :return: The basis coefficients of the covariance matrix in
             the form of cell array representing a block diagonal matrix. These
             block diagonal matrices are implemented as BlkDiagMatrix instances.
@@ -339,6 +341,9 @@ class RotCov2D:
         logger.info("Check positive semidefinite property of covariance in Cov2D.")
         if not covar_coeff.check_psd_matrix():
             logger.warning("Matrices are not positive semidefinite.")
+            if make_psd:
+                logger.info("Convert matrices to positive semidefinite.")
+                covar_coeff = covar_coeff.make_psd_matrix()
 
         return covar_coeff
 
@@ -649,7 +654,9 @@ class BatchedRotCov2D(RotCov2D):
 
         return mean_coeff
 
-    def get_covar(self, noise_var=1, mean_coeff=None, covar_est_opt=None):
+    def get_covar(
+        self, noise_var=1, mean_coeff=None, covar_est_opt=None, make_psd=False
+    ):
         """
         Calculate the block diagonal covariance matrix in the basis
         coefficients.
@@ -676,6 +683,7 @@ class BatchedRotCov2D(RotCov2D):
               `1e-12`).
             - 'precision': Precision of conjugate gradient algorithm (see
               documentation for `conj_grad`, default `'float64'`)
+        :param make_psd: If True, make the covariance matrix positive semidefinite
         :return: The block diagonal matrix containing the basis coefficients (in
         `self.basis`) for the estimated covariance matrix. These are
         implemented using `BlkDiagMatrix`.
@@ -733,6 +741,9 @@ class BatchedRotCov2D(RotCov2D):
         )
         if not covar_coeff.check_psd_matrix():
             logger.warning("Matrices are not positive semidefinite.")
+            if make_psd:
+                logger.info("Convert matrices to positive semidefinite.")
+                covar_coeff = covar_coeff.make_psd_matrix()
 
         return covar_coeff
 

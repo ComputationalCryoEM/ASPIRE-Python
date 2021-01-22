@@ -7,6 +7,7 @@ import numpy as np
 from numpy.linalg import norm, solve
 from scipy.linalg import block_diag
 
+from aspire.utils import psd_mat
 from aspire.utils.cell import Cell2D
 
 
@@ -678,6 +679,21 @@ class BlkDiagMatrix:
             [np.linalg.eigvals(mat).flatten() for mat in self.data]
         )
         return np.alltrue(eigenvalues > 0.0)
+
+    def make_psd_matrix(self):
+        """
+        Convert all submatrices to positive semidefinite
+
+        :return: The BlkDiagMatrix instance with all matrices of
+            non-negative eigenvalues.
+        """
+
+        C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+
+        for i in range(self.nblocks):
+            C[i] = psd_mat(self[i])
+
+        return C
 
     @staticmethod
     def __check_square(shp):

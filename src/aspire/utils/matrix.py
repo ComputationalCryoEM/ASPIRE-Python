@@ -299,6 +299,21 @@ def make_symmat(A):
     return 0.5 * (A + A.T)
 
 
+def psd_mat(A):
+    """
+    Make a matrix positive semi-definite
+
+    This is the simplest way by setting negative eigenvalues to zero.
+    :param A: A matrix.
+    :return: The positive semi-definite matrix
+    """
+    B = make_symmat(A)
+    W, V = eigh(B)
+    W[W < 0.0] = 0.0
+
+    return V @ np.diag(W) @ np.linalg.inv(V)
+
+
 def anorm(x, axes=None):
     """
     Calculate array norm along given axes

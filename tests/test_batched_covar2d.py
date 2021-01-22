@@ -19,7 +19,12 @@ class BatchedRotCov2DTestCase(TestCase):
         ]
         self.dtype = np.float32
         self.noise_var = 0.1848
-        noise_filter = ScalarFilter(dim=2, value=self.noise_var)
+
+        # Initial noise filter to generate noise images.
+        # Noise variance is set to a value far away that is used to calculate
+        # covariance matrix and CWF coefficients in order to check the function
+        # for rebuilding positive definite covariance matrix.
+        noise_filter = ScalarFilter(dim=2, value=self.noise_var * 0.001)
 
         self.src = Simulation(
             L, n, unique_filters=filters, dtype=self.dtype, noise_filter=noise_filter
@@ -145,6 +150,7 @@ class BatchedRotCov2DTestCase(TestCase):
             ctf_fb=self.ctf_fb,
             ctf_idx=self.ctf_idx,
             noise_var=self.noise_var,
+            make_psd=True,
         )
 
         coeff_cov2d = self.cov2d.get_cwf_coeffs(
@@ -158,7 +164,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
         # Calculate CWF coefficients using Batched Cov2D class
         mean_bcov2d = self.bcov2d.get_mean()
-        covar_bcov2d = self.bcov2d.get_covar(noise_var=self.noise_var)
+        covar_bcov2d = self.bcov2d.get_covar(noise_var=self.noise_var, make_psd=True)
 
         coeff_bcov2d = self.bcov2d.get_cwf_coeffs(
             self.coeff,
@@ -172,8 +178,6 @@ class BatchedRotCov2DTestCase(TestCase):
             self.blk_diag_allclose(
                 coeff_cov2d,
                 coeff_bcov2d,
-                # Note, the Batched class has reduced resolution,
-                #  compared to the non batched method.
                 atol=utest_tolerance(self.dtype),
             )
         )
