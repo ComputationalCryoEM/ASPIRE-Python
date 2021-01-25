@@ -546,7 +546,7 @@ class ImageSource:
         :param overwrite: Option to overwrite the output MRCS files.
         """
         logger.info("save metadata into STAR file")
-        mrcs_filenames = self.save_metadata(
+        filename_indices = self.save_metadata(
             starfile_filepath,
             new_mrcs=True,
             batch_size=batch_size,
@@ -556,7 +556,7 @@ class ImageSource:
         logger.info("save images into MRCS file")
         self.save_images(
             starfile_filepath,
-            mrcs_filenames=mrcs_filenames,
+            filename_indices=filename_indices,
             batch_size=batch_size,
             overwrite=overwrite,
         )
@@ -637,7 +637,7 @@ class ImageSource:
         return mrcs_filenames
 
     def save_images(
-        self, starfile_filepath, mrcs_filenames=None, batch_size=512, overwrite=False
+        self, starfile_filepath, filename_indices=None, batch_size=512, overwrite=False
     ):
 
         """
@@ -645,7 +645,7 @@ class ImageSource:
 
         Note that .mrcs files are saved at the same location as the STAR file.
 
-        :param mrcs_filenames: Filename list for save all images
+        :param filename_indices: Filename list for save all images
         :param starfile_filepath: Path to STAR file where we want to save image_source
         :param batch_size: Batch size of images to query from the `ImageSource` object.
             if `save_mode` is not `single`, images in the same batch will save to one MRCS file.
@@ -653,12 +653,12 @@ class ImageSource:
         :return: None
         """
 
-        if mrcs_filenames is None:
+        if filename_indices is None:
             logger.info("No image filenames are specified. Images are not saved.")
             return
 
         # get the save_mode from the file names
-        unique_filename = set(mrcs_filenames)
+        unique_filename = set(filename_indices)
         save_mode = None
         if len(unique_filename) == 1:
             save_mode = "single"
@@ -668,7 +668,7 @@ class ImageSource:
 
             # First, construct name for mrc file
             fdir = os.path.dirname(starfile_filepath)
-            mrcs_filepath = os.path.join(fdir, mrcs_filenames[0])
+            mrcs_filepath = os.path.join(fdir, filename_indices[0])
 
             # Open new MRC file
             with mrcfile.new_mmap(
@@ -710,7 +710,7 @@ class ImageSource:
                 num = i_end - i_start
 
                 mrcs_filepath = os.path.join(
-                    os.path.dirname(starfile_filepath), mrcs_filenames[i_start]
+                    os.path.dirname(starfile_filepath), filename_indices[i_start]
                 )
 
                 logger.info(
