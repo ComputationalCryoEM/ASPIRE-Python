@@ -299,7 +299,7 @@ def make_symmat(A):
     return 0.5 * (A + A.T)
 
 
-def psd_mat(A):
+def make_psd(A):
     """
     Make a matrix positive semi-definite
 
@@ -311,7 +311,7 @@ def psd_mat(A):
     W, V = eigh(B)
     W[W < 0.0] = 0.0
 
-    return V @ np.diag(W) @ np.linalg.inv(V)
+    return V @ np.diag(W) @ np.transpose(V)
 
 
 def anorm(x, axes=None):
