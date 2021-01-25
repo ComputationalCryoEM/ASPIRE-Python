@@ -590,7 +590,7 @@ class ImageSource:
             axis=1,
         )
 
-        mrcs_filenames = None
+        filename_indices = None
 
         with open(starfile_filepath, "w") as f:
             if new_mrcs:
@@ -626,15 +626,15 @@ class ImageSource:
                             ]
                         )
 
-                mrcs_filenames = [
-                    df["_rlnImageName"][i].split("@")[1] for i in range(self.n)
-                ]
+            filename_indices = [
+                df["_rlnImageName"][i].split("@")[1] for i in range(self.n)
+            ]
 
             # initial the star file object and save it
             starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
             starfile.save(f)
 
-        return mrcs_filenames
+        return filename_indices
 
     def save_images(
         self, starfile_filepath, filename_indices=None, batch_size=512, overwrite=False
