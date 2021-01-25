@@ -548,7 +548,7 @@ class ImageSource:
         logger.info("save metadata into STAR file")
         mrcs_filenames = self.save_metadata(
             starfile_filepath,
-            save_images=True,
+            new_mrcs=True,
             batch_size=batch_size,
             save_mode=save_mode,
         )
@@ -562,14 +562,14 @@ class ImageSource:
         )
 
     def save_metadata(
-        self, starfile_filepath, save_images=True, batch_size=512, save_mode=None
+        self, starfile_filepath, new_mrcs=True, batch_size=512, save_mode=None
     ):
         """
         Save updated metadata to a STAR file
 
         :param starfile_filepath: Path to STAR file where we want to
             save image_source
-        :param save_images: Whether to save all images or not.
+        :param new_mrcs: Whether to save all images to new MRCS files or not.
             If True, new file names and pathes need to be created.
         :param batch_size: Batch size of images to query from the
             `ImageSource` object. Every `batch_size` rows, entries are
@@ -593,7 +593,7 @@ class ImageSource:
         mrcs_filenames = None
 
         with open(starfile_filepath, "w") as f:
-            if save_images:
+            if new_mrcs:
                 # Create a new column that we will be populating in the loop below
                 # For
                 df["_rlnImageName"] = ""
