@@ -654,8 +654,10 @@ class ImageSource:
         """
 
         if filename_indices is None:
-            logger.info("No image filenames are specified. Images are not saved.")
-            return
+            # Generate filenames from metadata
+            filename_indices = [
+                self._metadata["_rlnImageName"][i].split("@")[1] for i in range(self.n)
+            ]
 
         # get the save_mode from the file names
         unique_filename = set(filename_indices)
