@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.6.0",
+    version="0.6.2",
     data_files=[
         ("", ["src/aspire/config.ini"]),
         ("", ["src/aspire/logging.conf"]),
@@ -20,7 +20,7 @@ setup(
     long_description_content_type="text/markdown",
     license="GPLv3",
     url="https://github.com/ComputationalCryoEM/ASPIRE-Python",
-    author="Joakim Anden, Yoel Shkolnisky, Itay Sason, Robbie Brook, Vineet Bansal, Junchao Xia",
+    author="Joakim Anden, Ayelet Heimowitz, Vineet Bansal, Robbie Brook, Itay Sason, Yoel Shkolnisky, Garrett Wright, Junchao Xia",
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
@@ -39,7 +39,7 @@ setup(
         "pytest-cov",
         "scipy==1.4.0",
         "scikit-learn",
-        "scikit-image==0.14.0",
+        "scikit-image==0.16.2",
         "setuptools>=0.41",
         "sphinxcontrib-bibtex",
         "sphinx-rtd-theme>=0.4.2",

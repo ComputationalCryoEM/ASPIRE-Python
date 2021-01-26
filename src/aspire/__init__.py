@@ -10,7 +10,7 @@ from aspire.config import Config
 from aspire.exceptions import handle_exception
 
 # version in maj.min.bld format
-__version__ = "0.6.0"
+__version__ = "0.6.2"
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 config = Config(read_text(aspire, "config.ini"))

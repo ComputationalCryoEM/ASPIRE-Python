@@ -2,16 +2,16 @@ import logging
 
 import mrcfile
 import numpy as np
-from scipy.fftpack import fft2, ifft2, ifftshift
 from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import lstsq
 
 import aspire.volume
 from aspire.nufft import anufft
-from aspire.utils import anorm, ensure
+from aspire.numeric import fft, xp
+from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.fft import centered_fft2, centered_ifft2
 from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.matrix import anorm
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,9 @@ def _im_translate2(im, shifts):
         raise ValueError("The number of shifts must be 1 or match the number of images")
 
     resolution = im.res
-    grid = np.fft.ifftshift(np.ceil(np.arange(-resolution / 2, resolution / 2)))
+    grid = xp.asnumpy(
+        fft.ifftshift(xp.asarray(np.ceil(np.arange(-resolution / 2, resolution / 2))))
+    )
     om_y, om_x = np.meshgrid(grid, grid)
     phase_shifts = np.einsum("ij, k -> ijk", om_x, shifts[:, 0]) + np.einsum(
         "ij, k -> ijk", om_y, shifts[:, 1]
@@ -56,9 +58,9 @@ def _im_translate2(im, shifts):
     phase_shifts /= resolution
 
     mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
-    im_f = np.fft.fft2(im.asnumpy())
+    im_f = xp.asnumpy(fft.fft2(xp.asarray(im.asnumpy())))
     im_translated_f = im_f * mult_f
-    im_translated = np.real(np.fft.ifft2(im_translated_f))
+    im_translated = np.real(xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f))))
 
     return Image(im_translated)
 
@@ -154,6 +156,9 @@ class Image:
 
         return Image(self.data * other)
 
+    def __neg__(self):
+        return Image(-self.data)
+
     def sqrt(self):
         return np.sqrt(self.data)
 
@@ -200,7 +205,10 @@ class Image:
         mask = (np.abs(grid["x"]) < ds_res / self.res) & (
             np.abs(grid["y"]) < ds_res / self.res
         )
-        im = np.real(centered_ifft2(centered_fft2(self.data) * mask))
+        im_shifted = fft.centered_ifft2(
+            fft.centered_fft2(xp.asarray(self.data)) * xp.asarray(mask)
+        )
+        im = np.real(xp.asnumpy(im_shifted))
 
         for s in range(im_ds.shape[0]):
             interpolator = RegularGridInterpolator(
@@ -219,12 +227,13 @@ class Image:
         """
         filter_values = filter.evaluate_grid(self.res)
 
-        im_f = centered_fft2(self.data)
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data)))
+
         if im_f.ndim > filter_values.ndim:
             im_f *= filter_values
         else:
             im_f = filter_values * im_f
-        im = centered_ifft2(im_f)
+        im = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
         im = np.real(im)
 
         return Image(im)
@@ -263,13 +272,11 @@ class Image:
         shifts = shifts.astype(self.dtype)
 
         L = self.res
-        im_f = fft2(im, axes=(1, 2))
-        grid_1d = (
-            ifftshift(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
-            * 2
-            * np.pi
-            / L
+        im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))
+        grid_shifted = fft.ifftshift(
+            xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
         )
+        grid_1d = xp.asnumpy(grid_shifted) * 2 * np.pi / L
         om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing="ij")
 
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
@@ -281,7 +288,7 @@ class Image:
         )
         mult_f = np.exp(-1j * phase_shifts)
         im_translated_f = im_f * mult_f
-        im_translated = ifft2(im_translated_f, axes=(1, 2))
+        im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f)))
         im_translated = np.real(im_translated)
 
         return Image(im_translated)
@@ -316,7 +323,7 @@ class Image:
         pts_rot = np.moveaxis(pts_rot, 1, 2)
         pts_rot = m_reshape(pts_rot, (3, -1))
 
-        im_f = centered_fft2(self.data) / (L ** 2)
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L ** 2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0

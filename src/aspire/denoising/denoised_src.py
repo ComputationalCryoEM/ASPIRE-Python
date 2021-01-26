@@ -40,11 +40,13 @@ class DenoisedImageSource(ImageSource):
             start = indices.min()
         end = indices.max()
 
-        im = np.empty((self.L, self.L, len(indices)))
+        nimgs = len(indices)
+        im = np.empty((nimgs, self.L, self.L))
 
-        logger.info(f"Loading {len(indices)} images complete")
-        for istart in range(start, end, batch_size):
+        logger.info(f"Loading {nimgs} images complete")
+        for istart in range(start, end + 1, batch_size):
             imgs_denoised = self.denoiser.images(istart, batch_size)
-            im = imgs_denoised.data
+            iend = min(istart + batch_size, end + 1)
+            im[istart:iend] = imgs_denoised.data
 
         return Image(im)

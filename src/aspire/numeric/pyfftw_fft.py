@@ -4,6 +4,9 @@ from threading import Lock
 import pyfftw
 import pyfftw.interfaces.scipy_fftpack as scipy_fft
 
+from aspire.numeric.base_fft import FFT
+from aspire.utils.types import complex_type
+
 mutex = Lock()
 
 _cpu_count = os.cpu_count()
@@ -28,20 +31,20 @@ def _workers(workers):
     return workers
 
 
-class PyfftwFFT:
+class PyfftwFFT(FFT):
     """
     Define a unified wrapper class for PyFFT functions
 
     To be consistent with Scipy FFT, not all arguments are included.
     """
 
-    @staticmethod
-    def fft(a, axis=-1, workers=-1):
+    def fft(self, a, axis=-1, workers=-1):
         mutex.acquire()
 
+        comp_type = complex_type(a.dtype)
         try:
-            a_ = pyfftw.empty_aligned(a.shape, dtype="complex128")
-            b = pyfftw.empty_aligned(a.shape, dtype="complex128")
+            a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
+            b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             cls = pyfftw.FFTW(
                 a_, b, axes=(axis,), direction="FFTW_FORWARD", threads=_workers(workers)
             )
@@ -51,13 +54,13 @@ class PyfftwFFT:
 
         return b
 
-    @staticmethod
-    def ifft(a, axis=-1, workers=-1):
+    def ifft(self, a, axis=-1, workers=-1):
         mutex.acquire()
 
+        comp_type = a.dtype
         try:
-            a_ = pyfftw.empty_aligned(a.shape, dtype="complex128")
-            b = pyfftw.empty_aligned(a.shape, dtype="complex128")
+            a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
+            b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             cls = pyfftw.FFTW(
                 a_,
                 b,
@@ -71,8 +74,7 @@ class PyfftwFFT:
 
         return b
 
-    @staticmethod
-    def fft2(a, axes=(-2, -1), workers=-1):
+    def fft2(self, a, axes=(-2, -1), workers=-1):
         # This is called by ApplePicker unit test using ThreadPoolExecutor.
         #   I don't believe this pyfftw call is actually threadsafe.
         #   Holding mutex here, I have not been able to reproduce the spurious
@@ -81,9 +83,10 @@ class PyfftwFFT:
         #   presumably the parts which are IO bound.
         mutex.acquire()
 
+        comp_type = complex_type(a.dtype)
         try:
-            a_ = pyfftw.empty_aligned(a.shape, dtype="complex128")
-            b = pyfftw.empty_aligned(a.shape, dtype="complex128")
+            a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
+            b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             cls = pyfftw.FFTW(
                 a_, b, axes=axes, direction="FFTW_FORWARD", threads=_workers(workers)
             )
@@ -93,13 +96,13 @@ class PyfftwFFT:
 
         return b
 
-    @staticmethod
-    def ifft2(a, axes=(-2, -1), workers=-1):
+    def ifft2(self, a, axes=(-2, -1), workers=-1):
         mutex.acquire()
 
+        comp_type = a.dtype
         try:
-            a_ = pyfftw.empty_aligned(a.shape, dtype="complex128")
-            b = pyfftw.empty_aligned(a.shape, dtype="complex128")
+            a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
+            b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             cls = pyfftw.FFTW(
                 a_, b, axes=axes, direction="FFTW_BACKWARD", threads=_workers(workers)
             )
@@ -109,13 +112,13 @@ class PyfftwFFT:
 
         return b
 
-    @staticmethod
-    def fftn(a, axes=None, workers=-1):
+    def fftn(self, a, axes=None, workers=-1):
         mutex.acquire()
 
+        comp_type = complex_type(a.dtype)
         try:
-            a_ = pyfftw.empty_aligned(a.shape, dtype="complex128")
-            b = pyfftw.empty_aligned(a.shape, dtype="complex128")
+            a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
+            b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             cls = pyfftw.FFTW(
                 a_, b, axes=axes, direction="FFTW_FORWARD", threads=_workers(workers)
             )
@@ -125,13 +128,13 @@ class PyfftwFFT:
 
         return b
 
-    @staticmethod
-    def ifftn(a, axes=None, workers=-1):
+    def ifftn(self, a, axes=None, workers=-1):
         mutex.acquire()
 
+        comp_type = a.dtype
         try:
-            a_ = pyfftw.empty_aligned(a.shape, dtype="complex128")
-            b = pyfftw.empty_aligned(a.shape, dtype="complex128")
+            a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
+            b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             cls = pyfftw.FFTW(
                 a_, b, axes=axes, direction="FFTW_BACKWARD", threads=_workers(workers)
             )
@@ -141,10 +144,8 @@ class PyfftwFFT:
 
         return b
 
-    @staticmethod
-    def fftshift(a, axes=None):
+    def fftshift(self, a, axes=None):
         return scipy_fft.fftshift(a, axes=axes)
 
-    @staticmethod
-    def ifftshift(a, axes=None):
+    def ifftshift(self, a, axes=None):
         return scipy_fft.ifftshift(a, axes=axes)

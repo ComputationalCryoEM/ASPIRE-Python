@@ -130,9 +130,7 @@ class DenoiserCov2D(Denoiser):
 
         # Initialize the rotationally invariant covariance matrix of 2D images
         # A fixed batch size is used to go through each image
-        self.cov2d = BatchedRotCov2D(
-            self.src, self.basis, batch_size=batch_size, dtype=self.dtype
-        )
+        self.cov2d = BatchedRotCov2D(self.src, self.basis, batch_size=batch_size)
 
         default_opt = {
             "shrinker": "frobenius_norm",
