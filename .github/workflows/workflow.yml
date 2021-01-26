@@ -1,4 +1,4 @@
-name: Python package
+name: ASPIRE Python package
 
 on:
   - push
@@ -10,10 +10,11 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
+        pyenv: [stable, dev]
 
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }} ${{ matrix.pyenv }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
@@ -22,4 +23,4 @@ jobs:
         python -m pip install --upgrade pip
         pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox
+      run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
