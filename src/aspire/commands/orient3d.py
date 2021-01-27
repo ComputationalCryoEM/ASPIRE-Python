@@ -48,4 +48,4 @@ def orient3d(data_folder, starfile_in, starfile_out, pixel_size, max_rows):
     logger.info("Save Estimate rotation matrices.")
     orient_est_src = orient_est.save_rotations()
 
-    orient_est_src.save(starfile_out)
+    orient_est_src.save_metadata(starfile_out, new_mrcs=False)
