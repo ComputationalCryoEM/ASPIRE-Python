@@ -408,11 +408,13 @@ class CtfEstimator:
         background[np.where(radii <= max_col + 2)] = signal[
             np.where(radii <= max_col + 2)
         ]
+        background = Image(background)
 
         signal = signal - background
-        signal = np.where(signal < 0, 0, signal)
+        signal_data = signal.asnumpy()
+        signal = Image(np.where(signal_data < 0, 0, signal_data))
 
-        return signal, Image(background)
+        return signal, background
 
     def ctf_PCA(self, signal, pixel_size, g_min, g_max, w):
         """
@@ -424,7 +426,7 @@ class CtfEstimator:
         :param w: ratio
         """
 
-        N = signal.shape[0]
+        N = signal.res # check if should be self.psd_size or something.
         center = N // 2
         [X, Y] = np.meshgrid(
             np.arange(0 - center, N - center) / N, np.arange(0 - center, N - center) / N
@@ -436,6 +438,7 @@ class CtfEstimator:
 
         [X, Y] = np.meshgrid(np.arange(-center, center), np.arange(-center, center))
 
+        signal = signal.asnumpy()
         signal = signal - np.min(np.ravel(signal))
 
         rad_sq_min = N * pixel_size / g_min
@@ -443,17 +446,18 @@ class CtfEstimator:
 
         min_limit = r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
         signal = np.where(r_ctf < min_limit, 0, signal)
+
         max_limit = r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
         signal = np.where(r_ctf > max_limit, 0, signal)
 
         moment_02 = np.multiply(Y ** 2, signal)
-        moment_02 = np.sum(moment_02, axis=(0, 1))
+        moment_02 = np.sum(moment_02, axis=(-1, -2))
 
         moment_11 = np.multiply(np.multiply(Y, X), signal)
-        moment_11 = np.sum(moment_11, axis=(0, 1))
+        moment_11 = np.sum(moment_11, axis=(-1, -2))
 
         moment_20 = np.multiply(X ** 2, signal)
-        moment_20 = np.sum(moment_20, axis=(0, 1))
+        moment_20 = np.sum(moment_20, axis=(-1, -2))
 
         moment_mat = np.zeros((2, 2))
         moment_mat[0, 0] = moment_20

@@ -206,7 +206,8 @@ def estimate_ctf(
         with mrcfile.new(
             output_dir + "/" + os.path.splitext(name)[0] + "_noise.mrc", overwrite=True
         ) as mrc:
-            mrc.set_data(np.float32(background_2d))
+            print(f"background_2d {type(background_2d)} {background_2d.shape}")
+            mrc.set_data(background_2d[0].astype(np.float32))
             mrc.voxel_size = pixel_size
             mrc.close()
 
@@ -222,9 +223,10 @@ def estimate_ctf(
             + amplitude_contrast
         )
         ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
+        print(f"ctf_signal.shape {ctf_signal.shape} ctf_im.shape {ctf_im.shape} signal.shape {signal.shape}")
         ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
         ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal[
-            ctf_im.shape[0] // 2 + 1 :, :
+            :, :, ctf_im.shape[0] // 2 + 1
         ]
 
         with mrcfile.new(
