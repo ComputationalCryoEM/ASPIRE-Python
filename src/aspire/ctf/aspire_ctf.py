@@ -13,6 +13,7 @@ from scipy.optimize import linprog
 
 from aspire.image import Image
 
+
 @numba.vectorize([numba.float64(numba.complex128), numba.float32(numba.complex64)])
 def abs2(x):
     return x.real ** 2 + x.imag ** 2
@@ -163,11 +164,11 @@ class CtfEstimator:
         :return:
         """
 
-        k, l = np.meshgrid(np.arange(N), np.arange(N))
+        k, el = np.meshgrid(np.arange(N), np.arange(N))
 
-        denom = np.pi * (k - l)
+        denom = np.pi * (k - el)
         denom = denom + np.eye(N)
-        phi_R = np.divide(np.sin(np.pi * R * (k - l)), denom)
+        phi_R = np.divide(np.sin(np.pi * R * (k - el)), denom)
         np.fill_diagonal(phi_R, 1)  # absolute difference from Matlab 10^-18
 
         tapers_val, data_tapers = npla.eigh(phi_R)
@@ -220,7 +221,7 @@ class CtfEstimator:
         thon_rings = np.fft.fftshift(
             blocks_mt
         )  # max difference 10^-13, max relative difference 10^-14
-        print('thon_rings', thon_rings)
+
         return Image(thon_rings)
 
     def ctf_elliptical_average(self, ffbbasis, thon_rings, k):
@@ -231,10 +232,9 @@ class CtfEstimator:
         :param k:
         :return: PSD and noise as 2-tuple of numpy arrays.
         """
-        #RCOPT, come back and change the indices for this method
+        # RCOPT, come back and change the indices for this method
         coeffs_s = ffbbasis.evaluate_t(thon_rings).T
         coeffs_n = coeffs_s.copy()
-        print('coeffs_s.shape', coeffs_s.shape)
 
         coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 1)] = 0
         if k == 0:
@@ -270,11 +270,8 @@ class CtfEstimator:
             signal = thon_rings[..., m:]
             signal = np.ravel(signal)
             N = element_no - m
-            print("m, N, element_no", m, N, element_no)
 
             f = np.concatenate((np.ones((N)), -1 * np.ones((N))), axis=0)
-            lb = np.concatenate((signal, -1 * np.inf * np.ones((N))), axis=0)
-            ub = np.concatenate((signal, np.inf * np.ones((N))), axis=0)
 
             superposition_condition = np.concatenate(
                 (-1 * np.eye(N), np.eye(N)), axis=1
@@ -309,7 +306,6 @@ class CtfEstimator:
                 for i in range(signal.shape[0])
             ]
             x_bound = np.asarray(x_bound_lst, A.dtype)
-            print("x_bound.shape", x_bound.shape)
             x_bound = np.concatenate((x_bound[:, :2], x_bound[:, 2:]), axis=0)
 
             x = linprog(f, A_ub=A, b_ub=np.zeros((A.shape[0])), bounds=x_bound)
@@ -426,7 +422,7 @@ class CtfEstimator:
         :param w: ratio
         """
 
-        N = signal.res # check if should be self.psd_size or something.
+        N = signal.res  # check if should be self.psd_size or something.
         center = N // 2
         [X, Y] = np.meshgrid(
             np.arange(0 - center, N - center) / N, np.arange(0 - center, N - center) / N
@@ -434,7 +430,6 @@ class CtfEstimator:
 
         rb = np.sqrt(np.square(X) + np.square(Y))
         r_ctf = rb * (10 / pixel_size)
-        theta = np.arctan2(Y, X)
 
         [X, Y] = np.meshgrid(np.arange(-center, center), np.arange(-center, center))
 
@@ -517,7 +512,6 @@ class CtfEstimator:
             r, 4
         ) / 2 - amplitude_contrast * np.ones(r.shape)
 
-        print("signal.shape gd", signal.shape)
         N = signal.shape[1]
         center = N // 2
 
@@ -658,7 +652,6 @@ class CtfEstimator:
         """
 
         N = signal.shape[0]
-        center = N // 2
 
         derivatives = np.zeros((8, signal.shape[0], signal.shape[1]))
         derivatives[0, 1:, :] = signal[: N - 1, :] - signal

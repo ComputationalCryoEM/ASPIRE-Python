@@ -8,7 +8,6 @@ import numpy as np
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.ctf.aspire_ctf import CtfEstimator
 
-
 logger = logging.getLogger("aspire")
 
 
@@ -74,10 +73,6 @@ def estimate_ctf(
 
     ffbbasis = FFBBasis2D((psd_size, psd_size), 2)
 
-    defocus = np.zeros((3, len(file_names)))
-
-    atan_ampcon = np.arctan(amplitude_contrast)
-
     for name in file_names:
         with mrcfile.open(
             os.path.join(data_folder, name), mode="r+", permissive=True
@@ -88,7 +83,7 @@ def estimate_ctf(
 
         micrograph = np.double(micrograph)
 
-#RCOPT?        micrograph = np.transpose(micrograph)
+        # RCOPT?        micrograph = np.transpose(micrograph)
 
         micrograph_blocks = ctf_object.ctf_preprocess(micrograph, psd_size)
 
@@ -103,7 +98,6 @@ def estimate_ctf(
         thon_rings, g_out = ctf_object.ctf_elliptical_average(
             ffbbasis, signal_observed, 0
         )  # absolute differenceL 10^-14. Relative error: 10^-7
-        print("thon_rings.shape", thon_rings.shape)
         signal_1d, background_1d = ctf_object.ctf_background_subtract_1d(thon_rings)
 
         if corr:
@@ -124,24 +118,20 @@ def estimate_ctf(
             signal, additional_background = ctf_object.ctf_elliptical_average(
                 ffbbasis, np.sqrt(signal), 2
             )
-            print("signal.shape corr", signal.shape)
         else:
             signal, background_2d = ctf_object.ctf_background_subtract_2d(
                 signal_observed, background_1d, 12
             )
-            print("signal.shape 2", signal.shape)
             ratio = ctf_object.ctf_PCA(
                 signal_observed, pixel_size, g_min, g_max, amplitude_contrast
             )
             signal, additional_background = ctf_object.ctf_elliptical_average(
                 ffbbasis, np.sqrt(signal), 2
             )
-            zero_map = ctf_object.ctf_locate_minima(signal)
-            print("signal.shape 3", signal.shape)
 
         if additional_background.shape[-1] == 1:
             additional_background = np.squeeze(additional_background, -1)
-        print("type", type(background_2d), type(additional_background))
+
         background_2d = background_2d + additional_background
 
         initial_df1 = (avg_defocus * 2) / (1 + ratio)
@@ -156,11 +146,6 @@ def estimate_ctf(
         rb = np.sqrt(np.square(X) + np.square(Y))
         r_ctf = rb * (10 / pixel_size)
         theta = np.arctan2(Y, X)
-
-        print("signal pre sqz", signal.shape)
-        #signal = np.squeeze(signal)
-        print("signal post sqz", signal.shape)
-        # signal = np.divide(signal, 2*np.pi*r_ctf)
 
         angle = -75
         cc_array = np.zeros((6, 4))
@@ -200,13 +185,9 @@ def estimate_ctf(
         ctf_object.set_angle(cc_array[ml, 2])
         ctf_object.generate_ctf()
 
-        print('noise_image types', type(signal_observed), type(signal))
-        noise_image = np.subtract(signal_observed, signal)
-
         with mrcfile.new(
             output_dir + "/" + os.path.splitext(name)[0] + "_noise.mrc", overwrite=True
         ) as mrc:
-            print(f"background_2d {type(background_2d)} {background_2d.shape}")
             mrc.set_data(background_2d[0].astype(np.float32))
             mrc.voxel_size = pixel_size
             mrc.close()
@@ -223,7 +204,6 @@ def estimate_ctf(
             + amplitude_contrast
         )
         ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
-        print(f"ctf_signal.shape {ctf_signal.shape} ctf_im.shape {ctf_im.shape} signal.shape {signal.shape}")
         ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
         ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal[
             :, :, ctf_im.shape[0] // 2 + 1
