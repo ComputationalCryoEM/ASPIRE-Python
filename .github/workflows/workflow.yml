@@ -1,4 +1,4 @@
-name: ASPIRE Python package
+name: ASPIRE Python Pip CI
 
 on:
   - push
