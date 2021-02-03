@@ -8,6 +8,7 @@ import numpy as np
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.ctf import CtfEstimator
 
+
 def estimate_ctf(
     data_folder,
     pixel_size,

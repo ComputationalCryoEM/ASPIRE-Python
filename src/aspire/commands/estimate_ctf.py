@@ -6,6 +6,7 @@ logger = logging.getLogger("aspire")
 
 from aspire import ctf
 
+
 @click.command()
 @click.option("--data_folder", default=None, help="Path to mrc or mrcs files")
 @click.option("--pixel_size", default=1, type=float, help="Pixel size in A")
@@ -38,7 +39,6 @@ from aspire import ctf
     default=False,
     help="Set dtypes and linear programming methods to be more deterministic in exchange for speed.",
 )
-
 def estimate_ctf(
     data_folder,
     pixel_size,
@@ -51,13 +51,13 @@ def estimate_ctf(
     g_max,
     corr,
     output_dir,
-    repro
+    repro,
 ):
     """
     Given paramaters estimates CTF from experimental data
     and returns CTF as a mrc file.
 
-    This is a Click command line interface wrapper for 
+    This is a Click command line interface wrapper for
     the aspire.ctf module.
     """
     return ctf.estimate_ctf(
@@ -72,5 +72,5 @@ def estimate_ctf(
         g_max,
         corr,
         output_dir,
-        repro
+        repro,
     )
