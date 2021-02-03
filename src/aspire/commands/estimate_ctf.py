@@ -38,6 +38,8 @@ logger = logging.getLogger("aspire")
 )
 @click.option("--corr", default=1, type=float, help="Select method")
 @click.option("--output_dir", default="results", help="Path to output files")
+@click.option("--repro/--no-repro", default=False, help="Set dtypes and linear programming methods to be more deterministic in exchange for speed.")
+
 def estimate_ctf(
     data_folder,
     pixel_size,
@@ -50,11 +52,19 @@ def estimate_ctf(
     g_max,
     corr,
     output_dir,
+    repro
 ):
     """
     Given paramaters estimates CTF from experimental data
     and returns CTF as a mrc file.
     """
+
+    dtype = np.float32
+    linprog_method = 'interior-point'
+    if repro:
+        dtype = np.float64
+        linprog_method = 'simplex'
+        
     dir_content = os.scandir(data_folder)
 
     mrc_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrc"]
@@ -68,11 +78,12 @@ def estimate_ctf(
     lmbd = 1.22639 / np.sqrt(voltage * 1000 + 0.97845 * np.square(voltage))
 
     ctf_object = CtfEstimator(
-        pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers
+        pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
     )
 
-    # Note for repro debugging, use doubles
-    ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=np.float64)
+    # Note for repro debugging, suggest use of doubles,
+    #   closer to original code.
+    ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
 
     for name in file_names:
         with mrcfile.open(
@@ -80,11 +91,8 @@ def estimate_ctf(
         ) as mrc:
             micrograph = mrc.data
 
-        micrograph = micrograph.astype("float")
-
-        micrograph = np.double(micrograph)
-
-        # RCOPT?        micrograph = np.transpose(micrograph)
+        # Try to match dtype used in Basis instance
+        micrograph = micrograph.astype(dtype, copy=False)
 
         micrograph_blocks = ctf_object.ctf_preprocess(micrograph, psd_size)
 
@@ -92,31 +100,18 @@ def estimate_ctf(
             psd_size, (2 * num_tapers) / psd_size, num_tapers
         )
 
-        # okay, tapers_1d matches identically
-        # print(f"num_tapers {num_tapers}, tapers_1d {tapers_1d}")
         signal_observed = ctf_object.ctf_estimate_psd(
             micrograph_blocks, tapers_1d, num_tapers
         )
-        # signal observed is correct to last digit up to transpose, great
-        #print(f"signal_observed: {signal_observed.asnumpy()}")
                 
         thon_rings, g_out = ctf_object.ctf_elliptical_average(
             ffbbasis, signal_observed, 0
         )  # absolute differenceL 10^-14. Relative error: 10^-7
 
-        print("Force loading thon_rings")
-        from aspire.image import Image
-        thon_rings = np.load("bg_sub_1d-thon_rings.npy")
-        thon_rings = Image(np.transpose(thon_rings, axes=(2, 1, 0)))        
-        print('XXX sum', np.sum(thon_rings))
-        print(f"background_subtract_1d input thon_rings {thon_rings}")
-        # linprog_method='simplex' will deterministically repro old results in exchange for speed.
-        #signal_1d, background_1d = ctf_object.ctf_background_subtract_1d_legacy(thon_rings.asnumpy().T, linprog_method='simplex')
-        signal_1d, background_1d = ctf_object.ctf_background_subtract_1d(thon_rings, linprog_method='simplex')
-        #signal_1d, background_1d = ctf_object.ctf_background_subtract_1d(thon_rings)
-        print(f"corr signal_1d {signal_1d}");
-        print(f"corr background_1d {background_1d}")
-        # okay
+        # Adding optional argument: linprog_method='simplex',
+        # will deterministically repro results in exchange for speed.
+        # This is controlled with `repro` cli argument.        
+        signal_1d, background_1d = ctf_object.ctf_background_subtract_1d(thon_rings, linprog_method=linprog_method)
         
         if corr:
             avg_defocus, low_freq_skip = ctf_object.ctf_opt1d(
@@ -127,23 +122,20 @@ def estimate_ctf(
                 amplitude_contrast,
                 signal_observed.shape[-1],
             )
-            print("avg_defocus", avg_defocus, "low_freq_skip", low_freq_skip)
+
+            #print('background_1d', background_1d.shape)
             signal, background_2d = ctf_object.ctf_background_subtract_2d(                
                 signal_observed, background_1d, low_freq_skip
             )
-            print("sum signal (bg 2d)", np.sum(signal.asnumpy()))
-            print("sum background_2d (bg 2d)", np.sum(background_2d.asnumpy()))
-            # match
 
             ratio = ctf_object.ctf_PCA(
                 signal_observed, pixel_size, g_min, g_max, amplitude_contrast
             )
-            #match print("ratio", ratio)
-            
+
             signal, additional_background = ctf_object.ctf_elliptical_average(
-                ffbbasis, np.sqrt(signal), 2
+                ffbbasis, signal.sqrt(), 2
             )
-            #reasonable print('ZZZ', np.sum(signal.asnumpy()), np.sum(additional_background.asnumpy()))
+
         else:
             signal, background_2d = ctf_object.ctf_background_subtract_2d(
                 signal_observed, background_1d, 12
@@ -152,16 +144,8 @@ def estimate_ctf(
                 signal_observed, pixel_size, g_min, g_max, amplitude_contrast
             )
             signal, additional_background = ctf_object.ctf_elliptical_average(
-                ffbbasis, np.sqrt(signal), 2
+                ffbbasis, signal.sqrt(), 2
             )
-
-        print(f"additional_background.shape {additional_background.shape}")
-        print(f"np.sum(additional_background)", np.sum(additional_background.asnumpy()))
-        print(f"additional_background", additional_background.asnumpy())
-        #additional_background.data = np.transpose(additional_background.data, (0,2,1))
-        
-        # if additional_background.shape[0] == 1:
-        #     additional_background = np.squeeze(additional_background, 0)
 
         background_2d = background_2d + additional_background
 
@@ -181,8 +165,6 @@ def estimate_ctf(
         angle = -75
         cc_array = np.zeros((6, 4))
         for a in range(0, 6):
-            #print(f"a {a}: signal.asnumpy() {signal.asnumpy()}, initial_df1 {initial_df1}, initial_df2 {initial_df2}, angle + np.multiply(a, 30) {angle + np.multiply(a, 30)}, r_ctf {r_ctf}, theta {theta}, pixel_size {pixel_size}, g_min {g_min}, g_max {g_max}, amplitude_contrast {amplitude_contrast}, lmbd {lmbd}, cs {cs}")
-            print(f"a {a}: signal.asnumpy() {signal.asnumpy()}")
             df1, df2, angle_ast, p = ctf_object.ctf_gd(
                 signal,
                 initial_df1,
@@ -197,7 +179,7 @@ def estimate_ctf(
                 lmbd,
                 cs,
             )
-            print(f"a: {a}\tdf1 {df1}")            
+
             cc_array[a, 0] = df1
             cc_array[a, 1] = df2
             cc_array[a, 2] = angle_ast
