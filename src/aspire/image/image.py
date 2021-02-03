@@ -175,7 +175,14 @@ class Image:
         return Image(-self.data)
 
     def sqrt(self):
-        return np.sqrt(self.data)
+        return Image(np.sqrt(self.data))
+
+    def transpose(self):
+        return Image(np.transpose(self.data, (0, 2, 1)))
+
+    @property
+    def T(self):
+        return self.transpose()
 
     def __repr__(self):
         return f"{self.n_images} images of size {self.res}x{self.res}"

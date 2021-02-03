@@ -16,6 +16,13 @@ class ImageTestCase(TestCase):
         self.im_np = misc.face(gray=True).astype(np.float64)[np.newaxis, :768, :768]
         # Independent Image object for testing Image methods
         self.im = Image(misc.face(gray=True).astype(np.float64)[:768, :768])
+        # Construct a simple stack of Images
+        self.n = 3
+        self.ims_np = np.empty((3, *self.im_np.shape[1:]), dtype=self.im_np.dtype)
+        for i in range(self.n):
+            self.ims_np[i] = self.im_np * (i + 1) / float(self.n)
+        # Independent Image stack object for testing Image methods
+        self.ims = Image(self.ims_np)
 
     def tearDown(self):
         pass
@@ -45,3 +52,32 @@ class ImageTestCase(TestCase):
         src = ArrayImageSource(self.im)
         im = src.images(start=0, num=np.inf)
         self.assertTrue(np.allclose(im.asnumpy(), self.im_np))
+
+    def testImageSqrt(self):
+        self.assertTrue(np.allclose(self.im.sqrt().asnumpy(), np.sqrt(self.im_np)))
+
+        self.assertTrue(np.allclose(self.ims.sqrt().asnumpy(), np.sqrt(self.ims_np)))
+
+    def testImageTranspose(self):
+        self.assertTrue(
+            np.allclose(
+                self.im.transpose().asnumpy(), np.transpose(self.im_np, (0, 2, 1))
+            )
+        )
+
+        self.assertTrue(
+            np.allclose(self.im.T.asnumpy(), np.transpose(self.im_np, (0, 2, 1)))
+        )
+
+        # This is equivalent to checking np.tranpose(..., (0, 2, 1))
+        for i in range(self.ims_np.shape[0]):
+            self.assertTrue(np.allclose(self.ims.transpose()[i], self.ims_np[i].T))
+
+            self.assertTrue(np.allclose(self.ims.T[i], self.ims_np[i].T))
+
+            # Check against the contruction.
+            self.assertTrue(
+                np.allclose(
+                    self.ims.transpose()[i], self.im_np[0].T * (i + 1) / float(self.n)
+                )
+            )
