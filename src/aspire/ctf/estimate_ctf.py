@@ -8,6 +8,8 @@ import numpy as np
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.ctf import CtfEstimator
 
+logger = logging.getLogger(__name__)
+
 
 def estimate_ctf(
     data_folder,
@@ -21,18 +23,15 @@ def estimate_ctf(
     g_max,
     corr,
     output_dir,
-    repro=False,
+    dtype=np.float32,
 ):
     """
     Given paramaters estimates CTF from experimental data
     and returns CTF as a mrc file.
     """
 
-    dtype = np.float32
-    linprog_method = "interior-point"
-    if repro:
-        dtype = np.float64
-        linprog_method = "simplex"
+    dtype = np.dtype(dtype)
+    assert dtype in (np.float32, np.float64)
 
     dir_content = os.scandir(data_folder)
 
@@ -77,11 +76,10 @@ def estimate_ctf(
             ffbbasis, signal_observed, 0
         )  # absolute differenceL 10^-14. Relative error: 10^-7
 
-        # Adding optional argument: linprog_method='simplex',
-        # will deterministically repro results in exchange for speed.
-        # This is controlled with `repro` cli argument.
+        # Optionally changing to: linprog_method='simplex',
+        # will more deterministically repro results in exchange for speed.
         signal_1d, background_1d = ctf_object.ctf_background_subtract_1d(
-            thon_rings, linprog_method=linprog_method
+            thon_rings, linprog_method="interior-point"
         )
 
         if corr:

@@ -5,6 +5,7 @@ Created on Sep 10, 2019
 Integrated into ASPIRE by Garrett Wright Feb 2021.
 """
 
+import logging
 import os
 
 import numpy as np
@@ -14,6 +15,8 @@ from scipy.optimize import linprog
 
 from aspire.image import Image
 from aspire.utils import complex_type
+
+logger = logging.getLogger(__name__)
 
 
 def abs2(x):

@@ -35,9 +35,9 @@ from aspire import ctf
 @click.option("--corr", default=1, type=float, help="Select method")
 @click.option("--output_dir", default="results", help="Path to output files")
 @click.option(
-    "--repro/--no-repro",
-    default=False,
-    help="Set dtypes and linear programming methods to be more deterministic in exchange for speed.",
+    "--dtype",
+    default="float32",
+    help="Numpy dtype to use in computation.  Example: 'float32' or 'float64'.",
 )
 def estimate_ctf(
     data_folder,
@@ -51,7 +51,7 @@ def estimate_ctf(
     g_max,
     corr,
     output_dir,
-    repro,
+    dtype,
 ):
     """
     Given paramaters estimates CTF from experimental data
@@ -72,5 +72,5 @@ def estimate_ctf(
         g_max,
         corr,
         output_dir,
-        repro,
+        dtype,
     )

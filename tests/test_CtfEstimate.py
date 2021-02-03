@@ -39,5 +39,5 @@ class CtfEstimatorTestCase(TestCase):
                     g_max=5.0,
                     corr=1.0,
                     output_dir=tmp_output_dir,
-                    repro=True,
+                    dtype=np.float64,
                 )
