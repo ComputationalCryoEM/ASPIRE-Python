@@ -12,7 +12,19 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class CtfEstimatorTestCase(TestCase):
     def setUp(self):
-        pass
+        self.test_input_fn = "sample.mrc"
+        self.test_output = [
+            [
+                1114.254017912154,
+                1092.0990109849506,
+                -0.47977871300012714,
+                2.0,
+                300.0,
+                1,
+                0.07,
+                self.test_input_fn,
+            ]
+        ]
 
     def tearDown(self):
         pass
@@ -21,13 +33,13 @@ class CtfEstimatorTestCase(TestCase):
         with tempfile.TemporaryDirectory() as tmp_input_dir:
             # Copy input file
             copyfile(
-                os.path.join(DATA_DIR, "sample.mrc"),
-                os.path.join(tmp_input_dir, "input1.mrc"),
+                os.path.join(DATA_DIR, self.test_input_fn),
+                os.path.join(tmp_input_dir, self.test_input_fn),
             )
 
             with tempfile.TemporaryDirectory() as tmp_output_dir:
                 # Returns results in output_dir
-                estimate_ctf(
+                results = estimate_ctf(
                     data_folder=tmp_input_dir,
                     pixel_size=1,
                     cs=2.0,
@@ -41,3 +53,12 @@ class CtfEstimatorTestCase(TestCase):
                     output_dir=tmp_output_dir,
                     dtype=np.float64,
                 )
+
+                print(results)
+
+                for i, result in enumerate(results):
+                    diffs = np.subtract(result[:-1], self.test_output[i][:-1])
+                    print(f"diffs:", diffs)
+
+                    self.assertTrue(np.allclose(result[:-1], self.test_output[i][:-1]))
+                    self.assertEqual(result[-1], self.test_output[i][-1])

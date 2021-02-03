@@ -227,6 +227,7 @@ class CtfEstimator:
 
         blocks_mt = np.zeros(blocks_mt_pre_fft.shape, dtype=self.dtype)
 
+        pyfftw.config.PLANNER_EFFORT = "FFTW_ESTIMATE"
         fft_class_f = pyfftw.FFTW(
             blocks_mt_pre_fft,
             blocks_mt_post_fft,
@@ -287,6 +288,7 @@ class CtfEstimator:
 
         return psd, noise
 
+    # NOTE DISCUSS linprog_method
     def ctf_background_subtract_1d(self, thon_rings, linprog_method="interior-point"):
         """
 

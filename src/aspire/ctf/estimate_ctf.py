@@ -53,6 +53,7 @@ def estimate_ctf(
     #   closer to original code.
     ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
 
+    results = []
     for name in file_names:
         with mrcfile.open(
             os.path.join(data_folder, name), mode="r+", permissive=True
@@ -153,7 +154,8 @@ def estimate_ctf(
             cc_array[a, 2] = angle_ast
             cc_array[a, 3] = p
         ml = np.argmax(cc_array[:, 3], -1)
-        ctf_object.write_star(
+
+        result = (
             cc_array[ml, 0],
             cc_array[ml, 1],
             cc_array[ml, 2],
@@ -163,6 +165,9 @@ def estimate_ctf(
             amp,
             name,
         )
+
+        ctf_object.write_star(*result)
+        results.append(result)
 
         ctf_object.set_df1(cc_array[ml, 0])
         ctf_object.set_df2(cc_array[ml, 1])
@@ -199,3 +204,5 @@ def estimate_ctf(
             mrc.set_data(np.float32(ctf_signal))
             mrc.voxel_size = pixel_size
             mrc.close()
+
+    return results
