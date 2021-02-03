@@ -233,7 +233,10 @@ class CtfEstimator:
         :return: PSD and noise as 2-tuple of numpy arrays.
         """
         # RCOPT, come back and change the indices for this method
+
         coeffs_s = ffbbasis.evaluate_t(thon_rings).T
+        # up to last digit when ffbbasis in double precision...
+        # print("coeffs_s", coeffs_s); exit(1)
         coeffs_n = coeffs_s.copy()
 
         coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 1)] = 0
@@ -244,17 +247,94 @@ class CtfEstimator:
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 0)] = 0
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
             noise = ffbbasis.evaluate(coeffs_n.T)
-        psd = ffbbasis.evaluate(coeffs_s.T)
+        # okay print("coeffs_s", coeffs_s)
 
+        #print("coeffs_s.T.shape", coeffs_s.T.shape)
+        # good to last digit, print("coeffs_s.T", coeffs_s.T); exit(1)
+        
+        psd = ffbbasis.evaluate(coeffs_s.T)
+        
+        #print(f"psd.shape {psd.shape} psd", psd.asnumpy())
+        # looks reasonable, slight differences in lower right coner of matrix
+        # exit(1)
+        
         return psd, noise
 
-    def ctf_background_subtract_1d(self, thon_rings):
+
+    # copied verbatim from master version
+    def ctf_background_subtract_1d_legacy(self, thon_rings, linprog_method='interior-point'):
+        # compute radial average                                                                               
+        center = thon_rings.shape[0] // 2
+        #print('thon_rings.shape', thon_rings.shape)                                                           
+        print('background_subtract_1d internal thon_rings', thon_rings.dtype, thon_rings)                                                
+        thon_rings = thon_rings[center:, center]
+
+        thon_rings = thon_rings[0:3 * thon_rings.shape[0] // 4]
+        element_no = thon_rings.shape[0]
+
+
+        final_signal = np.zeros((thon_rings.shape[0], 13))
+        final_background = np.ones((thon_rings.shape[0], 13))
+
+        for m in range(1, 14):
+            signal = thon_rings[m:]
+            signal = np.ravel(signal)
+            N = element_no - m
+            print("m, N, element_no", m, N, element_no, np.sum(signal))                                                       
+
+            f = np.concatenate((np.ones((N)), -1 * np.ones((N))), axis=0)
+            lb = np.concatenate((signal, -1 * np.inf * np.ones((N))), axis=0)
+            ub = np.concatenate((signal, np.inf * np.ones((N))), axis=0)
+
+            superposition_condition = np.concatenate((-1 * np.eye(N), np.eye(N)), axis=1)
+
+            monotone_condition = np.zeros((N, N))
+            monotone_condition[np.arange(N - 1), np.arange(N - 1)] = -1
+            monotone_condition[np.arange(N - 1), np.arange(1, N)] = 1
+            monotone_condition = np.concatenate((np.zeros((N, N)), monotone_condition), axis=1)
+
+            convex_condition = np.zeros((N, N))
+            convex_condition[np.arange(N - 2), np.arange(N - 2)] = -1
+            convex_condition[np.arange(N - 2), np.arange(1, N - 1)] = 2
+            convex_condition[np.arange(N - 2), np.arange(2, N)] = -1
+            convex_condition = np.concatenate((np.zeros((N, N)), convex_condition), axis=1)
+
+            positivity_condition = np.concatenate((np.zeros((N, N)), -1 * np.eye(N)), axis=1)
+
+            A = np.concatenate((superposition_condition, convex_condition, positivity_condition), axis=0)
+
+            x_bound_lst = [(signal[i], signal[i], -1 * np.inf, np.inf) for i in range(signal.shape[0])]
+            x_bound_ = np.asarray(x_bound_lst, A.dtype)
+            x_bound = np.concatenate((x_bound_[:, :2], x_bound_[:, 2:]), axis=0)
+
+            for nm, var in [("f", f), ("A", A), ("x_bound", x_bound_[:,:2])]:
+                print(f"np.sum({nm}) {np.sum(var)}")
+
+            # note to repro, need to force thon_rings and run method='simplex' (slow)
+            x = linprog(f, A_ub=A, b_ub=np.zeros((A.shape[0])), bounds=x_bound, method=linprog_method)            
+            background = x.x[N:]
+            print(x)
+            print(f"background {np.sum(background)}")
+            
+            bs_psd = signal - background
+
+            final_signal[m:, m - 1] = bs_psd
+            final_background[m:, m - 1] = background # difference: 10^-7 (absolute)                            
+
+        return final_signal, final_background
+        
+
+
+
+        
+    def ctf_background_subtract_1d(self, thon_rings, linprog_method='interior-point'):
         """
 
         :param thon_rings:
         :return: 2-tuple of numpy arrays
         """
 
+        #print("background_subtract_1d thon_rings", thon_rings.asnumpy())
         # compute radial average
         center = thon_rings.shape[-1] // 2
 
@@ -308,7 +388,7 @@ class CtfEstimator:
             x_bound = np.asarray(x_bound_lst, A.dtype)
             x_bound = np.concatenate((x_bound[:, :2], x_bound[:, 2:]), axis=0)
 
-            x = linprog(f, A_ub=A, b_ub=np.zeros((A.shape[0])), bounds=x_bound)
+            x = linprog(f, A_ub=A, b_ub=np.zeros((A.shape[0])), bounds=x_bound, method=linprog_method)
             background = x.x[N:]
 
             bs_psd = signal - background
@@ -379,6 +459,28 @@ class CtfEstimator:
 
         return avg_defocus, max_col
 
+    def ctf_background_subtract_2d_legacy(self, signal, background_p1, max_col):
+
+        N = signal.shape[0]
+        center = N // 2
+        [X, Y] = np.meshgrid(np.arange(0 - center, N - center), np.arange(0 - center, N - center))
+        radii = np.sqrt(X ** 2 + Y ** 2)
+
+        background = np.zeros(signal.shape)
+        background_p1 = background_p1[:, max_col]
+        # background = thon_rings.copy()                                                                       
+        for r in range(background_p1.shape[0] - 1, 0, -1):
+            background[np.where(radii <= r + 1)] = background_p1[r]
+
+        background[np.where(radii <= max_col + 2)] = signal[np.where(radii <= max_col + 2)]
+
+        signal = signal - background
+        signal = np.where(signal < 0, 0, signal)
+
+        return signal, background
+
+
+    
     def ctf_background_subtract_2d(self, signal, background_p1, max_col):
         """
 
@@ -388,11 +490,14 @@ class CtfEstimator:
         :return: 2-tuple of numpy arrays.
         """
 
+        assert isinstance(signal, Image)
+        signal = signal.asnumpy().T #can optimize this method later, once validated...
+        # background_p1 is still np array in old ordering for now.
+        # assert isinstance(background_p1, Image)
+
         N = signal.shape[0]
         center = N // 2
-        [X, Y] = np.meshgrid(
-            np.arange(0 - center, N - center), np.arange(0 - center, N - center)
-        )
+        [X, Y] = np.meshgrid(np.arange(0 - center, N - center), np.arange(0 - center, N - center))
         radii = np.sqrt(X ** 2 + Y ** 2)
 
         background = np.zeros(signal.shape)
@@ -404,13 +509,13 @@ class CtfEstimator:
         background[np.where(radii <= max_col + 2)] = signal[
             np.where(radii <= max_col + 2)
         ]
-        background = Image(background)
 
         signal = signal - background
-        signal_data = signal.asnumpy()
-        signal = Image(np.where(signal_data < 0, 0, signal_data))
+        signal = np.where(signal < 0, 0, signal)
 
-        return signal, background
+        print("shapes", signal.shape, background.shape)
+        return Image(signal.T), Image(background.T)
+
 
     def ctf_PCA(self, signal, pixel_size, g_min, g_max, w):
         """
@@ -422,7 +527,12 @@ class CtfEstimator:
         :param w: ratio
         """
 
-        N = signal.res  # check if should be self.psd_size or something.
+        # Can optimize after validation
+        print(f"signal.shape 1 {signal.shape}")        
+        signal = signal.asnumpy()[0].T
+        print(f"signal.shape 2 {signal.shape}")
+
+        N = signal.shape[0]
         center = N // 2
         [X, Y] = np.meshgrid(
             np.arange(0 - center, N - center) / N, np.arange(0 - center, N - center) / N
@@ -433,26 +543,28 @@ class CtfEstimator:
 
         [X, Y] = np.meshgrid(np.arange(-center, center), np.arange(-center, center))
 
-        signal = signal.asnumpy()
         signal = signal - np.min(np.ravel(signal))
-
+        print(f"signal.shape 3 {signal.shape}")
+        
         rad_sq_min = N * pixel_size / g_min
         rad_sq_max = N * pixel_size / g_max
 
         min_limit = r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
+        print(f"min_limit {min_limit.shape}, min_limit")
         signal = np.where(r_ctf < min_limit, 0, signal)
+        print(f"r_ctf.shape {r_ctf.shape} signal.shape 4{signal.shape}")
 
         max_limit = r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
         signal = np.where(r_ctf > max_limit, 0, signal)
 
         moment_02 = np.multiply(Y ** 2, signal)
-        moment_02 = np.sum(moment_02, axis=(-1, -2))
+        moment_02 = np.sum(moment_02, axis=(0, 1))
 
         moment_11 = np.multiply(np.multiply(Y, X), signal)
-        moment_11 = np.sum(moment_11, axis=(-1, -2))
+        moment_11 = np.sum(moment_11, axis=(0, 1))
 
         moment_20 = np.multiply(X ** 2, signal)
-        moment_20 = np.sum(moment_20, axis=(-1, -2))
+        moment_20 = np.sum(moment_20, axis=(0, 1))
 
         moment_mat = np.zeros((2, 2))
         moment_mat[0, 0] = moment_20
@@ -465,6 +577,119 @@ class CtfEstimator:
 
         return ratio
 
+
+    def ctf_gd_legacy(self, signal, df1, df2, angle_ast, r, theta, pixel_size, g_min, g_max, amplitude_contrast, lmbd, cs):
+
+        signal = signal.asnumpy()[0].T
+        
+        angle_ast = angle_ast / 180 * np.pi
+
+        # step size                                                                                                            
+        alpha1 = np.power(10, 5)
+        alpha2 = np.power(10, 4)
+
+        # initialization                                                                                                       
+        x = df1 + df2
+        y = (df1 - df2) * np.cos(2 * angle_ast)
+        z = (df1 - df2) * np.sin(2 * angle_ast)
+
+        a = np.pi * lmbd * np.power(r, 2) / 2
+        b = np.pi * np.power(lmbd, 3) * cs * np.power(10, 6) * np.power(r, 4) / 2 - amplitude_contrast * np.ones(r.shape)
+
+        N = signal.shape[1]
+        center = N // 2
+
+        rad_sq_min = N * pixel_size / g_min
+        rad_sq_max = N * pixel_size / g_max
+
+        max_val = r[center, np.int(center-1+np.floor(rad_sq_max))]
+        min_val = r[center, np.int(center-1+np.ceil(rad_sq_min))]
+        valid_region = np.argwhere(np.logical_and(np.where(r <= max_val, 1, 0), np.where(r > min_val, 1, 0)))
+
+
+        a = a[valid_region[:,0], valid_region[:,1]]
+        b = b[valid_region[:,0], valid_region[:,1]]
+        signal = signal[valid_region[:,0], valid_region[:,1]]
+        r = r[valid_region[:,0], valid_region[:,1]]
+        theta = theta[valid_region[:,0], valid_region[:,1]]
+
+        sum_A = np.sum(np.power(signal, 2))
+
+        dx = 1
+        dy = 1
+        dz = 1
+
+        stop_cond = 10^-20
+        iter_no = 1
+
+        #for iter_no in range(0, 399):                                                                                         
+        while np.maximum(np.maximum(dx,dy),dz)>stop_cond:
+            inner_cosine = np.multiply(y, np.cos(2*theta)) + np.multiply(z, np.sin(2*theta))
+            outer_sine = np.sin(np.multiply(a,x)+np.multiply(a,inner_cosine) - b)
+            outer_cosine = np.cos(np.multiply(a,x)+np.multiply(a,inner_cosine) - b)
+
+            sine_x_term = a
+            sine_y_term = np.multiply(a, np.cos(2*theta))
+            sine_z_term = np.multiply(a, np.sin(2*theta))
+
+            c1 = np.sum(np.multiply(np.abs(outer_sine), signal))
+            c2 = np.sqrt(np.multiply(sum_A, np.sum(np.power(outer_sine, 2))))
+
+            # gradients of numerator                                                                                           
+            dx_c1 = np.sum(np.multiply(np.multiply(np.multiply(np.sign(outer_sine), outer_cosine), a), signal))
+            dy_c1 = np.sum(np.multiply(np.multiply(np.multiply(np.multiply(np.sign(outer_sine), outer_cosine), a), np.cos(2 * \
+theta)), signal))
+            dz_c1 = np.sum(np.multiply(np.multiply(np.multiply(np.multiply(np.sign(outer_sine), outer_cosine), a), np.sin(2 * \
+theta)), signal))
+
+            derivative_sqrt = np.divide(1, 2*np.sqrt(np.multiply(sum_A, np.sum(np.power(outer_sine, 2)))))
+            derivative_sine2 = 2 * np.multiply(outer_sine, outer_cosine)
+
+            #  gradients of denomenator                                                                                        
+            dx_c2 = np.multiply(derivative_sqrt, np.multiply(sum_A, np.sum(np.multiply(derivative_sine2, sine_x_term))))
+            dy_c2 = np.multiply(derivative_sqrt, np.multiply(sum_A, np.sum(np.multiply(derivative_sine2, sine_y_term))))
+            dz_c2 = np.multiply(derivative_sqrt, np.multiply(sum_A, np.sum(np.multiply(derivative_sine2, sine_z_term))))
+
+            # gradients                                                                                                        
+            dx = np.divide(np.multiply(dx_c1, c2) - np.multiply(dx_c2, c1), np.power(c2, 2))
+            dy = np.divide(np.multiply(dy_c1, c2) - np.multiply(dy_c2, c1), np.power(c2, 2))
+            dz = np.divide(np.multiply(dz_c1, c2) - np.multiply(dz_c2, c1), np.power(c2, 2))
+
+            # update                                                                                                           
+            x = x + np.multiply(alpha1, dx)
+            y = y + np.multiply(alpha2, dy)
+            z = z + np.multiply(alpha2, dz)
+
+            if iter_no<2:
+                stop_cond = np.minimum(np.minimum(dx,dy),dz)/1000
+
+            if iter_no>400:
+                stop_cond = np.maximum(np.maximum(dx,dy),dz) + 1
+
+            iter_no = iter_no + 1
+
+        df1 = np.divide(x + np.abs(y+z*1j), 2)
+        df2 = np.divide(x - np.abs(y+z*1j), 2)
+        angle_ast = np.angle(y+z*1j)/2
+
+        inner_cosine = np.multiply(y, np.cos(2 * theta)) + np.multiply(z, np.sin(2 * theta))
+        outer_sine = np.sin(np.multiply(a, x) + np.multiply(a, inner_cosine) - b)
+        outer_cosine = np.cos(np.multiply(a, x) + np.multiply(a, inner_cosine) - b)
+
+        sine_x_term = a
+        sine_y_term = np.multiply(a, np.cos(2 * theta))
+        sine_z_term = np.multiply(a, np.sin(2 * theta))
+
+        c1 = np.sum(np.multiply(np.abs(outer_sine), signal))
+        c2 = np.sqrt(np.multiply(sum_A, np.sum(np.power(outer_sine, 2))))
+
+        p = np.divide(c1, c2)
+
+        return df1, df2, angle_ast, p
+
+    
+
+    
     def ctf_gd(
         self,
         signal,
@@ -512,6 +737,7 @@ class CtfEstimator:
             r, 4
         ) / 2 - amplitude_contrast * np.ones(r.shape)
 
+        signal = signal.asnumpy()[0].T
         N = signal.shape[1]
         center = N // 2
 
