@@ -29,7 +29,6 @@ setup(
         "joblib",
         "matplotlib",
         "mrcfile",
-        "numba",  # Note should probably pin this version.
         "numpy==1.16",
         "pandas==0.25.3",
         "pyfftw",

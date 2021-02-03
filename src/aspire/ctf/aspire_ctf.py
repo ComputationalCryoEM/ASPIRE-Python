@@ -6,7 +6,6 @@ Created on Sep 10, 2019
 
 import os
 
-import numba
 import numpy as np
 import pyfftw
 from numpy import linalg as npla
@@ -15,14 +14,18 @@ from scipy.optimize import linprog
 from aspire.image import Image
 from aspire.utils import complex_type
 
-@numba.vectorize([numba.float64(numba.complex128), numba.float32(numba.complex64)])
+
 def abs2(x):
+    """
+    Compute complex modulus squared.
+    """
     return x.real ** 2 + x.imag ** 2
 
-# def abs2(x):
-#       return x.real ** 2 + x.imag ** 2
 
 class CtfEstimator:
+    """
+    CtfEstimator Class ...
+    """
     def __init__(
             self, pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=np.float32
     ):
