@@ -1,7 +1,8 @@
 """
 Created on Sep 10, 2019
-
 @author: Ayelet Heimowitz, Amit Moscovich
+
+Integrated into ASPIRE by Garrett Wright Feb 2021.
 """
 
 import os
@@ -19,6 +20,7 @@ def abs2(x):
     """
     Compute complex modulus squared.
     """
+
     return x.real ** 2 + x.imag ** 2
 
 
@@ -26,8 +28,16 @@ class CtfEstimator:
     """
     CtfEstimator Class ...
     """
+
     def __init__(
-            self, pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=np.float32
+        self,
+        pixel_size,
+        cs,
+        amplitude_contrast,
+        voltage,
+        psd_size,
+        num_tapers,
+        dtype=np.float32,
     ):
         """
         Instantiate a CtfEstimator instance.
@@ -40,7 +50,7 @@ class CtfEstimator:
         :param num_tapers: Number of tapers to apply in PSD estimation.
         :returns: CtfEstimator instance.
         """
-        
+
         self.pixel_size = pixel_size
         self.cs = cs
         self.amplitude_contrast = amplitude_contrast
@@ -49,15 +59,15 @@ class CtfEstimator:
         self.num_tapers = num_tapers
         self.lmbd = 1.22639 / np.sqrt(voltage * 1000 + 0.97845 * np.square(voltage))
         self.dtype = np.dtype(dtype)
-        
+
         center = psd_size // 2
         [X, Y] = np.meshgrid(
             np.arange(0 - center, psd_size - center, dtype=self.dtype) / psd_size,
             np.arange(0 - center, psd_size - center, dtype=self.dtype) / psd_size,
         )
-        
+
         rb = np.sqrt(np.square(X) + np.square(Y))
-        
+
         self.r_ctf = rb * (10 / pixel_size)
         self.theta = np.arctan2(Y, X)
         self.defocus1 = 0
@@ -96,7 +106,7 @@ class CtfEstimator:
         """
         Generates internal representation of the Contrast Transfer Function using parameters from this instance.
         """
-        
+
         astigmatism_angle = np.reshape(
             np.repeat(
                 self.angle, np.multiply(self.theta.shape[0], self.theta.shape[1])
@@ -201,15 +211,19 @@ class CtfEstimator:
         :param num_1d_tapers:
         :return: Numpy array.
         """
-        
+
         tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
 
-        blocks_mt_pre_fft = np.empty(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
-        
-        blocks_mt_post_fft = np.empty(blocks_mt_pre_fft.shape, dtype=complex_type(self.dtype))
-        
+        blocks_mt_pre_fft = np.empty(
+            blocks[0, :, :].shape, dtype=complex_type(self.dtype)
+        )
+
+        blocks_mt_post_fft = np.empty(
+            blocks_mt_pre_fft.shape, dtype=complex_type(self.dtype)
+        )
+
         blocks_mt = np.zeros(blocks_mt_pre_fft.shape, dtype=self.dtype)
-        
+
         fft_class_f = pyfftw.FFTW(
             blocks_mt_pre_fft,
             blocks_mt_post_fft,
@@ -218,8 +232,10 @@ class CtfEstimator:
         )
 
         blocks_tapered = np.empty(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
-        
-        taper_2d = np.empty((blocks.shape[1], blocks.shape[2]), dtype=complex_type(self.dtype))
+
+        taper_2d = np.empty(
+            (blocks.shape[1], blocks.shape[2]), dtype=complex_type(self.dtype)
+        )
 
         for x in range(num_1d_tapers ** 2):
             np.matmul(
@@ -234,7 +250,7 @@ class CtfEstimator:
 
         blocks_mt = blocks_mt / (blocks.shape[0])
         blocks_mt = blocks_mt / (blocks.shape[0])
-        blocks_mt = blocks_mt / tapers_1d.shape[0] ** 2.
+        blocks_mt = blocks_mt / tapers_1d.shape[0] ** 2.0
 
         thon_rings = np.fft.fftshift(
             blocks_mt
@@ -250,7 +266,7 @@ class CtfEstimator:
         :param k:
         :return: PSD and noise as 2-tuple of numpy arrays.
         """
-        
+
         # RCOPT, come back and change the indices for this method
         coeffs_s = ffbbasis.evaluate_t(thon_rings).T
         coeffs_n = coeffs_s.copy()
@@ -263,13 +279,12 @@ class CtfEstimator:
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 0)] = 0
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
             noise = ffbbasis.evaluate(coeffs_n.T)
-        
+
         psd = ffbbasis.evaluate(coeffs_s.T)
-        
+
         return psd, noise
 
-
-    def ctf_background_subtract_1d(self, thon_rings, linprog_method='interior-point'):
+    def ctf_background_subtract_1d(self, thon_rings, linprog_method="interior-point"):
         """
 
         :param thon_rings:
@@ -330,7 +345,13 @@ class CtfEstimator:
             x_bound = np.asarray(x_bound_lst, A.dtype)
             x_bound = np.concatenate((x_bound[:, :2], x_bound[:, 2:]), axis=0)
 
-            x = linprog(f, A_ub=A, b_ub=np.zeros((A.shape[0])), bounds=x_bound, method=linprog_method)
+            x = linprog(
+                f,
+                A_ub=A,
+                b_ub=np.zeros((A.shape[0])),
+                bounds=x_bound,
+                method=linprog_method,
+            )
             background = x.x[N:]
 
             bs_psd = signal - background
@@ -401,7 +422,6 @@ class CtfEstimator:
 
         return avg_defocus, max_col
 
-
     def ctf_background_subtract_2d(self, signal, background_p1, max_col):
         """
 
@@ -412,12 +432,15 @@ class CtfEstimator:
         """
 
         # RCOPT
-        signal = signal.asnumpy().T        
+        signal = signal.asnumpy().T
         # background_p1 is still np array in old ordering for now.
 
         N = signal.shape[0]
         center = N // 2
-        [X, Y] = np.meshgrid(np.arange(0 - center, N - center, dtype=self.dtype), np.arange(0 - center, N - center, dtype=self.dtype))
+        [X, Y] = np.meshgrid(
+            np.arange(0 - center, N - center, dtype=self.dtype),
+            np.arange(0 - center, N - center, dtype=self.dtype),
+        )
         radii = np.sqrt(X ** 2 + Y ** 2)
 
         background = np.zeros(signal.shape, dtype=self.dtype)
@@ -434,7 +457,6 @@ class CtfEstimator:
         signal = np.where(signal < 0, 0, signal)
 
         return Image(signal.T), Image(background.T)
-
 
     def ctf_PCA(self, signal, pixel_size, g_min, g_max, w):
         """
@@ -461,7 +483,7 @@ class CtfEstimator:
         [X, Y] = np.meshgrid(np.arange(-center, center), np.arange(-center, center))
 
         signal = signal - np.min(np.ravel(signal))
-        
+
         rad_sq_min = N * pixel_size / g_min
         rad_sq_max = N * pixel_size / g_max
 
@@ -490,7 +512,7 @@ class CtfEstimator:
         ratio = np.divide(moment_evals[0], moment_evals[1])
 
         return ratio
-    
+
     def ctf_gd(
         self,
         signal,
@@ -522,7 +544,7 @@ class CtfEstimator:
         :param cs:
         :return: tuple of
         """
-        
+
         angle_ast = angle_ast / 180 * np.pi
 
         # step size

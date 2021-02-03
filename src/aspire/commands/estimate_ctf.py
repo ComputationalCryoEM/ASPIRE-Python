@@ -38,8 +38,11 @@ logger = logging.getLogger("aspire")
 )
 @click.option("--corr", default=1, type=float, help="Select method")
 @click.option("--output_dir", default="results", help="Path to output files")
-@click.option("--repro/--no-repro", default=False, help="Set dtypes and linear programming methods to be more deterministic in exchange for speed.")
-
+@click.option(
+    "--repro/--no-repro",
+    default=False,
+    help="Set dtypes and linear programming methods to be more deterministic in exchange for speed.",
+)
 def estimate_ctf(
     data_folder,
     pixel_size,
@@ -52,7 +55,7 @@ def estimate_ctf(
     g_max,
     corr,
     output_dir,
-    repro
+    repro,
 ):
     """
     Given paramaters estimates CTF from experimental data
@@ -60,11 +63,11 @@ def estimate_ctf(
     """
 
     dtype = np.float32
-    linprog_method = 'interior-point'
+    linprog_method = "interior-point"
     if repro:
         dtype = np.float64
-        linprog_method = 'simplex'
-        
+        linprog_method = "simplex"
+
     dir_content = os.scandir(data_folder)
 
     mrc_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrc"]
@@ -103,16 +106,18 @@ def estimate_ctf(
         signal_observed = ctf_object.ctf_estimate_psd(
             micrograph_blocks, tapers_1d, num_tapers
         )
-                
+
         thon_rings, g_out = ctf_object.ctf_elliptical_average(
             ffbbasis, signal_observed, 0
         )  # absolute differenceL 10^-14. Relative error: 10^-7
 
         # Adding optional argument: linprog_method='simplex',
         # will deterministically repro results in exchange for speed.
-        # This is controlled with `repro` cli argument.        
-        signal_1d, background_1d = ctf_object.ctf_background_subtract_1d(thon_rings, linprog_method=linprog_method)
-        
+        # This is controlled with `repro` cli argument.
+        signal_1d, background_1d = ctf_object.ctf_background_subtract_1d(
+            thon_rings, linprog_method=linprog_method
+        )
+
         if corr:
             avg_defocus, low_freq_skip = ctf_object.ctf_opt1d(
                 signal_1d,
@@ -123,8 +128,7 @@ def estimate_ctf(
                 signal_observed.shape[-1],
             )
 
-            #print('background_1d', background_1d.shape)
-            signal, background_2d = ctf_object.ctf_background_subtract_2d(                
+            signal, background_2d = ctf_object.ctf_background_subtract_2d(
                 signal_observed, background_1d, low_freq_skip
             )
 
