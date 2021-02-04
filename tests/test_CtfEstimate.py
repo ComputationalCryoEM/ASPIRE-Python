@@ -15,13 +15,13 @@ class CtfEstimatorTestCase(TestCase):
         self.test_input_fn = "sample.mrc"
         self.test_output = [
             [
-                1114.254017912154,
-                1092.0990109849506,
-                -0.47977871300012714,
-                2.0,
-                300.0,
-                1,
-                0.07,
+                1114.249878341215,
+             1092.097776049334,
+             -0.4798126410114381,
+             2.0,
+             300.0,
+             1,
+             0.07,
                 self.test_input_fn,
             ]
         ]
