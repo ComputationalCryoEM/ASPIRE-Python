@@ -56,7 +56,7 @@ def estimate_ctf(
     results = []
     for name in file_names:
         with mrcfile.open(
-            os.path.join(data_folder, name), mode="r+", permissive=True
+            os.path.join(data_folder, name), mode="r", permissive=True
         ) as mrc:
             micrograph = mrc.data
 

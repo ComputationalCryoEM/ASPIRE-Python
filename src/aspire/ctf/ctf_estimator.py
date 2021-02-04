@@ -9,12 +9,12 @@ import logging
 import os
 
 import numpy as np
-import pyfftw
 from numpy import linalg as npla
 from scipy.optimize import linprog
 
 from aspire.image import Image
-from aspire.utils import complex_type
+from aspire.numeric import fft
+from aspire.utils import complex_type, eigs
 
 logger = logging.getLogger(__name__)
 
@@ -189,20 +189,16 @@ class CtfEstimator:
         :return:
         """
 
-        k, el = np.meshgrid(np.arange(N), np.arange(N))
+        k, el = np.meshgrid(
+            np.arange(N, dtype=self.dtype), np.arange(N, dtype=self.dtype)
+        )
 
         denom = np.pi * (k - el)
-        denom = denom + np.eye(N)
+        denom = denom + np.eye(N, dtype=self.dtype)
         phi_R = np.divide(np.sin(np.pi * R * (k - el)), denom)
         np.fill_diagonal(phi_R, 1)  # absolute difference from Matlab 10^-18
 
-        tapers_val, data_tapers = npla.eigh(phi_R)
-        sort_idx = np.argsort(tapers_val)
-
-        data_tapers = data_tapers[:, sort_idx[-L:]]
-        data_tapers = (
-            data_tapers.copy()
-        )  # absolute difference from matlab: 10^-15, relative: 10^-11
+        data_tapers, _ = eigs(phi_R, L)
 
         return data_tapers
 
@@ -217,27 +213,19 @@ class CtfEstimator:
 
         tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
 
-        blocks_mt_pre_fft = np.empty(
+        blocks_mt_pre_fft = np.zeros(
             blocks[0, :, :].shape, dtype=complex_type(self.dtype)
         )
 
-        blocks_mt_post_fft = np.empty(
+        blocks_mt_post_fft = np.zeros(
             blocks_mt_pre_fft.shape, dtype=complex_type(self.dtype)
         )
 
         blocks_mt = np.zeros(blocks_mt_pre_fft.shape, dtype=self.dtype)
 
-        pyfftw.config.PLANNER_EFFORT = "FFTW_ESTIMATE"
-        fft_class_f = pyfftw.FFTW(
-            blocks_mt_pre_fft,
-            blocks_mt_post_fft,
-            axes=(-2, -1),
-            direction="FFTW_FORWARD",
-        )
+        blocks_tapered = np.zeros(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
 
-        blocks_tapered = np.empty(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
-
-        taper_2d = np.empty(
+        taper_2d = np.zeros(
             (blocks.shape[1], blocks.shape[2]), dtype=complex_type(self.dtype)
         )
 
@@ -249,7 +237,7 @@ class CtfEstimator:
             )
             for m in range(blocks.shape[0]):
                 np.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
-                fft_class_f(blocks_tapered, blocks_mt_post_fft)
+                blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
                 blocks_mt = blocks_mt + abs2(blocks_mt_post_fft)
 
         blocks_mt = blocks_mt / (blocks.shape[0])
@@ -380,7 +368,8 @@ class CtfEstimator:
 
         center = N // 2
         [X, Y] = np.meshgrid(
-            np.arange(0 - center, N - center) / N, np.arange(0 - center, N - center) / N
+            np.arange(0 - center, N - center, dtype=self.dtype) / N,
+            np.arange(0 - center, N - center, dtype=self.dtype) / N,
         )
 
         rb = np.sqrt(np.square(X) + np.square(Y))
@@ -393,7 +382,7 @@ class CtfEstimator:
         signal = signal[: 3 * signal.shape[0] // 4]
 
         r_ctf_sq = np.square(r_ctf)
-        c = np.zeros((9500, 13))
+        c = np.zeros((9500, 13), dtype=self.dtype)
 
         for f in range(500, 10000):
             ctf_im = np.abs(
