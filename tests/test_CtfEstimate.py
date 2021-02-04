@@ -15,9 +15,9 @@ class CtfEstimatorTestCase(TestCase):
         self.test_input_fn = "sample.mrc"
         self.test_output = [
             [
-                1114.249878341215,
-                1092.097776049334,
-                -0.4798126410114381,
+                1114.2576921535956,
+                1092.1058059587763,
+                -0.47980462467230006,
                 2.0,
                 300.0,
                 1,
@@ -60,5 +60,8 @@ class CtfEstimatorTestCase(TestCase):
                     diffs = np.subtract(result[:-1], self.test_output[i][:-1])
                     print(f"diffs:", diffs)
 
-                    self.assertTrue(np.allclose(result[:-1], self.test_output[i][:-1]))
-                    self.assertEqual(result[-1], self.test_output[i][-1])
+                    self.assertTrue(
+                        np.allclose(result[:3], self.test_output[i][:3], atol=1e-3)
+                    )
+                    self.assertTrue(np.allclose(result[3:-1], self.test_output[i][3:-1]))
+                    self.assertTrue(result[-1] == self.test_output[i][-1])
