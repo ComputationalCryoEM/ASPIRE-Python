@@ -1,7 +1,6 @@
 import logging
 import os
 
-import click
 import mrcfile
 import numpy as np
 

@@ -2,9 +2,9 @@ import logging
 
 import click
 
-logger = logging.getLogger("aspire")
-
 from aspire import ctf
+
+logger = logging.getLogger("aspire")
 
 
 @click.command()
@@ -33,7 +33,11 @@ from aspire import ctf
     "--g_max", default=5, type=float, help="Inverse of maximum resolution for PSD"
 )
 @click.option("--corr", default=1, type=float, help="Select method")
-@click.option("--output_dir", default="results", help="Path to output files, defaults to './results'")
+@click.option(
+    "--output_dir",
+    default="results",
+    help="Path to output files, defaults to './results'",
+)
 @click.option(
     "--dtype",
     default="float32",

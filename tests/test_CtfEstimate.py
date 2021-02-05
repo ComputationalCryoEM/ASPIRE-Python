@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from shutil import copyfile
@@ -6,6 +7,8 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.ctf import estimate_ctf
+
+logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
