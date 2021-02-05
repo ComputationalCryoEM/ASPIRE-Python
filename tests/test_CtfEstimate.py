@@ -54,11 +54,11 @@ class CtfEstimatorTestCase(TestCase):
                     dtype=np.float64,
                 )
 
-                print(results)
+                logger.debug(f"results: {results}")
 
                 for i, result in enumerate(results):
                     diffs = np.subtract(result[:-1], self.test_output[i][:-1])
-                    print(f"diffs:", diffs)
+                    logger.debug(f"diffs: {diffs}")
 
                     # defocusU
                     np.allclose(result[0], self.test_output[i][0], atol=5e-2)
