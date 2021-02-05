@@ -5,8 +5,8 @@ import numpy as np
 import scipy.sparse as sparse
 
 from aspire import config
+from aspire.abinitio.orientation_src import OrientEstSource
 from aspire.basis import PolarBasis2D
-from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import common_line_from_rots
 from aspire.utils.random import choice
 
@@ -96,13 +96,9 @@ class CLOrient3D:
 
     def save_rotations(self):
         """
-        Save the estimated rotation matrices to new ImageSource object
+        Return a new ImageSource object for orientation information
         """
-        # Generate a new ImageSource object and save estimated rotation matrices
-        # It will be simpler if it is allowed to modify the original one
-        src = ArrayImageSource(self.src.images(start=0, num=np.inf))
-        src.rots = self.rotations
-        return src
+        return OrientEstSource(self.src, self)
 
     def build_clmatrix(self):
         """
