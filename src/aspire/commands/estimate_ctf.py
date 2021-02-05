@@ -33,11 +33,11 @@ from aspire import ctf
     "--g_max", default=5, type=float, help="Inverse of maximum resolution for PSD"
 )
 @click.option("--corr", default=1, type=float, help="Select method")
-@click.option("--output_dir", default="results", help="Path to output files")
+@click.option("--output_dir", default="results", help="Path to output files, defaults to './results'")
 @click.option(
     "--dtype",
     default="float32",
-    help="Numpy dtype to use in computation.  Example: 'float32' or 'float64'.",
+    help="Numpy dtype to use in computation.  Example: 'float32' or 'float64'. defaults to 'float32'",
 )
 def estimate_ctf(
     data_folder,
