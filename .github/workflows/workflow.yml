@@ -1,0 +1,51 @@
+name: ASPIRE Python Pip CI
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox tox-gh-actions
+    - name: Run Tox Check
+      run: tox -e check
+
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+        pyenv: [stable, dev]
+        exclude:
+          # Exclude 3.6-stable so we can add pre and post tasks to that environment.
+          - python-version: 3.6
+            pyenv: stable
+        include:
+          # Re-include 3.6-stable with additional tox tasks.
+          - python-version: 3.6
+            # Note since the environments are fresh, we don't need invoke `clean`.
+            pyenv: stable,docs,coveralls,report
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }} ${{ matrix.pyenv }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox tox-gh-actions
+    - name: Test with tox
+      run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
