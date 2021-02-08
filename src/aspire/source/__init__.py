@@ -16,10 +16,10 @@ from aspire.image.xform import (
     Pipeline,
 )
 from aspire.operators import (
+    IdentityFilter,
     LambdaFilter,
     MultiplicativeFilter,
     PowerFilter,
-    IdentityFilter,
 )
 from aspire.storage import MrcStats, StarFile, StarFileBlock
 from aspire.utils import ensure

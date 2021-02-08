@@ -24,6 +24,7 @@ setup(
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
+        "colorednoise",
         "finufft",
         "importlib_resources>=1.0.2",
         "joblib",
