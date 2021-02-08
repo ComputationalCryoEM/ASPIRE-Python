@@ -15,7 +15,12 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.operators import LambdaFilter, MultiplicativeFilter, PowerFilter
+from aspire.operators import (
+    LambdaFilter,
+    MultiplicativeFilter,
+    PowerFilter,
+    IdentityFilter,
+)
 from aspire.storage import MrcStats, StarFile, StarFileBlock
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
@@ -742,3 +747,4 @@ class ArrayImageSource(ImageSource):
             L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None
         )
         self._cached_im = im
+        self.unique_filters = [IdentityFilter(dim=2)]
