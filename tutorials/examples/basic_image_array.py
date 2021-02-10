@@ -1,24 +1,28 @@
 import colorednoise
+import matplotlib._color_data as mcd
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import misc
+from skimage.measure import block_reduce
 
 from aspire.image import Image
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source import ArrayImageSource
 
 # ------------------------------------------------------------------------------
-# Lets get some image data as a numpy array.
+# Lets get some basic image data as a numpy array.
 
-# Grab some image, here we have a Procyon (common north american trash panda).
+# Scipy ships with a portrait of a Procyon (common north american trash panda).
 img_data = misc.face(gray=True)
 
 # Crop to a square
 n_pixels = min(img_data.shape)
 img_data = img_data[0:n_pixels, 0:n_pixels]
+# Block (down)sample the image.
+img_data = block_reduce(img_data, (2, 2))
 
 plt.imshow(img_data, cmap=plt.cm.gray)
-plt.title("Original Image")
+plt.title("Starting Image")
 plt.show()
 
 # Initially, we will add some white noise to the image.
@@ -28,10 +32,12 @@ mu = 0.0
 sigma = 256.0
 white = np.random.normal(mu, sigma, img_data.shape)
 
-img_data_withWhiteNoise = img_data + white
-# plt.imshow(img_data_withWhiteNoise, cmap=plt.cm.gray)
-# plt.title('With White Noise')
-# plt.show()
+snr = np.var(img_data) / np.var(white)
+print(f"Rough SNR {snr}")
+
+# We'll also compute the spectrum of the original image and white noise sample for later.
+img_data_f = np.abs(np.fft.fftshift(np.fft.fft2(img_data)))
+white_f = np.abs(np.fft.fftshift(np.fft.fft2(white)))
 
 
 # ------------------------------------------------------------------------------
@@ -41,8 +47,8 @@ img_data_withWhiteNoise = img_data + white
 # This is a light wrapper over the numpy array. Many ASPIRE internals
 # are built around an Image classes.
 
-# Construct the Image class by passing it the array data.
-img = Image(img_data_withWhiteNoise)
+# Construct the Image class by passing it an array of data.
+img = Image(img_data + white)
 
 # "Source" classes are what we use in processing pipelines.
 # They provide a consistent interface to a variety of underlying data sources.
@@ -54,82 +60,127 @@ img = Image(img_data_withWhiteNoise)
 img_src = ArrayImageSource(img)
 
 # ASPIRE's WhiteNoiseEstimator consumes from a Source
-# noise_estimator = WhiteNoiseEstimator(img_src)
+noise_estimator = WhiteNoiseEstimator(img_src)
 
 # We can use that estimator to whiten all the images in the Source.
-# img_src.whiten(noise_estimator.filter)
+img_src.whiten(noise_estimator.filter)
 
 # We can get a copy as numpy array instead of an ASPIRE source object.
-# img_data_whitened = img_src.images(0,img_src.n).asnumpy()
-# plt.imshow(img_data_whitened[0], cmap=plt.cm.gray)
-# plt.title('Whitened')
-# plt.show()
+img_data_whitened = img_src.images(0, img_src.n).asnumpy()
 
 
 # ------------------------------------------------------------------------------
-# Lets try adding a different sort of noise
+# Lets try a small experiment, this time on a stack of thee images in an array.
+# We'll go through the same steps as before.
 
+# The following will generate additional distributions of noise.
 pink = (
     colorednoise.powerlaw_psd_gaussian(1, img_data.shape)
     + colorednoise.powerlaw_psd_gaussian(1, img_data.shape).T
 ) * sigma
-pink2 = (
-    colorednoise.powerlaw_psd_gaussian(1, img_data.shape)
-    + colorednoise.powerlaw_psd_gaussian(1, img_data.shape).T
-) * sigma
-pink3 = (
-    colorednoise.powerlaw_psd_gaussian(1, img_data.shape)
-    + colorednoise.powerlaw_psd_gaussian(1, img_data.shape).T
-) * sigma
+pink_f = np.abs(np.fft.fftshift(np.fft.fft2(pink)))
+
 brown = (
     colorednoise.powerlaw_psd_gaussian(2, img_data.shape)
     + colorednoise.powerlaw_psd_gaussian(2, img_data.shape).T
 ) * sigma
+brown_f = np.abs(np.fft.fftshift(np.fft.fft2(brown)))
 
-# noises = {'White': white, 'Pink': pink, 'Brown': brown}
-noises = {"Pink1": pink, "Pink2": pink2, "Pink3": pink3}
+# Storing noises in a dictionary for reference later.
+noises = {"White": white, "Pink": pink, "Brown": brown}
+noises_f = {"White": white_f, "Pink": pink_f, "Brown": brown_f}
 
-# We'll go through the same steps as before,
-#   but adding different noise to our original image data,
-#   and keeping some fourier space arrays to plot later.
-myarray = np.zeros((3, n_pixels, n_pixels))
-myarray_f = np.zeros_like(myarray)
-myarray_f_whitened = np.zeros_like(myarray)
+
+# Setup some arrays to hold our data.
+#   In real use, you would probably bring your own stack of images,
+#   but we'll create some here as before.
+stack = np.zeros((3, img_data.shape[-2], img_data.shape[-1]))
+stack_f = np.zeros_like(stack)
+stack_whitened_f = np.zeros_like(stack)
+whitened_noises_f = dict()
+
 for i, name in enumerate(sorted(noises)):
+    #  Adding the different noises to our original image data.
+    stack[i] = img_data + noises[name]
+    # Compute and keep some fourier space arrays to plot later.
+    stack_f[i] = np.abs(np.fft.fftshift(np.fft.fft2(stack[i])))
 
-    myarray[i] = img_data + noises[name]
-    # Lets get the fourier space
-    myarray_f[i] = np.abs(np.fft.fftshift(np.fft.fft2(myarray[i])))
 
-# Construct our Image and Source
-images = Image(myarray)
-imgs_src = ArrayImageSource(images)
+# Construct our Image and Source.
+images = Image(stack)
+img_src = ArrayImageSource(images)
+
 
 # Use ASPIRE pipeline to Whiten
-noise_estimator = WhiteNoiseEstimator(imgs_src)
-imgs_src.whiten(noise_estimator.filter)
-img_data_whitened = imgs_src.images(0, imgs_src.n).asnumpy()
+noise_estimator = WhiteNoiseEstimator(img_src)
+img_src.whiten(noise_estimator.filter)
+img_data_whitened = img_src.images(0, img_src.n).asnumpy()
 
 
 # Plot before and after whitening.
 fig, axs = plt.subplots(3, 4)
 for i, name in enumerate(sorted(noises)):
 
-    myarray[i] = img_data + noises[name]
-    # Lets get a picture of the whitened fourier space
-    myarray_f_whitened[i] = np.abs(np.fft.fftshift(np.fft.fft2(img_data_whitened[i])))
+    stack[i] = img_data + noises[name]
+    # Lets save the whitened fourier space
+    stack_whitened_f[i] = np.abs(np.fft.fftshift(np.fft.fft2(img_data_whitened[i])))
 
-    # and we can make the plots now
-    axs[i, 0].imshow(myarray[i], cmap=plt.cm.gray)
+    # and retrieve the whitened noise profile by subracting from the original signal
+    whitened_noises_f[name] = img_data_f - stack_whitened_f[i]
+
+    # and we can make some plots now
+    axs[i, 0].imshow(stack[i], cmap=plt.cm.gray)
     axs[i, 0].set_title(f"Image with {name} Noise")
 
-    axs[i, 1].imshow(np.log(1 + myarray_f[i]), cmap=plt.cm.gray)
+    axs[i, 1].imshow(np.log(1 + stack_f[i]), cmap=plt.cm.gray)
     axs[i, 1].set_title(f"{name} Noise Spectrum")
 
-    axs[i, 2].imshow(np.log(1 + myarray_f_whitened[i]), cmap=plt.cm.gray)
+    axs[i, 2].imshow(np.log(1 + stack_whitened_f[i]), cmap=plt.cm.gray)
     axs[i, 2].set_title(f"Whitened {name} Noise Spection")
 
     axs[i, 3].imshow(img_data_whitened[i], cmap=plt.cm.gray)
-    axs[i, 3].set_title(f"Image with {name} Noise Whitened")
+    axs[i, 3].set_title(f"Image with Whitened {name} Noise")
 
 plt.show()
+
+
+# We'll also want to take a look at the spectrum power distribution.
+#  Since we just want to see the character of what is happening,
+#  I'll assume each pixel's contribution is placed at their lower left corner,
+#  and compute a crude radial profile.
+#  Code from a discussion at https://stackoverflow.com/questions/21242011/most-efficient-way-to-calculate-radial-profile.
+def radial_profile(data):
+    y, x = np.indices((data.shape))
+    # Distance from origin to lower left corner
+    r = np.sqrt(x ** 2 + y ** 2).astype(np.int)
+    binsum = np.bincount(r.ravel(), np.log(1 + data.ravel()))
+    bincount = np.bincount(r.ravel())
+    # Return the mean per bin
+    return binsum / bincount
+
+
+# Setup some plot colors
+legend_colors = {
+    "White": mcd.XKCD_COLORS["xkcd:black"],
+    "Pink": mcd.XKCD_COLORS["xkcd:pink"],
+    "Brown": mcd.XKCD_COLORS["xkcd:sienna"],
+}
+
+# Loop through the sprectral profiles and plot.
+for i, name in enumerate(sorted(noises)):
+    plt.plot(radial_profile(noises_f[name]), legend_colors[name], label=name)
+    plt.plot(
+        radial_profile(whitened_noises_f[name]),
+        color=f"{legend_colors[name]}",
+        linestyle="--",
+        label=f"Whitened {name}",
+    )
+
+plt.title(f"Spectrum Profiles")
+plt.legend()
+plt.show()
+
+# At this point we should see that ASPIRE's whitening procedure has
+#   effected the distribution of noise.
+# In other tutorials a Simulation source is generally used
+#   in place of constructing your own image stacks.
