@@ -32,8 +32,6 @@ mu = 0.0
 sigma = 256.0
 white = np.random.normal(mu, sigma, img_data.shape)
 
-snr = np.var(img_data) / np.var(white)
-print(f"Rough SNR {snr}")
 
 # We'll also compute the spectrum of the original image and white noise sample for later.
 img_data_f = np.abs(np.fft.fftshift(np.fft.fft2(img_data)))
@@ -167,7 +165,7 @@ legend_colors = {
 }
 
 # Loop through the sprectral profiles and plot.
-for i, name in enumerate(sorted(noises)):
+for name in sorted(noises):
     plt.plot(radial_profile(noises_f[name]), legend_colors[name], label=name)
     plt.plot(
         radial_profile(whitened_noises_f[name]),
@@ -176,7 +174,7 @@ for i, name in enumerate(sorted(noises)):
         label=f"Whitened {name}",
     )
 
-plt.title(f"Spectrum Profiles")
+plt.title("Spectrum Profiles")
 plt.legend()
 plt.show()
 
