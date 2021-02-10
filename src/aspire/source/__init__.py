@@ -747,4 +747,4 @@ class ArrayImageSource(ImageSource):
             L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None
         )
         self._cached_im = im
-        self.unique_filters = [IdentityFilter(dim=2)]
+        self.unique_filters = [IdentityFilter()]
