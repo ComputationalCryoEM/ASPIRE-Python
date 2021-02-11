@@ -6,7 +6,7 @@ CRYO projections (MRC files).
 
 .. code-block:: console
 
-    python -m aspire <command>
+    aspire <command>
 
 Running the ``aspire`` module as a script allows one to run different stages of the Cryo-EM data pipeline.
 Substitute ``<command>`` with one of the available ``aspire`` commands. Use the ``-h`` flag to display all available commands.
@@ -26,7 +26,7 @@ For example, to run the command on sample data included in ASPIRE (a single ``sa
 .. code-block:: console
 
     mkdir apple_output
-    python -m aspire apple --mrc_file /path/to/aspire/data/sample.mrc --output_dir particles
+    aspire apple --mrc_file /path/to/aspire/data/sample.mrc --output_dir particles
 
 Use the ``--help`` argument with the command to see the several options associated with this command.
 
@@ -39,7 +39,7 @@ and runs evaluations on these estimated quantities (against the `true` values wh
 
 .. code-block:: console
 
-    python -m aspire simulation
+    aspire simulation
 
 Use the ``--help`` argument to look for configurable options. You can select the no. of distinct gaussian blobs, the no. of images,
 the resolution of the (square) images generated etc.
@@ -55,7 +55,7 @@ For example, to run the command on a sample data included in ASPIRE:
 
 .. code-block:: console
 
-    python -m aspire cov3d --starfile /path/to/aspire/data/sample_relion_data.star --pixel_size 1.338 --max_resolution 8 --cg_tol 0.2
+    aspire cov3d --starfile /path/to/aspire/data/sample_relion_data.star --pixel_size 1.338 --max_resolution 8 --cg_tol 0.2
 
 .. note::
 
@@ -74,7 +74,7 @@ The ``crop`` command crops a stack of projections of an mrc file to squares of a
 
 .. code-block:: console
 
-      python -m aspire --debug -v 3 crop demo.mrc 42
+      aspire --debug -v 3 crop demo.mrc 42
 
 .. note::
 
@@ -105,7 +105,7 @@ provide another layer of arguments, options and flags. For example, in case of `
 
 .. code-block:: console
 
-   $ python -m aspire -v 2 --debug compare  a.mrc  b.mrc --max-error=0.123
+   $ aspire -v 2 --debug compare  a.mrc  b.mrc --max-error=0.123
 
 
 .. bibliography:: references.bib
