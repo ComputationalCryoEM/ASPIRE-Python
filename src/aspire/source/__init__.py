@@ -118,7 +118,7 @@ class ImageSource:
                     degrees=True,
                 )
 
-        self.unique_filters = None
+        self.unique_filters = [IdentityFilter()]
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
 
@@ -747,4 +747,3 @@ class ArrayImageSource(ImageSource):
             L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None
         )
         self._cached_im = im
-        self.unique_filters = [IdentityFilter()]
