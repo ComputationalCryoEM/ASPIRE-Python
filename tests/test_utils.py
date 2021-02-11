@@ -47,4 +47,4 @@ class UtilsTestCase(TestCase):
         self.assertEqual(1e-8, utest_tolerance(np.float64))
         self.assertEqual(1e-5, utest_tolerance(np.float32))
         with raises(TypeError):
-            utest_tolerance(np.int)
+            utest_tolerance(np.int64)

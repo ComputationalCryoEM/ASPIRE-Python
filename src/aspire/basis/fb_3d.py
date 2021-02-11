@@ -67,9 +67,9 @@ class FBBasis3D(Basis):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count, dtype=np.int)
-        indices_ms = np.zeros(self.count, dtype=np.int)
-        indices_ks = np.zeros(self.count, dtype=np.int)
+        indices_ells = np.zeros(self.count, dtype=np.int64)
+        indices_ms = np.zeros(self.count, dtype=np.int64)
+        indices_ks = np.zeros(self.count, dtype=np.int64)
 
         ind = 0
         for ell in range(self.ell_max + 1):
