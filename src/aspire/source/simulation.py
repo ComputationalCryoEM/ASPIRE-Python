@@ -175,7 +175,7 @@ class Simulation(ImageSource):
 
     def _images(self, start=0, num=np.inf, indices=None, enable_noise=True):
         if indices is None:
-            indices = np.arange(start, min(start + num, self.n), dtype=np.int)
+            indices = np.arange(start, min(start + num, self.n), dtype=np.int64)
 
         im = self.projections(start=start, num=num, indices=indices)
 

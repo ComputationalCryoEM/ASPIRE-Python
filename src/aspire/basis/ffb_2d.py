@@ -134,7 +134,7 @@ class FFBBasis2D(FBBasis2D):
 
         ind = 0
 
-        idx = ind + np.arange(self.k_max[0], dtype=np.int)
+        idx = ind + np.arange(self.k_max[0], dtype=np.int64)
 
         # include the normalization factor of angular part into radial part
         radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
@@ -144,8 +144,8 @@ class FFBBasis2D(FBBasis2D):
         ind_pos = ind
 
         for ell in range(1, self.ell_max + 1):
-            idx = ind + np.arange(self.k_max[ell], dtype=np.int)
-            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=np.int)
+            idx = ind + np.arange(self.k_max[ell], dtype=np.int64)
+            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=np.int64)
             idx_neg = idx_pos + self.k_max[ell]
 
             v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0

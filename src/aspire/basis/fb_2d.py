@@ -71,9 +71,9 @@ class FBBasis2D(Basis):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count, dtype=np.int)
-        indices_ks = np.zeros(self.count, dtype=np.int)
-        indices_sgns = np.zeros(self.count, dtype=np.int)
+        indices_ells = np.zeros(self.count, dtype=np.int64)
+        indices_ks = np.zeros(self.count, dtype=np.int64)
+        indices_sgns = np.zeros(self.count, dtype=np.int64)
 
         i = 0
         for ell in range(self.ell_max + 1):
@@ -186,7 +186,7 @@ class FBBasis2D(Basis):
         x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
-            idx_radial = ind_radial + np.arange(0, k_max, dtype=np.int)
+            idx_radial = ind_radial + np.arange(0, k_max, dtype=np.int64)
 
             # include the normalization factor of angular part
             ang_nrms = self.angular_norms[idx_radial]
@@ -197,7 +197,7 @@ class FBBasis2D(Basis):
             for _ in sgns:
                 ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
-                idx = ind + np.arange(0, k_max, dtype=np.int)
+                idx = ind + np.arange(0, k_max, dtype=np.int64)
                 x[mask] += ang_radial @ v[idx]
                 ind += len(idx)
                 ind_ang += 1
