@@ -73,4 +73,9 @@ setup(
         "Programming Language :: Python",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
+    entry_points={
+        "console_scripts": [
+            "aspire = aspire.__main__:main_entry",
+        ]
+    },
 )
