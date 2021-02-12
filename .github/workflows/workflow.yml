@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8, 3.9]
         pyenv: [stable, dev]
         exclude:
           # Exclude 3.6-stable so we can add pre and post tasks to that environment.
