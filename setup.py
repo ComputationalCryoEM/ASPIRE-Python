@@ -37,7 +37,7 @@ setup(
         "pillow",
         "pytest",
         "pytest-cov",
-        "scipy==1.6.0",
+        "scipy==1.5.4",
         "scikit-learn",
         "scikit-image==0.18.1",
         "setuptools>=0.41",
