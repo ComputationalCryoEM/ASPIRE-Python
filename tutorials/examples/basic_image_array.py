@@ -5,8 +5,8 @@ from skimage.measure import block_reduce
 
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
-from aspire.noise import WhiteNoiseEstimator
-from aspire.operators import ScalarFilter
+from aspire.noise import AnisotropicNoiseEstimator
+from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source import ArrayImageSource
 
 # ------------------------------------------------------------------------------
@@ -14,20 +14,15 @@ from aspire.source import ArrayImageSource
 
 # Scipy ships with a portrait.
 #  We'll take the grayscale representation as floating point data.
-stock_img_data = misc.face(gray=True).astype(np.float32)
+stock_img = misc.face(gray=True).astype(np.float32)
 
 # Crop to a square
-n_pixels = min(stock_img_data.shape)
-stock_img_data = stock_img_data[0:n_pixels, 0:n_pixels]
-# downsample (speeds things up)
-stock_img_data = block_reduce(stock_img_data, (4, 4))
-
-plt.imshow(stock_img_data, cmap=plt.cm.gray)
-plt.title("Starting Image")
-plt.show()
-
-# We'll also compute the spectrum of the original image sample for later.
-stock_img_data_f = np.abs(np.fft.fftshift(np.fft.fft2(stock_img_data)))
+n_pixels = min(stock_img.shape)
+stock_img = stock_img[0:n_pixels, 0:n_pixels]
+# Downsample (just to speeds things up)
+stock_img = block_reduce(stock_img, (4, 4))
+# Normalize to [0,1]
+stock_img /= np.max(stock_img)
 
 
 # ------------------------------------------------------------------------------
@@ -38,119 +33,106 @@ stock_img_data_f = np.abs(np.fft.fftshift(np.fft.fft2(stock_img_data)))
 # are built around an Image classes.
 
 # Construct the Image class by passing it an array of data.
-img = Image(stock_img_data)
+img = Image(stock_img)
 
 # We'll begin processing by adding some noise.
 #   We'd like to create uniform noise for a 2d image with prescibed variance,
-#   say yielding an SNR around 10.
-noise_var = np.var(stock_img_data) * 10.0
+noise_var = np.var(stock_img) * 5
 noise_filter = ScalarFilter(dim=2, value=noise_var)
 
-#   Then create a NoiseAdder,
+#   Then create a NoiseAdder.
 noise = NoiseAdder(seed=123, noise_filter=noise_filter)
 
-#   which we can apply to our image data.
+#   We can apply the NoiseAdder to our image data.
 img_with_noise = noise.forward(img)
 
-# We'll plot the first image (we only have one in our stack here).
-plt.imshow(img_with_noise[0], cmap=plt.cm.gray)
-plt.title("Noisy Image")
+# We'll plot the original and first noisy image (we only have one in our stack here).
+fig, axs = plt.subplots(1, 2)
+axs[0].imshow(stock_img, cmap=plt.cm.gray)
+axs[0].set_title("Starting Image")
+axs[1].imshow(img_with_noise[0], cmap=plt.cm.gray)
+axs[1].set_title("Noisy Image")
 plt.show()
 
 
 # ------------------------------------------------------------------------------
-# Lets try an experiment, this time on a stack of images in an array.
-#   In real use, you would probably bring your own stack of images,
-#   but we'll create some here as before.
+# Great, now we have enough to try an experiment,
+# but this time on a stack of images.
+#
+# In real use, you would probably bring your own array of images,
+# or use a `Simulation` object.  For now we'll create some arrays as before.
 n_imgs = 128
 imgs_data = np.empty(
-    (n_imgs, stock_img_data.shape[-2], stock_img_data.shape[-1]), dtype=np.float64
+    (n_imgs, stock_img.shape[-2], stock_img.shape[-1]), dtype=np.float64
 )
 for i in range(n_imgs):
-    imgs_data[i] = stock_img_data
+    imgs_data[i] = stock_img
 imgs = Image(imgs_data)
 
-# Similar to before, we'll construct noise with a constant variance,
-#   but now for the whole stack.
-noise_var = np.var(stock_img_data) * 10.0
-noise_adder = NoiseAdder(seed=123, noise_filter=ScalarFilter(dim=2, value=noise_var))
+
+# Lets say we want to add different kind of noise to the images.
+# We can create our own function. Here we want to apply in two dimensions.
+def noise_function(x, y):
+    return np.exp(-(x * x + y * y) / (2 * 0.3 ** 2))
+
+
+# We can create a custom filter from that function.
+f = FunctionFilter(noise_function)
+# And use the filter to add the noise to our stack of images.
+noise_adder = NoiseAdder(seed=123, noise_filter=f)
 imgs_with_noise = noise_adder.forward(imgs)
 
-# We can check some images, which should be the same up to noise.
-n_check = 2
-fig, axs = plt.subplots(1, n_check)
-for i in range(n_check):
-    axs[i].imshow(imgs_with_noise[i], cmap=plt.cm.gray)
-    axs[i].set_title(f"Noisy Image {i}")
-plt.show()
-
-# Lets say we want to add additonal noise to half the images, every other image.
-indices = range(1, n_imgs, 2)
-noise_adder = NoiseAdder(
-    seed=123, noise_filter=ScalarFilter(dim=2, value=4 * noise_var)
-)
-# We can use the "indices" to selectively apply our xform.
-#   Note, that the xform will return a dense Image, so we need to match dimensions
-#   There is an IndexdXform that provides an alternative to this.
-imgs_with_noise[indices] = noise_adder.forward(imgs_with_noise, indices=indices)[
-    : len(indices)
-]
-
-# We can check now that the second image has a different noise profile.
-n_check = 2
-fig, axs = plt.subplots(1, n_check)
-for i in range(n_check):
-    axs[i].imshow(imgs_with_noise[i], cmap=plt.cm.gray)
-    axs[i].set_title(f"Noisy Image {i}")
+# Let's see the first two noisy images.
+# They should each display slightly different noise.
+fig, axs = plt.subplots(2, 2)
+for i, img in enumerate(imgs_with_noise[0:2]):
+    axs[0, i].imshow(img, cmap=plt.cm.gray)
+    axs[0, i].set_title(f"Custom Noisy Image {i}")
+    img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(img)))
+    axs[1, i].imshow(np.log(1 + img_with_noise_f), cmap=plt.cm.gray)
+    axs[1, i].set_title(f"Custom Noisy Spectrum Image {i}")
 plt.show()
 
 
 # ------------------------------------------------------------------------------
 # Use ASPIRE pipeline to Whiten
+# Here we will introduce our `Source` class and demonstrate applying a `xform`.
 
 # "Source" classes are what we use in processing pipelines.
 # They provide a consistent interface to a variety of underlying data sources.
-# In this case, we'll just use our Image to run a small experiment.
+# In this case, we'll just use our Image in an ArrayImageSource to run a small experiment.
+#
 # If you were happy with the experiment design on an array of test data,
 # the source is easily swapped out to something like RelionSource,
 # which might point at a stack of images too large to fit in memory at once.
-# This would be managed behind the scenes for you.
+# The implementation of batching for memory management
+# would be managed behind the scenes for you.
+
 imgs_src = ArrayImageSource(imgs_with_noise)
 
+# We'll copy the orginals for comparison later, before we process them further.
+noisy_imgs_copy = imgs_src.images(0, n_imgs)
 
 # One of the tools we can use is a NoiseEstimator,
 #   which consumes from a Source.
-noise_estimator = WhiteNoiseEstimator(imgs_src)
+noise_estimator = AnisotropicNoiseEstimator(imgs_src)
 
 # Once we have the estimator instance,
 #   we can use it in a transform applied to our Source.
 imgs_src.whiten(noise_estimator.filter)
 
-# We can get numpy arrays from our source if we want them.
-whitened_imgs_data = imgs_src.images(0, imgs_src.n).asnumpy()
 
+# Peek at two whitened images and their corresponding spectrum.
 fig, axs = plt.subplots(2, 2)
-for i in range(axs.shape[1]):
-    axs[0, i].imshow(imgs_with_noise[i], cmap=plt.cm.gray)
-    axs[0, i].set_title(f"Noisy Image {i}")
-    axs[1, i].imshow(whitened_imgs_data[i], cmap=plt.cm.gray)
-    axs[1, i].set_title(f"Whitened Noisy Image {i}")
+for i, img in enumerate(imgs_src.images(0, 2)):
+    axs[0, i].imshow(img, cmap=plt.cm.gray)
+    axs[0, i].set_title(f"Whitened Noisy Image {i}")
+    img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(img)))
+    axs[1, i].imshow(np.log(1 + img_with_noise_f), cmap=plt.cm.gray)
+    axs[1, i].set_title(f"Whitened Noisy Image Spectrum {i}")
 plt.show()
 
 
-# Okay, so lets look at the spectrum
-fig, axs = plt.subplots(2, 2)
-for i in range(axs.shape[1]):
-    imgs_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(imgs_with_noise[i])))
-    axs[0, i].imshow(np.log(1 + imgs_with_noise_f), cmap=plt.cm.gray)
-    axs[0, i].set_title(f"Spectrum of Noisy Image {i}")
-    whitened_imgs_f = np.abs(np.fft.fftshift(np.fft.fft2(whitened_imgs_data[i])))
-    axs[1, i].imshow(np.log(1 + whitened_imgs_f), cmap=plt.cm.gray)
-    axs[1, i].set_title(f"Whitened Noisy Image {i}")
-plt.show()
-
-
-# Stil hard to tell.
 # We'll also want to take a look at the spectrum power distribution.
 #  Since we just want to see the character of what is happening,
 #  I'll assume each pixel's contribution is placed at their lower left corner,
@@ -166,21 +148,24 @@ def radial_profile(data):
     return binsum / bincount
 
 
-# Still not happy with this part
-colors = ["r", "g"]
-for i in range(axs.shape[1]):
-    imgs_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(imgs_with_noise[i])))
-    noise_f = imgs_with_noise_f - stock_img_data_f
-    plt.plot(radial_profile(noise_f), color=colors[i], label=f"PSD of Noisy Image {i}")
-
-    whitened_imgs_f = np.abs(np.fft.fftshift(np.fft.fft2(whitened_imgs_data[i])))
-    whitened_noise_f = stock_img_data_f - whitened_imgs_f
+# Lets pickout several images and plot their the radial profile of their noise.
+colors = ["r", "g", "b", "k", "c"]
+for i, img in enumerate(imgs_src.images(0, len(colors))):
+    img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(noisy_imgs_copy[i])))
     plt.plot(
-        radial_profile(whitened_noise_f),
+        radial_profile(img_with_noise_f),
+        color=colors[i],
+        label=f"Noisy Image Radial Profile {i}",
+    )
+
+    whitened_img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(img)))
+    plt.plot(
+        radial_profile(whitened_img_with_noise_f),
         color=colors[i],
         linestyle="--",
-        label=f"PSD Whitened Noisy Image {i}",
+        label=f"Whitened Noisy Image Radial Profile {i}",
     )
+
 plt.title("Spectrum Profiles")
 plt.legend()
 plt.show()
