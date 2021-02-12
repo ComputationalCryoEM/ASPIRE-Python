@@ -30,7 +30,7 @@ setup(
         "jupyter",
         "matplotlib",
         "mrcfile",
-        "numpy==1.20",
+        "numpy==1.19",
         "numpydoc==0.7.0",
         "pandas==1.1.5",
         "pyfftw",
