@@ -473,13 +473,13 @@ class FBBasis3DTestCase(TestCase):
         self.assertTrue(
             np.allclose(
                 result,
-                np.load(os.path.join(DATA_DIR, "hbbasis_evaluation_8_8_8.npy")),
+                np.load(os.path.join(DATA_DIR, "hbbasis_evaluation_8_8_8.npy")).T,
                 atol=utest_tolerance(self.dtype),
             )
         )
 
     def testFBBasis3DEvaluate_t(self):
-        v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy"))
+        v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         result = self.basis.evaluate_t(v.astype(self.dtype))
         self.assertTrue(
             np.allclose(
@@ -589,7 +589,7 @@ class FBBasis3DTestCase(TestCase):
         )
 
     def testFBBasis3DExpand(self):
-        v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy"))
+        v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         result = self.basis.expand(v.astype(self.dtype))
         self.assertTrue(
             np.allclose(
