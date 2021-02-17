@@ -142,14 +142,15 @@ def mdim_mat_fun_conj(X, d1, d2, f):
 
     TODO: Very complicated to wrap head around this one!
     """
+    X = X.T
     X, sz_roll = unroll_dim(X, 2 * d1 + 1)
-    X = f(X)
+    X = f(X.T).T
 
     # Swap the first d2 axes block of X with the next d1 axes block
     X = np.moveaxis(X, list(range(d1 + d2)), list(range(d1, d1 + d2)) + list(range(d1)))
 
     X = np.conj(X)
-    X = f(X)
+    X = f(X.T).T
 
     # Swap the first d2 axes block of X with the next d2 axes block
     X = np.moveaxis(X, list(range(2 * d2)), list(range(d2, 2 * d2)) + list(range(d2)))
@@ -157,7 +158,7 @@ def mdim_mat_fun_conj(X, d1, d2, f):
     X = np.conj(X)
     X = roll_dim(X, sz_roll)
 
-    return X
+    return X.T
 
 
 def symmat_to_vec_iso(mat):
