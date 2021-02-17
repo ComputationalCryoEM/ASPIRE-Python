@@ -146,12 +146,10 @@ class FBBasis3D(Basis):
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
-        print('xxx v evaluate', v.shape)
+
         v = v.T
-        print('xxx v evaluate T', v.shape)
         v, sz_roll = unroll_dim(v, 2)
-        print('xxx v unrolled', v.shape)
-        
+
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
         mask = m_flatten(self.basis_coords["mask"])
@@ -182,9 +180,8 @@ class FBBasis3D(Basis):
 
         x = m_reshape(x, self.sz + x.shape[1:])
         x = roll_dim(x, sz_roll)
-        print('xxx evaluate x', x.shape)
 
-        return x.T #np.moveaxis(x, -1, 0)
+        return x.T
 
     def evaluate_t(self, v):
         """
@@ -197,9 +194,8 @@ class FBBasis3D(Basis):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
-        #v = np.moveaxis(v, 0, -1)
+
         v = v.T
-        print('xxx v evaluate_t', v.shape)
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(
             x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
@@ -232,4 +228,4 @@ class FBBasis3D(Basis):
             ind_radial += len(idx_radial)
 
         v = roll_dim(v, sz_roll)
-        return v.T #np.moveaxis(v, -1, 0)
+        return v.T

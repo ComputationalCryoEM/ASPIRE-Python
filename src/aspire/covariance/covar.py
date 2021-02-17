@@ -90,9 +90,7 @@ class CovarianceEstimator(Estimator):
 
     def estimate(self, mean_vol, noise_variance, tol=None):
         logger.info("Running Covariance Estimator")
-        print(f"XXX mean_vol.shape {mean_vol.shape}")
         b_coeff = self.src_backward(mean_vol, noise_variance)
-        print(f"XXX b_coeff {b_coeff.shape}")
         est_coeff = self.conj_grad(b_coeff, tol=tol)
         covar_est = self.basis.mat_evaluate(est_coeff)
         covar_est = vecmat_to_volmat(make_symmat(volmat_to_vecmat(covar_est)))
