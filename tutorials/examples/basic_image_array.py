@@ -30,7 +30,7 @@ stock_img /= np.max(stock_img)
 
 # First we'll make an ASPIRE Image instance out of our data.
 # This is a light wrapper over the numpy array. Many ASPIRE internals
-# are built around an Image classes.
+# are built around an Image class.
 
 # Construct the Image class by passing it an array of data.
 img = Image(stock_img)
@@ -46,7 +46,8 @@ noise = NoiseAdder(seed=123, noise_filter=noise_filter)
 #   We can apply the NoiseAdder to our image data.
 img_with_noise = noise.forward(img)
 
-# We'll plot the original and first noisy image (we only have one in our stack here).
+# We'll plot the original and first noisy image,
+# because we only have one image in our Image stack right now.
 fig, axs = plt.subplots(1, 2)
 axs[0].imshow(stock_img, cmap=plt.cm.gray)
 axs[0].set_title("Starting Image")
@@ -56,11 +57,13 @@ plt.show()
 
 
 # ------------------------------------------------------------------------------
-# Great, now we have enough to try an experiment,
-# but this time on a stack of images.
+# Great, now we have enough to try an experiment.
+# This time we'll use a stack of images.
 #
 # In real use, you would probably bring your own array of images,
 # or use a `Simulation` object.  For now we'll create some arrays as before.
+# For demonstration we'll setup a stack of n_imgs,
+# with each image just being a copy of the stock_img data.
 n_imgs = 128
 imgs_data = np.empty(
     (n_imgs, stock_img.shape[-2], stock_img.shape[-1]), dtype=np.float64
@@ -95,7 +98,7 @@ plt.show()
 
 
 # ------------------------------------------------------------------------------
-# Use ASPIRE pipeline to Whiten
+# Now we''l use an ASPIRE pipeline to Whiten the image stack.
 # Here we will introduce our `Source` class and demonstrate applying a `xform`.
 
 # "Source" classes are what we use in processing pipelines.
