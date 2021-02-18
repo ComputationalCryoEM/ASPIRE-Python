@@ -208,7 +208,7 @@ class RotCov2D:
         do_refl=True,
         noise_var=1,
         covar_est_opt=None,
-        make_psd=False,
+        make_psd=True,
     ):
         """
         Calculate the covariance matrix from the expansion coefficients and CTF information.
@@ -655,7 +655,7 @@ class BatchedRotCov2D(RotCov2D):
         return mean_coeff
 
     def get_covar(
-        self, noise_var=1, mean_coeff=None, covar_est_opt=None, make_psd=False
+        self, noise_var=1, mean_coeff=None, covar_est_opt=None, make_psd=True
     ):
         """
         Calculate the block diagonal covariance matrix in the basis
