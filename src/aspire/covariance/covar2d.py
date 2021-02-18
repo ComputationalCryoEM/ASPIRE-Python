@@ -283,9 +283,8 @@ class RotCov2D:
             A[k] = np.sqrt(weight) * ctf_fb_k_sq
             M += A[k]
 
-        logger.info("Check positive semidefinite property of left side b in Cov2D.")
-        if not b_coeff.check_psd_matrix():
-            logger.warning("Matrices are not positive semidefinite.")
+        if not b_coeff.check_psd():
+            logger.warning("Left side b in Cov2D is not positive semidefinite.")
 
         if covar_est_opt["shrinker"] == "None":
             b = b_coeff - noise_var * b_noise
@@ -297,12 +296,11 @@ class RotCov2D:
                 noise_var,
                 covar_est_opt["shrinker"],
             )
-        logger.info(
-            "Check positive semidefinite property of "
-            "left side b after removing noise in Cov2D."
-        )
-        if not b.check_psd_matrix():
-            logger.warning("Matrices are not positive semidefinite.")
+        if not b.check_psd():
+            logger.warning(
+                "Left side b after removing noise in Cov2D"
+                " is not positive semidefinite."
+            )
 
         # RCOPT okay, this looks like a big batch, come back later
 
@@ -338,12 +336,11 @@ class RotCov2D:
             covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
-        logger.info("Check positive semidefinite property of covariance in Cov2D.")
-        if not covar_coeff.check_psd_matrix():
-            logger.warning("Matrices are not positive semidefinite.")
+        if not covar_coeff.check_psd():
+            logger.warning("Covariance matrix in Cov2D is not positive semidefinite.")
             if make_psd:
                 logger.info("Convert matrices to positive semidefinite.")
-                covar_coeff = covar_coeff.make_psd_matrix()
+                covar_coeff = covar_coeff.make_psd()
 
         return covar_coeff
 
@@ -717,33 +714,28 @@ class BatchedRotCov2D(RotCov2D):
         b_covar = self.b_covar
 
         b_covar = self._mean_correct_covar_rhs(b_covar, self.b_mean, mean_coeff)
-        logger.info(
-            "Check positive semidefinite property of left side b in batched Cov2D."
-        )
-        if not b_covar.check_psd_matrix():
-            logger.warning("Matrices are not positive semidefinite.")
+        if not b_covar.check_psd():
+            logger.warning("Left side b in Batched Cov2D is not positive semidefinite.")
 
         b_covar = self._noise_correct_covar_rhs(
             b_covar, self.A_mean, noise_var, covar_est_opt["shrinker"]
         )
-        logger.info(
-            "Check positive semidefinite property of left side b"
-            " after removing noise in batched Cov2D."
-        )
-        if not b_covar.check_psd_matrix():
-            logger.warning("Matrices are not positive semidefinite.")
+        if not b_covar.check_psd():
+            logger.warning(
+                "Left side b after removing noise "
+                "in Batched Cov2D is not positive semidefinite."
+            )
 
         covar_coeff = self._solve_covar(
             self.A_covar, b_covar, self.M_covar, covar_est_opt
         )
-        logger.info(
-            "Check positive semidefinite property of covariance in batched Cov2D."
-        )
-        if not covar_coeff.check_psd_matrix():
-            logger.warning("Matrices are not positive semidefinite.")
+        if not covar_coeff.check_psd():
+            logger.warning(
+                "Covariance matrix in Batched Cov2D is not positive semidefinite."
+            )
             if make_psd:
                 logger.info("Convert matrices to positive semidefinite.")
-                covar_coeff = covar_coeff.make_psd_matrix()
+                covar_coeff = covar_coeff.make_psd()
 
         return covar_coeff
 
