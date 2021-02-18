@@ -39,7 +39,6 @@ setup(
         "pytest-cov",
         "scipy==1.4.0",
         "scikit-learn",
-        "scikit-image==0.16.2",
         "setuptools>=0.41",
         "sphinxcontrib-bibtex",
         "sphinx-rtd-theme>=0.4.2",
