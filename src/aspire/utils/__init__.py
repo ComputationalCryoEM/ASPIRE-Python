@@ -5,6 +5,7 @@ from .matrix import (
     anorm,
     eigs,
     im_to_vec,
+    make_psd,
     make_symmat,
     mat_to_vec,
     mdim_mat_fun_conj,
