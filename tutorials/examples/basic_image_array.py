@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import misc
-from skimage.measure import block_reduce
 
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
@@ -19,8 +18,6 @@ stock_img = misc.face(gray=True).astype(np.float32)
 # Crop to a square
 n_pixels = min(stock_img.shape)
 stock_img = stock_img[0:n_pixels, 0:n_pixels]
-# Downsample (just to speeds things up)
-stock_img = block_reduce(stock_img, (4, 4))
 # Normalize to [0,1]
 stock_img /= np.max(stock_img)
 
@@ -34,10 +31,14 @@ stock_img /= np.max(stock_img)
 
 # Construct the Image class by passing it an array of data.
 img = Image(stock_img)
+# Downsample (just to speeds things up)
+new_resolution = img.res // 4
+img = img.downsample(new_resolution)
+
 
 # We'll begin processing by adding some noise.
 #   We'd like to create uniform noise for a 2d image with prescibed variance,
-noise_var = np.var(stock_img) * 5
+noise_var = np.var(img.asnumpy()) * 5
 noise_filter = ScalarFilter(dim=2, value=noise_var)
 
 #   Then create a NoiseAdder.
@@ -49,7 +50,7 @@ img_with_noise = noise.forward(img)
 # We'll plot the original and first noisy image,
 # because we only have one image in our Image stack right now.
 fig, axs = plt.subplots(1, 2)
-axs[0].imshow(stock_img, cmap=plt.cm.gray)
+axs[0].imshow(img[0], cmap=plt.cm.gray)
 axs[0].set_title("Starting Image")
 axs[1].imshow(img_with_noise[0], cmap=plt.cm.gray)
 axs[1].set_title("Noisy Image")
@@ -63,13 +64,11 @@ plt.show()
 # In real use, you would probably bring your own array of images,
 # or use a `Simulation` object.  For now we'll create some arrays as before.
 # For demonstration we'll setup a stack of n_imgs,
-# with each image just being a copy of the stock_img data.
+# with each image just being a copy of the data from `img`.
 n_imgs = 128
-imgs_data = np.empty(
-    (n_imgs, stock_img.shape[-2], stock_img.shape[-1]), dtype=np.float64
-)
+imgs_data = np.empty((n_imgs, img.res, img.res), dtype=np.float64)
 for i in range(n_imgs):
-    imgs_data[i] = stock_img
+    imgs_data[i] = img[0]
 imgs = Image(imgs_data)
 
 
