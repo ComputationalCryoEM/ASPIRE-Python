@@ -139,26 +139,35 @@ def mdim_mat_fun_conj(X, d1, d2, f):
         array of size M_1-by-...-by-M_d2-by-... .
     :return: An array of size M_1-by-...-by-M_d2-by-M_1-by-...-by-M_d2-by-... resulting from applying fun to the rows
         and columns of the multidimensional matrix X.
-
-    TODO: Very complicated to wrap head around this one!
     """
-    X = X.T
-    X, sz_roll = unroll_dim(X, 2 * d1 + 1)
-    X = f(X.T).T
 
-    # Swap the first d2 axes block of X with the next d1 axes block
-    X = np.moveaxis(X, list(range(d1 + d2)), list(range(d1, d1 + d2)) + list(range(d1)))
+    # Roll up outer dimensions if any.
+    dim = 2 * d1 + 1
+    sz_roll = X.shape[:-dim]
+    shp = X.shape[-dim:]
+    X = X.reshape((-1, *shp))
+
+    X = f(X)
+
+    # Swap the last d2 axes with the first d1 axes
+    dims1 = [X.ndim - d - 1 for d in range(d1 + d2)]
+    dims2 = [X.ndim - d - 1 for d in list(range(d1, d1 + d2)) + list(range(d1))]
+    X = np.moveaxis(X, dims1, dims2)
 
     X = np.conj(X)
-    X = f(X.T).T
+    X = f(X)
 
-    # Swap the first d2 axes block of X with the next d2 axes block
-    X = np.moveaxis(X, list(range(2 * d2)), list(range(d2, 2 * d2)) + list(range(d2)))
+    # Swap the next d2 axes block
+    dims1 = [X.ndim - d - 1 for d in range(2 * d2)]
+    dims2 = [X.ndim - d - 1 for d in list(range(d2, 2 * d2)) + list(range(d2))]
+    X = np.moveaxis(X, dims1, dims2)
 
     X = np.conj(X)
-    X = roll_dim(X, sz_roll)
 
-    return X.T
+    # Unroll outer dimensions.
+    X = X.reshape(*sz_roll, *X.shape[1:])
+
+    return X
 
 
 def symmat_to_vec_iso(mat):
