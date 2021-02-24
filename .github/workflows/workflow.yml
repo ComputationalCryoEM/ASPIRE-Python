@@ -67,7 +67,7 @@ jobs:
       env:
         GITHUB_ACTOR: ${{ github.actor }}
         GITHUB_REPOSITORY: ${{ github.repository }}
-        GITHUB_TOKEN: ${{ secrets.token }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: "docs/buildsite.sh"
       shell: bash
 
