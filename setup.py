@@ -31,7 +31,6 @@ setup(
         "matplotlib",
         "mrcfile",
         "numpy==1.16",
-        "numpydoc==0.7.0",
         "pandas==0.25.3",
         "pyfftw",
         "pillow",
