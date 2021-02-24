@@ -1,6 +1,9 @@
 #!/bin/bash
 set -x
 
+# Change from wherever you are to the directory containing this script.
+pushd "$(dirname "$0")"
+
 pwd ls -lah
 export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
  
@@ -11,6 +14,7 @@ export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
 # Python Sphinx, configured with source/conf.py
 # See https://www.sphinx-doc.org/
 make clean
+sphinx-apidoc -f -o ./source ../src -H Modules
 make html
 
 #######################
@@ -42,7 +46,8 @@ git commit -am "${msg}"
  
 # overwrite the contents of the gh-pages branch on our github.com repo
 git push deploy gh-pages --force
- 
+
+popd
 popd # return to main repo sandbox root
  
 # exit cleanly
