@@ -51,7 +51,7 @@ jobs:
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
 
   docs:
-    if: github.ref == 'refs/heads/gh_docs'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
