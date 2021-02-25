@@ -1,7 +1,7 @@
 import logging
 
-import mrcfile
 import matplotlib.pyplot as plt
+import mrcfile
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import lstsq
