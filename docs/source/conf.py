@@ -37,7 +37,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.mathjax",
     "sphinxcontrib.bibtex",
-    "numpydoc",
+    "sphinx.ext.napoleon",
 ]
 bibtex_bibfiles = ["references.bib"]
 
