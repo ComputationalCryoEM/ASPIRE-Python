@@ -78,10 +78,6 @@ class CufinufftPlan(Plan):
             opts=self.adjoint_opts,
         )
 
-        # Note, I store self.fourier_pts_gpu so the GPUArrray life
-        #   is tied to instance, instead of this method.
-        self.fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
-
         self._transform_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
         self._adjoint_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
 
