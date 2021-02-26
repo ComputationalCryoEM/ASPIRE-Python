@@ -65,7 +65,7 @@ class CufinufftPlan(Plan):
                 "Converting cufinufft gpu_method=1 from default of 2 for 3D1 transform,"
                 f"to support computation in double precision with tol={self.epsilon}."
             )
-            self.adjoint_opts['gpu_method'] = 1
+            self.adjoint_opts["gpu_method"] = 1
 
         self._adjoint_plan = cufinufft(
             1,
