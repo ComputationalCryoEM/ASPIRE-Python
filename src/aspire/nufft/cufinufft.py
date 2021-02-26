@@ -58,15 +58,14 @@ class CufinufftPlan(Plan):
             2, self.sz, -1, self.epsilon, ntransforms=self.ntransforms, dtype=self.dtype
         )
 
-        self.adjoint_opts = None
+        self.adjoint_opts = dict()
         if self.dtype is np.float64 and self.dim == 3 and self.epsilon < 1e3:
             # Note this is an algorithmic implementation dictated by shmem.
             logger.info(
                 "Converting cufinufft gpu_method=1 from default of 2 for 3D1 transform,"
                 f"to support computation in double precision with tol={self.epsilon}."
             )
-            self.adjoint_opts = cufinufft.default_opts(nufft_type=1, dim=self.dim)
-            self.adjoint_opts.gpu_method = 1
+            self.adjoint_opts['gpu_method'] = 1
 
         self._adjoint_plan = cufinufft(
             1,
@@ -75,7 +74,7 @@ class CufinufftPlan(Plan):
             self.epsilon,
             ntransforms=self.ntransforms,
             dtype=self.dtype,
-            opts=self.adjoint_opts,
+            **self.adjoint_opts,
         )
 
         self._transform_plan.set_pts(self.num_pts, *self.fourier_pts_gpu)
