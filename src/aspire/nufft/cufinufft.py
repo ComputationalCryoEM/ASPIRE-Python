@@ -55,7 +55,7 @@ class CufinufftPlan(Plan):
         self.epsilon = max(epsilon, np.finfo(self.dtype).eps)
 
         self._transform_plan = cufinufft(
-            2, self.sz, -1, self.epsilon, ntransforms=self.ntransforms, dtype=self.dtype
+            2, self.sz, self.ntransforms, self.epsilon, -1, dtype=self.dtype
         )
 
         self.adjoint_opts = dict()
@@ -70,9 +70,9 @@ class CufinufftPlan(Plan):
         self._adjoint_plan = cufinufft(
             1,
             self.sz,
-            1,
+            self.ntransforms,
             self.epsilon,
-            ntransforms=self.ntransforms,
+            1,
             dtype=self.dtype,
             **self.adjoint_opts,
         )
