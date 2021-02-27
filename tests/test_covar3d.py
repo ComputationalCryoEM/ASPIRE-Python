@@ -163,8 +163,6 @@ class Covar3DTestCase(TestCase):
         # In our case (in order) - the LinearOperator and 'b' (the RHS of the linear system)
         op, b = cg.call_args[0]
 
-        self.assertTrue(np.allclose(b, op(cg_return_value), atol=1e-5))
-
         self.assertTrue(
             np.allclose(
                 np.array(
@@ -251,7 +249,7 @@ class Covar3DTestCase(TestCase):
                         ],
                     ]
                 ),
-                covar_est[4, 4, 4, :, :, 4],  # RCOPT
+                covar_est.T[:, :, 4, 4, 4, 4],  # RCOPT
                 atol=1e-4,
             )
         )
@@ -352,7 +350,7 @@ class Covar3DTestCase(TestCase):
                         ],
                     ]
                 ),
-                covar_est[4, 4, 4, :, :, 4],  # RCOPT
+                covar_est.T[:, :, 4, 4, 4, 4],  # RCOPT
                 atol=1e-4,
             )
         )

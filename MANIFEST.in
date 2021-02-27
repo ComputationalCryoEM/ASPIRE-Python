@@ -16,6 +16,7 @@ recursive-include docs *.bib
 recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs Makefile
+recursive-include docs *.sh
 prune docs/source
 prune tests
 prune tutorials

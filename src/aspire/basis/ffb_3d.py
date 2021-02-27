@@ -66,7 +66,7 @@ class FFBBasis3D(FBBasis3D):
         wt_z = m_reshape(wt_z, (n_phi, 1))
         phi = np.arccos(z)
         wt_phi = wt_z
-        theta = 2 * pi * np.arange(n_theta).T / (2 * n_theta)
+        theta = 2 * pi * np.arange(n_theta, dtype=self.dtype).T / (2 * n_theta)
         theta = m_reshape(theta, (n_theta, 1))
 
         # evaluate basis function in the radial dimension
