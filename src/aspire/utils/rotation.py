@@ -25,7 +25,7 @@ class Rotation:
         """
         String representation.
         """
-        return f"Rotation stack consisting of {self.num_rots} elements of {self.dtype} type"
+        return f"Rotation stack consisting of {len(self)} elements of {self.dtype} type"
 
     def __len__(self):
         return self._matrices.shape[0]
