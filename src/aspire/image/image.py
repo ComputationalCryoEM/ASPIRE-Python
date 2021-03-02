@@ -1,5 +1,6 @@
 import logging
 
+import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
@@ -114,7 +115,17 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
 
 
 class Image:
-    def __init__(self, data):
+    def __init__(self, data, dtype=None):
+        """
+        A stack of one or more images.
+
+        This is a wrapper of numpy.ndarray which provides methods
+        for common processing tasks.
+
+        :param data: Numpy array containing image data with shape `(n_images, res, res)`.
+        :param dtype: Optionally cast `data` to this dtype. Defaults to `data.dtype`.
+        :return: Image instance storing `data`.
+        """
 
         assert isinstance(
             data, np.ndarray
@@ -123,9 +134,13 @@ class Image:
         if data.ndim == 2:
             data = data[np.newaxis, :, :]
 
-        self.data = data
+        if dtype is None:
+            self.dtype = data.dtype
+        else:
+            self.dtype = np.dtype(dtype)
+
+        self.data = data.astype(self.dtype, copy=False)
         self.ndim = self.data.ndim
-        self.dtype = self.data.dtype
         self.shape = self.data.shape
         self.n_images = self.shape[0]
         self.res = self.shape[1]
@@ -333,6 +348,20 @@ class Image:
         vol = anufft(im_f, pts_rot, (L, L, L), real=True) / L
 
         return aspire.volume.Volume(vol)
+
+    def show(self, columns=5, figsize=(20, 10)):
+        """
+        Plotting Utility Function.
+
+        :param columns: Number of columns in a row of plots.
+        :param figsize: Figure size in inches, consult `matplotlib.figure`.
+        """
+
+        plt.figure(figsize=figsize)
+        for i, im in enumerate(self):
+            plt.subplot(self.n_images // columns + 1, columns, i + 1)
+            plt.imshow(im, cmap="gray")
+        plt.show()
 
 
 class CartesianImage(Image):

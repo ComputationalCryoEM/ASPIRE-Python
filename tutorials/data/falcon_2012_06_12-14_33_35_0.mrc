@@ -1,1 +1,1 @@
-tests/saved_test_data/sample.mrc
+../../tests/saved_test_data/sample.mrc

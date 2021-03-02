@@ -5,7 +5,7 @@ from scipy.linalg import eigh, qr
 
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
-from aspire.operators import ZeroFilter
+from aspire.operators import IdentityFilter, ZeroFilter
 from aspire.source import ImageSource
 from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
@@ -70,11 +70,16 @@ class Simulation(ImageSource):
 
         self.C = self.vols.n_vols
 
-        states = states or randi(self.C, n, seed=seed)
-        angles = angles or uniform_random_angles(n, seed=seed, dtype=self.dtype)
-
+        if states is None:
+            states = randi(self.C, n, seed=seed)
         self.states = states
 
+        if angles is None:
+            angles = uniform_random_angles(n, seed=seed, dtype=self.dtype)
+        self.angles = angles
+
+        if unique_filters is None:
+            unique_filters = [IdentityFilter()]
         self.unique_filters = unique_filters
 
         # Create filter indices and fill the metadata based on unique filters
@@ -85,7 +90,6 @@ class Simulation(ImageSource):
 
         self.offsets = offsets
         self.amplitudes = amplitudes
-        self.angles = angles
 
         self.noise_adder = None
         if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
