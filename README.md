@@ -4,7 +4,7 @@
 [![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/workflows/ASPIRE%20Python%20package/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/workflows/ASPIRE%20Python%20package/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/ComputationalCryoEM/ASPIRE-Python/badge.svg?branch=master)](https://coveralls.io/github/ComputationalCryoEM/ASPIRE-Python?branch=master)
 
-# ASPIRE - Algorithms for Single Particle Reconstruction - v0.6.2
+# ASPIRE - Algorithms for Single Particle Reconstruction - v0.6.3
 
 This is the Python version to supersede the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire).
 
