@@ -46,10 +46,10 @@ class CtfEstimator:
         Instantiate a CtfEstimator instance.
 
         :param pixel_size: Size of the pixel in Angstrom.
-        :param cs: Spherical aberration.
+        :param cs: Spherical aberration in mm.
         :param amplitude_contrast: Amplitude contrast.
         :param voltage: Voltage of electron microscope.
-        :param psd_size: Block size for PSD estimation.
+        :param psd_size: Block size (in pixels) for PSD estimation.
         :param num_tapers: Number of tapers to apply in PSD estimation.
         :returns: CtfEstimator instance.
         """
@@ -80,18 +80,18 @@ class CtfEstimator:
 
     def set_df1(self, df):
         """
-        Sets first defocus.
+        Sets defocus.
 
-        :param df: First defocus.
+        :param df: Defocus value in the direction perpendicular to df2.
         """
 
         self.defocus1 = df
 
     def set_df2(self, df):
         """
-        Sets second defocus.
+        Sets defocus.
 
-        :param df: second defocus.
+        :param df: Defocus value in the direction perpendicular to df1.
         """
 
         self.defocus2 = df
@@ -100,7 +100,7 @@ class CtfEstimator:
         """
         Sets angle.
 
-        :param angle: Angle in degrees.
+        :param angle: Angle (in degrees) between df1 and the x-axis.
         """
 
         self.angle = angle
@@ -183,10 +183,10 @@ class CtfEstimator:
     def ctf_tapers(self, N, R, L):
         """
 
-        :param N:
-        :param R:
-        :param L:
-        :return:
+        :param N: Size of each taper
+        :param R: Spectral resolution
+        :param L: Number of tapers
+        :return: numpy array of data tapers
         """
 
         k, el = np.meshgrid(
