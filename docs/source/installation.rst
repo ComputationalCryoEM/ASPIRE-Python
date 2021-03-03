@@ -47,7 +47,7 @@ Alternative Developer Installations
 
 Developers are expected to be able to manage their own code and environments.
 However, for consistency and newcomers, we recommend the following procedure using `conda`.
-Note that here the name ``aspire_dev`` was chosen, but you may chose any name for the ``conda`` environment.
+Note that here the name ``aspire_dev`` was chosen, but you may choose any name for the ``conda`` environment.
 Some people use different environment names for different features,
 but this is personal preference and will largely depend on what type of changes you are making.
 For example, if you are making changes to dependent package versions for testing,
