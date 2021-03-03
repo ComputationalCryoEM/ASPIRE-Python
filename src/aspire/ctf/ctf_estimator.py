@@ -182,6 +182,7 @@ class CtfEstimator:
 
     def ctf_tapers(self, N, R, L):
         """
+        Compute data tapers (which are discrete prolate spheroidal sequences (dpss))
 
         :param N: Size of each taper
         :param R: Spectral resolution
@@ -204,10 +205,11 @@ class CtfEstimator:
 
     def ctf_estimate_psd(self, blocks, tapers_1d, num_1d_tapers):
         """
+        Estimate the power spectrum of the micrograph using the multi-taper method
 
-        :param blocks:
-        :param tapers_1d:
-        :param num_1d_tapers:
+        :param blocks: 3-D numpy array containing windows extracted from the micrograph in the ctf_preprocess function.
+        :param tapers_1d: numpy array of data tapers.
+        :param num_1d_tapers: number of 1-D data tapers
         :return: Numpy array.
         """
 
@@ -252,10 +254,11 @@ class CtfEstimator:
 
     def ctf_elliptical_average(self, ffbbasis, thon_rings, k):
         """
+        Computes radial/elliptical average of the power spectrum
 
         :param ffbbasis: FFBBasis instance.
-        :param thon_rings:
-        :param k:
+        :param thon_rings: Power spectrum.
+        :param k: 0 for radial averaging and 2 for elliptical averaging.
         :return: PSD and noise as 2-tuple of numpy arrays.
         """
 
@@ -279,8 +282,9 @@ class CtfEstimator:
     # NOTE DISCUSS linprog_method
     def ctf_background_subtract_1d(self, thon_rings, linprog_method="interior-point"):
         """
+        Estimate and subtract the background from the power spectrum
 
-        :param thon_rings:
+        :param thon_rings: Estimated power spectrum
         :param linprog_method: Method passed to linear progam solver.
         :return: 2-tuple of numpy arrays
         """
@@ -356,14 +360,15 @@ class CtfEstimator:
 
     def ctf_opt1d(self, thon_rings, pixel_size, cs, lmbd, w, N):
         """
+        Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
-        :param thon_rings:
-        :param pixel_size:
-        :param cs:
-        :param lmbd:
-        :param w:
-        :param N:
-        :return: 2-tuple of numpy arrays
+        :param thon_rings: Estimated power specrtum.
+        :param pixel_size: Pixel size in Angstrom
+        :param cs: Spherical aberration in mm.
+        :param lmbd: Electron wavelength.
+        :param w: Amplitude contrast.
+        :param N: Number of rows (or columns) in the estimate power spectrum.
+        :return: 2-tuple of numpy arrays.
         """
 
         center = N // 2
@@ -418,10 +423,11 @@ class CtfEstimator:
 
     def ctf_background_subtract_2d(self, signal, background_p1, max_col):
         """
+        Subtract background from estimated power spectrum
 
-        :param signal:
-        :param background_p1:
-        :param max_col:
+        :param signal: Estimated power spectrum
+        :param background_p1: 1-D background estimation
+        :param max_col: Internal variable, returned as the second parameter from ctf_opt1d.
         :return: 2-tuple of numpy arrays.
         """
 
@@ -455,8 +461,8 @@ class CtfEstimator:
     def ctf_PCA(self, signal, pixel_size, g_min, g_max, w):
         """
 
-        :param signal:
-        :param pixel_size:
+        :param signal: Estimated power spectrum.
+        :param pixel_size: Pixel size in Angstrom.
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
         :param w: ratio
@@ -523,20 +529,21 @@ class CtfEstimator:
         cs,
     ):
         """
+        Runs gradient ascent to optimize defocus parameters
 
-        :param signal:
-        :param df1:
-        :param df2:
-        :param angle_ast:
-        :param r:
-        :param theta:
-        :param pixel_size:
-        :param g_min:
-        :param g_max:
-        :param amplitude_contrast:
-        :param lmbd:
-        :param cs:
-        :return: tuple of
+        :param signal: Estimated power spectrum
+        :param df1: Defocus value in the direction perpendicular to df2.
+        :param df2: Defocus value in the direction perpendicular to df1.
+        :param angle_ast: Angle between df1 and the x-axis
+        :param r: Magnitude of spatial frequencies.
+        :param theta: Phase of spatial frequencies.
+        :param pixel_size: Pixel size in angstrom.
+        :param g_min: Inverse of minimun resolution for PSD.
+        :param g_max: Inverse of maximum resolution for PSD.
+        :param amplitude_contrast: Amplitude contrast.
+        :param lmbd: Electron wavelength.
+        :param cs: Spherical aberration in mm.
+        :return: Optimal defocus parameters
         """
 
         angle_ast = angle_ast / 180 * np.pi
@@ -690,8 +697,9 @@ class CtfEstimator:
 
     def ctf_locate_minima(self, signal):
         """
+        Find zero-crossings of power spectrum.
 
-        :param signal:
+        :param signal: Estimated power spectrum
         :return: array of indices.
         """
 
