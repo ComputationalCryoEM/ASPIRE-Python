@@ -149,7 +149,7 @@ class CtfEstimator:
 
         :param micrograph: Micrograph as numpy array. #NOTE looks like F order
         :param blocksize: Size of the square blocks to partition micrograph.
-        :return: Numpy array of blocks.
+        :return: Numpy array of blocks extracted from the micrograph.
         """
 
         # verify block_size is even
@@ -169,7 +169,7 @@ class CtfEstimator:
             for j in range(range_y)
             for i in range(range_x)
         ]
-        block = np.asarray(block_list, dtype=np.float64)
+        block = np.asarray(block_list, dtype=self.dtype)
 
         block_sum = np.sum(np.sum(block, axis=-1), axis=-1)
         block_sum = np.reshape(block_sum, (block.shape[0], 1, 1))
@@ -210,7 +210,7 @@ class CtfEstimator:
         :param blocks: 3-D numpy array containing windows extracted from the micrograph in the ctf_preprocess function.
         :param tapers_1d: numpy array of data tapers.
         :param num_1d_tapers: number of 1-D data tapers
-        :return: Numpy array.
+        :return: Numpy array of estimated power spectrum.
         """
 
         tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
@@ -286,7 +286,7 @@ class CtfEstimator:
 
         :param thon_rings: Estimated power spectrum
         :param linprog_method: Method passed to linear progam solver.
-        :return: 2-tuple of numpy arrays
+        :return: 2-tuple of numpy arrays (PSD after noise subtraction and estimated noise)
         """
 
         # compute radial average
@@ -368,7 +368,7 @@ class CtfEstimator:
         :param lmbd: Electron wavelength.
         :param w: Amplitude contrast.
         :param N: Number of rows (or columns) in the estimate power spectrum.
-        :return: 2-tuple of numpy arrays.
+        :return: 2-tuple of numpy arrays (Estimated average of defocus and an internal variable)
         """
 
         center = N // 2
@@ -428,7 +428,7 @@ class CtfEstimator:
         :param signal: Estimated power spectrum
         :param background_p1: 1-D background estimation
         :param max_col: Internal variable, returned as the second parameter from ctf_opt1d.
-        :return: 2-tuple of numpy arrays.
+        :return: 2-tuple of numpy arrays (Estimated PSD without noise and estimated noise).
         """
 
         # RCOPT
@@ -458,14 +458,14 @@ class CtfEstimator:
 
         return Image(signal.T), Image(background.T)
 
-    def ctf_PCA(self, signal, pixel_size, g_min, g_max, w):
+    def ctf_PCA(self, signal, pixel_size, g_min, g_max):
         """
 
         :param signal: Estimated power spectrum.
         :param pixel_size: Pixel size in Angstrom.
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
-        :param w: ratio
+        :return: ratio.
         """
 
         # RCOPT
@@ -700,7 +700,7 @@ class CtfEstimator:
         Find zero-crossings of power spectrum.
 
         :param signal: Estimated power spectrum
-        :return: array of indices.
+        :return: array of zero-crossings indices.
         """
 
         N = signal.shape[0]
