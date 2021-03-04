@@ -166,10 +166,10 @@ class CtfEstimator:
             micrograph[
                 i * step_size : (i + 2) * step_size, j * step_size : (j + 2) * step_size
             ]
-            for i in range(range_y)
-            for j in range(range_x)
+            for j in range(range_y)
+            for i in range(range_x)
         ]
-        block = np.asarray(block_list, micrograph.dtype)
+        block = np.asarray(block_list, dtype=np.float64)
 
         block_sum = np.sum(np.sum(block, axis=-1), axis=-1)
         block_sum = np.reshape(block_sum, (block.shape[0], 1, 1))
