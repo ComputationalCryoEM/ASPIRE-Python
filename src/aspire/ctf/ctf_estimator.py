@@ -175,7 +175,7 @@ class CtfEstimator:
         block_sum = np.reshape(block_sum, (block.shape[0], 1, 1))
         block_sum = np.tile(block_sum, (1, block_size, block_size))
         block = block - (
-            block_sum / (512 ** 2)
+            block_sum / (block_size ** 2)
         )  # equals to the matlab version (11-7-19)
 
         return block
