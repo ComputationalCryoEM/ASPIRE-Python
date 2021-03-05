@@ -1,7 +1,7 @@
 ![Logo](http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg)
 
 [![Azure Build Status](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_apis/build/status/ComputationalCryoEM.ASPIRE-Python?branchName=master)](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_build/latest?definitionId=3&branchName=master)
-[![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/workflows/ASPIRE%20Python%20package/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/workflows/ASPIRE%20Python%20package/badge.svg)
+[![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml)
 [![Coverage Status](https://coveralls.io/repos/github/ComputationalCryoEM/ASPIRE-Python/badge.svg?branch=master)](https://coveralls.io/github/ComputationalCryoEM/ASPIRE-Python?branch=master)
 
 # ASPIRE - Algorithms for Single Particle Reconstruction - v0.6.3
