@@ -15,12 +15,7 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.operators import (
-    IdentityFilter,
-    LambdaFilter,
-    MultiplicativeFilter,
-    PowerFilter,
-)
+from aspire.operators import LambdaFilter, MultiplicativeFilter, PowerFilter
 from aspire.storage import MrcStats, StarFile, StarFileBlock
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
@@ -118,7 +113,7 @@ class ImageSource:
                     degrees=True,
                 )
 
-        self.unique_filters = [IdentityFilter()]
+        self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
 

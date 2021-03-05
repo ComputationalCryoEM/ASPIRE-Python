@@ -5,7 +5,7 @@ from scipy.linalg import eigh, qr
 
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
-from aspire.operators import IdentityFilter, ZeroFilter
+from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
 from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
@@ -79,7 +79,7 @@ class Simulation(ImageSource):
         self.angles = angles
 
         if unique_filters is None:
-            unique_filters = [IdentityFilter()]
+            unique_filters = []
         self.unique_filters = unique_filters
 
         # Create filter indices and fill the metadata based on unique filters
