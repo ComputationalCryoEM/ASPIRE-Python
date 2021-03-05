@@ -1,0 +1,37 @@
+aspire.storage package
+======================
+
+Submodules
+----------
+
+aspire.storage.micrograph module
+--------------------------------
+
+.. automodule:: aspire.storage.micrograph
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.storage.mrc module
+-------------------------
+
+.. automodule:: aspire.storage.mrc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.storage.starfile module
+------------------------------
+
+.. automodule:: aspire.storage.starfile
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.storage
+   :members:
+   :undoc-members:
+   :show-inheritance:

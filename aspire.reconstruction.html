@@ -1,0 +1,379 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>aspire.reconstruction package &mdash; ASPIRE 0.6.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.source package" href="aspire.source.html" />
+    <link rel="prev" title="aspire.optimization package" href="aspire.optimization.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ASPIRE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.6.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.config.html">aspire.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+          <li><a href="aspire.html">aspire package</a> &raquo;</li>
+        
+      <li>aspire.reconstruction package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/aspire.reconstruction.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="aspire-reconstruction-package">
+<h1>aspire.reconstruction package<a class="headerlink" href="#aspire-reconstruction-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-aspire.reconstruction.estimator">
+<span id="aspire-reconstruction-estimator-module"></span><h2>aspire.reconstruction.estimator module<a class="headerlink" href="#module-aspire.reconstruction.estimator" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.reconstruction.estimator.Estimator">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.reconstruction.estimator.</span></code><code class="sig-name descname"><span class="pre">Estimator</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preconditioner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'circulant'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="aspire.reconstruction.estimator.Estimator.apply_kernel">
+<code class="sig-name descname"><span class="pre">apply_kernel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vol_coeff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator.apply_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies the kernel represented by convolution
+:param vol_coeff: The volume to be convolved, stored in the basis coefficients.
+:param kernel: a Kernel object. If None, the kernel for this Estimator is used.
+:return: The result of evaluating <cite>vol_coeff</cite> in the given basis, convolving with the kernel given by</p>
+<blockquote>
+<div><p>kernel, and backprojecting into the basis.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.estimator.Estimator.compute_kernel">
+<code class="sig-name descname"><span class="pre">compute_kernel</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator.compute_kernel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.estimator.Estimator.conj_grad">
+<code class="sig-name descname"><span class="pre">conj_grad</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b_coeff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator.conj_grad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.estimator.Estimator.estimate">
+<code class="sig-name descname"><span class="pre">estimate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b_coeff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an estimate as a Volume instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.estimator.Estimator.src_backward">
+<code class="sig-name descname"><span class="pre">src_backward</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator.src_backward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply adjoint mapping to source</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The adjoint mapping applied to the images, averaged over the whole dataset and expressed
+as coefficients of <cite>basis</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.reconstruction.kernel">
+<span id="aspire-reconstruction-kernel-module"></span><h2>aspire.reconstruction.kernel module<a class="headerlink" href="#module-aspire.reconstruction.kernel" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.reconstruction.kernel.FourierKernel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.reconstruction.kernel.</span></code><code class="sig-name descname"><span class="pre">FourierKernel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centered</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.reconstruction.kernel.Kernel" title="aspire.reconstruction.kernel.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.reconstruction.kernel.Kernel</span></code></a></p>
+<dl class="py method">
+<dt id="aspire.reconstruction.kernel.FourierKernel.circularize">
+<code class="sig-name descname"><span class="pre">circularize</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.circularize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.kernel.FourierKernel.circularize_1d">
+<code class="sig-name descname"><span class="pre">circularize_1d</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.circularize_1d" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.kernel.FourierKernel.convolve_volume">
+<code class="sig-name descname"><span class="pre">convolve_volume</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.convolve_volume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolve volume with kernel
+:param x: An N-by-N-by-N-by-… array of volumes to be convolved.
+:return: The original volumes convolved by the kernel with the same dimensions as before.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.kernel.FourierKernel.convolve_volume_matrix">
+<code class="sig-name descname"><span class="pre">convolve_volume_matrix</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.convolve_volume_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolve volume matrix with kernel
+:param x: An N-by-…-by-N (6 dimensions) volume matrix to be convolved.
+:return: The original volume matrix convolved by the kernel with the same dimensions as before.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.kernel.FourierKernel.is_centered">
+<code class="sig-name descname"><span class="pre">is_centered</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.is_centered" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.reconstruction.kernel.FourierKernel.toeplitz">
+<code class="sig-name descname"><span class="pre">toeplitz</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.toeplitz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the 3D Toeplitz matrix corresponding to this Fourier Kernel
+:param L: The size of the volumes to be convolved (default M/2, where the dimensions of this Fourier Kernel</p>
+<blockquote>
+<div><p>are MxMxM</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An six-dimensional Toeplitz matrix of size L describing the convolution of a volume with this kernel</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.reconstruction.kernel.Kernel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.reconstruction.kernel.</span></code><code class="sig-name descname"><span class="pre">Kernel</span></code><a class="headerlink" href="#aspire.reconstruction.kernel.Kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.reconstruction.mean">
+<span id="aspire-reconstruction-mean-module"></span><h2>aspire.reconstruction.mean module<a class="headerlink" href="#module-aspire.reconstruction.mean" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.reconstruction.mean.MeanEstimator">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.reconstruction.mean.</span></code><code class="sig-name descname"><span class="pre">MeanEstimator</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preconditioner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'circulant'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.MeanEstimator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.reconstruction.estimator.Estimator" title="aspire.reconstruction.estimator.Estimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.reconstruction.estimator.Estimator</span></code></a></p>
+<dl class="py method">
+<dt id="aspire.reconstruction.mean.MeanEstimator.compute_kernel">
+<code class="sig-name descname"><span class="pre">compute_kernel</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.MeanEstimator.compute_kernel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.reconstruction">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.reconstruction" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="aspire.source.html" class="btn btn-neutral float-right" title="aspire.source package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="aspire.optimization.html" class="btn btn-neutral float-left" title="aspire.optimization package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Princeton University.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

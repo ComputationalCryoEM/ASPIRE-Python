@@ -1,0 +1,878 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>aspire.operators package &mdash; ASPIRE 0.6.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.optimization package" href="aspire.optimization.html" />
+    <link rel="prev" title="aspire.numeric package" href="aspire.numeric.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ASPIRE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.6.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.config.html">aspire.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+          <li><a href="aspire.html">aspire package</a> &raquo;</li>
+        
+      <li>aspire.operators package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/aspire.operators.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="aspire-operators-package">
+<h1>aspire.operators package<a class="headerlink" href="#aspire-operators-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-aspire.operators.blk_diag_matrix">
+<span id="aspire-operators-blk-diag-matrix-module"></span><h2>aspire.operators.blk_diag_matrix module<a class="headerlink" href="#module-aspire.operators.blk_diag_matrix" title="Permalink to this headline">¶</a></h2>
+<p>Define a BlkDiagMatrix module which implements operations for
+block diagonal matrices as used by ASPIRE.</p>
+<dl class="py class">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.blk_diag_matrix.</span></code><code class="sig-name descname"><span class="pre">BlkDiagMatrix</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">partition</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Define a BlkDiagMatrix class which implements operations for
+block diagonal matrices as used by ASPIRE.</p>
+<p>Currently BlkDiagMatrix is implemented only for square blocks.
+While in the future this can be extended, at this time assigning
+a non square array will raise NotImplementedError.</p>
+<p>Instantiate a BlkDiagMatrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition</strong> – The matrix block partition
+in the form of a <cite>nblock</cite>-element list storing all shapes of
+diagonal matrix blocks, where <cite>partition[i]</cite> corresponds to
+the shape (number of rows and columns) of the <cite>i</cite> matrix block.</p></li>
+<li><p><strong>dtype</strong> – Datatype for blocks, defaults to np.float32.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>BlkDiagMatrix instance.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.T">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">T</span></code><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Syntactic sugar for self.transpose().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.abs">
+<code class="sig-name descname"><span class="pre">abs</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.abs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the elementwise absolute value of BlkDiagMatrix instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A BlkDiagMatrix like self.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.add">
+<code class="sig-name descname"><span class="pre">add</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define the elementwise addition of BlkDiagMatrix instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>other</strong> – The rhs BlkDiagMatrix instance.</p></li>
+<li><p><strong>inplace</strong> – Boolean, when set to True change values in place,</p></li>
+</ul>
+</dd>
+</dl>
+<p>otherwise return a new instance (default).
+:return:  BlkDiagMatrix instance with elementwise sum equal
+to self + other.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.append">
+<code class="sig-name descname"><span class="pre">append</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">blk</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append <cite>blk</cite> to <cite>self</cite>. Used to incrementally build up a BlkDiagMatrix
+instance where the number of blocks and/or shapes are derived
+incrementally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>blk</strong> – Block to append (ndarray).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.apply">
+<code class="sig-name descname"><span class="pre">apply</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define the apply option of a block diagonal matrix with a matrix of
+coefficient vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>X</strong> – The coefficient matrix with each column is a coefficient</p>
+</dd>
+</dl>
+<p>vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A matrix with new coefficient vectors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.check_psd">
+<code class="sig-name descname"><span class="pre">check_psd</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.check_psd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the positive semidefinite property of all blocks</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if all blocks have non-negative eigenvalues.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.copy">
+<code class="sig-name descname"><span class="pre">copy</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns new BlkDiagMatrix which is a copy of <cite>self</cite>.</p>
+<p>:return BlkDiagMatrix like self</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.dense">
+<code class="sig-name descname"><span class="pre">dense</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.dense" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert list representation of BlkDiagMatrix instance into full matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>blk_diag</strong> – The BlkDiagMatrix instance.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The BlkDiagMatrix instance including the zero elements of</p>
+</dd>
+</dl>
+<p>non-diagonal blocks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.empty">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">empty</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">nblocks</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate an empty BlkDiagMatrix with <cite>nblocks</cite>, where each
+data block is initially None with size (0,0).</p>
+<p>This is used for incrementally building up a BlkDiagMatrix, by
+using nblocks=0 in conjunction with <cite>append</cite> method or
+situations where blocks are immediately assigned in a loop,
+such as in a <cite>copy</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>nblocks</strong> – Number of diagonal matrix blocks.</p>
+</dd>
+</dl>
+<p>:return BlkDiagMatrix instance where each block is None.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.eye">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">eye</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">blk_partition</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.eye" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a BlkDiagMatrix eye (identity) matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>blk_partition</strong> – The matrix block partition in the form of</p>
+</dd>
+</dl>
+<p>a K-element list storing all shapes of K diagonal matrix blocks,
+where <cite>blk_partition[i]</cite> corresponds to the shape (number of rows
+and columns) of the <cite>i</cite> diagonal matrix block.
+:param dtype: The data type of the diagonal matrix blocks.
+:return: A BlkDiagMatrix instance consisting of <cite>K</cite> eye (identity)
+blocks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.eye_like">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">eye_like</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.eye_like" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a BlkDiagMatrix eye (identity) matrix with the partition
+structure of BlkDiagMatrix A.  Defaults to dtype of A.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>A</strong> – BlkDiagMatrix instance.</p></li>
+<li><p><strong>dtype</strong> – Optional, data type of the new diagonal matrix blocks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>BlkDiagMatrix instance consisting of <cite>K</cite> eye (identity)</p>
+</dd>
+</dl>
+<p>blocks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.from_list">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">from_list</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">blk_diag</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.from_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert full from python list representation into BlkDiagMatrix.</p>
+<p>This is to facilitate integration with code that may not be
+using the BlkDiagMatrix class yet.</p>
+<p>:param blk_diag; The blk_diag representation in the form of a
+K-element list storing all shapes of K diagonal matrix blocks,
+where <cite>blk_partition[i]</cite> corresponds to the shape (number of rows
+and columns) of the <cite>i</cite> diagonal matrix block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The BlkDiagMatrix instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.isfinite">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">isfinite</span></code><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.isfinite" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if all blocks in diag matrix are finite.</p>
+<p>Calls numpy.isfinite for every entry in self.  This has the effect of
+checking values are not += <cite>inf</cite> or <a href="#id1"><span class="problematic" id="id2">`</span></a>nan`s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Bool.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.make_psd">
+<code class="sig-name descname"><span class="pre">make_psd</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.make_psd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert all blocks to positive semidefinite</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The BlkDiagMatrix instance with all blocks
+positive semidefinite</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.matmul">
+<code class="sig-name descname"><span class="pre">matmul</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.matmul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the matrix multiplication of two BlkDiagMatrix instances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>other</strong> – The rhs BlkDiagMatrix instance.</p></li>
+<li><p><strong>inplace</strong> – Boolean, when set to True change values in place,</p></li>
+</ul>
+</dd>
+</dl>
+<p>otherwise return a new instance (default).
+:return: A BlkDiagMatrix of self &#64; other.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.mul">
+<code class="sig-name descname"><span class="pre">mul</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.mul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the numeric multiplication of a BlkDiagMatrix instance and a
+scalar.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>other</strong> – The rhs BlkDiagMatrix instance.</p></li>
+<li><p><strong>inplace</strong> – Boolean, when set to True change values in place,</p></li>
+</ul>
+</dd>
+</dl>
+<p>otherwise return a new instance (default).
+:return: A BlkDiagMatrix of self * other.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.neg">
+<code class="sig-name descname"><span class="pre">neg</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.neg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the unary negation of BlkDiagMatrix instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A BlkDiagMatrix like self.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.norm">
+<code class="sig-name descname"><span class="pre">norm</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the norm of a BlkDiagMatrix instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>inplace</strong> – Boolean, when set to True change values in place,</p>
+</dd>
+</dl>
+<p>otherwise return a new instance (default).
+:return: The norm of the BlkDiagMatrix instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.ones">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">ones</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">blk_partition</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.ones" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a BlkDiagMatrix ones matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>blk_partition</strong> – The matrix block partition in the form of a</p>
+</dd>
+</dl>
+<p>K-element list storing all shapes of K diagonal matrix blocks,
+where <cite>blk_partition[i]</cite> corresponds to the shape (number of rows and
+columns) of the <cite>i</cite> diagonal matrix block.
+:param dtype: The data type to set precision of diagonal matrix block.
+:return: A BlkDiagMatrix instance consisting of <cite>K</cite> ones blocks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.partition">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">partition</span></code><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.partition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the partitions (block sizes) of this BlkDiagMatrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The matrix block partition in the form of a</p>
+</dd>
+</dl>
+<p>K-element list storing all shapes of K diagonal matrix blocks,
+where <cite>partition[i]</cite> corresponds to the shape (number of rows and
+columns) of the <cite>i</cite> diagonal matrix block.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.pow">
+<code class="sig-name descname"><span class="pre">pow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.pow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the elementwise power of BlkDiagMatrix instance.
+:param inplace: Boolean, when set to True change values in place,
+otherwise return a new instance (default).
+:return: A BlkDiagMatrix like self.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.reset_cache">
+<code class="sig-name descname"><span class="pre">reset_cache</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.reset_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets this objects internal cache. This should trigger the cache
+to be recalculated on the next request (ie lazily).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.solve">
+<code class="sig-name descname"><span class="pre">solve</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solve a linear system involving a block diagonal matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>Y</strong> – The right-hand side in the linear system.  May be a matrix</p>
+</dd>
+</dl>
+<p>consisting of coefficient vectors, in which case each column is
+solved for separately.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The result of solving the linear system formed by the matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.sub">
+<code class="sig-name descname"><span class="pre">sub</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.sub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define the element subtraction of BlkDiagMatrix instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>other</strong> – The rhs BlkDiagMatrix instance.</p></li>
+<li><p><strong>inplace</strong> – Boolean, when set to True change values in place,</p></li>
+</ul>
+</dd>
+</dl>
+<p>otherwise return a new instance (default).
+:return: A BlkDiagMatrix instance with elementwise subraction equal to</p>
+<blockquote>
+<div><p>self - other.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.transpose">
+<code class="sig-name descname"><span class="pre">transpose</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.transpose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the transpose matrix of a BlkDiagMatrix instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The corresponding transpose form as a BlkDiagMatrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.zeros">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">zeros</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">blk_partition</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.zeros" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a BlkDiagMatrix zeros matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>blk_partition</strong> – The matrix block partition in the form of a</p>
+</dd>
+</dl>
+<p>K-element list storing all shapes of K diagonal matrix blocks,
+where <cite>blk_partition[i]</cite> corresponds to the shape (number of rows and
+columns) of the <cite>i</cite> diagonal matrix block.
+:param dtype: The data type to set precision of diagonal matrix block.
+:return: A BlkDiagMatrix instance consisting of <cite>K</cite> zero blocks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.blk_diag_matrix.BlkDiagMatrix.zeros_like">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">zeros_like</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.blk_diag_matrix.BlkDiagMatrix.zeros_like" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a BlkDiagMatrix zeros matrix with the partition
+structure of BlkDiagMatrix A.  Defaults to dtype of A.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>A</strong> – BlkDiagMatrix instance.</p></li>
+<li><p><strong>dtype</strong> – Optional, data type of the new diagonal matrix blocks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>BlkDiagMatrix instance consisting of <cite>K</cite> zeros blocks.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.operators.filters">
+<span id="aspire-operators-filters-module"></span><h2>aspire.operators.filters module<a class="headerlink" href="#module-aspire.operators.filters" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.operators.filters.ArrayFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">ArrayFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xfer_fn_array</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.ArrayFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+<p>A Filter corresponding to the filter with the specified transfer function.
+:param xfer_fn_array: The transfer function of the filter in the form of an array of one or two dimensions.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.CTFFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">CTFFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defocus_u</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defocus_v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defocus_ang</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Cs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.26</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.CTFFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+<p>A CTF (Contrast Transfer Function) Filter</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pixel_size</strong> – Pixel size in angstrom</p></li>
+<li><p><strong>voltage</strong> – Electron voltage in kV</p></li>
+<li><p><strong>defocus_u</strong> – Defocus depth along the u-axis in angstrom</p></li>
+<li><p><strong>defocus_v</strong> – Defocus depth along the v-axis in angstrom</p></li>
+<li><p><strong>defocus_ang</strong> – Angle between the x-axis and the u-axis in radians</p></li>
+<li><p><strong>Cs</strong> – Spherical aberration constant</p></li>
+<li><p><strong>alpha</strong> – Amplitude contrast phase in radians</p></li>
+<li><p><strong>B</strong> – Envelope decay in inverse square angstrom (default 0)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.operators.filters.CTFFilter.scale">
+<code class="sig-name descname"><span class="pre">scale</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.CTFFilter.scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scale filter by a constant factor
+:param c: The scaling factor. For c &lt; 1, it dilates the filter(s) in frequency, while for c &gt; 1,</p>
+<blockquote>
+<div><p>it compresses (default 1).</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A ScaledFilter object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.DualFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">DualFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter_in</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.DualFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+<p>A Filter object that is dual to origin one, namely g(w)=f(-w)</p>
+<dl class="py method">
+<dt id="aspire.operators.filters.DualFilter.evaluate">
+<code class="sig-name descname"><span class="pre">evaluate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">omega</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.DualFilter.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate the filter at specified frequencies.
+:param omega: A vector of size n (for 1d filters), or an array of size 2-by-n, representing the spatial</p>
+<blockquote>
+<div><p>frequencies at which the filter is to be evaluated. These are normalized so that pi is equal to the Nyquist
+frequency.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The value of the filter at the specified frequencies.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.Filter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">Filter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.Filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="aspire.operators.filters.Filter.dual">
+<code class="sig-name descname"><span class="pre">dual</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.Filter.dual" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.filters.Filter.evaluate">
+<code class="sig-name descname"><span class="pre">evaluate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">omega</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.Filter.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate the filter at specified frequencies.
+:param omega: A vector of size n (for 1d filters), or an array of size 2-by-n, representing the spatial</p>
+<blockquote>
+<div><p>frequencies at which the filter is to be evaluated. These are normalized so that pi is equal to the Nyquist
+frequency.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The value of the filter at the specified frequencies.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.filters.Filter.evaluate_grid">
+<code class="sig-name descname"><span class="pre">evaluate_grid</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">L</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em>, <em class="sig-param"><span class="pre">*args</span></em>, <em class="sig-param"><span class="pre">**kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.Filter.evaluate_grid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.filters.Filter.fb_mat">
+<code class="sig-name descname"><span class="pre">fb_mat</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fbasis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.Filter.fb_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent the filter in FB basis matrix</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.operators.filters.Filter.scale">
+<code class="sig-name descname"><span class="pre">scale</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.Filter.scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scale filter by a constant factor
+:param c: The scaling factor. For c &lt; 1, it dilates the filter(s) in frequency, while for c &gt; 1,</p>
+<blockquote>
+<div><p>it compresses (default 1).</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A ScaledFilter object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.FunctionFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">FunctionFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.FunctionFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+<p>A Filter object that is instantiated directly using a 1D or 2D function, which is then directly used for evaluating
+the filter.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.IdentityFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">IdentityFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.IdentityFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.ScalarFilter" title="aspire.operators.filters.ScalarFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.ScalarFilter</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.LambdaFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">LambdaFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.LambdaFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+<p>A Filter object to evaluate lambda function of a regular <cite>Filter</cite>.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.MultiplicativeFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">MultiplicativeFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.MultiplicativeFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+<p>A Filter object that returns the product of the evaluation of its individual filters</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.PowerFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">PowerFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.PowerFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+<p>A Filter object that is composed of a regular <cite>Filter</cite> object, but evaluates it to a specified power.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.RadialCTFFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">RadialCTFFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defocus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Cs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.26</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.RadialCTFFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.CTFFilter" title="aspire.operators.filters.CTFFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.CTFFilter</span></code></a></p>
+<p>A CTF (Contrast Transfer Function) Filter</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pixel_size</strong> – Pixel size in angstrom</p></li>
+<li><p><strong>voltage</strong> – Electron voltage in kV</p></li>
+<li><p><strong>defocus_u</strong> – Defocus depth along the u-axis in angstrom</p></li>
+<li><p><strong>defocus_v</strong> – Defocus depth along the v-axis in angstrom</p></li>
+<li><p><strong>defocus_ang</strong> – Angle between the x-axis and the u-axis in radians</p></li>
+<li><p><strong>Cs</strong> – Spherical aberration constant</p></li>
+<li><p><strong>alpha</strong> – Amplitude contrast phase in radians</p></li>
+<li><p><strong>B</strong> – Envelope decay in inverse square angstrom (default 0)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.ScalarFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">ScalarFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.ScalarFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.ScaledFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">ScaledFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.ScaledFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.Filter" title="aspire.operators.filters.Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.Filter</span></code></a></p>
+<p>A Filter object that is composed of a regular <cite>Filter</cite> object, but evaluates it on a scaled omega.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.operators.filters.ZeroFilter">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">ZeroFilter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.ZeroFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.operators.filters.ScalarFilter" title="aspire.operators.filters.ScalarFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.filters.ScalarFilter</span></code></a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="aspire.operators.filters.voltage_to_wavelength">
+<code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">voltage_to_wavelength</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.voltage_to_wavelength" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from electron voltage to wavelength.
+:param voltage: float, The electron voltage in kV.
+:return: float, The electron wavelength in nm.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="aspire.operators.filters.wavelength_to_voltage">
+<code class="sig-prename descclassname"><span class="pre">aspire.operators.filters.</span></code><code class="sig-name descname"><span class="pre">wavelength_to_voltage</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavelength</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.operators.filters.wavelength_to_voltage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from electron voltage to wavelength.
+:param wavelength: float, The electron wavelength in nm.
+:return: float, The electron voltage in kV.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.operators">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.operators" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="aspire.optimization.html" class="btn btn-neutral float-right" title="aspire.optimization package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="aspire.numeric.html" class="btn btn-neutral float-left" title="aspire.numeric package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Princeton University.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

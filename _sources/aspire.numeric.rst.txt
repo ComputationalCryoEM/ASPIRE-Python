@@ -1,0 +1,61 @@
+aspire.numeric package
+======================
+
+Submodules
+----------
+
+aspire.numeric.base\_fft module
+-------------------------------
+
+.. automodule:: aspire.numeric.base_fft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.numeric.cupy module
+--------------------------
+
+.. automodule:: aspire.numeric.cupy
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.numeric.cupy\_fft module
+-------------------------------
+
+.. automodule:: aspire.numeric.cupy_fft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.numeric.numpy module
+---------------------------
+
+.. automodule:: aspire.numeric.numpy
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.numeric.pyfftw\_fft module
+---------------------------------
+
+.. automodule:: aspire.numeric.pyfftw_fft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.numeric.scipy\_fft module
+--------------------------------
+
+.. automodule:: aspire.numeric.scipy_fft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.numeric
+   :members:
+   :undoc-members:
+   :show-inheritance:

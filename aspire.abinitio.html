@@ -1,0 +1,489 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>aspire.abinitio package &mdash; ASPIRE 0.6.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.apple package" href="aspire.apple.html" />
+    <link rel="prev" title="aspire package" href="aspire.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ASPIRE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.6.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.config.html">aspire.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+          <li><a href="aspire.html">aspire package</a> &raquo;</li>
+        
+      <li>aspire.abinitio package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/aspire.abinitio.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="aspire-abinitio-package">
+<h1>aspire.abinitio package<a class="headerlink" href="#aspire-abinitio-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-aspire.abinitio.commonline_base">
+<span id="aspire-abinitio-commonline-base-module"></span><h2>aspire.abinitio.commonline_base module<a class="headerlink" href="#module-aspire.abinitio.commonline_base" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.abinitio.commonline_base.CLOrient3D">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_base.</span></code><code class="sig-name descname"><span class="pre">CLOrient3D</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Define a base class for estimating 3D orientations using common lines methods</p>
+<p>Initialize an object for estimating 3D orientations using common lines</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged imag</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction</p></li>
+<li><p><strong>n_check</strong> – For each image/projection find its common-lines with
+n_check images. If n_check is less than the total number of images,
+a random subset of n_check images is used.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix">
+<code class="sig-name descname"><span class="pre">build_clmatrix</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build common-lines matrix from Fourier stack of 2D images</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_base.CLOrient3D.estimate_rotations">
+<code class="sig-name descname"><span class="pre">estimate_rotations</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.estimate_rotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate orientation matrices for all 2D images</p>
+<p>Subclasses should implement this function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_base.CLOrient3D.estimate_shifts">
+<code class="sig-name descname"><span class="pre">estimate_shifts</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">equations_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.estimate_shifts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate 2D shifts in images</p>
+<p>This function computes 2D shifts in x, y of images by solving the least-squares
+equations to <cite>Ax = b</cite>. <cite>A</cite> on the left-hand side is a sparse matrix representing
+precomputed coefficients of shift equations; and on the right-side, <cite>b</cite> is
+estimated 1D shifts along the theta direction between two Fourier rays (one in
+image i and the other in image j).  Each row of shift equations contains four
+unknowns, shifts in x, y for a pair of images. The detailed implementation
+can be found in the book chapter as below:
+Y. Shkolnisky and A. Singer,
+Center of Mass Operators for CryoEM - Theory and Implementation,
+Modeling Nanoscale Imaging in Electron Microscopy,
+T. Vogt, W. Dahmen, and P. Binev (Eds.)
+Nanostructure Science and Technology Series,
+Springer, 2012, pp. 147–177</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>equations_factor</strong> – The factor to rescale the number of shift equations
+(=1 in default)</p></li>
+<li><p><strong>max_memory</strong> – If there are N images and N_check selected to check
+for common lines, then the exact system of equations solved for the shifts
+is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
+This may be too big if N is large. The algorithm will use <cite>equations_factor</cite>
+times the total number of equations if the resulting total number of memory
+requirements is less than <cite>max_memory</cite> (in megabytes); otherwise it will
+reduce the number of equations by approximation to fit in <cite>max_memory</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_base.CLOrient3D.save_rotations">
+<code class="sig-name descname"><span class="pre">save_rotations</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.save_rotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new ImageSource object for orientation information</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.abinitio.commonline_ev">
+<span id="aspire-abinitio-commonline-ev-module"></span><h2>aspire.abinitio.commonline_ev module<a class="headerlink" href="#module-aspire.abinitio.commonline_ev" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.abinitio.commonline_ev.CommLineEV">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_ev.</span></code><code class="sig-name descname"><span class="pre">CommLineEV</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_ev.CommLineEV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.abinitio.commonline_base.CLOrient3D</span></code></a></p>
+<p>Class to estimate 3D orientations using Eigenvector method
+<span id="id1">[<a class="reference internal" href="quickstart.html#id5">SS11</a>]</span></p>
+<p>constructor of an object for estimating 3D orientations</p>
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_ev.CommLineEV.estimate">
+<code class="sig-name descname"><span class="pre">estimate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_ev.CommLineEV.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform estimation of orientations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_ev.CommLineEV.output">
+<code class="sig-name descname"><span class="pre">output</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_ev.CommLineEV.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output the 3D orientations</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.abinitio.commonline_gcar">
+<span id="aspire-abinitio-commonline-gcar-module"></span><h2>aspire.abinitio.commonline_gcar module<a class="headerlink" href="#module-aspire.abinitio.commonline_gcar" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.abinitio.commonline_gcar.CommLineGCAR">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_gcar.</span></code><code class="sig-name descname"><span class="pre">CommLineGCAR</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_gcar.CommLineGCAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.abinitio.commonline_base.CLOrient3D</span></code></a></p>
+<p>Define a derived class to estimate 3D orientations using Globally Consistent Angular Reconstitution described
+as below:
+R. Coifman, Y. Shkolnisky, F. J. Sigworth, and A. Singer, Reference Free Structure Determination through
+Eigenvestors of Center of Mass Operators, Applied and Computational Harmonic Analysis, 28, 296-312 (2010).</p>
+<p>constructor of an object for estimating 3D oreintations</p>
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_gcar.CommLineGCAR.estimate">
+<code class="sig-name descname"><span class="pre">estimate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_gcar.CommLineGCAR.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform estimation of orientations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_gcar.CommLineGCAR.output">
+<code class="sig-name descname"><span class="pre">output</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_gcar.CommLineGCAR.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output the 3D orientations</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.abinitio.commonline_lud">
+<span id="aspire-abinitio-commonline-lud-module"></span><h2>aspire.abinitio.commonline_lud module<a class="headerlink" href="#module-aspire.abinitio.commonline_lud" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.abinitio.commonline_lud.CommLineLUD">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_lud.</span></code><code class="sig-name descname"><span class="pre">CommLineLUD</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_lud.CommLineLUD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.abinitio.commonline_base.CLOrient3D</span></code></a></p>
+<p>Define a derived class to estimate 3D orientations using Least Unsquared Deviations described as below:
+L. Wang, A. Singer, and  Z. Wen, Orientation Determination of Cryo-EM Images Using Least Unsquared Deviations,
+SIAM J. Imaging Sciences, 6, 2450-2483 (2013).</p>
+<p>constructor of an object for estimating 3D orientations</p>
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_lud.CommLineLUD.estimate">
+<code class="sig-name descname"><span class="pre">estimate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_lud.CommLineLUD.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform estimation of orientations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_lud.CommLineLUD.output">
+<code class="sig-name descname"><span class="pre">output</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_lud.CommLineLUD.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output the 3D orientations</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.abinitio.commonline_sdp">
+<span id="aspire-abinitio-commonline-sdp-module"></span><h2>aspire.abinitio.commonline_sdp module<a class="headerlink" href="#module-aspire.abinitio.commonline_sdp" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.abinitio.commonline_sdp.CommLineSDP">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_sdp.</span></code><code class="sig-name descname"><span class="pre">CommLineSDP</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sdp.CommLineSDP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.abinitio.commonline_base.CLOrient3D</span></code></a></p>
+<p>Class to estimate 3D orientations using Semi-Definite Programming
+<span id="id2">[<a class="reference internal" href="quickstart.html#id5">SS11</a>]</span></p>
+<p>constructor of an object for estimating 3D orientations</p>
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_sdp.CommLineSDP.estimate">
+<code class="sig-name descname"><span class="pre">estimate</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sdp.CommLineSDP.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform estimation of orientations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_sdp.CommLineSDP.output">
+<code class="sig-name descname"><span class="pre">output</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sdp.CommLineSDP.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output the 3D orientations</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.abinitio.commonline_sync">
+<span id="aspire-abinitio-commonline-sync-module"></span><h2>aspire.abinitio.commonline_sync module<a class="headerlink" href="#module-aspire.abinitio.commonline_sync" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.abinitio.commonline_sync.CLSyncVoting">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_sync.</span></code><code class="sig-name descname"><span class="pre">CLSyncVoting</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sync.CLSyncVoting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.abinitio.commonline_base.CLOrient3D</span></code></a></p>
+<p>Define a class to estimate 3D orientations using synchronization matrix and voting method.</p>
+<p>The related publications are listed as below:
+Y. Shkolnisky, and A. Singer,
+Viewing Direction Estimation in Cryo-EM Using Synchronization,
+SIAM J. Imaging Sciences, 5, 1088-1110 (2012).</p>
+<p>A. Singer, R. R. Coifman, F. J. Sigworth, D. W. Chester, Y. Shkolnisky,
+Detecting Consistent Common Lines in Cryo-EM by Voting,
+Journal of Structural Biology, 169, 312-322 (2010).</p>
+<p>Initialize an object for estimating 3D orientations using synchronization matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images with metadata</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_sync.CLSyncVoting.estimate_rotations">
+<code class="sig-name descname"><span class="pre">estimate_rotations</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sync.CLSyncVoting.estimate_rotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate orientation matrices for all 2D images using synchronization matrix</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.abinitio.commonline_sync.CLSyncVoting.syncmatrix_vote">
+<code class="sig-name descname"><span class="pre">syncmatrix_vote</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sync.CLSyncVoting.syncmatrix_vote" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the synchronization matrix using voting method</p>
+<p>A pre-computed common line matrix is required as input.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.abinitio.orientation_src">
+<span id="aspire-abinitio-orientation-src-module"></span><h2>aspire.abinitio.orientation_src module<a class="headerlink" href="#module-aspire.abinitio.orientation_src" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.abinitio.orientation_src.OrientEstSource">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.abinitio.orientation_src.</span></code><code class="sig-name descname"><span class="pre">OrientEstSource</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orient_method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.orientation_src.OrientEstSource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="aspire.source.html#aspire.source.image.ImageSource" title="aspire.source.image.ImageSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.source.image.ImageSource</span></code></a></p>
+<p>Derived an ImageSource class for updating orientation information</p>
+<p>Initialize an Orientation ImageSource object from original ImageSource</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Original ImageSource object after 2D classification</p></li>
+<li><p><strong>orient_method</strong> – object specifying orientation estimation method</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.abinitio">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.abinitio" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="aspire.apple.html" class="btn btn-neutral float-right" title="aspire.apple package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="aspire.html" class="btn btn-neutral float-left" title="aspire package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Princeton University.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

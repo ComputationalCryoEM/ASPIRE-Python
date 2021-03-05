@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>aspire.denoising package &mdash; ASPIRE 0.6.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.image package" href="aspire.image.html" />
+    <link rel="prev" title="aspire.covariance package" href="aspire.covariance.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ASPIRE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.6.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.config.html">aspire.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+          <li><a href="aspire.html">aspire package</a> &raquo;</li>
+        
+      <li>aspire.denoising package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/aspire.denoising.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="aspire-denoising-package">
+<h1>aspire.denoising package<a class="headerlink" href="#aspire-denoising-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-aspire.denoising.class_avg">
+<span id="aspire-denoising-class-avg-module"></span><h2>aspire.denoising.class_avg module<a class="headerlink" href="#module-aspire.denoising.class_avg" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.denoising.class_avg.ClassAvg">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.denoising.class_avg.</span></code><code class="sig-name descname"><span class="pre">ClassAvg</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img_src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.denoising.denoiser.Denoiser" title="aspire.denoising.denoiser.Denoiser"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.denoising.denoiser.Denoiser</span></code></a></p>
+<p>Define a derived class for denoising 2D images using class average methods</p>
+<p>constructor of an object for denoising 2D images using class averaging method.</p>
+<dl class="py method">
+<dt id="aspire.denoising.class_avg.ClassAvg.class_averaging">
+<code class="sig-name descname"><span class="pre">class_averaging</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvg.class_averaging" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.denoising.class_avg.ClassAvg.output_images">
+<code class="sig-name descname"><span class="pre">output_images</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvg.output_images" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output the clean images</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.denoising.denoised_src">
+<span id="aspire-denoising-denoised-src-module"></span><h2>aspire.denoising.denoised_src module<a class="headerlink" href="#module-aspire.denoising.denoised_src" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.denoising.denoised_src.DenoisedImageSource">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.denoising.denoised_src.</span></code><code class="sig-name descname"><span class="pre">DenoisedImageSource</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">denoiser</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoised_src.DenoisedImageSource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="aspire.source.html#aspire.source.image.ImageSource" title="aspire.source.image.ImageSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.source.image.ImageSource</span></code></a></p>
+<p>Define a derived ImageSource class to perform operations for denoised 2D images</p>
+<p>Initialize a denoised ImageSource object from original ImageSource of noisy images</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Original ImageSource object storing noisy images</p></li>
+<li><p><strong>denoiser</strong> – A Denoiser object for specifying a method for denoising</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.denoising.denoiser">
+<span id="aspire-denoising-denoiser-module"></span><h2>aspire.denoising.denoiser module<a class="headerlink" href="#module-aspire.denoising.denoiser" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.denoising.denoiser.Denoiser">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.denoising.denoiser.</span></code><code class="sig-name descname"><span class="pre">Denoiser</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser.Denoiser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Define a base class for denoising 2D images</p>
+<p>Initialize an object for denoising 2D images from the image source</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>src</strong> – The source object of 2D images with metadata</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.denoising.denoiser.Denoiser.denoise">
+<code class="sig-name descname"><span class="pre">denoise</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser.Denoiser.denoise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Precompute for Denoiser and DenoisedImageSource for 2D images</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.denoising.denoiser.Denoiser.image">
+<code class="sig-name descname"><span class="pre">image</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">istart</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser.Denoiser.image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain a batch size of 2D images after denosing by a specified method</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.denoising.denoiser_cov2d">
+<span id="aspire-denoising-denoiser-cov2d-module"></span><h2>aspire.denoising.denoiser_cov2d module<a class="headerlink" href="#module-aspire.denoising.denoiser_cov2d" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.denoising.denoiser_cov2d.DenoiserCov2D">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.denoising.denoiser_cov2d.</span></code><code class="sig-name descname"><span class="pre">DenoiserCov2D</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_noise</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser_cov2d.DenoiserCov2D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.denoising.denoiser.Denoiser" title="aspire.denoising.denoiser.Denoiser"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.denoising.denoiser.Denoiser</span></code></a></p>
+<p>Define a derived class for denoising 2D images using Cov2D method</p>
+<p>Initialize an object for denoising 2D images using Cov2D method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D images with metadata</p></li>
+<li><p><strong>basis</strong> – The basis method to expand 2D images</p></li>
+<li><p><strong>var_noise</strong> – The estimated variance of noise</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.denoising.denoiser_cov2d.DenoiserCov2D.denoise">
+<code class="sig-name descname"><span class="pre">denoise</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covar_opt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser_cov2d.DenoiserCov2D.denoise" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Build covariance matrix of 2D images and return a new ImageSource object</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>covar_opt</strong> – The option list for building Cov2D matrix</p></li>
+<li><p><strong>batch_size</strong> – The batch size for processing images</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A <cite>DenoisedImageSource</cite> object with the specified denoising object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.denoising.denoiser_cov2d.DenoiserCov2D.images">
+<code class="sig-name descname"><span class="pre">images</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">istart</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser_cov2d.DenoiserCov2D.images" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain a batch size of 2D images after denosing by Cov2D method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>istart</strong> – the index of starting image</p></li>
+<li><p><strong>batch_size</strong> – The batch size for processing images</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>an <cite>Image</cite> object with denoised images</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="aspire.denoising.denoiser_cov2d.src_wiener_coords">
+<code class="sig-prename descclassname"><span class="pre">aspire.denoising.denoiser_cov2d.</span></code><code class="sig-name descname"><span class="pre">src_wiener_coords</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_vol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eig_vols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambdas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser_cov2d.src_wiener_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate coordinates using Wiener filter
+:param sim: A simulation object containing the images whose coordinates we want.
+:param mean_vol: The mean volume of the source as Volume instance.
+:param eig_vols: The eigenvolumes of the source as Volume instance.
+:param lambdas: The eigenvalues in a K-by-K diagonal matrix (default <cite>eye(K)</cite>).
+:param noise_var: The variance of the noise in the images (default 0).
+:param batch_size: The size of the batches in which to compute the coordinates (default 512).
+:return: A K-by-<cite>src.n</cite> array of coordinates corresponding to the Wiener filter coordinates of each image in sim.</p>
+<dl class="simple">
+<dt>The coordinates are obtained by the formula</dt><dd><p>alpha_s = eig_vols^T H_s ( y_s - P_s mean_vol ) ,</p>
+</dd>
+<dt>where P_s is the forward image mapping and y_s is the sth image,</dt><dd><p>H_s = Sigma * P_s^T ( P_s Sigma P_s^T + noise_var I )^(-1) ,</p>
+</dd>
+</dl>
+<p>and Sigma is the covariance matrix eig_vols * lambdas * eig_vols^T.
+Note that when noise_var is zero, this reduces to the projecting y_s onto the span of P_s eig_vols.</p>
+<p># TODO: Find a better place for this functionality other than in utils</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.denoising">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.denoising" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="aspire.image.html" class="btn btn-neutral float-right" title="aspire.image package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="aspire.covariance.html" class="btn btn-neutral float-left" title="aspire.covariance package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Princeton University.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

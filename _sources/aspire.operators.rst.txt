@@ -1,0 +1,29 @@
+aspire.operators package
+========================
+
+Submodules
+----------
+
+aspire.operators.blk\_diag\_matrix module
+-----------------------------------------
+
+.. automodule:: aspire.operators.blk_diag_matrix
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.operators.filters module
+-------------------------------
+
+.. automodule:: aspire.operators.filters
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.operators
+   :members:
+   :undoc-members:
+   :show-inheritance:

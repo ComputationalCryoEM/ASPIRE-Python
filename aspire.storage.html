@@ -1,0 +1,364 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>aspire.storage package &mdash; ASPIRE 0.6.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.utils package" href="aspire.utils.html" />
+    <link rel="prev" title="aspire.source package" href="aspire.source.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ASPIRE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.6.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.config.html">aspire.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+          <li><a href="aspire.html">aspire package</a> &raquo;</li>
+        
+      <li>aspire.storage package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/aspire.storage.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="aspire-storage-package">
+<h1>aspire.storage package<a class="headerlink" href="#aspire-storage-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-aspire.storage.micrograph">
+<span id="aspire-storage-micrograph-module"></span><h2>aspire.storage.micrograph module<a class="headerlink" href="#module-aspire.storage.micrograph" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.storage.micrograph.Micrograph">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.storage.micrograph.</span></code><code class="sig-name descname"><span class="pre">Micrograph</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">filepath</span></em>, <em class="sig-param"><span class="pre">margin=None</span></em>, <em class="sig-param"><span class="pre">shrink_factor=None</span></em>, <em class="sig-param"><span class="pre">square=False</span></em>, <em class="sig-param"><span class="pre">gauss_filter_size=None</span></em>, <em class="sig-param"><span class="pre">gauss_filter_sigma=None</span></em>, <em class="sig-param"><span class="pre">permissive=False</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.micrograph.Micrograph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="aspire.storage.micrograph.Micrograph.gaussian_filter">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">gaussian_filter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_filter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.micrograph.Micrograph.gaussian_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes low-pass filter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size_filter</strong> – Size of filter (size_filter x size_filter).</p></li>
+<li><p><strong>std</strong> – sigma value in filter.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.storage.mrc">
+<span id="aspire-storage-mrc-module"></span><h2>aspire.storage.mrc module<a class="headerlink" href="#module-aspire.storage.mrc" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.storage.mrc.MrcStats">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.storage.mrc.</span></code><code class="sig-name descname"><span class="pre">MrcStats</span></code><a class="headerlink" href="#aspire.storage.mrc.MrcStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Instantiate an empty instance ready to receive slices of arrays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>MrcStats instance</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.storage.mrc.MrcStats.amean">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">amean</span></code><a class="headerlink" href="#aspire.storage.mrc.MrcStats.amean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the curren mean.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.storage.mrc.MrcStats.arms">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">arms</span></code><a class="headerlink" href="#aspire.storage.mrc.MrcStats.arms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the current standard deviation.</p>
+<p>We use the simplest method.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.storage.mrc.MrcStats.push">
+<code class="sig-name descname"><span class="pre">push</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array_slice</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.mrc.MrcStats.push" title="Permalink to this definition">¶</a></dt>
+<dd><p>Incrementally add contribution of array_slice to stats.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>array_slice</strong> – An ndarray to contribute to stats.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.storage.mrc.MrcStats.update_header">
+<code class="sig-name descname"><span class="pre">update_header</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mrcobj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.mrc.MrcStats.update_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign the statistics to <cite>mrcobj</cite> header.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mrcobj</strong> – The <cite>mrcfile</cite> instance we want stats written to.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.storage.starfile">
+<span id="aspire-storage-starfile-module"></span><h2>aspire.storage.starfile module<a class="headerlink" href="#module-aspire.storage.starfile" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.storage.starfile.StarFile">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.storage.starfile.</span></code><code class="sig-name descname"><span class="pre">StarFile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">starfile_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.starfile.StarFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="aspire.storage.starfile.StarFile.init_from_blocks">
+<code class="sig-name descname"><span class="pre">init_from_blocks</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">blocks</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.starfile.StarFile.init_from_blocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a StarFile from a list of blocks
+:param blocks: An iterable of StarFileBlock objects
+:return: An initialized StarFile object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.storage.starfile.StarFile.init_from_starfile">
+<code class="sig-name descname"><span class="pre">init_from_starfile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">starfile_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.starfile.StarFile.init_from_starfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initalize a StarFile from a star file at a given path
+:param starfile_path: Path to saved starfile.
+:return: An initialized StarFile object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.storage.starfile.StarFile.save">
+<code class="sig-name descname"><span class="pre">save</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.starfile.StarFile.save" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.storage.starfile.StarFileBlock">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.storage.starfile.</span></code><code class="sig-name descname"><span class="pre">StarFileBlock</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.storage.starfile.StarFileBlock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.storage">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.storage" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="aspire.utils.html" class="btn btn-neutral float-right" title="aspire.utils package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="aspire.source.html" class="btn btn-neutral float-left" title="aspire.source package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Princeton University.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

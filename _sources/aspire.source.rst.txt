@@ -1,0 +1,45 @@
+aspire.source package
+=====================
+
+Submodules
+----------
+
+aspire.source.image module
+--------------------------
+
+.. automodule:: aspire.source.image
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.source.mrcstack module
+-----------------------------
+
+.. automodule:: aspire.source.mrcstack
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.source.relion module
+---------------------------
+
+.. automodule:: aspire.source.relion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.source.simulation module
+-------------------------------
+
+.. automodule:: aspire.source.simulation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.source
+   :members:
+   :undoc-members:
+   :show-inheritance:

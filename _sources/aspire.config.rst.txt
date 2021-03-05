@@ -1,0 +1,10 @@
+aspire.config package
+=====================
+
+Module contents
+---------------
+
+.. automodule:: aspire.config
+   :members:
+   :undoc-members:
+   :show-inheritance:

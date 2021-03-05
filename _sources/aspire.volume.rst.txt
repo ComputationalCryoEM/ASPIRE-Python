@@ -1,0 +1,10 @@
+aspire.volume package
+=====================
+
+Module contents
+---------------
+
+.. automodule:: aspire.volume
+   :members:
+   :undoc-members:
+   :show-inheritance:

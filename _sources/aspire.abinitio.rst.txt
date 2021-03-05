@@ -1,0 +1,69 @@
+aspire.abinitio package
+=======================
+
+Submodules
+----------
+
+aspire.abinitio.commonline\_base module
+---------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_ev module
+-------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_ev
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_gcar module
+---------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_gcar
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_lud module
+--------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_lud
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_sdp module
+--------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_sdp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_sync module
+---------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_sync
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.orientation\_src module
+---------------------------------------
+
+.. automodule:: aspire.abinitio.orientation_src
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.abinitio
+   :members:
+   :undoc-members:
+   :show-inheritance:

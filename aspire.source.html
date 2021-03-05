@@ -1,0 +1,759 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>aspire.source package &mdash; ASPIRE 0.6.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.storage package" href="aspire.storage.html" />
+    <link rel="prev" title="aspire.reconstruction package" href="aspire.reconstruction.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ASPIRE
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.6.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.config.html">aspire.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+          <li><a href="aspire.html">aspire package</a> &raquo;</li>
+        
+      <li>aspire.source package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/aspire.source.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="aspire-source-package">
+<h1>aspire.source package<a class="headerlink" href="#aspire-source-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-aspire.source.image">
+<span id="aspire-source-image-module"></span><h2>aspire.source.image module<a class="headerlink" href="#module-aspire.source.image" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.source.image.ArrayImageSource">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.source.image.</span></code><code class="sig-name descname"><span class="pre">ArrayImageSource</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ArrayImageSource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.source.image.ImageSource" title="aspire.source.image.ImageSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.source.image.ImageSource</span></code></a></p>
+<p>An <cite>ImageSource</cite> object that holds a reference to an underlying <cite>Image</cite> object (a thin wrapper on an ndarray)
+representing images. It does not produce its images on the fly, but keeps them in memory. As such, it should not be
+used where large Image objects are involved, but can be used in situations where API conformity is desired.</p>
+<p>Note that this class does not provide an <cite>_images</cite> method, since it populates the <cite>_cached_im</cite> attribute which,
+if available, is consulted directly by the parent class, bypassing <cite>_images</cite>.</p>
+<p>Initialize from an <cite>Image</cite> object
+:param im: An <cite>Image</cite> object representing image data served up by this <cite>ImageSource</cite>
+:param metadata: A Dataframe of metadata information corresponding to this ImageSource’s images</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="aspire.source.image.ImageSource">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.source.image.</span></code><code class="sig-name descname"><span class="pre">ImageSource</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'double'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>When creating an <cite>ImageSource</cite> object, a ‘metadata’ table holds metadata information about all images in the
+<cite>ImageSource</cite>. The number of rows in this metadata table will equal the total number of images supported by this
+<cite>ImageSource</cite> (available as the ‘n’ attribute), though reading/writing of images is usually done in chunks.</p>
+<p>This metadata table is implemented as a pandas <cite>DataFrame</cite>.</p>
+<p>The ‘values’ in this metadata table are usually primitive types (floats/ints/strings) that are suitable
+for being read from STAR files, and being written to STAR files. The columns corresponding to these fields
+begin with a single underscore ‘_’.</p>
+<p>In addition, the metadata table may also contain references to Python objects.
+<cite>Filter</cite> objects, for example, are stored in this metadata table as references to unique <cite>Filter</cite> objects that
+correspond to images in this <cite>ImageSource</cite>. Several rows of metadata may end up containing a reference to a small
+handful of unique <cite>Filter</cite> objects, depending on the values found in other columns (identical <cite>Filter</cite>
+objects, depending on unique CTF values found for _rlnDefocusU/_rlnDefocusV etc.</p>
+<p>A Cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – resolution of (square) images (int)</p></li>
+<li><p><strong>n</strong> – The total number of images available
+Note that images() may return a different number of images based on its arguments.</p></li>
+<li><p><strong>metadata</strong> – A Dataframe of metadata information corresponding to this ImageSource’s images</p></li>
+<li><p><strong>memory</strong> – str or None
+The path of the base directory to use as a data store or None. If None is given, no caching is performed.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.amplitudes">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">amplitudes</span></code><a class="headerlink" href="#aspire.source.image.ImageSource.amplitudes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.angles">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">angles</span></code><a class="headerlink" href="#aspire.source.image.ImageSource.angles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotation angles in radians, as a n x 3 array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.cache">
+<code class="sig-name descname"><span class="pre">cache</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.downsample">
+<code class="sig-name descname"><span class="pre">downsample</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.downsample" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.eval_filter_grid">
+<code class="sig-name descname"><span class="pre">eval_filter_grid</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.eval_filter_grid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.eval_filters">
+<code class="sig-name descname"><span class="pre">eval_filters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im_orig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.eval_filters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.filter_indices">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">filter_indices</span></code><a class="headerlink" href="#aspire.source.image.ImageSource.filter_indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.get_metadata">
+<code class="sig-name descname"><span class="pre">get_metadata</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata_fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.get_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get metadata field information of this ImageSource for selected indices
+:param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
+:param indices: A list of 0-based indices indicating the indices for which to get metadata.</p>
+<blockquote>
+<div><p>If indices is None, then values corresponding to all indices in this Source object are returned.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>default_value</strong> – Default scalar value to use for any fields not found in the metadata. If None,
+no default value is used, and missing field(s) cause a RuntimeError.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An ndarray of values (any valid np types) representing metadata info.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.has_metadata">
+<code class="sig-name descname"><span class="pre">has_metadata</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata_fields</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.has_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find out if one more more metadata fields are available for this <cite>ImageSource</cite>.
+:param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
+:return: Boolean value indicating whether the field(s) are available.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.im_backward">
+<code class="sig-name descname"><span class="pre">im_backward</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.im_backward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply adjoint mapping to set of images
+:param im: An Image instance to which we wish to apply the adjoint of the forward model.
+:param start: Start index of image to consider
+:return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.images">
+<code class="sig-name descname"><span class="pre">images</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.images" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return images from this ImageSource as an Image object.
+:param start: The inclusive start index from which to return images.
+:param num: The exclusive end index up to which to return images.
+:param args: Any additional positional arguments to pass on to the <cite>ImageSource</cite>’s underlying <cite>_images</cite> method.
+:param kwargs: Any additional keyword arguments to pass on to the <cite>ImageSource</cite>’s underlying <cite>_images</cite> method.
+:return: an <cite>Image</cite> object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.invert_contrast">
+<code class="sig-name descname"><span class="pre">invert_contrast</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.invert_contrast" title="Permalink to this definition">¶</a></dt>
+<dd><p>invert the global contrast of images</p>
+<p>Check if all images in a stack should be globally phase flipped so that
+the molecule corresponds to brighter pixels and the background corresponds
+to darker pixels. This is done by comparing the mean in a small circle
+around the origin (supposed to correspond to the molecule) with the mean
+of the noise, and making sure that the mean of the molecule is larger.
+From the implementation level, we modify the <cite>ImageSource</cite> in-place by
+appending a <cite>Multiple</cite> filter to the generation pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>batch_size</strong> – Batch size of images to query.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On return, the <cite>ImageSource</cite> object has been modified in place.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="aspire.source.image.ImageSource.metadata_fields">
+<code class="sig-name descname"><span class="pre">metadata_fields</span></code><em class="property"> <span class="pre">=</span> <span class="pre">{'_rlnAmplitudeContrast':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnAnglePsi':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnAngleRot':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnAngleTilt':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnClassNumber':</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">'_rlnCoordinateX':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnCoordinateY':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnCoordinateZ':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnCtfFigureOfMerit':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnCtfImage':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'_rlnDefocusAngle':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnDefocusU':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnDefocusV':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnDetectorPixelSize':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnGroupName':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'_rlnGroupNumber':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'_rlnImageName':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'_rlnLogLikeliContribution':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnMagnification':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnMaxValueProbDistribution':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnMicrographName':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'_rlnNormCorrection':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnNrOfFrames':</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">'_rlnNrOfSignificantSamples':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnOriginX':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnOriginY':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnOriginalName':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'_rlnOriginalParticleName':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'_rlnParticleName':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'_rlnRandomSubset':</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">'_rlnSphericalAberration':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'_rlnVoltage':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;}</span></em><a class="headerlink" href="#aspire.source.image.ImageSource.metadata_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.normalize_background">
+<code class="sig-name descname"><span class="pre">normalize_background</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bg_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_ramp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.normalize_background" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize the images by the noise background</p>
+<p>This is done by shifting the image density by the mean value of background
+and scaling the image density by the standard deviation of background.
+From the implementation level, we modify the <cite>ImageSource</cite> in-place by
+appending the <cite>Add</cite> and <cite>Multiple</cite> filters to the generation pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bg_radius</strong> – Radius cutoff to be considered as background (in image size)</p></li>
+<li><p><strong>do_ramp</strong> – When it is <cite>True</cite>, fit a ramping background to the data
+and subtract. Namely perform normalization based on values from each image.
+Otherwise, a constant background level from all images is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On return, the <cite>ImageSource</cite> object has been modified in place.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.offsets">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">offsets</span></code><a class="headerlink" href="#aspire.source.image.ImageSource.offsets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.phase_flip">
+<code class="sig-name descname"><span class="pre">phase_flip</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.phase_flip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform phase flip to images in the source object using CTF information</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.rots">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">rots</span></code><a class="headerlink" href="#aspire.source.image.ImageSource.rots" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotation matrices as a n x 3 x 3 array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.save">
+<code class="sig-name descname"><span class="pre">save</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">starfile_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the output metadata to STAR file and/or images to MRCS file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>starfile_filepath</strong> – Path to STAR file where we want to
+save metadata of image_source</p></li>
+<li><p><strong>batch_size</strong> – Batch size of images to query.</p></li>
+<li><p><strong>save_mode</strong> – Whether to save all images in a single or multiple files in batch size.</p></li>
+<li><p><strong>overwrite</strong> – Option to overwrite the output MRCS files.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.save_images">
+<code class="sig-name descname"><span class="pre">save_images</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">starfile_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename_indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.save_images" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save an ImageSource to MRCS files</p>
+<p>Note that .mrcs files are saved at the same location as the STAR file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename_indices</strong> – Filename list for save all images</p></li>
+<li><p><strong>starfile_filepath</strong> – Path to STAR file where we want to save image_source</p></li>
+<li><p><strong>batch_size</strong> – Batch size of images to query from the <cite>ImageSource</cite> object.
+if <cite>save_mode</cite> is not <cite>single</cite>, images in the same batch will save to one MRCS file.</p></li>
+<li><p><strong>overwrite</strong> – Whether to overwrite any .mrcs files found at the target location.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.save_metadata">
+<code class="sig-name descname"><span class="pre">save_metadata</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">starfile_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_mrcs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.save_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save updated metadata to a STAR file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>starfile_filepath</strong> – Path to STAR file where we want to
+save image_source</p></li>
+<li><p><strong>new_mrcs</strong> – Whether to save all images to new MRCS files or not.
+If True, new file names and pathes need to be created.</p></li>
+<li><p><strong>batch_size</strong> – Batch size of images to query from the
+<cite>ImageSource</cite> object. Every <cite>batch_size</cite> rows, entries are
+written to STAR file.</p></li>
+<li><p><strong>save_mode</strong> – Whether to save all images in a single or
+multiple files in batch size.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.set_metadata">
+<code class="sig-name descname"><span class="pre">set_metadata</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata_fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.set_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify metadata field information of this ImageSource for selected indices
+:param metadata_fields: A string, or list of strings, representing the metadata field(s) to be modified
+:param values: A scalar or vector (of length <a href="#id1"><span class="problematic" id="id2">|indices|</span></a>) of replacement values.
+:param indices: A list of 0-based indices indicating the indices for which to modify metadata.</p>
+<blockquote>
+<div><p>If indices is None, then all indices in this Source object are modified. In this case,
+values should either be a scalar or a vector of length equal to the total number of images, <a href="#id3"><span class="problematic" id="id4">|self.n|</span></a>.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>On return, the metadata associated with the specified indices has been modified.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.states">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">states</span></code><a class="headerlink" href="#aspire.source.image.ImageSource.states" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.vol_forward">
+<code class="sig-name descname"><span class="pre">vol_forward</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.vol_forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply forward image model to volume
+:param vol: A volume instance.
+:param start: Start index of image to consider
+:param num: Number of images to consider
+:return: The images obtained from volume by projecting, applying CTFs, translating, and multiplying by the</p>
+<blockquote>
+<div><p>amplitude.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.image.ImageSource.whiten">
+<code class="sig-name descname"><span class="pre">whiten</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">noise_filter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.image.ImageSource.whiten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify the <cite>ImageSource</cite> in-place by appending a whitening filter to the generation pipeline.
+:param noise_filter: The noise psd of the images as a <cite>Filter</cite> object. Typically determined by a</p>
+<blockquote>
+<div><p>NoiseEstimator class, and available as its <cite>filter</cite> attribute.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>On return, the <cite>ImageSource</cite> object has been modified in place.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.source.mrcstack">
+<span id="aspire-source-mrcstack-module"></span><h2>aspire.source.mrcstack module<a class="headerlink" href="#module-aspire.source.mrcstack" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.source.mrcstack.MrcStack">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.source.mrcstack.</span></code><code class="sig-name descname"><span class="pre">MrcStack</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">filepath</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.mrcstack.MrcStack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.source.image.ImageSource" title="aspire.source.image.ImageSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.source.image.ImageSource</span></code></a></p>
+<p>A Cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – resolution of (square) images (int)</p></li>
+<li><p><strong>n</strong> – The total number of images available
+Note that images() may return a different number of images based on its arguments.</p></li>
+<li><p><strong>metadata</strong> – A Dataframe of metadata information corresponding to this ImageSource’s images</p></li>
+<li><p><strong>memory</strong> – str or None
+The path of the base directory to use as a data store or None. If None is given, no caching is performed.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.source.relion">
+<span id="aspire-source-relion-module"></span><h2>aspire.source.relion module<a class="headerlink" href="#module-aspire.source.relion" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.source.relion.RelionSource">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.source.relion.</span></code><code class="sig-name descname"><span class="pre">RelionSource</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.relion.RelionSource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.source.image.ImageSource" title="aspire.source.image.ImageSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.source.image.ImageSource</span></code></a></p>
+<p>Load STAR file at given filepath
+:param filepath: Absolute or relative path to STAR file
+:param data_folder: Path to folder w.r.t which all relative paths to .mrcs files are resolved.</p>
+<blockquote>
+<div><p>If None, the folder corresponding to filepath is used.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pixel_size</strong> – the pixel size of the images in angstroms (Default 1)</p></li>
+<li><p><strong>B</strong> – the envelope decay of the CTF in inverse square angstrom (Default 0)</p></li>
+<li><p><strong>n_workers</strong> – Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)</p></li>
+<li><p><strong>max_rows</strong> – Maximum number of rows in STAR file to read. If None, all rows are read.
+Note that this refers to the max number of images to load, not the max. number of .mrcs files (which may be
+equal to or less than the number of images).</p></li>
+<li><p><strong>memory</strong> – str or None
+The path of the base directory to use as a data store or None. If None is given, no caching is performed.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.source.relion.RelionSource.starfile2df">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">starfile2df</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.relion.RelionSource.starfile2df" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.source.simulation">
+<span id="aspire-source-simulation-module"></span><h2>aspire.source.simulation module<a class="headerlink" href="#module-aspire.source.simulation" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="aspire.source.simulation.Simulation">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">aspire.source.simulation.</span></code><code class="sig-name descname"><span class="pre">Simulation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">L=8</span></em>, <em class="sig-param"><span class="pre">n=1024</span></em>, <em class="sig-param"><span class="pre">vols=None</span></em>, <em class="sig-param"><span class="pre">states=None</span></em>, <em class="sig-param"><span class="pre">unique_filters=None</span></em>, <em class="sig-param"><span class="pre">filter_indices=None</span></em>, <em class="sig-param"><span class="pre">offsets=None</span></em>, <em class="sig-param"><span class="pre">amplitudes=None</span></em>, <em class="sig-param"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></em>, <em class="sig-param"><span class="pre">C=2</span></em>, <em class="sig-param"><span class="pre">angles=None</span></em>, <em class="sig-param"><span class="pre">seed=0</span></em>, <em class="sig-param"><span class="pre">memory=None</span></em>, <em class="sig-param"><span class="pre">noise_filter=None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.source.image.ImageSource" title="aspire.source.image.ImageSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.source.image.ImageSource</span></code></a></p>
+<p>A Cryo-EM simulation
+Other than the base class attributes, it has:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>C</strong> – The number of distinct volumes</p></li>
+<li><p><strong>angles</strong> – A 3-by-n array of rotation angles</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.clean_images">
+<code class="sig-name descname"><span class="pre">clean_images</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.clean_images" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.covar_true">
+<code class="sig-name descname"><span class="pre">covar_true</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.covar_true" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eigs">
+<code class="sig-name descname"><span class="pre">eigs</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eigs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Eigendecomposition of volume covariance matrix of simulation
+:return: A 2-tuple:</p>
+<blockquote>
+<div><p>eigs_true: The eigenvectors of the volume covariance matrix in the form of Volume instance.
+lambdas_true: The eigenvalues of the covariance matrix in the form of a (C-1)-by-(C-1) diagonal matrix.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eval_clustering">
+<code class="sig-name descname"><span class="pre">eval_clustering</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vol_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eval_clustering" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate clustering estimation
+:param vol_idx: Indexes of the volumes determined (0-indexed)
+:return: Accuracy [0-1] in terms of proportion of correctly assigned labels</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eval_coords">
+<code class="sig-name descname"><span class="pre">eval_coords</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean_vol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eig_vols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords_est</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eval_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate coordinate estimation
+:param mean_vol: A mean volume in the form of a Volume instance.
+:param eig_vols: A set of eigenvolumes in an Volume instance.
+:param coords_est: The estimated coordinates in the affine space defined centered at <cite>mean_vol</cite> and spanned</p>
+<blockquote>
+<div><p>by <cite>eig_vols</cite>.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eval_covar">
+<code class="sig-name descname"><span class="pre">eval_covar</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covar_est</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eval_covar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eval_eigs">
+<code class="sig-name descname"><span class="pre">eval_eigs</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eigs_est</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambdas_est</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eval_eigs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate covariance eigendecomposition accuracy
+:param eigs_est: The estimated volume eigenvectors in an L-by-L-by-L-by-K array.
+:param lambdas_est: The estimated eigenvalues in a K-by-K diagonal matrix (default <cite>diag(ones(K, 1))</cite>).
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eval_gaussian_blobs">
+<code class="sig-name descname"><span class="pre">eval_gaussian_blobs</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eval_gaussian_blobs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eval_mean">
+<code class="sig-name descname"><span class="pre">eval_mean</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean_est</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eval_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eval_vol">
+<code class="sig-name descname"><span class="pre">eval_vol</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vol_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_est</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eval_vol" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.eval_volmat">
+<code class="sig-name descname"><span class="pre">eval_volmat</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volmat_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volmat_est</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.eval_volmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate volume matrix estimation accuracy
+:param volmat_true: The true volume matrices in the form of an L-by-L-by-L-by-L-by-L-by-L-by-K array.
+:param volmat_est: The estimated volume matrices in the same form.
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.mean_true">
+<code class="sig-name descname"><span class="pre">mean_true</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.mean_true" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.projections">
+<code class="sig-name descname"><span class="pre">projections</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.projections" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return projections of generated volumes, without applying filters/shifts/amplitudes/noise
+:param start: start index (0-indexed) of the start image to return
+:param num: Number of images to return. If None, <em>all</em> images are returned.
+:param indices: A numpy array of image indices. If specified, start and num are ignored.
+:return: An Image instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="aspire.source.simulation.Simulation.vol_coords">
+<code class="sig-name descname"><span class="pre">vol_coords</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean_vol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eig_vols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.source.simulation.Simulation.vol_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Coordinates of simulation volumes in a given basis
+:param mean_vol: A mean volume in the form of a Volume Instance (default <cite>mean_true</cite>).
+:param eig_vols: A set of k volumes in a Volume instance (default <cite>eigs</cite>).
+:return:</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-aspire.source">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.source" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="aspire.storage.html" class="btn btn-neutral float-right" title="aspire.storage package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="aspire.reconstruction.html" class="btn btn-neutral float-left" title="aspire.reconstruction package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Princeton University.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

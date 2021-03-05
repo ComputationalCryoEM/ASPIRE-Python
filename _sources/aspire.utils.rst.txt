@@ -1,0 +1,93 @@
+aspire.utils package
+====================
+
+Submodules
+----------
+
+aspire.utils.cell module
+------------------------
+
+.. automodule:: aspire.utils.cell
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.coor\_trans module
+-------------------------------
+
+.. automodule:: aspire.utils.coor_trans
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.fft module
+-----------------------
+
+.. automodule:: aspire.utils.fft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.filter\_to\_fb\_mat module
+---------------------------------------
+
+.. automodule:: aspire.utils.filter_to_fb_mat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.matlab\_compat module
+----------------------------------
+
+.. automodule:: aspire.utils.matlab_compat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.matrix module
+--------------------------
+
+.. automodule:: aspire.utils.matrix
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.misc module
+------------------------
+
+.. automodule:: aspire.utils.misc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.random module
+--------------------------
+
+.. automodule:: aspire.utils.random
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.rotation module
+----------------------------
+
+.. automodule:: aspire.utils.rotation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.utils.types module
+-------------------------
+
+.. automodule:: aspire.utils.types
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:

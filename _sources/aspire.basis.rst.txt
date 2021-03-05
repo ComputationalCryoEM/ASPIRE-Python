@@ -1,0 +1,117 @@
+aspire.basis package
+====================
+
+Submodules
+----------
+
+aspire.basis.basis module
+-------------------------
+
+.. automodule:: aspire.basis.basis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.basis\_utils module
+--------------------------------
+
+.. automodule:: aspire.basis.basis_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.dirac module
+-------------------------
+
+.. automodule:: aspire.basis.dirac
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.fb\_2d module
+--------------------------
+
+.. automodule:: aspire.basis.fb_2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.fb\_3d module
+--------------------------
+
+.. automodule:: aspire.basis.fb_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.ffb\_2d module
+---------------------------
+
+.. automodule:: aspire.basis.ffb_2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.ffb\_3d module
+---------------------------
+
+.. automodule:: aspire.basis.ffb_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.fpswf\_2d module
+-----------------------------
+
+.. automodule:: aspire.basis.fpswf_2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.fpswf\_3d module
+-----------------------------
+
+.. automodule:: aspire.basis.fpswf_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.polar\_2d module
+-----------------------------
+
+.. automodule:: aspire.basis.polar_2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.pswf\_2d module
+----------------------------
+
+.. automodule:: aspire.basis.pswf_2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.pswf\_3d module
+----------------------------
+
+.. automodule:: aspire.basis.pswf_3d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.basis.pswf\_utils module
+-------------------------------
+
+.. automodule:: aspire.basis.pswf_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.basis
+   :members:
+   :undoc-members:
+   :show-inheritance:
