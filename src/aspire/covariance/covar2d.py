@@ -208,6 +208,7 @@ class RotCov2D:
         do_refl=True,
         noise_var=1,
         covar_est_opt=None,
+        make_psd=True,
     ):
         """
         Calculate the covariance matrix from the expansion coefficients and CTF information.
@@ -220,6 +221,7 @@ class RotCov2D:
         :param noise_var: The estimated variance of noise. The value should be zero for `coeffs`
             from clean images of simulation data.
         :param covar_est_opt: The optimization parameter list for obtaining the Cov2D matrix.
+        :param make_psd: If True, make the covariance matrix positive semidefinite
         :return: The basis coefficients of the covariance matrix in
             the form of cell array representing a block diagonal matrix. These
             block diagonal matrices are implemented as BlkDiagMatrix instances.
@@ -281,6 +283,9 @@ class RotCov2D:
             A[k] = np.sqrt(weight) * ctf_fb_k_sq
             M += A[k]
 
+        if not b_coeff.check_psd():
+            logger.warning("Left side b in Cov2D is not positive semidefinite.")
+
         if covar_est_opt["shrinker"] == "None":
             b = b_coeff - noise_var * b_noise
         else:
@@ -290,6 +295,11 @@ class RotCov2D:
                 np.size(coeffs, 1),
                 noise_var,
                 covar_est_opt["shrinker"],
+            )
+        if not b.check_psd():
+            logger.warning(
+                "Left side b after removing noise in Cov2D"
+                " is not positive semidefinite."
             )
 
         # RCOPT okay, this looks like a big batch, come back later
@@ -325,6 +335,12 @@ class RotCov2D:
             cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
             covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
+
+        if not covar_coeff.check_psd():
+            logger.warning("Covariance matrix in Cov2D is not positive semidefinite.")
+            if make_psd:
+                logger.info("Convert matrices to positive semidefinite.")
+                covar_coeff = covar_coeff.make_psd()
 
         return covar_coeff
 
@@ -635,7 +651,9 @@ class BatchedRotCov2D(RotCov2D):
 
         return mean_coeff
 
-    def get_covar(self, noise_var=1, mean_coeff=None, covar_est_opt=None):
+    def get_covar(
+        self, noise_var=1, mean_coeff=None, covar_est_opt=None, make_psd=True
+    ):
         """
         Calculate the block diagonal covariance matrix in the basis
         coefficients.
@@ -662,6 +680,7 @@ class BatchedRotCov2D(RotCov2D):
               `1e-12`).
             - 'precision': Precision of conjugate gradient algorithm (see
               documentation for `conj_grad`, default `'float64'`)
+        :param make_psd: If True, make the covariance matrix positive semidefinite
         :return: The block diagonal matrix containing the basis coefficients (in
         `self.basis`) for the estimated covariance matrix. These are
         implemented using `BlkDiagMatrix`.
@@ -677,7 +696,7 @@ class BatchedRotCov2D(RotCov2D):
             "iter_callback": [],
             "store_iterates": False,
             "rel_tolerance": 1e-12,
-            "precision": "float64",
+            "precision": self.dtype,
             "preconditioner": identity,
         }
 
@@ -695,13 +714,28 @@ class BatchedRotCov2D(RotCov2D):
         b_covar = self.b_covar
 
         b_covar = self._mean_correct_covar_rhs(b_covar, self.b_mean, mean_coeff)
+        if not b_covar.check_psd():
+            logger.warning("Left side b in Batched Cov2D is not positive semidefinite.")
+
         b_covar = self._noise_correct_covar_rhs(
             b_covar, self.A_mean, noise_var, covar_est_opt["shrinker"]
         )
+        if not b_covar.check_psd():
+            logger.warning(
+                "Left side b after removing noise "
+                "in Batched Cov2D is not positive semidefinite."
+            )
 
         covar_coeff = self._solve_covar(
             self.A_covar, b_covar, self.M_covar, covar_est_opt
         )
+        if not covar_coeff.check_psd():
+            logger.warning(
+                "Covariance matrix in Batched Cov2D is not positive semidefinite."
+            )
+            if make_psd:
+                logger.info("Convert matrices to positive semidefinite.")
+                covar_coeff = covar_coeff.make_psd()
 
         return covar_coeff
 
@@ -730,7 +764,7 @@ class BatchedRotCov2D(RotCov2D):
             covar_coeff = self.get_covar(noise_var=noise_var, mean_coeff=mean_coeff)
 
         if (ctf_fb is None) or (ctf_idx is None):
-            ctf_idx = np.zeros(coeffs.shape[1], dtype=int)
+            ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
         noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)

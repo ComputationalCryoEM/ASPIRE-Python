@@ -1,7 +1,6 @@
 import os.path
 import tempfile
 from itertools import zip_longest
-from os.path import splitext
 from unittest import TestCase
 
 import importlib_resources
@@ -12,8 +11,7 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.source.mrcstack import MrcStack
-from aspire.storage import StarFile, StarFileBlock, save_star
+from aspire.storage import StarFile, StarFileBlock
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -123,78 +121,3 @@ class StarFileTestCase(TestCase):
         self.assertEqual(self.starfile, self.starfile2)
 
         os.remove("sample_saved.star")
-
-    def testSaveStar(self):
-        test_path = os.path.join(self.tmpdir, "sample_save_star.star")
-        mrc_path = splitext(test_path)[0] + "_0_0.mrcs"
-
-        # Save some data using the wrapper.
-        save_star(self.img_src, test_path)
-
-        # Can we read it back using the class?
-        _ = StarFile(test_path)
-
-        # Read the data file
-        saved_data = MrcStack(mrc_path).im.data
-
-        # Compare
-        self.assertTrue(np.allclose(self.im.data, saved_data))
-
-    def testSaveStarSingle(self):
-        test_path = os.path.join(self.tmpdir, "sample_save_single.star")
-        mrc_path = splitext(test_path)[0] + "_0_0.mrcs"
-
-        # Save some data using the wrapper.
-        save_star(self.img_src, test_path, save_mode="single")
-
-        # Can we read it back using the class?
-        _ = StarFile(test_path)
-
-        # Read the data file.
-        saved_data = MrcStack(mrc_path).im.data
-
-        # Compare
-        self.assertTrue(np.allclose(self.im.data, saved_data))
-
-    def testSaveStarStack(self):
-        test_path = os.path.join(self.tmpdir, "sample_save_stack.star")
-        cleanup_files = [test_path]
-        batch_size = 2
-
-        # Save some data using the wrapper.
-        save_star(self.img_src_stack, test_path, batch_size=batch_size)
-
-        # Can we read it back using the class?
-        _ = StarFile(test_path)
-
-        # Loop over the stack of files
-        for itr in grouper(range(self.n), batch_size):
-            grp = list(filter(None.__ne__, itr))
-
-            # Parse fname
-            mrc_path = splitext(test_path)[0] + f"_{min(grp)}_{max(grp)}.mrcs"
-            cleanup_files.append(mrc_path)
-
-            # Read the data file.
-            saved_data = MrcStack(mrc_path).im.data
-
-            # Compare
-            self.assertTrue(
-                np.allclose(self.im_stack[min(grp) : max(grp) + 1], saved_data)
-            )
-
-    def testSaveStarSingleStack(self):
-        test_path = os.path.join(self.tmpdir, "sample_save_single_stack.star")
-        mrc_path = splitext(test_path)[0] + f"_0_{self.im_stack.n_images-1}.mrcs"
-
-        # Save some data using the wrapper.
-        save_star(self.img_src_stack, test_path, batch_size=2, save_mode="single")
-
-        # Can we read it back using the class?
-        _ = StarFile(test_path)
-
-        # Read the data file.
-        saved_data = MrcStack(mrc_path).im.data
-
-        # Compare
-        self.assertTrue(np.allclose(self.im_stack.data, saved_data))

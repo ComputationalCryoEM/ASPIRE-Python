@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.6.2",
+    version="0.6.3",
     data_files=[
         ("", ["src/aspire/config.ini"]),
         ("", ["src/aspire/logging.conf"]),
@@ -31,7 +31,6 @@ setup(
         "matplotlib",
         "mrcfile",
         "numpy==1.16",
-        "numpydoc==0.7.0",
         "pandas==0.25.3",
         "pyfftw",
         "pillow",
@@ -39,7 +38,6 @@ setup(
         "pytest-cov",
         "scipy==1.4.0",
         "scikit-learn",
-        "scikit-image==0.16.2",
         "setuptools>=0.41",
         "sphinxcontrib-bibtex",
         "sphinx-rtd-theme>=0.4.2",
@@ -49,7 +47,7 @@ setup(
     #   for example gpu packages which may not install for all users,
     #   or developer tools that are handy but not required for users.
     extras_require={
-        "gpu": ["pycuda", "cupy", "cufinufft>=1.1"],
+        "gpu": ["pycuda", "cupy", "cufinufft==1.2"],
         "dev": [
             "black",
             "bumpversion",
@@ -73,4 +71,9 @@ setup(
         "Programming Language :: Python",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
+    entry_points={
+        "console_scripts": [
+            "aspire = aspire.__main__:main_entry",
+        ]
+    },
 )

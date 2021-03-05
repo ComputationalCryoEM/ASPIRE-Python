@@ -1,9 +1,11 @@
 import os.path
+import tempfile
 from unittest import TestCase
 
 import numpy as np
 
 from aspire.operators import IdentityFilter, RadialCTFFilter
+from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
@@ -450,3 +452,26 @@ class SimTestCase(TestCase):
                 ],
             )
         )
+
+    def testSimulationSaveFile(self):
+        # Create a tmpdir in a context. It will be cleaned up on exit.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Save the simulation object into STAR and MRCS files
+            star_filepath = os.path.join(tmpdir, "save_test.star")
+            # Save images into one single MRCS file
+            self.sim.save(
+                star_filepath, batch_size=512, save_mode="single", overwrite=False
+            )
+            imgs_org = self.sim.images(start=0, num=1024)
+            # Input saved images into Relion object
+            relion_src = RelionSource(star_filepath, tmpdir, max_rows=1024)
+            imgs_sav = relion_src.images(start=0, num=1024)
+            # Compare original images with saved images
+            self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
+            # Save images into multiple MRCS files based on batch size
+            self.sim.save(star_filepath, batch_size=512, overwrite=False)
+            # Input saved images into Relion object
+            relion_src = RelionSource(star_filepath, tmpdir, max_rows=1024)
+            imgs_sav = relion_src.images(start=0, num=1024)
+            # Compare original images with saved images
+            self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))

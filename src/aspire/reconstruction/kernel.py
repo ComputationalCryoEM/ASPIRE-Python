@@ -115,7 +115,7 @@ class FourierKernel(Kernel):
 
         x = roll_dim(x, sz_roll)
 
-        return x
+        return np.real(x)
 
     def convolve_volume_matrix(self, x):
         """

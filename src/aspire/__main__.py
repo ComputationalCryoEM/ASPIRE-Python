@@ -4,7 +4,8 @@ from click.core import Command, Group
 
 import aspire.commands
 
-if __name__ == "__main__":
+
+def main_entry():
     main = Group(chain=False)
 
     # TODO: Add options
@@ -18,3 +19,7 @@ if __name__ == "__main__":
             main.add_command(command)
 
     main.main(prog_name="aspire")
+
+
+if __name__ == "__main__":
+    main_entry()

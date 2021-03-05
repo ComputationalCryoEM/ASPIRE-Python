@@ -1,10 +1,10 @@
 ![Logo](http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg)
 
 [![Azure Build Status](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_apis/build/status/ComputationalCryoEM.ASPIRE-Python?branchName=master)](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_build/latest?definitionId=3&branchName=master)
-[![Travis Build Status](https://travis-ci.org/ComputationalCryoEM/ASPIRE-Python.svg?branch=master)](https://travis-ci.org/ComputationalCryoEM/ASPIRE-Python)
+[![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/workflows/ASPIRE%20Python%20package/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/workflows/ASPIRE%20Python%20package/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/ComputationalCryoEM/ASPIRE-Python/badge.svg?branch=master)](https://coveralls.io/github/ComputationalCryoEM/ASPIRE-Python?branch=master)
 
-# ASPIRE - Algorithms for Single Particle Reconstruction - v0.6.2
+# ASPIRE - Algorithms for Single Particle Reconstruction - v0.6.3
 
 This is the Python version to supersede the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire).
 

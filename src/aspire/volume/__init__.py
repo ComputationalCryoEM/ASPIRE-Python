@@ -9,6 +9,7 @@ from aspire.numeric import fft, xp
 from aspire.utils import ensure, mat_to_vec, vec_to_mat
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matlab_compat import m_reshape
+from aspire.utils.rotation import Rotation
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,19 @@ class Volume:
         return self * otherL
 
     def project(self, vol_idx, rot_matrices):
+        """
+        Using the stack of rot_matrices,
+        project images of Volume[vol_idx].
+
+        :param vol_idx: Volume index
+        :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
+        :return: `Image` instance.
+        """
+
+        # If we are an ASPIRE Rotation, get the numpy representation.
+        if isinstance(rot_matrices, Rotation):
+            rot_matrices = rot_matrices.matrices
+
         if rot_matrices.dtype != self.dtype:
             logger.warning(
                 f"{self.__class__.__name__}"
