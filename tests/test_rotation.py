@@ -22,7 +22,9 @@ class UtilsTestCase(TestCase):
     def testRotMatrices(self):
         rot_ref = sp_rot.from_matrix(self.matrices)
         matrices = rot_ref.as_matrix().astype(self.dtype)
-        self.assertTrue(np.allclose(self.matrices, matrices))
+        self.assertTrue(
+            np.allclose(self.matrices, matrices, atol=utest_tolerance(self.dtype))
+        )
 
     def testRotAngles(self):
         rot_ref = sp_rot.from_euler("ZYZ", self.angles, degrees=False)
