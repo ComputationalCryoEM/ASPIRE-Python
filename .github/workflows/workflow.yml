@@ -48,7 +48,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
+      run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }},coveralls
 
   docs:
     if: github.ref == 'refs/heads/master'
