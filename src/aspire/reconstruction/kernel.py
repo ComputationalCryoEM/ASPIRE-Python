@@ -165,3 +165,56 @@ class FourierKernel(Kernel):
 
         A = vecmat_to_volmat(A)
         return A
+
+
+class FourierKernelMat(FourierKernel):
+    def __init__(self, kermat, centered):
+
+        self.ndim = kermat.ndim - 2
+        self.kermat = kermat
+        self.r = kermat.shape[0]
+        assert kermat.shape[1] == self.r
+        self.dtype = kermat.dtype
+
+        self._centered = centered
+
+    def __add__(self, delta):
+        new_kermat = self.kermat + delta
+        return FourierKernelMat(new_kermat, self._centered)
+
+    def is_centered(self):
+        return self._centered
+
+    def circularize(self):
+        xx = np.empty((self.r, self.r, self.N))
+        for k in range(self.r):
+            for j in range(self.r):
+                xx[k, j] = FourierKernel(self.kermat[k, j]).circularize()
+        return xx
+
+    def convolve_volume(self, x):
+        Vmat = np.empty(*self.r, self.r, *self.x.shape)
+        for k in range(self.r):
+            for j in range(self.r):
+                Vmat[k, j] = FourierKernel(self.kermat[k, j]).convolve_volume(x)
+
+        return Vmat
+
+    def convolve_volume_matrix(self, x):
+        Vmat = np.empty(*self.r, self.r, *self.x.shape)
+        for k in range(self.r):
+            for j in range(self.r):
+                Vmat[k, j] = FourierKernel(self.kermat[k, j]).convolve_volume(x)
+
+        return Vmat
+
+    def toeplitz(self, L=None):
+        if L is None:
+            L = int(self.M / 2)
+
+        Amat = np.empty((self.r, self.r, self.L, self.L, self.L))
+        for k in range(self.r):
+            for j in range(self.r):
+                Amat[k, j] = FourierKernel(self.kermat[k, j]).toeplitz(L)
+
+        return Amat
