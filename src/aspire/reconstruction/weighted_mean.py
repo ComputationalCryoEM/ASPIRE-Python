@@ -14,10 +14,10 @@ from aspire.volume import Volume, rotated_grids
 logger = logging.getLogger(__name__)
 
 
-class WeightedMeanEstimator(MeanEstimator):
+class WeightedVolumesEstimator(MeanEstimator):
     def __init__(weights, *args, **kwargs):
         """
-        Weighted mean estimation.
+        Weighted mean volume estimation.
 
         This is best considered as an r x r matrix of volumes;
         each volume is a weighted mean least-squares estimator kernel (MeanEstimator).
@@ -98,12 +98,7 @@ class WeightedMeanEstimator(MeanEstimator):
             for i in range(0, self.n, self.batch_size):
                 im = self.src.images(i, self.batch_size)
 
-                #  I think I should be able to use a filter for this,
-                #  but I can only guess I would add one, or
-                #  what the right one is?! (If not me then who, yikes).
-                self.src.generation_pipeline.add_xform(ijustwanttomultiplytwothingshere)
-
-                batch_mean_b = self.src.im_backward(im, i) / self.n
+                batch_mean_b = self.src.im_backward(im, i, self.weights) / self.n
                 mean_b[k] += batch_mean_b.astype(self.dtype)
 
         res = np.sqrt(self.n) * self.basis.evaluate_t(mean_b)
@@ -111,6 +106,6 @@ class WeightedMeanEstimator(MeanEstimator):
 
         return res
 
-    def conj_grad(self, b_coeff, tol=None):
-        # conj_grad_vols_wt, tbd
-        pass
+    # def conj_grad(self, b_coeff, tol=None):
+    #     # conj_grad_vols_wt, tbd
+    #     pass
