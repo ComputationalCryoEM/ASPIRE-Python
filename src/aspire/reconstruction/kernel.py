@@ -175,6 +175,7 @@ class FourierKernelMat(FourierKernel):
         self.r = kermat.shape[0]
         assert kermat.shape[1] == self.r
         self.dtype = kermat.dtype
+        self.M = kermat.shape[-1]
 
         self._centered = centered
 
@@ -186,25 +187,66 @@ class FourierKernelMat(FourierKernel):
         return self._centered
 
     def circularize(self):
-        xx = np.empty((self.r, self.r, self.N))
+        xx = np.empty((self.r, self.r, self.M // 2))  # XXX?
         for k in range(self.r):
             for j in range(self.r):
-                xx[k, j] = FourierKernel(self.kermat[k, j]).circularize()
+                xx[k, j] = FourierKernel(
+                    self.kermat[k, j], centered=self._centered
+                ).circularize()
         return xx
 
-    def convolve_volume(self, x):
-        Vmat = np.empty(*self.r, self.r, *self.x.shape)
-        for k in range(self.r):
-            for j in range(self.r):
-                Vmat[k, j] = FourierKernel(self.kermat[k, j]).convolve_volume(x)
+    def convolve_volume(self, x, k, j):
+        N = x.shape[0]
 
-        return Vmat
+        kernel_f = self.kermat[k, j, ..., np.newaxis]
+        N_ker = kernel_f.shape[0]
+
+        x, sz_roll = unroll_dim(x, 4)
+        ensure(
+            x.shape[0] == x.shape[1] == x.shape[2] == N, "Volumes in x must be cubic"
+        )
+        ensure(kernel_f.shape[3] == 1, "Convolution kernel must be cubic")
+        ensure(len(set(kernel_f.shape[:3])) == 1, "Convolution kernel must be cubic")
+
+        is_singleton = x.shape[3] == 1
+
+        if is_singleton:
+            x = fftn(x[..., 0], (N_ker, N_ker, N_ker))[..., np.newaxis]
+        else:
+            raise NotImplementedError("not yet")
+
+        x = x * kernel_f
+
+        if is_singleton:
+            x[..., 0] = np.real(ifftn(x[..., 0]))
+            x = x[:N, :N, :N, :]
+        else:
+            raise NotImplementedError("not yet")
+
+        x = roll_dim(x, sz_roll)
+
+        return np.real(x)
+
+        # Vmat = np.zeros((self.r, *x.shape), dtype=self.dtype)
+        # for k in range(self.r):
+        #     for j in range(self.r):
+        #         Vmat[k] += FourierKernel(self.kermat[k, j], centered=self._centered).convolve_volume(x)
+
+        # return Vmat
+        # Vmat = np.empty((self.r, self.r, *x.shape), dtype=self.dtype)
+        # for k in range(self.r):
+        #     for j in range(self.r):
+        #         Vmat[k, j] = FourierKernel(self.kermat[k, j], centered=self._centered).convolve_volume(x)
+
+        # return Vmat
 
     def convolve_volume_matrix(self, x):
-        Vmat = np.empty(*self.r, self.r, *self.x.shape)
+        Vmat = np.empty(self.r, self.r, x.shape)
         for k in range(self.r):
             for j in range(self.r):
-                Vmat[k, j] = FourierKernel(self.kermat[k, j]).convolve_volume(x)
+                Vmat[k, j] = FourierKernel(
+                    self.kermat[k, j], centered=self._centered
+                ).convolve_volume(x)
 
         return Vmat
 
@@ -215,6 +257,8 @@ class FourierKernelMat(FourierKernel):
         Amat = np.empty((self.r, self.r, self.L, self.L, self.L))
         for k in range(self.r):
             for j in range(self.r):
-                Amat[k, j] = FourierKernel(self.kermat[k, j]).toeplitz(L)
+                Amat[k, j] = FourierKernel(
+                    self.kermat[k, j], centered=self._centered
+                ).toeplitz(L)
 
         return Amat

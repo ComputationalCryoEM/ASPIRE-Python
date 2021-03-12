@@ -57,7 +57,10 @@ class Estimator:
                 precond_kernel = self.precond_kernel = None
             return precond_kernel
 
-        return super(Estimator, self).__getattr__(name)
+        else:
+            raise AttributeError(name)
+        # ??? try to get in their head here, see what I'm missing.
+        # return super(Estimator, self).__getattr__(name)
 
     def compute_kernel(self):
         raise NotImplementedError("Subclasses must implement the compute_kernel method")
