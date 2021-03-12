@@ -237,7 +237,7 @@ class WeightedVolumesEstimatorTestCase(TestCase):
 
     def testOptimize1(self):
         mean_b_coeff = np.array(
-            [
+            [[
                 1.07338590e-01,
                 1.23690941e-01,
                 6.44482039e-03,
@@ -336,9 +336,10 @@ class WeightedVolumesEstimatorTestCase(TestCase):
                 -7.98651783e-04,
                 -9.82705453e-04,
                 6.46337066e-05,
-            ]
+            ]] * self.r
         )
 
+        # Given equal weighting we should get the same result for all self.r volumes.
         x = self.estimator.conj_grad(mean_b_coeff)
         self.assertTrue(
             np.allclose(
@@ -442,14 +443,14 @@ class WeightedVolumesEstimatorTestCase(TestCase):
                     -1.03837231e-01,
                     -1.26116949e-01,
                     9.82006976e-02,
-                ],
+                ] * self.r,
                 atol=1e-4,
             )
         )
 
     def testOptimize2(self):
         mean_b_coeff = np.array(
-            [
+            [[
                 1.07338590e-01,
                 1.23690941e-01,
                 6.44482039e-03,
@@ -548,7 +549,7 @@ class WeightedVolumesEstimatorTestCase(TestCase):
                 -7.98651783e-04,
                 -9.82705453e-04,
                 6.46337066e-05,
-            ]
+            ]] * self.r
         )
 
         x = self.estimator_with_preconditioner.conj_grad(mean_b_coeff)
@@ -654,7 +655,7 @@ class WeightedVolumesEstimatorTestCase(TestCase):
                     -1.03837231e-01,
                     -1.26116949e-01,
                     9.82006976e-02,
-                ],
+                ] * self.r,
                 atol=1e-4,
             )
         )

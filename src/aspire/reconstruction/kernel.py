@@ -59,6 +59,7 @@ class FourierKernel(Kernel):
             kernel = self.circularize_1d(kernel, dim)
 
         xx = fftn(mdim_ifftshift(kernel))
+        print('xx shape', xx.shape)
         return xx
 
     def circularize_1d(self, kernel, dim):
@@ -187,7 +188,8 @@ class FourierKernelMat(FourierKernel):
         return self._centered
 
     def circularize(self):
-        xx = np.empty((self.r, self.r, self.M // 2))  # XXX?
+        _L = self.M // 2
+        xx = np.empty((self.r, self.r, _L, _L, _L))
         for k in range(self.r):
             for j in range(self.r):
                 xx[k, j] = FourierKernel(
@@ -197,8 +199,9 @@ class FourierKernelMat(FourierKernel):
 
     def convolve_volume(self, x, k, j):
         N = x.shape[0]
-
+        print("x.shape", x.shape)
         kernel_f = self.kermat[k, j, ..., np.newaxis]
+        print('kernel_f.shape', kernel_f.shape)
         N_ker = kernel_f.shape[0]
 
         x, sz_roll = unroll_dim(x, 4)

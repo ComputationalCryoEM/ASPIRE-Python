@@ -10,7 +10,7 @@ from scipy.sparse.linalg import LinearOperator
 from aspire import config
 from aspire.image import Image
 from aspire.nufft import anufft
-from aspire.reconstruction import FourierKernelMat, MeanEstimator
+from aspire.reconstruction import FourierKernel, FourierKernelMat, MeanEstimator
 from aspire.utils import vec_to_symmat_iso, vecmat_to_volmat, volmat_to_vecmat
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_flatten, m_reshape
@@ -43,6 +43,16 @@ class WeightedVolumesEstimator(MeanEstimator):
         assert self.n == self.weights.shape[0]
 
     def __getattr__(self, name):
+        if name == "precond_kernel":
+            if self.preconditioner == "circulant":
+                precond_kernel = 1.0 / self.kernel.circularize()
+                print(precond_kernel)
+                print("precond_kernel.shape", precond_kernel.shape)
+                precond_kernel = self.precond_kernel = FourierKernelMat(precond_kernel, centered=True)
+            else:
+                precond_kernel = self.precond_kernel = None
+            return precond_kernel
+        
         return super().__getattr__(name)
 
     def compute_kernel(self):
@@ -137,7 +147,7 @@ class WeightedVolumesEstimator(MeanEstimator):
             if regularizer > 0:
                 precond_kernel += regularizer
             M = LinearOperator(
-                (n, n),
+                (self.r * n, self.r * n),
                 matvec=partial(self.apply_kernel, kernel=precond_kernel),
                 dtype=self.dtype,
             )
@@ -157,7 +167,11 @@ class WeightedVolumesEstimator(MeanEstimator):
 
         if info != 0:
             raise RuntimeError("Unable to converge!")
+
+        # Thinking might be clearer if r x ... but would need to mess with roll/unroll in FBB.
+        # return x.reshape(self.r, -1)
         return x
+
 
     def apply_kernel(self, vol_coeff, kernel=None):
         """
