@@ -2,7 +2,7 @@
 
 [![Azure Build Status](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_apis/build/status/ComputationalCryoEM.ASPIRE-Python?branchName=master)](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_build/latest?definitionId=3&branchName=master)
 [![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml)
-[![Coverage Status](https://coveralls.io/repos/github/ComputationalCryoEM/ASPIRE-Python/badge.svg?branch=master)](https://coveralls.io/github/ComputationalCryoEM/ASPIRE-Python?branch=master)
+[![codecov](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python/branch/master/graph/badge.svg?token=3XFC4VONX0)](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python)
 
 # ASPIRE - Algorithms for Single Particle Reconstruction - v0.6.3
 
