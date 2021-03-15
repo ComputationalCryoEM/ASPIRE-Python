@@ -59,7 +59,6 @@ class FourierKernel(Kernel):
             kernel = self.circularize_1d(kernel, dim)
 
         xx = fftn(mdim_ifftshift(kernel))
-        print('xx shape', xx.shape)
         return xx
 
     def circularize_1d(self, kernel, dim):
@@ -199,9 +198,7 @@ class FourierKernelMat(FourierKernel):
 
     def convolve_volume(self, x, k, j):
         N = x.shape[0]
-        print("x.shape", x.shape)
         kernel_f = self.kermat[k, j, ..., np.newaxis]
-        print('kernel_f.shape', kernel_f.shape)
         N_ker = kernel_f.shape[0]
 
         x, sz_roll = unroll_dim(x, 4)
@@ -230,28 +227,8 @@ class FourierKernelMat(FourierKernel):
 
         return np.real(x)
 
-        # Vmat = np.zeros((self.r, *x.shape), dtype=self.dtype)
-        # for k in range(self.r):
-        #     for j in range(self.r):
-        #         Vmat[k] += FourierKernel(self.kermat[k, j], centered=self._centered).convolve_volume(x)
-
-        # return Vmat
-        # Vmat = np.empty((self.r, self.r, *x.shape), dtype=self.dtype)
-        # for k in range(self.r):
-        #     for j in range(self.r):
-        #         Vmat[k, j] = FourierKernel(self.kermat[k, j], centered=self._centered).convolve_volume(x)
-
-        # return Vmat
-
     def convolve_volume_matrix(self, x):
-        Vmat = np.empty(self.r, self.r, x.shape)
-        for k in range(self.r):
-            for j in range(self.r):
-                Vmat[k, j] = FourierKernel(
-                    self.kermat[k, j], centered=self._centered
-                ).convolve_volume(x)
-
-        return Vmat
+        raise NotImplementedError("Not implemented for Fourier Kernel Matrix")
 
     def toeplitz(self, L=None):
         if L is None:

@@ -46,6 +46,5 @@ class MeanEstimator(Estimator):
         kernel = mdim_ifftshift(kernel, range(0, 3))
         kernel_f = fft2(kernel, axes=(0, 1, 2))
         kernel_f = np.real(kernel_f)
-        print("there", kernel_f.shape)
 
         return FourierKernel(kernel_f, centered=False)

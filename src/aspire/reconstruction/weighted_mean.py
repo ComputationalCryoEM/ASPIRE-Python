@@ -8,13 +8,11 @@ from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
-from aspire.image import Image
 from aspire.nufft import anufft
-from aspire.reconstruction import FourierKernel, FourierKernelMat, MeanEstimator
-from aspire.utils import vec_to_symmat_iso, vecmat_to_volmat, volmat_to_vecmat
+from aspire.reconstruction import FourierKernelMat, MeanEstimator
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.volume import Volume, rotated_grids
+from aspire.volume import rotated_grids
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +24,7 @@ class WeightedVolumesEstimator(MeanEstimator):
 
         This is best considered as an r x r matrix of volumes;
         each volume is a weighted mean least-squares estimator kernel (MeanEstimator).
-        Convolution with each of thesekernels is equivalent
+        Convolution with each of these kernels is equivalent
         to performing a projection/backprojection on a volume,
         with the appropriate amplitude modifiers and CTF,
         and also a weighting term;
@@ -45,14 +43,21 @@ class WeightedVolumesEstimator(MeanEstimator):
     def __getattr__(self, name):
         if name == "precond_kernel":
             if self.preconditioner == "circulant":
-                precond_kernel = 1.0 / self.kernel.circularize()
-                print(precond_kernel)
-                print("precond_kernel.shape", precond_kernel.shape)
-                precond_kernel = self.precond_kernel = FourierKernelMat(precond_kernel, centered=True)
+                # TODO: Discuss precond plans.
+                # self.precond_kernel = FourierKernelMat(
+                #     1.0 / self.kernel.circularize(), centered=True
+                # )
+                raise NotImplementedError(
+                    "Circulant preconditioner not implemented for WeightedVolumesEstimator."
+                )
             else:
-                precond_kernel = self.precond_kernel = None
-            return precond_kernel
-        
+                if self.preconditioner.lower() not in (None, "none"):
+                    logger.warning(
+                        f"Preconditioner {self.preconditioner} is not implemented, resetting to default of None."
+                    )
+                self.precond_kernel = None
+            return self.precond_kernel
+
         return super().__getattr__(name)
 
     def compute_kernel(self):
@@ -99,11 +104,8 @@ class WeightedVolumesEstimator(MeanEstimator):
         for k in range(self.r):
             for j in range(k):
                 kernel[k, j] = mdim_ifftshift(kernel[k, j], range(0, 3))
-                # should this be fft3?
-                print("here", kernel[k, j].shape)
                 kernel_f = fft2(kernel[k, j], axes=(0, 1, 2))
                 kernel_f = np.real(kernel_f)
-                print("XXX", kernel_f.shape)
                 kermat_f[k, j] = kernel_f
                 kermat_f[j, k] = kermat_f[k, j]
 
@@ -127,7 +129,6 @@ class WeightedVolumesEstimator(MeanEstimator):
         return res
 
     def conj_grad(self, b_coeff, tol=None):
-        print("cg", b_coeff.shape)
         n = b_coeff.shape[-1]
         kernel = self.kernel
 
@@ -160,7 +161,6 @@ class WeightedVolumesEstimator(MeanEstimator):
                 f"Delta {norm(b_coeff - self.apply_kernel(xk))} (target {target_residual})"
             )
 
-        print("b_coeff.shape", b_coeff.shape)
         x, info = scipy.sparse.linalg.cg(
             operator, b_coeff.flatten(), M=M, callback=cb, tol=tol, atol=0
         )
@@ -171,7 +171,6 @@ class WeightedVolumesEstimator(MeanEstimator):
         # Thinking might be clearer if r x ... but would need to mess with roll/unroll in FBB.
         # return x.reshape(self.r, -1)
         return x
-
 
     def apply_kernel(self, vol_coeff, kernel=None):
         """
@@ -189,13 +188,10 @@ class WeightedVolumesEstimator(MeanEstimator):
             vol_coeff = vol_coeff.reshape(self.r, self.basis.count)
 
         vols_out = np.zeros((self.r, self.L, self.L, self.L), dtype=self.dtype)
-        print(f"vol_coeff.shape {vol_coeff.shape}")  # 2 98
 
         for k in range(self.r):
             vol = self.basis.evaluate(vol_coeff[k])
-            print("vol.shape", vol.shape)  # 8 8 8
             for j in range(self.r):
-                print("convolv", kernel.convolve_volume(vol, k, j).shape)  # (8, 8, 8)
                 vols_out[k] += kernel.convolve_volume(vol, k, j)
 
         vol_coeff = self.basis.evaluate_t(vols_out)
