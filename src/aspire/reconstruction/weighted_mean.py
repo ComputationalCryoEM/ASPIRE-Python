@@ -66,6 +66,7 @@ class WeightedVolumesEstimator(MeanEstimator):
         """
 
         _2L = 2 * self.L
+        # Note, because we're iteratively summing it is critical we zero this array.
         kernel = np.zeros((self.r, self.r, _2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = self.src.eval_filter_grid(self.L, power=2)
 
@@ -91,8 +92,9 @@ class WeightedVolumesEstimator(MeanEstimator):
                         / (self.n * self.L ** 4)
                         * anufft(weights, pts_rot, (_2L, _2L, _2L), real=True)
                     )
-                    # r x r symmetric
-                    kernel[j, k] = kernel[j, k]
+                # r x r symmetric
+                # After summing all batch entries of kernel[k,j], copy values to kernel[j,k]
+                kernel[j, k] = kernel[k, j]
 
         # Ensure symmetric kernel
         kernel[:, :, 0, :, :] = 0
@@ -102,12 +104,15 @@ class WeightedVolumesEstimator(MeanEstimator):
         kermat_f = np.empty((self.r, self.r, _2L, _2L, _2L))
         logger.info("Computing non-centered Fourier Transform Kernel Mat")
         for k in range(self.r):
-            for j in range(k):
+            # Include the diagonals,
+            #   I suspect these would be zeros anyway (fft of `kernel` which should be zeroes?).
+            for j in range(k + 1):
                 kernel[k, j] = mdim_ifftshift(kernel[k, j], range(0, 3))
                 kernel_f = fft2(kernel[k, j], axes=(0, 1, 2))
                 kernel_f = np.real(kernel_f)
                 kermat_f[k, j] = kernel_f
-                kermat_f[j, k] = kermat_f[k, j]
+                if j != k:
+                    kermat_f[j, k] = kermat_f[k, j]
 
         return FourierKernelMat(kermat_f, centered=False)
 
