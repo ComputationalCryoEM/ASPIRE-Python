@@ -169,7 +169,7 @@ class CtfEstimator:
             for j in range(range_y)
             for i in range(range_x)
         ]
-        block = np.asarray(block_list, dtype=self.dtype)
+        block = np.asarray(block_list, dtype=micrograph.dtype)
 
         block_sum = np.sum(np.sum(block, axis=-1), axis=-1)
         block_sum = np.reshape(block_sum, (block.shape[0], 1, 1))
