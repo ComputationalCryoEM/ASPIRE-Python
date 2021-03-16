@@ -96,9 +96,7 @@ def estimate_ctf(
                 signal_observed, background_1d, low_freq_skip
             )
 
-            ratio = ctf_object.ctf_PCA(
-                signal_observed, pixel_size, g_min, g_max, amplitude_contrast
-            )
+            ratio = ctf_object.ctf_PCA(signal_observed, pixel_size, g_min, g_max)
 
             signal, additional_background = ctf_object.ctf_elliptical_average(
                 ffbbasis, signal.sqrt(), 2
@@ -108,9 +106,7 @@ def estimate_ctf(
             signal, background_2d = ctf_object.ctf_background_subtract_2d(
                 signal_observed, background_1d, 12
             )
-            ratio = ctf_object.ctf_PCA(
-                signal_observed, pixel_size, g_min, g_max, amplitude_contrast
-            )
+            ratio = ctf_object.ctf_PCA(signal_observed, pixel_size, g_min, g_max)
             signal, additional_background = ctf_object.ctf_elliptical_average(
                 ffbbasis, signal.sqrt(), 2
             )
