@@ -745,7 +745,7 @@ class CtfEstimator:
         f.write("\t")
         f.write("%5.8f" % (df2))
         f.write("\t")
-        f.write("%5.8f" % (np.pi * ang / 180))
+        f.write("%5.8f" % (ang))
         f.write("\t")
         f.write("%5.2f" % (cs))
         f.write("\t")
