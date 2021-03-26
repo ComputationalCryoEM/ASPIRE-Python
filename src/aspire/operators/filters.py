@@ -251,7 +251,8 @@ class ArrayFilter(Filter):
             logger.debug(
                 "Size of transfer function matches grid size exactly, skipping interpolation."
             )
-            result = self.xfer_fn_array
+            # Same effect as squeeze below, creating 1-d vector output.
+            result = self.xfer_fn_array.flatten()
 
         else:
             # TODO: This part could do with some documentation - not intuitive!

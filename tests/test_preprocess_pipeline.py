@@ -123,6 +123,32 @@ class PreprocessPLTestCase(TestCase):
         # correlation matrix should be close to identity
         self.assertTrue(np.allclose(np.eye(2), corr_coef, atol=1e-1))
 
+    def testWhiten2(self):
+        # Excercises missing cases using odd image resolutions with filter.
+        #  Relates to GitHub issue #401.
+        # Otherwise this is the same as testWhiten, though the accuracy
+        #  (atol) for odd resolutions seems slightly worse.
+        L = self.L - 1
+        assert L % 2 == 1, "Test resolution should be odd"
+
+        sim = Simulation(
+            L=L,
+            n=self.n,
+            unique_filters=[
+                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
+            ],
+            noise_filter=self.noise_filter,
+            dtype=self.dtype,
+        )
+        noise_estimator = AnisotropicNoiseEstimator(sim)
+        sim.whiten(noise_estimator.filter)
+        imgs_wt = sim.images(start=0, num=self.n).asnumpy()
+
+        corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+
+        # Correlation matrix should be close to identity
+        self.assertTrue(np.allclose(np.eye(2), corr_coef, atol=2e-1))
+
     def testInvertContrast(self):
         sim1 = self.sim
         imgs1 = sim1.images(start=0, num=128)
