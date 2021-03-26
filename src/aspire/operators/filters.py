@@ -1,4 +1,5 @@
 import inspect
+import logging
 import math
 
 import numpy as np
@@ -8,6 +9,8 @@ from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 from aspire.utils.matlab_compat import m_reshape
+
+logger = logging.getLogger(__name__)
 
 
 def voltage_to_wavelength(voltage):
@@ -241,25 +244,42 @@ class ArrayFilter(Filter):
         self.xfer_fn_array = xfer_fn_array
 
     def _evaluate(self, omega):
-        sz = self.sz
-        # TODO: This part could do with some documentation - not intuitive!
-        temp = np.array(sz)[:, np.newaxis]
-        omega = (omega / (2 * np.pi)) * temp
-        omega += np.floor(temp / 2) + 1
 
-        # Emulating the behavior of interpn(V,X1q,X2q,X3q,...) in MATLAB
-        _input_pts = tuple(list(range(1, x + 1)) for x in self.xfer_fn_array.shape)
-        interpolator = RegularGridInterpolator(
-            _input_pts, self.xfer_fn_array, bounds_error=False, fill_value=0
-        )
-        result = interpolator(
-            # Split omega into input arrays and stack depth-wise because that's how
-            # the interpolator wants it
-            np.dstack(np.split(omega, len(sz)))
-        )
+        _input_pts = tuple(np.linspace(1, x, x) for x in self.xfer_fn_array.shape)
 
-        # Result is 1 x np.prod(sz) in shape; convert to a 1-d vector
-        result = np.squeeze(result, 0)
+        if self.sz == self.xfer_fn_array.shape:
+            logger.debug(
+                "Size of transfer function matches grid size exactly, skipping interpolation."
+            )
+            result = self.xfer_fn_array
+
+        else:
+            # TODO: This part could do with some documentation - not intuitive!
+            temp = np.array(self.sz)[:, np.newaxis]
+            omega = (omega / (2 * np.pi)) * temp
+            omega += np.floor(temp / 2) + 1
+
+            # Emulating the behavior of interpn(V,X1q,X2q,X3q,...) in MATLAB
+            # The original MATLAB was using 'linear' and zero fill.
+            # We will use 'linear' but fill_value=None which will extrapolate
+            #  for values slightly outside the interpolation grid bounds.
+            interpolator = RegularGridInterpolator(
+                _input_pts,
+                self.xfer_fn_array,
+                method="linear",
+                bounds_error=False,
+                fill_value=None,
+            )
+
+            result = interpolator(
+                # Split omega into input arrays and stack depth-wise because that's how
+                # the interpolator wants it
+                np.dstack(np.split(omega, len(self.sz)))
+            )
+
+            # Result is 1 x np.prod(self.sz) in shape; convert to a 1-d vector
+            result = np.squeeze(result, 0)
+
         return result
 
 
