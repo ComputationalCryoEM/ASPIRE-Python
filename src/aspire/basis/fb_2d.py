@@ -5,6 +5,7 @@ from scipy.special import jv
 
 from aspire.basis import Basis
 from aspire.basis.basis_utils import unique_coords_nd
+from aspire.image import Image
 from aspire.utils import ensure, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
@@ -88,7 +89,15 @@ class FBBasis2D(Basis):
 
                 i += len(rng)
 
+        # Why are these not class attributes (a dict lookup anyway).
         return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
+
+    def get_angular_indices(self):
+        angular_indices = self._indices["ks"] * self._indices["sgns"]
+        return angular_indices
+
+    def get_radial_indices(self):
+        return self._indices["ells"]
 
     def _precomp(self):
         """
@@ -225,6 +234,9 @@ class FBBasis2D(Basis):
                 f"{self.__class__.__name__}::evaluate_t"
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
+
+        if isinstance(v, Image):
+            v = v.asnumpy()
 
         v = v.T  # RCOPT
 

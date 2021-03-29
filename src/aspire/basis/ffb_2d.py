@@ -101,6 +101,18 @@ class FFBBasis2D(FBBasis2D):
         """
         return self._precomp["radial"]
 
+    def get_freqs(self):
+        """
+        Return precomputed frequencies
+        """
+        return self._precomp["freqs"]
+
+    def get_indices(self):
+        """
+        Return precomputed angles
+        """
+        return self._indices
+
     def evaluate(self, v):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis

@@ -192,7 +192,11 @@ class RotCov2D:
         # should assert we require none or both...
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
+            ctf_fb = [
+                BlkDiagMatrix.eye_like(
+                    RadialCTFFilter().fb_mat(self.basis), dtype=self.dtype
+                )
+            ]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
@@ -247,7 +251,11 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
+            ctf_fb = [
+                BlkDiagMatrix.eye_like(
+                    RadialCTFFilter().fb_mat(self.basis), dtype=self.dtype
+                )
+            ]
 
         def identity(x):
             return x
@@ -286,6 +294,7 @@ class RotCov2D:
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
             covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
+            print("xxx", ctf_fb_k_t.dtype, covar_coeff_k.dtype, ctf_fb_k.dtype)
             b_coeff += weight * (ctf_fb_k_t @ covar_coeff_k @ ctf_fb_k)
 
             ctf_fb_k_sq = ctf_fb_k_t @ ctf_fb_k
