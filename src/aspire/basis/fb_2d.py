@@ -6,7 +6,7 @@ from scipy.special import jv
 from aspire.basis import Basis
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.image import Image
-from aspire.utils import ensure, roll_dim, unroll_dim
+from aspire.utils import complex_type, ensure, real_type, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
@@ -72,32 +72,40 @@ class FBBasis2D(Basis):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count, dtype=np.int)
-        indices_ks = np.zeros(self.count, dtype=np.int)
-        indices_sgns = np.zeros(self.count, dtype=np.int)
+        indices_ells = np.zeros(self.count, dtype=np.uint16)
+        indices_ks = np.zeros(self.count, dtype=np.uint16)
+        indices_sgns = np.zeros(self.count, dtype=np.int8)
+
+        # We'll also generate a mapping for complex construction
+        self.complex_count = self.count // 2 + self.k_max[0]
+        self.indices_real = np.zeros(self.complex_count, dtype=np.uint16)
+        self.indices_imag = np.zeros(self.complex_count, dtype=np.uint16)
 
         i = 0
+        ci = 0
         for ell in range(self.ell_max + 1):
             sgns = (1,) if ell == 0 else (1, -1)
-            ks = range(0, self.k_max[ell])
+            ks = np.arange(0, self.k_max[ell])
+
+            self.indices_imag[ci + ks] = i + len(ks) + ks
 
             for sgn in sgns:
-                rng = range(i, i + len(ks))
+                rng = np.arange(i, i + len(ks))
                 indices_ells[rng] = ell
                 indices_ks[rng] = ks
                 indices_sgns[rng] = sgn
 
-                i += len(rng)
+                if sgn == 1:
+                    self.indices_real[ci + ks] = rng
+                elif sgn == -1:
+                    self.indices_imag[ci + ks] = rng
+
+                i += len(ks)
+
+            ci += len(ks)
 
         # Why are these not class attributes (a dict lookup anyway).
         return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
-
-    def get_angular_indices(self):
-        angular_indices = self._indices["ks"] * self._indices["sgns"]
-        return angular_indices
-
-    def get_radial_indices(self):
-        return self._indices["ells"]
 
     def _precomp(self):
         """
@@ -275,3 +283,65 @@ class FBBasis2D(Basis):
 
         v = roll_dim(v, sz_roll)
         return v.T  # RCOPT
+
+    def to_complex(self, coef):
+        """
+        Return complex valued representation of coefficients.
+        This can be useful when comparing or implementing methods
+        from literature.
+
+        There is a corresponding method, to_real.
+
+        :param coef: Coefficients from this basis.
+        :return: Complex coefficent representation from this basis.
+        """
+
+        if coef.ndim == 1:
+            coef = coef.reshape(1, -1)
+
+        if coef.dtype not in (np.float64, np.float32):
+            raise TypeError("coef provided to to_complex should be real.")
+
+        # Pass through dtype precions, but check and warn if mismatched.
+        dtype = complex_type(coef.dtype)
+        if coef.dtype != self.dtype:
+            logger.warning(
+                f"coef dtype {coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
+            )
+
+        # Return the same precision as coef
+        imaginary = dtype(1j)
+
+        return (
+            coef[..., self.indices_real] - imaginary * coef[..., self.indices_imag]
+        ) / 2.0
+
+    def to_real(self, complex_coef):
+        """
+        Return real valued representation of complex coefficients.
+        This can be useful when comparing or implementing methods
+        from literature.
+
+        There is a corresponding method, to_complex.
+
+        :param complex_coef: Complex coefficients from this basis.
+        :return: Real coefficent representation from this basis.
+        """
+        if complex_coef.ndim == 1:
+            complex_coef = complex_coef.reshape(1, -1)
+
+        if complex_coef.dtype not in (np.complex128, np.complex64):
+            raise TypeError("coef provided to to_reeal should be complex.")
+
+        # Pass through dtype precions, but check and warn if mismatched.
+        dtype = real_type(complex_coef.dtype)
+        if dtype != self.dtype:
+            logger.warning(
+                f"Complex coef dtype {complex_coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
+            )
+
+        coef = np.zeros((complex_coef.shape[0], self.count), dtype=dtype)
+        coef[:, self.indices_real] = 2 * complex_coef.real
+        coef[:, self.indices_imag] = -2 * complex_coef.imag
+
+        return coef

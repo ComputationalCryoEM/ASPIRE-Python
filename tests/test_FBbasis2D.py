@@ -318,3 +318,18 @@ class FBBasis2DTestCase(TestCase):
                 atol=utest_tolerance(self.dtype),
             )
         )
+
+    def testComplexCoversion(self):
+        # Load a reasonable input
+        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+
+        # Express in an FB basis
+        v1 = self.basis.expand(x.astype(self.dtype))
+
+        # Convert real FB coef to complex coef,
+        cv = self.basis.to_complex(v1)
+        # then convert back to real coef representation.
+        v2 = self.basis.to_real(cv)
+
+        # The round trip should be equivalent up to machine precision.
+        self.assertTrue(np.allclose(v1, v2))
