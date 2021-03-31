@@ -590,8 +590,6 @@ class ImageSource:
             axis=1,
         )
 
-        filename_indices = None
-
         with open(starfile_filepath, "w") as f:
             if new_mrcs:
                 # Create a new column that we will be populating in the loop below
@@ -605,10 +603,12 @@ class ImageSource:
                     mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
 
                     # Then set name in dataframe for the StarFile
-                    df["_rlnImageName"][0 : self.n] = pd.Series(
-                        [f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)]
-                    )
-
+                    # Note, here the row_indexer is :, representing all rows in this data frame.
+                    #   df.loc will be reponsible for dereferencing and assigning values to df.
+                    #   Pandas will assert df.shape[0] == self.n
+                    df.loc[:, "_rlnImageName"] = [
+                        f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
+                    ]
                 else:
                     # save all images into multiple mrc files in batch size
                     for i_start in np.arange(0, self.n, batch_size):
@@ -619,16 +619,18 @@ class ImageSource:
                             + f"_{i_start}_{i_end-1}.mrcs"
                         )
 
-                        df["_rlnImageName"][i_start:i_end] = pd.Series(
-                            [
-                                "{0:06}@{1}".format(j + 1, mrcs_filename)
-                                for j in range(num)
-                            ]
-                        )
+                        # Note, here the row_indexer is a slice.
+                        #   df.loc will be reponsible for dereferencing and assigning values to df.
+                        #   Pandas will assert the lnegth of row_indexer equals num.
+                        row_indexer = df[i_start:i_end].index
+                        df.loc[row_indexer, "_rlnImageName"] = [
+                            "{0:06}@{1}".format(j + 1, mrcs_filename)
+                            for j in range(num)
+                        ]
 
-            filename_indices = [
-                df["_rlnImageName"][i].split("@")[1] for i in range(self.n)
-            ]
+            filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[
+                1
+            ].tolist()
 
             # initial the star file object and save it
             starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
