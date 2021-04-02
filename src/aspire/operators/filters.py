@@ -247,39 +247,31 @@ class ArrayFilter(Filter):
 
         _input_pts = tuple(np.linspace(1, x, x) for x in self.xfer_fn_array.shape)
 
-        if self.sz == self.xfer_fn_array.shape:
-            logger.debug(
-                "Size of transfer function matches grid size exactly, skipping interpolation."
-            )
-            # Same effect as squeeze below, creating 1-d vector output.
-            result = self.xfer_fn_array.flatten()
+        # TODO: This part could do with some documentation - not intuitive!
+        temp = np.array(self.sz)[:, np.newaxis]
+        omega = (omega / (2 * np.pi)) * temp
+        omega += np.floor(temp / 2) + 1
 
-        else:
-            # TODO: This part could do with some documentation - not intuitive!
-            temp = np.array(self.sz)[:, np.newaxis]
-            omega = (omega / (2 * np.pi)) * temp
-            omega += np.floor(temp / 2) + 1
+        # Emulating the behavior of interpn(V,X1q,X2q,X3q,...) in MATLAB
+        # The original MATLAB was using 'linear' and zero fill.
+        # We will use 'linear' but fill_value=None which will extrapolate
+        #  for values slightly outside the interpolation grid bounds.
+        interpolator = RegularGridInterpolator(
+            _input_pts,
+            self.xfer_fn_array,
+            method="linear",
+            bounds_error=False,
+            fill_value=None,
+        )
 
-            # Emulating the behavior of interpn(V,X1q,X2q,X3q,...) in MATLAB
-            # The original MATLAB was using 'linear' and zero fill.
-            # We will use 'linear' but fill_value=None which will extrapolate
-            #  for values slightly outside the interpolation grid bounds.
-            interpolator = RegularGridInterpolator(
-                _input_pts,
-                self.xfer_fn_array,
-                method="linear",
-                bounds_error=False,
-                fill_value=None,
-            )
+        result = interpolator(
+            # Split omega into input arrays and stack depth-wise because that's how
+            # the interpolator wants it
+            np.dstack(np.split(omega, len(self.sz)))
+        )
 
-            result = interpolator(
-                # Split omega into input arrays and stack depth-wise because that's how
-                # the interpolator wants it
-                np.dstack(np.split(omega, len(self.sz)))
-            )
-
-            # Result is 1 x np.prod(self.sz) in shape; convert to a 1-d vector
-            result = np.squeeze(result, 0)
+        # Result is 1 x np.prod(self.sz) in shape; convert to a 1-d vector
+        result = np.squeeze(result, 0)
 
         return result
 
