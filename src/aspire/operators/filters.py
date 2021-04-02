@@ -95,6 +95,18 @@ class Filter:
         return ScaledFilter(self, c)
 
     def evaluate_grid(self, L, dtype=np.float32, *args, **kwargs):
+        """
+        Generates a two dimensional grid with prescribed dtype,
+        yielding the values (omega) which are then evaluated by
+        the filter's evaluate method.
+
+        Passes arbritrary args and kwargs down to self.evaluate method.
+
+        :param L: Number of grid points (L by L).
+        :param dtype: dtype of grid, defaults np.float32.
+        :return: Filter values at omega's points.
+        """
+
         grid2d = grid_2d(L, dtype=dtype)
         omega = np.pi * np.vstack((grid2d["x"].flatten("F"), grid2d["y"].flatten("F")))
         h = self.evaluate(omega, *args, **kwargs)
@@ -155,6 +167,19 @@ class PowerFilter(Filter):
 
     def _evaluate(self, omega):
         return self._filter.evaluate(omega) ** self._power
+
+    def evaluate_grid(self, L, dtype=np.float32, *args, **kwargs):
+        """
+        Calls the provided filter's evaluate_grid method in case there is an optimization.
+
+        If no optimized method is provided, falls back to base `evaluate_grid`.
+
+        See `Filter.evaluate_grid` for usage.
+        """
+
+        return (
+            self._filter.evaluate_grid(L, dtype=dtype, *args, **kwargs) ** self._power
+        )
 
 
 class LambdaFilter(Filter):
@@ -274,6 +299,33 @@ class ArrayFilter(Filter):
         result = np.squeeze(result, 0)
 
         return result
+
+    def evaluate_grid(self, L, dtype=np.float32, *args, **kwargs):
+        """
+        Optimized evaluate_grid method for ArrayFilter.
+
+        If evaluate_grid is called with a resolution L that matches
+        the transfer function `xfer_fn_array` resolution,
+        we do not need to generate a grid, setup interpolation, and
+        evaluate by interpolation. We can instead use the transfer
+        function directly.
+
+        In the case the grid is not a match, we fall back to the
+        base `evaluate_grid` implementation.
+
+        See Filter.evaluate_grid for usage.
+        """
+
+        if all(dim == L for dim in self.xfer_fn_array.shape):
+            logger.debug(
+                "Size of transfer function matches evaluate_grid size L exactly,"
+                " skipping grid generation and interpolation."
+            )
+            res = self.xfer_fn_array
+        else:
+            # Otherwise call parent code to generate a grid then evaluate.
+            res = super().evaluate_grid(L, dtype=dtype, *args, **kwargs)
+        return res
 
 
 class ScalarFilter(Filter):
