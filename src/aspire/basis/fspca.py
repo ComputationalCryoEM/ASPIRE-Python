@@ -68,7 +68,7 @@ class FSPCABasis(Basis):
     def _build(self):
 
         # setup any common indexing arrays
-        self._indices()
+        #self._indices()
 
         # maybe call this _precompute?
         # For now, use the whole image set.
@@ -78,7 +78,10 @@ class FSPCABasis(Basis):
 
         # We'll use the complex representation for the calculations
         self.complex_coef = self.basis.to_complex(self.coef)
-
+        self.count = self.basis.complex_count
+        self.complex_angular_indices = self.basis.complex_angular_indices
+        self.complex_radial_indices = self.basis.complex_radial_indices
+        
         # Create the arrays to be packed by _compute_spca
         self.eigvals = np.zeros(
             self.basis.complex_count, dtype=complex_type(self.dtype)
@@ -94,14 +97,14 @@ class FSPCABasis(Basis):
 
         self._compute_spca(noise_var)
 
-    def _indices(self):
-        # Map between the real coef indices and complex
-        self.complex_angular_indices = self.basis._indices["ells"][
-            self.basis.indices_real
-        ]  # k
-        self.complex_radial_indices = self.basis._indices["ks"][
-            self.basis.indices_real
-        ]  # q
+    # def get_compressed_indices(self, k):
+    #     compressed_indices = self.sorted_indices[:k]
+    
+    #     complex_angular_indices = self.complex_angular_indices[compressed_indices]
+    #     complex_radial_indices = self.complex_radial_indices[compressed_indices]
+
+    #     return compressed_indices, complex_radial_indices, complex_radial_indices
+    
 
     def _compute_spca(self, noise_var):
         """
@@ -115,7 +118,6 @@ class FSPCABasis(Basis):
         mean_coef = np.mean(
             self.complex_coef[:, self.complex_angular_indices == 0], axis=0
         )
-        complex_coef = self.complex_coef.copy()
 
         # Foreach angular frequency (`k` in paper, `ells` in FB code)
         eigval_index = 0
@@ -131,7 +133,7 @@ class FSPCABasis(Basis):
             ##  then use the transpose so image stack becomes columns.
 
             indices = self.complex_angular_indices == angular_index
-            A_k = complex_coef[:, indices].T
+            A_k = self.complex_coef[:, indices].T
 
             lambda_var = self.basis.n_r / (2 * n)  # this isn't used in the clean regime
 
@@ -194,18 +196,41 @@ class FSPCABasis(Basis):
                 f"eigvals dimension {eigval_index} != complex basis coef count {self.basis.complex_count}."
             )
 
-    def expand(self, x):
+        # Store a map of indices sorted by eigenvalue.
+        ##   We don't resort then now because this would destroy the block diagonal structure.
+        ##
+        ## sorted_indices[i] is the ith most powerful eigendecomposition index
+        ##
+        ## We can pass a full or truncated slice of sorted_indices to any array indexed by
+        ##  the complex coefs.
+        self.sorted_indices = np.argsort(-np.abs(self.eigvals))
+
+
+    def expand(self, x, k=None):
         """
         Take an image in the standard coordinate basis and express as FSPCA coefs.
 
+        Note each FSPCA coef corresponds to a linear combination Fourier Bessel
+        basis vectors, described by an eigenvector in FSPCA.
+
         :param x:  The Image instance representing a stack of images in the
         standard 2D coordinate basis to be evaluated.
+        :param k:  Optionally compress to k compenents.
         :return: Stack of (complex) coefs in the FSPCABasis.
         """
 
+        # If k is none, we are creating a full rank basis (hopefully).
+        if k is None:
+            k = len(self.eigvals)
+
         # evaluate_t in FFB
+        c_fb = self.basis.to_complex(self.basis.evaluate_t(x))
         # then apply linear combination defined by FSPCA (eigvecs)
-        pass
+        #  can try blk_diag here, but I think would need to do full mult then truncate
+        c_fspca = (c_fb @ self.eigvecs.dense()[:, self.sorted_indices[:k]])
+        assert c_fspca.shape == (x.shape[0], k)
+        
+        return c_fspca
 
     def evalute(self, c):
         """
@@ -215,6 +240,9 @@ class FSPCABasis(Basis):
         :return: The Image instance representing a stack of images in the
         standard 2D coordinate basis..
         """
+        ## don't forget.... if we rearranged vectors in expand
+        # # Sort by eigenvalue
+        # sorted_indices = np.argsort(-np.abs(self.eigvals))[:c.shape[1]]
 
         # apply FSPCA eigenvector to coefs c, yields original coefs v in self.basis
         # return self.basis.evaluate(v)
@@ -283,3 +311,65 @@ class FSPCABasis(Basis):
         eigen_images = self.basis.evaluate(reconstructed_image_coef)
 
         return eigen_images
+
+    def calculate_bispectrum(self, coef, flatten=False):
+        """
+        Calculate bispectrum for a set of coefs in this basis.
+
+        :param coef: Coefficients representing a (single) image expanded in this basis.
+        """
+
+        # self._indices["ells"]  # angular freq indices k in paper/slides
+        # self._indices["ks"]    # radial freq indices q in paper/slides
+        # radial_indices = self._indices["ks"][self.indices_real]  # q
+        # angular_indices = self._indices["ells"][self.indices_real]  # k
+        radial_indices = self.complex_radial_indices  # q
+        angular_indices = self.complex_angular_indices # k
+        unique_radial_indices = np.unique(radial_indices)  # q
+        unique_angular_indices = np.unique(angular_indices)  # k
+
+        B = np.zeros(
+            (self.count, self.count, unique_radial_indices.shape[0]),
+            dtype=complex_type(self.dtype),
+        )
+
+        logger.info(f"Calculating bispectrum matrix with shape {B.shape}.")
+
+        for ind1 in tqdm(range(self.count)):
+
+            k1 = self.complex_angular_indices[ind1]
+            coef1 = coef[ind1]
+            
+            for ind2 in range(self.count):
+
+                k2 = self.complex_angular_indices[ind2]
+                coef2 = coef[ind2]
+
+                k3 = k1 + k2
+                intermodulated_coef_inds = angular_indices == k3                
+
+                if np.any(intermodulated_coef_inds):
+                    Q3 = radial_indices[intermodulated_coef_inds]
+                    Coef3 = coef[intermodulated_coef_inds]
+
+                    B[ind1, ind2, Q3] = coef1 * coef2 * np.conj(Coef3)
+
+        non_zero_freqs = angular_indices != 0
+        B = B[non_zero_freqs][:, non_zero_freqs]
+        # #Normalize B ?
+        # B /= np.linalg.norm(B, axis=-1)[:,:,np.newaxis]
+        import matplotlib.pyplot as plt
+        for q in range(B.shape[-1]):
+            print(np.max(np.abs(B[...,q])))
+            plt.imshow(np.log(np.abs(B[...,q])))
+            plt.show()
+
+        if flatten:
+            # B is sym, start by taking lower triangle.
+            tril = np.tri(B.shape[0], dtype=bool)
+            B = B[tril,:]
+            # Then flatten
+            B = B.flatten()
+            
+        return B
+

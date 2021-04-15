@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from tqdm import tqdm
 
+from aspire.basis import FSPCABasis
 from aspire.classification import Class2D
 from aspire.covariance import RotCov2D
 from aspire.utils import complex_type
@@ -13,7 +14,7 @@ import matplotlib.pyplot as plt
 
 
 class RIRClass2D(Class2D):
-    def __init__(self, src, basis, k_components=400, dtype=None):
+    def __init__(self, src, pca_basis, fspca_components=400, dtype=None):
         """
         Constructor of an object for classifying 2D images using
         Rotationally Invariant Representation (RIP) algorithm.
@@ -25,32 +26,46 @@ class RIRClass2D(Class2D):
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
         """
         super().__init__(src=src, dtype=dtype)
-        self.basis = basis
-        if self.dtype != self.basis.dtype:
+
+        self.pca_basis = pca_basis
+        self.fb_basis = self.pca_basis.basis
+        self.fspca_components = fspca_components
+
+        # Type checks
+        if self.dtype != self.fb_basis.dtype:
             logger.warning(
                 f"RIRClass2D basis.dtype {self.basis.dtype} does not match self.dtype {self.dtype}."
             )
 
-        # Sanity Check
-        assert hasattr(basis, "calculate_bispectrum")
+            
+        # Sanity Checks
+        assert hasattr(self.pca_basis, "calculate_bispectrum")
+
+        # For now, only run with FSPCA
+        assert isinstance(self.pca_basis, FSPCABasis)
 
     def classify(self):
         """
         Perform the 2D images classification.
         """
 
-        ## Stage 1: Compute Coefficients
+        ## Stage 1: Compute coef and reduce dimensionality.
         # Memioze/batch this later when result is working
 
-        self.coef = self.basis.evaluate_t(
-            src.images(0, self.src.n)
-        )  # basis coefficients
+        # Initial round of component truncation is before bispectrum.
+        #  default of 400 components taken from legacy code.
+        #  Take minumum here in case we have less than k coefs already.
+        # GBW, unsure this is needed.
+        fspca_k = min(self.fspca_components, self.fb_basis.complex_count)
 
+        # Expand into the compressed FSPCA space.
+        coef = self.pca_basis.expand(self.src.images(0, self.src.n))
+        
         ### Compute Bispectrum
         for i in range(self.src.n):
-            basis.calculate_bispectrum(self.coef[i])
+            self.pca_basis.calculate_bispectrum(coef[i])
 
-        ### Truncate Bispectrum (Probably optional?)
+            ### Truncate Bispectrum (Probably optional?)
 
         ### Reduce dimensionality of Bispectrum (PCA/SVD)
 
