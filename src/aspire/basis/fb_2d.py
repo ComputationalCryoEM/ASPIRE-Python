@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.special import jv
 
-from aspire.basis import Basis
+from aspire.basis import SteerableBasis
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.image import Image
 from aspire.utils import complex_type, ensure, real_type, roll_dim, unroll_dim
@@ -12,7 +12,7 @@ from aspire.utils.matlab_compat import m_flatten, m_reshape
 logger = logging.getLogger(__name__)
 
 
-class FBBasis2D(Basis):
+class FBBasis2D(SteerableBasis):
     """
     Define a derived class using the Fourier-Bessel basis for mapping 2D images
 
@@ -385,3 +385,37 @@ class FBBasis2D(Basis):
             ind_pos += 2 * self.k_max[ell]
         
         return coef
+
+    def calculate_bispectrum(self, coef, flatten=False):
+        """
+        Calculate bispectrum for a set of coefs in this basis.
+
+        The Bispectum matrix is of shape:
+            (count, count, unique_radial_indices)
+
+        where count is the number of complex coefficients.
+
+        :param coef: Coefficients representing a (single) image expanded in this basis.
+        :param flatten: Optionally extract symmetric values (tril) and then flatten.
+        :return: Bispectum matrix (complex valued).
+        """
+
+        # Bispectrum implementation expects the complex representation of coefficients.
+        complex_coef = self.to_complex(coef)
+        
+        return super().calculate_bispectrum(complex_coef, flatten=flatten)
+
+    def rotate(self, coef, radians):
+        """
+        Returns coefs rotated by `radians`.
+
+        :param coef: Basis coefs.
+        :param radians: Rotation in radians.
+        :return: rotated coefs.
+        """
+
+        # Base class rotation expects complex representation of coefficients.        
+        #  Convert, rotate and convert back to real representation.
+        return self.to_real(super().rotate(self.to_complex(coef)))
+
+    

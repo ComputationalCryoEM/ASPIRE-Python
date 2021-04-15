@@ -1,4 +1,5 @@
 from .basis import Basis
+from .steerable import SteerableBasis
 from .dirac import DiracBasis
 from .fb_2d import FBBasis2D
 from .fb_3d import FBBasis3D

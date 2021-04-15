@@ -5,7 +5,7 @@ from numpy import pi
 from scipy.special import jv
 from tqdm import tqdm
 
-from aspire.basis import Basis
+from aspire.basis import SteerableBasis
 from aspire.basis.basis_utils import lgwt
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
@@ -31,7 +31,7 @@ def fix_signs(u):
     return u
 
 
-class FSPCABasis(Basis):
+class FSPCABasis(SteerableBasis):
     """
     A class for Fast Steerable Principal Component Analaysis basis.
 
@@ -311,65 +311,4 @@ class FSPCABasis(Basis):
         eigen_images = self.basis.evaluate(reconstructed_image_coef)
 
         return eigen_images
-
-    def calculate_bispectrum(self, coef, flatten=False):
-        """
-        Calculate bispectrum for a set of coefs in this basis.
-
-        :param coef: Coefficients representing a (single) image expanded in this basis.
-        """
-
-        # self._indices["ells"]  # angular freq indices k in paper/slides
-        # self._indices["ks"]    # radial freq indices q in paper/slides
-        # radial_indices = self._indices["ks"][self.indices_real]  # q
-        # angular_indices = self._indices["ells"][self.indices_real]  # k
-        radial_indices = self.complex_radial_indices  # q
-        angular_indices = self.complex_angular_indices # k
-        unique_radial_indices = np.unique(radial_indices)  # q
-        unique_angular_indices = np.unique(angular_indices)  # k
-
-        B = np.zeros(
-            (self.count, self.count, unique_radial_indices.shape[0]),
-            dtype=complex_type(self.dtype),
-        )
-
-        logger.info(f"Calculating bispectrum matrix with shape {B.shape}.")
-
-        for ind1 in tqdm(range(self.count)):
-
-            k1 = self.complex_angular_indices[ind1]
-            coef1 = coef[ind1]
-            
-            for ind2 in range(self.count):
-
-                k2 = self.complex_angular_indices[ind2]
-                coef2 = coef[ind2]
-
-                k3 = k1 + k2
-                intermodulated_coef_inds = angular_indices == k3                
-
-                if np.any(intermodulated_coef_inds):
-                    Q3 = radial_indices[intermodulated_coef_inds]
-                    Coef3 = coef[intermodulated_coef_inds]
-
-                    B[ind1, ind2, Q3] = coef1 * coef2 * np.conj(Coef3)
-
-        non_zero_freqs = angular_indices != 0
-        B = B[non_zero_freqs][:, non_zero_freqs]
-        # #Normalize B ?
-        # B /= np.linalg.norm(B, axis=-1)[:,:,np.newaxis]
-        import matplotlib.pyplot as plt
-        for q in range(B.shape[-1]):
-            print(np.max(np.abs(B[...,q])))
-            plt.imshow(np.log(np.abs(B[...,q])))
-            plt.show()
-
-        if flatten:
-            # B is sym, start by taking lower triangle.
-            tril = np.tri(B.shape[0], dtype=bool)
-            B = B[tril,:]
-            # Then flatten
-            B = B.flatten()
-            
-        return B
 
