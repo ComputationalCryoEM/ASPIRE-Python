@@ -107,8 +107,8 @@ class FBBasis2D(SteerableBasis):
 
         ## a[i] = a_ell_ks = a_angularindices[i]_radialindices[i]
         self.complex_angular_indices = indices_ells[self.indices_real]  # k
-        self.complex_radial_indices = indices_ks[self.indices_real]     # q
-            
+        self.complex_radial_indices = indices_ks[self.indices_real]  # q
+
         # Why are these not class attributes (a dict lookup anyway).
         return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
 
@@ -316,28 +316,27 @@ class FBBasis2D(SteerableBasis):
 
         # Return the same precision as coef
         imaginary = dtype(1j)
-        
+
         ccoef = np.zeros((coef.shape[0], self.complex_count), dtype=dtype)
 
         ind = 0
         idx = np.arange(self.k_max[0], dtype=int)
         ind += np.size(idx)
         ind_pos = ind
-        
+
         ccoef[:, idx] = coef[:, idx]
 
         for ell in range(1, self.ell_max + 1):
             idx = ind + np.arange(self.k_max[ell], dtype=int)
             idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
             idx_neg = idx_pos + self.k_max[ell]
-                
+
             ccoef[:, idx] = (coef[:, idx_pos] - imaginary * coef[:, idx_neg]) / 2.0
 
             ind += np.size(idx)
             ind_pos += 2 * self.k_max[ell]
-        
-        return ccoef
 
+        return ccoef
 
     def to_real(self, complex_coef):
         """
@@ -369,7 +368,7 @@ class FBBasis2D(SteerableBasis):
         idx = np.arange(self.k_max[0], dtype=int)
         ind += np.size(idx)
         ind_pos = ind
-        
+
         coef[:, idx] = complex_coef[:, idx].real
 
         for ell in range(1, self.ell_max + 1):
@@ -378,12 +377,12 @@ class FBBasis2D(SteerableBasis):
             idx_neg = idx_pos + self.k_max[ell]
 
             c = complex_coef[:, idx]
-            coef[:, idx_pos] =  2. * np.real(c)
-            coef[:, idx_neg] = -2. * np.imag(c)
+            coef[:, idx_pos] = 2.0 * np.real(c)
+            coef[:, idx_neg] = -2.0 * np.imag(c)
 
             ind += np.size(idx)
             ind_pos += 2 * self.k_max[ell]
-        
+
         return coef
 
     def calculate_bispectrum(self, coef, flatten=False):
@@ -402,7 +401,7 @@ class FBBasis2D(SteerableBasis):
 
         # Bispectrum implementation expects the complex representation of coefficients.
         complex_coef = self.to_complex(coef)
-        
+
         return super().calculate_bispectrum(complex_coef, flatten=flatten)
 
     def rotate(self, coef, radians):
@@ -414,8 +413,6 @@ class FBBasis2D(SteerableBasis):
         :return: rotated coefs.
         """
 
-        # Base class rotation expects complex representation of coefficients.        
+        # Base class rotation expects complex representation of coefficients.
         #  Convert, rotate and convert back to real representation.
         return self.to_real(super().rotate(self.to_complex(coef)))
-
-    

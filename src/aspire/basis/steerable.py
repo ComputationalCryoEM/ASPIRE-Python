@@ -1,7 +1,7 @@
 import logging
-from tqdm import tqdm
 
 import numpy as np
+from tqdm import tqdm
 
 from aspire.basis import Basis
 from aspire.utils import complex_type, real_type
@@ -35,20 +35,21 @@ class SteerableBasis(Basis):
         if complex_coef.ndim != 1:
             raise ValueError(
                 "Due to potentially large sizes, bispectrum is limited to a single set of coefs."
-                f"  Passed shape {complex_coef.shape}")
+                f"  Passed shape {complex_coef.shape}"
+            )
 
         if len(complex_coef) != self.complex_count:
             raise ValueError(
                 "Basis.calculate_bispectrum coefs expected"
-                f"to have (complex) count {self.complex_count}, received {len(complex_coef)}.")
-        
-        
+                f"to have (complex) count {self.complex_count}, received {len(complex_coef)}."
+            )
+
         # self._indices["ells"]  # angular freq indices k in paper/slides
         # self._indices["ks"]    # radial freq indices q in paper/slides
         # radial_indices = self._indices["ks"][self.indices_real]  # q
         # angular_indices = self._indices["ells"][self.indices_real]  # k
         radial_indices = self.complex_radial_indices  # q
-        angular_indices = self.complex_angular_indices # k
+        angular_indices = self.complex_angular_indices  # k
         unique_radial_indices = np.unique(radial_indices)  # q
         unique_angular_indices = np.unique(angular_indices)  # k
 
@@ -63,14 +64,14 @@ class SteerableBasis(Basis):
 
             k1 = self.complex_angular_indices[ind1]
             coef1 = complex_coef[ind1]
-            
+
             for ind2 in range(self.complex_count):
 
                 k2 = self.complex_angular_indices[ind2]
                 coef2 = complex_coef[ind2]
 
                 k3 = k1 + k2
-                intermodulated_coef_inds = angular_indices == k3                
+                intermodulated_coef_inds = angular_indices == k3
 
                 if np.any(intermodulated_coef_inds):
                     Q3 = radial_indices[intermodulated_coef_inds]
@@ -94,10 +95,10 @@ class SteerableBasis(Basis):
         if flatten:
             # B is sym, start by taking lower triangle.
             tril = np.tri(B.shape[0], dtype=bool)
-            B = B[tril,:]
+            B = B[tril, :]
             # Then flatten
             B = B.flatten()
-            
+
         return B
 
     def rotate(self, complex_coef, radians):
@@ -108,9 +109,8 @@ class SteerableBasis(Basis):
         :param radians: Rotation in radians.
         :return: rotated (complex) coefs.
         """
-        
+
         ks = self.complex_angular_indices
         rotated_coef = complex_coef * np.exp(-1j * ks * radians)
-        
-        return rotated_coef
 
+        return rotated_coef

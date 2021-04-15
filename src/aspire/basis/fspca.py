@@ -63,29 +63,22 @@ class FSPCABasis(SteerableBasis):
                 f" source {self.src.dtype}, using {self.dtype}."
             )
 
-        self._build()
+        # self._build()  # hrmm how/when to kick off build, tricky
+        # self.built = False
 
-    def _build(self):
-
-        # setup any common indexing arrays
-        #self._indices()
-
-        # maybe call this _precompute?
-        # For now, use the whole image set.
-        self.coef = self.basis.evaluate_t(
-            self.src.images(0, self.src.n)
-        )  # basis coefficients
+    def build(self, coef):
+        # figure out a better name later, talked about using via batchcov but im pretty suspect...
 
         # We'll use the complex representation for the calculations
-        self.complex_coef = self.basis.to_complex(self.coef)
-        self.count = self.basis.complex_count
+        complex_coef = self.basis.to_complex(coef)
+        self.count = self.complex_count = self.basis.complex_count
         self.complex_angular_indices = self.basis.complex_angular_indices
         self.complex_radial_indices = self.basis.complex_radial_indices
-        
+
         # Create the arrays to be packed by _compute_spca
         self.eigvals = np.zeros(
             self.basis.complex_count, dtype=complex_type(self.dtype)
-        )
+        )  # should be real... either make real, or use as a check...
         self.eigvecs = BlkDiagMatrix.empty(
             self.basis.ell_max + 1, dtype=complex_type(self.dtype)
         )
@@ -95,18 +88,19 @@ class FSPCABasis(SteerableBasis):
 
         noise_var = 0  # XXX, clean img only for now
 
-        self._compute_spca(noise_var)
+        self._compute_spca(complex_coef, noise_var)
+
+        # self.built = True
 
     # def get_compressed_indices(self, k):
     #     compressed_indices = self.sorted_indices[:k]
-    
+
     #     complex_angular_indices = self.complex_angular_indices[compressed_indices]
     #     complex_radial_indices = self.complex_radial_indices[compressed_indices]
 
     #     return compressed_indices, complex_radial_indices, complex_radial_indices
-    
 
-    def _compute_spca(self, noise_var):
+    def _compute_spca(self, complex_coef, noise_var):
         """
         Algorithm 2 from paper.
         """
@@ -115,9 +109,7 @@ class FSPCABasis(SteerableBasis):
         n = self.src.n
 
         # Compute coefficient vector of mean image at zeroth component
-        mean_coef = np.mean(
-            self.complex_coef[:, self.complex_angular_indices == 0], axis=0
-        )
+        mean_coef = np.mean(complex_coef[:, self.complex_angular_indices == 0], axis=0)
 
         # Foreach angular frequency (`k` in paper, `ells` in FB code)
         eigval_index = 0
@@ -133,7 +125,7 @@ class FSPCABasis(SteerableBasis):
             ##  then use the transpose so image stack becomes columns.
 
             indices = self.complex_angular_indices == angular_index
-            A_k = self.complex_coef[:, indices].T
+            A_k = complex_coef[:, indices].T
 
             lambda_var = self.basis.n_r / (2 * n)  # this isn't used in the clean regime
 
@@ -205,8 +197,7 @@ class FSPCABasis(SteerableBasis):
         ##  the complex coefs.
         self.sorted_indices = np.argsort(-np.abs(self.eigvals))
 
-
-    def expand(self, x, k=None):
+    def expand_from_image_basis(self, x):
         """
         Take an image in the standard coordinate basis and express as FSPCA coefs.
 
@@ -215,24 +206,33 @@ class FSPCABasis(SteerableBasis):
 
         :param x:  The Image instance representing a stack of images in the
         standard 2D coordinate basis to be evaluated.
-        :param k:  Optionally compress to k compenents.
         :return: Stack of (complex) coefs in the FSPCABasis.
         """
+        fb_coefs = self.basis.evaluate_t(x)
+        return self.expand(fb_coefs)
 
-        # If k is none, we are creating a full rank basis (hopefully).
-        if k is None:
-            k = len(self.eigvals)
+    def expand(self, x):
+        """
+        Take a Fourier-Bessel coefs and express as FSPCA coefs.
 
-        # evaluate_t in FFB
-        c_fb = self.basis.to_complex(self.basis.evaluate_t(x))
-        # then apply linear combination defined by FSPCA (eigvecs)
-        #  can try blk_diag here, but I think would need to do full mult then truncate
-        c_fspca = (c_fb @ self.eigvecs.dense()[:, self.sorted_indices[:k]])
-        assert c_fspca.shape == (x.shape[0], k)
-        
+        Note each FSPCA coef corresponds to a linear combination Fourier Bessel
+        basis vectors, described by an eigenvector in FSPCA.
+
+        :param x:  Coefs representing a stack in the
+        Fourier Bessel basis.
+        :return: Stack of (complex) coefs in the FSPCABasis.
+        """
+        c_fb = self.basis.to_complex(x)
+
+        # apply linear combination defined by FSPCA (eigvecs)
+        #  can try blk_diag here, but I think needs to be extended to non square...,
+        #  or masked.
+        c_fspca = c_fb @ self.eigvecs.dense()
+        assert c_fspca.shape == (x.shape[0], self.basis.complex_count)
+
         return c_fspca
 
-    def evalute(self, c):
+    def evalute_to_image_basis(self, c):
         """
         Take FSPCA coefs and evaluate as image in the standard coordinate basis.
 
@@ -240,23 +240,22 @@ class FSPCABasis(SteerableBasis):
         :return: The Image instance representing a stack of images in the
         standard 2D coordinate basis..
         """
-        ## don't forget.... if we rearranged vectors in expand
-        # # Sort by eigenvalue
-        # sorted_indices = np.argsort(-np.abs(self.eigvals))[:c.shape[1]]
+        c_fb = self.evaluate(c)
 
-        # apply FSPCA eigenvector to coefs c, yields original coefs v in self.basis
-        # return self.basis.evaluate(v)
-        pass
+        return self.basis.evaluate(c_fb)
 
-    def rotate(self, c, radians):
+    def evalute(self, c):
         """
-        Rotate a stack of coefs in the FSPCA basis.
+        Take FSPCA coefs and evaluate to Fourier Bessel (self.basis) ceofs.
 
-        :param c:  Stack of (complex) coefs in the FSPCABasis.
-        :param radians: Rotation to apply (positive as counter clockwise).
-        :return:  Stack of (complex) coefs in the FSPCABasis after rotation.
+        :param c:  Stack of (complex) coefs in the FSPCABasis to be evaluated.
+        :return: The (real) coefs representing a stack of images in self.basis
         """
-        pass
+
+        # apply FSPCA eigenvector to coefs c, yields complex_coefs in self.basis
+        cv = c @ self.eigvecs.dense().T
+        # convert to real reprsentation
+        return self.to_real(cv)
 
     def eigenimages(self, images):
         """
@@ -312,3 +311,6 @@ class FSPCABasis(SteerableBasis):
 
         return eigen_images
 
+    def truncate(self, k):
+        print("truncation not implemented yet")
+        return self

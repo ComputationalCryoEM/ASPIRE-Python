@@ -37,7 +37,6 @@ class RIRClass2D(Class2D):
                 f"RIRClass2D basis.dtype {self.basis.dtype} does not match self.dtype {self.dtype}."
             )
 
-            
         # Sanity Checks
         assert hasattr(self.pca_basis, "calculate_bispectrum")
 
@@ -55,12 +54,16 @@ class RIRClass2D(Class2D):
         # Initial round of component truncation is before bispectrum.
         #  default of 400 components taken from legacy code.
         #  Take minumum here in case we have less than k coefs already.
-        # GBW, unsure this is needed.
-        fspca_k = min(self.fspca_components, self.fb_basis.complex_count)
+        if self.fb_basis.complex_count > self.fspca_components:
+            # Instantiate a new truncated (compressed) basis.
+            self.pca_basis = self.pca_basis.truncate(self.fspca_components)
 
         # Expand into the compressed FSPCA space.
-        coef = self.pca_basis.expand(self.src.images(0, self.src.n))
-        
+        fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
+        coef = self.pca_basis.expand(fb_coef)
+        ## should be equiv, make a ut
+        # coef = self.pca_basis.expand_from_image_basis(self.src.images(0, self.src.n))
+
         ### Compute Bispectrum
         for i in range(self.src.n):
             self.pca_basis.calculate_bispectrum(coef[i])

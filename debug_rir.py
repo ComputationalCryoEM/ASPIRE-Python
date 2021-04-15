@@ -5,8 +5,8 @@ import mrcfile
 import numpy as np
 from tqdm import tqdm
 
-# from aspire.classification import RIRClass2D
 from aspire.basis import FBBasis2D, FFBBasis2D, FSPCABasis
+from aspire.classification import RIRClass2D
 from aspire.image import Image
 from aspire.source import ArrayImageSource, Simulation
 from aspire.volume import Volume
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 ##################################################
 # Parameters
 RESOLUTION = 64  # 300 used in paper
-NUMBER_OF_TEST_IMAGES = 4096  # 24000 images
+NUMBER_OF_TEST_IMAGES = 100  # 4096  # 24000 images
 DTYPE = np.float64
 ##################################################
 # Setup
@@ -56,9 +56,7 @@ logger.info("Setting up FSPCA")
 fspca_basis = FSPCABasis(src, basis)
 fspca_basis.build(coefs)
 
-logger.info("Plot reconstruction from eigen basis")
-reconstructed = fspca_basis.eigenimages(src.images(0, src.n))
-Image(reconstructed[:10]).show()
+rir = RIRClass2D(src, fspca_basis)
 
-logger.info("Plot reconstruction diff")
-(Image(reconstructed[:10]) - src.images(0, 10)).show()
+
+rir.classify()
