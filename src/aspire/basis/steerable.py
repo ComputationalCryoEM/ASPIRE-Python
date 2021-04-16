@@ -14,7 +14,9 @@ class SteerableBasis(Basis):
     SteerableBasis are an extension of Basis that is expected to have rotation (steerable) and bispectrum.
     """
 
-    def calculate_bispectrum(self, complex_coef, flatten=False, filter_nonzero_freqs=False):
+    def calculate_bispectrum(
+        self, complex_coef, flatten=False, filter_nonzero_freqs=False
+    ):
         """
         Calculate bispectrum for a set of coefs in this basis.
 

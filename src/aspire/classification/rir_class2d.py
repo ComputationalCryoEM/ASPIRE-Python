@@ -16,9 +16,16 @@ import matplotlib.pyplot as plt
 
 
 class RIRClass2D(Class2D):
-    def __init__(self, src, pca_basis, fspca_components=400, alpha=1/3,
-                 rank_approx=4000,
-                 bispectrum_componenents=300, dtype=None):
+    def __init__(
+        self,
+        src,
+        pca_basis,
+        fspca_components=400,
+        alpha=1 / 3,
+        rank_approx=4000,
+        bispectrum_componenents=300,
+        dtype=None,
+    ):
         """
         Constructor of an object for classifying 2D images using
         Rotationally Invariant Representation (RIR) algorithm.
@@ -78,43 +85,48 @@ class RIRClass2D(Class2D):
 
         # Legacy code included a sanity check:
         non_zero_freqs = self.pca_basis.complex_angular_indices != 0
-        #coef_norm = np.log(np.power(np.abs(coef[:,non_zero_freqs]), self.alpha)).all())
+        # coef_norm = np.log(np.power(np.abs(coef[:,non_zero_freqs]), self.alpha)).all())
         # just stick to the paper (eq 20) for now , look at this more later.
-        coef_normed = np.where(coef == 0, 0,
-                             coef / np.power(np.abs(coef), 1-self.alpha))
-        
+        coef_normed = np.where(
+            coef == 0, 0, coef / np.power(np.abs(coef), 1 - self.alpha)
+        )
+
         if not np.isfinite(coef_normed).all():
             raise ValueError("Coefs should be finite")
 
         ### Compute and reduce Bispectrum
         num_radial_freqs = len(np.unique(self.pca_basis.complex_radial_indices))
-        coef_b = np.empty((self.src.n, num_radial_freqs, num_radial_freqs), dtype=coef.dtype)
+        coef_b = np.empty(
+            (self.src.n, num_radial_freqs, num_radial_freqs), dtype=coef.dtype
+        )
         coef_b_r = np.empty_like(coef_b)
-        
+
         for i in range(self.src.n):
             B = self.pca_basis.calculate_bispectrum(coef_normed[i])
 
             #### Truncate Bispectrum (by sampling)
             #### Note, where is this written down? Check if this is the rank_approx method mentioned in paper...
             M = np.power(self.pca_basis.eigvals, self.alpha)
-            pM = M/ np.sum(M)            
+            pM = M / np.sum(M)
             X = rand(len(M))
             M_mask = X < self.rank_approx * pM
             B = B[M_mask][:, M_mask]
-            logger.info(f"Truncating Bispectrum to {B.shape} coefs.")            
+            logger.info(f"Truncating Bispectrum to {B.shape} coefs.")
 
-            ### Reduce dimensionality of Bispectrum sample with PCA 
+            ### Reduce dimensionality of Bispectrum sample with PCA
             # Legacy code had bispect with shape number_feasible_k3, non_zero_unique_radial_indices.
             M = B.reshape(B.shape[0] * B.shape[1], B.shape[2])
 
-            logger.info(f"Computing PCA, returning {self.bispectrum_componenents} components.")
+            logger.info(
+                f"Computing PCA, returning {self.bispectrum_componenents} components."
+            )
             u, s, v = self.pca_y(M, self.bispectrum_componenents)
             # ## # Check it looks something like a spectrum.
             # import matplotlib.pyplot as plt
             # plt.semilogy(s)
             # plt.show()
             ## Contruct coefficients
-            coef_b[i] = np.einsum('i, ij -> ij', s, np.conjugate(v))
+            coef_b[i] = np.einsum("i, ij -> ij", s, np.conjugate(v))
             coef_b_r[i] = np.conjugate(u.T).dot(np.conjugate(M))
 
             # normalize
@@ -122,11 +134,11 @@ class RIRClass2D(Class2D):
             coef_b_r[i] /= np.linalg.norm(coef_b_r[i], axis=0)
             print(coef_b[i])
             import matplotlib.pyplot as plt
+
             plt.imshow(np.abs(coef_b[i]))
             plt.show()
             plt.imshow(np.abs(coef_b_r[i]))
             plt.show()
-            
 
         ## Stage 2: Compute Nearest Neighbors
         classes = self.nn_classification(coef_b, coef_b_r)
@@ -141,14 +153,16 @@ class RIRClass2D(Class2D):
         # revisit
 
         concat_coeff = np.concatenate(coeff_b, coeff_b_r)
-        
+
         num_batches = int(np.ceil(1.0 * n_im / batch_size))
-        classes = np.zeros((n_im, n_nbor), dtype='int')
+        classes = np.zeros((n_im, n_nbor), dtype="int")
         for i in range(num_batches):
             start = i * batch_size
             finish = min((i + 1) * batch_size, n_im)
-            corr = np.real(np.dot(np.conjugate(coeff_b[:, start: finish]).T, concat_coeff))
-            classes[start: finish] = np.argsort(-corr, axis=1)[:, 1: n_nbor + 1]
+            corr = np.real(
+                np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
+            )
+            classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
 
         return classes
 
@@ -160,13 +174,13 @@ class RIRClass2D(Class2D):
 
     def pca_y(self, x, k, num_iters=2):
         """
-        PCA using QR factorization. 
-        
+        PCA using QR factorization.
+
         See:
 
         An algorithm for the principal component analysis of large data sets.
         Halko, Martinsson, Shkolnisky, Tygert , SIAM 2011.
-        
+
         :param x: Data matrix
         :param k: Number of estimated Principal Components.
         :param num_iters: Number of dot product applications.
@@ -191,8 +205,11 @@ class RIRClass2D(Class2D):
             m, n = n, m
 
         ones = np.ones((n, k + 2))
-        if x.dtype == np.dtype('complex'):
-            h = operator((2 * np.random.random((k + 2, n)).T - ones) + 1j * (2 * np.random.random((k + 2, n)).T - ones))
+        if x.dtype == np.dtype("complex"):
+            h = operator(
+                (2 * np.random.random((k + 2, n)).T - ones)
+                + 1j * (2 * np.random.random((k + 2, n)).T - ones)
+            )
         else:
             h = operator(2 * np.random.random((k + 2, n)).T - ones)
 
@@ -205,7 +222,7 @@ class RIRClass2D(Class2D):
 
         f = np.concatenate(f, axis=1)
         # f has e-16 error, q has e-13
-        q, _, _ = qr(f, mode='economic', pivoting=True)
+        q, _, _ = qr(f, mode="economic", pivoting=True)
         b = np.conj(operator_transpose(q)).T
         u, s, v = np.linalg.svd(b, full_matrices=False)
         # not sure how to fix the signs but it seems like I dont need to
