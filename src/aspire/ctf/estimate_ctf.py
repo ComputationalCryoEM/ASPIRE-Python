@@ -64,9 +64,7 @@ def estimate_ctf(
 
         micrograph_blocks = ctf_object.preprocess(micrograph, psd_size)
 
-        tapers_1d = ctf_object.tapers(
-            psd_size, (2 * num_tapers) / psd_size, num_tapers
-        )
+        tapers_1d = ctf_object.tapers(psd_size, (2 * num_tapers) / psd_size, num_tapers)
 
         signal_observed = ctf_object.estimate_psd(
             micrograph_blocks, tapers_1d, num_tapers
@@ -92,7 +90,7 @@ def estimate_ctf(
                 amplitude_contrast,
                 signal_observed.shape[-1],
             )
-            
+
         signal, background_2d = ctf_object.background_subtract_2d(
             signal_observed, background_1d, low_freq_skip
         )
@@ -102,7 +100,6 @@ def estimate_ctf(
         signal, additional_background = ctf_object.elliptical_average(
             ffbbasis, signal.sqrt(), False
         )
-
 
         background_2d = background_2d + additional_background
 

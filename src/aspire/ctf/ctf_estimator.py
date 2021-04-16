@@ -20,7 +20,6 @@ from aspire.utils import abs2, complex_type, eigs
 logger = logging.getLogger(__name__)
 
 
-
 class CtfEstimator:
     """
     CtfEstimator Class ...
@@ -166,8 +165,8 @@ class CtfEstimator:
         block = np.asarray(block_list, dtype=micrograph.dtype)
 
         # Create a sum and reshape so it may be broadcast with `block`.
-        block_sum = np.sum(block, axis=(-1,-2))[:, np.newaxis, np.newaxis]
-        
+        block_sum = np.sum(block, axis=(-1, -2))[:, np.newaxis, np.newaxis]
+
         block = block - (
             block_sum / (block_size ** 2)
         )  # equals to the matlab version (11-7-19)
@@ -228,7 +227,7 @@ class CtfEstimator:
                 blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
                 blocks_mt += abs2(blocks_mt_post_fft)
 
-        blocks_mt /= (blocks.shape[0]**2)
+        blocks_mt /= blocks.shape[0] ** 2
         blocks_mt /= tapers_1d.shape[0] ** 2
 
         thon_rings = fft.fftshift(
@@ -264,7 +263,6 @@ class CtfEstimator:
 
         return psd, noise
 
-
     def background_subtract_1d(self, thon_rings, linprog_method="interior-point"):
         """
         Estimate and subtract the background from the power spectrum
@@ -279,7 +277,7 @@ class CtfEstimator:
 
         thon_rings = thon_rings[..., center, center:]
 
-        thon_rings = thon_rings[..., 0 : 3 * thon_rings.shape[-1] // 4] 
+        thon_rings = thon_rings[..., 0 : 3 * thon_rings.shape[-1] // 4]
 
         final_signal = np.zeros((thon_rings.shape[-1], 13), dtype=self.dtype)
         final_background = np.ones((thon_rings.shape[-1], 13), dtype=self.dtype)
@@ -366,7 +364,7 @@ class CtfEstimator:
         r_ctf = rb * (10 / pixel_size)
 
         signal = thon_rings
-        signal = np.maximum(0., signal)
+        signal = np.maximum(0.0, signal)
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
 
@@ -394,7 +392,7 @@ class CtfEstimator:
 
             Sx = np.sqrt(np.sum(np.square(ctf_im), axis=0))
             Sy = np.sqrt(np.sum(np.square(signal), axis=0))
-            c[f - 500, :] = np.sum(np.multiply(ctf_im, signal), axis=0) /  (Sx * Sy)
+            c[f - 500, :] = np.sum(np.multiply(ctf_im, signal), axis=0) / (Sx * Sy)
 
         max_c = np.argmax(c)
         arr_max = np.unravel_index(max_c, c.shape)
@@ -551,7 +549,7 @@ class CtfEstimator:
         max_val = r[center, np.int(center - 1 + np.floor(rad_sq_max))]
         min_val = r[center, np.int(center - 1 + np.ceil(rad_sq_min))]
 
-        mask = (r <= max_val) & (r > min_val)        
+        mask = (r <= max_val) & (r > min_val)
         a = a[mask]
         b = b[mask]
         signal = signal[..., mask]
