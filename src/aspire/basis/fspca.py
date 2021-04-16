@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import numpy as np
@@ -63,6 +64,10 @@ class FSPCABasis(SteerableBasis):
                 f" source {self.src.dtype}, using {self.dtype}."
             )
 
+        self.count = self.complex_count = self.basis.complex_count
+        self.complex_angular_indices = self.basis.complex_angular_indices
+        self.complex_radial_indices = self.basis.complex_radial_indices
+
         # self._build()  # hrmm how/when to kick off build, tricky
         # self.built = False
 
@@ -71,9 +76,6 @@ class FSPCABasis(SteerableBasis):
 
         # We'll use the complex representation for the calculations
         complex_coef = self.basis.to_complex(coef)
-        self.count = self.complex_count = self.basis.complex_count
-        self.complex_angular_indices = self.basis.complex_angular_indices
-        self.complex_radial_indices = self.basis.complex_radial_indices
 
         # Create the arrays to be packed by _compute_spca
         self.eigvals = np.zeros(
@@ -91,14 +93,6 @@ class FSPCABasis(SteerableBasis):
         self._compute_spca(complex_coef, noise_var)
 
         # self.built = True
-
-    # def get_compressed_indices(self, k):
-    #     compressed_indices = self.sorted_indices[:k]
-
-    #     complex_angular_indices = self.complex_angular_indices[compressed_indices]
-    #     complex_radial_indices = self.complex_radial_indices[compressed_indices]
-
-    #     return compressed_indices, complex_radial_indices, complex_radial_indices
 
     def _compute_spca(self, complex_coef, noise_var):
         """
@@ -227,8 +221,14 @@ class FSPCABasis(SteerableBasis):
         # apply linear combination defined by FSPCA (eigvecs)
         #  can try blk_diag here, but I think needs to be extended to non square...,
         #  or masked.
-        c_fspca = c_fb @ self.eigvecs.dense()
-        assert c_fspca.shape == (x.shape[0], self.basis.complex_count)
+        # c_fspca = (self.eigvecs.apply(c_fb.T)).T
+        eigvecs = self.eigvecs
+        if isinstance(eigvecs, BlkDiagMatrix):
+            eigvecs = eigvecs.dense()
+
+        c_fspca = c_fb @ eigvecs
+
+        assert c_fspca.shape == (x.shape[0], self.complex_count)
 
         return c_fspca
 
@@ -270,7 +270,7 @@ class FSPCABasis(SteerableBasis):
         ## Check do we expect blocks decreasing? if so i have bug...
         sorted_indices = np.argsort(-np.abs(self.eigvals))
         k = 10
-        print(
+        logger.info(
             f"Top {k} Eigvals of {len(self.eigvals)} {self.eigvals[sorted_indices][:k]}"
         )
         import matplotlib.pyplot as plt
@@ -311,6 +311,42 @@ class FSPCABasis(SteerableBasis):
 
         return eigen_images
 
-    def truncate(self, k):
-        print("truncation not implemented yet")
-        return self
+    def compress(self, k):
+        """
+        Use the eigendecomposition to select the most powerful
+        coefficients.
+
+        Using those coefficients new indice mappings are constructed.
+
+        :param k: Number of components (coef)
+        :return: New FSPCABasis instance
+        """
+
+        if k >= self.complex_count:
+            logger.warning(
+                f"Requested compression to {k} components,"
+                f" but already {self.complex_count}."
+                "  Skipping compression."
+            )
+            return self
+
+        # Create a deepcopy.
+        result = copy.deepcopy(self)
+        # result = FSPCABasis(self.src, self.basis)
+
+        # Create compressed mapping
+        result.count = result.complex_count = k
+        compressed_indices = self.sorted_indices[:k]
+
+        # NOTE, no longer blk_diag! ugh
+        # Note can copy from self or result, should be same...
+        result.eigvals = self.eigvals[compressed_indices]
+        result.eigvecs = self.eigvecs.dense()[:, compressed_indices]
+        result.spca_coef = self.spca_coef[:, compressed_indices]
+
+        result.complex_angular_indices = self.complex_angular_indices[
+            compressed_indices
+        ]
+        result.complex_radial_indices = self.complex_radial_indices[compressed_indices]
+
+        return result

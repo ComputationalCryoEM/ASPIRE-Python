@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 ##################################################
 # Parameters
-RESOLUTION = 64  # 300 used in paper
-NUMBER_OF_TEST_IMAGES = 100  # 4096  # 24000 images
+RESOLUTION = 16  # 300 used in paper
+NUMBER_OF_TEST_IMAGES = 3  # 4096  # 24000 images
 DTYPE = np.float64
 ##################################################
 # Setup
@@ -56,7 +56,7 @@ logger.info("Setting up FSPCA")
 fspca_basis = FSPCABasis(src, basis)
 fspca_basis.build(coefs)
 
-rir = RIRClass2D(src, fspca_basis, rank_approx=400)
+rir = RIRClass2D(src, fspca_basis, rank_approx=4000)
 
 
 rir.classify()

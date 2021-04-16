@@ -72,10 +72,8 @@ class RIRClass2D(Class2D):
 
         # Initial round of component truncation is before bispectrum.
         #  default of 400 components taken from legacy code.
-        #  Take minumum here in case we have less than k coefs already.
-        if self.fb_basis.complex_count > self.fspca_components:
-            # Instantiate a new truncated (compressed) basis.
-            self.pca_basis = self.pca_basis.truncate(self.fspca_components)
+        # Instantiate a new compressed (truncated) basis.
+        self.pca_basis = self.pca_basis.compress(self.fspca_components)
 
         # Expand into the compressed FSPCA space.
         fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
@@ -132,36 +130,46 @@ class RIRClass2D(Class2D):
             # normalize
             coef_b[i] /= np.linalg.norm(coef_b[i], axis=0)
             coef_b_r[i] /= np.linalg.norm(coef_b_r[i], axis=0)
-            print(coef_b[i])
-            import matplotlib.pyplot as plt
+            # print(coef_b[i])
+            # print(coef_b_r[i])
+            # import matplotlib.pyplot as plt
 
-            plt.imshow(np.abs(coef_b[i]))
-            plt.show()
-            plt.imshow(np.abs(coef_b_r[i]))
-            plt.show()
+            # plt.imshow(np.abs(coef_b[i]))
+            # plt.show()
+            # plt.imshow(np.abs(coef_b_r[i]))
+            # plt.show()
 
-        ## Stage 2: Compute Nearest Neighbors
+        ## stage 2: Compute Nearest Neighbors
         classes = self.nn_classification(coef_b, coef_b_r)
         print(classes)
 
         ## Stage 3: Align
 
-    def nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
+    def nn_classification(self, coeff_b, coeff_b_r, n_nbor=100, batch_size=2000):
         """
         Perform nearest neighbor classification and alignment.
         """
         # revisit
+        n_im = self.src.n
 
-        concat_coeff = np.concatenate(coeff_b, coeff_b_r)
+        concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=0)
+        print(concat_coeff.shape)
 
         num_batches = int(np.ceil(1.0 * n_im / batch_size))
-        classes = np.zeros((n_im, n_nbor), dtype="int")
+
+        classes = np.zeros((n_im, n_nbor), dtype=int)
         for i in range(num_batches):
             start = i * batch_size
             finish = min((i + 1) * batch_size, n_im)
             corr = np.real(
-                np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
+                # I dont understand what they were doing here yet.
+                # np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
+                # np.dot(np.conjugate(coeff_b[start:finish]).T, concat_coeff.T)
+                np.dot(
+                    np.conjugate(coeff_b[start:finish]), concat_coeff  # slice, 8 8
+                )  # 6 8 8
             )
+            print(corr.shape)
             classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
 
         return classes
