@@ -14,17 +14,10 @@ from scipy.optimize import linprog
 
 from aspire.image import Image
 from aspire.numeric import fft
-from aspire.utils import complex_type, eigs
+from aspire.utils import abs2, complex_type, eigs
 
 logger = logging.getLogger(__name__)
 
-
-def abs2(x):
-    """
-    Compute complex modulus squared.
-    """
-
-    return x.real ** 2 + x.imag ** 2
 
 
 class CtfEstimator:
