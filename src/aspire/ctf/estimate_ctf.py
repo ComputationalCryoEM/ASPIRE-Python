@@ -62,29 +62,29 @@ def estimate_ctf(
         # Try to match dtype used in Basis instance
         micrograph = micrograph.astype(dtype, copy=False)
 
-        micrograph_blocks = ctf_object.ctf_preprocess(micrograph, psd_size)
+        micrograph_blocks = ctf_object.preprocess(micrograph, psd_size)
 
-        tapers_1d = ctf_object.ctf_tapers(
+        tapers_1d = ctf_object.tapers(
             psd_size, (2 * num_tapers) / psd_size, num_tapers
         )
 
-        signal_observed = ctf_object.ctf_estimate_psd(
+        signal_observed = ctf_object.estimate_psd(
             micrograph_blocks, tapers_1d, num_tapers
         )
 
-        thon_rings, g_out = ctf_object.ctf_elliptical_average(
+        thon_rings, g_out = ctf_object.elliptical_average(
             ffbbasis, signal_observed, 0
         )  # absolute differenceL 10^-14. Relative error: 10^-7
 
         # Optionally changing to: linprog_method='simplex',
         # will more deterministically repro results in exchange for speed.
-        signal_1d, background_1d = ctf_object.ctf_background_subtract_1d(
+        signal_1d, background_1d = ctf_object.background_subtract_1d(
             thon_rings, linprog_method="interior-point"
         )
 
         low_freq_skip = 12
         if corr:
-            avg_defocus, low_freq_skip = ctf_object.ctf_opt1d(
+            avg_defocus, low_freq_skip = ctf_object.opt1d(
                 signal_1d,
                 pixel_size,
                 cs,
@@ -93,13 +93,13 @@ def estimate_ctf(
                 signal_observed.shape[-1],
             )
             
-        signal, background_2d = ctf_object.ctf_background_subtract_2d(
+        signal, background_2d = ctf_object.background_subtract_2d(
             signal_observed, background_1d, low_freq_skip
         )
 
-        ratio = ctf_object.ctf_PCA(signal_observed, pixel_size, g_min, g_max)
+        ratio = ctf_object.PCA(signal_observed, pixel_size, g_min, g_max)
 
-        signal, additional_background = ctf_object.ctf_elliptical_average(
+        signal, additional_background = ctf_object.elliptical_average(
             ffbbasis, signal.sqrt(), 2
         )
 
@@ -122,7 +122,7 @@ def estimate_ctf(
         angle = -75
         cc_array = np.zeros((6, 4))
         for a in range(0, 6):
-            df1, df2, angle_ast, p = ctf_object.ctf_gd(
+            df1, df2, angle_ast, p = ctf_object.gd(
                 signal,
                 initial_df1,
                 initial_df2,

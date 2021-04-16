@@ -137,7 +137,7 @@ class CtfEstimator:
         h = -np.sin(chi)
         self.h = h
 
-    def ctf_preprocess(self, micrograph, block_size):
+    def preprocess(self, micrograph, block_size):
         """
         Preprocess CTF of micrograph using block_size.
 
@@ -174,7 +174,7 @@ class CtfEstimator:
 
         return block
 
-    def ctf_tapers(self, N, R, L):
+    def tapers(self, N, R, L):
         """
         Compute data tapers (which are discrete prolate spheroidal sequences (dpss))
 
@@ -197,11 +197,11 @@ class CtfEstimator:
 
         return data_tapers
 
-    def ctf_estimate_psd(self, blocks, tapers_1d, num_1d_tapers):
+    def estimate_psd(self, blocks, tapers_1d, num_1d_tapers):
         """
         Estimate the power spectrum of the micrograph using the multi-taper method
 
-        :param blocks: 3-D NumPy array containing windows extracted from the micrograph in the ctf_preprocess function.
+        :param blocks: 3-D NumPy array containing windows extracted from the micrograph in the preprocess function.
         :param tapers_1d: NumPy array of data tapers.
         :param num_1d_tapers: number of 1-D data tapers
         :return: NumPy array of estimated power spectrum.
@@ -246,7 +246,7 @@ class CtfEstimator:
 
         return Image(thon_rings)
 
-    def ctf_elliptical_average(self, ffbbasis, thon_rings, k):
+    def elliptical_average(self, ffbbasis, thon_rings, k):
         """
         Computes radial/elliptical average of the power spectrum
 
@@ -274,7 +274,7 @@ class CtfEstimator:
         return psd, noise
 
     # NOTE DISCUSS linprog_method
-    def ctf_background_subtract_1d(self, thon_rings, linprog_method="interior-point"):
+    def background_subtract_1d(self, thon_rings, linprog_method="interior-point"):
         """
         Estimate and subtract the background from the power spectrum
 
@@ -352,7 +352,7 @@ class CtfEstimator:
 
         return final_signal, final_background
 
-    def ctf_opt1d(self, thon_rings, pixel_size, cs, lmbd, w, N):
+    def opt1d(self, thon_rings, pixel_size, cs, lmbd, w, N):
         """
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
@@ -415,13 +415,13 @@ class CtfEstimator:
 
         return avg_defocus, max_col
 
-    def ctf_background_subtract_2d(self, signal, background_p1, max_col):
+    def background_subtract_2d(self, signal, background_p1, max_col):
         """
         Subtract background from estimated power spectrum
 
         :param signal: Estimated power spectrum
         :param background_p1: 1-D background estimation
-        :param max_col: Internal variable, returned as the second parameter from ctf_opt1d.
+        :param max_col: Internal variable, returned as the second parameter from opt1d.
         :return: 2-tuple of NumPy arrays (Estimated PSD without noise and estimated noise).
         """
 
@@ -451,7 +451,7 @@ class CtfEstimator:
 
         return Image(signal.T), Image(background.T)
 
-    def ctf_PCA(self, signal, pixel_size, g_min, g_max):
+    def PCA(self, signal, pixel_size, g_min, g_max):
         """
 
         :param signal: Estimated power spectrum.
@@ -506,7 +506,7 @@ class CtfEstimator:
 
         return ratio
 
-    def ctf_gd(
+    def gd(
         self,
         signal,
         df1,
@@ -688,7 +688,7 @@ class CtfEstimator:
 
         return df1, df2, angle_ast, p
 
-    def ctf_locate_minima(self, signal):
+    def locate_minima(self, signal):
         """
         Find zero-crossings of power spectrum.
 
