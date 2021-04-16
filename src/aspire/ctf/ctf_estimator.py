@@ -279,8 +279,7 @@ class CtfEstimator:
 
         thon_rings = thon_rings[..., center, center:]
 
-        thon_rings = thon_rings[..., 0 : 3 * thon_rings.shape[-1] // 4]
-        element_no = thon_rings.shape[-1]
+        thon_rings = thon_rings[..., 0 : 3 * thon_rings.shape[-1] // 4] 
 
         final_signal = np.zeros((thon_rings.shape[-1], 13), dtype=self.dtype)
         final_background = np.ones((thon_rings.shape[-1], 13), dtype=self.dtype)
@@ -288,9 +287,9 @@ class CtfEstimator:
         for m in range(1, 14):
             signal = thon_rings[..., m:]
             signal = np.ravel(signal)
-            N = element_no - m
+            N = thon_rings.shape[-1] - m
 
-            f = np.concatenate((np.ones((N)), -1 * np.ones((N))), axis=0)
+            f = np.concatenate((np.ones(N), -1 * np.ones(N)), axis=0)
 
             superposition_condition = np.concatenate(
                 (-1 * np.eye(N), np.eye(N)), axis=1
@@ -330,7 +329,7 @@ class CtfEstimator:
             x = linprog(
                 f,
                 A_ub=A,
-                b_ub=np.zeros((A.shape[0])),
+                b_ub=np.zeros(A.shape[0]),
                 bounds=x_bound,
                 method=linprog_method,
             )
@@ -367,7 +366,7 @@ class CtfEstimator:
         r_ctf = rb * (10 / pixel_size)
 
         signal = thon_rings
-        signal = np.where(signal < 0, 0, signal)
+        signal = np.maximum(0., signal)
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
 
@@ -395,9 +394,7 @@ class CtfEstimator:
 
             Sx = np.sqrt(np.sum(np.square(ctf_im), axis=0))
             Sy = np.sqrt(np.sum(np.square(signal), axis=0))
-            c[f - 500, :] = np.divide(
-                np.sum(np.multiply(ctf_im, signal), axis=0), (np.multiply(Sx, Sy))
-            )
+            c[f - 500, :] = np.sum(np.multiply(ctf_im, signal), axis=0) /  (Sx * Sy)
 
         max_c = np.argmax(c)
         arr_max = np.unravel_index(max_c, c.shape)
@@ -431,14 +428,12 @@ class CtfEstimator:
         background = np.zeros(signal.shape, dtype=self.dtype)
         background_p1 = background_p1[:, max_col]
         for r in range(background_p1.shape[0] - 1, 0, -1):
-            background[np.where(radii <= r + 1)] = background_p1[r]
-
-        background[np.where(radii <= max_col + 2)] = signal[
-            np.where(radii <= max_col + 2)
-        ]
+            background[radii <= r + 1] = background_p1[r]
+        mask = radii <= max_col + 2
+        background[mask] = signal[mask]
 
         signal = signal - background
-        signal = np.where(signal < 0, 0, signal)
+        signal = np.maximum(0, signal)
 
         return Image(signal.T), Image(background.T)
 
@@ -466,13 +461,13 @@ class CtfEstimator:
 
         [X, Y] = np.meshgrid(np.arange(-center, center), np.arange(-center, center))
 
-        signal = signal - np.min(np.ravel(signal))
+        signal -= np.min(signal)
 
         rad_sq_min = N * pixel_size / g_min
         rad_sq_max = N * pixel_size / g_max
 
         min_limit = r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
-        signal = np.where(r_ctf < min_limit, 0, signal)
+        signal[r_ctf < min_limit] = 0
 
         max_limit = r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
         signal = np.where(r_ctf > max_limit, 0, signal)
@@ -492,7 +487,7 @@ class CtfEstimator:
         moment_mat[0, 1] = moment_11
         moment_mat[1, 0] = moment_11
 
-        moment_evals, moment_evecs = npla.eigh(moment_mat)
+        moment_evals = npla.eigvalsh(moment_mat)
         ratio = np.divide(moment_evals[0], moment_evals[1])
 
         return ratio
@@ -555,15 +550,13 @@ class CtfEstimator:
 
         max_val = r[center, np.int(center - 1 + np.floor(rad_sq_max))]
         min_val = r[center, np.int(center - 1 + np.ceil(rad_sq_min))]
-        valid_region = np.argwhere(
-            np.logical_and(np.where(r <= max_val, 1, 0), np.where(r > min_val, 1, 0))
-        )
 
-        a = a[valid_region[:, 0], valid_region[:, 1]]
-        b = b[valid_region[:, 0], valid_region[:, 1]]
-        signal = signal[..., valid_region[:, 0], valid_region[:, 1]]
-        r = r[valid_region[:, 0], valid_region[:, 1]]
-        theta = theta[valid_region[:, 0], valid_region[:, 1]]
+        mask = (r <= max_val) & (r > min_val)        
+        a = a[mask]
+        b = b[mask]
+        signal = signal[..., mask]
+        r = r[mask]
+        theta = theta[mask]
 
         sum_A = np.sum(np.power(signal, 2))
 
