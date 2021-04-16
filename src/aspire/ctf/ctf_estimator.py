@@ -209,15 +209,7 @@ class CtfEstimator:
 
         tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
 
-        blocks_mt_pre_fft = np.zeros(
-            blocks[0, :, :].shape, dtype=complex_type(self.dtype)
-        )
-
-        blocks_mt_post_fft = np.zeros(
-            blocks_mt_pre_fft.shape, dtype=complex_type(self.dtype)
-        )
-
-        blocks_mt = np.zeros(blocks_mt_pre_fft.shape, dtype=self.dtype)
+        blocks_mt = np.zeros(blocks[0, :, :].shape, dtype=self.dtype)
 
         blocks_tapered = np.zeros(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
 
@@ -234,25 +226,24 @@ class CtfEstimator:
             for m in range(blocks.shape[0]):
                 np.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
                 blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
-                blocks_mt = blocks_mt + abs2(blocks_mt_post_fft)
+                blocks_mt += abs2(blocks_mt_post_fft)
 
-        blocks_mt = blocks_mt / (blocks.shape[0])
-        blocks_mt = blocks_mt / (blocks.shape[0])
-        blocks_mt = blocks_mt / tapers_1d.shape[0] ** 2.0
+        blocks_mt /= (blocks.shape[0]**2)
+        blocks_mt /= tapers_1d.shape[0] ** 2
 
-        thon_rings = np.fft.fftshift(
+        thon_rings = fft.fftshift(
             blocks_mt
         )  # max difference 10^-13, max relative difference 10^-14
 
         return Image(thon_rings)
 
-    def elliptical_average(self, ffbbasis, thon_rings, k):
+    def elliptical_average(self, ffbbasis, thon_rings, circular):
         """
         Computes radial/elliptical average of the power spectrum
 
         :param ffbbasis: FFBBasis instance.
         :param thon_rings: Power spectrum.
-        :param k: 0 for radial averaging and 2 for elliptical averaging.
+        :param circular: True for radial averaging and False for elliptical averaging.
         :return: PSD and noise as 2-tuple of NumPy arrays.
         """
 
@@ -261,10 +252,10 @@ class CtfEstimator:
         coeffs_n = coeffs_s.copy()
 
         coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 1)] = 0
-        if k == 0:
+        if circular:
             coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
             noise = thon_rings
-        if k == 2:
+        else:
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 0)] = 0
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
             noise = ffbbasis.evaluate(coeffs_n.T)
@@ -273,13 +264,13 @@ class CtfEstimator:
 
         return psd, noise
 
-    # NOTE DISCUSS linprog_method
+
     def background_subtract_1d(self, thon_rings, linprog_method="interior-point"):
         """
         Estimate and subtract the background from the power spectrum
 
         :param thon_rings: Estimated power spectrum
-        :param linprog_method: Method passed to linear progam solver.
+        :param linprog_method: Method passed to linear progam solver (scipy.optimize.linprog).  Defaults to 'interior-point'.
         :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
 

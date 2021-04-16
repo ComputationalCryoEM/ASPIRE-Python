@@ -72,8 +72,8 @@ def estimate_ctf(
             micrograph_blocks, tapers_1d, num_tapers
         )
 
-        thon_rings, g_out = ctf_object.elliptical_average(
-            ffbbasis, signal_observed, 0
+        thon_rings, _ = ctf_object.elliptical_average(
+            ffbbasis, signal_observed, True
         )  # absolute differenceL 10^-14. Relative error: 10^-7
 
         # Optionally changing to: linprog_method='simplex',
@@ -100,7 +100,7 @@ def estimate_ctf(
         ratio = ctf_object.PCA(signal_observed, pixel_size, g_min, g_max)
 
         signal, additional_background = ctf_object.elliptical_average(
-            ffbbasis, signal.sqrt(), 2
+            ffbbasis, signal.sqrt(), False
         )
 
 

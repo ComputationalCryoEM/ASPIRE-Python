@@ -177,12 +177,8 @@ class Image:
     def sqrt(self):
         return Image(np.sqrt(self.data))
 
-    def transpose(self):
+    def flip_axes(self):
         return Image(np.transpose(self.data, (0, 2, 1)))
-
-    @property
-    def T(self):
-        return self.transpose()
 
     def __repr__(self):
         return f"{self.n_images} images of size {self.res}x{self.res}"
