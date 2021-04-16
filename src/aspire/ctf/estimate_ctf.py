@@ -82,6 +82,7 @@ def estimate_ctf(
             thon_rings, linprog_method="interior-point"
         )
 
+        low_freq_skip = 12
         if corr:
             avg_defocus, low_freq_skip = ctf_object.ctf_opt1d(
                 signal_1d,
@@ -91,25 +92,17 @@ def estimate_ctf(
                 amplitude_contrast,
                 signal_observed.shape[-1],
             )
+            
+        signal, background_2d = ctf_object.ctf_background_subtract_2d(
+            signal_observed, background_1d, low_freq_skip
+        )
 
-            signal, background_2d = ctf_object.ctf_background_subtract_2d(
-                signal_observed, background_1d, low_freq_skip
-            )
+        ratio = ctf_object.ctf_PCA(signal_observed, pixel_size, g_min, g_max)
 
-            ratio = ctf_object.ctf_PCA(signal_observed, pixel_size, g_min, g_max)
+        signal, additional_background = ctf_object.ctf_elliptical_average(
+            ffbbasis, signal.sqrt(), 2
+        )
 
-            signal, additional_background = ctf_object.ctf_elliptical_average(
-                ffbbasis, signal.sqrt(), 2
-            )
-
-        else:
-            signal, background_2d = ctf_object.ctf_background_subtract_2d(
-                signal_observed, background_1d, 12
-            )
-            ratio = ctf_object.ctf_PCA(signal_observed, pixel_size, g_min, g_max)
-            signal, additional_background = ctf_object.ctf_elliptical_average(
-                ffbbasis, signal.sqrt(), 2
-            )
 
         background_2d = background_2d + additional_background
 

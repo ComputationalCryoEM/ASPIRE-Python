@@ -15,7 +15,7 @@ logger = logging.getLogger("aspire")
     "--amplitude_contrast", default=0.07, type=float, help="Amplitude contrast"
 )
 @click.option(
-    "--voltage", default=300, type=float, help="Voltage in electron microscope"
+    "--voltage", default=300, type=float, help="Electron microscope Voltage in kilovolts (kV)"
 )
 @click.option(
     "--num_tapers",
@@ -24,10 +24,10 @@ logger = logging.getLogger("aspire")
     help="Number of tapers to apply in PSD estimation",
 )
 @click.option(
-    "--psd_size", default=512, type=int, help="Size of blocks for use in PSD estimation"
+    "--psd_size", default=512, type=int, help="Size of blocks for use in Power Spectrum estimation"
 )
 @click.option(
-    "--g_min", default=30, type=float, help="Inverse of minimum resolution for PSD"
+    "--g_min", default=30, type=float, help="Inverse of minimum resolution for Power Spectrum Distribution"
 )
 @click.option(
     "--g_max", default=5, type=float, help="Inverse of maximum resolution for PSD"
@@ -41,7 +41,7 @@ logger = logging.getLogger("aspire")
 @click.option(
     "--dtype",
     default="float32",
-    help="Numpy dtype to use in computation.  Example: 'float32' or 'float64'. defaults to 'float32'",
+    help="NumPy dtype to use in computation.  Example: 'float32' or 'float64'. defaults to 'float32'",
 )
 def estimate_ctf(
     data_folder,
@@ -58,7 +58,7 @@ def estimate_ctf(
     dtype,
 ):
     """
-    Given paramaters estimates CTF from experimental data
+    Given parameters estimates CTF from experimental data
     and returns CTF as a mrc file.
 
     This is a Click command line interface wrapper for

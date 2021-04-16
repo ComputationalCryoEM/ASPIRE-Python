@@ -147,9 +147,9 @@ class CtfEstimator:
         """
         Preprocess CTF of micrograph using block_size.
 
-        :param micrograph: Micrograph as numpy array. #NOTE looks like F order
+        :param micrograph: Micrograph as NumPy array. #NOTE looks like F order
         :param blocksize: Size of the square blocks to partition micrograph.
-        :return: Numpy array of blocks extracted from the micrograph.
+        :return: NumPy array of blocks extracted from the micrograph.
         """
 
         # verify block_size is even
@@ -187,7 +187,7 @@ class CtfEstimator:
         :param N: Size of each taper
         :param R: Spectral resolution
         :param L: Number of tapers
-        :return: numpy array of data tapers
+        :return: NumPy array of data tapers
         """
 
         k, el = np.meshgrid(
@@ -207,10 +207,10 @@ class CtfEstimator:
         """
         Estimate the power spectrum of the micrograph using the multi-taper method
 
-        :param blocks: 3-D numpy array containing windows extracted from the micrograph in the ctf_preprocess function.
-        :param tapers_1d: numpy array of data tapers.
+        :param blocks: 3-D NumPy array containing windows extracted from the micrograph in the ctf_preprocess function.
+        :param tapers_1d: NumPy array of data tapers.
         :param num_1d_tapers: number of 1-D data tapers
-        :return: Numpy array of estimated power spectrum.
+        :return: NumPy array of estimated power spectrum.
         """
 
         tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
@@ -259,7 +259,7 @@ class CtfEstimator:
         :param ffbbasis: FFBBasis instance.
         :param thon_rings: Power spectrum.
         :param k: 0 for radial averaging and 2 for elliptical averaging.
-        :return: PSD and noise as 2-tuple of numpy arrays.
+        :return: PSD and noise as 2-tuple of NumPy arrays.
         """
 
         # RCOPT, come back and change the indices for this method
@@ -286,7 +286,7 @@ class CtfEstimator:
 
         :param thon_rings: Estimated power spectrum
         :param linprog_method: Method passed to linear progam solver.
-        :return: 2-tuple of numpy arrays (PSD after noise subtraction and estimated noise)
+        :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
 
         # compute radial average
@@ -368,7 +368,7 @@ class CtfEstimator:
         :param lmbd: Electron wavelength.
         :param w: Amplitude contrast.
         :param N: Number of rows (or columns) in the estimate power spectrum.
-        :return: 2-tuple of numpy arrays (Estimated average of defocus and an internal variable)
+        :return: 2-tuple of NumPy arrays (Estimated average of defocus and an internal variable)
         """
 
         center = N // 2
@@ -428,7 +428,7 @@ class CtfEstimator:
         :param signal: Estimated power spectrum
         :param background_p1: 1-D background estimation
         :param max_col: Internal variable, returned as the second parameter from ctf_opt1d.
-        :return: 2-tuple of numpy arrays (Estimated PSD without noise and estimated noise).
+        :return: 2-tuple of NumPy arrays (Estimated PSD without noise and estimated noise).
         """
 
         # RCOPT
