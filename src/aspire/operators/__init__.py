@@ -12,5 +12,6 @@ from .filters import (
     RadialCTFFilter,
     ScalarFilter,
     ScaledFilter,
+    voltage_to_wavelength,
     ZeroFilter,
 )

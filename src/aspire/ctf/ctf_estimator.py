@@ -14,6 +14,7 @@ from scipy.optimize import linprog
 
 from aspire.image import Image
 from aspire.numeric import fft
+from aspire.operators import voltage_to_wavelength
 from aspire.utils import abs2, complex_type, eigs
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class CtfEstimator:
         """
         Instantiate a CtfEstimator instance.
 
-        :param pixel_size: Size of the pixel in Angstrom.
+        :param pixel_size: Size of the pixel in \u212b (Angstrom).
         :param cs: Spherical aberration in mm.
         :param amplitude_contrast: Amplitude contrast.
         :param voltage: Voltage of electron microscope.
@@ -53,7 +54,7 @@ class CtfEstimator:
         self.voltage = voltage
         self.psd_size = psd_size
         self.num_tapers = num_tapers
-        self.lmbd = 1.22639 / np.sqrt(voltage * 1000 + 0.97845 * np.square(voltage))
+        self.lmbd = 10 * voltage_to_wavelength(voltage)
         self.dtype = np.dtype(dtype)
 
         center = psd_size // 2
@@ -146,7 +147,7 @@ class CtfEstimator:
         """
 
         # verify block_size is even
-        block_size = block_size - (block_size % 2)
+        assert block_size % 2 == 0
 
         size_x = micrograph.shape[1]
         size_y = micrograph.shape[0]
@@ -164,9 +165,9 @@ class CtfEstimator:
         ]
         block = np.asarray(block_list, dtype=micrograph.dtype)
 
-        block_sum = np.sum(np.sum(block, axis=-1), axis=-1)
-        block_sum = np.reshape(block_sum, (block.shape[0], 1, 1))
-        block_sum = np.tile(block_sum, (1, block_size, block_size))
+        # Create a sum and reshape so it may be broadcast with `block`.
+        block_sum = np.sum(block, axis=(-1,-2))[:, np.newaxis, np.newaxis]
+        
         block = block - (
             block_sum / (block_size ** 2)
         )  # equals to the matlab version (11-7-19)
@@ -356,7 +357,7 @@ class CtfEstimator:
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
         :param thon_rings: Estimated power specrtum.
-        :param pixel_size: Pixel size in Angstrom
+        :param pixel_size: Pixel size in \u212b (Angstrom).
         :param cs: Spherical aberration in mm.
         :param lmbd: Electron wavelength.
         :param w: Amplitude contrast.
@@ -438,7 +439,6 @@ class CtfEstimator:
 
         background = np.zeros(signal.shape, dtype=self.dtype)
         background_p1 = background_p1[:, max_col]
-        # background = thon_rings.copy()
         for r in range(background_p1.shape[0] - 1, 0, -1):
             background[np.where(radii <= r + 1)] = background_p1[r]
 
@@ -455,7 +455,7 @@ class CtfEstimator:
         """
 
         :param signal: Estimated power spectrum.
-        :param pixel_size: Pixel size in Angstrom.
+        :param pixel_size: Pixel size in \u212b (Angstrom).
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
         :return: ratio.
@@ -530,7 +530,7 @@ class CtfEstimator:
         :param angle_ast: Angle between df1 and the x-axis
         :param r: Magnitude of spatial frequencies.
         :param theta: Phase of spatial frequencies.
-        :param pixel_size: Pixel size in angstrom.
+        :param pixel_size: Pixel size in \u212b (Angstrom).
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
         :param amplitude_contrast: Amplitude contrast.
