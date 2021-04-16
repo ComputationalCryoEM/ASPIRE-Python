@@ -9,7 +9,7 @@ logger = logging.getLogger("aspire")
 
 @click.command()
 @click.option("--data_folder", default=None, help="Path to mrc or mrcs files")
-@click.option("--pixel_size", default=1, type=float, help="Pixel size in A")
+@click.option("--pixel_size", default=1, type=float, help="Pixel size in \u212b (Angstrom)")
 @click.option("--cs", default=2.0, type=float, help="Spherical aberration")
 @click.option(
     "--amplitude_contrast", default=0.07, type=float, help="Amplitude contrast"
