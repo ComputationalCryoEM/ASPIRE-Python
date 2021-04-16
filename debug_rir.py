@@ -56,7 +56,7 @@ logger.info("Setting up FSPCA")
 fspca_basis = FSPCABasis(src, basis)
 fspca_basis.build(coefs)
 
-rir = RIRClass2D(src, fspca_basis)
+rir = RIRClass2D(src, fspca_basis, rank_approx=400)
 
 
 rir.classify()

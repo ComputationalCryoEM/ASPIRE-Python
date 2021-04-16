@@ -14,7 +14,7 @@ class SteerableBasis(Basis):
     SteerableBasis are an extension of Basis that is expected to have rotation (steerable) and bispectrum.
     """
 
-    def calculate_bispectrum(self, complex_coef, flatten=False):
+    def calculate_bispectrum(self, complex_coef, flatten=False, filter_nonzero_freqs=False):
         """
         Calculate bispectrum for a set of coefs in this basis.
 
@@ -25,6 +25,7 @@ class SteerableBasis(Basis):
 
         :param coef: Coefficients representing a (single) image expanded in this basis.
         :param flatten: Optionally extract symmetric values (tril) and then flatten.
+        :param filter_nonzero_freqs: Remove indices corresponding to zero frequency (defaults False).
         :return: Bispectum matrix (complex valued).
         """
 
@@ -62,12 +63,12 @@ class SteerableBasis(Basis):
 
         for ind1 in tqdm(range(self.complex_count)):
 
-            k1 = self.complex_angular_indices[ind1]
+            k1 = angular_indices[ind1]
             coef1 = complex_coef[ind1]
 
             for ind2 in range(self.complex_count):
 
-                k2 = self.complex_angular_indices[ind2]
+                k2 = angular_indices[ind2]
                 coef2 = complex_coef[ind2]
 
                 k3 = k1 + k2
@@ -79,8 +80,9 @@ class SteerableBasis(Basis):
 
                     B[ind1, ind2, Q3] = coef1 * coef2 * np.conj(Coef3)
 
-        non_zero_freqs = angular_indices != 0
-        B = B[non_zero_freqs][:, non_zero_freqs]
+        if filter_nonzero_freqs:
+            non_zero_freqs = angular_indices != 0
+            B = B[non_zero_freqs][:, non_zero_freqs]
         # #Normalize B ?
         # B /= np.linalg.norm(B, axis=-1)[:,:,np.newaxis]
 
