@@ -64,6 +64,7 @@ class FSPCABasis(SteerableBasis):
                 f" source {self.src.dtype}, using {self.dtype}."
             )
 
+        self.compressed = False
         self.count = self.complex_count = self.basis.complex_count
         self.complex_angular_indices = self.basis.complex_angular_indices
         self.complex_radial_indices = self.basis.complex_radial_indices
@@ -335,6 +336,7 @@ class FSPCABasis(SteerableBasis):
         # result = FSPCABasis(self.src, self.basis)
 
         # Create compressed mapping
+        result.compressed = True
         result.count = result.complex_count = k
         compressed_indices = self.sorted_indices[:k]
 
