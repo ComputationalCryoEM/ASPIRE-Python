@@ -55,7 +55,15 @@ class SteerableBasis(Basis):
         angular_indices = self.complex_angular_indices  # k
         unique_radial_indices = np.unique(radial_indices)  # q
         # unique_angular_indices = np.unique(angular_indices)  # k
-        radial_map = {q: i for i, q in enumerate(unique_radial_indices)}
+        # compressed_radial_map = {q: i for i, q in enumerate(unique_radial_indices)}
+        if self.compressed:
+            # k should never be this high..
+            fill_value = self.complex_count + 1
+            compressed_radial_map = (
+                np.ones(np.max(unique_radial_indices) + 1, dtype=int) * fill_value
+            )
+            for i, q in enumerate(unique_radial_indices):
+                compressed_radial_map[q] = i
 
         B = np.zeros(
             (self.complex_count, self.complex_count, unique_radial_indices.shape[0]),
@@ -81,10 +89,9 @@ class SteerableBasis(Basis):
                     Q3 = radial_indices[intermodulated_coef_inds]
                     if self.compressed:
                         # The compressed mapping is sparse in q
-                        Q3 = [radial_map[q] for q in Q3]
+                        # Q3 = [compressed_radial_map[q] for q in Q3]
+                        Q3 = compressed_radial_map[Q3]
 
-                    #                    print('Q3', Q3)
-                    #                    print('radial_inds', unique_radial_indices)
                     Coef3 = complex_coef[intermodulated_coef_inds]
 
                     B[ind1, ind2, Q3] = coef1 * coef2 * np.conj(Coef3)

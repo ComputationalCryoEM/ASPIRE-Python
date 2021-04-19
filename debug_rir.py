@@ -67,6 +67,12 @@ classes, class_refl, rot, corr, _ = result
 # lets peek at first couple image classes:
 #   first ten nearest neighbors
 Orig = src.images(0, NUMBER_OF_TEST_IMAGES)
+
+logger.info("Random Sample:")
+random_10 = Image(Orig[np.random.choice(src.n, 10)])
+random_10.show()
+
+logger.info("Classed Sample:")
 for c in range(5):
     neighbors = classes[c][:10]
     neighbors_img = Image(Orig[neighbors])

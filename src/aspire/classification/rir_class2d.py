@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 import matplotlib.pyplot as plt
 
+
 # copied for debugging/poc purposes
 def icfft2(x):
     if len(x.shape) == 2:
@@ -182,7 +183,7 @@ class RIRClass2D(Class2D):
 
         M = None
 
-        for i in range(self.src.n):
+        for i in tqdm(range(self.src.n)):
             B = self.pca_basis.calculate_bispectrum(
                 coef_normed[i], filter_nonzero_freqs=True
             )
@@ -234,7 +235,6 @@ class RIRClass2D(Class2D):
         # plt.show()
         # plt.imshow(np.abs(coef_b_r))
         # plt.show()
-
         ## stage 2: Compute Nearest Neighbors
         classes, corr = self.nn_classification(coef_b, coef_b_r)
         print(classes)
