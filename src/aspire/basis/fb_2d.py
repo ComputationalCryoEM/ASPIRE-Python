@@ -105,7 +105,7 @@ class FBBasis2D(SteerableBasis):
 
             ci += len(ks)
 
-        ## a[i] = a_ell_ks = a_angularindices[i]_radialindices[i]
+        # Relating to paper: a[i] = a_ell_ks = a_angularindices[i]_radialindices[i]
         self.complex_angular_indices = indices_ells[self.indices_real]  # k
         self.complex_radial_indices = indices_ks[self.indices_real]  # q
 
@@ -404,15 +404,16 @@ class FBBasis2D(SteerableBasis):
 
         return super().calculate_bispectrum(complex_coef, flatten=flatten)
 
-    def rotate(self, coef, radians):
+    def rotate(self, coef, radians, refl=None):
         """
         Returns coefs rotated by `radians`.
 
         :param coef: Basis coefs.
         :param radians: Rotation in radians.
+        :param refl: Optional reflect image (bool)
         :return: rotated coefs.
         """
 
         # Base class rotation expects complex representation of coefficients.
         #  Convert, rotate and convert back to real representation.
-        return self.to_real(super().rotate(self.to_complex(coef)))
+        return self.to_real(super().rotate(self.to_complex(coef), radians, refl))

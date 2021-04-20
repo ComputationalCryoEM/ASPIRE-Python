@@ -2,20 +2,14 @@ import copy
 import logging
 
 import numpy as np
-from numpy import pi
-from scipy.special import jv
 from tqdm import tqdm
 
 from aspire.basis import SteerableBasis
-from aspire.basis.basis_utils import lgwt
-from aspire.image import Image
-from aspire.nufft import anufft, nufft
-from aspire.numeric import fft, xp
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type
-from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
+
 
 # This function was shamelessly copied from class_averaging.py
 #   I think ASPIRE has something similar, and if not, we should...
@@ -110,14 +104,14 @@ class FSPCABasis(SteerableBasis):
         eigval_index = 0
         for angular_index in tqdm(range(0, self.basis.ell_max + 1)):
 
-            ## Construct A_k, matrix of expansion coefficients a^i_k_q
-            ##   for image i, angular index k, radial index q,
-            ##   (around eq 31-33)
-            ##   Rows radial indices, columns image i.
-            ##
-            ## We can extract this directly (up to transpose) from
-            ##  complex_coef vector where ells == angular_index
-            ##  then use the transpose so image stack becomes columns.
+            # # Construct A_k, matrix of expansion coefficients a^i_k_q
+            # #   for image i, angular index k, radial index q,
+            # #   (around eq 31-33)
+            # #   Rows radial indices, columns image i.
+            # #
+            # # We can extract this directly (up to transpose) from
+            # #  complex_coef vector where ells == angular_index
+            # #  then use the transpose so image stack becomes columns.
 
             indices = self.complex_angular_indices == angular_index
             A_k = complex_coef[:, indices].T
@@ -132,13 +126,13 @@ class FSPCABasis(SteerableBasis):
                 # double count the zero case
                 lambda_var *= 2
 
-            ## Compute the covariance matrix representation C_k, eq 32
-            ##   Note, I don't see relevance of special case 33...
-            ##     C_k = np.real(A_k @ A_k.conj().T) / n
-            ##   Einsum is performing the transpose, sometimes better performance.
+            # # Compute the covariance matrix representation C_k, eq 32
+            # #   Note, I don't see relevance of special case 33...
+            # #     C_k = np.real(A_k @ A_k.conj().T) / n
+            # #   Einsum is performing the transpose, sometimes better performance.
             C_k = np.einsum("ij, kj -> ik", A_k, A_k.conj()).real / n
 
-            ## Eigen/SVD,
+            # # Eigen/SVD,
             eigvals_k, eigvecs_k = np.linalg.eig(C_k)
             logger.debug(
                 f"eigvals_k.shape {eigvals_k.shape} eigvecs_k.shape {eigvecs_k.shape}"
@@ -166,8 +160,8 @@ class FSPCABasis(SteerableBasis):
                 # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
                 self.eigvecs[angular_index] = eigvecs_k
 
-                ## To compute new expansion coefficients using spca basis
-                ##   we combine the basis coefs using the eigen decomposition.
+                # # To compute new expansion coefficients using spca basis
+                # #   we combine the basis coefs using the eigen decomposition.
                 # Note image stack slow moving axis, and requires transpose from other implementation.
                 self.spca_coef[:, basis_inds] = np.einsum(
                     "ji, jk -> ik", eigvecs_k, A_k
@@ -175,7 +169,7 @@ class FSPCABasis(SteerableBasis):
 
                 eigval_index += len(eigvals_k)
 
-                ## Computing radial eigen vectors (functions) (eq 35) is not used? check
+                # # Computing radial eigen vectors (functions) (eq 35) is not used? check
 
         # Sanity check we have same dimension of eigvals and (complex) basis coefs.
         if eigval_index != self.basis.complex_count:
@@ -184,12 +178,12 @@ class FSPCABasis(SteerableBasis):
             )
 
         # Store a map of indices sorted by eigenvalue.
-        ##   We don't resort then now because this would destroy the block diagonal structure.
-        ##
-        ## sorted_indices[i] is the ith most powerful eigendecomposition index
-        ##
-        ## We can pass a full or truncated slice of sorted_indices to any array indexed by
-        ##  the complex coefs.
+        # #   We don't resort then now because this would destroy the block diagonal structure.
+        # #
+        # # sorted_indices[i] is the ith most powerful eigendecomposition index
+        # #
+        # # We can pass a full or truncated slice of sorted_indices to any array indexed by
+        # #  the complex coefs.
         self.sorted_indices = np.argsort(-np.abs(self.eigvals))
 
     def expand_from_image_basis(self, x):
@@ -268,7 +262,7 @@ class FSPCABasis(SteerableBasis):
         """
 
         # Sanity check the power captured by the eigen components
-        ## Check do we expect blocks decreasing? if so i have bug...
+        # # Check do we expect blocks decreasing? if so i have bug...
         sorted_indices = np.argsort(-np.abs(self.eigvals))
         k = 10
         logger.info(
@@ -280,7 +274,7 @@ class FSPCABasis(SteerableBasis):
         plt.show()
 
         # What do the eigvecs look like?
-        I = self.basis.evaluate(
+        _I = self.basis.evaluate(
             self.basis.to_real(
                 self.eigvecs.dense()[sorted_indices].astype(np.complex128)
             )
@@ -288,7 +282,7 @@ class FSPCABasis(SteerableBasis):
         eigenplot = np.empty((k, self.basis.nres, k, self.basis.nres))
         for i in range(k):
             for j in range(k):
-                eigenplot[i, :, j, :] = I[i * k + j]
+                eigenplot[i, :, j, :] = _I[i * k + j]
         eigenplot = eigenplot.reshape(k * self.basis.nres, k * self.basis.nres)
         plt.imshow(eigenplot)
         plt.show()

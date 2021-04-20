@@ -6,13 +6,9 @@ from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
 from aspire.classification import Class2D
-from aspire.covariance import RotCov2D
-from aspire.utils import complex_type
 from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
-
-import matplotlib.pyplot as plt
 
 
 # copied for debugging/poc purposes
@@ -146,7 +142,7 @@ class RIRClass2D(Class2D):
         Perform the 2D images classification.
         """
 
-        ## Stage 1: Compute coef and reduce dimensionality.
+        # # Stage 1: Compute coef and reduce dimensionality.
         # Memioze/batch this later when result is working
 
         # Initial round of component truncation is before bispectrum.
@@ -157,11 +153,11 @@ class RIRClass2D(Class2D):
         # Expand into the compressed FSPCA space.
         fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
         coef = self.pca_basis.expand(fb_coef)
-        ## should be equiv, make a ut
+        # # should be equiv, make a ut
         # coef = self.pca_basis.expand_from_image_basis(self.src.images(0, self.src.n))
 
         # Legacy code included a sanity check:
-        non_zero_freqs = self.pca_basis.complex_angular_indices != 0
+        # non_zero_freqs = self.pca_basis.complex_angular_indices != 0
         # coef_norm = np.log(np.power(np.abs(coef[:,non_zero_freqs]), self.alpha)).all())
         # just stick to the paper (eq 20) for now , look at this more later.
         coef_normed = np.where(
@@ -171,7 +167,7 @@ class RIRClass2D(Class2D):
         if not np.isfinite(coef_normed).all():
             raise ValueError("Coefs should be finite")
 
-        ### Compute and reduce Bispectrum
+        # ## Compute and reduce Bispectrum
 
         m = np.power(self.pca_basis.eigvals, self.alpha)
         m = m[
@@ -188,8 +184,8 @@ class RIRClass2D(Class2D):
                 coef_normed[i], filter_nonzero_freqs=True
             )
 
-            #### Truncate Bispectrum (by sampling)
-            #### Note, where is this written down? (and is it even needed?
+            # ### Truncate Bispectrum (by sampling)
+            # ### Note, where is this written down? (and is it even needed?
             B = B[m_mask][:, m_mask]
             logger.info(f"Truncating Bispectrum to {B.shape} ({np.size(B)}) coefs.")
 
@@ -208,7 +204,7 @@ class RIRClass2D(Class2D):
                 M = np.empty((self.src.n, B.shape[0]), dtype=coef.dtype)
             M[i] = B
 
-        ### Reduce dimensionality of Bispectrum sample with PCA
+        # ## Reduce dimensionality of Bispectrum sample with PCA
         logger.info(
             f"Computing PCA, returning {self.bispectrum_componenents} components."
         )
@@ -220,28 +216,29 @@ class RIRClass2D(Class2D):
         # import matplotlib.pyplot as plt
         # plt.semilogy(s)
         # plt.show()
-        ## Contruct coefficients
+        # # Contruct coefficients
         coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
         coef_b_r = np.conjugate(u.T).dot(np.conjugate(M))
 
         # normalize
         coef_b /= np.linalg.norm(coef_b, axis=0)
         coef_b_r /= np.linalg.norm(coef_b_r, axis=0)
-        print(coef_b)
-        print(coef_b_r)
-        import matplotlib.pyplot as plt
+        # print(coef_b)
+        # print(coef_b_r)
 
+        # import matplotlib.pyplot as plt
         # plt.imshow(np.abs(coef_b))
         # plt.show()
         # plt.imshow(np.abs(coef_b_r))
         # plt.show()
-        ## stage 2: Compute Nearest Neighbors
+
+        # # Stage 2: Compute Nearest Neighbors
         classes, corr = self.nn_classification(coef_b, coef_b_r)
-        print(classes)
+        # print(classes)
         np.save(f"classes_raw_res{self.fb_basis.nres}_nimg{self.src.n}.npy", classes)
         np.save(f"corr_raw_res{self.fb_basis.nres}_nimg{self.src.n}.npy", corr)
 
-        ## Stage 3: Align
+        # # Stage 3: Align
 
         # translate some variables between this code and the legacy aspire aspire implementation (just trying to figure out of the old code ran...).
         freqs = self.pca_basis.complex_angular_indices
@@ -249,7 +246,7 @@ class RIRClass2D(Class2D):
         n_im = self.src.n
         n_nbor = self.n_nbor
 
-        ### COPIED FROM LEGACY CODE:
+        # ## COPIED FROM LEGACY CODE:
         # del coeff_b, concat_coeff
         max_freq = np.max(freqs)
         cell_coeff = []
@@ -277,9 +274,13 @@ class RIRClass2D(Class2D):
             classes[i] = classes[i, id_corr[i]]
             rot[i] = rot[i, id_corr[i]]
 
-        class_refl = np.ceil((classes + 1.0) / n_im).astype("int")
+        # gbw, class_refl = np.ceil((classes + 1.0) / n_im).astype("int")
+        # gbw, prefer bool
+        class_refl = ((classes + 1) // n_im).astype(bool)
         classes[classes >= n_im] = classes[classes >= n_im] - n_im
-        rot[class_refl == 2] = np.mod(rot[class_refl == 2] + 180, 360)
+        # gbw rot[class_refl == 2] = np.mod(rot[class_refl == 2] + 180, 360)
+        rot[class_refl] = np.mod(rot[class_refl] + 180, 360)
+        rot *= np.pi / 180.0  # gbw, radians
         return classes, class_refl, rot, corr, 0
 
     def nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
@@ -297,7 +298,7 @@ class RIRClass2D(Class2D):
 
         # concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=0)
         concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=1)
-        print(concat_coeff.shape)
+        # print(concat_coeff.shape)
 
         num_batches = (
             n_im + batch_size - 1
@@ -364,7 +365,7 @@ class RIRClass2D(Class2D):
 
         f = [h]
 
-        for i in range(num_iters):
+        for _ in range(num_iters):
             h = operator_transpose(h)
             h = operator(h)
             f.append(h)

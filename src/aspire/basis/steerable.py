@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 
 from aspire.basis import Basis
-from aspire.utils import complex_type, real_type
+from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -119,16 +119,31 @@ class SteerableBasis(Basis):
 
         return B
 
-    def rotate(self, complex_coef, radians):
+    def rotate(self, complex_coef, radians, refl=None):
         """
         Returns complex coefs rotated by `radians`.
 
         :param complex_coef: Basis coefs (in complex representation).
         :param radians: Rotation in radians.
+        :param refl: Optional reflect image (about y=x) (bool)
         :return: rotated (complex) coefs.
         """
 
-        ks = self.complex_angular_indices
-        rotated_coef = complex_coef * np.exp(-1j * ks * radians)
+        # Covert radians to a broadcastable shape
+        if isinstance(radians, np.ndarray):
+            len(radians) == len(complex_coef), f"{len(radians)} != {len(complex_coef)}"
+            radians = radians.reshape(-1, 1)
+        # else: radians can be a constant
 
-        return rotated_coef
+        ks = self.complex_angular_indices
+        assert len(ks) == complex_coef.shape[-1]
+
+        # refl
+        if refl is not None:
+            assert len(refl) == 1 or len(refl) == len(complex_coef)
+            # get the coefs corresponding to -ks , aka "ells"
+            complex_coef[refl] = np.conj(complex_coef[refl])
+
+        complex_coef[:] = complex_coef * np.exp(-1j * ks * radians)
+
+        return complex_coef

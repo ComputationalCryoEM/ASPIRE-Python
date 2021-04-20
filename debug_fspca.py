@@ -1,14 +1,13 @@
 import logging
 
-import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
-from tqdm import tqdm
 
-# from aspire.classification import RIRClass2D
-from aspire.basis import FBBasis2D, FFBBasis2D, FSPCABasis
+from aspire.basis import FFBBasis2D, FSPCABasis
 from aspire.image import Image
-from aspire.source import ArrayImageSource, Simulation
+
+# from aspire.source import ArrayImageSource
+from aspire.source import Simulation
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -35,9 +34,9 @@ v = Volume(fh.data.astype(DTYPE))
 v = v.downsample((RESOLUTION,) * 3)
 src = Simulation(L=v.resolution, n=NUMBER_OF_TEST_IMAGES, vols=v, dtype=DTYPE)
 
-### Trivial rotation for testing invariance
+# ## Trivial rotation for testing invariance
 # img = src.images(0,NUMBER_OF_TEST_IMAGES)
-#####img.data = np.transpose(img.data, (0,2,1))
+# ####img.data = np.transpose(img.data, (0,2,1))
 # img.data = img.data[:, ::-1, ::-1] # 180
 # img.data = np.rot90(img.data, axes=(1,2)) # 90
 # src = ArrayImageSource(img)

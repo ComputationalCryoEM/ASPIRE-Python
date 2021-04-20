@@ -3,7 +3,6 @@ import logging
 import numpy as np
 from numpy import pi
 from scipy.special import jv
-from tqdm import tqdm
 
 from aspire.basis import FBBasis2D
 from aspire.basis.basis_utils import lgwt

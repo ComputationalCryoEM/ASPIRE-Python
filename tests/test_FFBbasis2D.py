@@ -1,10 +1,14 @@
 import os.path
 from unittest import TestCase
 
+import mrcfile
 import numpy as np
 
 from aspire.basis import FFBBasis2D
+from aspire.image import Image
+from aspire.source import Simulation
 from aspire.utils import utest_tolerance
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -252,3 +256,60 @@ class FFBBasis2DTestCase(TestCase):
                 atol=utest_tolerance(self.dtype),
             )
         )
+
+    def testRotate(self):
+        # hack for now, low res had problems doing basic stuff... ugh.
+        fh = mrcfile.open("tutorials/data/clean70SRibosome_vol_65p.mrc")
+        v = Volume(fh.data.astype(np.float64))
+        v = v.downsample((64,) * 3)
+        src = Simulation(L=v.resolution, n=3, vols=v, dtype=v.dtype)
+        x1 = src.images(0, 1)
+
+        # Rotate in cartesion
+        x2 = Image(np.rot90(x1.asnumpy(), axes=(1, 2)))
+
+        # Express in an FB basis
+        basis = FFBBasis2D((v.resolution,) * 2, dtype=x1.dtype)
+        v1 = basis.evaluate_t(x1)
+        v2 = basis.evaluate_t(x2)
+        v3 = basis.evaluate_t(x1)
+        v4 = basis.evaluate_t(x1)
+
+        # Rotate in FB basis:
+        v3 = basis.rotate(v1, 2 * np.pi)
+        v1 = basis.rotate(v1, -np.pi / 2)
+
+        # Reflect in FB basis
+        v4 = basis.rotate(v1, 0, refl=[True])
+
+        # Evaluate back into cartesian
+        y1 = basis.evaluate(v1)
+        y2 = basis.evaluate(v2)
+        y3 = basis.evaluate(v3)
+        y4 = basis.evaluate(v4)
+
+        # import matplotlib.pyplot as plt
+        # plt.imshow(x1[0])
+        # plt.show()
+        # plt.imshow(y1[0])
+        # plt.show()
+        # plt.imshow(y2[0])
+        # plt.show()
+        # plt.imshow(y1[0]-y2[0])
+        # plt.show()
+        # plt.imshow(y3[0])
+        # plt.show()
+        # plt.imshow(y3[0]-x1)
+        # plt.show()
+
+        # plt.imshow(y4[0])
+        # plt.show()
+
+        # 90
+        self.assertTrue(np.allclose(y1[0], y2[0], atol=1e-4))
+
+        # 2*pi
+        self.assertTrue(np.allclose(x1[0], y3[0], atol=utest_tolerance(self.dtype)))
+
+        # refl
+        self.assertTrue(np.allclose(x1[0].T, y4[0], atol=1e-4))

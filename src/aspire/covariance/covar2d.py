@@ -294,7 +294,6 @@ class RotCov2D:
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
             covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
-            print("xxx", ctf_fb_k_t.dtype, covar_coeff_k.dtype, ctf_fb_k.dtype)
             b_coeff += weight * (ctf_fb_k_t @ covar_coeff_k @ ctf_fb_k)
 
             ctf_fb_k_sq = ctf_fb_k_t @ ctf_fb_k
