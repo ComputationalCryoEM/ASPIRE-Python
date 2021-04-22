@@ -64,7 +64,7 @@ class CtfEstimator:
 
         rb = np.sqrt(np.square(X) + np.square(Y))
 
-        self.r_ctf = rb * (10 / pixel_size)
+        self.r_ctf = rb * (10 / pixel_size) # units: inverse nm
         self.theta = np.arctan2(Y, X)
         self.defocus1 = 0
         self.defocus2 = 0
