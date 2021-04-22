@@ -385,7 +385,7 @@ class CtfEstimator:
 
         rb = np.sqrt(np.square(X) + np.square(Y))
         rb = rb[center, center:]
-        r_ctf = rb * (10 / pixel_size) # units: inverse nm
+        r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
         signal = thon_rings
         signal = np.maximum(0.0, signal)
@@ -593,79 +593,50 @@ class CtfEstimator:
 
         # for iter_no in range(0, 399):
         while np.maximum(np.maximum(dx, dy), dz) > stop_cond:
-            inner_cosine = np.multiply(y, np.cos(2 * theta)) + np.multiply(
-                z, np.sin(2 * theta)
-            )
-            outer_sine = np.sin(np.multiply(a, x) + np.multiply(a, inner_cosine) - b)
-            outer_cosine = np.cos(np.multiply(a, x) + np.multiply(a, inner_cosine) - b)
+            inner_cosine = y * np.cos(2 * theta) + z * np.sin(2 * theta)
+            psi = a * x + a * inner_cosine - b
+            outer_sine = np.sin(psi)
+            outer_cosine = np.cos(psi)
 
             sine_x_term = a
-            sine_y_term = np.multiply(a, np.cos(2 * theta))
-            sine_z_term = np.multiply(a, np.sin(2 * theta))
+            sine_y_term = a * np.cos(2 * theta)
+            sine_z_term = a * np.sin(2 * theta)
 
-            c1 = np.sum(np.multiply(np.abs(outer_sine), signal))
-            c2 = np.sqrt(np.multiply(sum_A, np.sum(np.power(outer_sine, 2))))
+            c1 = np.sum(np.abs(outer_sine) * signal)
+            c2 = np.sqrt(sum_A * np.sum(outer_sine ** 2))
 
             # gradients of numerator
-            dx_c1 = np.sum(
-                np.multiply(
-                    np.multiply(np.multiply(np.sign(outer_sine), outer_cosine), a),
-                    signal,
-                )
-            )
+            dx_c1 = np.sum(np.sign(outer_sine) * outer_cosine * a * signal)
+
             dy_c1 = np.sum(
-                np.multiply(
-                    np.multiply(
-                        np.multiply(np.multiply(np.sign(outer_sine), outer_cosine), a),
-                        np.cos(2 * theta),
-                    ),
-                    signal,
-                )
+                np.sign(outer_sine) * outer_cosine * a * np.cos(2 * theta) * signal
             )
             dz_c1 = np.sum(
-                np.multiply(
-                    np.multiply(
-                        np.multiply(np.multiply(np.sign(outer_sine), outer_cosine), a),
-                        np.sin(2 * theta),
-                    ),
-                    signal,
-                )
+                np.sign(outer_sine) * outer_cosine * a * np.sin(2 * theta) * signal
             )
 
-            derivative_sqrt = np.divide(
-                1, 2 * np.sqrt(np.multiply(sum_A, np.sum(np.power(outer_sine, 2))))
-            )
-            derivative_sine2 = 2 * np.multiply(outer_sine, outer_cosine)
+            derivative_sqrt = 1 / (2 * np.sqrt(sum_A * np.sum(outer_sine ** 2)))
+
+            derivative_sine2 = 2 * outer_sine * outer_cosine
 
             #  gradients of denomenator
-            dx_c2 = np.multiply(
-                derivative_sqrt,
-                np.multiply(sum_A, np.sum(np.multiply(derivative_sine2, sine_x_term))),
-            )
-            dy_c2 = np.multiply(
-                derivative_sqrt,
-                np.multiply(sum_A, np.sum(np.multiply(derivative_sine2, sine_y_term))),
-            )
-            dz_c2 = np.multiply(
-                derivative_sqrt,
-                np.multiply(sum_A, np.sum(np.multiply(derivative_sine2, sine_z_term))),
-            )
+            dx_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_x_term)
+
+            dy_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_y_term)
+
+            dz_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_z_term)
 
             # gradients
-            dx = np.divide(
-                np.multiply(dx_c1, c2) - np.multiply(dx_c2, c1), np.power(c2, 2)
-            )
-            dy = np.divide(
-                np.multiply(dy_c1, c2) - np.multiply(dy_c2, c1), np.power(c2, 2)
-            )
-            dz = np.divide(
-                np.multiply(dz_c1, c2) - np.multiply(dz_c2, c1), np.power(c2, 2)
-            )
+            dx = (dx_c1 * c2 - dx_c2 * c1) / np.power(c2, 2)
+
+            dy = (dy_c1 * c2 - dy_c2 * c1) / np.power(c2, 2)
+
+            dz = (dz_c1 * c2 - dz_c2 * c1) / np.power(c2, 2)
 
             # update
-            x = x + np.multiply(alpha1, dx)
-            y = y + np.multiply(alpha2, dy)
-            z = z + np.multiply(alpha2, dz)
+            x = x + alpha1 * dx
+            y = y + alpha2 * dy
+            z = z + alpha2 * dz
 
             if iter_no < 2:
                 stop_cond = np.minimum(np.minimum(dx, dy), dz) / 1000
@@ -675,24 +646,22 @@ class CtfEstimator:
 
             iter_no = iter_no + 1
 
-        df1 = np.divide(x + np.abs(y + z * 1j), 2)
-        df2 = np.divide(x - np.abs(y + z * 1j), 2)
+        df1 = (x + np.abs(y + z * 1j)) / 2
+        df2 = (x - np.abs(y + z * 1j)) / 2
         angle_ast = np.angle(y + z * 1j) / 2
 
-        inner_cosine = np.multiply(y, np.cos(2 * theta)) + np.multiply(
-            z, np.sin(2 * theta)
-        )
-        outer_sine = np.sin(np.multiply(a, x) + np.multiply(a, inner_cosine) - b)
-        outer_cosine = np.cos(np.multiply(a, x) + np.multiply(a, inner_cosine) - b)
+        inner_cosine = y * np.cos(2 * theta) + z * np.sin(2 * theta)
+        outer_sine = np.sin(a * x + a * inner_cosine - b)
+        outer_cosine = np.cos(a * x + a * inner_cosine - b)
 
         sine_x_term = a
-        sine_y_term = np.multiply(a, np.cos(2 * theta))
-        sine_z_term = np.multiply(a, np.sin(2 * theta))
+        sine_y_term = a * np.cos(2 * theta)
+        sine_z_term = a * np.sin(2 * theta)
 
-        c1 = np.sum(np.multiply(np.abs(outer_sine), signal))
-        c2 = np.sqrt(np.multiply(sum_A, np.sum(np.power(outer_sine, 2))))
+        c1 = np.sum(np.abs(outer_sine) * signal)
+        c2 = np.sqrt(sum_A * np.sum(outer_sine ** 2))
 
-        p = np.divide(c1, c2)
+        p = c1 / c2
 
         return df1, df2, angle_ast, p
 
