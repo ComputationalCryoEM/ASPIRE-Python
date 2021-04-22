@@ -2,6 +2,8 @@ import logging
 
 import click
 
+# Overrides click.option with ASPIRE global defaults, see ./__init__.py
+import aspire.commands
 from aspire import ctf
 
 logger = logging.getLogger("aspire")
@@ -46,7 +48,7 @@ logger = logging.getLogger("aspire")
 @click.option(
     "--dtype",
     default="float32",
-    help="NumPy dtype to use in computation.  Example: 'float32' or 'float64'. defaults to 'float32'",
+    help="NumPy dtype to use in computation.  Example: 'float32' or 'float64'.",
 )
 def estimate_ctf(
     data_folder,
