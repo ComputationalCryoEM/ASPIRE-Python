@@ -20,7 +20,6 @@ def estimate_ctf(
     psd_size,
     g_min,
     g_max,
-    corr,
     output_dir,
     dtype=np.float32,
 ):
@@ -81,15 +80,15 @@ def estimate_ctf(
         )
 
         low_freq_skip = 12
-        if corr:
-            avg_defocus, low_freq_skip = ctf_object.opt1d(
-                signal_1d,
-                pixel_size,
-                cs,
-                lmbd,
-                amplitude_contrast,
-                signal_observed.shape[-1],
-            )
+
+        avg_defocus, low_freq_skip = ctf_object.opt1d(
+            signal_1d,
+            pixel_size,
+            cs,
+            lmbd,
+            amplitude_contrast,
+            signal_observed.shape[-1],
+        )
 
         signal, background_2d = ctf_object.background_subtract_2d(
             signal_observed, background_1d, low_freq_skip

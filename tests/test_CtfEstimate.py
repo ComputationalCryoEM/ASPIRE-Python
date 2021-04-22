@@ -52,7 +52,6 @@ class CtfEstimatorTestCase(TestCase):
                     psd_size=512,
                     g_min=30.0,
                     g_max=5.0,
-                    corr=1.0,
                     output_dir=tmp_output_dir,
                     dtype=np.float64,
                 )

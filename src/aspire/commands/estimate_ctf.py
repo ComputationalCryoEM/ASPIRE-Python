@@ -43,12 +43,6 @@ logger = logging.getLogger("aspire")
 @click.option(
     "--g_max", default=5, type=float, help="Inverse of maximum resolution for PSD"
 )
-@click.option("--corr", default=1, type=float, help="Select method")
-@click.option(
-    "--output_dir",
-    default="results",
-    help="Path to output files, defaults to './results'",
-)
 @click.option(
     "--dtype",
     default="float32",
@@ -64,7 +58,6 @@ def estimate_ctf(
     psd_size,
     g_min,
     g_max,
-    corr,
     output_dir,
     dtype,
 ):
@@ -85,7 +78,6 @@ def estimate_ctf(
         psd_size,
         g_min,
         g_max,
-        corr,
         output_dir,
         dtype,
     )
