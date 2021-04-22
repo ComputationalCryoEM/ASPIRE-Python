@@ -316,17 +316,16 @@ class CtfEstimator:
                 (-1 * np.eye(N), np.eye(N)), axis=1
             )
 
-            monotone_condition = np.zeros((N, N))
-            monotone_condition[np.arange(N - 1), np.arange(N - 1)] = -1
-            monotone_condition[np.arange(N - 1), np.arange(1, N)] = 1
-            monotone_condition = np.concatenate(
-                (np.zeros((N, N)), monotone_condition), axis=1
+            monotone_condition = np.diag(np.full((N - 1), -1), -1) + np.diag(
+                np.ones(N), 0
             )
+            monotone_condition = monotone_condition[1:]
 
-            convex_condition = np.zeros((N, N))
-            convex_condition[np.arange(N - 2), np.arange(N - 2)] = -1
-            convex_condition[np.arange(N - 2), np.arange(1, N - 1)] = 2
-            convex_condition[np.arange(N - 2), np.arange(2, N)] = -1
+            convex_condition = (
+                np.diag(np.full((N - 1), -1), -1)
+                + np.diag(np.full(N, 2), 0)
+                + np.diag(np.full((N - 1), -1), 1)
+            )
             convex_condition = np.concatenate(
                 (np.zeros((N, N)), convex_condition), axis=1
             )
