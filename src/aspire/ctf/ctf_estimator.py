@@ -385,7 +385,7 @@ class CtfEstimator:
 
         rb = np.sqrt(np.square(X) + np.square(Y))
         rb = rb[center, center:]
-        r_ctf = rb * (10 / pixel_size)
+        r_ctf = rb * (10 / pixel_size) # units: inverse nm
 
         signal = thon_rings
         signal = np.maximum(0.0, signal)
