@@ -362,7 +362,9 @@ class CtfEstimator:
 
         return final_signal, final_background
 
-    def opt1d(self, thon_rings, pixel_size, cs, lmbd, w, N, min_defocus=500, max_defocus=10000):
+    def opt1d(
+        self, thon_rings, pixel_size, cs, lmbd, w, N, min_defocus=500, max_defocus=10000
+    ):
         """
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
@@ -414,7 +416,9 @@ class CtfEstimator:
 
             Sx = np.sqrt(np.sum(np.square(ctf_im), axis=0))
             Sy = np.sqrt(np.sum(np.square(signal), axis=0))
-            c[f - min_defocus, :] = np.sum(np.multiply(ctf_im, signal), axis=0) / (Sx * Sy)
+            c[f - min_defocus, :] = np.sum(np.multiply(ctf_im, signal), axis=0) / (
+                Sx * Sy
+            )
 
         max_c = np.argmax(c)
         arr_max = np.unravel_index(max_c, c.shape)
