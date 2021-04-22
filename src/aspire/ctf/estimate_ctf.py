@@ -61,7 +61,7 @@ def estimate_ctf(
         # Try to match dtype used in Basis instance
         micrograph = micrograph.astype(dtype, copy=False)
 
-        micrograph_blocks = ctf_object.preprocess(micrograph, psd_size)
+        micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
 
         tapers_1d = ctf_object.tapers(psd_size, (2 * num_tapers) / psd_size, num_tapers)
 

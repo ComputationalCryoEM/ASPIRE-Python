@@ -64,7 +64,7 @@ class CtfEstimator:
 
         rb = np.sqrt(np.square(X) + np.square(Y))
 
-        self.r_ctf = rb * (10 / pixel_size) # units: inverse nm
+        self.r_ctf = rb * (10 / pixel_size)  # units: inverse nm
         self.theta = np.arctan2(Y, X)
         self.defocus1 = 0
         self.defocus2 = 0
@@ -136,9 +136,9 @@ class CtfEstimator:
         h = -np.sin(chi)
         self.h = h
 
-    def preprocess(self, micrograph, block_size):
+    def micrograph_to_blocks(self, micrograph, block_size):
         """
-        Preprocess CTF of micrograph using block_size.
+        Preprocess micrograph into blocks using block_size.
 
         :param micrograph: Micrograph as NumPy array. #NOTE looks like F order
         :param blocksize: Size of the square blocks to partition micrograph.
@@ -162,16 +162,39 @@ class CtfEstimator:
             for j in range(range_y)
             for i in range(range_x)
         ]
-        block = np.asarray(block_list, dtype=micrograph.dtype)
+        blocks = np.asarray(block_list, dtype=micrograph.dtype)
+
+        return blocks
+
+    def normalize_blocks(self, blocks):
+        """
+        Preprocess CTF of micrograph using block_size.
+
+        :param blocks: NumPy array of blocks extracted from the micrograph.
+        :return: NumPy array of normalized blocks.
+        """
+
+        # Take block size from blocks
+        block_size = blocks.shape[1]
+        assert block_size == blocks.shape[2]
 
         # Create a sum and reshape so it may be broadcast with `block`.
-        block_sum = np.sum(block, axis=(-1, -2))[:, np.newaxis, np.newaxis]
+        blocks_sum = np.sum(blocks, axis=(-1, -2))[:, np.newaxis, np.newaxis]
 
-        block = block - (
-            block_sum / (block_size ** 2)
-        )  # equals to the matlab version (11-7-19)
+        blocks -= blocks_sum / (block_size ** 2)
 
-        return block
+        return blocks
+
+    def preprocess_micrograph(self, micrograph, block_size):
+        """
+        Preprocess micrograph into normalized blocks using block_size.
+
+        :param micrograph: Micrograph as NumPy array. #NOTE looks like F order
+        :param blocksize: Size of the square blocks to partition micrograph.
+        :return: NumPy array of normalized blocks extracted from the micrograph.
+        """
+
+        return self.normalize_blocks(self.micrograph_to_blocks(micrograph, block_size))
 
     def tapers(self, N, R, L):
         """
