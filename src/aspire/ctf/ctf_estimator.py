@@ -374,7 +374,7 @@ class CtfEstimator:
         :param lmbd: Electron wavelength.
         :param w: Amplitude contrast.
         :param N: Number of rows (or columns) in the estimate power spectrum.
-        :return: 2-tuple of NumPy arrays (Estimated average of defocus and an internal variable)
+        :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
         """
 
         center = N // 2
@@ -420,12 +420,10 @@ class CtfEstimator:
                 Sx * Sy
             )
 
-        max_c = np.argmax(c)
-        arr_max = np.unravel_index(max_c, c.shape)
-        avg_defocus = arr_max[0] + min_defocus
-        max_col = arr_max[1]
+        avg_defocus, low_freq_cutoff = np.unravel_index(np.argmax(c), c.shape)[:2]
+        avg_defocus += min_defocus
 
-        return avg_defocus, max_col
+        return avg_defocus, low_freq_cutoff
 
     def background_subtract_2d(self, signal, background_p1, max_col):
         """
