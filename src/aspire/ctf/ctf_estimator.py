@@ -286,12 +286,15 @@ class CtfEstimator:
 
         return psd, noise
 
-    def background_subtract_1d(self, thon_rings, linprog_method="interior-point"):
+    def background_subtract_1d(
+        self, thon_rings, linprog_method="interior-point", n_low_freq_cutoffs=14
+    ):
         """
         Estimate and subtract the background from the power spectrum
 
         :param thon_rings: Estimated power spectrum
         :param linprog_method: Method passed to linear progam solver (scipy.optimize.linprog).  Defaults to 'interior-point'.
+        :param n_low_freq_cutoffs: Low frequency cutoffs (loop iterations).
         :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
 
@@ -305,10 +308,10 @@ class CtfEstimator:
         final_signal = np.zeros((thon_rings.shape[-1], 13), dtype=self.dtype)
         final_background = np.ones((thon_rings.shape[-1], 13), dtype=self.dtype)
 
-        for m in range(1, 14):
-            signal = thon_rings[..., m:]
+        for low_freq_cutoff in range(1, n_low_freq_cutoffs):
+            signal = thon_rings[..., low_freq_cutoff:]
             signal = np.ravel(signal)
-            N = thon_rings.shape[-1] - m
+            N = thon_rings.shape[-1] - low_freq_cutoff
 
             f = np.concatenate((np.ones(N), -1 * np.ones(N)), axis=0)
 
@@ -357,8 +360,9 @@ class CtfEstimator:
 
             bs_psd = signal - background
 
-            final_signal[m:, m - 1] = bs_psd
-            final_background[m:, m - 1] = background  # difference: 10^-7 (absolute)
+            final_signal[low_freq_cutoff:, low_freq_cutoff - 1] = bs_psd
+            # expected difference: 10^-7 (absolute)
+            final_background[low_freq_cutoff:, low_freq_cutoff - 1] = background
 
         return final_signal, final_background
 
@@ -374,6 +378,8 @@ class CtfEstimator:
         :param lmbd: Electron wavelength.
         :param w: Amplitude contrast.
         :param N: Number of rows (or columns) in the estimate power spectrum.
+        :param min_defocus: Start of defocus loop scan.
+        :param max_defocus: End of defocus loop scan.
         :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
         """
 
