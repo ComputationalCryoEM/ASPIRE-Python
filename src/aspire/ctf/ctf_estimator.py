@@ -207,8 +207,10 @@ class CtfEstimator:
         :return: NumPy array of data tapers
         """
 
-        k, el = np.meshgrid(
-            np.arange(N, dtype=self.dtype), np.arange(N, dtype=self.dtype)
+        grid = grid_2d(N, normalized=False, dtype=self.dtype)
+        k, el = (
+            grid["x"].T / 2,
+            grid["y"].T / 2,
         )
 
         denom = np.pi * (k - el)
@@ -393,12 +395,9 @@ class CtfEstimator:
         """
 
         center = N // 2
-        [X, Y] = np.meshgrid(
-            np.arange(0 - center, N - center, dtype=self.dtype) / N,
-            np.arange(0 - center, N - center, dtype=self.dtype) / N,
-        )
+        grid = grid_2d(N, normalized=True, dtype=self.dtype)
 
-        rb = np.sqrt(np.square(X) + np.square(Y))
+        rb = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"])).T
         rb = rb[center, center:]
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
@@ -455,12 +454,9 @@ class CtfEstimator:
         # background_p1 is still np array in old ordering for now.
 
         N = signal.shape[0]
-        center = N // 2
-        [X, Y] = np.meshgrid(
-            np.arange(0 - center, N - center, dtype=self.dtype),
-            np.arange(0 - center, N - center, dtype=self.dtype),
-        )
-        radii = np.sqrt(X ** 2 + Y ** 2)
+        grid = grid_2d(N, normalized=False, dtype=self.dtype)
+
+        radii = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
 
         background = np.zeros(signal.shape, dtype=self.dtype)
         background_p1 = background_p1[:, max_col]
@@ -489,14 +485,15 @@ class CtfEstimator:
 
         N = signal.shape[0]
         center = N // 2
-        [X, Y] = np.meshgrid(
-            np.arange(0 - center, N - center) / N, np.arange(0 - center, N - center) / N
-        )
 
-        rb = np.sqrt(np.square(X) + np.square(Y))
+        grid = grid_2d(N, normalized=True, dtype=self.dtype)
+        rb = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
+
         r_ctf = rb * (10 / pixel_size)
 
-        [X, Y] = np.meshgrid(np.arange(-center, center), np.arange(-center, center))
+        grid = grid_2d(N, normalized=False, dtype=self.dtype)
+        X = grid["x"].T
+        Y = grid["y"].T
 
         signal -= np.min(signal)
 
@@ -805,15 +802,11 @@ def estimate_ctf(
         initial_df1 = (avg_defocus * 2) / (1 + ratio)
         initial_df2 = (avg_defocus * 2) - initial_df1
 
-        center = psd_size // 2
-        [X, Y] = np.meshgrid(
-            np.arange(0 - center, psd_size - center) / psd_size,
-            np.arange(0 - center, psd_size - center) / psd_size,
-        )
+        grid = grid_2d(psd_size, normalized=True, dtype=dtype)
 
-        rb = np.sqrt(np.square(X) + np.square(Y))
+        rb = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
         r_ctf = rb * (10 / pixel_size)
-        theta = np.arctan2(Y, X)
+        theta = grid["phi"].T
 
         angle = -75
         cc_array = np.zeros((6, 4))
