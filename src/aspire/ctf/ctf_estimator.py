@@ -12,12 +12,13 @@ import mrcfile
 import numpy as np
 from numpy import linalg as npla
 from scipy.optimize import linprog
+from scipy.signal.windows import dpss
 
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.image import Image
 from aspire.numeric import fft
 from aspire.operators import voltage_to_wavelength
-from aspire.utils import abs2, complex_type, eigs
+from aspire.utils import abs2, complex_type
 from aspire.utils.coor_trans import grid_2d
 
 logger = logging.getLogger(__name__)
@@ -207,20 +208,12 @@ class CtfEstimator:
         :return: NumPy array of data tapers
         """
 
-        grid = grid_2d(N, normalized=False, dtype=self.dtype)
-        k, el = (
-            grid["x"].T / 2,
-            grid["y"].T / 2,
-        )
+        # Scipy dpss expect Half Bandwidth which I found by experimentation to be:
+        NW = N * R / 4
+        # see: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.dpss.html
 
-        denom = np.pi * (k - el)
-        denom = denom + np.eye(N, dtype=self.dtype)
-        phi_R = np.divide(np.sin(np.pi * R * (k - el)), denom)
-        np.fill_diagonal(phi_R, 1)  # absolute difference from Matlab 10^-18
-
-        data_tapers, _ = eigs(phi_R, L)
-
-        return data_tapers
+        # Note the Scipy implementation is negated from original ASPIRE...
+        return -1 * dpss(M=N, NW=NW, Kmax=L, return_ratios=False).T
 
     def estimate_psd(self, blocks, tapers_1d, num_1d_tapers):
         """
