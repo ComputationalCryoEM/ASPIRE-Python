@@ -626,16 +626,12 @@ class CtfEstimator:
 
             #  gradients of denomenator
             dx_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_x_term)
-
             dy_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_y_term)
-
             dz_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_z_term)
 
             # gradients
             dx = (dx_c1 * c2 - dx_c2 * c1) / np.power(c2, 2)
-
             dy = (dy_c1 * c2 - dy_c2 * c1) / np.power(c2, 2)
-
             dz = (dz_c1 * c2 - dz_c2 * c1) / np.power(c2, 2)
 
             # update
@@ -669,32 +665,6 @@ class CtfEstimator:
         p = c1 / c2
 
         return df1, df2, angle_ast, p
-
-    def locate_minima(self, signal):
-        """
-        Find zero-crossings of power spectrum.
-
-        :param signal: Estimated power spectrum
-        :return: array of zero-crossings indices.
-        """
-
-        N = signal.shape[0]
-
-        derivatives = np.zeros((8, signal.shape[0], signal.shape[1]))
-        derivatives[0, 1:, :] = signal[: N - 1, :] - signal
-        derivatives[1, : N - 1, :] = signal[1:, :] - signal
-        derivatives[2, :, 1:] = signal[:, 1:] - signal
-        derivatives[3, :, : N - 1] = signal[:, 1:] - signal
-        derivatives[4, 1:, 1:] = signal[: N - 1, : N - 1] - signal
-        derivatives[5, 1:, : N - 1] = signal[: N - 1, 1:] - signal
-        derivatives[6, : N - 1, 1:] = signal[1:, : N - 1] - signal
-        derivatives[7, : N - 1, : N - 1] = signal[1:, 1:] - signal
-
-        derivative_sign = np.where(derivatives >= 0, 1, 0)
-        objective = np.sum(derivative_sign, axis=-1)
-        zero_cross_map = np.where(objective >= 6, 1, 0)
-
-        return zero_cross_map
 
     # Note, This doesn't actually use anything from the class.
     # It is used in a solver loop of some sort, so it may not be correct
