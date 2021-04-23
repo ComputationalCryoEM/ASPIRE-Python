@@ -59,11 +59,14 @@ class CtfEstimator:
         self.lmbd = 10 * voltage_to_wavelength(voltage)
         self.dtype = np.dtype(dtype)
 
-        rb = np.sqrt(np.square(X) + np.square(Y))
+        grid = grid_2d(psd_size, normalized=True, dtype=self.dtype)
+
+        # Note this mesh for x,y is transposed, and range is -half to half.
+        rb = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
 
         self.r_ctf = rb * (10 / pixel_size)  # units: inverse nm
         # Note this mesh for theta is transposed.
-        self.theta = grid_2d(psd_size, normalized=True, dtype=self.dtype)["phi"].T
+        self.theta = grid["phi"].T
         self.defocus1 = 0
         self.defocus2 = 0
         self.angle = 0
