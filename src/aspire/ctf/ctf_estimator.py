@@ -198,33 +198,32 @@ class CtfEstimator:
 
         return self.normalize_blocks(self.micrograph_to_blocks(micrograph, block_size))
 
-    def tapers(self, N, R, L):
+    def tapers(self, N, NW, L):
         """
         Compute data tapers (which are discrete prolate spheroidal sequences (dpss))
 
+        Uses scipy implementation, see:
+            https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.dpss.html
+
         :param N: Size of each taper
-        :param R: Spectral resolution
+        :param NW: Half Bandwidth
         :param L: Number of tapers
         :return: NumPy array of data tapers
         """
 
-        # Scipy dpss expect Half Bandwidth which I found by experimentation to be:
-        NW = N * R / 4
-        # see: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.dpss.html
-
-        # Note the Scipy implementation is negated from original ASPIRE...
+        # Note the original ASPIRE implementation is negated from original scipy...
         return -1 * dpss(M=N, NW=NW, Kmax=L, return_ratios=False).T
 
-    def estimate_psd(self, blocks, tapers_1d, num_1d_tapers):
+    def estimate_psd(self, blocks, tapers_1d):
         """
         Estimate the power spectrum of the micrograph using the multi-taper method
 
         :param blocks: 3-D NumPy array containing windows extracted from the micrograph in the preprocess function.
         :param tapers_1d: NumPy array of data tapers.
-        :param num_1d_tapers: number of 1-D data tapers
         :return: NumPy array of estimated power spectrum.
         """
 
+        num_1d_tapers = tapers_1d.shape[-1]
         tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
 
         blocks_mt = np.zeros(blocks[0, :, :].shape, dtype=self.dtype)
@@ -756,11 +755,9 @@ def estimate_ctf(
 
         micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
 
-        tapers_1d = ctf_object.tapers(psd_size, (2 * num_tapers) / psd_size, num_tapers)
+        tapers_1d = ctf_object.tapers(psd_size, num_tapers / 2, num_tapers)
 
-        signal_observed = ctf_object.estimate_psd(
-            micrograph_blocks, tapers_1d, num_tapers
-        )
+        signal_observed = ctf_object.estimate_psd(micrograph_blocks, tapers_1d)
 
         thon_rings, _ = ctf_object.elliptical_average(
             ffbbasis, signal_observed, True
