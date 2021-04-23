@@ -234,16 +234,18 @@ class CtfEstimator:
             (blocks.shape[1], blocks.shape[2]), dtype=complex_type(self.dtype)
         )
 
-        for x in range(num_1d_tapers ** 2):
-            np.matmul(
-                np.reshape(tapers_1d[:, x // num_1d_tapers], (tapers_1d.shape[0], 1)),
-                np.reshape(tapers_1d[:, x % num_1d_tapers], (1, tapers_1d.shape[0])),
-                out=taper_2d,
-            )
-            for m in range(blocks.shape[0]):
-                np.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
-                blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
-                blocks_mt += abs2(blocks_mt_post_fft)
+        for ax1 in range(num_1d_tapers):
+            for ax2 in range(num_1d_tapers):
+                np.matmul(
+                    tapers_1d[:, ax1, np.newaxis],
+                    tapers_1d[:, ax2, np.newaxis].T,
+                    out=taper_2d,
+                )
+
+                for m in range(blocks.shape[0]):
+                    np.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
+                    blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
+                    blocks_mt += abs2(blocks_mt_post_fft)
 
         blocks_mt /= blocks.shape[0] ** 2
         blocks_mt /= tapers_1d.shape[0] ** 2
