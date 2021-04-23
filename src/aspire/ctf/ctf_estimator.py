@@ -302,15 +302,23 @@ class CtfEstimator:
         # compute radial average
         center = thon_rings.shape[-1] // 2
 
-        thon_rings = thon_rings[..., center, center:]
+        if thon_rings.ndim == 3:
+            if thon_rings.shape[0] != 1:
+                raise ValueError(
+                    f"Invalid dimension 0 for thon_rings {thon_rings.shape}"
+                )
+            thon_rings = thon_rings[0]
+        elif thon_rings.ndim > 3:
+            raise ValueError(f"Invalid ndimension for thon_rings {thon_rings.shape}")
 
-        thon_rings = thon_rings[..., 0 : 3 * thon_rings.shape[-1] // 4]
+        thon_rings = thon_rings[center, center:]
+        thon_rings = thon_rings[0 : 3 * thon_rings.shape[-1] // 4]
 
         final_signal = np.zeros((thon_rings.shape[-1], 13), dtype=self.dtype)
         final_background = np.ones((thon_rings.shape[-1], 13), dtype=self.dtype)
 
         for low_freq_cutoff in range(1, n_low_freq_cutoffs):
-            signal = thon_rings[..., low_freq_cutoff:]
+            signal = thon_rings[low_freq_cutoff:]
             signal = np.ravel(signal)
             N = thon_rings.shape[-1] - low_freq_cutoff
 
