@@ -317,10 +317,10 @@ class CtfEstimator:
         thon_rings = thon_rings[0 : 3 * thon_rings.shape[-1] // 4]
 
         final_signal = np.zeros(
-            (thon_rings.shape[-1], n_low_freq_cutoffs - 1), dtype=self.dtype
+            (n_low_freq_cutoffs - 1, thon_rings.shape[-1]), dtype=self.dtype
         )
         final_background = np.ones(
-            (thon_rings.shape[-1], n_low_freq_cutoffs - 1), dtype=self.dtype
+            (n_low_freq_cutoffs - 1, thon_rings.shape[-1]), dtype=self.dtype
         )
 
         for low_freq_cutoff in range(1, n_low_freq_cutoffs):
@@ -375,9 +375,9 @@ class CtfEstimator:
 
             bs_psd = signal - background
 
-            final_signal[low_freq_cutoff:, low_freq_cutoff - 1] = bs_psd
+            final_signal[low_freq_cutoff - 1, low_freq_cutoff:] = bs_psd.T
             # expected difference: 10^-7 (absolute)
-            final_background[low_freq_cutoff:, low_freq_cutoff - 1] = background
+            final_background[low_freq_cutoff - 1, low_freq_cutoff:] = background.T
 
         return final_signal, final_background
 
@@ -405,7 +405,7 @@ class CtfEstimator:
         rb = rb[center, center:]
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
-        signal = thon_rings
+        signal = thon_rings.T
         signal = np.maximum(0.0, signal)
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
@@ -455,7 +455,6 @@ class CtfEstimator:
 
         # RCOPT
         signal = signal.asnumpy().T
-        # background_p1 is still np array in old ordering for now.
 
         N = signal.shape[0]
         grid = grid_2d(N, normalized=False, dtype=self.dtype)
@@ -463,7 +462,7 @@ class CtfEstimator:
         radii = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
 
         background = np.zeros(signal.shape, dtype=self.dtype)
-        background_p1 = background_p1[:, max_col]
+        background_p1 = background_p1[max_col, :]
         for r in range(background_p1.shape[0] - 1, 0, -1):
             background[radii <= r + 1] = background_p1[r]
         mask = radii <= max_col + 2
@@ -780,8 +779,6 @@ def estimate_ctf(
             thon_rings, linprog_method="interior-point"
         )
 
-        low_freq_skip = 12
-
         avg_defocus, low_freq_skip = ctf_object.opt1d(
             signal_1d,
             pixel_size,
@@ -791,6 +788,7 @@ def estimate_ctf(
             signal_observed.shape[-1],
         )
 
+        low_freq_skip = 12
         signal, background_2d = ctf_object.background_subtract_2d(
             signal_observed, background_1d, low_freq_skip
         )
