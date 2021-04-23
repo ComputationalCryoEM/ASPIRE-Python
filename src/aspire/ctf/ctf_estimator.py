@@ -62,6 +62,7 @@ class CtfEstimator:
         rb = np.sqrt(np.square(X) + np.square(Y))
 
         self.r_ctf = rb * (10 / pixel_size)  # units: inverse nm
+        # Note this mesh for theta is transposed.
         self.theta = grid_2d(psd_size, normalized=True, dtype=self.dtype)["phi"].T
         self.defocus1 = 0
         self.defocus2 = 0
