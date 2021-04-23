@@ -18,6 +18,7 @@ from aspire.image import Image
 from aspire.numeric import fft
 from aspire.operators import voltage_to_wavelength
 from aspire.utils import abs2, complex_type, eigs
+from aspire.utils.coor_trans import grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -58,16 +59,10 @@ class CtfEstimator:
         self.lmbd = 10 * voltage_to_wavelength(voltage)
         self.dtype = np.dtype(dtype)
 
-        center = psd_size // 2
-        [X, Y] = np.meshgrid(
-            np.arange(0 - center, psd_size - center, dtype=self.dtype) / psd_size,
-            np.arange(0 - center, psd_size - center, dtype=self.dtype) / psd_size,
-        )
-
         rb = np.sqrt(np.square(X) + np.square(Y))
 
         self.r_ctf = rb * (10 / pixel_size)  # units: inverse nm
-        self.theta = np.arctan2(Y, X)
+        self.theta = grid_2d(psd_size, normalized=True, dtype=self.dtype)["phi"].T
         self.defocus1 = 0
         self.defocus2 = 0
         self.angle = 0
