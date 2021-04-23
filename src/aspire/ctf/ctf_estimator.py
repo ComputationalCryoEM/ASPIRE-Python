@@ -407,7 +407,7 @@ class CtfEstimator:
         signal = signal[: 3 * signal.shape[0] // 4]
 
         r_ctf_sq = np.square(r_ctf)
-        c = np.zeros((9500, 13), dtype=self.dtype)
+        c = np.zeros((9500, signal.shape[1]), dtype=self.dtype)
 
         for f in range(min_defocus, max_defocus):
             ctf_im = np.abs(
@@ -420,9 +420,9 @@ class CtfEstimator:
             ctf_im = ctf_im[: signal.shape[0]]
 
             ctf_im = np.reshape(ctf_im, (ctf_im.shape[0], 1))
-            ctf_im = np.tile(ctf_im, (1, 13))
+            ctf_im = np.tile(ctf_im, (1, signal.shape[1]))
 
-            for m in range(0, 13):
+            for m in range(0, signal.shape[1]):
                 signal[:, m] = signal[:, m] - np.mean(signal[m + 1 :, m], axis=0)
                 ctf_im[:, m] = ctf_im[:, m] - np.mean(ctf_im[m + 1 :, m], axis=0)
                 ctf_im[: m + 1, m] = np.zeros((m + 1))
