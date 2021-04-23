@@ -316,8 +316,12 @@ class CtfEstimator:
         thon_rings = thon_rings[center, center:]
         thon_rings = thon_rings[0 : 3 * thon_rings.shape[-1] // 4]
 
-        final_signal = np.zeros((thon_rings.shape[-1], 13), dtype=self.dtype)
-        final_background = np.ones((thon_rings.shape[-1], 13), dtype=self.dtype)
+        final_signal = np.zeros(
+            (thon_rings.shape[-1], n_low_freq_cutoffs - 1), dtype=self.dtype
+        )
+        final_background = np.ones(
+            (thon_rings.shape[-1], n_low_freq_cutoffs - 1), dtype=self.dtype
+        )
 
         for low_freq_cutoff in range(1, n_low_freq_cutoffs):
             signal = thon_rings[low_freq_cutoff:]
