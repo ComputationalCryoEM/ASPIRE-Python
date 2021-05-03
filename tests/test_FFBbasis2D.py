@@ -1,7 +1,6 @@
 import os.path
 from unittest import TestCase
 
-import mrcfile
 import numpy as np
 
 from aspire.basis import FFBBasis2D
@@ -258,34 +257,36 @@ class FFBBasis2DTestCase(TestCase):
         )
 
     def testRotate(self):
-        # hack for now, low res had problems doing basic stuff... ugh.
-        # fh = mrcfile.open("tutorials/data/clean70SRibosome_vol_65p.mrc")
-        fh = mrcfile.open(os.path.join(DATA_DIR, "sample.mrc"))
-        import matplotlib.pyplot as plt
-
-        plt.imshow(fh.data)
-        plt.show()
-        v = Volume(fh.data.astype(np.float64))
-        v = v.downsample((64,) * 3)
-        src = Simulation(L=v.resolution, n=3, vols=v, dtype=v.dtype)
+        # Now low res (8x8) had problems;
+        #  better with odd (7x7), but still not good.
+        # We'll use a higher res test image.
+        # fh = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy'))[:7,:7]
+        # Use a real data volume to generate a clean test image.
+        v = Volume(
+            np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
+                np.float64
+            )
+        )
+        src = Simulation(L=v.resolution, n=1, vols=v, dtype=v.dtype)
+        # Extract, this is the original image to transform.
         x1 = src.images(0, 1)
 
-        # Rotate in cartesion
+        # Rotate 90 degrees in cartesian coordinates.
         x2 = Image(np.rot90(x1.asnumpy(), axes=(1, 2)))
 
         # Express in an FB basis
-        basis = FFBBasis2D((v.resolution,) * 2, dtype=x1.dtype)
+        basis = FFBBasis2D((x1.res,) * 2, dtype=x1.dtype)
         v1 = basis.evaluate_t(x1)
         v2 = basis.evaluate_t(x2)
         v3 = basis.evaluate_t(x1)
         v4 = basis.evaluate_t(x1)
 
-        # Rotate in FB basis:
-        v3 = basis.rotate(v1, 2 * np.pi)
-        v1 = basis.rotate(v1, -np.pi / 2)
-
-        # Reflect in FB basis
+        # Reflect in the FB basis space
         v4 = basis.rotate(v1, 0, refl=[True])
+
+        # Rotate in the FB basis space
+        v1 = basis.rotate(v1, -np.pi / 2)
+        v3 = basis.rotate(v1, 2 * np.pi)
 
         # Evaluate back into cartesian
         y1 = basis.evaluate(v1)
@@ -293,28 +294,11 @@ class FFBBasis2DTestCase(TestCase):
         y3 = basis.evaluate(v3)
         y4 = basis.evaluate(v4)
 
-        # import matplotlib.pyplot as plt
-        # plt.imshow(x1[0])
-        # plt.show()
-        # plt.imshow(y1[0])
-        # plt.show()
-        # plt.imshow(y2[0])
-        # plt.show()
-        # plt.imshow(y1[0]-y2[0])
-        # plt.show()
-        # plt.imshow(y3[0])
-        # plt.show()
-        # plt.imshow(y3[0]-x1)
-        # plt.show()
-
-        # plt.imshow(y4[0])
-        # plt.show()
-
-        # 90
+        # Rotate 90
         self.assertTrue(np.allclose(y1[0], y2[0], atol=1e-4))
 
-        # 2*pi
+        # 2*pi Identity
         self.assertTrue(np.allclose(x1[0], y3[0], atol=utest_tolerance(self.dtype)))
 
-        # refl
-        self.assertTrue(np.allclose(x1[0].T, y4[0], atol=1e-4))
+        # Refl (flipped using flipud)
+        self.assertTrue(np.allclose(np.flipud(x1[0]), y4[0], atol=1e-4))

@@ -228,7 +228,6 @@ class RIRClass2D(Class2D):
         coef_b_r /= np.linalg.norm(coef_b_r, axis=0)
 
         # # Stage 2: Compute Nearest Neighbors
-        # classes, refl, corr = self.nn_classification(coef_b, coef_b_r)
         classes = self.nn_classification(coef_b, coef_b_r)
         # classes, _ = self.legacy_nn_classification(coef_b, coef_b_r)
 

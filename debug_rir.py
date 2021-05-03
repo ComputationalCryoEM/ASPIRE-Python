@@ -96,23 +96,22 @@ random_10 = Image(Orig[np.random.choice(src.n, 10)])
 logger.info("Classed Sample:")
 for c in range(5):
     # this was selecting just the non reflected neighbors and seemed reasonable
-    selection = class_refl[c] == False
-    neighbors = classes[c][selection][:10]  # not refl
+    # selection = class_refl[c] == False
+    # neighbors = classes[c][selection][:10]  # not refl
+    neighbors = classes[c][:10]  # not refl
 
-    # neighbors = classes[c][:10]  # not refl
     neighbors_img = Image(Orig[neighbors])
 
     # neighbors = classes[c][:10]
     # neighbors_img = Image(Orig[neighbors])
-    print("before rot & refl")
+    logger.info("before rot & refl")
     neighbors_img.show()
 
     co = basis.evaluate_t(neighbors_img)
-    print(f"Class {c} after rot/refl")
+    logger.info(f"Class {c} after rot/refl")
     # rco = basis.rotate(co, rot[c][:10])
-    rco = basis.rotate(co, rot[c][selection][:10])  # not refl
-    # rco = basis.rotate(co, rot[c][:10], class_refl[c][:10])
-    # rco = basis.rotate(co, 0, class_refl[c][:10])
+    # rco = basis.rotate(co, rot[c][selection][:10])  # not refl
+    rco = basis.rotate(co, rot[c][:10], class_refl[c][:10])
 
     rotated_neighbors_img = basis.evaluate(rco)
     rotated_neighbors_img.show()
