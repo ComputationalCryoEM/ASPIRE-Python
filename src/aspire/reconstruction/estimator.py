@@ -63,7 +63,7 @@ class Estimator:
         raise NotImplementedError("Subclasses must implement the compute_kernel method")
 
     def estimate(self, b_coeff=None, tol=None):
-        """ Return an estimate as a Volume instance. """
+        """Return an estimate as a Volume instance."""
         if b_coeff is None:
             b_coeff = self.src_backward()
         est_coeff = self.conj_grad(b_coeff, tol=tol)

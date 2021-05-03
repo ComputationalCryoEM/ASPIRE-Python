@@ -176,7 +176,7 @@ class Volume:
         return aspire.image.Image(np.real(im_f))
 
     def to_vec(self):
-        """ Returns an N x resolution ** 3 array."""
+        """Returns an N x resolution ** 3 array."""
         return self._data.reshape((self.n_vols, self.resolution ** 3))
 
     @staticmethod
