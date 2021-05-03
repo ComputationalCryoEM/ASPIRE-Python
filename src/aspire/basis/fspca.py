@@ -46,7 +46,7 @@ class FSPCABasis(SteerableBasis):
     """
 
     def __init__(self, source, basis):
-        """ Not sure if I sure actually inherit from Basis, the __init__ doesn't correspond well... later..."""
+        """Not sure if I sure actually inherit from Basis, the __init__ doesn't correspond well... later..."""
 
         self.basis = basis
         self.src = source
