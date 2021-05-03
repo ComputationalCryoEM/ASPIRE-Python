@@ -154,8 +154,6 @@ class RIRClass2D(Class2D):
         # Expand into the compressed FSPCA space.
         fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
         coef = self.pca_basis.expand(fb_coef)
-        # # should be equiv, make a ut
-        # coef = self.pca_basis.expand_from_image_basis(self.src.images(0, self.src.n))
 
         # Legacy code included a sanity check:
         # non_zero_freqs = self.pca_basis.complex_angular_indices != 0
@@ -186,7 +184,7 @@ class RIRClass2D(Class2D):
             )
 
             # ### Truncate Bispectrum (by sampling)
-            # ### Note, where is this written down? (and is it even needed?
+            # ### Note, where is this written down? (and is it even needed?)
             B = B[m_mask][:, m_mask]
             logger.info(f"Truncating Bispectrum to {B.shape} ({np.size(B)}) coefs.")
 
@@ -211,24 +209,16 @@ class RIRClass2D(Class2D):
         )
         # should add memory sanity check here... these can be crushingly large...
 
-        u, s, v = self.pca_y(M, self.bispectrum_componenents)        
-        # u is shaped (features, n_img)
-        print('u.shape', u.shape)
-        print('s.shape', s.shape)
-        print('v.shape', v.shape)
+        M = M.T
+        u, s, v = self.pca_y(M, self.bispectrum_componenents)
 
-        # GBW
+        # GBW, curiousity
         # M_pca_basis = u.T @ M
         # coef_b = u @ M_pca_basis
         # # same as above, conjugated
         # coef_b_r = u @ (u.T @ np.conjugate(M))
-        
-       
-        ### The following was from legacy code and I haven't figured it out.
-        # ## # Check it looks something like a spectrum.
-        # import matplotlib.pyplot as plt
-        # plt.semilogy(s)
-        # plt.show()
+
+        # ### The following was from legacy code and I haven't figured it out.
         # # Contruct coefficients
         coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
         coef_b_r = np.conjugate(u.T).dot(np.conjugate(M))
@@ -237,68 +227,58 @@ class RIRClass2D(Class2D):
         coef_b /= np.linalg.norm(coef_b, axis=0)
         coef_b_r /= np.linalg.norm(coef_b_r, axis=0)
 
-        # import matplotlib.pyplot as plt
-        # plt.imshow(np.abs(coef_b))
-        # plt.show()
-        # plt.imshow(np.abs(coef_b_r))
-        # plt.show()
-
         # # Stage 2: Compute Nearest Neighbors
-        classes, refl, corr = self.nn_classification(coef_b, coef_b_r)
-        # print(classes)
+        # classes, refl, corr = self.nn_classification(coef_b, coef_b_r)
+        classes, corr = self.legacy_nn_classification(coef_b, coef_b_r)
 
-        # # # Stage 3: Align
-
-        #angles = self.align(classes, refl, coef=fb_coef, basis=self.fb_basis)
-        #angles = self.align(classes, refl, coef=coef)
-
+        # # Stage 3: Align
+        # angles = self.align(classes, refl, coef=fb_coef, basis=self.fb_basis)
+        # angles = self.align(classes, refl, coef=coef)
         return self.legacy_align(classes, coef)
-
-        #return classes, None, None, None, None
 
     def nn_classification(self, coeff_b, coeff_b_r):
         # Before we get clever lets just use a generally accepted implementation.
-        
+
         n_img = coeff_b_r.shape[0]
-        print('coeff_b', coeff_b.shape, coeff_b_r.shape)
-        
+
         # Third party tools generally expecting:
-        #   slow axis as n_data, fast axis n_features.        
+        #   slow axis as n_data, fast axis n_features.
         # Also most third party NN complain about complex...
         # X = np.abs(coeff_b)
         X = coeff_b.view(self.dtype)
         # We'll also want to consider the neighbors under reflection.
-        #   These coefficients should be provided by coeff_b_r        
+        #   These coefficients should be provided by coeff_b_r
         # X_r = np.abs(coeff_b_r)
-        #X_r = coeff_b_r.view(self.dtype)
+        # X_r = coeff_b_r.view(self.dtype)
 
         # We can compare both non-reflected and reflected representations as one large set by
         #   taking care later that we store refl=True where indices>=n_img
-        #X_both = np.concatenate((X, X_r))
-        X_both = X # ignore refl for now
-        
-        nbrs = NearestNeighbors(n_neighbors=self.n_nbor, algorithm='auto').fit(X_both)
+        # X_both = np.concatenate((X, X_r))
+        X_both = X  # ignore refl for now
+
+        nbrs = NearestNeighbors(n_neighbors=self.n_nbor, algorithm="auto").fit(X_both)
         distances, indices = nbrs.kneighbors(X)
-        print('indices.shape', indices.shape)
+
         # any refl?
-        logger.info(f'Count indices>n_img: {np.sum(indices>=n_img)}')
+        logger.info(f"Count indices>n_img: {np.sum(indices>=n_img)}")
 
         # # lets peek at the distribution of distances
         import matplotlib.pyplot as plt
-        plt.hist(distances[:,1:].flatten(), bins='auto')
+
+        plt.hist(distances[:, 1:].flatten(), bins="auto")
         plt.show()
-        
+
         # There are two sets of vectors each n_img long.
         #   The second set represents reflected (gbw, unsure..)
         #   When a reflected coef vector is a nearest neighbor,
         #   we notate the original image index (indices modulus),
         #   and notate we'll need the reflection (refl).
         classes = indices % n_img
-        refl = np.array(indices // n_img, dtype=bool)        
+        refl = np.array(indices // n_img, dtype=bool)
         corr = distances
 
         return classes, refl, corr
-        
+
     def output(self):
         """
         Return class averages.
@@ -374,140 +354,6 @@ class RIRClass2D(Class2D):
 
         return u, s, v
 
-    def align(self, classes, refl, coef=None, basis=None, epsilon=1e-10, max_iter=100):
-        """
-        For each class find the corresponding set of
-        in plane rotation angles which align the images.
-
-        :param classes: Integer array of image indices 
-        representing images from the same viewing angle.
-        :param refl: Bool array corresponding to whether
-        the index is reflected.
-        :param coef: Optionally supply coef, defaults
-        to coefs computed from `basis`.
-        :param basis: Optionally allow custom basis, defaults
-        to FSPCA basis.        
-        :param epsilon: Tolerance for stopping solver.
-        :param max_iter: Max iteration before halting solver.
-
-        """
-
-        # As best I can tell the MATLAB code was using
-        # Newton-Raphson to find an optimal-ish set of angles.
-
-
-        # To make our equations we'll need steerable coefficients.
-        if basis is None:
-            basis = self.pca_basis
-        if coef is None:
-            coef = basis.evaluate_t(self.src.images(0, self.src.n))
-
-        # For each class c, want equations like:
-        #   ||image_c_i - image_c_0|| < delta
-        # But I think we can just save some effort and use
-        #   the basis coef, so we'll actually want
-        #   ||coef_c_i - coef_c_0|| < eps
-
-        # Lets stash a copy of the original image coef since we'll use them several times.        
-        coef_0 = coef.copy()
-
-        # Gather some shape information.
-        # Initial image_0 should be fixed, so we ignore it in following arrays (n_class_members-1)
-        # It would complicate the iterative loop (causing divs by 0).
-        n_classes, n_class_members = classes.shape
-
-        # Initial rotation can be zero.
-        rotation_angles = np.zeros((n_classes, n_class_members-1),
-                                   dtype=self.dtype)
-
-        # We need to make a 3d array of coefs
-        C = np.empty((n_classes, n_class_members, basis.count),
-                     dtype=coef.dtype)
-
-        # We'll need a place to store our errors,
-        error = np.zeros((n_classes, n_class_members-1), dtype=self.dtype)
-
-        # Now that we have some house keeping variables locally,
-        #   make a util function to perform updates.
-        # This should keep the Newton method looking cleaner.
-        def _update_C(C, rotation_angles):
-            for cls in tqdm(range(n_classes)):
-                for member in range(n_class_members-1):
-                    # Get the index wrt original set of images,
-                    image_index = classes[cls][member+1]
-                    #print(f'update_C cls {cls} member {member} image {image_index}')
-                    #   and to rotate coeffs use `basis.rotate` method.
-                    #C[cls,member] = basis.rotate(coef_0[image_index], rotation_angles[cls][member], refl[cls][member])
-                    C[cls,member] = basis.rotate(coef_0[image_index], rotation_angles[cls][member])
-            return C
-
-        # and a similar utility for computing the error.
-        def _update_error(C):
-            for cls in tqdm(range(n_classes)):
-                for member in range(n_class_members-1):
-                    image_index = classes[cls][member+1]
-                    #   and rotate the coeffs.
-                    #error[cls, member] = np.linalg.norm((C[cls,member] - coef_0[cls]) ) #/ nrm
-                    #error[cls, member] = np.sum(np.abs(C[cls,member] - coef_0[cls]))
-                    error[cls, member] = np.mean(np.square(
-                        basis.evaluate_to_image_basis(
-                            C[cls,member] - coef_0[cls]).asnumpy()))
-            return error
-
-        # # Initialization
-        # Each iteration densely assigns C,
-        #   we can do an initial one now.
-        itr = 0
-        C = _update_C(C, rotation_angles)
-        # Along with computing an initial error, 0 rotation angle
-        error = _update_error(C)
-        logger.info(f'Alignment iteration: {itr}    max(error): {np.max(error)}')
-
-        # Make an intial guess for angle
-        angle_diff = np.full_like(rotation_angles, np.pi) # ""h""
-        rotation_angles[:,:] = np.pi
-        
-        # For Newton method we'll take f = error and just approx f' as a first difference using (f_2-f_1) / h
-        # rotation_angles = rotation_angles_last - error / f'
-        while itr < max_iter:
-            itr += 1
-            error_last = error.copy()
-
-            C = _update_C(C, rotation_angles)
-            error = _update_error(C)
-
-            logger.info(f'Alignment iteration: {itr}    max(error): {np.max(error)}')
-
-            if np.max(error) < epsilon:
-                # convergence criteria met, exit loop
-                # rotation_angles holds result
-                break
-            if not np.all(np.isfinite(error)):
-                raise RuntimeError('Alignment has failed')
-
-            first_diff = (error - error_last) / angle_diff
-            print('error', error)
-            print('error_last', error_last)
-            print('angle_diff', angle_diff)
-            print('first_diff', first_diff)
-            angle_diff = error / first_diff # store for use in next iteration
-            rotation_angles -= angle_diff
-            # modulo circle
-            rotation_angles %= 2*np.pi 
-
-        else:
-            logger.error(f"rotation_angles failed to converge in {itr} iterations."
-                         f"Last error {error}")
-
-        # Recall that we ignored the rotation angle of the first image,
-        #   because it should remain zero.
-        rotation_angles = np.pad(rotation_angles, [(0,0),(1,0)], mode='constant')
-        
-        return rotation_angles
-        
-                    
-                                                    
-                                              
     def legacy_align(self, classes, coef):
         # translate some variables between this code and the legacy aspire aspire implementation (just trying to figure out of the old code ran...).
         freqs = self.pca_basis.complex_angular_indices
@@ -544,7 +390,7 @@ class RIRClass2D(Class2D):
             rot[i] = rot[i, id_corr[i]]
 
         # gbw, class_refl = np.ceil((classes + 1.0) / n_im).astype("int")
-        # gbw, prefer bool
+        # gbw, prefer bool over 1, 2
         class_refl = ((classes + 1) // n_im).astype(bool)
         classes[classes >= n_im] = classes[classes >= n_im] - n_im
         # gbw rot[class_refl == 2] = np.mod(rot[class_refl == 2] + 180, 360)
@@ -552,6 +398,38 @@ class RIRClass2D(Class2D):
         rot *= np.pi / 180.0  # gbw, radians
         return classes, class_refl, rot, corr, 0
 
+    def legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
+        """
+        Perform nearest neighbor classification and alignment.
+        """
 
+        # Note kept ordering from legacy code (features, n_img)
 
-                     
+        n_im = self.src.n
+        # Shouldn't have more neighbors than images
+        n_nbor = self.n_nbor
+        if n_nbor >= n_im:
+            logger.warning(
+                f"Requested {self.n_nbor} self.n_nbor, but only {n_im} images. Setting self.n_nbor={n_im-1}."
+            )
+            n_nbor = n_im - 1
+
+        concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=1)
+
+        num_batches = (
+            n_im + batch_size - 1
+        ) // batch_size  # int(np.ceil(float(n_im) / batch_size))
+
+        classes = np.zeros((n_im, n_nbor), dtype=int)
+        for i in range(num_batches):
+            start = i * batch_size
+            finish = min((i + 1) * batch_size, n_im)
+            corr = np.real(
+                # I dont understand what they were doing here yet.
+                # I presume relying on dot being large for similar vectors.
+                # But I don't get the conjugation etc.
+                np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
+            )
+            classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
+
+        return classes, corr

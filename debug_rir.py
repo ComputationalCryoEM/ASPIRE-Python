@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 ##################################################
 # Parameters
 RESOLUTION = 65  # 300 used in paper
-NUMBER_OF_TEST_IMAGES = 321  # 24000 images
+NUMBER_OF_TEST_IMAGES = 4096  # 24000 images
 DTYPE = np.float64
 ##################################################
 # Setup
@@ -46,6 +46,7 @@ src = Simulation(
 )
 src.images(0, 10).show()
 
+
 # ## Trivial rotation for testing invariance
 # img = src.images(0,NUMBER_OF_TEST_IMAGES)
 # ####img.data = np.transpose(img.data, (0,2,1))
@@ -68,6 +69,7 @@ fspca_basis = FSPCABasis(src, basis)
 fspca_basis.build(coefs)
 
 rir = RIRClass2D(src, fspca_basis, fspca_components=100, sample_n=40)
+# rir = RIRClass2D(src, fspca_basis, fspca_components=100, sample_n=4000)
 
 
 result = rir.classify()
@@ -94,22 +96,21 @@ random_10 = Image(Orig[np.random.choice(src.n, 10)])
 logger.info("Classed Sample:")
 for c in range(5):
     # this was selecting just the non reflected neighbors and seemed reasonable
-    #selection = class_refl[c] == False
-    #neighbors = classes[c][selection][:10]  # not refl
-    neighbors = classes[c][:10]  # not refl
+    selection = class_refl[c] == False
+    neighbors = classes[c][selection][:10]  # not refl
+
+    # neighbors = classes[c][:10]  # not refl
     neighbors_img = Image(Orig[neighbors])
-    #neighbors_img.show()
-    #continue
 
     # neighbors = classes[c][:10]
     # neighbors_img = Image(Orig[neighbors])
-    # print('before rot & refl')
-    # neighbors_img.show()
+    print("before rot & refl")
+    neighbors_img.show()
 
     co = basis.evaluate_t(neighbors_img)
     print(f"Class {c} after rot/refl")
-    rco = basis.rotate(co, rot[c][:10])  # not refl
-    #rco = basis.rotate(co, rot[c][selection][:10])  # not refl
+    # rco = basis.rotate(co, rot[c][:10])
+    rco = basis.rotate(co, rot[c][selection][:10])  # not refl
     # rco = basis.rotate(co, rot[c][:10], class_refl[c][:10])
     # rco = basis.rotate(co, 0, class_refl[c][:10])
 

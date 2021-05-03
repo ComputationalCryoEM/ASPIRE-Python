@@ -259,10 +259,10 @@ class FFBBasis2DTestCase(TestCase):
 
     def testRotate(self):
         # hack for now, low res had problems doing basic stuff... ugh.
-        #fh = mrcfile.open("tutorials/data/clean70SRibosome_vol_65p.mrc")
+        # fh = mrcfile.open("tutorials/data/clean70SRibosome_vol_65p.mrc")
         fh = mrcfile.open(os.path.join(DATA_DIR, "sample.mrc"))
-        print(fh.data.shape)
         import matplotlib.pyplot as plt
+
         plt.imshow(fh.data)
         plt.show()
         v = Volume(fh.data.astype(np.float64))
