@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 ##################################################
 # Parameters
-RESOLUTION = 64  # 300 used in paper
-NUMBER_OF_TEST_IMAGES = 4096  # 24000 images
+RESOLUTION = 65  # 300 used in paper
+NUMBER_OF_TEST_IMAGES = 321  # 24000 images
 DTYPE = np.float64
 ##################################################
 # Setup
@@ -75,13 +75,13 @@ result = rir.classify()
 # debugging/poc
 classes, class_refl, rot, corr, _ = result
 
-print("class_refl")
-print(class_refl.shape)
-print(class_refl[0])
+# print("class_refl")
+# print(class_refl.shape)
+# print(class_refl[0])
 
-print("rot")
-print(rot.shape)
-print(rot[0])
+# print("rot")
+# print(rot.shape)
+# print(rot[0])
 
 # lets peek at first couple image classes:
 #   first ten nearest neighbors
@@ -94,10 +94,12 @@ random_10 = Image(Orig[np.random.choice(src.n, 10)])
 logger.info("Classed Sample:")
 for c in range(5):
     # this was selecting just the non reflected neighbors and seemed reasonable
-    selection = class_refl[c] == False
-    neighbors = classes[c][selection][:10]  # not refl
+    #selection = class_refl[c] == False
+    #neighbors = classes[c][selection][:10]  # not refl
+    neighbors = classes[c][:10]  # not refl
     neighbors_img = Image(Orig[neighbors])
-    # #neighbors_img.show()
+    #neighbors_img.show()
+    #continue
 
     # neighbors = classes[c][:10]
     # neighbors_img = Image(Orig[neighbors])
@@ -106,7 +108,8 @@ for c in range(5):
 
     co = basis.evaluate_t(neighbors_img)
     print(f"Class {c} after rot/refl")
-    rco = basis.rotate(co, rot[c][selection][:10])  # not refl
+    rco = basis.rotate(co, rot[c][:10])  # not refl
+    #rco = basis.rotate(co, rot[c][selection][:10])  # not refl
     # rco = basis.rotate(co, rot[c][:10], class_refl[c][:10])
     # rco = basis.rotate(co, 0, class_refl[c][:10])
 

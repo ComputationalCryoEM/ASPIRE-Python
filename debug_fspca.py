@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 ##################################################
 # Parameters
-RESOLUTION = 64  # 300 used in paper
+RESOLUTION = 63  # 300 used in paper
 NUMBER_OF_TEST_IMAGES = 4096  # 24000 images
 DTYPE = np.float64
 ##################################################

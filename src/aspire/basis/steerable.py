@@ -140,7 +140,9 @@ class SteerableBasis(Basis):
 
         # refl
         if refl is not None:
-            assert len(refl) == 1 or len(refl) == len(complex_coef)
+            if isinstance(refl, np.ndarray):
+                assert len(refl) == len(complex_coef)
+            # else: refl can be a constant
             # get the coefs corresponding to -ks , aka "ells"
             complex_coef[refl] = np.conj(complex_coef[refl])
 

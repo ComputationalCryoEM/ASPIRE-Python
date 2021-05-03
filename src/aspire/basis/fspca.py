@@ -227,7 +227,7 @@ class FSPCABasis(SteerableBasis):
 
         return c_fspca
 
-    def evalute_to_image_basis(self, c):
+    def evaluate_to_image_basis(self, c):
         """
         Take FSPCA coefs and evaluate as image in the standard coordinate basis.
 
@@ -239,7 +239,7 @@ class FSPCABasis(SteerableBasis):
 
         return self.basis.evaluate(c_fb)
 
-    def evalute(self, c):
+    def evaluate(self, c):
         """
         Take FSPCA coefs and evaluate to Fourier Bessel (self.basis) ceofs.
 
@@ -248,9 +248,13 @@ class FSPCABasis(SteerableBasis):
         """
 
         # apply FSPCA eigenvector to coefs c, yields complex_coefs in self.basis
-        cv = c @ self.eigvecs.dense().T
+        eigvecs = self.eigvecs
+        if isinstance(eigvecs, BlkDiagMatrix):
+            eigvecs = eigvecs.dense()
+
+        cv = c @ eigvecs.T
         # convert to real reprsentation
-        return self.to_real(cv)
+        return self.basis.to_real(cv)
 
     def eigenimages(self, images):
         """
