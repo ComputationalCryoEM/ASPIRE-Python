@@ -229,7 +229,8 @@ class RIRClass2D(Class2D):
 
         # # Stage 2: Compute Nearest Neighbors
         # classes, refl, corr = self.nn_classification(coef_b, coef_b_r)
-        classes, corr = self.legacy_nn_classification(coef_b, coef_b_r)
+        classes = self.nn_classification(coef_b, coef_b_r)
+        # classes, _ = self.legacy_nn_classification(coef_b, coef_b_r)
 
         # # Stage 3: Align
         # angles = self.align(classes, refl, coef=fb_coef, basis=self.fb_basis)
@@ -244,17 +245,17 @@ class RIRClass2D(Class2D):
         # Third party tools generally expecting:
         #   slow axis as n_data, fast axis n_features.
         # Also most third party NN complain about complex...
-        # X = np.abs(coeff_b)
-        X = coeff_b.view(self.dtype)
+        #   so we'll pretend we have 2*n_features of real values.
+        # Don't worry about the copy because NearestNeighbors wants
+        #   C-contiguous anyway... (it would copy internally otherwise)
+        X = np.column_stack((coeff_b.T.real, coeff_b.T.imag))
         # We'll also want to consider the neighbors under reflection.
         #   These coefficients should be provided by coeff_b_r
-        # X_r = np.abs(coeff_b_r)
-        # X_r = coeff_b_r.view(self.dtype)
+        X_r = np.column_stack((coeff_b_r.T.real, coeff_b_r.T.imag))
 
         # We can compare both non-reflected and reflected representations as one large set by
         #   taking care later that we store refl=True where indices>=n_img
-        # X_both = np.concatenate((X, X_r))
-        X_both = X  # ignore refl for now
+        X_both = np.concatenate((X, X_r))
 
         nbrs = NearestNeighbors(n_neighbors=self.n_nbor, algorithm="auto").fit(X_both)
         distances, indices = nbrs.kneighbors(X)
@@ -268,16 +269,19 @@ class RIRClass2D(Class2D):
         plt.hist(distances[:, 1:].flatten(), bins="auto")
         plt.show()
 
-        # There are two sets of vectors each n_img long.
-        #   The second set represents reflected (gbw, unsure..)
-        #   When a reflected coef vector is a nearest neighbor,
-        #   we notate the original image index (indices modulus),
-        #   and notate we'll need the reflection (refl).
-        classes = indices % n_img
-        refl = np.array(indices // n_img, dtype=bool)
-        corr = distances
+        # I was planning to change the result of this function
+        # but for now return classes as range 0 to 2*n_img..
+        # # There are two sets of vectors each n_img long.
+        # #   The second set represents reflected (gbw, unsure..)
+        # #   When a reflected coef vector is a nearest neighbor,
+        # #   we notate the original image index (indices modulus),
+        # #   and notate we'll need the reflection (refl).
+        # classes = indices % n_img
+        # refl = np.array(indices // n_img, dtype=bool)
+        # corr = distances
+        # return classes, refl, corr
 
-        return classes, refl, corr
+        return indices
 
     def output(self):
         """
