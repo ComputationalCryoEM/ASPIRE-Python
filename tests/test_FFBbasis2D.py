@@ -285,8 +285,8 @@ class FFBBasis2DTestCase(TestCase):
         v4 = basis.rotate(v1, 0, refl=[True])
 
         # Rotate in the FB basis space
-        v1 = basis.rotate(v1, -np.pi / 2)
         v3 = basis.rotate(v1, 2 * np.pi)
+        v1 = basis.rotate(v1, -np.pi / 2)
 
         # Evaluate back into cartesian
         y1 = basis.evaluate(v1)
