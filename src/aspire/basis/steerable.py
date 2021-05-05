@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from tqdm import tqdm
 
 from aspire.basis import Basis
 from aspire.utils import complex_type
@@ -15,7 +14,7 @@ class SteerableBasis(Basis):
     """
 
     def calculate_bispectrum(
-        self, complex_coef, flatten=False, filter_nonzero_freqs=False
+        self, complex_coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
     ):
         """
         Calculate bispectrum for a set of coefs in this basis.
@@ -28,6 +27,7 @@ class SteerableBasis(Basis):
         :param coef: Coefficients representing a (single) image expanded in this basis.
         :param flatten: Optionally extract symmetric values (tril) and then flatten.
         :param filter_nonzero_freqs: Remove indices corresponding to zero frequency (defaults False).
+        :param freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
         :return: Bispectum matrix (complex valued).
         """
 
@@ -45,6 +45,11 @@ class SteerableBasis(Basis):
             raise ValueError(
                 "Basis.calculate_bispectrum coefs expected"
                 f"to have (complex) count {self.complex_count}, received {len(complex_coef)}."
+            )
+
+        if freq_cutoff and freq_cutoff > np.max(self.complex_angular_indices):
+            logger.warning(
+                f"Bispectrum frequency cutoff {freq_cutoff} outside max {np.max(self.complex_angular_indices)}"
             )
 
         # self._indices["ells"]  # angular freq indices k in paper/slides
@@ -72,14 +77,18 @@ class SteerableBasis(Basis):
 
         logger.info(f"Calculating bispectrum matrix with shape {B.shape}.")
 
-        for ind1 in tqdm(range(self.complex_count)):
+        for ind1 in range(self.complex_count):
 
             k1 = angular_indices[ind1]
+            if freq_cutoff and k1 > freq_cutoff:
+                continue
             coef1 = complex_coef[ind1]
 
             for ind2 in range(self.complex_count):
 
                 k2 = angular_indices[ind2]
+                if freq_cutoff and k2 > freq_cutoff:
+                    continue
                 coef2 = complex_coef[ind2]
 
                 k3 = k1 + k2

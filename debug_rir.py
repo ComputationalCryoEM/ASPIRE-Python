@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 ##################################################
 # Parameters
-RESOLUTION = 65  # 300 used in paper
+RESOLUTION = 64  # 300 used in paper
 NUMBER_OF_TEST_IMAGES = 4096  # 24000 images
 DTYPE = np.float64
 ##################################################
@@ -44,7 +44,7 @@ src = Simulation(
     dtype=DTYPE,
     noise_filter=noise_filter,
 )
-src.images(0, 10).show()
+# src.images(0, 10).show()
 
 
 # ## Trivial rotation for testing invariance
@@ -68,8 +68,16 @@ logger.info("Setting up FSPCA")
 fspca_basis = FSPCABasis(src, basis)
 fspca_basis.build(coefs)
 
-rir = RIRClass2D(src, fspca_basis, fspca_components=100, sample_n=40)
-# rir = RIRClass2D(src, fspca_basis, fspca_components=100, sample_n=4000)
+# rir = RIRClass2D(src, fspca_basis, fspca_components=100, sample_n=40)
+# rir = RIRClass2D(src, fspca_basis, fspca_components=400, sample_n=4000, bispectrum_freq_cutoff=1)
+rir = RIRClass2D(
+    src,
+    fspca_basis,
+    fspca_components=100,
+    sample_n=40,
+    bispectrum_freq_cutoff=3,
+    use_yoel_ref=True,
+)
 
 
 result = rir.classify()
@@ -89,29 +97,46 @@ classes, class_refl, rot, corr, _ = result
 #   first ten nearest neighbors
 Orig = src.images(0, NUMBER_OF_TEST_IMAGES)
 
-logger.info("Random Sample:")
-random_10 = Image(Orig[np.random.choice(src.n, 10)])
-# random_10.show()
+
+def plot_helper(img, refl, columns=5, figsize=(20, 10)):
+    import matplotlib.pyplot as plt
+
+    plt.figure(figsize=figsize)
+    for i, im in enumerate(img):
+        plt.subplot(img.n_images // columns + 1, columns, i + 1)
+        if refl[i]:
+            plt.title("Reflected")
+        plt.imshow(im, cmap="gray")
+    plt.show()
+
+
+include_refl = False  # I'll have to get some help regarding the reflected set. I don't like the results.
 
 logger.info("Classed Sample:")
 for c in range(5):
     # this was selecting just the non reflected neighbors and seemed reasonable
-    # selection = class_refl[c] == False
-    # neighbors = classes[c][selection][:10]  # not refl
-    neighbors = classes[c][:10]  # not refl
+    if include_refl:
+        neighbors = classes[c][:10]
+    else:
+        logger.info("Ignoring Reflected matches")
+        selection = class_refl[c] == False
+        neighbors = classes[c][selection][:10]  # not refl
 
     neighbors_img = Image(Orig[neighbors])
 
-    # neighbors = classes[c][:10]
-    # neighbors_img = Image(Orig[neighbors])
-    logger.info("before rot & refl")
-    neighbors_img.show()
+    # logger.info("before rot & refl")
+    # neighbors_img.show()
 
     co = basis.evaluate_t(neighbors_img)
     logger.info(f"Class {c} after rot/refl")
-    # rco = basis.rotate(co, rot[c][:10])
-    # rco = basis.rotate(co, rot[c][selection][:10])  # not refl
-    rco = basis.rotate(co, rot[c][:10], class_refl[c][:10])
+    if include_refl:
+        rco = basis.rotate(co, rot[c][:10], class_refl[c][:10])
+    else:
+        # rco = basis.rotate(co, rot[c][:10])
+        rco = basis.rotate(co, rot[c][selection][:10])  # not refl
 
     rotated_neighbors_img = basis.evaluate(rco)
-    rotated_neighbors_img.show()
+    if include_refl:
+        plot_helper(rotated_neighbors_img, class_refl[c][:10])
+    else:
+        rotated_neighbors_img.show()

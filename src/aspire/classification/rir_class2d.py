@@ -1,93 +1,16 @@
 import logging
 
 import numpy as np
-from scipy.linalg import qr
+from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
 from aspire.classification import Class2D
+from aspire.classification.legacy_implementations import pca_y, rot_align
 from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
-
-
-# copied for debugging/poc purposes
-def icfft2(x):
-    if len(x.shape) == 2:
-        return np.fft.fftshift(
-            np.transpose(np.fft.ifft2(np.transpose(np.fft.ifftshift(x))))
-        )
-    elif len(x.shape) == 3:
-        y = np.fft.ifftshift(x, (1, 2))
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.ifft2(y)
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.fftshift(y, (1, 2))
-        return y
-    else:
-        raise ValueError("x must be 2D or 3D")
-
-
-# lol
-def icfft(x, axis=0):
-    return np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(x, axis), axis=axis), axis)
-
-
-# copied for debugging/poc purposes
-# very slow function compared to matlab
-def rot_align(m, coeff, pairs):
-    n_theta = 360.0
-    p = pairs.shape[0]
-    c = np.zeros((m + 1, p), dtype="complex128")
-    m_list = np.arange(1, m + 1)
-
-    for i in range(m + 1):
-        c[i] = np.einsum(
-            "ij, ij -> j", np.conj(coeff[i][:, pairs[:, 0]]), coeff[i][:, pairs[:, 1]]
-        )
-
-    c2 = np.flipud(np.conj(c[1:]))
-    b = (2 * m + 1) * np.real(icfft(np.concatenate((c2, c), axis=0)))
-    rot = np.argmax(b, axis=0)
-    rot = (rot - m) * n_theta / (2 * m + 1)
-
-    x_old = -np.ones(p)
-    x_new = rot
-    precision = 0.001
-    num_iter = 0
-
-    m_list_ang = m_list * np.pi / 180
-    m_list_ang_1j = 1j * m_list_ang
-    c_for_f_prime_1 = np.einsum("i, ij -> ji", m_list_ang, c[1:]).copy()
-    c_for_f_prime_2 = np.einsum("i, ji -> ji", m_list_ang, c_for_f_prime_1).copy()
-
-    diff = np.absolute(x_new - x_old)
-    while np.max(diff) > precision:
-        diff = np.absolute(x_new - x_old)
-        indices = np.where(diff > precision)[0]
-        x_old1 = x_new[indices]
-        tmp = np.exp(np.outer(m_list_ang_1j, x_old1))
-
-        delta = np.imag(
-            np.einsum("ji, ij -> j", c_for_f_prime_1[indices], tmp)
-        ) / np.real(np.einsum("ji, ij -> j", c_for_f_prime_2[indices], tmp))
-        delta_bigger10 = np.where(np.abs(delta) > 10)[0]
-        tmp_random = np.random.rand(len(delta))
-        tmp_random = tmp_random[delta_bigger10]
-        delta[delta_bigger10] = np.sign(delta_bigger10) * 10 * tmp_random
-        x_new[indices] = x_old1 - delta
-        num_iter += 1
-        if num_iter > 100:
-            break
-
-    rot = x_new
-    m_list = np.arange(m + 1)
-    m_list_ang = m_list * np.pi / 180
-    c = c * np.exp(1j * np.outer(m_list_ang, rot))
-    corr = (np.real(c[0]) + 2 * np.sum(np.real(c[1:]), axis=0)) / 2
-
-    return corr, rot
 
 
 class RIRClass2D(Class2D):
@@ -100,6 +23,8 @@ class RIRClass2D(Class2D):
         sample_n=4000,
         bispectrum_componenents=300,
         n_nbor=100,
+        bispectrum_freq_cutoff=None,
+        use_yoel_ref=False,
         dtype=None,
     ):
         """
@@ -114,6 +39,7 @@ class RIRClass2D(Class2D):
         :param fspca_components: Components (top eigvals) to keep from full FSCPA, default truncates to  400.
         :param sample_n: A number and associated method used to confuse your enemies.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
+        :param bispectrum_freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
         :param dtype: optional dtype, otherwise taken from src.
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
         """
@@ -126,6 +52,8 @@ class RIRClass2D(Class2D):
         self.alpha = alpha
         self.bispectrum_componenents = bispectrum_componenents
         self.n_nbor = n_nbor
+        self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
+        self.use_yoel_ref = use_yoel_ref
         # Type checks
         if self.dtype != self.fb_basis.dtype:
             logger.warning(
@@ -134,6 +62,12 @@ class RIRClass2D(Class2D):
 
         # Sanity Checks
         assert hasattr(self.pca_basis, "calculate_bispectrum")
+
+        if self.src.n < self.bispectrum_componenents:
+            raise RuntimeError(
+                f"{self.src.n} Images too small for Bispectrum Componenents {self.bispectrum_componenents}."
+                "  Increase number of images or reduce components."
+            )
 
         # For now, only run with FSPCA
         assert isinstance(self.pca_basis, FSPCABasis)
@@ -180,7 +114,9 @@ class RIRClass2D(Class2D):
 
         for i in tqdm(range(self.src.n)):
             B = self.pca_basis.calculate_bispectrum(
-                coef_normed[i], filter_nonzero_freqs=True
+                coef_normed[i],
+                filter_nonzero_freqs=True,
+                freq_cutoff=self.bispectrum_freq_cutoff,
             )
 
             # ### Truncate Bispectrum (by sampling)
@@ -209,29 +145,57 @@ class RIRClass2D(Class2D):
         )
         # should add memory sanity check here... these can be crushingly large...
 
-        M = M.T
-        u, s, v = self.pca_y(M, self.bispectrum_componenents)
+        # Use a randomized pca technique
+        if self.use_yoel_ref:
+            # ### The following was from legacy code and I haven't totally figured it out.
+            M = M.T
+            u, s, v = pca_y(M, self.bispectrum_componenents)
+            # Contruct coefficients
+            coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
+            coef_b_r = np.conjugate(u.T).dot(np.conjugate(M))
+            # Normalize
+            coef_b /= np.linalg.norm(coef_b, axis=0)
+            coef_b_r /= np.linalg.norm(coef_b_r, axis=0)
+            # Transpose (this code was originally F order)
+            coef_b = coef_b.T
+            coef_b_r = coef_b_r.T
+
+        else:
+            pca = PCA(
+                self.bispectrum_componenents,
+                copy=False,  # careful, overwrites data matrix... see Note
+                svd_solver="auto",  # use randomized (Halko) for larger problems
+                random_state=123,
+            )  # replace with ASPIRE repro seed later.
+            # Note
+            # sk PCA expects real data so we make a copy.
+            # We need to use `fit_transform`,
+            #   and avoid using that X again (it is dirtied by PCA copy=False).
+            X = np.column_stack((M.real, M.imag))
+            Xr = pca.fit_transform(X)
+            coef_b = Xr[:, ::2] + 1j * Xr[:, 1::2]
+
+            X = np.column_stack((M.real, -M.imag))
+            Xr = pca.fit_transform(X)
+            coef_b_r = Xr[:, ::2] + 1j * Xr[:, 1::2]
+
+        # PCA should return coef_b that is (n_img, n_feature).
+        #   Where feature is typically self.bispectrum_componenents.
+        #   However, for small problems it may return n_feature=n_img.
 
         # GBW, curiousity
-        # M_pca_basis = u.T @ M
-        # coef_b = u @ M_pca_basis
-        # # same as above, conjugated
+        # coef_b = u.T @ M
+        # # est = u @ M_pca_basis
+        # # same as above, conjugated ?
         # coef_b_r = u @ (u.T @ np.conjugate(M))
 
-        # ### The following was from legacy code and I haven't figured it out.
-        # # Contruct coefficients
-        coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
-        coef_b_r = np.conjugate(u.T).dot(np.conjugate(M))
-
-        # normalize, XXX check axis
-        coef_b /= np.linalg.norm(coef_b, axis=0)
-        coef_b_r /= np.linalg.norm(coef_b_r, axis=0)
-
         # # Stage 2: Compute Nearest Neighbors
+        logger.info("Begin Nearest Neighbors Search")
         classes = self.nn_classification(coef_b, coef_b_r)
         # classes, _ = self.legacy_nn_classification(coef_b, coef_b_r)
 
         # # Stage 3: Align
+        logger.info("Begin Rotational Alignment")
         # angles = self.align(classes, refl, coef=fb_coef, basis=self.fb_basis)
         # angles = self.align(classes, refl, coef=coef)
         return self.legacy_align(classes, coef)
@@ -239,7 +203,7 @@ class RIRClass2D(Class2D):
     def nn_classification(self, coeff_b, coeff_b_r):
         # Before we get clever lets just use a generally accepted implementation.
 
-        n_img = coeff_b_r.shape[0]
+        n_img = self.src.n
 
         # Third party tools generally expecting:
         #   slow axis as n_data, fast axis n_features.
@@ -247,10 +211,10 @@ class RIRClass2D(Class2D):
         #   so we'll pretend we have 2*n_features of real values.
         # Don't worry about the copy because NearestNeighbors wants
         #   C-contiguous anyway... (it would copy internally otherwise)
-        X = np.column_stack((coeff_b.T.real, coeff_b.T.imag))
+        X = np.column_stack((coeff_b.real, coeff_b.imag))
         # We'll also want to consider the neighbors under reflection.
         #   These coefficients should be provided by coeff_b_r
-        X_r = np.column_stack((coeff_b_r.T.real, coeff_b_r.T.imag))
+        X_r = np.column_stack((coeff_b_r.real, coeff_b_r.imag))
 
         # We can compare both non-reflected and reflected representations as one large set by
         #   taking care later that we store refl=True where indices>=n_img
@@ -260,16 +224,22 @@ class RIRClass2D(Class2D):
         distances, indices = nbrs.kneighbors(X)
 
         # any refl?
-        logger.info(f"Count indices>n_img: {np.sum(indices>=n_img)}")
+        logger.info(
+            f"Count reflected: {np.sum(indices>=n_img)}"
+            f" ({np.sum(indices>=n_img) / len(indices)}%)"
+        )
 
         # # lets peek at the distribution of distances
         import matplotlib.pyplot as plt
 
-        plt.hist(distances[:, 1:].flatten(), bins="auto")
+        plt.hist(
+            distances[:, 1:].flatten(), bins="auto"
+        )  # zero index is self, distance 0
         plt.show()
 
         # I was planning to change the result of this function
         # but for now return classes as range 0 to 2*n_img..
+        # #########################
         # # There are two sets of vectors each n_img long.
         # #   The second set represents reflected (gbw, unsure..)
         # #   When a reflected coef vector is a nearest neighbor,
@@ -287,75 +257,6 @@ class RIRClass2D(Class2D):
         Return class averages.
         """
         pass
-
-    def pca_y(self, x, k, num_iters=2):
-        """
-        PCA using QR factorization.
-
-        See:
-
-        An algorithm for the principal component analysis of large data sets.
-        Halko, Martinsson, Shkolnisky, Tygert , SIAM 2011.
-
-        :param x: Data matrix
-        :param k: Number of estimated Principal Components.
-        :param num_iters: Number of dot product applications.
-        :return: (left Singular Vectors, Singular Values, right Singular Vectors)
-        """
-
-        # TODO, move this out of this class, its a general method...
-        # Note I should come back, read this paper, and understand this better, looks useful.
-
-        m, n = x.shape
-
-        def operator(mat):
-            return x.dot(mat)
-
-        def operator_transpose(mat):
-            return np.conj(x.T).dot(mat)
-
-        flag = False
-        if m < n:
-            flag = True
-            operator_transpose, operator = operator, operator_transpose
-            m, n = n, m
-
-        ones = np.ones((n, k + 2))
-        if x.dtype == np.dtype("complex"):
-            h = operator(
-                (2 * np.random.random((k + 2, n)).T - ones)
-                + 1j * (2 * np.random.random((k + 2, n)).T - ones)
-            )
-        else:
-            h = operator(2 * np.random.random((k + 2, n)).T - ones)
-
-        f = [h]
-
-        for _ in range(num_iters):
-            h = operator_transpose(h)
-            h = operator(h)
-            f.append(h)
-
-        f = np.concatenate(f, axis=1)
-        # f has e-16 error, q has e-13
-        q, _, _ = qr(f, mode="economic", pivoting=True)
-        b = np.conj(operator_transpose(q)).T
-        u, s, v = np.linalg.svd(b, full_matrices=False)
-        # not sure how to fix the signs but it seems like I dont need to
-        # TODO use fix_svd, here and matlab
-        # u, v = fix_svd(u, v)
-
-        v = v.conj()
-        u = np.dot(q, u)
-
-        u = u[:, :k]
-        v = v[:k]
-        s = s[:k]
-
-        if flag:
-            u, v = v.T, u.T
-
-        return u, s, v
 
     def legacy_align(self, classes, coef):
         # translate some variables between this code and the legacy aspire aspire implementation (just trying to figure out of the old code ran...).
@@ -392,13 +293,11 @@ class RIRClass2D(Class2D):
             classes[i] = classes[i, id_corr[i]]
             rot[i] = rot[i, id_corr[i]]
 
-        # gbw, class_refl = np.ceil((classes + 1.0) / n_im).astype("int")
-        # gbw, prefer bool over 1, 2
-        class_refl = ((classes + 1) // n_im).astype(bool)
+        class_refl = (classes // n_im).astype(bool)
         classes[classes >= n_im] = classes[classes >= n_im] - n_im
-        # gbw rot[class_refl == 2] = np.mod(rot[class_refl == 2] + 180, 360)
-        rot[class_refl] = np.mod(rot[class_refl] + 180, 360)
-        rot *= np.pi / 180.0  # gbw, radians
+        # Why did they do this?
+        # rot[class_refl] = np.mod(rot[class_refl] + 180, 360) # ??
+        rot *= np.pi / 180.0  # Convert to radians
         return classes, class_refl, rot, corr, 0
 
     def legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
@@ -407,6 +306,8 @@ class RIRClass2D(Class2D):
         """
 
         # Note kept ordering from legacy code (features, n_img)
+        coeff_b = coeff_b.T
+        coeff_b_r = coeff_b_r.T
 
         n_im = self.src.n
         # Shouldn't have more neighbors than images
