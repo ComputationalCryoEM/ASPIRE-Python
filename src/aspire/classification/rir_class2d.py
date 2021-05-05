@@ -24,7 +24,7 @@ class RIRClass2D(Class2D):
         bispectrum_componenents=300,
         n_nbor=100,
         bispectrum_freq_cutoff=None,
-        use_yoel_ref=False,
+        use_yoel_ref=True,
         dtype=None,
     ):
         """
@@ -147,7 +147,7 @@ class RIRClass2D(Class2D):
 
         # Use a randomized pca technique
         if self.use_yoel_ref:
-            # ### The following was from legacy code and I haven't totally figured it out.
+            # ### The following was from legacy code.
             M = M.T
             u, s, v = pca_y(M, self.bispectrum_componenents)
             # Contruct coefficients
@@ -161,33 +161,27 @@ class RIRClass2D(Class2D):
             coef_b_r = coef_b_r.T
 
         else:
-            pca = PCA(
-                self.bispectrum_componenents,
-                copy=False,  # careful, overwrites data matrix... see Note
-                svd_solver="auto",  # use randomized (Halko) for larger problems
-                random_state=123,
-            )  # replace with ASPIRE repro seed later.
-            # Note
-            # sk PCA expects real data so we make a copy.
-            # We need to use `fit_transform`,
-            #   and avoid using that X again (it is dirtied by PCA copy=False).
-            X = np.column_stack((M.real, M.imag))
-            Xr = pca.fit_transform(X)
-            coef_b = Xr[:, ::2] + 1j * Xr[:, 1::2]
+            raise NotImplemented("Alt. PCA not implemented, set use_yoel_ref=True")
+            # # Abandon for now. sk PCA while it is really useful,
+            # #   expects real data.
+            # # I tried the stupid things regarding converting to real,
+            # #   (flattening, running mags and phases seperately etc)
+            # #   but the accuracy was too poor for me.
+            # #   Should discuss this.
+            # pca = PCA(
+            #     self.bispectrum_componenents,
+            #     copy=False,  # careful, overwrites data matrix...
+            #     svd_solver="auto",  # use randomized (Halko) for larger problems
+            #     random_state=123,
+            # )  # replace with ASPIRE repro seed later.
 
-            X = np.column_stack((M.real, -M.imag))
-            Xr = pca.fit_transform(X)
-            coef_b_r = Xr[:, ::2] + 1j * Xr[:, 1::2]
+            # _ = pca.fit_transform(X)
+            # # ...
 
-        # PCA should return coef_b that is (n_img, n_feature).
+        # Any PCA step should return coef_b that is (n_img, n_feature).
+        #   Same shape for coef_b_r.
         #   Where feature is typically self.bispectrum_componenents.
         #   However, for small problems it may return n_feature=n_img.
-
-        # GBW, curiousity
-        # coef_b = u.T @ M
-        # # est = u @ M_pca_basis
-        # # same as above, conjugated ?
-        # coef_b_r = u @ (u.T @ np.conjugate(M))
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info("Begin Nearest Neighbors Search")
@@ -305,7 +299,7 @@ class RIRClass2D(Class2D):
         Perform nearest neighbor classification and alignment.
         """
 
-        # Note kept ordering from legacy code (features, n_img)
+        # Note kept ordering from legacy code (n_features, n_img)
         coeff_b = coeff_b.T
         coeff_b_r = coeff_b_r.T
 
