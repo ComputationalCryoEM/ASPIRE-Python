@@ -385,7 +385,9 @@ class FBBasis2D(SteerableBasis):
 
         return coef
 
-    def calculate_bispectrum(self, coef, flatten=False, freq_cutoff=None):
+    def calculate_bispectrum(
+        self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
+    ):
         """
         Calculate bispectrum for a set of coefs in this basis.
 
@@ -404,7 +406,10 @@ class FBBasis2D(SteerableBasis):
         complex_coef = self.to_complex(coef)
 
         return super().calculate_bispectrum(
-            complex_coef, flatten=flatten, freq_cutoff=freq_cutoff
+            complex_coef,
+            flatten=flatten,
+            filter_nonzero_freqs=filter_nonzero_freqs,
+            freq_cutoff=freq_cutoff,
         )
 
     def rotate(self, coef, radians, refl=None):

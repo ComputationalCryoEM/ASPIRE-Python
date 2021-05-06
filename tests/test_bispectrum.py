@@ -52,8 +52,13 @@ class BispectrumTestCase(TestCase):
 
         # Compute Bispectrum
         q = 3  # slab cutoff
-        b1 = self.basis.calculate_bispectrum(self.v1, freq_cutoff=q)
-        b2 = self.basis.calculate_bispectrum(self.v2, freq_cutoff=q)
+        # We'll also excercise some other options to check they don't crash
+        b1 = self.basis.calculate_bispectrum(
+            self.v1, freq_cutoff=q, flatten=True, filter_nonzero_freqs=True
+        )
+        b2 = self.basis.calculate_bispectrum(
+            self.v2, freq_cutoff=q, flatten=True, filter_nonzero_freqs=True
+        )
 
         # Bispectrum should be equivalent
         self.assertTrue(np.allclose(b1, b2))
