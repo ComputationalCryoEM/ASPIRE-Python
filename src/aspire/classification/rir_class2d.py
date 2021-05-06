@@ -1,13 +1,13 @@
 import logging
 
 import numpy as np
-from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
 from aspire.classification import Class2D
 from aspire.classification.legacy_implementations import pca_y, rot_align
+from aspire.numeric import ComplexPCA
 from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,8 @@ class RIRClass2D(Class2D):
         bispectrum_componenents=300,
         n_nbor=100,
         bispectrum_freq_cutoff=None,
-        use_yoel_ref=True,
+        large_pca_implementation="legacy",
+        nn_implementation="legacy",
         dtype=None,
     ):
         """
@@ -53,7 +54,6 @@ class RIRClass2D(Class2D):
         self.bispectrum_componenents = bispectrum_componenents
         self.n_nbor = n_nbor
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
-        self.use_yoel_ref = use_yoel_ref
         # Type checks
         if self.dtype != self.fb_basis.dtype:
             logger.warning(
@@ -69,8 +69,59 @@ class RIRClass2D(Class2D):
                 "  Increase number of images or reduce components."
             )
 
-        # For now, only run with FSPCA
+        # Implementation Checks
+        # # Do we have a sane Nearest Neighbor
+        nn_implementations = {
+            "legacy": self._legacy_nn_classification,
+            "sklearn": self._sk_nn_classification,
+        }
+        if nn_implementation not in nn_implementations:
+            raise ValueError(
+                f"Provided nn_implementation={nn_implementation} not in {nn_implementations.keys()}"
+            )
+        self._nn_classification = nn_implementations[nn_implementation]
+
+        # # Do we have a sane Large Dataset PCA
+        large_pca_implementations = {
+            "legacy": self._legacy_pca,
+            "sklearn": self._sk_pca,
+        }
+        if large_pca_implementation not in large_pca_implementations:
+            raise ValueError(
+                f"Provided large_pca_implementation={large_pca_implementation} not in {large_pca_implementations.keys()}"
+            )
+        self._pca = large_pca_implementations[large_pca_implementation]
+
+        # For now, only run with FSPCA basis
         assert isinstance(self.pca_basis, FSPCABasis)
+
+    def pca(self, M):
+        """
+        Any PCA implementation here should return both
+        coef_b and coef_b_r that are (n_img, n_components).
+
+        Where n_components is typically self.bispectrum_componenents.
+        However, for small problems it may return n_components=n_img,
+        since that would be the smallest dimension.
+
+        :param M: Array (n_img, m_features), typically complex.
+        :returns: Tuple of arrays coef_b coef_b_r.
+        """
+        return self._pca(M)
+
+    def nn_classification(self, coef_b, coef_b_r):
+        """
+        Takes in features as pair of arrays (coef_b coef_b_r),
+        each having shape (n_img, features)
+        where features = min(self.bispectrum_componenents, n_img).
+
+        Result is array (n_img, n_nbor) with entry i reprsenting
+        index i into class input img array (src).
+
+        :returns: Array of indices representing classes.
+        """
+
+        return self._nn_classification(coef_b, coef_b_r)
 
     def classify(self):
         """
@@ -139,62 +190,22 @@ class RIRClass2D(Class2D):
                 M = np.empty((self.src.n, B.shape[0]), dtype=coef.dtype)
             M[i] = B
 
-        # ## Reduce dimensionality of Bispectrum sample with PCA
+        # Reduce dimensionality of Bispectrum sample with PCA
         logger.info(
-            f"Computing PCA, returning {self.bispectrum_componenents} components."
+            f"Computing Large PCA, returning {self.bispectrum_componenents} components."
         )
         # should add memory sanity check here... these can be crushingly large...
-
-        # Use a randomized pca technique
-        if self.use_yoel_ref:
-            # ### The following was from legacy code.
-            M = M.T
-            u, s, v = pca_y(M, self.bispectrum_componenents)
-            # Contruct coefficients
-            coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
-            coef_b_r = np.conjugate(u.T).dot(np.conjugate(M))
-            # Normalize
-            coef_b /= np.linalg.norm(coef_b, axis=0)
-            coef_b_r /= np.linalg.norm(coef_b_r, axis=0)
-            # Transpose (this code was originally F order)
-            coef_b = coef_b.T
-            coef_b_r = coef_b_r.T
-
-        else:
-            raise NotImplemented("Alt. PCA not implemented, set use_yoel_ref=True")
-            # # Abandon for now. sk PCA while it is really useful,
-            # #   expects real data.
-            # # I tried the stupid things regarding converting to real,
-            # #   (flattening, running mags and phases seperately etc)
-            # #   but the accuracy was too poor for me.
-            # #   Should discuss this.
-            # pca = PCA(
-            #     self.bispectrum_componenents,
-            #     copy=False,  # careful, overwrites data matrix...
-            #     svd_solver="auto",  # use randomized (Halko) for larger problems
-            #     random_state=123,
-            # )  # replace with ASPIRE repro seed later.
-
-            # _ = pca.fit_transform(X)
-            # # ...
-
-        # Any PCA step should return coef_b that is (n_img, n_feature).
-        #   Same shape for coef_b_r.
-        #   Where feature is typically self.bispectrum_componenents.
-        #   However, for small problems it may return n_feature=n_img.
+        coef_b, coef_b_r = self.pca(M)
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info("Begin Nearest Neighbors Search")
         classes = self.nn_classification(coef_b, coef_b_r)
-        # classes, _ = self.legacy_nn_classification(coef_b, coef_b_r)
 
         # # Stage 3: Align
         logger.info("Begin Rotational Alignment")
-        # angles = self.align(classes, refl, coef=fb_coef, basis=self.fb_basis)
-        # angles = self.align(classes, refl, coef=coef)
         return self.legacy_align(classes, coef)
 
-    def nn_classification(self, coeff_b, coeff_b_r):
+    def _sk_nn_classification(self, coeff_b, coeff_b_r):
         # Before we get clever lets just use a generally accepted implementation.
 
         n_img = self.src.n
@@ -294,7 +305,7 @@ class RIRClass2D(Class2D):
         rot *= np.pi / 180.0  # Convert to radians
         return classes, class_refl, rot, corr, 0
 
-    def legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
+    def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """
         Perform nearest neighbor classification and alignment.
         """
@@ -330,4 +341,61 @@ class RIRClass2D(Class2D):
             )
             classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
 
-        return classes, corr
+        return classes
+
+    def _legacy_pca(self, M):
+        """
+        PCA_y (y is I think for Yoel...).
+
+        This is more or less the historic implementation ported
+        to Python from MATLAB.
+        """
+
+        # ### The following was from legacy code. Be careful wrt order.
+        M = M.T
+        u, s, v = pca_y(M, self.bispectrum_componenents)
+
+        # Contruct coefficients
+        coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
+        coef_b_r = np.conjugate(u.T).dot(np.conjugate(M))
+
+        # Normalize
+        coef_b /= np.linalg.norm(coef_b, axis=0)
+        coef_b_r /= np.linalg.norm(coef_b_r, axis=0)
+
+        # Transpose (this code was originally F order)
+        coef_b = coef_b.T
+        coef_b_r = coef_b_r.T
+
+        return coef_b, coef_b_r
+
+    def _sk_pca(self, M):
+        # # Abandon using SK directly for now,
+        # #   while it is really useful, it
+        # #   expects real data.
+        # #
+        # # I tried the stupid things like
+        # #   flattening,
+        # #   running reals imags seperate,
+        # #   running mags and phases seperately etc...
+        # #   but the accuracy was too poor for me.
+        # #   Should discuss this.
+        # # So I subclassed sk PCA extended to complex numbers.
+        pca = ComplexPCA(
+            self.bispectrum_componenents,
+            copy=False,  # careful, overwrites data matrix... we'll handle the copies.
+            svd_solver="auto",  # use randomized (Halko) for larger problems
+            random_state=123,
+        )  # replace with ASPIRE repro seed later.
+        coef_b = pca.fit_transform(M.copy())
+        coef_b_r = pca.fit_transform(np.conjugate(M))
+
+        # M is no longer needed, hint for it to get cleaned up.
+        del M
+
+        # I'm also not sure why this norm is needed...
+        #  but it does work better with it.
+        coef_b /= np.linalg.norm(coef_b, axis=1)[:, np.newaxis]
+        coef_b_r /= np.linalg.norm(coef_b_r, axis=1)[:, np.newaxis]
+
+        return coef_b, coef_b_r

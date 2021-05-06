@@ -76,6 +76,8 @@ rir = RIRClass2D(
     fspca_components=100,
     sample_n=40,
     bispectrum_freq_cutoff=3,
+    large_pca_implementation="legacy",
+    nn_implementation="legacy",
 )
 
 
