@@ -256,60 +256,6 @@ class FSPCABasis(SteerableBasis):
         # convert to real reprsentation
         return self.basis.to_real(cv)
 
-    def eigenimages(self, images):
-        """
-        Take stack of images in the standard coordinate basis and return the eigenimages.
-
-        :param images:  The Image instance representing a stack of images in the
-        standard 2D coordinate basis to be evaluated.
-        :return: Stack of eigenimages computed by FSPCA.
-        """
-
-        # Sanity check the power captured by the eigen components
-        # # Check do we expect blocks decreasing? if so i have bug...
-        sorted_indices = np.argsort(-np.abs(self.eigvals))
-        k = 10
-        logger.info(
-            f"Top {k} Eigvals of {len(self.eigvals)} {self.eigvals[sorted_indices][:k]}"
-        )
-        import matplotlib.pyplot as plt
-
-        plt.semilogy(np.abs(self.eigvals[sorted_indices]))
-        plt.show()
-
-        # What do the eigvecs look like?
-        _I = self.basis.evaluate(
-            self.basis.to_real(
-                self.eigvecs.dense()[sorted_indices].astype(np.complex128)
-            )
-        )
-        eigenplot = np.empty((k, self.basis.nres, k, self.basis.nres))
-        for i in range(k):
-            for j in range(k):
-                eigenplot[i, :, j, :] = _I[i * k + j]
-        eigenplot = eigenplot.reshape(k * self.basis.nres, k * self.basis.nres)
-        plt.imshow(eigenplot)
-        plt.show()
-
-        # evaluate_t in self.basis (FFB)
-        c_fb = self.basis.to_complex(self.basis.evaluate_t(images))
-
-        # Then apply linear combination defined by FSPCA (eigvecs)
-        # This yields the representation in FSPCA basis
-        #  alpha =         U.T             @   X
-        # c_fspca = (self.eigvecs.dense().T @ c_fb.T)  # transpose the smaller matrix
-        c_fspca = (c_fb @ self.eigvecs.dense()).T
-
-        # We then apply FSPCA eigenvector matrix again to get the reconstructed images
-        #           Y            =         U            @  alpha     =     U @ U.T @ X
-        reconstructed_image_coef = self.eigvecs.dense() @ c_fspca
-        #  These are still coefs in self.basis (FFB)
-        #  so we need to evaluate back to the image domain.
-        reconstructed_image_coef = self.basis.to_real(reconstructed_image_coef.T)
-        eigen_images = self.basis.evaluate(reconstructed_image_coef)
-
-        return eigen_images
-
     def compress(self, k):
         """
         Use the eigendecomposition to select the most powerful
