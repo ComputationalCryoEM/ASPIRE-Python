@@ -1,8 +1,8 @@
 import os.path
-from pytest import raises
 from unittest import TestCase
 
 import numpy as np
+from pytest import raises
 
 from aspire.basis import FBBasis2D
 from aspire.image import Image
