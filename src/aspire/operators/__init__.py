@@ -13,4 +13,5 @@ from .filters import (
     ScalarFilter,
     ScaledFilter,
     ZeroFilter,
+    voltage_to_wavelength,
 )

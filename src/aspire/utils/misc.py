@@ -10,6 +10,14 @@ from itertools import chain, combinations
 logger = logging.getLogger(__name__)
 
 
+def abs2(x):
+    """
+    Compute complex modulus squared.
+    """
+
+    return x.real ** 2 + x.imag ** 2
+
+
 def ensure(cond, error_message=None):
     """
     assert statements in Python are sometimes optimized away by the compiler, and are for internal testing purposes.
