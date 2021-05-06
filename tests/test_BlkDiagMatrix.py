@@ -56,16 +56,16 @@ class BlkDiagMatrixTestCase(TestCase):
         pass
 
     def allallfunc(self, A, B, func=np.allclose):
-        """ Checks assertTrue(func()) as it iterates through A, B. """
+        """Checks assertTrue(func()) as it iterates through A, B."""
         for (a, b) in zip(A, B):
             self.assertTrue(func(a, b))
 
     def allallid(self, A, B_ids, func=np.allclose):
-        """ Checks id(a) matches b_id for (a, b_id) in zip(A, B_ids). """
+        """Checks id(a) matches b_id for (a, b_id) in zip(A, B_ids)."""
         return self.allallfunc(A, B_ids, func=lambda x, y: id(x) == y)
 
     def testBlkDiagMatrixCompat(self):
-        """ Check incompatible matrix raises exception. """
+        """Check incompatible matrix raises exception."""
         # Create a differently shaped matrix
         x = BlkDiagMatrix.from_list(self.blk_a[1:-1])
         # code should raise
@@ -208,7 +208,7 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(blk_a_copy_2, self.blk_a)
 
     def testBlkDiagMatrixInPlace(self):
-        """ Tests sequence of in place optimized arithmetic (add, sub, mul) """
+        """Tests sequence of in place optimized arithmetic (add, sub, mul)"""
         _ = [x + x + 10.0 for x in self.blk_a]
         _ = [np.ones(x.shape) * 5.0 for x in self.blk_a]
 
@@ -316,7 +316,7 @@ class BlkDiagMatrixTestCase(TestCase):
         self.assertFalse(blk_nan.isfinite)
 
     def testBlkDiagMatrixDense(self):
-        """ Test we correctly compute the right shape and array. """
+        """Test we correctly compute the right shape and array."""
         self.assertTrue(np.allclose(self.dense, self.blk_a.dense()))
 
     def testBlkDiagMatrixArith(self):
