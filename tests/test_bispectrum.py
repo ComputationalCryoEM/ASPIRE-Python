@@ -41,16 +41,21 @@ class BispectrumTestCase(TestCase):
 
         # Prepare a FSPCA Basis too.
         self.fspca_basis = FSPCABasis(self.src, self.basis)
+        self.fspca_basis.build(self.v1)
 
     def testRotationalInvarianceFB(self):
         """
         Compare FB/FFB bispectrums before and after rotation.
-        Compares a slab (by freq_cutoff) to reduce size.
+        Compares a slab of 3d bispectrum (k1 q1) x (k2 q2) x q3,
+        by freq_cutoff of q3 to reduce size.
         """
 
-        b1 = self.basis.calculate_bispectrum(self.v1, freq_cutoff=3)
-        b2 = self.basis.calculate_bispectrum(self.v2, freq_cutoff=3)
+        # Compute Bispectrum
+        q = 3  # slab cutoff
+        b1 = self.basis.calculate_bispectrum(self.v1, freq_cutoff=q)
+        b2 = self.basis.calculate_bispectrum(self.v2, freq_cutoff=q)
 
+        # Bispectrum should be equivalent
         self.assertTrue(np.allclose(b1, b2))
 
     def testRotationalInvarianceFSPCA(self):
@@ -58,15 +63,38 @@ class BispectrumTestCase(TestCase):
         Compare FSPCA bispctrum before and after rotation.
         """
 
-        self.fspca_basis.build(self.v1)
-        self.fspca_basis.build(self.v2)
-
         # Convert to complex
         cv1 = self.basis.to_complex(self.v1)
         cv2 = self.basis.to_complex(self.v2)
 
-        # Compute Bispect
+        # Compute Bispectrum
         w1 = self.fspca_basis.calculate_bispectrum(cv1)
         w2 = self.fspca_basis.calculate_bispectrum(cv2)
 
+        # Bispectrum should be equivalent
+        self.assertTrue(np.allclose(w1, w2))
+
+    def testRotationalInvarianceFSPCACompressed(self):
+        """
+        Compare Compressed FSPCA bispctrum before and after rotation.
+
+        This is most like what is used in practice for RIR.
+        """
+
+        # Create a reduced rank (compressed) FSPCABasis, top 100 components.
+        components = 100
+        compressed_fspca = self.fspca_basis.compress(k=components)
+
+        # Compress using representation in the compressed FSPCA
+        cv1_r = compressed_fspca.expand(self.v1)
+        cv2_r = compressed_fspca.expand(self.v2)
+
+        # Check we are really compressed
+        self.assertTrue(cv1_r.shape == (1, components))
+
+        # Compute Bispectrum
+        w1 = compressed_fspca.calculate_bispectrum(cv1_r)
+        w2 = compressed_fspca.calculate_bispectrum(cv2_r)
+
+        # Bispectrum should be equivalent
         self.assertTrue(np.allclose(w1, w2))
