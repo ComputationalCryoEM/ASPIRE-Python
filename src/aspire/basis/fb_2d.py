@@ -353,7 +353,7 @@ class FBBasis2D(SteerableBasis):
             complex_coef = complex_coef.reshape(1, -1)
 
         if complex_coef.dtype not in (np.complex128, np.complex64):
-            raise TypeError("coef provided to to_reeal should be complex.")
+            raise TypeError("coef provided to to_real should be complex.")
 
         # Pass through dtype precions, but check and warn if mismatched.
         dtype = real_type(complex_coef.dtype)

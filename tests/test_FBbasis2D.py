@@ -1,10 +1,12 @@
 import os.path
+from pytest import raises
 from unittest import TestCase
 
 import numpy as np
 
 from aspire.basis import FBBasis2D
-from aspire.utils import utest_tolerance
+from aspire.image import Image
+from aspire.utils import complex_type, real_type, utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -333,5 +335,57 @@ class FBBasis2DTestCase(TestCase):
         # then convert back to real coef representation.
         v2 = self.basis.to_real(cv)
 
-        # The round trip should be equivalent up to machine precision.
+        # The round trip should be equivalent up to machine precision
         self.assertTrue(np.allclose(v1, v2))
+
+    def testComplexCoversionErrorsToComplex(self):
+        # Load a reasonable input
+        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+
+        # Express in an FB basis
+        v1 = self.basis.expand(x.astype(self.dtype))
+
+        # Test catching Errors
+        with raises(TypeError):
+            # Pass complex into `to_complex`
+            _ = self.basis.to_complex(v1.astype(np.complex64))
+
+        # Test casting case, where basis and coef don't match
+        if self.basis.dtype == np.float32:
+            test_dtype = np.float64
+        elif self.basis.dtype == np.float64:
+            test_dtype = np.float32
+        # Result should be same precision as coef input, just complex.
+        result_dtype = complex_type(test_dtype)
+
+        v3 = self.basis.to_complex(v1.astype(test_dtype))
+        self.assertTrue(v3.dtype == result_dtype)
+
+        # Try 0d vector, should not crash.
+        _ = self.basis.to_complex(v1.reshape(-1))
+
+    def testComplexCoversionErrorsToReal(self):
+        # Load a reasonable input
+        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+
+        # Express in an FB basis
+        cv1 = self.basis.to_complex(self.basis.expand(x.astype(self.dtype)))
+
+        # Test catching Errors
+        with raises(TypeError):
+            # Pass real into `to_real`
+            _ = self.basis.to_real(cv1.real.astype(np.float32))
+
+        # Test casting case, where basis and coef precision don't match
+        if self.basis.dtype == np.float32:
+            test_dtype = np.complex128
+        elif self.basis.dtype == np.float64:
+            test_dtype = np.complex64
+        # Result should be same precision as coef input, just real.
+        result_dtype = real_type(test_dtype)
+
+        v3 = self.basis.to_real(cv1.astype(test_dtype))
+        self.assertTrue(v3.dtype == result_dtype)
+
+        # Try a 0d vector, should not crash.
+        _ = self.basis.to_real(cv1.reshape(-1))
