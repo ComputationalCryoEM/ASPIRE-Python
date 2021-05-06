@@ -2,12 +2,10 @@ import os
 from unittest import TestCase
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from aspire.basis import FFBBasis2D, FSPCABasis
 from aspire.image import Image
 from aspire.source import Simulation
-from aspire.utils import powerset
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -41,22 +39,22 @@ class BispectrumTestCase(TestCase):
         # Prepare a FSPCA Basis too.
         self.fspca_basis = FSPCABasis(self.src, self.basis)
 
-    def testRotationalInvariance(self):
+    def testRotationalInvarianceFB(self):
+        """
+        Compare FB/FFB bispectrums before and after rotation.
+        Compares a slab (by freq_cutoff) to reduce size.
+        """
 
-        b1 = self.basis.calculate_bispectrum(self.v1)
-        b2 = self.basis.calculate_bispectrum(self.v2)
-
-        self.assertTrue(np.allclose(b1, b2))
-
-    def testRotationalInvariance(self):
-
-        # Here we'll use a slab of bispectrum (by freq_cutoff) to reduce size.
         b1 = self.basis.calculate_bispectrum(self.v1, freq_cutoff=3)
         b2 = self.basis.calculate_bispectrum(self.v2, freq_cutoff=3)
 
         self.assertTrue(np.allclose(b1, b2))
 
     def testRotationalInvarianceFSPCA(self):
+        """
+        Compare FSPCA bispctrum before and after rotation.
+        """
+
         self.fspca_basis.build(self.v1)
         self.fspca_basis.build(self.v2)
 

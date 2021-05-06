@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from aspire.numeric import ComplexPCA
-from aspire.utils import complex_type, utest_tolerance
+from aspire.utils import complex_type
 
 
 class ComplexPCACase(TestCase):
