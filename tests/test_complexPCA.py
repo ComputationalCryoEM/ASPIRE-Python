@@ -18,8 +18,8 @@ class ComplexPCACase(TestCase):
         )
 
         # Setup larger experiment
-        self.n_samples = n_samples = 10000
-        self.m_features = m_features = 1200
+        self.n_samples = n_samples = 2048
+        self.m_features = m_features = 600
         self.components_large = 300
         self.X_large = np.random.random(
             (n_samples, m_features)

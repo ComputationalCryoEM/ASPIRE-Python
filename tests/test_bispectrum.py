@@ -20,21 +20,24 @@ class BispectrumTestCase(TestCase):
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
                 self.dtype
             )
-        )
+        ).downsample(32)
 
-        # Create Sim object then extract a projection.
+        # Create Sim object.
+        # Creates 10 projects so there is something to feed FSPCABasis.
         self.src = Simulation(L=v.resolution, n=10, vols=v, dtype=v.dtype)
 
         # Original projection image to transform.
         self.orig_img = self.src.images(0, 1)
 
-        # Rotate 90 degrees in cartesian coordinates.
+        # Rotate 90 degrees in cartesian coordinates using third party tool.
         self.rt90_img = Image(np.rot90(self.orig_img.asnumpy(), axes=(1, 2)))
 
         # Prepare a Fourier Bessel Basis
         self.basis = FFBBasis2D((self.orig_img.res,) * 2, dtype=self.dtype)
         self.v1 = self.basis.evaluate_t(self.orig_img)
         self.v2 = self.basis.evaluate_t(self.rt90_img)
+        # These should _not_ be equal or the test is pointless.
+        self.assertFalse(np.allclose(self.v1, self.v2))
 
         # Prepare a FSPCA Basis too.
         self.fspca_basis = FSPCABasis(self.src, self.basis)
