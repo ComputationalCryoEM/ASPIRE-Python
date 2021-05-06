@@ -104,9 +104,13 @@ class RIRClass2D(Class2D):
         However, for small problems it may return n_components=n_img,
         since that would be the smallest dimension.
 
+        To extend with an additional PCA like method,
+        add as private method and list in large_pca_implementations.
+
         :param M: Array (n_img, m_features), typically complex.
         :returns: Tuple of arrays coef_b coef_b_r.
         """
+        # _pca is assigned during initialization.
         return self._pca(M)
 
     def nn_classification(self, coef_b, coef_b_r):
@@ -118,9 +122,12 @@ class RIRClass2D(Class2D):
         Result is array (n_img, n_nbor) with entry i reprsenting
         index i into class input img array (src).
 
+        To extend with an additonal Nearest Neighbor algo,
+        add as a private method and list in nn_implementations.
+
         :returns: Array of indices representing classes.
         """
-
+        # _nn_classification is assigned during initialization.
         return self._nn_classification(coef_b, coef_b_r)
 
     def classify(self):
