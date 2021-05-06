@@ -229,7 +229,9 @@ class FBBasis2DTestCase(TestCase):
 
     def testFBBasis2DEvaluate_t(self):
         v = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy")).T  # RCOPT
-        result = self.basis.evaluate_t(v.astype(self.dtype))
+        # While FB can accept arrays, prefable to pass FB2D and FFB2D Image instances.
+        img = Image(v.astype(self.dtype))
+        result = self.basis.evaluate_t(img)
         self.assertTrue(
             np.allclose(
                 result,
