@@ -61,7 +61,8 @@ class SteerableBasis(Basis):
         unique_radial_indices = np.unique(radial_indices)  # q
         # unique_angular_indices = np.unique(angular_indices)  # k
         # compressed_radial_map = {q: i for i, q in enumerate(unique_radial_indices)}
-        if self.compressed:
+        # maybe rm this if we go with important sampling...
+        if hasattr(self, "compressed") and self.compressed:
             # k should never be this high..
             fill_value = self.complex_count + 1
             compressed_radial_map = (
@@ -96,7 +97,8 @@ class SteerableBasis(Basis):
 
                 if np.any(intermodulated_coef_inds):
                     Q3 = radial_indices[intermodulated_coef_inds]
-                    if self.compressed:
+
+                    if hasattr(self, "compressed") and self.compressed:
                         # The compressed mapping is sparse in q
                         # Q3 = [compressed_radial_map[q] for q in Q3]
                         Q3 = compressed_radial_map[Q3]

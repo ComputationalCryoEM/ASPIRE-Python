@@ -385,7 +385,7 @@ class FBBasis2D(SteerableBasis):
 
         return coef
 
-    def calculate_bispectrum(self, coef, flatten=False):
+    def calculate_bispectrum(self, coef, flatten=False, freq_cutoff=None):
         """
         Calculate bispectrum for a set of coefs in this basis.
 
@@ -396,13 +396,16 @@ class FBBasis2D(SteerableBasis):
 
         :param coef: Coefficients representing a (single) image expanded in this basis.
         :param flatten: Optionally extract symmetric values (tril) and then flatten.
+        :param freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
         :return: Bispectum matrix (complex valued).
         """
 
         # Bispectrum implementation expects the complex representation of coefficients.
         complex_coef = self.to_complex(coef)
 
-        return super().calculate_bispectrum(complex_coef, flatten=flatten)
+        return super().calculate_bispectrum(
+            complex_coef, flatten=flatten, freq_cutoff=freq_cutoff
+        )
 
     def rotate(self, coef, radians, refl=None):
         """
