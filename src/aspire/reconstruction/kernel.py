@@ -165,3 +165,80 @@ class FourierKernel(Kernel):
 
         A = vecmat_to_volmat(A)
         return A
+
+
+class FourierKernelMat(FourierKernel):
+    def __init__(self, kermat, centered):
+
+        self.ndim = kermat.ndim - 2
+        self.kermat = kermat
+        self.r = kermat.shape[0]
+        assert kermat.shape[1] == self.r
+        self.dtype = kermat.dtype
+        self.M = kermat.shape[-1]
+
+        self._centered = centered
+
+    def __add__(self, delta):
+        new_kermat = self.kermat + delta
+        return FourierKernelMat(new_kermat, self._centered)
+
+    def is_centered(self):
+        return self._centered
+
+    def circularize(self):
+        _L = self.M // 2
+        xx = np.empty((self.r, self.r, _L, _L, _L))
+        for k in range(self.r):
+            for j in range(self.r):
+                xx[k, j] = FourierKernel(
+                    self.kermat[k, j], centered=self._centered
+                ).circularize()
+        return xx
+
+    def convolve_volume(self, x, k, j):
+        N = x.shape[0]
+        kernel_f = self.kermat[k, j, ..., np.newaxis]
+        N_ker = kernel_f.shape[0]
+
+        x, sz_roll = unroll_dim(x, 4)
+        ensure(
+            x.shape[0] == x.shape[1] == x.shape[2] == N, "Volumes in x must be cubic"
+        )
+        ensure(kernel_f.shape[3] == 1, "Convolution kernel must be cubic")
+        ensure(len(set(kernel_f.shape[:3])) == 1, "Convolution kernel must be cubic")
+
+        is_singleton = x.shape[3] == 1
+
+        if is_singleton:
+            x = fftn(x[..., 0], (N_ker, N_ker, N_ker))[..., np.newaxis]
+        else:
+            raise NotImplementedError("not yet")
+
+        x = x * kernel_f
+
+        if is_singleton:
+            x[..., 0] = np.real(ifftn(x[..., 0]))
+            x = x[:N, :N, :N, :]
+        else:
+            raise NotImplementedError("not yet")
+
+        x = roll_dim(x, sz_roll)
+
+        return np.real(x)
+
+    def convolve_volume_matrix(self, x):
+        raise NotImplementedError("Not implemented for Fourier Kernel Matrix")
+
+    def toeplitz(self, L=None):
+        if L is None:
+            L = int(self.M / 2)
+
+        Amat = np.empty((self.r, self.r, self.L, self.L, self.L))
+        for k in range(self.r):
+            for j in range(self.r):
+                Amat[k, j] = FourierKernel(
+                    self.kermat[k, j], centered=self._centered
+                ).toeplitz(L)
+
+        return Amat
