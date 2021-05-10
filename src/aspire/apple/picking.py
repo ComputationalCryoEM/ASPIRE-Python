@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class Picker:
-    """ This class does the actual picking with help from PickerHelper class. """
+    """This class does the actual picking with help from PickerHelper class."""
 
     def __init__(
         self,

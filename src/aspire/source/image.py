@@ -119,7 +119,7 @@ class ImageSource:
 
     @property
     def states(self):
-        return self.get_metadata("_rlnClassNumber")
+        return np.atleast_1d(self.get_metadata("_rlnClassNumber"))
 
     @states.setter
     def states(self, values):
@@ -164,7 +164,9 @@ class ImageSource:
 
     @property
     def offsets(self):
-        return self.get_metadata(["_rlnOriginX", "_rlnOriginY"], default_value=0.0)
+        return np.atleast_2d(
+            self.get_metadata(["_rlnOriginX", "_rlnOriginY"], default_value=0.0)
+        )
 
     @offsets.setter
     def offsets(self, values):
@@ -172,7 +174,7 @@ class ImageSource:
 
     @property
     def amplitudes(self):
-        return self.get_metadata("_rlnAmplitude", default_value=1.0)
+        return np.atleast_1d(self.get_metadata("_rlnAmplitude", default_value=1.0))
 
     @amplitudes.setter
     def amplitudes(self, values):
