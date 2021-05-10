@@ -70,7 +70,7 @@ class CtfEstimator:
         self.theta = grid["phi"].T
         self.defocus1 = 0
         self.defocus2 = 0
-        self.angle = 0
+        self.angle = 0  # Radians
         self.h = 0
 
     def set_df1(self, df):
@@ -95,7 +95,7 @@ class CtfEstimator:
         """
         Sets angle.
 
-        :param angle: Angle (in degrees) between df1 and the x-axis.
+        :param angle: Angle (in Radians) between df1 and the x-axis.
         """
 
         self.angle = angle
@@ -544,7 +544,7 @@ class CtfEstimator:
         :param signal: Estimated power spectrum
         :param df1: Defocus value in the direction perpendicular to df2.
         :param df2: Defocus value in the direction perpendicular to df1.
-        :param angle_ast: Angle between df1 and the x-axis
+        :param angle_ast: Angle between df1 and the x-axis, Radians.
         :param r: Magnitude of spatial frequencies.
         :param theta: Phase of spatial frequencies.
         :param pixel_size: Pixel size in \u212b (Angstrom).
@@ -555,8 +555,6 @@ class CtfEstimator:
         :param cs: Spherical aberration in mm.
         :return: Optimal defocus parameters
         """
-
-        angle_ast = angle_ast / 180 * np.pi
 
         # step size
         alpha1 = np.power(10, 5)
@@ -651,7 +649,7 @@ class CtfEstimator:
 
         df1 = (x + np.abs(y + z * 1j)) / 2
         df2 = (x - np.abs(y + z * 1j)) / 2
-        angle_ast = np.angle(y + z * 1j) / 2
+        angle_ast = np.angle(y + z * 1j) / 2  # Radians
 
         inner_cosine = y * np.cos(2 * theta) + z * np.sin(2 * theta)
         outer_sine = np.sin(a * x + a * inner_cosine - b)
@@ -802,14 +800,14 @@ def estimate_ctf(
         r_ctf = rb * (10 / pixel_size)
         theta = grid["phi"].T
 
-        angle = -75
+        angle = -5 / 12 * np.pi  # Radians (-75 degrees)
         cc_array = np.zeros((6, 4))
         for a in range(0, 6):
             df1, df2, angle_ast, p = ctf_object.gd(
                 signal,
                 initial_df1,
                 initial_df2,
-                angle + np.multiply(a, 30),
+                angle + a * np.pi / 6.0,  # Radians, + a*30degrees
                 r_ctf,
                 theta,
                 pixel_size,
@@ -822,14 +820,14 @@ def estimate_ctf(
 
             cc_array[a, 0] = df1
             cc_array[a, 1] = df2
-            cc_array[a, 2] = angle_ast
+            cc_array[a, 2] = angle_ast  # Radians
             cc_array[a, 3] = p
         ml = np.argmax(cc_array[:, 3], -1)
 
         result = (
             cc_array[ml, 0],
             cc_array[ml, 1],
-            cc_array[ml, 2],
+            cc_array[ml, 2],  # Radians
             cs,
             voltage,
             pixel_size,
@@ -842,7 +840,7 @@ def estimate_ctf(
 
         ctf_object.set_df1(cc_array[ml, 0])
         ctf_object.set_df2(cc_array[ml, 1])
-        ctf_object.set_angle(cc_array[ml, 2])
+        ctf_object.set_angle(cc_array[ml, 2])  # Radians
         ctf_object.generate_ctf()
 
         with mrcfile.new(
