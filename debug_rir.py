@@ -70,15 +70,35 @@ fspca_basis.build(coefs)
 
 # rir = RIRClass2D(src, fspca_basis, fspca_components=100, sample_n=40)
 # rir = RIRClass2D(src, fspca_basis, fspca_components=400, sample_n=4000, bispectrum_freq_cutoff=1)
+# rir = RIRClass2D(
+#     src,
+#     fspca_basis,
+#     fspca_components=100,
+#     sample_n=40,
+#     bispectrum_freq_cutoff=3,
+#     large_pca_implementation="legacy",
+#     nn_implementation="legacy",
+# )
+
+# rir = RIRClass2D(
+#     src,
+#     fspca_basis,
+#     fspca_components=400,
+#     sample_n=50000,  # MATLAB had a note suggesting 50k...
+#     large_pca_implementation="legacy",
+#     nn_implementation="legacy",
+#     bispectrum_implementation="legacy"
+# )  # 13-15 m
+
 rir = RIRClass2D(
     src,
     fspca_basis,
-    fspca_components=100,
-    sample_n=40,
-    bispectrum_freq_cutoff=3,
-    large_pca_implementation="legacy",
-    nn_implementation="legacy",
-)
+    fspca_components=400,
+    sample_n=4000,  # MATLAB had a note suggesting 50k...
+    large_pca_implementation="sklearn",
+    nn_implementation="sklearn",
+    bispectrum_implementation="legacy",
+)  # 10-11 m
 
 
 result = rir.classify()

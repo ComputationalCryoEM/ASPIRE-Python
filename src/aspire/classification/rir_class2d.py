@@ -6,7 +6,11 @@ from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
 from aspire.classification import Class2D
-from aspire.classification.legacy_implementations import pca_y, rot_align
+from aspire.classification.legacy_implementations import (
+    bispec_2drot_large,
+    pca_y,
+    rot_align,
+)
 from aspire.numeric import ComplexPCA
 from aspire.utils.random import rand
 
@@ -26,6 +30,7 @@ class RIRClass2D(Class2D):
         bispectrum_freq_cutoff=None,
         large_pca_implementation="legacy",
         nn_implementation="legacy",
+        bispectrum_implementation="devel",
         dtype=None,
     ):
         """
@@ -92,6 +97,17 @@ class RIRClass2D(Class2D):
             )
         self._pca = large_pca_implementations[large_pca_implementation]
 
+        # # Do we have a sane Bispectrum component
+        bispectrum_implementations = {
+            "legacy": self._legacy_bispectrum,
+            "devel": self._devel_bispectrum,
+        }
+        if bispectrum_implementation not in bispectrum_implementations:
+            raise ValueError(
+                f"Provided bispectrum_implementation={bispectrum_implementation} not in {bispectrum_implementations.keys()}"
+            )
+        self._bispectrum = bispectrum_implementations[bispectrum_implementation]
+
         # For now, only run with FSPCA basis
         assert isinstance(self.pca_basis, FSPCABasis)
 
@@ -130,6 +146,17 @@ class RIRClass2D(Class2D):
         # _nn_classification is assigned during initialization.
         return self._nn_classification(coef_b, coef_b_r)
 
+    def bispectrum(self, coef):
+        """
+        All bispectrum implementations should consume a stack of fspca coef
+        and return bispectrum coefficients.
+
+        :param coef: complex steerable coefficients (eg. from FSPCABasis).
+        :returns: tuple of arrays (coef_b, coef_b_r)
+        """
+        # _bispectrum is assigned during initialization.
+        return self._bispectrum(coef)
+
     def classify(self):
         """
         Perform the 2D images classification.
@@ -147,62 +174,8 @@ class RIRClass2D(Class2D):
         fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
         coef = self.pca_basis.expand(fb_coef)
 
-        # Legacy code included a sanity check:
-        # non_zero_freqs = self.pca_basis.complex_angular_indices != 0
-        # coef_norm = np.log(np.power(np.abs(coef[:,non_zero_freqs]), self.alpha)).all())
-        # just stick to the paper (eq 20) for now , look at this more later.
-        coef_normed = np.where(
-            coef == 0, 0, coef / np.power(np.abs(coef), 1 - self.alpha)
-        )  # should use an epsilon here...
-
-        if not np.isfinite(coef_normed).all():
-            raise ValueError("Coefs should be finite")
-
-        # ## Compute and reduce Bispectrum
-
-        m = np.power(self.pca_basis.eigvals, self.alpha)
-        m = m[
-            self.pca_basis.complex_angular_indices != 0
-        ]  # filter non_zero_freqs eq 18,19
-        pm = m / np.sum(m)
-        x = rand(len(m))
-        m_mask = x < self.sample_n * pm
-
-        M = None
-
-        for i in tqdm(range(self.src.n)):
-            B = self.pca_basis.calculate_bispectrum(
-                coef_normed[i],
-                filter_nonzero_freqs=True,
-                freq_cutoff=self.bispectrum_freq_cutoff,
-            )
-
-            # ### Truncate Bispectrum (by sampling)
-            # ### Note, where is this written down? (and is it even needed?)
-            B = B[m_mask][:, m_mask]
-            logger.info(f"Truncating Bispectrum to {B.shape} ({np.size(B)}) coefs.")
-
-            # B is symmetric, take lower triangle of first two axis.
-            tril = np.tri(B.shape[0], dtype=bool)
-            B = B[tril, :]
-            logger.info(f"Symmetry reduced Bispectrum to {np.size(B)} coefs.")
-            # B is sparse and should have same sparsity for any image up to underflows...
-            B = B.ravel()[np.flatnonzero(B)]
-            logger.info(f"Sparse (nnz) reduced Bispectrum to {np.size(B)} coefs.")
-
-            # Legacy code had bispect flattened as CSR and some other hacks.
-            #   For now, we'll compute it densely then take nonzeros.
-            if M is None:
-                # Instanstiate M with B's nnz size
-                M = np.empty((self.src.n, B.shape[0]), dtype=coef.dtype)
-            M[i] = B
-
-        # Reduce dimensionality of Bispectrum sample with PCA
-        logger.info(
-            f"Computing Large PCA, returning {self.bispectrum_componenents} components."
-        )
-        # should add memory sanity check here... these can be crushingly large...
-        coef_b, coef_b_r = self.pca(M)
+        # Compute Bispectrum
+        coef_b, coef_b_r = self.bispectrum(coef)
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info("Begin Nearest Neighbors Search")
@@ -307,8 +280,8 @@ class RIRClass2D(Class2D):
 
         class_refl = (classes // n_im).astype(bool)
         classes[classes >= n_im] = classes[classes >= n_im] - n_im
-        # Why did they do this?
-        # rot[class_refl] = np.mod(rot[class_refl] + 180, 360) # ??
+        # # Why did they do this?
+        #     rot[class_refl] = np.mod(rot[class_refl] + 180, 360) # ??
         rot *= np.pi / 180.0  # Convert to radians
         return classes, class_refl, rot, corr, 0
 
@@ -406,3 +379,84 @@ class RIRClass2D(Class2D):
         coef_b_r /= np.linalg.norm(coef_b_r, axis=1)[:, np.newaxis]
 
         return coef_b, coef_b_r
+
+    def _devel_bispectrum(self, coef):
+        # Legacy code included a sanity check:
+        # non_zero_freqs = self.pca_basis.complex_angular_indices != 0
+        # coef_norm = np.log(np.power(np.abs(coef[:,non_zero_freqs]), self.alpha)).all())
+        # just stick to the paper (eq 20) for now , look at this more later.
+        coef_normed = np.where(
+            coef == 0, 0, coef / np.power(np.abs(coef), 1 - self.alpha)
+        )  # should use an epsilon here...
+
+        if not np.isfinite(coef_normed).all():
+            raise ValueError("Coefs should be finite")
+
+        # ## Compute and reduce Bispectrum
+
+        m = np.power(self.pca_basis.eigvals, self.alpha)
+        m = m[
+            self.pca_basis.complex_angular_indices != 0
+        ]  # filter non_zero_freqs eq 18,19
+        pm = m / np.sum(m)
+        x = rand(len(m))
+        m_mask = x < self.sample_n * pm
+
+        M = None
+
+        for i in tqdm(range(self.src.n)):
+            B = self.pca_basis.calculate_bispectrum(
+                coef_normed[i],
+                filter_nonzero_freqs=True,
+                freq_cutoff=self.bispectrum_freq_cutoff,
+            )
+
+            # ### Truncate Bispectrum (by sampling)
+            # ### Note, where is this written down? (and is it even needed?)
+            B = B[m_mask][:, m_mask]
+            logger.info(f"Truncating Bispectrum to {B.shape} ({np.size(B)}) coefs.")
+
+            # B is symmetric, take lower triangle of first two axis.
+            tril = np.tri(B.shape[0], dtype=bool)
+            B = B[tril, :]
+            logger.info(f"Symmetry reduced Bispectrum to {np.size(B)} coefs.")
+            # B is sparse and should have same sparsity for any image up to underflows...
+            B = B.ravel()[np.flatnonzero(B)]
+            logger.info(f"Sparse (nnz) reduced Bispectrum to {np.size(B)} coefs.")
+
+            # Legacy code had bispect flattened as CSR and some other hacks.
+            #   For now, we'll compute it densely then take nonzeros.
+            if M is None:
+                # Instanstiate M with B's nnz size
+                M = np.empty((self.src.n, B.shape[0]), dtype=coef.dtype)
+            M[i] = B
+
+        # Reduce dimensionality of Bispectrum sample with PCA
+        logger.info(
+            f"Computing Large PCA, returning {self.bispectrum_componenents} components."
+        )
+        # should add memory sanity check here... these can be crushingly large...
+        coef_b, coef_b_r = self.pca(M)
+
+        return coef_b, coef_b_r
+
+    def _legacy_bispectrum(self, coef):
+        """
+        This code was ported to Python by an unkown author,
+        and is the closest viable reference material.
+
+        It is copied here to compare it a hot swappable manner while
+        fresh code is developed for this class.
+        """
+
+        # Legacy code requires we unpack just a few things to call it.
+
+        coef_b, coef_b_r = bispec_2drot_large(
+            coeff=coef.T,
+            freqs=self.pca_basis.complex_angular_indices,
+            eigval=self.pca_basis.eigvals,
+            alpha=self.alpha,
+            sample_n=self.sample_n,
+        )
+
+        return coef_b.T, coef_b_r.T
