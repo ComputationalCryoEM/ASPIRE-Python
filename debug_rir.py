@@ -23,15 +23,7 @@ DTYPE = np.float64
 ##################################################
 # Setup
 
-# logger.info("Generates gaussian blob simulation source")
-# src = Simulation(
-#     n=NUMBER_OF_TEST_IMAGES,
-#     L=RESOLUTION,
-#     seed=123,
-#     dtype=DTYPE,
-# )
-
-# # or generate some projections
+# Generate some projections
 fh = mrcfile.open("tutorials/data/clean70SRibosome_vol_65p.mrc")
 v = Volume(fh.data.astype(DTYPE))
 v = v.downsample((RESOLUTION,) * 3)
@@ -68,8 +60,6 @@ logger.info("Setting up FSPCA")
 fspca_basis = FSPCABasis(src, basis)
 fspca_basis.build(coefs)
 
-# rir = RIRClass2D(src, fspca_basis, fspca_components=100, sample_n=40)
-# rir = RIRClass2D(src, fspca_basis, fspca_components=400, sample_n=4000, bispectrum_freq_cutoff=1)
 # rir = RIRClass2D(
 #     src,
 #     fspca_basis,
@@ -78,7 +68,7 @@ fspca_basis.build(coefs)
 #     bispectrum_freq_cutoff=3,
 #     large_pca_implementation="legacy",
 #     nn_implementation="legacy",
-# )
+# )  # devel, ignore, need to implement eig based bispect sampling.
 
 # rir = RIRClass2D(
 #     src,
@@ -88,7 +78,7 @@ fspca_basis.build(coefs)
 #     large_pca_implementation="legacy",
 #     nn_implementation="legacy",
 #     bispectrum_implementation="legacy"
-# )  # 13-15 m
+# )  # near legacy implementation
 
 rir = RIRClass2D(
     src,
@@ -98,25 +88,13 @@ rir = RIRClass2D(
     large_pca_implementation="sklearn",
     nn_implementation="sklearn",
     bispectrum_implementation="legacy",
-)  # 10-11 m
+)  # replaced PCA and NN for third party; legacy Bispect
 
 
 result = rir.classify()
 
 # debugging/poc
 classes, class_refl, rot, corr, _ = result
-
-# print("class_refl")
-# print(class_refl.shape)
-# print(class_refl[0])
-
-# print("rot")
-# print(rot.shape)
-# print(rot[0])
-
-# lets peek at first couple image classes:
-#   first ten nearest neighbors
-Orig = src.images(0, NUMBER_OF_TEST_IMAGES)
 
 
 def plot_helper(img, refl, columns=5, figsize=(20, 10)):
@@ -131,11 +109,15 @@ def plot_helper(img, refl, columns=5, figsize=(20, 10)):
     plt.show()
 
 
+# lets peek at first couple image classes:
+#   first ten nearest neighbors
+Orig = src.images(0, NUMBER_OF_TEST_IMAGES)
+
 include_refl = False  # I'll have to get some help regarding the reflected set. I don't like the results.
 
 logger.info("Classed Sample:")
 for c in range(5):
-    # this was selecting just the non reflected neighbors and seemed reasonable
+    # If we select just the non reflected neighbors things seem reasonable.
     if include_refl:
         neighbors = classes[c][:10]
     else:
@@ -153,7 +135,6 @@ for c in range(5):
     if include_refl:
         rco = basis.rotate(co, rot[c][:10], class_refl[c][:10])
     else:
-        # rco = basis.rotate(co, rot[c][:10])
         rco = basis.rotate(co, rot[c][selection][:10])  # not refl
 
     rotated_neighbors_img = basis.evaluate(rco)
