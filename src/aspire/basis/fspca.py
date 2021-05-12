@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 
 from aspire.basis import SteerableBasis
+from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type
 
@@ -45,8 +46,13 @@ class FSPCABasis(SteerableBasis):
 
     """
 
-    def __init__(self, source, basis):
-        """Not sure if I sure actually inherit from Basis, the __init__ doesn't correspond well... later..."""
+    def __init__(self, source, basis, noise_var=None):
+        """
+        Not sure if I sure actually inherit from Basis, the __init__ doesn't correspond well... later...
+        :param noise_var: None estimates noise (default).
+        0 forces "clean" treatment (no weighting).
+        Other values assigned to noise_var.
+        """
 
         self.basis = basis
         self.src = source
@@ -62,6 +68,7 @@ class FSPCABasis(SteerableBasis):
         self.count = self.complex_count = self.basis.complex_count
         self.complex_angular_indices = self.basis.complex_angular_indices
         self.complex_radial_indices = self.basis.complex_radial_indices
+        self.noise_var = noise_var  # noise_var is handled during `build` call.
 
         # self._build()  # hrmm how/when to kick off build, tricky
         # self.built = False
@@ -83,19 +90,25 @@ class FSPCABasis(SteerableBasis):
             (self.src.n, self.basis.complex_count), dtype=complex_type(self.dtype)
         )
 
-        noise_var = 0  # XXX, clean img only for now
+        if self.noise_var is None:
+            logger.info("Estimate the noise of images using anisotropic method.")
+            self.noise_var = AnisotropicNoiseEstimator(self.src).estimate()
+        logger.info(f"Setting noise_var={self.noise_var}")
 
-        self._compute_spca(complex_coef, noise_var)
+        self._compute_spca(complex_coef)
 
         # self.built = True
 
-    def _compute_spca(self, complex_coef, noise_var):
+    def _compute_spca(self, complex_coef):
         """
         Algorithm 2 from paper.
         """
 
         # number of images
         n = self.src.n
+
+        # Noise Variance
+        n_var = self.noise_var
 
         # Compute coefficient vector of mean image at zeroth component
         mean_coef = np.mean(complex_coef[:, self.complex_angular_indices == 0], axis=0)
@@ -148,28 +161,43 @@ class FSPCABasis(SteerableBasis):
                 eigvecs_k[:, sorted_indices],
             )
 
-            if noise_var != 0:
-                raise NotImplementedError("soon")
-            else:
-                # These are the complex basis indices
-                basis_inds = np.arange(eigval_index, eigval_index + len(eigvals_k))
+            # These are the complex basis indices
+            basis_inds = np.arange(eigval_index, eigval_index + len(eigvals_k))
 
-                # Store the eigvals
-                self.eigvals[basis_inds] = eigvals_k
+            # Store the eigvals
+            self.eigvals[basis_inds] = eigvals_k
 
-                # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
-                self.eigvecs[angular_index] = eigvecs_k
+            # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
+            self.eigvecs[angular_index] = eigvecs_k
 
-                # # To compute new expansion coefficients using spca basis
-                # #   we combine the basis coefs using the eigen decomposition.
-                # Note image stack slow moving axis, and requires transpose from other implementation.
-                self.spca_coef[:, basis_inds] = np.einsum(
-                    "ji, jk -> ik", eigvecs_k, A_k
-                ).T
+            # For noisy regime we compute weights. TODO: Document this (paper reference?).
+            weight = np.ones(eigvecs_k.shape[1])
+            # Check: how do the `nan` not flow through from here.. (low to moderate noise can gen neg sqrt..)
+            if n_var != 0 and np.sum(
+                eigvals_k > n_var * (1 + np.sqrt(lambda_var)) ** 2
+            ):
+                l_k = 0.5 * (
+                    (eigvals_k - (lambda_var + 1) * n_var)
+                    + np.sqrt(
+                        np.square((lambda_var + 1) * n_var - eigvals_k)
+                        - 4 * lambda_var * n_var ** 2
+                    )
+                )
+                snr_i = l_k / n_var
+                snr = (snr_i ** 2 - lambda_var) / (snr_i + lambda_var)
+                weight = 1.0 / (1.0 + 1.0 / snr)
 
-                eigval_index += len(eigvals_k)
+            # To compute new expansion coefficients using spca basis
+            #   we combine the basis coefs using the eigen decomposition.
+            # weight is computed based on the noise (noise of 0 implies weight 1)
+            # Note image stack slow moving axis, and requires transpose from other implementation.
+            self.spca_coef[:, basis_inds] = np.einsum(
+                "i, ji, jk -> ik", weight, eigvecs_k, A_k
+            ).T
 
-                # # Computing radial eigen vectors (functions) (eq 35) is not used? check
+            eigval_index += len(eigvals_k)
+
+            # # Computing radial eigen vectors (functions) (eq 35) is not used? check
 
         # Sanity check we have same dimension of eigvals and (complex) basis coefs.
         if eigval_index != self.basis.complex_count:
