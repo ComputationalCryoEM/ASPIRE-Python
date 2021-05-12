@@ -267,7 +267,7 @@ class RIRClass2D(Class2D):
             logger.info(
                 f"Output include_refl={include_refl}. Averaging only unreflected images."
             )
-            unreflected_indices = class_refl == False
+            unreflected_indices = class_refl == False  # noqa: E712
             # subset excluding reflected images
             classes = classes[unreflected_indices]
             class_refl = class_refl[unreflected_indices]
