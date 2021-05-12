@@ -5,7 +5,6 @@ import numpy as np
 from tqdm import tqdm
 
 from aspire.basis import SteerableBasis
-from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type
 
@@ -91,6 +90,8 @@ class FSPCABasis(SteerableBasis):
         )
 
         if self.noise_var is None:
+            from aspire.noise import AnisotropicNoiseEstimator
+
             logger.info("Estimate the noise of images using anisotropic method.")
             self.noise_var = AnisotropicNoiseEstimator(self.src).estimate()
         logger.info(f"Setting noise_var={self.noise_var}")
