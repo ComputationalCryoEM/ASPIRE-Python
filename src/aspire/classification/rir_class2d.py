@@ -117,7 +117,10 @@ class RIRClass2D(Class2D):
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
 
         # For now, only run with FSPCA basis
-        assert isinstance(self.pca_basis, FSPCABasis)
+        if not isinstance(self.pca_basis, FSPCABasis):
+            raise NotImplementedError(
+                "RIRClass2D has currently only been developed against with pca_basis as a FSPCABasis."
+            )
 
     def pca(self, M):
         """
