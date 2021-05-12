@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 ##################################################
 # Parameters
 RESOLUTION = 64  # 300 used in paper
-NUMBER_OF_TEST_IMAGES = 4096  # 24000 images
+NUMBER_OF_TEST_IMAGES = 12000  # 24000 images
 DTYPE = np.float64
 ##################################################
 # Setup
@@ -27,7 +27,7 @@ DTYPE = np.float64
 fh = mrcfile.open("tutorials/data/clean70SRibosome_vol_65p.mrc")
 v = Volume(fh.data.astype(DTYPE))
 v = v.downsample((RESOLUTION,) * 3)
-noise_var = 0  # 0.01 * np.var(np.sum(v[0],axis=0))
+noise_var = 0  # 0.001 * np.var(np.sum(v[0],axis=0))
 noise_filter = ScalarFilter(dim=2, value=noise_var)
 src = Simulation(
     L=v.resolution,
@@ -94,7 +94,7 @@ rir = RIRClass2D(
 result = rir.classify()
 
 # debugging/poc
-classes, class_refl, rot, corr, _ = result
+classes, class_refl, rot, corr = result
 
 
 def plot_helper(img, refl, columns=5, figsize=(20, 10)):
@@ -142,3 +142,8 @@ for c in range(5):
         plot_helper(rotated_neighbors_img, class_refl[c][:10])
     else:
         rotated_neighbors_img.show()
+
+# # Stage 5: Averaging
+logger.info("Averaging")
+avgs = rir.output(*result[:3], include_refl=False)
+Image(avgs[:10]).show()

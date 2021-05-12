@@ -11,6 +11,7 @@ from aspire.classification.legacy_implementations import (
     pca_y,
     rot_align,
 )
+from aspire.image import Image
 from aspire.numeric import ComplexPCA
 from aspire.utils.random import rand
 
@@ -27,6 +28,7 @@ class RIRClass2D(Class2D):
         sample_n=4000,
         bispectrum_componenents=300,
         n_nbor=100,
+        n_classes=50,
         bispectrum_freq_cutoff=None,
         large_pca_implementation="legacy",
         nn_implementation="legacy",
@@ -41,11 +43,16 @@ class RIRClass2D(Class2D):
         for Viewing Direction Classification in Cryo-EM. (2014)
 
         :param src: Source instance
-        :param basis: (Fast) Fourier Bessel Basis instance
+        :param pca_basis: (Fast) Fourier Bessel Basis instance
         :param fspca_components: Components (top eigvals) to keep from full FSCPA, default truncates to  400.
-        :param sample_n: A number and associated method used to confuse your enemies.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
+        :param sample_n: A number and associated method used to confuse your enemies.
+        :param n_nbor: Number of nearest neighbors to compute.
+        :param n_classes: Number of class averages to return.
         :param bispectrum_freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
+        :param large_pca_implementation: See `pca`.
+        :param nn_implementation: See `nn_classification`.
+        :param bispectrum_implementation: See `bispectrum`.
         :param dtype: optional dtype, otherwise taken from src.
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
         """
@@ -58,6 +65,7 @@ class RIRClass2D(Class2D):
         self.alpha = alpha
         self.bispectrum_componenents = bispectrum_componenents
         self.n_nbor = n_nbor
+        self.n_classes = n_classes
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
         # Type checks
         if self.dtype != self.fb_basis.dtype:
@@ -178,11 +186,14 @@ class RIRClass2D(Class2D):
         coef_b, coef_b_r = self.bispectrum(coef)
 
         # # Stage 2: Compute Nearest Neighbors
-        logger.info("Begin Nearest Neighbors Search")
+        logger.info("Calculate Nearest Neighbors")
         classes = self.nn_classification(coef_b, coef_b_r)
 
-        # # Stage 3: Align
-        logger.info("Begin Rotational Alignment")
+        # # Stage 3: Class Selection
+        # logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
+
+        # # Stage 4: Align
+        logger.info(f"Begin Rotational Alignment of {classes.shape[0]} Classes")
         return self.legacy_align(classes, coef)
 
     def _sk_nn_classification(self, coeff_b, coeff_b_r):
@@ -237,11 +248,50 @@ class RIRClass2D(Class2D):
 
         return indices
 
-    def output(self):
+    # can should optionally take/cache images/coef.
+    #  we almost certainly have constructed them by now...
+    def output(self, classes, class_refl, rot, include_refl=True):
         """
         Return class averages.
+
+        :param classes: class indices (refering to src). (n_img, n_nbor)
+        :param class_refl: Bool representing whether to reflect image in `classes`
+        :param rot: Array represting totation angle (Radians) of image in `classes`
+        :return: Stack of Synthetic Class Average images as Image instance.
         """
-        pass
+
+        if not include_refl:
+            logger.info(
+                f"Output include_refl={include_refl}. Averaging only unreflected images."
+            )
+            unreflected_indices = class_refl == False
+            # subset excluding reflected images
+            classes = classes[unreflected_indices]
+            class_refl = class_refl[unreflected_indices]
+            rot = rot[unreflected_indices]
+
+        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
+        # generate indices for random sample (can do something smart later).
+        selection = np.random.choice(self.src.n, self.n_classes, replace=False)
+
+        imgs = self.src.images(0, self.src.n)
+        avgs = np.empty((self.n_classes, self.src.L, self.src.L), dtype=self.src.dtype)
+
+        for i in tqdm(range(self.n_classes)):
+            j = selection[i]
+            # Get the neighbors
+            neighbors_imgs = Image(imgs[classes[j]])
+            # in Fourier Bessel Basis
+            co = self.fb_basis.evaluate_t(neighbors_imgs)
+            # Rotate
+            co = self.fb_basis.rotate(co, rot[j], class_refl[j])
+
+            # Averaging in FB
+            fb_avg = np.mean(co, axis=0)
+            # convert a single averaged image back
+            avgs[i] = self.fb_basis.evaluate(fb_avg).asnumpy()
+
+        return Image(avgs)
 
     def legacy_align(self, classes, coef):
         # translate some variables between this code and the legacy aspire aspire implementation (just trying to figure out of the old code ran...).
@@ -283,7 +333,7 @@ class RIRClass2D(Class2D):
         # # Why did they do this?
         #     rot[class_refl] = np.mod(rot[class_refl] + 180, 360) # ??
         rot *= np.pi / 180.0  # Convert to radians
-        return classes, class_refl, rot, corr, 0
+        return classes, class_refl, rot, corr
 
     def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """
