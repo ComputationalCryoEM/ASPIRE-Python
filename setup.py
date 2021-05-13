@@ -33,6 +33,7 @@ setup(
         "pandas==0.25.3",
         "pyfftw",
         "PyWavelets",
+        "pynndescent",
         "pillow",
         "scipy==1.4.0",
         "scikit-learn",
