@@ -2,12 +2,10 @@ import logging
 import os
 from unittest import TestCase
 
-import mrcfile
 import numpy as np
 
 from aspire.basis import FFBBasis2D, FSPCABasis
 from aspire.classification import RIRClass2D
-from aspire.image import Image
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
 from aspire.volume import Volume
@@ -32,7 +30,7 @@ class RIRClass2DTestCase(TestCase):
         v = v.downsample(self.resolution)
 
         # Clean
-        self.clean_src = src = Simulation(
+        self.clean_src = Simulation(
             L=self.resolution,
             n=321,
             vols=v,
@@ -42,7 +40,7 @@ class RIRClass2DTestCase(TestCase):
         # With Noise
         noise_var = 0.01 * np.var(np.sum(v[0], axis=0))
         noise_filter = ScalarFilter(dim=2, value=noise_var)
-        self.noisy_src = src = Simulation(
+        self.noisy_src = Simulation(
             L=self.resolution,
             n=123,
             vols=v,
