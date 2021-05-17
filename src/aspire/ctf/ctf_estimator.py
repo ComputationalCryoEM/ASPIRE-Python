@@ -57,7 +57,7 @@ class CtfEstimator:
         self.voltage = voltage
         self.psd_size = psd_size
         self.num_tapers = num_tapers
-        self.lmbd = 10 * voltage_to_wavelength(voltage)
+        self.lmbd = voltage_to_wavelength(voltage) / 10.
         self.dtype = np.dtype(dtype)
 
         grid = grid_2d(psd_size, normalized=True, dtype=self.dtype)
@@ -722,7 +722,8 @@ def estimate_ctf(
     amplitude_contrast = np.arctan(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
-    lmbd = 1.22639 / np.sqrt(voltage * 1000 + 0.97845 * voltage**2)
+
+    lmbd = voltage_to_wavelength(voltage) / 10
 
     ctf_object = CtfEstimator(
         pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
