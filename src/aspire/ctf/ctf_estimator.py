@@ -63,7 +63,7 @@ class CtfEstimator:
         grid = grid_2d(psd_size, normalized=True, dtype=self.dtype)
 
         # Note this mesh for x,y is transposed, and range is -half to half.
-        rb = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
+        rb = np.sqrt((grid["x"] / 2)**2 + (grid["y"] / 2) **2).T
 
         self.r_ctf = rb * (10 / pixel_size)  # units: inverse nm
         # Note this mesh for theta is transposed.
@@ -116,12 +116,13 @@ class CtfEstimator:
         defocus = defocus_sum + ((self.defocus1 - self.defocus2) * np.cos(2 * (self.theta - astigmatism_angle)))
         defocus_factor = np.pi * self.lmbd * self.r_ctf * defocus / 2
         amplitude_contrast_term = self.amplitude_contrast / np.sqrt(1 - self.amplitude_contrast ** 2)
+
         chi = (
             defocus_factor
             - np.pi
-            * self.lmbd**3,
+            * self.lmbd**3
             * self.cs
-            * 10**6
+            * 1E6
             * self.r_ctf ** 2
             / 2
             + amplitude_contrast_term
@@ -386,7 +387,7 @@ class CtfEstimator:
         center = N // 2
         grid = grid_2d(N, normalized=True, dtype=self.dtype)
 
-        rb = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"])).T
+        rb = np.sqrt((grid["x"] / 2)**2 + (grid["y"])**2).T
         rb = rb[center, center:]
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
@@ -395,14 +396,14 @@ class CtfEstimator:
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
 
-        r_ctf_sq = np.square(r_ctf)
+        r_ctf_sq = r_ctf ** 2
         c = np.zeros((9500, signal.shape[1]), dtype=self.dtype)
 
         for f in range(min_defocus, max_defocus):
             ctf_im = np.abs(
                 np.sin(
                     np.pi * lmbd * f * r_ctf_sq
-                    - 0.5 * np.pi * (lmbd ** 3) * cs * (10 ** 6) * np.square(r_ctf_sq)
+                    - 0.5 * np.pi * (lmbd ** 3) * cs * 1E6 * r_ctf_sq ** 2
                     + w
                 )
             )
@@ -417,9 +418,9 @@ class CtfEstimator:
                 ctf_im[: m + 1, m] = np.zeros((m + 1))
                 signal[: m + 1, m] = np.zeros((m + 1))
 
-            Sx = np.sqrt(np.sum(np.square(ctf_im), axis=0))
-            Sy = np.sqrt(np.sum(np.square(signal), axis=0))
-            c[f - min_defocus, :] = np.sum(np.multiply(ctf_im, signal), axis=0) / (
+            Sx = np.sqrt(np.sum(ctf_im ** 2, axis=0))
+            Sy = np.sqrt(np.sum(signal ** 2, axis=0))
+            c[f - min_defocus, :] = np.sum(ctf_im * signal, axis=0) / (
                 Sx * Sy
             )
 
@@ -444,7 +445,7 @@ class CtfEstimator:
         N = signal.shape[0]
         grid = grid_2d(N, normalized=False, dtype=self.dtype)
 
-        radii = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
+        radii = np.sqrt((grid["x"] / 2)**2 + (grid["y"] / 2)**2).T
 
         background = np.zeros(signal.shape, dtype=self.dtype)
         background_p1 = background_p1[max_col, :]
@@ -475,7 +476,7 @@ class CtfEstimator:
         center = N // 2
 
         grid = grid_2d(N, normalized=True, dtype=self.dtype)
-        rb = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
+        rb = np.sqrt((grid["x"] / 2)**2 + (grid["y"] / 2)**2).T
 
         r_ctf = rb * (10 / pixel_size)
 
@@ -494,13 +495,13 @@ class CtfEstimator:
         max_limit = r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
         signal = np.where(r_ctf > max_limit, 0, signal)
 
-        moment_02 = np.multiply(Y ** 2, signal)
+        moment_02 = Y ** 2 * signal
         moment_02 = np.sum(moment_02, axis=(0, 1))
 
-        moment_11 = np.multiply(np.multiply(Y, X), signal)
+        moment_11 = Y * X * signal
         moment_11 = np.sum(moment_11, axis=(0, 1))
 
-        moment_20 = np.multiply(X ** 2, signal)
+        moment_20 = X ** 2 * signal
         moment_20 = np.sum(moment_20, axis=(0, 1))
 
         moment_mat = np.zeros((2, 2))
@@ -510,7 +511,7 @@ class CtfEstimator:
         moment_mat[1, 0] = moment_11
 
         moment_evals = npla.eigvalsh(moment_mat)
-        ratio = np.divide(moment_evals[0], moment_evals[1])
+        ratio = moment_evals[0] /  moment_evals[1]
 
         return ratio
 
@@ -548,18 +549,16 @@ class CtfEstimator:
         """
 
         # step size
-        alpha1 = np.power(10, 5)
-        alpha2 = np.power(10, 4)
+        alpha1 = 1E5
+        alpha2 = 1E4
 
         # initialization
         x = df1 + df2
         y = (df1 - df2) * np.cos(2 * angle_ast)
         z = (df1 - df2) * np.sin(2 * angle_ast)
 
-        a = np.pi * lmbd * np.power(r, 2) / 2
-        b = np.pi * np.power(lmbd, 3) * cs * np.power(10, 6) * np.power(
-            r, 4
-        ) / 2 - amplitude_contrast * np.ones(r.shape)
+        a = np.pi * lmbd * r ** 2 / 2
+        b = np.pi * lmbd ** 3* cs * 1E6 * r ** 4 / 2 - np.full(shape=r.shape, fill_value=amplitude_contrast,dtype=self.dtype)
 
         signal = signal.asnumpy()[0].T
         N = signal.shape[1]
@@ -578,13 +577,13 @@ class CtfEstimator:
         r = r[mask]
         theta = theta[mask]
 
-        sum_A = np.sum(np.power(signal, 2))
+        sum_A = np.sum(signal**2)
 
         dx = 1
         dy = 1
         dz = 1
 
-        stop_cond = 10 ^ -20
+        stop_cond = 10 ^ -20 # XXX Fix this BUG in own commit, ^ is XOR...
         iter_no = 1
 
         # for iter_no in range(0, 399):
@@ -621,9 +620,9 @@ class CtfEstimator:
             dz_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_z_term)
 
             # gradients
-            dx = (dx_c1 * c2 - dx_c2 * c1) / np.power(c2, 2)
-            dy = (dy_c1 * c2 - dy_c2 * c1) / np.power(c2, 2)
-            dz = (dz_c1 * c2 - dz_c2 * c1) / np.power(c2, 2)
+            dx = (dx_c1 * c2 - dx_c2 * c1) / c2**2
+            dy = (dy_c1 * c2 - dy_c2 * c1) / c2**2
+            dz = (dz_c1 * c2 - dz_c2 * c1) / c2**2
 
             # update
             x = x + alpha1 * dx
@@ -722,9 +721,9 @@ def estimate_ctf(
 
     amp = amplitude_contrast
     amplitude_contrast = np.arctan(
-        amplitude_contrast / np.sqrt(1 - np.square(amplitude_contrast))
+        amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
-    lmbd = 1.22639 / np.sqrt(voltage * 1000 + 0.97845 * np.square(voltage))
+    lmbd = 1.22639 / np.sqrt(voltage * 1000 + 0.97845 * voltage**2)
 
     ctf_object = CtfEstimator(
         pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
@@ -787,7 +786,7 @@ def estimate_ctf(
 
         grid = grid_2d(psd_size, normalized=True, dtype=dtype)
 
-        rb = np.sqrt(np.square(grid["x"] / 2) + np.square(grid["y"] / 2)).T
+        rb = np.sqrt((grid["x"] / 2)**2 + (grid["y"] / 2)**2).T
         r_ctf = rb * (10 / pixel_size)
         theta = grid["phi"].T
 
@@ -847,9 +846,9 @@ def estimate_ctf(
         ctf_im = -np.sin(
             np.pi
             * lmbd
-            * np.power(r_ctf, 2)
+            * r_ctf ** 2
             / 2
-            * (df - np.power(lmbd, 2) * np.power(r_ctf, 2) * (cs * np.power(10, 6)))
+            * (df - lmbd **2 * r_ctf**2 * cs * 1E6)
             + amplitude_contrast
         )
         ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
