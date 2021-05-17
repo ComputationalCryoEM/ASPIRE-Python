@@ -397,7 +397,7 @@ class CtfEstimator:
         signal = signal[: 3 * signal.shape[0] // 4]
 
         r_ctf_sq = r_ctf ** 2
-        c = np.zeros((9500, signal.shape[1]), dtype=self.dtype)
+        c = np.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
 
         for f in range(min_defocus, max_defocus):
             ctf_im = np.abs(
