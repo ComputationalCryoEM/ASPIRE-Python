@@ -451,25 +451,23 @@ class CtfEstimator:
         :return: 2-tuple of NumPy arrays (Estimated PSD without noise and estimated noise).
         """
 
-        # RCOPT
-        signal = signal.asnumpy().T
+        signal = signal.asnumpy()
 
-        N = signal.shape[0]
+        N = signal.shape[1]
         grid = grid_2d(N, normalized=False, dtype=self.dtype)
 
         radii = np.sqrt((grid["x"] / 2) ** 2 + (grid["y"] / 2) ** 2).T
 
         background = np.zeros(signal.shape, dtype=self.dtype)
-        background_p1 = background_p1[max_col, :]
-        for r in range(background_p1.shape[0] - 1, 0, -1):
-            background[radii <= r + 1] = background_p1[r]
+        for r in range(max_col + 2, background_p1.shape[1]):
+            background[:, (r < radii) & (radii <= r + 1)] = background_p1[max_col, r]
         mask = radii <= max_col + 2
-        background[mask] = signal[mask]
+        background[:, mask] = signal[:, mask]
 
         signal = signal - background
         signal = np.maximum(0, signal)
 
-        return Image(signal.T), Image(background.T)
+        return Image(signal), Image(background)
 
     def pca(self, signal, pixel_size, g_min, g_max):
         """
