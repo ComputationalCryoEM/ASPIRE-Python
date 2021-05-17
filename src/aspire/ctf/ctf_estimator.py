@@ -57,7 +57,7 @@ class CtfEstimator:
         self.voltage = voltage
         self.psd_size = psd_size
         self.num_tapers = num_tapers
-        self.lmbd = voltage_to_wavelength(voltage) / 10.
+        self.lmbd = voltage_to_wavelength(voltage) / 10.  # (Angstrom)
         self.dtype = np.dtype(dtype)
 
         grid = grid_2d(psd_size, normalized=True, dtype=self.dtype)
@@ -376,7 +376,7 @@ class CtfEstimator:
         :param thon_rings: Estimated power specrtum.
         :param pixel_size: Pixel size in \u212b (Angstrom).
         :param cs: Spherical aberration in mm.
-        :param lmbd: Electron wavelength.
+        :param lmbd: Electron wavelength \u212b (Angstrom).
         :param w: Amplitude contrast.
         :param N: Number of rows (or columns) in the estimate power spectrum.
         :param min_defocus: Start of defocus loop scan.
@@ -543,7 +543,7 @@ class CtfEstimator:
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
         :param amplitude_contrast: Amplitude contrast.
-        :param lmbd: Electron wavelength.
+        :param lmbd: Electron wavelength \u212b (Angstrom).
         :param cs: Spherical aberration in mm.
         :return: Optimal defocus parameters
         """
@@ -723,7 +723,7 @@ def estimate_ctf(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
 
-    lmbd = voltage_to_wavelength(voltage) / 10
+    lmbd = voltage_to_wavelength(voltage) / 10  # (Angstrom)
 
     ctf_object = CtfEstimator(
         pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
@@ -763,7 +763,7 @@ def estimate_ctf(
             signal_1d,
             pixel_size,
             cs,
-            lmbd,
+            lmbd,  # (Angstrom)
             amplitude_contrast,
             signal_observed.shape[-1],
         )
@@ -804,7 +804,7 @@ def estimate_ctf(
                 g_min,
                 g_max,
                 amplitude_contrast,
-                lmbd,
+                lmbd,  # (Angstrom)
                 cs,
             )
 
