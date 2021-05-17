@@ -19,7 +19,7 @@ from aspire.image import Image
 from aspire.numeric import fft
 from aspire.operators import voltage_to_wavelength
 from aspire.utils import abs2, complex_type
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils.coor_trans import grid_1d, grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -385,10 +385,10 @@ class CtfEstimator:
         """
 
         center = N // 2
-        grid = grid_2d(N, normalized=True, dtype=self.dtype)
 
-        rb = np.sqrt((grid["x"] / 2)**2 + (grid["y"])**2).T
-        rb = rb[center, center:]
+        grid = grid_1d(N, normalized=True, dtype=self.dtype)
+        rb = grid["x"][0][center:] / 2
+        
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
         signal = thon_rings.T
