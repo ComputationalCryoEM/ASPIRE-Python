@@ -583,7 +583,7 @@ class CtfEstimator:
         dy = 1
         dz = 1
 
-        stop_cond = 10 ^ -20 # XXX Fix this BUG in own commit, ^ is XOR...
+        stop_cond = 1E-20
         iter_no = 1
 
         # for iter_no in range(0, 399):
