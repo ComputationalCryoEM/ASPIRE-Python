@@ -459,7 +459,7 @@ class CtfEstimator:
 
         return Image(signal.T), Image(background.T)
 
-    def PCA(self, signal, pixel_size, g_min, g_max):
+    def pca(self, signal, pixel_size, g_min, g_max):
         """
 
         :param signal: Estimated power spectrum.
@@ -773,7 +773,7 @@ def estimate_ctf(
             signal_observed, background_1d, low_freq_skip
         )
 
-        ratio = ctf_object.PCA(signal_observed, pixel_size, g_min, g_max)
+        ratio = ctf_object.pca(signal_observed, pixel_size, g_min, g_max)
 
         signal, additional_background = ctf_object.elliptical_average(
             ffbbasis, signal.sqrt(), False
