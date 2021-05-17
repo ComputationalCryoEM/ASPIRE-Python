@@ -586,7 +586,6 @@ class CtfEstimator:
         stop_cond = 1E-20
         iter_no = 1
 
-        # for iter_no in range(0, 399):
         while np.maximum(np.maximum(dx, dy), dz) > stop_cond:
             inner_cosine = y * np.cos(2 * theta) + z * np.sin(2 * theta)
             psi = a * x + a * inner_cosine - b
