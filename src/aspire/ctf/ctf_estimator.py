@@ -206,7 +206,8 @@ class CtfEstimator:
         """
 
         # Note the original ASPIRE implementation is negated from original scipy...
-        return -1 * dpss(M=N, NW=NW, Kmax=L, return_ratios=False).T
+        #  but at time of writing subsequent code was agnostic to sign.
+        return dpss(M=N, NW=NW, Kmax=L, return_ratios=False).T
 
     def estimate_psd(self, blocks, tapers_1d):
         """
