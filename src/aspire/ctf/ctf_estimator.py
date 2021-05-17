@@ -244,30 +244,30 @@ class CtfEstimator:
         blocks_mt /= blocks.shape[0] ** 2
         blocks_mt /= tapers_1d.shape[0] ** 2
 
-        thon_rings = fft.fftshift(
+        amplitude_spectrum = fft.fftshift(
             blocks_mt
         )  # max difference 10^-13, max relative difference 10^-14
 
-        return Image(thon_rings)
+        return Image(amplitude_spectrum)
 
-    def elliptical_average(self, ffbbasis, thon_rings, circular):
+    def elliptical_average(self, ffbbasis, amplitude_spectrum, circular):
         """
         Computes radial/elliptical average of the power spectrum
 
         :param ffbbasis: FFBBasis instance.
-        :param thon_rings: Power spectrum.
+        :param amplitude_spectrum: Power spectrum.
         :param circular: True for radial averaging and False for elliptical averaging.
         :return: PSD and noise as 2-tuple of NumPy arrays.
         """
 
         # RCOPT, come back and change the indices for this method
-        coeffs_s = ffbbasis.evaluate_t(thon_rings).T
+        coeffs_s = ffbbasis.evaluate_t(amplitude_spectrum).T
         coeffs_n = coeffs_s.copy()
 
         coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 1)] = 0
         if circular:
             coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
-            noise = thon_rings
+            noise = amplitude_spectrum
         else:
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 0)] = 0
             coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
@@ -278,43 +278,47 @@ class CtfEstimator:
         return psd, noise
 
     def background_subtract_1d(
-        self, thon_rings, linprog_method="interior-point", n_low_freq_cutoffs=14
+        self, amplitude_spectrum, linprog_method="interior-point", n_low_freq_cutoffs=14
     ):
         """
         Estimate and subtract the background from the power spectrum
 
-        :param thon_rings: Estimated power spectrum
+        :param amplitude_spectrum: Estimated power spectrum
         :param linprog_method: Method passed to linear progam solver (scipy.optimize.linprog).  Defaults to 'interior-point'.
         :param n_low_freq_cutoffs: Low frequency cutoffs (loop iterations).
         :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
 
         # compute radial average
-        center = thon_rings.shape[-1] // 2
+        center = amplitude_spectrum.shape[-1] // 2
 
-        if thon_rings.ndim == 3:
-            if thon_rings.shape[0] != 1:
+        if amplitude_spectrum.ndim == 3:
+            if amplitude_spectrum.shape[0] != 1:
                 raise ValueError(
-                    f"Invalid dimension 0 for thon_rings {thon_rings.shape}"
+                    f"Invalid dimension 0 for amplitude_spectrum {amplitude_spectrum.shape}"
                 )
-            thon_rings = thon_rings[0]
-        elif thon_rings.ndim > 3:
-            raise ValueError(f"Invalid ndimension for thon_rings {thon_rings.shape}")
+            amplitude_spectrum = amplitude_spectrum[0]
+        elif amplitude_spectrum.ndim > 3:
+            raise ValueError(
+                f"Invalid ndimension for amplitude_spectrum {amplitude_spectrum.shape}"
+            )
 
-        thon_rings = thon_rings[center, center:]
-        thon_rings = thon_rings[0 : 3 * thon_rings.shape[-1] // 4]
+        amplitude_spectrum = amplitude_spectrum[center, center:]
+        amplitude_spectrum = amplitude_spectrum[
+            0 : 3 * amplitude_spectrum.shape[-1] // 4
+        ]
 
         final_signal = np.zeros(
-            (n_low_freq_cutoffs - 1, thon_rings.shape[-1]), dtype=self.dtype
+            (n_low_freq_cutoffs - 1, amplitude_spectrum.shape[-1]), dtype=self.dtype
         )
         final_background = np.ones(
-            (n_low_freq_cutoffs - 1, thon_rings.shape[-1]), dtype=self.dtype
+            (n_low_freq_cutoffs - 1, amplitude_spectrum.shape[-1]), dtype=self.dtype
         )
 
         for low_freq_cutoff in range(1, n_low_freq_cutoffs):
-            signal = thon_rings[low_freq_cutoff:]
+            signal = amplitude_spectrum[low_freq_cutoff:]
             signal = np.ravel(signal)
-            N = thon_rings.shape[-1] - low_freq_cutoff
+            N = amplitude_spectrum.shape[-1] - low_freq_cutoff
 
             f = np.concatenate((np.ones(N), -1 * np.ones(N)), axis=0)
 
@@ -370,12 +374,20 @@ class CtfEstimator:
         return final_signal, final_background
 
     def opt1d(
-        self, thon_rings, pixel_size, cs, lmbd, w, N, min_defocus=500, max_defocus=10000
+        self,
+        amplitude_spectrum,
+        pixel_size,
+        cs,
+        lmbd,
+        w,
+        N,
+        min_defocus=500,
+        max_defocus=10000,
     ):
         """
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
-        :param thon_rings: Estimated power specrtum.
+        :param amplitude_spectrum: Estimated power specrtum.
         :param pixel_size: Pixel size in \u212b (Angstrom).
         :param cs: Spherical aberration in mm.
         :param lmbd: Electron wavelength \u212b (Angstrom).
@@ -393,7 +405,7 @@ class CtfEstimator:
 
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
-        signal = thon_rings.T
+        signal = amplitude_spectrum.T
         signal = np.maximum(0.0, signal)
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
@@ -751,14 +763,14 @@ def estimate_ctf(
 
         signal_observed = ctf_object.estimate_psd(micrograph_blocks, tapers_1d)
 
-        thon_rings, _ = ctf_object.elliptical_average(
+        amplitude_spectrum, _ = ctf_object.elliptical_average(
             ffbbasis, signal_observed, True
         )  # absolute differenceL 10^-14. Relative error: 10^-7
 
         # Optionally changing to: linprog_method='simplex',
         # will more deterministically repro results in exchange for speed.
         signal_1d, background_1d = ctf_object.background_subtract_1d(
-            thon_rings, linprog_method="interior-point"
+            amplitude_spectrum, linprog_method="interior-point"
         )
 
         avg_defocus, low_freq_skip = ctf_object.opt1d(
