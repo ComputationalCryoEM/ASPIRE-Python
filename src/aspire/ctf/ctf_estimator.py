@@ -105,33 +105,24 @@ class CtfEstimator:
         Generates internal representation of the Contrast Transfer Function using parameters from this instance.
         """
 
-        astigmatism_angle = np.reshape(
-            np.repeat(
-                self.angle, np.multiply(self.theta.shape[0], self.theta.shape[1])
-            ),
-            self.theta.shape,
-        )
-        defocus_sum = np.reshape(
-            np.repeat(
-                self.defocus1 + self.defocus2,
-                np.multiply(self.theta.shape[0], self.theta.shape[1]),
-            ),
-            self.theta.shape,
-        )
-        defocus = defocus_sum + np.multiply(
-            self.defocus1 - self.defocus2, np.cos(2 * (self.theta - astigmatism_angle))
-        )
-        defocus_factor = np.pi * self.lmbd * np.multiply(self.r_ctf, defocus) / 2
-        amplitude_contrast_term = np.divide(
-            self.amplitude_contrast, np.sqrt(1 - np.square(self.amplitude_contrast))
-        )
+        astigmatism_angle = np.full(shape=self.theta.shape,
+                                    fill_value=self.angle,
+                                    dtype=self.dtype)
+
+        defocus_sum = np.full(shape=self.theta.shape,
+                              fill_value=self.defocus1 + self.defocus2,
+                              dtype=self.dtype)
+
+        defocus = defocus_sum + ((self.defocus1 - self.defocus2) * np.cos(2 * (self.theta - astigmatism_angle)))
+        defocus_factor = np.pi * self.lmbd * self.r_ctf * defocus / 2
+        amplitude_contrast_term = self.amplitude_contrast / np.sqrt(1 - self.amplitude_contrast ** 2)
         chi = (
             defocus_factor
             - np.pi
-            * np.power(self.lmbd, 3)
+            * self.lmbd**3,
             * self.cs
-            * np.power(10, 6)
-            * np.square(self.r_ctf)
+            * 10**6
+            * self.r_ctf ** 2
             / 2
             + amplitude_contrast_term
         )
