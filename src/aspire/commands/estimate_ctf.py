@@ -3,7 +3,7 @@ import logging
 import click
 
 # Overrides click.option with ASPIRE global defaults, see ./__init__.py
-import aspire.commands  # noqa: F401
+import aspire.commands._config  # noqa: F401
 from aspire import ctf
 
 logger = logging.getLogger("aspire")
