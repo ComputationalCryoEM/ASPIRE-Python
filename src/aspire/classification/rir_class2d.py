@@ -2,7 +2,6 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pynndescent
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
@@ -265,6 +264,15 @@ class RIRClass2D(Class2D):
         X = np.column_stack((coeff_b.real, coeff_b.imag))
         X_r = np.column_stack((coeff_b_r.real, coeff_b_r.imag))
         X_both = np.concatenate((X, X_r))
+
+        try:
+            import pynndescent
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
+                "Please install pynndescent, it is an optional package and not included by default."
+                'You may try `pip install "aspire[opt]"`',
+                " or `pip install pynndescent`.",
+            )
 
         index = pynndescent.NNDescent(X_both, n_neighbors=self.n_nbor)
         # The documentation suggests using the index's graph
