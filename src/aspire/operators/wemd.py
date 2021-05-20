@@ -26,20 +26,21 @@ def embed(arr, wavelet, level):
     :returns: One-dimensional numpy array containing weighted details coefficients.
     """
 
-    arrdwt = pywt.wavedecn(arr/arr.sum(), wavelet, mode='zero', level=level)
+    arrdwt = pywt.wavedecn(arr / arr.sum(), wavelet, mode="zero", level=level)
 
     dimension = len(arr.shape)
-    assert dimension in [2,3], f'Dimension {dimension} should be 2 or 3'
+    assert dimension in [2, 3], f"Dimension {dimension} should be 2 or 3"
 
     n_levels = len(arrdwt[1:])
 
     weighted_coefs = []
     for (j, details_level_j) in enumerate(arrdwt[1:]):
         for coefs in details_level_j.values():
-            multiplier = 2**((n_levels-1-j)*(1+(dimension/2.0)))
-            weighted_coefs.append(coefs.flatten()*multiplier)
+            multiplier = 2 ** ((n_levels - 1 - j) * (1 + (dimension / 2.0)))
+            weighted_coefs.append(coefs.flatten() * multiplier)
 
     return np.concatenate(weighted_coefs)
+
 
 def wemd(arr1, arr2, wavelet, level):
     """
