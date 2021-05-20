@@ -14,3 +14,4 @@ from .filters import (
     ScaledFilter,
     ZeroFilter,
 )
+from .wemd import wembed, wemd

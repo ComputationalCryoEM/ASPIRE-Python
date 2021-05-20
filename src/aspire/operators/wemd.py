@@ -11,7 +11,7 @@ import numpy as np
 import pywt
 
 
-def embed(arr, wavelet, level):
+def wembed(arr, wavelet, level):
     """
     This function computes an embedding of Numpy arrays such that
     the L1 distance between the resulting embeddings is approximately
@@ -56,7 +56,7 @@ def wemd(arr1, arr2, wavelet, level):
     :return: Approximated Earthmover Distance
     """
 
-    coefs1 = embed(arr1, wavelet, level)
-    coefs2 = embed(arr2, wavelet, level)
+    coefs1 = wembed(arr1, wavelet, level)
+    coefs2 = wembed(arr2, wavelet, level)
 
     return np.linalg.norm(coefs1 - coefs2, ord=1)
