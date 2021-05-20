@@ -29,7 +29,8 @@ def wembed(arr, wavelet, level):
     arrdwt = pywt.wavedecn(arr / arr.sum(), wavelet, mode="zero", level=level)
 
     dimension = len(arr.shape)
-    assert dimension in [2, 3], f"Dimension {dimension} should be 2 or 3"
+    if dimension not in (2, 3):
+        raise ValueError(f"wembed input dimension {dimension} should be 2 or 3.")
 
     n_levels = len(arrdwt[1:])
 
