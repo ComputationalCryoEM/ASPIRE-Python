@@ -12,7 +12,7 @@ from aspire.utils.matlab_compat import m_reshape
 logger = logging.getLogger(__name__)
 
 
-def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
+def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
     """
     Shrink the covariance matrix
     :param covar_in: An input covariance matrix
@@ -22,14 +22,13 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
     :return: The shrinked covariance matrix
     """
 
-    if shrinker is None:
-        shrinker = "frobenius_norm"
     ensure(
         shrinker in ("frobenius_norm", "operator_norm", "soft_threshold"),
         "Unsupported shrink method",
     )
 
-    covar = covar_in / noise_var
+    if noise_var > 0:
+        covar /= noise_var
 
     lambs, eig_vec = eig(make_symmat(covar))
 
@@ -68,7 +67,8 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
     np.fill_diagonal(diag_lambs, lambs)
 
     shrinked_covar = eig_vec @ diag_lambs @ eig_vec.conj().T
-    shrinked_covar *= noise_var
+    if noise_var > 0:
+        shrinked_covar *= noise_var
 
     return shrinked_covar
 
@@ -206,7 +206,7 @@ class RotCov2D:
         ctf_idx=None,
         mean_coeff=None,
         do_refl=True,
-        noise_var=1,
+        noise_var=0,
         covar_est_opt=None,
         make_psd=True,
     ):
@@ -242,7 +242,7 @@ class RotCov2D:
             return x
 
         default_est_opt = {
-            "shrinker": "None",
+            "shrinker": None,
             "verbose": 0,
             "max_iter": 250,
             "iter_callback": [],
@@ -286,7 +286,7 @@ class RotCov2D:
         if not b_coeff.check_psd():
             logger.warning("Left side b in Cov2D is not positive semidefinite.")
 
-        if covar_est_opt["shrinker"] == "None":
+        if covar_est_opt["shrinker"] is None:
             b = b_coeff - noise_var * b_noise
         else:
             b = self.shrink_covar_backward(
@@ -373,7 +373,7 @@ class RotCov2D:
         ctf_idx=None,
         mean_coeff=None,
         covar_coeff=None,
-        noise_var=1,
+        noise_var=0,
     ):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
@@ -403,7 +403,9 @@ class RotCov2D:
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
-        noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
+        noise_covar_coeff = BlkDiagMatrix.eye_like(covar_coeff)
+        if noise_var > 0:
+            noise_covar_coeff *= noise_var
 
         coeffs_est = np.zeros_like(coeffs)
 
@@ -586,7 +588,7 @@ class BatchedRotCov2D(RotCov2D):
         return b_covar
 
     def _noise_correct_covar_rhs(self, b_covar, b_noise, noise_var, shrinker):
-        if shrinker == "None":
+        if shrinker is None:
             b_noise = -noise_var * b_noise
             b_covar += b_noise
         else:
@@ -652,7 +654,7 @@ class BatchedRotCov2D(RotCov2D):
         return mean_coeff
 
     def get_covar(
-        self, noise_var=1, mean_coeff=None, covar_est_opt=None, make_psd=True
+        self, noise_var=0, mean_coeff=None, covar_est_opt=None, make_psd=True
     ):
         """
         Calculate the block diagonal covariance matrix in the basis
@@ -690,7 +692,7 @@ class BatchedRotCov2D(RotCov2D):
             return x
 
         default_est_opt = {
-            "shrinker": "None",
+            "shrinker": None,
             "verbose": 0,
             "max_iter": 250,
             "iter_callback": [],
@@ -740,7 +742,7 @@ class BatchedRotCov2D(RotCov2D):
         return covar_coeff
 
     def get_cwf_coeffs(
-        self, coeffs, ctf_fb, ctf_idx, mean_coeff, covar_coeff, noise_var=1
+        self, coeffs, ctf_fb, ctf_idx, mean_coeff, covar_coeff, noise_var=0
     ):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
@@ -767,7 +769,9 @@ class BatchedRotCov2D(RotCov2D):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
-        noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
+        noise_covar_coeff = BlkDiagMatrix.eye_like(covar_coeff)
+        if noise_var > 0:
+            noise_covar_coeff *= noise_var
 
         coeffs_est = np.zeros_like(coeffs)
 
