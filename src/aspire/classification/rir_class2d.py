@@ -88,7 +88,6 @@ class RIRClass2D(Class2D):
         nn_implementations = {
             "legacy": self._legacy_nn_classification,
             "sklearn": self._sk_nn_classification,
-            "pynndescent": self._pynndescent_nn_classification,
         }
         if nn_implementation not in nn_implementations:
             raise ValueError(
@@ -248,53 +247,6 @@ class RIRClass2D(Class2D):
         # refl = np.array(indices // n_img, dtype=bool)
         # corr = distances
         # return classes, refl, corr
-
-        return indices
-
-    def _pynndescent_nn_classification(self, coeff_b, coeff_b_r):
-        """
-        Use PyNNDescent library forfast approximate nearest neighbor search.
-
-        See `sklearn` and `nn_classification` for description of
-        function arguments and supporting code.
-        """
-
-        n_img = self.src.n
-
-        X = np.column_stack((coeff_b.real, coeff_b.imag))
-        X_r = np.column_stack((coeff_b_r.real, coeff_b_r.imag))
-        X_both = np.concatenate((X, X_r))
-
-        try:
-            import pynndescent
-        except ModuleNotFoundError:
-            raise ModuleNotFoundError(
-                "Please install pynndescent, it is an optional package and not included by default."
-                'You may try `pip install "aspire[opt]"`',
-                " or `pip install pynndescent`.",
-            )
-
-        index = pynndescent.NNDescent(X_both, n_neighbors=self.n_nbor)
-        # The documentation suggests using the index's graph
-        #   instead of querying for data in the training set.
-        # https://pynndescent.readthedocs.io/en/latest/how_to_use_pynndescent.html#Nearest-neighbors-of-the-training-set
-        indices, distances = index.neighbor_graph
-        # We truncate the "reflected" half of the sample inputs,
-        #  but allow keeping the indices.
-        indices = indices[:n_img]
-        distances = distances[:n_img]
-
-        # any refl?
-        logger.info(
-            f"Count reflected: {np.sum(indices>=n_img)}"
-            f" ({np.sum(indices>=n_img) / len(indices)}%)"
-        )
-
-        # Lets peek at the distribution of distances
-        plt.hist(
-            distances[:, 1:].flatten(), bins="auto"
-        )  # zero index is self, distance 0
-        plt.show()
 
         return indices
 
