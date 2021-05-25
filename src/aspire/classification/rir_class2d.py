@@ -71,7 +71,7 @@ class RIRClass2D(Class2D):
         # Type checks
         if self.dtype != self.fb_basis.dtype:
             logger.warning(
-                f"RIRClass2D basis.dtype {self.basis.dtype} does not match self.dtype {self.dtype}."
+                f"RIRClass2D basis.dtype {self.fb_basis.dtype} does not match self.dtype {self.dtype}."
             )
 
         # Sanity Checks
@@ -300,12 +300,12 @@ class RIRClass2D(Class2D):
 
     # can should optionally take/cache images/coef.
     #  we almost certainly have constructed them by now...
-    def output(self, classes, class_refl, rot, include_refl=True):
+    def output(self, classes, classes_refl, rot, include_refl=True, average_cart=False):
         """
         Return class averages.
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
-        :param class_refl: Bool representing whether to reflect image in `classes`
+        :param classes_refl: Bool representing whether to reflect image in `classes`
         :param rot: Array represting totation angle (Radians) of image in `classes`
         :return: Stack of Synthetic Class Average images as Image instance.
         """
@@ -314,15 +314,26 @@ class RIRClass2D(Class2D):
             logger.info(
                 f"Output include_refl={include_refl}. Averaging only unreflected images."
             )
-            unreflected_indices = class_refl == False  # noqa: E712
+            unreflected_indices = classes_refl == False  # noqa: E712
             # subset excluding reflected images
-            classes = classes[unreflected_indices]
-            class_refl = class_refl[unreflected_indices]
-            rot = rot[unreflected_indices]
+            # Note these become ragged so we'll use a list
+            # Can avoid the raggedness if used in the loop below,
+            #  but really I think we should get to point where include_refl goes away...
+            #  It is for debugging/diagnostics.
+            _classes = [None] * self.src.n
+            _classes_refl = [None] * self.src.n
+            _rot = [None] * self.src.n
+            for i in range(self.src.n):
+                _classes[i] = classes[i][unreflected_indices[i]]
+                _classes_refl[i] = classes_refl[i][unreflected_indices[i]]
+                _rot[i] = rot[i][unreflected_indices[i]]
+            classes, classes_refl, rot = _classes, _classes_refl, _rot
 
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        # generate indices for random sample (can do something smart later).
-        selection = np.random.choice(self.src.n, self.n_classes, replace=False)
+        # generate indices for random sample (can do something smart with corr later).
+        # selection = np.random.choice(self.src.n, self.n_classes, replace=False)
+        # XXX for testing just take the first n_classes so it matches earlier plots for manual comparison
+        selection = np.arange(self.n_classes)
 
         imgs = self.src.images(0, self.src.n)
         avgs = np.empty((self.n_classes, self.src.L, self.src.L), dtype=self.src.dtype)
@@ -334,12 +345,16 @@ class RIRClass2D(Class2D):
             # in Fourier Bessel Basis
             co = self.fb_basis.evaluate_t(neighbors_imgs)
             # Rotate
-            co = self.fb_basis.rotate(co, rot[j], class_refl[j])
+            co = self.fb_basis.rotate(co, rot[j], classes_refl[j])
 
-            # Averaging in FB
-            fb_avg = np.mean(co, axis=0)
-            # convert a single averaged image back
-            avgs[i] = self.fb_basis.evaluate(fb_avg).asnumpy()
+            if average_cart:
+                # Averaging in Cart
+                avgs[i] = np.mean(self.fb_basis.evaluate(co).asnumpy(), axis=0)
+            else:
+                # Averaging in FB
+                fb_avg = np.mean(co, axis=0)
+                # convert a single averaged image back
+                avgs[i] = self.fb_basis.evaluate(fb_avg).asnumpy()
 
         return Image(avgs)
 

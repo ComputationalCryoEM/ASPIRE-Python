@@ -45,7 +45,7 @@ class FSPCABasis(SteerableBasis):
 
     """
 
-    def __init__(self, source, basis, noise_var=None):
+    def __init__(self, source, basis, noise_var=None, adaptive_support=False):
         """
         Not sure if I sure actually inherit from Basis, the __init__ doesn't correspond well... later...
         :param noise_var: None estimates noise (default).
@@ -69,8 +69,18 @@ class FSPCABasis(SteerableBasis):
         self.complex_radial_indices = self.basis.complex_radial_indices
         self.noise_var = noise_var  # noise_var is handled during `build` call.
 
+        # Support sizes
+        self.fourier_support_size = 0.5  # Legacy c (sometimes called bandlimit)
+        self.cartesian_support_size = (
+            self.src.L // 2
+        )  # Legacy r (sometimes called support_size)
+        if adaptive_support:
+            raise NotImplementedError("adaptive_support not implemented yet.")
+        assert isinstance(
+            self.cartesian_support_size, int
+        ), "Cartesian support should be integer number of pixels."
+
         # self._build()  # hrmm how/when to kick off build, tricky
-        # self.built = False
 
     def build(self, coef):
         # figure out a better name later, talked about using via batchcov but im pretty suspect...
@@ -98,8 +108,6 @@ class FSPCABasis(SteerableBasis):
 
         self._compute_spca(complex_coef)
 
-        # self.built = True
-
     def _compute_spca(self, complex_coef):
         """
         Algorithm 2 from paper.
@@ -112,7 +120,9 @@ class FSPCABasis(SteerableBasis):
         n_var = self.noise_var
 
         # Compute coefficient vector of mean image at zeroth component
-        mean_coef = np.mean(complex_coef[:, self.complex_angular_indices == 0], axis=0)
+        self.mean_coef = np.mean(
+            complex_coef[:, self.complex_angular_indices == 0], axis=0
+        )
 
         # Foreach angular frequency (`k` in paper, `ells` in FB code)
         eigval_index = 0
@@ -136,7 +146,7 @@ class FSPCABasis(SteerableBasis):
             if angular_index == 0:  # eq 33
                 # de-mean
                 # A_k = A_k - mean_coef.T[:, np.newaxis]
-                A_k = (A_k.T - mean_coef).T
+                A_k = (A_k.T - self.mean_coef).T
                 # double count the zero case
                 lambda_var *= 2
 
@@ -197,8 +207,6 @@ class FSPCABasis(SteerableBasis):
             ).T
 
             eigval_index += len(eigvals_k)
-
-            # # Computing radial eigen vectors (functions) (eq 35) is not used? check
 
         # Sanity check we have same dimension of eigvals and (complex) basis coefs.
         if eigval_index != self.basis.complex_count:
