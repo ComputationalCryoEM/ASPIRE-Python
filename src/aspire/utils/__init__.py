@@ -1,4 +1,4 @@
-from .misc import ensure, get_full_version, powerset, sha256sum  # isort:skip
+from .misc import abs2, ensure, get_full_version, powerset, sha256sum  # isort:skip
 from .matrix import (
     acorr,
     ainner,
