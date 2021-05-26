@@ -5,8 +5,9 @@ import numpy as np
 from tqdm import tqdm
 
 from aspire.basis import SteerableBasis
+from aspire.covariance import RotCov2D
 from aspire.operators import BlkDiagMatrix
-from aspire.utils import complex_type
+from aspire.utils import complex_type, make_symmat
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,10 @@ class FSPCABasis(SteerableBasis):
             )
 
         self.compressed = False
-        self.count = self.complex_count = self.basis.complex_count
+        self.count = self.basis.count
+        self.complex_count = self.basis.complex_count
+        self.angular_indices = self.basis.angular_indices
+        self.radial_indices = self.basis.radial_indices
         self.complex_angular_indices = self.basis.complex_angular_indices
         self.complex_radial_indices = self.basis.complex_radial_indices
         self.noise_var = noise_var  # noise_var is handled during `build` call.
@@ -85,20 +89,6 @@ class FSPCABasis(SteerableBasis):
     def build(self, coef):
         # figure out a better name later, talked about using via batchcov but im pretty suspect...
 
-        # We'll use the complex representation for the calculations
-        complex_coef = self.basis.to_complex(coef)
-
-        # Create the arrays to be packed by _compute_spca
-        self.eigvals = np.zeros(
-            self.basis.complex_count, dtype=complex_type(self.dtype)
-        )  # should be real... either make real, or use as a check...
-        self.eigvecs = BlkDiagMatrix.empty(
-            self.basis.ell_max + 1, dtype=complex_type(self.dtype)
-        )
-        self.spca_coef = np.zeros(
-            (self.src.n, self.basis.complex_count), dtype=complex_type(self.dtype)
-        )
-
         if self.noise_var is None:
             from aspire.noise import AnisotropicNoiseEstimator
 
@@ -106,9 +96,35 @@ class FSPCABasis(SteerableBasis):
             self.noise_var = AnisotropicNoiseEstimator(self.src).estimate()
         logger.info(f"Setting noise_var={self.noise_var}")
 
-        self._compute_spca(complex_coef)
+        cov2d = RotCov2D(self.basis)
+        covar_opt = {
+            "shrinker": "frobenius_norm",
+            "verbose": 0,
+            "max_iter": 250,
+            "iter_callback": [],
+            "store_iterates": False,
+            "rel_tolerance": 1e-12,
+            "precision": "float64",
+            "preconditioner": "identity",
+        }
+        self.mean_coef_est = cov2d.get_mean(coef)
+        self.covar_coef_est = cov2d.get_covar(
+            coef,
+            mean_coeff=self.mean_coef_est,
+            noise_var=self.noise_var,  # xxx 0 has a problem?
+            covar_est_opt=covar_opt,
+        )
 
-    def _compute_spca(self, complex_coef):
+        # Create the arrays to be packed by _compute_spca
+        self.eigvals = np.zeros(self.basis.count, dtype=self.dtype)
+
+        self.eigvecs = BlkDiagMatrix.empty(2 * self.basis.ell_max + 1, dtype=self.dtype)
+
+        self.spca_coef = np.zeros((self.src.n, self.basis.count), dtype=self.dtype)
+
+        self._compute_spca(coef)
+
+    def _compute_spca(self, coef):
         """
         Algorithm 2 from paper.
         """
@@ -120,45 +136,46 @@ class FSPCABasis(SteerableBasis):
         n_var = self.noise_var
 
         # Compute coefficient vector of mean image at zeroth component
-        self.mean_coef = np.mean(
-            complex_coef[:, self.complex_angular_indices == 0], axis=0
+        self.mean_coef_zero = np.mean(
+            self.mean_coef_est[self.angular_indices == 0], axis=0
         )
+
+        # Make the Data matrix (A_k)
+        # This code is intentionally ripped off cov2d so that we can refactor both later.
+        # Begin copy pasta.
+        # Initialize a totally empty BlkDiagMatrix, build incrementally.
+        A = BlkDiagMatrix.empty(0, dtype=coef.dtype)
+        ell = 0
+        mask = self.basis._indices["ells"] == ell
+        A_k = coef[:, mask] - self.mean_coef_zero
+        A.append(A_k)
+
+        for ell in range(1, self.basis.ell_max + 1):  # ell is k, k is q, for now
+            mask = self.basis._indices["ells"] == ell
+            mask_pos = [
+                mask[i] and (self.basis._indices["sgns"][i] == +1)
+                for i in range(len(mask))
+            ]
+            mask_neg = [
+                mask[i] and (self.basis._indices["sgns"][i] == -1)
+                for i in range(len(mask))
+            ]
+            A_k = (coef[:, mask_pos] + coef[:, mask_neg]) / 2
+
+            A.append(A_k)
+            A.append(A_k)
+
+        # # end copy pasta
+        assert len(A) == len(self.covar_coef_est)
 
         # Foreach angular frequency (`k` in paper, `ells` in FB code)
         eigval_index = 0
-        for angular_index in tqdm(range(0, self.basis.ell_max + 1)):
-
-            # # Construct A_k, matrix of expansion coefficients a^i_k_q
-            # #   for image i, angular index k, radial index q,
-            # #   (around eq 31-33)
-            # #   Rows radial indices, columns image i.
-            # #
-            # # We can extract this directly (up to transpose) from
-            # #  complex_coef vector where ells == angular_index
-            # #  then use the transpose so image stack becomes columns.
-
-            indices = self.complex_angular_indices == angular_index
-            A_k = complex_coef[:, indices].T
-
-            lambda_var = self.basis.n_r / (2 * n)  # this isn't used in the clean regime
-
-            # Zero angular freq is a special case
-            if angular_index == 0:  # eq 33
-                # de-mean
-                # A_k = A_k - mean_coef.T[:, np.newaxis]
-                A_k = (A_k.T - self.mean_coef).T
-                # double count the zero case
-                lambda_var *= 2
-
-            # # Compute the covariance matrix representation C_k, eq 32
-            # #   Note, I don't see relevance of special case 33...
-            # #     C_k = np.real(A_k @ A_k.conj().T) / n
-            # #   Einsum is performing the transpose, sometimes better performance.
-            C_k = np.einsum("ij, kj -> ik", A_k, A_k.conj()).real / n
+        for angular_index, C_k in enumerate(self.covar_coef_est):
 
             # # Eigen/SVD,
-            eigvals_k, eigvecs_k = np.linalg.eig(C_k)
-            logger.debug(
+            # XXX make_symmat?
+            eigvals_k, eigvecs_k = np.linalg.eig(make_symmat(C_k))
+            logger.info(
                 f"eigvals_k.shape {eigvals_k.shape} eigvecs_k.shape {eigvecs_k.shape}"
             )
 
@@ -172,7 +189,7 @@ class FSPCABasis(SteerableBasis):
                 eigvecs_k[:, sorted_indices],
             )
 
-            # These are the complex basis indices
+            # These are the basis indices
             basis_inds = np.arange(eigval_index, eigval_index + len(eigvals_k))
 
             # Store the eigvals
@@ -181,37 +198,33 @@ class FSPCABasis(SteerableBasis):
             # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
             self.eigvecs[angular_index] = eigvecs_k
 
-            # For noisy regime we compute weights. TODO: Document this (paper reference?).
-            weight = np.ones(eigvecs_k.shape[1])
-            # Check: how do the `nan` not flow through from here.. (low to moderate noise can gen neg sqrt..)
-            if n_var != 0 and np.sum(
-                eigvals_k > n_var * (1 + np.sqrt(lambda_var)) ** 2
-            ):
-                l_k = 0.5 * (
-                    (eigvals_k - (lambda_var + 1) * n_var)
-                    + np.sqrt(
-                        np.square((lambda_var + 1) * n_var - eigvals_k)
-                        - 4 * lambda_var * n_var ** 2
-                    )
-                )
-                snr_i = l_k / n_var
-                snr = (snr_i ** 2 - lambda_var) / (snr_i + lambda_var)
-                weight = 1.0 / (1.0 + 1.0 / snr)
+            # # Construct A_k, matrix of expansion coefficients a^i_k_q
+            # #   for image i, angular index k, radial index q,
+            # #   (around eq 31-33)
+            # #   Rows radial indices, columns image i.
+            # #
+            # # Garrett would just call this a `data` matrix.
+            # #
+            # # We can extract this directly (up to transpose) from
+            # #  complex_coef vector where ells == angular_index
+            # #  then use the transpose so image stack becomes columns.
+
+            # indices =( self.angular_indices == angular_index ) & (self.basis._indices["sgns"] == 1)
 
             # To compute new expansion coefficients using spca basis
             #   we combine the basis coefs using the eigen decomposition.
-            # weight is computed based on the noise (noise of 0 implies weight 1)
             # Note image stack slow moving axis, and requires transpose from other implementation.
+            print("A_k.shape", A[angular_index].shape)
             self.spca_coef[:, basis_inds] = np.einsum(
-                "i, ji, jk -> ik", weight, eigvecs_k, A_k
-            ).T
+                "ji, kj -> ki", eigvecs_k, A[angular_index]
+            )
 
             eigval_index += len(eigvals_k)
 
-        # Sanity check we have same dimension of eigvals and (complex) basis coefs.
-        if eigval_index != self.basis.complex_count:
+        # Sanity check we have same dimension of eigvals and basis coefs.
+        if eigval_index != self.basis.count:
             raise RuntimeError(
-                f"eigvals dimension {eigval_index} != complex basis coef count {self.basis.complex_count}."
+                f"eigvals dimension {eigval_index} != basis coef count {self.basis.count}."
             )
 
         # Store a map of indices sorted by eigenvalue.
@@ -220,7 +233,7 @@ class FSPCABasis(SteerableBasis):
         # # sorted_indices[i] is the ith most powerful eigendecomposition index
         # #
         # # We can pass a full or truncated slice of sorted_indices to any array indexed by
-        # #  the complex coefs.
+        # #  the coefs.
         self.sorted_indices = np.argsort(-np.abs(self.eigvals))
 
     def expand_from_image_basis(self, x):
@@ -232,7 +245,7 @@ class FSPCABasis(SteerableBasis):
 
         :param x:  The Image instance representing a stack of images in the
         standard 2D coordinate basis to be evaluated.
-        :return: Stack of (complex) coefs in the FSPCABasis.
+        :return: Stack of coefs in the FSPCABasis.
         """
         fb_coefs = self.basis.evaluate_t(x)
         return self.expand(fb_coefs)
@@ -246,10 +259,8 @@ class FSPCABasis(SteerableBasis):
 
         :param x:  Coefs representing a stack in the
         Fourier Bessel basis.
-        :return: Stack of (complex) coefs in the FSPCABasis.
+        :return: Stack of coefs in the FSPCABasis.
         """
-        c_fb = self.basis.to_complex(x)
-
         # apply linear combination defined by FSPCA (eigvecs)
         #  can try blk_diag here, but I think needs to be extended to non square...,
         #  or masked.
@@ -258,9 +269,9 @@ class FSPCABasis(SteerableBasis):
         if isinstance(eigvecs, BlkDiagMatrix):
             eigvecs = eigvecs.dense()
 
-        c_fspca = c_fb @ eigvecs
+        c_fspca = x @ eigvecs
 
-        assert c_fspca.shape == (x.shape[0], self.complex_count)
+        assert c_fspca.shape == (x.shape[0], self.count)
 
         return c_fspca
 
@@ -268,7 +279,7 @@ class FSPCABasis(SteerableBasis):
         """
         Take FSPCA coefs and evaluate as image in the standard coordinate basis.
 
-        :param c:  Stack of (complex) coefs in the FSPCABasis to be evaluated.
+        :param c:  Stack of coefs in the FSPCABasis to be evaluated.
         :return: The Image instance representing a stack of images in the
         standard 2D coordinate basis..
         """
@@ -284,14 +295,12 @@ class FSPCABasis(SteerableBasis):
         :return: The (real) coefs representing a stack of images in self.basis
         """
 
-        # apply FSPCA eigenvector to coefs c, yields complex_coefs in self.basis
+        # apply FSPCA eigenvector to coefs c, yields coefs in self.basis
         eigvecs = self.eigvecs
         if isinstance(eigvecs, BlkDiagMatrix):
             eigvecs = eigvecs.dense()
 
-        cv = c @ eigvecs.T
-        # convert to real reprsentation
-        return self.basis.to_real(cv)
+        return c @ eigvecs.T
 
     def compress(self, k):
         """
@@ -304,10 +313,10 @@ class FSPCABasis(SteerableBasis):
         :return: New FSPCABasis instance
         """
 
-        if k >= self.complex_count:
+        if k >= self.count:
             logger.warning(
                 f"Requested compression to {k} components,"
-                f" but already {self.complex_count}."
+                f" but already {self.count}."
                 "  Skipping compression."
             )
             return self
@@ -318,8 +327,9 @@ class FSPCABasis(SteerableBasis):
 
         # Create compressed mapping
         result.compressed = True
-        result.count = result.complex_count = k
-        compressed_indices = self.sorted_indices[:k]
+        result.count = k
+        result.complex_count = k
+        compressed_indices = self.sorted_indices[: result.count]
 
         # NOTE, no longer blk_diag! ugh
         # Note can copy from self or result, should be same...
@@ -327,9 +337,15 @@ class FSPCABasis(SteerableBasis):
         result.eigvecs = self.eigvecs.dense()[:, compressed_indices]
         result.spca_coef = self.spca_coef[:, compressed_indices]
 
-        result.complex_angular_indices = self.complex_angular_indices[
-            compressed_indices
+        result.angular_indices = self.angular_indices[compressed_indices]
+        result.radial_indices = self.radial_indices[compressed_indices]
+
+        compressed_positive = self.basis._indices["sgns"][compressed_indices] == 1
+        result.complex_angular_indices = self.angular_indices[
+            compressed_indices & compressed_positive
         ]
-        result.complex_radial_indices = self.complex_radial_indices[compressed_indices]
+        result.complex_radial_indices = self.radial_indices[
+            compressed_indices & compressed_positive
+        ]
 
         return result

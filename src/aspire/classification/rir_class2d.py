@@ -167,6 +167,14 @@ class RIRClass2D(Class2D):
         :returns: tuple of arrays (coef_b, coef_b_r)
         """
         # _bispectrum is assigned during initialization.
+
+        # xxx
+        print(
+            "xxx coef", coef, coef.shape, coef.dtype
+        )  # should be real, but is complex (zero imag, so could be worse)
+        # coef = self.fb_basis.to_complex(np.real(coef))
+        coef = np.real(coef)
+
         return self._bispectrum(coef)
 
     def classify(self):
@@ -180,7 +188,7 @@ class RIRClass2D(Class2D):
         # Initial round of component truncation is before bispectrum.
         #  default of 400 components was taken from legacy code.
         # Instantiate a new compressed (truncated) basis.
-        self.pca_basis = self.pca_basis.compress(self.fspca_components)
+        # UGH top component mapping is screeewwwweeed self.pca_basis = self.pca_basis.compress(self.fspca_components)
 
         # Expand into the compressed FSPCA space.
         fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
@@ -281,6 +289,11 @@ class RIRClass2D(Class2D):
                 _rot[i] = rot[i][unreflected_indices[i]]
             classes, classes_refl, rot = _classes, _classes_refl, _rot
 
+            if len(classes) == 0:
+                raise RuntimeError(
+                    "No unreflected classes found. Probably this is an error"
+                )
+
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
         # generate indices for random sample (can do something smart with corr later).
         # selection = np.random.choice(self.src.n, self.n_classes, replace=False)
@@ -294,6 +307,7 @@ class RIRClass2D(Class2D):
             j = selection[i]
             # Get the neighbors
             neighbors_imgs = Image(imgs[classes[j]])
+
             # in Fourier Bessel Basis
             co = self.fb_basis.evaluate_t(neighbors_imgs)
             # Rotate
@@ -312,7 +326,7 @@ class RIRClass2D(Class2D):
 
     def legacy_align(self, classes, coef):
         # translate some variables between this code and the legacy aspire aspire implementation (just trying to figure out of the old code ran...).
-        freqs = self.pca_basis.complex_angular_indices
+        freqs = self.pca_basis.angular_indices
         coeff = coef.T
         n_im = self.src.n
         n_nbor = self.n_nbor
@@ -520,7 +534,7 @@ class RIRClass2D(Class2D):
 
         coef_b, coef_b_r = bispec_2drot_large(
             coeff=coef.T,
-            freqs=self.pca_basis.complex_angular_indices,
+            freqs=self.pca_basis.angular_indices,
             eigval=self.pca_basis.eigvals,
             alpha=self.alpha,
             sample_n=self.sample_n,

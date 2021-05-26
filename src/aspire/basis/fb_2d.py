@@ -105,6 +105,8 @@ class FBBasis2D(SteerableBasis):
 
             ci += len(ks)
 
+        self.angular_indices = indices_ells
+        self.radial_indices = indices_ks
         # Relating to paper: a[i] = a_ell_ks = a_angularindices[i]_radialindices[i]
         self.complex_angular_indices = indices_ells[self.indices_real]  # k
         self.complex_radial_indices = indices_ks[self.indices_real]  # q
