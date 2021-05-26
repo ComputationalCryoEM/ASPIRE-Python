@@ -401,6 +401,11 @@ class RotCov2D:
             These are obtained using a Wiener filter with the specified covariance for the clean images
             and white noise of variance `noise_var` for the noise.
         """
+
+        if noise_var == 0:
+            logger.info("get_cwf_coeffs skipping coefficient estimation (noise_var=0).")
+            return coeffs
+
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
@@ -768,6 +773,11 @@ class BatchedRotCov2D(RotCov2D):
             These are obtained using a Wiener filter with the specified covariance for the clean images
             and white noise of variance `noise_var` for the noise.
         """
+
+        if noise_var == 0:
+            logger.info("get_cwf_coeffs skipping coefficient estimation (noise_var=0).")
+            return coeffs
+
         if mean_coeff is None:
             mean_coeff = self.get_mean()
 

@@ -41,7 +41,10 @@ class BatchedRotCov2DTestCase(TestCase):
     def tearDown(self):
         pass
 
-    def blk_diag_allclose(self, blk_diag_a, blk_diag_b, atol=1e-8):
+    def blk_diag_allclose(self, blk_diag_a, blk_diag_b, atol=None):
+        if atol is None:
+            atol = utest_tolerance(self.dtype)
+
         close = True
         for blk_a, blk_b in zip(blk_diag_a, blk_diag_b):
             close = close and np.allclose(blk_a, blk_b, atol=atol)
