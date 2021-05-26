@@ -27,12 +27,9 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
         "Unsupported shrink method",
     )
 
-    if noise_var > 0:
-        covar /= noise_var
-
     lambs, eig_vec = eig(make_symmat(covar))
 
-    lambda_max = (1 + np.sqrt(gamma)) ** 2
+    lambda_max = noise_var * (1 + np.sqrt(gamma)) ** 2
 
     lambs[lambs < lambda_max] = 0
 
@@ -41,20 +38,36 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
         lambdas = (
             1
             / 2
-            * (lambdas - gamma + 1 + np.sqrt((lambdas - gamma + 1) ** 2 - 4 * lambdas))
-            - 1
+            * (
+                lambdas
+                - noise_var * (gamma - 1)
+                + np.sqrt(
+                    (lambdas - noise_var * (gamma - 1)) ** 2
+                    - 4 * noise_var ** 2 * lambdas
+                )
+            )
+            - noise_var
         )
+
         lambs[lambs > lambda_max] = lambdas
     elif shrinker == "frobenius_norm":
         lambdas = lambs[lambs > lambda_max]
         lambdas = (
             1
             / 2
-            * (lambdas - gamma + 1 + np.sqrt((lambdas - gamma + 1) ** 2 - 4 * lambdas))
-            - 1
+            * (
+                lambdas
+                - noise_var * (gamma - 1)
+                + np.sqrt(
+                    (lambdas - noise_var * (gamma - 1)) ** 2
+                    - 4 * noise_var ** 2 * lambdas
+                )
+            )
+            - noise_var
         )
         c = np.divide(
-            (1 - np.divide(gamma, lambdas ** 2)), (1 + np.divide(gamma, lambdas))
+            (1 - np.divide(noise_var ** 2 * gamma, lambdas ** 2)),
+            (1 + np.divide(noise_var * gamma, lambdas)),
         )
         lambdas = lambdas * c
         lambs[lambs > lambda_max] = lambdas
@@ -67,8 +80,6 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
     np.fill_diagonal(diag_lambs, lambs)
 
     shrinked_covar = eig_vec @ diag_lambs @ eig_vec.conj().T
-    if noise_var > 0:
-        shrinked_covar *= noise_var
 
     return shrinked_covar
 
