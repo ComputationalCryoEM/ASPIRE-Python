@@ -154,3 +154,25 @@ class Cov2DTestCase(TestCase):
         self.assertTrue(
             np.allclose(results, self.coeff_cwf_clean, atol=utest_tolerance(self.dtype))
         )
+
+    def testGetCWFCoeffsCleanCTF(self):
+        """
+        Test case of clean images (coeff_clean and noise_var=0)
+        while using a non Identity CTF.
+
+        This case may come up when a developer switches between
+        clean and dirty images.
+        """
+
+        results = np.load(
+            os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coeff.npy")
+        )
+        coeff_cwf = self.cov2d.get_cwf_coeffs(
+            self.coeff_clean, self.h_ctf_fb, self.h_idx, noise_var=0
+        )
+
+        # Reconstruct images from output of get_cwf_coeffs
+        img_est = self.basis.evaluate(coeff_cwf)
+        # Compare with clean images
+        delta = np.mean(np.square((self.imgs_clean - img_est).asnumpy()))
+        self.assertTrue(delta < 0.02)
