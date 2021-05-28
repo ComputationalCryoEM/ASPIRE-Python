@@ -184,3 +184,53 @@ class BatchedRotCov2DTestCase(TestCase):
                 atol=utest_tolerance(self.dtype),
             )
         )
+
+    def testCWFCoeffCleanCTF(self):
+        """
+        Test case of clean images (coeff_clean and noise_var=0)
+        while using a non Identity CTF.
+
+        This case may come up when a developer switches between
+        clean and dirty images.
+        """
+
+        # Calculate CWF coefficients using Cov2D base class
+        mean_cov2d = self.cov2d.get_mean(
+            self.coeff, ctf_fb=self.ctf_fb, ctf_idx=self.ctf_idx
+        )
+        covar_cov2d = self.cov2d.get_covar(
+            self.coeff,
+            ctf_fb=self.ctf_fb,
+            ctf_idx=self.ctf_idx,
+            noise_var=self.noise_var,
+            make_psd=True,
+        )
+
+        coeff_cov2d = self.cov2d.get_cwf_coeffs(
+            self.coeff,
+            self.ctf_fb,
+            self.ctf_idx,
+            mean_coeff=mean_cov2d,
+            covar_coeff=covar_cov2d,
+            noise_var=0,
+        )
+
+        # Calculate CWF coefficients using Batched Cov2D class
+        mean_bcov2d = self.bcov2d.get_mean()
+        covar_bcov2d = self.bcov2d.get_covar(noise_var=self.noise_var, make_psd=True)
+
+        coeff_bcov2d = self.bcov2d.get_cwf_coeffs(
+            self.coeff,
+            self.ctf_fb,
+            self.ctf_idx,
+            mean_bcov2d,
+            covar_bcov2d,
+            noise_var=0,
+        )
+        self.assertTrue(
+            self.blk_diag_allclose(
+                coeff_cov2d,
+                coeff_bcov2d,
+                atol=utest_tolerance(self.dtype),
+            )
+        )

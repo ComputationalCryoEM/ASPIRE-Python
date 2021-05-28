@@ -3,6 +3,8 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+from parameterized import parameterized
+from pytest import raises
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
@@ -164,9 +166,6 @@ class Cov2DTestCase(TestCase):
         clean and dirty images.
         """
 
-        results = np.load(
-            os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coeff.npy")
-        )
         coeff_cwf = self.cov2d.get_cwf_coeffs(
             self.coeff_clean, self.h_ctf_fb, self.h_idx, noise_var=0
         )
@@ -176,3 +175,40 @@ class Cov2DTestCase(TestCase):
         # Compare with clean images
         delta = np.mean(np.square((self.imgs_clean - img_est).asnumpy()))
         self.assertTrue(delta < 0.02)
+
+    def testGetCWFCoeffsCTFargs(self):
+        """
+        Test we raise when user supplies incorrect CTF arguments
+        """
+
+        with raises(RuntimeError):
+            _ = self.cov2d.get_cwf_coeffs(
+                self.coeff, self.h_ctf_fb, None, noise_var=self.noise_var
+            )
+
+    @parameterized.expand(
+        [(None,), "frobenius_norm", "operator_norm", "soft_threshold", "None"]
+    )
+    def testShrinkers(self, shrinker):
+        """Test all the shrinkers we know about run, and we raise otherwise."""
+
+        if shrinker == "None":
+            with raises(AssertionError):
+                _ = self.cov2d.get_covar(
+                    self.coeff_clean, covar_est_opt={"shrinker": shrinker}
+                )
+            return
+
+        results = np.load(
+            os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covar.npy"),
+            allow_pickle=True,
+        )
+
+        covar_coeff = self.cov2d.get_covar(
+            self.coeff_clean, covar_est_opt={"shrinker": shrinker}
+        )
+
+        for im, mat in enumerate(results.tolist()):
+            self.assertTrue(
+                np.allclose(mat, covar_coeff[im], atol=utest_tolerance(self.dtype))
+            )
