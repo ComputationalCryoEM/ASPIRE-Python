@@ -402,10 +402,6 @@ class RotCov2D:
             and white noise of variance `noise_var` for the noise.
         """
 
-        if noise_var == 0:
-            logger.info("get_cwf_coeffs skipping coefficient estimation (noise_var=0).")
-            return coeffs
-
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
@@ -414,8 +410,15 @@ class RotCov2D:
                 coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var
             )
 
-        # should be none or both
-        if (ctf_fb is None) or (ctf_idx is None):
+        # Handle CTF arguments.
+        if (ctf_fb is None) ^ (ctf_idx is None):
+            raise RuntimeError(
+                "Both `ctf_fb` and `ctf_idx` should be provided,"
+                " or both should be `None`."
+                f' Given {"ctf_fb" if ctf_idx is None else "ctf_idx"}'
+            )
+        elif ctf_fb is None:
+            # Setup defaults for CTF
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
@@ -427,15 +430,19 @@ class RotCov2D:
             coeff_k = coeffs[ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
-            sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
-
-            sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
-
             coeff_est_k = coeff_k - mean_coeff_k
-            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
-            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+
+            if noise_var == 0:
+                coeff_est_k = ctf_fb_k.solve(coeff_est_k.T).T
+            else:
+                sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
+                sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
+
+                coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
+                coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
@@ -774,17 +781,21 @@ class BatchedRotCov2D(RotCov2D):
             and white noise of variance `noise_var` for the noise.
         """
 
-        if noise_var == 0:
-            logger.info("get_cwf_coeffs skipping coefficient estimation (noise_var=0).")
-            return coeffs
-
         if mean_coeff is None:
             mean_coeff = self.get_mean()
 
         if covar_coeff is None:
             covar_coeff = self.get_covar(noise_var=noise_var, mean_coeff=mean_coeff)
 
-        if (ctf_fb is None) or (ctf_idx is None):
+        # Handle CTF arguments.
+        if (ctf_fb is None) ^ (ctf_idx is None):
+            raise RuntimeError(
+                "Both `ctf_fb` and `ctf_idx` should be provided,"
+                " or both should be `None`."
+                f' Given {"ctf_fb" if ctf_idx is None else "ctf_idx"}'
+            )
+        elif ctf_fb is None:
+            # Setup defaults for CTF
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
@@ -796,14 +807,19 @@ class BatchedRotCov2D(RotCov2D):
             coeff_k = coeffs[ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
-            sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
-            sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
-
             coeff_est_k = coeff_k - mean_coeff_k
-            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
-            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+
+            if noise_var == 0:
+                coeff_est_k = ctf_fb_k.solve(coeff_est_k.T).T
+            else:
+                sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
+                sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
+
+                coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
+                coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
