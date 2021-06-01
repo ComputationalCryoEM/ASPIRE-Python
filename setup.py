@@ -52,6 +52,7 @@ setup(
             "jupyter",
             "pyflakes",
             "pydocstyle",
+            "parameterized",
             "pytest",
             "pytest-cov",
             "pytest-random-order",

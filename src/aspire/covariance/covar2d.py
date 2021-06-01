@@ -12,7 +12,7 @@ from aspire.utils.matlab_compat import m_reshape
 logger = logging.getLogger(__name__)
 
 
-def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
+def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
     """
     Shrink the covariance matrix
     :param covar_in: An input covariance matrix
@@ -22,18 +22,14 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
     :return: The shrinked covariance matrix
     """
 
-    if shrinker is None:
-        shrinker = "frobenius_norm"
     ensure(
         shrinker in ("frobenius_norm", "operator_norm", "soft_threshold"),
         "Unsupported shrink method",
     )
 
-    covar = covar_in / noise_var
-
     lambs, eig_vec = eig(make_symmat(covar))
 
-    lambda_max = (1 + np.sqrt(gamma)) ** 2
+    lambda_max = noise_var * (1 + np.sqrt(gamma)) ** 2
 
     lambs[lambs < lambda_max] = 0
 
@@ -42,20 +38,36 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
         lambdas = (
             1
             / 2
-            * (lambdas - gamma + 1 + np.sqrt((lambdas - gamma + 1) ** 2 - 4 * lambdas))
-            - 1
+            * (
+                lambdas
+                - noise_var * (gamma - 1)
+                + np.sqrt(
+                    (lambdas - noise_var * (gamma - 1)) ** 2
+                    - 4 * noise_var ** 2 * lambdas
+                )
+            )
+            - noise_var
         )
+
         lambs[lambs > lambda_max] = lambdas
     elif shrinker == "frobenius_norm":
         lambdas = lambs[lambs > lambda_max]
         lambdas = (
             1
             / 2
-            * (lambdas - gamma + 1 + np.sqrt((lambdas - gamma + 1) ** 2 - 4 * lambdas))
-            - 1
+            * (
+                lambdas
+                - noise_var * (gamma - 1)
+                + np.sqrt(
+                    (lambdas - noise_var * (gamma - 1)) ** 2
+                    - 4 * noise_var ** 2 * lambdas
+                )
+            )
+            - noise_var
         )
         c = np.divide(
-            (1 - np.divide(gamma, lambdas ** 2)), (1 + np.divide(gamma, lambdas))
+            (1 - np.divide(noise_var ** 2 * gamma, lambdas ** 2)),
+            (1 + np.divide(noise_var * gamma, lambdas)),
         )
         lambdas = lambdas * c
         lambs[lambs > lambda_max] = lambdas
@@ -68,7 +80,6 @@ def shrink_covar(covar_in, noise_var, gamma, shrinker=None):
     np.fill_diagonal(diag_lambs, lambs)
 
     shrinked_covar = eig_vec @ diag_lambs @ eig_vec.conj().T
-    shrinked_covar *= noise_var
 
     return shrinked_covar
 
@@ -206,7 +217,7 @@ class RotCov2D:
         ctf_idx=None,
         mean_coeff=None,
         do_refl=True,
-        noise_var=1,
+        noise_var=0,
         covar_est_opt=None,
         make_psd=True,
     ):
@@ -242,7 +253,7 @@ class RotCov2D:
             return x
 
         default_est_opt = {
-            "shrinker": "None",
+            "shrinker": None,
             "verbose": 0,
             "max_iter": 250,
             "iter_callback": [],
@@ -286,7 +297,7 @@ class RotCov2D:
         if not b_coeff.check_psd():
             logger.warning("Left side b in Cov2D is not positive semidefinite.")
 
-        if covar_est_opt["shrinker"] == "None":
+        if covar_est_opt["shrinker"] is None:
             b = b_coeff - noise_var * b_noise
         else:
             b = self.shrink_covar_backward(
@@ -373,7 +384,7 @@ class RotCov2D:
         ctf_idx=None,
         mean_coeff=None,
         covar_coeff=None,
-        noise_var=1,
+        noise_var=0,
     ):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
@@ -390,6 +401,7 @@ class RotCov2D:
             These are obtained using a Wiener filter with the specified covariance for the clean images
             and white noise of variance `noise_var` for the noise.
         """
+
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
@@ -398,8 +410,15 @@ class RotCov2D:
                 coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var
             )
 
-        # should be none or both
-        if (ctf_fb is None) or (ctf_idx is None):
+        # Handle CTF arguments.
+        if (ctf_fb is None) ^ (ctf_idx is None):
+            raise RuntimeError(
+                "Both `ctf_fb` and `ctf_idx` should be provided,"
+                " or both should be `None`."
+                f' Given {"ctf_fb" if ctf_idx is None else "ctf_idx"}'
+            )
+        elif ctf_fb is None:
+            # Setup defaults for CTF
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
@@ -411,15 +430,19 @@ class RotCov2D:
             coeff_k = coeffs[ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
-            sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
-
-            sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
-
             coeff_est_k = coeff_k - mean_coeff_k
-            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
-            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+
+            if noise_var == 0:
+                coeff_est_k = ctf_fb_k.solve(coeff_est_k.T).T
+            else:
+                sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
+                sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
+
+                coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
+                coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
@@ -586,7 +609,7 @@ class BatchedRotCov2D(RotCov2D):
         return b_covar
 
     def _noise_correct_covar_rhs(self, b_covar, b_noise, noise_var, shrinker):
-        if shrinker == "None":
+        if shrinker is None:
             b_noise = -noise_var * b_noise
             b_covar += b_noise
         else:
@@ -652,7 +675,7 @@ class BatchedRotCov2D(RotCov2D):
         return mean_coeff
 
     def get_covar(
-        self, noise_var=1, mean_coeff=None, covar_est_opt=None, make_psd=True
+        self, noise_var=0, mean_coeff=None, covar_est_opt=None, make_psd=True
     ):
         """
         Calculate the block diagonal covariance matrix in the basis
@@ -690,7 +713,7 @@ class BatchedRotCov2D(RotCov2D):
             return x
 
         default_est_opt = {
-            "shrinker": "None",
+            "shrinker": None,
             "verbose": 0,
             "max_iter": 250,
             "iter_callback": [],
@@ -740,7 +763,7 @@ class BatchedRotCov2D(RotCov2D):
         return covar_coeff
 
     def get_cwf_coeffs(
-        self, coeffs, ctf_fb, ctf_idx, mean_coeff, covar_coeff, noise_var=1
+        self, coeffs, ctf_fb, ctf_idx, mean_coeff, covar_coeff, noise_var=0
     ):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
@@ -757,13 +780,22 @@ class BatchedRotCov2D(RotCov2D):
             These are obtained using a Wiener filter with the specified covariance for the clean images
             and white noise of variance `noise_var` for the noise.
         """
+
         if mean_coeff is None:
             mean_coeff = self.get_mean()
 
         if covar_coeff is None:
             covar_coeff = self.get_covar(noise_var=noise_var, mean_coeff=mean_coeff)
 
-        if (ctf_fb is None) or (ctf_idx is None):
+        # Handle CTF arguments.
+        if (ctf_fb is None) ^ (ctf_idx is None):
+            raise RuntimeError(
+                "Both `ctf_fb` and `ctf_idx` should be provided,"
+                " or both should be `None`."
+                f' Given {"ctf_fb" if ctf_idx is None else "ctf_idx"}'
+            )
+        elif ctf_fb is None:
+            # Setup defaults for CTF
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
 
@@ -775,14 +807,19 @@ class BatchedRotCov2D(RotCov2D):
             coeff_k = coeffs[ctf_idx == k]
             ctf_fb_k = ctf_fb[k]
             ctf_fb_k_t = ctf_fb_k.T
-            sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
-            sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
             mean_coeff_k = ctf_fb_k.apply(mean_coeff)
-
             coeff_est_k = coeff_k - mean_coeff_k
-            coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
-            coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+
+            if noise_var == 0:
+                coeff_est_k = ctf_fb_k.solve(coeff_est_k.T).T
+            else:
+                sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
+                sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
+
+                coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
+                coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
