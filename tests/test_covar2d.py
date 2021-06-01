@@ -178,10 +178,11 @@ class Cov2DTestCase(TestCase):
 
     def testGetCWFCoeffsCTFargs(self):
         """
-        Test we raise when user supplies incorrect CTF arguments
+        Test we raise when user supplies incorrect CTF arguments,
+        and that the error message matches.
         """
 
-        with raises(RuntimeError):
+        with raises(RuntimeError, match=r".*Given ctf_fb.*"):
             _ = self.cov2d.get_cwf_coeffs(
                 self.coeff, self.h_ctf_fb, None, noise_var=self.noise_var
             )
