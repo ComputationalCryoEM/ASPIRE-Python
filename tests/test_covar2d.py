@@ -17,6 +17,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class Cov2DTestCase(TestCase):
+    # These class variables support parameterized arg checking in `testShrinkers`
+    shrinkers = [(None,), "frobenius_norm", "operator_norm", "soft_threshold"]
+    bad_shrinker_inputs = ["None", "notashrinker", ""]
+
     def setUp(self):
         self.dtype = np.float32
 
@@ -187,14 +191,17 @@ class Cov2DTestCase(TestCase):
                 self.coeff, self.h_ctf_fb, None, noise_var=self.noise_var
             )
 
-    @parameterized.expand(
-        [(None,), "frobenius_norm", "operator_norm", "soft_threshold", "None"]
-    )
+    # Note, parameterized module can be removed at a later date
+    # and replaced with pytest if ASPIRE-Python moves away from
+    # the TestCase class style tests.
+    # Paramaterize over known shrinkers and some bad values
+    @parameterized.expand(shrinkers + bad_shrinker_inputs)
     def testShrinkers(self, shrinker):
-        """Test all the shrinkers we know about run, and we raise otherwise."""
+        """Test all the shrinkers we know about run without crashing,
+        and check we raise with specific message for unsupporting shrinker arg."""
 
-        if shrinker == "None":
-            with raises(AssertionError):
+        if shrinker in self.bad_shrinker_inputs:
+            with raises(AssertionError, match="Unsupported shrink method"):
                 _ = self.cov2d.get_covar(
                     self.coeff_clean, covar_est_opt={"shrinker": shrinker}
                 )
