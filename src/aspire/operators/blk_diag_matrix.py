@@ -107,6 +107,7 @@ class BlkDiagMatrix:
         """
 
         BlkDiagMatrix.__check_square(value.shape)
+        self.__check_dtype_compatible(value)
         self.data[key] = value
         self.reset_cache()
 
@@ -163,7 +164,7 @@ class BlkDiagMatrix:
         if self.dtype != other.dtype:
             raise RuntimeError(
                 "BlkDiagMatrix received different types,"
-                " {} and {}.  Please validate and cast"
+                "self: {} and other: {}.  Please validate and cast"
                 " as appropriate.".format(self.dtype, other.dtype)
             )
 

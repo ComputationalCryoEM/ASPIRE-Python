@@ -115,6 +115,10 @@ class RIRClass2D(Class2D):
             raise ValueError(
                 f"Provided bispectrum_implementation={bispectrum_implementation} not in {bispectrum_implementations.keys()}"
             )
+        elif bispectrum_implementation == "legacy" and self._pca != self._legacy_pca:
+            raise ValueError('"legacy" bispectrum_implementation implies'
+                             ' large_pca_implementation="legacy".'
+                             ' Check class configuration and retry.')
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
 
         # For now, only run with FSPCA basis
@@ -168,13 +172,6 @@ class RIRClass2D(Class2D):
         """
         # _bispectrum is assigned during initialization.
 
-        # xxx
-        print(
-            "xxx coef", coef, coef.shape, coef.dtype
-        )  # should be real, but is complex (zero imag, so could be worse)
-        # coef = self.fb_basis.to_complex(np.real(coef))
-        coef = np.real(coef)
-
         return self._bispectrum(coef)
 
     def classify(self):
@@ -188,11 +185,11 @@ class RIRClass2D(Class2D):
         # Initial round of component truncation is before bispectrum.
         #  default of 400 components was taken from legacy code.
         # Instantiate a new compressed (truncated) basis.
-        # UGH top component mapping is screeewwwweeed self.pca_basis = self.pca_basis.compress(self.fspca_components)
+        #XXXX self.pca_basis = self.pca_basis.compress(self.fspca_components)
 
         # Expand into the compressed FSPCA space.
         fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
-        coef = self.pca_basis.expand(fb_coef)
+        self.fspca_coef = coef = self.pca_basis.expand(fb_coef)
 
         # Compute Bispectrum
         coef_b, coef_b_r = self.bispectrum(coef)
@@ -258,6 +255,75 @@ class RIRClass2D(Class2D):
 
         return indices
 
+    def fspca_output(self, classes, classes_refl, rot, include_refl=True):
+        """
+        Return class averages, averaging in the eigen basis.
+
+        :param classes: class indices (refering to src). (n_img, n_nbor)
+        :param classes_refl: Bool representing whether to reflect image in `classes`
+        :param rot: Array represting totation angle (Radians) of image in `classes`
+        :return: Stack of Synthetic Class Average images as Image instance.
+        """
+        
+        if not include_refl:
+            logger.info(
+                f"Output include_refl={include_refl}. Averaging only unreflected images."
+            )
+            unreflected_indices = classes_refl == False  # noqa: E712
+            # subset excluding reflected images
+            # Note these become ragged so we'll use a list
+            # Can avoid the raggedness if used in the loop below,
+            #  but really I think we should get to point where include_refl goes away...
+            #  It is for debugging/diagnostics.
+            _classes = [None] * self.src.n
+            _classes_refl = [None] * self.src.n
+            _rot = [None] * self.src.n
+            for i in range(self.src.n):
+                _classes[i] = classes[i][unreflected_indices[i]]
+                _classes_refl[i] = classes_refl[i][unreflected_indices[i]]
+                _rot[i] = rot[i][unreflected_indices[i]]
+            classes, classes_refl, rot = _classes, _classes_refl, _rot
+
+            if len(classes) == 0:
+                raise RuntimeError(
+                    "No unreflected classes found. Probably this is an error"
+                )
+
+        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
+        # generate indices for random sample (can do something smart with corr later).
+        # selection = np.random.choice(self.src.n, self.n_classes, replace=False)
+        # XXX for testing just take the first n_classes so it matches earlier plots for manual comparison
+        selection = np.arange(self.n_classes)
+
+        #imgs = self.src.images(0, self.src.n)
+        eigen_avgs = np.empty((self.n_classes, self.fb_basis.count), dtype=self.src.dtype)
+
+        for i in tqdm(range(self.n_classes)):
+            j = selection[i]
+            # Get the set of neighboring images
+            neighbors_coef = self.fspca_coef[classes[j]]
+
+            # Apply rotations corresponding to this set XXX
+            assert neighbors_coef.dtype == self.dtype, 'neighbors_coef should be real'
+            neighbors_coef = self.fb_basis.rotate(neighbors_coef, rot[j], classes_refl[j])
+
+            # Average in the eigen space
+            eigen_avgs[i] = np.mean(neighbors_coef, axis=0)
+            
+        # evaluate back to FB
+        c_fb = self.pca_basis.evaluate(eigen_avgs)
+        assert c_fb.shape == (self.n_classes, self.fb_basis.count)
+
+        # then to image space
+        avgs = self.fb_basis.evaluate(c_fb)
+        assert avgs.shape == (self.n_classes, self.src.L, self.src.L)
+
+        return avgs
+
+
+
+        
+    
     # can should optionally take/cache images/coef.
     #  we almost certainly have constructed them by now...
     def output(self, classes, classes_refl, rot, include_refl=True, average_cart=False):
@@ -326,8 +392,8 @@ class RIRClass2D(Class2D):
 
     def legacy_align(self, classes, coef):
         # translate some variables between this code and the legacy aspire aspire implementation (just trying to figure out of the old code ran...).
-        freqs = self.pca_basis.angular_indices
-        coeff = coef.T
+        freqs = self.pca_basis.complex_angular_indices
+        coeff = self.fb_basis.to_complex(coef).T
         n_im = self.src.n
         n_nbor = self.n_nbor
 
@@ -362,7 +428,7 @@ class RIRClass2D(Class2D):
         class_refl = (classes // n_im).astype(bool)
         classes[classes >= n_im] = classes[classes >= n_im] - n_im
         # # Why did they do this?
-        #     rot[class_refl] = np.mod(rot[class_refl] + 180, 360) # ??
+        # rot[class_refl] = np.mod(rot[class_refl] + 180, 360) # ??
         rot *= np.pi / 180.0  # Convert to radians
         return classes, class_refl, rot, corr
 
@@ -529,13 +595,19 @@ class RIRClass2D(Class2D):
         It is copied here to compare it a hot swappable manner while
         fresh code is developed for this class.
         """
+        
+        # xxx, I beleive this code was working in the complex regime,
+        #  so we'll convert to complex and check rest of program first.
+        coef = self.fb_basis.to_complex(coef)
+        complex_eigvals = self.fb_basis.to_complex(self.pca_basis.eigvals).reshape(
+            self.pca_basis.complex_count)
 
         # Legacy code requires we unpack just a few things to call it.
 
         coef_b, coef_b_r = bispec_2drot_large(
             coeff=coef.T,
-            freqs=self.pca_basis.angular_indices,
-            eigval=self.pca_basis.eigvals,
+            freqs=self.pca_basis.complex_angular_indices,
+            eigval=complex_eigvals,
             alpha=self.alpha,
             sample_n=self.sample_n,
         )
