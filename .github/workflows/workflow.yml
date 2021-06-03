@@ -34,8 +34,8 @@ jobs:
         include:
           # Re-include 3.6-stable with additional tox tasks.
           - python-version: 3.6
-            # Note since the environments are fresh, we don't need invoke `clean`.
-            pyenv: stable,docs,coveralls,report
+            pyenv: stable,docs
+
 
     steps:
     - uses: actions/checkout@v1
@@ -49,6 +49,9 @@ jobs:
         pip install tox tox-gh-actions
     - name: Test with tox
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
+    - name: Upload Coverage to CodeCov
+      uses: codecov/codecov-action@v1
+
 
   docs:
     if: github.ref == 'refs/heads/master'

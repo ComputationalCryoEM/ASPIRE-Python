@@ -13,6 +13,20 @@ from aspire.volume import Volume
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
+class SingleSimTestCase(TestCase):
+    """Test we can construct a length 1 Sim."""
+
+    def setUp(self):
+        self.sim = Simulation(
+            n=1,
+            L=8,
+        )
+
+    def testImage(self):
+        """Test we can get an Image from a length 1 Sim."""
+        _ = self.sim.images(0, 1)
+
+
 class SimTestCase(TestCase):
     def setUp(self):
         self.sim = Simulation(

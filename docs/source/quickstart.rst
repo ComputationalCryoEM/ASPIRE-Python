@@ -14,7 +14,7 @@ Substitute ``<command>`` with one of the available ``aspire`` commands. Use the 
 Currently, the following operations can be run with ASPIRE:
 
 1. Particle-Picking
-*******************
+###################
 
 The ``apple`` command takes in a folder of one or more ``*.mrc`` files, picks particles using the Apple-Picker algorithm described at
 :cite:`DBLP:journals/corr/abs-1802-00469`, and generates ``*.star`` files, one for each ``*.mrc`` file processed, at an output folder location.
@@ -31,7 +31,7 @@ For example, to run the command on sample data included in ASPIRE (a single ``sa
 Use the ``--help`` argument with the command to see the several options associated with this command.
 
 2. Simulation
-*************
+#############
 
 The ``simulation`` command simulates a virtual particle made up of multiple gaussian blobs, generates of set of (noisy) images,
 runs the ASPIRE pipeline to determine the estimated mean volume and estimated covariance on the mean volume,
@@ -45,7 +45,7 @@ Use the ``--help`` argument to look for configurable options. You can select the
 the resolution of the (square) images generated etc.
 
 3. Reconstructing a mean volume with covariance
-***********************************************
+###############################################
 
 The ``cov3d`` command takes in a ``*.star`` file, processes the images (``*.mrcs`` files) found in the starfile, and runs the ASPIRE pipeline
 to determine the estimated mean volume and estimated covariance on the mean volume. No results are saved currently, but this command is
@@ -68,7 +68,7 @@ For example, to run the command on a sample data included in ASPIRE:
 Use the ``--help`` argument to look for configurable options.
 
 4. Crop a set of projections
-****************************
+############################
 
 The ``crop`` command crops a stack of projections of an mrc file to squares of a given size (in pixels). For example,
 
@@ -80,9 +80,24 @@ The ``crop`` command crops a stack of projections of an mrc file to squares of a
 
     This command will crop images found in `demo.mrc` to images of size 42x42, in debug mode and with maximum verbosity.
 
+5. Estimate Contrast Transfer Function
+######################################
+
+The ``estimate-ctf`` command estimates the CTF from experimental data and returns the CTF as a mrc file.  For example,
+
+.. code-block:: console
+
+      python -m aspire estimate-ctf --data_folder path_to_input_data_folder
+
+.. note::
+
+    This command expects data files are in the directory prescribed by ``--data_folder``,
+    and will process all files with the extension ``.mrc`` and ``.mrcs`` contained there.
+    This command will output mrc files to a ``--output_dir``, set to ``./results`` by default.
+
 
 Arguments, options and flags
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+############################
 
 - **Arguments** are mandatory inputs.
    For example, when running 'compare' command, you must provide 2 MRC files to compare.

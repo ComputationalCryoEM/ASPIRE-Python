@@ -42,7 +42,7 @@ def cart2sph(x, y, z):
     return az, el, r
 
 
-def grid_1d(n, shifted=False, normalized=True):
+def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate one dimensional grid.
 
@@ -52,10 +52,10 @@ def grid_1d(n, shifted=False, normalized=True):
     :return: the rectangular and polar coordinates of all grid points.
     """
 
-    grid = np.ceil(np.arange(-n / 2, n / 2))
+    grid = np.ceil(np.arange(-n / 2, n / 2), dtype=dtype)
 
     if shifted and n % 2 == 0:
-        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2)
+        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
 
     if normalized:
         if shifted and n % 2 == 0:

@@ -121,19 +121,19 @@ class VolumeTestCase(TestCase):
             self.assertTrue(np.allclose(vol_along_axis, prj_along_axis))
 
     def to_vec(self):
-        """ Compute the to_vec method and compare. """
+        """Compute the to_vec method and compare."""
         result = self.vols_1.to_vec()
         self.assertTrue(result == self.vec)
         self.assertTrue(isinstance(result, np.ndarray))
 
     def testFromVec(self):
-        """ Compute Volume from_vec method and compare. """
+        """Compute Volume from_vec method and compare."""
         vol = Volume.from_vec(self.vec)
         self.assertTrue(np.allclose(vol, self.vols_1))
         self.assertTrue(isinstance(vol, Volume))
 
     def testVecId1(self):
-        """ Test composition of from_vec(to_vec). """
+        """Test composition of from_vec(to_vec)."""
         # Construct vec
         vec = self.vols_1.to_vec()
 
@@ -141,7 +141,7 @@ class VolumeTestCase(TestCase):
         self.assertTrue(np.allclose(Volume.from_vec(vec), self.vols_1))
 
     def testVecId2(self):
-        """ Test composition of to_vec(from_vec). """
+        """Test composition of to_vec(from_vec)."""
         # Construct Volume
         vol = Volume.from_vec(self.vec)
 
