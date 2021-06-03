@@ -1,13 +1,15 @@
 import copy
 import logging
+from collections import OrderedDict
 
 import numpy as np
-from tqdm import tqdm
 
 from aspire.basis import SteerableBasis
 from aspire.covariance import RotCov2D
 from aspire.operators import BlkDiagMatrix
-from aspire.utils import complex_type, make_symmat
+from aspire.utils import complex_type, real_type
+
+# from aspire.utils import make_symmat
 
 logger = logging.getLogger(__name__)
 
@@ -129,12 +131,6 @@ class FSPCABasis(SteerableBasis):
         Algorithm 2 from paper.
         """
 
-        # number of images
-        n = self.src.n
-
-        # Noise Variance
-        n_var = self.noise_var
-
         # Compute coefficient vector of mean image at zeroth component
         self.mean_coef_zero = np.mean(
             self.mean_coef_est[self.angular_indices == 0], axis=0
@@ -161,11 +157,11 @@ class FSPCABasis(SteerableBasis):
                 for i in range(len(mask))
             ]
             A_k = (coef[:, mask_pos] + coef[:, mask_neg]) / 2
-           # A_k_refl = (coef[:, mask_pos] - coef[:, mask_neg]) / 2
+            # A_k_refl = (coef[:, mask_pos] - coef[:, mask_neg]) / 2
 
             A.append(A_k)
             A.append(A_k)
-            #A.append(A_k_refl)
+            # A.append(A_k_refl)
 
         # # end copy pasta
         assert len(A) == len(self.covar_coef_est)
@@ -302,6 +298,7 @@ class FSPCABasis(SteerableBasis):
 
         return c @ eigvecs.T
 
+    # # Noting this is awful, but I'm still trying to work out how we can push the complex arithmetic out and away...
     def compress(self, k):
         """
         Use the eigendecomposition to select the most powerful
@@ -338,15 +335,32 @@ class FSPCABasis(SteerableBasis):
 
         result.angular_indices = self.angular_indices[compressed_indices]
         result.radial_indices = self.radial_indices[compressed_indices]
+        result.signs_indices = self.basis._indices["sgns"][compressed_indices]
 
-        compressed_positive = self.basis._indices["sgns"][compressed_indices] == 1
-        result.complex_angular_indices = self.angular_indices[
-            compressed_indices & compressed_positive
-        ]
-        result.complex_radial_indices = self.radial_indices[
-            compressed_indices & compressed_positive
-        ]
-        result.complex_count = np.sum(compressed_positive)
+        result.complex_indices_map = complex_indices_map = OrderedDict()
+        for i in range(result.count):
+            ell = result.angular_indices[i]
+            q = result.radial_indices[i]
+            sgn = result.signs_indices[i]
+
+            complex_indices_map.setdefault((ell, q), [None, None])
+            if sgn == 1:
+                complex_indices_map[(ell, q)][0] = i
+            elif sgn == -1:
+                complex_indices_map[(ell, q)][1] = i
+            else:
+                raise ValueError("sgn should be +-1")
+
+        result.complex_count = len(complex_indices_map)
+        result.complex_angular_indices = np.empty(result.complex_count, int)
+        result.complex_radial_indices = np.empty(result.complex_count, int)
+        for i, key in enumerate(complex_indices_map.keys()):
+            ang, rad = key
+            result.complex_angular_indices[i] = ang
+            result.complex_radial_indices[i] = rad
+
+        logger.debug(f"complex_radial_indices: {result.complex_radial_indices} {len(result.complex_radial_indices)}")
+        logger.debug(F"complex_angular_indices: {result.complex_angular_indices} {len(result.complex_angular_indices)}")
 
         return result
 
@@ -380,23 +394,76 @@ class FSPCABasis(SteerableBasis):
 
         ccoef = np.zeros((coef.shape[0], self.complex_count), dtype=dtype)
 
-        ind = 0
+        ccoef_d = OrderedDict()
+        for i in range(self.count):
+            ell = self.angular_indices[i]
+            q = self.radial_indices[i]
+            sgn = self.signs_indices[i]
 
-        for ell in self.angular_indices:
-            if ell==0:
-                idx = np.arange(self.k_max[0], dtype=int)
-                ccoef[:, idx] = coef[:, idx]
-                ind_pos += np.size(idx)
+            ccoef_d.setdefault((ell, q), 0 + 0j)
+            if sgn == 1:
+                ccoef_d[(ell, q)] += coef[:, i]
+            elif sgn == -1:
+                ccoef_d[(ell, q)] -= imaginary * coef[:, i]
             else:
-                idx = ind + np.arange(self.k_max[ell], dtype=int)
-                idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
-                idx_neg = idx_pos + self.k_max[ell]
+                raise ValueError("sgns should be +-1")
 
-                ccoef[:, idx] = (coef[:, idx_pos] - imaginary * coef[:, idx_neg]) / 2.0
-                ind_pos += 2 * self.k_max[ell]
-                
-            ind += np.size(idx)
+        for i, k in enumerate(ccoef_d.keys()):
+            ccoef[:, i] = ccoef_d[k]
 
+        ccoef /= 2.0
 
         return ccoef
 
+    def to_real(self, complex_coef):
+        """
+        Return real valued representation of complex coefficients.
+        This can be useful when comparing or implementing methods
+        from literature.
+
+        There is a corresponding method, to_complex.
+
+        :param complex_coef: Complex coefficients from this basis.
+        :return: Real coefficent representation from this basis.
+        """
+
+        if complex_coef.ndim == 1:
+            complex_coef = complex_coef.reshape(1, -1)
+
+        if complex_coef.dtype not in (np.complex128, np.complex64):
+            raise TypeError("coef provided to to_real should be complex.")
+
+        # Pass through dtype precions, but check and warn if mismatched.
+        dtype = real_type(complex_coef.dtype)
+        if dtype != self.dtype:
+            logger.warning(
+                f"Complex coef dtype {complex_coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
+            )
+
+        coef = np.zeros((complex_coef.shape[0], self.count), dtype=dtype)
+
+        # map ordered index to (ell, q) key in dict
+        keymap = list(self.complex_indices_map.keys())
+        for i in range(self.complex_count):
+            # retreive index into reals
+            pos_i, neg_i = self.complex_indices_map[keymap[i]]
+            if pos_i is not None:
+                coef[:, pos_i] = 2.0 * complex_coef[:, i].real
+            if neg_i is not None:
+                coef[:, neg_i] = -2.0 * complex_coef[:, i].imag
+
+        return coef
+
+    def rotate(self, coef, radians, refl=None):
+        """
+        Returns coefs rotated by `radians`.
+
+        :param coef: Basis coefs.
+        :param radians: Rotation in radians.
+        :param refl: Optional reflect image (bool)
+        :return: rotated coefs.
+        """
+
+        # Sterrable class rotation expects complex representation of coefficients.
+        #  Convert, rotate and convert back to real representation.
+        return self.to_real(super().rotate(self.to_complex(coef), radians, refl))

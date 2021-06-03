@@ -220,8 +220,8 @@ def bispec_2drot_large(coeff, freqs, eigval, alpha, sample_n):
     # GBW, naively handle vanishing eigvals.
     #  This became a problem with very noisy images...
     p = np.power(eigval, alpha)
-    mask = np.where(p, p, -1) # taking the log in the next step will yield a 0    
-    m = np.exp(o1 * np.log(p, where =(mask > 0)))
+    mask = np.where(p, p, -1)  # taking the log in the next step will yield a 0
+    m = np.exp(o1 * np.log(p, where=(mask > 0)))
     p_m = m / m.sum()
     x = np.random.rand(len(m))
     m_id = np.where(x < sample_n * p_m)[0]
