@@ -44,7 +44,7 @@ class SteerableBasis(Basis):
         if len(complex_coef) != self.complex_count:
             raise ValueError(
                 "Basis.calculate_bispectrum coefs expected"
-                f"to have (complex) count {self.complex_count}, received {len(complex_coef)}."
+                f" to have (complex) count {self.complex_count}, received {len(complex_coef)}."
             )
 
         if freq_cutoff and freq_cutoff > np.max(self.complex_angular_indices):

@@ -531,10 +531,16 @@ class RIRClass2D(Class2D):
         return coef_b, coef_b_r
 
     def _devel_bispectrum(self, coef):
+        coef = self.pca_basis.to_complex(coef)
+        eigvals = self.pca_basis.to_complex(self.pca_basis.eigvals).reshape(
+            self.pca_basis.complex_count
+        )  # flattens
+
         # Legacy code included a sanity check:
         # non_zero_freqs = self.pca_basis.complex_angular_indices != 0
         # coef_norm = np.log(np.power(np.abs(coef[:,non_zero_freqs]), self.alpha)).all())
         # just stick to the paper (eq 20) for now , look at this more later.
+
         coef_normed = np.where(
             coef == 0, 0, coef / np.power(np.abs(coef), 1 - self.alpha)
         )  # should use an epsilon here...
@@ -543,8 +549,7 @@ class RIRClass2D(Class2D):
             raise ValueError("Coefs should be finite")
 
         # ## Compute and reduce Bispectrum
-
-        m = np.power(self.pca_basis.eigvals, self.alpha)
+        m = np.power(eigvals, self.alpha)
         m = m[
             self.pca_basis.complex_angular_indices != 0
         ]  # filter non_zero_freqs eq 18,19

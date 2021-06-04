@@ -524,3 +524,15 @@ class FSPCABasis(SteerableBasis):
         # Sterrable class rotation expects complex representation of coefficients.
         #  Convert, rotate and convert back to real representation.
         return self.to_real(super().rotate(self.to_complex(coef), radians, refl))
+
+    def calculate_bispectrum(
+        self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
+    ):
+        if coef.dtype == real_type(self.dtype):
+            coef = self.to_complex(coef)
+        return super().calculate_bispectrum(
+            coef,
+            flatten=flatten,
+            filter_nonzero_freqs=filter_nonzero_freqs,
+            freq_cutoff=freq_cutoff,
+        )

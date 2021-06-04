@@ -68,13 +68,9 @@ class BispectrumTestCase(TestCase):
         Compare FSPCA bispctrum before and after rotation.
         """
 
-        # Convert to complex
-        cv1 = self.basis.to_complex(self.v1)
-        cv2 = self.basis.to_complex(self.v2)
-
         # Compute Bispectrum
-        w1 = self.fspca_basis.calculate_bispectrum(cv1)
-        w2 = self.fspca_basis.calculate_bispectrum(cv2)
+        w1 = self.fspca_basis.calculate_bispectrum(self.v1)
+        w2 = self.fspca_basis.calculate_bispectrum(self.v2)
 
         # Bispectrum should be equivalent
         self.assertTrue(np.allclose(w1, w2))
@@ -95,7 +91,7 @@ class BispectrumTestCase(TestCase):
         cv2_r = compressed_fspca.expand(self.v2)
 
         # Check we are really compressed
-        self.assertTrue(cv1_r.shape == (1, components))
+        self.assertTrue(compressed_fspca.complex_count == components)
 
         # Compute Bispectrum
         w1 = compressed_fspca.calculate_bispectrum(cv1_r)

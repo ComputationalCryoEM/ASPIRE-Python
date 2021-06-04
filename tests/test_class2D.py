@@ -97,7 +97,7 @@ class RIRClass2DTestCase(TestCase):
             sample_n=42,
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
-            bispectrum_implementation="legacy",
+            bispectrum_implementation="devel",
         )
 
         result = rir.classify()
