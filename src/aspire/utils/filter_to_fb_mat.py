@@ -45,7 +45,6 @@ def filter_to_fb_mat(h_fun, fbasis):
         fb_vals = np.zeros_like(rmat)
         ind_radial = np.sum(fbasis.k_max[0:ell])
         fb_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T
-
         h_fb_vals = fb_vals * h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
             h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1)

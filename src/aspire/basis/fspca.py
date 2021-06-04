@@ -71,8 +71,15 @@ class FSPCABasis(SteerableBasis):
         self.complex_count = self.basis.complex_count
         self.angular_indices = self.basis.angular_indices
         self.radial_indices = self.basis.radial_indices
+        self.signs_indices = self.basis._indices["sgns"]
         self.complex_angular_indices = self.basis.complex_angular_indices
         self.complex_radial_indices = self.basis.complex_radial_indices
+
+        self.complex_indices_map = self._get_complex_indices_map()
+        assert (
+            len(self.complex_indices_map) == self.complex_count
+        ), f"{len(self.complex_indices_map)} != {self.complex_count}"
+
         self.noise_var = noise_var  # noise_var is handled during `build` call.
 
         # Support sizes
@@ -87,6 +94,24 @@ class FSPCABasis(SteerableBasis):
         ), "Cartesian support should be integer number of pixels."
 
         # self._build()  # hrmm how/when to kick off build, tricky
+
+    def _get_complex_indices_map(self):
+        complex_indices_map = OrderedDict()
+        for i in range(self.count):
+            ell = self.angular_indices[i]
+            q = self.radial_indices[i]
+            sgn = self.signs_indices[i]
+
+            # print(f"{i}, {ell}, {q}, {sgn}")
+            complex_indices_map.setdefault((ell, q), [None, None])
+            if sgn == 1:
+                complex_indices_map[(ell, q)][0] = i
+            elif sgn == -1:
+                complex_indices_map[(ell, q)][1] = i
+            else:
+                raise ValueError("sgn should be +-1")
+
+        return complex_indices_map
 
     def build(self, coef):
         # figure out a better name later, talked about using via batchcov but im pretty suspect...
@@ -137,16 +162,25 @@ class FSPCABasis(SteerableBasis):
         )
 
         # Make the Data matrix (A_k)
-        # This code is intentionally ripped off cov2d so that we can refactor both later.
-        # Begin copy pasta.
-        # Initialize a totally empty BlkDiagMatrix, build incrementally.
-        A = BlkDiagMatrix.empty(0, dtype=coef.dtype)
-        ell = 0
-        mask = self.basis._indices["ells"] == ell
-        A_k = coef[:, mask] - self.mean_coef_zero
-        A.append(A_k)
+        # # Construct A_k, matrix of expansion coefficients a^i_k_q
+        # #   for image i, angular index k, radial index q,
+        # #   (around eq 31-33)
+        # #   Rows radial indices, columns image i.
+        # #
+        # # We can extract this directly (up to transpose) from
+        # #  complex_coef vector where ells == angular_index
+        # #  then use the transpose so image stack becomes columns.
 
-        for ell in range(1, self.basis.ell_max + 1):  # ell is k, k is q, for now
+        # Initialize a totally empty BlkDiagMatrix, then build incrementally.
+        A = BlkDiagMatrix.empty(0, dtype=coef.dtype)
+
+        # Zero angular index is special case of indexing.
+        mask = self.basis._indices["ells"] == 0
+        A_0 = coef[:, mask] - self.mean_coef_zero
+        A.append(A_0)
+
+        # Remaining angular indices have postive and negative entries in real representation.
+        for ell in range(1, self.basis.ell_max + 1):  # ell(code) is k(paper)
             mask = self.basis._indices["ells"] == ell
             mask_pos = [
                 mask[i] and (self.basis._indices["sgns"][i] == +1)
@@ -156,36 +190,36 @@ class FSPCABasis(SteerableBasis):
                 mask[i] and (self.basis._indices["sgns"][i] == -1)
                 for i in range(len(mask))
             ]
-            A_k = (coef[:, mask_pos] + coef[:, mask_neg]) / 2
-            # A_k_refl = (coef[:, mask_pos] - coef[:, mask_neg]) / 2
 
-            A.append(A_k)
-            A.append(A_k)
-            # A.append(A_k_refl)
+            A.append(coef[:, mask_pos])
+            A.append(coef[:, mask_neg])
 
-        # # end copy pasta
-        assert len(A) == len(self.covar_coef_est)
+        if len(A) != len(self.covar_coef_est):
+            raise RuntimeError(
+                "Data matrix A should have same number of blocks as Covar matrix.",
+                f" {len(A)} != {len(self.covar_coef_est)}",
+            )
 
         # Foreach angular frequency (`k` in paper, `ells` in FB code)
         eigval_index = 0
         for angular_index, C_k in enumerate(self.covar_coef_est):
 
             # # Eigen/SVD,
-            # XXX make_symmat? shouldn't covar already be sym?, what am I missing.
-            # eigvals_k, eigvecs_k = np.linalg.eig(make_symmat(C_k))
+            # CHECK: similar cov2d code has make_symmat? shouldn't covar already be sym?, what am I missing...
+            # eigvals_k, eigvecs_k = np.linalg.eigh(make_symmat(C_k))
             eigvals_k, eigvecs_k = np.linalg.eigh(C_k)
 
             # Determistically enforce eigen vector sign convention
             eigvecs_k = fix_signs(eigvecs_k)
 
-            # Sort eigvals_k (gbw, are they not sorted already?!)
+            # Sort eigvals_k
             sorted_indices = np.argsort(-eigvals_k)
             eigvals_k, eigvecs_k = (
                 eigvals_k[sorted_indices],
                 eigvecs_k[:, sorted_indices],
             )
 
-            # These are the basis indices
+            # These are the dense basis indices for this block.
             basis_inds = np.arange(eigval_index, eigval_index + len(eigvals_k))
 
             # Store the eigvals
@@ -194,22 +228,10 @@ class FSPCABasis(SteerableBasis):
             # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
             self.eigvecs[angular_index] = eigvecs_k
 
-            # # Construct A_k, matrix of expansion coefficients a^i_k_q
-            # #   for image i, angular index k, radial index q,
-            # #   (around eq 31-33)
-            # #   Rows radial indices, columns image i.
-            # #
-            # # Garrett would just call this a `data` matrix.
-            # #
-            # # We can extract this directly (up to transpose) from
-            # #  complex_coef vector where ells == angular_index
-            # #  then use the transpose so image stack becomes columns.
-
-            # indices =( self.angular_indices == angular_index ) & (self.basis._indices["sgns"] == 1)
-
             # To compute new expansion coefficients using spca basis
             #   we combine the basis coefs using the eigen decomposition.
-            # Note image stack slow moving axis, and requires transpose from other implementation.
+            # Note image stack slow moving axis, otherwise this is just a
+            #   block by block matrix multiply.
 
             self.spca_coef[:, basis_inds] = np.einsum(
                 "ji, kj -> ki", eigvecs_k, A[angular_index]
@@ -298,6 +320,46 @@ class FSPCABasis(SteerableBasis):
 
         return c @ eigvecs.T
 
+    def _get_compressed_indices(self, n):
+        """
+        Return the sorted compressed (truncated) indices into the full FSPCA basis.
+
+        Note that we return some number of indices in the real representation (in +- pairs)
+        required to cover the `n` components in the complex representation.
+        """
+
+        unsigned_components = zip(
+            self.angular_indices[self.sorted_indices],
+            self.radial_indices[self.sorted_indices],
+        )
+
+        # order the components by their importance (occurance based on sorted eigvals)
+        #  This isn't exactly right since the eigvals would be sorted by the complex magnitude,
+        #    instead of the larger component.
+        ordered_components = OrderedDict()
+        for (k, q) in unsigned_components:
+            ordered_components.setdefault((k, q))  # inserts when not exists yet
+
+        # Select the top n (k,q) pairs
+        top_components = list(ordered_components)[:n]
+
+        # Now we need to find the locations of both the + and - sgns.
+        k_maps = dict()  # memoize
+        q_maps = dict()  # memoize
+        pos_mask = self.basis._indices["sgns"] == 1
+        neg_mask = self.basis._indices["sgns"] == -1
+        compressed_indices = []
+        for (k, q) in top_components:
+            k_maps.setdefault(k, self.angular_indices == k)
+            q_maps.setdefault(q, self.radial_indices == q)
+
+            pos_index = np.where(k_maps[k] & q_maps[q] & pos_mask)[0][0]
+            compressed_indices.append(pos_index)
+            if k > 0:
+                neg_index = np.where(k_maps[k] & q_maps[q] & neg_mask)[0][0]
+                compressed_indices.append(neg_index)
+        return compressed_indices
+
     # # Noting this is awful, but I'm still trying to work out how we can push the complex arithmetic out and away...
     def compress(self, k):
         """
@@ -324,8 +386,10 @@ class FSPCABasis(SteerableBasis):
 
         # Create compressed mapping
         result.compressed = True
-        result.count = k
-        compressed_indices = self.sorted_indices[: result.count]
+        compressed_indices = self._get_compressed_indices(k)
+        logger.info(f"compressed_indices {compressed_indices}")
+        result.count = len(compressed_indices)
+        logger.info(f"compressed count {result.count}")
 
         # NOTE, no longer blk_diag! ugh
         # Note can copy from self or result, should be same...
@@ -335,32 +399,23 @@ class FSPCABasis(SteerableBasis):
 
         result.angular_indices = self.angular_indices[compressed_indices]
         result.radial_indices = self.radial_indices[compressed_indices]
-        result.signs_indices = self.basis._indices["sgns"][compressed_indices]
+        result.signs_indices = self.signs_indices[compressed_indices]
 
-        result.complex_indices_map = complex_indices_map = OrderedDict()
-        for i in range(result.count):
-            ell = result.angular_indices[i]
-            q = result.radial_indices[i]
-            sgn = result.signs_indices[i]
-
-            complex_indices_map.setdefault((ell, q), [None, None])
-            if sgn == 1:
-                complex_indices_map[(ell, q)][0] = i
-            elif sgn == -1:
-                complex_indices_map[(ell, q)][1] = i
-            else:
-                raise ValueError("sgn should be +-1")
-
-        result.complex_count = len(complex_indices_map)
+        result.complex_indices_map = result._get_complex_indices_map()
+        result.complex_count = len(result.complex_indices_map)
         result.complex_angular_indices = np.empty(result.complex_count, int)
         result.complex_radial_indices = np.empty(result.complex_count, int)
-        for i, key in enumerate(complex_indices_map.keys()):
+        for i, key in enumerate(result.complex_indices_map.keys()):
             ang, rad = key
             result.complex_angular_indices[i] = ang
             result.complex_radial_indices[i] = rad
 
-        logger.debug(f"complex_radial_indices: {result.complex_radial_indices} {len(result.complex_radial_indices)}")
-        logger.debug(F"complex_angular_indices: {result.complex_angular_indices} {len(result.complex_angular_indices)}")
+        logger.info(
+            f"complex_radial_indices: {result.complex_radial_indices} {len(result.complex_radial_indices)}"
+        )
+        logger.info(
+            f"complex_angular_indices: {result.complex_angular_indices} {len(result.complex_angular_indices)}"
+        )
 
         return result
 
@@ -395,23 +450,24 @@ class FSPCABasis(SteerableBasis):
         ccoef = np.zeros((coef.shape[0], self.complex_count), dtype=dtype)
 
         ccoef_d = OrderedDict()
+
         for i in range(self.count):
             ell = self.angular_indices[i]
             q = self.radial_indices[i]
             sgn = self.signs_indices[i]
 
             ccoef_d.setdefault((ell, q), 0 + 0j)
-            if sgn == 1:
-                ccoef_d[(ell, q)] += coef[:, i]
+            if ell == 0:
+                ccoef_d[(ell, q)] = coef[:, i]
+            elif sgn == 1:
+                ccoef_d[(ell, q)] += coef[:, i] / 2.0
             elif sgn == -1:
-                ccoef_d[(ell, q)] -= imaginary * coef[:, i]
+                ccoef_d[(ell, q)] -= imaginary * coef[:, i] / 2.0
             else:
                 raise ValueError("sgns should be +-1")
 
         for i, k in enumerate(ccoef_d.keys()):
             ccoef[:, i] = ccoef_d[k]
-
-        ccoef /= 2.0
 
         return ccoef
 
@@ -447,9 +503,10 @@ class FSPCABasis(SteerableBasis):
         for i in range(self.complex_count):
             # retreive index into reals
             pos_i, neg_i = self.complex_indices_map[keymap[i]]
-            if pos_i is not None:
+            if self.complex_angular_indices[i] == 0:
+                coef[:, pos_i] = complex_coef[:, i].real
+            else:
                 coef[:, pos_i] = 2.0 * complex_coef[:, i].real
-            if neg_i is not None:
                 coef[:, neg_i] = -2.0 * complex_coef[:, i].imag
 
         return coef

@@ -191,6 +191,7 @@ class RIRClass2D(Class2D):
 
         # Expand into the compressed FSPCA space.
         fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
+        # fb_coef = self.fb_basis.expand(self.src.images(0, self.src.n).asnumpy()).T
         self.fspca_coef = coef = self.pca_basis.expand(fb_coef)
 
         # Compute Bispectrum
@@ -257,7 +258,7 @@ class RIRClass2D(Class2D):
 
         return indices
 
-    def fspca_output(self, classes, classes_refl, rot, include_refl=True):
+    def denoised_output(self, classes, classes_refl, rot, include_refl=True):
         """
         Return class averages, averaging in the eigen basis.
 
@@ -307,7 +308,7 @@ class RIRClass2D(Class2D):
             # Get the set of neighboring images
             neighbors_coef = self.fspca_coef[classes[j]]
 
-            # Apply rotations corresponding to this set XXX
+            # Apply rotations corresponding to this set
             assert neighbors_coef.dtype == self.dtype, "neighbors_coef should be real"
             neighbors_coef = self.pca_basis.rotate(
                 neighbors_coef, rot[j], classes_refl[j]
