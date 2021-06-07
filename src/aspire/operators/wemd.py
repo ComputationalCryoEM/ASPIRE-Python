@@ -22,8 +22,9 @@ def wemd_embed(arr, wavelet, level):
     of the arrays.
 
     :param arr: Numpy array
-    :param level: Decomposition level of the wavelets
-    Larger levels yield more coefficients and more accurate results
+    :param level: Decomposition level of the wavelets.
+    Larger levels yield more coefficients and more accurate results.
+    As a rule of thumb, you can take level to be the log2 of the side-length of the domain.
     :param wavelet: Either the name of a wavelet supported by PyWavelets
     (e.g. 'coif3', 'sym3', 'sym5', etc.) or a pywt.Wavelet object
     See https://pywavelets.readthedocs.io/en/latest/ref/wavelets.html#built-in-wavelets-wavelist
