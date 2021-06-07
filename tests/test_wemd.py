@@ -23,21 +23,26 @@ def _is_monotone(seq):
 
 
 class WEMDTestCase(TestCase):
-    """Test that the WEMD distance between smoothed disks of various radii, angles and distances is monotone in the Euclidean distance of their centers.
-    Note that this monotonicity isn't strictly required by the theory, but holds empirically."""
+    """
+    Test that the WEMD distance between smoothed disks of various radii,
+    angles and distances is monotone in the Euclidean distance of their centers.
+    Note that this monotonicity isn't strictly required by the theory,
+    but holds empirically.
+    """
 
     def test_wemd_norm(self):
         WIDTH = 64
         HEIGHT = 64
         CENTER_X = WIDTH // 2
         CENTER_Y = HEIGHT // 2
-        LEVEL = (
-            int(ceil(log2(max(WIDTH, HEIGHT)))) + 1
-        )  # A rule of thumb for the wavelet level is to take the log2 of the side length.
+        # A rule of thumb for the wavelet level is to take
+        # the log2 of the side length.
+        LEVEL = int(ceil(log2(max(WIDTH, HEIGHT)))) + 1
         WAVELET = "coif3"
         warnings.filterwarnings(
             "ignore",
-            message="Level value of .* is too high: all coefficients will experience boundary effects.",
+            message="Level value of .* is too high:"
+            " all coefficients will experience boundary effects.",
         )
         for radius in [1, 2, 3, 4, 5, 6, 7]:  # Just some random radii
             for angle in [
