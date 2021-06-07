@@ -4,7 +4,6 @@ from unittest import TestCase
 
 import numpy as np
 from numpy import all, asarray, ceil, cos, log2, mgrid, sin
-from pytest import raises
 
 from aspire.operators import wemd_norm
 
@@ -30,8 +29,8 @@ class WEMDTestCase(TestCase):
     def test_wemd_norm(self):
         WIDTH = 64
         HEIGHT = 64
-        CENTER_X = WIDTH / 2
-        CENTER_Y = HEIGHT / 2
+        CENTER_X = WIDTH // 2
+        CENTER_Y = HEIGHT // 2
         LEVEL = (
             int(ceil(log2(max(WIDTH, HEIGHT)))) + 1
         )  # A rule of thumb for the wavelet level is to take the log2 of the side length.
@@ -64,5 +63,5 @@ class WEMDTestCase(TestCase):
                 wemd_distances_along_ray = [
                     wemd_norm(disks[0] - disk, WAVELET, LEVEL) for disk in disks
                 ]
-                print(wemd_distances_along_ray)
+                logger.info(f"wemd distances along ray: {wemd_distances_along_ray}")
                 self.assertTrue(_is_monotone(wemd_distances_along_ray))
