@@ -10,6 +10,7 @@ More details are available in their technical report:
     CAR-TR-1025 CS-TR-4908 UMIACS-TR-2008-06.
 """
 
+import warnings
 import numpy as np
 import pywt
 
@@ -36,7 +37,15 @@ def wemd_embed(arr, wavelet='coif3', level=None):
     if level is None:
         level = int(np.ceil(np.log2(max(arr.shape))))+1
 
+    # Using wavedecn with the default level creates this boundary effects warning.
+    # However, this doesn't seem to be a cause for concern.
+    warnings.filterwarnings(
+        "ignore",
+        message="Level value of .* is too high:"
+        " all coefficients will experience boundary effects.",
+    )
     arrdwt = pywt.wavedecn(arr, wavelet, mode="zero", level=level)
+
     detail_coefs = arrdwt[1:]
     assert len(detail_coefs) == level
 

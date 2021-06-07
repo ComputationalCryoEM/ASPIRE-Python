@@ -35,12 +35,6 @@ class WEMDTestCase(TestCase):
         CENTER_X = WIDTH // 2
         CENTER_Y = HEIGHT // 2
         
-        warnings.filterwarnings(
-            "ignore",
-            message="Level value of .* is too high:"
-            " all coefficients will experience boundary effects.",
-        )
-        
         # A few disk radii and ray angles to test
         RADII = [1, 2, 3, 4, 5, 6, 7]
         ANGLES = [0.0, 0.4755, 0.6538, 1.9818, 3.0991, 4.4689, 4.9859, 5.5752]
