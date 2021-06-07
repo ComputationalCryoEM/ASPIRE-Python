@@ -25,21 +25,20 @@ def wemd_embed(arr, wavelet, level):
     :param level: Decomposition level of the wavelets
     Larger levels yield more coefficients and more accurate results
     :param wavelet: Either the name of a wavelet supported by PyWavelets
-    (e.g. 'coif3', 'sym3') or a pywt.Wavelet object
+    (e.g. 'coif3', 'sym3', 'sym5', etc.) or a pywt.Wavelet object
     See https://pywavelets.readthedocs.io/en/latest/ref/wavelets.html#built-in-wavelets-wavelist
     :returns: One-dimensional numpy array containing weighted details coefficients.
     """
+    dimension = arr.ndim
 
     arrdwt = pywt.wavedecn(arr, wavelet, mode="zero", level=level)
-
-    dimension = len(arr.shape)
-
-    n_levels = len(arrdwt[1:])
+    detail_coefs = arrdwt[1:]
+    assert len(detail_coefs) == level
 
     weighted_coefs = []
-    for (j, details_level_j) in enumerate(arrdwt[1:]):
+    for (j, details_level_j) in enumerate(detail_coefs):
         for coefs in details_level_j.values():
-            multiplier = 2 ** ((n_levels - 1 - j) * (1 + (dimension / 2.0)))
+            multiplier = 2 ** ((level-1-j) * (1+(dimension/2.0)))
             weighted_coefs.append(coefs.flatten() * multiplier)
 
     return np.concatenate(weighted_coefs)
