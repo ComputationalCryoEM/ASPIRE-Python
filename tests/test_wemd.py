@@ -35,9 +35,6 @@ class WEMDTestCase(TestCase):
         CENTER_X = WIDTH // 2
         CENTER_Y = HEIGHT // 2
         
-        # A rule of thumb for the wavelet level is to take the log2 of the side length.
-        LEVEL = int(ceil(log2(max(WIDTH, HEIGHT)))) + 1
-        WAVELET = "coif3"
         warnings.filterwarnings(
             "ignore",
             message="Level value of .* is too high:"
@@ -61,7 +58,7 @@ class WEMDTestCase(TestCase):
                     for k in range(0, 16, 2)
                 ]
                 wemd_distances_along_ray = [
-                    wemd_norm(disks[0] - disk, WAVELET, LEVEL) for disk in disks
+                    wemd_norm(disks[0] - disk) for disk in disks
                 ]
                 logger.info(f"wemd distances along ray: {wemd_distances_along_ray}")
                 self.assertTrue(_is_monotone(wemd_distances_along_ray))
