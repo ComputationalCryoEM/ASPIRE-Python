@@ -1,5 +1,5 @@
 """
-Wavelet-based approximate Earthmover's distance (EMD) for 2D/3D signals.
+Wavelet-based approximate Earthmover's distance (EMD) for n-dimensional signals.
 
 This code is based on the following paper:
     Sameer Shirdhonkar and David W. Jacobs. "Approximate earth mover’s distance in linear time." 2008 IEEE Conference on Computer Vision and Pattern Recognition (CVPR).
@@ -11,11 +11,11 @@ import numpy as np
 import pywt
 
 
-def wembed(arr, wavelet, level):
+def wemd_embed(arr, wavelet, level):
     """
     This function computes an embedding of Numpy arrays such that
-    the L1 distance between the resulting embeddings is approximately
-    equal to the Earthmover distance of the arrays.
+    for non-negative arrays that sum to one, the L1 distance between the resulting embeddings
+    is strongly equivalent to the Earthmover distance of the arrays.
 
     :param arr: Numpy array
     :param level: Decomposition level of the wavelets
@@ -26,11 +26,9 @@ def wembed(arr, wavelet, level):
     :returns: One-dimensional numpy array containing weighted details coefficients.
     """
 
-    arrdwt = pywt.wavedecn(arr / arr.sum(), wavelet, mode="zero", level=level)
+    arrdwt = pywt.wavedecn(arr, wavelet, mode="zero", level=level)
 
     dimension = len(arr.shape)
-    if dimension not in (2, 3):
-        raise ValueError(f"wembed input dimension {dimension} should be 2 or 3.")
 
     n_levels = len(arrdwt[1:])
 
@@ -43,21 +41,17 @@ def wembed(arr, wavelet, level):
     return np.concatenate(weighted_coefs)
 
 
-def wemd(arr1, arr2, wavelet, level):
+def wemd_norm(arr, wavelet, level):
     """
-    Approximate Earthmover's distance between  using `embed`.
+    Wavelet-based norm used to approximate the Earthmover's distance between mass distributions specified as Numpy arrays (typically images or volumes).
 
-    :param arr1: Numpy array
-    :param arr2: Numpy array
+    :param arr: Numpy array of the difference between the two mass distributions.
     :param level: Decomposition level of the wavelets
     Larger levels yield more coefficients and more accurate results
     :param wavelet: Either the name of a wavelet supported by PyWavelets
     (e.g. 'coif3', 'sym3') or a pywt.Wavelet object
     See https://pywavelets.readthedocs.io/en/latest/ref/wavelets.html#built-in-wavelets-wavelist
-    :return: Approximated Earthmover Distance
+    :return: Approximated Earthmover's Distance
     """
-
-    coefs1 = wembed(arr1, wavelet, level)
-    coefs2 = wembed(arr2, wavelet, level)
-
-    return np.linalg.norm(coefs1 - coefs2, ord=1)
+    coefs = wemd_embed(arr, wavelet, level)
+    return np.linalg.norm(coefs, ord=1)
