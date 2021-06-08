@@ -1,9 +1,8 @@
 import logging
-import warnings
 from unittest import TestCase
 
 import numpy as np
-from numpy import all, asarray, ceil, cos, log2, mgrid, sin
+from numpy import all, asarray, cos, mgrid, sin
 
 from aspire.operators import wemd_norm
 
