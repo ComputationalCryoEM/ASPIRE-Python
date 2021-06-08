@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def _smoothed_disk_image(x, y, radius, width, height):
     (Y, X) = mgrid[:height, :width]
-    ratio = ((X-x)**2 + (Y-y)**2) / (radius**2)
+    ratio = ((X - x) ** 2 + (Y - y) ** 2) / (radius ** 2)
     return 2.0 - 2 / (1 + np.exp(-ratio))  # Scaled sigmoid funciton
 
 
@@ -29,12 +29,13 @@ class WEMDTestCase(TestCase):
     Note that this monotonicity isn't strictly required by the theory,
     but holds empirically.
     """
+
     def test_wemd_norm(self):
         WIDTH = 64
         HEIGHT = 64
         CENTER_X = WIDTH // 2
         CENTER_Y = HEIGHT // 2
-        
+
         # A few disk radii and ray angles to test
         RADII = [1, 2, 3, 4, 5, 6, 7]
         ANGLES = [0.0, 0.4755, 0.6538, 1.9818, 3.0991, 4.4689, 4.9859, 5.5752]
@@ -56,4 +57,3 @@ class WEMDTestCase(TestCase):
                 ]
                 logger.info(f"wemd distances along ray: {wemd_distances_along_ray}")
                 self.assertTrue(_is_monotone(wemd_distances_along_ray))
-

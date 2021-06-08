@@ -11,11 +11,12 @@ More details are available in their technical report:
 """
 
 import warnings
+
 import numpy as np
 import pywt
 
 
-def wemd_embed(arr, wavelet='coif3', level=None):
+def wemd_embed(arr, wavelet="coif3", level=None):
     """
     This function computes an embedding of Numpy arrays such that
     for non-negative arrays that sum to one, the L1 distance between the
@@ -35,7 +36,7 @@ def wemd_embed(arr, wavelet='coif3', level=None):
     dimension = arr.ndim
 
     if level is None:
-        level = int(np.ceil(np.log2(max(arr.shape))))+1
+        level = int(np.ceil(np.log2(max(arr.shape)))) + 1
 
     # Using wavedecn with the default level creates this boundary effects warning.
     # However, this doesn't seem to be a cause for concern.
@@ -51,14 +52,14 @@ def wemd_embed(arr, wavelet='coif3', level=None):
 
     weighted_coefs = []
     for (j, details_level_j) in enumerate(detail_coefs):
-        multiplier = 2 ** ((level-1-j) * (1+(dimension/2.0)))
+        multiplier = 2 ** ((level - 1 - j) * (1 + (dimension / 2.0)))
         for coefs in details_level_j.values():
             weighted_coefs.append(multiplier * coefs.flatten())
 
     return np.concatenate(weighted_coefs)
 
 
-def wemd_norm(arr, wavelet='coif3', level=None):
+def wemd_norm(arr, wavelet="coif3", level=None):
     """
     Wavelet-based norm used to approximate the Earthmover's distance between
     mass distributions specified as Numpy arrays (typically images or volumes).
