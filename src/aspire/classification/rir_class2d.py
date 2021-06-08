@@ -430,7 +430,7 @@ class RIRClass2D(Class2D):
 
         class_refl = (classes // n_im).astype(bool)
         classes[classes >= n_im] = classes[classes >= n_im] - n_im
-        # # Why did they do this?
+        # Check Reflections usually imply rotation by 180, but this seems to yield worse results?
         # rot[class_refl] = np.mod(rot[class_refl] + 180, 360) # ??
         rot *= np.pi / 180.0  # Convert to radians
         return classes, class_refl, rot, corr
