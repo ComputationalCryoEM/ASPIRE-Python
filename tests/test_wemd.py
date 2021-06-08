@@ -2,7 +2,7 @@ import logging
 from unittest import TestCase
 
 import numpy as np
-from numpy import all, asarray, cos, mgrid, sin
+from numpy import asarray, cos, mgrid, sin
 
 from aspire.operators import wemd_norm
 
@@ -18,7 +18,7 @@ def _smoothed_disk_image(x, y, radius, width, height):
 def _is_monotone(seq):
     arr = asarray(seq)
     assert arr.ndim == 1
-    return all(arr[1:] >= arr[:-1])
+    return np.all(arr[1:] >= arr[:-1])
 
 
 class WEMDTestCase(TestCase):
