@@ -32,6 +32,7 @@ setup(
         "numpy==1.16",
         "pandas==0.25.3",
         "pyfftw",
+        "PyWavelets",
         "pillow",
         "scipy==1.4.0",
         "scikit-learn",

@@ -15,3 +15,4 @@ from .filters import (
     ZeroFilter,
     voltage_to_wavelength,
 )
+from .wemd import wemd_embed, wemd_norm
