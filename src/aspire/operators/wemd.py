@@ -40,12 +40,13 @@ def wemd_embed(arr, wavelet="coif3", level=None):
 
     # Using wavedecn with the default level creates this boundary effects warning.
     # However, this doesn't seem to be a cause for concern.
-    warnings.filterwarnings(
-        "ignore",
-        message="Level value of .* is too high:"
-        " all coefficients will experience boundary effects.",
-    )
-    arrdwt = pywt.wavedecn(arr, wavelet, mode="zero", level=level)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Level value of .* is too high:"
+            " all coefficients will experience boundary effects.",
+        )
+        arrdwt = pywt.wavedecn(arr, wavelet, mode="zero", level=level)
 
     detail_coefs = arrdwt[1:]
     assert len(detail_coefs) == level
