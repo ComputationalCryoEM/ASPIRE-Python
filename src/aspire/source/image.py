@@ -192,6 +192,14 @@ class ImageSource:
         """
         :return: Rotation matrices as a n x 3 x 3 array
         """
+        # Call a private method. This allows sub classes to effeciently override.
+        return self._rots()
+
+    def _rots(self):
+        """
+        Converts interal `_rotations` representation to expected matrix form.
+        :return: Rotation matrices as a n x 3 x 3 array
+        """
         return self._rotations.as_matrix().astype(self.dtype)
 
     @angles.setter
@@ -742,7 +750,16 @@ class ArrayImageSource(ImageSource):
         :param im: An `Image` object representing image data served up by this `ImageSource`
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         """
+
         super().__init__(
             L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None
         )
+
         self._cached_im = im
+
+    def _rots(self):
+        """
+        Private method to populate rots attribute if called by consumer of this `source`.
+        Supports mean volume estimating code which expects rotations.
+        """
+        return np.zeros((self.n, 3, 3), dtype=self.dtype)
