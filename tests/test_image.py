@@ -4,10 +4,7 @@ from unittest import TestCase
 import numpy as np
 from scipy import misc
 
-from aspire.basis import FBBasis3D
 from aspire.image import Image, _im_translate2
-from aspire.reconstruction import MeanEstimator
-from aspire.source import ArrayImageSource
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 

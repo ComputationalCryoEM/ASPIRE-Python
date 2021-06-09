@@ -15,7 +15,12 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.operators import LambdaFilter, MultiplicativeFilter, PowerFilter
+from aspire.operators import (
+    IdentityFilter,
+    LambdaFilter,
+    MultiplicativeFilter,
+    PowerFilter,
+)
 from aspire.storage import MrcStats, StarFile, StarFileBlock
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
@@ -116,6 +121,7 @@ class ImageSource:
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
+        self._rotations_set = False
 
     @property
     def states(self):
@@ -185,7 +191,14 @@ class ImageSource:
         """
         :return: Rotation angles in radians, as a n x 3 array
         """
-        return self._rotations.as_euler().astype(self.dtype)
+        # Call a private method. This allows sub classes to effeciently override.
+        return self._angles()
+
+    def _angles(self):
+        """
+        Converts internal _rotations representation to expected matrix form.
+        """
+        return self._rotations.as_euler("ZYZ", degrees=False).astype(self.dtype)
 
     @property
     def rots(self):
@@ -197,7 +210,7 @@ class ImageSource:
 
     def _rots(self):
         """
-        Converts interal `_rotations` representation to expected matrix form.
+        Converts internal `_rotations` representation to expected matrix form.
         :return: Rotation matrices as a n x 3 x 3 array
         """
         return self._rotations.as_matrix().astype(self.dtype)
@@ -213,6 +226,7 @@ class ImageSource:
         self.set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
         )
+        self._rotations_set = True
 
     @rots.setter
     def rots(self, values):
@@ -226,6 +240,7 @@ class ImageSource:
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
             self._rotations.as_euler("ZYZ", degrees=True),
         )
+        self._rotations_set = True
 
     def set_metadata(self, metadata_fields, values, indices=None):
         """
@@ -744,11 +759,12 @@ class ArrayImageSource(ImageSource):
     if available, is consulted directly by the parent class, bypassing `_images`.
     """
 
-    def __init__(self, im, metadata=None):
+    def __init__(self, im, metadata=None, angles=None):
         """
         Initialize from an `Image` object
         :param im: An `Image` object representing image data served up by this `ImageSource`
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
+        :param angles:
         """
 
         super().__init__(
@@ -757,9 +773,38 @@ class ArrayImageSource(ImageSource):
 
         self._cached_im = im
 
+        # Create filter indices, these are required to pass unharmed through filter eval code
+        #   that is potentially called by other methods later.
+        self.filter_indices = np.zeros(self.n)
+        self.unique_filters = [IdentityFilter()]
+
+        # Optionally populate angles/rotations.
+        if angles is not None:
+            if angles.shape != (self.n, 3):
+                raise ValueError(f"Angles should be shape {(self.n, 3)}")
+            # This will popular ._rotations which is exposed by properties `angles` and `rots`.
+            self.angles = angles
+
     def _rots(self):
         """
-        Private method to populate rots attribute if called by consumer of this `source`.
-        Supports mean volume estimating code which expects rotations.
+        Private method, checks if `_rotations_set` is True then returns inherited rots, otherwise raise.
         """
-        return np.zeros((self.n, 3, 3), dtype=self.dtype)
+
+        if self._rotations_set:
+            return super()._rots()
+        else:
+            raise RuntimeError(
+                "Consumer of ArrayImageSource trying to access rots, but rots were not defined for this source.  Try instantiating with angles."
+            )
+
+    def _angles(self):
+        """
+        Private method, checks if `_rotations_set` is True then returns inherited angles, otherwise raise.
+        """
+
+        if self._rotations_set:
+            return super()._angles()
+        else:
+            raise RuntimeError(
+                "Consumer of ArrayImageSource trying to access angles, but angles were not defined for this source.  Try instantiating with angles."
+            )
