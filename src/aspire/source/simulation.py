@@ -38,7 +38,7 @@ class Simulation(ImageSource):
         Other than the base class attributes, it has:
 
         :param C: The number of distinct volumes
-        :param angles: A 3-by-n array of rotation angles
+        :param angles: A n-by-3 array of rotation angles
         """
         super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
