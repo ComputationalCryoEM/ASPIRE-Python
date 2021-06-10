@@ -764,7 +764,7 @@ class ArrayImageSource(ImageSource):
         Initialize from an `Image` object
         :param im: An `Image` object representing image data served up by this `ImageSource`
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
-        :param angles:
+        :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
         """
 
         super().__init__(
@@ -782,29 +782,36 @@ class ArrayImageSource(ImageSource):
         if angles is not None:
             if angles.shape != (self.n, 3):
                 raise ValueError(f"Angles should be shape {(self.n, 3)}")
-            # This will popular ._rotations which is exposed by properties `angles` and `rots`.
+            # This will populate `_rotations`,
+            #   which is exposed by properties `angles` and `rots`.
             self.angles = angles
 
     def _rots(self):
         """
-        Private method, checks if `_rotations_set` is True then returns inherited rots, otherwise raise.
+        Private method, checks if `_rotations_set` is True,
+        then returns inherited rots, otherwise raise.
         """
 
         if self._rotations_set:
             return super()._rots()
         else:
             raise RuntimeError(
-                "Consumer of ArrayImageSource trying to access rots, but rots were not defined for this source.  Try instantiating with angles."
+                "Consumer of ArrayImageSource trying to access rots,"
+                " but rots were not defined for this source."
+                "  Try instantiating with angles."
             )
 
     def _angles(self):
         """
-        Private method, checks if `_rotations_set` is True then returns inherited angles, otherwise raise.
+        Private method, checks if `_rotations_set` is True,
+        then returns inherited angles, otherwise raise.
         """
 
         if self._rotations_set:
             return super()._angles()
         else:
             raise RuntimeError(
-                "Consumer of ArrayImageSource trying to access angles, but angles were not defined for this source.  Try instantiating with angles."
+                "Consumer of ArrayImageSource trying to access angles,"
+                " but angles were not defined for this source."
+                "  Try instantiating with angles."
             )
