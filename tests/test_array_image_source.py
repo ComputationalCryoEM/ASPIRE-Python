@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import numpy as np
 from pytest import raises
+from scipy.spatial.transform import Rotation as R
 
 from aspire.basis import FBBasis3D
 from aspire.image import Image
@@ -22,18 +23,18 @@ class ImageTestCase(TestCase):
         self.dtype = np.float32
         self.resolution = 8
 
-        n = 1024
+        self.n = 1024
 
         # Generate a stack of images
         self.sim = sim = Simulation(
-            n=n,
+            n=self.n,
             L=self.resolution,
             unique_filters=[IdentityFilter()],
             seed=0,
             dtype=self.dtype,
             # We'll use random angles
-            offsets=np.zeros((n, 2)),  # No offsets
-            amplitudes=np.ones((n)),  # Constant amplitudes
+            offsets=np.zeros((self.n, 2)),  # No offsets
+            amplitudes=np.ones((self.n)),  # Constant amplitudes
         )
 
         # Expose images as numpy array.
@@ -54,21 +55,42 @@ class ImageTestCase(TestCase):
         im = src.images(start=0, num=np.inf)  # returns Image instance
         self.assertTrue(np.allclose(im.asnumpy(), self.ims_np))
 
-    def testArrayImageSourceMeanVolError1(self):
+    def testArrayImageSourceAngGetterError(self):
         """
-        Test that ArrayImageSource when instantiated without required rotations/angles gives an appropriate error.
+        Test that ArrayImageSource when instantiated without required
+        rotations/angles gives an appropriate error.
         """
 
-        # Construct the source for testing
-        # Rotations(angles) are required, but we intentionally do not pass to instantiater here.
+        # Construct the source for testing.
+        #   Rotations (via angles) are required,
+        #   but we intentionally do not pass
+        #   to instantiater here.
         src = ArrayImageSource(self.im)
 
-        # Instatiate a volume estimator
+        # Test we raise with expected message
+        with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
+            _ = src.angles
+
+        # We also test that a source consumer generates same error.
+
+        # Instantiate a volume estimator
         estimator = MeanEstimator(src, self.basis, preconditioner="none")
 
         # Test we raise with expected message
         with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
             _ = estimator.estimate()
+
+    def testArrayImageSourceRotGetterError(self):
+        """
+        Test that ArrayImageSource when instantiated without required rotations/angles gives an appropriate error.  Here we specifically test `rots`.
+        """
+
+        # Construct the source for testing.
+        src = ArrayImageSource(self.im)
+
+        # Test we raise with expected message from getter.
+        with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
+            _ = src.rots
 
     def testArrayImageSourceMeanVol(self):
         """
@@ -84,7 +106,7 @@ class ImageTestCase(TestCase):
         # Construct the source for testing
         src = ArrayImageSource(self.im, angles=self.sim.angles)
 
-        # Instatiate a volume estimator using ArrayImageSource
+        # Instantiate a volume estimator using ArrayImageSource
         estimator = MeanEstimator(src, self.basis, preconditioner="none")
 
         # Get estimate consuming ArrayImageSource
@@ -95,3 +117,52 @@ class ImageTestCase(TestCase):
 
         self.assertTrue(delta <= utest_tolerance(self.dtype))
         self.assertTrue(np.allclose(est, sim_est, atol=utest_tolerance(self.dtype)))
+
+    def testArrayImageSourceRotsSetGet(self):
+        """
+        Test ArrayImageSource `rots` property, setter and getter function.
+        """
+
+        # Construct the source for testing
+        src = ArrayImageSource(self.im)
+
+        # Get some random angles, can use from sim.
+        angles = self.sim.angles
+        self.assertTrue(angles.shape == (src.n, 3))
+
+        # Convert to rotation matrix (n,3,3)
+        rotations = R.from_euler("ZYZ", angles).as_matrix()
+        self.assertTrue(rotations.shape == (src.n, 3, 3))
+
+        # Excercise the setter
+        src.rots = rotations
+
+        # Test Rots Getter
+        self.assertTrue(
+            np.allclose(rotations, src.rots, atol=utest_tolerance(self.dtype))
+        )
+
+        # Test Angles Getter
+        self.assertTrue(
+            np.allclose(angles, src.angles, atol=utest_tolerance(self.dtype))
+        )
+
+    def testArrayImageSourceAnglesShape(self):
+        """
+        Test ArrayImageSource `angles` argument shapes.
+        """
+
+        # Construct the source with correct shape.
+        _ = ArrayImageSource(self.im, angles=self.sim.angles)
+
+        # Should match this error message.
+        msg = r"Angles should be shape.*"
+
+        # Construct the source with wrong shape.
+        wrong_width = np.random.randn(self.n, 2)
+        with raises(ValueError, match=msg):
+            _ = ArrayImageSource(self.im, angles=wrong_width)
+
+        wrong_dim = np.random.randn(self.n, 3, 3)
+        with raises(ValueError, match=msg):
+            _ = ArrayImageSource(self.im, angles=wrong_dim)
