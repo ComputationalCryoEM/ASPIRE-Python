@@ -71,9 +71,8 @@ class ImageTestCase(TestCase):
         with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
             _ = src.angles
 
-        # We also test that a source consumer generates same error.
-
-        # Instantiate a volume estimator
+        # We also test that a source consumer generates same error,
+        #   by instantiating a volume estimator.
         estimator = MeanEstimator(src, self.basis, preconditioner="none")
 
         # Test we raise with expected message
@@ -82,7 +81,9 @@ class ImageTestCase(TestCase):
 
     def testArrayImageSourceRotGetterError(self):
         """
-        Test that ArrayImageSource when instantiated without required rotations/angles gives an appropriate error.  Here we specifically test `rots`.
+        Test that ArrayImageSource when instantiated without required
+        rotations/angles gives an appropriate error.
+        Here we specifically test `rots`.
         """
 
         # Construct the source for testing.
@@ -112,10 +113,14 @@ class ImageTestCase(TestCase):
         # Get estimate consuming ArrayImageSource
         est = estimator.estimate()
 
+        # Compute RMS error and log it for debugging.
         delta = np.sqrt(np.mean(np.square(est - sim_est)))
         logger.info(f"Simulation vs ArrayImageSource estimates MRSE: {delta}")
 
+        # Estimate RMSE should be small.
         self.assertTrue(delta <= utest_tolerance(self.dtype))
+        # And the estimate themselves should be close (virtually same inputs).
+        #  We should be within same neighborhood as generating sim_est multiple times...
         self.assertTrue(np.allclose(est, sim_est, atol=utest_tolerance(self.dtype)))
 
     def testArrayImageSourceRotsSetGet(self):
