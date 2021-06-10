@@ -121,7 +121,10 @@ class ImageSource:
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
-        self._rotations_set = False
+        # _rotations is assigned non None value
+        #  by `rots` or `angles` setters.
+        #  It is potentially used by sublasses to test if we've used setters.
+        self._rotations = None
 
     @property
     def states(self):
@@ -226,7 +229,6 @@ class ImageSource:
         self.set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
         )
-        self._rotations_set = True
 
     @rots.setter
     def rots(self, values):
@@ -240,7 +242,6 @@ class ImageSource:
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
             self._rotations.as_euler("ZYZ", degrees=True),
         )
-        self._rotations_set = True
 
     def set_metadata(self, metadata_fields, values, indices=None):
         """
@@ -788,11 +789,11 @@ class ArrayImageSource(ImageSource):
 
     def _rots(self):
         """
-        Private method, checks if `_rotations_set` is True,
+        Private method, checks if `_rotations` has been set,
         then returns inherited rots, otherwise raise.
         """
 
-        if self._rotations_set:
+        if self._rotations is not None:
             return super()._rots()
         else:
             raise RuntimeError(
@@ -803,11 +804,11 @@ class ArrayImageSource(ImageSource):
 
     def _angles(self):
         """
-        Private method, checks if `_rotations_set` is True,
+        Private method, checks if `_rotations` has been set,
         then returns inherited angles, otherwise raise.
         """
 
-        if self._rotations_set:
+        if self._rotations is not None:
             return super()._angles()
         else:
             raise RuntimeError(
