@@ -113,7 +113,7 @@ class Picker:
             warnings.simplefilter("always")
 
             # Try to open the mrcfile
-            with mrcfile.open(self.filename, mode="r+", permissive=True) as mrc:
+            with mrcfile.open(self.filename, mode="r", permissive=True) as mrc:
                 im = mrc.data.astype("float")
 
             # Log each mrcfile warning to debug log, noting the associated file
