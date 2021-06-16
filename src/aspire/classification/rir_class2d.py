@@ -190,9 +190,7 @@ class RIRClass2D(Class2D):
         self.pca_basis = self.pca_basis.compress(self.fspca_components)
 
         # Expand into the compressed FSPCA space.
-        fb_coef = self.fb_basis.evaluate_t(self.src.images(0, self.src.n))
-        # fb_coef = self.fb_basis.expand(self.src.images(0, self.src.n).asnumpy()).T
-        self.fspca_coef = coef = self.pca_basis.expand(fb_coef)
+        self.fspca_coef = coef = self.pca_basis.spca_coef
 
         # Compute Bispectrum
         coef_b, coef_b_r = self.bispectrum(coef)
@@ -305,13 +303,18 @@ class RIRClass2D(Class2D):
 
         for i in tqdm(range(self.n_classes)):
             j = selection[i]
-            # Get the set of neighboring images
-            neighbors_coef = self.fspca_coef[classes[j]]
+
+            # if only class member is self, skip these steps
+            if len(classes[j]) == 1:
+                continue
+
+            # Get the set of neighboring images, skip zero element (self)
+            neighbors_coef = self.fspca_coef[classes[j][1:]]
 
             # Apply rotations corresponding to this set
             assert neighbors_coef.dtype == self.dtype, "neighbors_coef should be real"
             neighbors_coef = self.pca_basis.rotate(
-                neighbors_coef, rot[j], classes_refl[j]
+                neighbors_coef, rot[j][1:], classes_refl[j][1:]
             )
 
             # Average in the eigen space
@@ -319,10 +322,20 @@ class RIRClass2D(Class2D):
 
         # evaluate back to FB
         c_fb = self.pca_basis.evaluate(eigen_avgs)
+
+        # Add mean image in FB basis.
+        c_fb += self.pca_basis.mean_coef_est
+
+        # Check shape is sane.
         assert c_fb.shape == (self.n_classes, self.fb_basis.count)
 
         # then to image space
         avgs = self.fb_basis.evaluate(c_fb)
+        # add the original image (makes background look legit)
+        for i in tqdm(range(self.n_classes)):
+            j = selection[i]
+            avgs[i] += self.src.images(j, j + 1)[0]
+
         assert avgs.shape == (self.n_classes, self.src.L, self.src.L)
 
         return avgs

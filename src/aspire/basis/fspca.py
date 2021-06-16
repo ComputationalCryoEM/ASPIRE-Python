@@ -168,7 +168,7 @@ class FSPCABasis(SteerableBasis):
         # #   Rows radial indices, columns image i.
         # #
         # # We can extract this directly (up to transpose) from
-        # #  complex_coef vector where ells == angular_index
+        # #  fb coef matrix where ells == angular_index
         # #  then use the transpose so image stack becomes columns.
 
         # Initialize a totally empty BlkDiagMatrix, then build incrementally.
@@ -318,6 +318,11 @@ class FSPCABasis(SteerableBasis):
         if isinstance(eigvecs, BlkDiagMatrix):
             eigvecs = eigvecs.dense()
 
+        # # XXX Legacy code doubles nonzero coefs ?
+        # corrected_c = c.copy()
+        # corrected_c[:, self.angular_indices!=0] *= 2
+        # return corrected_c @ eigvecs.T
+
         return c @ eigvecs.T
 
     def _get_compressed_indices(self, n):
@@ -394,7 +399,9 @@ class FSPCABasis(SteerableBasis):
         # NOTE, no longer blk_diag! ugh
         # Note can copy from self or result, should be same...
         result.eigvals = self.eigvals[compressed_indices]
-        result.eigvecs = self.eigvecs.dense()[:, compressed_indices]
+        if isinstance(self.eigvecs, BlkDiagMatrix):
+            self.eigvecs = self.eigvecs.dense()
+        result.eigvecs = self.eigvecs[:, compressed_indices]
         result.spca_coef = self.spca_coef[:, compressed_indices]
 
         result.angular_indices = self.angular_indices[compressed_indices]
