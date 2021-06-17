@@ -14,6 +14,7 @@ from aspire.classification.legacy_implementations import (
 )
 from aspire.image import Image
 from aspire.numeric import ComplexPCA
+from aspire.operators import BlkDiagMatrix
 from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
@@ -256,99 +257,29 @@ class RIRClass2D(Class2D):
 
         return indices
 
-    def denoised_output(self, classes, classes_refl, rot, include_refl=True):
+    def eigen_images(self):
         """
-        Return class averages, averaging in the eigen basis.
+        Return the eigen images of the FSPCA basis, evaluated to image space.
 
-        :param classes: class indices (refering to src). (n_img, n_nbor)
-        :param classes_refl: Bool representing whether to reflect image in `classes`
-        :param rot: Array represting totation angle (Radians) of image in `classes`
-        :return: Stack of Synthetic Class Average images as Image instance.
+        Ordering corresponds to FSPCA eigvals.
         """
 
-        if not include_refl:
-            logger.info(
-                f"Output include_refl={include_refl}. Averaging only unreflected images."
-            )
-            unreflected_indices = classes_refl == False  # noqa: E712
-            # subset excluding reflected images
-            # Note these become ragged so we'll use a list
-            # Can avoid the raggedness if used in the loop below,
-            #  but really I think we should get to point where include_refl goes away...
-            #  It is for debugging/diagnostics.
-            _classes = [None] * self.src.n
-            _classes_refl = [None] * self.src.n
-            _rot = [None] * self.src.n
-            for i in range(self.src.n):
-                _classes[i] = classes[i][unreflected_indices[i]]
-                _classes_refl[i] = classes_refl[i][unreflected_indices[i]]
-                _rot[i] = rot[i][unreflected_indices[i]]
-            classes, classes_refl, rot = _classes, _classes_refl, _rot
+        eigvecs = self.pca_basis.eigvecs
+        if isinstance(eigvecs, BlkDiagMatrix):
+            eigvecs = eigvecs.dense()
 
-            if len(classes) == 0:
-                raise RuntimeError(
-                    "No unreflected classes found. Probably this is an error"
-                )
-
-        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        # generate indices for random sample (can do something smart with corr later).
-        # selection = np.random.choice(self.src.n, self.n_classes, replace=False)
-        # XXX for testing just take the first n_classes so it matches earlier plots for manual comparison
-        selection = np.arange(self.n_classes)
-
-        # imgs = self.src.images(0, self.src.n)
-        eigen_avgs = np.empty(
-            (self.n_classes, self.pca_basis.count), dtype=self.src.dtype
-        )
-
-        for i in tqdm(range(self.n_classes)):
-            j = selection[i]
-
-            # if only class member is self, skip these steps
-            if len(classes[j]) == 1:
-                continue
-
-            # Get the set of neighboring images, skip zero element (self)
-            neighbors_coef = self.fspca_coef[classes[j][1:]]
-
-            # Apply rotations corresponding to this set
-            assert neighbors_coef.dtype == self.dtype, "neighbors_coef should be real"
-            neighbors_coef = self.pca_basis.rotate(
-                neighbors_coef, rot[j][1:], classes_refl[j][1:]
-            )
-
-            # Average in the eigen space
-            eigen_avgs[i] = np.mean(neighbors_coef, axis=0)
-
-        # evaluate back to FB
-        c_fb = self.pca_basis.evaluate(eigen_avgs)
-
-        # Add mean image in FB basis.
-        c_fb += self.pca_basis.mean_coef_est
-
-        # Check shape is sane.
-        assert c_fb.shape == (self.n_classes, self.fb_basis.count)
-
-        # then to image space
-        avgs = self.fb_basis.evaluate(c_fb)
-        # add the original image (makes background look legit)
-        for i in tqdm(range(self.n_classes)):
-            j = selection[i]
-            avgs[i] += self.src.images(j, j + 1)[0]
-
-        assert avgs.shape == (self.n_classes, self.src.L, self.src.L)
-
-        return avgs
+        return self.fb_basis.evaluate(eigvecs.T)
 
     # can should optionally take/cache images/coef.
     #  we almost certainly have constructed them by now...
-    def output(self, classes, classes_refl, rot, include_refl=True, average_cart=False):
+    def output(self, classes, classes_refl, rot, coefs=None, include_refl=True):
         """
         Return class averages.
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
         :param classes_refl: Bool representing whether to reflect image in `classes`
         :param rot: Array represting totation angle (Radians) of image in `classes`
+        :coefs: Optional Fourier bessel coefs (avoids recomputing).
         :return: Stack of Synthetic Class Average images as Image instance.
         """
 
@@ -371,7 +302,7 @@ class RIRClass2D(Class2D):
                 _rot[i] = rot[i][unreflected_indices[i]]
             classes, classes_refl, rot = _classes, _classes_refl, _rot
 
-            if len(classes) == 0:
+            if any(len(cls) == 0 for cls in classes):
                 raise RuntimeError(
                     "No unreflected classes found. Probably this is an error"
                 )
@@ -383,28 +314,30 @@ class RIRClass2D(Class2D):
         selection = np.arange(self.n_classes)
 
         imgs = self.src.images(0, self.src.n)
-        avgs = np.empty((self.n_classes, self.src.L, self.src.L), dtype=self.src.dtype)
+        fb_avgs = np.empty((self.n_classes, self.fb_basis.count), dtype=self.src.dtype)
 
         for i in tqdm(range(self.n_classes)):
             j = selection[i]
             # Get the neighbors
-            neighbors_imgs = Image(imgs[classes[j]])
+            neighbors_ids = classes[j]
 
-            # in Fourier Bessel Basis
-            co = self.fb_basis.evaluate_t(neighbors_imgs)
-            # Rotate
-            co = self.fb_basis.rotate(co, rot[j], classes_refl[j])
-
-            if average_cart:
-                # Averaging in Cart
-                avgs[i] = np.mean(self.fb_basis.evaluate(co).asnumpy(), axis=0)
+            # Get coefs in Fourier Bessel Basis if not provided as am argument.
+            if coefs is None:
+                neighbors_imgs = Image(imgs[neighbors_ids])
+                neighbors_coefs = self.fb_basis.evaluate_t(neighbors_imgs)
             else:
-                # Averaging in FB
-                fb_avg = np.mean(co, axis=0)
-                # convert a single averaged image back
-                avgs[i] = self.fb_basis.evaluate(fb_avg).asnumpy()
+                neighbors_coefs = coefs[neighbors_ids]
 
-        return Image(avgs)
+            # Rotate in Fourier Bessel
+            neighbors_coefs = self.fb_basis.rotate(
+                neighbors_coefs, rot[j], classes_refl[j]
+            )
+
+            # Averaging in FB
+            fb_avgs[i] = np.mean(neighbors_coefs, axis=0)
+
+        # Now we convert the averaged images from FB to Cartestian.
+        return self.fb_basis.evaluate(fb_avgs)
 
     def legacy_align(self, classes, coef):
         # translate some variables between this code and the legacy aspire aspire implementation (just trying to figure out of the old code ran...).

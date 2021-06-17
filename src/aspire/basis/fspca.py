@@ -387,14 +387,13 @@ class FSPCABasis(SteerableBasis):
 
         # Create a deepcopy.
         result = copy.deepcopy(self)
-        # result = FSPCABasis(self.src, self.basis)
 
         # Create compressed mapping
         result.compressed = True
         compressed_indices = self._get_compressed_indices(k)
-        logger.info(f"compressed_indices {compressed_indices}")
+        logger.debug(f"compressed_indices {compressed_indices}")
         result.count = len(compressed_indices)
-        logger.info(f"compressed count {result.count}")
+        logger.debug(f"compressed count {result.count}")
 
         # NOTE, no longer blk_diag! ugh
         # Note can copy from self or result, should be same...
@@ -417,10 +416,10 @@ class FSPCABasis(SteerableBasis):
             result.complex_angular_indices[i] = ang
             result.complex_radial_indices[i] = rad
 
-        logger.info(
+        logger.debug(
             f"complex_radial_indices: {result.complex_radial_indices} {len(result.complex_radial_indices)}"
         )
-        logger.info(
+        logger.debug(
             f"complex_angular_indices: {result.complex_angular_indices} {len(result.complex_angular_indices)}"
         )
 
