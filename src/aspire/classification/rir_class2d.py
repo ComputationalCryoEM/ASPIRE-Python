@@ -160,6 +160,8 @@ class RIRClass2D(Class2D):
         To extend with an additonal Nearest Neighbor algo,
         add as a private method and list in nn_implementations.
 
+        :param coef_b:
+        :param coef_b_r:
         :returns: Array of indices representing classes.
         """
         # _nn_classification is assigned during initialization.
@@ -207,7 +209,7 @@ class RIRClass2D(Class2D):
         logger.info(f"Begin Rotational Alignment of {classes.shape[0]} Classes")
         return self.legacy_align(classes, coef)
 
-    def _sk_nn_classification(self, coeff_b, coeff_b_r):
+    def _sk_nn_classification(self, coeff_b, coeff_b_r, diagnostics=False):
         # Before we get clever lets just use a generally accepted implementation.
 
         n_img = self.src.n
@@ -236,11 +238,12 @@ class RIRClass2D(Class2D):
             f" ({np.sum(indices>=n_img) / len(indices)}%)"
         )
 
-        # Lets peek at the distribution of distances
-        plt.hist(
-            distances[:, 1:].flatten(), bins="auto"
-        )  # zero index is self, distance 0
-        plt.show()
+        if diagnostics:
+            # Lets peek at the distribution of distances
+            plt.hist(
+                distances[:, 1:].flatten(), bins="auto"
+            )  # zero index is self, distance 0
+            plt.show()
 
         # I was planning to change the result of this function
         # but for now return classes as range 0 to 2*n_img..
