@@ -7,26 +7,11 @@ import numpy as np
 from aspire.basis import SteerableBasis
 from aspire.covariance import RotCov2D
 from aspire.operators import BlkDiagMatrix
-from aspire.utils import complex_type, real_type
+from aspire.utils import complex_type, fix_signs, real_type
 
 # from aspire.utils import make_symmat
 
 logger = logging.getLogger(__name__)
-
-
-# This function was shamelessly copied from class_averaging.py
-#   I think ASPIRE has something similar, and if not, we should...
-#   Move this later....
-def fix_signs(u):
-    """
-    makes the matrix coloumn sign be by the biggest value
-    :param u: matrix
-    :return: matrix
-    """
-    b = np.argmax(np.absolute(u), axis=0)
-    b = np.array([np.linalg.norm(u[b[k], k]) / u[b[k], k] for k in range(len(b))])
-    u = u * b
-    return u
 
 
 class FSPCABasis(SteerableBasis):
@@ -205,8 +190,6 @@ class FSPCABasis(SteerableBasis):
         for angular_index, C_k in enumerate(self.covar_coef_est):
 
             # # Eigen/SVD,
-            # CHECK: similar cov2d code has make_symmat? shouldn't covar already be sym?, what am I missing...
-            # eigvals_k, eigvecs_k = np.linalg.eigh(make_symmat(C_k))
             eigvals_k, eigvecs_k = np.linalg.eigh(C_k)
 
             # Determistically enforce eigen vector sign convention

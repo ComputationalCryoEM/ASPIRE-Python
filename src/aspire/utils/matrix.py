@@ -394,3 +394,25 @@ def eigs(A, k):
     v = m_reshape(v, sig_sz + (k,)).astype(dtype)
 
     return v, np.diag(w)
+
+
+def fix_signs(u):
+    """
+    Negates columns so the sign of the largest element in the column is positive.
+
+    Typically this is used for making eigenvectors deterministically signed.
+
+    :param u: matrix as numpy array
+    :return: matrix as numpy array
+    """
+
+    # Locate the largest element in each column
+    argb = np.argmax(np.absolute(u), axis=0)
+
+    # Create array of sign corrections
+    b = np.array([np.linalg.norm(u[r, k]) / u[r, k] for k, r in enumerate(argb)])
+
+    # Apply signs elementwise to matrix
+    u = u * b
+
+    return u
