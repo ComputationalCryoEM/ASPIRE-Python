@@ -418,7 +418,10 @@ class RIRClass2D(Class2D):
                 # But I don't get the conjugation etc.
                 np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
             )
-            classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
+            # Note this did not include the original image?
+            # classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
+            # This does include the original image. (Matches sklean implementation.) Check.
+            classes[start:finish] = np.argsort(-corr, axis=1)[:, :n_nbor]
 
         return classes
 
