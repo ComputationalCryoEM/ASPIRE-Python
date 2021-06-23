@@ -72,9 +72,9 @@ class FBBasis2D(SteerableBasis):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count, dtype=np.uint16)
-        indices_ks = np.zeros(self.count, dtype=np.uint16)
-        indices_sgns = np.zeros(self.count, dtype=np.int8)
+        indices_ells = np.zeros(self.count, dtype=int)
+        indices_ks = np.zeros(self.count, dtype=int)
+        indices_sgns = np.zeros(self.count, dtype=int)
 
         # We'll also generate a mapping for complex construction
         # self.complex_count = self.count // 2 + self.k_max[0]
@@ -82,8 +82,8 @@ class FBBasis2D(SteerableBasis):
             self.count + self.k_max[0]
         ) // 2  # Do not double count zero case
         # these map an index in the complex storage to a pair of indices in real storage.
-        self.indices_real = np.zeros(self.complex_count, dtype=np.uint16)
-        self.indices_imag = np.zeros(self.complex_count, dtype=np.uint16)
+        self.indices_real = np.zeros(self.complex_count, dtype=np.int)
+        self.indices_imag = np.zeros(self.complex_count, dtype=np.int)
 
         i = 0
         ci = 0
