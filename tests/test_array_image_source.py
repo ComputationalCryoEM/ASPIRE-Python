@@ -121,7 +121,9 @@ class ImageTestCase(TestCase):
         self.assertTrue(delta <= utest_tolerance(self.dtype))
         # And the estimate themselves should be close (virtually same inputs).
         #  We should be within same neighborhood as generating sim_est multiple times...
-        self.assertTrue(np.allclose(est, sim_est, atol=utest_tolerance(self.dtype)))
+        self.assertTrue(
+            np.allclose(est, sim_est, atol=10 * utest_tolerance(self.dtype))
+        )
 
     def testArrayImageSourceRotsSetGet(self):
         """
