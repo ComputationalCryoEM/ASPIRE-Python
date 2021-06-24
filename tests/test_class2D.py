@@ -5,7 +5,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis import FFBBasis2D, FSPCABasis
-from aspire.classification import RIRClass2D
+from aspire.classification import Class2D, RIRClass2D
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
 from aspire.volume import Volume
@@ -67,6 +67,14 @@ class RIRClass2DTestCase(TestCase):
 
         self.noisy_fspca_basis = FSPCABasis(self.noisy_src, self.basis)
         self.noisy_fspca_basis.build(self.noisy_coefs)
+
+    def testClass2DBase(self):
+        """
+        Make sure the base class doesn't crash when using arguments.
+        """
+        _ = Class2D(self.src)  # Default dtype
+        _ = Class2D(self.src, dtype=self.dtype)  # Consistent dtype
+        _ = Class2D(self.src, dtype=np.float16)  # Different dtype
 
     def testRIRLegacy(self):
         """
