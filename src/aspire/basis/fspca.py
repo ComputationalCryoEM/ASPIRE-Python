@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from aspire.basis import SteerableBasis
+from aspire.basis import FFBBasis2D, SteerableBasis
 from aspire.covariance import RotCov2D
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, fix_signs, real_type
@@ -33,16 +33,22 @@ class FSPCABasis(SteerableBasis):
 
     """
 
-    def __init__(self, source, basis, noise_var=None, adaptive_support=False):
+    def __init__(self, src, basis=None, noise_var=None, adaptive_support=False):
         """
-        Not sure if I sure actually inherit from Basis, the __init__ doesn't correspond well... later...
+
+        :param src
         :param noise_var: None estimates noise (default).
         0 forces "clean" treatment (no weighting).
         Other values assigned to noise_var.
         """
 
+        self.src = src
+
+        # Automatically generate basis if needed.
+        if basis is None:
+            basis = FFBBasis2D((self.src.L,) * 2, dtype=self.src.dtype)
         self.basis = basis
-        self.src = source
+
         # check/warn dtypes
         self.dtype = self.src.dtype
         if self.basis.dtype != self.dtype:
@@ -98,8 +104,9 @@ class FSPCABasis(SteerableBasis):
 
         return complex_indices_map
 
-    def build(self, coef):
-        # figure out a better name later, talked about using via batchcov but im pretty suspect...
+    def build(self, coef=None):
+        if coef is None:
+            coef = self.basis.evaluate_t(self.src.images(0, self.src.n))
 
         if self.noise_var is None:
             from aspire.noise import AnisotropicNoiseEstimator
@@ -292,7 +299,7 @@ class FSPCABasis(SteerableBasis):
         """
         Take FSPCA coefs and evaluate to Fourier Bessel (self.basis) ceofs.
 
-        :param c:  Stack of (complex) coefs in the FSPCABasis to be evaluated.
+        :param c:  Stack of coefs in the FSPCABasis to be evaluated.
         :return: The (real) coefs representing a stack of images in self.basis
         """
 

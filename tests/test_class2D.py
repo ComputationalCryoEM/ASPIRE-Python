@@ -15,12 +15,90 @@ from aspire.classification.legacy_implementations import (
 )
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
+from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
+
+
+class FSPCATestCase(TestCase):
+    def setUp(self):
+        self.resolution = 16
+        self.dtype = np.float32
+
+        # Get a volume
+        v = Volume(
+            np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
+                self.dtype
+            )
+        )
+        v = v.downsample(self.resolution)
+
+        # Create a src from the volume
+        self.src = Simulation(
+            L=self.resolution,
+            n=321,
+            vols=v,
+            dtype=self.dtype,
+        )
+
+        # Calculate some projection images
+        self.imgs = self.src.images(0, self.src.n)
+
+        # Configure an FSPCA basis
+        self.fspca_basis = FSPCABasis(self.src, noise_var=0)
+        # Compute the FSPCA basis
+        self.fspca_basis.build()
+
+    def testExpandEval(self):
+        coef = self.fspca_basis.expand_from_image_basis(self.imgs)
+        recon = self.fspca_basis.evaluate_to_image_basis(coef)
+
+        # Check recon is close to imgs
+        rmse = np.sqrt(np.mean(np.square(self.imgs.asnumpy() - recon.asnumpy())))
+        logger.info(f"FSPCA Expand Eval Image Round Trupe RMSE: {rmse}")
+        self.assertTrue(rmse < utest_tolerance(self.dtype))
+
+    def testComplexConversionErrors(self):
+        """
+        Test we raise when passed incorrect dtypes.
+
+        Also checks we can handle 0d vector in `to_real`.
+
+        Most other cases covered by classification unit tests.
+        """
+
+        with pytest.raises(
+            TypeError, match="coef provided to to_complex should be real."
+        ):
+            _ = self.fspca_basis.to_complex(
+                np.arange(self.fspca_basis.count, dtype=np.complex64)
+            )
+
+        with pytest.raises(
+            TypeError, match="coef provided to to_real should be complex."
+        ):
+            _ = self.fspca_basis.to_real(
+                np.arange(self.fspca_basis.count, dtype=np.float32).flatten()
+            )
+
+    def testRotate(self):
+        """
+        Trivial test of rotation in FSPCA Basis.
+
+        Also covers to_real and to_complex conversions in FSPCA Basis.
+        """
+        coef = self.fspca_basis.expand_from_image_basis(self.imgs)
+        # rotate by pi
+        rot_coef = self.fspca_basis.rotate(coef, radians=np.pi)
+        rot_imgs = self.fspca_basis.evaluate_to_image_basis(rot_coef)
+
+        for i, img in enumerate(self.imgs):
+            rmse = np.sqrt(np.mean(np.square(np.flip(img) - rot_imgs[i])))
+            self.assertTrue(rmse < 10 * utest_tolerance(self.dtype))
 
 
 class RIRClass2DTestCase(TestCase):
