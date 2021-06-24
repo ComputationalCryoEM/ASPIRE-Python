@@ -34,18 +34,25 @@ class RIRClass2D(Class2D):
         bispectrum_freq_cutoff=None,
         large_pca_implementation="legacy",
         nn_implementation="legacy",
-        bispectrum_implementation="devel",
+        bispectrum_implementation="legacy",
         dtype=None,
+        seed=None,
     ):
         """
         Constructor of an object for classifying 2D images using
         Rotationally Invariant Representation (RIR) algorithm.
 
+        At a high level this consumes a Source instance `src`,
+        and a FSPCA Basis `pca_basis`.
+
+        Yield class averages by first performing `classify`,
+        then performing `output`.
+
         Z. Zhao, Y. Shkolnisky, A. Singer, Rotationally Invariant Image Representation
         for Viewing Direction Classification in Cryo-EM. (2014)
 
         :param src: Source instance
-        :param pca_basis: (Fast) Fourier Bessel Basis instance
+        :param pca_basis: FSPCA Basis instance
         :param fspca_components: Components (top eigvals) to keep from full FSCPA, default truncates to  400.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
         :param sample_n: A number and associated method used to confuse your enemies.
@@ -55,7 +62,8 @@ class RIRClass2D(Class2D):
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
-        :param dtype: optional dtype, otherwise taken from src.
+        :param dtype: Optional dtype, otherwise taken from src.
+        :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
         """
         super().__init__(src=src, dtype=dtype)
@@ -69,6 +77,7 @@ class RIRClass2D(Class2D):
         self.n_nbor = n_nbor
         self.n_classes = n_classes
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
+        self.seed = seed
         # Type checks
         if self.dtype != self.fb_basis.dtype:
             logger.warning(
@@ -130,17 +139,49 @@ class RIRClass2D(Class2D):
                 "RIRClass2D has currently only been developed against with pca_basis as a FSPCABasis."
             )
 
+    def classify(self):
+        """
+        This is the high level method to perform the 2D images classification.
+
+        The stages of this method are intentionally modular so they may be
+        swapped for other implementations.
+        """
+
+        # # Stage 1: Compute coef and reduce dimensionality.
+        # Memioze/batch this later when result is working
+        # Initial round of component truncation is before bispectrum.
+        #  default of 400 components was taken from legacy code.
+        # Instantiate a new compressed (truncated) basis.
+        self.pca_basis = self.pca_basis.compress(self.fspca_components)
+
+        # Expand into the compressed FSPCA space.
+        self.fspca_coef = self.pca_basis.spca_coef
+
+        # Compute Bispectrum
+        coef_b, coef_b_r = self.bispectrum(self.fspca_coef)
+
+        # # Stage 2: Compute Nearest Neighbors
+        logger.info("Calculate Nearest Neighbors")
+        classes = self.nn_classification(coef_b, coef_b_r)
+
+        # # Stage 3: Class Selection
+        # logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
+
+        # # Stage 4: Align
+        logger.info(f"Begin Rotational Alignment of {classes.shape[0]} Classes")
+        return self.legacy_align(classes, self.fspca_coef)
+
     def pca(self, M):
         """
         Any PCA implementation here should return both
         coef_b and coef_b_r that are (n_img, n_components).
 
-        Where n_components is typically self.bispectrum_componenents.
-        However, for small problems it may return n_components=n_img,
+        `n_components` is typically self.bispectrum_componenents.
+        However, for small problems it may return `n_components`=`n_img`,
         since that would be the smallest dimension.
 
-        To extend with an additional PCA like method,
-        add as private method and list in large_pca_implementations.
+        To extend class with an additional PCA like method,
+        add as private method and list in `large_pca_implementations`.
 
         :param M: Array (n_img, m_features), typically complex.
         :returns: Tuple of arrays coef_b coef_b_r.
@@ -154,8 +195,8 @@ class RIRClass2D(Class2D):
         each having shape (n_img, features)
         where features = min(self.bispectrum_componenents, n_img).
 
-        Result is array (n_img, n_nbor) with entry i reprsenting
-        index i into class input img array (src).
+        Result is array (n_img, n_nbor) with entry `i` reprsenting
+        index `i` into class input img array (src).
 
         To extend with an additonal Nearest Neighbor algo,
         add as a private method and list in nn_implementations.
@@ -178,36 +219,6 @@ class RIRClass2D(Class2D):
         # _bispectrum is assigned during initialization.
 
         return self._bispectrum(coef)
-
-    def classify(self):
-        """
-        Perform the 2D images classification.
-        """
-
-        # # Stage 1: Compute coef and reduce dimensionality.
-        # Memioze/batch this later when result is working
-
-        # Initial round of component truncation is before bispectrum.
-        #  default of 400 components was taken from legacy code.
-        # Instantiate a new compressed (truncated) basis.
-        self.pca_basis = self.pca_basis.compress(self.fspca_components)
-
-        # Expand into the compressed FSPCA space.
-        self.fspca_coef = coef = self.pca_basis.spca_coef
-
-        # Compute Bispectrum
-        coef_b, coef_b_r = self.bispectrum(coef)
-
-        # # Stage 2: Compute Nearest Neighbors
-        logger.info("Calculate Nearest Neighbors")
-        classes = self.nn_classification(coef_b, coef_b_r)
-
-        # # Stage 3: Class Selection
-        # logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-
-        # # Stage 4: Align
-        logger.info(f"Begin Rotational Alignment of {classes.shape[0]} Classes")
-        return self.legacy_align(classes, coef)
 
     def _sk_nn_classification(self, coeff_b, coeff_b_r, diagnostics=False):
         # Before we get clever lets just use a generally accepted implementation.
@@ -264,6 +275,8 @@ class RIRClass2D(Class2D):
         """
         Return the eigen images of the FSPCA basis, evaluated to image space.
 
+        This may be used to implot visualizations of the eigenvectors.
+
         Ordering corresponds to FSPCA eigvals.
         """
 
@@ -273,8 +286,6 @@ class RIRClass2D(Class2D):
 
         return self.fb_basis.evaluate(eigvecs.T)
 
-    # can should optionally take/cache images/coef.
-    #  we almost certainly have constructed them by now...
     def output(self, classes, classes_refl, rot, coefs=None, include_refl=True):
         """
         Return class averages.
@@ -312,8 +323,8 @@ class RIRClass2D(Class2D):
 
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
         # generate indices for random sample (can do something smart with corr later).
-        # selection = np.random.choice(self.src.n, self.n_classes, replace=False)
-        # XXX for testing just take the first n_classes so it matches earlier plots for manual comparison
+        # For testing just take the first n_classes so it matches earlier plots for manual comparison
+        # This is assumed to be reasonably random.
         selection = np.arange(self.n_classes)
 
         imgs = self.src.images(0, self.src.n)
@@ -452,23 +463,16 @@ class RIRClass2D(Class2D):
         return coef_b, coef_b_r
 
     def _sk_pca(self, M):
-        # # Abandon using SK directly for now,
-        # #   while it is really useful, it
-        # #   expects real data.
-        # #
-        # # I tried the stupid things like
-        # #   flattening,
-        # #   running reals imags seperate,
-        # #   running mags and phases seperately etc...
-        # #   but the accuracy was too poor for me.
-        # #   Should discuss this.
-        # # So I subclassed sk PCA extended to complex numbers.
+        # Avoiding SK directly for now,
+        #   while it is really useful, it
+        #   expects real data.
+        #   We use an extension of SK that is hacked to admit complex.
         pca = ComplexPCA(
             self.bispectrum_componenents,
             copy=False,  # careful, overwrites data matrix... we'll handle the copies.
             svd_solver="auto",  # use randomized (Halko) for larger problems
-            random_state=123,
-        )  # replace with ASPIRE repro seed later.
+            random_state=self.seed,
+        )
         coef_b = pca.fit_transform(M.copy())
         coef_b_r = pca.fit_transform(np.conjugate(M))
 
@@ -556,14 +560,13 @@ class RIRClass2D(Class2D):
         fresh code is developed for this class.
         """
 
-        # xxx, I beleive this code was working in the complex regime,
-        #  so we'll convert to complex and check rest of program first.
+        # The legacy code expects the complex representation
         coef = self.pca_basis.to_complex(coef)
         complex_eigvals = self.pca_basis.to_complex(self.pca_basis.eigvals).reshape(
             self.pca_basis.complex_count
         )  # flatten
 
-        # Legacy code requires we unpack just a few things to call it.
+        # Legacy code requires we unpack just a few things to call it
 
         coef_b, coef_b_r = bispec_2drot_large(
             coeff=coef.T,  # Note F style tranpose here and in return
