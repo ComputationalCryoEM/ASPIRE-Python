@@ -3,9 +3,16 @@ import os
 from unittest import TestCase
 
 import numpy as np
+import pytest
+from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
 from aspire.classification import Class2D, RIRClass2D
+from aspire.classification.legacy_implementations import (
+    bispec_2drot_large,
+    icfft2,
+    pca_y,
+)
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
 from aspire.volume import Volume
@@ -72,9 +79,9 @@ class RIRClass2DTestCase(TestCase):
         """
         Make sure the base class doesn't crash when using arguments.
         """
-        _ = Class2D(self.src)  # Default dtype
-        _ = Class2D(self.src, dtype=self.dtype)  # Consistent dtype
-        _ = Class2D(self.src, dtype=np.float16)  # Different dtype
+        _ = Class2D(self.clean_src)  # Default dtype
+        _ = Class2D(self.clean_src, dtype=self.dtype)  # Consistent dtype
+        _ = Class2D(self.clean_src, dtype=np.float16)  # Different dtype
 
     def testRIRLegacy(self):
         """
@@ -110,3 +117,61 @@ class RIRClass2DTestCase(TestCase):
 
         result = rir.classify()
         _ = rir.output(*result[:3], include_refl=True)
+
+
+class LegacyImplementationTestCase(TestCase):
+    """
+    Cover branches of Legacy code not taken by the classification unit tests.
+    """
+
+    def setUp(self):
+        pass
+
+    def test_icfft2_ndim2(self):
+        """
+        Check icfft2 works with 2D shapes.
+        3D (stack of one) is checked in the classification unit tests.
+        """
+        fin = np.mgrid[:5, :5][0]
+        # Note we fftshift in
+        F = np.fft.fftshift(np.fft.fft2(fin))
+        # and ifftshift out
+        fout = np.fft.ifftshift(icfft2(F))
+
+        self.assertTrue(np.allclose(fin, fout))
+
+    def test_pca_y(self):
+        """
+        We want to check that real inputs and differing input matrix shapes work.
+
+        Most of pca_y is covered by the classificiation unit tests.
+        """
+
+        # The iris dataset is a small 150 sample by 5 feature dataset in float64
+        iris = datasets.load_iris()
+
+        # Extract the data matrix, run once as is (150, 5),
+        # and once tranposed  so shape[0] < shape[1] (5, 150)
+        for x in (iris.data, iris.data.T):
+            # Run pca_y and check reconstruction holds
+            lsvec, svals, rsvec = pca_y(x, 5)
+
+            # svd ~~> A = U S V = (U S) V
+            recon = np.dot(lsvec * svals, rsvec)
+
+            self.assertTrue(np.allclose(x, recon))
+
+    def testBispectOverflow(self):
+        """
+        A zero value coeff will cause a div0 error in log call.
+        Check it is raised.
+        """
+
+        with pytest.raises(ValueError, match="coeff_norm should not be -inf"):
+            bispec_2drot_large(
+                coeff=np.arange(10),
+                freqs=np.arange(1, 11),
+                eigval=np.arange(10),
+                alpha=1 / 3,
+                sample_n=4000,
+            )
