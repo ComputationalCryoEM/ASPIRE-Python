@@ -33,10 +33,11 @@ class FSPCABasis(SteerableBasis):
 
     """
 
-    def __init__(self, src, basis=None, noise_var=None, adaptive_support=False):
+    def __init__(self, src, basis=None, noise_var=None):
         """
 
-        :param src
+        :param src: Source instance
+        :param basis: Optional Fourier Bessel Basis (usually FFBBasis2D)
         :param noise_var: None estimates noise (default).
         0 forces "clean" treatment (no weighting).
         Other values assigned to noise_var.
@@ -78,8 +79,7 @@ class FSPCABasis(SteerableBasis):
         self.cartesian_support_size = (
             self.src.L // 2
         )  # Legacy r (sometimes called support_size)
-        if adaptive_support:
-            raise NotImplementedError("adaptive_support not implemented yet.")
+
         assert isinstance(
             self.cartesian_support_size, int
         ), "Cartesian support should be integer number of pixels."
