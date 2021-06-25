@@ -66,7 +66,14 @@ class RIRClass2D(Class2D):
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
         """
+
         super().__init__(src=src, dtype=dtype)
+
+        # For now, only run with FSPCA basis
+        if not isinstance(pca_basis, FSPCABasis):
+            raise NotImplementedError(
+                "RIRClass2D has currently only been developed against with pca_basis as a FSPCABasis."
+            )
 
         self.pca_basis = pca_basis
         self.fb_basis = self.pca_basis.basis
@@ -132,12 +139,6 @@ class RIRClass2D(Class2D):
                 " Check class configuration and retry."
             )
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
-
-        # For now, only run with FSPCA basis
-        if not isinstance(self.pca_basis, FSPCABasis):
-            raise NotImplementedError(
-                "RIRClass2D has currently only been developed against with pca_basis as a FSPCABasis."
-            )
 
     def classify(self):
         """

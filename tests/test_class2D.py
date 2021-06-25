@@ -196,6 +196,96 @@ class RIRClass2DTestCase(TestCase):
         result = rir.classify()
         _ = rir.output(*result[:3], include_refl=True)
 
+    def testEigenImages(self):
+        """
+        Test we can return eigenimages.
+        """
+
+        rir = RIRClass2D(
+            self.clean_src,
+            self.clean_fspca_basis,
+            fspca_components=150,
+            large_pca_implementation="legacy",
+            nn_implementation="legacy",
+            bispectrum_implementation="legacy",
+        )
+
+        # Get the eigenimages
+        eigimg_uncompressed = rir.eigen_images()
+
+        # The classification process compressesed the FSPCA Basis
+        _ = rir.classify()
+
+        # Get the eigenimages
+        eigimg_compressed = rir.eigen_images()
+
+        # Check they are close
+        self.assertTrue(
+            np.allclose(eigimg_uncompressed.asnumpy(), eigimg_compressed.asnumpy())
+        )
+
+    def testComponentSize(self):
+        """
+        Tests we raise when number of components are too small.
+
+        Also tests dtype mismatch behavior.
+        """
+
+        with pytest.raises(
+            RuntimeError, match=r".*Images too small for Bispectrum Componenents.*"
+        ):
+            _ = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                bispectrum_componenents=self.clean_src.n + 1,
+                dtype=np.float64,
+            )
+
+    def testImplementations(self):
+        """
+        Test optional implementations handle bad inputs with a descriptive error.
+        """
+
+        # Nearest Neighbhor component
+        with pytest.raises(ValueError, match=r"Provided nn_implementation.*"):
+            _ = RIRClass2D(
+                self.clean_src, self.clean_fspca_basis, nn_implementation="badinput"
+            )
+
+        # Large PCA component
+        with pytest.raises(ValueError, match=r"Provided large_pca_implementation.*"):
+            _ = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                large_pca_implementation="badinput",
+            )
+
+        # Bispectrum component
+        with pytest.raises(ValueError, match=r"Provided bispectrum_implementation.*"):
+            _ = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                bispectrum_implementation="badinput",
+            )
+
+        # Legacy Bispectrum implies legacy bispectrum (they're integrated).
+        with pytest.raises(
+            ValueError, match=r'"legacy" bispectrum_implementation implies.*'
+        ):
+            _ = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                bispectrum_implementation="legacy",
+                large_pca_implementation="sklearn",
+            )
+
+        # Currently we only FSPCA Basis in RIRClass2D
+        with pytest.raises(
+            RuntimeError,
+            match="RIRClass2D has currently only been developed against with pca_basis as a FSPCABasis.",
+        ):
+            _ = RIRClass2D(self.clean_src, self.basis)
+
 
 class LegacyImplementationTestCase(TestCase):
     """
@@ -246,10 +336,12 @@ class LegacyImplementationTestCase(TestCase):
         """
 
         with pytest.raises(ValueError, match="coeff_norm should not be -inf"):
-            bispec_2drot_large(
-                coeff=np.arange(10),
-                freqs=np.arange(1, 11),
-                eigval=np.arange(10),
-                alpha=1 / 3,
-                sample_n=4000,
-            )
+            # This should emit a warning before raising
+            with self.assertWarns(RuntimeWarning):
+                bispec_2drot_large(
+                    coeff=np.arange(10),
+                    freqs=np.arange(1, 11),
+                    eigval=np.arange(10),
+                    alpha=1 / 3,
+                    sample_n=4000,
+                )
