@@ -4,6 +4,8 @@ import numpy as np
 import scipy.sparse as sps
 from scipy.linalg import qr
 
+from aspire.numeric import fft
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,28 +77,6 @@ def pca_y(x, k, num_iters=2):
 
 
 # copied for debugging/poc purposes
-def icfft2(x):
-    if len(x.shape) == 2:
-        return np.fft.fftshift(
-            np.transpose(np.fft.ifft2(np.transpose(np.fft.ifftshift(x))))
-        )
-    elif len(x.shape) == 3:
-        y = np.fft.ifftshift(x, (1, 2))
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.ifft2(y)
-        y = np.transpose(y, (0, 2, 1))
-        y = np.fft.fftshift(y, (1, 2))
-        return y
-    else:
-        raise ValueError("x must be 2D or 3D")
-
-
-# lol
-def icfft(x, axis=0):
-    return np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(x, axis), axis=axis), axis)
-
-
-# copied for debugging/poc purposes
 # very slow function compared to matlab
 def rot_align(m, coeff, pairs):
     n_theta = 360.0
@@ -110,7 +90,7 @@ def rot_align(m, coeff, pairs):
         )
 
     c2 = np.flipud(np.conj(c[1:]))
-    b = (2 * m + 1) * np.real(icfft(np.concatenate((c2, c), axis=0)))
+    b = (2 * m + 1) * np.real(fft.centered_ifft(np.concatenate((c2, c), axis=0), axis=0))
     rot = np.argmax(b, axis=0)
     rot = (rot - m) * n_theta / (2 * m + 1)
 

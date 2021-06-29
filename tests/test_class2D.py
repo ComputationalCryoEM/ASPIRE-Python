@@ -8,11 +8,7 @@ from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
 from aspire.classification import Class2D, RIRClass2D
-from aspire.classification.legacy_implementations import (
-    bispec_2drot_large,
-    icfft2,
-    pca_y,
-)
+from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
@@ -294,19 +290,6 @@ class LegacyImplementationTestCase(TestCase):
 
     def setUp(self):
         pass
-
-    def test_icfft2_ndim2(self):
-        """
-        Check icfft2 works with 2D shapes.
-        3D (stack of one) is checked in the classification unit tests.
-        """
-        fin = np.mgrid[:5, :5][0]
-        # Note we fftshift in
-        F = np.fft.fftshift(np.fft.fft2(fin))
-        # and ifftshift out
-        fout = np.fft.ifftshift(icfft2(F))
-
-        self.assertTrue(np.allclose(fin, fout))
 
     def test_pca_y(self):
         """
