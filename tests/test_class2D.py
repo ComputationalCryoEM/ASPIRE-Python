@@ -278,7 +278,7 @@ class RIRClass2DTestCase(TestCase):
         # Currently we only FSPCA Basis in RIRClass2D
         with pytest.raises(
             RuntimeError,
-            match="RIRClass2D has currently only been developed against with pca_basis as a FSPCABasis.",
+            match="RIRClass2D has currently only been developed for pca_basis as a FSPCABasis.",
         ):
             _ = RIRClass2D(self.clean_src, self.basis)
 

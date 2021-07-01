@@ -77,11 +77,10 @@ class FBBasis2D(SteerableBasis):
         indices_sgns = np.zeros(self.count, dtype=int)
 
         # We'll also generate a mapping for complex construction
-        # self.complex_count = self.count // 2 + self.k_max[0]
         self.complex_count = (
             self.count + self.k_max[0]
         ) // 2  # Do not double count zero case
-        # these map an index in the complex storage to a pair of indices in real storage.
+        # These map indices in complex array to pair of indices in real array
         self.indices_real = np.zeros(self.complex_count, dtype=np.int)
         self.indices_imag = np.zeros(self.complex_count, dtype=np.int)
 
@@ -114,7 +113,7 @@ class FBBasis2D(SteerableBasis):
         self.complex_angular_indices = indices_ells[self.indices_real]  # k
         self.complex_radial_indices = indices_ks[self.indices_real]  # q
 
-        # Why are these not class attributes (a dict lookup anyway).
+        # TODO, these can become class attributes
         return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
 
     def _precomp(self):

@@ -72,7 +72,7 @@ class RIRClass2D(Class2D):
         # For now, only run with FSPCA basis
         if not isinstance(pca_basis, FSPCABasis):
             raise NotImplementedError(
-                "RIRClass2D has currently only been developed against with pca_basis as a FSPCABasis."
+                "RIRClass2D has currently only been developed for pca_basis as a FSPCABasis."
             )
 
         self.pca_basis = pca_basis
@@ -355,14 +355,13 @@ class RIRClass2D(Class2D):
         return self.fb_basis.evaluate(fb_avgs)
 
     def legacy_align(self, classes, coef):
-        # translate some variables between this code and the legacy aspire aspire implementation (just trying to figure out of the old code ran...).
+        # Translate some variables between this code and the legacy aspire implementation
         freqs = self.pca_basis.complex_angular_indices
         coeff = self.pca_basis.to_complex(coef).T
         n_im = self.src.n
         n_nbor = self.n_nbor
 
         # ## COPIED FROM LEGACY CODE:
-        # del coeff_b, concat_coeff
         max_freq = np.max(freqs)
         cell_coeff = []
         for i in range(max_freq + 1):
@@ -391,8 +390,8 @@ class RIRClass2D(Class2D):
 
         class_refl = (classes // n_im).astype(bool)
         classes[classes >= n_im] = classes[classes >= n_im] - n_im
-        # Check Reflections usually imply rotation by 180, but this seems to yield worse results?
-        # rot[class_refl] = np.mod(rot[class_refl] + 180, 360) # ??
+        # Check Reflections usually imply rotation by 180, but this seems to yield worse results.
+        # rot[class_refl] = np.mod(rot[class_refl] + 180, 360)
         rot *= np.pi / 180.0  # Convert to radians
         return classes, class_refl, rot, corr
 
@@ -416,33 +415,29 @@ class RIRClass2D(Class2D):
 
         concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=1)
 
-        num_batches = (
-            n_im + batch_size - 1
-        ) // batch_size  # int(np.ceil(float(n_im) / batch_size))
+        num_batches = (n_im + batch_size - 1) // batch_size
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
         for i in range(num_batches):
             start = i * batch_size
             finish = min((i + 1) * batch_size, n_im)
             corr = np.real(
-                # I dont understand what they were doing here yet.
-                # I presume relying on dot being large for similar vectors.
-                # But I don't get the conjugation etc.
                 np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
             )
-            # Note this did not include the original image?
+            # Note legacy did not include the original image?
             # classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
-            # This does include the original image. (Matches sklean implementation.) Check.
+            # This now does include the original image
+            # (Matches sklean implementation.)
+            # Check with Joakim about preference.
+            # I (GBW) think class[i] should have class[i][0] be the original image index.
             classes[start:finish] = np.argsort(-corr, axis=1)[:, :n_nbor]
 
         return classes
 
     def _legacy_pca(self, M):
         """
-        PCA_y (y is I think for Yoel...).
-
         This is more or less the historic implementation ported
-        to Python from MATLAB.
+        to Python from code calling MATLAB's `pca_y`.
         """
 
         # ### The following was from legacy code. Be careful wrt order.
@@ -557,7 +552,7 @@ class RIRClass2D(Class2D):
         This code was ported to Python by an unkown author,
         and is the closest viable reference material.
 
-        It is copied here to compare it a hot swappable manner while
+        It is copied here to compare while
         fresh code is developed for this class.
         """
 
@@ -566,8 +561,6 @@ class RIRClass2D(Class2D):
         complex_eigvals = self.pca_basis.to_complex(self.pca_basis.eigvals).reshape(
             self.pca_basis.complex_count
         )  # flatten
-
-        # Legacy code requires we unpack just a few things to call it
 
         coef_b, coef_b_r = bispec_2drot_large(
             coeff=coef.T,  # Note F style tranpose here and in return

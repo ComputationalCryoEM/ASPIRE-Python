@@ -8,6 +8,8 @@ package would become when extended to complex.
 They don't want to mix support by admitting complex in only
 a few places and not supporting it/crashing in other areas of code,
 and I can respect that.
+
+Unfortunately we need a complex values PCA, so we wrap theirs for now.
 """
 
 import numpy as np
@@ -18,7 +20,7 @@ from .validation import check_array
 
 
 class ComplexPCA(PCA):
-    # In a moe ideal world we could patch with something smaller
+    # In a more ideal world we could patch with something smaller
     # but some versions of scikit do not admit this.
     # def _validate_data(self, *args, **kwargs):
     #     # stuff

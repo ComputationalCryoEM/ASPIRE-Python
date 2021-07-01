@@ -90,7 +90,9 @@ def rot_align(m, coeff, pairs):
         )
 
     c2 = np.flipud(np.conj(c[1:]))
-    b = (2 * m + 1) * np.real(fft.centered_ifft(np.concatenate((c2, c), axis=0), axis=0))
+    b = (2 * m + 1) * np.real(
+        fft.centered_ifft(np.concatenate((c2, c), axis=0), axis=0)
+    )
     rot = np.argmax(b, axis=0)
     rot = (rot - m) * n_theta / (2 * m + 1)
 

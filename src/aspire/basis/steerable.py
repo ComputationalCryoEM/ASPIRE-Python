@@ -52,16 +52,13 @@ class SteerableBasis(Basis):
                 f"Bispectrum frequency cutoff {freq_cutoff} outside max {np.max(self.complex_angular_indices)}"
             )
 
-        # self._indices["ells"]  # angular freq indices k in paper/slides
-        # self._indices["ks"]    # radial freq indices q in paper/slides
-        # radial_indices = self._indices["ks"][self.indices_real]  # q
-        # angular_indices = self._indices["ells"][self.indices_real]  # k
+        # Note regarding the naming,
+        # _indices["ells"]  # angular freq indices k in paper/slides
+        # _indices["ks"]    # radial freq indices q in paper/slides
         radial_indices = self.complex_radial_indices  # q
         angular_indices = self.complex_angular_indices  # k
         unique_radial_indices = np.unique(radial_indices)  # q
-        # unique_angular_indices = np.unique(angular_indices)  # k
-        # compressed_radial_map = {q: i for i, q in enumerate(unique_radial_indices)}
-        # maybe rm this if we go with important sampling...
+
         if hasattr(self, "compressed") and self.compressed:
             # k should never be this high..
             fill_value = self.complex_count + 1
@@ -110,16 +107,6 @@ class SteerableBasis(Basis):
         if filter_nonzero_freqs:
             non_zero_freqs = angular_indices != 0
             B = B[non_zero_freqs][:, non_zero_freqs]
-        # #Normalize B ?
-        # B /= np.linalg.norm(B, axis=-1)[:,:,np.newaxis]
-
-        # dirty plot for debugging, can rm later.
-        # import matplotlib.pyplot as plt
-        # for q in range(B.shape[-1]):
-        #     print(np.max(np.abs(B[...,q])))
-        # plt.imshow(np.log(np.abs(
-        #     B.reshape(B.shape[0], -1) )))
-        # plt.show()
 
         if flatten:
             # B is sym, start by taking lower triangle.
