@@ -60,49 +60,46 @@ def adaptive_support(images, energy_threshold=0.99):
     # Take smaller so we do not yield negative variance or PSD later
     noise_var = min(np.var(img_corner), np.var(imgf_corner))
 
-    variance_map = np.var(
-        img,
-        axis=0,
-        ddof=1,
-    )  # Note ddof=1 employed to match MATLAB [] vector syntax
+    # Compute the Variance and Power Spectrum
+    variance_map = np.mean(np.abs(img) ** 2, axis=0)
+    pspec = np.mean(np.abs(imgf) ** 2, axis=0)
 
-    # Compute the Radial Variance
+    # Compute the Radial Variance and Radial Power Spectrum
     radial_var = np.zeros(N)
+    radial_pspec = np.zeros(N)
     for i in range(N):
         mask = (r >= i) & (r < i + 1)
         radial_var[i] = np.mean(variance_map[mask])
-
-    # Compute the Radial Power Spectrum
-    img_ps = np.abs(imgf) ** 2
-    pspec = np.mean(img_ps, axis=0)
-    radial_pspec = np.zeros(N)
-    for i in range(N):
-        radial_pspec[i] = np.mean(pspec[(r >= i) & (r < i + 1)])
+        radial_pspec[i] = np.mean(pspec[mask])
 
     # Subtract the noise variance
     radial_pspec -= noise_var
     radial_var -= noise_var
 
+    # Lower bound variance and power by 0
+    np.clip(radial_pspec, 0, a_max=None, out=radial_pspec)
+    np.clip(radial_var, 0, a_max=None, out=radial_var)
+
     # Construct range of Fourier limits
     c = np.linspace(0, 0.5, N)
     # Construct range of Real limits
-    R = np.arange(N, dtype=int)
+    R = np.arange(0, N, dtype=int)
 
     # Calculate cumulative energy
-    cum_pspec = np.zeros(N)
-    cum_var = np.zeros(N)
-    for i in range(N):
-        cum_pspec[i] = np.sum(radial_pspec[: i + 1] * c[: i + 1])
-        cum_var[i] = np.sum(radial_var[: i + 1] * R[: i + 1])
+    cum_pspec = np.cumsum(radial_pspec * c)
+    cum_var = np.cumsum(radial_var * R)
 
     # Normalize energies [0,1]
     cum_pspec /= cum_pspec[-1]
     cum_var /= cum_var[-1]
 
-    # Note legacy code *=L for Fourier limit,
+    # First note legacy code *=L for Fourier limit,
     #   but then only uses divided by L... so just removed here.
-    # This makes it consistent with Nyquist, ie [0, .5]
-    c_limit = c[np.argwhere(cum_pspec > energy_threshold)[0, 0]]
-    R_limit = int(R[np.argwhere(cum_var > energy_threshold)[0, 0]])
+    #   This makes it consistent with Nyquist, ie [0, .5]
+    # Second note, we attempt to find the cutoff,
+    #   but when a search fails returns the last (-1) element,
+    #   essentially the maximal radius.
+    c_limit = c[np.argmax(cum_pspec > energy_threshold) or -1]
+    R_limit = int(R[np.argmax(cum_var > energy_threshold) or -1])
 
     return c_limit, R_limit

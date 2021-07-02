@@ -22,5 +22,6 @@ from .matrix import (
     vol_to_vec,
     volmat_to_vecmat,
 )
+from .misc import gaussian_2d
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance

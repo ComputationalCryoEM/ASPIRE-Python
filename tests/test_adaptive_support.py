@@ -7,6 +7,7 @@ import pytest
 
 from aspire.denoising import adaptive_support
 from aspire.image import Image
+from aspire.utils import gaussian_2d
 
 logger = logging.getLogger(__name__)
 
@@ -52,3 +53,19 @@ class AdaptiveSupportTest(TestCase):
         ):
             # Pass numpy array.
             _ = adaptive_support(self.images.asnumpy())
+
+    def test_adaptivate_support_gaussian(self):
+        """
+        Test against known Gaussians.
+        """
+
+        resolution = 65
+        sigma = 64
+        n_disc = 10
+        discs = np.tile(
+            gaussian_2d(resolution, sigma_x=sigma, sigma_y=sigma), (n_disc, 1, 1)
+        )
+        disc_img = Image(discs)
+
+        threshold = 1
+        np.allclose(adaptive_support(disc_img, threshold), (0.5, 65 // 2))

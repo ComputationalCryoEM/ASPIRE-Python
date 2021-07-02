@@ -7,6 +7,8 @@ import os.path
 import subprocess
 from itertools import chain, combinations
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,3 +111,33 @@ def sha256sum(filename):
             h.update(mv[:n])
 
     return h.hexdigest()
+
+
+def gaussian_2d(resolution, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64):
+    """
+    Returns a 2d Gaussian in a square 2d numpy array.
+
+    Default is a centered disc of spread=peak=1.
+
+    Note for odd resolutions center is the grid point 0,
+    while for even resolutions center is first pixel (grid point 0.5).
+
+    :param resolution: The height and width of returned array (pixels)
+    :param x0: x cordinate of center (pixels)
+    :param y0: y cordinate of center (pixels)
+    :param sigma_x: spread in x direction
+    :param sigma_y: spread in y direction
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (2D)
+    """
+
+    # Construct centered mesh
+    # # Lower
+    Ll = -(resolution - 1) // 2 + (resolution - 1) % 2
+    # # Upper
+    Lu = resolution // 2 + 1
+    (Y, X) = np.mgrid[Ll:Lu, Ll:Lu]
+
+    p = (X - x0) ** 2 / (2 * sigma_x) + (Y - y0) ** 2 / (2 * sigma_y)
+    return (peak * np.exp(-p)).astype(dtype, copy=False)
