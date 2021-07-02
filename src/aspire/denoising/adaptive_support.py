@@ -16,7 +16,8 @@ def adaptive_support(images, energy_threshold=0.99):
     Images are scaled in real space so that the noise variance in both
     real and Fourier domains is similar.
 
-    Returns c_limit (support in Fourier space), R_limit (support in real space).
+    Returns c_limit (support radius in Fourier space),
+    and R_limit (support radius in real space).
 
     Fourier c_limit is scaled in range [0, 0.5].
     R_limit is in pixels [0, Image.res/2].
