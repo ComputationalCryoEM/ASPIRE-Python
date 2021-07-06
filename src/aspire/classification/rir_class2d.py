@@ -155,7 +155,7 @@ class RIRClass2D(Class2D):
         # Instantiate a new compressed (truncated) basis.
         self.pca_basis = self.pca_basis.compress(self.fspca_components)
 
-        # Expand into the compressed FSPCA space.
+        # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
 
         # Compute Bispectrum
@@ -166,6 +166,8 @@ class RIRClass2D(Class2D):
         classes = self.nn_classification(coef_b, coef_b_r)
 
         # # Stage 3: Class Selection
+        # This is an area open to active research.
+        # Currently we take naive approach documented later in `output`.
         # logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
 
         # # Stage 4: Align
@@ -257,11 +259,11 @@ class RIRClass2D(Class2D):
             )  # zero index is self, distance 0
             plt.show()
 
-        # I was planning to change the result of this function
-        # but for now return classes as range 0 to 2*n_img..
+        # I was considering to change the result of these functions
+        # but for now return classes as range 0 to 2*n_img.
         # #########################
         # # There are two sets of vectors each n_img long.
-        # #   The second set represents reflected (gbw, unsure..)
+        # #   The second set represents reflected.
         # #   When a reflected coef vector is a nearest neighbor,
         # #   we notate the original image index (indices modulus),
         # #   and notate we'll need the reflection (refl).
@@ -336,7 +338,7 @@ class RIRClass2D(Class2D):
             # Get the neighbors
             neighbors_ids = classes[j]
 
-            # Get coefs in Fourier Bessel Basis if not provided as am argument.
+            # Get coefs in Fourier Bessel Basis if not provided as an argument.
             if coefs is None:
                 neighbors_imgs = Image(imgs[neighbors_ids])
                 neighbors_coefs = self.fb_basis.evaluate_t(neighbors_imgs)
@@ -520,6 +522,8 @@ class RIRClass2D(Class2D):
 
             # ### Truncate Bispectrum (by sampling)
             # ### Note, where is this written down? (and is it even needed?)
+            # It is only briefly mentioned in the paper and was more/less
+            # soft disabled in the matlab code.
             B = B[m_mask][:, m_mask]
             logger.info(f"Truncating Bispectrum to {B.shape} ({np.size(B)}) coefs.")
 

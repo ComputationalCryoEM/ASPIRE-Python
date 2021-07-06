@@ -9,8 +9,6 @@ from aspire.covariance import RotCov2D
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, fix_signs, real_type
 
-# from aspire.utils import make_symmat
-
 logger = logging.getLogger(__name__)
 
 
@@ -19,17 +17,17 @@ class FSPCABasis(SteerableBasis):
     A class for Fast Steerable Principal Component Analaysis basis.
 
     FSPCA is an extension to Fourier Bessel representations
-    (provided asFBBasis2D/FFBBasis2D), which computes combinations of basis
+    (provided asF BBasis2D/FFBBasis2D), which computes combinations of basis
     coefficients coresponding to the princicpal components of image(s)
     represented in the provided basis.
 
     The principal components are computed from eigen decomposition of the
-    covariance matrix, and when evaluated into the real domain form
+    covariance matrix, and when evaluated into the real domain and reshaped form
     the set of `eigenimages`.
 
     The algorithm is described in the publication:
     Z. Zhao, Y. Shkolnisky, A. Singer, Fast Steerable Principal Component Analysis,
-    IEEE Transactions on Computational Imaging, 2 (1), pp. 1-12 (2016).​
+    IEEE Transactions on Computational Imaging, 2 (1), pp. 1-12 (2016).
 
     """
 
@@ -74,26 +72,30 @@ class FSPCABasis(SteerableBasis):
 
         self.noise_var = noise_var  # noise_var is handled during `build` call.
 
-        # Support sizes
-        self.fourier_support_size = 0.5  # Legacy c (sometimes called bandlimit)
-        self.cartesian_support_size = (
-            self.src.L // 2
-        )  # Legacy r (sometimes called support_size)
-
-        assert isinstance(
-            self.cartesian_support_size, int
-        ), "Cartesian support should be integer number of pixels."
-
-        # self._build()  # hrmm how/when to kick off build, tricky
-
     def _get_complex_indices_map(self):
+        """
+        Private method for building an ordered dictionary mapping
+        every complex coefficients (ell, q) pair
+        with the real coefficients' flattened array index.
+
+        The ordering stores the first occurance of a complex
+        coefficient, which is used in compression to select the
+        first k complex components.
+
+        Once we know the first k complex components, this mapping
+        further provides the index of both +/- real coefficients.
+
+        This is subtly different than taking the top 2*k real
+        components' coefficients and converting to complex,
+        which often does not yield k complex components.
+        """
+
         complex_indices_map = OrderedDict()
         for i in range(self.count):
             ell = self.angular_indices[i]
             q = self.radial_indices[i]
             sgn = self.signs_indices[i]
 
-            # print(f"{i}, {ell}, {q}, {sgn}")
             complex_indices_map.setdefault((ell, q), [None, None])
             if sgn == 1:
                 complex_indices_map[(ell, q)][0] = i
@@ -105,6 +107,13 @@ class FSPCABasis(SteerableBasis):
         return complex_indices_map
 
     def build(self, coef=None):
+        """
+        Computes the FSPCA basis.
+
+        This may take some time for large image stacks.
+
+        :param coef: Optionally provide coef stack if already computed.
+        """
         if coef is None:
             coef = self.basis.evaluate_t(self.src.images(0, self.src.n))
 
@@ -146,6 +155,9 @@ class FSPCABasis(SteerableBasis):
     def _compute_spca(self, coef):
         """
         Algorithm 2 from paper.
+
+        It has been adopted to use ASPIRE-Python's
+        cov2d (real) covariance estimation.
         """
 
         # Compute coefficient vector of mean image at zeroth component
@@ -172,7 +184,9 @@ class FSPCABasis(SteerableBasis):
         A.append(A_0)
 
         # Remaining angular indices have postive and negative entries in real representation.
-        for ell in range(1, self.basis.ell_max + 1):  # ell(code) is k(paper)
+        for ell in range(
+            1, self.basis.ell_max + 1
+        ):  # `ell` in this code is `k` from paper
             mask = self.basis._indices["ells"] == ell
             mask_pos = [
                 mask[i] and (self.basis._indices["sgns"][i] == +1)
@@ -192,11 +206,13 @@ class FSPCABasis(SteerableBasis):
                 f" {len(A)} != {len(self.covar_coef_est)}",
             )
 
-        # Foreach angular frequency (`k` in paper, `ells` in FB code)
+        # For each angular frequency (`ells` in FB code, `k` from paper)
+        #   we use the properties of Block Diagonal Matrices to work
+        #   on the correspong block.
         eigval_index = 0
         for angular_index, C_k in enumerate(self.covar_coef_est):
 
-            # # Eigen/SVD,
+            # # Eigen/SVD, covariance block C_k should be symmetric.
             eigvals_k, eigvecs_k = np.linalg.eigh(C_k)
 
             # Determistically enforce eigen vector sign convention
@@ -212,7 +228,7 @@ class FSPCABasis(SteerableBasis):
             # These are the dense basis indices for this block.
             basis_inds = np.arange(eigval_index, eigval_index + len(eigvals_k))
 
-            # Store the eigvals
+            # Store the eigvals for this block, note this is a flat array.
             self.eigvals[basis_inds] = eigvals_k
 
             # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
@@ -221,8 +237,8 @@ class FSPCABasis(SteerableBasis):
             # To compute new expansion coefficients using spca basis
             #   we combine the basis coefs using the eigen decomposition.
             # Note image stack slow moving axis, otherwise this is just a
-            #   block by block matrix multiply.
-
+            #   block by block matrix multiply, with the einsum
+            #   indexing performing transposes for us.
             self.spca_coef[:, basis_inds] = np.einsum(
                 "ji, kj -> ki", eigvecs_k, A[angular_index]
             )
@@ -236,12 +252,12 @@ class FSPCABasis(SteerableBasis):
             )
 
         # Store a map of indices sorted by eigenvalue.
-        # #   We don't resort then now because this would destroy the block diagonal structure.
-        # #
-        # # sorted_indices[i] is the ith most powerful eigendecomposition index
-        # #
-        # # We can pass a full or truncated slice of sorted_indices to any array indexed by
-        # #  the coefs.
+        #  We don't resort then now because this would destroy the block diagonal structure.
+        #
+        # sorted_indices[i] is the ith most powerful eigendecomposition index
+        #
+        # We can pass a full or truncated slice of sorted_indices to any array indexed by
+        # the coefs.  This is used later for compression and index re-generation.
         self.sorted_indices = np.argsort(-np.abs(self.eigvals))
 
     def expand_from_image_basis(self, x):
@@ -356,20 +372,20 @@ class FSPCABasis(SteerableBasis):
         return compressed_indices
 
     # # Noting this is awful, but I'm still trying to work out how we can push the complex arithmetic out and away...
-    def compress(self, k):
+    def compress(self, n):
         """
         Use the eigendecomposition to select the most powerful
         coefficients.
 
         Using those coefficients new indice mappings are constructed.
 
-        :param k: Number of components (coef)
+        :param n: Number of components (coef)
         :return: New FSPCABasis instance
         """
 
-        if k >= self.count:
+        if n >= self.count:
             logger.warning(
-                f"Requested compression to {k} components,"
+                f"Requested compression to {n} components,"
                 f" but already {self.count}."
                 "  Skipping compression."
             )
@@ -380,7 +396,7 @@ class FSPCABasis(SteerableBasis):
 
         # Create compressed mapping
         result.compressed = True
-        compressed_indices = self._get_compressed_indices(k)
+        compressed_indices = self._get_compressed_indices(n)
         logger.debug(f"compressed_indices {compressed_indices}")
         result.count = len(compressed_indices)
         logger.debug(f"compressed count {result.count}")

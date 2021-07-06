@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 class SteerableBasis(Basis):
     """
-    SteerableBasis are an extension of Basis that is expected to have rotation (steerable) and bispectrum.
+    SteerableBasis is an extension of Basis that is expected to have
+    `rotation` (steerable) and `calculate_bispectrum` methods.
     """
 
     def calculate_bispectrum(

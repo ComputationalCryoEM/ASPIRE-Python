@@ -6,10 +6,9 @@ They refuse to support complex, not because of this code,
 but because of how complicated other portions of their
 package would become when extended to complex.
 They don't want to mix support by admitting complex in only
-a few places and not supporting it/crashing in other areas of code,
-and I can respect that.
+a few places and not supporting it/crashing in other areas of code.
 
-Unfortunately we need a complex values PCA, so we wrap theirs for now.
+Unfortunately we need a complex valued PCA, so we wrap theirs for now.
 """
 
 import numpy as np
