@@ -84,7 +84,7 @@ class BispectrumTestCase(TestCase):
 
         # Create a reduced rank (compressed) FSPCABasis, top 100 components.
         components = 100
-        compressed_fspca = self.fspca_basis.compress(k=components)
+        compressed_fspca = self.fspca_basis.compress(n=components)
 
         # Compress using representation in the compressed FSPCA
         cv1_r = compressed_fspca.expand(self.v1)
