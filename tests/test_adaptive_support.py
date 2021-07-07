@@ -59,13 +59,15 @@ class AdaptiveSupportTest(TestCase):
         Test against known Gaussians.
         """
 
-        resolution = 65
-        sigma = 64
+        resolution = 1025
+        sigma = 128
         n_disc = 10
         discs = np.tile(
             gaussian_2d(resolution, sigma_x=sigma, sigma_y=sigma), (n_disc, 1, 1)
         )
         disc_img = Image(discs)
 
-        threshold = 1
-        np.allclose(adaptive_support(disc_img, threshold), (0.5, 65 // 2))
+        # for one, two, three, inf standard deviations
+        for threshold in (0.68, 0.966, 0.997, 1):
+            print(adaptive_support(disc_img, threshold))
+        # np.allclose(adaptive_support(disc_img, threshold), (0.5, 65 // 2))

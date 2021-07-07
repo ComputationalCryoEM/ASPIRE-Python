@@ -139,5 +139,5 @@ def gaussian_2d(resolution, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.f
     Lu = resolution // 2 + 1
     (Y, X) = np.mgrid[Ll:Lu, Ll:Lu]
 
-    p = (X - x0) ** 2 / (2 * sigma_x**2) + (Y - y0) ** 2 / (2 * sigma_y**2)
+    p = (X - x0) ** 2 / (2 * sigma_x ** 2) + (Y - y0) ** 2 / (2 * sigma_y ** 2)
     return (peak * np.exp(-p)).astype(dtype, copy=False)

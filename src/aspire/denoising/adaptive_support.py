@@ -47,9 +47,9 @@ def adaptive_support(images, energy_threshold=0.99):
     imgf = fft.centered_fft2(images.asnumpy())
 
     # demean
-    img = images.asnumpy() * L
+    img = images.asnumpy()
     mean = np.mean(img, axis=0)
-    img -= mean
+    img = img - mean
 
     # Construct a mask of corner values, outside max radiaus N
     corner_mask = r.flatten() > N
