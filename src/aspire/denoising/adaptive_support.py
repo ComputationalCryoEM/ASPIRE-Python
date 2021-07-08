@@ -2,19 +2,17 @@ import logging
 
 import numpy as np
 
-from aspire.image import Image
+from aspire.noise import WhiteNoiseEstimator
 from aspire.numeric import fft
+from aspire.source import ImageSource
 from aspire.utils.coor_trans import grid_2d
 
 logger = logging.getLogger(__name__)
 
 
-def adaptive_support(images, energy_threshold=0.99):
+def adaptive_support(img_src, energy_threshold=0.99):
     """
     Determine size of the compact support in both real and Fourier Space.
-
-    Images are scaled in real space so that the noise variance in both
-    real and Fourier domains is similar.
 
     Returns c_limit (support radius in Fourier space),
     and R_limit (support radius in real space).
@@ -22,14 +20,13 @@ def adaptive_support(images, energy_threshold=0.99):
     Fourier c_limit is scaled in range [0, 0.5].
     R_limit is in pixels [0, Image.res/2].
 
-    :param images: Input `Image` stack
+    :param img_src: Input `Source` of images.
     :param energy_threshold: [0, 1] threshold limit
     :return: (c_limit, R_limit)
     """
 
-    # Sanity Check Input is Image stack
-    if not isinstance(images, Image):
-        raise RuntimeError("adaptive_support expects Image instance")
+    if not isinstance(img_src, ImageSource):
+        raise RuntimeError("adaptive_support expects `Source` instance or subclass.")
 
     # Sanity Check Threshold is in range
     if energy_threshold <= 0 or energy_threshold > 1:
@@ -37,28 +34,18 @@ def adaptive_support(images, energy_threshold=0.99):
             f"Given energy_threshold {energy_threshold} outside sane range [0,1]"
         )
 
-    L = images.res
+    L = img_src.L
     N = L // 2
-    P = images.n_images
 
-    r = grid_2d(L, shifted=False, normalized=False, dtype=images.dtype)["r"]
+    r = grid_2d(L, shifted=False, normalized=False, dtype=img_src.dtype)["r"]
+
+    # Estimate noise
+    noise_est = WhiteNoiseEstimator(img_src)
+    noise_var = noise_est.estimate()
 
     # Transform to Fourier space
-    imgf = fft.centered_fft2(images.asnumpy())
-
-    # demean
-    img = images.asnumpy()
-    mean = np.mean(img, axis=0)
-    img = img - mean
-
-    # Construct a mask of corner values, outside max radiaus N
-    corner_mask = r.flatten() > N
-    img_corner = img.reshape(P, L * L)[:, corner_mask]
-    imgf_corner = imgf.reshape(P, L * L)[:, corner_mask]
-
-    # Note that the noise theoretically same, but in practice differ
-    # Take smaller so we do not yield negative variance or PSD later
-    noise_var = min(np.var(img_corner), np.var(imgf_corner))
+    img = img_src.images(0, img_src.n).asnumpy()
+    imgf = fft.centered_fft2(img)
 
     # Compute the Variance and Power Spectrum
     variance_map = np.mean(np.abs(img) ** 2, axis=0)

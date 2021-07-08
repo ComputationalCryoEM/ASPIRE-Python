@@ -7,6 +7,7 @@ import pytest
 
 from aspire.denoising import adaptive_support
 from aspire.image import Image
+from aspire.source import ArrayImageSource
 from aspire.utils import gaussian_2d
 
 logger = logging.getLogger(__name__)
@@ -16,21 +17,15 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class AdaptiveSupportTest(TestCase):
     def setUp(self):
-        self.images = Image(
-            np.load(os.path.join(DATA_DIR, "sim_images_with_noise.npy"))
+
+        self.resolution = 1025
+        self.sigma = 128
+        n_disc = 10
+        discs = np.tile(
+            gaussian_2d(self.resolution, sigma_x=self.sigma, sigma_y=self.sigma),
+            (n_disc, 1, 1),
         )
-
-    def test_adaptivate_support(self):
-        """
-        The following low res references were computed after manually validating
-        against a higher resolution example in MATLAB.
-        """
-        references = {0.8: (1 / 3, 2), 0.95: (1 / 3, 3), 0.99: (0.5, 3)}
-
-        for threshold, reference in references.items():
-            self.assertTrue(
-                np.allclose(adaptive_support(self.images, threshold), reference)
-            )
+        self.img_src = ArrayImageSource(Image(discs))
 
     def testAdaptiveSupportBadThreshold(self):
         """
@@ -38,36 +33,39 @@ class AdaptiveSupportTest(TestCase):
         """
 
         with pytest.raises(ValueError, match=r"Given energy_threshold.*"):
-            _ = adaptive_support(self.images, -0.5)
+            _ = adaptive_support(self.img_src, -0.5)
 
         with pytest.raises(ValueError, match=r"Given energy_threshold.*"):
-            _ = adaptive_support(self.images, 9000)
+            _ = adaptive_support(self.img_src, 9000)
 
-    def testAdaptiveSupportNonImageInput(self):
+    def testAdaptiveSupportIncorrectInput(self):
         """
         Method should raise meaningful error when passed wrong format input.
         """
 
         with pytest.raises(
-            RuntimeError, match="adaptive_support expects Image instance"
+            RuntimeError,
+            match="adaptive_support expects `Source` instance or subclass.",
         ):
             # Pass numpy array.
-            _ = adaptive_support(self.images.asnumpy())
+            _ = adaptive_support(np.empty((10, 32, 32)))
 
     def test_adaptivate_support_gaussian(self):
         """
         Test against known Gaussians.
         """
 
-        resolution = 1025
-        sigma = 128
-        n_disc = 10
-        discs = np.tile(
-            gaussian_2d(resolution, sigma_x=sigma, sigma_y=sigma), (n_disc, 1, 1)
-        )
-        disc_img = Image(discs)
+        references = {
+            1: 0.68,
+            2: 0.96,
+            3: 0.999,  # slightly off
+            self.resolution / (2 * self.sigma): 1,
+        }
 
-        # for one, two, three, inf standard deviations
-        for threshold in (0.68, 0.966, 0.997, 1):
-            print(adaptive_support(disc_img, threshold))
-        # np.allclose(adaptive_support(disc_img, threshold), (0.5, 65 // 2))
+        # for one, two, three, inf standard deviations (one sided)
+        for stddevs, threshold in references.items():
+            # Real support should be ~ 1, 2, 3 times sigma
+            c, r = adaptive_support(self.img_src, threshold)
+            # Check closer to this threshold than next
+            logger.info(f"{c} {r} = adaptive_support(..., {threshold})")
+            self.assertTrue(np.abs(r / self.sigma - stddevs) < 0.5)
