@@ -73,7 +73,7 @@ class ComplexPCACase(TestCase):
         Make a sparse input and check raises.
         """
 
-        pca = PCA(n_components=self.components_small)
+        pca = ComplexPCA(n_components=self.components_small)
         sparse_X = csr_matrix(self.X_small)
         with pytest.raises(TypeError, match=r"PCA does not support sparse.*"):
             _ = pca.fit_transform(sparse_X)
@@ -83,7 +83,7 @@ class ComplexPCACase(TestCase):
         Check we can take automatic n_component branches
         """
 
-        pca = PCA(n_components=None)
+        pca = ComplexPCA(n_components=None)
         _ = pca.fit_transform(self.X_small)
 
         # Internally there is a different calculation when using arpack
@@ -95,6 +95,6 @@ class ComplexPCACase(TestCase):
         Check we raise when given unsupported solver.
         """
 
-        pca = PCA(n_components=self.components_small, svd_solver="notasolver")
+        pca = ComplexPCA(n_components=self.components_small, svd_solver="notasolver")
         with pytest.raises(ValueError, match=r"Unrecognized svd_solver.*"):
             _ = pca.fit_transform(self.X_small)
