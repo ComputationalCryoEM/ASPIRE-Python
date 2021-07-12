@@ -342,6 +342,7 @@ class FSPCABasis(SteerableBasis):
         # order the components by their importance (occurance based on sorted eigvals)
         #  This isn't exactly right since the eigvals would be sorted by the complex magnitude,
         #    instead of the larger component.
+        # Note, that we only use OrderedDict for its key's (ie as an OrderedSet)
         ordered_components = OrderedDict()
         for (k, q) in unsigned_components:
             ordered_components.setdefault((k, q))  # inserts when not exists yet
