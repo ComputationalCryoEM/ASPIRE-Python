@@ -235,11 +235,8 @@ class FSPCABasis(SteerableBasis):
             # To compute new expansion coefficients using spca basis
             #   we combine the basis coefs using the eigen decomposition.
             # Note image stack slow moving axis, otherwise this is just a
-            #   block by block matrix multiply, with the einsum
-            #   indexing performing transposes for us.
-            self.spca_coef[:, basis_inds] = np.einsum(
-                "ji, kj -> ki", eigvecs_k, A[angular_index]
-            )
+            #   block by block matrix multiply.
+            self.spca_coef[:, basis_inds] = A[angular_index] @ eigvecs_k
 
             eigval_index += len(eigvals_k)
 
