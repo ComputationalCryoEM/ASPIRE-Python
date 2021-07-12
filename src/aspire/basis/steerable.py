@@ -130,7 +130,11 @@ class SteerableBasis(Basis):
 
         # Covert radians to a broadcastable shape
         if isinstance(radians, np.ndarray):
-            len(radians) == len(complex_coef), f"{len(radians)} != {len(complex_coef)}"
+            if len(radians) != len(complex_coef):
+                raise RuntimeError(
+                    "`rotate` call `radians` length cannot broadcast with"
+                    f" `complex_coef` {len(complex_coef)} != {len(radians)}"
+                )
             radians = radians.reshape(-1, 1)
         # else: radians can be a constant
 
