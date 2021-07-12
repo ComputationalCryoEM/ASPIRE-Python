@@ -141,3 +141,72 @@ def gaussian_2d(resolution, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.f
 
     p = (X - x0) ** 2 / (2 * sigma_x ** 2) + (Y - y0) ** 2 / (2 * sigma_y ** 2)
     return (peak * np.exp(-p)).astype(dtype, copy=False)
+
+
+def circ(resolution, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
+    """
+    Returns a 2d `circ` function in a square 2d numpy array.
+
+    where for r = sqrt(x**2 + y**2)
+
+    circ(x,y) = peak : 0 <= r <= radius
+                0 : otherwise
+
+    Default is a centered circle of spread=peak=1.
+
+    Note for odd resolutions center is the grid point 0,
+    while for even resolutions center is first pixel (grid point 0.5).
+
+    :param resolution: The height and width of returned array (pixels)
+    :param x0: x cordinate of center (pixels)
+    :param y0: y cordinate of center (pixels)
+    :param radius: radius of circle
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (2D)
+    """
+
+    # Construct centered mesh
+    # # Lower
+    Ll = -(resolution - 1) // 2 + (resolution - 1) % 2
+    # # Upper
+    Lu = resolution // 2 + 1
+    (Y, X) = np.mgrid[Ll:Lu, Ll:Lu]
+
+    circ = (X ** 2 + Y ** 2) < radius * radius
+    return circ.astype(dtype)
+
+
+def hankel(resolution, x0=0, y0=0, peak=1, dtype=np.float64):
+    """
+    Returns a 2d `hankel` function in a square 2d numpy array.
+
+    Where hankel(x,y): 1/sqrt(x**2 + y**2)
+
+    Default is a centered circle of peak=1.
+
+    Note for odd resolutions center is the grid point 0,
+    while for even resolutions center is first pixel (grid point 0.5).
+
+    :param resolution: The height and width of returned array (pixels)
+    :param x0: x cordinate of center (pixels)
+    :param y0: y cordinate of center (pixels)
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (2D)
+    """
+
+    # Construct centered mesh
+    # # Lower
+    Ll = -(resolution - 1) // 2 + (resolution - 1) % 2
+    # # Upper
+    Lu = resolution // 2 + 1
+    (Y, X) = np.mgrid[Ll:Lu, Ll:Lu]
+
+    # Compute the denominator
+    circ = np.sqrt(X ** 2 + Y ** 2)
+
+    # Remove extreme values.
+    circ[circ == 0] = 1
+
+    return (peak / circ).astype(dtype)

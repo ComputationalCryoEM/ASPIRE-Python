@@ -48,16 +48,18 @@ def adaptive_support(img_src, energy_threshold=0.99):
     imgf = fft.centered_fft2(img)
 
     # Compute the Variance and Power Spectrum
+    #   Mean along image stack.
     variance_map = np.mean(np.abs(img) ** 2, axis=0)
-    pspec = np.mean(np.abs(imgf) ** 2, axis=0)
+    pspec = np.mean(imgf.real ** 2, axis=0)
 
     # Compute the Radial Variance and Radial Power Spectrum
     radial_var = np.zeros(N)
     radial_pspec = np.zeros(N)
     for i in range(N):
         mask = (r >= i) & (r < i + 1)
+        # Mean along radial track defined by mask
         radial_var[i] = np.mean(variance_map[mask])
-        radial_pspec[i] = np.mean(pspec[mask])
+        radial_pspec[i] = np.sum(pspec[mask]) / np.sum(mask) ** 2
 
     # Subtract the noise variance
     radial_pspec -= noise_var
@@ -77,8 +79,9 @@ def adaptive_support(img_src, energy_threshold=0.99):
     cum_var = np.cumsum(radial_var * R)
 
     # Normalize energies [0,1]
-    cum_pspec /= cum_pspec[-1]
-    cum_var /= cum_var[-1]
+    #  Multiply threshold to avoid unstable division
+    c_energy_threshold = energy_threshold * cum_pspec[-1]
+    R_energy_threshold = energy_threshold * cum_var[-1]
 
     # First note legacy code *=L for Fourier limit,
     #   but then only uses divided by L... so just removed here.
@@ -86,7 +89,7 @@ def adaptive_support(img_src, energy_threshold=0.99):
     # Second note, we attempt to find the cutoff,
     #   but when a search fails returns the last (-1) element,
     #   essentially the maximal radius.
-    c_limit = c[np.argmax(cum_pspec > energy_threshold) or -1]
-    R_limit = int(R[np.argmax(cum_var > energy_threshold) or -1])
+    c_limit = c[np.argmax(cum_pspec > c_energy_threshold) or -1]
+    R_limit = int(R[np.argmax(cum_var > R_energy_threshold) or -1])
 
     return c_limit, R_limit
