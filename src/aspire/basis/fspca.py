@@ -118,10 +118,10 @@ class FSPCABasis(SteerableBasis):
             coef = self.basis.evaluate_t(self.src.images(0, self.src.n))
 
         if self.noise_var is None:
-            from aspire.noise import AnisotropicNoiseEstimator
+            from aspire.noise import WhiteNoiseEstimator
 
             logger.info("Estimate the noise of images using anisotropic method.")
-            self.noise_var = AnisotropicNoiseEstimator(self.src).estimate()
+            self.noise_var = WhiteNoiseEstimator(self.src).estimate()
         logger.info(f"Setting noise_var={self.noise_var}")
 
         cov2d = RotCov2D(self.basis)
@@ -161,9 +161,7 @@ class FSPCABasis(SteerableBasis):
         """
 
         # Compute coefficient vector of mean image at zeroth component
-        self.mean_coef_zero = np.mean(
-            self.mean_coef_est[self.angular_indices == 0], axis=0
-        )
+        self.mean_coef_zero = self.mean_coef_est[self.angular_indices == 0]
 
         # Make the Data matrix (A_k)
         # # Construct A_k, matrix of expansion coefficients a^i_k_q
