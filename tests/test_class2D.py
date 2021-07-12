@@ -182,7 +182,7 @@ class RIRClass2DTestCase(TestCase):
         rir = RIRClass2D(
             self.noisy_src,
             self.noisy_fspca_basis,
-            bispectrum_componenents=100,
+            bispectrum_components=100,
             sample_n=42,
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
@@ -228,12 +228,12 @@ class RIRClass2DTestCase(TestCase):
         """
 
         with pytest.raises(
-            RuntimeError, match=r".*Images too small for Bispectrum Componenents.*"
+            RuntimeError, match=r".*Images too small for Bispectrum Components.*"
         ):
             _ = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
-                bispectrum_componenents=self.clean_src.n + 1,
+                bispectrum_components=self.clean_src.n + 1,
                 dtype=np.float64,
             )
 

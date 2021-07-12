@@ -28,7 +28,7 @@ class RIRClass2D(Class2D):
         fspca_components=400,
         alpha=1 / 3,
         sample_n=4000,
-        bispectrum_componenents=300,
+        bispectrum_components=300,
         n_nbor=100,
         n_classes=50,
         bispectrum_freq_cutoff=None,
@@ -80,7 +80,7 @@ class RIRClass2D(Class2D):
         self.fspca_components = fspca_components
         self.sample_n = sample_n
         self.alpha = alpha
-        self.bispectrum_componenents = bispectrum_componenents
+        self.bispectrum_components = bispectrum_components
         self.n_nbor = n_nbor
         self.n_classes = n_classes
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
@@ -94,9 +94,9 @@ class RIRClass2D(Class2D):
         # Sanity Checks
         assert hasattr(self.pca_basis, "calculate_bispectrum")
 
-        if self.src.n < self.bispectrum_componenents:
+        if self.src.n < self.bispectrum_components:
             raise RuntimeError(
-                f"{self.src.n} Images too small for Bispectrum Componenents {self.bispectrum_componenents}."
+                f"{self.src.n} Images too small for Bispectrum Componenents {self.bispectrum_components}."
                 "  Increase number of images or reduce components."
             )
 
@@ -179,7 +179,7 @@ class RIRClass2D(Class2D):
         Any PCA implementation here should return both
         coef_b and coef_b_r that are (n_img, n_components).
 
-        `n_components` is typically self.bispectrum_componenents.
+        `n_components` is typically self.bispectrum_components.
         However, for small problems it may return `n_components`=`n_img`,
         since that would be the smallest dimension.
 
@@ -196,7 +196,7 @@ class RIRClass2D(Class2D):
         """
         Takes in features as pair of arrays (coef_b coef_b_r),
         each having shape (n_img, features)
-        where features = min(self.bispectrum_componenents, n_img).
+        where features = min(self.bispectrum_components, n_img).
 
         Result is array (n_img, n_nbor) with entry `i` reprsenting
         index `i` into class input img array (src).
@@ -443,7 +443,7 @@ class RIRClass2D(Class2D):
 
         # ### The following was from legacy code. Be careful wrt order.
         M = M.T
-        u, s, v = pca_y(M, self.bispectrum_componenents)
+        u, s, v = pca_y(M, self.bispectrum_components)
 
         # Contruct coefficients
         coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
@@ -465,7 +465,7 @@ class RIRClass2D(Class2D):
         #   expects real data.
         #   We use an extension of SK that is hacked to admit complex.
         pca = ComplexPCA(
-            self.bispectrum_componenents,
+            self.bispectrum_components,
             copy=False,  # careful, overwrites data matrix... we'll handle the copies.
             svd_solver="auto",  # use randomized (Halko) for larger problems
             random_state=self.seed,
@@ -543,7 +543,7 @@ class RIRClass2D(Class2D):
 
         # Reduce dimensionality of Bispectrum sample with PCA
         logger.info(
-            f"Computing Large PCA, returning {self.bispectrum_componenents} components."
+            f"Computing Large PCA, returning {self.bispectrum_components} components."
         )
         # should add memory sanity check here... these can be crushingly large...
         coef_b, coef_b_r = self.pca(M)
