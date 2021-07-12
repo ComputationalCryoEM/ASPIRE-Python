@@ -8,7 +8,7 @@ import pytest
 from aspire.denoising import adaptive_support
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.utils import gaussian_2d
+from aspire.utils import circ, gaussian_2d, hankel
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +18,31 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class AdaptiveSupportTest(TestCase):
     def setUp(self):
 
-        self.resolution = 1025
-        self.sigma = 128
-        n_disc = 10
+        self.resolution = resolution = 1025
+        self.sigma = sigma = 128
+        self.n_disc = n_disc = 10
+
+        # Create 2D Gaussian as initial array.
         discs = np.tile(
-            gaussian_2d(self.resolution, sigma_x=self.sigma, sigma_y=self.sigma),
+            gaussian_2d(resolution, sigma_x=sigma, sigma_y=sigma),
             (n_disc, 1, 1),
         )
+
+        # Add varying radius of solid disc.
+        #  The Fourier transform will yield Airy disc
+        #  which has more interesting content in F space.
+        for d in range(n_disc):
+            discs[d] = discs[d] + circ(resolution, radius=(d + 1) ** 2)
+
         self.img_src = ArrayImageSource(Image(discs))
+
+        # Reference thesholds
+        self.references = {
+            1: 0.68,
+            2: 0.96,
+            3: 0.999,  # slightly off
+            self.resolution / (2 * self.sigma): 1,
+        }
 
     def testAdaptiveSupportBadThreshold(self):
         """
@@ -50,20 +67,65 @@ class AdaptiveSupportTest(TestCase):
             # Pass numpy array.
             _ = adaptive_support(np.empty((10, 32, 32)))
 
-    def test_adaptivate_support_gaussian(self):
+    def test_adaptivate_support_hankel(self):
         """
-        Test against known Gaussians.
+        Test support of Hankel function in Real and Fourier space is similar.
+
+        The Fourier transform of `hankel` should be similar to real space,
+        so we can test the support is similar.
         """
 
-        references = {
-            1: 0.68,
-            2: 0.96,
-            3: 0.999,  # slightly off
-            self.resolution / (2 * self.sigma): 1,
-        }
+        # Generate stack of Hankel function images.
+        resolution = 64
+        imgs = np.tile(
+            hankel(resolution),
+            (self.n_disc, 1, 1),
+        )
+        # Centered Fourier Transform
+        f_imgs = np.fft.fftshift(np.sqrt(np.abs(np.fft.fft2(imgs))))
+
+        # Setup ImageSource like objects
+        img_src = ArrayImageSource(Image(imgs))
+        f_img_src = ArrayImageSource(Image(f_imgs))
+
+        thresholds = list(self.references.values())
+
+        for threshold in thresholds:
+            _, r = adaptive_support(img_src, threshold)
+            _, rf = adaptive_support(f_img_src, threshold)
+            # Test support is similar between original and transformed
+            self.assertTrue(abs(r - rf) / r < 0.2)
+
+    def test_adaptivate_support_F(self):
+        """
+        Test Fourier support of Gaussian relates to normal distribution.
+        """
+
+        # Generate stack of 2D Gaussian images.
+        imgs = np.tile(
+            gaussian_2d(
+                self.resolution, sigma_x=1 / self.sigma, sigma_y=1 / self.sigma
+            ),
+            (self.n_disc, 1, 1),
+        )
+
+        # Setup ImageSource like objects
+        img_src = ArrayImageSource(Image(imgs))
+
+        thresholds = list(self.references.values())
+
+        for threshold in thresholds:
+            c, _ = adaptive_support(img_src, threshold)
+            # Assert Fourier support is close to normal (doubled for sym).
+            self.assertTrue(abs(2 * c - threshold) / threshold < 0.01)
+
+    def test_adaptivate_support_gaussian_circ(self):
+        """
+        Test against known Gaussian + circ.
+        """
 
         # for one, two, three, inf standard deviations (one sided)
-        for stddevs, threshold in references.items():
+        for stddevs, threshold in self.references.items():
             # Real support should be ~ 1, 2, 3 times sigma
             c, r = adaptive_support(self.img_src, threshold)
             # Check closer to this threshold than next
