@@ -32,21 +32,21 @@ class SteerableBasis(Basis):
         :return: Bispectum matrix (complex valued).
         """
 
-        # Coefs should be 0 or 1D, remove any dim shapes equal to one, then check.
-        complex_coef = np.squeeze(complex_coef)
-
         # Check shape
-        if complex_coef.ndim != 1:
+        if complex_coef.shape[0] != 1:
             raise ValueError(
                 "Due to potentially large sizes, bispectrum is limited to a single set of coefs."
                 f"  Passed shape {complex_coef.shape}"
             )
 
-        if len(complex_coef) != self.complex_count:
+        if complex_coef.shape[1] != self.complex_count:
             raise ValueError(
                 "Basis.calculate_bispectrum coefs expected"
-                f" to have (complex) count {self.complex_count}, received {len(complex_coef)}."
+                f" to have (complex) count {self.complex_count}, received {complex_coef.shape}."
             )
+
+        # From here just treat complex_coef as 1d vector instead of 1 by count 2d array.
+        complex_coef = complex_coef[0]
 
         if freq_cutoff and freq_cutoff > np.max(self.complex_angular_indices):
             logger.warning(

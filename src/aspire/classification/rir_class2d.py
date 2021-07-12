@@ -220,7 +220,6 @@ class RIRClass2D(Class2D):
         :returns: tuple of arrays (coef_b, coef_b_r)
         """
         # _bispectrum is assigned during initialization.
-
         return self._bispectrum(coef)
 
     def _sk_nn_classification(self, coeff_b, coeff_b_r, diagnostics=False):
@@ -515,7 +514,7 @@ class RIRClass2D(Class2D):
 
         for i in tqdm(range(self.src.n)):
             B = self.pca_basis.calculate_bispectrum(
-                coef_normed[i],
+                coef_normed[i, np.newaxis],
                 filter_nonzero_freqs=True,
                 freq_cutoff=self.bispectrum_freq_cutoff,
             )
