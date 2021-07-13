@@ -173,6 +173,21 @@ class RIRClass2DTestCase(TestCase):
         result = rir.classify()
         _ = rir.output(*result[:3])
 
+    def testRIRDevelBisp(self):
+        """
+        Currently just tests for runtime errors.
+        """
+        rir = RIRClass2D(
+            self.clean_src,
+            self.clean_fspca_basis,
+            large_pca_implementation="legacy",
+            nn_implementation="legacy",
+            bispectrum_implementation="devel",
+        )
+
+        result = rir.classify()
+        _ = rir.output(*result[:3])
+
     def testRIRsk(self):
         """
         Excercises the eigenvalue based filtering,
