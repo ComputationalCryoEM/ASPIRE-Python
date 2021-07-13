@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.special import jv
 
-from aspire.basis import SteerableBasis
+from aspire.basis import SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.image import Image
 from aspire.utils import complex_type, ensure, real_type, roll_dim, unroll_dim
@@ -12,7 +12,7 @@ from aspire.utils.matlab_compat import m_flatten, m_reshape
 logger = logging.getLogger(__name__)
 
 
-class FBBasis2D(SteerableBasis):
+class FBBasis2D(SteerableBasis2D):
     """
     Define a derived class using the Fourier-Bessel basis for mapping 2D images
 

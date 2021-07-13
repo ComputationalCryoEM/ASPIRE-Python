@@ -2,7 +2,7 @@
 # isort: off
 
 from .basis import Basis
-from .steerable import SteerableBasis
+from .steerable import SteerableBasis2D
 
 # isort: on
 

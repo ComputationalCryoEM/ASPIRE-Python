@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from aspire.basis import FFBBasis2D, SteerableBasis
+from aspire.basis import FFBBasis2D, SteerableBasis2D
 from aspire.covariance import RotCov2D
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, fix_signs, real_type
@@ -12,7 +12,7 @@ from aspire.utils import complex_type, fix_signs, real_type
 logger = logging.getLogger(__name__)
 
 
-class FSPCABasis(SteerableBasis):
+class FSPCABasis(SteerableBasis2D):
     """
     A class for Fast Steerable Principal Component Analaysis basis.
 

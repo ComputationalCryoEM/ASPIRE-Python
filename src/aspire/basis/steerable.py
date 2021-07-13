@@ -8,9 +8,9 @@ from aspire.utils import complex_type
 logger = logging.getLogger(__name__)
 
 
-class SteerableBasis(Basis):
+class SteerableBasis2D(Basis):
     """
-    SteerableBasis is an extension of Basis that is expected to have
+    SteerableBasis2D is an extension of Basis that is expected to have
     `rotation` (steerable) and `calculate_bispectrum` methods.
     """
 
