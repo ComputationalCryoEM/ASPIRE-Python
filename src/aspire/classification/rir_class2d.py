@@ -15,6 +15,7 @@ from aspire.classification.legacy_implementations import (
 from aspire.image import Image
 from aspire.numeric import ComplexPCA
 from aspire.operators import BlkDiagMatrix
+from aspire.source import ArrayImageSource
 from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
@@ -315,7 +316,7 @@ class RIRClass2D(Class2D):
             fb_avgs[i] = np.mean(neighbors_coefs, axis=0)
 
         # Now we convert the averaged images from FB to Cartestian.
-        return self.fb_basis.evaluate(fb_avgs)
+        return ArrayImageSource(self.fb_basis.evaluate(fb_avgs))
 
     def legacy_align(self, classes, coef):
         # Translate some variables between this code and the legacy aspire implementation
