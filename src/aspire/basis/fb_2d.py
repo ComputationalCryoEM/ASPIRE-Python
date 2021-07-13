@@ -88,8 +88,6 @@ class FBBasis2D(SteerableBasis2D):
             sgns = (1,) if ell == 0 else (1, -1)
             ks = np.arange(0, self.k_max[ell])
 
-            self._neg[ci + ks] = i + len(ks) + ks
-
             for sgn in sgns:
                 rng = np.arange(i, i + len(ks))
                 indices_ells[rng] = ell
