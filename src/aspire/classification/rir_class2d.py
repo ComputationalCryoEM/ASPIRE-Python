@@ -288,7 +288,7 @@ class RIRClass2D(Class2D):
 
         return self.fb_basis.evaluate(eigvecs.T)
 
-    def output(self, classes, classes_refl, rot, coefs=None, include_refl=True):
+    def output(self, classes, classes_refl, rot, coefs=None):
         """
         Return class averages.
 
@@ -298,30 +298,6 @@ class RIRClass2D(Class2D):
         :coefs: Optional Fourier bessel coefs (avoids recomputing).
         :return: Stack of Synthetic Class Average images as Image instance.
         """
-
-        if not include_refl:
-            logger.info(
-                f"Output include_refl={include_refl}. Averaging only unreflected images."
-            )
-            unreflected_indices = classes_refl == False  # noqa: E712
-            # subset excluding reflected images
-            # Note these become ragged so we'll use a list
-            # Can avoid the raggedness if used in the loop below,
-            #  but really I think we should get to point where include_refl goes away...
-            #  It is for debugging/diagnostics.
-            _classes = [None] * self.src.n
-            _classes_refl = [None] * self.src.n
-            _rot = [None] * self.src.n
-            for i in range(self.src.n):
-                _classes[i] = classes[i][unreflected_indices[i]]
-                _classes_refl[i] = classes_refl[i][unreflected_indices[i]]
-                _rot[i] = rot[i][unreflected_indices[i]]
-            classes, classes_refl, rot = _classes, _classes_refl, _rot
-
-            if any(len(cls) == 0 for cls in classes):
-                raise RuntimeError(
-                    "No unreflected classes found. Probably this is an error"
-                )
 
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
         # generate indices for random sample (can do something smart with corr later).

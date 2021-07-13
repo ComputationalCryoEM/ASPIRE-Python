@@ -170,7 +170,7 @@ class RIRClass2DTestCase(TestCase):
         )
 
         result = rir.classify()
-        _ = rir.output(*result[:3], include_refl=False)
+        _ = rir.output(*result[:3])
 
     def testRIRsk(self):
         """
@@ -190,7 +190,7 @@ class RIRClass2DTestCase(TestCase):
         )
 
         result = rir.classify()
-        _ = rir.output(*result[:3], include_refl=True)
+        _ = rir.output(*result[:3])
 
     def testEigenImages(self):
         """
