@@ -4,6 +4,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.utils import (
+    fix_signs,
     im_to_vec,
     mat_to_vec,
     roll_dim,
@@ -300,3 +301,24 @@ class MatrixTestCase(TestCase):
                 ),
             )
         )
+
+    def testFixSigns(self):
+        """
+        Tests `fix_signs` util function.
+        """
+
+        # Create simple array
+        x = np.arange(25).reshape(5, 5)
+        # Set diagonal elements = -1
+        x[np.diag_indices_from(x)] *= -1
+        # Negate largest elem (last row) of first col
+        x[-1, 0] *= -1
+        # Insert a zero column to spice things up
+        x[:, 3] = 0
+
+        # Now we expect fix_signs to negate the first and last column,
+        #  otherwise should be identical.
+        y = x.copy()
+        y[:, (0, -1)] *= -1
+
+        self.assertTrue(np.allclose(fix_signs(x), y))
