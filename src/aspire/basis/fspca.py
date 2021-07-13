@@ -360,7 +360,7 @@ class FSPCABasis(SteerableBasis2D):
             k_maps.setdefault(k, self.angular_indices == k)
             q_maps.setdefault(q, self.radial_indices == q)
 
-            pos_index = np.where(k_maps[k] & q_maps[q] & pos_mask)[0][0]
+            pos_index = np.argmax(k_maps[k] & q_maps[q] & pos_mask)
             compressed_indices.append(pos_index)
             if k > 0:
                 neg_index = np.where(k_maps[k] & q_maps[q] & neg_mask)[0][0]
