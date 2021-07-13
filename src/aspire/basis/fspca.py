@@ -544,3 +544,18 @@ class FSPCABasis(SteerableBasis2D):
             filter_nonzero_freqs=filter_nonzero_freqs,
             freq_cutoff=freq_cutoff,
         )
+
+    def eigen_images(self):
+        """
+        Return the eigen images of the FSPCA basis, evaluated to image space.
+
+        This may be used to implot visualizations of the eigenvectors.
+
+        Ordering corresponds to FSPCA eigvals.
+        """
+
+        eigvecs = self.eigvecs
+        if isinstance(eigvecs, BlkDiagMatrix):
+            eigvecs = eigvecs.dense()
+
+        return self.basis.evaluate(eigvecs.T)

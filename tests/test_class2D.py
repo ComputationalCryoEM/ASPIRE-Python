@@ -147,7 +147,8 @@ class RIRClass2DTestCase(TestCase):
         self.clean_fspca_basis.build(self.clean_coefs)
 
         self.noisy_fspca_basis = FSPCABasis(self.noisy_src, self.basis)
-        self.noisy_fspca_basis.build(self.noisy_coefs)
+        # This line will test autogeneration of coefs when not supplied.
+        self.noisy_fspca_basis.build()
 
     def testClass2DBase(self):
         """
@@ -197,23 +198,17 @@ class RIRClass2DTestCase(TestCase):
         Test we can return eigenimages.
         """
 
-        rir = RIRClass2D(
-            self.clean_src,
-            self.clean_fspca_basis,
-            fspca_components=150,
-            large_pca_implementation="legacy",
-            nn_implementation="legacy",
-            bispectrum_implementation="legacy",
-        )
+        # Get an FSPCA basis for testing
+        fspca = self.clean_fspca_basis
 
         # Get the eigenimages
-        eigimg_uncompressed = rir.eigen_images()
+        eigimg_uncompressed = fspca.eigen_images()
 
-        # The classification process compressesed the FSPCA Basis
-        _ = rir.classify()
+        # Compresses the FSPCA basis
+        compressed_fspca = fspca.compress(150)
 
         # Get the eigenimages
-        eigimg_compressed = rir.eigen_images()
+        eigimg_compressed = compressed_fspca.eigen_images()
 
         # Check they are close
         self.assertTrue(

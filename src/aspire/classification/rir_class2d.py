@@ -274,21 +274,6 @@ class RIRClass2D(Class2D):
 
         return indices
 
-    def eigen_images(self):
-        """
-        Return the eigen images of the FSPCA basis, evaluated to image space.
-
-        This may be used to implot visualizations of the eigenvectors.
-
-        Ordering corresponds to FSPCA eigvals.
-        """
-
-        eigvecs = self.pca_basis.eigvecs
-        if isinstance(eigvecs, BlkDiagMatrix):
-            eigvecs = eigvecs.dense()
-
-        return self.fb_basis.evaluate(eigvecs.T)
-
     def output(self, classes, classes_refl, rot, coefs=None):
         """
         Return class averages.
