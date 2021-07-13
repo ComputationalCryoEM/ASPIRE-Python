@@ -77,9 +77,7 @@ class FBBasis2D(SteerableBasis2D):
         indices_sgns = np.zeros(self.count, dtype=int)
 
         # We'll also generate a mapping for complex construction
-        self.complex_count = (
-            self.count + self.k_max[0]
-        ) // 2  # Do not double count zero case
+        self.complex_count = sum(self.k_max)
         # These map indices in complex array to pair of indices in real array
         self.indices_real = np.zeros(self.complex_count, dtype=np.int)
         self.indices_imag = np.zeros(self.complex_count, dtype=np.int)
