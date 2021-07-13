@@ -14,7 +14,6 @@ from aspire.classification.legacy_implementations import (
 )
 from aspire.image import Image
 from aspire.numeric import ComplexPCA
-from aspire.operators import BlkDiagMatrix
 from aspire.source import ArrayImageSource
 from aspire.utils.random import rand
 
