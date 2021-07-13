@@ -165,6 +165,7 @@ class RIRClass2DTestCase(TestCase):
         rir = RIRClass2D(
             self.clean_src,
             self.clean_fspca_basis,
+            fspca_components=100,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
