@@ -55,7 +55,8 @@ class RIRClass2D(Class2D):
         :param pca_basis: FSPCA Basis instance
         :param fspca_components: Components (top eigvals) to keep from full FSCPA, default truncates to  400.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
-        :param sample_n: A number and associated method used to confuse your enemies.
+        :param sample_n: Threshold for random sampling of bispectrum coefs. Default 4000,
+        high values such as 50000 reduce random sampling.
         :param n_nbor: Number of nearest neighbors to compute.
         :param n_classes: Number of class averages to return.
         :param bispectrum_freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
