@@ -400,6 +400,8 @@ def fix_signs(u):
     """
     Negates columns so the sign of the largest element in the column is positive.
 
+    For complex values sign is taken as norm(x)/x, zero columns unchanged.
+
     Typically this is used for making eigenvectors deterministically signed.
 
     :param u: matrix as numpy array
@@ -407,12 +409,18 @@ def fix_signs(u):
     """
 
     # Locate the largest element in each column
-    argb = np.argmax(np.absolute(u), axis=0)
+    # Internally np.absolute performs `norm` for complex values.
+    index_array = np.argmax(np.absolute(u), axis=0)
 
     # Create array of sign corrections
-    b = np.array([np.linalg.norm(u[r, k]) / u[r, k] for k, r in enumerate(argb)])
+    signs = np.take_along_axis(u, np.expand_dims(index_array, axis=0), axis=0).squeeze()
+    _abs = np.absolute(signs)
+    signs = np.divide(_abs, signs, where=_abs != 0)
+
+    # Now we only care about the sign +1/-1.
+    #  The following corrects for any numerical division noise,
+    #  and also remaps 0 to +1.
+    signs = np.sign(signs * 2 + 1)
 
     # Apply signs elementwise to matrix
-    u = u * b
-
-    return u
+    return u * signs

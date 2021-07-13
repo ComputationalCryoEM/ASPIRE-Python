@@ -313,12 +313,20 @@ class MatrixTestCase(TestCase):
         x[np.diag_indices_from(x)] *= -1
         # Negate largest elem (last row) of first col
         x[-1, 0] *= -1
-        # Insert a zero column to spice things up
-        x[:, 3] = 0
 
         # Now we expect fix_signs to negate the first and last column,
         #  otherwise should be identical.
         y = x.copy()
         y[:, (0, -1)] *= -1
+        self.assertTrue(np.allclose(fix_signs(x), y))
 
+        # Should work for complex cases too.
+        x = x + x * 1j
+        y = x.copy()
+        y[:, (0, -1)] *= -1
+        self.assertTrue(np.allclose(fix_signs(x), y))
+
+        # Insert a zero column to spice things up
+        x[:, 3] = 0
+        y[:, 3] = 0
         self.assertTrue(np.allclose(fix_signs(x), y))
