@@ -280,7 +280,7 @@ class RIRClass2D(Class2D):
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
         :param classes_refl: Bool representing whether to reflect image in `classes`
-        :param rot: Array represting totation angle (Radians) of image in `classes`
+        :param rot: Array represting rotation angle (Radians) of image in `classes`
         :coefs: Optional Fourier bessel coefs (avoids recomputing).
         :return: Stack of Synthetic Class Average images as Image instance.
         """
