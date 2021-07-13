@@ -58,16 +58,29 @@ class SteerableBasis2D(Basis):
         radial_indices = self.complex_radial_indices  # q
         # angular freq indices k in paper/slides, _indices["ells"] in code
         angular_indices = self.complex_angular_indices  # k
+        # Compute the set of all unique q in the compressed basis
+        #   Note that np.unique is also sorted.
         unique_radial_indices = np.unique(radial_indices)
 
+        # When compressed, we need maps between the basis and uncompressed set of q
+        #   to a reduced set of q that remain after compression.
+        # One map is provided by self.complex_radial_indices
+        #   which maps an index in the basis remaining after compression to a q value.
+        # The following code computes a similar but inverted map,
+        #   given a q value, find an index into the set of unique q after compression.
+        # Also, it is known that the set of q gets sparser with increasing k
+        #   but that's ignored here, instead construct a dense
+        #   array and filter it later.
+        #  The plan is to revisit this code after appropriate coef classes are derived.
         if hasattr(self, "compressed") and self.compressed:
-            # k should never be this high..
-            fill_value = self.complex_count + 1
+            # Default array to fill_value, we can use a value
+            # k should never achieve..
+            fill_value = self.complex_count ** 2
             compressed_radial_map = (
                 np.ones(np.max(unique_radial_indices) + 1, dtype=int) * fill_value
             )
-            for i, q in enumerate(unique_radial_indices):
-                compressed_radial_map[q] = i
+            for uniq_q_index, q_value in enumerate(unique_radial_indices):
+                compressed_radial_map[q_value] = uniq_q_index
 
         B = np.zeros(
             (self.complex_count, self.complex_count, unique_radial_indices.shape[0]),
@@ -94,16 +107,17 @@ class SteerableBasis2D(Basis):
                 intermodulated_coef_inds = angular_indices == k3
 
                 if np.any(intermodulated_coef_inds):
-                    Q3 = radial_indices[intermodulated_coef_inds]
+                    # Get the specific q indices related to feasible k3 angular_indices
+                    Q3_ind = radial_indices[intermodulated_coef_inds]
 
                     if hasattr(self, "compressed") and self.compressed:
-                        # The compressed mapping is sparse in q
-                        # Q3 = [compressed_radial_map[q] for q in Q3]
-                        Q3 = compressed_radial_map[Q3]
+                        # Map those Q3_ind values to indices into compressed unique_radial_indices
+                        #  by using the compressed_radial_map prepared above.
+                        Q3_ind = compressed_radial_map[Q3_ind]
 
                     Coef3 = complex_coef[intermodulated_coef_inds]
 
-                    B[ind1, ind2, Q3] = coef1 * coef2 * np.conj(Coef3)
+                    B[ind1, ind2, Q3_ind] = coef1 * coef2 * np.conj(Coef3)
 
         if filter_nonzero_freqs:
             non_zero_freqs = angular_indices != 0
