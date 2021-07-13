@@ -473,9 +473,6 @@ class RIRClass2D(Class2D):
         coef_b = pca.fit_transform(M.copy())
         coef_b_r = pca.fit_transform(np.conjugate(M))
 
-        # M is no longer needed, hint for it to get cleaned up.
-        del M
-
         # I'm also not sure why this norm is needed...
         #  but it does work better with it.
         coef_b /= np.linalg.norm(coef_b, axis=1)[:, np.newaxis]
