@@ -79,8 +79,8 @@ class FBBasis2D(SteerableBasis2D):
         # We'll also generate a mapping for complex construction
         self.complex_count = sum(self.k_max)
         # These map indices in complex array to pair of indices in real array
-        self.indices_real = np.zeros(self.complex_count, dtype=np.int)
-        self.indices_imag = np.zeros(self.complex_count, dtype=np.int)
+        self._pos = np.zeros(self.complex_count, dtype=np.int)
+        self._neg = np.zeros(self.complex_count, dtype=np.int)
 
         i = 0
         ci = 0
@@ -88,7 +88,7 @@ class FBBasis2D(SteerableBasis2D):
             sgns = (1,) if ell == 0 else (1, -1)
             ks = np.arange(0, self.k_max[ell])
 
-            self.indices_imag[ci + ks] = i + len(ks) + ks
+            self._neg[ci + ks] = i + len(ks) + ks
 
             for sgn in sgns:
                 rng = np.arange(i, i + len(ks))
@@ -97,9 +97,9 @@ class FBBasis2D(SteerableBasis2D):
                 indices_sgns[rng] = sgn
 
                 if sgn == 1:
-                    self.indices_real[ci + ks] = rng
+                    self._pos[ci + ks] = rng
                 elif sgn == -1:
-                    self.indices_imag[ci + ks] = rng
+                    self._neg[ci + ks] = rng
 
                 i += len(ks)
 
@@ -108,8 +108,8 @@ class FBBasis2D(SteerableBasis2D):
         self.angular_indices = indices_ells
         self.radial_indices = indices_ks
         # Relating to paper: a[i] = a_ell_ks = a_angularindices[i]_radialindices[i]
-        self.complex_angular_indices = indices_ells[self.indices_real]  # k
-        self.complex_radial_indices = indices_ks[self.indices_real]  # q
+        self.complex_angular_indices = indices_ells[self._pos]  # k
+        self.complex_radial_indices = indices_ks[self._pos]  # q
 
         # TODO, these can become class attributes
         return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
