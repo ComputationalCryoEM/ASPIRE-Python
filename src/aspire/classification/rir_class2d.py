@@ -141,12 +141,14 @@ class RIRClass2D(Class2D):
             )
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
 
-    def classify(self):
+    def classify(self, diagnostics=False):
         """
         This is the high level method to perform the 2D images classification.
 
         The stages of this method are intentionally modular so they may be
         swapped for other implementations.
+
+        :param diagnostics: Optionally plots distribution of distances
         """
 
         # # Stage 1: Compute coef and reduce dimensionality.
@@ -164,7 +166,16 @@ class RIRClass2D(Class2D):
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info("Calculate Nearest Neighbors")
-        classes = self.nn_classification(coef_b, coef_b_r)
+        classes, refl, distances = self.nn_classification(coef_b, coef_b_r)
+
+        if diagnostics:
+            # Lets peek at the distribution of distances
+            # zero index is self, distance 0, ignored
+            plt.hist(distances[:, 1:].flatten(), bins="auto")
+            plt.show()
+
+            # Report some information about reflections
+            logger.info(f"Count reflected: {np.sum(refl)}" f" {100 * np.mean(refl) } %")
 
         # # Stage 3: Class Selection
         # This is an area open to active research.
@@ -173,7 +184,7 @@ class RIRClass2D(Class2D):
 
         # # Stage 4: Align
         logger.info(f"Begin Rotational Alignment of {classes.shape[0]} Classes")
-        return self.legacy_align(classes, self.fspca_coef)
+        return self.legacy_align(classes, refl, self.fspca_coef)
 
     def pca(self, M):
         """
@@ -207,7 +218,10 @@ class RIRClass2D(Class2D):
 
         :param coef_b:
         :param coef_b_r:
-        :returns: Array of indices representing classes.
+        :returns:  Tuple of classes, refl, dists where
+        classes is an integer array of indices representing image ids,
+        refl is a bool array representing reflections (True is refl),
+        and distances is an array of distances as returned by NN implementation.
         """
         # _nn_classification is assigned during initialization.
         return self._nn_classification(coef_b, coef_b_r)
@@ -223,7 +237,7 @@ class RIRClass2D(Class2D):
         # _bispectrum is assigned during initialization.
         return self._bispectrum(coef)
 
-    def _sk_nn_classification(self, coeff_b, coeff_b_r, diagnostics=False):
+    def _sk_nn_classification(self, coeff_b, coeff_b_r):
         # Before we get clever lets just use a generally accepted implementation.
 
         n_img = self.src.n
@@ -246,31 +260,15 @@ class RIRClass2D(Class2D):
         nbrs = NearestNeighbors(n_neighbors=self.n_nbor, algorithm="auto").fit(X_both)
         distances, indices = nbrs.kneighbors(X)
 
-        # any refl?
-        logger.info(
-            f"Count reflected: {np.sum(indices>=n_img)}"
-            f" ({np.sum(indices>=n_img) / len(indices)}%)"
-        )
+        # There were two sets of vectors each n_img long.
+        #   The second set represented reflected.
+        #   When a reflected coef vector is a nearest neighbor,
+        #   we notate the original image index (indices modulus n_img),
+        #   and notate we'll need the reflection (refl).
+        classes = indices % n_img
+        refl = np.array(indices // n_img, dtype=bool)
 
-        if diagnostics:
-            # Lets peek at the distribution of distances
-            plt.hist(
-                distances[:, 1:].flatten(), bins="auto"
-            )  # zero index is self, distance 0
-            plt.show()
-
-        # I was considering to change the result of these functions
-        # but for now return classes as range 0 to 2*n_img.
-        # #########################
-        # # There are two sets of vectors each n_img long.
-        # #   The second set represents reflected.
-        # #   When a reflected coef vector is a nearest neighbor,
-        # #   we notate the original image index (indices modulus),
-        # #   and notate we'll need the reflection (refl).
-        # classes = indices % n_img
-        # refl = np.array(indices // n_img, dtype=bool)
-        # corr = distances
-        # return classes, refl, corr
+        return classes, refl, distances
 
         return indices
 
@@ -317,7 +315,7 @@ class RIRClass2D(Class2D):
         # Now we convert the averaged images from FB to Cartestian.
         return ArrayImageSource(self.fb_basis.evaluate(fb_avgs))
 
-    def legacy_align(self, classes, coef):
+    def legacy_align(self, classes, refl, coef):
         # Translate some variables between this code and the legacy aspire implementation
         freqs = self.pca_basis.complex_angular_indices
         coeff = self.pca_basis.to_complex(coef).T
@@ -351,12 +349,10 @@ class RIRClass2D(Class2D):
             classes[i] = classes[i, id_corr[i]]
             rot[i] = rot[i, id_corr[i]]
 
-        class_refl = (classes // n_im).astype(bool)
-        classes[classes >= n_im] = classes[classes >= n_im] - n_im
         # Check Reflections usually imply rotation by 180, but this seems to yield worse results.
         # rot[class_refl] = np.mod(rot[class_refl] + 180, 360)
         rot *= np.pi / 180.0  # Convert to radians
-        return classes, class_refl, rot, corr
+        return classes, refl, rot, corr
 
     def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """
@@ -381,6 +377,7 @@ class RIRClass2D(Class2D):
         num_batches = (n_im + batch_size - 1) // batch_size
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
+        distances = np.zeros((n_im, n_nbor), dtype=self.dtype)
         for i in range(num_batches):
             start = i * batch_size
             finish = min((i + 1) * batch_size, n_im)
@@ -394,8 +391,20 @@ class RIRClass2D(Class2D):
             # Check with Joakim about preference.
             # I (GBW) think class[i] should have class[i][0] be the original image index.
             classes[start:finish] = np.argsort(-corr, axis=1)[:, :n_nbor]
+            # Store the corr values for the n_nhors in this batch
+            distances[start:finish] = np.take_along_axis(
+                corr, classes[start:finish], axis=1
+            )
 
-        return classes
+        # There were two sets of vectors each n_img long.
+        #   The second set represented reflected.
+        #   When a reflected coef vector is a nearest neighbor,
+        #   we notate the original image index (indices modulus n_img),
+        #   and notate we'll need the reflection (refl).
+        refl = np.array(classes // n_im, dtype=bool)
+        classes %= n_im
+
+        return classes, refl, distances
 
     def _legacy_pca(self, M):
         """
