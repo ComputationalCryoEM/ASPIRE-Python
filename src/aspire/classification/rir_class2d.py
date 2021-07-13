@@ -96,7 +96,7 @@ class RIRClass2D(Class2D):
 
         if self.src.n < self.bispectrum_components:
             raise RuntimeError(
-                f"{self.src.n} Images too small for Bispectrum Componenents {self.bispectrum_components}."
+                f"{self.src.n} Images too small for Bispectrum Components {self.bispectrum_components}."
                 "  Increase number of images or reduce components."
             )
 
