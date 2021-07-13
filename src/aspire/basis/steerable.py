@@ -53,12 +53,12 @@ class SteerableBasis2D(Basis):
                 f"Bispectrum frequency cutoff {freq_cutoff} outside max {np.max(self.complex_angular_indices)}"
             )
 
-        # Note regarding the naming,
-        # _indices["ells"]  # angular freq indices k in paper/slides
-        # _indices["ks"]    # radial freq indices q in paper/slides
+        # Notes, regarding the naming:
+        # radial freq indices q in paper/slides, _indices["ks"] in code
         radial_indices = self.complex_radial_indices  # q
+        # angular freq indices k in paper/slides, _indices["ells"] in code
         angular_indices = self.complex_angular_indices  # k
-        unique_radial_indices = np.unique(radial_indices)  # q
+        unique_radial_indices = np.unique(radial_indices)
 
         if hasattr(self, "compressed") and self.compressed:
             # k should never be this high..
