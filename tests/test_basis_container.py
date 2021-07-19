@@ -29,9 +29,15 @@ class CoefContainerTestCase(TestCase):
         self.C3 = CoefContainer(self.data, self.maps)
 
     def assertAll(self, a, b):
+        """
+        Helper function, checks np compares all elements is True.
+        """
         return self.assertTrue(np.all(a == b))
 
-    def testContainerZero(self):
+    def testContainerGetter(self):
+        """
+        Sanity test basic gets (accesses).
+        """
 
         # 3D
         self.assertAll(self.data[0, 0], self.C3[:, 0:1, 0:1, 0:1])
@@ -49,6 +55,32 @@ class CoefContainerTestCase(TestCase):
 
         for i in range(self.data.shape[0]):
             self.assertAll(self.C3[i], self.data[i])
+
+    def testContainerSetter(self):
+        """
+        Sanity check basic sets (assignments).
+        """
+
+        # Copy C3 so we can use as a reference later.
+        C = self.C3.copy()
+
+        # We'll excercise setting each axis in a different way.
+        C[:, 1] = 0
+        self.assertTrue(np.sum(C[:, 1]) == 0)
+
+        C[:, :, 1:] = 1
+        self.assertTrue(np.sum(C[:, :, 1:]) == 6 * 42)
+
+        C[:, :, :, 0:2] = np.arange(6)
+        self.assertTrue(np.sum(C[:, :, :, 0:2]) == 15 * 42)
+
+        # Other entries should not have changed.
+        self.assertAll(C[:, 0, 0, 2:], self.C3[:, 0, 0, 2:])
+
+        # Sanity check stack axis assignment.
+        x = np.arange(self.maps.shape[-1])
+        C[13] = x
+        self.assertAll(C[13], x)
 
     def testBounds(self):
         pass
