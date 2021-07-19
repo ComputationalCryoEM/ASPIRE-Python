@@ -98,8 +98,9 @@ class CoefContainer:
                     f"Incorrect mappings shape {mapping.shape[0]} for dimension {d}, expected {self._m}"
                 )
 
-        # # This is potentially used many times, compute it once.
-        # self._rng = [np.arange(d[0], d[1]+1) for d in self.bounds)]
+        # Precompute these attributes
+        self._shape = tuple([len(np.unique(axis)) for axis in self._mappings])
+        self._bounds = [(np.min(axis), np.max(axis)) for axis in self._mappings]
 
     def __repr__(self):
         return f"{type(self)}({self._data}, {self._mappings})"
@@ -206,7 +207,7 @@ class CoefContainer:
 
         :returns: tuple
         """
-        return tuple([len(np.unique(axis)) for axis in self._mappings])
+        return self._shape
 
     @property
     def bounds(self):
@@ -216,5 +217,4 @@ class CoefContainer:
 
         :returns: list of tuples
         """
-
-        return [(np.min(axis), np.max(axis)) for axis in self._mappings]
+        return self._bounds
