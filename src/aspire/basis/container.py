@@ -82,6 +82,7 @@ class CoefContainer:
         self._n = data.shape[0]
         self._m = self._data.shape[1]
 
+        # Todo, discuess mappings optionally admitting a dictionary, naming the axes...
         try:
             self._mappings = np.array(mappings)
         except Exception as e:
@@ -97,8 +98,8 @@ class CoefContainer:
                     f"Incorrect mappings shape {mapping.shape[0]} for dimension {d}, expected {self._m}"
                 )
 
-        # This is potentially used many times, compute it once.
-        self._rng = np.arange(self._m)
+        # # This is potentially used many times, compute it once.
+        # self._rng = [np.arange(d[0], d[1]+1) for d in self.bounds)]
 
     def __repr__(self):
         return f"{type(self)}({self._data}, {self._mappings})"
@@ -142,7 +143,7 @@ class CoefContainer:
         # Make a consistent tuple so we can use the same logic for all cases.
         idx = self._expand_tuple(idx)
 
-        # The first axis is always the "stack" axis
+        # The first axis is always the "stack" axis and has traditional slicing.
         stack_idx = idx[0]
         logger.debug(f"stack_idx {stack_idx}")
 
@@ -152,8 +153,16 @@ class CoefContainer:
         masks = np.zeros((self.dim, self._m), dtype=bool)
 
         for dim, _idx in enumerate(idx[1:]):
-            # Evaluate the slice
-            indices = self._rng[_idx]
+            # Evaluate the slice, note we convert to ranges instead of slices to accomodate negative subscripts.
+            if isinstance(_idx, slice):
+                # Consider bounds checking
+                indices = np.arange(
+                    _idx.start or self.bounds[dim][0],
+                    _idx.stop or self.bounds[dim][1] + 1,  # inclusive
+                    _idx.step or 1,
+                )
+            else:
+                indices = _idx
             logger.debug(f"dim {dim} indices {indices}")
 
             # Union all locations we find indices
@@ -185,12 +194,27 @@ class CoefContainer:
         """
         Copy, copies `data` and `mappings` arrays backing instance.
 
-        :return: new container instance.
+        :returns: new container instance.
         """
         return type(self)(self._data.copy(), self._mappings.copy())
 
+    @property
     def shape(self):
-        pass
+        """
+        Return shape of mapping, where each dimension in shape
+        corresponds to count of unique indices in that dimension.
 
+        :returns: tuple
+        """
+        return tuple([len(np.unique(axis)) for axis in self._mappings])
+
+    @property
     def bounds(self):
-        pass
+        """
+        Return the upper and lower bounds for each dimension
+        of the mapping indices.
+
+        :returns: list of tuples
+        """
+
+        return [(np.min(axis), np.max(axis)) for axis in self._mappings]

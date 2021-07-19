@@ -94,8 +94,49 @@ class CoefContainerTestCase(TestCase):
         logger.info(repr(self.C3))
         logger.info(str(self.C3))
 
-    def testBounds(self):
-        pass
-
     def testDims(self):
-        pass
+        self.assertTrue(self.C2.dim == 2)
+        self.assertTrue(self.C3.dim == 3)
+
+    def testShape(self):
+        self.assertTrue(self.C2.shape == (2, 4))
+        self.assertTrue(self.C3.shape == (2, 2, 4))
+
+    def testBounds(self):
+        self.assertTrue(self.C2.bounds == [(0, 1), (0, 3)])
+        self.assertTrue(self.C3.bounds == [(0, 1), (0, 1), (0, 3)])
+
+    def testNegative(self):
+        """
+        Container should handle negative indices.
+        """
+
+        # Setup dummy data imagining axes as:
+        # ax1 [-1,0,1] ax2 [0,1,2,3,4]]
+        nmap = [
+            [-1, -1, -1, -1, -1, 0, 1, 1, 1, 1, 1],
+            [0, 1, 2, 3, 4, 0, 0, 1, 2, 3, 4],
+        ]
+        ndata = np.empty((123, 11))
+
+        # Instantiate the container accessor
+        C = CoefContainer(ndata, nmap)
+
+        # Check shape and bounds
+        self.assertTrue(C.shape == (3, 5))
+        self.assertTrue(C.bounds == [(-1, 1), (0, 4)])
+
+    def testIter(self):
+        """
+        Test we able to iterate over the container.
+
+        Realistically only iterating the stack will be common.
+        """
+
+        # Iterate over stack
+        for i, v in enumerate(self.C3):
+            self.assertAll(v, (i + 1) * np.arange(self.maps.shape[-1]))
+
+        # Iterate over first data axis of an element
+        for i, ax1 in enumerate(self.C3[1]):
+            self.assertTrue(2 * i == ax1)
