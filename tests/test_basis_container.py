@@ -1,8 +1,11 @@
+import logging
 from unittest import TestCase
 
 import numpy as np
 
 from aspire.basis import CoefContainer
+
+logger = logging.getLogger(__name__)
 
 
 class CoefContainerTestCase(TestCase):
@@ -81,6 +84,15 @@ class CoefContainerTestCase(TestCase):
         x = np.arange(self.maps.shape[-1])
         C[13] = x
         self.assertAll(C[13], x)
+
+    def testStringRepr(self):
+        """
+        String representations should not crash.
+        """
+        logger.info(repr(self.C2))
+        logger.info(str(self.C2))
+        logger.info(repr(self.C3))
+        logger.info(str(self.C3))
 
     def testBounds(self):
         pass

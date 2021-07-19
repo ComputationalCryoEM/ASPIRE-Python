@@ -101,7 +101,10 @@ class CoefContainer:
         self._rng = np.arange(self._m)
 
     def __repr__(self):
-        return f"{tuple(self).__class__.__name__}({self._data}, {self._mappings})"
+        return f"{type(self)}({self._data}, {self._mappings})"
+
+    def __str__(self):
+        return f"{type(self)} {self._n} entries of {self._m} coefficients mapped as {self.dim} dimensions."
 
     def __len__(self):
         return self._n
