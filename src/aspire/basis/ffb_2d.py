@@ -58,6 +58,11 @@ class FFBBasis2D(FBBasis2D):
         # precompute the basis functions in 2D grids
         self._precomp = self._precomp()
 
+        self._indices_map = [
+            self._indices["ells"] * self._indices["sgns"],
+            self._indices["ks"],
+        ]
+
     def _precomp(self):
         """
         Precomute the basis functions on a polar Fourier grid
@@ -121,6 +126,9 @@ class FFBBasis2D(FBBasis2D):
         sz_roll = v.shape[:-1]
         v = v.reshape(-1, self.count)
 
+        # Create coefficient array and container
+        coefs = CoefContainer(v, self._indices_map)
+
         # number of 2D image samples
         n_data = v.shape[0]
 
@@ -130,29 +138,24 @@ class FFBBasis2D(FBBasis2D):
 
         # go through  each basis function and find corresponding coefficient
         pf = np.zeros((n_data, 2 * n_theta, n_r), dtype=complex_type(self.dtype))
-        mask = self._indices["ells"] == 0
 
         ind = 0
-
         idx = ind + np.arange(self.k_max[0], dtype=np.int)
 
         # include the normalization factor of angular part into radial part
         radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
-        pf[:, 0, :] = v[:, mask] @ radial_norm[idx]
         ind = ind + np.size(idx)
 
-        ind_pos = ind
+        pf[:, 0, :] = coefs[:, 0] @ radial_norm[idx]
 
         for ell in range(1, self.ell_max + 1):
-            idx = ind + np.arange(self.k_max[ell], dtype=np.int)
-            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=np.int)
-            idx_neg = idx_pos + self.k_max[ell]
 
-            v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0
+            v_ell = (coefs[:, ell] - 1j * coefs[:, -ell]) / 2.0
 
             if np.mod(ell, 2) == 1:
                 v_ell = 1j * v_ell
 
+            idx = ind + np.arange(self.k_max[ell], dtype=np.int)
             pf_ell = v_ell @ radial_norm[idx]
             pf[:, ell, :] = pf_ell
 
@@ -162,7 +165,6 @@ class FFBBasis2D(FBBasis2D):
                 pf[:, 2 * n_theta - ell, :] = -pf_ell.conjugate()
 
             ind = ind + np.size(idx)
-            ind_pos = ind_pos + 2 * self.k_max[ell]
 
         # 1D inverse FFT in the degree of polar angle
         pf = 2 * pi * xp.asnumpy(fft.ifft(xp.asarray(pf), axis=1))
@@ -242,11 +244,7 @@ class FFBBasis2D(FBBasis2D):
 
         # Create coefficient array and container
         v = np.zeros((n_images, self.count), dtype=x.dtype)
-        indices_map = [
-            self._indices["ells"] * self._indices["sgns"],
-            self._indices["ks"],
-        ]
-        coefs = CoefContainer(v, indices_map)
+        coefs = CoefContainer(v, self._indices_map)
 
         ind = 0
         idx = ind + np.arange(self.k_max[0])
