@@ -4,7 +4,7 @@ import numpy as np
 from numpy import pi
 from scipy.special import jv
 
-from aspire.basis import FBBasis2D
+from aspire.basis import CoefContainer, FBBasis2D
 from aspire.basis.basis_utils import lgwt
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
@@ -237,39 +237,34 @@ class FFBBasis2D(FBBasis2D):
         #  1D FFT on the angular dimension for each concentric circle
         pf = 2 * pi / (2 * n_theta) * xp.asnumpy(fft.fft(xp.asarray(pf)))
 
-        # This only makes it easier to slice the array later.
-        v = np.zeros((n_images, self.count), dtype=x.dtype)
-
-        # go through each basis function and find the corresponding coefficient
-        ind = 0
-        idx = ind + np.arange(self.k_max[0])
-        mask = self._indices["ells"] == 0
-
         # include the normalization factor of angular part into radial part
         radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
-        v[:, mask] = pf[:, :, 0].real @ radial_norm[idx].T
+
+        # Create coefficient array and container
+        v = np.zeros((n_images, self.count), dtype=x.dtype)
+        indices_map = [
+            self._indices["ells"] * self._indices["sgns"],
+            self._indices["ks"],
+        ]
+        coefs = CoefContainer(v, indices_map)
+
+        ind = 0
+        idx = ind + np.arange(self.k_max[0])
+        coefs[:, 0] = pf[:, :, 0].real @ radial_norm[idx].T
         ind = ind + np.size(idx)
 
-        ind_pos = ind
         for ell in range(1, self.ell_max + 1):
             idx = ind + np.arange(self.k_max[ell])
-            idx_pos = ind_pos + np.arange(self.k_max[ell])
-            idx_neg = idx_pos + self.k_max[ell]
-
             v_ell = pf[:, :, ell] @ radial_norm[idx].T
 
             if np.mod(ell, 2) == 0:
-                v_pos = np.real(v_ell)
-                v_neg = -np.imag(v_ell)
+                coefs[:, ell] = np.real(v_ell)
+                coefs[:, -ell] = -np.imag(v_ell)
             else:
-                v_pos = np.imag(v_ell)
-                v_neg = np.real(v_ell)
-
-            v[:, idx_pos] = v_pos
-            v[:, idx_neg] = v_neg
+                coefs[:, ell] = np.imag(v_ell)
+                coefs[:, -ell] = np.real(v_ell)
 
             ind = ind + np.size(idx)
 
-            ind_pos = ind_pos + 2 * self.k_max[ell]
-
-        return v
+        # for testing return as numpy for now, xxx change later...
+        return coefs.asnumpy()
