@@ -115,13 +115,13 @@ def sha256sum(filename):
     return h.hexdigest()
 
 
-def gaussian_2d(resolution, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64):
+def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64):
     """
     Returns a 2d Gaussian in a square 2d numpy array.
 
     Default is a centered disc of spread=peak=1.
 
-    :param resolution: The height and width of returned array (pixels)
+    :param size: The height and width of returned array (pixels)
     :param x0: x cordinate of center (pixels)
     :param y0: y cordinate of center (pixels)
     :param sigma_x: spread in x direction
@@ -132,7 +132,7 @@ def gaussian_2d(resolution, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.f
     """
 
     # Construct centered mesh
-    g = grid_2d(resolution, shifted=True, normalized=False, dtype=dtype)
+    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
 
     p = (g["x"] - x0) ** 2 / (2 * sigma_x ** 2) + (g["y"] - y0) ** 2 / (
         2 * sigma_y ** 2
@@ -140,7 +140,7 @@ def gaussian_2d(resolution, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.f
     return (peak * np.exp(-p)).astype(dtype, copy=False)
 
 
-def circ(resolution, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
+def circ(size, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
     """
     Returns a 2d `circ` function in a square 2d numpy array.
 
@@ -151,7 +151,7 @@ def circ(resolution, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
 
     Default is a centered circle of spread=peak=1.
 
-    :param resolution: The height and width of returned array (pixels)
+    :param size: The height and width of returned array (pixels)
     :param x0: x cordinate of center (pixels)
     :param y0: y cordinate of center (pixels)
     :param radius: radius of circle
@@ -161,13 +161,13 @@ def circ(resolution, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
     """
 
     # Construct centered mesh
-    g = grid_2d(resolution, shifted=True, normalized=False, dtype=dtype)
+    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
 
     circ = (g["x"] ** 2 + g["y"] ** 2) < radius * radius
     return circ.astype(dtype)
 
 
-def hankel(resolution, x0=0, y0=0, peak=1, dtype=np.float64):
+def hankel(size, x0=0, y0=0, peak=1, dtype=np.float64):
     """
     Returns a 2d `hankel` function in a square 2d numpy array.
 
@@ -175,7 +175,7 @@ def hankel(resolution, x0=0, y0=0, peak=1, dtype=np.float64):
 
     Default is a centered circle of peak=1.
 
-    :param resolution: The height and width of returned array (pixels)
+    :param size: The height and width of returned array (pixels)
     :param x0: x cordinate of center (pixels)
     :param y0: y cordinate of center (pixels)
     :param peak: peak height at center
@@ -184,7 +184,7 @@ def hankel(resolution, x0=0, y0=0, peak=1, dtype=np.float64):
     """
 
     # Construct centered mesh
-    g = grid_2d(resolution, shifted=True, normalized=False, dtype=dtype)
+    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
 
     # Compute the denominator
     circ = np.sqrt(g["x"] ** 2 + g["y"] ** 2)
