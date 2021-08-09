@@ -67,7 +67,7 @@ class AdaptiveSupportTest(TestCase):
             # Pass numpy array.
             _ = adaptive_support(np.empty((10, 32, 32)))
 
-    def test_adaptivate_support_inverse_r(self):
+    def test_adaptive_support_inverse_r(self):
         """
         Test `inverse_r` function support in Real and Fourier space is similar.
 
@@ -96,7 +96,7 @@ class AdaptiveSupportTest(TestCase):
             # Test support is similar between original and transformed
             self.assertTrue(abs(r - rf) / r < 0.2)
 
-    def test_adaptivate_support_F(self):
+    def test_adaptive_support_F(self):
         """
         Test Fourier support of Gaussian relates to normal distribution.
         """
@@ -117,7 +117,7 @@ class AdaptiveSupportTest(TestCase):
             # Assert Fourier support is close to normal (doubled for sym).
             self.assertTrue(abs(2 * c - threshold) / threshold < 0.01)
 
-    def test_adaptivate_support_gaussian_circ(self):
+    def test_adaptive_support_gaussian_circ(self):
         """
         Test against known Gaussian + circ.
         """
