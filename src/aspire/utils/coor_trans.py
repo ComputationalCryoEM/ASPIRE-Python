@@ -6,7 +6,6 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import svd
 
-from aspire.utils import ensure
 from aspire.utils.random import Random
 
 
@@ -157,9 +156,9 @@ def register_rotations(rots, rots_ref):
             flag, flag==1 then J conjugacy is required and 0 is not.
     """
 
-    ensure(
-        rots.shape == rots_ref.shape, "Two sets of rotations must have same dimensions."
-    )
+    assert (
+        rots.shape == rots_ref.shape
+    ), "Two sets of rotations must have same dimensions."
     K = rots.shape[0]
 
     # Reflection matrix
@@ -243,10 +242,9 @@ def get_rots_mse(rots_reg, rots_ref):
     :param rots_ref: The reference rotations.
     :return: The MSE value between two sets of rotations.
     """
-    ensure(
-        rots_reg.shape == rots_ref.shape,
-        "Two sets of rotations must have same dimensions.",
-    )
+    assert (
+        rots_reg.shape == rots_ref.shape
+    ), "Two sets of rotations must have same dimensions."
     K = rots_reg.shape[0]
 
     diff = np.zeros(K)
