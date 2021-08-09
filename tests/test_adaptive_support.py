@@ -20,28 +20,14 @@ class AdaptiveSupportTest(TestCase):
 
         self.size = size = 1025
         self.sigma = sigma = 128
-        self.n_disc = n_disc = 10
-
-        # Create 2D Gaussian as initial array.
-        discs = np.tile(
-            gaussian_2d(size, sigma_x=sigma, sigma_y=sigma),
-            (n_disc, 1, 1),
-        )
-
-        # Add varying radius of solid disc.
-        #  The Fourier transform will yield Airy disc
-        #  which has more interesting content in F space.
-        for d in range(n_disc):
-            discs[d] = discs[d] + circ(size, radius=(d + 1) ** 2)
-
-        self.img_src = ArrayImageSource(Image(discs))
+        self.n_disc = 10
 
         # Reference thesholds
         self.references = {
             1: 0.68,
             2: 0.96,
             3: 0.999,  # slightly off
-            self.size / (2 * self.sigma): 1,
+            size / (2 * sigma): 1,
         }
 
     def testAdaptiveSupportBadThreshold(self):
@@ -49,11 +35,14 @@ class AdaptiveSupportTest(TestCase):
         Method should raise meaningful error when passed unreasonable thresholds.
         """
 
-        with pytest.raises(ValueError, match=r"Given energy_threshold.*"):
-            _ = adaptive_support(self.img_src, -0.5)
+        discs = np.empty((self.size, self.size))  # Intentional Dummy Data
+        img_src = ArrayImageSource(Image(discs))
 
         with pytest.raises(ValueError, match=r"Given energy_threshold.*"):
-            _ = adaptive_support(self.img_src, 9000)
+            _ = adaptive_support(img_src, -0.5)
+
+        with pytest.raises(ValueError, match=r"Given energy_threshold.*"):
+            _ = adaptive_support(img_src, 9000)
 
     def testAdaptiveSupportIncorrectInput(self):
         """
@@ -122,10 +111,24 @@ class AdaptiveSupportTest(TestCase):
         Test against known Gaussian + circ.
         """
 
+        # Create 2D Gaussian as initial array.
+        discs = np.tile(
+            gaussian_2d(self.size, sigma_x=self.sigma, sigma_y=self.sigma),
+            (self.n_disc, 1, 1),
+        )
+
+        # Add varying radius of solid disc.
+        #  The Fourier transform will yield Airy disc
+        #  which has more interesting content in F space.
+        for d in range(self.n_disc):
+            discs[d] = discs[d] + circ(self.size, radius=(d + 1) ** 2)
+
+        img_src = ArrayImageSource(Image(discs))
+
         # for one, two, three, inf standard deviations (one sided)
         for stddevs, threshold in self.references.items():
             # Real support should be ~ 1, 2, 3 times sigma
-            c, r = adaptive_support(self.img_src, threshold)
+            c, r = adaptive_support(img_src, threshold)
             # Check closer to this threshold than next
             logger.info(f"{c} {r} = adaptive_support(..., {threshold})")
             self.assertTrue(np.abs(r / self.sigma - stddevs) < 0.5)
