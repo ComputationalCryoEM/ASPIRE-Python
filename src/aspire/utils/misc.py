@@ -167,11 +167,11 @@ def circ(size, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
     return circ.astype(dtype)
 
 
-def hankel(size, x0=0, y0=0, peak=1, dtype=np.float64):
+def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     """
-    Returns a 2d `hankel` function in a square 2d numpy array.
+    Returns a 2d inverse radius function in a square 2d numpy array.
 
-    Where hankel(x,y): 1/sqrt(x**2 + y**2)
+    Where inverse_r(x,y): 1/sqrt(1 + x**2 + y**2)
 
     Default is a centered circle of peak=1.
 
@@ -187,9 +187,6 @@ def hankel(size, x0=0, y0=0, peak=1, dtype=np.float64):
     g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
 
     # Compute the denominator
-    circ = np.sqrt(g["x"] ** 2 + g["y"] ** 2)
-
-    # Remove extreme values.
-    circ[circ == 0] = 1
+    circ = np.sqrt(1 + g["x"] ** 2 + g["y"] ** 2)
 
     return (peak / circ).astype(dtype)

@@ -8,7 +8,7 @@ import pytest
 from aspire.denoising import adaptive_support
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.utils import circ, gaussian_2d, hankel
+from aspire.utils import circ, gaussian_2d, inverse_r
 
 logger = logging.getLogger(__name__)
 
@@ -67,18 +67,18 @@ class AdaptiveSupportTest(TestCase):
             # Pass numpy array.
             _ = adaptive_support(np.empty((10, 32, 32)))
 
-    def test_adaptivate_support_hankel(self):
+    def test_adaptivate_support_inverse_r(self):
         """
-        Test support of Hankel function in Real and Fourier space is similar.
+        Test `inverse_r` function support in Real and Fourier space is similar.
 
-        The Fourier transform of `hankel` should be similar to real space,
+        The Fourier transform of `inverse_r` should be similar to real space,
         so we can test the support is similar.
         """
 
-        # Generate stack of Hankel function images.
-        size = 65
+        # Generate stack of inverse_r function images.
+        size = 64
         imgs = np.tile(
-            hankel(size),
+            inverse_r(size),
             (self.n_disc, 1, 1),
         )
         # Centered Fourier Transform
