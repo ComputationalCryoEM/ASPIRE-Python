@@ -70,20 +70,16 @@ class AdaptiveSupportTest(TestCase):
             inverse_r(size),
             (self.n_disc, 1, 1),
         )
-        # Centered Fourier Transform
-        f_imgs = np.fft.fftshift(np.sqrt(np.abs(np.fft.fft2(imgs))))
 
         # Setup ImageSource like objects
         img_src = ArrayImageSource(Image(imgs))
-        f_img_src = ArrayImageSource(Image(f_imgs))
 
         thresholds = list(self.references.values())
 
         for threshold in thresholds:
-            _, r = adaptive_support(img_src, threshold)
-            _, rf = adaptive_support(f_img_src, threshold)
+            rf, r = adaptive_support(img_src, threshold)
             # Test support is similar between original and transformed
-            self.assertTrue(abs(r - rf) / r < 0.2)
+            self.assertTrue(abs(r - rf * size) / r < 0.2)
 
     def test_adaptive_support_F(self):
         """
