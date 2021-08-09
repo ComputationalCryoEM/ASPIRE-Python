@@ -76,7 +76,7 @@ class AdaptiveSupportTest(TestCase):
         """
 
         # Generate stack of Hankel function images.
-        resolution = 64
+        resolution = 65
         imgs = np.tile(
             hankel(resolution),
             (self.n_disc, 1, 1),
