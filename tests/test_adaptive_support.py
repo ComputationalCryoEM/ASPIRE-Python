@@ -18,13 +18,13 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class AdaptiveSupportTest(TestCase):
     def setUp(self):
 
-        self.resolution = resolution = 1025
+        self.size = size = 1025
         self.sigma = sigma = 128
         self.n_disc = n_disc = 10
 
         # Create 2D Gaussian as initial array.
         discs = np.tile(
-            gaussian_2d(resolution, sigma_x=sigma, sigma_y=sigma),
+            gaussian_2d(size, sigma_x=sigma, sigma_y=sigma),
             (n_disc, 1, 1),
         )
 
@@ -32,7 +32,7 @@ class AdaptiveSupportTest(TestCase):
         #  The Fourier transform will yield Airy disc
         #  which has more interesting content in F space.
         for d in range(n_disc):
-            discs[d] = discs[d] + circ(resolution, radius=(d + 1) ** 2)
+            discs[d] = discs[d] + circ(size, radius=(d + 1) ** 2)
 
         self.img_src = ArrayImageSource(Image(discs))
 
@@ -41,7 +41,7 @@ class AdaptiveSupportTest(TestCase):
             1: 0.68,
             2: 0.96,
             3: 0.999,  # slightly off
-            self.resolution / (2 * self.sigma): 1,
+            self.size / (2 * self.sigma): 1,
         }
 
     def testAdaptiveSupportBadThreshold(self):
@@ -76,9 +76,9 @@ class AdaptiveSupportTest(TestCase):
         """
 
         # Generate stack of Hankel function images.
-        resolution = 65
+        size = 65
         imgs = np.tile(
-            hankel(resolution),
+            hankel(size),
             (self.n_disc, 1, 1),
         )
         # Centered Fourier Transform
@@ -103,9 +103,7 @@ class AdaptiveSupportTest(TestCase):
 
         # Generate stack of 2D Gaussian images.
         imgs = np.tile(
-            gaussian_2d(
-                self.resolution, sigma_x=1 / self.sigma, sigma_y=1 / self.sigma
-            ),
+            gaussian_2d(self.size, sigma_x=1 / self.sigma, sigma_y=1 / self.sigma),
             (self.n_disc, 1, 1),
         )
 
