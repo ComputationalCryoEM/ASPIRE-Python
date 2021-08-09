@@ -50,7 +50,7 @@ def adaptive_support(img_src, energy_threshold=0.99):
     # Compute the Variance and Power Spectrum
     #   Mean along image stack.
     variance_map = np.mean(np.abs(img) ** 2, axis=0)
-    pspec = np.mean(imgf.real ** 2, axis=0)
+    pspec = np.mean(np.sqrt(np.abs(imgf)), axis=0)
 
     # Compute the Radial Variance and Radial Power Spectrum
     radial_var = np.zeros(N)
