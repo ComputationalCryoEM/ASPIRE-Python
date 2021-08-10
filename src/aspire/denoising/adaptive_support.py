@@ -69,10 +69,11 @@ def adaptive_support(img_src, energy_threshold=0.99):
     np.clip(radial_pspec, 0, a_max=None, out=radial_pspec)
     np.clip(radial_var, 0, a_max=None, out=radial_var)
 
-    # Construct range of Fourier limits
-    c = np.linspace(0, 0.5, N)
-    # Construct range of Real limits
-    R = np.arange(0, N, dtype=int)
+    # Construct range of Fourier limits. We need a half-sample correction
+    # since each ring is centered between two integer radii. Same for spatial
+    # domain (R).
+    c = (np.arange(N) + 0.5) / (2 * N)
+    R = np.arange(N) + 0.5
 
     # Calculate cumulative energy
     cum_pspec = np.cumsum(radial_pspec * c)
@@ -89,7 +90,21 @@ def adaptive_support(img_src, energy_threshold=0.99):
     # Second note, we attempt to find the cutoff,
     #   but when a search fails returns the last (-1) element,
     #   essentially the maximal radius.
-    c_limit = c[np.argmax(cum_pspec > c_energy_threshold) or -1]
-    R_limit = int(R[np.argmax(cum_var > R_energy_threshold) or -1])
+    # Third note, to increase accuracy, we take a weighted average of the two
+    #   points around the cutoff. This mostly affects c since R is rounded.
+
+    ind = np.argmax(cum_pspec > c_energy_threshold)
+    if ind > 0:
+        c_limit = ((cum_pspec[ind - 1] * c[ind - 1] + cum_pspec[ind] * c[ind])
+                   / (cum_pspec[ind - 1] + cum_pspec[ind]))
+    else:
+        c_limit = c[-1]
+
+    ind = np.argmax(cum_var > R_energy_threshold)
+    if ind > 0:
+        R_limit = round((cum_var[ind - 1] * R[ind - 1] + cum_var[ind] * R[ind])
+                        / (cum_var[ind - 1] + cum_var[ind]))
+    else:
+        R_limit = R[-1]
 
     return c_limit, R_limit
