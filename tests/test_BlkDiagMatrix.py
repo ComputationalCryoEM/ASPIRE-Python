@@ -392,10 +392,9 @@ class IrrBlkDiagMatrixTestCase(TestCase):
         # Manually compute
         indc = 0
         indr = 0
-        res = np.empty(shape=(n, coeffm.shape[1]), dtype=coeffm.dtype)
+        res = np.empty(shape=(n, k), dtype=coeffm.dtype)
         for b, blk in enumerate(self.blk_x):
-            row = self.blk_x.partition[b, 0]
-            col = self.blk_x.partition[b, 1]
+            row, col = self.blk_x.partition[b]
             res[indr : indr + row, :] = blk @ coeffm[indc : indc + col, :]
             indc += col
             indr += row
@@ -410,3 +409,36 @@ class IrrBlkDiagMatrixTestCase(TestCase):
 
         # Check against dense numpy matmul
         self.allallfunc(d, self.blk_x.dense() @ coeffm)
+
+    def testSolve(self):
+        from numpy.linalg import lstsq
+
+        # Construct a matrix for solving.
+        B = self.blk_x
+        for _i, blk in enumerate(B):
+            B[_i] = blk + np.eye(*blk.shape)
+
+        n = np.sum(self.blk_x.partition[:, 0])
+        m = np.sum(self.blk_x.partition[:, 1])
+        k = 3
+        coeffm = np.arange(n * k).reshape(n, k).astype(self.blk_x.dtype)
+
+        # Manually compute
+        indra = 0
+        indrb = 0
+        res = np.empty(shape=(m, k), dtype=coeffm.dtype)
+        for b, blk in enumerate(B):
+            rb, ra = B.partition[b]
+            res[indra : indra + ra, :] = lstsq(
+                blk, coeffm[indrb : indrb + rb, :], rcond=None
+            )[0]
+            indra += ra
+            indrb += rb
+
+        # Solve using the Block Diagonal implementation and compare
+        coeff_est = B.solve(coeffm)
+        self.allallfunc(res, coeff_est)
+
+        # Convert to dense then solve using Numpy and compare
+        coeff_est = lstsq(B.dense(), coeffm, rcond=None)[0]
+        self.allallfunc(res, coeff_est)

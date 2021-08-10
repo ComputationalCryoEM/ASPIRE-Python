@@ -4,7 +4,7 @@ block diagonal matrices as used by ASPIRE.
 """
 
 import numpy as np
-from numpy.linalg import norm, solve
+from numpy.linalg import lstsq, norm, solve
 from scipy.linalg import block_diag
 
 from aspire.utils import make_psd
@@ -208,6 +208,15 @@ class BlkDiagMatrix:
             raise RuntimeError("Unknown compatibility type {}".format(size_compat))
 
         self.__check_dtype_compatible(other)
+
+    @property
+    def isregular(self):
+        """
+        Check if all blocks are square.
+
+        :return: boolean
+        """
+        return all([shp[0] == shp[1] for shp in self.partition])
 
     @property
     def isfinite(self):
@@ -633,6 +642,13 @@ class BlkDiagMatrix:
         if sum(rows) != Y.shape[0]:
             raise RuntimeError("Sizes of `self` and `Y` are not compatible.")
 
+        # Default using `np.linalg.solve` for square matrices/blocks.
+        _solve = solve
+        if not self.isregular:
+            # For non-square use `lstsq`.  Wrap for slightly different syntax.
+            def _solve(a, b):
+                return lstsq(a, b, rcond=None)[0]
+
         vector = False
         if np.ndim(Y) == 1:
             Y = Y[:, np.newaxis]
@@ -643,7 +659,7 @@ class BlkDiagMatrix:
         Y = cellarray.mat2cell(Y, rows, cols)
         X = []
         for i in range(0, self.nblocks):
-            X.append(solve(self[i], Y[i]))
+            X.append(_solve(self[i], Y[i]))
         X = np.concatenate(X, axis=0)
 
         if vector:
