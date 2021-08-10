@@ -19,15 +19,16 @@ class AdaptiveSupportTest(TestCase):
     def setUp(self):
 
         self.size = size = 1025
-        self.sigma = sigma = 128
+        self.sigma = sigma = 16
         self.n_disc = 10
 
-        # Reference thesholds, One Sided Normal
+        # Reference thresholds. Since we're integrating 2 * r * exp(-r ** 2 /
+        # (2 * sigma ** 2)), the thresholds corresponding to one, two, and
+        # three standard deviations are the following.
         self.references = {
-            1: 0.84,
-            2: 0.977,
-            3: 0.999,
-            size / (2 * sigma): 1,
+            1: 1 - np.exp(-1 / 2),
+            2: 1 - np.exp(-2 ** 2 / 2),
+            3: 1 - np.exp(-3 ** 2/ 2)
         }
 
     def testAdaptiveSupportBadThreshold(self):
@@ -91,7 +92,7 @@ class AdaptiveSupportTest(TestCase):
 
         # Generate stack of 2D Gaussian images.
         imgs = np.tile(
-            gaussian_2d(self.size, sigma_x=1 / self.sigma, sigma_y=1 / self.sigma),
+            gaussian_2d(self.size, sigma_x=self.sigma, sigma_y=self.sigma),
             (self.n_disc, 1, 1),
         )
 
@@ -100,11 +101,28 @@ class AdaptiveSupportTest(TestCase):
 
         thresholds = list(self.references.values())
 
-        for threshold in thresholds:
-            c, _ = adaptive_support(img_src, threshold)
-            # Assert Fourier support is close to normal (doubled for sym).
-            logger.info(f"Threshold {threshold} 2*c {2*c}")
-            self.assertTrue(abs(2 * c - threshold) / threshold < 0.1)
+        for ref, threshold in self.references.items():
+            c, R = adaptive_support(img_src, threshold)
+
+            # Assert spatial support is close to normal.
+            R_true = ref * self.sigma
+
+            # Standard deviation in Fourier space is given by 1/(2 * pi *
+            # sigma). This can be obtained by applying the Poisson summation
+            # formula to the continuous FT which gives that the discrete FT is
+            # well approximated by a Gaussian with that particular standard
+            # deviation.
+            c_true = ref / (2 * np.pi * self.sigma)
+
+            # Since we're dealing with the square of the Gaussian, this
+            # effectively divides the sigmas by sqrt(2).
+            R_true /= np.sqrt(2)
+            c_true /= np.sqrt(2)
+
+            # Accuracy is not perfect, but within 5% if sigma is in the right
+            # range (too small, R is inaccurate; too big, c is inaccurate.
+            self.assertTrue(abs(R - R_true) / R_true < 0.05)
+            self.assertTrue(abs(c - c_true) / c_true < 0.05)
 
     def test_adaptive_support_gaussian_circ(self):
         """
