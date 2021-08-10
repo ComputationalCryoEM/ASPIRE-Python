@@ -335,3 +335,78 @@ class BlkDiagMatrixTestCase(TestCase):
             results.append(res)
 
         self.assertTrue(np.allclose(results[0], results[1].dense()))
+
+
+class IrrBlkDiagMatrixTestCase(TestCase):
+    """
+    Tests Irregular (non square) Block Diagonal Matrices.
+    """
+
+    def setUp(self):
+
+        partition = [[4, 5], [2, 3], [1, 1]]
+        self.X = X = [(1 + np.arange(np.prod(p))).reshape(p) for p in partition]
+        self.XT = XT = [x.T for x in X]
+
+        self.blk_x = BlkDiagMatrix.from_list(X)
+        self.blk_xt = BlkDiagMatrix.from_list(XT)
+
+    def allallfunc(self, A, B, func=np.allclose):
+        """Checks assertTrue(func()) as it iterates through A, B."""
+        for (a, b) in zip(A, B):
+            self.assertTrue(func(a, b))
+
+    def testAdd(self):
+        Y = [2 * x for x in self.X]
+        BlkY = self.blk_x + self.blk_x
+
+        self.allallfunc(Y, BlkY)
+
+    def testAddIncompat(self):
+        with pytest.raises(
+            RuntimeError, match=r".*BlkDiagMatrix instances are not same shape.*"
+        ):
+            _ = self.blk_x + self.blk_xt
+
+    def testMatMul(self):
+        result = [np.matmul(*tup) for tup in zip(self.X, self.XT)]
+
+        blk_y = self.blk_x @ self.blk_xt
+        self.allallfunc(blk_y, result)
+
+        blk_y = self.blk_x.matmul(self.blk_xt)
+        self.allallfunc(blk_y, result)
+
+    def testMatMulIncompat(self):
+        with pytest.raises(
+            RuntimeError, match=r".*BlkDiagMatrix instances are not compatible.*"
+        ):
+            _ = self.blk_x @ self.blk_x
+
+    def testApply(self):
+        n = np.sum(self.blk_x.partition[:, 0])
+        m = np.sum(self.blk_x.partition[:, 1])
+        k = 3
+        coeffm = np.arange(k * m).reshape(m, k).astype(self.blk_x.dtype)
+
+        # Manually compute
+        indc = 0
+        indr = 0
+        res = np.empty(shape=(n, coeffm.shape[1]), dtype=coeffm.dtype)
+        for b, blk in enumerate(self.blk_x):
+            row = self.blk_x.partition[b, 0]
+            col = self.blk_x.partition[b, 1]
+            res[indr : indr + row, :] = blk @ coeffm[indc : indc + col, :]
+            indc += col
+            indr += row
+
+        # Check ndim 1 case
+        c = self.blk_x.apply(coeffm[:, 0])
+        self.allallfunc(c, res[:, 0])
+
+        # Check ndim 2 case
+        d = self.blk_x.apply(coeffm)
+        self.allallfunc(res, d)
+
+        # Check against dense numpy matmul
+        self.allallfunc(d, self.blk_x.dense() @ coeffm)
