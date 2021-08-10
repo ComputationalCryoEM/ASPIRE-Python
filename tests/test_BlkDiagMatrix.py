@@ -368,6 +368,24 @@ class IrrBlkDiagMatrixTestCase(TestCase):
         ):
             _ = self.blk_x + self.blk_xt
 
+    def testSub(self):
+        Y = BlkDiagMatrix.zeros_like(self.blk_x)
+        BlkY = self.blk_x - self.blk_x
+
+        self.allallfunc(Y, BlkY)
+
+    def testSubIncompat(self):
+        with pytest.raises(
+            RuntimeError, match=r".*BlkDiagMatrix instances are not same shape.*"
+        ):
+            _ = self.blk_x - self.blk_xt
+
+    def testScalars(self):
+        self.allallfunc((42 - self.blk_x) * 13, [13 * (42 - x) for x in self.X])
+
+    def testTranspose(self):
+        self.allallfunc(self.blk_x.T, self.blk_xt)
+
     def testMatMul(self):
         result = [np.matmul(*tup) for tup in zip(self.X, self.XT)]
 
@@ -414,9 +432,7 @@ class IrrBlkDiagMatrixTestCase(TestCase):
         from numpy.linalg import lstsq
 
         # Construct a matrix for solving.
-        B = self.blk_x
-        for _i, blk in enumerate(B):
-            B[_i] = blk + np.eye(*blk.shape)
+        B = self.blk_x + BlkDiagMatrix.eye_like(self.blk_x)
 
         n = np.sum(self.blk_x.partition[:, 0])
         m = np.sum(self.blk_x.partition[:, 1])
