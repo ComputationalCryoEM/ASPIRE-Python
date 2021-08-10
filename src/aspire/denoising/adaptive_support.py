@@ -59,7 +59,7 @@ def adaptive_support(img_src, energy_threshold=0.99):
         mask = (r >= i) & (r < i + 1)
         # Mean along radial track defined by mask
         radial_var[i] = np.mean(variance_map[mask])
-        radial_pspec[i] = np.sum(pspec[mask]) / np.sum(mask) ** 2
+        radial_pspec[i] = np.mean(pspec[mask])
 
     # Subtract the noise variance
     radial_pspec -= noise_var
