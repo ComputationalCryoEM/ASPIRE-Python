@@ -210,7 +210,7 @@ class BlkDiagMatrix:
         self.__check_dtype_compatible(other)
 
     @property
-    def isregular(self):
+    def _issquare(self):
         """
         Check if all blocks are square.
 
@@ -644,7 +644,7 @@ class BlkDiagMatrix:
 
         # Default using `np.linalg.solve` for square matrices/blocks.
         _solve = solve
-        if not self.isregular:
+        if not self._issquare:
             # For non-square use `lstsq`.  Wrap for slightly different syntax.
             def _solve(a, b):
                 return lstsq(a, b, rcond=None)[0]
