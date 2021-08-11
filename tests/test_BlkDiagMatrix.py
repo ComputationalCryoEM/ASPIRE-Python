@@ -429,32 +429,18 @@ class IrrBlkDiagMatrixTestCase(TestCase):
         self.allallfunc(d, self.blk_x.dense() @ coeffm)
 
     def testSolve(self):
-        from numpy.linalg import lstsq
+        """
+        Test attempts to solve non square BlkDiagMatrix raise error.
+        """
 
-        # Construct a matrix for solving.
-        B = self.blk_x + BlkDiagMatrix.eye_like(self.blk_x)
-
+        # Setup a dummy coeff matrix
         n = np.sum(self.blk_x.partition[:, 0])
-        m = np.sum(self.blk_x.partition[:, 1])
         k = 3
         coeffm = np.arange(n * k).reshape(n, k).astype(self.blk_x.dtype)
 
-        # Manually compute
-        indra = 0
-        indrb = 0
-        res = np.empty(shape=(m, k), dtype=coeffm.dtype)
-        for b, blk in enumerate(B):
-            rb, ra = B.partition[b]
-            res[indra : indra + ra, :] = lstsq(
-                blk, coeffm[indrb : indrb + rb, :], rcond=None
-            )[0]
-            indra += ra
-            indrb += rb
-
-        # Solve using the Block Diagonal implementation and compare
-        coeff_est = B.solve(coeffm)
-        self.allallfunc(res, coeff_est)
-
-        # Convert to dense then solve using Numpy and compare
-        coeff_est = lstsq(B.dense(), coeffm, rcond=None)[0]
-        self.allallfunc(res, coeff_est)
+        with pytest.raises(
+            NotImplementedError,
+            match=r"BlkDiagMatrix.solve is only defined for square arrays.*",
+        ):
+            # Attemplt solve using the Block Diagonal implementation
+            _ = self.blk_x.solve(coeffm)
