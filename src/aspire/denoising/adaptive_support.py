@@ -95,15 +95,18 @@ def adaptive_support(img_src, energy_threshold=0.99):
 
     ind = np.argmax(cum_pspec > c_energy_threshold)
     if ind > 0:
-        c_limit = ((cum_pspec[ind - 1] * c[ind - 1] + cum_pspec[ind] * c[ind])
-                   / (cum_pspec[ind - 1] + cum_pspec[ind]))
+        c_limit = (cum_pspec[ind - 1] * c[ind - 1] + cum_pspec[ind] * c[ind]) / (
+            cum_pspec[ind - 1] + cum_pspec[ind]
+        )
     else:
         c_limit = c[-1]
 
     ind = np.argmax(cum_var > R_energy_threshold)
     if ind > 0:
-        R_limit = round((cum_var[ind - 1] * R[ind - 1] + cum_var[ind] * R[ind])
-                        / (cum_var[ind - 1] + cum_var[ind]))
+        R_limit = round(
+            (cum_var[ind - 1] * R[ind - 1] + cum_var[ind] * R[ind])
+            / (cum_var[ind - 1] + cum_var[ind])
+        )
     else:
         R_limit = R[-1]
 

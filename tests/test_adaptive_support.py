@@ -18,8 +18,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class AdaptiveSupportTest(TestCase):
     def setUp(self):
 
-        self.size = size = 1025
-        self.sigma = sigma = 16
+        self.size = 1025
+        self.sigma = 16
         self.n_disc = 10
 
         # Reference thresholds. Since we're integrating 2 * r * exp(-r ** 2 /
@@ -27,8 +27,8 @@ class AdaptiveSupportTest(TestCase):
         # three standard deviations are the following.
         self.references = {
             1: 1 - np.exp(-1 / 2),
-            2: 1 - np.exp(-2 ** 2 / 2),
-            3: 1 - np.exp(-3 ** 2/ 2)
+            2: 1 - np.exp(-(2 ** 2) / 2),
+            3: 1 - np.exp(-(3 ** 2) / 2),
         }
 
     def testAdaptiveSupportBadThreshold(self):
@@ -98,8 +98,6 @@ class AdaptiveSupportTest(TestCase):
 
         # Setup ImageSource like objects
         img_src = ArrayImageSource(Image(imgs))
-
-        thresholds = list(self.references.values())
 
         for ref, threshold in self.references.items():
             c, R = adaptive_support(img_src, threshold)
