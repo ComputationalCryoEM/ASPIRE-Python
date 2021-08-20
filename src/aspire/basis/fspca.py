@@ -120,7 +120,7 @@ class FSPCABasis(SteerableBasis2D):
         if self.noise_var is None:
             from aspire.noise import WhiteNoiseEstimator
 
-            logger.info("Estimate the noise of images using anisotropic method.")
+            logger.info("Estimating the noise of images.")
             self.noise_var = WhiteNoiseEstimator(self.src).estimate()
         logger.info(f"Setting noise_var={self.noise_var}")
 
