@@ -60,6 +60,7 @@ class FBBasis2D(SteerableBasis2D):
         self.basis_coords = unique_coords_nd(self.nres, self.ndim, dtype=self.dtype)
 
         # generate 1D indices for basis functions
+        self._compute_indices()
         self._indices = self.indices()
 
         # get normalized factors
@@ -68,7 +69,7 @@ class FBBasis2D(SteerableBasis2D):
         # precompute the basis functions in 2D grids
         self._precomp = self._precomp()
 
-    def indices(self):
+    def _compute_indices(self):
         """
         Create the indices for each basis function
         """
@@ -105,12 +106,20 @@ class FBBasis2D(SteerableBasis2D):
 
         self.angular_indices = indices_ells
         self.radial_indices = indices_ks
+        self.signs_indices = indices_sgns
         # Relating to paper: a[i] = a_ell_ks = a_angularindices[i]_radialindices[i]
         self.complex_angular_indices = indices_ells[self._pos]  # k
         self.complex_radial_indices = indices_ks[self._pos]  # q
 
-        # TODO, these can become class attributes
-        return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
+    def indices(self):
+        """
+        Return the precomputed indices for each basis function.
+        """
+        return {
+            "ells": self.angular_indices,
+            "ks": self.radial_indices,
+            "sgns": self.signs_indices,
+        }
 
     def _precomp(self):
         """
@@ -322,19 +331,16 @@ class FBBasis2D(SteerableBasis2D):
         ind = 0
         idx = np.arange(self.k_max[0], dtype=int)
         ind += np.size(idx)
-        ind_pos = ind
 
         ccoef[:, idx] = coef[:, idx]
 
         for ell in range(1, self.ell_max + 1):
             idx = ind + np.arange(self.k_max[ell], dtype=int)
-            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
-            idx_neg = idx_pos + self.k_max[ell]
-
-            ccoef[:, idx] = (coef[:, idx_pos] - imaginary * coef[:, idx_neg]) / 2.0
+            ccoef[:, idx] = (
+                coef[:, self._pos[idx]] - imaginary * coef[:, self._neg[idx]]
+            ) / 2.0
 
             ind += np.size(idx)
-            ind_pos += 2 * self.k_max[ell]
 
         return ccoef
 

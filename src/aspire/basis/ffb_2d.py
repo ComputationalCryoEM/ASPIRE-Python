@@ -50,6 +50,7 @@ class FFBBasis2D(FBBasis2D):
         self.count = self.k_max[0] + sum(2 * self.k_max[1:])
 
         # generate 1D indices for basis functions
+        self._compute_indices()
         self._indices = self.indices()
 
         # get normalized factors
