@@ -343,6 +343,8 @@ class RIRClass2D(Class2D):
             (n_im, n_nbor), order="F"
         )  # this should already be in that shape
         corr = corr.reshape((n_im, n_nbor), order="F")
+        # Note that the sorting here for alignment is wrt correlation,
+        #  whereas previously in the NN calculation sorting is by bispectrum distance.
         id_corr = np.argsort(-corr, axis=1)
         for i in range(n_im):
             corr[i] = corr[i, id_corr[i]]
