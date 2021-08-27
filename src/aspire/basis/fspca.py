@@ -351,19 +351,18 @@ class FSPCABasis(SteerableBasis2D):
         top_components = list(ordered_components)[:n]
 
         # Now we need to find the locations of both the + and - sgns.
-        k_maps = dict()  # memoize
-        q_maps = dict()  # memoize
         pos_mask = self.basis._indices["sgns"] == 1
         neg_mask = self.basis._indices["sgns"] == -1
         compressed_indices = []
         for (k, q) in top_components:
-            k_maps.setdefault(k, self.angular_indices == k)
-            q_maps.setdefault(q, self.radial_indices == q)
+            # Compute the locations of coefs we're interested in.
+            k_maps = self.angular_indices == k
+            q_maps = self.radial_indices == q
 
-            pos_index = np.argmax(k_maps[k] & q_maps[q] & pos_mask)
+            pos_index = np.argmax(k_maps & q_maps & pos_mask)
             compressed_indices.append(pos_index)
             if k > 0:
-                neg_index = np.where(k_maps[k] & q_maps[q] & neg_mask)[0][0]
+                neg_index = np.where(k_maps & q_maps & neg_mask)[0][0]
                 compressed_indices.append(neg_index)
         return compressed_indices
 
