@@ -444,7 +444,7 @@ class RIRClass2D(Class2D):
             random_state=self.seed,
         )
         coef_b = pca.fit_transform(M.copy())
-        coef_b_r = pca.fit_transform(np.conjugate(M))
+        coef_b_r = coef_b.conj()
 
         # I'm also not sure why this norm is needed...
         #  but it does work better with it.
