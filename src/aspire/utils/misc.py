@@ -7,6 +7,10 @@ import os.path
 import subprocess
 from itertools import chain, combinations
 
+import numpy as np
+
+from aspire.utils.coor_trans import grid_2d
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,3 +113,80 @@ def sha256sum(filename):
             h.update(mv[:n])
 
     return h.hexdigest()
+
+
+def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64):
+    """
+    Returns a 2d Gaussian in a square 2d numpy array.
+
+    Default is a centered disc of spread=peak=1.
+
+    :param size: The height and width of returned array (pixels)
+    :param x0: x cordinate of center (pixels)
+    :param y0: y cordinate of center (pixels)
+    :param sigma_x: spread in x direction
+    :param sigma_y: spread in y direction
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (2D)
+    """
+
+    # Construct centered mesh
+    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
+
+    p = (g["x"] - x0) ** 2 / (2 * sigma_x ** 2) + (g["y"] - y0) ** 2 / (
+        2 * sigma_y ** 2
+    )
+    return (peak * np.exp(-p)).astype(dtype, copy=False)
+
+
+def circ(size, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
+    """
+    Returns a 2d `circ` function in a square 2d numpy array.
+
+    where for r = sqrt(x**2 + y**2)
+
+    circ(x,y) = peak : 0 <= r <= radius
+                0 : otherwise
+
+    Default is a centered circle of spread=peak=1.
+
+    :param size: The height and width of returned array (pixels)
+    :param x0: x cordinate of center (pixels)
+    :param y0: y cordinate of center (pixels)
+    :param radius: radius of circle
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (2D)
+    """
+
+    # Construct centered mesh
+    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
+
+    circ = (g["x"] ** 2 + g["y"] ** 2) < radius * radius
+    return circ.astype(dtype)
+
+
+def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
+    """
+    Returns a 2d inverse radius function in a square 2d numpy array.
+
+    Where inverse_r(x,y): 1/sqrt(1 + x**2 + y**2)
+
+    Default is a centered circle of peak=1.
+
+    :param size: The height and width of returned array (pixels)
+    :param x0: x cordinate of center (pixels)
+    :param y0: y cordinate of center (pixels)
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (2D)
+    """
+
+    # Construct centered mesh
+    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
+
+    # Compute the denominator
+    circ = np.sqrt(1 + g["x"] ** 2 + g["y"] ** 2)
+
+    return (peak / circ).astype(dtype)

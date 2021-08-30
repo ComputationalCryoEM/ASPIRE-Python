@@ -48,7 +48,6 @@ class BlkDiagMatrix:
         self._cached_blk_sizes = np.array(partition)
         if len(partition):
             assert self._cached_blk_sizes.shape[1] == 2
-            assert all([BlkDiagMatrix.__check_square(s) for s in partition])
 
     def reset_cache(self):
         """
@@ -106,8 +105,6 @@ class BlkDiagMatrix:
         Convenience wrapper, setter on self.data.
         """
 
-        BlkDiagMatrix.__check_square(value.shape)
-        self.__check_dtype_compatible(value)
         self.data[key] = value
         self.reset_cache()
 
@@ -137,9 +134,10 @@ class BlkDiagMatrix:
 
         return np.isscalar(x)
 
-    def __check_size_compatible(self, other):
+    def __check_size_compatible_add(self, other):
         """
-        Sanity check two BlkDiagMatrix instances are compatible in size.
+        Sanity check two BlkDiagMatrix instances are compatible in size
+        for addition operators. (Same size)
 
         :param other: The BlkDiagMatrix to compare with self.
         """
@@ -147,12 +145,28 @@ class BlkDiagMatrix:
         if np.any(self.partition != other.partition):
             # be helpful and find the first one as an example
             for _i, (a, b) in enumerate(zip(self.partition, other.partition)):
-                if a != b:
+                if any(a != b):
                     break
             raise RuntimeError(
                 "Block i={} of BlkDiagMatrix instances are "
                 "not same shape {} {}".format(_i, a, b)
             )
+
+    def __check_size_compatible_mul(self, other):
+        """
+        Sanity check two BlkDiagMatrix instances are compatible in size
+        for multiplication operators. (m n) @ (n k).
+
+        :param other: The BlkDiagMatrix to compare with self.
+        """
+
+        for _i, a in enumerate(self.partition):
+            b = other.partition[_i]
+            if a[1] != b[0]:
+                raise RuntimeError(
+                    "Block i={} of BlkDiagMatrix instances are "
+                    "not compatible. {} {}".format(_i, a, b)
+                )
 
     def __check_dtype_compatible(self, other):
         """
@@ -168,7 +182,7 @@ class BlkDiagMatrix:
                 " as appropriate.".format(self.dtype, other.dtype)
             )
 
-    def __check_compatible(self, other):
+    def __check_compatible(self, other, size_compat="add"):
         """
         Sanity check two BlkDiagMatrix instances are compatible in size.
 
@@ -186,8 +200,23 @@ class BlkDiagMatrix:
                 "Number of blocks {} {} are not equal.".format(len(self), len(other))
             )
 
-        self.__check_size_compatible(other)
+        if size_compat == "add":
+            self.__check_size_compatible_add(other)
+        elif size_compat == "mul":
+            self.__check_size_compatible_mul(other)
+        else:
+            raise RuntimeError("Unknown compatibility type {}".format(size_compat))
+
         self.__check_dtype_compatible(other)
+
+    @property
+    def is_square(self):
+        """
+        Check if all blocks are square.
+
+        :return: boolean
+        """
+        return all([shp[0] == shp[1] for shp in self.partition])
 
     @property
     def isfinite(self):
@@ -374,7 +403,7 @@ class BlkDiagMatrix:
                 "(matmul,@) of non BlkDiagMatrix {}, try (*,mul)".format(repr(other))
             )
 
-        self.__check_compatible(other)
+        self.__check_compatible(other, size_compat="mul")
 
         if inplace:
             for i in range(self.nblocks):
@@ -613,6 +642,16 @@ class BlkDiagMatrix:
         if sum(rows) != Y.shape[0]:
             raise RuntimeError("Sizes of `self` and `Y` are not compatible.")
 
+        # Use `np.linalg.solve` for square matrices/blocks.
+        #   If user requires solving non square, we'll need to extend for
+        #   lstsq or qr,triangle solvers.
+        if not self.is_square:
+            raise NotImplementedError(
+                "BlkDiagMatrix.solve is only defined for square arrays. "
+                "If you require solving non square BlkDiagMatrix please "
+                "report to developers."
+            )
+
         vector = False
         if np.ndim(Y) == 1:
             Y = Y[:, np.newaxis]
@@ -700,22 +739,6 @@ class BlkDiagMatrix:
             C[i] = make_psd(self[i])
 
         return C
-
-    @staticmethod
-    def __check_square(shp):
-        """
-        Check if supplied shape tuple is square.
-
-        :param shp:  Shape to test, expressed as a 2-tuple.
-        """
-
-        if shp[0] != shp[1]:
-            raise NotImplementedError(
-                "Currently BlkDiagMatrix only supports"
-                " square blocks.  Received {}".format(shp)
-            )
-
-        return True
 
     @staticmethod
     def empty(nblocks, dtype=np.float32):
