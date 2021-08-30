@@ -455,9 +455,9 @@ class RIRClass2D(Class2D):
 
     def _devel_bispectrum(self, coef):
         coef = self.pca_basis.to_complex(coef)
-        eigvals = self.pca_basis.to_complex(self.pca_basis.eigvals).reshape(
-            self.pca_basis.complex_count
-        )  # flattens
+        # Take just positive frequencies, corresponds to complex indices.
+        # Original implementation used norm of Complex values, here abs of Real.
+        eigvals = np.abs(self.pca_basis.eigvals[self.pca_basis.signs_indices >= 0])
 
         # Legacy code included a sanity check:
         # non_zero_freqs = self.pca_basis.complex_angular_indices != 0
