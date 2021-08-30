@@ -1,0 +1,69 @@
+# RELION optimiser
+# --o Class3D/run_001 --i images_norm.star --particle_diameter 150 --angpix 1.25 --ref 2del_test_object_tools_v109_020_b11gbl61homo_savestar01_vol.mrc --firstiter_cc --ini_high 100 --ctf --iter 25 --tau2_fudge 4 --K 1 --flatten_solvent --zero_mask --oversampling 1 --healpix_order 2 --offset_range 6 --offset_step 2 --sym C1 --j 24 --gpu 
+
+data_optimiser_general
+
+_rlnOutputRootName                                    Class3D/run_001
+_rlnModelStarFile                                     Class3D/run_001_it025_model.star
+_rlnExperimentalDataStarFile                          Class3D/run_001_it025_data.star
+_rlnOrientSamplingStarFile                            Class3D/run_001_it025_sampling.star
+_rlnCurrentIteration                                            25
+_rlnNumberOfIterations                                          25
+_rlnDoSplitRandomHalves                                          0
+_rlnJoinHalvesUntilThisResolution                        -1.000000
+_rlnAdaptiveOversampleOrder                                      1
+_rlnAdaptiveOversampleFraction                            0.999000
+_rlnRandomSeed                                          1507860291
+_rlnParticleDiameter                                    150.000000
+_rlnWidthMaskEdge                                                5
+_rlnDoZeroMask                                                   1
+_rlnDoSolventFlattening                                          1
+_rlnSolventMaskName                                   None
+_rlnSolventMask2Name                                  None
+_rlnTauSpectrumName                                   None
+_rlnCoarseImageSize                                             24
+_rlnMaximumCoarseImageSize                                     150
+_rlnHighresLimitExpectation                              -1.000000
+_rlnIncrementImageSize                                          10
+_rlnDoMapEstimation                                              1
+_rlnDoAutoRefine                                                 0
+_rlnAutoLocalSearchesHealpixOrder                                4
+_rlnNumberOfIterWithoutResolutionGain                           11
+_rlnBestResolutionThusFar                                 0.122667
+_rlnNumberOfIterWithoutChangingAssignments                       2
+_rlnDoSkipAlign                                                  0
+_rlnDoSkipRotate                                                 0
+_rlnOverallAccuracyRotations                              1.801000
+_rlnOverallAccuracyTranslations                           0.559000
+_rlnChangesOptimalOrientations                           17.608145
+_rlnChangesOptimalOffsets                                 1.622667
+_rlnChangesOptimalClasses                                 0.000000
+_rlnSmallestChangesOrientations                          15.168985
+_rlnSmallestChangesOffsets                                1.529509
+_rlnSmallestChangesClasses                                       0
+_rlnDoHelicalRefine                                              0
+_rlnIgnoreHelicalSymmetry                                        0
+_rlnHelicalTwistInitial                                   0.000000
+_rlnHelicalRiseInitial                                    0.000000
+_rlnHelicalCentralProportion                              0.300000
+_rlnHelicalMaskTubeInnerDiameter                         -1.000000
+_rlnHelicalMaskTubeOuterDiameter                         -1.000000
+_rlnHelicalSymmetryLocalRefinement                               0
+_rlnHelicalSigmaDistance                                 -1.000000
+_rlnHelicalKeepTiltPriorFixed                                    0
+_rlnHasConverged                                                 0
+_rlnHasHighFscAtResolLimit                                       0
+_rlnHasLargeSizeIncreaseIterationsAgo                            0
+_rlnDoCorrectNorm                                                0
+_rlnDoCorrectScale                                               0
+_rlnDoCorrectCtf                                                 1
+_rlnDoRealignMovies                                              0
+_rlnDoIgnoreCtfUntilFirstPeak                                    0
+_rlnCtfDataArePhaseFlipped                                       0
+_rlnCtfDataAreCtfPremultiplied                                   0
+_rlnDoOnlyFlipCtfPhases                                          0
+_rlnRefsAreCtfCorrected                                          1
+_rlnFixSigmaNoiseEstimates                                       0
+_rlnFixSigmaOffsetEstimates                                      0
+_rlnMaxNumberOfPooledParticles                                  24
+ 
