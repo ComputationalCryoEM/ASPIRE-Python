@@ -31,7 +31,7 @@ class FSPCABasis(SteerableBasis2D):
 
     """
 
-    def __init__(self, src, basis=None, noise_var=None):
+    def __init__(self, src, basis=None, noise_var=None, components=400):
         """
 
         :param src: Source instance
@@ -48,6 +48,9 @@ class FSPCABasis(SteerableBasis2D):
             basis = FFBBasis2D((self.src.L,) * 2, dtype=self.src.dtype)
         self.basis = basis
 
+        # Components are used for `compress` during `build`.
+        self.components = components
+
         # check/warn dtypes
         self.dtype = self.src.dtype
         if self.basis.dtype != self.dtype:
@@ -56,7 +59,6 @@ class FSPCABasis(SteerableBasis2D):
                 f" source {self.src.dtype}, using {self.dtype}."
             )
 
-        self.compressed = False
         self.count = self.basis.count
         self.complex_count = self.basis.complex_count
         self.angular_indices = self.basis.angular_indices
@@ -71,6 +73,8 @@ class FSPCABasis(SteerableBasis2D):
         ), f"{len(self.complex_indices_map)} != {self.complex_count}"
 
         self.noise_var = noise_var  # noise_var is handled during `build` call.
+
+        self.build()
 
     def _get_complex_indices_map(self):
         """
@@ -106,16 +110,14 @@ class FSPCABasis(SteerableBasis2D):
 
         return complex_indices_map
 
-    def build(self, coef=None):
+    def build(self):
         """
         Computes the FSPCA basis.
 
         This may take some time for large image stacks.
-
-        :param coef: Optionally provide coef stack if already computed.
         """
-        if coef is None:
-            coef = self.basis.evaluate_t(self.src.images(0, self.src.n))
+
+        coef = self.basis.evaluate_t(self.src.images(0, self.src.n))
 
         if self.noise_var is None:
             from aspire.noise import WhiteNoiseEstimator
@@ -151,6 +153,8 @@ class FSPCABasis(SteerableBasis2D):
         self.spca_coef = np.zeros((self.src.n, self.basis.count), dtype=self.dtype)
 
         self._compute_spca(coef)
+
+        self._compress(self.components)
 
     def _compute_spca(self, coef):
         """
@@ -367,7 +371,7 @@ class FSPCABasis(SteerableBasis2D):
         return compressed_indices
 
     # # Noting this is awful, but I'm still trying to work out how we can push the complex arithmetic out and away...
-    def compress(self, n):
+    def _compress(self, n):
         """
         Use the eigendecomposition to select the most powerful
         coefficients.
@@ -387,44 +391,41 @@ class FSPCABasis(SteerableBasis2D):
             return self
 
         # Create a deepcopy.
-        result = copy.deepcopy(self)
+        old = copy.deepcopy(self)
 
         # Create compressed mapping
-        result.compressed = True
-        compressed_indices = self._get_compressed_indices(n)
+        compressed_indices = old._get_compressed_indices(n)
         logger.debug(f"compressed_indices {compressed_indices}")
-        result.count = len(compressed_indices)
-        logger.debug(f"compressed count {result.count}")
+        self.count = len(compressed_indices)
+        logger.debug(f"n {n} compressed count {self.count}")
 
         # NOTE, no longer blk_diag! ugh
-        # Note can copy from self or result, should be same...
-        result.eigvals = self.eigvals[compressed_indices]
-        if isinstance(self.eigvecs, BlkDiagMatrix):
-            self.eigvecs = self.eigvecs.dense()
-        result.eigvecs = self.eigvecs[:, compressed_indices]
-        result.spca_coef = self.spca_coef[:, compressed_indices]
+        # Note can copy from old or self, should be same...
+        self.eigvals = old.eigvals[compressed_indices]
+        if isinstance(old.eigvecs, BlkDiagMatrix):
+            old.eigvecs = old.eigvecs.dense()
+        self.eigvecs = old.eigvecs[:, compressed_indices]
+        self.spca_coef = old.spca_coef[:, compressed_indices]
 
-        result.angular_indices = self.angular_indices[compressed_indices]
-        result.radial_indices = self.radial_indices[compressed_indices]
-        result.signs_indices = self.signs_indices[compressed_indices]
+        self.angular_indices = old.angular_indices[compressed_indices]
+        self.radial_indices = old.radial_indices[compressed_indices]
+        self.signs_indices = old.signs_indices[compressed_indices]
 
-        result.complex_indices_map = result._get_complex_indices_map()
-        result.complex_count = len(result.complex_indices_map)
-        result.complex_angular_indices = np.empty(result.complex_count, int)
-        result.complex_radial_indices = np.empty(result.complex_count, int)
-        for i, key in enumerate(result.complex_indices_map.keys()):
+        self.complex_indices_map = self._get_complex_indices_map()
+        self.complex_count = len(self.complex_indices_map)
+        self.complex_angular_indices = np.empty(self.complex_count, int)
+        self.complex_radial_indices = np.empty(self.complex_count, int)
+        for i, key in enumerate(self.complex_indices_map.keys()):
             ang, rad = key
-            result.complex_angular_indices[i] = ang
-            result.complex_radial_indices[i] = rad
+            self.complex_angular_indices[i] = ang
+            self.complex_radial_indices[i] = rad
 
         logger.debug(
-            f"complex_radial_indices: {result.complex_radial_indices} {len(result.complex_radial_indices)}"
+            f"complex_radial_indices: {self.complex_radial_indices} {len(self.complex_radial_indices)}"
         )
         logger.debug(
-            f"complex_angular_indices: {result.complex_angular_indices} {len(result.complex_angular_indices)}"
+            f"complex_angular_indices: {self.complex_angular_indices} {len(self.complex_angular_indices)}"
         )
-
-        return result
 
     def to_complex(self, coef):
         """

@@ -24,7 +24,7 @@ class RIRClass2D(Class2D):
     def __init__(
         self,
         src,
-        pca_basis,
+        pca_basis=None,
         fspca_components=400,
         alpha=1 / 3,
         sample_n=4000,
@@ -52,7 +52,7 @@ class RIRClass2D(Class2D):
         for Viewing Direction Classification in Cryo-EM. (2014)
 
         :param src: Source instance
-        :param pca_basis: FSPCA Basis instance
+        :param pca_basis: Optional FSPCA Basis instance
         :param fspca_components: Components (top eigvals) to keep from full FSCPA, default truncates to  400.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
         :param sample_n: Threshold for random sampling of bispectrum coefs. Default 4000,
@@ -71,13 +71,12 @@ class RIRClass2D(Class2D):
         super().__init__(src=src, dtype=dtype)
 
         # For now, only run with FSPCA basis
-        if not isinstance(pca_basis, FSPCABasis):
+        if pca_basis and not isinstance(pca_basis, FSPCABasis):
             raise NotImplementedError(
                 "RIRClass2D has currently only been developed for pca_basis as a FSPCABasis."
             )
 
         self.pca_basis = pca_basis
-        self.fb_basis = self.pca_basis.basis
         self.fspca_components = fspca_components
         self.sample_n = sample_n
         self.alpha = alpha
@@ -86,14 +85,6 @@ class RIRClass2D(Class2D):
         self.n_classes = n_classes
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
         self.seed = seed
-        # Type checks
-        if self.dtype != self.fb_basis.dtype:
-            logger.warning(
-                f"RIRClass2D basis.dtype {self.fb_basis.dtype} does not match self.dtype {self.dtype}."
-            )
-
-        # Sanity Checks
-        assert hasattr(self.pca_basis, "calculate_bispectrum")
 
         if self.src.n < self.bispectrum_components:
             raise RuntimeError(
@@ -156,7 +147,11 @@ class RIRClass2D(Class2D):
         # Initial round of component truncation is before bispectrum.
         #  default of 400 components was taken from legacy code.
         # Instantiate a new compressed (truncated) basis.
-        self.pca_basis = self.pca_basis.compress(self.fspca_components)
+        if self.pca_basis is None:
+            # self.pca_basis = self.pca_basis.compress(self.fspca_components)
+            self.pca_basis = FSPCABasis(self.src, components=self.fspca_components)
+        # For convenience, assign the fb_basis used in the pca_basis.
+        self.fb_basis = self.pca_basis.basis
 
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef

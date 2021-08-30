@@ -72,15 +72,15 @@ class SteerableBasis2D(Basis):
         #   but that's ignored here, instead construct a dense
         #   array and filter it later.
         #  The plan is to revisit this code after appropriate coef classes are derived.
-        if hasattr(self, "compressed") and self.compressed:
-            # Default array to fill_value, we can use a value
-            # k should never achieve..
-            fill_value = self.complex_count ** 2
-            compressed_radial_map = (
-                np.ones(np.max(unique_radial_indices) + 1, dtype=int) * fill_value
-            )
-            for uniq_q_index, q_value in enumerate(unique_radial_indices):
-                compressed_radial_map[q_value] = uniq_q_index
+
+        # Default array to fill_value, we can use a value
+        # k should never achieve..
+        fill_value = self.complex_count ** 2
+        compressed_radial_map = (
+            np.ones(np.max(unique_radial_indices) + 1, dtype=int) * fill_value
+        )
+        for uniq_q_index, q_value in enumerate(unique_radial_indices):
+            compressed_radial_map[q_value] = uniq_q_index
 
         B = np.zeros(
             (self.complex_count, self.complex_count, unique_radial_indices.shape[0]),

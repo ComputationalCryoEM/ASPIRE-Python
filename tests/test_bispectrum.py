@@ -41,7 +41,6 @@ class BispectrumTestCase(TestCase):
 
         # Prepare a FSPCA Basis too.
         self.fspca_basis = FSPCABasis(self.src, self.basis)
-        self.fspca_basis.build(self.v1)
 
     def testRotationalInvarianceFB(self):
         """
@@ -84,7 +83,7 @@ class BispectrumTestCase(TestCase):
 
         # Create a reduced rank (compressed) FSPCABasis, top 100 components.
         components = 100
-        compressed_fspca = self.fspca_basis.compress(n=components)
+        compressed_fspca = FSPCABasis(self.src, self.basis, components=components)
 
         # Compress using representation in the compressed FSPCA
         cv1_r = compressed_fspca.expand(self.v1)

@@ -46,8 +46,6 @@ class FSPCATestCase(TestCase):
 
         # Configure an FSPCA basis
         self.fspca_basis = FSPCABasis(self.src, noise_var=0)
-        # Compute the FSPCA basis
-        self.fspca_basis.build()
 
     def testExpandEval(self):
         coef = self.fspca_basis.expand_from_image_basis(self.imgs)
@@ -132,23 +130,14 @@ class RIRClass2DTestCase(TestCase):
         # Set up FFB
         # Setup a Basis
         self.basis = FFBBasis2D((self.resolution, self.resolution), dtype=self.dtype)
-        # Calculate Fourier Bessel Coefs
-        self.clean_coefs = self.basis.evaluate_t(
-            self.clean_src.images(0, self.clean_src.n)
-        )
-        self.noisy_coefs = self.basis.evaluate_t(
-            self.noisy_src.images(0, self.clean_src.n)
-        )
 
-        # Create Basis
+        # Create Basis, use precomputed Basis
         self.clean_fspca_basis = FSPCABasis(
             self.clean_src, self.basis, noise_var=0
         )  # Note noise_var assigned zero, skips eigval filtering.
-        self.clean_fspca_basis.build(self.clean_coefs)
 
-        self.noisy_fspca_basis = FSPCABasis(self.noisy_src, self.basis)
-        # This line will test autogeneration of coefs when not supplied.
-        self.noisy_fspca_basis.build()
+        # Ceate another fspca_basis, use autogeneration FFB2D Basis
+        self.noisy_fspca_basis = FSPCABasis(self.noisy_src)
 
     def testClass2DBase(self):
         """
@@ -178,9 +167,10 @@ class RIRClass2DTestCase(TestCase):
         """
         Currently just tests for runtime errors.
         """
+
+        # Use the basis class setup, only requires a Source.
         rir = RIRClass2D(
             self.clean_src,
-            self.clean_fspca_basis,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="devel",
@@ -221,7 +211,7 @@ class RIRClass2DTestCase(TestCase):
         eigimg_uncompressed = fspca.eigen_images()
 
         # Compresses the FSPCA basis
-        compressed_fspca = fspca.compress(150)
+        compressed_fspca = fspca._compress(150)
 
         # Get the eigenimages
         eigimg_compressed = compressed_fspca.eigen_images()
