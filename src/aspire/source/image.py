@@ -768,7 +768,7 @@ class ArrayImageSource(ImageSource):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
         """
-        
+
         if not isinstance(im, Image):
             logger.info("Attempting to create an Image object from Numpy array.")
             try:
