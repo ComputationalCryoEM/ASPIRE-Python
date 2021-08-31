@@ -6,11 +6,11 @@ from multiprocessing import cpu_count
 import mrcfile
 import numpy as np
 import pandas as pd
+import starfile
 
 from aspire.image import Image
 from aspire.operators import CTFFilter
 from aspire.source import ImageSource
-from aspire.storage import StarFile
 from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class RelionSource(ImageSource):
 
         # Note: Valid Relion image "_data.star" files have to have their data in the first loop of the first block.
         # We thus index our StarFile class with [0][0].
-        df = StarFile(filepath)[0][0]
+        df = starfile.read(filepath)
         column_types = {name: cls.metadata_fields.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 
