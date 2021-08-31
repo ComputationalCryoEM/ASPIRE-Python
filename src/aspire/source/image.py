@@ -5,7 +5,7 @@ import mrcfile
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
-import starfile
+from aspire.source.starfile import StarFile
 
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
@@ -658,7 +658,7 @@ class ImageSource:
         # the starfile library will automatically add in an underscore, so we remove it from our columns
         df.columns = [col[1:] for col in df.columns]
         # write the dataframe directly to a starfile
-        starfile.write(df, starfile_filepath, overwrite=True)
+        StarFile.write(df, starfile_filepath)
 
         return filename_indices
 
