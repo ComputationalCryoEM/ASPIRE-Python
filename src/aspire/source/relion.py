@@ -25,9 +25,10 @@ class RelionSource(ImageSource):
         else:
             data_folder = os.path.dirname(filepath)
 
-        # Note: Valid Relion image "_data.star" files have to have their data in the first loop of the first block.
-        # We thus index our StarFile class with [0][0].
+        # read star file directly into a pandas dataframe (note this will be an ordered dict of DFs if the star file contains multiple blocks)
         df = starfile.read(filepath)
+        # the starfile package automatically strips the underscore from the column names, so we need to add it back in
+        df.columns = ["_" + col for col in df.columns]
         column_types = {name: cls.metadata_fields.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 

@@ -657,10 +657,13 @@ class ImageSource:
         filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[
         1
         ].tolist()
-
-        # initial the star file object and save it
-        starfile_out = starfile.new(df, f) 
-        starfile_out.save(f)
+        
+        
+        # the starfile library will automatically add in an underscore, so we remove it from our columns
+        df.columns = [col[1:] for col in df.columns]
+        # write the dataframe directly to a starfile
+        starfile.write(df, starfile_filepath, overwrite=True) 
+        
 
         return filename_indices
 
