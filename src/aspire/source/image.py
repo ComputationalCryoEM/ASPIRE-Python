@@ -617,7 +617,6 @@ class ImageSource:
             axis=1,
         )
 
-        
         if new_mrcs:
             # Create a new column that we will be populating in the loop below
             # For
@@ -654,16 +653,12 @@ class ImageSource:
                         for j in range(num)
                     ]
 
-        filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[
-        1
-        ].tolist()
-        
-        
+        filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
+
         # the starfile library will automatically add in an underscore, so we remove it from our columns
         df.columns = [col[1:] for col in df.columns]
         # write the dataframe directly to a starfile
-        starfile.write(df, starfile_filepath, overwrite=True) 
-        
+        starfile.write(df, starfile_filepath, overwrite=True)
 
         return filename_indices
 

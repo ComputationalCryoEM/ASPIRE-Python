@@ -37,7 +37,7 @@ setup(
         "scipy==1.4.0",
         "scikit-learn",
         "setuptools>=0.41",
-	"starfile==0.4.5",
+        "starfile==0.4.5",
         "tqdm",
     ],
     # Here we can call out specific extras,
