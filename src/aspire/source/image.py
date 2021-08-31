@@ -5,7 +5,7 @@ import mrcfile
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
-from aspire.source.starfile import StarFile
+from aspire.storage.starfile import StarFile
 
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
@@ -22,7 +22,7 @@ from aspire.operators import (
     MultiplicativeFilter,
     PowerFilter,
 )
-from aspire.storage import MrcStats, StarFile, StarFileBlock
+from aspire.storage import MrcStats
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 
