@@ -55,6 +55,22 @@ class ImageTestCase(TestCase):
         im = src.images(start=0, num=np.inf)  # returns Image instance
         self.assertTrue(np.allclose(im.asnumpy(), self.ims_np))
 
+    def testArrayImageSourceFromNumpy(self):
+        """
+        An Array can be wrapped in an ArrayImageSource when we need to deal with ImageSource objects.
+
+        This checks round trip conversion does not crash and returns identity.
+        """
+
+        # Create an ArrayImageSource directly from Numpy array
+        src = ArrayImageSource(self.ims_np)
+
+        # Ask the Source for all images in the stack as a Numpy array
+        ims_np = src.images(start=0, num=np.inf).asnumpy()
+
+        # Comparison should be yield identity
+        self.assertTrue(np.allclose(ims_np, self.ims_np))
+
     def testArrayImageSourceAngGetterError(self):
         """
         Test that ArrayImageSource when instantiated without required
