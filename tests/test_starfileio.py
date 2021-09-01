@@ -36,7 +36,7 @@ def grouper(iterable, n, fillvalue=None):
 class StarFileTestCase(TestCase):
     def setUp(self):
         with importlib_resources.path(tests.saved_test_data, "sample_relion_data.star") as path:
-            self.starfile_oneblock = StarFile.read(path)
+            self.starfile_singleblock = StarFile.read(path)
         with importlib_resources.path(tests.saved_test_data, "sample_data_model.star") as path:
             self.starfile_multiblock = StarFile.read(path)
         # Independent Image object for testing Image source methods
@@ -61,10 +61,17 @@ class StarFileTestCase(TestCase):
         # Destroy the tmpdir instance and contents
         self._tmpdir.cleanup()
 
-    def testLength(self):
-        # StarFile is an iterable that gives us blocks.
-        #   We have 2 blocks in our sample starfile.
-        self.assertEqual(2, len(self.starfile))
+    def testLengthSingleBlock(self):
+        # starfile_oneblock is an OrderedDict containing one
+        # pandas dataframe, representing the single data block
+        # in this STAR file. It should have length 1
+        self.assertEqual(1, len(self.starfile_singleblock))
+
+    def testLengthMultiBlock(self):
+        # starfile_multiblock is an OrderedDict containing 6
+        # pandas dataframes, representing the 6 data blocks
+        # in this STAR file. It should have length 6
+        self.assertEqual(6, len(self.starfile_multiblock)
 
     def testIteration(self):
         # A StarFile can be iterated over, yielding StarFileBlocks
