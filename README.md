@@ -48,7 +48,7 @@ conda env create -f environment.yml --name aspire_dev
 conda activate aspire_dev
 
 # Install the aspire package in a locally editable way,
-# and additional installs the developer tools extras:
+# and additionally installs the developer tools extras:
 pip install -e ".[dev]"
 
 ```
@@ -56,7 +56,7 @@ pip install -e ".[dev]"
 If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.6.
 Please see the full documentation for details.
 
-You may optionally install additional packages for GPU extension:
+You may optionally install additional packages for GPU extensions:
 
 ```
 # Additional GPU packages (requires CUDA)
