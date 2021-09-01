@@ -150,25 +150,20 @@ class StarFileTestCase(TestCase):
                         
 
     def testBlockProperties(self):
-        # A StarFileBlock may have attributes that were read from the
-        #   starfile key=>value pairs.
+        # Each block in the STAR file is represented by a dataframe
+        # we can access the values in the block by interacting with the dataframe
         block = self.starfile_multiblock["model_general"]
         # Note that no typecasting is performed
         self.assertEqual(block["rlnReferenceDimensionality"], "3")
         # We can also access the data directly via properties of the dataframe
         self.assertEqual(block._rlnReferenceDimensionality, "3")
-       
-
-    def testLoop(self):
-        loop = self.starfile[1][0]
-        self.assertIsInstance(loop, DataFrame)
 
     def testData1(self):
-        df = self.starfile["planetary"][0]
-        self.assertEqual(8, len(df))
-        self.assertEqual(4, len(df.columns))
+        df = self.starfile_multiblock["model_group_1"]
+        self.assertEqual(76, len(df))
+        self.assertEqual(3, len(df.columns))
         # Note that no typecasting of values is performed at io.StarFile level
-        self.assertEqual("1", df[df["_name"] == "Earth"].iloc[0]["_gravity"])
+        self.assertEqual("0.005333", df[df["rlnSpectralIndex"] == "1"].iloc[0]["rlnResolution"])
 
     def testData2(self):
         df = self.starfile["planetary"][1]
