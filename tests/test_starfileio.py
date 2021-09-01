@@ -127,22 +127,26 @@ class StarFileTestCase(TestCase):
 
     def testBlockByIndex(self):
         # We can access each block by index if we convert the OrderedDict to a list
+
+        # Here we use the pandas.DataFrame.equals() method to compare
+        # the block obtained by index with the block obtained by name
+
         list_singleblock = list(self.starfile_singleblock.items())
         kv_pair_single = list_singleblock[0]
         # make sure we are accessing the correct block
         self.assertEqual('model_class_1', kv_pair_single[0])
-        self.assertEqual(self.starfile_singleblock['model_class_1'], kv_pair_single[1])
+        self.assertTrue(self.starfile_singleblock['model_class_1'].equals(kv_pair_single[1]))
 
         list_multiblock = list(self.starfile_multiblock.items())
         kv_pair0 = list_multiblock[0]
         self.assertEqual('model_general', kv_pair0[0])
-        self.assertEqual(self.starfile_multiblock['model_general'], kv_pair0[1])
+        self.assertTrue(self.starfile_multiblock['model_general'].equals(kv_pair0[1]))
         kv_pair1 = list_multiblock[1]
         self.assertEqual('model_classes', kv_pair1[0])
-        self.assertEqual(self.starfile_multiblock['model_classes'], kv_pair1[1])
+        self.assertTrue(self.starfile_multiblock['model_classes'].equals(kv_pair1[1]))
         kv_pair2 = list_multiblock[2]
         self.assertEqual('model_class_1', kv_pair2[0])
-        self.assertEqual(self.starfile_multiblock['model_class_1'], kv_pair2[1])
+        self.assertTrue(self.starfile_multiblock['model_class_1'].equals(kv_pair2[1]))
                         
 
     def testBlockProperties(self):
