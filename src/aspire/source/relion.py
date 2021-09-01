@@ -29,8 +29,7 @@ class RelionSource(ImageSource):
         # read star file directly into a pandas dataframe
         # note that since we expect a STAR file of one block, 
         # StarFile.read() returns an OrderedDict with one pandas dataframe
-        # indexed by the empty string
-        df = StarFile.read(filepath)['']
+        df = list(StarFile.read(filepath).items())[0][1]
         # the starfile package automatically strips the underscore from the column names, so we need to add it back in
         df.columns = ["_" + col for col in df.columns]
         column_types = {name: cls.metadata_fields.get(name, str) for name in df.columns}

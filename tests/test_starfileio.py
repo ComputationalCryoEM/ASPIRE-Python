@@ -152,9 +152,12 @@ class StarFileTestCase(TestCase):
     def testBlockProperties(self):
         # A StarFileBlock may have attributes that were read from the
         #   starfile key=>value pairs.
-        block0 = self.starfile["general"]
+        block = self.starfile_multiblock["model_general"]
         # Note that no typecasting is performed
-        self.assertEqual(block0._three, "3")
+        self.assertEqual(block["rlnReferenceDimensionality"], "3")
+        # We can also access the data directly via properties of the dataframe
+        self.assertEqual(block._rlnReferenceDimensionality, "3")
+       
 
     def testLoop(self):
         loop = self.starfile[1][0]
