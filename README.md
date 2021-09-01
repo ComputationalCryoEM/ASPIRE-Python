@@ -41,26 +41,26 @@ After cloning this repo, the simplest option is to use Anaconda 64-bit for your 
 ```
 cd /path/to/git/clone/folder
 
-# Create's the conda environment and installs base dependencies.
+# Creates the conda environment and installs base dependencies.
 conda env create -f environment.yml --name aspire_dev
 
 # Enable the environment
 conda activate aspire_dev
 
-# Install the aspire package in a locally editable way:
-pip install -e .
+# Install the aspire package in a locally editable way,
+# and additional installs the developer tools extras:
+pip install -e ".[dev]"
+
 ```
 
 If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.6.
 Please see the full documentation for details.
 
-You may optionally install additional packages:
+You may optionally install additional packages for GPU extension:
 
 ```
-# Additional GPU packages (reqires CUDA)
+# Additional GPU packages (requires CUDA)
 pip install -e ".[gpu]"
-# Additional developer tools
-pip install -e ".[dev]"
 ```
 
 ### Make sure everything works
