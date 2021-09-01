@@ -71,17 +71,17 @@ class StarFileTestCase(TestCase):
         # starfile_multiblock is an OrderedDict containing 6
         # pandas dataframes, representing the 6 data blocks
         # in this STAR file. It should have length 6
-        self.assertEqual(6, len(self.starfile_multiblock)
+        self.assertEqual(6, len(self.starfile_multiblock))
 
     def testDictIteration(self):
         # starfile_singleblock and starfile_multiblock are OrderedDicts 
         # of dataframes indexed by strings
         for blockname, block in self.starfile_singleblock.items():
             self.assertTrue(isinstance(blockname, str))
-            self.assertTrue(isinstance(block, pd.DataFrame))
+            self.assertTrue(isinstance(block, DataFrame))
         for blockname, block in self.starfile_multiblock.items():
-            self.assertTrue(isinstance(blockname, str)
-            self.assertTrue(isinstance(block, pd.DataFrame)
+            self.assertTrue(isinstance(blockname, str))
+            self.assertTrue(isinstance(block, DataFrame))
 
     def testListIteration(self):
         # to access blocks by index, we have to convert the items() 
@@ -92,12 +92,12 @@ class StarFileTestCase(TestCase):
             # this is a tuple containing the key and the value at index i
             kv_pair = list_singleblock[i]
             self.assertTrue(isinstance(kv_pair[0], str))
-            self.assertTrue(isinstance(kv_pair[1], pd.DataFrame))
+            self.assertTrue(isinstance(kv_pair[1], DataFrame))
         for i in range(len(list_multiblock)):
             # this is a tuple containing the key and the value at index i
             kv_pair = list_multiblock[i]
             self.assertTrue(isinstance(kv_pair[0], str))
-            self.assertTrue(isinstance(kv_pair[1], pd.DataFrame))
+            self.assertTrue(isinstance(kv_pair[1], DataFrame))
 
     def testBlockByName(self):
         # We can access each block by name.
@@ -106,22 +106,22 @@ class StarFileTestCase(TestCase):
         # single block case:
         datablock = self.starfile_singleblock['model_class_1']
         # make sure we're actually getting a DF
-        self.assertTrue(isinstance(datablock, pd.DataFrame))
+        self.assertTrue(isinstance(datablock, DataFrame))
         # make sure this is the *right* DF
         self.assertEqual(17, len(datablock))
         self.assertEqual(29, len(datablock.columns))
 
         # multi block case:
         block1 = self.starfile_multiblock['model_general']
-        self.assertTrue(isinstance(block1, pd.DataFrame)
+        self.assertTrue(isinstance(block1, DataFrame))
         self.assertEqual(1, len(block1))
         self.assertEqual(22, len(block1.columns))
         block2 = self.starfile_multiblock['model_classes']
-        self.assertTrue(isinstance(block2, pd.DataFrame)
+        self.assertTrue(isinstance(block2, DataFrame))
         self.assertEqual(1, len(block2))
         self.assertEqual(4, len(block2.columns))
         block3 = self.starfile_multiblock['model_class_1']
-        self.assertTrue(isinstance(block3, pd.DataFrame))
+        self.assertTrue(isinstance(block3, DataFrame))
         self.assertEqual(76, len(block3))
         self.assertEqual(8, len(block3.columns))
 
