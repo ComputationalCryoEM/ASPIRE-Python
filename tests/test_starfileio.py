@@ -73,25 +73,60 @@ class StarFileTestCase(TestCase):
         # in this STAR file. It should have length 6
         self.assertEqual(6, len(self.starfile_multiblock)
 
-    def testIteration(self):
-        # A StarFile can be iterated over, yielding StarFileBlocks
-        for block in self.starfile:
-            self.assertTrue(isinstance(block, StarFileBlock))
+    def testDictIteration(self):
+        # starfile_singleblock and starfile_multiblock are OrderedDicts 
+        # of dataframes indexed by strings
+        for blockname, block in self.starfile_singleblock.items():
+            self.assertTrue(isinstance(blockname, str))
+            self.assertTrue(isinstance(block, pd.DataFrame))
+        for blockname, block in self.starfile_multiblock.items():
+            self.assertTrue(isinstance(blockname, str)
+            self.assertTrue(isinstance(block, pd.DataFrame)
 
-    def testBlockByIndex(self):
-        # Indexing a StarFile with a 0-based index gives us a 'block',
-        block0 = self.starfile[0]
-        self.assertTrue(isinstance(block0, StarFileBlock))
-        # Our first block has no 'loop's.
-        self.assertEqual(0, len(block0))
+    def testListIteration(self):
+        # to access blocks by index, we have to convert the items() 
+        # of the OrderedDict to a list of tuples
+        list_singleblock = list(self.starfile_singleblock.items())
+        list_multiblock = list(self.starfile_multiblock.items())
+        for i in range(len(list_singleblock)):
+            # this is a tuple containing the key and the value at index i
+            kv_pair = list_singleblock[i]
+            self.assertTrue(isinstance(kv_pair[0], str))
+            self.assertTrue(isinstance(kv_pair[1], pd.DataFrame))
+        for i in range(len(list_multiblock)):
+            # this is a tuple containing the key and the value at index i
+            kv_pair = list_multiblock[i]
+            self.assertTrue(isinstance(kv_pair[0], str))
+            self.assertTrue(isinstance(kv_pair[1], pd.DataFrame))
 
     def testBlockByName(self):
-        # Indexing a StarFile with a string gives us a block with that name
-        #   ("data_<name>" in starfile).
-        # In our case the block at index 1 has name 'planetary'
-        block1 = self.starfile["planetary"]
-        # This block has a two 'loops'.
-        self.assertEqual(2, len(block1))
+        # We can access each block by name.
+        # the blocks are indexed by their name in the OrderedDict
+
+        # single block case:
+        datablock = self.starfile_singleblock['model_class_1']
+        # make sure we're actually getting a DF
+        self.assertTrue(isinstance(datablock, pd.DataFrame))
+        # make sure this is the *right* DF
+        self.assertEqual(17, len(datablock))
+        self.assertEqual(29, len(datablock.columns))
+
+        # multi block case:
+        block1 = self.starfile_multiblock['model_general']
+        self.assertTrue(isinstance(block1, pd.DataFrame)
+        self.assertEqual(1, len(block1))
+        self.assertEqual(22, len(block1.columns))
+        block2 = self.starfile_multiblock['model_classes']
+        self.assertTrue(isinstance(block2, pd.DataFrame)
+        self.assertEqual(1, len(block2))
+        self.assertEqual(4, len(block2.columns))
+        block3 = self.starfile_multiblock['model_class_1']
+        self.assertTrue(isinstance(block3, pd.DataFrame))
+        self.assertEqual(76, len(block3))
+        self.assertEqual(8, len(block3.columns))
+
+    def testBlockByIndex(self):
+       
 
     def testBlockProperties(self):
         # A StarFileBlock may have attributes that were read from the
