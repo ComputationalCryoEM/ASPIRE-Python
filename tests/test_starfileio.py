@@ -11,7 +11,7 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.storage import StarFile, StarFileBlock
+from aspire.storage.starfile import StarFile
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -35,9 +35,10 @@ def grouper(iterable, n, fillvalue=None):
 
 class StarFileTestCase(TestCase):
     def setUp(self):
-        with importlib_resources.path(tests.saved_test_data, "sample.star") as path:
-            self.starfile = StarFile(path)
-
+        with importlib_resources.path(tests.saved_test_data, "sample_relion_data.star") as path:
+            self.starfile_oneblock = StarFile.read(path)
+        with importlib_resources.path(tests.saved_test_data, "sample_data_model.star") as path:
+            self.starfile_multiblock = StarFile.read(path)
         # Independent Image object for testing Image source methods
         L = 768
         self.im = Image(misc.face(gray=True).astype("float64")[:L, :L])
