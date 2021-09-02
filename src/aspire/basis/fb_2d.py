@@ -3,15 +3,16 @@ import logging
 import numpy as np
 from scipy.special import jv
 
-from aspire.basis import Basis
+from aspire.basis import SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
-from aspire.utils import ensure, roll_dim, unroll_dim
+from aspire.image import Image
+from aspire.utils import complex_type, ensure, real_type, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
 
 
-class FBBasis2D(Basis):
+class FBBasis2D(SteerableBasis2D):
     """
     Define a derived class using the Fourier-Bessel basis for mapping 2D images
 
@@ -59,6 +60,7 @@ class FBBasis2D(Basis):
         self.basis_coords = unique_coords_nd(self.nres, self.ndim, dtype=self.dtype)
 
         # generate 1D indices for basis functions
+        self._compute_indices()
         self._indices = self.indices()
 
         # get normalized factors
@@ -67,28 +69,57 @@ class FBBasis2D(Basis):
         # precompute the basis functions in 2D grids
         self._precomp = self._precomp()
 
-    def indices(self):
+    def _compute_indices(self):
         """
         Create the indices for each basis function
         """
-        indices_ells = np.zeros(self.count, dtype=np.int)
-        indices_ks = np.zeros(self.count, dtype=np.int)
-        indices_sgns = np.zeros(self.count, dtype=np.int)
+        indices_ells = np.zeros(self.count, dtype=int)
+        indices_ks = np.zeros(self.count, dtype=int)
+        indices_sgns = np.zeros(self.count, dtype=int)
+
+        # We'll also generate a mapping for complex construction
+        self.complex_count = sum(self.k_max)
+        # These map indices in complex array to pair of indices in real array
+        self._pos = np.zeros(self.complex_count, dtype=np.int)
+        self._neg = np.zeros(self.complex_count, dtype=np.int)
 
         i = 0
+        ci = 0
         for ell in range(self.ell_max + 1):
             sgns = (1,) if ell == 0 else (1, -1)
-            ks = range(0, self.k_max[ell])
+            ks = np.arange(0, self.k_max[ell])
 
             for sgn in sgns:
-                rng = range(i, i + len(ks))
+                rng = np.arange(i, i + len(ks))
                 indices_ells[rng] = ell
                 indices_ks[rng] = ks
                 indices_sgns[rng] = sgn
 
-                i += len(rng)
+                if sgn == 1:
+                    self._pos[ci + ks] = rng
+                elif sgn == -1:
+                    self._neg[ci + ks] = rng
 
-        return {"ells": indices_ells, "ks": indices_ks, "sgns": indices_sgns}
+                i += len(ks)
+
+            ci += len(ks)
+
+        self.angular_indices = indices_ells
+        self.radial_indices = indices_ks
+        self.signs_indices = indices_sgns
+        # Relating to paper: a[i] = a_ell_ks = a_angularindices[i]_radialindices[i]
+        self.complex_angular_indices = indices_ells[self._pos]  # k
+        self.complex_radial_indices = indices_ks[self._pos]  # q
+
+    def indices(self):
+        """
+        Return the precomputed indices for each basis function.
+        """
+        return {
+            "ells": self.angular_indices,
+            "ks": self.radial_indices,
+            "sgns": self.signs_indices,
+        }
 
     def _precomp(self):
         """
@@ -226,6 +257,9 @@ class FBBasis2D(Basis):
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
+        if isinstance(v, Image):
+            v = v.asnumpy()
+
         v = v.T  # RCOPT
 
         x, sz_roll = unroll_dim(v, self.ndim + 1)
@@ -263,3 +297,137 @@ class FBBasis2D(Basis):
 
         v = roll_dim(v, sz_roll)
         return v.T  # RCOPT
+
+    def to_complex(self, coef):
+        """
+        Return complex valued representation of coefficients.
+        This can be useful when comparing or implementing methods
+        from literature.
+
+        There is a corresponding method, to_real.
+
+        :param coef: Coefficients from this basis.
+        :return: Complex coefficent representation from this basis.
+        """
+
+        if coef.ndim == 1:
+            coef = coef.reshape(1, -1)
+
+        if coef.dtype not in (np.float64, np.float32):
+            raise TypeError("coef provided to to_complex should be real.")
+
+        # Pass through dtype precions, but check and warn if mismatched.
+        dtype = complex_type(coef.dtype)
+        if coef.dtype != self.dtype:
+            logger.warning(
+                f"coef dtype {coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
+            )
+
+        # Return the same precision as coef
+        imaginary = dtype(1j)
+
+        ccoef = np.zeros((coef.shape[0], self.complex_count), dtype=dtype)
+
+        ind = 0
+        idx = np.arange(self.k_max[0], dtype=int)
+        ind += np.size(idx)
+
+        ccoef[:, idx] = coef[:, idx]
+
+        for ell in range(1, self.ell_max + 1):
+            idx = ind + np.arange(self.k_max[ell], dtype=int)
+            ccoef[:, idx] = (
+                coef[:, self._pos[idx]] - imaginary * coef[:, self._neg[idx]]
+            ) / 2.0
+
+            ind += np.size(idx)
+
+        return ccoef
+
+    def to_real(self, complex_coef):
+        """
+        Return real valued representation of complex coefficients.
+        This can be useful when comparing or implementing methods
+        from literature.
+
+        There is a corresponding method, to_complex.
+
+        :param complex_coef: Complex coefficients from this basis.
+        :return: Real coefficent representation from this basis.
+        """
+        if complex_coef.ndim == 1:
+            complex_coef = complex_coef.reshape(1, -1)
+
+        if complex_coef.dtype not in (np.complex128, np.complex64):
+            raise TypeError("coef provided to to_real should be complex.")
+
+        # Pass through dtype precions, but check and warn if mismatched.
+        dtype = real_type(complex_coef.dtype)
+        if dtype != self.dtype:
+            logger.warning(
+                f"Complex coef dtype {complex_coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
+            )
+
+        coef = np.zeros((complex_coef.shape[0], self.count), dtype=dtype)
+
+        ind = 0
+        idx = np.arange(self.k_max[0], dtype=int)
+        ind += np.size(idx)
+        ind_pos = ind
+
+        coef[:, idx] = complex_coef[:, idx].real
+
+        for ell in range(1, self.ell_max + 1):
+            idx = ind + np.arange(self.k_max[ell], dtype=int)
+            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
+            idx_neg = idx_pos + self.k_max[ell]
+
+            c = complex_coef[:, idx]
+            coef[:, idx_pos] = 2.0 * np.real(c)
+            coef[:, idx_neg] = -2.0 * np.imag(c)
+
+            ind += np.size(idx)
+            ind_pos += 2 * self.k_max[ell]
+
+        return coef
+
+    def calculate_bispectrum(
+        self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
+    ):
+        """
+        Calculate bispectrum for a set of coefs in this basis.
+
+        The Bispectum matrix is of shape:
+            (count, count, unique_radial_indices)
+
+        where count is the number of complex coefficients.
+
+        :param coef: Coefficients representing a (single) image expanded in this basis.
+        :param flatten: Optionally extract symmetric values (tril) and then flatten.
+        :param freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
+        :return: Bispectum matrix (complex valued).
+        """
+
+        # Bispectrum implementation expects the complex representation of coefficients.
+        complex_coef = self.to_complex(coef)
+
+        return super().calculate_bispectrum(
+            complex_coef,
+            flatten=flatten,
+            filter_nonzero_freqs=filter_nonzero_freqs,
+            freq_cutoff=freq_cutoff,
+        )
+
+    def rotate(self, coef, radians, refl=None):
+        """
+        Returns coefs rotated by `radians`.
+
+        :param coef: Basis coefs.
+        :param radians: Rotation in radians.
+        :param refl: Optional reflect image (bool)
+        :return: rotated coefs.
+        """
+
+        # Base class rotation expects complex representation of coefficients.
+        #  Convert, rotate and convert back to real representation.
+        return self.to_real(super().rotate(self.to_complex(coef), radians, refl))

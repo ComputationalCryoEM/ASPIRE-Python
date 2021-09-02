@@ -4,6 +4,7 @@ from .matrix import (
     ainner,
     anorm,
     eigs,
+    fix_signs,
     im_to_vec,
     make_psd,
     make_symmat,

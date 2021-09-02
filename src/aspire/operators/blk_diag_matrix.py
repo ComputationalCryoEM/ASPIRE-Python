@@ -178,7 +178,7 @@ class BlkDiagMatrix:
         if self.dtype != other.dtype:
             raise RuntimeError(
                 "BlkDiagMatrix received different types,"
-                " {} and {}.  Please validate and cast"
+                "self: {} and other: {}.  Please validate and cast"
                 " as appropriate.".format(self.dtype, other.dtype)
             )
 
@@ -709,16 +709,21 @@ class BlkDiagMatrix:
 
         return Y
 
+    def eigvals(self):
+        """
+        Compute the eigenvalues of a BlkDiagMatrix.
+        :return: Array of eigvals, with length equal to the fully expanded matrix diagonal.
+
+        """
+        return np.concatenate([np.linalg.eigvals(blk).flatten() for blk in self])
+
     def check_psd(self):
         """
         Check the positive semidefinite property of all blocks
 
         :return: True if all blocks have non-negative eigenvalues.
         """
-        eigenvalues = np.concatenate(
-            [np.linalg.eigvals(mat).flatten() for mat in self.data]
-        )
-        return np.alltrue(eigenvalues > 0.0)
+        return np.alltrue(self.eigvals() > 0.0)
 
     def make_psd(self):
         """
