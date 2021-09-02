@@ -32,8 +32,8 @@ _rlnReferenceImage #1
 _rlnClassDistribution #2 
 _rlnAccuracyRotations #3 
 _rlnAccuracyTranslations #4 
-Class3D/run_001_it025_class001.mrc     1.000000     1.801000     0.559000 
- 
+Class3D/run_001_it025_class001.mrc     1.000000     1.801000     5.000000
+
 
 data_model_class_1
 

@@ -21,7 +21,7 @@ class StarFile:
         return star
 
     @staticmethod
-    def write(df, filename, float_format='%.6f', sep='\t', na_rep='<NA>', overwrite=True):
+    def write(df, filename, float_format='%.6f', overwrite=True):
         # wraps the write() method exactly, except that we enable the overwrite flag by default
         # to mimic the behavior of the previous StarFile class
-        starfile.write(df, filename, float_format=float_format, sep=sep, na_rep=na_rep, overwrite=overwrite)
+        starfile.new(df, filename, float_format=float_format, overwrite=overwrite)

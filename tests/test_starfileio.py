@@ -6,6 +6,7 @@ from unittest import TestCase
 import importlib_resources
 import numpy as np
 from pandas import DataFrame
+import pandas as pd
 from scipy import misc
 
 import tests.saved_test_data
@@ -153,33 +154,28 @@ class StarFileTestCase(TestCase):
         # Each block in the STAR file is represented by a dataframe
         # we can access the values in the block by interacting with the dataframe
         block = self.starfile_multiblock["model_general"]
-        # Note that no typecasting is performed
-        self.assertEqual(block["rlnReferenceDimensionality"], "3")
-        # We can also access the data directly via properties of the dataframe
-        self.assertEqual(block._rlnReferenceDimensionality, "3")
+        # Note that typecasting IS performed
+        self.assertEqual(block["rlnReferenceDimensionality"][0], 3)
 
-    def testData1(self):
+    def testData(self):
         df = self.starfile_multiblock["model_group_1"]
         self.assertEqual(76, len(df))
         self.assertEqual(3, len(df.columns))
         # Note that no typecasting of values is performed at io.StarFile level
-        self.assertEqual("0.005333", df[df["rlnSpectralIndex"] == "1"].iloc[0]["rlnResolution"])
-
-    def testData2(self):
-        df = self.starfile["planetary"][1]
-        self.assertEqual(3, len(df))
-        self.assertEqual(2, len(df.columns))
-        # Missing values in a loop default to ''
-        self.assertEqual("", df[df["_name"] == "Earth"].iloc[0]["_discovered_year"])
+        self.assertEqual(0.005333, df[df["rlnSpectralIndex"] == 1].iloc[0]["rlnResolution"])
 
     def testSave(self):
-        # Save the StarFile object to disk,
-        #   read it back, and check for equality.
-        # Note that __eq__ is supported for StarFile/StarFileBlock classes
-
-        with open("sample_saved.star", "w") as f:
-            self.starfile.save(f)
-        self.starfile2 = StarFile("sample_saved.star")
-        self.assertEqual(self.starfile, self.starfile2)
+        # Save the starfile to disk,
+        # read it back, and check for equality.
+        # 
+        pd.set_option("display.max_columns", None)
+        StarFile.write(self.starfile_multiblock, "sample_saved.star")
+        self.starfile2 = StarFile.read("sample_saved.star")
+        # check for equality by using DataFrame.equals on all elements of OrderedDict
+                
+        # this test currently fails
+        self.assertEqual(self.starfile_multiblock.keys(), self.starfile2.keys())
+        for key in self.starfile2.keys():
+            self.assertTrue(self.starfile_multiblock[key].equals(self.starfile2[key]))
 
         os.remove("sample_saved.star")
