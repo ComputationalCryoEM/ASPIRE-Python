@@ -763,7 +763,7 @@ class ArrayImageSource(ImageSource):
     def __init__(self, im, metadata=None, angles=None):
         """
         Initialize from an `Image` object
-        :param im: An `Image` or Numpy array object representing image data served up by this `ImageSource`
+        :param im: An `Image` or Numpy array object representing image data served up by this `ImageSource`.
         In the case of a Numpy array, attempts to create an 'Image' object.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
