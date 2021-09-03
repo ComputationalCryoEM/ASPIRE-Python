@@ -71,6 +71,16 @@ class ImageTestCase(TestCase):
         # Comparison should be yield identity
         self.assertTrue(np.allclose(ims_np, self.ims_np))
 
+    def testArrayImageSourceNumpyError(self):
+        """
+        Test that ArrayImageSource when instantiated with incorrect input
+        gives appropriate error.
+        """
+
+        # Test we raise with expected message from getter.
+        with raises(RuntimeError, match=r"Creating Image object from Numpy.*"):
+            _ = ArrayImageSource(np.empty((3, 2, 1)))
+
     def testArrayImageSourceAngGetterError(self):
         """
         Test that ArrayImageSource when instantiated without required

@@ -774,8 +774,10 @@ class ArrayImageSource(ImageSource):
             try:
                 im = Image(im)
             except Exception as e:
-                logger.error("Creating Image object from Numpy array failed.")
-                raise e
+                raise RuntimeError(
+                    "Creating Image object from Numpy array failed."
+                    f" Original error: {str(e)}"
+                )
 
         super().__init__(
             L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None
