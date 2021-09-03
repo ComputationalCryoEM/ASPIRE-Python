@@ -284,15 +284,10 @@ class FSPCABasis(SteerableBasis2D):
         Fourier Bessel basis.
         :return: Stack of coefs in the FSPCABasis.
         """
-        # apply linear combination defined by FSPCA (eigvecs)
-        #  can try blk_diag here, but I think needs to be extended to non square...,
-        #  or masked.
-        # c_fspca = (self.eigvecs.apply(c_fb.T)).T
-        eigvecs = self.eigvecs
-        if isinstance(eigvecs, BlkDiagMatrix):
-            eigvecs = eigvecs.dense()
 
-        c_fspca = x @ eigvecs
+        # Apply linear combination defined by FSPCA (eigvecs)
+        #  The following is equivalent to `x @ eigvecs`
+        c_fspca = self.eigvecs.T.apply(x.T).T
 
         assert c_fspca.shape == (x.shape[0], self.count)
 
