@@ -145,6 +145,16 @@ class BlkDiagMatrixTestCase(TestCase):
             e[:, i] = self.blk_a.apply(coeffm[:, i])
         self.allallfunc(e, d)
 
+        # Test the rapply is also functional
+        coeffm = coeffm.T  # matmul dimensions
+        res = coeffm @ self.blk_a.dense()
+        d = self.blk_a.rapply(coeffm)
+        self.allallfunc(res, d)
+
+        # And the syntactic sugar @
+        d = coeffm @ self.blk_a
+        self.allallfunc(res, d)
+
     def testBlkDiagMatrixMatMult(self):
         result = [np.matmul(*tup) for tup in zip(self.blk_a, self.blk_b)]
 
