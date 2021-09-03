@@ -286,8 +286,7 @@ class FSPCABasis(SteerableBasis2D):
         """
 
         # Apply linear combination defined by FSPCA (eigvecs)
-        #  The following is equivalent to `x @ eigvecs`
-        c_fspca = self.eigvecs.T.apply(x.T).T
+        c_fspca = x @ self.eigvecs
 
         assert c_fspca.shape == (x.shape[0], self.count)
 
