@@ -58,6 +58,7 @@ setup(
             "pytest-cov",
             "pytest-random-order",
             "sphinxcontrib-bibtex",
+            "sphinx-gallery",
             "sphinx-rtd-theme>=0.4.2",
             "snakeviz",
             "tox",
