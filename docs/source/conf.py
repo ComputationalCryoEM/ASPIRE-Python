@@ -38,9 +38,15 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinxcontrib.bibtex",
     "sphinx.ext.napoleon",
+    "sphinx_gallery.gen_gallery",
 ]
 bibtex_bibfiles = ["references.bib"]
 
+# Sphinx-Gallery Configuration
+sphinx_gallery_conf = {
+     'examples_dirs': '../../gallery',   # path to your example scripts
+     'gallery_dirs': 'auto_gallery',  # path to where to save gallery generated output
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

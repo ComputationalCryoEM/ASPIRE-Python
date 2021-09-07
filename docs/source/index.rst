@@ -19,6 +19,12 @@ linear and nonlinear dimensionality reduction, randomized algorithms in numerica
    modules
    authors
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Galleries:
+
+   auto_gallery/index
+
 
 Indices and tables
 ==================
