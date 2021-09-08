@@ -71,7 +71,7 @@ axs[0].imshow(img[0], cmap=plt.cm.gray)
 axs[0].set_title("Starting Image")
 axs[1].imshow(img_with_noise[0], cmap=plt.cm.gray)
 axs[1].set_title("Noisy Image")
-plt.show()
+plt.tight_layout()
 
 
 # %%
@@ -113,7 +113,7 @@ for i, img in enumerate(imgs_with_noise[0:2]):
     img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(img)))
     axs[1, i].imshow(np.log(1 + img_with_noise_f), cmap=plt.cm.gray)
     axs[1, i].set_title(f"Custom Noisy Spectrum Image {i}")
-plt.show()
+plt.tight_layout()
 
 
 # %%
@@ -155,7 +155,7 @@ for i, img in enumerate(imgs_src.images(0, 2)):
     img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(img)))
     axs[1, i].imshow(np.log(1 + img_with_noise_f), cmap=plt.cm.gray)
     axs[1, i].set_title(f"Whitened Noisy Image Spectrum {i}")
-plt.show()
+plt.tight_layout()
 
 # %%
 # Spectrum Power Distribution
@@ -196,5 +196,5 @@ for i, img in enumerate(imgs_src.images(0, len(colors))):
     )
 
 plt.title("Spectrum Profiles")
-plt.legend()
-plt.show()
+plt.gca().legend(loc="upper center", bbox_to_anchor=(0.5, -0.1))
+plt.tight_layout()

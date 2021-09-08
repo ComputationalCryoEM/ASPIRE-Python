@@ -1,5 +1,5 @@
-This is a Gallery
+Examples
 ===================
 
-Below is a gallery of examples
+Below you will find examples of various image processing tools from the ASPIRE package.
 
