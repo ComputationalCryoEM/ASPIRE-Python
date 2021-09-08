@@ -1,8 +1,16 @@
 """
+=================
 Basic Image Array
 =================
 
+
+In this example we will demonstrate some of ASPIRE's image processing functionality.
+We will add noise to a stack of copies of a stock image. We will then estimate and
+whiten that noise using some tools from the ASPIRE pipeline.
+
+
 """
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,11 +22,13 @@ from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source import ArrayImageSource
 
-# ------------------------------------------------------------------------------
+# %%
+# Stock Image
+# -----------
 # Lets get some basic image data as a numpy array.
-
 # Scipy ships with a portrait.
-#  We'll take the grayscale representation as floating point data.
+
+# We'll take the grayscale representation as floating point data.
 stock_img = misc.face(gray=True).astype(np.float32)
 
 # Crop to a square
@@ -28,12 +38,13 @@ stock_img = stock_img[0:n_pixels, 0:n_pixels]
 stock_img /= np.max(stock_img)
 
 
-# ------------------------------------------------------------------------------
-# Now that we have an example array, we'll begin using the ASPIRE toolkit.
-
-# First we'll make an ASPIRE Image instance out of our data.
+# %%
+# Add Noise to the Image
+# ----------------------
+# Now that we have an example array, we will begin using the ASPIRE toolkit.
+# First we will make an ASPIRE Image instance out of our data.
 # This is a light wrapper over the numpy array. Many ASPIRE internals
-# are built around an Image class.
+# are built around an ``Image`` class.
 
 # Construct the Image class by passing it an array of data.
 img = Image(stock_img)
@@ -42,18 +53,18 @@ new_resolution = img.res // 4
 img = img.downsample(new_resolution)
 
 
-# We'll begin processing by adding some noise.
-#   We'd like to create uniform noise for a 2d image with prescibed variance,
+# We will begin processing by adding some noise.
+# We wouldd like to create uniform noise for a 2d image with prescibed variance,
 noise_var = np.var(img.asnumpy()) * 5
 noise_filter = ScalarFilter(dim=2, value=noise_var)
 
-#   Then create a NoiseAdder.
+# Then create a NoiseAdder.
 noise = NoiseAdder(seed=123, noise_filter=noise_filter)
 
-#   We can apply the NoiseAdder to our image data.
+# We can apply the NoiseAdder to our image data.
 img_with_noise = noise.forward(img)
 
-# We'll plot the original and first noisy image,
+# We will plot the original and first noisy image,
 # because we only have one image in our Image stack right now.
 fig, axs = plt.subplots(1, 2)
 axs[0].imshow(img[0], cmap=plt.cm.gray)
@@ -63,14 +74,17 @@ axs[1].set_title("Noisy Image")
 plt.show()
 
 
-# ------------------------------------------------------------------------------
-# Great, now we have enough to try an experiment.
-# This time we'll use a stack of images.
+# %%
+# Adding Noise to a Simulated Stack of Images
+# -------------------------------------------
 #
+# Great, now we have enough to try an experiment.
+# This time we will use a stack of images.
 # In real use, you would probably bring your own array of images,
-# or use a `Simulation` object.  For now we'll create some arrays as before.
+# or use a ``Simulation`` object.  For now we'll create some arrays as before.
 # For demonstration we'll setup a stack of n_imgs,
-# with each image just being a copy of the data from `img`.
+# with each image just being a copy of the data from ``img``.
+
 n_imgs = 128
 imgs_data = np.empty((n_imgs, img.res, img.res), dtype=np.float64)
 for i in range(n_imgs):
@@ -102,11 +116,14 @@ for i, img in enumerate(imgs_with_noise[0:2]):
 plt.show()
 
 
-# ------------------------------------------------------------------------------
-# Now we''l use an ASPIRE pipeline to Whiten the image stack.
-# Here we will introduce our `Source` class and demonstrate applying a `xform`.
+# %%
+# Noise Estimation and Whitening
+# ------------------------------
+#
+# Now we will use an ASPIRE pipeline to Whiten the image stack.
+# Here we will introduce our ``Source`` class and demonstrate applying an ``xform``.
 
-# "Source" classes are what we use in processing pipelines.
+# ``Source`` classes are what we use in processing pipelines.
 # They provide a consistent interface to a variety of underlying data sources.
 # In this case, we'll just use our Image in an ArrayImageSource to run a small experiment.
 #
@@ -140,12 +157,16 @@ for i, img in enumerate(imgs_src.images(0, 2)):
     axs[1, i].set_title(f"Whitened Noisy Image Spectrum {i}")
 plt.show()
 
-
+# %%
+# Spectrum Power Distribution
+# ---------------------------
 # We'll also want to take a look at the spectrum power distribution.
-#  Since we just want to see the character of what is happening,
-#  I'll assume each pixel's contribution is placed at their lower left corner,
-#  and compute a crude radial profile.
-#  Code from a discussion at https://stackoverflow.com/questions/21242011/most-efficient-way-to-calculate-radial-profile.
+# Since we just want to see the character of what is happening,
+# I'll assume each pixel's contribution is placed at their lower left corner,
+# and compute a crude radial profile.
+# Code from a discussion at https://stackoverflow.com/questions/21242011/most-efficient-way-to-calculate-radial-profile.
+
+
 def radial_profile(data):
     y, x = np.indices((data.shape))
     # Distance from origin to lower left corner
