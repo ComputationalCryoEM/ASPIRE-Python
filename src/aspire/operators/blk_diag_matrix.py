@@ -621,7 +621,7 @@ class BlkDiagMatrix:
         """
 
         if self._cached_blk_sizes is None:
-            blk_sizes = np.empty((self.nblocks, 2), dtype=np.int)
+            blk_sizes = np.empty((self.nblocks, 2), dtype=int)
             for i, blk in enumerate(self.data):
                 blk_sizes[i] = np.shape(blk)
             self._cached_blk_sizes = blk_sizes

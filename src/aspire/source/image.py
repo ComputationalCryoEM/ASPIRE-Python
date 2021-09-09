@@ -387,7 +387,7 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        indices = np.arange(start, min(start + num, self.n), dtype=np.int)
+        indices = np.arange(start, min(start + num, self.n), dtype=int)
 
         if self._cached_im is not None:
             logger.info("Loading images from cache")
