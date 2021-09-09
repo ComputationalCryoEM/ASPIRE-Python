@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from aspire.denoising import adaptive_support
-from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.utils import gaussian_2d
 
@@ -37,7 +36,7 @@ class AdaptiveSupportTest(TestCase):
         """
 
         discs = np.empty((self.size, self.size))  # Intentional Dummy Data
-        img_src = ArrayImageSource(Image(discs))
+        img_src = ArrayImageSource(discs)
 
         with pytest.raises(ValueError, match=r"Given energy_threshold.*"):
             _ = adaptive_support(img_src, -0.5)
@@ -69,7 +68,7 @@ class AdaptiveSupportTest(TestCase):
         )
 
         # Setup ImageSource like objects
-        img_src = ArrayImageSource(Image(imgs))
+        img_src = ArrayImageSource(imgs)
 
         for ref, threshold in self.references.items():
             c, R = adaptive_support(img_src, threshold)
