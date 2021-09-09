@@ -145,6 +145,31 @@ class BlkDiagMatrixTestCase(TestCase):
             e[:, i] = self.blk_a.apply(coeffm[:, i])
         self.allallfunc(e, d)
 
+        # We can use syntactic sugar @ for apply as well
+        f = self.blk_a @ coeffm
+        self.allallfunc(f, d)
+
+        # Test the rapply is also functional
+        coeffm = coeffm.T  # matmul dimensions
+        res = coeffm @ self.blk_a.dense()
+        d = self.blk_a.rapply(coeffm)
+        self.allallfunc(res, d)
+
+        # And the syntactic sugar @
+        d = coeffm @ self.blk_a
+        self.allallfunc(res, d)
+
+        # And test some incorrrect invocations:
+        # inplace not supported for matmul of mixed classes.
+        with pytest.raises(RuntimeError, match=r".*method not supported.*"):
+            self.blk_a @= coeffm
+
+        # Test left operand of an __rmatmul__ must be an ndarray
+        with pytest.raises(
+            RuntimeError, match=r".*only defined for np.ndarray @ BlkDiagMatrix.*"
+        ):
+            _ = list(coeffm) @ self.blk_a
+
     def testBlkDiagMatrixMatMult(self):
         result = [np.matmul(*tup) for tup in zip(self.blk_a, self.blk_b)]
 

@@ -398,10 +398,12 @@ class BlkDiagMatrix:
         """
 
         if not isinstance(other, BlkDiagMatrix):
-            raise RuntimeError(
-                "Attempt BlkDiagMatrix matrix multiplication "
-                "(matmul,@) of non BlkDiagMatrix {}, try (*,mul)".format(repr(other))
-            )
+            if inplace:
+                raise RuntimeError(
+                    "`inplace` method not supported when "
+                    "mixing `BlkDiagMatrix` and `Numpy`."
+                )
+            return self.apply(other)
 
         self.__check_compatible(other, size_compat="mul")
 
@@ -423,6 +425,25 @@ class BlkDiagMatrix:
         """
 
         return self.matmul(other)
+
+    def __rmatmul__(self, lhs):
+        """
+        Compute the right matrix multiplication with a BlkDiagMatrix instance,
+        and a numpy array, lhs @ self.
+
+        :param other: The lhs Numpy instance.
+        :return: Returns numpy array representing `other @ self`.
+        """
+
+        # Note, we should only hit this method when mixing BlkDiagMatrix with numpy.
+        #   This is because if both a and b are BlkDiagMatrix,
+        #   then a@b would be handled first by a.__matmul__(b), never reaching here.
+        if not isinstance(lhs, np.ndarray):
+            raise RuntimeError(
+                "__rmatmul__ only defined for np.ndarray @ BlkDiagMatrix."
+            )
+
+        return self.rapply(lhs)
 
     def __imatmul__(self, other):
         """
@@ -675,9 +696,7 @@ class BlkDiagMatrix:
         Define the apply option of a block diagonal matrix with a matrix of
         coefficient vectors.
 
-        :param X: The coefficient matrix with each column is a coefficient
-        vector.
-
+        :param X: Coefficient matrix, each column is a coefficient vector.
         :return: A matrix with new coefficient vectors.
         """
 
@@ -708,6 +727,25 @@ class BlkDiagMatrix:
             Y = Y[:, 0]
 
         return Y
+
+    def rapply(self, X):
+        """
+        Right apply.  Given a matrix of coefficient vectors,
+        applies the block diagonal matrix on the right hand side.
+        Example, X @ self.
+
+        This is the right hand side equivalent to `apply`.
+
+        :param X: Coefficient matrix, each column is a coefficient vector.
+
+        :return: A matrix with new coefficient vectors.
+        """
+
+        # For now do the transposes a @ b = (b.T @ a.T).T.
+        #  Note there is an optimization opportunity here,
+        #  but the current application of this method is only called once
+        #  per FSPCA/RIR classification.
+        return self.T.apply(X.T).T
 
     def eigvals(self):
         """
