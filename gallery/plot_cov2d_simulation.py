@@ -2,8 +2,8 @@
 2D Covariance Estimation
 ========================
 
-This script illustrates the covariance Wiener filtering functionality of the
-ASPIRE, implemented by estimating the covariance of the unfiltered
+This script illustrates 2D covariance Wiener filtering functionality in the
+ASPIRE package, implemented by estimating the covariance of the unfiltered
 images in a Fourier-Bessel basis and applying the Wiener filter induced by
 that covariance matrix.
 """
@@ -31,6 +31,10 @@ logger.info(
     "This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package."
 )
 
+# %%
+# Image Formatting
+# ----------------
+
 # Set the sizes of images 64 x 64
 img_size = 64
 # Set the total number of images generated from the 3D map
@@ -39,13 +43,20 @@ num_imgs = 1024
 dtype = np.float32
 logger.info(f"Simulation running in {dtype} precision.")
 
+# %%
+# Build Noise Filter
+# ------------------
 # Set the noise variance and build the noise filter
 # It might be better to select a signal noise ratio
 # and initial noise inside the Simulation class.
+
 noise_var = 1.3957e-4
 noise_filter = ScalarFilter(dim=2, value=noise_var)
 
-# Specify the CTF parameters
+# %%
+# Specify the CTF Parameters
+# --------------------------
+
 pixel_size = 5 * 65 / img_size  # Pixel size of the images (in angstroms)
 voltage = 200  # Voltage (in KV)
 defocus_min = 1.5e4  # Minimum defocus value (in angstroms)
@@ -53,6 +64,10 @@ defocus_max = 2.5e4  # Maximum defocus value (in angstroms)
 defocus_ct = 7  # Number of defocus groups.
 Cs = 2.0  # Spherical aberration
 alpha = 0.1  # Amplitude contrast
+
+# %%
+# Initialize Simulation Object and CTF Filters
+# --------------------------------------------
 
 logger.info("Initialize simulation object and CTF filters.")
 # Create filters
@@ -67,6 +82,7 @@ logger.info(
     f"of {img_size} x {img_size} x {img_size}."
 )
 infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
+
 # We prefer that our various arrays have consistent dtype.
 vols = Volume(infile.data.astype(dtype) / np.max(infile.data))
 vols = vols.downsample(img_size)
@@ -84,7 +100,11 @@ sim = Simulation(
     noise_filter=noise_filter,
 )
 
-# Specify the fast FB basis method for expending the 2D images
+# %%
+# Build Clean and Noisy Projection Images
+# ---------------------------------------
+
+# Specify the fast FB basis method for expanding the 2D images
 ffbbasis = FFBBasis2D((img_size, img_size), dtype=dtype)
 
 # Assign the CTF information and index for each image
@@ -101,19 +121,26 @@ power_clean = imgs_ctf_clean.norm() ** 2 / imgs_ctf_clean.size
 sn_ratio = power_clean / noise_var
 logger.info(f"Signal to noise ratio is {sn_ratio}.")
 
-# get noisy images after apply CTF and noise filters
+# get noisy images after applying CTF and noise filters
 imgs_noise = sim.images(start=0, num=num_imgs)
 
+# %%
+# Expand Images in the Fourier-Bessel Basis
+# -----------------------------------------
 # Expand the images, both clean and noisy, in the Fourier-Bessel basis. This
 # can be done exactly (that is, up to numerical precision) using the
-# `basis.expand` function, but for our purposes, an approximation will do.
+# ``basis.expand`` function, but for our purposes, an approximation will do.
 # Since the basis is close to orthonormal, we may approximate the exact
 # expansion by applying the adjoint of the evaluation mapping using
-# `basis.evaluate_t`.
+# ``basis.evaluate_t``.
+
 logger.info("Get coefficients of clean and noisy images in FFB basis.")
 coeff_clean = ffbbasis.evaluate_t(imgs_clean)
 coeff_noise = ffbbasis.evaluate_t(imgs_noise)
 
+# %%
+# Create Cov2D Object and Calculate Mean and Variance for Clean Images
+# --------------------------------------------------------------------
 # Create the Cov2D object and calculate mean and covariance for clean images without CTF.
 # Given the clean Fourier-Bessel coefficients, we can estimate the symmetric
 # mean and covariance. Note that these are not the same as the sample mean and
@@ -124,6 +151,7 @@ coeff_noise = ffbbasis.evaluate_t(imgs_noise)
 # constraints, so to reduce space, only the diagonal blocks are stored. The
 # mean and covariance estimates will allow us to evaluate the mean and
 # covariance estimates from the filtered, noisy data, later.
+
 logger.info(
     "Get 2D covariance matrices of clean and noisy images using FB coefficients."
 )
@@ -131,13 +159,16 @@ cov2d = RotCov2D(ffbbasis)
 mean_coeff = cov2d.get_mean(coeff_clean)
 covar_coeff = cov2d.get_covar(coeff_clean, mean_coeff, noise_var=0)
 
-# Estimate mean and covariance for noise images with CTF and shrink method.
+# %%
+# Estimate mean and covariance for noisy images with CTF and shrink method
+# ------------------------------------------------------------------------
 # We now estimate the mean and covariance from the Fourier-Bessel
 # coefficients of the noisy, filtered images. These functions take into
 # account the filters applied to each image to undo their effect on the
 # estimates. For the covariance estimation, the additional information of
 # the estimated mean and the variance of the noise are needed. Again, the
 # covariance matrix estimate is provided in block diagonal form.
+
 covar_opt = {
     "shrinker": "frobenius_norm",
     "verbose": 0,
@@ -158,10 +189,14 @@ covar_coeff_est = cov2d.get_covar(
     covar_est_opt=covar_opt,
 )
 
+# %%
+# Estimate Fourier-Bessel Coefficients with Wiener Filter
+# -------------------------------------------------------
 # Estimate the Fourier-Bessel coefficients of the underlying images using a
 # Wiener filter. This Wiener filter is calculated from the estimated mean,
 # covariance, and the variance of the noise. The resulting estimator has
 # the lowest expected mean square error out of all linear estimators.
+
 logger.info("Get the CWF coefficients of noising images.")
 coeff_est = cov2d.get_cwf_coeffs(
     coeff_noise,
@@ -175,7 +210,10 @@ coeff_est = cov2d.get_cwf_coeffs(
 # Convert Fourier-Bessel coefficients back into 2D images
 imgs_est = ffbbasis.evaluate(coeff_est)
 
-# Evaluate the results
+# %%
+# Evaluate the Results
+# --------------------
+
 # Calculate the difference between the estimated covariance and the "true"
 # covariance estimated from the clean Fourier-Bessel coefficients.
 covar_coeff_diff = covar_coeff - covar_coeff_est
@@ -209,7 +247,7 @@ plt.subplot(2, 2, 4)
 plt.imshow(imgs_est[idm] - imgs_clean[idm], cmap="gray")
 plt.colorbar()
 plt.title("Clean-Estimated")
-plt.show()
+plt.tight_layout()
 
 # Basic Check
 assert nrmse_ims < 0.25
