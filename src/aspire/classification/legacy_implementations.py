@@ -191,7 +191,7 @@ def bispec_2drot_large(coeff, freqs, eigval, alpha, sample_n):
     freqs_not_zero = freqs != 0
 
     coeff_norm = np.log(np.power(np.absolute(coeff[freqs_not_zero]), alpha))
-    if np.any(coeff_norm == np.float("-inf")):
+    if np.any(coeff_norm == float("-inf")):
         raise ValueError("coeff_norm should not be -inf")
 
     phase = coeff[freqs_not_zero] / np.absolute(coeff[freqs_not_zero])
