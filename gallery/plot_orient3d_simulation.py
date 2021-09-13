@@ -2,8 +2,8 @@
 3D Image Orientation
 ====================
 
-This script illustrates the estimation of orientation angles using synchronization
-matrix and voting method, based on simulated data projected from a 3D CryoEM map.
+This script illustrates the estimation of orientation angles using a synchronization
+matrix and the voting method, based on simulated data projected from a 3D CryoEM map.
 """
 
 import logging
@@ -31,6 +31,10 @@ logger.info(
     "synchronization matrix and voting method"
 )
 
+# %%
+# Initialize Simulation Object and CTF Filters
+# --------------------------------------------
+
 # Define a precision for this experiment
 dtype = np.float32
 
@@ -57,6 +61,10 @@ filters = [
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 
+# %%
+# Downsampling
+# ------------
+
 # Load the map file of a 70S Ribosome and downsample the 3D map to desired resolution.
 # The downsampling should be done by the internal function of Volume object in future.
 logger.info(
@@ -67,6 +75,10 @@ infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 vols = Volume(infile.data.astype(dtype))
 vols = vols.downsample((img_size,) * 3)
 
+# %%
+# Create Simulation Object and Obtain True Rotation Angles
+# --------------------------------------------------------
+
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info("Use downsampled map to creat simulation object.")
 sim = Simulation(L=img_size, n=num_imgs, vols=vols, unique_filters=filters, dtype=dtype)
@@ -74,11 +86,19 @@ sim = Simulation(L=img_size, n=num_imgs, vols=vols, unique_filters=filters, dtyp
 logger.info("Get true rotation angles generated randomly by the simulation object.")
 rots_true = sim.rots
 
+# %%
+# Estimate Orientation and Rotation Angles
+# ----------------------------------------
+
 # Initialize an orientation estimation object and perform view angle estimation
 logger.info("Estimate rotation angles using synchronization matrix and voting method.")
 orient_est = CLSyncVoting(sim, n_theta=36)
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
+
+# %%
+# Mean Squared Error
+# ------------------
 
 # Get register rotations after performing global alignment
 Q_mat, flag = register_rotations(rots_est, rots_true)

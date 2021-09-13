@@ -31,6 +31,7 @@ logger.info(
     "This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package."
 )
 
+
 # %%
 # Image Formatting
 # ----------------
@@ -42,6 +43,7 @@ num_imgs = 1024
 # Set dtype for this experiment
 dtype = np.float32
 logger.info(f"Simulation running in {dtype} precision.")
+
 
 # %%
 # Build Noise Filter
@@ -99,6 +101,7 @@ sim = Simulation(
     dtype=dtype,
     noise_filter=noise_filter,
 )
+
 
 # %%
 # Build Clean and Noisy Projection Images
