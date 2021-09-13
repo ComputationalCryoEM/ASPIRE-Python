@@ -23,6 +23,10 @@ from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
+# %%
+# Create Simulation Object
+# ------------------------
+
 # Specify parameters
 num_vols = 2  # number of volumes
 img_size = 8  # image size in square
@@ -45,7 +49,10 @@ noise_estimator = WhiteNoiseEstimator(sim, batchSize=500)
 noise_variance = noise_estimator.estimate()
 logger.info(f"Noise Variance = {noise_variance}")
 
-
+# %%
+# Estimate Mean Volume and Covariance
+# -----------------------------------
+#
 # Estimate the mean. This uses conjugate gradient on the normal equations for
 # the least-squares estimator of the mean volume. The mean volume is represented internally
 # using the basis object, but the output is in the form of an
@@ -58,6 +65,9 @@ mean_est = mean_estimator.estimate()
 covar_estimator = CovarianceEstimator(sim, basis, mean_kernel=mean_estimator.kernel)
 covar_est = covar_estimator.estimate(mean_est, noise_variance)
 
+# %%
+# Use Top Eigenpairs to Form a Basis
+# ----------------------------------
 
 # Extract the top eigenvectors and eigenvalues of the covariance estimate.
 # Since we know the population covariance is low-rank, we are only interested
@@ -95,6 +105,9 @@ with Random(0):
     centers, vol_idx = kmeans2(coords_est.T, num_vols)
     centers = centers.squeeze()
 
+# %%
+# Performance Evaluation
+# ----------------------
 
 # Evaluate performance of mean estimation.
 
@@ -119,6 +132,9 @@ clustering_accuracy = sim.eval_clustering(vol_idx)
 clustered_coords_est = centers[vol_idx]
 coords_perf = sim.eval_coords(mean_est, eigs_est_trunc, clustered_coords_est)
 
+# %%
+# Results
+# -------
 
 # Output estimated covariance spectrum.
 
