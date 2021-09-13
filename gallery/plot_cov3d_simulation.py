@@ -75,13 +75,8 @@ covar_est = covar_estimator.estimate(mean_est, noise_variance)
 
 eigs_est, lambdas_est = eigs(covar_est, num_eigs)
 
-# Eigs should probably return a Volume, for now hack it.
-s = eigs_est.shape
-eigs_est_c = np.empty((s[3], s[0], s[1], s[2]), dtype=eigs_est.dtype)
-for i in range(s[3]):
-    eigs_est_c[i] = eigs_est[..., i]
-eigs_est = Volume(eigs_est_c)
-
+# Eigs returns column-major, so we transpose and construct a volume.
+eigs_est = Volume(np.transpose(eigs_est, (3, 0, 1, 2)))
 
 # Truncate the eigendecomposition. Since we know the true rank of the
 # covariance matrix, we enforce it here.
