@@ -78,4 +78,5 @@ class StarFile:
     def __setitem__(self, key, value):
         self.blocks[key] = value
 
-
+    def __iter__(self):
+        return iter(self.blocks) 
