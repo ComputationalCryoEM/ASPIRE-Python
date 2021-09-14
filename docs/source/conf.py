@@ -44,8 +44,8 @@ bibtex_bibfiles = ["references.bib"]
 
 # Sphinx-Gallery Configuration
 sphinx_gallery_conf = {
-     'examples_dirs': '../../gallery',   # path to your example scripts
-     'gallery_dirs': 'auto_gallery',  # path to where to save gallery generated output
+     'examples_dirs': ['../../gallery/tutorials', '../../gallery/experiments'],   # path to your example scripts
+     'gallery_dirs': ['../../docs/build/auto_tutorials', '../../docs/build/auto_experiments'],  # path to where to save gallery generated output
 }
 
 # Add any paths that contain templates here, relative to this directory.

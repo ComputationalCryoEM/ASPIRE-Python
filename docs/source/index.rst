@@ -23,7 +23,8 @@ linear and nonlinear dimensionality reduction, randomized algorithms in numerica
    :maxdepth: 2
    :caption: Galleries:
 
-   auto_gallery/index
+   auto_tutorials/index
+   auto_experiments/index
 
 
 Indices and tables
