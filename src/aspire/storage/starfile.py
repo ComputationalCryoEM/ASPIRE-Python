@@ -21,6 +21,7 @@ class StarFile:
             pairs = {}
             loop_tags = []
             loop_data = []              
+            print(gemmi_block.name)
             for gemmi_item in gemmi_block:
                 if gemmi_item.pair is not None:
                     block_has_pair = True
@@ -31,10 +32,6 @@ class StarFile:
                         pairs[gemmi_item.pair[0]] = gemmi_item.pair[1] 
                     else:
                         raise StarFileError(f'Duplicate key in pair: {gemmi_item.pair[0]}')
-                    if gemmi_block.name not in self.blocks:
-                        self.blocks[gemmi_block.name] = pd.DataFrame(list(pairs.items()), columns = pairs.keys())                                  
-                    else:
-                        raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
                 if gemmi_item.loop is not None:
                     block_has_loop = True  
                     if block_has_pair:
@@ -43,10 +40,16 @@ class StarFile:
                     loop_data = [0 for x in range(gemmi_item.loop.length())]  
                     for row in range(gemmi_item.loop.length()):
                             loop_data[row] = [gemmi_item.loop.val(row, col) for col in range(gemmi_item.loop.width())]
-                    if gemmi_block.name not in self.blocks:
-                        self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns = loop_tags)
-                    else:
-                        raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}') 
+            if block_has_pair:
+                if gemmi_block.name not in self.blocks:                                                                                              
+                    self.blocks[gemmi_block.name] = pd.DataFrame([pairs], columns = pairs.keys())                                                   
+                else:                                                                                                                               
+                    raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
+            elif block_has_loop:
+                if gemmi_block.name not in self.blocks:                                                                                              
+                    self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns = loop_tags)                                                    
+                else:                                                                                                                               
+                    raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')   
     @staticmethod
     def write(self, data, filepath):
         # construct empty document
@@ -70,13 +73,30 @@ class StarFile:
         
         _doc.write_file(filepath)
         
-        
+
+    def get_block_by_index(self, index):
+        return self.blocks[list(self.blocks.keys())[index]]
             
     def __getitem__(self, key):
         return self.blocks[key]
-        
+
     def __setitem__(self, key, value):
         self.blocks[key] = value
 
     def __iter__(self):
-        return iter(self.blocks) 
+        return self.blocks.items().__iter__()
+ 
+    def __len__(self):
+        return len(self.blocks)
+    
+    def __eq__(self, other):
+        if not len(self) == len(other):
+            return False
+        self_list = list(self.blocks.keys())
+        other_list = list(other.blocks.keys())
+        for i in range(len(self_list))
+            if not self_list[i][0] == other_list[i][0]:
+                return False
+            if not self_list[i][1] == other_list[i][1]:
+                return False
+        return True

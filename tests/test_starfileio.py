@@ -36,7 +36,7 @@ def grouper(iterable, n, fillvalue=None):
 class StarFileTestCase(TestCase):
     def setUp(self):
         with importlib_resources.path(tests.saved_test_data, "sample_data_model.star") as path:
-            self.starfile = StarFile(path)
+            self.starfile = StarFile(str(path))
 
         # Independent Image object for testing Image source methods
         L = 768
@@ -63,38 +63,34 @@ class StarFileTestCase(TestCase):
     def testLength(self):
         # StarFile is an iterable that gives us blocks.
         #   We have 2 blocks in our sample starfile.
-        self.assertEqual(2, len(self.starfile))
+        self.assertEqual(6, len(self.starfile))
 
     def testIteration(self):
         # A StarFile can be iterated over, yielding StarFileBlocks
-        for block in self.starfile:
-            self.assertTrue(isinstance(block, StarFileBlock))
+        for block, df in self.starfile:
+            self.assertTrue(isinstance(df, DataFrame))
 
     def testBlockByIndex(self):
         # Indexing a StarFile with a 0-based index gives us a 'block',
-        block0 = self.starfile[0]
-        self.assertTrue(isinstance(block0, StarFileBlock))
-        # Our first block has no 'loop's.
-        self.assertEqual(0, len(block0))
+        block0 = self.starfile.get_block_by_index(0)
+        self.assertTrue(isinstance(block0, DataFrame))
+        # Our first block has one row
+        self.assertEqual(1, len(block0))
 
     def testBlockByName(self):
         # Indexing a StarFile with a string gives us a block with that name
         #   ("data_<name>" in starfile).
         # In our case the block at index 1 has name 'planetary'
-        block1 = self.starfile["planetary"]
-        # This block has a two 'loops'.
-        self.assertEqual(2, len(block1))
+        block1 = self.starfile["model_classes"]
+        # This block has one row as well
+        self.assertEqual(1, len(block1))
 
     def testBlockProperties(self):
         # A StarFileBlock may have attributes that were read from the
         #   starfile key=>value pairs.
-        block0 = self.starfile["general"]
+        block0 = self.starfile["model_general"]
         # Note that no typecasting is performed
-        self.assertEqual(block0._three, "3")
-
-    def testLoop(self):
-        loop = self.starfile[1][0]
-        self.assertIsInstance(loop, DataFrame)
+        self.assertEqual(block0['rlnReferenceDimensionality'], "3")
 
     def testData1(self):
         df = self.starfile["planetary"][0]
