@@ -63,17 +63,19 @@ class StarFileTestCase(TestCase):
         self._tmpdir.cleanup()
 
     def testLength(self):
-        # StarFile is an iterable that gives us blocks.
-        #   We have 2 blocks in our sample starfile.
+        # StarFile is an iterable that gives us blocks
+        # blocks are pandas DataFrames
+        # We have 6 blocks in our sample starfile.
         self.assertEqual(6, len(self.starfile))
 
     def testIteration(self):
-        # A StarFile can be iterated over, yielding StarFileBlocks
+        # A StarFile can be iterated over, yielding DataFrames
         for block, df in self.starfile:
             self.assertTrue(isinstance(df, DataFrame))
 
     def testBlockByIndex(self):
-        # Indexing a StarFile with a 0-based index gives us a 'block',
+        # We can use get_block_by_index to retrieve the blocks in
+        # the OrderedDict by index
         block0 = self.starfile.get_block_by_index(0)
         self.assertTrue(isinstance(block0, DataFrame))
         # Our first block has one row
@@ -82,7 +84,7 @@ class StarFileTestCase(TestCase):
     def testBlockByName(self):
         # Indexing a StarFile with a string gives us a block with that name
         #   ("data_<name>" in starfile).
-        # In our case the block at index 1 has name 'planetary'
+        # In our case the block at index 1 has name 'model_classes'
         block1 = self.starfile["model_classes"]
         # This block has one row as well
         self.assertEqual(1, len(block1))
@@ -107,9 +109,11 @@ class StarFileTestCase(TestCase):
         self.assertEqual(3, len(df.columns))
 
     def testReadWriteReadBack(self):
-        # Save the StarFile object to disk,
-        #   read it back, and check for equality.
-        # Note that __eq__ is supported for StarFile/StarFileBlock classes
+        # Save the StarFile object to a .star file
+        # Read it back for object equality
+        # Note that __eq__ is supported for the class
+        # it checks the equality of the underlying OrderedDicts of DataFrames 
+        # using pd.DataFrame.equals()
 
         test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
         self.starfile.write(test_outfile)
@@ -119,26 +123,32 @@ class StarFileTestCase(TestCase):
         os.remove(test_outfile)
 
     def testWriteReadWriteBack(self):
-        # initialize a new StarFile object
-
+        # setup our temp filenames
         test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
         test_outfile2 = os.path.join(self.tmpdir, "sampled_saved2.star")
 
+        # create a new StarFile object directly via an OrderedDict of DataFrames 
+        # not by reading a file
         data = OrderedDict()
         # note that GEMMI requires the names of the fields to start with _
         block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
+        # initialize a single-row data block (a pair in GEMMI-parlance)
         block1 = DataFrame([block1_dict], columns = block1_dict.keys())
         block2_keys = ["_field4", "_field5", "_field6"]
         block2_arr = [ [ f'{x}{y}' for x in range(3)] for y in range(3)]
+        # initialize a loop data block with a list of lists
         block2 = DataFrame(block2_arr, columns = block2_keys)
         data["single_row"] = block1
         data["loops"] = block2
+        # initialize with blocks kwarg
         original = StarFile(blocks = data)
         original.write(test_outfile)
         read_back = StarFile(test_outfile)
+        # assert that the read-back objects are equal
         self.assertEqual(original, read_back)
+        # write back the second star file object
         read_back.write(test_outfile2)
-        
+        # compare the two .star files line by line
         with open(test_outfile) as f_original, open(test_outfile2) as f_read_back:
             lines_original = f_original.readlines()
             lines_read_back = f_read_back.readlines()
