@@ -113,8 +113,8 @@ class StarFileTestCase(TestCase):
 
         test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
         self.starfile.write(test_outfile)
-        self.starfile2 = StarFile(test_outfile)
-        self.assertEqual(self.starfile, self.starfile2)
+        starfile2 = StarFile(test_outfile)
+        self.assertEqual(self.starfile, starfile2)
 
         os.remove(test_outfile)
 
@@ -122,6 +122,7 @@ class StarFileTestCase(TestCase):
         # initialize a new StarFile object
 
         test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
+        test_outfile2 = os.path.join(self.tmpdir, "sampled_saved2.star")
 
         data = OrderedDict()
         # note that GEMMI requires the names of the fields to start with _
@@ -134,3 +135,14 @@ class StarFileTestCase(TestCase):
         data["loops"] = block2
         original = StarFile(blocks = data)
         original.write(test_outfile)
+        read_back = StarFile(test_outfile)
+        self.assertEqual(original, read_back)
+        read_back.write(test_outfile2)
+        
+        with open(test_outfile) as f_original, open(test_outfile2) as f_read_back:
+            lines_original = f_original.readlines()
+            lines_read_back = f_read_back.readlines()
+            self.assertEqual(lines_original, lines_read_back)
+        
+        os.remove(test_outfile)
+        os.remove(test_outfile2)
