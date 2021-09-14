@@ -2,8 +2,8 @@
 Image Preprocessing
 ===================
 
-This script illustrates the preprocess steps before starting the pipeline of
-reconstructing 3D map using the simulated 2D images.
+This script illustrates the preprocess steps implemented prior to starting the pipeline of
+reconstructing a 3D map using simulated 2D images.
 """
 import logging
 import os
@@ -27,6 +27,10 @@ logger.info(
     "synchronization matrix and voting method"
 )
 
+# %%
+# Specify Parameters
+# ------------------
+
 # Set the downsample size of images
 img_size = 33
 
@@ -46,6 +50,10 @@ defocus_max = 2.5e4  # Maximum defocus value (in angstroms)
 defocus_ct = 7  # Number of defocus groups
 Cs = 2.0  # Spherical aberration
 alpha = 0.1  # Amplitude contrast
+
+# %%
+# Build Simulation Object and Apply Noise
+# ---------------------------------------
 
 logger.info("Initialize simulation object and CTF filters.")
 # Create CTF filters
@@ -74,6 +82,10 @@ source = Simulation(
     noise_filter=noise_filter,
 )
 
+# %%
+# Apply Preprocessing Techniques
+# ------------------------------
+
 logger.info("Obtain original images.")
 imgs_od = source.images(start=0, num=1).asnumpy()
 
@@ -100,6 +112,10 @@ logger.info("Invert the global density contrast if need")
 source.invert_contrast()
 imgs_rc = source.images(start=0, num=1).asnumpy()
 
+
+# %%
+# Plot First Image from Each Preprocess Step
+# ------------------------------------------
 
 # plot the first images
 logger.info("Plot first image from each preprocess steps")
@@ -133,4 +149,4 @@ plt.subplot(2, 3, 6)
 plt.imshow(imgs_rc[idm], cmap="gray")
 plt.colorbar(orientation="horizontal")
 plt.title("invert contrast")
-plt.show()
+plt.tight_layout()
