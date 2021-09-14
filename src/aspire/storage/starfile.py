@@ -8,13 +8,21 @@ class StarFileError(Exception):
         self.message = message
 
 class StarFile:
-    def __init__(self, filepath):
-        self.filepath = filepath
-        self.blocks = OrderedDict()
-        self._initialize_blocks()
-       
-    def _initialize_blocks(self):
-        gemmi_doc = cif.read_file(self.filepath)
+    def __init__(self, filepath=None, blocks=None):
+        if (filepath is None) and (blocks is None):
+            raise StarFileError('Must specify a STAR file to read or pass an OrderedDict of dataframes')
+        if not (filepath is None) and not (blocks is None):
+            raise StarFileError('Pass either a STAR file OR an OrderedDict of dataframes')
+
+        if not (filepath is None):
+            self.blocks = OrderedDict()
+            self._initialize_blocks(filepath)
+
+        elif not (blocks is None):
+            self.blocks = blocks
+   
+    def _initialize_blocks(self, filepath):
+        gemmi_doc = cif.read_file(filepath)
         for gemmi_block in gemmi_doc:
             block_has_pair = False
             block_has_loop = False
@@ -50,21 +58,20 @@ class StarFile:
                     self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns = loop_tags)                                                    
                 else:                                                                                                                               
                     raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')   
-    @staticmethod
-    def write(self, data, filepath):
+                    
+    def write(self, filepath):
         # construct empty document
         _doc = cif.Document()
-        for name, df in data.items():
+        for name, df in self.blocks.items():
             # construct new empty block
             _block = _doc.add_new_block(name)
             # are we constructing a pair (df has 1 row) or a loop (df has >1 rows)
             if len(df) == 0:
                 continue
             if len(df) == 1:
-                for col in df.columns:
+                for col in list(df):
                     # key is the column label. value is value in the df at row 0, column col
-                    _block.set_pair(col, df.at(0, col))
-                    continue
+                    _block.set_pair(col, str(df.at[0, col]))
             elif len(df) > 1:
                 # initialize loop with column names
                 _loop = _block.init_loop('', list(df.columns))
@@ -94,7 +101,7 @@ class StarFile:
             return False
         self_list = list(self.blocks.keys())
         other_list = list(other.blocks.keys())
-        for i in range(len(self_list))
+        for i in range(len(self_list)):
             if not self_list[i][0] == other_list[i][0]:
                 return False
             if not self_list[i][1] == other_list[i][1]:

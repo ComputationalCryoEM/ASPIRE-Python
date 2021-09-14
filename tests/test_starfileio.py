@@ -11,7 +11,9 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.storage import StarFile
+import aspire.storage.starfile
+from aspire.storage.starfile import StarFile
+from collections import OrderedDict
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -90,30 +92,45 @@ class StarFileTestCase(TestCase):
         #   starfile key=>value pairs.
         block0 = self.starfile["model_general"]
         # Note that no typecasting is performed
-        self.assertEqual(block0['rlnReferenceDimensionality'], "3")
+        self.assertEqual(block0.at[0, '_rlnReferenceDimensionality'], "3")
 
     def testData1(self):
-        df = self.starfile["planetary"][0]
-        self.assertEqual(8, len(df))
-        self.assertEqual(4, len(df.columns))
+        df = self.starfile["model_class_1"]
+        self.assertEqual(76, len(df))
+        self.assertEqual(8, len(df.columns))
         # Note that no typecasting of values is performed at io.StarFile level
-        self.assertEqual("1", df[df["_name"] == "Earth"].iloc[0]["_gravity"])
+        self.assertEqual("0.000000", df[df["_rlnSpectralIndex"] == "0"].iloc[0]["_rlnResolution"])
 
     def testData2(self):
-        df = self.starfile["planetary"][1]
-        self.assertEqual(3, len(df))
-        self.assertEqual(2, len(df.columns))
-        # Missing values in a loop default to ''
-        self.assertEqual("", df[df["_name"] == "Earth"].iloc[0]["_discovered_year"])
+        df = self.starfile["model_group_1"]
+        self.assertEqual(76, len(df))
+        self.assertEqual(3, len(df.columns))
 
-    def testSave(self):
+    def testReadWriteReadBack(self):
         # Save the StarFile object to disk,
         #   read it back, and check for equality.
         # Note that __eq__ is supported for StarFile/StarFileBlock classes
 
-        with open("sample_saved.star", "w") as f:
-            self.starfile.save(f)
-        self.starfile2 = StarFile("sample_saved.star")
+        test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
+        self.starfile.write(test_outfile)
+        self.starfile2 = StarFile(test_outfile)
         self.assertEqual(self.starfile, self.starfile2)
 
-        os.remove("sample_saved.star")
+        os.remove(test_outfile)
+
+    def testWriteReadWriteBack(self):
+        # initialize a new StarFile object
+
+        test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
+
+        data = OrderedDict()
+        # note that GEMMI requires the names of the fields to start with _
+        block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
+        block1 = DataFrame([block1_dict], columns = block1_dict.keys())
+        block2_keys = ["_field4", "_field5", "_field6"]
+        block2_arr = [ [ f'{x}{y}' for x in range(3)] for y in range(3)]
+        block2 = DataFrame(block2_arr, columns = block2_keys)
+        data["single_row"] = block1
+        data["loops"] = block2
+        original = StarFile(blocks = data)
+        original.write(test_outfile)
