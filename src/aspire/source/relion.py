@@ -26,8 +26,8 @@ class RelionSource(ImageSource):
             data_folder = os.path.dirname(filepath)
 
         # Note: Valid Relion image "_data.star" files have to have their data in the first loop of the first block.
-        # We thus index our StarFile class with [0][0].
-        df = StarFile(filepath)[0]
+        # We are getting the first (and only) block in this StarFile object
+        df = StarFile(filepath).get_block_by_index(0)
         column_types = {name: cls.metadata_fields.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 
