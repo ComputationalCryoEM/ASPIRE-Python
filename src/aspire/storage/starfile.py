@@ -20,7 +20,7 @@ class StarFile:
 
         elif not (blocks is None):
             self.blocks = blocks
-   
+
     def _initialize_blocks(self, filepath):
         gemmi_doc = cif.read_file(filepath)
         for gemmi_block in gemmi_doc:
@@ -28,7 +28,7 @@ class StarFile:
             block_has_loop = False
             pairs = {}
             loop_tags = []
-            loop_data = []              
+            loop_data = []
             print(gemmi_block.name)
             for gemmi_item in gemmi_block:
                 if gemmi_item.pair is not None:
@@ -36,29 +36,29 @@ class StarFile:
                     if block_has_loop:
                         raise StarFileError('Blocks with multiple loops and/or pairs are not supported')
                     # assign key-value pair
-                    if gemmi_item.pair[0] not in pairs:         
-                        pairs[gemmi_item.pair[0]] = gemmi_item.pair[1] 
+                    if gemmi_item.pair[0] not in pairs:
+                        pairs[gemmi_item.pair[0]] = gemmi_item.pair[1]
                     else:
                         raise StarFileError(f'Duplicate key in pair: {gemmi_item.pair[0]}')
                 if gemmi_item.loop is not None:
-                    block_has_loop = True  
+                    block_has_loop = True
                     if block_has_pair:
                         raise StarFileError('Blocks with multiple loops and/or pairs are not supported')
-                    loop_tags = gemmi_item.loop.tags 
-                    loop_data = [0 for x in range(gemmi_item.loop.length())]  
+                    loop_tags = gemmi_item.loop.tags
+                    loop_data = [0 for x in range(gemmi_item.loop.length())]
                     for row in range(gemmi_item.loop.length()):
                             loop_data[row] = [gemmi_item.loop.val(row, col) for col in range(gemmi_item.loop.width())]
             if block_has_pair:
-                if gemmi_block.name not in self.blocks:                                                                                              
-                    self.blocks[gemmi_block.name] = pd.DataFrame([pairs], columns = pairs.keys())                                                   
-                else:                                                                                                                               
+                if gemmi_block.name not in self.blocks:
+                    self.blocks[gemmi_block.name] = pd.DataFrame([pairs], columns = pairs.keys())
+                else:                                                   
                     raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
             elif block_has_loop:
-                if gemmi_block.name not in self.blocks:                                                                                              
-                    self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns = loop_tags)                                                    
-                else:                                                                                                                               
-                    raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')   
-                    
+                if gemmi_block.name not in self.blocks:
+                    self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns = loop_tags)
+                else:                                                    
+                    raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
+
     def write(self, filepath):
         # construct empty document
         _doc = cif.Document()
@@ -77,13 +77,13 @@ class StarFile:
                 _loop = _block.init_loop('', list(df.columns))
                 for row in df.values.tolist():
                     _loop.add_row(row)
-        
+
         _doc.write_file(filepath)
-        
+
 
     def get_block_by_index(self, index):
         return self.blocks[list(self.blocks.keys())[index]]
-            
+
     def __getitem__(self, key):
         return self.blocks[key]
 
@@ -92,10 +92,10 @@ class StarFile:
 
     def __iter__(self):
         return self.blocks.items().__iter__()
- 
+
     def __len__(self):
         return len(self.blocks)
-    
+
     def __eq__(self, other):
         if not len(self) == len(other):
             return False
