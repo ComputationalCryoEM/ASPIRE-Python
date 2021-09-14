@@ -21,7 +21,9 @@ from aspire.operators import (
     MultiplicativeFilter,
     PowerFilter,
 )
-from aspire.storage import MrcStats, StarFile, StarFileBlock
+from aspire.storage import MrcStats
+import aspire.storage.starfile
+from collections import OrderedDict
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 
@@ -659,8 +661,9 @@ class ImageSource:
             ].tolist()
 
             # initial the star file object and save it
-            starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
-            starfile.save(f)
+            odict = OrderedDict()
+            odict[''] = df
+            starfile.write(odict, starfile_filepath)
 
         return filename_indices
 
