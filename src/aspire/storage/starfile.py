@@ -1,11 +1,12 @@
 from gemmi import cif
-import  pandas  as pd
-import  os
+import pandas as pd
 from collections import OrderedDict
+
 
 class StarFileError(Exception):
     def __init__(self, message):
         self.message = message
+
 
 class StarFile:
     def __init__(self, filepath=None, blocks=None):
@@ -31,7 +32,7 @@ class StarFile:
             loop_tags = []
             loop_data = []
             if gemmi_block.name == '#':
-                gemmi_block.name == ''
+                gemmi_block.name = ''
             for gemmi_item in gemmi_block:
                 if gemmi_item.pair is not None:
                     block_has_pair = True
@@ -49,16 +50,16 @@ class StarFile:
                     loop_tags = gemmi_item.loop.tags
                     loop_data = [0 for x in range(gemmi_item.loop.length())]
                     for row in range(gemmi_item.loop.length()):
-                            loop_data[row] = [gemmi_item.loop.val(row, col) for col in range(gemmi_item.loop.width())]
+                        loop_data[row] = [gemmi_item.loop.val(row, col) for col in range(gemmi_item.loop.width())]
             if block_has_pair:
                 if gemmi_block.name not in self.blocks:
-                    self.blocks[gemmi_block.name] = pd.DataFrame([pairs], columns = pairs.keys(), dtype=str)
-                else:                                                   
+                    self.blocks[gemmi_block.name] = pd.DataFrame([pairs], columns=pairs.keys(), dtype=str)
+                else:
                     raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
             elif block_has_loop:
                 if gemmi_block.name not in self.blocks:
-                    self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns = loop_tags, dtype=str)
-                else:                                                    
+                    self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns=loop_tags, dtype=str)
+                else:
                     raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
 
     def write(self, filepath):
@@ -79,11 +80,10 @@ class StarFile:
                 # initialize loop with column names
                 _loop = _block.init_loop('', list(df.columns))
                 for row in df.values.tolist():
-                    row = [str(row[x]) for x in range(len(row))]      
+                    row = [str(row[x]) for x in range(len(row))]
                     _loop.add_row(row)
 
         _doc.write_file(filepath)
-
 
     def get_block_by_index(self, index):
         return self.blocks[list(self.blocks.keys())[index]]

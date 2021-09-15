@@ -619,8 +619,8 @@ class ImageSource:
         )
 
         if new_mrcs:
-        # Create a new column that we will be populating in the loop below
-        # For
+            # Create a new column that we will be populating in the loop below
+            # For
             df["_rlnImageName"] = ""
 
             if save_mode == "single":
@@ -645,7 +645,6 @@ class ImageSource:
                         os.path.splitext(os.path.basename(starfile_filepath))[0]
                         + f"_{i_start}_{i_end-1}.mrcs"
                     )
-                    print(mrcs_filename)
                     # Note, here the row_indexer is a slice.
                     #   df.loc will be reponsible for dereferencing and assigning values to df.
                     #   Pandas will assert the lnegth of row_indexer equals num.
@@ -654,7 +653,7 @@ class ImageSource:
                         "{0:06}@{1}".format(j + 1, mrcs_filename)
                         for j in range(num)
                     ]
-            
+
         filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[
             1
         ].tolist()

@@ -11,7 +11,6 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-import aspire.storage.starfile
 from aspire.storage.starfile import StarFile
 from collections import OrderedDict
 
@@ -37,7 +36,9 @@ def grouper(iterable, n, fillvalue=None):
 
 class StarFileTestCase(TestCase):
     def setUp(self):
-        with importlib_resources.path(tests.saved_test_data, "sample_data_model.star") as path:
+        with importlib_resources.path(
+            tests.saved_test_data, "sample_data_model.star"
+        ) as path:
             self.starfile = StarFile(str(path))
 
         # Independent Image object for testing Image source methods
@@ -70,7 +71,7 @@ class StarFileTestCase(TestCase):
 
     def testIteration(self):
         # A StarFile can be iterated over, yielding DataFrames
-        for block, df in self.starfile:
+        for _, df in self.starfile:
             self.assertTrue(isinstance(df, DataFrame))
 
     def testBlockByIndex(self):
@@ -94,14 +95,16 @@ class StarFileTestCase(TestCase):
         #   starfile key=>value pairs.
         block0 = self.starfile["model_general"]
         # Note that no typecasting is performed
-        self.assertEqual(block0.at[0, '_rlnReferenceDimensionality'], "3")
+        self.assertEqual(block0.at[0, "_rlnReferenceDimensionality"], "3")
 
     def testData1(self):
         df = self.starfile["model_class_1"]
         self.assertEqual(76, len(df))
         self.assertEqual(8, len(df.columns))
         # Note that no typecasting of values is performed at io.StarFile level
-        self.assertEqual("0.000000", df[df["_rlnSpectralIndex"] == "0"].iloc[0]["_rlnResolution"])
+        self.assertEqual(
+            "0.000000", df[df["_rlnSpectralIndex"] == "0"].iloc[0]["_rlnResolution"]
+        )
 
     def testData2(self):
         df = self.starfile["model_group_1"]
@@ -112,7 +115,7 @@ class StarFileTestCase(TestCase):
         # Save the StarFile object to a .star file
         # Read it back for object equality
         # Note that __eq__ is supported for the class
-        # it checks the equality of the underlying OrderedDicts of DataFrames 
+        # it checks the equality of the underlying OrderedDicts of DataFrames
         # using pd.DataFrame.equals()
 
         test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
@@ -127,21 +130,21 @@ class StarFileTestCase(TestCase):
         test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
         test_outfile2 = os.path.join(self.tmpdir, "sampled_saved2.star")
 
-        # create a new StarFile object directly via an OrderedDict of DataFrames 
+        # create a new StarFile object directly via an OrderedDict of DataFrames
         # not by reading a file
         data = OrderedDict()
         # note that GEMMI requires the names of the fields to start with _
         block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
         # initialize a single-row data block (a pair in GEMMI-parlance)
-        block1 = DataFrame([block1_dict], columns = block1_dict.keys())
+        block1 = DataFrame([block1_dict], columns=block1_dict.keys())
         block2_keys = ["_field4", "_field5", "_field6"]
-        block2_arr = [ [ f'{x}{y}' for x in range(3)] for y in range(3)]
+        block2_arr = [[f"{x}{y}" for x in range(3)] for y in range(3)]
         # initialize a loop data block with a list of lists
-        block2 = DataFrame(block2_arr, columns = block2_keys)
+        block2 = DataFrame(block2_arr, columns=block2_keys)
         data["single_row"] = block1
         data["loops"] = block2
         # initialize with blocks kwarg
-        original = StarFile(blocks = data)
+        original = StarFile(blocks=data)
         original.write(test_outfile)
         read_back = StarFile(test_outfile)
         # assert that the read-back objects are equal
@@ -153,6 +156,6 @@ class StarFileTestCase(TestCase):
             lines_original = f_original.readlines()
             lines_read_back = f_read_back.readlines()
             self.assertEqual(lines_original, lines_read_back)
-        
+
         os.remove(test_outfile)
         os.remove(test_outfile2)
