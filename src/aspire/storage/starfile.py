@@ -10,6 +10,9 @@ class StarFileError(Exception):
 
 class StarFile:
     def __init__(self, filepath=None, blocks=None):
+        '''
+        Initialize either from a path to a STAR file or from an OrderedDict of dataframes
+        '''
         if (filepath is None) and (blocks is None):
             raise StarFileError(
                 "Must specify a STAR file to read or pass an OrderedDict of dataframes"
@@ -30,21 +33,25 @@ class StarFile:
     def _initialize_blocks(self, filepath):
         gemmi_doc = cif.read_file(filepath)
         for gemmi_block in gemmi_doc:
+            # we only allow a set of pairs OR a loop in a block
             block_has_pair = False
             block_has_loop = False
             pairs = {}
             loop_tags = []
             loop_data = []
+            # correct for GEMMI default behavior ('#' as name of block)
             if gemmi_block.name == "#":
                 gemmi_block.name = ""
             for gemmi_item in gemmi_block:
                 if gemmi_item.pair is not None:
                     block_has_pair = True
+                    # if we find both a pair and a loop raise an error
                     if block_has_loop:
                         raise StarFileError(
                             "Blocks with multiple loops and/or pairs are not supported"
                         )
                     # assign key-value pair
+                    # gemmi pair is represented as a list
                     if gemmi_item.pair[0] not in pairs:
                         pairs[gemmi_item.pair[0]] = gemmi_item.pair[1]
                     else:
@@ -53,11 +60,14 @@ class StarFile:
                         )
                 if gemmi_item.loop is not None:
                     block_has_loop = True
+                    # if we find both a pair and a loop raise an error
                     if block_has_pair:
                         raise StarFileError(
                             "Blocks with multiple loops and/or pairs are not supported"
                         )
                     loop_tags = gemmi_item.loop.tags
+                    # convert loop data to a list of lists
+                    # using the .val(row, col) method of gemmi's Loop class
                     loop_data = [0 for x in range(gemmi_item.loop.length())]
                     for row in range(gemmi_item.loop.length()):
                         loop_data[row] = [
@@ -66,19 +76,23 @@ class StarFile:
                         ]
             if block_has_pair:
                 if gemmi_block.name not in self.blocks:
+                    # initialize DF from dictionary of kv pairs
                     self.blocks[gemmi_block.name] = pd.DataFrame(
                         [pairs], columns=pairs.keys(), dtype=str
                     )
                 else:
+                    # enforce unique keys
                     raise StarFileError(
                         f"Attempted overwrite of existing data block: {gemmi_block.name}"
                     )
             elif block_has_loop:
                 if gemmi_block.name not in self.blocks:
+                    # initialize DF from list of lists
                     self.blocks[gemmi_block.name] = pd.DataFrame(
                         loop_data, columns=loop_tags, dtype=str
                     )
                 else:
+                    # enforce unique keys
                     raise StarFileError(
                         f"Attempted overwrite of existing data block: {gemmi_block.name}"
                     )
