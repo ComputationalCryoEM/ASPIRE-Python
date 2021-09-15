@@ -6,12 +6,11 @@ This tutorial demonstrates some methods of the ASPIRE ``image`` class
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-
 from aspire.image import Image
+from aspire.operators import CTFFilter
 
 img_data = np.load("../../tutorials/data/monuments.npy")
-print(img_data.shape, img_data.dtype)
+# print(img_data.shape, img_data.dtype)
 
 # %%
 # Create an Image Instance
@@ -42,7 +41,7 @@ im.shift(shifts).show()
 
 # Or apply shifts corresponding to to each image.
 shifts = np.array([[300 * i, 100 * i] for i in range(1, im.n_images + 1)])
-print(shifts)
+# print(shifts)
 im.shift(shifts).show()
 
 # %%
@@ -54,8 +53,6 @@ im.downsample(80).show()
 # %%
 # CTF Filter
 # ----------
-
-from aspire.operators import CTFFilter
 
 # pixel_size/defous_u/defocus_v in Angstrom, voltage in kV
 filter = CTFFilter(pixel_size=1, voltage=100, defocus_u=1500, defocus_v=2000)

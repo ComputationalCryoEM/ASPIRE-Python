@@ -5,10 +5,11 @@ Apple Picker
 We demonstrate ASPIRE's particle picking methods using the ``Apple`` class.
 """
 
-import numpy as np
+# import numpy as np
 import matplotlib.pyplot as plt
 
 from aspire.apple.apple import Apple
+import mrcfile
 
 # %%
 # Load Micrograph Data
@@ -26,8 +27,6 @@ centers = apple_picker.process_micrograph(filename, show_progress=False)
 # %%
 # Read Micrograph
 # ---------------
-
-import mrcfile
 
 with mrcfile.open(filename, mode="r") as mrc:
     micro_img = mrc.data
