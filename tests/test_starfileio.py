@@ -1,5 +1,6 @@
 import os.path
 import tempfile
+from collections import OrderedDict
 from itertools import zip_longest
 from unittest import TestCase
 
@@ -12,7 +13,6 @@ import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.storage.starfile import StarFile
-from collections import OrderedDict
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 

@@ -1,6 +1,7 @@
-from gemmi import cif
-import pandas as pd
 from collections import OrderedDict
+
+import pandas as pd
+from gemmi import cif
 
 
 class StarFileError(Exception):

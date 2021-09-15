@@ -1,5 +1,6 @@
 import logging
 import os.path
+from collections import OrderedDict
 
 import mrcfile
 import numpy as np
@@ -23,7 +24,6 @@ from aspire.operators import (
 )
 from aspire.storage import MrcStats
 from aspire.storage.starfile import StarFile
-from collections import OrderedDict
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 
