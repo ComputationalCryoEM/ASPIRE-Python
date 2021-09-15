@@ -12,9 +12,13 @@ class StarFileError(Exception):
 class StarFile:
     def __init__(self, filepath=None, blocks=None):
         if (filepath is None) and (blocks is None):
-            raise StarFileError('Must specify a STAR file to read or pass an OrderedDict of dataframes')
+            raise StarFileError(
+                "Must specify a STAR file to read or pass an OrderedDict of dataframes"
+            )
         if not (filepath is None) and not (blocks is None):
-            raise StarFileError('Pass either a STAR file OR an OrderedDict of dataframes')
+            raise StarFileError(
+                "Pass either a STAR file OR an OrderedDict of dataframes"
+            )
 
         if not (filepath is None):
             self.blocks = OrderedDict()
@@ -32,36 +36,53 @@ class StarFile:
             pairs = {}
             loop_tags = []
             loop_data = []
-            if gemmi_block.name == '#':
-                gemmi_block.name = ''
+            if gemmi_block.name == "#":
+                gemmi_block.name = ""
             for gemmi_item in gemmi_block:
                 if gemmi_item.pair is not None:
                     block_has_pair = True
                     if block_has_loop:
-                        raise StarFileError('Blocks with multiple loops and/or pairs are not supported')
+                        raise StarFileError(
+                            "Blocks with multiple loops and/or pairs are not supported"
+                        )
                     # assign key-value pair
                     if gemmi_item.pair[0] not in pairs:
                         pairs[gemmi_item.pair[0]] = gemmi_item.pair[1]
                     else:
-                        raise StarFileError(f'Duplicate key in pair: {gemmi_item.pair[0]}')
+                        raise StarFileError(
+                            f"Duplicate key in pair: {gemmi_item.pair[0]}"
+                        )
                 if gemmi_item.loop is not None:
                     block_has_loop = True
                     if block_has_pair:
-                        raise StarFileError('Blocks with multiple loops and/or pairs are not supported')
+                        raise StarFileError(
+                            "Blocks with multiple loops and/or pairs are not supported"
+                        )
                     loop_tags = gemmi_item.loop.tags
                     loop_data = [0 for x in range(gemmi_item.loop.length())]
                     for row in range(gemmi_item.loop.length()):
-                        loop_data[row] = [gemmi_item.loop.val(row, col) for col in range(gemmi_item.loop.width())]
+                        loop_data[row] = [
+                            gemmi_item.loop.val(row, col)
+                            for col in range(gemmi_item.loop.width())
+                        ]
             if block_has_pair:
                 if gemmi_block.name not in self.blocks:
-                    self.blocks[gemmi_block.name] = pd.DataFrame([pairs], columns=pairs.keys(), dtype=str)
+                    self.blocks[gemmi_block.name] = pd.DataFrame(
+                        [pairs], columns=pairs.keys(), dtype=str
+                    )
                 else:
-                    raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
+                    raise StarFileError(
+                        f"Attempted overwrite of existing data block: {gemmi_block.name}"
+                    )
             elif block_has_loop:
                 if gemmi_block.name not in self.blocks:
-                    self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns=loop_tags, dtype=str)
+                    self.blocks[gemmi_block.name] = pd.DataFrame(
+                        loop_data, columns=loop_tags, dtype=str
+                    )
                 else:
-                    raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
+                    raise StarFileError(
+                        f"Attempted overwrite of existing data block: {gemmi_block.name}"
+                    )
 
     def write(self, filepath):
         # construct empty document
@@ -79,7 +100,7 @@ class StarFile:
                     _block.set_pair(col, str(df.at[0, col]))
             elif len(df) > 1:
                 # initialize loop with column names
-                _loop = _block.init_loop('', list(df.columns))
+                _loop = _block.init_loop("", list(df.columns))
                 for row in df.values.tolist():
                     row = [str(row[x]) for x in range(len(row))]
                     _loop.add_row(row)

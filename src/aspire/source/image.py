@@ -650,17 +650,14 @@ class ImageSource:
                     #   Pandas will assert the lnegth of row_indexer equals num.
                     row_indexer = df[i_start:i_end].index
                     df.loc[row_indexer, "_rlnImageName"] = [
-                        "{0:06}@{1}".format(j + 1, mrcs_filename)
-                        for j in range(num)
+                        "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
                     ]
 
-        filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[
-            1
-        ].tolist()
+        filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
 
         # initial the star file object and save it
         odict = OrderedDict()
-        odict[''] = df
+        odict[""] = df
         outStar = StarFile(blocks=odict)
         outStar.write(starfile_filepath)
         return filename_indices
