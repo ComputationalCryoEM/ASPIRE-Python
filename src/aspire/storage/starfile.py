@@ -16,6 +16,7 @@ class StarFile:
 
         if not (filepath is None):
             self.blocks = OrderedDict()
+            filepath = str(filepath)
             self._initialize_blocks(filepath)
 
         elif not (blocks is None):
@@ -29,7 +30,8 @@ class StarFile:
             pairs = {}
             loop_tags = []
             loop_data = []
-            print(gemmi_block.name)
+            if gemmi_block.name == '#':
+                gemmi_block.name == ''
             for gemmi_item in gemmi_block:
                 if gemmi_item.pair is not None:
                     block_has_pair = True
@@ -50,18 +52,19 @@ class StarFile:
                             loop_data[row] = [gemmi_item.loop.val(row, col) for col in range(gemmi_item.loop.width())]
             if block_has_pair:
                 if gemmi_block.name not in self.blocks:
-                    self.blocks[gemmi_block.name] = pd.DataFrame([pairs], columns = pairs.keys())
+                    self.blocks[gemmi_block.name] = pd.DataFrame([pairs], columns = pairs.keys(), dtype=str)
                 else:                                                   
                     raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
             elif block_has_loop:
                 if gemmi_block.name not in self.blocks:
-                    self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns = loop_tags)
+                    self.blocks[gemmi_block.name] = pd.DataFrame(loop_data, columns = loop_tags, dtype=str)
                 else:                                                    
                     raise StarFileError(f'Attempted overwrite of existing data block: {gemmi_block.name}')
 
     def write(self, filepath):
         # construct empty document
         _doc = cif.Document()
+        filepath = str(filepath)
         for name, df in self.blocks.items():
             # construct new empty block
             _block = _doc.add_new_block(name)
@@ -76,6 +79,7 @@ class StarFile:
                 # initialize loop with column names
                 _loop = _block.init_loop('', list(df.columns))
                 for row in df.values.tolist():
+                    row = [str(row[x]) for x in range(len(row))]      
                     _loop.add_row(row)
 
         _doc.write_file(filepath)

@@ -41,7 +41,7 @@ class StarFileTestCase(TestCase):
                     )
                     should_delete_file = True
 
-            self.src = RelionSource(str(path), data_folder=temp_folder_path, max_rows=12)
+            self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)
             super(StarFileTestCase, self).run(result)
 
             if should_delete_file:

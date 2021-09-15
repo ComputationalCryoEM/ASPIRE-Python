@@ -665,7 +665,6 @@ class ImageSource:
         odict[''] = df
         outStar = StarFile(blocks=odict)
         outStar.write(starfile_filepath)
-
         return filename_indices
 
     def save_images(
