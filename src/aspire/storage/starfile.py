@@ -9,29 +9,21 @@ class StarFileError(Exception):
 
 
 class StarFile:
-    def __init__(self, filepath=None, blocks=None):
+    def __init__(self, filepath='', blocks=OrderedDict()):
         '''
         Initialize either from a path to a STAR file or from an OrderedDict of dataframes
         '''
-        if (filepath is None) and (blocks is None):
-            raise StarFileError(
-                "Must specify a STAR file to read or pass an OrderedDict of dataframes"
-            )
-        if not (filepath is None) and not (blocks is None):
-            raise StarFileError(
-                "Pass either a STAR file OR an OrderedDict of dataframes"
-            )
+        self.filepath = str(filepath)
+        self.blocks = blocks
+        
+        if not(self.filepath and len(self.blocks)):
+            raise StarFileError('Must specifiy either a path to a .star file OR an OrderedDict of pandas DataFrames')
 
-        if not (filepath is None):
-            self.blocks = OrderedDict()
-            filepath = str(filepath)
-            self._initialize_blocks(filepath)
+        if self.filepath:
+            self._initialize_blocks()
 
-        elif not (blocks is None):
-            self.blocks = blocks
-
-    def _initialize_blocks(self, filepath):
-        gemmi_doc = cif.read_file(filepath)
+    def _initialize_blocks(self):
+        gemmi_doc = cif.read_file(self.filepath)
         for gemmi_block in gemmi_doc:
             # we only allow a set of pairs OR a loop in a block
             block_has_pair = False
@@ -68,7 +60,7 @@ class StarFile:
                     loop_tags = gemmi_item.loop.tags
                     # convert loop data to a list of lists
                     # using the .val(row, col) method of gemmi's Loop class
-                    loop_data = [0 for x in range(gemmi_item.loop.length())]
+                    loop_data = [None] * gemmi_item.loop.length()
                     for row in range(gemmi_item.loop.length()):
                         loop_data[row] = [
                             gemmi_item.loop.val(row, col)
