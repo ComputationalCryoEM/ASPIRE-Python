@@ -163,8 +163,8 @@ def circ(size, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
     # Construct centered mesh
     g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
 
-    circ = ((g["x"] - x0) ** 2 + (g["y"] - y0) ** 2) < radius * radius
-    return (peak * circ).astype(dtype)
+    vals = ((g["x"] - x0) ** 2 + (g["y"] - y0) ** 2) < radius * radius
+    return (peak * vals).astype(dtype)
 
 
 def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
@@ -187,6 +187,6 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
 
     # Compute the denominator
-    circ = np.sqrt(1 + (g["x"] - x0) ** 2 + (g["y"] - y0) ** 2)
+    vals = np.sqrt(1 + (g["x"] - x0) ** 2 + (g["y"] - y0) ** 2)
 
-    return (peak / circ).astype(dtype)
+    return (peak / vals).astype(dtype)
