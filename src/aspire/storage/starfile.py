@@ -141,14 +141,7 @@ class StarFile:
     def __len__(self):
         return len(self.blocks)
 
-    def __eq__(self, other):
-        if not len(self) == len(other):
+    def __eq__(self, other):\
+        # use __eq__ of OrderedDict
+        if not self.blocks == other.blocks:
             return False
-        self_list = list(self.blocks.keys())
-        other_list = list(other.blocks.keys())
-        for i in range(len(self_list)):
-            if not self_list[i][0] == other_list[i][0]:
-                return False
-            if not self_list[i][1] == other_list[i][1]:
-                return False
-        return True
