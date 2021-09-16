@@ -6,11 +6,12 @@ This tutorial demonstrates some methods of the ASPIRE ``image`` class
 """
 
 import numpy as np
+
 from aspire.image import Image
 from aspire.operators import CTFFilter
 
 img_data = np.load("../../tutorials/data/monuments.npy")
-# print(img_data.shape, img_data.dtype)
+img_data.shape, img_data.dtype
 
 # %%
 # Create an Image Instance
