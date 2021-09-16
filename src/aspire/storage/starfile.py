@@ -23,15 +23,29 @@ class StarFile:
             self._initialize_blocks()
 
     def _initialize_blocks(self):
+        '''
+        This method converts a gemmi Document object representing the .star file
+        at self.filepath into an OrderedDict of pandas dataframes, each of which represents one block in the .star file
+        '''
         gemmi_doc = cif.read_file(self.filepath)
+        # iterate over gemmi Block objects in the gemmi Document
         for gemmi_block in gemmi_doc:
-            # we only allow a set of pairs OR a loop in a block
+            # iterating over gemmi Block objects yields Item objects
+            # Items can have a Loop object and/or a Pair object
+            # Loops correspond to the regular loop_ structure in a STAR file
+            # Pairs have type List[str[2]] and correspond to a non-loop key value
+            # pair in a STAR file, e.g.
+            # _field1 \t 'value' #1
+            
+            # Our model of the .star file only allows a block to be one or the other
             block_has_pair = False
             block_has_loop = False
             pairs = {}
             loop_tags = []
             loop_data = []
-            # correct for GEMMI default behavior ('#' as name of block)
+            # correct for GEMMI default behavior
+            # if a block is called 'data_' in the .star file, GEMMI names it '#'
+            # but we want to name it '' for consistency
             if gemmi_block.name == "#":
                 gemmi_block.name = ""
             for gemmi_item in gemmi_block:
@@ -43,9 +57,9 @@ class StarFile:
                             "Blocks with multiple loops and/or pairs are not supported"
                         )
                     # assign key-value pair
-                    # gemmi pair is represented as a list
-                    if gemmi_item.pair[0] not in pairs:
-                        pairs[gemmi_item.pair[0]] = gemmi_item.pair[1]
+                    pair_key, pair_val = gemmi_item.pair
+                    if pair_key not in pairs:
+                        pairs[pair_key] = pair_val
                     else:
                         raise StarFileError(
                             f"Duplicate key in pair: {gemmi_item.pair[0]}"
