@@ -135,7 +135,7 @@ class StarFileTestCase(TestCase):
         data = OrderedDict()
         # note that GEMMI requires the names of the fields to start with _
         block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
-        # initialize a single-row data block (a pair in GEMMI-parlance)
+        # initialize a single-row data block (a set of pairs in GEMMI-parlance)
         block1 = DataFrame([block1_dict], columns=block1_dict.keys())
         block2_keys = ["_field4", "_field5", "_field6"]
         block2_arr = [[f"{x}{y}" for x in range(3)] for y in range(3)]
@@ -145,11 +145,11 @@ class StarFileTestCase(TestCase):
         data["loops"] = block2
         # initialize with blocks kwarg
         # in test environment only, we have to specify filepath=''
-        original = StarFile(filepath="", blocks=data)
+        original = StarFile(blocks=data)
         original.write(test_outfile)
         # in test environment only, we have to specify blocks as an
         # empty OrderedDict
-        read_back = StarFile(test_outfile, blocks=OrderedDict())
+        read_back = StarFile(test_outfile)
         # assert that the read-back objects are equal
         self.assertEqual(original, read_back)
         # write back the second star file object
