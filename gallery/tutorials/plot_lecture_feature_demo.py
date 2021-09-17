@@ -23,11 +23,25 @@ First I'll import some of the usual suspects, and we'll import classes from ASPI
 # [Run this notebook on mybinder.com](https://mybinder.org/v2/gh/ComputationalCryoEM/ASPIRE-Python/master?filepath=tutorials/notebooks/Lecture_1-6_Feature_Demonstration.ipynb)
 # (This may take a few minutes to launch container.)
 
-import os
+import logging
 
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
+
+from aspire.abinitio import CLSyncVoting
+from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
+from aspire.operators import FunctionFilter, RadialCTFFilter, ScalarFilter
+from aspire.source import RelionSource, Simulation
+from aspire.utils.coor_trans import (
+    get_aligned_rotations,
+    get_rots_mse,
+    register_rotations,
+)
+from aspire.utils.rotation import Rotation
+from aspire.volume import Volume
+
+logger = logging.getLogger(__name__)
 
 # %%
 # ``Image`` Class
@@ -71,8 +85,6 @@ import numpy as np
 # Initialize Volume
 # -----------------
 
-from aspire.volume import Volume
-
 # A low res example file is included in the repo as a sanity check.
 infile = mrcfile.open("../../tutorials/data/clean70SRibosome_vol_65p.mrc")
 
@@ -80,7 +92,7 @@ infile = mrcfile.open("../../tutorials/data/clean70SRibosome_vol_65p.mrc")
 # infile = mrcfile.open("EMD-2660/map/emd_2660.map")
 
 d = infile.data
-print(f"map data shape: {d.shape} dtype:{d.dtype}")
+logger.info(f"map data shape: {d.shape} dtype:{d.dtype}")
 v = Volume(d)
 
 # Downsample the volume to a desired resolution
@@ -132,20 +144,18 @@ plt.show()
 # The following code will generate some random rotations, and use the `Volume.project()` method to return an `Image` instance representing the stack of projections.
 # We can display projection images using the `Image.show()` method.
 
-from aspire.utils.rotation import Rotation
-
 num_rotations = 2
 rots = Rotation.generate_random_rotations(n=num_rotations, seed=12345)
 
 # We can access the numpy array holding the actual stack of 3x3 matrices:
-print(rots)
-print(rots.matrices)
+logger.info(rots)
+logger.info(rots.matrices)
 
 # Using the first(and in this case, only) volume, compute projections using the stack of rotations:
 projections = v.project(0, rots)
 
 # project() returns an Image instance.
-print(projections)
+logger.info(projections)
 projections.show()
 # Neat, we've generated random projections of some real data.
 
@@ -175,8 +185,6 @@ projections.show()
 # Using `Simulation`, we can generate arbitrary numbers of projections for use in experiments.
 # Later we will demonstrate additional features which allow us to create more realistic data sources.
 
-from aspire.source import Simulation
-
 num_imgs = 100  # How many images in our source.
 # Generate a Simulation instance based on the original volume data.
 sim = Simulation(L=v.resolution, n=num_imgs, vols=v)
@@ -194,7 +202,7 @@ sim_seed = Simulation(L=v.resolution, n=num_imgs, vols=v, seed=42)
 sim_seed.images(0, 10).show()
 
 # We can also view the rotations used to create these projections
-# print(sim2.rots)  # Commented due to long output
+# logger.info(sim2.rots)  # Commented due to long output
 
 # %%
 # Simulation with Noise - Filters
@@ -217,13 +225,11 @@ sim_seed.images(0, 10).show()
 # Then when used in the ``noise_filter``, this scalar will be multiplied by a random sample.
 # Similar to before, if you require a different sample, this would be controlled via a ``seed``.
 
-from aspire.operators import ScalarFilter
-
 # Using the sample variance, we'll compute a target noise variance
 var = np.var(sim2.images(0, sim2.n).asnumpy())
-print(f"sim2 clean sample var {var}")
+logger.info(f"sim2 clean sample var {var}")
 noise_variance = 100.0 * var
-print(f"noise var {noise_variance}")
+logger.info(f"noise var {noise_variance}")
 
 # Then create a constant filter based on that variance
 white_noise_filter = ScalarFilter(dim=2, value=noise_variance)
@@ -246,23 +252,16 @@ sim3.images(0, 10).show()
 # - Compute orientation estimate using CLSyncVoting method
 # - Compare the estimated vs true rotations
 #
-# Each iteration will print some diagnostic information that contains the top eigenvalues found.
+# Each iteration will logger.info some diagnostic information that contains the top eigenvalues found.
 # From class we learned that a healthy eigen distribution should have a significant gap after the third eigenvalue.
 # It is clear we have such eigenspacing for the clean images, but not for the noisy images.
-
-from aspire.abinitio import CLSyncVoting
-from aspire.utils.coor_trans import (
-    get_aligned_rotations,
-    get_rots_mse,
-    register_rotations,
-)
 
 for desc, _sim in [
     ("High Res", sim),
     ("Downsampled", sim2),
     ("Downsampled with Noise", sim3),
 ]:
-    print(desc)
+    logger.info(desc)
     true_rotations = _sim.rots  # for later comparison
 
     orient_est = CLSyncVoting(_sim, n_theta=36)
@@ -274,7 +273,7 @@ for desc, _sim in [
     Q_mat, flag = register_rotations(rots_est, true_rotations)
     regrot = get_aligned_rotations(rots_est, Q_mat, flag)
     mse_reg = get_rots_mse(regrot, true_rotations)
-    print(
+    logger.info(
         f"MSE deviation of the estimated rotations using register_rotations : {mse_reg}\n"
     )
 
@@ -305,8 +304,6 @@ for desc, _sim in [
 #
 # The white noise estimator should log a diagnostic variance value. How does this compare with the known noise variance above?
 
-from aspire.noise import WhiteNoiseEstimator
-
 # Create another Simulation source to tinker with.
 sim_wht = Simulation(
     L=v2.resolution, n=num_imgs, vols=v2, noise_filter=white_noise_filter
@@ -323,8 +320,6 @@ noise_estimator = WhiteNoiseEstimator(sim_wht)
 #
 # Using ``FunctionFilter`` we can create our own custom functions to apply in a pipeline.
 # Here we want to apply a custom filter as a noise adder.  We can use a function of two variables for example.
-
-from aspire.operators import FunctionFilter
 
 
 def noise_function(x, y):
@@ -348,8 +343,6 @@ sim4.images(0, 10).show()
 #
 # Applying the ``Simulation.whiten()`` method just requires passing the filter corresponding to the estimated noise instance.
 # Then we can inspect some of the whitened images.  While noise is still present, we can see a dramatic change.
-
-from aspire.noise import AnisotropicNoiseEstimator
 
 # Estimate noise.
 aiso_noise_estimator = AnisotropicNoiseEstimator(sim4)
@@ -376,8 +369,6 @@ sim4.images(0, 10).show()
 # we can try to replace the simulation with a real experimental data source.
 #
 # Lets attempt the same CL experiment, but with a ``RelionSource``.
-
-from aspire.source import RelionSource
 
 src = RelionSource(
     "../../tests/saved_test_data/sample_relion_data.star",
@@ -419,8 +410,6 @@ rots_est = orient_est.rotations
 #
 # By combining CTFFilters, noise, and other filters ASPIRE can generate repeatable rich data sets with controlled parameters.
 # The ``Simulation`` class will attempt to apply transforms ``on the fly`` to batches of our images, allowing us to generate arbitrarily long stacks of data.
-
-from aspire.operators import RadialCTFFilter
 
 # Specify the CTF parameters not used for this example
 # but necessary for initializing the simulation object
