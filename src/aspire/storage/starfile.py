@@ -14,11 +14,11 @@ class StarFileError(Exception):
 
 
 class StarFile:
-    def __init__(self, filepath="", blocks=OrderedDict()):
+    def __init__(self, filepath="", blocks=None):
         """
         Initialize either from a path to a STAR file or from an OrderedDict of dataframes
         """
-        self.blocks = blocks
+        self.blocks = blocks or OrderedDict()
         self.filepath = str(filepath)
         if not (bool(self.filepath) ^ len(self.blocks)):
             raise StarFileError(
