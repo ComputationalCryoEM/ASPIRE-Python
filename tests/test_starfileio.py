@@ -6,7 +6,6 @@ from unittest import TestCase
 
 import importlib_resources
 import numpy as np
-import pytest
 from pandas import DataFrame
 from scipy import misc
 
@@ -113,6 +112,10 @@ class StarFileTestCase(TestCase):
         df = self.starfile["model_group_1"]
         self.assertEqual(76, len(df))
         self.assertEqual(3, len(df.columns))
+
+    def testFileNotFound(self):
+        with self.assertRaises(FileNotFoundError):
+            starfileBadFile = StarFile('badfile.star')
 
     def testReadWriteReadBack(self):
         # Save the StarFile object to a .star file
