@@ -115,7 +115,7 @@ class StarFileTestCase(TestCase):
 
     def testFileNotFound(self):
         with self.assertRaises(FileNotFoundError):
-            starfileBadFile = StarFile('badfile.star')
+            StarFile("badfile.star")
 
     def testReadWriteReadBack(self):
         # Save the StarFile object to a .star file
