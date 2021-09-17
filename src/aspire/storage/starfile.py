@@ -31,7 +31,7 @@ class StarFile:
 
     def _initialize_blocks(self):
         """
-        This method converts a gemmi Document object representing the .star file
+        Converts a gemmi Document object representing the .star file
         at self.filepath into an OrderedDict of pandas dataframes, each of which represents one block in the .star file
         """
         gemmi_doc = cif.read_file(self.filepath)
@@ -111,7 +111,10 @@ class StarFile:
                     )
 
     def write(self, filepath):
-        # construct empty document
+        '''
+        Converts `blocks` to a gemmi Document and writes to a starfile at the given filepath.
+        '''
+        # create an empty Document
         _doc = cif.Document()
         filepath = str(filepath)
         for name, df in self.blocks.items():
@@ -134,13 +137,25 @@ class StarFile:
         _doc.write_file(filepath)
 
     def get_block_by_index(self, index):
+        '''
+        Retrieve a DataFrame representing a star file block by its position in the starfile
+        '''
         return self.blocks[list(self.blocks.keys())[index]]
 
     def __getitem__(self, key):
+        '''
+        Retrieve the star file block with name `key`
+        '''
         return self.blocks[key]
 
     def __setitem__(self, key, value):
+        '''
+        Pass in a Pandas Dataframe to add a block named `key` with values `value`
+        '''
         self.blocks[key] = value
+
+    def __repr__(self):
+        print('<< StarFile with blocks: ' + ', '.join(list(self.blocks.keys())) + '>>')
 
     def __iter__(self):
         return self.blocks.items().__iter__()
