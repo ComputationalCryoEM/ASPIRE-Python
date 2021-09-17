@@ -6,6 +6,7 @@ from unittest import TestCase
 
 import importlib_resources
 import numpy as np
+import pytest
 from pandas import DataFrame
 from scipy import misc
 
@@ -13,7 +14,6 @@ import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.storage.starfile import StarFile
-import pytest
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -40,10 +40,10 @@ class StarFileTestCase(TestCase):
         with importlib_resources.path(
             tests.saved_test_data, "sample_data_model.star"
         ) as path:
-            # explicitly reset blocks variable, ensures identical object is tested 
+            # explicitly reset blocks variable, ensures identical object is tested
             # in each test
             self.starfile = StarFile(path, blocks=OrderedDict())
-      
+
         # Independent Image object for testing Image source methods
         L = 768
         self.im = Image(misc.face(gray=True).astype("float64")[:L, :L])
@@ -108,7 +108,7 @@ class StarFileTestCase(TestCase):
         self.assertEqual(
             "0.000000", df[df["_rlnSpectralIndex"] == "0"].iloc[0]["_rlnResolution"]
         )
-    
+
     def testData2(self):
         df = self.starfile["model_group_1"]
         self.assertEqual(76, len(df))
@@ -147,7 +147,7 @@ class StarFileTestCase(TestCase):
         data["loops"] = block2
         # initialize with blocks kwarg
         # in test environment only, we have to specify filepath=''
-        original = StarFile(filepath='',blocks=data)
+        original = StarFile(filepath="", blocks=data)
         original.write(test_outfile)
         # in test environment only, we have to specify blocks as an
         # empty OrderedDict

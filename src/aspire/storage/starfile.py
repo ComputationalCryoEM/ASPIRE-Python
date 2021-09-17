@@ -1,38 +1,40 @@
-import logging
-from collections import OrderedDict
 import errno
+import logging
 import os
+from collections import OrderedDict
 
 import pandas as pd
 from gemmi import cif
 
 logger = logging.getLogger(__name__)
 
+
 class StarFileError(Exception):
     pass
 
 
 class StarFile:
-    def __init__(self, filepath='', blocks=OrderedDict()):
-        '''
+    def __init__(self, filepath="", blocks=OrderedDict()):
+        """
         Initialize either from a path to a STAR file or from an OrderedDict of dataframes
-        '''
+        """
         self.blocks = blocks
         self.filepath = str(filepath)
-        if not(bool(self.filepath) ^ len(self.blocks)):
-            raise StarFileError('Pass a path to a STAR file or an OrderedDict of Pandas DataFrames')
+        if not (bool(self.filepath) ^ len(self.blocks)):
+            raise StarFileError(
+                "Pass a path to a STAR file or an OrderedDict of Pandas DataFrames"
+            )
         if self.filepath:
             if not os.path.exists(self.filepath):
-                logger.error(f'Could not open {self.filepath}')
+                logger.error(f"Could not open {self.filepath}")
                 raise FileNotFoundError
             self._initialize_blocks()
 
-
     def _initialize_blocks(self):
-        '''
+        """
         This method converts a gemmi Document object representing the .star file
         at self.filepath into an OrderedDict of pandas dataframes, each of which represents one block in the .star file
-        '''
+        """
         gemmi_doc = cif.read_file(self.filepath)
         # iterate over gemmi Block objects in the gemmi Document
         for gemmi_block in gemmi_doc:
@@ -42,7 +44,7 @@ class StarFile:
             # Pairs have type List[str[2]] and correspond to a non-loop key value
             # pair in a STAR file, e.g.
             # _field1 \t 'value' #1
-            
+
             # Our model of the .star file only allows a block to be one or the other
             block_has_pair = False
             block_has_loop = False
