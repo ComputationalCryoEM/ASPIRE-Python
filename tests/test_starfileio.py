@@ -99,7 +99,7 @@ class StarFileTestCase(TestCase):
         # Note that no typecasting is performed
         self.assertEqual(block0.at[0, "_rlnReferenceDimensionality"], "3")
 
-    def testData1(self):
+    def testData(self):
         df = self.starfile["model_class_1"]
         self.assertEqual(76, len(df))
         self.assertEqual(8, len(df.columns))
@@ -107,11 +107,6 @@ class StarFileTestCase(TestCase):
         self.assertEqual(
             "0.000000", df[df["_rlnSpectralIndex"] == "0"].iloc[0]["_rlnResolution"]
         )
-
-    def testData2(self):
-        df = self.starfile["model_group_1"]
-        self.assertEqual(76, len(df))
-        self.assertEqual(3, len(df.columns))
 
     def testFileNotFound(self):
         with self.assertRaises(FileNotFoundError):
