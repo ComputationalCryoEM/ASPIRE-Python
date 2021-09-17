@@ -1,8 +1,12 @@
+import logging
 from collections import OrderedDict
+import errno
+import os
 
 import pandas as pd
 from gemmi import cif
 
+logger = logging.getLogger(__name__)
 
 class StarFileError(Exception):
     pass
@@ -13,14 +17,16 @@ class StarFile:
         '''
         Initialize either from a path to a STAR file or from an OrderedDict of dataframes
         '''
-        self.filepath = str(filepath)
         self.blocks = blocks
-        
-        if not(self.filepath and len(self.blocks)):
-            raise StarFileError('Must specifiy either a path to a .star file OR an OrderedDict of pandas DataFrames')
-
+        self.filepath = str(filepath)
+        if not(bool(self.filepath) ^ len(self.blocks)):
+            raise StarFileError('Pass a path to a STAR file or an OrderedDict of Pandas DataFrames')
         if self.filepath:
+            if not os.path.exists(self.filepath):
+                logger.error(f'Could not open {self.filepath}')
+                raise FileNotFoundError
             self._initialize_blocks()
+
 
     def _initialize_blocks(self):
         '''
@@ -141,7 +147,14 @@ class StarFile:
     def __len__(self):
         return len(self.blocks)
 
-    def __eq__(self, other):\
-        # use __eq__ of OrderedDict
-        if not self.blocks == other.blocks:
+    def __eq__(self, other):
+        if not len(self) == len(other):
             return False
+        self_list = list(self.blocks.keys())
+        other_list = list(other.blocks.keys())
+        for i in range(len(self_list)):
+            if not self_list[i][0] == other_list[i][0]:
+                return False
+            if not self_list[i][1] == other_list[i][1]:
+                return False
+        return True
