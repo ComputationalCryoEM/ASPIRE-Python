@@ -28,12 +28,14 @@ class StarFile:
                 logger.error(f"Could not open {self.filepath}")
                 raise FileNotFoundError
             self._initialize_blocks()
+        logger.info(f"Created {self}")
 
     def _initialize_blocks(self):
         """
         Converts a gemmi Document object representing the .star file
         at self.filepath into an OrderedDict of pandas dataframes, each of which represents one block in the .star file
         """
+        logger.info(f"Parsing star file at: {self.filepath}")
         gemmi_doc = cif.read_file(self.filepath)
         # iterate over gemmi Block objects in the gemmi Document
         for gemmi_block in gemmi_doc:
@@ -155,7 +157,7 @@ class StarFile:
         self.blocks[key] = value
 
     def __repr__(self):
-        print('<< StarFile with blocks: ' + ', '.join(list(self.blocks.keys())) + '>>')
+        return 'StarFile with blocks: ' + ', '.join(list(self.blocks.keys()))
 
     def __iter__(self):
         return self.blocks.items().__iter__()
