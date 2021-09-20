@@ -2,7 +2,7 @@
 ASPIRE-Python Introduction
 ==========================
 
-In this notebook we will introduce some code from ASPIRE-Python 
+In this notebook we will introduce some code from ASPIRE-Python
 that corresponds to topics from MATH586.
 """
 
