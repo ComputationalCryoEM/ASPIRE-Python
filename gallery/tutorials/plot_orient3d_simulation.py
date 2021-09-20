@@ -24,7 +24,7 @@ from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = "../../tutorials/data/"
+DATA_DIR = "data/"
 
 logger.info(
     "This script illustrates orientation estimation using "

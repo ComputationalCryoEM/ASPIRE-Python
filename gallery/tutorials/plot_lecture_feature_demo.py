@@ -96,7 +96,7 @@ logger = logging.getLogger(__name__)
 # -----------------
 
 # A low res example file is included in the repo as a sanity check.
-infile = mrcfile.open("../../tutorials/data/clean70SRibosome_vol_65p.mrc")
+infile = mrcfile.open("data/clean70SRibosome_vol_65p.mrc")
 
 # More interesting data requires downloading locally.
 # infile = mrcfile.open("EMD-2660/map/emd_2660.map")

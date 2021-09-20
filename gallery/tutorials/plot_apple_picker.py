@@ -17,7 +17,7 @@ from aspire.apple.apple import Apple
 # Initiate ASPIRE's ``Apple`` class and load the micrograph data.
 
 apple_picker = Apple()
-filename = "../../tutorials/data/falcon_2012_06_12-14_33_35_0.mrc"
+filename = "data/falcon_2012_06_12-14_33_35_0.mrc"
 
 # %%
 # Pick Particles and Find Centers

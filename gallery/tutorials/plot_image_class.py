@@ -10,7 +10,7 @@ import numpy as np
 from aspire.image import Image
 from aspire.operators import CTFFilter
 
-img_data = np.load("../../tutorials/data/monuments.npy")
+img_data = np.load("data/monuments.npy")
 img_data.shape, img_data.dtype
 
 # %%

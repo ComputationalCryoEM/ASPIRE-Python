@@ -28,7 +28,7 @@ logger.info(
 # -------------------
 
 # Load the images from NumPy array, 10 images of 70S Ribosome with size 129 x 129
-DATA_DIR = "../../tutorials/data/"
+DATA_DIR = "data/"
 org_images = np.load(os.path.join(DATA_DIR, "example_data_np_array.npy")).T
 
 # Set the sizes of images (129, 129)
