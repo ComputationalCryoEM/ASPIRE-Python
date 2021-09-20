@@ -170,7 +170,7 @@ plt.tight_layout()
 def radial_profile(data):
     y, x = np.indices((data.shape))
     # Distance from origin to lower left corner
-    r = np.sqrt(x ** 2 + y ** 2).astype(np.int)
+    r = np.sqrt(x ** 2 + y ** 2).astype(int)
     binsum = np.bincount(r.ravel(), np.log(1 + data.ravel()))
     bincount = np.bincount(r.ravel())
     # Return the mean per bin
