@@ -4,19 +4,23 @@ ASPIRE-Python Introduction
 
 In this notebook we will introduce some code from ASPIRE-Python 
 that corresponds to topics from MATH586.
-First I'll import some of the usual suspects, 
-and we'll import classes from ASPIRE as we use them.
 """
 
 # %%
+# Imports
+# -------
+# First we import some of the usual suspects. In addition, we import some classes from
+# the ASPIRE package that we will use throughout this tutorial.
+
+# %%
 # Homework Task 0
-# --------------
+# ^^^^^^^^^^^^^^^
 #
 # Attempt to install ASPIRE on your machine. ASPIRE can generally install on
 # Linux, Mac, and Windows
 # under Anaconda Python, by following the instructions in the README.
-# [`The instructions for developers is the most comprehensive
-# <https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/master/README.md#for-developers>`_].
+# `The instructions for developers is the most comprehensive
+# <https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/master/README.md#for-developers>`_.
 # Linux is the most tested platform.
 #
 # ASPIRE requires some resources to run, so if you wouldn't run typical data
@@ -51,20 +55,22 @@ logger = logging.getLogger(__name__)
 # ``Image`` Class
 # ---------------
 #
-# The [Image](https://computationalcryoem.github.io/ASPIRE-Python/aspire.image.html#aspire.image.image.Image) class
+# The `Image <https://computationalcryoem.github.io/ASPIRE-Python/aspire.image.html#aspire.image.image.Image>`_ class
 # is a thin wrapper over numpy arrays for a stack containing 1 or more images.
 # In this notebook we won't be working directly with the ``Image`` class a lot, but it will be one of the fundemental structures behind the scenes.
 # A lot of ASPIRE code passes around ``Image`` and ``Volume`` classes.
 #
 # Examples of using the Image class can be found in:
+#
 # - ``examples/basic_image_array.py``
+#
 # - ``tutorials/notebooks/00_image_class.ipynb``
 
 # %%
 # ``Volume`` Class
 # ----------------
 #
-# Like ``Image``, the [Volume](https://computationalcryoem.github.io/ASPIRE-Python/aspire.volume.html#aspire.volume.Volume) class
+# Like ``Image``, the `Volume <https://computationalcryoem.github.io/ASPIRE-Python/aspire.volume.html#aspire.volume.Volume>`_ class
 # is a thin wrapper over numpy arrays that provides specialized methods for a stack containing 1 or more volumes.
 #
 # Here we will instantiate a Volume using a numpy array and use it to downsample to a desired resolution (64 should be good).
@@ -73,8 +79,8 @@ logger = logging.getLogger(__name__)
 # Unfortunately real data can be quite large so we do not ship it with the repo.
 
 # %%
-# Homework 1
-# ----------
+# Homework Task 1
+# ^^^^^^^^^^^^^^^
 #
 # - Starting from `EMPIAR <https://www.ebi.ac.uk/pdbe/emdb/empiar/>`_ find a molecule of interest and try to
 # find if it has a corresponding volume density map from `EMDB <https://www.ebi.ac.uk/pdbe/emdb>`_.
@@ -128,12 +134,12 @@ plt.show()
 
 # %%
 # Homework Task 2
-# ---------------
+# ^^^^^^^^^^^^^^^
 #
 # Above I have used a simple log transform with a scatter plot to peek at the 3D data.
 # This was mainly just to make sure the data was in the neighborhood of what I was looking for.
 # More commonly we will want to construct an ``isosurface`` plot.
-# Try to create a better plot of the volume ( this will probably require more advanced tools than matplotlib).
+# Try to create a better plot of the volume (this will probably require more advanced tools than matplotlib).
 
 # %%
 # ``Rotation`` Class - Generating Random Rotations
@@ -142,7 +148,7 @@ plt.show()
 # To get general projections this brings us to generating random rotations which we will apply to our volume.
 #
 # While you may bring your own 3x3 matrices or generate manually (say from your own Euler angles),
-# ASPIRE has a [Rotation class](https://computationalcryoem.github.io/ASPIRE-Python/aspire.utils.html#module-aspire.utils.rotation)
+# ASPIRE has a `Rotation class <https://computationalcryoem.github.io/ASPIRE-Python/aspire.utils.html#module-aspire.utils.rotation>`_
 # which can do this random rotation generation for us.  It also has some other utility methods if you would want to compare with something manual.
 #
 # The following code will generate some random rotations, and use the ``Volume.project()`` method to return an ``Image`` instance representing the stack of projections.
@@ -167,7 +173,7 @@ projections.show()
 # The ``source`` Package
 # ----------------------
 #
-# [aspire.source](https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation)
+# `aspire.source <https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation>`_
 # package contains a collection of data source interfaces.
 # The idea is that we can design an experiment using a synthetic ``Simulation`` source or our own provided array via ``ArrayImageSource``;
 # then later swap out the source for a large experimental data set using something like ``RelionSource``.
@@ -185,7 +191,7 @@ projections.show()
 #
 # Generating realistic synthetic data sources is a common task.
 # The process of generating then projecting random rotations is integrated into the
-# [Simulation](https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation) class.
+# `Simulation <https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation>`_ class.
 # Using ``Simulation``, we can generate arbitrary numbers of projections for use in experiments.
 # Later we will demonstrate additional features which allow us to create more realistic data sources.
 
@@ -215,7 +221,7 @@ sim_seed.images(0, 10).show()
 # Filters
 # ^^^^^^^
 #
-# [Filters](https://computationalcryoem.github.io/ASPIRE-Python/aspire.operators.html#module-aspire.operators.filters)
+# `Filters <https://computationalcryoem.github.io/ASPIRE-Python/aspire.operators.html#module-aspire.operators.filters>`_
 # are a collection of classes which once configured can be applied to ``Source`` pipelines.
 # Common filters we might use are ``ScalarFilter``, ``PowerFilter``, ``FunctionFilter``, and ``CTFFilter``.
 #
@@ -248,7 +254,7 @@ sim3.images(0, 10).show()
 #
 # Now we can create a CL instance for estimating orientation of projections using the Common Line with synchronization method.
 #
-# We will import [CLSyncVoting](https://computationalcryoem.github.io/ASPIRE-Python/aspire.abinitio.html?highlight=clsyncvoting#aspire.abinitio.commonline_sync.CLSyncVoting),
+# We will import `CLSyncVoting <(https://computationalcryoem.github.io/ASPIRE-Python/aspire.abinitio.html?highlight=clsyncvoting#aspire.abinitio.commonline_sync.CLSyncVoting>`_,
 # then several helper utilities fron the ``coor_trans`` package to help verify our estimates.
 #
 # For each iteration in the loop:
@@ -300,11 +306,11 @@ for desc, _sim in [
 # The ``noise`` Package
 # ^^^^^^^^^^^^^^^^^^^^^
 #
-# The [aspire.noise](https://computationalcryoem.github.io/ASPIRE-Python/aspire.noise.html)
+# The `aspire.noise <https://computationalcryoem.github.io/ASPIRE-Python/aspire.noise.html>`_
 # package contains several useful classes for generating and estimating different types of noise.
 #
 # In this case, we know the noise to be white, so we can proceed directly to
-# [WhiteNoiseEstimator](https://computationalcryoem.github.io/ASPIRE-Python/aspire.noise.html#aspire.noise.noise.WhiteNoiseEstimator).  The noise estimators consume from a ``Source``.
+# `WhiteNoiseEstimator <https://computationalcryoem.github.io/ASPIRE-Python/aspire.noise.html#aspire.noise.noise.WhiteNoiseEstimator>`_.  The noise estimators consume from a ``Source``.
 #
 # The white noise estimator should log a diagnostic variance value. How does this compare with the known noise variance above?
 
@@ -406,7 +412,7 @@ rots_est = orient_est.rotations
 # ----------
 #
 # Here we can use the ``RadialCTFFilter`` subclass of
-# [CTFFilter](https://computationalcryoem.github.io/ASPIRE-Python/aspire.operators.html?highlight=ctffilter#aspire.operators.filters.CTFFilter)
+# `CTFFilter <https://computationalcryoem.github.io/ASPIRE-Python/aspire.operators.html?highlight=ctffilter#aspire.operators.filters.CTFFilter>`_
 # to generate some simulated images with CTF effects.
 #
 # We use the ``unique_filter`` argument of the ``Simulation`` class to apply a collection of several CTFs with different defocus.
