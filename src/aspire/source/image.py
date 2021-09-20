@@ -620,7 +620,6 @@ class ImageSource:
 
         if new_mrcs:
             # Create a new column that we will be populating in the loop below
-            # For
             df["_rlnImageName"] = ""
 
             if save_mode == "single":
