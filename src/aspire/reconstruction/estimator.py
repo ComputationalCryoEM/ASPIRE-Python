@@ -30,6 +30,12 @@ class Estimator:
                 f" basis: {self.basis.dtype}"
             )
 
+        if src.L != basis.nres:
+            raise ValueError(
+                "Currently require 2D source and 3D volume resolution to be the same."
+                f" Given src.L={src.L} != {basis.nres}"
+            )
+
         """
         An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
         least-squares estimator kernel.

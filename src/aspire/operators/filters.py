@@ -33,6 +33,7 @@ def wavelength_to_voltage(wavelength):
     ) / (2 * 0.978466)
 
 
+# TODO: filters should probably be dtyped...
 class Filter:
     def __init__(self, dim=None, radial=False):
         self.dim = dim
