@@ -389,7 +389,7 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        indices = np.arange(start, min(start + num, self.n), dtype=np.int)
+        indices = np.arange(start, min(start + num, self.n), dtype=int)
 
         if self._cached_im is not None:
             logger.info("Loading images from cache")
@@ -765,10 +765,21 @@ class ArrayImageSource(ImageSource):
     def __init__(self, im, metadata=None, angles=None):
         """
         Initialize from an `Image` object
-        :param im: An `Image` object representing image data served up by this `ImageSource`
+        :param im: An `Image` or Numpy array object representing image data served up by this `ImageSource`.
+        In the case of a Numpy array, attempts to create an 'Image' object.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
         """
+
+        if not isinstance(im, Image):
+            logger.info("Attempting to create an Image object from Numpy array.")
+            try:
+                im = Image(im)
+            except Exception as e:
+                raise RuntimeError(
+                    "Creating Image object from Numpy array failed."
+                    f" Original error: {str(e)}"
+                )
 
         super().__init__(
             L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None

@@ -80,8 +80,8 @@ class FBBasis2D(SteerableBasis2D):
         # We'll also generate a mapping for complex construction
         self.complex_count = sum(self.k_max)
         # These map indices in complex array to pair of indices in real array
-        self._pos = np.zeros(self.complex_count, dtype=np.int)
-        self._neg = np.zeros(self.complex_count, dtype=np.int)
+        self._pos = np.zeros(self.complex_count, dtype=int)
+        self._neg = np.zeros(self.complex_count, dtype=int)
 
         i = 0
         ci = 0
@@ -217,7 +217,7 @@ class FBBasis2D(SteerableBasis2D):
         x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
-            idx_radial = ind_radial + np.arange(0, k_max, dtype=np.int)
+            idx_radial = ind_radial + np.arange(0, k_max, dtype=int)
 
             # include the normalization factor of angular part
             ang_nrms = self.angular_norms[idx_radial]
@@ -228,7 +228,7 @@ class FBBasis2D(SteerableBasis2D):
             for _ in sgns:
                 ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
-                idx = ind + np.arange(0, k_max, dtype=np.int)
+                idx = ind + np.arange(0, k_max, dtype=int)
                 x[mask] += ang_radial @ v[idx]
                 ind += len(idx)
                 ind_ang += 1
