@@ -2,26 +2,30 @@
 ASPIRE-Python Introduction
 ==========================
 
-In this notebook we will introduce some code from ASPIRE-Python that corresponds to topics from MATH586.
-First I'll import some of the usual suspects, and we'll import classes from ASPIRE as we use them.
+In this notebook we will introduce some code from ASPIRE-Python 
+that corresponds to topics from MATH586.
+First I'll import some of the usual suspects, 
+and we'll import classes from ASPIRE as we use them.
 """
 
 # %%
 # Homework Task 0
 # --------------
 #
-# Attempt to install ASPIRE on your machine. ASPIRE can generally install on Linux, Mac, and Windows
+# Attempt to install ASPIRE on your machine. ASPIRE can generally install on
+# Linux, Mac, and Windows
 # under Anaconda Python, by following the instructions in the README.
-# [The instructions for developers is the most comprehensive](https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/master/README.md#for-developers).
+# [`The instructions for developers is the most comprehensive
+# <https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/master/README.md#for-developers>`_].
 # Linux is the most tested platform.
 #
-# ASPIRE requires some resources to run, so if you wouldn't run typical data science codes on your machine (maybe a netbook for example), you may use TigerCPU.
-# After logging into TigerCPU, ``module load anaconda3/2020.7`` and follow the anaconda instructions for developers in the link above.
-# Those instructions should create a working environment for tinkering with ASPIRE code found in this notebook.
-#
-# As a last resort, this code can be run in your browser via `binder`, but out of the box this will limit you to included sample datasets.
-# [Run this notebook on mybinder.com](https://mybinder.org/v2/gh/ComputationalCryoEM/ASPIRE-Python/master?filepath=tutorials/notebooks/Lecture_1-6_Feature_Demonstration.ipynb)
-# (This may take a few minutes to launch container.)
+# ASPIRE requires some resources to run, so if you wouldn't run typical data
+# science codes on your machine (maybe a netbook for example),
+# you may use TigerCPU. After logging into TigerCPU,
+# ``module load anaconda3/2020.7`` and follow the anaconda instructions for
+# developers in the link above.
+# Those instructions should create a working environment for tinkering with
+# ASPIRE code found in this notebook.
 
 import logging
 
@@ -49,22 +53,22 @@ logger = logging.getLogger(__name__)
 #
 # The [Image](https://computationalcryoem.github.io/ASPIRE-Python/aspire.image.html#aspire.image.image.Image) class
 # is a thin wrapper over numpy arrays for a stack containing 1 or more images.
-# In this notebook we won't be working directly with the `Image` class a lot, but it will be one of the fundemental structures behind the scenes.
-# A lot of ASPIRE code passes around `Image` and `Volume` classes.
+# In this notebook we won't be working directly with the ``Image`` class a lot, but it will be one of the fundemental structures behind the scenes.
+# A lot of ASPIRE code passes around ``Image`` and ``Volume`` classes.
 #
 # Examples of using the Image class can be found in:
-# - `examples/basic_image_array.py`
-# - `tutorials/notebooks/00_image_class.ipynb`
+# - ``examples/basic_image_array.py``
+# - ``tutorials/notebooks/00_image_class.ipynb``
 
 # %%
 # ``Volume`` Class
 # ----------------
 #
-# Like `Image`, the [Volume](https://computationalcryoem.github.io/ASPIRE-Python/aspire.volume.html#aspire.volume.Volume) class
+# Like ``Image``, the [Volume](https://computationalcryoem.github.io/ASPIRE-Python/aspire.volume.html#aspire.volume.Volume) class
 # is a thin wrapper over numpy arrays that provides specialized methods for a stack containing 1 or more volumes.
 #
 # Here we will instantiate a Volume using a numpy array and use it to downsample to a desired resolution (64 should be good).
-# For the data source I chose to download a real volume density map from EMDB https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660.
+# For the data source I chose to download a real volume density map from `EMDB <https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.
 # The download was uncompressed in my local directory.  The notebook defaults to a small low resolution sample file you may use to sanity check.
 # Unfortunately real data can be quite large so we do not ship it with the repo.
 
@@ -72,14 +76,14 @@ logger = logging.getLogger(__name__)
 # Homework 1
 # ----------
 #
-# - Starting from [EMPIAR](https://www.ebi.ac.uk/pdbe/emdb/empiar/) find a molecule of interest and try to
-# find if it has a corresponding volume density map from [EMDB](https://www.ebi.ac.uk/pdbe/emdb).
+# - Starting from `EMPIAR <https://www.ebi.ac.uk/pdbe/emdb/empiar/>`_ find a molecule of interest and try to
+# find if it has a corresponding volume density map from `EMDB <https://www.ebi.ac.uk/pdbe/emdb>`_.
 #
 # - Download such a map and use it in the following experiments where I have used 2660.
 #
 # Helpful friendly hint:
 # `mrcfile` will typically open `.map` files provided by EMDB, corresponding to an EMPIAR entry.
-# This was not obvious to me, but you may [read more about the format here](https://www.emdataresource.org/mapformat.html).
+# This was not obvious to me, but you may `read more about the format here <https://www.emdataresource.org/mapformat.html>`_.
 
 # %%
 # Initialize Volume
@@ -128,7 +132,7 @@ plt.show()
 #
 # Above I have used a simple log transform with a scatter plot to peek at the 3D data.
 # This was mainly just to make sure the data was in the neighborhood of what I was looking for.
-# More commonly we will want to construct an `isosurface` plot.
+# More commonly we will want to construct an ``isosurface`` plot.
 # Try to create a better plot of the volume ( this will probably require more advanced tools than matplotlib).
 
 # %%
@@ -136,13 +140,13 @@ plt.show()
 # ------------------------------------------------
 #
 # To get general projections this brings us to generating random rotations which we will apply to our volume.
-
+#
 # While you may bring your own 3x3 matrices or generate manually (say from your own Euler angles),
 # ASPIRE has a [Rotation class](https://computationalcryoem.github.io/ASPIRE-Python/aspire.utils.html#module-aspire.utils.rotation)
 # which can do this random rotation generation for us.  It also has some other utility methods if you would want to compare with something manual.
-
-# The following code will generate some random rotations, and use the `Volume.project()` method to return an `Image` instance representing the stack of projections.
-# We can display projection images using the `Image.show()` method.
+#
+# The following code will generate some random rotations, and use the ``Volume.project()`` method to return an ``Image`` instance representing the stack of projections.
+# We can display projection images using the ``Image.show()`` method.
 
 num_rotations = 2
 rots = Rotation.generate_random_rotations(n=num_rotations, seed=12345)
@@ -165,13 +169,13 @@ projections.show()
 #
 # [aspire.source](https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation)
 # package contains a collection of data source interfaces.
-# The idea is that we can design an experiment using a synthetic `Simulation` source or our own provided array via `ArrayImageSource`;
-# then later swap out the source for a large experimental data set using something like `RelionSource`.
+# The idea is that we can design an experiment using a synthetic ``Simulation`` source or our own provided array via ``ArrayImageSource``;
+# then later swap out the source for a large experimental data set using something like ``RelionSource``.
 #
 # We do this because the experimental datasets are too large to fit in memory.
 # They cannot be provided as a massive large array, and instead require methods to orchestrate batching.
 # Depending on the application, they may also require corresponding batched algorithms.
-# The `Source` classes try to make most of this opaque to an end user.  Ideally we can swap one source for another.
+# The ``Source`` classes try to make most of this opaque to an end user.  Ideally we can swap one source for another.
 #
 # For now we will build up to the creation and application of synthetic data set based on the real volume data used previously.
 
@@ -182,7 +186,7 @@ projections.show()
 # Generating realistic synthetic data sources is a common task.
 # The process of generating then projecting random rotations is integrated into the
 # [Simulation](https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation) class.
-# Using `Simulation`, we can generate arbitrary numbers of projections for use in experiments.
+# Using ``Simulation``, we can generate arbitrary numbers of projections for use in experiments.
 # Later we will demonstrate additional features which allow us to create more realistic data sources.
 
 num_imgs = 100  # How many images in our source.
@@ -245,7 +249,7 @@ sim3.images(0, 10).show()
 # Now we can create a CL instance for estimating orientation of projections using the Common Line with synchronization method.
 #
 # We will import [CLSyncVoting](https://computationalcryoem.github.io/ASPIRE-Python/aspire.abinitio.html?highlight=clsyncvoting#aspire.abinitio.commonline_sync.CLSyncVoting),
-# then several helper utilities fron the `coor_trans` package to help verify our estimates.
+# then several helper utilities fron the ``coor_trans`` package to help verify our estimates.
 #
 # For each iteration in the loop:
 # - Save the true rotations
