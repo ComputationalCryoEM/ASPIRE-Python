@@ -157,7 +157,7 @@ class StarFile:
         self.blocks[key] = value
 
     def __repr__(self):
-        return "StarFile with blocks: " + ", ".join(list(self.blocks.keys()))
+        return "StarFile with blocks: " + ", ".join(self.blocks.keys())
 
     def __iter__(self):
         return self.blocks.items().__iter__()
