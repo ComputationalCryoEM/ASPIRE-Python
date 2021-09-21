@@ -654,8 +654,11 @@ class ImageSource:
 
         filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
 
-        # initial the star file object and save it
+        # initialize the star file object and save it
         odict = OrderedDict()
+        # since our StarFile only has one block, the convention is to save it with the header "data_", i.e. its name is blank
+        # if we had a block called "XYZ" it would be saved as "XYZ"
+        # thus we index the metadata block with ""
         odict[""] = df
         outStar = StarFile(blocks=odict)
         outStar.write(starfile_filepath)

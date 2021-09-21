@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.7.0",
+    version="0.8.0",
     data_files=[
         ("", ["src/aspire/config.ini"]),
         ("", ["src/aspire/logging.conf"]),
@@ -24,8 +24,12 @@ setup(
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
+<<<<<<< HEAD
         "finufft",
         "gemmi>=0.4.8",
+=======
+        "finufft==2.0.0",
+>>>>>>> origin/develop
         "importlib_resources>=1.0.2",
         "joblib",
         "matplotlib",
