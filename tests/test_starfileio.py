@@ -167,6 +167,7 @@ class StarFileTestCase(TestCase):
         with self.assertRaises(StarFileError):
             _blocks = OrderedDict()
             _blocks["a"], _blocks["b"] = 1, 2
-            with importlib_resources.path(tests.saved_test_data, "sample_data_model.star") as path:   
+            with importlib_resources.path(
+                tests.saved_test_data, "sample_data_model.star"
+            ) as path:
                 StarFile(filepath=path, blocks=_blocks)
-            

@@ -21,7 +21,7 @@ class StarFile:
         self.filepath = str(filepath)
         # the below syntax is an XOR of filepath and blocks. it will equal false if __init__
         # is called with no arguments or with both kwargs and will equal true if either one or the other
-        # is passed 
+        # is passed
         if not (bool(self.filepath) ^ bool(len(self.blocks))):
             raise StarFileError(
                 "Pass either a path to a STAR file or an OrderedDict of Pandas DataFrames"
