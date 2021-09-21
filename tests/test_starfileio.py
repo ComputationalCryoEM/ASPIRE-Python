@@ -12,7 +12,7 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.storage.starfile import StarFile
+from aspire.storage.starfile import StarFile, StarFileError
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -162,3 +162,11 @@ class StarFileTestCase(TestCase):
 
         os.remove(test_outfile)
         os.remove(test_outfile2)
+
+    def testArgsError(self):
+        with self.assertRaises(StarFileError):
+            _blocks = OrderedDict()
+            _blocks["a"], _blocks["b"] = 1, 2
+            with importlib_resources.path(tests.saved_test_data, "sample_data_model.star") as path:   
+                StarFile(filepath=path, blocks=_blocks)
+            
