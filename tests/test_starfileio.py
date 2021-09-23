@@ -39,9 +39,7 @@ class StarFileTestCase(TestCase):
         with importlib_resources.path(
             tests.saved_test_data, "sample_data_model.star"
         ) as path:
-            # explicitly reset blocks variable, ensures identical object is tested
-            # in each test
-            self.starfile = StarFile(path, blocks=OrderedDict())
+            self.starfile = StarFile(path)
 
         # Independent Image object for testing Image source methods
         L = 768
@@ -144,11 +142,8 @@ class StarFileTestCase(TestCase):
         data["single_row"] = block1
         data["loops"] = block2
         # initialize with blocks kwarg
-        # in test environment only, we have to specify filepath=''
         original = StarFile(blocks=data)
         original.write(test_outfile)
-        # in test environment only, we have to specify blocks as an
-        # empty OrderedDict
         read_back = StarFile(test_outfile)
         # assert that the read-back objects are equal
         self.assertEqual(original, read_back)
@@ -166,7 +161,7 @@ class StarFileTestCase(TestCase):
     def testArgsError(self):
         with self.assertRaises(StarFileError):
             _blocks = OrderedDict()
-            _blocks[""] = DataFrame(["test","data"])
+            _blocks[""] = DataFrame(["test", "data"])
             with importlib_resources.path(
                 tests.saved_test_data, "sample_data_model.star"
             ) as path:
@@ -175,4 +170,4 @@ class StarFileTestCase(TestCase):
     def testEmptyInit(self):
         empty = StarFile()
         self.assertTrue(isinstance(empty.blocks, OrderedDict))
-        self.assertEqual(len(empty.blocks),0)
+        self.assertEqual(len(empty.blocks), 0)
