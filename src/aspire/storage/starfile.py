@@ -176,6 +176,6 @@ class StarFile:
         for i in range(len(self_list)):
             if not self_list[i][0] == other_list[i][0]:
                 return False
-            if not self_list[i][1] == other_list[i][1]:
+            if not self_list[i][1].equals(other_list[i][1]):
                 return False
         return True
