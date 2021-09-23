@@ -10,7 +10,7 @@ import pandas as pd
 from aspire.image import Image
 from aspire.operators import CTFFilter
 from aspire.source import ImageSource
-from aspire.storage.starfile import StarFile
+from aspire.storage import StarFile
 from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)

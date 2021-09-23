@@ -12,7 +12,7 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.storage.starfile import StarFile, StarFileError
+from aspire.storage import StarFile, StarFileError
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
