@@ -22,8 +22,7 @@ from aspire.operators import (
     MultiplicativeFilter,
     PowerFilter,
 )
-from aspire.storage import MrcStats
-from aspire.storage.starfile import StarFile
+from aspire.storage import MrcStats, StarFile
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 
