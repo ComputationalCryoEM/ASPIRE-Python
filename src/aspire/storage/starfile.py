@@ -18,6 +18,7 @@ class StarFile:
         Initialize either from a path to a STAR file or from an OrderedDict of dataframes
         """
         self.blocks = blocks or OrderedDict()
+        self.blocks = {key: df.astype(str) for (key, df) in self.blocks.items()}
         self.filepath = str(filepath)
         # the below syntax is an XOR of filepath and blocks. it will equal false if __init__
         # is called with no arguments or with both kwargs and will equal true if either one or the other
@@ -171,8 +172,8 @@ class StarFile:
     def __eq__(self, other):
         if not len(self) == len(other):
             return False
-        self_list = list(self.blocks.keys())
-        other_list = list(other.blocks.keys())
+        self_list = list(self.blocks.items())
+        other_list = list(other.blocks.items())
         for i in range(len(self_list)):
             if not self_list[i][0] == other_list[i][0]:
                 return False

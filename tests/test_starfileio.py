@@ -166,7 +166,7 @@ class StarFileTestCase(TestCase):
     def testArgsError(self):
         with self.assertRaises(StarFileError):
             _blocks = OrderedDict()
-            _blocks["a"], _blocks["b"] = 1, 2
+            _blocks[""] = DataFrame(["test","data"])
             with importlib_resources.path(
                 tests.saved_test_data, "sample_data_model.star"
             ) as path:
