@@ -22,7 +22,7 @@ class StarFile:
         # if constructing from blocks, must switch pandas dtype to str
         # otherwise comparison with StarFiles read from files will fail
         # due to different data types 
-        self.blocks = {key: df.astype(str) for (key, df) in self.blocks.items()}
+        self.blocks = OrderedDict({key: df.astype(str) for (key, df) in self.blocks.items()})
         self.filepath = str(filepath)
         # raise an error if blocks and a filepath are both pased
         if bool(self.filepath) and bool(len(self.blocks)):

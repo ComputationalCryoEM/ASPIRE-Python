@@ -171,3 +171,8 @@ class StarFileTestCase(TestCase):
                 tests.saved_test_data, "sample_data_model.star"
             ) as path:
                 StarFile(filepath=path, blocks=_blocks)
+
+    def testEmptyInit(self):
+        empty = StarFile()
+        self.assertTrue(isinstance(empty.blocks, OrderedDict))
+        self.assertEqual(len(empty.blocks),0)
