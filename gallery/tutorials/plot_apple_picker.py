@@ -50,6 +50,8 @@ centers.shape
 #
 # We use the ``process_micrograph`` method to build a plot showing the picked particles.
 
+# The next comment sets the gallery thumbnail to be the 2nd image in the script (ie. this image)
+# sphinx_gallery_thumbnail_number = 2
 plt.title("A simple chirp")
 plt.imshow(micro_img)
 
