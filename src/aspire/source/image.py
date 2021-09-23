@@ -660,8 +660,8 @@ class ImageSource:
         # if we had a block called "XYZ" it would be saved as "XYZ"
         # thus we index the metadata block with ""
         odict[""] = df
-        outStar = StarFile(blocks=odict)
-        outStar.write(starfile_filepath)
+        out_star = StarFile(blocks=odict)
+        out_star.write(starfile_filepath)
         return filename_indices
 
     def save_images(
