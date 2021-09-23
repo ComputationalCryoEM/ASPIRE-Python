@@ -17,7 +17,11 @@ class StarFile:
         """
         Initialize either from a path to a STAR file or from an OrderedDict of dataframes
         """
+        # if blocks are given, set self.blocks, otherwise initialize an empty OrderedDict()
         self.blocks = blocks or OrderedDict()
+        # if constructing from blocks, must switch pandas dtype to str
+        # otherwise comparison with StarFiles read from files will fail
+        # due to different data types 
         self.blocks = {key: df.astype(str) for (key, df) in self.blocks.items()}
         self.filepath = str(filepath)
         # the below syntax is an XOR of filepath and blocks. it will equal false if __init__
