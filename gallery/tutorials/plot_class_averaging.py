@@ -12,13 +12,10 @@ import numpy as np
 from PIL import Image as PILImage
 
 from aspire.classification import RIRClass2D
-from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ScalarFilter
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
-from aspire.source import Simulation
 from aspire.utils import gaussian_2d
-from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +50,6 @@ thetas = np.linspace(start=0, stop=360, num=N, endpoint=False)
 
 classRound = np.zeros((N, L, L))
 classOval = np.zeros((N, L, L))
-
 
 for i, theta in enumerate(thetas):
     classRound[i] = np.asarray(PILImage.fromarray(round_disc).rotate(theta))
