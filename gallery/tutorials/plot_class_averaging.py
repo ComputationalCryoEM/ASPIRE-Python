@@ -2,7 +2,7 @@
 Class Averaging
 ===============
 
-We demonstrate class averaging
+We demonstrate class averaging using the Rotationally Invariant Representaion algorithm.
 """
 
 import logging
@@ -108,10 +108,10 @@ noise_var = 0.5 * var
 # We create a uniform noise to apply to the 2D images
 noise_filter = ScalarFilter(dim=2, value=noise_var)
 
-# Then create a NoiseAdder.
+# Then create noise with the ``NoiseAdder`` class.
 noise = NoiseAdder(seed=123, noise_filter=noise_filter)
 
-# Add the noise to the images
+# Add noise to the images by performing ``forward``
 src_with_noise = noise.forward(src.images(0, src.n))
 
 # Recast as an ASPIRE source
