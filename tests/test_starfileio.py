@@ -1,5 +1,6 @@
 import os.path
 import tempfile
+from collections import OrderedDict
 from itertools import zip_longest
 from unittest import TestCase
 
@@ -11,7 +12,7 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.storage import StarFile, StarFileBlock
+from aspire.storage import StarFile, StarFileError
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -35,7 +36,9 @@ def grouper(iterable, n, fillvalue=None):
 
 class StarFileTestCase(TestCase):
     def setUp(self):
-        with importlib_resources.path(tests.saved_test_data, "sample.star") as path:
+        with importlib_resources.path(
+            tests.saved_test_data, "sample_data_model.star"
+        ) as path:
             self.starfile = StarFile(path)
 
         # Independent Image object for testing Image source methods
@@ -61,63 +64,110 @@ class StarFileTestCase(TestCase):
         self._tmpdir.cleanup()
 
     def testLength(self):
-        # StarFile is an iterable that gives us blocks.
-        #   We have 2 blocks in our sample starfile.
-        self.assertEqual(2, len(self.starfile))
+        # StarFile is an iterable that gives us blocks
+        # blocks are pandas DataFrames
+        # We have 6 blocks in our sample starfile.
+        self.assertEqual(6, len(self.starfile))
 
     def testIteration(self):
-        # A StarFile can be iterated over, yielding StarFileBlocks
-        for block in self.starfile:
-            self.assertTrue(isinstance(block, StarFileBlock))
+        # A StarFile can be iterated over, yielding DataFrames
+        for _, df in self.starfile:
+            self.assertTrue(isinstance(df, DataFrame))
 
     def testBlockByIndex(self):
-        # Indexing a StarFile with a 0-based index gives us a 'block',
-        block0 = self.starfile[0]
-        self.assertTrue(isinstance(block0, StarFileBlock))
-        # Our first block has no 'loop's.
-        self.assertEqual(0, len(block0))
+        # We can use get_block_by_index to retrieve the blocks in
+        # the OrderedDict by index
+        block0 = self.starfile.get_block_by_index(0)
+        self.assertTrue(isinstance(block0, DataFrame))
+        # Our first block has one row
+        self.assertEqual(1, len(block0))
 
     def testBlockByName(self):
         # Indexing a StarFile with a string gives us a block with that name
         #   ("data_<name>" in starfile).
-        # In our case the block at index 1 has name 'planetary'
-        block1 = self.starfile["planetary"]
-        # This block has a two 'loops'.
-        self.assertEqual(2, len(block1))
+        # In our case the block at index 1 has name 'model_classes'
+        block1 = self.starfile["model_classes"]
+        # This block has one row as well
+        self.assertEqual(1, len(block1))
 
     def testBlockProperties(self):
         # A StarFileBlock may have attributes that were read from the
         #   starfile key=>value pairs.
-        block0 = self.starfile["general"]
+        block0 = self.starfile["model_general"]
         # Note that no typecasting is performed
-        self.assertEqual(block0._three, "3")
+        self.assertEqual(block0.at[0, "_rlnReferenceDimensionality"], "3")
 
-    def testLoop(self):
-        loop = self.starfile[1][0]
-        self.assertIsInstance(loop, DataFrame)
-
-    def testData1(self):
-        df = self.starfile["planetary"][0]
-        self.assertEqual(8, len(df))
-        self.assertEqual(4, len(df.columns))
+    def testData(self):
+        df = self.starfile["model_class_1"]
+        self.assertEqual(76, len(df))
+        self.assertEqual(8, len(df.columns))
         # Note that no typecasting of values is performed at io.StarFile level
-        self.assertEqual("1", df[df["_name"] == "Earth"].iloc[0]["_gravity"])
+        self.assertEqual(
+            "0.000000", df[df["_rlnSpectralIndex"] == "0"].iloc[0]["_rlnResolution"]
+        )
 
-    def testData2(self):
-        df = self.starfile["planetary"][1]
-        self.assertEqual(3, len(df))
-        self.assertEqual(2, len(df.columns))
-        # Missing values in a loop default to ''
-        self.assertEqual("", df[df["_name"] == "Earth"].iloc[0]["_discovered_year"])
+    def testFileNotFound(self):
+        with self.assertRaises(FileNotFoundError):
+            StarFile("badfile.star")
 
-    def testSave(self):
-        # Save the StarFile object to disk,
-        #   read it back, and check for equality.
-        # Note that __eq__ is supported for StarFile/StarFileBlock classes
+    def testReadWriteReadBack(self):
+        # Save the StarFile object to a .star file
+        # Read it back for object equality
+        # Note that __eq__ is supported for the class
+        # it checks the equality of the underlying OrderedDicts of DataFrames
+        # using pd.DataFrame.equals()
+        test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
+        self.starfile.write(test_outfile)
+        starfile2 = StarFile(test_outfile)
+        self.assertEqual(self.starfile, starfile2)
 
-        with open("sample_saved.star", "w") as f:
-            self.starfile.save(f)
-        self.starfile2 = StarFile("sample_saved.star")
-        self.assertEqual(self.starfile, self.starfile2)
+        os.remove(test_outfile)
 
-        os.remove("sample_saved.star")
+    def testWriteReadWriteBack(self):
+        # setup our temp filenames
+        test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
+        test_outfile2 = os.path.join(self.tmpdir, "sampled_saved2.star")
+
+        # create a new StarFile object directly via an OrderedDict of DataFrames
+        # not by reading a file
+        data = OrderedDict()
+        # note that GEMMI requires the names of the fields to start with _
+        block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
+        # initialize a single-row data block (a set of pairs in GEMMI-parlance)
+        block1 = DataFrame([block1_dict], columns=block1_dict.keys())
+        block2_keys = ["_field4", "_field5", "_field6"]
+        block2_arr = [[f"{x}{y}" for x in range(3)] for y in range(3)]
+        # initialize a loop data block with a list of lists
+        block2 = DataFrame(block2_arr, columns=block2_keys)
+        data["single_row"] = block1
+        data["loops"] = block2
+        # initialize with blocks kwarg
+        original = StarFile(blocks=data)
+        original.write(test_outfile)
+        read_back = StarFile(test_outfile)
+        # assert that the read-back objects are equal
+        self.assertEqual(original, read_back)
+        # write back the second star file object
+        read_back.write(test_outfile2)
+        # compare the two .star files line by line
+        with open(test_outfile) as f_original, open(test_outfile2) as f_read_back:
+            lines_original = f_original.readlines()
+            lines_read_back = f_read_back.readlines()
+            self.assertEqual(lines_original, lines_read_back)
+
+        os.remove(test_outfile)
+        os.remove(test_outfile2)
+
+    def testArgsError(self):
+        with self.assertRaises(StarFileError):
+            _blocks = OrderedDict()
+            _blocks[""] = DataFrame(["test", "data"])
+            with importlib_resources.path(
+                tests.saved_test_data, "sample_data_model.star"
+            ) as path:
+                StarFile(filepath=path, blocks=_blocks)
+
+    def testEmptyInit(self):
+        empty = StarFile()
+        self.assertTrue(isinstance(empty.blocks, OrderedDict))
+        self.assertEqual(len(empty.blocks), 0)

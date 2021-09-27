@@ -25,6 +25,7 @@ setup(
     install_requires=[
         "click",
         "finufft==2.0.0",
+        "gemmi>=0.4.8",
         "importlib_resources>=1.0.2",
         "joblib",
         "matplotlib",
