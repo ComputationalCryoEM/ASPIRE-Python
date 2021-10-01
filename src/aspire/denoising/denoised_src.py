@@ -25,7 +25,7 @@ class DenoisedImageSource(ImageSource):
         self._im = None
         self.denoiser = denoiser
 
-    def _images(self, start=0, num=np.inf, indices=None, batch_size=512):
+    def _images(self, start=0, num=np.inf, indices=None):
         """
         Internal function to return a set of images after denoising
 
@@ -41,12 +41,5 @@ class DenoisedImageSource(ImageSource):
         end = indices.max()
 
         nimgs = len(indices)
-        im = np.empty((nimgs, self.L, self.L))
-
-        logger.info(f"Loading {nimgs} images complete")
-        for istart in range(start, end + 1, batch_size):
-            imgs_denoised = self.denoiser.images(istart, batch_size)
-            iend = min(istart + batch_size, end + 1)
-            im[istart:iend] = imgs_denoised.data
-
-        return Image(im)
+        imgs_denoised = self.denoiser.images(start, nimgs)
+        return Image(imgs_denoised.data)
