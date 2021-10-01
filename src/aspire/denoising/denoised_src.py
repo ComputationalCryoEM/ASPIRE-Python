@@ -36,7 +36,10 @@ class DenoisedImageSource(ImageSource):
         """
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
-        start = indices.min()
+        else:
+            start = indices.min()
+        end = indices.max()
+
         nimgs = len(indices)
         imgs_denoised = self.denoiser.images(start, nimgs)
         return Image(imgs_denoised.data)
