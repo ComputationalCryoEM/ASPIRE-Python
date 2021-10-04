@@ -8,9 +8,11 @@ Integrated into ASPIRE by Garrett Wright Feb 2021.
 import logging
 import os
 
+from collections import OrderedDict
 import mrcfile
 import numpy as np
 from numpy import linalg as npla
+from pandas import DataFrame
 from scipy.optimize import linprog
 from scipy.signal.windows import dpss
 
@@ -18,6 +20,7 @@ from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.image import Image
 from aspire.numeric import fft
 from aspire.operators import voltage_to_wavelength
+from aspire.storage import StarFile
 from aspire.utils import abs2, complex_type
 from aspire.utils.coor_trans import grid_1d, grid_2d
 
@@ -674,35 +677,25 @@ class CtfEstimator:
     # to just use what is avail in the obj.
     def write_star(self, df1, df2, ang, cs, voltage, pixel_size, amp, name):
         """
-        Writes starfile.
+        Writes CTF parameters to starfile.
         """
-
         if os.path.isdir("results") is False:
             os.mkdir("results")
-
+        data_block = {}
+        data_block["rlnMicrographName"] = name
+        data_block["rlnDefocusU"] = df1
+        data_block["rlnDefocusV"] = df2
+        data_block["rlnDefocusAngle"] = ang
+        data_block["rlnSphericalAbberation"] = cs
+        data_block["rlnAmplitudeContrast"] = amp
+        data_block["rlnVoltage"] = voltage
+        data_block["rlnDetectorPixelSize"] = pixel_size
+        df = DataFrame([data_block])
+        blocks = OrderedDict()
+        blocks["root"] = df
+        star = StarFile(blocks=blocks)
+        star.write("results/" + os.path.splitext(name)[0] + ".star")
         f = open("results/" + os.path.splitext(name)[0] + ".log", "w")
-        f.write(
-            "data_root\n\nloop_\n_rlnMicrographName #1\n_rlnDefocusU #2\n_rlnDefocusV #3\n_rlnDefocusAngle #4\n"
-        )
-        f.write(
-            "_rlnSphericalAberration #5\n_rlnAmplitudeContrast #6\n_rlnVoltage #7\n_rlnDetectorPixelSize #8\n"
-        )
-        f.write(name)
-        f.write("\t")
-        f.write("%5.8f" % (df1))
-        f.write("\t")
-        f.write("%5.8f" % (df2))
-        f.write("\t")
-        f.write("%5.8f" % (ang))
-        f.write("\t")
-        f.write("%5.2f" % (cs))
-        f.write("\t")
-        f.write("%5.4f" % (amp))
-        f.write("\t")
-        f.write("%5.4f" % (voltage))
-        f.write("\t")
-        f.write("%5.4f" % (pixel_size))
-        f.close()
 
 
 def estimate_ctf(
