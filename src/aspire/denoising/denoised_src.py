@@ -31,7 +31,7 @@ class DenoisedImageSource(ImageSource):
 
         :param start: The inclusive start index from which to return images.
         :param num: The exclusive end index up to which to return images.
-        :param num: The indices of images to return.
+        :param indices: The indices of images to return.
         :return: an `Image` object after denoisng.
         """
         if indices is None:
