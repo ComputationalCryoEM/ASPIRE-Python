@@ -47,6 +47,6 @@ class DenoisedImageSource(ImageSource):
         for istart in range(start, end + 1, batch_size):
             imgs_denoised = self.denoiser.images(istart, batch_size)
             iend = min(istart + batch_size, end + 1)
-            im[istart:iend] = imgs_denoised.data
+            im[istart-start:iend-start] = imgs_denoised.data
 
         return Image(im)
