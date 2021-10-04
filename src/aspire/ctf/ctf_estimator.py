@@ -7,8 +7,8 @@ Integrated into ASPIRE by Garrett Wright Feb 2021.
 
 import logging
 import os
-
 from collections import OrderedDict
+
 import mrcfile
 import numpy as np
 from numpy import linalg as npla
@@ -682,20 +682,19 @@ class CtfEstimator:
         if os.path.isdir("results") is False:
             os.mkdir("results")
         data_block = {}
-        data_block["rlnMicrographName"] = name
-        data_block["rlnDefocusU"] = df1
-        data_block["rlnDefocusV"] = df2
-        data_block["rlnDefocusAngle"] = ang
-        data_block["rlnSphericalAbberation"] = cs
-        data_block["rlnAmplitudeContrast"] = amp
-        data_block["rlnVoltage"] = voltage
-        data_block["rlnDetectorPixelSize"] = pixel_size
+        data_block["_rlnMicrographName"] = name
+        data_block["_rlnDefocusU"] = df1
+        data_block["_rlnDefocusV"] = df2
+        data_block["_rlnDefocusAngle"] = ang
+        data_block["_rlnSphericalAbberation"] = cs
+        data_block["_rlnAmplitudeContrast"] = amp
+        data_block["_rlnVoltage"] = voltage
+        data_block["_rlnDetectorPixelSize"] = pixel_size
         df = DataFrame([data_block])
         blocks = OrderedDict()
         blocks["root"] = df
         star = StarFile(blocks=blocks)
         star.write("results/" + os.path.splitext(name)[0] + ".star")
-        f = open("results/" + os.path.splitext(name)[0] + ".log", "w")
 
 
 def estimate_ctf(
