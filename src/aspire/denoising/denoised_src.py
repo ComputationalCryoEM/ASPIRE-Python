@@ -35,7 +35,7 @@ class DenoisedImageSource(ImageSource):
         :return: an `Image` object after denoisng.
         """
         # start and end (and indices) refer to the indices in the DenoisedImageSource
-        # that are being denoised and returned in batches 
+        # that are being denoised and returned in batches
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
         else:
