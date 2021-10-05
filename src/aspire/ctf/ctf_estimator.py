@@ -675,12 +675,13 @@ class CtfEstimator:
     # Note, This doesn't actually use anything from the class.
     # It is used in a solver loop of some sort, so it may not be correct
     # to just use what is avail in the obj.
-    def write_star(self, df1, df2, ang, cs, voltage, pixel_size, amp, name):
+    def write_star(self, df1, df2, ang, cs, voltage, pixel_size, amp, name, output_dir):
         """
         Writes CTF parameters to starfile.
         """
-        if os.path.isdir("results") is False:
-            os.mkdir("results")
+
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
         data_block = {}
         data_block["_rlnMicrographName"] = name
         data_block["_rlnDefocusU"] = df1
@@ -694,7 +695,7 @@ class CtfEstimator:
         blocks = OrderedDict()
         blocks["root"] = df
         star = StarFile(blocks=blocks)
-        star.write("results/" + os.path.splitext(name)[0] + ".star")
+        star.write(os.path.join(output_dir, os.path.splitext(name)[0]) + ".star")
 
 
 def estimate_ctf(
@@ -831,7 +832,7 @@ def estimate_ctf(
             name,
         )
 
-        ctf_object.write_star(*result)
+        ctf_object.write_star(*result, output_dir)
         results.append(result)
 
         ctf_object.set_df1(cc_array[ml, 0])

@@ -50,6 +50,11 @@ logger = logging.getLogger("aspire")
     default="float32",
     help="NumPy dtype to use in computation.  Example: 'float32' or 'float64'.",
 )
+@click.option(
+    "--output_dir",
+    default="results",
+    help="Path to output files, defaults to './results'",
+)
 def estimate_ctf(
     data_folder,
     pixel_size,
