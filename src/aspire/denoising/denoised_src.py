@@ -50,6 +50,6 @@ class DenoisedImageSource(ImageSource):
             imgs_denoised = self.denoiser.images(batch_start, batch_size)
             batch_end = min(batch_start + batch_size, end + 1)
             # we subtract start here to correct for any offset in the indices
-            im[batch_start - start : batch_end - start] = imgs_denoised.data
+            im[batch_start - start : batch_end - start] = imgs_denoised.asnumpy()
 
         return Image(im)
