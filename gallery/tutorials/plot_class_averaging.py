@@ -64,7 +64,6 @@ src = ArrayImageSource(example_array)
 
 # Let's peek at the images to make sure they're shuffled up nicely
 src.images(0, 10).show()
-src.n
 
 # %%
 # Class Average
@@ -112,21 +111,20 @@ noise_filter = ScalarFilter(dim=2, value=noise_var)
 noise = NoiseAdder(seed=123, noise_filter=noise_filter)
 
 # Add noise to the images by performing ``forward``
-src_with_noise = noise.forward(src.images(0, src.n))
+images_with_noise = noise.forward(src.images(0, src.n))
 
 # Recast as an ASPIRE source
-noisey_src = ArrayImageSource(src_with_noise)
+noisy_src = ArrayImageSource(images_with_noise)
 
 # Let's peek at the noisey images
-noisey_src.images(0, 10).show()
-noisey_src.n
+noisy_src.images(0, 10).show()
 
 # %%
 # RIR with Noise
 # --------------
 
-rir_n = RIRClass2D(
-    noisey_src,
+noisy_rir = RIRClass2D(
+    noisy_src,
     fspca_components=400,
     bispectrum_components=300,  # Compressed Features after last PCA stage.
     n_nbor=5,
@@ -136,11 +134,11 @@ rir_n = RIRClass2D(
     bispectrum_implementation="legacy",
 )  # replaced PCA and NN codes with third party (slightly faster and more robust)
 
-classes, reflections, rotations, corr = rir_n.classify()
+classes, reflections, rotations, corr = noisy_rir.classify()
 
 # %%
 # Display Classes
 # ---------------
 
-avgs = rir_n.output(classes, reflections, rotations)
+avgs = noisy_rir.output(classes, reflections, rotations)
 avgs.images(0, 10).show()
