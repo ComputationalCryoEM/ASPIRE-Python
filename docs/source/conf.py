@@ -49,6 +49,7 @@ sphinx_gallery_conf = {
      'gallery_dirs': ['auto_tutorials', 'auto_experiments'],  # path to where to save gallery generated output
      'download_all_examples': False,
      'within_subsection_order': ExampleTitleSortKey,
+     'filename_pattern': '/*.py',
 }
 
 # Add any paths that contain templates here, relative to this directory.
