@@ -3,12 +3,9 @@
 Basic Image Array
 =================
 
-
 In this example we will demonstrate some of ASPIRE's image processing functionality.
 We will add noise to a stack of copies of a stock image. We will then estimate and
 whiten that noise using some tools from the ASPIRE pipeline.
-
-
 """
 
 
@@ -54,7 +51,7 @@ img = img.downsample(new_resolution)
 
 
 # We will begin processing by adding some noise.
-# We wouldd like to create uniform noise for a 2d image with prescibed variance,
+# We would like to create uniform noise for a 2d image with prescibed variance,
 noise_var = np.var(img.asnumpy()) * 5
 noise_filter = ScalarFilter(dim=2, value=noise_var)
 
@@ -72,7 +69,7 @@ axs[0].set_title("Starting Image")
 axs[1].imshow(img_with_noise[0], cmap=plt.cm.gray)
 axs[1].set_title("Noisy Image")
 plt.tight_layout()
-
+plt.show()
 
 # %%
 # Adding Noise to a Simulated Stack of Images
@@ -114,14 +111,14 @@ for i, img in enumerate(imgs_with_noise[0:2]):
     axs[1, i].imshow(np.log(1 + img_with_noise_f), cmap=plt.cm.gray)
     axs[1, i].set_title(f"Custom Noisy Spectrum Image {i}")
 plt.tight_layout()
-
+plt.show()
 
 # %%
 # Noise Estimation and Whitening
 # ------------------------------
 #
-# Now we will use an ASPIRE pipeline to Whiten the image stack.
-# Here we will introduce our ``Source`` class and demonstrate applying an ``xform``.
+# Now we will use an ASPIRE pipeline to whiten the image stack.
+# Here we will introduce our ``Source`` class and demonstrate applying an ``Xform``.
 
 # ``Source`` classes are what we use in processing pipelines.
 # They provide a consistent interface to a variety of underlying data sources.
@@ -156,13 +153,14 @@ for i, img in enumerate(imgs_src.images(0, 2)):
     axs[1, i].imshow(np.log(1 + img_with_noise_f), cmap=plt.cm.gray)
     axs[1, i].set_title(f"Whitened Noisy Image Spectrum {i}")
 plt.tight_layout()
+plt.show()
 
 # %%
-# Spectrum Power Distribution
-# ---------------------------
-# We'll also want to take a look at the spectrum power distribution.
+# Power Spectral Density
+# ----------------------
+# We will also want to take a look at the power spectral density.
 # Since we just want to see the character of what is happening,
-# I'll assume each pixel's contribution is placed at their lower left corner,
+# We will assume each pixel's contribution is placed at its lower left corner,
 # and compute a crude radial profile.
 # Code from a discussion at https://stackoverflow.com/questions/21242011/most-efficient-way-to-calculate-radial-profile.
 
@@ -198,3 +196,4 @@ for i, img in enumerate(imgs_src.images(0, len(colors))):
 plt.title("Spectrum Profiles")
 plt.gca().legend(loc="upper center", bbox_to_anchor=(0.5, -0.1))
 plt.tight_layout()
+plt.show()

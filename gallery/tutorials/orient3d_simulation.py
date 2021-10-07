@@ -3,7 +3,7 @@
 ====================
 
 This script illustrates the estimation of orientation angles using a synchronization
-matrix and the voting method, based on simulated data projected from a 3D CryoEM map.
+matrix and the voting method, based on simulated data projected from a 3D cryo-EM map.
 """
 
 import logging
@@ -24,7 +24,7 @@ from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = "data/"
+DATA_DIR = "data"
 
 logger.info(
     "This script illustrates orientation estimation using "

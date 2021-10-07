@@ -2,15 +2,18 @@
 ASPIRE Image Class
 ==================
 
-This tutorial demonstrates some methods of the ASPIRE ``image`` class
+This tutorial demonstrates some methods of the ASPIRE ``Image`` class
 """
+
+import os
 
 import numpy as np
 
 from aspire.image import Image
 from aspire.operators import CTFFilter
 
-img_data = np.load("data/monuments.npy")
+DATA_DIR = "data"
+img_data = np.load(os.path.join(DATA_DIR, "monuments.npy"))
 img_data.shape, img_data.dtype
 
 # %%
@@ -42,7 +45,6 @@ im.shift(shifts).show()
 
 # Or apply shifts corresponding to to each image.
 shifts = np.array([[300 * i, 100 * i] for i in range(1, im.n_images + 1)])
-# print(shifts)
 im.shift(shifts).show()
 
 # %%
@@ -57,7 +59,4 @@ im.downsample(80).show()
 
 # pixel_size/defous_u/defocus_v in Angstrom, voltage in kV
 filter = CTFFilter(pixel_size=1, voltage=100, defocus_u=1500, defocus_v=2000)
-im.filter(filter).show()
-
-filter = CTFFilter(pixel_size=1, voltage=1000, defocus_u=1500, defocus_v=2000)
 im.filter(filter).show()

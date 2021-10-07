@@ -3,7 +3,7 @@ Image Expansion
 ===============
 
 This script illustrates several expansion methods for 2D images developed in ASPIRE package
-based on the basis functions of  Fourier Bessel (FB) and Prolate Spheroidal Wave Function (PSWF).
+based on the basis functions of  Fourier-Bessel (FB) and prolate spheroidal wave function (PSWF).
 """
 
 import logging
@@ -28,7 +28,7 @@ logger.info(
 # -------------------
 
 # Load the images from NumPy array, 10 images of 70S Ribosome with size 129 x 129
-DATA_DIR = "data/"
+DATA_DIR = "data"
 org_images = np.load(os.path.join(DATA_DIR, "example_data_np_array.npy")).T
 
 # Set the sizes of images (129, 129)
@@ -217,7 +217,8 @@ assert fpswf_nrmse_ims < 0.025
 # Side-by-side Comparison
 # -----------------------
 #
-# Here we present the images side-by-side, column-wise, for comparison between the methods. All plotting commands are copied from the above sections and concatenated to render the comparison plot.
+# Here we present the images side-by-side, column-wise, for comparison between the methods.
+# All plotting commands are copied from the above sections and concatenated to render the comparison plot.
 
 # plot the first images using the normal FB method
 plt.subplot(3, 4, 1)

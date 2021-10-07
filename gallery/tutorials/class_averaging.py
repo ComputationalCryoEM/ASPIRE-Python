@@ -2,7 +2,7 @@
 Class Averaging
 ===============
 
-We demonstrate class averaging using the Rotationally Invariant Representaion algorithm.
+We demonstrate class averaging using the rotationally invariant representation algorithm.
 """
 
 import logging
@@ -69,7 +69,7 @@ src.images(0, 10).show()
 # Class Average
 # -------------
 #
-# We use the ASPIRE ``RIRClass2D`` class to classify the images via the Rotationally Invariant Representation (RIR)
+# We use the ASPIRE ``RIRClass2D`` class to classify the images via the rotationally invariant representation (RIR)
 # algorithm. We then yield class averages by performing ``classify``.
 
 rir = RIRClass2D(
@@ -79,9 +79,9 @@ rir = RIRClass2D(
     n_nbor=5,
     n_classes=10,
     large_pca_implementation="legacy",
-    nn_implementation="sklearn",  # I have sk version output hist of "distance" distribution for consideration.
+    nn_implementation="sklearn",
     bispectrum_implementation="legacy",
-)  # replaced PCA and NN codes with third party (slightly faster and more robust)
+)
 
 classes, reflections, rotations, corr = rir.classify()
 
@@ -111,10 +111,10 @@ noise_filter = ScalarFilter(dim=2, value=noise_var)
 noise = NoiseAdder(seed=123, noise_filter=noise_filter)
 
 # Add noise to the images by performing ``forward``
-images_with_noise = noise.forward(src.images(0, src.n))
+noisy_im = noise.forward(src.images(0, src.n))
 
 # Recast as an ASPIRE source
-noisy_src = ArrayImageSource(images_with_noise)
+noisy_src = ArrayImageSource(noisy_im)
 
 # Let's peek at the noisey images
 noisy_src.images(0, 10).show()
@@ -126,13 +126,13 @@ noisy_src.images(0, 10).show()
 noisy_rir = RIRClass2D(
     noisy_src,
     fspca_components=400,
-    bispectrum_components=300,  # Compressed Features after last PCA stage.
+    bispectrum_components=300,
     n_nbor=5,
     n_classes=10,
     large_pca_implementation="legacy",
-    nn_implementation="sklearn",  # I have sk version output hist of "distance" distribution for consideration.
+    nn_implementation="sklearn",
     bispectrum_implementation="legacy",
-)  # replaced PCA and NN codes with third party (slightly faster and more robust)
+)
 
 classes, reflections, rotations, corr = noisy_rir.classify()
 
