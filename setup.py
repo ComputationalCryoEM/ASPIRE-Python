@@ -28,7 +28,7 @@ setup(
         "gemmi>=0.4.8",
         "importlib_resources>=1.0.2",
         "joblib",
-        "matplotlib",
+        "matplotlib>=3.2.0",
         "mrcfile",
         "numpy==1.16",
         "pandas==0.25.3",
