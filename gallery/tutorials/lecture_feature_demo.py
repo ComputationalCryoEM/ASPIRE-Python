@@ -31,8 +31,8 @@ that corresponds to topics from MATH586.
 # Those instructions should create a working environment for tinkering with
 # ASPIRE code found in this notebook.
 
-import os
 import logging
+import os
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -42,12 +42,12 @@ from aspire.abinitio import CLSyncVoting
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import FunctionFilter, RadialCTFFilter, ScalarFilter
 from aspire.source import RelionSource, Simulation
+from aspire.utils import Rotation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
     register_rotations,
 )
-from aspire.utils import Rotation
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
