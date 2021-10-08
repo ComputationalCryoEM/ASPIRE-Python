@@ -100,3 +100,7 @@ class StarFileTestCase(TestCase):
                 atol=1e-6,
             )
         )
+
+    def testMRCSWithOneParticle(self):
+        last_image = self.src.images(0, 20)[-1]
+        self.assertEqual(last_image.shape, (200, 200))
