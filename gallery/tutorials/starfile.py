@@ -21,7 +21,7 @@ from aspire.source import RelionSource
 # Here we load a ".star" file using the RelionSource class
 
 source = RelionSource(
-    "../../tests/saved_test_data/sample_relion_data.star",
+    "data/sample_relion_data.star",
     pixel_size=1.338,
     max_rows=10000,
 )
