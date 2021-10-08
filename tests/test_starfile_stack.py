@@ -18,7 +18,7 @@ class StarFileTestCase(TestCase):
         """Overridden run method to use context manager provided by importlib_resources"""
         with importlib_resources.path(
             tests.saved_test_data, "sample_relion_data.star"
-        ) as path:
+        ) as path, importlib_resources.path(tests.saved_test_data, "sample_relion_one_image.star") as path_one_image:
 
             # Create a temporary file with the contents of the sample.mrcs file in a subfolder at the same location
             # as the starfile, to allow our classes to do their job
@@ -30,6 +30,7 @@ class StarFileTestCase(TestCase):
                 should_delete_folder = True
 
             temp_file_path = os.path.join(temp_folder_path, "sample.mrcs")
+            temp_file_path_one_img = os.path.join(temp_folder_path, "sample_one_image.mrcs")
 
             should_delete_file = False
             if not os.path.exists(temp_file_path):
@@ -40,12 +41,25 @@ class StarFileTestCase(TestCase):
                         )
                     )
                     should_delete_file = True
+            should_delete_file_one_img = False
+            if not os.path.exists(temp_file_path_one_img):
+                with open(temp_file_path_one_img, "wb") as f:
+                    f.write(
+                        importlib_resources.read_binary(
+                             tests.saved_test_data, "sample_one_image.mrcs"
+                        )
+                    )
+                    should_delete_file_one_img = True
+                
 
-            self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)
+            self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)            
+            self.src_one_image = RelionSource(path_one_image, data_folder=temp_folder_path)
             super(StarFileTestCase, self).run(result)
 
             if should_delete_file:
                 os.remove(temp_file_path)
+            if should_delete_file_one_img:
+                os.remove(temp_file_path_one_img)
             if should_delete_folder:
                 os.removedirs(temp_folder_path)
 
@@ -102,5 +116,7 @@ class StarFileTestCase(TestCase):
         )
 
     def testMRCSWithOneParticle(self):
-        last_image = self.src.images(0, 20)[-1]
-        self.assertEqual(last_image.shape, (200, 200))
+        # tests conversion of 2D numpy arrays into 3D stacks in the case
+        # where there is only one image in the mrcs
+        single_image = self.src_one_image.images(0, 1)[0]
+        self.assertEqual(single_image.shape, (200, 200))
