@@ -31,6 +31,7 @@ that corresponds to topics from MATH586.
 # Those instructions should create a working environment for tinkering with
 # ASPIRE code found in this notebook.
 
+import os
 import logging
 
 import matplotlib.pyplot as plt
@@ -46,7 +47,7 @@ from aspire.utils.coor_trans import (
     get_rots_mse,
     register_rotations,
 )
-from aspire.utils.rotation import Rotation
+from aspire.utils import Rotation
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -62,9 +63,9 @@ logger = logging.getLogger(__name__)
 #
 # Examples of using the Image class can be found in:
 #
-# - ``examples/basic_image_array.py``
+# - ``tutorials/basic_image_array.py``
 #
-# - ``tutorials/notebooks/00_image_class.ipynb``
+# - ``tutorials/image_class.py``
 
 # %%
 # ``Volume`` Class
@@ -96,7 +97,8 @@ logger = logging.getLogger(__name__)
 # -----------------
 
 # A low res example file is included in the repo as a sanity check.
-infile = mrcfile.open("data/clean70SRibosome_vol_65p.mrc")
+DATA_DIR = "data"
+infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 
 # More interesting data requires downloading locally.
 # infile = mrcfile.open("EMD-2660/map/emd_2660.map")
@@ -126,7 +128,7 @@ for axis in range(3):
 # Scatter Plot
 # ------------
 
-# We can attempt a 3d Scatter plot, but the results aren't very good.
+# We can attempt a 3d scatter plot, but the results aren't very good.
 x, y, z = np.meshgrid(np.arange(L), np.arange(L), np.arange(L))
 ax = plt.axes(projection="3d")
 ax.scatter3D(x, y, z, c=np.log10(v2.flatten()), cmap="Greys_r")
@@ -161,7 +163,7 @@ rots = Rotation.generate_random_rotations(n=num_rotations, seed=12345)
 logger.info(rots)
 logger.info(rots.matrices)
 
-# Using the first(and in this case, only) volume, compute projections using the stack of rotations:
+# Using the first (and in this case, only) volume, compute projections using the stack of rotations:
 projections = v.project(0, rots)
 
 # project() returns an Image instance.
@@ -263,7 +265,7 @@ sim3.images(0, 10).show()
 # - Compare the estimated vs true rotations
 #
 # Each iteration will logger.info some diagnostic information that contains the top eigenvalues found.
-# From class we learned that a healthy eigen distribution should have a significant gap after the third eigenvalue.
+# From class we learned that a healthy eigendistribution should have a significant gap after the third eigenvalue.
 # It is clear we have such eigenspacing for the clean images, but not for the noisy images.
 
 for desc, _sim in [
@@ -291,9 +293,9 @@ for desc, _sim in [
 # Homework Task 3
 # ^^^^^^^^^^^^^^^
 #
-# We confirmed a dramatic change in the eigen spacing when we add a lot of noise.
+# We confirmed a dramatic change in the eigenspacing when we add a lot of noise.
 # Compute the SNR in this case using the formula described from class.
-# Repeat the experiment with varying levels of SNR to find at what level the character of the eigen spacing changes.
+# Repeat the experiment with varying levels of SNR to find at what level the character of the eigenspacing changes.
 # This will require changing the Simulation Source's noise_filter.
 # How does this compare with the levels discussed in lecture?
 
@@ -381,7 +383,7 @@ sim4.images(0, 10).show()
 # Lets attempt the same CL experiment, but with a ``RelionSource``.
 
 src = RelionSource(
-    "../../tests/saved_test_data/sample_relion_data.star",
+    "data/sample_relion_data.star",
     data_folder="",
     pixel_size=5.0,
     max_rows=1024,
