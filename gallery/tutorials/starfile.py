@@ -59,22 +59,19 @@ mean_est = mean_estimator.estimate()
 
 # MeanEstimator.estimate() returns a Volume Instance,
 #   which is wrapper on an ndarray representing a stack of one or more 3d volumes.
-# Lets try to visualize the data from first volume in the stack.
+# We will visualize the data via orthogonal projections along the three axes.
 
 vol = mean_est[0]
 # Visualize volume
 L = vol.shape[0]
-x, y, z = np.meshgrid(np.arange(L), np.arange(L), np.arange(L))
-ax = plt.axes(projection="3d")
-vol = (vol - np.min(vol)) / (np.max(vol) - np.min(vol))
-cmap = plt.get_cmap("Greys_r")
-ax.scatter3D(x, y, z, c=vol.flatten(), cmap=cmap)
-plt.show()
-
-# %%
-# Contour Plot
-# ------------
-
-# Alternatively view as a contour plot
-plt.contourf(np.arange(L), np.arange(L), np.sum(vol, axis=0))
+# Plots
+plt.suptitle("Orthogonal Projections", size=20)
+plt.subplot(1, 3, 1, title="x-axis")
+plt.imshow(np.sum(vol, axis=0))
+plt.subplot(1, 3, 2, title="y-axis")
+plt.imshow(np.sum(vol, axis=1))
+plt.subplot(1, 3, 3, title="z-axis")
+plt.imshow(np.sum(vol, axis=2))
+plt.tight_layout()
+plt.subplots_adjust(top=1.25)
 plt.show()
