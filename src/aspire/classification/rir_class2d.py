@@ -35,6 +35,8 @@ class RIRClass2D(Class2D):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
+        alignment_implementation="simple",
+        alignment_opts=None,
         dtype=None,
         seed=None,
     ):
@@ -63,6 +65,8 @@ class RIRClass2D(Class2D):
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
+        :param alignment_implementation: See `alignment`.
+        :param alignment_opts: Optional implementation specific configuration options. See `alignment`.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
@@ -132,6 +136,17 @@ class RIRClass2D(Class2D):
             )
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
 
+        alignment_implementations = {
+            "simple": self._simple_align,
+            "legacy": self._legacy_align,
+        }
+        if alignment_implementation not in alignment_implementations:
+            raise ValueError(
+                f"Provided alignment_implementation={alignment_implementation}"
+                f" not in {alignment_implementations.keys()}."
+            )
+        self._alignment = alignment_implementations[alignment_implementation]
+
     def classify(self, diagnostics=False):
         """
         This is the high level method to perform the 2D images classification.
@@ -178,8 +193,10 @@ class RIRClass2D(Class2D):
         # logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
 
         # # Stage 4: Align
-        logger.info(f"Begin Rotational Alignment of {classes.shape[0]} Classes")
-        return self.legacy_align(classes, refl, self.fspca_coef)
+        logger.info(
+            f"Begin Rotational Alignment of {classes.shape[0]} Classes using {self._alignment}."
+        )
+        return self.alignment(classes, refl, self.fspca_coef)
 
     def pca(self, M):
         """
@@ -307,10 +324,85 @@ class RIRClass2D(Class2D):
             # Averaging in FB
             fb_avgs[i] = np.mean(neighbors_coefs, axis=0)
 
-        # Now we convert the averaged images from FB to Cartestian.
+        # Now we convert the averaged images from FB to Cartesian.
         return ArrayImageSource(self.fb_basis.evaluate(fb_avgs))
 
-    def legacy_align(self, classes, refl, coef):
+    def alignment(self, classes, refl, coef, alignment_opts=None):
+        """
+        Any class averagiing alignment method should take in the following arguments and return the tuple described.
+
+        The returned `classes` and `refl` should be same as the input.
+
+        Returned `rot` is an (n_classes, n_nbor) array of angles which should represent the rotations needed to align images within that class. `rot` is measure in Radians.
+
+        Returned `corr` is an (n_classes, n_nbor) array that should represent a correlation like measure between classified images and their base image (image index 0).
+
+        Alignment implementations may admit specific conifguration options using an optional `alignment_opts` dictionary.
+
+        :param classes: (n_classes, n_nbor) integer array of indices
+        :param refl: (n_classes, n_nbor) bool array of reflections
+        :param coef: (n_img, self.pca_basis.count) array of compressed basis coefficients.
+
+        :returns: (classes, refl, rot, corr)
+        """
+
+        # _alignment is assigned during initialization.
+        return self._alignment(classes, refl, coef, alignment_opts)
+
+    def _simple_align(self, classes, refl, coef, alignment_opts=None):
+        """
+        This perfoms a brute force alignment.
+
+        For each class,
+        constructs n_angles rotations of all class members,
+        and then identifies rotation angle yielding smallest RMS.
+        """
+
+        # Configure any alignment options, or set default
+        if alignment_opts is None:
+            alignment_opts = {}
+        n_angles = alignment_opts.get("n_angles", 359)
+
+        test_angles = np.linspace(0, 2 * np.pi, n_angles, endpoint=False)
+        rots = np.empty(classes.shape, dtype=self.dtype)
+        corr = np.empty(classes.shape, dtype=self.dtype)
+
+        for k in range(self.n_classes):
+
+            results = np.empty((self.n_nbor, n_angles))
+
+            # get the coefs for these neighbors
+            nbr_coef = coef[classes[k]]
+
+            for i, angle in enumerate(test_angles):
+                # rotate the set of neighbors by angle,
+                rotated_nbrs = self.pca_basis.rotate(nbr_coef, angle, refl[k])
+
+                # then store difference from class base image (0)
+                results[:, i] = np.sqrt(
+                    np.mean(np.square(nbr_coef[0] - rotated_nbrs), axis=1)
+                )
+
+            # Now for each class find the index of the angle that reported the lowest diff
+            angle_idx = np.argmin(results, axis=1)
+
+            # Store that angle as our rotation for this image
+            rots[k, :] = test_angles[angle_idx]
+
+            # Also store something relating to their difference
+            for j in range(self.n_nbor):
+                corr[k, j] = 1.0 / np.exp(results[j, angle_idx[j]])
+
+        return classes, refl, rots, corr
+
+    def _legacy_align(self, classes, refl, coef, alignment_options=None):
+        """ """
+        if alignment_options is not None:
+            raise RuntimeError(
+                "`alignment_options` are not used by `_legacy_align`."
+                "  Check class configuration."
+            )
+
         # Translate some variables between this code and the legacy aspire implementation
         freqs = self.pca_basis.complex_angular_indices
         coeff = self.pca_basis.to_complex(coef).T
