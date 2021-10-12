@@ -7,11 +7,7 @@ from tqdm import tqdm, trange
 
 from aspire.basis import FSPCABasis
 from aspire.classification import Class2D
-from aspire.classification.legacy_implementations import (
-    bispec_2drot_large,
-    pca_y,
-    rot_align,
-)
+from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.image import Image
 from aspire.numeric import ComplexPCA
 from aspire.source import ArrayImageSource
@@ -138,7 +134,6 @@ class RIRClass2D(Class2D):
 
         alignment_implementations = {
             "simple": self._simple_align,
-            "legacy": self._legacy_align,
         }
         if alignment_implementation not in alignment_implementations:
             raise ValueError(
@@ -368,7 +363,7 @@ class RIRClass2D(Class2D):
         corr = np.empty(classes.shape, dtype=self.dtype)
 
         results = np.empty((self.n_nbor, n_angles))
-        
+
         for k in trange(self.n_classes):
 
             # get the coefs for these neighbors
@@ -394,54 +389,6 @@ class RIRClass2D(Class2D):
                 corr[k, j] = 1.0 / np.exp(results[j, angle_idx[j]])
 
         return classes, refl, rots, corr
-
-    def _legacy_align(self, classes, refl, coef, alignment_options=None):
-        """ """
-        if alignment_options is not None:
-            raise RuntimeError(
-                "`alignment_options` are not used by `_legacy_align`."
-                "  Check class configuration."
-            )
-
-        # Translate some variables between this code and the legacy aspire implementation
-        freqs = self.pca_basis.complex_angular_indices
-        coeff = self.pca_basis.to_complex(coef).T
-        n_im = self.src.n
-        n_nbor = self.n_nbor
-
-        # ## COPIED FROM LEGACY CODE:
-        max_freq = np.max(freqs)
-        cell_coeff = []
-        for i in range(max_freq + 1):
-            cell_coeff.append(
-                np.concatenate(
-                    (coeff[freqs == i], np.conjugate(coeff[freqs == i])), axis=1
-                )
-            )
-
-        # maybe pairs should also be transposed
-        pairs = np.stack(
-            (classes.flatten("F"), np.tile(np.arange(n_im), n_nbor)), axis=1
-        )
-        corr, rot = rot_align(max_freq, cell_coeff, pairs)
-
-        rot = rot.reshape((n_im, n_nbor), order="F")
-        classes = classes.reshape(
-            (n_im, n_nbor), order="F"
-        )  # this should already be in that shape
-        corr = corr.reshape((n_im, n_nbor), order="F")
-        # Note that the sorting here for alignment is wrt correlation,
-        #  whereas previously in the NN calculation sorting is by bispectrum distance.
-        id_corr = np.argsort(-corr, axis=1)
-        for i in range(n_im):
-            corr[i] = corr[i, id_corr[i]]
-            classes[i] = classes[i, id_corr[i]]
-            rot[i] = rot[i, id_corr[i]]
-
-        # Check Reflections usually imply rotation by 180, but this seems to yield worse results.
-        # rot[class_refl] = np.mod(rot[class_refl] + 180, 360)
-        rot *= np.pi / 180.0  # Convert to radians
-        return classes, refl, rot, corr
 
     def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """

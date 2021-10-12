@@ -4,8 +4,6 @@ import numpy as np
 import scipy.sparse as sps
 from scipy.linalg import qr
 
-from aspire.numeric import fft
-
 logger = logging.getLogger(__name__)
 
 
@@ -74,64 +72,6 @@ def pca_y(x, k, num_iters=2):
         u, v = v.T, u.T
 
     return u, s, v
-
-
-# copied for debugging/poc purposes
-# very slow function compared to matlab
-def rot_align(m, coeff, pairs):
-    n_theta = 360.0
-    p = pairs.shape[0]
-    c = np.zeros((m + 1, p), dtype="complex128")
-    m_list = np.arange(1, m + 1)
-
-    for i in range(m + 1):
-        c[i] = np.einsum(
-            "ij, ij -> j", np.conj(coeff[i][:, pairs[:, 0]]), coeff[i][:, pairs[:, 1]]
-        )
-
-    c2 = np.flipud(np.conj(c[1:]))
-    b = (2 * m + 1) * np.real(
-        fft.centered_ifft(np.concatenate((c2, c), axis=0), axis=0)
-    )
-    rot = np.argmax(b, axis=0)
-    rot = (rot - m) * n_theta / (2 * m + 1)
-
-    x_old = -np.ones(p)
-    x_new = rot
-    precision = 0.001
-    num_iter = 0
-
-    m_list_ang = m_list * np.pi / 180
-    m_list_ang_1j = 1j * m_list_ang
-    c_for_f_prime_1 = np.einsum("i, ij -> ji", m_list_ang, c[1:]).copy()
-    c_for_f_prime_2 = np.einsum("i, ji -> ji", m_list_ang, c_for_f_prime_1).copy()
-
-    diff = np.absolute(x_new - x_old)
-    while np.max(diff) > precision:
-        diff = np.absolute(x_new - x_old)
-        indices = np.where(diff > precision)[0]
-        x_old1 = x_new[indices]
-        tmp = np.exp(np.outer(m_list_ang_1j, x_old1))
-
-        delta = np.imag(
-            np.einsum("ji, ij -> j", c_for_f_prime_1[indices], tmp)
-        ) / np.real(np.einsum("ji, ij -> j", c_for_f_prime_2[indices], tmp))
-        delta_bigger10 = np.where(np.abs(delta) > 10)[0]
-        tmp_random = np.random.rand(len(delta))
-        tmp_random = tmp_random[delta_bigger10]
-        delta[delta_bigger10] = np.sign(delta_bigger10) * 10 * tmp_random
-        x_new[indices] = x_old1 - delta
-        num_iter += 1
-        if num_iter > 100:
-            break
-
-    rot = x_new
-    m_list = np.arange(m + 1)
-    m_list_ang = m_list * np.pi / 180
-    c = c * np.exp(1j * np.outer(m_list_ang, rot))
-    corr = (np.real(c[0]) + 2 * np.sum(np.real(c[1:]), axis=0)) / 2
-
-    return corr, rot
 
 
 def bispec_operator_1(freqs):
