@@ -367,9 +367,9 @@ class RIRClass2D(Class2D):
         rots = np.empty(classes.shape, dtype=self.dtype)
         corr = np.empty(classes.shape, dtype=self.dtype)
 
+        results = np.empty((self.n_nbor, n_angles))
+        
         for k in range(self.n_classes):
-
-            results = np.empty((self.n_nbor, n_angles))
 
             # get the coefs for these neighbors
             nbr_coef = coef[classes[k]]
