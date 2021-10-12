@@ -3,7 +3,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from aspire.basis import FSPCABasis
 from aspire.classification import Class2D
@@ -369,7 +369,7 @@ class RIRClass2D(Class2D):
 
         results = np.empty((self.n_nbor, n_angles))
         
-        for k in range(self.n_classes):
+        for k in trange(self.n_classes):
 
             # get the coefs for these neighbors
             nbr_coef = coef[classes[k]]
