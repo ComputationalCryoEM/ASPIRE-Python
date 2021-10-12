@@ -346,47 +346,54 @@ class RIRClass2D(Class2D):
 
     def _simple_align(self, classes, refl, coef, alignment_opts=None):
         """
-        This perfoms a brute force alignment.
+        This perfoms a Brute Force Rotational alignment.
 
         For each class,
-        constructs n_angles rotations of all class members,
-        and then identifies rotation angle yielding smallest RMS.
+            constructs n_angles rotations of all class members,
+            and then identifies angle yielding largest correlation(dot).
+
+        For params, see `align`.
+
+        Configurable `alignment_opts`:
+        `n_angles` sets the number of brute force rotations to attempt.
+        Defaults `n_angles=359`.
         """
 
-        # Configure any alignment options, or set default
+        # Configure any alignment options, otherwise use defaults.
         if alignment_opts is None:
             alignment_opts = {}
         n_angles = alignment_opts.get("n_angles", 359)
 
+        # Construct array of angles to brute force.
         test_angles = np.linspace(0, 2 * np.pi, n_angles, endpoint=False)
+
+        # Instantiate matrices for results
         rots = np.empty(classes.shape, dtype=self.dtype)
         corr = np.empty(classes.shape, dtype=self.dtype)
-
         results = np.empty((self.n_nbor, n_angles))
 
         for k in trange(self.n_classes):
 
-            # get the coefs for these neighbors
+            # Get the coefs for these neighbors
             nbr_coef = coef[classes[k]]
 
             for i, angle in enumerate(test_angles):
-                # rotate the set of neighbors by angle,
+                # Rotate the set of neighbors by angle,
                 rotated_nbrs = self.pca_basis.rotate(nbr_coef, angle, refl[k])
 
-                # then store difference from class base image (0)
-                results[:, i] = np.sqrt(
-                    np.mean(np.square(nbr_coef[0] - rotated_nbrs), axis=1)
-                )
+                # then store dot between class base image (0) and each nbor
+                for j, nbor in enumerate(rotated_nbrs):
+                    results[j, i] = np.dot(nbr_coef[0], nbor)
 
-            # Now for each class find the index of the angle that reported the lowest diff
-            angle_idx = np.argmin(results, axis=1)
+            # Now along each class, find the index of the angle reporting highest correlation
+            angle_idx = np.argmax(results, axis=1)
 
             # Store that angle as our rotation for this image
             rots[k, :] = test_angles[angle_idx]
 
-            # Also store something relating to their difference
+            # Also store the correlations for each neighbor
             for j in range(self.n_nbor):
-                corr[k, j] = 1.0 / np.exp(results[j, angle_idx[j]])
+                corr[k, j] = results[j, angle_idx[j]]
 
         return classes, refl, rots, corr
 
