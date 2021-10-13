@@ -40,14 +40,14 @@ class StarFileTestCase(TestCase):
                 path, data_folder=self.temp_folder_path, max_rows=12
             )
 
+    def setUp(self):
+        # this method is used by StarFileMainCase but overridden by StarFileOneImage
+        self.setUpStarFile("sample_relion_data.star", "sample.mrcs")
+
     def tearDown(self):
         # this method is used by both subclasses
         os.remove(self.temp_file_path)
         os.removedirs(self.temp_folder_path)
-
-    def setUp(self):
-        # this method is used by StarFileMainCase but overridden by StarFileOneImage
-        self.setUpStarFile("sample_relion_data.star", "sample.mrcs")
 
 
 class StarFileMainCase(StarFileTestCase):
