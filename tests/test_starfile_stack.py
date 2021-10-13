@@ -15,9 +15,11 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class StarFileTestCase(TestCase):
     def setUpStarFile(self, starfile_name, mrcs_name):
+        # this method is run for both subclasses and creates a temporary directory to run tests
+        # as well as initializing a RelionSource
         with importlib_resources.path(tests.saved_test_data, starfile_name) as path:
 
-            # Create a temporary file with the contents of the sample.mrcs file in a subfolder at the same location
+            # Create a temporary file with the contents of the .mrcs file in a subfolder at the same location
             # as the starfile, to allow our classes to do their job
             self.temp_folder_path = os.path.join(path.parent.absolute(), "_temp")
 
@@ -33,15 +35,18 @@ class StarFileTestCase(TestCase):
                             tests.saved_test_data, mrcs_name
                         )
                     )
+            # create a RelionSource object representing the data in the .mrcs file
             self.src = RelionSource(
                 path, data_folder=self.temp_folder_path, max_rows=12
             )
 
     def tearDown(self):
+        # this method is used by both subclasses
         os.remove(self.temp_file_path)
         os.removedirs(self.temp_folder_path)
 
     def setUp(self):
+        # this method is used by StarFileMainCase but overridden by StarFileOneImage
         self.setUpStarFile("sample_relion_data.star", "sample.mrcs")
 
 
@@ -95,6 +100,7 @@ class StarFileMainCase(StarFileTestCase):
 
 class StarFileSingleImage(StarFileTestCase):
     def setUp(self):
+        # override parent setUp because we are loading different files
         self.setUpStarFile("sample_relion_one_image.star", "sample_one_image.mrcs")
 
     def testMRCSWithOneParticle(self):
