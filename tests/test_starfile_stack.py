@@ -2,6 +2,8 @@ import os
 import os.path
 from unittest import TestCase
 
+
+
 import importlib_resources
 import numpy as np
 
@@ -14,7 +16,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class StarFileTestCase(TestCase):
-    def run(self, starfile_name, mrcs_name, result=None):
+
+    def setUpStarFile(self, starfile_name, mrcs_name):
         """Overridden run method to use context manager provided by importlib_resources"""
         with importlib_resources.path(
             tests.saved_test_data, starfile_name
@@ -44,18 +47,25 @@ class StarFileTestCase(TestCase):
     
             self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)
 
-            super(StarFileTestCase, self).run(starfile_name, mrcs_name, result)
+            #super(StarFileTestCase, self).run(starfile_name, mrcs_name, result)
 
-            if should_delete_file:
-                os.remove(temp_file_path)
-            if should_delete_folder:
-                os.removedirs(temp_folder_path)
-
+            #if should_delete_file:
+             #   os.remove(temp_file_path)
+            #if should_delete_folder:
+             #   os.removedirs(temp_folder_path)
     def setUp(self):
-        pass
-
+        starfile_name = 'sample_relion_data.star'
+        mrcs_name = 'sample.mrcs'
+        self.setUpStarFile(starfile_name, mrcs_name)
     def tearDown(self):
         pass
+
+class StarFileMainCase(StarFileTestCase):
+    #def setUp(self):
+       # self.run('sample_relion_data.star', 'sample.mrcs', None)
+
+    #def tearDown(self):
+     #   pass
 
     def testImageStackType(self):
         # Since src is an ImageSource, we can call images() on it to get an Image
@@ -103,8 +113,13 @@ class StarFileTestCase(TestCase):
             )
         )
 
+
+class StarFileSingleImage(StarFileTestCase):
+    def setUp(self):
+        self.setUpStarFile('sample_relion_one_image.star', 'sample_one_image.mrcs')
+    
     def testMRCSWithOneParticle(self):
         # tests conversion of 2D numpy arrays into 3D stacks in the case
         # where there is only one image in the mrcs
-        single_image = self.src_one_image.images(0, 1)[0]
+        single_image = self.src.images(0, 1)[0]
         self.assertEqual(single_image.shape, (200, 200))
