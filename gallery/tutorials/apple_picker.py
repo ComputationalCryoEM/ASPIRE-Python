@@ -53,6 +53,7 @@ centers.shape
 # sphinx_gallery_thumbnail_number = 2
 plt.title("Sample Micrograph")
 plt.imshow(micro_img)
+plt.show()
 
 # %%
 # Plot with Particle Picker
