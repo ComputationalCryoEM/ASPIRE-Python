@@ -93,7 +93,7 @@ class EmanSource(ImageSource):
         im = np.empty((len(indices),self.particle_size, self.particle_size), dtype=self.dtype)
 
         def crop_micrograph(data, coord):
-            start_x, start_y, size_x, size_y = *coord
+            start_x, start_y, size_x, size_y = coord[0], coord[1], coord[2], coord[3]
             # according to MRC 2014 convention, origin represents
             # bottom-left corner of image
             return data[start_y:start_y+size_y,start_x:start_x+size_x]
