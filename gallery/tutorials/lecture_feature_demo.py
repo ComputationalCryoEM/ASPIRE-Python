@@ -63,9 +63,9 @@ logger = logging.getLogger(__name__)
 #
 # Examples of using the Image class can be found in:
 #
-# - ``tutorials/basic_image_array.py``
+# - ``gallery/tutorials/basic_image_array.py``
 #
-# - ``tutorials/image_class.py``
+# - ``gallery/tutorials/image_class.py``
 
 # %%
 # ``Volume`` Class

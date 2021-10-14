@@ -50,7 +50,6 @@ centers.shape
 #
 # We use the ``process_micrograph`` method to build a plot showing the picked particles.
 
-# sphinx_gallery_thumbnail_number = 2
 plt.title("Sample Micrograph")
 plt.imshow(micro_img)
 plt.show()
@@ -59,7 +58,7 @@ plt.show()
 # Plot with Particle Picker
 # -------------------------
 
-# The next comment sets the gallery thumbnail to be the 2nd image in the script (ie. this image)
+# sphinx_gallery_thumbnail_number = 2
 img = apple_picker.process_micrograph(filename, return_centers=False, return_img=True)
 plt.imshow(img)
 plt.show()
