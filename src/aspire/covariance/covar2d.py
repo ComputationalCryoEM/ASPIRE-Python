@@ -377,7 +377,9 @@ class RotCov2D:
         for ell in range(0, len(b)):
             b_ell = b[ell]
             p = np.size(b_ell, 1)
-            S = sqrtm(b_noise[ell])
+            # scipy >= 1.6.0 will upcast the sqrtm result to doubles
+            #  https://github.com/scipy/scipy/issues/14853
+            S = sqrtm(b_noise[ell]).astype(self.dtype)
             # from Matlab b_ell = S \ b_ell /S
             b_ell = solve(S, b_ell) @ inv(S)
             b_ell = shrink_covar(b_ell, noise_var, p / n, shrinker)
