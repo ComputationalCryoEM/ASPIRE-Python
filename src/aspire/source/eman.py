@@ -1,3 +1,5 @@
+import os.path
+
 import logging
 from aspire.source import ImageSource
 from aspire.storage import StarFile
@@ -42,8 +44,8 @@ class EmanSource(ImageSource):
                 for line in boxfile.readlines():
                     coordList.append([int(x) for x in line.split()])
             self.mrc2coords[mrc_paths[i]] = coordList     
-         num_particles = sum([len(mrc2coords[x]) for x in mrc2coords])
-         logger.debug(f"EmanSource from {filepath} contains {len(mrc2coords)} micrographs, {num_particles} picked particles.")        
+        num_particles = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
+        logger.info(f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {num_particles} picked particles.")        
         
        
     def _images(self, start=0, num=np.inf, indices=None):
