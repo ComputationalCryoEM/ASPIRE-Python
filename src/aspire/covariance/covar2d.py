@@ -42,8 +42,7 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
                 lambdas
                 - noise_var * (gamma - 1)
                 + np.sqrt(
-                    (lambdas - noise_var * (gamma - 1)) ** 2
-                    - 4 * noise_var ** 2 * lambdas
+                    (lambdas - noise_var * (gamma - 1)) ** 2 - 4 * noise_var * lambdas
                 )
             )
             - noise_var
@@ -59,8 +58,7 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
                 lambdas
                 - noise_var * (gamma - 1)
                 + np.sqrt(
-                    (lambdas - noise_var * (gamma - 1)) ** 2
-                    - 4 * noise_var ** 2 * lambdas
+                    (lambdas - noise_var * (gamma - 1)) ** 2 - 4 * noise_var * lambdas
                 )
             )
             - noise_var
