@@ -25,7 +25,8 @@ class EmanSource(ImageSource):
         """
         logger.debug(f"Creating ImageSource from STAR file at path {filepath}")
         
-        # dictionary from 
+        # dictionary indexed by mrc file paths, leading to a list of coordinates
+        # coordinates represented by a tuple of integers
         self.mrc2coords = {}
         
         # load in the STAR file as a data frame. this STAR file has one block
@@ -37,22 +38,54 @@ class EmanSource(ImageSource):
             data_folder = os.path.dirname(filepath)
         mrc_paths = [os.path.join(data_folder, p) for p in list(df["_mrcFile"])]
         box_paths = [os.path.join(data_folder, p) for p in list(df["_boxFile"])]
+        # populate mrc2coords
+        # for each mrc, read its corresponding box file and load in the coordinates
         for i in range(len(mrc_paths)):
             coordList = []
-            # open corresponding box file to see how many particles it contains
+            # open box file and read in the coordinates (one particle per line)
             with open(box_paths[i], 'r') as boxfile:
                 for line in boxfile.readlines():
-                    coordList.append([int(x) for x in line.split()])
+                    coordList.append((int(x) for x in line.split()))
             self.mrc2coords[mrc_paths[i]] = coordList     
-        num_particles = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
-        logger.info(f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {num_particles} picked particles.")        
+
+        self.num_particles = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
+        logger.info(f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {self.num_particles} picked particles.")        
         
+        # open first mrc file to populate metadata
+        first_mrc_filepath = mrc_paths[0]
+        mrc = mrcfile.open(first_mrc_filepath)
+        mode = int(mrc.header.mode)
+        dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
+        dtype = dtypes[mode]
+        shape = mrc.data.shape
+        assert(len(shape)==2)
+        assert(shape[0] == shape[1])
+        L = shape[1]
+        logger.info(f"Image size = {L}x{L}")
+        self._original_resolution = L
+        
+
        
     def _images(self, start=0, num=np.inf, indices=None):
-        pass   
-    
-    def load_micrograph(filepath):
-        return mrcfile.open(filepath).data
+        # very important: the indices passed to this method will refer to the index
+        # of the *particle*, not the micrograph
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.num_particles))
+        else:
+            start = indices.min()
+        logger.info(f"Loading {len(indices)} images from micrographs")
+        
+        # explode mrc2coords into a flat list
+        all_particles = []
+        for mrc in self.mrc2coords:
+            for i in range(len(self.mrc2coords[mrc])):
+                all_particles.append(f"{i:05d}@{mrc}")
+        _particles = [all_particles[i] for i in indices]
+        im = np.empty((len(indices),self._original_resolution, self._original_resolution), dtype=self.dtype)
+        
+        for particle in _particles:
+            num, fp = int(particle.split("@")[0]), particle.split("@")[1]
+            arr = mrcfile.open(fp).data
 
-    def crop_micrograph(im):         
+    def crop_micrograph(im, coord):         
         pass
