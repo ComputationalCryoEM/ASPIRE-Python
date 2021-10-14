@@ -3,6 +3,7 @@ import os.path
 import logging
 from aspire.source import ImageSource
 from aspire.storage import StarFile
+from aspire.image import Image
 
 import mrcfile
 import numpy as np
@@ -83,9 +84,19 @@ class EmanSource(ImageSource):
         _particles = [all_particles[i] for i in indices]
         im = np.empty((len(indices),self._original_resolution, self._original_resolution), dtype=self.dtype)
         
-        for particle in _particles:
+        for i in range(len(_particles)):
             num, fp = int(particle.split("@")[0]), particle.split("@")[1]
+            # load the image data for this micrograph
             arr = mrcfile.open(fp).data
+            # get the specified particle coordinates
+            coord = self.mrc2coords[fp][num]
+            im[i] = crop_micrograph(arr, coord)
 
-    def crop_micrograph(im, coord):         
-        pass
+        return Image(im)
+
+    def crop_micrograph(data, coord):         
+        bottom_left_corner_x = coord[0]
+        bottom_left_corner_y = coord[1]
+        size_x = coord[2]
+        size_y = coord[3]
+        
