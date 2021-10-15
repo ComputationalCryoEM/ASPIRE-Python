@@ -85,7 +85,7 @@ class StarFileTestCase(TestCase):
         # our second block is a loop, represented by a DataFrame
         block1 = self.starfile.get_block_by_index(1)
         self.assertTrue(isinstance(block1, DataFrame))
-        self.assertEqual(block1.at[0, "_rlnClassDistribution"], "1.000000")
+        self.assertEqual(block1.at[0, "_rlnClassDistribution"], "1.000000")        
 
     def testBlockByName(self):
         # Indexing a StarFile with a string gives us a block with that name
