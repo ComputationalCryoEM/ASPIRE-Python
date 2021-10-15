@@ -178,8 +178,19 @@ class StarFile:
         self_list = list(self.blocks.items())
         other_list = list(other.blocks.items())
         for i in range(len(self_list)):
+            # test whether block names are the same
             if not self_list[i][0] == other_list[i][0]:
                 return False
-            if not self_list[i][1].equals(other_list[i][1]):
+            # test whether blocks are both DFs or dicts
+            if not type(self_list[i][1]) is type(other_list[i][1]):
                 return False
+            # finally, compare the objects themselves
+            if isinstance(self_list[i][1], pd.DataFrame):
+                # test using pandas DataFrame.equals()
+                if not self_list[i][1].equals(other_list[i][1]):
+                    return False
+            else:
+                # test dict equality
+                if not self_list[i][1] == other_list[i][1]:
+                    return False
         return True
