@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 import mrcfile
 import numpy as np
-from pandas import DataFrame
 
 from aspire.image import Image
 from aspire.source import ImageSource
