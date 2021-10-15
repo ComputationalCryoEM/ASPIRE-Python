@@ -70,32 +70,35 @@ class StarFileTestCase(TestCase):
         self.assertEqual(6, len(self.starfile))
 
     def testIteration(self):
-        # A StarFile can be iterated over, yielding DataFrames
-        for _, df in self.starfile:
-            self.assertTrue(isinstance(df, DataFrame))
+        # A StarFile can be iterated over, yielding DataFrames for loops
+        # or dictionaries for pairs
+        for _, block in self.starfile:
+            self.assertTrue(isinstance(block, DataFrame) or isinstance(block, dict)
 
     def testBlockByIndex(self):
         # We can use get_block_by_index to retrieve the blocks in
         # the OrderedDict by index
+        # our first block is a set of pairs, represented by a dict
         block0 = self.starfile.get_block_by_index(0)
-        self.assertTrue(isinstance(block0, DataFrame))
-        # Our first block has one row
-        self.assertEqual(1, len(block0))
+        self.assertTrue(isinstance(block0, dict))
+        self.assertEqual(block0["_rlnReferenceDimensionality"],"3")
+        # our second block is a loop, represented by a DataFrame
+        block1 = self.starfile.get_block_by_index(1)
+        self.assertTrue(isinstance(block1, DataFrame))
+        self.assertEqual(block1.at[0, "_rlnClassDistribution"], "1.000000"])
+        
 
     def testBlockByName(self):
         # Indexing a StarFile with a string gives us a block with that name
         #   ("data_<name>" in starfile).
-        # In our case the block at index 1 has name 'model_classes'
-        block1 = self.starfile["model_classes"]
-        # This block has one row as well
-        self.assertEqual(1, len(block1))
-
-    def testBlockProperties(self):
-        # A StarFileBlock may have attributes that were read from the
-        #   starfile key=>value pairs.
+        # the block at index 0 has the name 'model_general'
         block0 = self.starfile["model_general"]
-        # Note that no typecasting is performed
-        self.assertEqual(block0.at[0, "_rlnReferenceDimensionality"], "3")
+        # this block is a pair/dict with 22 key value pairs
+        self.assertEqual(len(block0), 22)
+        # the block at index 1 has name 'model_classes'
+        block1 = self.starfile["model_classes"]
+        # This block is a loop/DF with one row
+        self.assertEqual(len(block1), 1)
 
     def testData(self):
         df = self.starfile["model_class_1"]
