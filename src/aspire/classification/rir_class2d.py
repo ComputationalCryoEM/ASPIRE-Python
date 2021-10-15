@@ -1,4 +1,5 @@
 import logging
+from itertools import product
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,7 +32,7 @@ class RIRClass2D(Class2D):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        alignment_implementation="simple",
+        alignment_implementation="bfr",
         alignment_opts=None,
         dtype=None,
         seed=None,
@@ -133,7 +134,8 @@ class RIRClass2D(Class2D):
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
 
         alignment_implementations = {
-            "simple": self._simple_align,
+            "bfr": self._bfr_align,
+            "bfsr": self._bfsr_align,
         }
         if alignment_implementation not in alignment_implementations:
             raise ValueError(
@@ -183,9 +185,11 @@ class RIRClass2D(Class2D):
             logger.info(f"Count reflected: {np.sum(refl)}" f" {100 * np.mean(refl) } %")
 
         # # Stage 3: Class Selection
+        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
         # This is an area open to active research.
-        # Currently we take naive approach documented later in `output`.
-        # logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
+        # Currently we take a naive approach by selecting the
+        # first n_classes assuming they are quasi random.
+        classes = classes[: self.n_classes]
 
         # # Stage 4: Align
         logger.info(
@@ -279,13 +283,21 @@ class RIRClass2D(Class2D):
 
         return indices
 
-    def output(self, classes, classes_refl, rot, coefs=None):
+    def output(
+        self,
+        classes,
+        classes_refl,
+        rot,
+        shifts=None,
+        coefs=None,
+    ):
         """
         Return class averages.
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
         :param classes_refl: Bool representing whether to reflect image in `classes`
-        :param rot: Array represting rotation angle (Radians) of image in `classes`
+        :param rot: Array of rotation angles (Radians) of image in `classes`
+        :param shifts: Optional array of shifts for image in `classes`.
         :coefs: Optional Fourier bessel coefs (avoids recomputing).
         :return: Stack of Synthetic Class Average images as Image instance.
         """
@@ -307,9 +319,13 @@ class RIRClass2D(Class2D):
             # Get coefs in Fourier Bessel Basis if not provided as an argument.
             if coefs is None:
                 neighbors_imgs = Image(imgs[neighbors_ids])
+                if shifts is not None:
+                    neighbors_imgs.shift(shifts[i])
                 neighbors_coefs = self.fb_basis.evaluate_t(neighbors_imgs)
             else:
                 neighbors_coefs = coefs[neighbors_ids]
+                if shifts is not None:
+                    neighbors_coefs = self.fb_basis.shift(neighbors_coefs, shifts[i])
 
             # Rotate in Fourier Bessel
             neighbors_coefs = self.fb_basis.rotate(
@@ -344,7 +360,73 @@ class RIRClass2D(Class2D):
         # _alignment is assigned during initialization.
         return self._alignment(classes, refl, coef, alignment_opts)
 
-    def _simple_align(self, classes, refl, coef, alignment_opts=None):
+    def _bfsr_align(self, classes, refl, coef, alignment_opts=None):
+        """
+        This perfoms a Brute Force Shift and Rotational alignment.
+
+        For each pair of x_shifts and y_shifts,
+           Perform BFR
+
+        Return the rotation and shift yielding the best results.
+        """
+
+        # Unpack any configuration options, or get defaults.
+        if alignment_opts is None:
+            alignment_opts = {}
+        # Default shift search space of +- 1 in X and Y
+        n_x_shifts = alignment_opts.get("n_x_shifts", 1)
+        n_y_shifts = alignment_opts.get("n_y_shifts", 1)
+
+        # Compute the shifts. Roll array so 0 is first.
+        x_shifts = np.roll(np.arange(-n_x_shifts, n_x_shifts + 1), -n_x_shifts)
+        y_shifts = np.roll(np.arange(-n_y_shifts, n_y_shifts + 1), -n_y_shifts)
+        assert (x_shifts[0], y_shifts[0]) == (0, 0)
+
+        # These arrays will incrementally store our best alignment.
+        rots = np.empty(classes.shape, dtype=self.dtype)
+        corr = np.ones(classes.shape, dtype=self.dtype) * -np.inf
+        shifts = np.empty((*classes.shape, 2), dtype=int)
+
+        # We want to maintain the original coefs for the base images,
+        #  because we will mutate them with shifts in the loop.
+        original_coef = coef[classes[:, 0], :]
+        assert original_coef.shape == (self.n_classes, self.pca_basis.count)
+
+        # Loop over shift search space, updating best result
+        for x, y in product(x_shifts, y_shifts):
+            shift = np.array([x, y], dtype=int)
+            logger.info(f"Computing Rotational alignment after shift ({x},{y}).")
+
+            # Shift the coef representing the first (base) entry in each class
+            #   by the negation of the shift
+            # Shifting one image is more efficient than shifting every neighbor
+            coef[classes[:, 0], :] = self.pca_basis.shift(original_coef, -shift)
+
+            _, _, _rots, _corr = self._bfr_align(classes, refl, coef, alignment_opts)
+
+            # Each class-neighbor pair may have a best shift-rot from a different shift.
+            # Test and update
+            improved_indices = _corr > corr
+            rots[improved_indices] = _rots[improved_indices]
+            corr[improved_indices] = _corr[improved_indices]
+            shifts[improved_indices] = shift
+
+            # Restore unshifted base coefs
+            coef[classes[:, 0], :] = original_coef
+
+            if (x, y) == (0, 0):
+                logger.info("Initial rotational alignment complete (shift (0,0))")
+                assert np.sum(improved_indices) == np.size(
+                    classes
+                ), f"{np.sum(improved_indices)} =?= {np.size(classes)}"
+            else:
+                logger.info(
+                    f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
+                )
+
+        return classes, refl, rots, corr, shifts
+
+    def _bfr_align(self, classes, refl, coef, alignment_opts=None):
         """
         This perfoms a Brute Force Rotational alignment.
 

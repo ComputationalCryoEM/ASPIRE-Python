@@ -553,3 +553,29 @@ class FSPCABasis(SteerableBasis2D):
             eigvecs = eigvecs.dense()
 
         return self.basis.evaluate(eigvecs.T)
+
+    def shift(self, coef, shifts):
+        """
+        Returns coefs shifted by `shifts`.
+
+        This will transform to real cartesian space, shift,
+        and transform pack to Polar Fourier-Bessel space.
+
+        :param coef: Basis coefs.
+        :param shifts: Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).
+        :return: coefs of shifted images.
+        """
+
+        shifts = np.atleast_2d(np.array(shifts))
+        if shifts.ndim != 2:
+            raise ValueError("`shifts` should be a one or two dimensional array.")
+        if shifts.shape[1] != 2 or shifts.shape[0] not in (1, len(coef)):
+            raise ValueError(
+                "`shifts` should be shape (1,2) or (len(coef),2),"
+                f" received {shifts.shape}."
+            )
+
+        # This transforms FSPCA->FB->Image->FB->FSPCA
+        return self.expand_from_image_basis(
+            self.evaluate_to_image_basis(coef).shift(shifts)
+        )
