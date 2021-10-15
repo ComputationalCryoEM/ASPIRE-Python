@@ -5,20 +5,20 @@ import numpy as np
 from scipy import misc
 
 from aspire.image import Image, _im_translate2
-from aspire.source import ArrayImageSource
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class ImageTestCase(TestCase):
     def setUp(self):
+        self.dtype = np.float64
         # numpy array for top-level functions that directly expect it
-        self.im_np = misc.face(gray=True).astype(np.float64)[np.newaxis, :768, :768]
+        self.im_np = misc.face(gray=True).astype(self.dtype)[np.newaxis, :768, :768]
         # Independent Image object for testing Image methods
-        self.im = Image(misc.face(gray=True).astype(np.float64)[:768, :768])
+        self.im = Image(misc.face(gray=True).astype(self.dtype)[:768, :768])
         # Construct a simple stack of Images
         self.n = 3
-        self.ims_np = np.empty((3, *self.im_np.shape[1:]), dtype=self.im_np.dtype)
+        self.ims_np = np.empty((3, *self.im_np.shape[1:]), dtype=self.dtype)
         for i in range(self.n):
             self.ims_np[i] = self.im_np * (i + 1) / float(self.n)
         # Independent Image stack object for testing Image methods
@@ -46,12 +46,6 @@ class ImageTestCase(TestCase):
         self.assertTrue(np.allclose(im.asnumpy(), im1.asnumpy()))
         self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
         self.assertTrue(np.allclose(im1.asnumpy()[0, :, :], im3))
-
-    def testArrayImageSource(self):
-        # An Image can be wrapped in an ArrayImageSource when we need to deal with ImageSource objects.
-        src = ArrayImageSource(self.im)
-        im = src.images(start=0, num=np.inf)
-        self.assertTrue(np.allclose(im.asnumpy(), self.im_np))
 
     def testImageSqrt(self):
         self.assertTrue(np.allclose(self.im.sqrt().asnumpy(), np.sqrt(self.im_np)))

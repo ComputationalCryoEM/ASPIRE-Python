@@ -16,7 +16,6 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-<<<<<<< HEAD
 from aspire.operators import (
     IdentityFilter,
     LambdaFilter,
@@ -123,6 +122,10 @@ class ImageSource:
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
+        # _rotations is assigned non None value
+        #  by `rots` or `angles` setters.
+        #  It is potentially used by sublasses to test if we've used setters.
+        self._rotations = None
 
     @property
     def states(self):
@@ -192,11 +195,26 @@ class ImageSource:
         """
         :return: Rotation angles in radians, as a n x 3 array
         """
-        return self._rotations.as_euler().astype(self.dtype)
+        # Call a private method. This allows sub classes to effeciently override.
+        return self._angles()
+
+    def _angles(self):
+        """
+        Converts internal _rotations representation to expected matrix form.
+        """
+        return self._rotations.as_euler("ZYZ", degrees=False).astype(self.dtype)
 
     @property
     def rots(self):
         """
+        :return: Rotation matrices as a n x 3 x 3 array
+        """
+        # Call a private method. This allows sub classes to effeciently override.
+        return self._rots()
+
+    def _rots(self):
+        """
+        Converts internal `_rotations` representation to expected matrix form.
         :return: Rotation matrices as a n x 3 x 3 array
         """
         return self._rotations.as_matrix().astype(self.dtype)
@@ -370,7 +388,7 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        indices = np.arange(start, min(start + num, self.n), dtype=np.int)
+        indices = np.arange(start, min(start + num, self.n), dtype=int)
 
         if self._cached_im is not None:
             logger.info("Loading images from cache")
@@ -741,13 +759,70 @@ class ArrayImageSource(ImageSource):
     if available, is consulted directly by the parent class, bypassing `_images`.
     """
 
-    def __init__(self, im, metadata=None):
+    def __init__(self, im, metadata=None, angles=None):
         """
         Initialize from an `Image` object
-        :param im: An `Image` object representing image data served up by this `ImageSource`
+        :param im: An `Image` or Numpy array object representing image data served up by this `ImageSource`.
+        In the case of a Numpy array, attempts to create an 'Image' object.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
+        :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
         """
+
+        if not isinstance(im, Image):
+            logger.info("Attempting to create an Image object from Numpy array.")
+            try:
+                im = Image(im)
+            except Exception as e:
+                raise RuntimeError(
+                    "Creating Image object from Numpy array failed."
+                    f" Original error: {str(e)}"
+                )
+
         super().__init__(
             L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None
         )
+
         self._cached_im = im
+
+        # Create filter indices, these are required to pass unharmed through filter eval code
+        #   that is potentially called by other methods later.
+        self.filter_indices = np.zeros(self.n)
+        self.unique_filters = [IdentityFilter()]
+
+        # Optionally populate angles/rotations.
+        if angles is not None:
+            if angles.shape != (self.n, 3):
+                raise ValueError(f"Angles should be shape {(self.n, 3)}")
+            # This will populate `_rotations`,
+            #   which is exposed by properties `angles` and `rots`.
+            self.angles = angles
+
+    def _rots(self):
+        """
+        Private method, checks if `_rotations` has been set,
+        then returns inherited rots, otherwise raise.
+        """
+
+        if self._rotations is not None:
+            return super()._rots()
+        else:
+            raise RuntimeError(
+                "Consumer of ArrayImageSource trying to access rots,"
+                " but rots were not defined for this source."
+                "  Try instantiating with angles."
+            )
+
+    def _angles(self):
+        """
+        Private method, checks if `_rotations` has been set,
+        then returns inherited angles, otherwise raise.
+        """
+
+        if self._rotations is not None:
+            return super()._angles()
+        else:
+            raise RuntimeError(
+                "Consumer of ArrayImageSource trying to access angles,"
+                " but angles were not defined for this source."
+                "  Try instantiating with angles."
+            )

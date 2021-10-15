@@ -4,6 +4,7 @@ from .matrix import (
     ainner,
     anorm,
     eigs,
+    fix_signs,
     im_to_vec,
     make_psd,
     make_symmat,
@@ -22,5 +23,6 @@ from .matrix import (
     vol_to_vec,
     volmat_to_vecmat,
 )
+from .misc import circ, gaussian_2d, inverse_r
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance

@@ -2,6 +2,7 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+from pytest import raises
 
 from aspire.basis import FBBasis3D
 from aspire.operators import RadialCTFFilter
@@ -14,21 +15,36 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class MeanEstimatorTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
-        sim = Simulation(
+        self.resolution = 8
+
+        self.sim = sim = Simulation(
             n=1024,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             dtype=self.dtype,
         )
-        basis = FBBasis3D((8, 8, 8), dtype=self.dtype)
+        basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)
+
         self.estimator = MeanEstimator(sim, basis, preconditioner="none")
+
         self.estimator_with_preconditioner = MeanEstimator(
             sim, basis, preconditioner="circulant"
         )
 
     def tearDown(self):
         pass
+
+    def testEstimateResolutionError(self):
+        """
+        Test mismatched resolutions yields a relevant error message.
+        """
+
+        with raises(ValueError, match=r".*resolution.*"):
+            # This basis is intentionally the wrong resolution.
+            incorrect_basis = FBBasis3D((2 * self.resolution,) * 3, dtype=self.dtype)
+
+            _ = MeanEstimator(self.sim, incorrect_basis, preconditioner="none")
 
     def testEstimate(self):
         estimate = self.estimator.estimate()
