@@ -23,7 +23,6 @@ class StarFile:
         # otherwise comparison with StarFiles read from files will fail
         # due to different data types
         self.blocks = OrderedDict(
-
             {
                 key: (block.astype(str) if isinstance(block, pd.DataFrame) else block)
                 for (key, block) in self.blocks.items()
