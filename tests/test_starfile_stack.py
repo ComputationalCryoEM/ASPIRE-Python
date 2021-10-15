@@ -14,14 +14,14 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class StarFileTestCase(TestCase):
-    def setUpStarFile(self, starfile_name, mrcs_name):
+    def setUpStarFile(self, starfile_name):
         # set up RelionSource object for tests
         with importlib_resources.path(tests.saved_test_data, starfile_name) as starfile:
             self.src = RelionSource(starfile, data_folder=DATA_DIR, max_rows=12)
 
     def setUp(self):
         # this method is used by StarFileMainCase but overridden by StarFileOneImage
-        self.setUpStarFile("sample_relion_data.star", "sample.mrcs")
+        self.setUpStarFile("sample_relion_data.star")
 
     def tearDown(self):
         pass
@@ -78,7 +78,7 @@ class StarFileMainCase(StarFileTestCase):
 class StarFileSingleImage(StarFileTestCase):
     def setUp(self):
         # override parent setUp because we are loading different files
-        self.setUpStarFile("sample_relion_one_image.star", "sample_one_image.mrcs")
+        self.setUpStarFile("sample_relion_one_image.star")
 
     def testMRCSWithOneParticle(self):
         # tests conversion of 2D numpy arrays into 3D stacks in the case
