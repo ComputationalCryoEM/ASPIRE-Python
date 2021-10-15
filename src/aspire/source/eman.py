@@ -63,7 +63,9 @@ class EmanSource(ImageSource):
             dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
             self.dtype = dtypes[mode]
             shape = mrc.data.shape
-        assert len(shape) == 2
+        if not len(shape) == 2:
+            logger.warn(f"Shape of micrographs is {shape}, but expected shape of length 2. Hint: are these unaligned micrographs?")
+            raise ValueError
         self.X = shape[0]
         self.Y = shape[1]
         logger.info(f"Image size = {self.X}x{self.Y}")
