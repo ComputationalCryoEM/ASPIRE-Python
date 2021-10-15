@@ -81,12 +81,11 @@ class StarFileTestCase(TestCase):
         # our first block is a set of pairs, represented by a dict
         block0 = self.starfile.get_block_by_index(0)
         self.assertTrue(isinstance(block0, dict))
-        self.assertEqual(block0["_rlnReferenceDimensionality"],"3")
+        self.assertEqual(block0["_rlnReferenceDimensionality"], "3")
         # our second block is a loop, represented by a DataFrame
         block1 = self.starfile.get_block_by_index(1)
         self.assertTrue(isinstance(block1, DataFrame))
         self.assertEqual(block1.at[0, "_rlnClassDistribution"], "1.000000")
-        
 
     def testBlockByName(self):
         # Indexing a StarFile with a string gives us a block with that name
@@ -136,8 +135,8 @@ class StarFileTestCase(TestCase):
         data = OrderedDict()
         # note that GEMMI requires the names of the fields to start with _
         # initialize a key-value set (a set of pairs in GEMMI parlance)
-        block0 = {"_key1":"val1", "_key2":"val2","_key3":"val3","_key4":"val4"}
-        # initialize a single-row loop. we want this to be distinct from a 
+        block0 = {"_key1": "val1", "_key2": "val2", "_key3": "val3", "_key4": "val4"}
+        # initialize a single-row loop. we want this to be distinct from a
         # set of key-value pairs
         block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
         block1 = DataFrame([block1_dict], columns=block1_dict.keys())
