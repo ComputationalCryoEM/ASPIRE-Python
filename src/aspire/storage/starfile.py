@@ -60,7 +60,9 @@ class StarFile:
             # Our model of the .star file only allows a block to be one or the other
             block_has_pair = False
             block_has_loop = False
+            # populated if this block has a pair
             pairs = {}
+            # populated if this block as a loop
             loop_tags = []
             loop_data = []
             # correct for GEMMI default behavior
@@ -76,9 +78,10 @@ class StarFile:
                         raise StarFileError(
                             "Blocks with multiple loops and/or pairs are not supported"
                         )
-                    # assign key-value pair
+                    # assign key-value pair to dictionary
                     pair_key, pair_val = gemmi_item.pair
                     if pair_key not in pairs:
+                        # read in as str because we do not want type conversion
                         pairs[pair_key] = str(pair_val)
                     else:
                         raise StarFileError(
@@ -105,18 +108,19 @@ class StarFile:
                     # represent a set of pairs by a dictionary
                     self.blocks[gemmi_block.name] = pairs
                 else:
-                    # enforce unique keys
+                    # enforce unique block names (keys of StarFile.block OrderedDict)
                     raise StarFileError(
                         f"Attempted overwrite of existing data block: {gemmi_block.name}"
                     )
             elif block_has_loop:
                 if gemmi_block.name not in self.blocks:
                     # initialize DF from list of lists
+                    # read in with dtype=str because we do not want type conversion
                     self.blocks[gemmi_block.name] = pd.DataFrame(
                         loop_data, columns=loop_tags, dtype=str
                     )
                 else:
-                    # enforce unique keys
+                    # enforce unique block names (keys of StarFile.block OrderedDict)
                     raise StarFileError(
                         f"Attempted overwrite of existing data block: {gemmi_block.name}"
                     )
@@ -138,11 +142,13 @@ class StarFile:
             if isinstance(block, dict):
                 for key, value in block.items():
                     # simply assign one pair item for each dict entry
+                    # write out as str because we do not want type conversion
                     _block.set_pair(key, str(value))
             elif isinstance(block, pd.DataFrame):
                 # initialize loop with column names
                 _loop = _block.init_loop("", list(block.columns))
                 for row in block.values.tolist():
+                    # write out as str because we do not want type conversion
                     row = [str(row[x]) for x in range(len(row))]
                     _loop.add_row(row)
             else:
