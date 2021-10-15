@@ -142,7 +142,8 @@ class StarFile:
                 for row in df.values.tolist():
                     row = [str(row[x]) for x in range(len(row))]
                     _loop.add_row(row)
-
+            else:
+                raise StarFileError(f"Unsupported type for block {name}: {type(block)")
         _doc.write_file(filepath)
 
     def get_block_by_index(self, index):
