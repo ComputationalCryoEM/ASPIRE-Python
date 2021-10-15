@@ -23,7 +23,7 @@ class StarFile:
         # otherwise comparison with StarFiles read from files will fail
         # due to different data types
         self.blocks = OrderedDict(
-            {key: df.astype(str) for (key, df) in self.blocks.items()}
+            {key: (block.astype(str) if isinstance(block, pd.DataFrame) else block) for (key, block) in self.blocks.items()}
         )
         self.filepath = str(filepath)
         # raise an error if blocks and a filepath are both passed
@@ -129,17 +129,17 @@ class StarFile:
             # construct new empty block
             _block = _doc.add_new_block(name)
             # if this block (loop or pair) is empty, continue
-            if len(df) == 0:
+            if len(block) == 0:
                 continue
             # are we constructing a loop (DataFrame) or a pair (Dictionary)?
             if isinstance(block, dict):
                 for key, value in block.items():
                     # simply assign one pair item for each dict entry
-                    _block.set_pair(key, value)
+                    _block.set_pair(key, str(value))
             elif isinstance(block, pd.DataFrame):
                 # initialize loop with column names
-                _loop = _block.init_loop("", list(df.columns))
-                for row in df.values.tolist():
+                _loop = _block.init_loop("", list(block.columns))
+                for row in block.values.tolist():
                     row = [str(row[x]) for x in range(len(row))]
                     _loop.add_row(row)
             else:
