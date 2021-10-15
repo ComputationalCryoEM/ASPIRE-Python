@@ -15,29 +15,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class StarFileTestCase(TestCase):
     def setUpStarFile(self, starfile_name, mrcs_name):
-        # this method is run for both subclasses and creates a temporary directory to run tests
-        # as well as initializing a RelionSource
-        with importlib_resources.path(tests.saved_test_data, starfile_name) as path:
-
-            # Create a temporary file with the contents of the .mrcs file in a subfolder at the same location
-            # as the starfile, to allow our classes to do their job
-            self.temp_folder_path = os.path.join(path.parent.absolute(), "_temp")
-
-            if not os.path.exists(self.temp_folder_path):
-                os.mkdir(self.temp_folder_path)
-
-            self.temp_file_path = os.path.join(self.temp_folder_path, mrcs_name)
-
-            if not os.path.exists(self.temp_file_path):
-                with open(self.temp_file_path, "wb") as f:
-                    f.write(
-                        importlib_resources.read_binary(
-                            tests.saved_test_data, mrcs_name
-                        )
-                    )
-            # create a RelionSource object representing the data in the .mrcs file
+        # set up RelionSource object for tests
+        with importlib_resources.path(tests.saved_test_data, starfile_name) as starfile:
             self.src = RelionSource(
-                path, data_folder=self.temp_folder_path, max_rows=12
+                starfile, data_folder=DATA_DIR, max_rows=12
             )
 
     def setUp(self):
@@ -46,8 +27,7 @@ class StarFileTestCase(TestCase):
 
     def tearDown(self):
         # this method is used by both subclasses
-        os.remove(self.temp_file_path)
-        os.removedirs(self.temp_folder_path)
+        self._tmpdir.cleanup()
 
 
 class StarFileMainCase(StarFileTestCase):
