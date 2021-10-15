@@ -23,7 +23,10 @@ class StarFile:
         # otherwise comparison with StarFiles read from files will fail
         # due to different data types
         self.blocks = OrderedDict(
-            {key: (block.astype(str) if isinstance(block, pd.DataFrame) else block) for (key, block) in self.blocks.items()}
+            {
+                key: (block.astype(str) if isinstance(block, pd.DataFrame) else block)
+                for (key, block) in self.blocks.items()
+            }
         )
         self.filepath = str(filepath)
         # raise an error if blocks and a filepath are both passed
@@ -183,7 +186,7 @@ class StarFile:
             if not self_list[i][0] == other_list[i][0]:
                 return False
             # test whether blocks are both DFs or dicts
-            if not type(self_list[i][1]) is type(other_list[i][1]):
+            if not isinstance(self_list[i][1], type(other_list[i][1])):
                 return False
             # finally, compare the objects themselves
             if isinstance(self_list[i][1], pd.DataFrame):
