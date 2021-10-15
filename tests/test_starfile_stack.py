@@ -17,17 +17,14 @@ class StarFileTestCase(TestCase):
     def setUpStarFile(self, starfile_name, mrcs_name):
         # set up RelionSource object for tests
         with importlib_resources.path(tests.saved_test_data, starfile_name) as starfile:
-            self.src = RelionSource(
-                starfile, data_folder=DATA_DIR, max_rows=12
-            )
+            self.src = RelionSource(starfile, data_folder=DATA_DIR, max_rows=12)
 
     def setUp(self):
         # this method is used by StarFileMainCase but overridden by StarFileOneImage
         self.setUpStarFile("sample_relion_data.star", "sample.mrcs")
 
     def tearDown(self):
-        # this method is used by both subclasses
-        self._tmpdir.cleanup()
+        pass
 
 
 class StarFileMainCase(StarFileTestCase):
