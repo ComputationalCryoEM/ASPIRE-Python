@@ -76,7 +76,7 @@ class StarFile:
                     # assign key-value pair
                     pair_key, pair_val = gemmi_item.pair
                     if pair_key not in pairs:
-                        pairs[pair_key] = pair_val
+                        pairs[pair_key] = str(pair_val)
                     else:
                         raise StarFileError(
                             f"Duplicate key in pair: {gemmi_item.pair[0]}"
@@ -99,10 +99,8 @@ class StarFile:
                         ]
             if block_has_pair:
                 if gemmi_block.name not in self.blocks:
-                    # initialize DF from dictionary of kv pairs
-                    self.blocks[gemmi_block.name] = pd.DataFrame(
-                        [pairs], columns=pairs.keys(), dtype=str
-                    )
+                    # represent a set of pairs by a dictionary
+                    self.blocks[gemmi_block.name] = pairs
                 else:
                     # enforce unique keys
                     raise StarFileError(
@@ -127,17 +125,18 @@ class StarFile:
         # create an empty Document
         _doc = cif.Document()
         filepath = str(filepath)
-        for name, df in self.blocks.items():
+        for name, block in self.blocks.items():
             # construct new empty block
             _block = _doc.add_new_block(name)
-            # are we constructing a pair (df has 1 row) or a loop (df has >1 rows)
+            # if this block (loop or pair) is empty, continue
             if len(df) == 0:
                 continue
-            if len(df) == 1:
-                for col in list(df):
-                    # key is the column label. value is value in the df at row 0, column col
-                    _block.set_pair(col, str(df.at[0, col]))
-            elif len(df) > 1:
+            # are we constructing a loop (DataFrame) or a pair (Dictionary)?
+            if isinstance(block, dict):
+                for key, value in block.items():
+                    # simply assign one pair item for each dict entry
+                    _block.set_pair(key, value)
+            elif isinstance(block, pd.DataFrame):
                 # initialize loop with column names
                 _loop = _block.init_loop("", list(df.columns))
                 for row in df.values.tolist():
@@ -160,7 +159,7 @@ class StarFile:
 
     def __setitem__(self, key, value):
         """
-        Pass in a Pandas Dataframe to add a block named `key` with values `value`
+        Pass in a Pandas Dataframe or dictionary to add a block named `key` with values `value`
         """
         self.blocks[key] = value
 
