@@ -73,7 +73,7 @@ class StarFileTestCase(TestCase):
         # A StarFile can be iterated over, yielding DataFrames for loops
         # or dictionaries for pairs
         for _, block in self.starfile:
-            self.assertTrue(isinstance(block, DataFrame) or isinstance(block, dict)
+            self.assertTrue(isinstance(block, DataFrame) or isinstance(block, dict))
 
     def testBlockByIndex(self):
         # We can use get_block_by_index to retrieve the blocks in
@@ -85,7 +85,7 @@ class StarFileTestCase(TestCase):
         # our second block is a loop, represented by a DataFrame
         block1 = self.starfile.get_block_by_index(1)
         self.assertTrue(isinstance(block1, DataFrame))
-        self.assertEqual(block1.at[0, "_rlnClassDistribution"], "1.000000"])
+        self.assertEqual(block1.at[0, "_rlnClassDistribution"], "1.000000")
         
 
     def testBlockByName(self):
@@ -135,13 +135,17 @@ class StarFileTestCase(TestCase):
         # not by reading a file
         data = OrderedDict()
         # note that GEMMI requires the names of the fields to start with _
+        # initialize a key-value set (a set of pairs in GEMMI parlance)
+        block0 = {"_key1":"val1", "_key2":"val2","_key3":"val3","_key4":"val4"}
+        # initialize a single-row loop. we want this to be distinct from a 
+        # set of key-value pairs
         block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
-        # initialize a single-row data block (a set of pairs in GEMMI-parlance)
         block1 = DataFrame([block1_dict], columns=block1_dict.keys())
         block2_keys = ["_field4", "_field5", "_field6"]
         block2_arr = [[f"{x}{y}" for x in range(3)] for y in range(3)]
         # initialize a loop data block with a list of lists
         block2 = DataFrame(block2_arr, columns=block2_keys)
+        data["pair"] = block0
         data["single_row"] = block1
         data["loops"] = block2
         # initialize with blocks kwarg
