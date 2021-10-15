@@ -86,6 +86,7 @@ class RIRClass2D(Class2D):
         self.n_classes = n_classes
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
         self.seed = seed
+        self.alignment_opts = alignment_opts
 
         if self.src.n < self.bispectrum_components:
             raise RuntimeError(
@@ -195,7 +196,7 @@ class RIRClass2D(Class2D):
         logger.info(
             f"Begin Rotational Alignment of {classes.shape[0]} Classes using {self._alignment}."
         )
-        return self.alignment(classes, refl, self.fspca_coef)
+        return self.alignment(classes, refl, self.fspca_coef, self.alignment_opts)
 
     def pca(self, M):
         """
@@ -296,7 +297,7 @@ class RIRClass2D(Class2D):
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
         :param classes_refl: Bool representing whether to reflect image in `classes`
-        :param rot: Array of rotation angles (Radians) of image in `classes`
+        :param rot: Array of in-plane rotation angles (Radians) of image in `classes`
         :param shifts: Optional array of shifts for image in `classes`.
         :coefs: Optional Fourier bessel coefs (avoids recomputing).
         :return: Stack of Synthetic Class Average images as Image instance.
@@ -348,13 +349,16 @@ class RIRClass2D(Class2D):
 
         Returned `corr` is an (n_classes, n_nbor) array that should represent a correlation like measure between classified images and their base image (image index 0).
 
+        Returned `shifts` is None or an (n_classes, n_nbor) array of 2D shifts which should represent the translation needed to best align the images within that class.
+
+
         Alignment implementations may admit specific conifguration options using an optional `alignment_opts` dictionary.
 
         :param classes: (n_classes, n_nbor) integer array of indices
         :param refl: (n_classes, n_nbor) bool array of reflections
         :param coef: (n_img, self.pca_basis.count) array of compressed basis coefficients.
 
-        :returns: (classes, refl, rot, corr)
+        :returns: (classes, refl, rot, corr, shifts)
         """
 
         # _alignment is assigned during initialization.
@@ -402,7 +406,7 @@ class RIRClass2D(Class2D):
             # Shifting one image is more efficient than shifting every neighbor
             coef[classes[:, 0], :] = self.pca_basis.shift(original_coef, -shift)
 
-            _, _, _rots, _corr = self._bfr_align(classes, refl, coef, alignment_opts)
+            _, _, _rots, _, _corr = self._bfr_align(classes, refl, coef, alignment_opts)
 
             # Each class-neighbor pair may have a best shift-rot from a different shift.
             # Test and update
@@ -424,7 +428,7 @@ class RIRClass2D(Class2D):
                     f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
                 )
 
-        return classes, refl, rots, corr, shifts
+        return classes, refl, rots, shifts, corr
 
     def _bfr_align(self, classes, refl, coef, alignment_opts=None):
         """
@@ -477,7 +481,8 @@ class RIRClass2D(Class2D):
             for j in range(self.n_nbor):
                 corr[k, j] = results[j, angle_idx[j]]
 
-        return classes, refl, rots, corr
+        # None is placeholder for shifts
+        return classes, refl, rots, None, corr
 
     def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """

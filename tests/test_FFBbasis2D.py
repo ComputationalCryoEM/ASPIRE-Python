@@ -330,14 +330,13 @@ class FFBBasis2DTestCase(TestCase):
         shifted_imgs = src.images(0, n_img).shift(test_shift)
 
         # Convert original images to basis coefficients
-        basis = FFBBasis2D((self.L,) * 2, dtype=np.float64)
-        f_imgs = basis.evaluate_t(src.images(0, n_img))
+        f_imgs = self.basis.evaluate_t(src.images(0, n_img))
 
         # Use the basis shift method
-        f_shifted_imgs = basis.shift(f_imgs, test_shift)
+        f_shifted_imgs = self.basis.shift(f_imgs, test_shift)
 
         # Compute diff between the shifted image sets
-        diff = shifted_imgs.asnumpy() - basis.evaluate(f_shifted_imgs).asnumpy()
+        diff = shifted_imgs.asnumpy() - self.basis.evaluate(f_shifted_imgs).asnumpy()
 
         # Compute mask to compare only the core of the shifted images
         g = grid_2d(self.L, normalized=False)

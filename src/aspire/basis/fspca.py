@@ -559,7 +559,7 @@ class FSPCABasis(SteerableBasis2D):
         Returns coefs shifted by `shifts`.
 
         This will transform to real cartesian space, shift,
-        and transform pack to Polar Fourier-Bessel space.
+        and transform back to Polar Fourier-Bessel space.
 
         :param coef: Basis coefs.
         :param shifts: Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).

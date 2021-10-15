@@ -191,13 +191,16 @@ class RIRClass2DTestCase(TestCase):
             self.noisy_fspca_basis,
             bispectrum_components=100,
             sample_n=42,
+            n_classes=5,
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
+            alignment_implementation="bfsr",
+            alignment_opts={"n_angles": 100, "n_x_shifts": 0},
         )
 
         result = rir.classify()
-        _ = rir.output(*result[:3])
+        _ = rir.output(*result[:4])
 
     def testEigenImages(self):
         """
