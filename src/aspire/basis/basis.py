@@ -80,7 +80,7 @@ class Basis:
                 (z, np.zeros(max_num_zeros - len(z), dtype=self.dtype))
             )
 
-        self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1)).astype(self.dtype)
+        self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1))
 
     def _build(self):
         """

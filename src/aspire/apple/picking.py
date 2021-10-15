@@ -1,6 +1,5 @@
 import logging
 import os
-import warnings
 from concurrent import futures
 
 import mrcfile
@@ -105,34 +104,8 @@ class Picker:
             Micrograph image.
         """
 
-        # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
-        # These warnings generally seem benign, and the message could be clearer
-        # The following code handles the warnings via ASPIRE's logger
-        with warnings.catch_warnings(record=True) as ws:
-            # Cause all warnings to always be triggered in this context
-            warnings.simplefilter("always")
-
-            # Try to open the mrcfile
-            with mrcfile.open(self.filename, mode="r", permissive=True) as mrc:
-                im = mrc.data.astype("float")
-
-            # Log each mrcfile warning to debug log, noting the associated file
-            for w in ws:
-                logger.debug(
-                    "In APPLE.picking mrcfile.open reports corruption for"
-                    f" {self.filename} warning: {w.message}"
-                )
-
-            # Log a single warning to user
-            # Give context and note assocated filename
-            if len(ws) > 0:
-                logger.warning(
-                    f"APPLE.picking mrcfile reporting {len(ws)} corruptions."
-                    " Most likely this is a problem with the header contents."
-                    " Details written to debug log."
-                    f" APPLE will attempt to continue processing {self.filename}"
-                )
-
+        with mrcfile.open(self.filename, mode="r+", permissive=True) as mrc:
+            im = mrc.data.astype("float")
         self.original_im = im
 
         # Discard outer pixels
@@ -148,9 +121,7 @@ class Picker:
         size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
 
         # Note, float64 required for signal.correlate call accuracy.
-        im = np.asarray(Image.fromarray(im).resize(size, Image.BICUBIC)).astype(
-            np.float64, copy=False
-        )
+        im = np.array(Image.fromarray(im).resize(size, Image.BICUBIC), dtype=np.float64)
 
         im = signal.correlate(
             im,

@@ -4,7 +4,7 @@
 [![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml)
 [![codecov](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python/branch/master/graph/badge.svg?token=3XFC4VONX0)](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python)
 
-# ASPIRE - Algorithms for Single Particle Reconstruction - v0.8.0
+# ASPIRE - Algorithms for Single Particle Reconstruction - v0.7.0
 
 This is the Python version to supersede the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire).
 
@@ -41,26 +41,26 @@ After cloning this repo, the simplest option is to use Anaconda 64-bit for your 
 ```
 cd /path/to/git/clone/folder
 
-# Creates the conda environment and installs base dependencies.
+# Create's the conda environment and installs base dependencies.
 conda env create -f environment.yml --name aspire_dev
 
 # Enable the environment
 conda activate aspire_dev
 
-# Install the aspire package in a locally editable way,
-# and additionally installs the developer tools extras:
-pip install -e ".[dev]"
-
+# Install the aspire package in a locally editable way:
+pip install -e .
 ```
 
 If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.6.
 Please see the full documentation for details.
 
-You may optionally install additional packages for GPU extensions:
+You may optionally install additional packages:
 
 ```
-# Additional GPU packages (requires CUDA)
+# Additional GPU packages (reqires CUDA)
 pip install -e ".[gpu]"
+# Additional developer tools
+pip install -e ".[dev]"
 ```
 
 ### Make sure everything works

@@ -584,8 +584,8 @@ class CtfEstimator:
         rad_sq_min = N * pixel_size / g_min
         rad_sq_max = N * pixel_size / g_max
 
-        max_val = r[center, int(center - 1 + np.floor(rad_sq_max))]
-        min_val = r[center, int(center - 1 + np.ceil(rad_sq_min))]
+        max_val = r[center, np.int(center - 1 + np.floor(rad_sq_max))]
+        min_val = r[center, np.int(center - 1 + np.ceil(rad_sq_min))]
 
         mask = (r <= max_val) & (r > min_val)
         a = a[mask]

@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.8.0",
+    version="0.7.0",
     data_files=[
         ("", ["src/aspire/config.ini"]),
         ("", ["src/aspire/logging.conf"]),
@@ -33,7 +33,6 @@ setup(
         "numpy==1.16",
         "pandas==0.25.3",
         "pyfftw",
-        "PyWavelets",
         "pillow",
         "scipy==1.4.0",
         "scikit-learn",

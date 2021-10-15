@@ -2,11 +2,9 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
-from pytest import raises
 
 from aspire.basis import FBBasis2D
-from aspire.image import Image
-from aspire.utils import complex_type, real_type, utest_tolerance
+from aspire.utils import utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -231,9 +229,7 @@ class FBBasis2DTestCase(TestCase):
 
     def testFBBasis2DEvaluate_t(self):
         v = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy")).T  # RCOPT
-        # While FB can accept arrays, prefable to pass FB2D and FFB2D Image instances.
-        img = Image(v.astype(self.dtype))
-        result = self.basis.evaluate_t(img)
+        result = self.basis.evaluate_t(v.astype(self.dtype))
         self.assertTrue(
             np.allclose(
                 result,
@@ -322,70 +318,3 @@ class FBBasis2DTestCase(TestCase):
                 atol=utest_tolerance(self.dtype),
             )
         )
-
-    def testComplexCoversion(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
-
-        # Express in an FB basis
-        v1 = self.basis.expand(x.astype(self.dtype))
-
-        # Convert real FB coef to complex coef,
-        cv = self.basis.to_complex(v1)
-        # then convert back to real coef representation.
-        v2 = self.basis.to_real(cv)
-
-        # The round trip should be equivalent up to machine precision
-        self.assertTrue(np.allclose(v1, v2))
-
-    def testComplexCoversionErrorsToComplex(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
-
-        # Express in an FB basis
-        v1 = self.basis.expand(x.astype(self.dtype))
-
-        # Test catching Errors
-        with raises(TypeError):
-            # Pass complex into `to_complex`
-            _ = self.basis.to_complex(v1.astype(np.complex64))
-
-        # Test casting case, where basis and coef don't match
-        if self.basis.dtype == np.float32:
-            test_dtype = np.float64
-        elif self.basis.dtype == np.float64:
-            test_dtype = np.float32
-        # Result should be same precision as coef input, just complex.
-        result_dtype = complex_type(test_dtype)
-
-        v3 = self.basis.to_complex(v1.astype(test_dtype))
-        self.assertTrue(v3.dtype == result_dtype)
-
-        # Try 0d vector, should not crash.
-        _ = self.basis.to_complex(v1.reshape(-1))
-
-    def testComplexCoversionErrorsToReal(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
-
-        # Express in an FB basis
-        cv1 = self.basis.to_complex(self.basis.expand(x.astype(self.dtype)))
-
-        # Test catching Errors
-        with raises(TypeError):
-            # Pass real into `to_real`
-            _ = self.basis.to_real(cv1.real.astype(np.float32))
-
-        # Test casting case, where basis and coef precision don't match
-        if self.basis.dtype == np.float32:
-            test_dtype = np.complex128
-        elif self.basis.dtype == np.float64:
-            test_dtype = np.complex64
-        # Result should be same precision as coef input, just real.
-        result_dtype = real_type(test_dtype)
-
-        v3 = self.basis.to_real(cv1.astype(test_dtype))
-        self.assertTrue(v3.dtype == result_dtype)
-
-        # Try a 0d vector, should not crash.
-        _ = self.basis.to_real(cv1.reshape(-1))

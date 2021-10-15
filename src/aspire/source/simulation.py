@@ -38,7 +38,7 @@ class Simulation(ImageSource):
         Other than the base class attributes, it has:
 
         :param C: The number of distinct volumes
-        :param angles: A n-by-3 array of rotation angles
+        :param angles: A 3-by-n array of rotation angles
         """
         super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
@@ -179,7 +179,7 @@ class Simulation(ImageSource):
 
     def _images(self, start=0, num=np.inf, indices=None, enable_noise=True):
         if indices is None:
-            indices = np.arange(start, min(start + num, self.n), dtype=int)
+            indices = np.arange(start, min(start + num, self.n), dtype=np.int)
 
         im = self.projections(start=start, num=num, indices=indices)
 

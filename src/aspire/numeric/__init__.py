@@ -2,8 +2,6 @@ import logging
 
 from aspire import config
 
-from .complex_pca.complex_pca import ComplexPCA
-
 logger = logging.getLogger(__name__)
 
 

@@ -192,11 +192,7 @@ class RotCov2D:
         # should assert we require none or both...
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_fb = [
-                BlkDiagMatrix.eye_like(
-                    RadialCTFFilter().fb_mat(self.basis), dtype=self.dtype
-                )
-            ]
+            ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
@@ -251,11 +247,7 @@ class RotCov2D:
 
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_fb = [
-                BlkDiagMatrix.eye_like(
-                    RadialCTFFilter().fb_mat(self.basis), dtype=self.dtype
-                )
-            ]
+            ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
 
         def identity(x):
             return x

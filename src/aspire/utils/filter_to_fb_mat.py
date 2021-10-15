@@ -1,5 +1,7 @@
 import numpy as np
 
+from aspire.basis import FFBBasis2D
+from aspire.basis.basis_utils import lgwt
 from aspire.operators import BlkDiagMatrix
 
 
@@ -13,10 +15,6 @@ def filter_to_fb_mat(h_fun, fbasis):
     :return: a BlkDiagMatrix instance representation using the
     `fbasis` expansion.
     """
-
-    # These form a circular dependence, import locally until time to clean up.
-    from aspire.basis import FFBBasis2D
-    from aspire.basis.basis_utils import lgwt
 
     if not isinstance(fbasis, FFBBasis2D):
         raise NotImplementedError("Currently only fast FB method is supported")
@@ -35,7 +33,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     omegax = k * np.cos(theta)
     omegay = k * np.sin(theta)
     omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
-    h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(fbasis.dtype)
+    h_vals2d = h_fun(omega).reshape(n_k, n_theta)
     h_vals = np.sum(h_vals2d, axis=1) / n_theta
 
     # Represent 1D function values in fbasis
@@ -47,6 +45,7 @@ def filter_to_fb_mat(h_fun, fbasis):
         fb_vals = np.zeros_like(rmat)
         ind_radial = np.sum(fbasis.k_max[0:ell])
         fb_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T
+
         h_fb_vals = fb_vals * h_vals.reshape(n_k, 1)
         h_fb_ell = fb_vals.T @ (
             h_fb_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1)

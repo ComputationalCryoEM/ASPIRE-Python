@@ -1,13 +1,2 @@
-# We take the defaults except for treating as informational only.
-# This provides feedback without erroring the entire CI pipeline.
-
-coverage:
-  status:
-    project:
-      default:
-        informational: true
-    patch:
-      default:
-        informational: true
 ignore:
-  - "*/tests/*"
+  - "*/tests/*”
