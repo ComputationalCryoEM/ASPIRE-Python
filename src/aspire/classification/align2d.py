@@ -13,6 +13,11 @@ class Align2D:
     """
 
     def __init__(self, basis, dtype):
+        """
+        :param basis: Basis to be used for any methods during alignment.
+        :param dtype: Numpy dtype to be used during alignment.
+        """
+
         self.basis = basis
         if dtype is None:
             dtype = self.basis.dtype
@@ -20,21 +25,29 @@ class Align2D:
 
     def align(self, classes, reflections, basis_coefficients):
         """
-        Any class averagiing alignment method should take in the following arguments and return the tuple described.
+        Any class averagiing alignment method should take in the following arguments and return the described tuple.
 
-        The returned `classes` and `reflections` should be same as the input.
+        Generally, the returned `classes` and `reflections` should be same as
+        the input.  They are provided for convience, considering they would
+        all be required for image output.
 
-        Returned `rotations` is an (n_classes, n_nbor) array of angles which should represent the rotations needed to align images within that class. `rot` is measure in Radians.
+        Returned `rotations` is an (n_classes, n_nbor) array of angles,
+        which should represent the rotations needed to align images within
+        that class. `rotations` is measured in Radians.
 
-        Returned `correlations` is an (n_classes, n_nbor) array that should represent a correlation like measure between classified images and their base image (image index 0).
+        Returned `correlations` is an (n_classes, n_nbor) array representing
+        a correlation like measure between classified images and their base
+        image (image index 0).
 
-        Returned `shifts` is None or an (n_classes, n_nbor) array of 2D shifts which should represent the translation needed to best align the images within that class.
+        Returned `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
+        which should represent the translation needed to best align the images
+        within that class.
 
-        Subclasses of `align` should extend with arguments as needed.
+        Subclasses of `align` should extend this method with optional arguments.
 
         :param classes: (n_classes, n_nbor) integer array of indices
         :param refl: (n_classes, n_nbor) bool array of reflections
-        :param coef: (n_img, self.pca_basis.count) array of compressed basis coefficients.
+        :param coef: (n_img, self.pca_basis.count) compressed basis coefficients.
 
         :returns: (classes, reflections, rotations, shifts, correlations)
         """
@@ -42,11 +55,18 @@ class Align2D:
 
 
 class BFRAlign2D(Align2D):
+    """
+    This perfoms a Brute Force Rotational alignment.
+
+    For each class,
+        constructs n_angles rotations of all class members,
+        and then identifies angle yielding largest correlation(dot).
+    """
+
     def __init__(self, basis, n_angles=359, dtype=None):
         """
-        Configurable options
-        `n_angles` sets the number of brute force rotations to attempt.
-        Defaults `n_angles=359`.
+        :params basis: Basis providing a `rotate` method.
+        :params n_angles: Number of brute force rotations to attempt, defaults 359.
         """
         super().__init__(basis, dtype)
 
@@ -57,11 +77,7 @@ class BFRAlign2D(Align2D):
 
     def align(self, classes, reflections, basis_coefficients):
         """
-        This perfoms a Brute Force Rotational alignment.
-
-        For each class,
-            constructs n_angles rotations of all class members,
-            and then identifies angle yielding largest correlation(dot).
+        See `Align2D.align`
         """
         n_classes, n_nbor = classes.shape
 
@@ -101,11 +117,29 @@ class BFRAlign2D(Align2D):
 
 
 class BFSRAlign2D(BFRAlign2D):
+    """
+    This perfoms a Brute Force Shift and Rotational alignment.
+    It is potentially expensive to brute force this search space.
+
+    For each pair of x_shifts and y_shifts,
+       Perform BFR
+
+    Return the rotation and shift yielding the best results.
+    """
+
     def __init__(self, basis, n_angles=359, n_x_shifts=1, n_y_shifts=1, dtype=None):
         """
-        Configurable options
-        `n_angles` sets the number of brute force rotations to attempt.
-        Defaults `n_angles=359`.
+        Note that n_x_shifts and n_y_shifts are the number of shifts to perform
+        in each direction.
+
+        Example: n_x_shifts=1, n_y_shifts=0 would test {-1,0,1} X {0}.
+
+        n_x_shifts=n_y_shifts=0 is the same as calling BFRAlign2D.
+
+        :params basis: Basis providing a `shift` and `rotate` method.
+        :params n_angles: Number of brute force rotations to attempt, defaults 359.
+        :params n_x_shifts: +- Number of brute force xshifts to attempt, defaults 1.
+        :params n_y_shifts: +- Number of brute force xshifts to attempt, defaults 1.
         """
         super().__init__(basis, n_angles, dtype)
 
@@ -122,12 +156,7 @@ class BFSRAlign2D(BFRAlign2D):
 
     def align(self, classes, reflections, basis_coefficients):
         """
-        This perfoms a Brute Force Shift and Rotational alignment.
-
-        For each pair of x_shifts and y_shifts,
-           Perform BFR
-
-        Return the rotation and shift yielding the best results.
+        See `Align2D.align`
         """
         n_classes = classes.shape[0]
 
@@ -191,7 +220,7 @@ class BFSRAlign2D(BFRAlign2D):
 
 class EMAlign2D(Align2D):
     """
-    Citation?
+    Citation needed.
     """
 
     def __init__(self, basis, dtype=None):
@@ -206,3 +235,6 @@ class FTKAlign2D(Align2D):
 
     def __init__(self, basis, dtype=None):
         super().__init__(basis, dtype)
+
+    def align(self, classes, reflections, basis_coefficients):
+        raise NotImplementedError
