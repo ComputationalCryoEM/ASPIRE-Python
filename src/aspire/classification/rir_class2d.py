@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
-from aspire.classification import Class2D
+from aspire.classification import BFRAlign2D, Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.image import Image
 from aspire.numeric import ComplexPCA
@@ -31,8 +31,7 @@ class RIRClass2D(Class2D):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        alignment_implementation="bfr",
-        alignment_opts=None,
+        aligner=None,
         dtype=None,
         seed=None,
     ):
@@ -61,8 +60,7 @@ class RIRClass2D(Class2D):
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
-        :param alignment_implementation: See `alignment`.
-        :param alignment_opts: Optional implementation specific configuration options. See `alignment`.
+        :param aligner: An Align2D subclass. Defaults to BFRAlign2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
@@ -72,8 +70,6 @@ class RIRClass2D(Class2D):
             src=src,
             n_nbor=n_nbor,
             n_classes=n_classes,
-            alignment_implementation=alignment_implementation,
-            alignment_opts=alignment_opts,
             seed=seed,
             dtype=dtype,
         )
@@ -83,13 +79,29 @@ class RIRClass2D(Class2D):
             raise NotImplementedError(
                 "RIRClass2D has currently only been developed for pca_basis as a FSPCABasis."
             )
-
         self.pca_basis = pca_basis
+
+        # When a user provides a basis, the fspca_components arg is either
+        # redudant (same) or conflicting (different).
+        # So when a user provides fspca_components, we need to check it matches the basis' compoenents.
+        _provided_fspca_components = (
+            fspca_components is not self.__init__.__defaults__[1]
+        )
+        if pca_basis and _provided_fspca_components:
+            # Check the provided components match.
+            if pca_basis.components != fspca_components:
+                raise RuntimeError(
+                    f"`pca_basis` components {pca_basis.components} != {fspca_components} `fspca_components` provided by user."
+                )
+        elif pca_basis:  # fspca_components not specfied (default to taking from basis)
+            fspca_components = pca_basis.components
         self.fspca_components = fspca_components
+
         self.sample_n = sample_n
         self.alpha = alpha
         self.bispectrum_components = bispectrum_components
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
+        self.aligner = aligner
 
         if self.src.n < self.bispectrum_components:
             raise RuntimeError(
@@ -155,8 +167,14 @@ class RIRClass2D(Class2D):
         if self.pca_basis is None:
             # self.pca_basis = self.pca_basis.compress(self.fspca_components)
             self.pca_basis = FSPCABasis(self.src, components=self.fspca_components)
+
         # For convenience, assign the fb_basis used in the pca_basis.
         self.fb_basis = self.pca_basis.basis
+
+        # When not provided by a user, the aligner is instantiated after
+        #  we are certain our pca_basis has been constructed.
+        if self.aligner is None:
+            self.aligner = BFRAlign2D(self.pca_basis, dtype=self.dtype)
 
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
@@ -186,9 +204,13 @@ class RIRClass2D(Class2D):
 
         # # Stage 4: Align
         logger.info(
-            f"Begin Rotational Alignment of {classes.shape[0]} Classes using {self._alignment}."
+            f"Begin Rotational Alignment of {classes.shape[0]} Classes using {self.aligner}."
         )
-        return self.alignment(classes, refl, self.fspca_coef, self.alignment_opts)
+        if not self.aligner.basis == self.pca_basis:
+            raise RuntimeError(
+                f"Aligner {self.aligner} basis does not match FSPCA basis."
+            )
+        return self.aligner.align(classes, refl, self.fspca_coef)
 
     def pca(self, M):
         """
