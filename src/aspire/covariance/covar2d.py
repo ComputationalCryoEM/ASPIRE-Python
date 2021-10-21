@@ -311,7 +311,7 @@ class RotCov2D:
             b = self.shrink_covar_backward(
                 b_coeff,
                 b_noise,
-                np.size(coeffs, 1),
+                np.size(coeffs, 0),
                 noise_var,
                 covar_est_opt["shrinker"],
             )
