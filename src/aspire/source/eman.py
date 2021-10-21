@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class EmanSource(ImageSource):
-    def __init__(self, filepath, data_folder, pixel_size=1, B=0, max_rows=None):
+            
+    def __init__(self, filepath, data_folder, particle_size=0, centers=False, pixel_size=1, B=0, max_rows=None):
         """
         Load a STAR file at a given filepath. This starfile must contains pairs of
         '_mrcFile' and '_boxFile', representing the mrc micrograph file and the
@@ -42,6 +43,7 @@ class EmanSource(ImageSource):
             data_folder = os.path.dirname(filepath)
         mrc_paths = [os.path.join(data_folder, p) for p in list(df["_mrcFile"])]
         box_paths = [os.path.join(data_folder, p) for p in list(df["_boxFile"])]
+
         # populate mrc2coords
         # for each mrc, read its corresponding box file and load in the coordinates
         for i in range(len(mrc_paths)):
@@ -57,7 +59,7 @@ class EmanSource(ImageSource):
             f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
         )
 
-        # open first mrc file to populate metadata
+        # open first mrc file to populate micrograph dimensions and data type
         with mrcfile.open(mrc_paths[0]) as mrc:
             mode = int(mrc.header.mode)
             dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
@@ -68,15 +70,42 @@ class EmanSource(ImageSource):
                 f"Shape of micrographs is {shape}, but expected shape of length 2. Hint: are these unaligned micrographs?"
             )
             raise ValueError
+
         self.X = shape[0]
         self.Y = shape[1]
         logger.info(f"Image size = {self.X}x{self.Y}")
 
+        
         # open first box file to get particle size
         first_box_filepath = box_paths[0]
         with open(first_box_filepath, "r") as boxfile:
             first_line = boxfile.readlines()[0]
             L = int(first_line.split()[2])
+            other_side = int(first_line.split()[3])
+        # ensure square particles
+        if not L == other_side:
+            logger.warn("Particle size in coordinates file is {L}x{other_side}, but only square particle images are supported.")
+            raise ValueError
+        # recrop micrograph to new particle size specified by user
+        if not particle_size == 0:
+            logger.info(f"Overriding particle size of {L}x{L} specified in coordinates file.")
+
+            def force_particle_size(mrc2coords, new_size, old_size):
+                if new_size > old_size:
+                    logger.warn(f'Forcing larger particle box size than specified by source. (Original: {old_size})')
+                    raise ValueError
+                # for each set of coordinates, the X and Y coordinates of the
+                # lower left corner must be adjusted given new particle size
+                for mrc, coordsList in mrc2coords.items():
+                    for coords in coordsList:
+                        coords[2] = coords[3] = new_size
+                        trim_length = (old_size - new_size) // 2
+                        coords[0] += trim_length
+                        coords[1] += trim_length  
+
+            force_particle_size(self.mrc2coords, particle_size, L)
+            L = particle_size
+             
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
 
