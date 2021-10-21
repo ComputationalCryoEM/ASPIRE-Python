@@ -51,7 +51,7 @@ class EmanSource(ImageSource):
                 for line in boxfile.readlines():
                     coordList.append([int(x) for x in line.split()])
             self.mrc2coords[mrc_paths[i]] = coordList
-     
+
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
         logger.info(
             f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
@@ -101,7 +101,8 @@ class EmanSource(ImageSource):
         _particles = [all_particles[i] for i in indices]
         # initialize empty array to hold particle stack
         im = np.empty(
-            (len(indices), self._original_resolution, self._original_resolution), dtype=self.dtype
+            (len(indices), self._original_resolution, self._original_resolution),
+            dtype=self.dtype,
         )
 
         def crop_micrograph(data, coord):
