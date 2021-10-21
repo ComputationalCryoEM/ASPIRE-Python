@@ -21,6 +21,7 @@ import os
 import sys
 
 import sphinx_rtd_theme
+from sphinx_gallery.sorting import ExampleTitleSortKey
 
 sys.path.insert(0, os.path.abspath("../../src"))
 
@@ -38,9 +39,18 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinxcontrib.bibtex",
     "sphinx.ext.napoleon",
+    "sphinx_gallery.gen_gallery",
 ]
 bibtex_bibfiles = ["references.bib"]
 
+# Sphinx-Gallery Configuration
+sphinx_gallery_conf = {
+     'examples_dirs': ['../../gallery/tutorials', '../../gallery/experiments'],   # path to your example scripts
+     'gallery_dirs': ['auto_tutorials', 'auto_experiments'],  # path to where to save gallery generated output
+     'download_all_examples': False,
+     'within_subsection_order': ExampleTitleSortKey,
+     'filename_pattern': '/*.py',
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

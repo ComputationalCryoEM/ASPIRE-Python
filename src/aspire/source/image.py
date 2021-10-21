@@ -106,6 +106,12 @@ class ImageSource:
         # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
         self._cached_im = None
 
+        # _rotations is assigned non None value
+        #  by `rots` or `angles` setters.
+        #  It is potentially used by sublasses to test if we've used setters.
+        #  This must come before the Relion/starfile meta data parsing below.
+        self._rotations = None
+
         if metadata is None:
             self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
         else:
@@ -122,10 +128,6 @@ class ImageSource:
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
-        # _rotations is assigned non None value
-        #  by `rots` or `angles` setters.
-        #  It is potentially used by sublasses to test if we've used setters.
-        self._rotations = None
 
     @property
     def states(self):
