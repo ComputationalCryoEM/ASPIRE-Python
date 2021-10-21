@@ -109,7 +109,7 @@ class EmanSource(ImageSource):
                     raise ValueError
                 # for each set of coordinates, the X and Y coordinates of the
                 # lower left corner must be adjusted given new particle size
-                for mrc, coordsList in mrc2coords.items():
+                for _mrc, coordsList in mrc2coords.items():
                     for coords in coordsList:
                         coords[2] = coords[3] = new_size
                         trim_length = (old_size - new_size) // 2
