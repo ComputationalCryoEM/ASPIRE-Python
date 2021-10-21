@@ -51,17 +51,17 @@ class EmanSource(ImageSource):
                 for line in boxfile.readlines():
                     coordList.append([int(x) for x in line.split()])
             self.mrc2coords[mrc_paths[i]] = coordList
-
-        self.num_particles = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
+     
+        n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
         logger.info(
-            f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {self.num_particles} picked particles."
+            f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
         )
 
         # open first mrc file to populate metadata
         with mrcfile.open(mrc_paths[0]) as mrc:
             mode = int(mrc.header.mode)
             dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
-            self.dtype = dtypes[mode]
+            dtype = dtypes[mode]
             shape = mrc.data.shape
         if not len(shape) == 2:
             logger.warn(
@@ -76,14 +76,17 @@ class EmanSource(ImageSource):
         first_box_filepath = box_paths[0]
         with open(first_box_filepath, "r") as boxfile:
             first_line = boxfile.readlines()[0]
-            self.particle_size = int(first_line.split()[2])
-        logger.info(f"Particle size = {self.particle_size}x{self.particle_size}")
+            L = int(first_line.split()[2])
+        logger.info(f"Particle size = {L}x{L}")
+        self._original_resolution = L
+
+        ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
     def _images(self, start=0, num=np.inf, indices=None):
         # very important: the indices passed to this method will refer to the index
         # of the *particle*, not the micrograph
         if indices is None:
-            indices = np.arange(start, min(start + num, self.num_particles))
+            indices = np.arange(start, min(start + num, self.n))
         else:
             start = indices.min()
         logger.info(f"Loading {len(indices)} images from micrographs")
@@ -98,7 +101,7 @@ class EmanSource(ImageSource):
         _particles = [all_particles[i] for i in indices]
         # initialize empty array to hold particle stack
         im = np.empty(
-            (len(indices), self.particle_size, self.particle_size), dtype=self.dtype
+            (len(indices), self._original_resolution, self._original_resolution), dtype=self.dtype
         )
 
         def crop_micrograph(data, coord):
