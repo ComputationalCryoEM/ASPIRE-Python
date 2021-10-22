@@ -20,8 +20,13 @@ class Align2D:
 
         self.basis = basis
         if dtype is None:
-            dtype = self.basis.dtype
-        self.dtype = np.dtype(dtype)
+            self.dtype = self.basis.dtype
+        else:
+            self.dtype = np.dtype(dtype)
+            if self.dtype != self.basis.dtype:
+                logger.warning(
+                    f"Align2D basis.dtype {self.basis.dtype} does not match self.dtype {self.dtype}."
+                )
 
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -51,7 +56,7 @@ class Align2D:
 
         :returns: (classes, reflections, rotations, shifts, correlations)
         """
-        raise NotImplementedError("Subclasses must implement align")
+        raise NotImplementedError("Subclasses must implement align.")
 
 
 class BFRAlign2D(Align2D):
@@ -73,7 +78,9 @@ class BFRAlign2D(Align2D):
         self.n_angles = n_angles
 
         if not hasattr(self.basis, "rotate"):
-            raise RuntimeError("BFRAlign2D basis must provide a `rotate` method.")
+            raise RuntimeError(
+                f"BFRAlign2D's basis {self.basis} must provide a `rotate` method."
+            )
 
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -148,7 +155,7 @@ class BFSRAlign2D(BFRAlign2D):
 
         if not hasattr(self.basis, "shift"):
             raise RuntimeError(
-                f"BFSRAlign2D basis {self.basis} must provide a `shift` method."
+                f"BFSRAlign2D's basis {self.basis} must provide a `shift` method."
             )
 
         # Each shift will require calling the parent BFRAlign2D.align
