@@ -88,10 +88,15 @@ class EmanSource(ImageSource):
         logger.info(f"Image size = {self.X}x{self.Y}")
 
         def size_particles(mrc2coords, new_size, old_size=0):
+            # this method covers two scenarios:
+            # 1. the coordinates represent the default, lower-left corner of the box (.box file standard), but the user wants to force a smaller particle size when loading
+            # 2. the coordinates given in the file are *centers* of particles, not corners, and must be corrected
             for _mrc, coordsList in mrc2coords.items():
                 for coords in coordsList:
+                    # if self.centers, subtract off half of the particle size to get the lower-left corner position
+                    # otherwise, we are reslicing from old_size to new_size, and we add half the difference of the two sizes to the lower left coordinates
                     trim_length = (
-                        -(L // 2) if self.centers else (old_size - new_size) // 2
+                        -(new_size // 2) if self.centers else (old_size - new_size) // 2
                     )
                     coords[0] += trim_length
                     coords[1] += trim_length
@@ -102,23 +107,24 @@ class EmanSource(ImageSource):
                 particle_size > 0
             ), "When constructing an EmanSource with coordinates of par\
 ticle centers, a particle size must be specified."
+            # recompute coordinates to account for the fact that we were given centers
+            size_particles(self.mrc2coords, particle_size)
             L = particle_size
-            size_particles(self.mrc2coords, L)
-
         else:
-            # open first box file to get particle size
+            # open first box file to get the particle size in the file
             first_box_filepath = box_paths[0]
             with open(first_box_filepath, "r") as boxfile:
                 first_line = boxfile.readlines()[0]
                 L = int(first_line.split()[2])
                 other_side = int(first_line.split()[3])
-            # ensure square particles
+
+            # firstly, ensure square particles
             if not L == other_side:
                 logger.warn(
                     "Particle size in coordinates file is {L}x{other_side}, but only square particle images are supported."
                 )
                 raise ValueError
-            # recrop micrograph to new particle size specified by user
+            # if particle_size specified by user, we will recompute the coordinates around the center of the particle
             if not particle_size == 0:
                 logger.info(
                     f"Overriding particle size of {L}x{L} specified in coordinates file."
