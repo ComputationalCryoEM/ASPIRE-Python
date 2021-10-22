@@ -38,6 +38,10 @@ class EmanSource(ImageSource):
         """
         logger.debug(f"Creating ImageSource from STAR file at path {filepath}")
 
+        self.centers = centers
+        self.pixel_size = pixel_size
+        self.max_rows = max_rows
+
         # dictionary indexed by mrc file paths, leading to a list of coordinates
         # coordinates represented by a tuple of integers
         self.mrc2coords = OrderedDict()
@@ -82,42 +86,41 @@ class EmanSource(ImageSource):
         self.X = shape[0]
         self.Y = shape[1]
         logger.info(f"Image size = {self.X}x{self.Y}")
-
-        # open first box file to get particle size
-        first_box_filepath = box_paths[0]
-        with open(first_box_filepath, "r") as boxfile:
-            first_line = boxfile.readlines()[0]
-            L = int(first_line.split()[2])
-            other_side = int(first_line.split()[3])
-        # ensure square particles
-        if not L == other_side:
-            logger.warn(
-                "Particle size in coordinates file is {L}x{other_side}, but only square particle images are supported."
-            )
-            raise ValueError
-        # recrop micrograph to new particle size specified by user
-        if not particle_size == 0:
-            logger.info(
-                f"Overriding particle size of {L}x{L} specified in coordinates file."
-            )
-
-            def force_particle_size(mrc2coords, new_size, old_size):
-                if new_size > old_size:
-                    logger.warn(
-                        f"Forcing larger particle box size than specified by source. (Original: {old_size})"
-                    )
-                    raise ValueError
-                # for each set of coordinates, the X and Y coordinates of the
-                # lower left corner must be adjusted given new particle size
-                for _mrc, coordsList in mrc2coords.items():
-                    for coords in coordsList:
-                        coords[2] = coords[3] = new_size
-                        trim_length = (old_size - new_size) // 2
-                        coords[0] += trim_length
-                        coords[1] += trim_length
-
-            force_particle_size(self.mrc2coords, particle_size, L)
+        
+        def size_particles(mrc2coords, new_size, old_size=0):
+            for _mrc, coordsList in mrc2coords.items():
+                for coords in coordsList:
+                    trim_length = -(L//2) if self.centers else (old_size - new_size) // 2
+                    coords[0] += trim_length
+                    coords[1] += trim_length
+                    coords[2] = coords[3] = new_size
+                  
+        if self.centers:
+            assert particle_size > 0, 'When constructing an EmanSource with coordinates of par\
+ticle centers, a particle size must be specified.'
             L = particle_size
+            size_particles(self.mrc2coords, L)
+                     
+        else:
+            # open first box file to get particle size
+            first_box_filepath = box_paths[0]
+            with open(first_box_filepath, "r") as boxfile:
+                first_line = boxfile.readlines()[0]
+                L = int(first_line.split()[2])
+                other_side = int(first_line.split()[3])
+            # ensure square particles
+            if not L == other_side:
+                logger.warn(
+                    "Particle size in coordinates file is {L}x{other_side}, but only square particle images are supported."
+                )
+                raise ValueError
+            # recrop micrograph to new particle size specified by user
+            if not particle_size == 0:
+                logger.info(
+                    f"Overriding particle size of {L}x{L} specified in coordinates file."
+                )
+                size_particles(self.mrc2coords, particle_size, L)
+                L = particle_size
 
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
