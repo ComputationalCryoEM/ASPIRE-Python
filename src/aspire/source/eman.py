@@ -178,7 +178,7 @@ ticle centers, a particle size must be specified."
             # get the specified particle coordinates
             coord = self.mrc2coords[fp][num]
             cropped = crop_micrograph(arr, coord)
-            if cropped:
+            if cropped is not None:
                 im[i] = cropped
             else:
                 raise IndexError(
