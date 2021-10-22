@@ -164,7 +164,11 @@ ticle centers, a particle size must be specified."
             start_x, start_y, size_x, size_y = coord[0], coord[1], coord[2], coord[3]
             # according to MRC 2014 convention, origin represents
             # bottom-left corner of image
-            return data[start_y : start_y + size_y, start_x : start_x + size_x]
+            try:
+                cropped = data[start_y : start_y + size_y, start_x : start_x + size_x]
+            except IndexError:
+                cropped = None
+            return cropped
 
         for i in range(len(_particles)):
             # get the particle number and the migrocraph
@@ -173,6 +177,12 @@ ticle centers, a particle size must be specified."
             arr = mrcfile.open(fp).data
             # get the specified particle coordinates
             coord = self.mrc2coords[fp][num]
-            im[i] = crop_micrograph(arr, coord)
+            cropped = crop_micrograph(arr, coord)
+            if cropped:
+                im[i] = cropped
+            else:
+                raise IndexError(
+                    f"Particle #{num} in file {fp}: Could not crop particle of size {self._original_resolution}x{self.origina_resolution}."
+                )
 
         return Image(im)
