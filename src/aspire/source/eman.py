@@ -86,21 +86,25 @@ class EmanSource(ImageSource):
         self.X = shape[0]
         self.Y = shape[1]
         logger.info(f"Image size = {self.X}x{self.Y}")
-        
+
         def size_particles(mrc2coords, new_size, old_size=0):
             for _mrc, coordsList in mrc2coords.items():
                 for coords in coordsList:
-                    trim_length = -(L//2) if self.centers else (old_size - new_size) // 2
+                    trim_length = (
+                        -(L // 2) if self.centers else (old_size - new_size) // 2
+                    )
                     coords[0] += trim_length
                     coords[1] += trim_length
                     coords[2] = coords[3] = new_size
-                  
+
         if self.centers:
-            assert particle_size > 0, 'When constructing an EmanSource with coordinates of par\
-ticle centers, a particle size must be specified.'
+            assert (
+                particle_size > 0
+            ), "When constructing an EmanSource with coordinates of par\
+ticle centers, a particle size must be specified."
             L = particle_size
             size_particles(self.mrc2coords, L)
-                     
+
         else:
             # open first box file to get particle size
             first_box_filepath = box_paths[0]
