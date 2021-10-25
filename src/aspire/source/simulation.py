@@ -96,7 +96,7 @@ class Simulation(ImageSource):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
-    def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1):
+    def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1, N=1):
         """
         Generate Gaussian blob volumes
         :param L: The size of the volumes
@@ -124,10 +124,10 @@ class Simulation(ImageSource):
             vols = np.zeros(shape=(C, L, L, L)).astype(self.dtype)
             for k in range(C):
                 Q, D, mu = gaussian_blobs(K, alpha)
-                vols[k] = self.eval_gaussian_blobs(L, Q, D, mu)
+                vols[k] = self.eval_gaussian_blobs(L, Q, D, mu, N)
             return Volume(vols)
 
-    def eval_gaussian_blobs(self, L, Q, D, mu):
+    def eval_gaussian_blobs(self, L, Q, D, mu, N):
         g = grid_3d(L, dtype=self.dtype)
         coords = np.array(
             [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=self.dtype
@@ -135,16 +135,23 @@ class Simulation(ImageSource):
 
         K = Q.shape[-1]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(self.dtype)
+        R = np.zeros(shape=(3,3,N)).astype(np.float64)
+
+        for n in range(N):
+            R[:,:,n] = [[np.cos(2 * n * np.pi / N), -np.sin(2 * n * np.pi / N), 0],
+                 [np.sin(2 * n * np.pi / N), np.cos(2 * n * np.pi / N), 0],
+                 [0, 0, 1]]
 
         for k in range(K):
-            coords_k = coords - mu[:, k, np.newaxis]
-            coords_k = (
+            for n in range(N):
+                coords_k = R[:, :, n] @ coords - mu[:, k, np.newaxis]
+                coords_k = (
                 Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
-            )
+                )
 
-            vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
+                vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
 
-        vol = np.reshape(vol, g["x"].shape)
+        vol = np.reshape(vol, g["x"].shape)        
 
         return vol
 
