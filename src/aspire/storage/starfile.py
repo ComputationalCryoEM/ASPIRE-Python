@@ -23,7 +23,10 @@ class StarFile:
         # otherwise comparison with StarFiles read from files will fail
         # due to different data types
         self.blocks = OrderedDict(
-            {key: df.astype(str) for (key, df) in self.blocks.items()}
+            {
+                key: (block.astype(str) if isinstance(block, pd.DataFrame) else block)
+                for (key, block) in self.blocks.items()
+            }
         )
         self.filepath = str(filepath)
         # raise an error if blocks and a filepath are both passed
@@ -57,7 +60,9 @@ class StarFile:
             # Our model of the .star file only allows a block to be one or the other
             block_has_pair = False
             block_has_loop = False
+            # populated if this block has a pair
             pairs = {}
+            # populated if this block as a loop
             loop_tags = []
             loop_data = []
             # correct for GEMMI default behavior
@@ -73,10 +78,11 @@ class StarFile:
                         raise StarFileError(
                             "Blocks with multiple loops and/or pairs are not supported"
                         )
-                    # assign key-value pair
+                    # assign key-value pair to dictionary
                     pair_key, pair_val = gemmi_item.pair
                     if pair_key not in pairs:
-                        pairs[pair_key] = pair_val
+                        # read in as str because we do not want type conversion
+                        pairs[pair_key] = str(pair_val)
                     else:
                         raise StarFileError(
                             f"Duplicate key in pair: {gemmi_item.pair[0]}"
@@ -99,23 +105,22 @@ class StarFile:
                         ]
             if block_has_pair:
                 if gemmi_block.name not in self.blocks:
-                    # initialize DF from dictionary of kv pairs
-                    self.blocks[gemmi_block.name] = pd.DataFrame(
-                        [pairs], columns=pairs.keys(), dtype=str
-                    )
+                    # represent a set of pairs by a dictionary
+                    self.blocks[gemmi_block.name] = pairs
                 else:
-                    # enforce unique keys
+                    # enforce unique block names (keys of StarFile.block OrderedDict)
                     raise StarFileError(
                         f"Attempted overwrite of existing data block: {gemmi_block.name}"
                     )
             elif block_has_loop:
                 if gemmi_block.name not in self.blocks:
                     # initialize DF from list of lists
+                    # read in with dtype=str because we do not want type conversion
                     self.blocks[gemmi_block.name] = pd.DataFrame(
                         loop_data, columns=loop_tags, dtype=str
                     )
                 else:
-                    # enforce unique keys
+                    # enforce unique block names (keys of StarFile.block OrderedDict)
                     raise StarFileError(
                         f"Attempted overwrite of existing data block: {gemmi_block.name}"
                     )
@@ -127,22 +132,27 @@ class StarFile:
         # create an empty Document
         _doc = cif.Document()
         filepath = str(filepath)
-        for name, df in self.blocks.items():
+        for name, block in self.blocks.items():
             # construct new empty block
             _block = _doc.add_new_block(name)
-            # are we constructing a pair (df has 1 row) or a loop (df has >1 rows)
-            if len(df) == 0:
+            # if this block (loop or pair) is empty, continue
+            if len(block) == 0:
                 continue
-            if len(df) == 1:
-                for col in list(df):
-                    # key is the column label. value is value in the df at row 0, column col
-                    _block.set_pair(col, str(df.at[0, col]))
-            elif len(df) > 1:
+            # are we constructing a loop (DataFrame) or a pair (Dictionary)?
+            if isinstance(block, dict):
+                for key, value in block.items():
+                    # simply assign one pair item for each dict entry
+                    # write out as str because we do not want type conversion
+                    _block.set_pair(key, str(value))
+            elif isinstance(block, pd.DataFrame):
                 # initialize loop with column names
-                _loop = _block.init_loop("", list(df.columns))
-                for row in df.values.tolist():
+                _loop = _block.init_loop("", list(block.columns))
+                for row in block.values.tolist():
+                    # write out as str because we do not want type conversion
                     row = [str(row[x]) for x in range(len(row))]
                     _loop.add_row(row)
+            else:
+                raise StarFileError(f"Unsupported type for block {name}: {type(block)}")
 
         _doc.write_file(filepath)
 
@@ -160,7 +170,7 @@ class StarFile:
 
     def __setitem__(self, key, value):
         """
-        Pass in a Pandas Dataframe to add a block named `key` with values `value`
+        Pass in a Pandas Dataframe or dictionary to add a block named `key` with values `value`
         """
         self.blocks[key] = value
 
@@ -179,8 +189,19 @@ class StarFile:
         self_list = list(self.blocks.items())
         other_list = list(other.blocks.items())
         for i in range(len(self_list)):
+            # test whether block names are the same
             if not self_list[i][0] == other_list[i][0]:
                 return False
-            if not self_list[i][1].equals(other_list[i][1]):
+            # test whether blocks are both DFs or dicts
+            if not isinstance(self_list[i][1], type(other_list[i][1])):
                 return False
+            # finally, compare the objects themselves
+            if isinstance(self_list[i][1], pd.DataFrame):
+                # test using pandas DataFrame.equals()
+                if not self_list[i][1].equals(other_list[i][1]):
+                    return False
+            else:
+                # test dict equality
+                if not self_list[i][1] == other_list[i][1]:
+                    return False
         return True
