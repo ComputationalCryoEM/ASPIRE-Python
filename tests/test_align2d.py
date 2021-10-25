@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
+# Ignore Gimbal lock warning for our in plane rotations.
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class Align2DTestCase(TestCase):
     # Subclasses should override `aligner` with a different class.
     aligner = Align2D
