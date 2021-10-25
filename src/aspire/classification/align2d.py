@@ -30,11 +30,12 @@ class Align2D:
 
     def align(self, classes, reflections, basis_coefficients):
         """
-        Any class averagiing alignment method should take in the following arguments and return the described tuple.
+        Any align2D alignment method should take in the following arguments
+        and return the described tuple.
 
         Generally, the returned `classes` and `reflections` should be same as
-        the input.  They are provided for convience, considering they would
-        all be required for image output.
+        the input.  They are passed through for convience,
+        considering they would all be required for image output.
 
         Returned `rotations` is an (n_classes, n_nbor) array of angles,
         which should represent the rotations needed to align images within
@@ -50,9 +51,9 @@ class Align2D:
 
         Subclasses of `align` should extend this method with optional arguments.
 
-        :param classes: (n_classes, n_nbor) integer array of indices
-        :param refl: (n_classes, n_nbor) bool array of reflections
-        :param coef: (n_img, self.pca_basis.count) compressed basis coefficients.
+        :param classes: (n_classes, n_nbor) integer array of img indices
+        :param refl: (n_classes, n_nbor) bool array of corresponding reflections
+        :param coef: (n_img, self.pca_basis.count) compressed basis coefficients
 
         :returns: (classes, reflections, rotations, shifts, correlations)
         """
@@ -86,6 +87,10 @@ class BFRAlign2D(Align2D):
         """
         See `Align2D.align`
         """
+        # Admit simple case of single case alignment
+        classes = np.atleast_2d(classes)
+        reflections = np.atleast_2d(reflections)
+
         n_classes, n_nbor = classes.shape
 
         # Construct array of angles to brute force.
@@ -165,6 +170,11 @@ class BFSRAlign2D(BFRAlign2D):
         """
         See `Align2D.align`
         """
+
+        # Admit simple case of single case alignment
+        classes = np.atleast_2d(classes)
+        reflections = np.atleast_2d(reflections)
+
         n_classes = classes.shape[0]
 
         # Compute the shifts. Roll array so 0 is first.
