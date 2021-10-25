@@ -70,32 +70,34 @@ class StarFileTestCase(TestCase):
         self.assertEqual(6, len(self.starfile))
 
     def testIteration(self):
-        # A StarFile can be iterated over, yielding DataFrames
-        for _, df in self.starfile:
-            self.assertTrue(isinstance(df, DataFrame))
+        # A StarFile can be iterated over, yielding DataFrames for loops
+        # or dictionaries for pairs
+        for _, block in self.starfile:
+            self.assertTrue(isinstance(block, DataFrame) or isinstance(block, dict))
 
     def testBlockByIndex(self):
         # We can use get_block_by_index to retrieve the blocks in
         # the OrderedDict by index
+        # our first block is a set of pairs, represented by a dict
         block0 = self.starfile.get_block_by_index(0)
-        self.assertTrue(isinstance(block0, DataFrame))
-        # Our first block has one row
-        self.assertEqual(1, len(block0))
+        self.assertTrue(isinstance(block0, dict))
+        self.assertEqual(block0["_rlnReferenceDimensionality"], "3")
+        # our second block is a loop, represented by a DataFrame
+        block1 = self.starfile.get_block_by_index(1)
+        self.assertTrue(isinstance(block1, DataFrame))
+        self.assertEqual(block1.at[0, "_rlnClassDistribution"], "1.000000")
 
     def testBlockByName(self):
         # Indexing a StarFile with a string gives us a block with that name
         #   ("data_<name>" in starfile).
-        # In our case the block at index 1 has name 'model_classes'
-        block1 = self.starfile["model_classes"]
-        # This block has one row as well
-        self.assertEqual(1, len(block1))
-
-    def testBlockProperties(self):
-        # A StarFileBlock may have attributes that were read from the
-        #   starfile key=>value pairs.
+        # the block at index 0 has the name 'model_general'
         block0 = self.starfile["model_general"]
-        # Note that no typecasting is performed
-        self.assertEqual(block0.at[0, "_rlnReferenceDimensionality"], "3")
+        # this block is a pair/dict with 22 key value pairs
+        self.assertEqual(len(block0), 22)
+        # the block at index 1 has name 'model_classes'
+        block1 = self.starfile["model_classes"]
+        # This block is a loop/DF with one row
+        self.assertEqual(len(block1), 1)
 
     def testData(self):
         df = self.starfile["model_class_1"]
@@ -132,13 +134,17 @@ class StarFileTestCase(TestCase):
         # not by reading a file
         data = OrderedDict()
         # note that GEMMI requires the names of the fields to start with _
+        # initialize a key-value set (a set of pairs in GEMMI parlance)
+        block0 = {"_key1": "val1", "_key2": "val2", "_key3": "val3", "_key4": "val4"}
+        # initialize a single-row loop. we want this to be distinct from a
+        # set of key-value pairs
         block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
-        # initialize a single-row data block (a set of pairs in GEMMI-parlance)
         block1 = DataFrame([block1_dict], columns=block1_dict.keys())
         block2_keys = ["_field4", "_field5", "_field6"]
         block2_arr = [[f"{x}{y}" for x in range(3)] for y in range(3)]
         # initialize a loop data block with a list of lists
         block2 = DataFrame(block2_arr, columns=block2_keys)
+        data["pair"] = block0
         data["single_row"] = block1
         data["loops"] = block2
         # initialize with blocks kwarg
