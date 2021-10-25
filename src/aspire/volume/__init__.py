@@ -271,7 +271,7 @@ def parseSymmetry(symmetry_string):
         # get the first letter
         sym_type = symmetry_string[0]
         # if there is a second letter, get that
-        subscript = symmetry_string[1:] or None
+        subscript = int(symmetry_string[1:]) or None
 
     # map our sym_types to classes of Volumes
     map_sym_to_generator = {
@@ -326,9 +326,7 @@ def gaussian_blob_Cn_vols(
     :return: A Volume instance containing C Gaussian blob volumes.
     """
 
-    assert subscript == 1, "josh to add his Cn stuff"
-
-    def _eval_gaussian_blobs(L, Q, D, mu, dtype=np.float64):
+    def _eval_gaussian_blobs(L, Q, D, mu, subscript, dtype=np.float64):
         g = grid_3d(L, dtype=dtype)
         coords = np.array(
             [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
@@ -336,14 +334,31 @@ def gaussian_blob_Cn_vols(
 
         K = Q.shape[-1]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(dtype)
+        rot = np.zeros(shape=(3, 3, subscript)).astype(dtype)
+
+        for k in range(subscript):
+            rot[:, :, k] = [
+                [
+                    np.cos(2 * np.pi * k / subscript),
+                    -np.sin(2 * np.pi * k / subscript),
+                    0,
+                ],
+                [
+                    np.sin(2 * np.pi * k / subscript),
+                    np.cos(2 * np.pi * k / subscript),
+                    0,
+                ],
+                [0, 0, 1],
+            ]
 
         for k in range(K):
-            coords_k = coords - mu[:, k, np.newaxis]
-            coords_k = (
-                Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
-            )
+            for j in range(subscript):
+                coords_k = rot[:, :, j] @ coords - mu[:, k, np.newaxis]
+                coords_k = (
+                    Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
+                )
 
-            vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
+                vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
 
         vol = np.reshape(vol, g["x"].shape)
 
@@ -366,7 +381,7 @@ def gaussian_blob_Cn_vols(
     with Random(seed):
         for k in range(C):
             Q, D, mu = gaussian_blobs(K, alpha)
-            vols[k] = _eval_gaussian_blobs(L, Q, D, mu, dtype=dtype)
+            vols[k] = _eval_gaussian_blobs(L, Q, D, mu, subscript, dtype=dtype)
     return Volume(vols)
 
 
