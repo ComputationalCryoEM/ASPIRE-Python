@@ -165,7 +165,6 @@ ticle centers, a particle size must be specified."
             # according to MRC 2014 convention, origin represents
             # bottom-left corner of image
             return data[start_y : start_y + size_y, start_x : start_x + size_x]
-                
 
         for i in range(len(_particles)):
             # get the particle number and the migrocraph
@@ -178,7 +177,8 @@ ticle centers, a particle size must be specified."
             try:
                 im[i] = cropped
             except ValueError:
-                logger.warn(f"Particle #{num} in file {fp}: Could not crop particle of size {self._original_resolution}x{self.original_resolution}."
+                logger.warn(
+                    f"Particle #{num} in file {fp}: Could not crop particle of size {self._original_resolution}x{self.original_resolution}."
                 )
 
         return Image(im)
