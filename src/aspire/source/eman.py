@@ -132,25 +132,37 @@ ticle centers, a particle size must be specified."
 
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
-        
+
         # Lastly, exclude particle coordinate boxes that do not fit into the micrograph dimensions
         for _mrc, coordsList in self.mrc2coords.items():
             out_of_range = []
             for i in range(len(coordsList)):
                 coord = coordsList[i]
-                start_x, start_y, size_x, size_y = coord[0], coord[1], coord[2], coord[3] 
-                if start_x < 0 or start_y < 0 or (start_x + size_x >= self.X) or (start_y + size_y >= self.Y):
+                start_x, start_y, size_x, size_y = (
+                    coord[0],
+                    coord[1],
+                    coord[2],
+                    coord[3],
+                )
+                if (
+                    start_x < 0
+                    or start_y < 0
+                    or (start_x + size_x >= self.X)
+                    or (start_y + size_y >= self.Y)
+                ):
                     out_of_range.append(i)
             # pop in reverse order to avoid messing up indices
             for j in reversed(out_of_range):
-                coordsList.pop(j)    
+                coordsList.pop(j)
 
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
         removed = original_n - n
         logger.info(
             f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
         )
-        logger.info(f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded.")
+        logger.info(
+            f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded."
+        )
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
     def _images(self, start=0, num=np.inf, indices=None):
@@ -185,7 +197,6 @@ ticle centers, a particle size must be specified."
             # bottom-left corner of image
             return data[start_y : start_y + size_y, start_x : start_x + size_x]
 
-        out_of_bounds = []
         for i in range(len(_particles)):
             # get the particle number and the migrocraph
             num, fp = int(_particles[i].split("@")[0]), _particles[i].split("@")[1]
