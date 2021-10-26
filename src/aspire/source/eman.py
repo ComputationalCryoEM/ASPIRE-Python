@@ -176,9 +176,9 @@ ticle centers, a particle size must be specified."
             cropped = crop_micrograph(arr, coord)
             try:
                 im[i] = cropped
-            except ValueError:
+            except ValueError as e:
                 logger.warn(
-                    f"Particle #{num} in file {fp}: Could not crop particle of size {self._original_resolution}x{self.original_resolution}."
+                    f"Particle {i} (#{num} in file {fp}): {str(e)}."
                 )
 
         return Image(im)
