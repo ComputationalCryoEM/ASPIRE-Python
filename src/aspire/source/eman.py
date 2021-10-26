@@ -34,7 +34,8 @@ class EmanSource(ImageSource):
         :param data_folder: Path to folder w.r.t. which all relative paths to .mrc
         and .box files are resolved. If None the folder corresponding to the filepath
         is used
-
+        :param particle_size: Desired size of cropped particles (will override size in coordinate file)
+        :param centers: Set to true if the coordinates provided represent the centers of picked particles. By default, they are taken to be the coordinates of the lower left corner of the particle's box. If this flag is set, `particle_size` must be specified.
         """
         logger.debug(f"Creating ImageSource from STAR file at path {filepath}")
 
@@ -138,6 +139,9 @@ ticle centers, a particle size must be specified."
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
     def _images(self, start=0, num=np.inf, indices=None):
+        """
+        :param remove_out_of_bounds: If a set of coordinates creates a box that is outside the bounds of the micrograph, do not include the particle in the result. (If not set, the particle that could not be cropped will be an array of zeros)    
+        """
         # very important: the indices passed to this method will refer to the index
         # of the *particle*, not the micrograph
         if indices is None:
@@ -165,7 +169,8 @@ ticle centers, a particle size must be specified."
             # according to MRC 2014 convention, origin represents
             # bottom-left corner of image
             return data[start_y : start_y + size_y, start_x : start_x + size_x]
-
+        
+        out_of_bounds = []
         for i in range(len(_particles)):
             # get the particle number and the migrocraph
             num, fp = int(_particles[i].split("@")[0]), _particles[i].split("@")[1]
@@ -180,5 +185,8 @@ ticle centers, a particle size must be specified."
                 logger.warn(
                     f"Particle {i} (#{num} in file {fp}): {str(e)}."
                 )
+                out_of_bounds.append(i)
+        if remove_out_of_bounds:
+            im = np.delete(im, out_of_bounds)
 
         return Image(im)
