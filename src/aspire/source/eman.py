@@ -134,7 +134,7 @@ ticle centers, a particle size must be specified."
         self._original_resolution = L
         
         # Lastly, exclude particle coordinate boxes that do not fit into the micrograph dimensions
-        for _mrc, coordsList in self.mrc2coords:
+        for _mrc, coordsList in self.mrc2coords.items():
             out_of_range = []
             for i in range(len(coordsList)):
                 coord = coordsList[i]
