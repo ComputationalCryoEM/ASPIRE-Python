@@ -140,7 +140,7 @@ ticle centers, a particle size must be specified."
 
     def _images(self, start=0, num=np.inf, indices=None):
         """
-        :param remove_out_of_bounds: If a set of coordinates creates a box that is outside the bounds of the micrograph, do not include the particle in the result. (If not set, the particle that could not be cropped will be an array of zeros)    
+        :param remove_out_of_bounds: If a set of coordinates creates a box that is outside the bounds of the micrograph, do not include the particle in the result. (If not set, the particle that could not be cropped will be an array of zeros)
         """
         # very important: the indices passed to this method will refer to the index
         # of the *particle*, not the micrograph
@@ -169,7 +169,7 @@ ticle centers, a particle size must be specified."
             # according to MRC 2014 convention, origin represents
             # bottom-left corner of image
             return data[start_y : start_y + size_y, start_x : start_x + size_x]
-        
+
         out_of_bounds = []
         for i in range(len(_particles)):
             # get the particle number and the migrocraph
@@ -179,14 +179,6 @@ ticle centers, a particle size must be specified."
             # get the specified particle coordinates
             coord = self.mrc2coords[fp][num]
             cropped = crop_micrograph(arr, coord)
-            try:
-                im[i] = cropped
-            except ValueError as e:
-                logger.warn(
-                    f"Particle {i} (#{num} in file {fp}): {str(e)}."
-                )
-                out_of_bounds.append(i)
-        if remove_out_of_bounds:
-            im = np.delete(im, out_of_bounds)
+            im[i] = cropped
 
         return Image(im)
