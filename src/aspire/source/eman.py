@@ -67,10 +67,7 @@ class EmanSource(ImageSource):
                     coordList.append([int(x) for x in line.split()])
             self.mrc2coords[mrc_paths[i]] = coordList
 
-        n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
-        logger.info(
-            f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
-        )
+        original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
 
         # open first mrc file to populate micrograph dimensions and data type
         with mrcfile.open(mrc_paths[0]) as mrc:
@@ -84,8 +81,8 @@ class EmanSource(ImageSource):
             )
             raise ValueError
 
-        self.X = shape[0]
-        self.Y = shape[1]
+        self.Y = shape[0]
+        self.X = shape[1]
         logger.info(f"Image size = {self.X}x{self.Y}")
 
         def size_particles(mrc2coords, new_size, old_size=0):
@@ -135,7 +132,25 @@ ticle centers, a particle size must be specified."
 
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
+        
+        # Lastly, exclude particle coordinate boxes that do not fit into the micrograph dimensions
+        for _mrc, coordsList in self.mrc2coords:
+            out_of_range = []
+            for i in range(len(coordsList)):
+                coord = coordsList[i]
+                start_x, start_y, size_x, size_y = coord[0], coord[1], coord[2], coord[3] 
+                if start_x < 0 or start_y < 0 or (start_x + size_x >= self.X) or (start_y + size_y >= self.Y):
+                    out_of_range.append(i)
+            # pop in reverse order to avoid messing up indices
+            for j in reversed(out_of_range):
+                coordsList.pop(j)    
 
+        n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
+        removed = original_n - n
+        logger.info(
+            f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
+        )
+        logger.info(f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded.")
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
     def _images(self, start=0, num=np.inf, indices=None):
