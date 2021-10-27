@@ -84,7 +84,13 @@ class EmanSource(ImageSource):
             # open box file and read in the coordinates (one particle per line)
             with open(coord_paths[i], "r") as coord_file:
                 for line in coord_file.readlines():
-                    coordList.append([int(x) for x in line.split()])
+                    particle_coord = [int(x) for x in line.split()]
+                    if len(particle_coord) < 4:
+                        particle_coord += [-1]*2
+                        if not self.centers:
+                            logger.error(f"{coord_paths[i]}: This coordinate file does not contain height and width information for particles. This may mean that the coordinates represent the center of the particle. Try setting centers=True and specifying a particle_size.")
+                            raise ValueError
+                    coordList.append(particle_coord)
             self.mrc2coords[mrc_paths[i]] = coordList
 
         original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
