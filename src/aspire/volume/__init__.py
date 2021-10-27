@@ -306,17 +306,23 @@ def parseSymmetry(symmetry_string):
         symmetry_string = symmetry_string.upper()
         # get the first letter
         sym_type = symmetry_string[0]
-        # if there is a second letter, get that
-        subscript = int(symmetry_string[1:]) or None
+        # if there is a number denoting rotational symmetry, get that
+        subscript = symmetry_string[1:] or None
 
     # map our sym_types to classes of Volumes
     map_sym_to_generator = {
         None: gaussian_blob_Cn_vols,
         "C": gaussian_blob_Cn_vols,
-        "D": gaussian_blob_Dn_vols,
+        # "D": gaussian_blob_Dn_vols,
         # "T": gaussian_blob_T_vols,
         # "O": gaussian_blob_O_vols,
     }
+
+    sym_types = list(map_sym_to_generator.keys())
+    if sym_type not in map_sym_to_generator.keys():
+        raise NotImplementedError(
+            f"{sym_type} type symmetry is not supported. The following symmetry types are currently supported: {sym_types}."
+        )
 
     return map_sym_to_generator[sym_type], subscript
 
@@ -363,6 +369,13 @@ def gaussian_blob_Cn_vols(
     """
 
     def _eval_gaussian_blobs(L, Q, D, mu, subscript, dtype=np.float64):
+        try:
+            subscript = int(subscript)
+        except Exception:
+            raise NotImplementedError(
+                f"C{subscript} symmetry not supported. Only Cn symmetry, where n is an integer, is supported."
+            )
+
         g = grid_3d(L, dtype=dtype)
         coords = np.array(
             [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
@@ -419,21 +432,6 @@ def gaussian_blob_Cn_vols(
             Q, D, mu = gaussian_blobs(K, alpha)
             vols[k] = _eval_gaussian_blobs(L, Q, D, mu, subscript, dtype=dtype)
     return Volume(vols)
-
-
-def gaussian_blob_Dn_vols(L=8, C=2, K=16, alpha=1, Cn=1, seed=None, dtype=np.float64):
-    Dn = int(Cn)  # ensure subscript sane
-    # complicated stuff we're not sure about yet
-    vol_array_1 = gaussian_blob_Cn_vols(L, C, Cn=Dn, seed=seed)
-    vol_array_2 = gaussian_blob_Cn_vols(L, C, Cn=Dn, seed=seed)
-
-    def smash(a, b):
-        """here be dragons"""
-        return a + b
-
-    vol_array = smash(vol_array_1, vol_array_2)
-
-    return Volume(vol_array)
 
 
 # TODO: The following functions likely all need to be moved inside the Volume class
