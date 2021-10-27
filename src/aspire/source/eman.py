@@ -18,8 +18,10 @@ logger = logging.getLogger(__name__)
 class EmanSource(ImageSource):
     def __init__(
         self,
-        filepath,
         data_folder,
+        starfile_path=None,
+        mrc_list=None,
+        coord_list=None,
         particle_size=0,
         centers=False,
         pixel_size=1,
@@ -37,7 +39,6 @@ class EmanSource(ImageSource):
         :param particle_size: Desired size of cropped particles (will override size in coordinate file)
         :param centers: Set to true if the coordinates provided represent the centers of picked particles. By default, they are taken to be the coordinates of the lower left corner of the particle's box. If this flag is set, `particle_size` must be specified.
         """
-        logger.debug(f"Creating ImageSource from STAR file at path {filepath}")
 
         self.centers = centers
         self.pixel_size = pixel_size
@@ -47,34 +48,48 @@ class EmanSource(ImageSource):
         # coordinates represented by a tuple of integers
         self.mrc2coords = OrderedDict()
 
-        # load in the STAR file as a data frame. this STAR file has one block
-        df = StarFile(filepath).get_block_by_index(0)
-        if data_folder is not None:
+        if starfile_path:
+            # load in the STAR file as a data frame. this STAR file has one block
+            logger.debug(f"Creating ImageSource from STAR file at path {starfile_path}")
+            df = StarFile(starfile_path).get_block_by_index(0)
             if not os.path.isabs(data_folder):
-                data_folder = os.path.join(os.path.dirname(filepath), data_folder)
+                data_folder = os.path.join(os.path.dirname(starfile_path), data_folder)
+            mrc_paths = [os.path.join(data_folder, p) for p in list(df["_mrcFile"])]
+            coord_paths = [os.path.join(data_folder, p) for p in list(df["_coordFile"])]
+        elif mrc_list and coord_list:
+            if not os.path.isabs(data_folder):
+                data_folder = os.path.join(os.path.dirname(mrc_list), data_folder)
+            with open(mrc_list, "r") as mrc_in, open(coord_list, "r") as coord_in:
+                mrc_paths = [
+                    os.path.join(data_folder, path) for path in mrc_in.readlines()
+                ]
+                coord_paths = [
+                    os.path.join(data_folder, path) for path in coord_in.readlines()
+                ]
         else:
-            data_folder = os.path.dirname(filepath)
-        mrc_paths = [os.path.join(data_folder, p) for p in list(df["_mrcFile"])]
-        box_paths = [os.path.join(data_folder, p) for p in list(df["_boxFile"])]
+            logger.error(
+                "Specify either a STAR file or text files containing micrograph and coordinate file paths!"
+            )
+            raise ValueError
 
         # populate mrc2coords
         # for each mrc, read its corresponding box file and load in the coordinates
         for i in range(len(mrc_paths)):
             coordList = []
             # open box file and read in the coordinates (one particle per line)
-            with open(box_paths[i], "r") as boxfile:
-                for line in boxfile.readlines():
+            with open(coord_paths[i], "r") as coord_file:
+                for line in coord_file.readlines():
                     coordList.append([int(x) for x in line.split()])
             self.mrc2coords[mrc_paths[i]] = coordList
 
         original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
 
         # open first mrc file to populate micrograph dimensions and data type
-        with mrcfile.open(mrc_paths[0]) as mrc:
-            mode = int(mrc.header.mode)
+        with mrcfile.open(mrc_paths[0]) as mrc_file:
+            mode = int(mrc_file.header.mode)
             dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
             dtype = dtypes[mode]
-            shape = mrc.data.shape
+            shape = mrc_file.data.shape
         if not len(shape) == 2:
             logger.warn(
                 f"Shape of micrographs is {shape}, but expected shape of length 2. Hint: are these unaligned micrographs?"
@@ -109,10 +124,10 @@ ticle centers, a particle size must be specified."
             size_particles(self.mrc2coords, particle_size)
             L = particle_size
         else:
-            # open first box file to get the particle size in the file
-            first_box_filepath = box_paths[0]
-            with open(first_box_filepath, "r") as boxfile:
-                first_line = boxfile.readlines()[0]
+            # open first coord file to get the particle size in the file
+            first_coord_filepath = coord_paths[0]
+            with open(first_coord_filepath, "r") as coord_file:
+                first_line = coord_file.readlines()[0]
                 L = int(first_line.split()[2])
                 other_side = int(first_line.split()[3])
 
@@ -158,7 +173,7 @@ ticle centers, a particle size must be specified."
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
         removed = original_n - n
         logger.info(
-            f"EmanSource from {filepath} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
+            f"EmanSource from {data_folder} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
         )
         logger.info(
             f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded."
