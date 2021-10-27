@@ -61,12 +61,16 @@ class EmanSource(ImageSource):
                 data_folder = os.path.join(os.path.dirname(mrc_list), data_folder)
             with open(mrc_list, "r") as mrc_in, open(coord_list, "r") as coord_in:
                 mrc_paths = [
-                    os.path.join(data_folder, path.strip()) for path in mrc_in.readlines()
+                    os.path.join(data_folder, path.strip())
+                    for path in mrc_in.readlines()
                 ]
                 coord_paths = [
-                    os.path.join(data_folder, path.strip()) for path in coord_in.readlines()
+                    os.path.join(data_folder, path.strip())
+                    for path in coord_in.readlines()
                 ]
-            assert len(mrc_paths) == len(coord_paths), f"{mrc_list} contains {len(mrc_paths)} micrographs, but {coord_list} contains {len(coord_list)} coordinate files."
+            assert len(mrc_paths) == len(
+                coord_paths
+            ), f"{mrc_list} contains {len(mrc_paths)} micrographs, but {coord_list} contains {len(coord_list)} coordinate files."
         else:
             logger.error(
                 "Specify either a STAR file or text files containing micrograph and coordinate file paths!"
