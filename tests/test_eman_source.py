@@ -488,4 +488,15 @@ class EmanSourceTestCase(TestCase):
 
     def testLoadFromBox(self):
         src = EmanSource(self.tmpdir, mrc_list=self.mrc_list, coord_list=self.box_list)
+        # loaded 440 particles from the box file (lower left corner and heights and widths given)
+        self.assertEqual(src.n, 440)
+
+    def testLoadFromCoord(self):
+        src = EmanSource(
+            self.tmpdir,
+            mrc_list=self.mrc_list,
+            coord_list=self.coord_list,
+            centers=True,
+            particle_size=256,
+        )
         self.assertEqual(src.n, 440)
