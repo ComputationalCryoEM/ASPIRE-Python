@@ -469,7 +469,9 @@ class EmanSourceTestCase(TestCase):
         self.box_fp = os.path.join(self.tmpdir, "sample.box")
         self.box_fp_nonsquare = os.path.join(self.tmpdir, "sample_nonsquare.box")
 
-        with open(self.coord_fp, "w") as coord, open(self.box_fp, "w") as box, open(self.box_fp_nonsquare,"w") as box_nonsquare:
+        with open(self.coord_fp, "w") as coord, open(self.box_fp, "w") as box, open(
+            self.box_fp_nonsquare, "w"
+        ) as box_nonsquare:
             for center in centers:
                 # .coord file usually contains just the centers
                 coord.write(f"{center[0]}\t{center[1]}\n")
@@ -479,11 +481,15 @@ class EmanSourceTestCase(TestCase):
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n"
                 )
                 # make a bad box file with non square particles
-                box_nonsquare.write(f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n")
+                box_nonsquare.write(
+                    f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
+                )
 
         with open(self.mrc_list, "w") as mrc_list, open(
             self.box_list, "w"
-        ) as box_list, open(self.box_list_nonsquare, "w") as box_list_nonsquare, open(self.coord_list, "w") as coord_list:
+        ) as box_list, open(self.box_list_nonsquare, "w") as box_list_nonsquare, open(
+            self.coord_list, "w"
+        ) as coord_list:
             mrc_list.write(self.mrc_path + "\n")
             box_list.write(self.box_fp + "\n")
             box_list_nonsquare.write(self.box_fp_nonsquare + "\n")
@@ -515,4 +521,6 @@ class EmanSourceTestCase(TestCase):
 
     def testNonSquareParticles(self):
         with self.assertRaises(ValueError):
-            src = EmanSource(self.tmpdir, mrc_list=self.mrc_list, coord_list = self.box_list_nonsquare)
+            src = EmanSource(
+                self.tmpdir, mrc_list=self.mrc_list, coord_list=self.box_list_nonsquare
+            )
