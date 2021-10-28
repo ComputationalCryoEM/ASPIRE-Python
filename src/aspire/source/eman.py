@@ -121,7 +121,7 @@ class EmanSource(ImageSource):
             dtype = dtypes[mode]
             shape = mrc_file.data.shape
         if not len(shape) == 2:
-            logger.warn(
+            logger.error(
                 f"Shape of micrographs is {shape}, but expected shape of length 2. Hint: are these unaligned micrographs?"
             )
             raise ValueError
@@ -163,7 +163,7 @@ ticle centers, a particle size must be specified."
 
             # firstly, ensure square particles
             if not L == other_side:
-                logger.warn(
+                logger.error(
                     "Particle size in coordinates file is {L}x{other_side}, but only square particle images are supported."
                 )
                 raise ValueError

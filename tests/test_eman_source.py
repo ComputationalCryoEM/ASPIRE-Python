@@ -463,24 +463,30 @@ class EmanSourceTestCase(TestCase):
         self.mrc_list = os.path.join(self.tmpdir, "mrcs.txt")
         self.box_list = os.path.join(self.tmpdir, "boxes.txt")
         self.coord_list = os.path.join(self.tmpdir, "coords.txt")
-        # create a coord file (will only contain centers) and a box file (will contain lower left corner as well as X and Y dimensions of particle). These are two ways the coordinate information is provided, so we need to test both
+        self.box_list_nonsquare = os.path.join(self.tmpdir, "boxes_nonsquare.txt")
+        # create a coord file (will only contain centers) and a box file (will contain lower left corner as well as X and Y dimensions of particle). These are two ways the coordinate information is provided, so we need to test both. also several cases of bad files.
         self.coord_fp = os.path.join(self.tmpdir, "sample.coord")
         self.box_fp = os.path.join(self.tmpdir, "sample.box")
+        self.box_fp_nonsquare = os.path.join(self.tmpdir, "sample_nonsquare.box")
 
-        with open(self.coord_fp, "w") as coord, open(self.box_fp, "w") as box:
+        with open(self.coord_fp, "w") as coord, open(self.box_fp, "w") as box, open(self.box_fp_nonsquare,"w") as box_nonsquare:
             for center in centers:
+                # .coord file usually contains just the centers
                 coord.write(f"{center[0]}\t{center[1]}\n")
                 # to make a box file, we convert the centers to lower left corners by subtracting half the particle size (here, 256).
                 lower_left_corners = (center[0] - 128, center[1] - 128)
                 box.write(
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n"
                 )
+                # make a bad box file with non square particles
+                box_nonsquare.write(f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n")
 
         with open(self.mrc_list, "w") as mrc_list, open(
             self.box_list, "w"
-        ) as box_list, open(self.coord_list, "w") as coord_list:
+        ) as box_list, open(self.box_list_nonsquare, "w") as box_list_nonsquare, open(self.coord_list, "w") as coord_list:
             mrc_list.write(self.mrc_path + "\n")
             box_list.write(self.box_fp + "\n")
+            box_list_nonsquare.write(self.box_fp_nonsquare + "\n")
             coord_list.write(self.coord_fp + "\n")
 
     def tearDown(self):
@@ -500,3 +506,13 @@ class EmanSourceTestCase(TestCase):
             particle_size=256,
         )
         self.assertEqual(src.n, 440)
+
+    def testLoadFromCoordError(self):
+        with self.assertRaises(ValueError):
+            src = EmanSource(
+                self.tmpdir, mrc_list=self.mrc_list, coord_list=self.coord_list
+            )
+
+    def testNonSquareParticles(self):
+        with self.assertRaises(ValueError):
+            src = EmanSource(self.tmpdir, mrc_list=self.mrc_list, coord_list = self.box_list_nonsquare)
