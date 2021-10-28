@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 from unittest import TestCase
 import importlib_resources
@@ -451,9 +452,10 @@ class EmanSourceTestCase(TestCase):
             (2053, 3861),
             (2855, 3883),
         }
-        self.tmpdir = tempfile.TemporaryDirectory()
+        self.tmpdir = tempfile.mkdtemp()
         # get path to test .mrc file
-        self.mrc_path = str(importlib_resources.path(tests.saved_test_data,'sample.mrc'))
+        with importlib_resources.path(tests.saved_test_data,'sample.mrc') as test_path:
+            self.mrc_path = str(test_path)
         # create a list of mrcs and a list of coord files to be fed to EmanSource
         # in this test, there is only one MRC and one coordinate file, though in general
         # there are many micrographs with one coordinate file each
@@ -476,8 +478,8 @@ class EmanSourceTestCase(TestCase):
             box_list.write(self.box_fp + '\n')
             coord_list.write(self.coord_fp + '\n')
     def tearDown(self):
-        self.tmpdir.cleanup()
+        shutil.rmtree(self.tmpdir)
 
     def testLoadFromBox(self):
         src = EmanSource(self.tmpdir, mrc_list = self.mrc_list, coord_list = self.box_list)
-        self.assertEqual(self.n, 440)
+        self.assertEqual(src.n, 440)
