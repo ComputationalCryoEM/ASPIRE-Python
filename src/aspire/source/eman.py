@@ -193,6 +193,10 @@ ticle centers, a particle size must be specified."
         )
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
+        # Create filter indices for the source. These are required in order to pass through filter eval code
+        self.filter_indices = np.zeros(self.n)
+        self.unique_filters = [IdentityFilter()]
+
     def _images(self, start=0, num=np.inf, indices=None):
         """
         :param remove_out_of_bounds: If a set of coordinates creates a box that is outside the bounds of the micrograph, do not include the particle in the result. (If not set, the particle that could not be cropped will be an array of zeros)
