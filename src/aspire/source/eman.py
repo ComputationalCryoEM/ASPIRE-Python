@@ -95,7 +95,7 @@ class EmanSource(ImageSource):
                             raise ValueError
                     coordList.append(particle_coord)
             self.mrc2coords[mrc_paths[i]] = coordList
-        
+
         # discard the last N - max_rows particles
         if max_rows:
             count = 0
@@ -129,7 +129,7 @@ class EmanSource(ImageSource):
         self.Y = shape[0]
         self.X = shape[1]
         logger.info(f"Image size = {self.X}x{self.Y}")
-        
+
         def size_particles(mrc2coords, new_size, old_size=0):
             # this method covers two scenarios:
             # 1. the coordinates represent the default, lower-left corner of the box (.box file standard), but the user wants to force a smaller particle size when loading
@@ -178,7 +178,7 @@ ticle centers, a particle size must be specified."
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
 
-        original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])  
+        original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
 
         # Lastly, exclude particle coordinate boxes that do not fit into the micrograph dimensions
         for _mrc, coordsList in self.mrc2coords.items():
@@ -201,7 +201,7 @@ ticle centers, a particle size must be specified."
             # pop in reverse order to avoid messing up indices
             for j in reversed(out_of_range):
                 coordsList.pop(j)
-        
+
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
         removed = original_n - n
         logger.info(
