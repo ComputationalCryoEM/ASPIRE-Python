@@ -2,11 +2,12 @@ import os
 import shutil
 import tempfile
 from unittest import TestCase
-import importlib_resources
-import mrcfile
-import tests.saved_test_data
 
+import importlib_resources
+
+import tests.saved_test_data
 from aspire.source import EmanSource
+
 
 class EmanSourceTestCase(TestCase):
     def setUp(self):
@@ -454,32 +455,37 @@ class EmanSourceTestCase(TestCase):
         }
         self.tmpdir = tempfile.mkdtemp()
         # get path to test .mrc file
-        with importlib_resources.path(tests.saved_test_data,'sample.mrc') as test_path:
+        with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.mrc_path = str(test_path)
         # create a list of mrcs and a list of coord files to be fed to EmanSource
         # in this test, there is only one MRC and one coordinate file, though in general
         # there are many micrographs with one coordinate file each
-        self.mrc_list = os.path.join(self.tmpdir,'mrcs.txt')
-        self.box_list = os.path.join(self.tmpdir,'boxes.txt')
-        self.coord_list = os.path.join(self.tmpdir,'coords.txt')
+        self.mrc_list = os.path.join(self.tmpdir, "mrcs.txt")
+        self.box_list = os.path.join(self.tmpdir, "boxes.txt")
+        self.coord_list = os.path.join(self.tmpdir, "coords.txt")
         # create a coord file (will only contain centers) and a box file (will contain lower left corner as well as X and Y dimensions of particle). These are two ways the coordinate information is provided, so we need to test both
-        self.coord_fp = os.path.join(self.tmpdir,'sample.coord')
-        self.box_fp = os.path.join(self.tmpdir,'sample.box')
+        self.coord_fp = os.path.join(self.tmpdir, "sample.coord")
+        self.box_fp = os.path.join(self.tmpdir, "sample.box")
 
-        with open(self.coord_fp,'w') as coord, open(self.box_fp, 'w') as box:
+        with open(self.coord_fp, "w") as coord, open(self.box_fp, "w") as box:
             for center in centers:
                 coord.write(f"{center[0]}\t{center[1]}\n")
                 # to make a box file, we convert the centers to lower left corners by subtracting half the particle size (here, 256).
-                lower_left_corners = (center[0]-128, center[1]-128)
-                box.write(f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n")
+                lower_left_corners = (center[0] - 128, center[1] - 128)
+                box.write(
+                    f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n"
+                )
 
-        with open(self.mrc_list,'w') as mrc_list, open(self.box_list,'w') as box_list, open(self.coord_list, 'w') as coord_list:
-            mrc_list.write(self.mrc_path + '\n')
-            box_list.write(self.box_fp + '\n')
-            coord_list.write(self.coord_fp + '\n')
+        with open(self.mrc_list, "w") as mrc_list, open(
+            self.box_list, "w"
+        ) as box_list, open(self.coord_list, "w") as coord_list:
+            mrc_list.write(self.mrc_path + "\n")
+            box_list.write(self.box_fp + "\n")
+            coord_list.write(self.coord_fp + "\n")
+
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def testLoadFromBox(self):
-        src = EmanSource(self.tmpdir, mrc_list = self.mrc_list, coord_list = self.box_list)
+        src = EmanSource(self.tmpdir, mrc_list=self.mrc_list, coord_list=self.box_list)
         self.assertEqual(src.n, 440)
