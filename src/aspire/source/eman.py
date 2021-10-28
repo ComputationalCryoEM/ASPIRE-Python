@@ -6,6 +6,7 @@ import mrcfile
 import numpy as np
 
 from aspire.image import Image
+from aspire.operators import IdentityFilter
 
 # need to import explicitly, since EmanSource is alphabetically
 # ahead of ImageSource in __init__.py
