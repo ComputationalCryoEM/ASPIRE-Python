@@ -255,8 +255,46 @@ class Volume:
     def shift(self):
         raise NotImplementedError
 
-    def rotate(self):
-        raise NotImplementedError
+    def rotate(self, vol_idx, rot_matrices):
+        """
+        Using the stack of rot_matrices,
+        rotate Volume[vol_idx].
+
+        :param vol_idx: Volume index
+        :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
+        :return: `Volume` instance.
+        """
+
+        # If we are an ASPIRE Rotation, get the numpy representation.
+        if isinstance(rot_matrices, Rotation):
+            rot_matrices = rot_matrices.matrices
+
+        if rot_matrices.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}"
+                f" rot_matrices.dtype {rot_matrices.dtype}"
+                f" != self.dtype {self.dtype}."
+                " In the future this will raise an error."
+            )
+
+        data = self[vol_idx].T
+
+        pts_rot = rotated_grids_3d(self.resolution, rot_matrices)
+
+        vol_f = nufft(data, pts_rot) / self.resolution
+
+        vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
+
+        if self.resolution % 2 == 0:
+            vol_f[:, 0, :, :] = 0
+            vol_f[:, :, 0, :] = 0
+            vol_f[:, :, :, 0] = 0
+
+        vol_f = xp.asnumpy(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
+
+        vol_f = np.real(vol_f)
+
+        return Volume(vol_f)
 
     def denoise(self):
         raise NotImplementedError
@@ -462,5 +500,33 @@ def rotated_grids(L, rot_matrices):
 
     pts_rot = pts_rot.reshape((3, L, L, num_rots))
 
+    # Note we return grids as (Z, Y, X)
+    return pts_rot[::-1]
+
+
+def rotated_grids_3d(L, rot_matrices):
+    """
+    Generate rotated Fourier grids in 3D from rotation matrices
+    :param L: The resolution of the desired grids.
+    :param rot_matrices: An array of size k-by-3-by-3 containing K rotation matrices
+    :return: A set of rotated Fourier grids in three dimensions as specified by the rotation matrices.
+        Frequencies are in the range [-pi, pi].
+    """
+
+    grid3d = grid_3d(L, dtype=rot_matrices.dtype)
+    num_pts = L ** 3
+    num_rots = rot_matrices.shape[0]
+    pts = np.pi * np.vstack(
+        [
+            grid3d["x"].flatten(),
+            grid3d["y"].flatten(),
+            grid3d["z"].flatten(),
+        ]
+    )
+    pts_rot = np.zeros((3, num_pts, num_rots), dtype=rot_matrices.dtype)
+    for i in range(num_rots):
+        pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
+
+    pts_rot = m_reshape(pts_rot, (3, L ** 3 * num_rots))
     # Note we return grids as (Z, Y, X)
     return pts_rot[::-1]
