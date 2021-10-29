@@ -184,6 +184,8 @@ class BFSRAlign2D(BFRAlign2D):
         y_shifts = np.roll(
             np.arange(-self.n_y_shifts, self.n_y_shifts + 1), -self.n_y_shifts
         )
+        # Above rolls should force initial pair of shifts to (0,0).
+        # This is done primarily in case of a tie later we would take unshifted.
         assert (x_shifts[0], y_shifts[0]) == (0, 0)
 
         # These arrays will incrementally store our best alignment.

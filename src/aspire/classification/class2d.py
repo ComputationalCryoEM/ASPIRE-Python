@@ -21,13 +21,11 @@ class Class2D:
         """
         Base constructor of an object for classifying 2D images.
 
+        :param src: ImageSource or subclass, provides images.
         :param n_nbor: Number of nearest neighbors to compute.
         :param n_classes: Number of class averages to return.
-        :param alignment_implementation: See `alignment`.
-        :param alignment_opts: Optional implementation specific configuration options. See `alignment`.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
-
-
+        :param dtype: Numpy dtype, defaults to `src.dtype`.
         """
         self.src = src
 

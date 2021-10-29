@@ -219,5 +219,9 @@ class BFSRAlign2DTestCase(BFRAlign2DTestCase):
 
         # Check that we are _not_ shifting the base image
         self.assertTrue(np.all(_shifts[0][0] == 0))
-        # Check that we produced  estimated shifts away from origin
+        # Check that we produced estimated shifts away from origin
+        #  Note that Simulation's rot+shift is generally not equal to shift+rot.
+        #  Instead we check that some combination of
+        #  non zero shift+rot improved corr.
+        #  Perhaps in the future should check more details.
         self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
