@@ -108,7 +108,7 @@ src = Simulation(
 # --------------------------------------------------
 
 # Consume images from the source by providing
-# a starting indexand number of images.
+# a starting index and number of images.
 # Here we generate the first 3 and peek at them.
 src.images(0, 3).show()
 src.projections(0, 3).show()
