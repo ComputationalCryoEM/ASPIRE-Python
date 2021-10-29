@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
     help="Resolution of downsampled images read from starfile",
 )
 @click.option(
-    "--noise_type", default="Isotropic", type=str, help="Noise type for estimation"
+    "--noise_type", default="Anisotropic", type=str, help="Noise type for estimation"
 )
 @click.option(
     "--denoise_method",
@@ -69,10 +69,12 @@ def denoise(
     if max_resolution < source.L:
         # Downsample the images
         source.downsample(max_resolution)
+    else:
+        logger.warn(f"Unable to downsample to {max_resolution}, using {source.L}")
     source.cache()
 
     # Specify the fast FB basis method for expending the 2D images
-    basis = FFBBasis2D((max_resolution, max_resolution))
+    basis = FFBBasis2D((source.L, source.L))
 
     # Estimate the noise of images
     noise_estimator = None
@@ -86,11 +88,10 @@ def denoise(
     # Whiten the noise of images
     logger.info("Whiten the noise of images from the noise estimator")
     source.whiten(noise_estimator.filter)
-    var_noise = noise_estimator.estimate()
 
     if denoise_method == "CWF":
         logger.info("Denoise the images using CWF cov2D method.")
-        denoiser = DenoiserCov2D(source, basis, var_noise)
+        denoiser = DenoiserCov2D(source, basis)
         denoised_src = denoiser.denoise(batch_size=512)
         denoised_src.save(
             starfile_out, batch_size=512, save_mode="single", overwrite=False
