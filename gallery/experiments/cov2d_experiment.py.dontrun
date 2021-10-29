@@ -37,13 +37,17 @@ basis = FFBBasis2D((MAX_RESOLUTION, MAX_RESOLUTION))
 # Estimate the noise of images
 print(f'Estimate the noise of images using anisotropic method')
 noise_estimator = AnisotropicNoiseEstimator(source)
+var_noise = noise_estimator.estimate()
+print(f'var_noise before whitening {var_noise}')
 
 # Whiten the noise of images
 print(f'Whiten the noise of images from the noise estimator')
 source.whiten(noise_estimator.filter)
-var_noise = noise_estimator.estimate()
+#   Note this changes the noise variance,
+#   flattening spectrum and converging towards 1.
+#   Noise variance will be recomputed in DenoiserCov2D by default.
 
 print(f'Denoise the images using batched cov2D method.')
-denoiser = DenoiserCov2D(source, basis, var_noise)
+denoiser = DenoiserCov2D(source, basis)
 denoised_src = denoiser.denoise(batch_size=512)
 denoised_src.save(STARFILE_OUT, batch_size=512, save_mode='single', overwrite=False)

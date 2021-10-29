@@ -7,6 +7,7 @@ from aspire.basis import FFBBasis2D
 from aspire.covariance import BatchedRotCov2D
 from aspire.denoising import Denoiser
 from aspire.denoising.denoised_src import DenoisedImageSource
+from aspire.noise import AnisotropicNoiseEstimator
 from aspire.optimization import fill_struct
 from aspire.utils import mat_to_vec
 from aspire.volume import Volume, qr_vols_forward
@@ -102,7 +103,7 @@ class DenoiserCov2D(Denoiser):
     Define a derived class for denoising 2D images using Cov2D method
     """
 
-    def __init__(self, src, basis, var_noise):
+    def __init__(self, src, basis, var_noise=None):
         """
         Initialize an object for denoising 2D images using Cov2D method
 
@@ -111,7 +112,16 @@ class DenoiserCov2D(Denoiser):
         :param var_noise: The estimated variance of noise
         """
         super().__init__(src)
+
+        # When var_noise is not specfically over-ridden,
+        #   recompute it now. See #496.
+        if var_noise is None:
+            logger.info("Estimating noise of images using anisotropic method")
+            noise_estimator = AnisotropicNoiseEstimator(src)
+            var_noise = noise_estimator.estimate()
+            logger.info(f"Estimated Noise Variance: {var_noise}")
         self.var_noise = var_noise
+
         if not isinstance(basis, FFBBasis2D):
             raise NotImplementedError("Currently only fast FB method is supported")
         self.basis = basis
