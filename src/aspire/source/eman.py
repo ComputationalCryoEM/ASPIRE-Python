@@ -44,15 +44,7 @@ class EmanSource(ImageSource):
         # coordinates represented by a tuple of integers
         self.mrc2coords = OrderedDict()
 
-        if starfile_path:
-            # load in the STAR file as a data frame. this STAR file has one block
-            logger.debug(f"Creating ImageSource from STAR file at path {starfile_path}")
-            df = StarFile(starfile_path).get_block_by_index(0)
-            if not os.path.isabs(data_folder):
-                data_folder = os.path.join(os.path.dirname(starfile_path), data_folder)
-            mrc_paths = [os.path.join(data_folder, p) for p in list(df["_mrcFile"])]
-            coord_paths = [os.path.join(data_folder, p) for p in list(df["_coordFile"])]
-        elif mrc_list and coord_list:
+        if mrc_list and coord_list:
             if not os.path.isabs(data_folder):
                 data_folder = os.path.join(os.path.dirname(mrc_list), data_folder)
             with open(mrc_list, "r") as mrc_in, open(coord_list, "r") as coord_in:
@@ -69,7 +61,7 @@ class EmanSource(ImageSource):
             ), f"{mrc_list} contains {len(mrc_paths)} micrographs, but {coord_list} contains {len(coord_list)} coordinate files."
         else:
             logger.error(
-                "Specify either a STAR file or text files containing micrograph and coordinate file paths!"
+                "Specify text files containing micrograph and coordinate file paths!"
             )
             raise ValueError
 
