@@ -6,6 +6,7 @@ import mrcfile
 import numpy as np
 
 from aspire.image import Image
+from aspire.operators import IdentityFilter
 
 # need to import explicitly, since EmanSource is alphabetically
 # ahead of ImageSource in __init__.py
@@ -90,7 +91,23 @@ class EmanSource(ImageSource):
                     coordList.append(particle_coord)
             self.mrc2coords[mrc_paths[i]] = coordList
 
-        original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
+        # discard the last N - max_rows particles
+        if max_rows:
+            count = 0
+            tempdict = {}
+            done = False
+            for mrc, coordList in self.mrc2coords.items():
+                if done:
+                    break
+                tempdict[mrc] = []
+                for coord in coordList:
+                    count += 1
+                    if count < max_rows:
+                        tempdict[mrc].append(coord)
+                    else:
+                        done = True
+                        break
+            self.mrc2coords = tempdict
 
         # open first mrc file to populate micrograph dimensions and data type
         with mrcfile.open(mrc_paths[0]) as mrc_file:
@@ -99,7 +116,7 @@ class EmanSource(ImageSource):
             dtype = dtypes[mode]
             shape = mrc_file.data.shape
         if not len(shape) == 2:
-            logger.warn(
+            logger.error(
                 f"Shape of micrographs is {shape}, but expected shape of length 2. Hint: are these unaligned micrographs?"
             )
             raise ValueError
@@ -141,7 +158,7 @@ ticle centers, a particle size must be specified."
 
             # firstly, ensure square particles
             if not L == other_side:
-                logger.warn(
+                logger.error(
                     "Particle size in coordinates file is {L}x{other_side}, but only square particle images are supported."
                 )
                 raise ValueError
@@ -155,6 +172,8 @@ ticle centers, a particle size must be specified."
 
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
+
+        original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
 
         # Lastly, exclude particle coordinate boxes that do not fit into the micrograph dimensions
         for _mrc, coordsList in self.mrc2coords.items():
@@ -187,6 +206,10 @@ ticle centers, a particle size must be specified."
             f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded."
         )
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
+
+        # Create filter indices for the source. These are required in order to pass through filter eval code
+        self.filter_indices = np.zeros(self.n, dtype=int)
+        self.unique_filters = [IdentityFilter()]
 
     def _images(self, start=0, num=np.inf, indices=None):
         """
