@@ -281,7 +281,7 @@ class Volume:
 
         pts_rot = rotated_grids_3d(self.resolution, rot_matrices)
 
-        vol_f = nufft(data, pts_rot) / self.resolution
+        vol_f = nufft(data, pts_rot)
 
         vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
