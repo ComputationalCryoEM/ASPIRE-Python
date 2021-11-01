@@ -1,5 +1,5 @@
 import logging
-import os.path
+import os
 from collections import OrderedDict
 
 import mrcfile
@@ -18,51 +18,46 @@ logger = logging.getLogger(__name__)
 class EmanSource(ImageSource):
     def __init__(
         self,
-        data_folder,
-        mrc_list=None,
-        coord_list=None,
+        mrc_list,
+        coord_list,
+        data_folder=None
         particle_size=0,
         centers=False,
         pixel_size=1,
         B=0,
-        max_rows=None,
+        max_rows=None
     ):
         """
         :param data_folder: Path to folder w.r.t. which all relative paths to .mrc
-        and .box files are resolved. If None the folder corresponding to the filepath
-        is used
-        :param particle_size: Desired size of cropped particles (will override size in coordinate file)
+        and .box files are resolved.
+        :param mrc_list: Python list of micrographs that are part of this source. Note that the order of this list is assumed to correspond to the order of the coord_list parameter.
+        :param coord_list: Python list of coordinate files (.box or .coord) containing coordinates of the particles in the micrographs. Note that the order of this list is assumed to correspond to the order of the mrc_list parameter.
+        :param particle_size: Desired size of cropped particles (will override size in coordinate file). This parameter is mandatory when coordinates provided are centers (instead of lower-left corners)
         :param centers: Set to true if the coordinates provided represent the centers of picked particles. By default, they are taken to be the coordinates of the lower left corner of the particle's box. If this flag is set, `particle_size` must be specified.
         """
 
         self.centers = centers
         self.pixel_size = pixel_size
+        self.B = B
         self.max_rows = max_rows
 
         # dictionary indexed by mrc file paths, leading to a list of coordinates
         # coordinates represented by a tuple of integers
         self.mrc2coords = OrderedDict()
+               
+        # must have one coordinate file for each micrograph
+        assert len(mrc_list) == len(
+            coord_list
+        ), f"mrc_list contains {len(mrc_list)} micrographs, but coord_list contains {len(coord_list)} coordinate files."
 
-        if mrc_list and coord_list:
+        if data_folder is not None:
             if not os.path.isabs(data_folder):
-                data_folder = os.path.join(os.path.dirname(mrc_list), data_folder)
-            with open(mrc_list, "r") as mrc_in, open(coord_list, "r") as coord_in:
-                mrc_paths = [
-                    os.path.join(data_folder, path.strip())
-                    for path in mrc_in.readlines()
-                ]
-                coord_paths = [
-                    os.path.join(data_folder, path.strip())
-                    for path in coord_in.readlines()
-                ]
-            assert len(mrc_paths) == len(
-                coord_paths
-            ), f"{mrc_list} contains {len(mrc_paths)} micrographs, but {coord_list} contains {len(coord_list)} coordinate files."
+                data_folder = os.path.join(os.getcwd(), data_folder)
         else:
-            logger.error(
-                "Specify text files containing micrograph and coordinate file paths!"
-            )
-            raise ValueError
+            data_folder = os.getcwd()
+
+        mrc_paths = [os.path.join(data_folder, mrc_list[i]) if not os.path.isabs(mrc_list[i]) else mrc_list[i] for i in range(len(mrc_paths))]
+        coord_paths = [os.path.join(data_folder, coord_list[i]) if not os.path.isabs(coord_list[i) else coord_list[i] for i in range(len(mrc_paths))]
 
         # populate mrc2coords
         # for each mrc, read its corresponding box file and load in the coordinates
