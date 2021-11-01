@@ -11,7 +11,6 @@ from aspire.operators import IdentityFilter
 # need to import explicitly, since EmanSource is alphabetically
 # ahead of ImageSource in __init__.py
 from aspire.source.image import ImageSource
-from aspire.storage import StarFile
 
 logger = logging.getLogger(__name__)
 

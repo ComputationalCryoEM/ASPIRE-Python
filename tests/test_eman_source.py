@@ -516,13 +516,11 @@ class EmanSourceTestCase(TestCase):
     def testLoadFromCoordError(self):
         # if loading only centers (coord file), centers must be set to true and a particle size specified
         with self.assertRaises(ValueError):
-            src = EmanSource(
-                self.tmpdir, mrc_list=self.mrc_list, coord_list=self.coord_list
-            )
+            EmanSource(self.tmpdir, mrc_list=self.mrc_list, coord_list=self.coord_list)
 
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
-            src = EmanSource(
+            EmanSource(
                 self.tmpdir, mrc_list=self.mrc_list, coord_list=self.box_list_nonsquare
             )
