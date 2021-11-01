@@ -3,6 +3,7 @@ import os.path
 from unittest import TestCase
 
 import importlib_resources
+import mrcfile
 import numpy as np
 
 import tests.saved_test_data
@@ -77,8 +78,22 @@ class StarFileMainCase(StarFileTestCase):
 
 class StarFileSingleImage(StarFileTestCase):
     def setUp(self):
-        # override parent setUp because we are loading different files
+        # create new mrcs containing only one particle image
+        with importlib_resources.path(tests.saved_test_data, "sample.mrcs") as path:
+            stack_path = str(path)
+            new_mrcs_path = os.path.join(
+                os.path.dirname(stack_path), "sample_one_image.mrcs"
+            )
+            mrcs_data = mrcfile.open(stack_path, "r").data[0]
+            with mrcfile.new(new_mrcs_path) as new_mrcs:
+                new_mrcs.set_data(mrcs_data)
         self.setUpStarFile("sample_relion_one_image.star")
+
+    def tearDown(self):
+        with importlib_resources.path(
+            tests.saved_test_data, "sample_one_image.mrcs"
+        ) as path:
+            os.remove(str(path))
 
     def testMRCSWithOneParticle(self):
         # tests conversion of 2D numpy arrays into 3D stacks in the case
