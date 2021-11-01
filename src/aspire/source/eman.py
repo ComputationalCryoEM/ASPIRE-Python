@@ -19,7 +19,6 @@ class EmanSource(ImageSource):
     def __init__(
         self,
         data_folder,
-        starfile_path=None,
         mrc_list=None,
         coord_list=None,
         particle_size=0,
@@ -29,10 +28,6 @@ class EmanSource(ImageSource):
         max_rows=None,
     ):
         """
-        Load a STAR file at a given filepath. This starfile must contains pairs of
-        '_mrcFile' and '_boxFile', representing the mrc micrograph file and the
-        EMAN format .box coordinates file respectively
-        :param filepath: Absolute or relative path to STAR file
         :param data_folder: Path to folder w.r.t. which all relative paths to .mrc
         and .box files are resolved. If None the folder corresponding to the filepath
         is used
