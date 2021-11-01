@@ -9,7 +9,7 @@ from itertools import chain, combinations
 
 import numpy as np
 
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils.coor_trans import grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +136,37 @@ def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64
 
     p = (g["x"] - x0) ** 2 / (2 * sigma_x ** 2) + (g["y"] - y0) ** 2 / (
         2 * sigma_y ** 2
+    )
+    return (peak * np.exp(-p)).astype(dtype, copy=False)
+
+
+def gaussian_3d(
+    size, x0=0, y0=0, z0=0, sigma_x=1, sigma_y=1, sigma_z=1, peak=1, dtype=np.float64
+):
+    """
+    Returns a 3d Gaussian in a size-by-size-by-size 3d numpy array.
+
+    Default is a centered volume of spread=peak=1.
+
+    :param size: The height and width of returned array (pixels)
+    :param x0: x cordinate of center (voxels)
+    :param y0: y cordinate of center (voxels)
+    :param z0: z cordinate of center (voxels)
+    :param sigma_x: spread in x direction
+    :param sigma_y: spread in y direction
+    :param sigma_z: spread in z direction
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (3D)
+    """
+
+    # Construct centered mesh
+    g = grid_3d(size, shifted=True, normalized=False, dtype=dtype)
+
+    p = (
+        (g["x"] - x0) ** 2 / (2 * sigma_x ** 2)
+        + (g["y"] - y0) ** 2 / (2 * sigma_y ** 2)
+        + (g["z"] - z0) ** 2 / (2 * sigma_z ** 2)
     )
     return (peak * np.exp(-p)).astype(dtype, copy=False)
 
