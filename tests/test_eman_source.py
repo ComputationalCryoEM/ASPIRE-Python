@@ -487,9 +487,7 @@ class EmanSourceTestCase(TestCase):
         shutil.rmtree(self.tmpdir)
 
     def testLoadFromBox(self):
-        src = EmanSource(
-            self.mrc_list, self.box_list, data_folder=self.tmpdir
-        )
+        src = EmanSource(self.mrc_list, self.box_list, data_folder=self.tmpdir)
         # loaded 440 particles from the box file (lower left corner and heights and widths given)
         self.assertEqual(src.n, 440)
 
