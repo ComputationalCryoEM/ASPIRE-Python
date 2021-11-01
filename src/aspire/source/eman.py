@@ -20,12 +20,12 @@ class EmanSource(ImageSource):
         self,
         mrc_list,
         coord_list,
-        data_folder=None
+        data_folder=None,
         particle_size=0,
         centers=False,
         pixel_size=1,
         B=0,
-        max_rows=None
+        max_rows=None,
     ):
         """
         :param data_folder: Path to folder w.r.t. which all relative paths to .mrc
@@ -44,7 +44,7 @@ class EmanSource(ImageSource):
         # dictionary indexed by mrc file paths, leading to a list of coordinates
         # coordinates represented by a tuple of integers
         self.mrc2coords = OrderedDict()
-               
+
         # must have one coordinate file for each micrograph
         assert len(mrc_list) == len(
             coord_list
@@ -56,8 +56,18 @@ class EmanSource(ImageSource):
         else:
             data_folder = os.getcwd()
 
-        mrc_paths = [os.path.join(data_folder, mrc_list[i]) if not os.path.isabs(mrc_list[i]) else mrc_list[i] for i in range(len(mrc_paths))]
-        coord_paths = [os.path.join(data_folder, coord_list[i]) if not os.path.isabs(coord_list[i) else coord_list[i] for i in range(len(mrc_paths))]
+        mrc_paths = [
+            os.path.join(data_folder, mrc_list[i])
+            if not os.path.isabs(mrc_list[i])
+            else mrc_list[i]
+            for i in range(len(mrc_list))
+        ]
+        coord_paths = [
+            os.path.join(data_folder, coord_list[i])
+            if not os.path.isabs(coord_list[i])
+            else coord_list[i]
+            for i in range(len(coord_list))
+        ]
 
         # populate mrc2coords
         # for each mrc, read its corresponding box file and load in the coordinates
