@@ -518,3 +518,7 @@ class EmanSourceTestCase(TestCase):
                 self.box_list_nonsquare,
                 data_folder=self.tmpdir,
             )
+
+    def testImages(self):
+        src = EmanSource(self.mrc_list, self.box_list, data_folder=self.tmpdir)
+        src.images(0, 10)
