@@ -50,6 +50,8 @@ class WhiteNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise variance of the images.
         """
+        # WhiteNoiseEstimator.filter is a ScalarFilter,
+        #   so we only evaluate for the zero frequencies.
         return self.filter.evaluate(np.zeros((2, 1), dtype=self.dtype)).item()
 
     def _create_filter(self, noise_variance=None):
@@ -94,7 +96,11 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise variance of the images.
         """
-        return self.filter.evaluate(np.zeros((2, 1))).item()
+
+        # AnisotropicNoiseEstimator.filter is an ArrayFilter.
+        #   We average the variance over all frequencies,
+
+        return np.mean(self.filter.evaluate_grid(self.L))
 
     def _create_filter(self, noise_psd=None):
         """
