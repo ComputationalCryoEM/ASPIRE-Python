@@ -477,24 +477,18 @@ class EmanSourceTestCase(TestCase):
                 box_nonsquare.write(
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
                 )
-        # create inputs to EmanSource: lists of filepaths
-        self.mrc_list = [self.mrc_path]
-        self.box_list = [self.box_fp]
-        self.box_list_nonsquare = [self.box_fp_nonsquare]
-        self.coord_list = [self.coord_fp]
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def testLoadFromBox(self):
-        src = EmanSource(self.mrc_list, self.box_list, data_folder=self.tmpdir)
+        src = EmanSource([(self.mrc_path, self.box_fp)], data_folder=self.tmpdir)
         # loaded 440 particles from the box file (lower left corner and heights and widths given)
         self.assertEqual(src.n, 440)
 
     def testLoadFromCoord(self):
         src = EmanSource(
-            self.mrc_list,
-            self.coord_list,
+            [(self.mrc_path, self.coord_fp)],
             data_folder=self.tmpdir,
             centers=True,
             particle_size=256,
@@ -505,8 +499,8 @@ class EmanSourceTestCase(TestCase):
         # if loading only centers (coord file), centers must be set to true and a particle size specified
         with self.assertRaises(ValueError):
             EmanSource(
-                self.mrc_list,
-                self.coord_list,
+                [(self.mrc_path,
+                  self.coord_fp)],
                 data_folder=self.tmpdir,
             )
 
@@ -514,11 +508,11 @@ class EmanSourceTestCase(TestCase):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
             EmanSource(
-                self.mrc_list,
-                self.box_list_nonsquare,
+                [(self.mrc_path,
+                  self.box_fp_nonsquare)],
                 data_folder=self.tmpdir,
             )
 
     def testImages(self):
-        src = EmanSource(self.mrc_list, self.box_list, data_folder=self.tmpdir)
+        src = EmanSource([(self.mrc_path, self.box_fp)], data_folder=self.tmpdir)
         src.images(0, 10)
