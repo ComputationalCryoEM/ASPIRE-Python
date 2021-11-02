@@ -285,10 +285,11 @@ class Volume:
 
         vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
-        if self.resolution % 2 == 0:
-            vol_f[:, 0, :, :] = 0
-            vol_f[:, :, 0, :] = 0
-            vol_f[:, :, :, 0] = 0
+        # Possible bug, confirm in dev meeting.
+        # if self.resolution % 2 == 0:
+        #     vol_f[:, 0, :, :] = 0
+        #     vol_f[:, :, 0, :] = 0
+        #     vol_f[:, :, :, 0] = 0
 
         vol_f = xp.asnumpy(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
 
