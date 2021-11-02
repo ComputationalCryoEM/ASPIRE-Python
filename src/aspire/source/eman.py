@@ -28,12 +28,14 @@ class EmanSource(ImageSource):
         max_rows=None,
     ):
         """
-        :param data_folder: Path to folder w.r.t. which all relative paths to .mrc
-        and .box files are resolved.
         :param mrc_list: Python list of micrographs that are part of this source. Note that the order of this list is assumed to correspond to the order of the coord_list parameter.
         :param coord_list: Python list of coordinate files (.box or .coord) containing coordinates of the particles in the micrographs. Note that the order of this list is assumed to correspond to the order of the mrc_list parameter.
+        :param data_folder: Optional parameter specifying path to which micrograph and coordinate file lists are relative. If paths given are absolute, this need not be specified. Defaults to current working directory.
         :param particle_size: Desired size of cropped particles (will override size in coordinate file). This parameter is mandatory when coordinates provided are centers (instead of lower-left corners)
         :param centers: Set to true if the coordinates provided represent the centers of picked particles. By default, they are taken to be the coordinates of the lower left corner of the particle's box. If this flag is set, `particle_size` must be specified.
+        :param pixel_size: Pixel size of micrograph in Angstroms (default: 1)
+        :param B: Envelope decay of the CTF in inverse Angstroms (default: 0)
+        :param max_rows: Maximum number of particles to read. Note that depending on the particle_size chosen, the number of particles returned may not be equal to max_rows, as some will be discarded after not fitting within the micrograph dimensions.
         """
 
         self.centers = centers
@@ -42,7 +44,7 @@ class EmanSource(ImageSource):
         self.max_rows = max_rows
 
         # dictionary indexed by mrc file paths, leading to a list of coordinates
-        # coordinates represented by a tuple of integers
+        # coordinates represented by a list of integers
         self.mrc2coords = OrderedDict()
 
         # must have one coordinate file for each micrograph
@@ -56,6 +58,7 @@ class EmanSource(ImageSource):
         else:
             data_folder = os.getcwd()
 
+        # fill in paths to micrographs and coordinate files
         mrc_paths = [
             os.path.join(data_folder, mrc_list[i])
             if not os.path.isabs(mrc_list[i])
@@ -77,7 +80,9 @@ class EmanSource(ImageSource):
             with open(coord_paths[i], "r") as coord_file:
                 for line in coord_file.readlines():
                     particle_coord = [int(x) for x in line.split()]
+                    # if there are less than 4 numbers, we are most likely being given centers
                     if len(particle_coord) < 4:
+                        # pad list to length 4 so that it can be filled in with proper values later
                         particle_coord += [-1] * 2
                         if not self.centers:
                             logger.error(
@@ -88,6 +93,7 @@ class EmanSource(ImageSource):
             self.mrc2coords[mrc_paths[i]] = coordList
 
         # discard the last N - max_rows particles
+        # note that this occurs before particle dimensions are checked against micrograph dimensions
         if max_rows:
             count = 0
             tempdict = {}
@@ -208,10 +214,7 @@ ticle centers, a particle size must be specified."
         self.unique_filters = [IdentityFilter()]
 
     def _images(self, start=0, num=np.inf, indices=None):
-        """
-        :param remove_out_of_bounds: If a set of coordinates creates a box that is outside the bounds of the micrograph, do not include the particle in the result. (If not set, the particle that could not be cropped will be an array of zeros)
-        """
-        # very important: the indices passed to this method will refer to the index
+        # the indices passed to this method refer to the index
         # of the *particle*, not the micrograph
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
