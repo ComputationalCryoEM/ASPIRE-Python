@@ -3,9 +3,9 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.noise import AnisotropicNoiseEstimator
+from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import RadialCTFFilter
-from aspire.source.simulation import Simulation
+from aspire.source import ArrayImageSource, Simulation
 from aspire.utils.types import utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -13,12 +13,13 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class SimTestCase(TestCase):
     def setUp(self):
+        self.dtype = np.float32
         self.sim = Simulation(
             n=1024,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            dtype="single",
+            dtype=self.dtype,
         )
 
     def tearDown(self):
@@ -120,8 +121,31 @@ class SimTestCase(TestCase):
         noise_variance = noise_estimator.estimate()
         self.assertTrue(
             np.allclose(
-                0.04534846544265747,
+                0.005158715099241817,
                 noise_variance,
                 atol=utest_tolerance(self.sim.dtype),
             )
         )
+
+    def testPerseval(self):
+        """
+        Here we construct a source of white noise.
+        Then code tests that the average noise power in the real domain,
+        is equivalent to the sum of the magnitudes squared
+        of all frequency's coefficients in the Fourier domain.
+
+        These are calculated by WhiteNoiseEstimator and
+        AnisotropicNoiseEstimator respectively.
+
+        See Perseval/Plancherel's Theorem.
+        """
+
+        wht_noise = np.random.randn(1024, 128, 128).astype(self.dtype)
+        src = ArrayImageSource(wht_noise)
+
+        wht_noise_estimator = WhiteNoiseEstimator(src, batchSize=512)
+        wht_noise_variance = wht_noise_estimator.estimate()
+        noise_estimator = AnisotropicNoiseEstimator(src, batchSize=512)
+        noise_variance = noise_estimator.estimate()
+
+        self.assertTrue(np.allclose(noise_variance, wht_noise_variance))
