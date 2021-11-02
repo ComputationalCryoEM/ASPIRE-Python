@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 class EmanSource(ImageSource):
     def __init__(
         self,
-        mrc_list,
-        coord_list,
+        files,
         data_folder=None,
         particle_size=0,
         centers=False,
@@ -28,29 +27,24 @@ class EmanSource(ImageSource):
         max_rows=None,
     ):
         """
-        :param mrc_list: Python list of micrographs that are part of this source. Note that the order of this list is assumed to correspond to the order of the coord_list parameter.
-        :param coord_list: Python list of coordinate files (.box or .coord) containing coordinates of the particles in the micrographs. Note that the order of this list is assumed to correspond to the order of the mrc_list parameter.
-        :param data_folder: Optional parameter specifying path to which micrograph and coordinate file lists are relative. If paths given are absolute, this need not be specified. Defaults to current working directory.
-        :param particle_size: Desired size of cropped particles (will override size in coordinate file). This parameter is mandatory when coordinates provided are centers (instead of lower-left corners)
-        :param centers: Set to true if the coordinates provided represent the centers of picked particles. By default, they are taken to be the coordinates of the lower left corner of the particle's box. If this flag is set, `particle_size` must be specified.
+        :param files: a list of tuples (micrograph path, coordinate file path)
+        :param data_folder: Path to which filepaths are relative do. Default: current directory.
+        :param particle_size: Desired size of cropped particles
+        :param centers: Set to true if the coordinates provided represent the centers of picked particles.
         :param pixel_size: Pixel size of micrograph in Angstroms (default: 1)
         :param B: Envelope decay of the CTF in inverse Angstroms (default: 0)
-        :param max_rows: Maximum number of particles to read. Note that depending on the particle_size chosen, the number of particles returned may not be equal to max_rows, as some will be discarded after not fitting within the micrograph dimensions.
+        :param max_rows: Maximum number of particles to read. (If None, all particles will be loaded)
         """
 
         self.centers = centers
         self.pixel_size = pixel_size
         self.B = B
         self.max_rows = max_rows
+        self.num_micrographs = len(files)
 
         # dictionary indexed by mrc file paths, leading to a list of coordinates
         # coordinates represented by a list of integers
         self.mrc2coords = OrderedDict()
-
-        # must have one coordinate file for each micrograph
-        assert len(mrc_list) == len(
-            coord_list
-        ), f"mrc_list contains {len(mrc_list)} micrographs, but coord_list contains {len(coord_list)} coordinate files."
 
         if data_folder is not None:
             if not os.path.isabs(data_folder):
@@ -60,17 +54,19 @@ class EmanSource(ImageSource):
 
         # fill in paths to micrographs and coordinate files
         mrc_paths = [
-            os.path.join(data_folder, mrc_list[i])
-            if not os.path.isabs(mrc_list[i])
-            else mrc_list[i]
-            for i in range(len(mrc_list))
+            os.path.join(data_folder, files[i][0])
+            if not os.path.isabs(files[i][0])
+            else files[i][0]
+            for i in range(self.num_micrographs)
         ]
         coord_paths = [
-            os.path.join(data_folder, coord_list[i])
-            if not os.path.isabs(coord_list[i])
-            else coord_list[i]
-            for i in range(len(coord_list))
+            os.path.join(data_folder, files[i][1])
+            if not os.path.isabs(files[i][1])
+            else files[i][1]
+            for i in range(self.num_micrographs)
         ]
+
+       
 
         # populate mrc2coords
         # for each mrc, read its corresponding box file and load in the coordinates
@@ -202,7 +198,7 @@ ticle centers, a particle size must be specified."
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
         removed = original_n - n
         logger.info(
-            f"EmanSource from {data_folder} contains {len(self.mrc2coords)} micrographs, {n} picked particles."
+            f"EmanSource from {data_folder} contains {self.num_micrographs} micrographs, {n} picked particles."
         )
         logger.info(
             f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded."
