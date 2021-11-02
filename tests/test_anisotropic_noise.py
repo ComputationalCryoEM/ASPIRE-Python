@@ -127,17 +127,17 @@ class SimTestCase(TestCase):
             )
         )
 
-    def testPerseval(self):
+    def testParseval(self):
         """
         Here we construct a source of white noise.
         Then code tests that the average noise power in the real domain,
         is equivalent to the sum of the magnitudes squared
-        of all frequency's coefficients in the Fourier domain.
+        of all frequency coefficients in the Fourier domain.
 
         These are calculated by WhiteNoiseEstimator and
         AnisotropicNoiseEstimator respectively.
 
-        See Perseval/Plancherel's Theorem.
+        See Parseval/Plancherel's Theorem.
         """
 
         wht_noise = np.random.randn(1024, 128, 128).astype(self.dtype)
