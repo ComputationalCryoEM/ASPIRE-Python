@@ -66,8 +66,6 @@ class EmanSource(ImageSource):
             for i in range(self.num_micrographs)
         ]
 
-       
-
         # populate mrc2coords
         # for each mrc, read its corresponding box file and load in the coordinates
         for i in range(len(mrc_paths)):
@@ -178,12 +176,7 @@ ticle centers, a particle size must be specified."
             out_of_range = []
             for i in range(len(coordsList)):
                 coord = coordsList[i]
-                start_x, start_y, size_x, size_y = (
-                    coord[0],
-                    coord[1],
-                    coord[2],
-                    coord[3],
-                )
+                start_x, start_y, size_x, size_y = coord
                 if (
                     start_x < 0
                     or start_y < 0
@@ -233,7 +226,7 @@ ticle centers, a particle size must be specified."
         )
 
         def crop_micrograph(data, coord):
-            start_x, start_y, size_x, size_y = coord[0], coord[1], coord[2], coord[3]
+            start_x, start_y, size_x, size_y = coord
             # according to MRC 2014 convention, origin represents
             # bottom-left corner of image
             return data[start_y : start_y + size_y, start_x : start_x + size_x]
