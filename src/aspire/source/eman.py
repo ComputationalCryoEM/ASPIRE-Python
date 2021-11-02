@@ -232,7 +232,7 @@ ticle centers, a particle size must be specified."
             return data[start_y : start_y + size_y, start_x : start_x + size_x]
 
         for i in range(len(_particles)):
-            # get the particle number and the migrocraph
+            # get the particle number and the micrograph
             num, fp = int(_particles[i].split("@")[0]), _particles[i].split("@")[1]
             # load the image data for this micrograph
             arr = mrcfile.open(fp).data
