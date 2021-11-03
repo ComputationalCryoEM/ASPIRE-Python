@@ -113,20 +113,29 @@ class EmanSource(ImageSource):
         self.X = shape[1]
         logger.info(f"Image size = {self.X}x{self.Y}")
 
-        def size_particles(mrc2coords, new_size, old_size=0):
-            # this method covers two scenarios:
-            # 1. the coordinates represent the default, lower-left corner of the box (.box file standard), but the user wants to force a smaller particle size when loading
-            # 2. the coordinates given in the file are *centers* of particles, not corners, and must be corrected
-            for _mrc, coordsList in mrc2coords.items():
+        def force_new_size(new_size, old_size):
+            trim_length = (old_size - new_size) // 2
+            tempdir = OrderedDict()
+            for mrc, coordsList in self.mrc2coords.items():
+                tempdir[mrc] = []
                 for coords in coordsList:
-                    # if self.centers, subtract off half of the particle size to get the lower-left corner position
-                    # otherwise, we are reslicing from old_size to new_size, and we add half the difference of the two sizes to the lower left coordinates
-                    trim_length = (
-                        -(new_size // 2) if self.centers else (old_size - new_size) // 2
-                    )
-                    coords[0] += trim_length
-                    coords[1] += trim_length
-                    coords[2] = coords[3] = new_size
+                    temp_coord = [-1, -1, new_size, new_size]
+                    temp_coord[0] = coords[0] + trim_length
+                    temp_coord[1] = coords[1] + trim_length
+                    tempdir[mrc].append(temp_coord)
+            self.mrc2coords = tempdir
+
+        def write_coords_from_centers(size):
+            trim_length = size // 2
+            tempdir = OrderedDict()
+            for mrc, coordsList in self.mrc2coords.items():
+                tempdir[mrc] = []
+                for coords in coordsList:
+                    temp_coord = [-1, -1, size, size]
+                    temp_coord[0] = coords[0] - trim_length
+                    temp_coord[1] = coords[1] - trim_length
+                    tempdir[mrc].append(temp_coord)
+            self.mrc2coords = tempdir
 
         if self.centers:
             assert (
@@ -134,7 +143,7 @@ class EmanSource(ImageSource):
             ), "When constructing an EmanSource with coordinates of par\
 ticle centers, a particle size must be specified."
             # recompute coordinates to account for the fact that we were given centers
-            size_particles(self.mrc2coords, particle_size)
+            write_coords_from_centers(particle_size)
             L = particle_size
         else:
             # open first coord file to get the particle size in the file
@@ -155,7 +164,7 @@ ticle centers, a particle size must be specified."
                 logger.info(
                     f"Overriding particle size of {L}x{L} specified in coordinates file."
                 )
-                size_particles(self.mrc2coords, particle_size, L)
+                force_new_size(particle_size, L)
                 L = particle_size
 
         logger.info(f"Particle size = {L}x{L}")
