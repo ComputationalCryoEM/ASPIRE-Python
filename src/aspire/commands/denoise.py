@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
     help="Resolution of downsampled images read from starfile",
 )
 @click.option(
-    "--noise_type", default="Anisotropic", type=str, help="Noise type for estimation"
+    "--noise_type", default="White", type=str, help="Noise type for estimation"
 )
 @click.option(
     "--denoise_method",
@@ -78,12 +78,14 @@ def denoise(
 
     # Estimate the noise of images
     noise_estimator = None
-    if noise_type == "Isotropic":
-        logger.info("Estimate the noise of images using isotropic method")
+    if noise_type == "White":
+        logger.info("Estimate the noise of images using white noise method")
         noise_estimator = WhiteNoiseEstimator(source)
-    else:
+    elif noise_type == "Anisotropic":
         logger.info("Estimate the noise of images using anisotropic method")
         noise_estimator = AnisotropicNoiseEstimator(source)
+    else:
+        raise RuntimeError(f"Unsupported noise_type={noise_type}")
 
     # Whiten the noise of images
     logger.info("Whiten the noise of images from the noise estimator")
