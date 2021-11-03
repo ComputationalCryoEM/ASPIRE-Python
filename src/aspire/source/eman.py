@@ -120,11 +120,9 @@ class EmanSource(ImageSource):
 
         # open first mrc file to populate micrograph dimensions and data type
         with mrcfile.open(mrc_paths[0]) as mrc_file:
-            mode = int(mrc_file.header.mode)
-            dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
-            dtype = dtypes[mode]
+            dtype = np.dtype(mrc_file.data.dtype)
             shape = mrc_file.data.shape
-        if not len(shape) == 2:
+        if len(shape) != 2:
             logger.error(
                 f"Shape of micrographs is {shape}, but expected shape of length 2. Hint: are these unaligned micrographs?"
             )
@@ -166,13 +164,13 @@ ticle centers, a particle size must be specified."
                 other_side = int(first_line.split()[3])
 
             # firstly, ensure square particles
-            if not L == other_side:
+            if L != other_side:
                 logger.error(
                     "Particle size in coordinates file is {L}x{other_side}, but only square particle images are supported."
                 )
                 raise ValueError
             # if particle_size specified by user, we will recompute the coordinates around the center of the particle
-            if not particle_size == 0:
+            if particle_size != 0:
                 logger.info(
                     f"Overriding particle size of {L}x{L} specified in coordinates file."
                 )
@@ -187,7 +185,7 @@ ticle centers, a particle size must be specified."
         # Lastly, exclude particle coordinate boxes that do not fit into the micrograph dimensions
         for _mrc, coordsList in self.mrc2coords.items():
             out_of_range = []
-            for i in range(len(coordsList)):
+            for i, coord in enumerate(coordsList):
                 coord = coordsList[i]
                 start_x, start_y, size_x, size_y = coord
                 if (
@@ -215,6 +213,12 @@ ticle centers, a particle size must be specified."
         self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
 
+    def crop_micrograph(data, coord):
+        start_x, start_y, size_x, size_y = coord
+        # according to MRC 2014 convention, origin represents
+        # bottom-left corner of image
+        return data[start_y : start_y + size_y, start_x : start_x + size_x]
+
     def _images(self, start=0, num=np.inf, indices=None):
         # the indices passed to this method refer to the index
         # of the *particle*, not the micrograph
@@ -237,12 +241,6 @@ ticle centers, a particle size must be specified."
             (len(indices), self._original_resolution, self._original_resolution),
             dtype=self.dtype,
         )
-
-        def crop_micrograph(data, coord):
-            start_x, start_y, size_x, size_y = coord
-            # according to MRC 2014 convention, origin represents
-            # bottom-left corner of image
-            return data[start_y : start_y + size_y, start_x : start_x + size_x]
 
         for i in range(len(_particles)):
             # get the particle number and the micrograph
