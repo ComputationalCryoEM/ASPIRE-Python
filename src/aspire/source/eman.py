@@ -213,6 +213,7 @@ ticle centers, a particle size must be specified."
         self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
 
+    @staticmethod
     def crop_micrograph(data, coord):
         start_x, start_y, size_x, size_y = coord
         # according to MRC 2014 convention, origin represents
@@ -249,7 +250,7 @@ ticle centers, a particle size must be specified."
             arr = mrcfile.open(fp).data
             # get the specified particle coordinates
             coord = self.mrc2coords[fp][num]
-            cropped = crop_micrograph(arr, coord)
+            cropped = self.crop_micrograph(arr, coord)
             im[i] = cropped
 
         return Image(im)
