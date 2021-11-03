@@ -46,22 +46,34 @@ class EmanSource(ImageSource):
         # coordinates represented by a list of integers
         self.mrc2coords = OrderedDict()
 
+        mrc_absolute_paths = False
+        coord_absolute_paths = False
         if data_folder is not None:
             if not os.path.isabs(data_folder):
                 data_folder = os.path.join(os.getcwd(), data_folder)
+            if os.path.isabs(files[0][0]):
+                assert (
+                    os.path.basename(files[0][0]) == data_folder
+                ), f"data_folder provided ({data_folder}) does not match basename of mrc files ({os.path.basename(files[0][0])})"
+                mrc_absolute_paths = True
+            if os.path.isabs(files[0][1]):
+                assert (
+                    os.path.basename(files[0][0]) == data_folder
+                ), f"data_folder provided ({data_folder}) does not match basename of mrc files ({os.path.basename(files[0][0])})"
+                coord_absolute_paths = True
         else:
             data_folder = os.getcwd()
 
         # fill in paths to micrographs and coordinate files
         mrc_paths = [
             os.path.join(data_folder, files[i][0])
-            if not os.path.isabs(files[i][0])
+            if not mrc_absolute_paths
             else files[i][0]
             for i in range(self.num_micrographs)
         ]
         coord_paths = [
             os.path.join(data_folder, files[i][1])
-            if not os.path.isabs(files[i][1])
+            if not coord_absolute_paths
             else files[i][1]
             for i in range(self.num_micrographs)
         ]
@@ -211,7 +223,7 @@ ticle centers, a particle size must be specified."
             start = indices.min()
         logger.info(f"Loading {len(indices)} images from micrographs")
 
-        # explode mrc2coords into a flat list
+        # flatten mrc2coords into a list
         all_particles = []
         # identify each particle as e.g. 000001@mrcfile, analogously to Relion
         for mrc in self.mrc2coords:
