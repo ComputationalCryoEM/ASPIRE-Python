@@ -1,10 +1,10 @@
 import os
+import pickle
 import shutil
 import tempfile
 from unittest import TestCase
 
 import importlib_resources
-import pickle
 
 import tests.saved_test_data
 from aspire.source import EmanSource
@@ -14,7 +14,9 @@ class EmanSourceTestCase(TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         # load pickled list of picked particle centers
-        with importlib_resources.path(tests.saved_test_data, "apple_centers.p") as centers_path:
+        with importlib_resources.path(
+            tests.saved_test_data, "apple_centers.p"
+        ) as centers_path:
             centers = pickle.load(open(str(centers_path), "rb"))
         # get path to test .mrc file
         with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
@@ -59,9 +61,7 @@ class EmanSourceTestCase(TestCase):
     def testLoadFromCoordError(self):
         # if loading only centers (coord file), centers must be set to true and a particle size specified
         with self.assertRaises(ValueError):
-            EmanSource(
-                [(self.mrc_path, self.coord_fp)]
-            )
+            EmanSource([(self.mrc_path, self.coord_fp)])
 
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail

@@ -1,11 +1,11 @@
 import os
+import pickle
 import tempfile
 from shutil import copyfile
 from unittest import TestCase
 
 import importlib_resources
 import mrcfile
-import pickle
 
 import tests.saved_test_data
 from aspire.apple.apple import Apple
@@ -20,7 +20,9 @@ class ApplePickerTestCase(TestCase):
 
     def testPickCenters(self):
         # 440 particles with the following centers
-        with importlib_resources.path(tests.saved_test_data, "apple_centers.p") as centers_path:
+        with importlib_resources.path(
+            tests.saved_test_data, "apple_centers.p"
+        ) as centers_path:
             centers = pickle.load(open(str(centers_path), "rb"))
         with tempfile.TemporaryDirectory() as tmpdir_name:
             apple_picker = Apple(output_dir=tmpdir_name)
