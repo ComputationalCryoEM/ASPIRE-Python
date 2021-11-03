@@ -53,13 +53,13 @@ class EmanSource(ImageSource):
                 data_folder = os.path.join(os.getcwd(), data_folder)
             if os.path.isabs(files[0][0]):
                 assert (
-                    os.path.basename(files[0][0]) == data_folder
-                ), f"data_folder provided ({data_folder}) does not match basename of mrc files ({os.path.basename(files[0][0])})"
+                    os.path.dirname(files[0][0]) == data_folder
+                ), f"data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(files[0][0])})"
                 mrc_absolute_paths = True
             if os.path.isabs(files[0][1]):
                 assert (
-                    os.path.basename(files[0][0]) == data_folder
-                ), f"data_folder provided ({data_folder}) does not match basename of mrc files ({os.path.basename(files[0][0])})"
+                    os.path.dirname(files[0][1]) == data_folder
+                ), f"data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(files[0][1])})"
                 coord_absolute_paths = True
         else:
             data_folder = os.getcwd()
@@ -84,18 +84,19 @@ class EmanSource(ImageSource):
             coordList = []
             # open box file and read in the coordinates (one particle per line)
             with open(coord_paths[i], "r") as coord_file:
-                for line in coord_file.readlines():
-                    particle_coord = [int(x) for x in line.split()]
-                    # if there are less than 4 numbers, we are most likely being given centers
-                    if len(particle_coord) < 4:
-                        # pad list to length 4 so that it can be filled in with proper values later
-                        particle_coord += [-1] * 2
-                        if not self.centers:
-                            logger.error(
-                                f"{coord_paths[i]}: This coordinate file does not contain height and width information for particles. This may mean that the coordinates represent the center of the particle. Try setting centers=True and specifying a particle_size."
-                            )
-                            raise ValueError
-                    coordList.append(particle_coord)
+                lines = coord_file.readlines()
+            for line in lines:
+                particle_coord = [int(x) for x in line.split()]
+                # if there are less than 4 numbers, we are most likely being given centers
+                if len(particle_coord) < 4:
+                    # pad list to length 4 so that it can be filled in with proper values later
+                    particle_coord += [-1] * 2
+                    if not self.centers:
+                        logger.error(
+                            f"{coord_paths[i]}: This coordinate file does not contain height and width information for particles. This may mean that the coordinates represent the center of the particle. Try setting centers=True and specifying a particle_size."
+                        )
+                        raise ValueError
+                coordList.append(particle_coord)
             self.mrc2coords[mrc_paths[i]] = coordList
 
         # discard the last N - max_rows particles
