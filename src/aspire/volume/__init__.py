@@ -255,7 +255,7 @@ class Volume:
     def shift(self):
         raise NotImplementedError
 
-    def rotate(self, vol_idx, rot_matrices):
+    def rotate(self, vol_idx, rot_matrices, nyquist=True):
         """
         Using the stack of rot_matrices,
         rotate Volume[vol_idx].
@@ -285,11 +285,11 @@ class Volume:
 
         vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
-        # Possible bug, confirm in dev meeting.
-        # if self.resolution % 2 == 0:
-        #     vol_f[:, 0, :, :] = 0
-        #     vol_f[:, :, 0, :] = 0
-        #     vol_f[:, :, :, 0] = 0
+        # If resolution is even, we zero out the nyquist frequency by default.
+        if self.resolution % 2 == 0 and nyquist == True:
+            vol_f[:, 0, :, :] = 0
+            vol_f[:, :, 0, :] = 0
+            vol_f[:, :, :, 0] = 0
 
         vol_f = xp.asnumpy(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
 
