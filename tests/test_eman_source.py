@@ -6,6 +6,7 @@ from unittest import TestCase
 
 import importlib_resources
 import numpy as np
+
 import tests.saved_test_data
 from aspire.source import EmanSource
 
@@ -42,6 +43,7 @@ class EmanSourceTestCase(TestCase):
         with open(self.box_fp_nonsquare, "w") as box_nonsquare:
             for center in centers:
                 # make a bad box file with non square particles
+                lower_left_corners = (center[0] - 128, center[1] - 128)
                 box_nonsquare.write(
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
                 )
@@ -70,6 +72,7 @@ class EmanSourceTestCase(TestCase):
     def testLoadFromCoordNoParticleSize(self):
         with self.assertRaises(AssertionError):
             EmanSource([(self.mrc_path, self.coord_fp)], centers=True)
+
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
@@ -81,8 +84,10 @@ class EmanSourceTestCase(TestCase):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
         src_from_box = EmanSource([(self.mrc_path, self.box_fp)])
-        src_from_coord = EmanSource([(self.mrc_path, self.coord_fp)], particle_size=256, centers=True)
-        imgs_box = src_from_box.images(0,10)
-        imgs_coord = src_from_coord.images(0,10)
+        src_from_coord = EmanSource(
+            [(self.mrc_path, self.coord_fp)], particle_size=256, centers=True
+        )
+        imgs_box = src_from_box.images(0, 10)
+        imgs_coord = src_from_coord.images(0, 10)
         for i in range(10):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
