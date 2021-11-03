@@ -21,22 +21,26 @@ class EmanSourceTestCase(TestCase):
         # get path to test .mrc file
         with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.mrc_path = str(test_path)
-        # create a coord file (will only contain centers) and a box file (will contain lower left corner as well as X and Y dimensions of particle). These are two ways the coordinate information is provided, so we need to test both. also several cases of bad files.
         self.coord_fp = os.path.join(self.tmpdir, "sample.coord")
+        # create a box file (lower left corner as well as X/Y dims of particle
         self.box_fp = os.path.join(self.tmpdir, "sample.box")
+        # box file with nonsquare particles
         self.box_fp_nonsquare = os.path.join(self.tmpdir, "sample_nonsquare.box")
         # populate box and coord files
-        with open(self.coord_fp, "w") as coord, open(self.box_fp, "w") as box, open(
-            self.box_fp_nonsquare, "w"
-        ) as box_nonsquare:
+        with open(self.coord_fp, "w") as coord:
             for center in centers:
                 # .coord file usually contains just the centers
                 coord.write(f"{center[0]}\t{center[1]}\n")
-                # to make a box file, we convert the centers to lower left corners by subtracting half the particle size (here, 256).
+        with open(self.box_fp, "w") as box:
+            for center in centers:
+                # to make a box file, we convert the centers to lower left
+                # corners by subtracting half the particle size (here, 256).
                 lower_left_corners = (center[0] - 128, center[1] - 128)
                 box.write(
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n"
                 )
+        with open(self.box_fp_nonsquare, "w") as box_nonsquare:
+            for center in centers:
                 # make a bad box file with non square particles
                 box_nonsquare.write(
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
@@ -61,7 +65,7 @@ class EmanSourceTestCase(TestCase):
     def testLoadFromCoordError(self):
         # if loading only centers (coord file), centers must be set to true and a particle size specified
         with self.assertRaises(ValueError):
-            EmanSource([(self.mrc_path, self.coord_fp)])
+            EmanSource([(self.mrc_path, self.coord_fp)], particle_size=256)
 
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
