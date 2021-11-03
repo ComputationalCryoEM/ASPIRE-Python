@@ -191,7 +191,7 @@ ticle centers, a particle size must be specified."
                 tempdict[mrc] = []
                 for coord in coordList:
                     count += 1
-                    if count < max_rows:
+                    if count <= max_rows:
                         tempdict[mrc].append(coord)
                     else:
                         done = True
@@ -203,7 +203,7 @@ ticle centers, a particle size must be specified."
             f"Data source from {data_folder} contains {self.num_micrographs} micrographs, {original_n} picked particles."
         )
         logger.info(
-            f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded."
+            f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {original_n - removed}."
         )
         logger.info(f"EmanSource object contains {n} particles.")
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
