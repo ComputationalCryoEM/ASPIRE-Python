@@ -3,6 +3,7 @@ import os.path
 from unittest import TestCase
 
 import importlib_resources
+import mrcfile
 import numpy as np
 
 import tests.saved_test_data
@@ -14,47 +15,20 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class StarFileTestCase(TestCase):
-    def run(self, result=None):
-        """Overridden run method to use context manager provided by importlib_resources"""
-        with importlib_resources.path(
-            tests.saved_test_data, "sample_relion_data.star"
-        ) as path:
-
-            # Create a temporary file with the contents of the sample.mrcs file in a subfolder at the same location
-            # as the starfile, to allow our classes to do their job
-            temp_folder_path = os.path.join(path.parent.absolute(), "_temp")
-
-            should_delete_folder = False
-            if not os.path.exists(temp_folder_path):
-                os.mkdir(temp_folder_path)
-                should_delete_folder = True
-
-            temp_file_path = os.path.join(temp_folder_path, "sample.mrcs")
-
-            should_delete_file = False
-            if not os.path.exists(temp_file_path):
-                with open(temp_file_path, "wb") as f:
-                    f.write(
-                        importlib_resources.read_binary(
-                            tests.saved_test_data, "sample.mrcs"
-                        )
-                    )
-                    should_delete_file = True
-
-            self.src = RelionSource(path, data_folder=temp_folder_path, max_rows=12)
-            super(StarFileTestCase, self).run(result)
-
-            if should_delete_file:
-                os.remove(temp_file_path)
-            if should_delete_folder:
-                os.removedirs(temp_folder_path)
+    def setUpStarFile(self, starfile_name):
+        # set up RelionSource object for tests
+        with importlib_resources.path(tests.saved_test_data, starfile_name) as starfile:
+            self.src = RelionSource(starfile, data_folder=DATA_DIR, max_rows=12)
 
     def setUp(self):
-        pass
+        # this method is used by StarFileMainCase but overridden by StarFileOneImage
+        self.setUpStarFile("sample_relion_data.star")
 
     def tearDown(self):
         pass
 
+
+class StarFileMainCase(StarFileTestCase):
     def testImageStackType(self):
         # Since src is an ImageSource, we can call images() on it to get an Image
         image_stack = self.src.images(start=0, num=np.inf)
@@ -100,3 +74,29 @@ class StarFileTestCase(TestCase):
                 atol=1e-6,
             )
         )
+
+
+class StarFileSingleImage(StarFileTestCase):
+    def setUp(self):
+        # create new mrcs containing only one particle image
+        with importlib_resources.path(tests.saved_test_data, "sample.mrcs") as path:
+            stack_path = str(path)
+            new_mrcs_path = os.path.join(
+                os.path.dirname(stack_path), "sample_one_image.mrcs"
+            )
+            mrcs_data = mrcfile.open(stack_path, "r").data[0]
+            with mrcfile.new(new_mrcs_path) as new_mrcs:
+                new_mrcs.set_data(mrcs_data)
+        self.setUpStarFile("sample_relion_one_image.star")
+
+    def tearDown(self):
+        with importlib_resources.path(
+            tests.saved_test_data, "sample_one_image.mrcs"
+        ) as path:
+            os.remove(str(path))
+
+    def testMRCSWithOneParticle(self):
+        # tests conversion of 2D numpy arrays into 3D stacks in the case
+        # where there is only one image in the mrcs
+        single_image = self.src.images(0, 1)[0]
+        self.assertEqual(single_image.shape, (200, 200))
