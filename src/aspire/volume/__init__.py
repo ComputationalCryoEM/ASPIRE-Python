@@ -286,7 +286,7 @@ class Volume:
         vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
         # If resolution is even, we zero out the nyquist frequency by default.
-        if self.resolution % 2 == 0 and nyquist == True:
+        if self.resolution % 2 == 0 and nyquist is True:
             vol_f[:, 0, :, :] = 0
             vol_f[:, :, 0, :] = 0
             vol_f[:, :, :, 0] = 0
