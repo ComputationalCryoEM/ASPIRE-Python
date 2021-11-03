@@ -99,25 +99,6 @@ class EmanSource(ImageSource):
                 coordList.append(particle_coord)
             self.mrc2coords[mrc_paths[i]] = coordList
 
-        # discard the last N - max_rows particles
-        # note that this occurs before particle dimensions are checked against micrograph dimensions
-        if max_rows:
-            count = 0
-            tempdict = {}
-            done = False
-            for mrc, coordList in self.mrc2coords.items():
-                if done:
-                    break
-                tempdict[mrc] = []
-                for coord in coordList:
-                    count += 1
-                    if count < max_rows:
-                        tempdict[mrc].append(coord)
-                    else:
-                        done = True
-                        break
-            self.mrc2coords = tempdict
-
         # open first mrc file to populate micrograph dimensions and data type
         with mrcfile.open(mrc_paths[0]) as mrc_file:
             dtype = np.dtype(mrc_file.data.dtype)
@@ -181,7 +162,7 @@ ticle centers, a particle size must be specified."
         self._original_resolution = L
 
         original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
-
+        removed = 0
         # Lastly, exclude particle coordinate boxes that do not fit into the micrograph dimensions
         for _mrc, coordsList in self.mrc2coords.items():
             out_of_range = []
@@ -195,18 +176,36 @@ ticle centers, a particle size must be specified."
                     or (start_y + size_y >= self.Y)
                 ):
                     out_of_range.append(i)
+                    removed += 1
             # pop in reverse order to avoid messing up indices
             for j in reversed(out_of_range):
                 coordsList.pop(j)
 
+        if max_rows:
+            count = 0
+            tempdict = {}
+            done = False
+            for mrc, coordList in self.mrc2coords.items():
+                if done:
+                    break
+                tempdict[mrc] = []
+                for coord in coordList:
+                    count += 1
+                    if count < max_rows:
+                        tempdict[mrc].append(coord)
+                    else:
+                        done = True
+                        break
+            self.mrc2coords = tempdict
+
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
-        removed = original_n - n
         logger.info(
-            f"EmanSource from {data_folder} contains {self.num_micrographs} micrographs, {n} picked particles."
+            f"Data source from {data_folder} contains {self.num_micrographs} micrographs, {original_n} picked particles."
         )
         logger.info(
             f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded."
         )
+        logger.info(f"EmanSource object contains {n} particles.")
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
         # Create filter indices for the source. These are required in order to pass through filter eval code
