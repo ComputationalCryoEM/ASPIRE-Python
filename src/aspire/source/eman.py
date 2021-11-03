@@ -11,6 +11,7 @@ from aspire.operators import IdentityFilter
 # need to import explicitly, since EmanSource is alphabetically
 # ahead of ImageSource in __init__.py
 from aspire.source.image import ImageSource
+from aspire.storage import StarFile
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +19,14 @@ logger = logging.getLogger(__name__)
 class EmanSource(ImageSource):
     def __init__(
         self,
-        files,
+        files=None,
         data_folder=None,
         particle_size=0,
         centers=False,
         pixel_size=1,
         B=0,
         max_rows=None,
+        relion_autopick_star=None,
     ):
         """
         :param files: a list of tuples (micrograph path, coordinate file path)
@@ -34,6 +36,7 @@ class EmanSource(ImageSource):
         :param pixel_size: Pixel size of micrograph in Angstroms (default: 1)
         :param B: Envelope decay of the CTF in inverse Angstroms (default: 0)
         :param max_rows: Maximum number of particles to read. (If None, all particles will be loaded)
+        :param relion_autopick_star: Relion star file from AutoPick or ManualPick jobs (e.g. AutoPick/job006/autopick.star)
         """
 
         self.centers = centers
@@ -45,6 +48,21 @@ class EmanSource(ImageSource):
         # dictionary indexed by mrc file paths, leading to a list of coordinates
         # coordinates represented by a list of integers
         self.mrc2coords = OrderedDict()
+
+        # if reading from a Relion STAR file
+        self.relion = False
+        if relion_autopick_star:
+            if data_folder is None:
+                raise ValueError(
+                    "Provide Relion project directory when loading from Relion picked coordinates STAR file"
+                )
+            self.centers = True
+            self.relion = True
+            star_in = StarFile(relion_autopick_star)
+            df = star_in["coordinate_files"]
+            micrographs = list(df["_rlnMicrographName"])
+            coord_stars = list(df["_rlnMicrographCoordinates"])
+            files = [(micrographs[i], coord_stars[i]) for i in range(len(df))]
 
         mrc_absolute_paths = False
         coord_absolute_paths = False
@@ -82,11 +100,24 @@ class EmanSource(ImageSource):
         # for each mrc, read its corresponding box file and load in the coordinates
         for i in range(len(mrc_paths)):
             coordList = []
-            # open box file and read in the coordinates (one particle per line)
-            with open(coord_paths[i], "r") as coord_file:
-                lines = coord_file.readlines()
-            for line in lines:
-                particle_coord = [int(x) for x in line.split()]
+            # two types of coordinate files, each containing coords of
+            # multiple particles in one micrograph
+            # for both, read coordinates into the form
+            # [ [particle1_X, particle1_Y, ..], [particle2_X, particle2_Y, ..]]
+            if relion:
+                df = StarFile(coord_paths[i]).get_block_by_index(0)
+                x_coords = list(df["_rlnCoordinateX"])
+                y_coords = list(df["_rlnCoordinateY"])
+                particles = [
+                    [int(x_coords[i]), int(y_coords[i])] for i in range(len(df))
+                ]
+            else:
+                # open coordinate file and read in the coordinates
+                with open(coord_paths[i], "r") as coord_file:
+                    lines = [line.split() for line in coord_file.readlines()]
+                    particles = [[int(x) for x in line] for line in lines]
+            for particle in particles:
+                particle_coord = [int(x) for x in particle.split()]
                 # if there are less than 4 numbers, we are most likely being given centers
                 if len(particle_coord) < 4:
                     # pad list to length 4 so that it can be filled in with proper values later
