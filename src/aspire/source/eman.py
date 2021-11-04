@@ -43,7 +43,6 @@ class EmanSource(ImageSource):
         self.pixel_size = pixel_size
         self.B = B
         self.max_rows = max_rows
-        self.num_micrographs = len(files)
 
         # dictionary indexed by mrc file paths, leading to a list of coordinates
         # coordinates represented by a list of integers
@@ -83,6 +82,7 @@ class EmanSource(ImageSource):
             data_folder = os.getcwd()
 
         # fill in paths to micrographs and coordinate files
+        self.num_micrographs = len(files)
         mrc_paths = [
             os.path.join(data_folder, files[i][0])
             if not mrc_absolute_paths
@@ -104,20 +104,19 @@ class EmanSource(ImageSource):
             # multiple particles in one micrograph
             # for both, read coordinates into the form
             # [ [particle1_X, particle1_Y, ..], [particle2_X, particle2_Y, ..]]
-            if relion:
+            if self.relion:
                 df = StarFile(coord_paths[i]).get_block_by_index(0)
                 x_coords = list(df["_rlnCoordinateX"])
                 y_coords = list(df["_rlnCoordinateY"])
                 particles = [
-                    [int(x_coords[i]), int(y_coords[i])] for i in range(len(df))
+                    [int(float(x_coords[i])), int(float(y_coords[i]))] for i in range(len(df))
                 ]
             else:
                 # open coordinate file and read in the coordinates
                 with open(coord_paths[i], "r") as coord_file:
                     lines = [line.split() for line in coord_file.readlines()]
                     particles = [[int(x) for x in line] for line in lines]
-            for particle in particles:
-                particle_coord = [int(x) for x in particle.split()]
+            for particle_coord in particles:
                 # if there are less than 4 numbers, we are most likely being given centers
                 if len(particle_coord) < 4:
                     # pad list to length 4 so that it can be filled in with proper values later
