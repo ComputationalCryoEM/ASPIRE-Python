@@ -266,7 +266,7 @@ class Volume:
 
         # If we are an ASPIRE Rotation, get the numpy representation.
         if isinstance(rot_matrices, Rotation):
-            rot_matrices = rot_matrices.matrices
+            rot_matrices = rot_matrices.matrices()
 
         if rot_matrices.dtype != self.dtype:
             logger.warning(
