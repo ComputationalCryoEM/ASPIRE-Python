@@ -51,12 +51,15 @@ class EmanSource(ImageSource):
         # if reading from a Relion STAR file
         self.relion = False
         if relion_autopick_star:
+            # paths in autopick.star are relative to Relion project dir
             if data_folder is None:
                 raise ValueError(
                     "Provide Relion project directory when loading from Relion picked coordinates STAR file"
                 )
+            # path TO autopick.star can also be relative to project dir
             if not os.path.isabs(relion_autopick_star):
                 relion_autopick_star = os.path.join(data_folder, relion_autopick_star)
+            # Relion coordinates are centers
             self.centers = True
             self.relion = True
             star_in = StarFile(relion_autopick_star)
@@ -71,11 +74,13 @@ class EmanSource(ImageSource):
             if not os.path.isabs(data_folder):
                 data_folder = os.path.join(os.getcwd(), data_folder)
             if os.path.isabs(files[0][0]):
+                # check that abs paths to mrcs matches data folder
                 assert (
                     os.path.dirname(files[0][0]) == data_folder
                 ), f"data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(files[0][0])})"
                 mrc_absolute_paths = True
             if os.path.isabs(files[0][1]):
+                # check that abs paths to coords matches data folder
                 assert (
                     os.path.dirname(files[0][1]) == data_folder
                 ), f"data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(files[0][1])})"
@@ -99,7 +104,7 @@ class EmanSource(ImageSource):
         ]
 
         # populate mrc2coords
-        # for each mrc, read its corresponding box file and load in the coordinates
+        # for each mrc, read its corresponding coordinates file
         for i in range(len(mrc_paths)):
             coordList = []
             # two types of coordinate files, each containing coords of
@@ -115,14 +120,14 @@ class EmanSource(ImageSource):
                     for i in range(len(df))
                 ]
             else:
-                # open coordinate file and read in the coordinates
+                # each set of coords is a whitespace separated line
                 with open(coord_paths[i], "r") as coord_file:
                     lines = [line.split() for line in coord_file.readlines()]
                     particles = [[int(x) for x in line] for line in lines]
             for particle_coord in particles:
-                # if there are less than 4 numbers, we are most likely being given centers
+                # less than 4 numbers -> we are being given centers
                 if len(particle_coord) < 4:
-                    # pad list to length 4 so that it can be filled in with proper values later
+                    # pad list to length 4 so that it can be filled in later
                     particle_coord += [-1] * 2
                     if not self.centers:
                         logger.error(
@@ -202,10 +207,13 @@ ticle centers, a particle size must be specified."
 
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
-
+        
+        # total number of particles given in coord files
+        # before removing those that do not fit
         original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
         removed = 0
-        # Lastly, exclude particle coordinate boxes that do not fit into the micrograph dimensions
+
+        # Exclude particle coordinate boxes that do not fit into the micrograph
         for _mrc, coordsList in self.mrc2coords.items():
             out_of_range = []
             for i, coord in enumerate(coordsList):
@@ -223,6 +231,7 @@ ticle centers, a particle size must be specified."
             for j in reversed(out_of_range):
                 coordsList.pop(j)
 
+        # Satisfy max_rows by removing N-max_rows final particles
         if max_rows:
             count = 0
             tempdict = {}
@@ -239,8 +248,11 @@ ticle centers, a particle size must be specified."
                         done = True
                         break
             self.mrc2coords = tempdict
+ 
 
+        # final number of particles in *this* source
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
+
         logger.info(
             f"Data source from {data_folder} contains {self.num_micrographs} micrographs, {original_n} picked particles."
         )
@@ -248,6 +260,7 @@ ticle centers, a particle size must be specified."
             f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {original_n - removed}."
         )
         logger.info(f"EmanSource object contains {n} particles.")
+
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
         # Create filter indices for the source. These are required in order to pass through filter eval code
