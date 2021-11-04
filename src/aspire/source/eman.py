@@ -207,7 +207,7 @@ ticle centers, a particle size must be specified."
 
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
-        
+
         # total number of particles given in coord files
         # before removing those that do not fit
         original_n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
@@ -248,7 +248,6 @@ ticle centers, a particle size must be specified."
                         done = True
                         break
             self.mrc2coords = tempdict
- 
 
         # final number of particles in *this* source
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
