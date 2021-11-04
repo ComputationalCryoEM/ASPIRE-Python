@@ -23,7 +23,7 @@ class ApplePickerTestCase(TestCase):
         with importlib_resources.path(
             tests.saved_test_data, "apple_centers.p"
         ) as centers_path:
-            centers = pickle.load(open(str(centers_path), "rb"))
+            centers = set(pickle.load(open(str(centers_path), "rb")))
         with tempfile.TemporaryDirectory() as tmpdir_name:
             apple_picker = Apple(output_dir=tmpdir_name)
             with importlib_resources.path(
