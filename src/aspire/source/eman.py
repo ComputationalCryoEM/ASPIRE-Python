@@ -55,6 +55,8 @@ class EmanSource(ImageSource):
                 raise ValueError(
                     "Provide Relion project directory when loading from Relion picked coordinates STAR file"
                 )
+            if not os.path.isabs(relion_autopick_star):
+                relion_autopick_star = os.path.join(data_folder, relion_autopick_star)
             self.centers = True
             self.relion = True
             star_in = StarFile(relion_autopick_star)
@@ -109,7 +111,8 @@ class EmanSource(ImageSource):
                 x_coords = list(df["_rlnCoordinateX"])
                 y_coords = list(df["_rlnCoordinateY"])
                 particles = [
-                    [int(float(x_coords[i])), int(float(y_coords[i]))] for i in range(len(df))
+                    [int(float(x_coords[i])), int(float(y_coords[i]))]
+                    for i in range(len(df))
                 ]
             else:
                 # open coordinate file and read in the coordinates

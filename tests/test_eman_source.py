@@ -22,6 +22,8 @@ class EmanSourceTestCase(TestCase):
         # get path to test .mrc file
         with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.mrc_path = str(test_path)
+        # get saved_test_data dir path as data_folder
+        self.data_folder = os.path.dirname(self.mrc_path)
         self.coord_fp = os.path.join(self.tmpdir, "sample.coord")
         # create a box file (lower left corner as well as X/Y dims of particle
         self.box_fp = os.path.join(self.tmpdir, "sample.box")
@@ -64,6 +66,13 @@ class EmanSourceTestCase(TestCase):
         )
         self.assertEqual(src.n, 440)
 
+    def testLoadFromRelion(self):
+        EmanSource(
+            data_folder=self.data_folder,
+            relion_autopick_star="sample_relion_autopick.star",
+            particle_size=256,
+        )
+
     def testLoadFromCoordWithoutCentersTrue(self):
         # if loading only centers (coord file), centers must be set to true
         with self.assertRaises(ValueError):
@@ -87,7 +96,14 @@ class EmanSourceTestCase(TestCase):
         src_from_coord = EmanSource(
             [(self.mrc_path, self.coord_fp)], particle_size=256, centers=True
         )
+        src_from_relion = EmanSource(
+            data_folder=self.data_folder,
+            relion_autopick_star="sample_relion_autopick.star",
+            particle_size=256,
+        )
         imgs_box = src_from_box.images(0, 10)
         imgs_coord = src_from_coord.images(0, 10)
+        imgs_star = src_from_relion.images(0, 10)
         for i in range(10):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
+            self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
