@@ -1,5 +1,7 @@
 import os
+
 import tempfile
+from itertools import product
 from unittest import TestCase
 
 import numpy as np
@@ -13,15 +15,20 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class VolumeTestCase(TestCase):
     def setUp(self):
-        self.dtype = np.float32
+        self.dtype = np.float64
         self.n = n = 3
         self.res = res = 42
         self.data_1 = np.arange(n * res ** 3, dtype=self.dtype).reshape(
             n, res, res, res
         )
         self.data_2 = 123 * self.data_1.copy()
+        self.data_3 = np.zeros((res, res, res), dtype=self.dtype)
+        self.data_3[res // 2 + 1, res // 2, res // 2] = self.data_3[
+            res // 2, res // 2 + 1, res // 2
+        ] = self.data_3[res // 2, res // 2, res // 2 + 1] = 1
         self.vols_1 = Volume(self.data_1)
         self.vols_2 = Volume(self.data_2)
+        self.vols_3 = Volume(self.data_3)
         self.random_data = np.random.randn(res, res, res).astype(self.dtype)
         self.vec = self.data_1.reshape(n, res ** 3)
 
@@ -137,6 +144,45 @@ class VolumeTestCase(TestCase):
             # The projection and Volume should be equivalent
             #  centered along the rotation axis for multiples of pi/2.
             self.assertTrue(np.allclose(vol_along_axis, prj_along_axis))
+
+    def testRotate(self):
+        # Create a stack of rotations to test. We will rotate by multiples of pi/2 from each axis.
+        rot_mat = np.empty((12, 3, 3), dtype=self.dtype)
+        axes = ["x", "y", "z"]
+        angles = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
+        pairs = list(product(axes, angles))
+        for k in range(len(pairs)):
+            rot_mat[k] = Rotation.from_euler(pairs[k][0], pairs[k][1]).as_matrix()
+
+        # Rotate the basis volume (contains a 1 on each positive axis, zero elsewhere) by rotation matrices rot_mat.
+        # Nyquist frequencies are not set to zero for even resolution to improve error.
+        rot_vols = self.vols_3.rotate(0, rot_mat, nyquist=False)
+
+        # Create reference volumes
+        L = self.res
+        ref_vol = np.zeros((8, L, L, L))
+        index = 0
+        for i in range(2):
+            for j in range(2):
+                for k in range(2):
+                    ref_vol[index, L // 2 + (-1) ** i, L // 2, L // 2] = 1
+                    ref_vol[index, L // 2, L // 2 + (-1) ** j, L // 2] = 1
+                    ref_vol[index, L // 2, L // 2, L // 2 + (-1) ** k] = 1
+                    index += 1
+        ref_vol = Volume(ref_vol)
+
+        # Compare rotated volumes with appropriate reference volumes
+        for k in range(3):
+            self.assertTrue(np.allclose(ref_vol[0], rot_vols[4 * k]))
+        for k in range(2):
+            self.assertTrue(np.allclose(ref_vol[1], rot_vols[6 * k + 1]))
+        for k in range(2):
+            self.assertTrue(np.allclose(ref_vol[2], rot_vols[6 * k + 3]))
+        for k in range(2):
+            self.assertTrue(np.allclose(ref_vol[4], rot_vols[6 * k + 5]))
+        self.assertTrue(np.allclose(ref_vol[3], rot_vols[2]))
+        self.assertTrue(np.allclose(ref_vol[5], rot_vols[6]))
+        self.assertTrue(np.allclose(ref_vol[6], rot_vols[10]))
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
