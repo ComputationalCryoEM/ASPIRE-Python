@@ -90,6 +90,15 @@ class ParticleCoordinateSourceTestCase(TestCase):
                 [(self.mrc_path, self.box_fp_nonsquare)],
             )
 
+    def testDataFolderMismatch(self):
+        # our sample.mrc is located in saved_test_data
+        # if we give an absolute path data_folder, and the dirnames do not match
+        # there should be an error due to the ambiguity
+        with self.assertRaises(AssertionError):
+            ParticleCoordinateSource(
+                [(self.mrc_path, self.box_fp)], data_folder=self.tmpdir.name
+            )
+
     def testOverrideParticleSize(self):
         # it is possible to override the particle size in the box file
         src_new_size = ParticleCoordinateSource(
