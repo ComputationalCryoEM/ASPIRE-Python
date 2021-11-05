@@ -264,7 +264,7 @@ ticle centers, a particle size must be specified."
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
         # Create filter indices for the source. These are required in order to pass through filter eval code
-        self.filter_indices = np.zeros(self.n, dtype=int)
+        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
         self.unique_filters = [IdentityFilter()]
 
     @staticmethod
