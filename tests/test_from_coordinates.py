@@ -4,10 +4,12 @@ import tempfile
 from unittest import TestCase
 
 import importlib_resources
+import mrcfile
 import numpy as np
 
 import tests.saved_test_data
 from aspire.source.from_coordinates import ParticleCoordinateSource
+from aspire.storage import StarFile
 
 
 class ParticleCoordinateSourceTestCase(TestCase):
@@ -130,3 +132,18 @@ class ParticleCoordinateSourceTestCase(TestCase):
         for i in range(10):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
+
+    def testSave(self):
+        # we can save the source into an .mrcs stack with *no* metadata
+        src = ParticleCoordinateSource([(self.mrc_path, self.box_fp)], max_rows=10)
+        imgs = src.images(0, 10)
+        star_path = os.path.join(self.tmpdir.name, "stack.star")
+        mrcs_path = os.path.join(self.tmpdir.name, "stack_0_9.mrcs")
+        src.save(star_path)
+        saved_mrc = mrcfile.open(mrcs_path).data
+        saved_star = StarFile(star_path)
+        # assert that the particles saved are correct
+        for i in range(10):
+            self.assertTrue(np.array_equal(imgs[i], saved_mrc[i]))
+        # assert that the star file has no metadata: the only col is _rlnImageName
+        self.assertEqual(list(saved_star[""].columns), ["_rlnImageName"])
