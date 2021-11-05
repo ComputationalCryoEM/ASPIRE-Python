@@ -1,6 +1,6 @@
 import logging
 
-from aspire.source.eman import EmanSource
+from aspire.source.from_coordinates import ParticleCoordinateSource
 from aspire.source.image import ArrayImageSource, ImageSource
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation

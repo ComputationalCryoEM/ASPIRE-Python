@@ -8,15 +8,15 @@ import numpy as np
 from aspire.image import Image
 from aspire.operators import IdentityFilter
 
-# need to import explicitly, since EmanSource is alphabetically
-# ahead of ImageSource in __init__.py
+# need to import explicitly, since from_particles is alphabetically
+# ahead of image in __init__.py
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile
 
 logger = logging.getLogger(__name__)
 
 
-class EmanSource(ImageSource):
+class ParticleCoordinateSource(ImageSource):
     def __init__(
         self,
         files=None,
@@ -178,7 +178,7 @@ class EmanSource(ImageSource):
         if self.centers:
             assert (
                 particle_size > 0
-            ), "When constructing an EmanSource with coordinates of par\
+            ), "When constructing a ParticleCoordinateSource with coordinates of par\
 ticle centers, a particle size must be specified."
             # recompute coordinates to account for the fact that we were given centers
             write_coords_from_centers(particle_size)
@@ -253,12 +253,13 @@ ticle centers, a particle size must be specified."
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
 
         logger.info(
-            f"Data source from {data_folder} contains {self.num_micrographs} micrographs, {original_n} picked particles."
+            f"ParticleCoordinateSource from {data_folder} contains {self.num_micrographs} micrographs, {original_n} picked particles."
         )
-        logger.info(
-            f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {original_n - removed}."
-        )
-        logger.info(f"EmanSource object contains {n} particles.")
+        if removed > 0:
+            logger.info(
+                f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {original_n - removed}."
+            )
+        logger.info(f"ParticleCoordinateSource object contains {n} particles.")
 
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 

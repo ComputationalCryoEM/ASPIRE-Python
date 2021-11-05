@@ -7,10 +7,10 @@ import importlib_resources
 import numpy as np
 
 import tests.saved_test_data
-from aspire.source import EmanSource
+from aspire.source import ParticleCoordinateSource
 
 
-class EmanSourceTestCase(TestCase):
+class ParticleCoordinateSourceTestCase(TestCase):
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory()
         # load pickled list of picked particle centers
@@ -53,12 +53,12 @@ class EmanSourceTestCase(TestCase):
         self.tmpdir.cleanup()
 
     def testLoadFromBox(self):
-        src = EmanSource([(self.mrc_path, self.box_fp)])
+        src = ParticleCoordinateSource([(self.mrc_path, self.box_fp)])
         # loaded 440 particles from the box file (lower left corner and heights and widths given)
         self.assertEqual(src.n, 440)
 
     def testLoadFromCoord(self):
-        src = EmanSource(
+        src = ParticleCoordinateSource(
             [(self.mrc_path, self.coord_fp)],
             centers=True,
             particle_size=256,
@@ -66,7 +66,7 @@ class EmanSourceTestCase(TestCase):
         self.assertEqual(src.n, 440)
 
     def testLoadFromRelion(self):
-        EmanSource(
+        ParticleCoordinateSource(
             data_folder=self.data_folder,
             relion_autopick_star="sample_relion_autopick.star",
             particle_size=256,
@@ -75,23 +75,27 @@ class EmanSourceTestCase(TestCase):
     def testLoadFromCoordWithoutCentersTrue(self):
         # if loading only centers (coord file), centers must be set to true
         with self.assertRaises(ValueError):
-            EmanSource([(self.mrc_path, self.coord_fp)], particle_size=256)
+            ParticleCoordinateSource(
+                [(self.mrc_path, self.coord_fp)], particle_size=256
+            )
 
     def testLoadFromCoordNoParticleSize(self):
         with self.assertRaises(AssertionError):
-            EmanSource([(self.mrc_path, self.coord_fp)], centers=True)
+            ParticleCoordinateSource([(self.mrc_path, self.coord_fp)], centers=True)
 
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
-            EmanSource(
+            ParticleCoordinateSource(
                 [(self.mrc_path, self.box_fp_nonsquare)],
             )
 
     def testOverrideParticleSize(self):
         # it is possible to override the particle size in the box file
-        src_new_size = EmanSource([(self.mrc_path, self.box_fp)], particle_size=100)
-        src_from_centers = EmanSource(
+        src_new_size = ParticleCoordinateSource(
+            [(self.mrc_path, self.box_fp)], particle_size=100
+        )
+        src_from_centers = ParticleCoordinateSource(
             [(self.mrc_path, self.coord_fp)], centers=True, particle_size=100
         )
         imgs_new_size = src_new_size.images(0, 10)
@@ -102,11 +106,11 @@ class EmanSourceTestCase(TestCase):
     def testImages(self):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
-        src_from_box = EmanSource([(self.mrc_path, self.box_fp)])
-        src_from_coord = EmanSource(
+        src_from_box = ParticleCoordinateSource([(self.mrc_path, self.box_fp)])
+        src_from_coord = ParticleCoordinateSource(
             [(self.mrc_path, self.coord_fp)], particle_size=256, centers=True
         )
-        src_from_relion = EmanSource(
+        src_from_relion = ParticleCoordinateSource(
             data_folder=self.data_folder,
             relion_autopick_star="sample_relion_autopick.star",
             particle_size=256,
