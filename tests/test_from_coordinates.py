@@ -8,6 +8,7 @@ import mrcfile
 import numpy as np
 
 import tests.saved_test_data
+from aspire.noise import WhiteNoiseEstimator
 from aspire.source.from_coordinates import ParticleCoordinateSource
 from aspire.storage import StarFile
 
@@ -158,3 +159,12 @@ class ParticleCoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs[i], saved_mrc[i]))
         # assert that the star file has no metadata: the only col is _rlnImageName
         self.assertEqual(list(saved_star[""].columns), ["_rlnImageName"])
+
+    def testPreprocessing(self):
+        # ensure that the preprocessing methods that do not require CTF do not error
+        src = ParticleCoordinateSource([(self.mrc_path, self.box_fp)], max_rows=10)
+        src.downsample(60)
+        src.normalize_background()
+        noise_estimator = WhiteNoiseEstimator(src)
+        src.whiten(noise_estimator.filter)
+        src.invert_contrast()
