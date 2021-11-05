@@ -1,6 +1,5 @@
 import os
 import pickle
-import shutil
 import tempfile
 from unittest import TestCase
 
@@ -13,7 +12,7 @@ from aspire.source import EmanSource
 
 class EmanSourceTestCase(TestCase):
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        self.tmpdir = tempfile.TemporaryDirectory()
         # load pickled list of picked particle centers
         with importlib_resources.path(
             tests.saved_test_data, "apple_centers.p"
@@ -24,11 +23,11 @@ class EmanSourceTestCase(TestCase):
             self.mrc_path = str(test_path)
         # get saved_test_data dir path as data_folder
         self.data_folder = os.path.dirname(self.mrc_path)
-        self.coord_fp = os.path.join(self.tmpdir, "sample.coord")
+        self.coord_fp = os.path.join(self.tmpdir.name, "sample.coord")
         # create a box file (lower left corner as well as X/Y dims of particle
-        self.box_fp = os.path.join(self.tmpdir, "sample.box")
+        self.box_fp = os.path.join(self.tmpdir.name, "sample.box")
         # box file with nonsquare particles
-        self.box_fp_nonsquare = os.path.join(self.tmpdir, "sample_nonsquare.box")
+        self.box_fp_nonsquare = os.path.join(self.tmpdir.name, "sample_nonsquare.box")
         # populate box and coord files
         with open(self.coord_fp, "w") as coord:
             for center in centers:
@@ -51,7 +50,7 @@ class EmanSourceTestCase(TestCase):
                 )
 
     def tearDown(self):
-        shutil.rmtree(self.tmpdir)
+        self.tmpdir.cleanup()
 
     def testLoadFromBox(self):
         src = EmanSource([(self.mrc_path, self.box_fp)])
