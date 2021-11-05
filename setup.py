@@ -63,6 +63,7 @@ setup(
             "sphinx-rtd-theme>=0.4.2",
             "snakeviz",
             "tox",
+            "twine",
         ],
     },
     package_dir={"": "src"},
