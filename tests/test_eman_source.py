@@ -88,6 +88,17 @@ class EmanSourceTestCase(TestCase):
                 [(self.mrc_path, self.box_fp_nonsquare)],
             )
 
+    def testOverrideParticleSize(self):
+        # it is possible to override the particle size in the box file
+        src_new_size = EmanSource([(self.mrc_path, self.box_fp)], particle_size=100)
+        src_from_centers = EmanSource(
+            [(self.mrc_path, self.coord_fp)], centers=True, particle_size=100
+        )
+        imgs_new_size = src_new_size.images(0, 10)
+        imgs_from_centers = src_from_centers.images(0, 10)
+        for i in range(10):
+            self.assertTrue(np.array_equal(imgs_new_size[i], imgs_from_centers[i]))
+
     def testImages(self):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
