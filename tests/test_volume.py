@@ -5,6 +5,7 @@ from unittest import TestCase
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from aspire.source.simulation import Simulation
 from aspire.utils import powerset
 from aspire.volume import Volume
 
@@ -164,6 +165,41 @@ class VolumeTestCase(TestCase):
         self.assertTrue(np.allclose(ref_vol[3], rot_vols[2]))
         self.assertTrue(np.allclose(ref_vol[5], rot_vols[6]))
         self.assertTrue(np.allclose(ref_vol[6], rot_vols[10]))
+
+    def testSymmetricVolume(self):
+        # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
+        L = self.res
+        sym_type = {2: "C2", 3: "C3", 4: "C4", 5: "C5", 6: "C6"}
+
+        for k, s in sym_type.items():
+            # Build rotation matrices that rotate by multiples of 2pi/k about the z axis
+            rot_mat = np.zeros((k, 3, 3), dtype=np.float64)
+            for i in range(k):
+                rot_mat[i, :, :] = [
+                    [np.cos(2 * i * np.pi / k), -np.sin(2 * i * np.pi / k), 0],
+                    [np.sin(2 * i * np.pi / k), np.cos(2 * i * np.pi / k), 0],
+                    [0, 0, 1],
+                ]
+
+            # To build a reference volume we rotate a volume instance.
+            # ref_vol[0] is a volume rotated by zero degrees.
+            sim = Simulation(L=L, C=1, symmetry_type=s, dtype=np.float64)
+            vol = sim.vols
+            ref_vol = vol.rotate(0, rot_mat, nyquist=False)
+
+            # We rotate ref_vol[0] by the stack of rotation matrices
+            # rot_vol is a stack of rotated ref_vol[0]
+            rot_vol = ref_vol.rotate(0, rot_mat, nyquist=False)
+
+            # Compare rotated volumes to reference volume. Check that rotated volumes are within 0.2% of reference volume.
+            for i in range(k):
+                ref = ref_vol[
+                    0, L // 3 : L - L // 3, L // 3 : L - L // 3, L // 3 : L - L // 3
+                ]
+                rot = rot_vol[
+                    i, L // 3 : L - L // 3, L // 3 : L - L // 3, L // 3 : L - L // 3
+                ]
+                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.002)
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
