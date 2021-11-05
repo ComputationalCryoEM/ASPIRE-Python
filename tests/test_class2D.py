@@ -7,7 +7,7 @@ import pytest
 from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
-from aspire.classification import Class2D, RIRClass2D
+from aspire.classification import BFSRAlign2D, Class2D, RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
@@ -147,14 +147,45 @@ class RIRClass2DTestCase(TestCase):
         _ = Class2D(self.clean_src, dtype=self.dtype)  # Consistent dtype
         _ = Class2D(self.clean_src, dtype=np.float16)  # Different dtype
 
+    def testIncorrectComponents(self):
+        """
+        Check we raise with inconsistent configuration of FSPCA components.
+        """
+
+        with pytest.raises(
+            RuntimeError, match=r"`pca_basis` components.*provided by user."
+        ):
+            _ = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,  # 400 components
+                fspca_components=100,
+                large_pca_implementation="legacy",
+                nn_implementation="legacy",
+                bispectrum_implementation="legacy",
+            )
+
+        # Explicitly providing the same number should be okay.
+        _ = RIRClass2D(
+            self.clean_src,
+            self.clean_fspca_basis,  # 400 components
+            fspca_components=self.clean_fspca_basis.components,
+            large_pca_implementation="legacy",
+            nn_implementation="legacy",
+            bispectrum_implementation="legacy",
+        )
+
     def testRIRLegacy(self):
         """
         Currently just tests for runtime errors.
         """
+
+        clean_fspca_basis = FSPCABasis(
+            self.clean_src, self.basis, noise_var=0, components=100
+        )  # Note noise_var assigned zero, skips eigval filtering.
+
         rir = RIRClass2D(
             self.clean_src,
-            self.clean_fspca_basis,
-            fspca_components=100,
+            clean_fspca_basis,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
@@ -191,13 +222,15 @@ class RIRClass2DTestCase(TestCase):
             self.noisy_fspca_basis,
             bispectrum_components=100,
             sample_n=42,
+            n_classes=5,
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
+            aligner=BFSRAlign2D(self.noisy_fspca_basis, n_angles=100, n_x_shifts=0),
         )
 
         result = rir.classify()
-        _ = rir.output(*result[:3])
+        _ = rir.output(*result[:4])
 
     def testEigenImages(self):
         """

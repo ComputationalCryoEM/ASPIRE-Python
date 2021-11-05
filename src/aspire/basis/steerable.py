@@ -166,3 +166,26 @@ class SteerableBasis2D(Basis):
         complex_coef[:] = complex_coef * np.exp(-1j * ks * radians)
 
         return complex_coef
+
+    def shift(self, coef, shifts):
+        """
+        Returns coefs shifted by `shifts`.
+
+        This will transform to real cartesian space, shift,
+        and transform back to Polar Fourier-Bessel space.
+
+        :param coef: Basis coefs.
+        :param shifts: Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).
+        :return: coefs of shifted images.
+        """
+
+        shifts = np.atleast_2d(np.array(shifts))
+        if shifts.ndim != 2:
+            raise ValueError("`shifts` should be a one or two dimensional array.")
+        if shifts.shape[1] != 2 or shifts.shape[0] not in (1, len(coef)):
+            raise ValueError(
+                "`shifts` should be shape (1,2) or (len(coef),2),"
+                f" received {shifts.shape}."
+            )
+
+        return self.evaluate_t(self.evaluate(coef).shift(shifts))

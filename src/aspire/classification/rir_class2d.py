@@ -6,12 +6,8 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
-from aspire.classification import Class2D
-from aspire.classification.legacy_implementations import (
-    bispec_2drot_large,
-    pca_y,
-    rot_align,
-)
+from aspire.classification import BFRAlign2D, Class2D
+from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.image import Image
 from aspire.numeric import ComplexPCA
 from aspire.source import ArrayImageSource
@@ -35,6 +31,7 @@ class RIRClass2D(Class2D):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
+        aligner=None,
         dtype=None,
         seed=None,
     ):
@@ -63,28 +60,48 @@ class RIRClass2D(Class2D):
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
+        :param aligner: An Align2D subclass. Defaults to BFRAlign2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
         """
 
-        super().__init__(src=src, dtype=dtype)
+        super().__init__(
+            src=src,
+            n_nbor=n_nbor,
+            n_classes=n_classes,
+            seed=seed,
+            dtype=dtype,
+        )
 
         # For now, only run with FSPCA basis
         if pca_basis and not isinstance(pca_basis, FSPCABasis):
             raise NotImplementedError(
                 "RIRClass2D has currently only been developed for pca_basis as a FSPCABasis."
             )
-
         self.pca_basis = pca_basis
+
+        # When a user provides a basis, the fspca_components arg is either
+        # redudant (same) or conflicting (different).
+        # So when a user provides fspca_components, we need to check it matches the basis' compoenents.
+        _provided_fspca_components = (
+            fspca_components is not self.__init__.__defaults__[1]
+        )
+        if pca_basis and _provided_fspca_components:
+            # Check the provided components match.
+            if pca_basis.components != fspca_components:
+                raise RuntimeError(
+                    f"`pca_basis` components {pca_basis.components} != {fspca_components} `fspca_components` provided by user."
+                )
+        elif pca_basis:  # fspca_components not specfied (default to taking from basis)
+            fspca_components = pca_basis.components
         self.fspca_components = fspca_components
+
         self.sample_n = sample_n
         self.alpha = alpha
         self.bispectrum_components = bispectrum_components
-        self.n_nbor = n_nbor
-        self.n_classes = n_classes
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
-        self.seed = seed
+        self.aligner = aligner
 
         if self.src.n < self.bispectrum_components:
             raise RuntimeError(
@@ -150,8 +167,14 @@ class RIRClass2D(Class2D):
         if self.pca_basis is None:
             # self.pca_basis = self.pca_basis.compress(self.fspca_components)
             self.pca_basis = FSPCABasis(self.src, components=self.fspca_components)
+
         # For convenience, assign the fb_basis used in the pca_basis.
         self.fb_basis = self.pca_basis.basis
+
+        # When not provided by a user, the aligner is instantiated after
+        #  we are certain our pca_basis has been constructed.
+        if self.aligner is None:
+            self.aligner = BFRAlign2D(self.pca_basis, dtype=self.dtype)
 
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
@@ -173,13 +196,21 @@ class RIRClass2D(Class2D):
             logger.info(f"Count reflected: {np.sum(refl)}" f" {100 * np.mean(refl) } %")
 
         # # Stage 3: Class Selection
+        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
         # This is an area open to active research.
-        # Currently we take naive approach documented later in `output`.
-        # logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
+        # Currently we take a naive approach by selecting the
+        # first n_classes assuming they are quasi random.
+        classes = classes[: self.n_classes]
 
         # # Stage 4: Align
-        logger.info(f"Begin Rotational Alignment of {classes.shape[0]} Classes")
-        return self.legacy_align(classes, refl, self.fspca_coef)
+        logger.info(
+            f"Begin Rotational Alignment of {classes.shape[0]} Classes using {self.aligner}."
+        )
+        if not self.aligner.basis == self.pca_basis:
+            raise RuntimeError(
+                f"Aligner {self.aligner} basis does not match FSPCA basis."
+            )
+        return self.aligner.align(classes, refl, self.fspca_coef)
 
     def pca(self, M):
         """
@@ -267,13 +298,21 @@ class RIRClass2D(Class2D):
 
         return indices
 
-    def output(self, classes, classes_refl, rot, coefs=None):
+    def output(
+        self,
+        classes,
+        classes_refl,
+        rot,
+        shifts=None,
+        coefs=None,
+    ):
         """
         Return class averages.
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
         :param classes_refl: Bool representing whether to reflect image in `classes`
-        :param rot: Array represting rotation angle (Radians) of image in `classes`
+        :param rot: Array of in-plane rotation angles (Radians) of image in `classes`
+        :param shifts: Optional array of shifts for image in `classes`.
         :coefs: Optional Fourier bessel coefs (avoids recomputing).
         :return: Stack of Synthetic Class Average images as Image instance.
         """
@@ -295,9 +334,13 @@ class RIRClass2D(Class2D):
             # Get coefs in Fourier Bessel Basis if not provided as an argument.
             if coefs is None:
                 neighbors_imgs = Image(imgs[neighbors_ids])
+                if shifts is not None:
+                    neighbors_imgs.shift(shifts[i])
                 neighbors_coefs = self.fb_basis.evaluate_t(neighbors_imgs)
             else:
                 neighbors_coefs = coefs[neighbors_ids]
+                if shifts is not None:
+                    neighbors_coefs = self.fb_basis.shift(neighbors_coefs, shifts[i])
 
             # Rotate in Fourier Bessel
             neighbors_coefs = self.fb_basis.rotate(
@@ -307,49 +350,8 @@ class RIRClass2D(Class2D):
             # Averaging in FB
             fb_avgs[i] = np.mean(neighbors_coefs, axis=0)
 
-        # Now we convert the averaged images from FB to Cartestian.
+        # Now we convert the averaged images from FB to Cartesian.
         return ArrayImageSource(self.fb_basis.evaluate(fb_avgs))
-
-    def legacy_align(self, classes, refl, coef):
-        # Translate some variables between this code and the legacy aspire implementation
-        freqs = self.pca_basis.complex_angular_indices
-        coeff = self.pca_basis.to_complex(coef).T
-        n_im = self.src.n
-        n_nbor = self.n_nbor
-
-        # ## COPIED FROM LEGACY CODE:
-        max_freq = np.max(freqs)
-        cell_coeff = []
-        for i in range(max_freq + 1):
-            cell_coeff.append(
-                np.concatenate(
-                    (coeff[freqs == i], np.conjugate(coeff[freqs == i])), axis=1
-                )
-            )
-
-        # maybe pairs should also be transposed
-        pairs = np.stack(
-            (classes.flatten("F"), np.tile(np.arange(n_im), n_nbor)), axis=1
-        )
-        corr, rot = rot_align(max_freq, cell_coeff, pairs)
-
-        rot = rot.reshape((n_im, n_nbor), order="F")
-        classes = classes.reshape(
-            (n_im, n_nbor), order="F"
-        )  # this should already be in that shape
-        corr = corr.reshape((n_im, n_nbor), order="F")
-        # Note that the sorting here for alignment is wrt correlation,
-        #  whereas previously in the NN calculation sorting is by bispectrum distance.
-        id_corr = np.argsort(-corr, axis=1)
-        for i in range(n_im):
-            corr[i] = corr[i, id_corr[i]]
-            classes[i] = classes[i, id_corr[i]]
-            rot[i] = rot[i, id_corr[i]]
-
-        # Check Reflections usually imply rotation by 180, but this seems to yield worse results.
-        # rot[class_refl] = np.mod(rot[class_refl] + 180, 360)
-        rot *= np.pi / 180.0  # Convert to radians
-        return classes, refl, rot, corr
 
     def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """

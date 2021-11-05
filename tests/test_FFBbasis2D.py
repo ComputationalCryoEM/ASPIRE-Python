@@ -1,3 +1,4 @@
+import logging
 import os.path
 from unittest import TestCase
 
@@ -7,15 +8,18 @@ from aspire.basis import FFBBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
+from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
+logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class FFBBasis2DTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32  # Required for convergence of this test
-        self.basis = FFBBasis2D((8, 8), dtype=self.dtype)
+        self.L = 8
+        self.basis = FFBBasis2D((self.L, self.L), dtype=self.dtype)
 
     def tearDown(self):
         pass
@@ -302,3 +306,45 @@ class FFBBasis2DTestCase(TestCase):
 
         # Refl (flipped using flipud)
         self.assertTrue(np.allclose(np.flipud(x1[0]), y4[0], atol=1e-4))
+
+    def testShift(self):
+        """
+        Compare shifting using Image with shifting provided by the Basis.
+
+        Note the Basis shift method converts from FB to Image space and back.
+        """
+
+        n_img = 3
+        test_shift = np.array([10, 2])
+
+        # Construct some synthetic data
+        v = Volume(
+            np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
+                np.float64
+            )
+        ).downsample(self.L)
+
+        src = Simulation(L=self.L, n=n_img, vols=v, dtype=np.float64)
+
+        # Shift images using the Image method directly
+        shifted_imgs = src.images(0, n_img).shift(test_shift)
+
+        # Convert original images to basis coefficients
+        f_imgs = self.basis.evaluate_t(src.images(0, n_img))
+
+        # Use the basis shift method
+        f_shifted_imgs = self.basis.shift(f_imgs, test_shift)
+
+        # Compute diff between the shifted image sets
+        diff = shifted_imgs.asnumpy() - self.basis.evaluate(f_shifted_imgs).asnumpy()
+
+        # Compute mask to compare only the core of the shifted images
+        g = grid_2d(self.L, normalized=False)
+        mask = g["r"] > self.L / 2
+        # Masking values outside radius to 0
+        diff = np.where(mask, 0, diff)
+
+        # Compute and check error
+        rmse = np.sqrt(np.mean(np.square(diff), axis=(1, 2)))
+        logger.info(f"RMSE shifted image diffs {rmse}")
+        self.assertTrue(np.allclose(rmse, 0, atol=1e-5))

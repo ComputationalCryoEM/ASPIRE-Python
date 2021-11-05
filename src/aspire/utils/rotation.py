@@ -57,7 +57,7 @@ class Rotation:
     @property
     def angles(self):
         """
-        :return: Rotation matrices as a n x 3 x 3 array
+        :return: Rotation matrices as a n x 3 array
         """
         rotations = sp_rot.from_matrix(self._matrices.astype(self.dtype))
         return rotations.as_euler(self._seq_order, degrees=False).astype(self.dtype)
