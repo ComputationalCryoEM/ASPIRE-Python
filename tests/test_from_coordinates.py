@@ -7,7 +7,7 @@ import importlib_resources
 import numpy as np
 
 import tests.saved_test_data
-from aspire.source import ParticleCoordinateSource
+from aspire.source.from_coordinates import ParticleCoordinateSource
 
 
 class ParticleCoordinateSourceTestCase(TestCase):
