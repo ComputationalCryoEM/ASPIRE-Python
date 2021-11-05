@@ -26,8 +26,8 @@ class RelionSource(ImageSource):
             data_folder = os.path.dirname(filepath)
 
         # Note: Valid Relion image "_data.star" files have to have their data in the first loop of the first block.
-        # We thus index our StarFile class with [0][0].
-        df = StarFile(filepath)[0][0]
+        # We are getting the first (and only) block in this StarFile object
+        df = StarFile(filepath).get_block_by_index(0)
         column_types = {name: cls.metadata_fields.get(name, str) for name in df.columns}
         df = df.astype(column_types)
 
@@ -97,6 +97,12 @@ class RelionSource(ImageSource):
         dtype = dtypes[mode]
 
         shape = mrc.data.shape
+        # the code below  accounts for the case where the first MRCS image in the STAR file has one image
+        # in that case, the shape will be (resolution, resolution), whereas this code expects
+        # (1, resolution, resolution). below, the shape is expanded to accomodate this expectation
+        if len(shape) == 2:
+            shape = (1,) + shape
+
         ensure(shape[1] == shape[2], "Only square images are supported")
         L = shape[1]
         logger.debug(f"Image size = {L}x{L}")
@@ -152,6 +158,10 @@ class RelionSource(ImageSource):
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
+            # if the stack only contains one image, arr will have shape (resolution, resolution)
+            # the code below reshapes it to (1, resolution, resolution)
+            if len(arr.shape) == 2:
+                arr = arr.reshape((1,) + arr.shape)
             data = arr[df["__mrc_index"] - 1, :, :]
 
             return df.index, data

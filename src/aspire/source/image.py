@@ -1,5 +1,6 @@
 import logging
 import os.path
+from collections import OrderedDict
 
 import mrcfile
 import numpy as np
@@ -21,7 +22,7 @@ from aspire.operators import (
     MultiplicativeFilter,
     PowerFilter,
 )
-from aspire.storage import MrcStats, StarFile, StarFileBlock
+from aspire.storage import MrcStats, StarFile
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 
@@ -105,6 +106,12 @@ class ImageSource:
         # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
         self._cached_im = None
 
+        # _rotations is assigned non None value
+        #  by `rots` or `angles` setters.
+        #  It is potentially used by sublasses to test if we've used setters.
+        #  This must come before the Relion/starfile meta data parsing below.
+        self._rotations = None
+
         if metadata is None:
             self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
         else:
@@ -121,10 +128,6 @@ class ImageSource:
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
-        # _rotations is assigned non None value
-        #  by `rots` or `angles` setters.
-        #  It is potentially used by sublasses to test if we've used setters.
-        self._rotations = None
 
     @property
     def states(self):
@@ -616,52 +619,50 @@ class ImageSource:
             axis=1,
         )
 
-        with open(starfile_filepath, "w") as f:
-            if new_mrcs:
-                # Create a new column that we will be populating in the loop below
-                # For
-                df["_rlnImageName"] = ""
+        if new_mrcs:
+            # Create a new column that we will be populating in the loop below
+            df["_rlnImageName"] = ""
 
-                if save_mode == "single":
-                    # Save all images into one single mrc file
-                    fname = os.path.basename(starfile_filepath)
-                    fstem = os.path.splitext(fname)[0]
-                    mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
+            if save_mode == "single":
+                # Save all images into one single mrc file
+                fname = os.path.basename(starfile_filepath)
+                fstem = os.path.splitext(fname)[0]
+                mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
 
-                    # Then set name in dataframe for the StarFile
-                    # Note, here the row_indexer is :, representing all rows in this data frame.
+                # Then set name in dataframe for the StarFile
+                # Note, here the row_indexer is :, representing all rows in this data frame.
+                #   df.loc will be reponsible for dereferencing and assigning values to df.
+                #   Pandas will assert df.shape[0] == self.n
+                df.loc[:, "_rlnImageName"] = [
+                    f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
+                ]
+            else:
+                # save all images into multiple mrc files in batch size
+                for i_start in np.arange(0, self.n, batch_size):
+                    i_end = min(self.n, i_start + batch_size)
+                    num = i_end - i_start
+                    mrcs_filename = (
+                        os.path.splitext(os.path.basename(starfile_filepath))[0]
+                        + f"_{i_start}_{i_end-1}.mrcs"
+                    )
+                    # Note, here the row_indexer is a slice.
                     #   df.loc will be reponsible for dereferencing and assigning values to df.
-                    #   Pandas will assert df.shape[0] == self.n
-                    df.loc[:, "_rlnImageName"] = [
-                        f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
+                    #   Pandas will assert the lnegth of row_indexer equals num.
+                    row_indexer = df[i_start:i_end].index
+                    df.loc[row_indexer, "_rlnImageName"] = [
+                        "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
                     ]
-                else:
-                    # save all images into multiple mrc files in batch size
-                    for i_start in np.arange(0, self.n, batch_size):
-                        i_end = min(self.n, i_start + batch_size)
-                        num = i_end - i_start
-                        mrcs_filename = (
-                            os.path.splitext(os.path.basename(starfile_filepath))[0]
-                            + f"_{i_start}_{i_end-1}.mrcs"
-                        )
 
-                        # Note, here the row_indexer is a slice.
-                        #   df.loc will be reponsible for dereferencing and assigning values to df.
-                        #   Pandas will assert the lnegth of row_indexer equals num.
-                        row_indexer = df[i_start:i_end].index
-                        df.loc[row_indexer, "_rlnImageName"] = [
-                            "{0:06}@{1}".format(j + 1, mrcs_filename)
-                            for j in range(num)
-                        ]
+        filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
 
-            filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[
-                1
-            ].tolist()
-
-            # initial the star file object and save it
-            starfile = StarFile(blocks=[StarFileBlock(loops=[df])])
-            starfile.save(f)
-
+        # initialize the star file object and save it
+        odict = OrderedDict()
+        # since our StarFile only has one block, the convention is to save it with the header "data_", i.e. its name is blank
+        # if we had a block called "XYZ" it would be saved as "XYZ"
+        # thus we index the metadata block with ""
+        odict[""] = df
+        out_star = StarFile(blocks=odict)
+        out_star.write(starfile_filepath)
         return filename_indices
 
     def save_images(

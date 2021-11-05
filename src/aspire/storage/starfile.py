@@ -1,173 +1,207 @@
 import logging
+import os
 from collections import OrderedDict
 
 import pandas as pd
+from gemmi import cif
 
 logger = logging.getLogger(__name__)
 
 
-class StarFileBlock:
-    def __init__(self, loops, name="", properties=None):
-        # Note: StarFile data blocks may have have key=>value pairs that start with a '_'.
-        # We serve these up to the user using getattr.
-        # To avoid potential conflicts with our custom
-        # attributes here, we simply make them 'public' without a leading underscore.
-        self.loops = loops
-        self.name = name
-        self.properties = properties
-
-    def __repr__(self):
-        return f"StarFileBlock (name={self.name}) with {len(self.loops)} loops"
-
-    def __getattr__(self, name):
-        return self.properties[name]
-
-    def __len__(self):
-        return len(self.loops)
-
-    def __getitem__(self, item):
-        return self.loops[item]
-
-    def __eq__(self, other):
-        return (
-            self.name == other.name
-            and self.properties == other.properties
-            and all([all(l1 == l2) for l1, l2 in zip(self.loops, other.loops)])
-        )
+class StarFileError(Exception):
+    pass
 
 
 class StarFile:
-    def __init__(self, starfile_path=None, blocks=None):
-
-        self.blocks = OrderedDict()
-
-        if starfile_path is not None:
-            self.init_from_starfile(starfile_path)
-        elif blocks is not None:
-            self.init_from_blocks(blocks)
-        else:
-            raise RuntimeError("Invalid constructor.")
-
-    def init_from_starfile(self, starfile_path):
+    def __init__(self, filepath="", blocks=None):
         """
-        Initalize a StarFile from a star file at a given path
-        :param starfile_path: Path to saved starfile.
-        :return: An initialized StarFile object
+        Initialize either from a path to a STAR file or from an OrderedDict of dataframes
         """
-        logger.info(f"Parsing starfile at path {starfile_path}")
-        with open(starfile_path, "r") as f:
+        # if blocks are given, set self.blocks, otherwise initialize an empty OrderedDict()
+        self.blocks = blocks or OrderedDict()
+        # if constructing from blocks, must switch pandas dtype to str
+        # otherwise comparison with StarFiles read from files will fail
+        # due to different data types
+        self.blocks = OrderedDict(
+            {
+                key: (block.astype(str) if isinstance(block, pd.DataFrame) else block)
+                for (key, block) in self.blocks.items()
+            }
+        )
+        self.filepath = str(filepath)
+        # raise an error if blocks and a filepath are both passed
+        if bool(self.filepath) and bool(len(self.blocks)):
+            raise StarFileError(
+                "Pass either a path to a STAR file or an OrderedDict of Pandas DataFrames, not both"
+            )
+        if self.filepath:
+            if not os.path.exists(self.filepath):
+                logger.error(f"Could not open {self.filepath}")
+                raise FileNotFoundError
+            self._initialize_blocks()
+        logger.info(f"Created {self}")
 
-            blocks = []  # list of StarFileBlock objects
-            block_name = ""  # name of current block
-            properties = {}  # key value mappings to add to current block
+    def _initialize_blocks(self):
+        """
+        Converts a gemmi Document object representing the .star file
+        at self.filepath into an OrderedDict of pandas dataframes, each of which represents one block in the .star file
+        """
+        logger.info(f"Parsing star file at: {self.filepath}")
+        gemmi_doc = cif.read_file(self.filepath)
+        # iterate over gemmi Block objects in the gemmi Document
+        for gemmi_block in gemmi_doc:
+            # iterating over gemmi Block objects yields Item objects
+            # Items can have a Loop object and/or a Pair object
+            # Loops correspond to the regular loop_ structure in a STAR file
+            # Pairs have type List[str[2]] and correspond to a non-loop key value
+            # pair in a STAR file, e.g.
+            # _field1 \t 'value' #1
 
-            loops = []  # a list of DataFrames
-            in_loop = False  # whether we're inside a loop
-            field_names = []  # current field names inside a loop
-            rows = []  # rows to add to current loop
-
-            for i, line in enumerate(f):
-                line = line.strip()
-
-                if line.startswith("#"):
-                    continue
-
-                # When in a 'loop', any blank line implies we break out of the loop
-                if not line:
-                    if in_loop:
-                        if rows:  # We have accumulated data for a loop
-                            loops.append(
-                                pd.DataFrame(rows, columns=field_names, dtype=str)
-                            )
-                            field_names = []
-                            rows = []
-                            in_loop = False
-
-                elif line.startswith("data_"):
-                    if loops or properties:
-                        blocks.append(
-                            StarFileBlock(loops, name=block_name, properties=properties)
+            # Our model of the .star file only allows a block to be one or the other
+            block_has_pair = False
+            block_has_loop = False
+            # populated if this block has a pair
+            pairs = {}
+            # populated if this block as a loop
+            loop_tags = []
+            loop_data = []
+            # correct for GEMMI default behavior
+            # if a block is called 'data_' in the .star file, GEMMI names it '#'
+            # but we want to name it '' for consistency
+            if gemmi_block.name == "#":
+                gemmi_block.name = ""
+            for gemmi_item in gemmi_block:
+                if gemmi_item.pair is not None:
+                    block_has_pair = True
+                    # if we find both a pair and a loop raise an error
+                    if block_has_loop:
+                        raise StarFileError(
+                            "Blocks with multiple loops and/or pairs are not supported"
                         )
-                        loops = []
-                        properties = {}
-                    block_name = line[
-                        5:
-                    ]  # note: block name might be, and most likely would be blank
-
-                elif line.startswith("loop_"):
-                    in_loop = True
-
-                elif line.startswith("_"):  # We have a field
-                    if in_loop:
-                        field_names.append(line.split()[0])
+                    # assign key-value pair to dictionary
+                    pair_key, pair_val = gemmi_item.pair
+                    if pair_key not in pairs:
+                        # read in as str because we do not want type conversion
+                        pairs[pair_key] = str(pair_val)
                     else:
-                        k, v = line.split()[:2]
-                        properties[k] = v
-
+                        raise StarFileError(
+                            f"Duplicate key in pair: {gemmi_item.pair[0]}"
+                        )
+                if gemmi_item.loop is not None:
+                    block_has_loop = True
+                    # if we find both a pair and a loop raise an error
+                    if block_has_pair:
+                        raise StarFileError(
+                            "Blocks with multiple loops and/or pairs are not supported"
+                        )
+                    loop_tags = gemmi_item.loop.tags
+                    # convert loop data to a list of lists
+                    # using the .val(row, col) method of gemmi's Loop class
+                    loop_data = [None] * gemmi_item.loop.length()
+                    for row in range(gemmi_item.loop.length()):
+                        loop_data[row] = [
+                            gemmi_item.loop.val(row, col)
+                            for col in range(gemmi_item.loop.width())
+                        ]
+            if block_has_pair:
+                if gemmi_block.name not in self.blocks:
+                    # represent a set of pairs by a dictionary
+                    self.blocks[gemmi_block.name] = pairs
                 else:
-                    # we're looking at a data row
-                    tokens = line.split()
-                    if len(tokens) < len(field_names):
-                        logger.warning(
-                            f"Line {i} - Expected {len(field_names)} values, got {len(tokens)}."
-                        )
-                        tokens.extend([""] * (len(field_names) - len(tokens)))
-                    else:
-                        tokens = tokens[: len(field_names)]  # ignore any extra tokens
+                    # enforce unique block names (keys of StarFile.block OrderedDict)
+                    raise StarFileError(
+                        f"Attempted overwrite of existing data block: {gemmi_block.name}"
+                    )
+            elif block_has_loop:
+                if gemmi_block.name not in self.blocks:
+                    # initialize DF from list of lists
+                    # read in with dtype=str because we do not want type conversion
+                    self.blocks[gemmi_block.name] = pd.DataFrame(
+                        loop_data, columns=loop_tags, dtype=str
+                    )
+                else:
+                    # enforce unique block names (keys of StarFile.block OrderedDict)
+                    raise StarFileError(
+                        f"Attempted overwrite of existing data block: {gemmi_block.name}"
+                    )
 
-                    rows.append(tokens)
-
-            # Any pending rows to be added?
-            if rows:
-                loops.append(pd.DataFrame(rows, columns=field_names, dtype=str))
-
-            # Any pending loops/properties to be added?
-            if loops or properties:
-                blocks.append(
-                    StarFileBlock(loops, name=block_name, properties=properties)
-                )
-
-            logger.info("StarFile parse complete")
-
-        logger.info("Initializing StarFile object from data")
-        self.init_from_blocks(blocks)
-        logger.info(f"Created <{self}>")
-
-    def init_from_blocks(self, blocks):
+    def write(self, filepath):
         """
-        Initialize a StarFile from a list of blocks
-        :param blocks: An iterable of StarFileBlock objects
-        :return: An initialized StarFile object
+        Converts `blocks` to a gemmi Document and writes to a starfile at the given filepath.
         """
-        for block in blocks:
-            self.blocks[block.name] = block
+        # create an empty Document
+        _doc = cif.Document()
+        filepath = str(filepath)
+        for name, block in self.blocks.items():
+            # construct new empty block
+            _block = _doc.add_new_block(name)
+            # if this block (loop or pair) is empty, continue
+            if len(block) == 0:
+                continue
+            # are we constructing a loop (DataFrame) or a pair (Dictionary)?
+            if isinstance(block, dict):
+                for key, value in block.items():
+                    # simply assign one pair item for each dict entry
+                    # write out as str because we do not want type conversion
+                    _block.set_pair(key, str(value))
+            elif isinstance(block, pd.DataFrame):
+                # initialize loop with column names
+                _loop = _block.init_loop("", list(block.columns))
+                for row in block.values.tolist():
+                    # write out as str because we do not want type conversion
+                    row = [str(row[x]) for x in range(len(row))]
+                    _loop.add_row(row)
+            else:
+                raise StarFileError(f"Unsupported type for block {name}: {type(block)}")
+
+        _doc.write_file(filepath)
+
+    def get_block_by_index(self, index):
+        """
+        Retrieve a DataFrame representing a star file block by its position in the starfile
+        """
+        return self.blocks[list(self.blocks.keys())[index]]
+
+    def __getitem__(self, key):
+        """
+        Retrieve the star file block with name `key`
+        """
+        return self.blocks[key]
+
+    def __setitem__(self, key, value):
+        """
+        Pass in a Pandas Dataframe or dictionary to add a block named `key` with values `value`
+        """
+        self.blocks[key] = value
 
     def __repr__(self):
-        return f"StarFile with {len(self.blocks)} blocks"
+        return "StarFile with blocks: " + ", ".join(self.blocks.keys())
 
-    def __getitem__(self, item):
-        if isinstance(item, str):
-            return self.blocks[item]
-        else:
-            return self.blocks[list(self.blocks.keys())[item]]
+    def __iter__(self):
+        return self.blocks.items().__iter__()
 
     def __len__(self):
         return len(self.blocks)
 
     def __eq__(self, other):
-        return all(b1 == b2 for b1, b2 in zip(self.blocks, other.blocks))
-
-    def save(self, f):
-        for block in self:
-            f.write(f"data_{block.name}\n\n")
-            if block.properties is not None:
-                for k, v in block.properties.items():
-                    f.write(f"{k} {v}\n")
-            f.write("\n")
-            for loop in block:
-                f.write("loop_\n")
-                for col in loop.columns:
-                    f.write(f"{col}\n")
-                for _, row in loop.iterrows():
-                    f.write(" ".join(map(str, row)) + "\n")
-                f.write("\n")
+        if not len(self) == len(other):
+            return False
+        self_list = list(self.blocks.items())
+        other_list = list(other.blocks.items())
+        for i in range(len(self_list)):
+            # test whether block names are the same
+            if not self_list[i][0] == other_list[i][0]:
+                return False
+            # test whether blocks are both DFs or dicts
+            if not isinstance(self_list[i][1], type(other_list[i][1])):
+                return False
+            # finally, compare the objects themselves
+            if isinstance(self_list[i][1], pd.DataFrame):
+                # test using pandas DataFrame.equals()
+                if not self_list[i][1].equals(other_list[i][1]):
+                    return False
+            else:
+                # test dict equality
+                if not self_list[i][1] == other_list[i][1]:
+                    return False
+        return True

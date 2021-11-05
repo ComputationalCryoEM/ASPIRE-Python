@@ -31,9 +31,11 @@ class DenoisedImageSource(ImageSource):
 
         :param start: The inclusive start index from which to return images.
         :param num: The exclusive end index up to which to return images.
-        :param num: The indices of images to return.
+        :param indices: The indices of images to return.
         :return: an `Image` object after denoisng.
         """
+        # start and end (and indices) refer to the indices in the DenoisedImageSource
+        # that are being denoised and returned in batches
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
         else:
@@ -44,9 +46,10 @@ class DenoisedImageSource(ImageSource):
         im = np.empty((nimgs, self.L, self.L))
 
         logger.info(f"Loading {nimgs} images complete")
-        for istart in range(start, end + 1, batch_size):
-            imgs_denoised = self.denoiser.images(istart, batch_size)
-            iend = min(istart + batch_size, end + 1)
-            im[istart:iend] = imgs_denoised.data
+        for batch_start in range(start, end + 1, batch_size):
+            imgs_denoised = self.denoiser.images(batch_start, batch_size)
+            batch_end = min(batch_start + batch_size, end + 1)
+            # we subtract start here to correct for any offset in the indices
+            im[batch_start - start : batch_end - start] = imgs_denoised.asnumpy()
 
         return Image(im)

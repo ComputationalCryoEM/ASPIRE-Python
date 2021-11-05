@@ -360,6 +360,9 @@ class Image:
         :param figsize: Figure size in inches, consult `matplotlib.figure`.
         """
 
+        # We never need more columns than images.
+        columns = min(columns, self.n_images)
+
         plt.figure(figsize=figsize)
         for i, im in enumerate(self):
             plt.subplot(self.n_images // columns + 1, columns, i + 1)
