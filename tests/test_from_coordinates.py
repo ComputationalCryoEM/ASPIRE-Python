@@ -133,6 +133,17 @@ class ParticleCoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
 
+    def testMaxRows(self):
+        # make sure max_rows loads the correct particles
+        src = ParticleCoordinateSource([(self.mrc_path, self.box_fp)])
+        src_only100 = ParticleCoordinateSource(
+            [(self.mrc_path, self.box_fp)], max_rows=100
+        )
+        imgs = src.images(0, src.n)
+        only100imgs = src_only100.images(0, src_only100.n)
+        for i in range(100):
+            self.assertTrue(np.array_equal(imgs[i], only100imgs[i]))
+
     def testSave(self):
         # we can save the source into an .mrcs stack with *no* metadata
         src = ParticleCoordinateSource([(self.mrc_path, self.box_fp)], max_rows=10)
