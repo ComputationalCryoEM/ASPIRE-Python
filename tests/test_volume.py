@@ -23,9 +23,9 @@ class VolumeTestCase(TestCase):
         )
         self.data_2 = 123 * self.data_1.copy()
         self.data_3 = np.zeros((res, res, res), dtype=self.dtype)
-        self.data_3[res // 2 + 1, res // 2, res // 2] = self.data_3[
-            res // 2, res // 2 + 1, res // 2
-        ] = self.data_3[res // 2, res // 2, res // 2 + 1] = 1
+        self.data_3[res // 2 + 1, res // 2, res // 2] = 1
+        self.data_3[res // 2, res // 2 + 1, res // 2] = 1
+        self.data_3[res // 2, res // 2, res // 2 + 1] = 1
         self.vols_1 = Volume(self.data_1)
         self.vols_2 = Volume(self.data_2)
         self.vols_3 = Volume(self.data_3)
