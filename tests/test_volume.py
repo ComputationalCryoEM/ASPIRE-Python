@@ -9,8 +9,8 @@ from scipy.spatial.transform import Rotation
 
 from aspire.source.simulation import Simulation
 from aspire.utils import powerset
-from aspire.utils.types import utest_tolerance
 from aspire.utils.coor_trans import grid_3d
+from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -215,7 +215,7 @@ class VolumeTestCase(TestCase):
 
             # Compare rotated volumes to reference volume within the shpere of radius L/4.
             # Check that rotated volumes are within 0.4% of reference volume.
-            selection = grid_3d(L,...)['r'] <= 1 / 2
+            selection = grid_3d(L, ...)["r"] <= 1 / 2
             for i in range(k):
                 ref = ref_vol[0, selection]
                 rot = rot_vol[i, selection]
