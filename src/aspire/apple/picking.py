@@ -38,6 +38,8 @@ class Picker:
         container_size,
         filename,
         output_directory,
+        model="svm",
+        model_opts=None,
     ):
 
         self.particle_size = int(particle_size / 2)
@@ -55,24 +57,33 @@ class Picker:
         self.original_im = None  # populated in read_mrc()
         self.im = self.read_mrc()
 
-        self._initialize_model()
+        if model_opts is None:
+            model_opts = dict()
+        self.model_opts = model_opts
+        self._initialize_model(model)
 
-    def _initialize_model(self):
+    def _initialize_model(self, model):
         """
         Initialize a classifier model for the Picker object base on configuration values.
         """
 
-        logger.info(f"Classifier model desired = {config.apple.model}")
-        if config.apple.model == "gaussian_mixture":
+        logger.info(f"Classifier model desired = {model}")
+        if model == "gaussian_mixture":
             from sklearn.mixture import GaussianMixture
 
             self.model = GaussianMixture(n_components=2)
-        elif config.apple.model == "gaussian_naive_bayes":
+        elif model == "gaussian_naive_bayes":
             from sklearn.naive_bayes import GaussianNB
 
             self.model = GaussianNB()
-        elif config.apple.model == "xgboost":
-            import xgboost as xgb
+        elif model == "xgboost":
+            try:
+                import xgboost as xgb
+            except ModuleNotFoundError as e:
+                logger.error(
+                    "`xgboost` import failed. xgboost is an optional package, ensure it is installed."
+                )
+                raise e
 
             self.model = xgb.XGBClassifier(
                 objective="binary:hinge",
@@ -81,18 +92,25 @@ class Picker:
                 n_estimators=10,
                 method="gpu_hist",
             )
-        elif config.apple.model == "thunder_svm":
-            import thundersvm
+        elif model == "thunder_svm":
+            try:
+                import thundersvm
+            except ModuleNotFoundError as e:
+                logger.error(
+                    "`thundersvm` import failed. thundersvm is an optional package, ensure it is installed."
+                )
+                raise e
 
             self.model = thundersvm.SVC(
                 kernel=config.apple.svm.kernel, gamma=config.apple.svm.gamma
             )
         else:
             logger.info("Using SVM Classifier")
+
             self.model = svm.SVC(
                 C=1,
-                kernel=config.apple.svm_kernel,
-                gamma=config.apple.svm_gamma,
+                kernel=self.model_opts.get("svm_kernel", "rbf"),
+                gamma=self.model_opts.get("svm_gamma", 0.5),
                 class_weight="balanced",
             )
 
