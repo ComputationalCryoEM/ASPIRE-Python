@@ -17,6 +17,7 @@ class Apple:
     def __init__(
         self,
         particle_size,
+        output_dir="",
         min_particle_size=None,
         max_particle_size=None,
         query_image_size=52,
@@ -26,7 +27,15 @@ class Apple:
         container_size=450,
         model="svm",
         model_opts=None,
-        output_dir="",
+        mrc_margin_left=99,
+        mrc_margin_right=100,
+        mrc_margin_top=99,
+        mrc_margin_bottom=100,
+        mrc_shrink_factor=2,
+        mrc_gauss_filter_size=15,
+        mrc_gauss_filter_sigma=0.5,
+        response_thresh_norm_factor=20,
+        conv_map_nthreads=4,
         n_processes=1,
     ):
         """
@@ -89,6 +98,19 @@ class Apple:
 
         self.model = model
         self.model_opts = model_opts
+
+        # MRC processing config
+        # Margins to discard from any processed .mrc file
+        # TODO: Margins are asymmetrical to conform to old behavior - fix going forward
+        self.mrc_margin_left = mrc_margin_left
+        self.mrc_margin_right = mrc_margin_right
+        self.mrc_margin_top = mrc_margin_top
+        self.mrc_margin_bottom = mrc_margin_bottom
+        self.mrc_shrink_factor = mrc_shrink_factor
+        self.mrc_gauss_filter_size = mrc_gauss_filter_size
+        self.mrc_gauss_filter_sigma = mrc_gauss_filter_sigma
+        self.response_thresh_norm_factor = response_thresh_norm_factor
+        self.conv_map_nthreads = conv_map_nthreads
 
     def verify_input_values(self):
         ensure(
@@ -181,6 +203,15 @@ class Apple:
             self.output_dir,
             model=self.model,
             model_opts=self.model_opts,
+            mrc_margin_left=self.mrc_margin_left,
+            mrc_margin_right=self.mrc_margin_right,
+            mrc_margin_top=self.mrc_margin_top,
+            mrc_margin_bottom=self.mrc_margin_bottom,
+            mrc_shrink_factor=self.mrc_shrink_factor,
+            mrc_gauss_filter_size=self.mrc_gauss_filter_size,
+            mrc_gauss_filter_sigma=self.mrc_gauss_filter_sigma,
+            response_thresh_norm_factor=self.response_thresh_norm_factor,
+            conv_map_nthreads=self.conv_map_nthreads,
         )
 
         logger.info("Computing scores for query images")

@@ -16,7 +16,6 @@ from scipy.ndimage import (
 from sklearn import preprocessing, svm
 from tqdm import tqdm
 
-from aspire import config
 from aspire.apple.helper import PickerHelper
 from aspire.numeric import fft, xp
 
@@ -40,6 +39,15 @@ class Picker:
         output_directory,
         model="svm",
         model_opts=None,
+        mrc_margin_left=99,
+        mrc_margin_right=100,
+        mrc_margin_top=99,
+        mrc_margin_bottom=100,
+        mrc_shrink_factor=2,
+        mrc_gauss_filter_size=15,
+        mrc_gauss_filter_sigma=0.5,
+        response_thresh_norm_factor=20,
+        conv_map_nthreads=4,
     ):
 
         self.particle_size = int(particle_size / 2)
@@ -53,6 +61,19 @@ class Picker:
         self.container_size = int(container_size / 2)
         self.filename = filename
         self.output_directory = output_directory
+
+        # MRC processing config
+        # Margins to discard from any processed .mrc file
+        # TODO: Margins are asymmetrical to conform to old behavior - fix going forward
+        self.mrc_margin_left = mrc_margin_left
+        self.mrc_margin_right = mrc_margin_right
+        self.mrc_margin_top = mrc_margin_top
+        self.mrc_margin_bottom = mrc_margin_bottom
+        self.mrc_shrink_factor = mrc_shrink_factor
+        self.mrc_gauss_filter_size = mrc_gauss_filter_size
+        self.mrc_gauss_filter_sigma = mrc_gauss_filter_sigma
+        self.response_thresh_norm_factor = response_thresh_norm_factor
+        self.conv_map_nthreads = conv_map_nthreads
 
         self.original_im = None  # populated in read_mrc()
         self.im = self.read_mrc()
@@ -102,7 +123,8 @@ class Picker:
                 raise e
 
             self.model = thundersvm.SVC(
-                kernel=config.apple.svm.kernel, gamma=config.apple.svm.gamma
+                kernel=self.model_opts.get("svm_kernel", "rbf"),
+                gamma=self.model_opts.get("svm_gamma", 0.5),
             )
         else:
             logger.info("Using SVM Classifier")
@@ -155,15 +177,15 @@ class Picker:
 
         # Discard outer pixels
         im = im[
-            config.apple.mrc_margin_top : -config.apple.mrc_margin_bottom,
-            config.apple.mrc_margin_left : -config.apple.mrc_margin_right,
+            self.mrc_margin_top : -self.mrc_margin_bottom,
+            self.mrc_margin_left : -self.mrc_margin_right,
         ]
 
         # Make square
         side_length = min(im.shape)
         im = im[:side_length, :side_length]
 
-        size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
+        size = tuple((np.array(im.shape) / self.mrc_shrink_factor).astype(int))
 
         # Note, float64 required for signal.correlate call accuracy.
         im = np.asarray(Image.fromarray(im).resize(size, Image.BICUBIC)).astype(
@@ -173,7 +195,7 @@ class Picker:
         im = signal.correlate(
             im,
             PickerHelper.gaussian_filter(
-                config.apple.mrc_gauss_filter_size, config.apple.mrc_gauss_filter_sigma
+                self.mrc_gauss_filter_size, self.mrc_gauss_filter_sigma
             ),
             "same",
         )
@@ -214,13 +236,12 @@ class Picker:
             return index, cc.real.max((2, 3)) - cc.real.mean((2, 3))
 
         n_works = reference_size
-        n_threads = config.apple.conv_map_nthreads
         pbar = tqdm(total=reference_size, disable=not show_progress)
 
         # Ideally we'd like something like 'SerialExecutor' to enable easy debugging
         # but for now do an if-else
-        if n_threads > 1:
-            with futures.ThreadPoolExecutor(n_threads) as executor:
+        if self.conv_map_nthreads > 1:
+            with futures.ThreadPoolExecutor(self.conv_map_nthreads) as executor:
                 to_do = [executor.submit(_work, i) for i in range(n_works)]
 
                 for future in futures.as_completed(to_do):
@@ -238,9 +259,7 @@ class Picker:
 
         min_val = xp.min(conv_map)
         max_val = xp.max(conv_map)
-        thresh = (
-            min_val + (max_val - min_val) / config.apple.response_thresh_norm_factor
-        )
+        thresh = min_val + (max_val - min_val) / self.response_thresh_norm_factor
         return xp.asnumpy(xp.sum(conv_map >= thresh, axis=2))
 
     def run_svm(self, score):
@@ -422,14 +441,14 @@ class Picker:
         center = center + (self.query_size // 2 - 1) * np.ones(center.shape)
         center = center + np.ones(center.shape)
 
-        center = config.apple.mrc_shrink_factor * center
+        center = self.mrc_shrink_factor * center
 
         # swap columns to align with Relion
         center = center[:, [1, 0]]
 
         # first column is x; second column is y - offset by margins that were discarded from the image
-        center[:, 0] += config.apple.mrc_margin_left
-        center[:, 1] += config.apple.mrc_margin_top
+        center[:, 0] += self.mrc_margin_left
+        center[:, 1] += self.mrc_margin_top
 
         if self.output_directory is not None:
             basename = os.path.basename(self.filename)
