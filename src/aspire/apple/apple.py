@@ -24,30 +24,34 @@ class Apple:
         tau1=None,
         tau2=None,
         container_size=450,
+        model="svm",
+        model_opts=None,
         output_dir="",
         n_processes=1,
     ):
         """
-        Instantiate an Apple instance with a given configuration.
+                Instantiate an Apple instance with a given configuration.
 
-        Some discussion of parameters can be found in:
+                Some discussion of parameters can be found in:
 
-        APPLE picker : Automatic particle picking, a low-effort cryo-EM framework. / Heimowitz, Ayelet; Andén, Joakim; Singer, Amit.
+                APPLE picker : Automatic particle picking, a low-effort cryo-EM framework. / Heimowitz, Ayelet; Andén, Joakim; Singer, Amit.
 
-In: Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
+        In: Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
 
-        :param particle_size: Particle size (pixels) is required.  Remaining parameters generally have defaults based on Particle size.
-        :param min_particle_size:
-        :param max_particle_size:
-        :param query_image_size: 52
-        :param minimum_overlap_amount:
-        :param tau1:
-        :param tau2:
-        :param container_size: 450
-        :param output_dir: Optionally specfic output_dir, defaults to local dir.
-        :param n_processes: Concurrent processes to spawn.
-        May improve performance on very large machines.
-        Otherwise use default of 1.
+                :param particle_size: Particle size (pixels) is required.  Remaining parameters generally have defaults based on Particle size.
+                :param min_particle_size:
+                :param max_particle_size:
+                :param query_image_size: 52
+                :param minimum_overlap_amount:
+                :param tau1:
+                :param tau2:
+                :param container_size: 450
+                :param output_dir: Optionally specfic output_dir, defaults to local dir.
+                :param model: One of svm/gaussian_mixture/gaussian_naive_bayes/xgboost/thunder_svm
+                :param model_opts: Optional dictionary of svm model options. Defaults to None.
+                :param n_processes: Concurrent processes to spawn.
+                May improve performance on very large machines.
+                Otherwise use default of 1.
         """
 
         self.particle_size = particle_size
@@ -82,6 +86,9 @@ In: Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
             os.makedirs(self.output_dir)
 
         self.verify_input_values()
+
+        self.model = model
+        self.model_opts = model_opts
 
     def verify_input_values(self):
         ensure(
@@ -172,6 +179,8 @@ In: Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
             self.container_size,
             filepath,
             self.output_dir,
+            model=self.model,
+            model_opts=self.model_opts,
         )
 
         logger.info("Computing scores for query images")

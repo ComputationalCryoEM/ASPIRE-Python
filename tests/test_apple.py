@@ -464,7 +464,13 @@ class ApplePickerTestCase(TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir_name:
             apple_picker = Apple(
-                particle_size=42,
+                particle_size=78,
+                min_particle_size=19,
+                max_particle_size=156,
+                query_image_size=52,
+                minimum_overlap_amount=7,
+                tau1=710,
+                tau2=7100,
                 output_dir=tmpdir_name,
             )
             with importlib_resources.path(
@@ -493,14 +499,7 @@ class ApplePickerTestCase(TestCase):
 
             # Instantiate an Apple instance
             apple_picker = Apple(
-                particle_size=78,
-                min_particle_size=19,
-                max_particle_size=156,
-                query_image_size=52,
-                minimum_overlap_amount=7,
-                tau1=710,
-                tau2=7100,
-                output_dir=tmpdir_name,
+                particle_size=123,
             )
 
             # Get the path of an input mrcfile
