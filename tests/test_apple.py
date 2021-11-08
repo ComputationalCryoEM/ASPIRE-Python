@@ -499,7 +499,8 @@ class ApplePickerTestCase(TestCase):
 
             # Instantiate an Apple instance
             apple_picker = Apple(
-                particle_size=123,
+                particle_size=42,
+                query_image_size=20,
             )
 
             # Get the path of an input mrcfile
