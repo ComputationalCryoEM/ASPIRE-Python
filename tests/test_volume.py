@@ -8,6 +8,7 @@ from scipy.spatial.transform import Rotation
 from aspire.source.simulation import Simulation
 from aspire.utils import powerset
 from aspire.utils.types import utest_tolerance
+from aspire.utils.coor_trans import grid_3d
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -175,7 +176,7 @@ class VolumeTestCase(TestCase):
 
         for k, s in sym_type.items():
             # Build rotation matrices that rotate by multiples of 2pi/k about the z axis
-            rot_mat = np.zeros((k, 3, 3), dtype=np.float64)
+            rot_mat = np.zeros((k, 3, 3), dtype=self.dtype)
             for i in range(k):
                 rot_mat[i, :, :] = [
                     [np.cos(2 * i * np.pi / k), -np.sin(2 * i * np.pi / k), 0],
@@ -193,15 +194,13 @@ class VolumeTestCase(TestCase):
             # rot_vol is a stack of rotated ref_vol[0]
             rot_vol = ref_vol.rotate(0, rot_mat, nyquist=False)
 
-            # Compare rotated volumes to reference volume. Check that rotated volumes are within 0.2% of reference volume.
+            # Compare rotated volumes to reference volume within the shpere of radius L/4.
+            # Check that rotated volumes are within 0.4% of reference volume.
+            selection = grid_3d(L,...)['r'] <= 1 / 2
             for i in range(k):
-                ref = ref_vol[
-                    0, L // 3 : L - L // 3, L // 3 : L - L // 3, L // 3 : L - L // 3
-                ]
-                rot = rot_vol[
-                    i, L // 3 : L - L // 3, L // 3 : L - L // 3, L // 3 : L - L // 3
-                ]
-                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.002)
+                ref = ref_vol[0, selection]
+                rot = rot_vol[i, selection]
+                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.004)
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
