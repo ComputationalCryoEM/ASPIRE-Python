@@ -516,3 +516,21 @@ class ApplePickerTestCase(TestCase):
 
             # Check the message contains the file path
             self.assertTrue(bad_mrc_path in logs.output[0])
+
+    def testEmptyCenters(self):
+        """
+        Test we handle case were no centers are found.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir_name:
+
+            apple_picker = Apple(output_dir=tmpdir_name)
+
+            with importlib_resources.path(
+                tests.saved_test_data, "sample.mrc"
+            ) as mrc_path:
+
+                centers_found = apple_picker.process_micrograph(
+                    mrc_path, create_jpg=False
+                )
+
+        self.assertTrue(len(centers_found) == 0)
