@@ -9,6 +9,7 @@ from scipy.spatial.transform import Rotation
 
 from aspire.source.simulation import Simulation
 from aspire.utils import powerset
+from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -16,7 +17,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class VolumeTestCase(TestCase):
     def setUp(self):
-        self.dtype = np.float64
+        self.dtype = np.float32
         self.n = n = 3
         self.res = res = 42
         self.data_1 = np.arange(n * res ** 3, dtype=self.dtype).reshape(
@@ -173,17 +174,18 @@ class VolumeTestCase(TestCase):
         ref_vol = Volume(ref_vol)
 
         # Compare rotated volumes with appropriate reference volumes
+        atol = utest_tolerance(self.dtype)
         for k in range(3):
-            self.assertTrue(np.allclose(ref_vol[0], rot_vols[4 * k]))
+            self.assertTrue(np.allclose(ref_vol[0], rot_vols[4 * k], atol=atol))
         for k in range(2):
-            self.assertTrue(np.allclose(ref_vol[1], rot_vols[6 * k + 1]))
+            self.assertTrue(np.allclose(ref_vol[1], rot_vols[6 * k + 1], atol=atol))
         for k in range(2):
-            self.assertTrue(np.allclose(ref_vol[2], rot_vols[6 * k + 3]))
+            self.assertTrue(np.allclose(ref_vol[2], rot_vols[6 * k + 3], atol=atol))
         for k in range(2):
-            self.assertTrue(np.allclose(ref_vol[4], rot_vols[6 * k + 5]))
-        self.assertTrue(np.allclose(ref_vol[3], rot_vols[2]))
-        self.assertTrue(np.allclose(ref_vol[5], rot_vols[6]))
-        self.assertTrue(np.allclose(ref_vol[6], rot_vols[10]))
+            self.assertTrue(np.allclose(ref_vol[4], rot_vols[6 * k + 5], atol=atol))
+        self.assertTrue(np.allclose(ref_vol[3], rot_vols[2], atol=atol))
+        self.assertTrue(np.allclose(ref_vol[5], rot_vols[6], atol=atol))
+        self.assertTrue(np.allclose(ref_vol[6], rot_vols[10], atol=atol))
 
     def testSymmetricVolume(self):
         # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
