@@ -262,6 +262,8 @@ ticle centers, a particle size must be specified."
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
         # Create filter indices for the source. These are required in order to pass through filter eval code
+        # bypassing the filter_indices setter in ImageSource allows us to create this source with
+        # absolutely *no* metadata. otherwise, six default Relion columns are created w/defualt values
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
         self.unique_filters = [IdentityFilter()]
 
