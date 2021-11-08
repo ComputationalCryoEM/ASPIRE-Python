@@ -7,7 +7,6 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
-from aspire import config
 from aspire.apple.picking import Picker
 from aspire.utils import ensure
 
@@ -15,21 +14,57 @@ logger = logging.getLogger(__name__)
 
 
 class Apple:
-    def __init__(self, output_dir=None):
+    def __init__(
+        self,
+        particle_size,
+        min_particle_size=None,
+        max_particle_size=None,
+        query_image_size=52,
+        minimum_overlap_amount=None,
+        tau1=None,
+        tau2=None,
+        container_size=450,
+        output_dir="",
+        n_processes=1,
+    ):
+        """
+        Instantiate an Apple instance with a given configuration.
 
-        self.particle_size = config.apple.particle_size
-        self.query_image_size = config.apple.query_image_size
-        self.max_particle_size = (
-            config.apple.max_particle_size or self.particle_size * 2
-        )
-        self.min_particle_size = (
-            config.apple.min_particle_size or self.particle_size // 4
-        )
-        self.minimum_overlap_amount = (
-            config.apple.minimum_overlap_amount or self.particle_size // 10
-        )
-        self.container_size = config.apple.container_size
-        self.n_processes = config.apple.n_processes
+        Some discussion of parameters can be found in:
+
+        APPLE picker : Automatic particle picking, a low-effort cryo-EM framework. / Heimowitz, Ayelet; Andén, Joakim; Singer, Amit.
+
+In: Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
+
+        :param particle_size: Particle size (pixels) is required.  Remaining parameters generally have defaults based on Particle size.
+        :param min_particle_size:
+        :param max_particle_size:
+        :param query_image_size: 52
+        :param minimum_overlap_amount:
+        :param tau1:
+        :param tau2:
+        :param container_size: 450
+        :param output_dir: Optionally specfic output_dir, defaults to local dir.
+        :param n_processes: Concurrent processes to spawn.
+        May improve performance on very large machines.
+        Otherwise use default of 1.
+        """
+
+        self.particle_size = particle_size
+
+        self.query_image_size = query_image_size
+
+        self.max_particle_size = max_particle_size or self.particle_size * 2
+
+        self.min_particle_size = min_particle_size or self.particle_size // 4
+
+        if self.max_particle_size < self.min_particle_size:
+            raise RuntimeError("max_particle_size must be >= min_particle_size")
+
+        self.minimum_overlap_amount = minimum_overlap_amount or self.particle_size // 10
+
+        self.container_size = container_size
+        self.n_processes = int(n_processes)
         self.output_dir = output_dir
 
         if self.query_image_size is None:
@@ -40,10 +75,10 @@ class Apple:
             self.query_image_size = query_image_size
 
         q_box = (4000 ** 2) / (self.query_image_size ** 2) * 4
-        self.tau1 = config.apple.tau1 or int(q_box * 0.03)
-        self.tau2 = config.apple.tau2 or int(q_box * 0.3)
+        self.tau1 = tau1 or int(q_box * 0.03)
+        self.tau2 = tau2 or int(q_box * 0.3)
 
-        if self.output_dir is not None and not os.path.exists(self.output_dir):
+        if self.output_dir and not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
         self.verify_input_values()
@@ -164,7 +199,7 @@ class Apple:
         centers = picker.extract_particles(segmentation)
 
         particle_image = None
-        if create_jpg and self.output_dir is not None:
+        if create_jpg:
             particle_image = self.particle_image(
                 picker.original_im, picker.particle_size, centers
             )
