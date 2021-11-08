@@ -1,3 +1,4 @@
+import itertools
 import logging
 import os
 from collections import OrderedDict
@@ -231,22 +232,19 @@ ticle centers, a particle size must be specified."
             for j in reversed(out_of_range):
                 coordsList.pop(j)
 
-        # Satisfy max_rows by removing N-max_rows final particles
         if max_rows:
-            count = 0
-            tempdict = {}
-            done = False
-            for mrc, coordList in self.mrc2coords.items():
-                if done:
-                    break
-                tempdict[mrc] = []
-                for coord in coordList:
-                    count += 1
-                    if count <= max_rows:
-                        tempdict[mrc].append(coord)
-                    else:
-                        done = True
-                        break
+            accum_lengths = list(
+                itertools.accumulate([len(self.mrc2coords[d]) for d in self.mrc2coords])
+            )
+            i_gt_max_rows = next(
+                elem[0] for elem in enumerate(accum_lengths) if elem[1] > max_rows
+            )
+            remainder = max_rows - accum_lengths[i_gt_max_rows - 1]
+            itms = list(self.mrc2coords.items())
+            tempdict = OrderedDict(
+                {itms[i][0]: itms[i][1] for i in range(i_gt_max_rows)}
+            )
+            tempdict[itms[i_gt_max_rows][0]] = itms[i_gt_max_rows][1][:remainder]
             self.mrc2coords = tempdict
 
         # final number of particles in *this* source
