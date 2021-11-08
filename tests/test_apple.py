@@ -463,7 +463,10 @@ class ApplePickerTestCase(TestCase):
         }
 
         with tempfile.TemporaryDirectory() as tmpdir_name:
-            apple_picker = Apple(output_dir=tmpdir_name)
+            apple_picker = Apple(
+                particle_size=42,
+                output_dir=tmpdir_name,
+            )
             with importlib_resources.path(
                 tests.saved_test_data, "sample.mrc"
             ) as mrc_path:
@@ -489,7 +492,16 @@ class ApplePickerTestCase(TestCase):
         with tempfile.TemporaryDirectory() as tmpdir_name:
 
             # Instantiate an Apple instance
-            apple_picker = Apple(output_dir=tmpdir_name)
+            apple_picker = Apple(
+                particle_size=78,
+                min_particle_size=19,
+                max_particle_size=156,
+                query_image_size=52,
+                minimum_overlap_amount=7,
+                tau1=710,
+                tau2=7100,
+                output_dir=tmpdir_name,
+            )
 
             # Get the path of an input mrcfile
             with importlib_resources.path(
@@ -522,8 +534,12 @@ class ApplePickerTestCase(TestCase):
         Test we handle case were no centers are found.
         """
         with tempfile.TemporaryDirectory() as tmpdir_name:
-
-            apple_picker = Apple(output_dir=tmpdir_name)
+            apple_picker = Apple(
+                particle_size=78,
+                min_particle_size=90,
+                max_particle_size=90,
+                output_dir=tmpdir_name,
+            )
 
             with importlib_resources.path(
                 tests.saved_test_data, "sample.mrc"

@@ -382,8 +382,7 @@ class Picker:
         if len(center) == 0:
             logger.warning(
                 "Picker did not find any centers.  "
-                f"Review micrograph, particle_size: {particle_size}"
-                f" and min: {min_size} max:{max_size} sizes."
+                "Review micrograph, particle_size, min, and max particle sizes."
             )
             return center
 
