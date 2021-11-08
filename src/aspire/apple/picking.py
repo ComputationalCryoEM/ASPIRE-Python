@@ -124,7 +124,7 @@ class Picker:
 
             self.model = thundersvm.SVC(
                 kernel=self.model_opts.get("svm_kernel", "rbf"),
-                gamma=self.model_opts.get("svm_gamma", 0.5),
+                gamma=float(self.model_opts.get("svm_gamma", 0.5)),
             )
         else:
             logger.info("Using SVM Classifier")
