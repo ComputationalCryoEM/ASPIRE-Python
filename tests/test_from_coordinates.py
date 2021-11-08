@@ -21,11 +21,14 @@ class ParticleCoordinateSourceTestCase(TestCase):
             tests.saved_test_data, "apple_centers.p"
         ) as centers_path:
             centers = pickle.load(open(str(centers_path), "rb"))
+
         # get path to test .mrc file
         with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.mrc_path = str(test_path)
         # get saved_test_data dir path as data_folder
         self.data_folder = os.path.dirname(self.mrc_path)
+
+        # create a coord file (only centers listed)
         self.coord_fp = os.path.join(self.tmpdir.name, "sample.coord")
         # create a box file (lower left corner as well as X/Y dims of particle
         self.box_fp = os.path.join(self.tmpdir.name, "sample.box")
@@ -52,13 +55,11 @@ class ParticleCoordinateSourceTestCase(TestCase):
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
                 )
 
+        # default object from a .box file, for comparisons in multiple tests
+        self.src_from_box = ParticleCoordinateSource([(self.mrc_path, self.box_fp)])
+
     def tearDown(self):
         self.tmpdir.cleanup()
-
-    def testLoadFromBox(self):
-        src = ParticleCoordinateSource([(self.mrc_path, self.box_fp)])
-        # loaded 440 particles from the box file (lower left corner and heights and widths given)
-        self.assertEqual(src.n, 440)
 
     def testLoadFromCoord(self):
         src = ParticleCoordinateSource(
@@ -118,7 +119,6 @@ class ParticleCoordinateSourceTestCase(TestCase):
     def testImages(self):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
-        src_from_box = ParticleCoordinateSource([(self.mrc_path, self.box_fp)])
         src_from_coord = ParticleCoordinateSource(
             [(self.mrc_path, self.coord_fp)], particle_size=256, centers=True
         )
@@ -127,7 +127,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
             relion_autopick_star="sample_relion_autopick.star",
             particle_size=256,
         )
-        imgs_box = src_from_box.images(0, 10)
+        imgs_box = self.src_from_box.images(0, 10)
         imgs_coord = src_from_coord.images(0, 10)
         imgs_star = src_from_relion.images(0, 10)
         for i in range(10):
@@ -136,11 +136,10 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testMaxRows(self):
         # make sure max_rows loads the correct particles
-        src = ParticleCoordinateSource([(self.mrc_path, self.box_fp)])
         src_only100 = ParticleCoordinateSource(
             [(self.mrc_path, self.box_fp)], max_rows=100
         )
-        imgs = src.images(0, src.n)
+        imgs = self.src_from_box.images(0, 440)
         only100imgs = src_only100.images(0, src_only100.n)
         for i in range(100):
             self.assertTrue(np.array_equal(imgs[i], only100imgs[i]))
