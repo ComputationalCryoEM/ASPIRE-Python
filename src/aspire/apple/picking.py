@@ -379,6 +379,14 @@ class Picker:
         center = center_of_mass(segmentation, labeled_segments, np.arange(1, max_val))
         center = np.rint(center)
 
+        if len(center) == 0:
+            logger.warning(
+                "Picker did not find any centers.  "
+                f"Review micrograph, particle_size: {particle_size}"
+                f" and min: {min_size} max:{max_size} sizes."
+            )
+            return center
+
         img = np.zeros((segmentation.shape[0], segmentation.shape[1]))
         img[center[:, 0].astype(int), center[:, 1].astype(int)] = 1
         y, x = np.ogrid[-self.moa : self.moa + 1, -self.moa : self.moa + 1]
