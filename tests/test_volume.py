@@ -12,7 +12,7 @@ from aspire.source.simulation import Simulation
 from aspire.utils import powerset
 from aspire.utils.coor_trans import grid_3d
 from aspire.utils.types import utest_tolerance
-from aspire.volume import Volume
+from aspire.volume import Volume, parseSymmetry
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -189,7 +189,7 @@ class VolumeTestCase(TestCase):
         self.assertTrue(np.allclose(ref_vol[5], rot_vols[6], atol=atol))
         self.assertTrue(np.allclose(ref_vol[6], rot_vols[10], atol=atol))
 
-    def testSymmetricVolume(self):
+    def testCnSymmetricVolume(self):
         # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
         L = self.res
         sym_type = {2: "C2", 3: "C3", 4: "C4", 5: "C5", 6: "C6"}
@@ -222,10 +222,10 @@ class VolumeTestCase(TestCase):
                 rot = rot_vol[i, selection]
                 self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.004)
 
-    def testSymmetryParserError(self):
-        # Test we raise with expected message from symmetryParser
+    def testParseSymmetryError(self):
+        # Test we raise with expected message from parseSymmetry
         with raises(NotImplementedError, match=r"J type symmetry.*"):
-            _ = Simulation(symmetry_type="junk")
+            _ = parseSymmetry("junk")
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
