@@ -5,7 +5,6 @@ import numpy as np
 from PIL import Image as PILImage
 from scipy import signal
 
-from aspire import config
 from aspire.image import Image
 from aspire.numeric import xp
 from aspire.utils import ensure
@@ -87,9 +86,7 @@ class Micrograph:
             im = im[..., :side_length, :side_length]
 
         if self.shrink_factor is not None:
-            size = tuple(
-                (np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int)
-            )
+            size = tuple((np.array(im.shape) / self.shrink_factor).astype(int))
             im = np.array(PILImage.fromarray(im).resize(size, PILImage.BICUBIC))
 
         if self.gauss_filter_size is not None:
