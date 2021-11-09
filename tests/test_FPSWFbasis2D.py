@@ -36,4 +36,4 @@ class FPSWFBasis2DTestCase(TestCase):
         images = np.load(
             os.path.join(DATA_DIR, "fpswf2d_xcoeffs_out_8_8.npy")
         ).T  # RCOPT
-        self.assertTrue(np.allclose(result, images))
+        self.assertTrue(np.allclose(result.asnumpy(), images))
