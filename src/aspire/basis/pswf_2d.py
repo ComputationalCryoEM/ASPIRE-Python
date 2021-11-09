@@ -11,6 +11,7 @@ from aspire.basis.basis_utils import (
     t_x_derivative_mat,
     t_x_mat,
 )
+from aspire.image import Image
 from aspire.basis.pswf_utils import BNMatrix
 from aspire.utils import complex_type
 
@@ -194,7 +195,7 @@ class PSWFBasis2D(Basis):
         )
         images[self._disk_mask, :] = flatten_images
         images = np.transpose(images, axes=(1, 0, 2))
-        return np.real(images).T  # RCOPT
+        return Image(np.real(images).T)  # RCOPT
 
     def _init_pswf_func2d(self, c, eps):
         """

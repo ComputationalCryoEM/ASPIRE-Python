@@ -35,4 +35,4 @@ class PSWFBasis2DTestCase(TestCase):
         ).T  # RCOPT
         result = self.basis.evaluate(coeffs)
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
-        self.assertTrue(np.allclose(result, images))
+        self.assertTrue(np.allclose(result.asnumpy(), images))

@@ -8,6 +8,7 @@ from scipy.special import jn
 
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
+from aspire.image import Image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.utils import complex_type
@@ -169,7 +170,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         )
         images[self._disk_mask, :] = flatten_images
         # TODO: no need to switch x and y any more, need to make consistent with direct method
-        return np.real(images).T  # RCOPT
+        return Image(np.real(images).T)  # RCOPT
 
     def _generate_pswf_quad(
         self, n, bandlimit, phi_approximate_error, lambda_max, epsilon
