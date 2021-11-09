@@ -39,28 +39,28 @@ class Apple:
         n_processes=1,
     ):
         """
-                Instantiate an Apple instance with a given configuration.
+        Instantiate an Apple instance with a given configuration.
 
-                Some discussion of parameters can be found in:
+        Some discussion of parameters can be found in:
 
-                APPLE picker : Automatic particle picking, a low-effort cryo-EM framework. / Heimowitz, Ayelet; Andén, Joakim; Singer, Amit.
+            APPLE picker : Automatic particle picking, a low-effort cryo-EM framework.
+            Heimowitz, Ayelet; Andén, Joakim; Singer, Amit.
+            Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
 
-        In: Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
-
-                :param particle_size: Particle size (pixels) is required.  Remaining parameters generally have defaults based on Particle size.
-                :param min_particle_size:
-                :param max_particle_size:
-                :param query_image_size: 52
-                :param minimum_overlap_amount:
-                :param tau1:
-                :param tau2:
-                :param container_size: 450
-                :param output_dir: Optionally specfic output_dir, defaults to local dir.
-                :param model: One of svm/gaussian_mixture/gaussian_naive_bayes/xgboost/thunder_svm
-                :param model_opts: Optional dictionary of svm model options. Defaults to None.
-                :param n_processes: Concurrent processes to spawn.
-                May improve performance on very large machines.
-                Otherwise use default of 1.
+        :param particle_size: Particle size (pixels) is required.  Remaining parameters generally have defaults based on Particle size.
+        :param min_particle_size:
+        :param max_particle_size:
+        :param query_image_size: 52
+        :param minimum_overlap_amount:
+        :param tau1: SVM parameter
+        :param tau2: SVM parameter
+        :param container_size: Defaults 450
+        :param output_dir: Optionally specfic output_dir, defaults to local dir.
+        :param model: One of svm/gaussian_mixture/gaussian_naive_bayes/xgboost/thunder_svm
+        :param model_opts: Optional dictionary of svm model options. Defaults to None.
+        :param n_processes: Concurrent processes to spawn.
+        May improve performance on very large machines.
+        Otherwise use default of 1.
         """
 
         self.particle_size = particle_size
@@ -188,7 +188,7 @@ class Apple:
         """
         Process micrograph at `filepath`, returning `centers`.
 
-        :param filepath: mrc filepath
+        :param filepath: MRC filepath
         :param show_progress: Display progress bar
         :return: `centers`
         """
@@ -252,7 +252,7 @@ class Apple:
 
         :param filepath: mrc filepath
         :param centers: Particle centers, typically from `process_micrograph_centers`.
-        :param create_jpg: Optionally writes jpg file identifying picked particles.
+        :param create_jpg: Optionally writes jpg file with picked particles.
         :return: `particle_image`
         """
 
@@ -283,7 +283,7 @@ class Apple:
 
     def process_micrograph(self, filepath, show_progress=True, create_jpg=False):
         """
-        Process micrograph at `filepath`, returning `centers`.
+        Process micrograph at `filepath`, returning (`centers`, `particle_image`).
 
         :param filepath: mrc filepath
         :param show_progress: Display progress bar
@@ -297,13 +297,15 @@ class Apple:
 
     def particle_image(self, micro_img, particle_size, centers):
         """
-        Return a numpy array representing the picked centers on a micrograph, suitable for rendering in a jupyter
-            notebook or saving as a jpg etc.
+        Return a numpy array representing the picked centers on a micrograph,
+        suitable for rendering in a jupyter notebook or saving as a jpg etc.
+
         :param micro_img: The micrograph image as a numpy array
         :param particle_size: Particle size of picked particles
         :param centers: Picked centers for micrograph.
         :return: A numpy array with picked centers displayed as rectangles
         """
+
         micro_img = micro_img - np.amin(
             np.reshape(micro_img, (np.prod(micro_img.shape)))
         )

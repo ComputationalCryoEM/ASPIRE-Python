@@ -23,7 +23,10 @@ logger = logging.getLogger(__name__)
 
 
 class Picker:
-    """This class does the actual picking with help from PickerHelper class."""
+    """
+    This class does the actual picking with help
+    from PickerHelper class.
+    """
 
     def __init__(
         self,
@@ -85,7 +88,8 @@ class Picker:
 
     def _initialize_model(self, model):
         """
-        Initialize a classifier model for the Picker object base on configuration values.
+        Util to initialize a classifier model for the Picker object
+        based on configuration values.
         """
 
         logger.info(f"Classifier model desired = {model}")
@@ -132,17 +136,16 @@ class Picker:
             self.model = svm.SVC(
                 C=1,
                 kernel=self.model_opts.get("svm_kernel", "rbf"),
-                gamma=self.model_opts.get("svm_gamma", 0.5),
+                gamma=float(self.model_opts.get("svm_gamma", 0.5)),
                 class_weight="balanced",
             )
 
     def read_mrc(self):
-        """Gets and preprocesses micrograph.
+        """
+        Reads the micrograph.
+        Applies binning and a low-pass filter.
 
-        Reads the micrograph, applies binning and a low-pass filter.
-
-        Returns:
-            Micrograph image.
+        :return: Micrograph image
         """
 
         # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
@@ -203,16 +206,15 @@ class Picker:
         return im
 
     def query_score(self, show_progress=True):
-        """Calculates score for each query image.
+        """
+        Calculates score for each query image.
 
-        Extracts query images and reference windows. Computes the cross-correlation between these
-        windows, and applies a threshold to compute a score for each query image.
+        Extracts query images and reference windows.
+        Computes the cross-correlation between these windows,
+        and applies a threshold to compute a score for each query image.
 
-        Args:
-            show_progress: Whether to show a progress bar
-
-        Returns:
-            Matrix containing a score for each query image.
+        :param show_progress: Whether to show a progress bar
+        :return: Matrix containing a score for each query image.
         """
 
         micro_img = xp.asarray(self.im)
@@ -266,16 +268,14 @@ class Picker:
         """
         Trains and uses an SVM classifier.
 
-        Trains an SVM classifier to distinguish between noise and particle projections based on
-        mean intensity and variance. Every possible window in the micrograph is then classified
-        as either noise or particle, resulting in a segmentation of the micrograph.
+        Trains an SVM classifier to distinguish between noise
+        and particle projections based on mean intensity and variance.
+        Every possible window in the micrograph is then classified as either noise or particle.
 
-        Args:
+        This results in a segmentation of the micrograph.
 
-            score: Matrix containing a score for each query image.
-
-        Returns:
-            Segmentation of the micrograph into noise and particle projections.
+        :param score: Matrix containing a score for each query image.
+        :return: Segmentation of the micrograph into noise and particle projections.
         """
 
         micro_img = xp.asarray(self.im)
@@ -330,11 +330,9 @@ class Picker:
         """
         Discards suspected artifacts from segmentation.
 
-        Args:
-            segmentation: Segmentation of the micrograph into noise and particle projections.
+        :param segmentation: Segmentation of the micrograph into noise and particle projections.
 
-        Returns:
-            Segmentation of the micrograph into noise and particle projections.
+        :return: Updated segmentation of the micrograph into noise and particle projections.
         """
 
         if (binary_fill_holes(segmentation) == np.ones(segmentation.shape)).all():
@@ -378,11 +376,13 @@ class Picker:
 
     def extract_particles(self, segmentation):
         """
-        Saves particle centers into output .star file, after dismissing regions
-        that are too big to contain a particle.
+        Saves particle centers into output .star file,
+        after dismissing regions that are too big to
+        contain a particle.
 
-        Args:
-            segmentation: Segmentation of the micrograph into noise and particle projections.
+        :param segmentation: Segmentation of the micrograph into noise and particle projections.
+        :return: centers
+
         """
         segmentation = segmentation[
             self.query_size // 2 - 1 : -self.query_size // 2,
@@ -469,13 +469,14 @@ class Picker:
 
     def get_maps(self, score, micro_img, particle_windows, non_noise_windows):
         """
-        Gets maps of regions from which to extract particle training for the SVM classifier.
+        Gets maps of regions from which to extract particle
+        training for the SVM classifier.
 
-        Args:
-            score: Matrix containing a score for each query image.
-            micro_img: Micrograph image.
-            particle_windows: Number of windows that must contain a particle.
-            non_noise_windows: Number of windows that contain neither noise nor particles.
+        :param score: Matrix containing a score for each query image.
+        :param micro_img: Micrograph image.
+        :param particle_windows: Number of windows that must contain a particle.
+        :param non_noise_windows: Number of windows that contain neither noise nor particles.
+        :return: 2-Tuple of particle and noise masks
         """
         particles = particle_windows.astype(int)
         non_noise = non_noise_windows.astype(int)
