@@ -222,6 +222,10 @@ class VolumeTestCase(TestCase):
                 rot = rot_vol[i, selection]
                 self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.004)
 
+        # Test we raise with expected error message when Simulation() is instantiated with unsupported C-type symmetry.
+        with raises(NotImplementedError, match=r"CH2 symmetry not supported.*"):
+            _ = Simulation(symmetry_type="Ch2")
+
     def testParseSymmetryError(self):
         # Test we raise with expected message from parseSymmetry
         with raises(NotImplementedError, match=r"J type symmetry.*"):
