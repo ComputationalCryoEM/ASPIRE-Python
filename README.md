@@ -3,6 +3,7 @@
 [![Azure Build Status](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_apis/build/status/ComputationalCryoEM.ASPIRE-Python?branchName=master)](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_build/latest?definitionId=3&branchName=master)
 [![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml)
 [![codecov](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python/branch/master/graph/badge.svg?token=3XFC4VONX0)](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5657281.svg)](https://doi.org/10.5281/zenodo.5657281)
 
 # ASPIRE - Algorithms for Single Particle Reconstruction - v0.8.1
 
@@ -14,7 +15,14 @@ processing pipeline, including 3-D *ab-initio* modeling, 2-D class averaging, au
 
 For more information about the project, algorithms, and related publications please refer to the [ASPIRE Project website](http://spr.math.princeton.edu/).
 
-**For full documentation see [the docs](https://computationalcryoem.github.io/ASPIRE-Python).**
+**For full documentation and tutorials see [the docs](https://computationalcryoem.github.io/ASPIRE-Python).**
+
+Please cite using the following DOI. This DOI represents all versions, and will always resolve to the latest one.
+
+```
+ComputationalCryoEM/ASPIRE-Python: v0.8.1 https://doi.org/10.5281/zenodo.5657281
+
+```
 
 ## Installation Instructions
 
