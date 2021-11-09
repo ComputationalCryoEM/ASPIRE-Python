@@ -28,42 +28,38 @@ filename = "data/falcon_2012_06_12-14_33_35_0.mrc"
 # -------------------------------
 #
 # Here we use the ``process_micrograph`` method from the ``Apple`` class to find particles in the micrograph.
+# It will also return an image suitable for display, and optionally save a jpg.
 
-centers = apple_picker.process_micrograph(filename, show_progress=False)
+centers, particles_img = apple_picker.process_micrograph(
+    filename, show_progress=False, create_jpg=True
+)
+
+# Note that if you only desire ``centers`` you may call ``process_micrograph_centers(filename,...)``.
 
 # %%
 # Read Micrograph
 # ---------------
+#
+# Here we read in and plot the raw micrograph.
 
 with mrcfile.open(filename, mode="r") as mrc:
     micro_img = mrc.data
-
-# %%
-# Verify Dimensions
-# -----------------
-#
-# Here we peek at the image dimensions and observe the number of particles picked.
-
-img_dim = micro_img.shape
-particles = centers.shape[0]
-logger.info(f"Dimensions of the micrograph are {img_dim}")
-logger.info(f"{particles} particles were picked")
-
-# %%
-# Plot with Picked Particles
-# --------------------------
-#
-# We use the ``process_micrograph`` method to build a plot showing the picked particles.
 
 plt.title("Sample Micrograph")
 plt.imshow(micro_img)
 plt.show()
 
 # %%
-# Plot with Particle Picker
-# -------------------------
+# Plot the Picked Particles
+# -----------------
+#
+# Observe the number of particles picked and plot the result from ``Apple``.
+
+img_dim = micro_img.shape
+particles = centers.shape[0]
+logger.info(f"Dimensions of the micrograph are {img_dim}")
+logger.info(f"{particles} particles were picked")
 
 # sphinx_gallery_thumbnail_number = 2
-img = apple_picker.process_micrograph(filename, return_centers=False, return_img=True)
-plt.imshow(img)
+plt.imshow(particles_img)
 plt.show()
