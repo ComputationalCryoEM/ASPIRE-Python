@@ -5,6 +5,7 @@ from itertools import product
 from unittest import TestCase
 
 import numpy as np
+from pytest import raises
 from scipy.spatial.transform import Rotation
 
 from aspire.source.simulation import Simulation
@@ -220,6 +221,11 @@ class VolumeTestCase(TestCase):
                 ref = ref_vol[0, selection]
                 rot = rot_vol[i, selection]
                 self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.004)
+
+    def testSymmetryParserError(self):
+        # Test we raise with expected message from symmetryParser
+        with raises(NotImplementedError, match=r"J type symmetry.*"):
+            _ = Simulation(symmetry_type="junk")
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
