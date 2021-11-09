@@ -112,6 +112,9 @@ class Apple:
         self.response_thresh_norm_factor = response_thresh_norm_factor
         self.conv_map_nthreads = conv_map_nthreads
 
+        # Assigned when process_micrograph_centers is run
+        self.picker = dict()
+
     def verify_input_values(self):
         ensure(
             1 <= self.max_particle_size <= 3000,
@@ -167,7 +170,7 @@ class Apple:
             to_do = []
             for filename in filenames:
                 future = executor.submit(
-                    self.process_micrograph, filename, False, False, False, create_jpg
+                    self.process_micrograph, filename, False, create_jpg
                 )
                 to_do.append(future)
 
@@ -177,20 +180,21 @@ class Apple:
                 pbar.update(1)
         pbar.close()
 
-    def process_micrograph(
+    def process_micrograph_centers(
         self,
         filepath,
-        return_centers=True,
-        return_img=False,
         show_progress=True,
-        create_jpg=False,
     ):
-        ensure(
-            not all([return_centers, return_img]),
-            "Cannot specify both return_centers and return_img",
-        )
+        """
+        Process micrograph at `filepath`, returning `centers`.
 
-        picker = Picker(
+        :param filepath: mrc filepath
+        :param show_progress: Display progress bar
+        :return: `centers`
+        """
+
+        # Note we assign picker now so we can access it from progress_micrograph_plots
+        self.picker[filepath] = picker = Picker(
             self.particle_size,
             self.max_particle_size,
             self.min_particle_size,
@@ -238,26 +242,58 @@ class Apple:
         logger.info("Getting particle centers")
         centers = picker.extract_particles(segmentation)
 
-        particle_image = None
-        if create_jpg:
-            particle_image = self.particle_image(
-                picker.original_im, picker.particle_size, centers
-            )
-            image_out = Image.fromarray((particle_image).astype(np.uint8))
-            filename_out = (
-                os.path.splitext(os.path.basename(picker.filename))[0] + "_result.jpg"
-            )
-            image_out.save(os.path.join(self.output_dir, filename_out))
+        return centers
 
-        if return_centers:
-            return centers
-        elif return_img:
-            if particle_image is not None:
-                return particle_image
-            else:
-                return self.particle_image(
-                    picker.original_im, picker.particle_size, centers
-                )
+    def process_micrograph_plots(self, filepath, centers, create_jpg=False):
+        """
+        Takes in `centers`, returns corresponding `particle_image`.
+
+        Optionally writes jpg to disk.
+
+        :param filepath: mrc filepath
+        :param centers: Particle centers, typically from `process_micrograph_centers`.
+        :param create_jpg: Optionally writes jpg file identifying picked particles.
+        :return: `particle_image`
+        """
+
+        # Note that we only use filepath to identify the specific picker,
+        #   since Apple instance may be shared.
+        picker = self.picker.get(filepath)
+        if picker is None:
+            raise RuntimeError(
+                "Must run `process_micrograph_centers` for this filepath first"
+            )
+
+        particle_image = self.particle_image(
+            picker.original_im, picker.particle_size, centers
+        )
+
+        if create_jpg:
+            # Create the image
+            image_out = Image.fromarray((particle_image).astype(np.uint8))
+
+            # Construct filename
+            base = os.path.splitext(os.path.basename(picker.filename))[0]
+            filename_out = os.path.join(self.output_dir, f"{base}_result.jpg")
+
+            # Save the image
+            image_out.save(filename_out)
+
+        return particle_image
+
+    def process_micrograph(self, filepath, show_progress=True, create_jpg=False):
+        """
+        Process micrograph at `filepath`, returning `centers`.
+
+        :param filepath: mrc filepath
+        :param show_progress: Display progress bar
+        :param create_jpg: Optionally writes jpg file identifying picked particles.
+        :return: (`centers`, `particle_image`)
+        """
+
+        centers = self.process_micrograph_centers(filepath, show_progress)
+        particle_image = self.process_micrograph_plots(filepath, centers, create_jpg)
+        return centers, particle_image
 
     def particle_image(self, micro_img, particle_size, centers):
         """
