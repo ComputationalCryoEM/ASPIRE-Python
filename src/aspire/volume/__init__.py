@@ -1,5 +1,6 @@
 import logging
 
+import mrcfile
 import numpy as np
 from numpy.linalg import qr
 
@@ -258,6 +259,10 @@ class Volume:
 
     def denoise(self):
         raise NotImplementedError
+
+    def save(self, mrcs_filepath, overwrite=False):
+        with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
+            mrc.set_data(self.data.astype(np.float32))
 
 
 class CartesianVolume(Volume):
