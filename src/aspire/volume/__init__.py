@@ -261,8 +261,29 @@ class Volume:
         raise NotImplementedError
 
     def save(self, mrcs_filepath, overwrite=False):
+        """
+        Save volume to disk as mrc file
+        """
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
-            mrc.set_data(self.data.astype(np.float32))
+            mrc.set_data(self._data.astype(np.float32))
+
+        if self.dtype != np.float32:
+            logger.debug(f"Volume with dtype {self.dtype} saved with dtype float32")
+
+    @staticmethod
+    def load(mrcs_filepath, dtype=np.float32):
+        """
+        Load an mrc file as a Volume instance.
+
+        :param mrcs_filepath: Data filepath to load.
+
+        :param dtype: Optionally specifiy data type. Defaults to dtype=np.float32.
+
+        :return: Volume instance.
+        """
+        with mrcfile.open(mrcs_filepath) as mrc:
+            loaded_data = mrc.data
+        return Volume(loaded_data.astype(dtype))
 
 
 class CartesianVolume(Volume):
