@@ -268,7 +268,7 @@ class Volume:
             mrc.set_data(self._data.astype(np.float32))
 
         if self.dtype != np.float32:
-            logger.debug(f"Volume with dtype {self.dtype} saved with dtype float32")
+            logger.info(f"Volume with dtype {self.dtype} saved with dtype float32")
 
     @staticmethod
     def load(mrcs_filepath, dtype=np.float32):
