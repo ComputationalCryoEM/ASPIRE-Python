@@ -4,6 +4,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis import FPSWFBasis2D
+from aspire.image import Image
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -16,8 +17,9 @@ class FPSWFBasis2DTestCase(TestCase):
         pass
 
     def testFPSWFBasis2DEvaluate_t(self):
-        # RCOPT, this image reference is a single image 8,8. Transpose no needed.
-        images = np.load(os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy"))
+        images = Image(
+            np.load(os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")).T
+        )
         result = self.basis.evaluate_t(images)
         coeffs = np.load(
             os.path.join(DATA_DIR, "fpswf2d_vcoeffs_out_8_8.npy")

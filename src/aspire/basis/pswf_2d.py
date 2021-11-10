@@ -11,8 +11,8 @@ from aspire.basis.basis_utils import (
     t_x_derivative_mat,
     t_x_mat,
 )
-from aspire.image import Image
 from aspire.basis.pswf_utils import BNMatrix
+from aspire.image import Image
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,6 @@ class PSWFBasis2D(Basis):
         self._theta_disk = np.angle(x + 1j * y)
         self._image_height = len(x_1d_grid)
         self._disk_mask = points_in_disk
-        self._disk_mask_vec = points_in_disk.reshape(self._image_height ** 2)
 
     def _precomp(self):
         """
@@ -154,18 +153,17 @@ class PSWFBasis2D(Basis):
             to be evaluated.
         :return : The evaluation of the coefficient array in the PSWF basis.
         """
-        images = images.T  # RCOPT
 
-        images_shape = images.shape
+        if not isinstance(images, Image):
+            logger.warning(
+                "FPSWFBasis2D.evaluate_t expects Image instance,"
+                " attempting conversion."
+            )
+            images = Image(images)
 
-        images_shape = (images_shape + (1,)) if len(images_shape) == 2 else images_shape
-        flattened_images = images.reshape(
-            (images_shape[0] * images_shape[1], images_shape[2]), order="F"
-        )
+        flattened_images = images[:, self._disk_mask]
 
-        flattened_images = flattened_images[self._disk_mask_vec, :]
-        coefficients = self.samples_conj_transpose.dot(flattened_images)
-        return coefficients.T
+        return self.samples_conj_transpose.dot(flattened_images.T).T  # RCOPT
 
     def evaluate(self, coefficients):
         """

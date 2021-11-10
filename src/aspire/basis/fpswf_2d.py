@@ -88,7 +88,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.num_angular_pts = f
 
         # pre computing variables for forward
-        us_fft_pts = np.column_stack((self.quad_rule_pts_y, self.quad_rule_pts_x))
+        us_fft_pts = np.row_stack((self.quad_rule_pts_y, self.quad_rule_pts_x))
         us_fft_pts = self.bandlimit / (self.rcut * np.pi * 2) * us_fft_pts  # for pynfft
         (
             blk_r,
@@ -112,40 +112,35 @@ class FPSWFBasis2D(PSWFBasis2D):
         """
         Evaluate coefficient vectors in PSWF basis using the fast method
 
-        :param images: coefficient array in the standard 2D coordinate basis
-            to be evaluated.
-        :return : The evaluation of the coefficient array in the PSWF basis.
+        :param images: Image stack in the standard 2D coordinate basis
+        :return : coefficient array in the PSWF basis
         """
 
-        images = np.moveaxis(images, 0, -1)  # RCOPT
+        if not isinstance(images, Image):
+            logger.warning(
+                "FPSWFBasis2D.evaluate_t expects Image instance,"
+                " attempting conversion."
+            )
+            images = Image(images)
 
-        # start and finish are for the threads option in the future
-        images_shape = images.shape
-        start = 0
+        # Construct array with zeros outside mask
+        images_disk = np.zeros(images.shape, dtype=images.dtype)
+        images_disk[:, self._disk_mask] = images[:, self._disk_mask]
 
-        if len(images_shape) == 3:
-            # if we got several images
-            finish = images_shape[2]
-        else:
-            # else we got only one image
-            images_shape = images_shape + (1,)
-            images = images[..., np.newaxis]
-            finish = 1
-        images_disk = np.zeros(images.shape, dtype=images.dtype, order="F")
-        images_disk[self._disk_mask, :] = images[self._disk_mask, :]
-        nfft_res = self._compute_nfft_potts(images_disk, start, finish)
+        # Invoke nufft with the `many` plan (reuse plan/points)
+        nfft_res = nufft(images_disk, 2 * pi * self.us_fft_pts)
+
+        # Accumulate coefficients
         coefficients = self._pswf_integration(nfft_res)
 
-        return coefficients.T  # RCOPT
+        return coefficients
 
     def evaluate(self, coefficients):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
 
-        :param coefficients: A coefficient vector (or an array of coefficient vectors)
-            in PSWF basis to be evaluated.
-        :return : The evaluation of the coefficient vector(s) in standard 2D
-            coordinate basis.
+        :param coefficients: Stack of coefficient vectors in PSWF basis
+        :return : Image in standard 2D coordinate basis.
         """
 
         coefficients = coefficients.T  # RCOPT
@@ -368,26 +363,14 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         return blk_r, num_angular_pts, r_quad_indices, numel_for_n, indices_for_n, n_max
 
-    def _compute_nfft_potts(self, images, start, finish):
-        """
-        Perform NuFFT transform for images in rectangular coordinates
-        """
-        x = self.us_fft_pts
-        num_images = finish - start
-
-        m = x.shape[0]
-
-        images_nufft = np.zeros((m, num_images), dtype=complex_type(self.dtype))
-        for i in range(start, finish):
-            images_nufft[:, i - start] = nufft(images[..., i], 2 * pi * x.T)
-
-        return images_nufft
-
     def _pswf_integration(self, images_nufft):
         """
         Perform integration part for rotational invariant property.
         """
-        num_images = images_nufft.shape[1]
+        # Handle both singleton and stacks
+        images_nufft = np.atleast_2d(images_nufft)
+        num_images = images_nufft.shape[0]
+
         n_max_float = float(self.n_max) / 2
         r_n_eval_mat = np.zeros(
             (len(self.radial_quad_pts), self.n_max, num_images),
@@ -396,10 +379,10 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         for i in range(len(self.radial_quad_pts)):
             curr_r_mat = images_nufft[
+                :,
                 self.r_quad_indices[i] : self.r_quad_indices[i]
                 + self.num_angular_pts[i],
-                :,
-            ]
+            ].T
             curr_r_mat = np.concatenate((curr_r_mat, np.conj(curr_r_mat)))
             fft_plan = xp.asnumpy(fft.fft(xp.asarray(curr_r_mat), axis=0))
             angular_eval = fft_plan * self.quad_rule_radial_wts[i]
@@ -413,12 +396,12 @@ class FPSWFBasis2D(PSWFBasis2D):
             (len(self.radial_quad_pts) * self.n_max, num_images), order="F"
         )
         coeff_vec_quad = np.zeros(
-            (len(self.ang_freqs), num_images), dtype=complex_type(self.dtype)
+            (num_images, len(self.ang_freqs)), dtype=complex_type(self.dtype)
         )
         m = len(self.pswf_radial_quad)
         for i in range(self.n_max):
             coeff_vec_quad[
-                self.indices_for_n[i] + np.arange(self.numel_for_n[i]), :
-            ] = np.dot(self.blk_r[i], r_n_eval_mat[i * m : (i + 1) * m, :])
+                :, self.indices_for_n[i] + np.arange(self.numel_for_n[i])
+            ] = np.dot(self.blk_r[i], r_n_eval_mat[i * m : (i + 1) * m, :]).T
 
         return coeff_vec_quad
