@@ -13,6 +13,7 @@ from .filters import (
     ScalarFilter,
     ScaledFilter,
     ZeroFilter,
+    evaluate_grid_src,
     voltage_to_wavelength,
 )
 from .wemd import wemd_embed, wemd_norm
