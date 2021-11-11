@@ -102,7 +102,7 @@ class VolumeTestCase(TestCase):
             self.vols_1.save(mrcs_filepath)
 
             # Load saved MRC file as a Volume of dtypes single and double.
-            vols_loaded_single = Volume.load(mrcs_filepath, dtype=self.dtype)
+            vols_loaded_single = Volume.load(mrcs_filepath, dtype=np.float32)
             vols_loaded_double = Volume.load(mrcs_filepath, dtype=np.float64)
 
             # Check that loaded data are Volume instances and compare to original volume.
