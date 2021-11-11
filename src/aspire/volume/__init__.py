@@ -263,6 +263,10 @@ class Volume:
     def save(self, mrcs_filepath, overwrite=False):
         """
         Save volume to disk as mrc file
+
+        :param mrcs_filepath: Filepath where volume will be saved
+
+        :param overwrite: Option to overwrite file when set to True. Defaults to overwrite=False.
         """
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             mrc.set_data(self._data.astype(np.float32))
