@@ -116,6 +116,20 @@ class Filter:
 
         return h
 
+    def evaluate_grid_src(self, src, L, power=1):
+        grid2d = grid_2d(L, dtype=src.dtype)
+        omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
+        h = np.empty((omega.shape[-1], len(src.filter_indices)), dtype=src.dtype)
+        for i, filt, in enumerate(src.unique_filters):
+            idx_k = np.where(src.filter_indices == i)[0]
+            if len(idx_k) > 0:
+                filter_values = filt.evaluate(omega)
+                if power != 1:
+                    filter_values **= power
+                h[:, idx_k] = np.column_stack((filter_values,)*len(idx_k))
+        h = np.reshape(h, grid2d["x"].shape + (len(src.filter_indices),))
+        return h
+
     def dual(self):
         return DualFilter(self)
 
