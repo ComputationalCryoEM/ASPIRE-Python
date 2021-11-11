@@ -266,7 +266,8 @@ class Volume:
 
         :param mrcs_filepath: Filepath where volume will be saved
 
-        :param overwrite: Option to overwrite file when set to True. Defaults to overwrite=False.
+        :param overwrite: Option to overwrite file when set to True.
+        Defaults to overwrite=False.
         """
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             mrc.set_data(self._data.astype(np.float32))
@@ -275,18 +276,25 @@ class Volume:
             logger.info(f"Volume with dtype {self.dtype} saved with dtype float32")
 
     @staticmethod
-    def load(mrcs_filepath, dtype=np.float32):
+    def load(mrcs_filepath, permissive=True, dtype=np.float32):
         """
         Load an mrc file as a Volume instance.
 
         :param mrcs_filepath: Data filepath to load.
 
+        :param permissive: Allows problematic files to load with warning when True.
+        Defaults to permissive=True.
+
         :param dtype: Optionally specifiy data type. Defaults to dtype=np.float32.
 
         :return: Volume instance.
         """
-        with mrcfile.open(mrcs_filepath) as mrc:
+        with mrcfile.open(mrcs_filepath, permissive=permissive) as mrc:
             loaded_data = mrc.data
+        if loaded_data.dtype != dtype:
+            logger.info(
+                f"{mrcs_filepath} with dtype {loaded_data.dtype} loaded as {dtype}"
+            )
         return Volume(loaded_data.astype(dtype))
 
 
