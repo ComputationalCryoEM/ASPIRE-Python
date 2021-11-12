@@ -3,6 +3,7 @@ import logging
 import mrcfile
 import numpy as np
 from numpy.linalg import qr
+from scipy.spatial.transform import Rotation as sp_rot
 
 import aspire.image
 from aspire.nufft import nufft
@@ -267,7 +268,7 @@ class Volume:
 
         # If we are an ASPIRE Rotation, get the numpy representation.
         if isinstance(rot_matrices, Rotation):
-            rot_matrices = rot_matrices.matrices()
+            rot_matrices = rot_matrices.matrices
 
         if rot_matrices.dtype != self.dtype:
             logger.warning(
