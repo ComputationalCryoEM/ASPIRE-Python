@@ -3,11 +3,12 @@ from itertools import product
 from unittest import TestCase
 
 import numpy as np
+from parameterized import parameterized
 from pytest import raises
-from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation as sp_rot
 
 from aspire.source.simulation import Simulation
-from aspire.utils import powerset
+from aspire.utils import Rotation, powerset
 from aspire.utils.coor_trans import grid_3d
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume, parseSymmetry
@@ -16,23 +17,22 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class VolumeTestCase(TestCase):
+    # res is at this scope to be picked up by parameterization in testRotate.
+    res = 42
+
     def setUp(self):
         self.dtype = np.float32
         self.n = n = 3
-        self.res = res = 42
-        self.data_1 = np.arange(n * res ** 3, dtype=self.dtype).reshape(
-            n, res, res, res
+        self.data_1 = np.arange(n * self.res ** 3, dtype=self.dtype).reshape(
+            n, self.res, self.res, self.res
         )
         self.data_2 = 123 * self.data_1.copy()
-        self.data_3 = np.zeros((res, res, res), dtype=self.dtype)
-        self.data_3[res // 2 + 1, res // 2, res // 2] = 1
-        self.data_3[res // 2, res // 2 + 1, res // 2] = 1
-        self.data_3[res // 2, res // 2, res // 2 + 1] = 1
         self.vols_1 = Volume(self.data_1)
         self.vols_2 = Volume(self.data_2)
-        self.vols_3 = Volume(self.data_3)
-        self.random_data = np.random.randn(res, res, res).astype(self.dtype)
-        self.vec = self.data_1.reshape(n, res ** 3)
+        self.random_data = np.random.randn(self.res, self.res, self.res).astype(
+            self.dtype
+        )
+        self.vec = self.data_1.reshape(n, self.res ** 3)
 
     def tearDown(self):
         pass
@@ -107,11 +107,11 @@ class VolumeTestCase(TestCase):
         # Create a stack of rotations to test.
         r_stack = np.empty((12, 3, 3), dtype=self.dtype)
         for r, ax in enumerate(["x", "y", "z"]):
-            r_stack[r] = Rotation.from_euler(ax, 0).as_matrix()
+            r_stack[r] = sp_rot.from_euler(ax, 0).as_matrix()
             # We'll consider the multiples of pi/2.
-            r_stack[r + 3] = Rotation.from_euler(ax, np.pi / 2).as_matrix()
-            r_stack[r + 6] = Rotation.from_euler(ax, np.pi).as_matrix()
-            r_stack[r + 9] = Rotation.from_euler(ax, 3 * np.pi / 2).as_matrix()
+            r_stack[r + 3] = sp_rot.from_euler(ax, np.pi / 2).as_matrix()
+            r_stack[r + 6] = sp_rot.from_euler(ax, np.pi).as_matrix()
+            r_stack[r + 9] = sp_rot.from_euler(ax, 3 * np.pi / 2).as_matrix()
 
         # Project a Volume with all the test rotations
         vol_id = 1  # select a volume from Volume stack
@@ -130,21 +130,30 @@ class VolumeTestCase(TestCase):
             #  centered along the rotation axis for multiples of pi/2.
             self.assertTrue(np.allclose(vol_along_axis, prj_along_axis))
 
-    def testRotate(self):
-        # Create a stack of rotations to test. We will rotate by multiples of pi/2 from each axis.
-        rot_mat = np.empty((12, 3, 3), dtype=self.dtype)
+    # Parameterize over even and odd resolutions
+    @parameterized.expand([(res,), (res - 1,)])
+    def testRotate(self, L):
+        # Create a Volume instance with a 1 along each axis and zeros elsewhere
+        data = np.zeros((L, L, L), dtype=self.dtype)
+        data[L // 2 + 1, L // 2, L // 2] = 1
+        data[L // 2, L // 2 + 1, L // 2] = 1
+        data[L // 2, L // 2, L // 2 + 1] = 1
+        vol = Volume(data)
+
+        # Create a stack of rotations to test. We will rotate vol by multiples of pi/2 from each axis.
+        _rot_mat = np.empty((12, 3, 3), dtype=self.dtype)
         axes = ["x", "y", "z"]
         angles = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
         pairs = list(product(axes, angles))
         for k in range(len(pairs)):
-            rot_mat[k] = Rotation.from_euler(pairs[k][0], pairs[k][1]).as_matrix()
+            _rot_mat[k] = sp_rot.from_euler(pairs[k][0], pairs[k][1]).as_matrix()
+        rot_mat = Rotation(_rot_mat)
 
         # Rotate the basis volume (contains a 1 on each positive axis, zero elsewhere) by rotation matrices rot_mat.
-        # Nyquist frequencies are not set to zero for even resolution to improve error.
-        rot_vols = self.vols_3.rotate(0, rot_mat, nyquist=False)
+        # For even resolution we keep the Nyquist frequency. This reduces error for rotations.
+        rot_vols = vol.rotate(0, rot_mat, nyquist=False)
 
         # Create reference volumes
-        L = self.res
         ref_vol = np.zeros((8, L, L, L))
         index = 0
         for i in range(2):
@@ -158,14 +167,23 @@ class VolumeTestCase(TestCase):
 
         # Compare rotated volumes with appropriate reference volumes
         atol = utest_tolerance(self.dtype)
+        # 3 equivalent cases of rotating by zero degrees about each axis
         for k in range(3):
             self.assertTrue(np.allclose(ref_vol[0], rot_vols[4 * k], atol=atol))
+
+        # Equivalent cases of rotation by pi/2 about y-axis and 3*pi/2 about x-axis
         for k in range(2):
             self.assertTrue(np.allclose(ref_vol[1], rot_vols[6 * k + 1], atol=atol))
+
+        # Equivalent cases of rotation by pi/2 about x-axis and 3*pi/2 about z-axis
         for k in range(2):
             self.assertTrue(np.allclose(ref_vol[2], rot_vols[6 * k + 3], atol=atol))
+
+        # Equivalent cases of rotation by pi/2 about z-axis and 3*pi/2 about y-axis
         for k in range(2):
             self.assertTrue(np.allclose(ref_vol[4], rot_vols[6 * k + 5], atol=atol))
+
+        # Rotation by pi about x-axis, pi about y-axis, and pi about z-axis, respectively
         self.assertTrue(np.allclose(ref_vol[3], rot_vols[2], atol=atol))
         self.assertTrue(np.allclose(ref_vol[5], rot_vols[6], atol=atol))
         self.assertTrue(np.allclose(ref_vol[6], rot_vols[10], atol=atol))
