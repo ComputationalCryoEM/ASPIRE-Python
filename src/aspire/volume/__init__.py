@@ -361,14 +361,19 @@ def gaussian_blob_Cn_vols(
     L=8, C=2, K=16, alpha=1, subscript=1, seed=None, dtype=np.float64
 ):
     """
-    Generate Gaussian blob volumes
+    Generate Cn rotationally symmetric volumes composed of Gaussian blobs.
+    The volumes are symmetric about the z-axis.
+
+    Defaults to volumes with no symmetry.
+
     :param L: The size of the volumes
     :param C: The number of volumes to generate
-    :param K: The number of blobs
-    :param subscript: Cn...
+    :param K: The number of blobs each volume is composed of.
+    A Cn symmetric volume will be composed of n times K blobs.
+    :param subscript: The subcript n indicating Cn symmetry.
     :param alpha: A scale factor of the blob widths
 
-    :return: A Volume instance containing C Gaussian blob volumes.
+    :return: A Volume instance containing C Gaussian blob volumes with Cn symmetry.
     """
 
     def _eval_gaussian_blobs(L, Q, D, mu, subscript, dtype=np.float64):
