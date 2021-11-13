@@ -46,8 +46,12 @@ class ParticleCoordinateSource(ImageSource):
         self.B = B
         self.max_rows = max_rows
 
-        # dictionary indexed by mrc file paths, leading to a list of coordinates
-        # coordinates represented by a list of integers
+        # The internal representation of micrographs and their picked coordinates 
+        # is mrc2coords, an OrderedDict with micrograph filepaths as keys, and 
+        # lists of coordinates as values. Coordinates are lists of integers:
+        # [lower left X, lower left Y, size X, size Y]. Different coordinate
+        # files store this information differently, but all coordinates are converted
+        # to this canonical format
         self.mrc2coords = self._extract_coordinates(
             files, data_folder, particle_size, centers, relion_autopick_star
         )
