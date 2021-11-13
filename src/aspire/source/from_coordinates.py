@@ -46,8 +46,8 @@ class ParticleCoordinateSource(ImageSource):
         self.B = B
         self.max_rows = max_rows
 
-        # The internal representation of micrographs and their picked coordinates 
-        # is mrc2coords, an OrderedDict with micrograph filepaths as keys, and 
+        # The internal representation of micrographs and their picked coordinates
+        # is mrc2coords, an OrderedDict with micrograph filepaths as keys, and
         # lists of coordinates as values. Coordinates are lists of integers:
         # [lower left X, lower left Y, size X, size Y]. Different coordinate
         # files store this information differently, but all coordinates are converted
@@ -195,7 +195,7 @@ class ParticleCoordinateSource(ImageSource):
             )
 
         if not os.path.isabs(relion_autopick_star):
-             relion_autopick_star = os.path.join(data_folder, relion_autopick_star)
+            relion_autopick_star = os.path.join(data_folder, relion_autopick_star)
         df = StarFile(relion_autopick_star)["coordinate_files"]
         micrographs = list(df["_rlnMicrographName"])
         coord_stars = list(df["_rlnMicrographCoordinates"])
@@ -262,7 +262,9 @@ class ParticleCoordinateSource(ImageSource):
             first_line = first_coord_file.readlines()[0]
             # box format requires 4 numbers per coordinate
             if len(first_line.split()) < 4:
-                raise ValueError("Coordinate file contains less than 4 numbers per coordinate. If these are particle centers, run with centers=True")
+                raise ValueError(
+                    "Coordinate file contains less than 4 numbers per coordinate. If these are particle centers, run with centers=True"
+                )
             # we can only accept square particles
             size_x, size_y = int(first_line.split()[2]), int(first_line.split()[3])
             if size_x != size_y:
@@ -289,19 +291,19 @@ class ParticleCoordinateSource(ImageSource):
 
         # if particle size is not zero, we have to re-do the coordinates
         # get the particle size of the first coordinate of the first micrographs
-        old_size = size_x
-        new_size = particle_size
         if particle_size > 0:
+            old_size = size_x
+            new_size = particle_size
             trim_length = (old_size - new_size) // 2
-            tempdict = OrderedDict()
+            _resized_mrc2coords = OrderedDict()
             for mrc, coordsList in _mrc2coords.items():
-                tempdict[mrc] = []
+                _resized_mrc2coords[mrc] = []
                 for coords in coordsList:
                     temp_coord = [-1, -1, new_size, new_size]
                     temp_coord[0] = coords[0] + trim_length
                     temp_coord[1] = coords[1] + trim_length
-                    tempdict[mrc].append(temp_coord)
-            return tempdict
+                    _resized_mrc2coords[mrc].append(temp_coord)
+            return _resized_mrc2coords
         else:
             return _mrc2coords
 
@@ -315,12 +317,16 @@ class ParticleCoordinateSource(ImageSource):
             if os.path.isabs(files_tuple[0][0]):
                 # check that abs paths to mrcs matches data folder
                 if os.path.dirname(files_tuple[0][0]) != data_folder:
-                    raise ValueError("data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(files_tuple[0][0])})")
+                    raise ValueError(
+                        "data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(files_tuple[0][0])})"
+                    )
                 _mrc_absolute_paths = True
             if os.path.isabs(files_tuple[0][1]):
                 # check that abs paths to coords matches data folder
                 if os.path.dirname(files_tuple[0][1]) != data_folder:
-                    raise ValueError("data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(files_tuple[0][1])})")
+                    raise ValueError(
+                        "data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(files_tuple[0][1])})"
+                    )
                 _coord_absolute_paths = True
         else:
             data_folder = os.getcwd()
@@ -359,7 +365,9 @@ class ParticleCoordinateSource(ImageSource):
         else:
             # check the data folder against the paths provided in the 'files' kwarg
             # and return the full filepaths
-            data_folder, mrc_paths, coord_paths = self._check_and_get_paths(files, data_folder)
+            data_folder, mrc_paths, coord_paths = self._check_and_get_paths(
+                files, data_folder
+            )
             # if centers, we are reading (X,Y) center coordinates only
             if self.centers:
                 if particle_size == 0:
