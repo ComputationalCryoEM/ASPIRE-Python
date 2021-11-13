@@ -84,7 +84,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
             )
 
     def testLoadFromCoordNoParticleSize(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             ParticleCoordinateSource([(self.mrc_path, self.coord_fp)], centers=True)
 
     def testNonSquareParticles(self):
@@ -98,7 +98,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # our sample.mrc is located in saved_test_data
         # if we give an absolute path data_folder, and the dirnames do not match
         # there should be an error due to the ambiguity
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             ParticleCoordinateSource(
                 [(self.mrc_path, self.box_fp)], data_folder=self.tmpdir.name
             )
