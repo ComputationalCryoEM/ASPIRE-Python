@@ -40,12 +40,6 @@ class ParticleCoordinateSource(ImageSource):
         :param relion_autopick_star: Relion star file from AutoPick or ManualPick jobs (e.g. AutoPick/job006/autopick.star)
         """
 
-        self.data_folder = data_folder
-        self.centers = centers
-        self.pixel_size = pixel_size
-        self.B = B
-        self.max_rows = max_rows
-
         # The internal representation of micrographs and their picked coordinates
         # is mrc2coords, an OrderedDict with micrograph filepaths as keys, and
         # lists of coordinates as values. Coordinates are lists of integers:
@@ -307,40 +301,40 @@ class ParticleCoordinateSource(ImageSource):
         else:
             return _mrc2coords
 
-    def _check_and_get_paths(self, files_tuple, data_folder):
-        num_files = len(files_tuple)
+    def _check_and_get_paths(self, files, data_folder):
+        num_files = len(files)
         _mrc_absolute_paths = False
         _coord_absolute_paths = False
         if data_folder is not None:
             if not os.path.isabs(data_folder):
                 data_folder = os.path.join(os.getcwd(), data_folder)
-            if os.path.isabs(files_tuple[0][0]):
+            if os.path.isabs(files[0][0]):
                 # check that abs paths to mrcs matches data folder
-                if os.path.dirname(files_tuple[0][0]) != data_folder:
+                if os.path.dirname(files[0][0]) != data_folder:
                     raise ValueError(
-                        "data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(files_tuple[0][0])})"
+                        "data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(files[0][0])})"
                     )
                 _mrc_absolute_paths = True
-            if os.path.isabs(files_tuple[0][1]):
+            if os.path.isabs(files[0][1]):
                 # check that abs paths to coords matches data folder
-                if os.path.dirname(files_tuple[0][1]) != data_folder:
+                if os.path.dirname(files[0][1]) != data_folder:
                     raise ValueError(
-                        "data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(files_tuple[0][1])})"
+                        "data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(files[0][1])})"
                     )
                 _coord_absolute_paths = True
         else:
             data_folder = os.getcwd()
 
         mrc_paths = [
-            os.path.join(data_folder, files_tuple[i][0])
+            os.path.join(data_folder, files[i][0])
             if not _mrc_absolute_paths
-            else files_tuple[i][0]
+            else files[i][0]
             for i in range(num_files)
         ]
         coord_paths = [
-            os.path.join(data_folder, files_tuple[i][1])
+            os.path.join(data_folder, files[i][1])
             if not _coord_absolute_paths
-            else files_tuple[i][1]
+            else files[i][1]
             for i in range(num_files)
         ]
 
@@ -369,7 +363,7 @@ class ParticleCoordinateSource(ImageSource):
                 files, data_folder
             )
             # if centers, we are reading (X,Y) center coordinates only
-            if self.centers:
+            if centers:
                 if particle_size == 0:
                     raise ValueError(
                         "If reading particle centers, a particle_size must be specified"
