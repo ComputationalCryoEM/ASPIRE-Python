@@ -263,7 +263,7 @@ class ParticleCoordinateSource(ImageSource):
             size_x, size_y = int(first_line.split()[2]), int(first_line.split()[3])
             if size_x != size_y:
                 raise ValueError(
-                    "Coordinate file gives non-square particle size {size_x}x{size_y}, but only square particles are supported"
+                    f"Coordinate file gives non-square particle size {size_x}x{size_y}, but only square particles are supported"
                 )
 
         # for each mrc, read its corresponding coordinates file
@@ -312,14 +312,14 @@ class ParticleCoordinateSource(ImageSource):
                 # check that abs paths to mrcs matches data folder
                 if os.path.dirname(files[0][0]) != data_folder:
                     raise ValueError(
-                        "data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(files[0][0])})"
+                        f"data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(files[0][0])})"
                     )
                 _mrc_absolute_paths = True
             if os.path.isabs(files[0][1]):
                 # check that abs paths to coords matches data folder
                 if os.path.dirname(files[0][1]) != data_folder:
                     raise ValueError(
-                        "data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(files[0][1])})"
+                        f"data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(files[0][1])})"
                     )
                 _coord_absolute_paths = True
         else:
