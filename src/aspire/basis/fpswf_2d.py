@@ -110,10 +110,10 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def evaluate_t(self, images):
         """
-        Evaluate coefficient vectors in PSWF basis using the fast method
+        Evaluate coefficient vectors in PSWF basis using the fast method.
 
-        :param images: Image stack in the standard 2D coordinate basis
-        :return : coefficient array in the PSWF basis
+        :param images: Image stack in the standard 2D coordinate basis.
+        :return : Coefficient array in the PSWF basis.
         """
 
         if not isinstance(images, Image):
@@ -137,9 +137,10 @@ class FPSWFBasis2D(PSWFBasis2D):
 
     def evaluate(self, coefficients):
         """
-        Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
+        Evaluate coefficients in standard 2D coordinate basis
+        from those in PSWF basis.
 
-        :param coefficients: Stack of coefficient vectors in PSWF basis
+        :param coefficients: Stack of coefficient vectors in PSWF basis.
         :return : Image in standard 2D coordinate basis.
         """
 
