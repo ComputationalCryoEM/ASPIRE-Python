@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.option(
-    "--mrc_dir", help="Path to folder containing all mrc files for particle picking"
+    "--mrc_path",
+    help="Path to an mrc file or folder containing all mrcs for particle picking.",
 )
-@click.option("--mrc_file", help="Path to a single mrc file for particle picking")
 @click.option(
     "--create_jpg", is_flag=True, help="save *.jpg files for picked particles."
 )
@@ -58,8 +58,7 @@ logger = logging.getLogger(__name__)
     default=1,
 )
 def apple(
-    mrc_dir,
-    mrc_file,
+    mrc_path,
     create_jpg,
     output_dir,
     particle_size,
@@ -84,11 +83,6 @@ def apple(
     n_processes,
 ):
     """Pick and save particles from one or more mrc files."""
-
-    # Exactly one of mrc_dir/mrc_file should be specified.
-    # We handle this manually here until Click supports mutually exclusive options.
-    if all([mrc_dir, mrc_file]) or not any([mrc_dir, mrc_file]):
-        raise UsageError("Specify one of --mrc_dir or --mrc_file.")
 
     # Convert model_opts string to a dictionary
     if model_opts is not None:
@@ -125,7 +119,11 @@ def apple(
         n_processes,
     )
 
-    if mrc_dir:
-        picker.process_folder(mrc_dir, create_jpg=create_jpg)
-    elif mrc_file:
-        picker.process_micrograph(mrc_file, create_jpg=create_jpg)
+    if not os.path.exists(mrc_path):
+        raise RuntimeError(f"`mrc_path` does not exist: {mrc_path}")
+    elif os.path.isdir(mrc_path):
+        func = picker.process_folder
+    else:
+        func = picker.process_micrograph
+
+    func(mrc_path, create_jpg=create_jpg)
