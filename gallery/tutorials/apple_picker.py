@@ -26,7 +26,7 @@ with mrcfile.open(filename, mode="r") as mrc:
     micro_img = mrc.data
 
 plt.title("Sample Micrograph")
-plt.imshow(micro_img)
+plt.imshow(micro_img, cmap="gray")
 plt.show()
 
 # %%
@@ -66,5 +66,5 @@ logger.info(f"Dimensions of the micrograph are {img_dim}")
 logger.info(f"{particles} particles were picked")
 
 # sphinx_gallery_thumbnail_number = 2
-plt.imshow(particles_img)
+plt.imshow(particles_img, cmap="gray")
 plt.show()
