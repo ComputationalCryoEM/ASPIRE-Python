@@ -85,9 +85,11 @@ class Apple:
 
         self.query_image_size = query_image_size
 
-        q_box = (4000 ** 2) / (self.query_image_size ** 2) * 4
-        self.tau1 = tau1 or int(q_box * 0.03)
-        self.tau2 = tau2 or int(q_box * 0.3)
+        # q_box is the query box (or "container") size
+        self.q_box = (4000 ** 2) / (self.query_image_size ** 2) * 4
+        # tau1 and tau2 correspond to particle and noise windows respectively
+        self.tau1 = tau1 or int(self.q_box * 0.03)
+        self.tau2 = tau2 or int(self.q_box * 0.3)
 
         if self.output_dir and not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -130,13 +132,13 @@ class Apple:
             "Min particle size must be in range [1, 3000]!",
         )
 
-        max_tau1_value = (4000 / self.query_image_size * 2) ** 2
+        max_tau1_value = self.q_box
         ensure(
             0 <= self.tau1 <= max_tau1_value,
             f"tau1 must be a in range [0, {max_tau1_value}]!",
         )
 
-        max_tau2_value = max_tau1_value
+        max_tau2_value = self.q_box
         ensure(
             0 <= self.tau2 <= max_tau2_value,
             f"tau2 must be in range [0, {max_tau2_value}]!",
