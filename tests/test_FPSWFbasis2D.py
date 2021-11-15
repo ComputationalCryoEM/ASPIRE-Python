@@ -17,10 +17,17 @@ class FPSWFBasis2DTestCase(TestCase):
         pass
 
     def testFPSWFBasis2DEvaluate_t(self):
-        images = Image(
-            np.load(os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")).T
-        )
+        img_ary = np.load(
+            os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")
+        ).T  # RCOPT
+        images = Image(img_ary)
+
         result = self.basis.evaluate_t(images)
+        result_ary = self.basis.evaluate_t(img_ary)
+
+        # Confirm output from passing ndarray or Image is the same
+        self.assertTrue(np.allclose(result, result_ary))
+
         coeffs = np.load(
             os.path.join(DATA_DIR, "fpswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
