@@ -20,7 +20,7 @@ class Apple:
         output_dir="",
         min_particle_size=None,
         max_particle_size=None,
-        query_image_size=52,
+        query_image_size=None,
         minimum_overlap_amount=None,
         tau1=None,
         tau2=None,
@@ -50,7 +50,7 @@ class Apple:
         :param particle_size: Particle size (pixels) is required.  Remaining parameters generally have defaults based on Particle size.
         :param min_particle_size:
         :param max_particle_size:
-        :param query_image_size: 52
+        :param query_image_size:
         :param minimum_overlap_amount:
         :param tau1: SVM parameter
         :param tau2: SVM parameter
@@ -65,8 +65,6 @@ class Apple:
 
         self.particle_size = particle_size
 
-        self.query_image_size = query_image_size
-
         self.max_particle_size = max_particle_size or self.particle_size * 2
 
         self.min_particle_size = min_particle_size or self.particle_size // 4
@@ -80,12 +78,12 @@ class Apple:
         self.n_processes = int(n_processes)
         self.output_dir = output_dir
 
-        if self.query_image_size is None:
+        if query_image_size is None:
             query_image_size = np.round(self.particle_size * 2 / 3)
             query_image_size -= query_image_size % 4
             query_image_size = int(query_image_size)
 
-            self.query_image_size = query_image_size
+        self.query_image_size = query_image_size
 
         q_box = (4000 ** 2) / (self.query_image_size ** 2) * 4
         self.tau1 = tau1 or int(q_box * 0.03)
