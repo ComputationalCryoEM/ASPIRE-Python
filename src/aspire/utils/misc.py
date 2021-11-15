@@ -156,17 +156,11 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), peak=1, dtype=np.float64):
 
     # Construct centered mesh
     g = grid_3d(size, shifted=True, normalized=False, dtype=dtype)
-    x0 = mu[0]
-    y0 = mu[1]
-    z0 = mu[2]
-    sigma_x = sigma[0]
-    sigma_y = sigma[1]
-    sigma_z = sigma[2]
 
     p = (
-        (g["x"] - x0) ** 2 / (2 * sigma_x ** 2)
-        + (g["y"] - y0) ** 2 / (2 * sigma_y ** 2)
-        + (g["z"] - z0) ** 2 / (2 * sigma_z ** 2)
+        (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2)
+        + (g["y"] - mu[1]) ** 2 / (2 * sigma[1] ** 2)
+        + (g["z"] - mu[2]) ** 2 / (2 * sigma[2] ** 2)
     )
     return (peak * np.exp(-p)).astype(dtype, copy=False)
 
