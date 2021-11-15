@@ -54,7 +54,7 @@ class Apple:
         :param tau1: SVM parameter
         :param tau2: SVM parameter
         :param container_size: Defaults 450
-        :param output_dir: Optionally specfic output_dir, defaults to local dir.
+        :param output_dir: Optionally specify output_dir, defaults to local dir.
         :param model: One of svm/gaussian_mixture/gaussian_naive_bayes/xgboost/thunder_svm
         :param model_opts: Optional dictionary of svm model options. Defaults to None.
         :param n_processes: Concurrent processes to spawn.
@@ -187,7 +187,7 @@ class Apple:
         :return: `centers`
         """
 
-        # Note we assign picker now so we can access it from progress_micrograph_plots
+        # Note we assign picker now so we can access it from process_micrograph_plots
         self.picker[filepath] = picker = Picker(
             self.particle_size,
             self.max_particle_size,
