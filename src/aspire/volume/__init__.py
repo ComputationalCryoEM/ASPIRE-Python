@@ -513,7 +513,8 @@ def rotated_grids(L, rot_matrices):
 
 def rotated_grids_3d(L, rot_matrices):
     """
-    Generate rotated Fourier grids in 3D from rotation matrices
+    Generate rotated Fourier grids in 3D from rotation matrices.
+
     :param L: The resolution of the desired grids.
     :param rot_matrices: An array of size k-by-3-by-3 containing K rotation matrices
     :return: A set of rotated Fourier grids in three dimensions as specified by the rotation matrices.
