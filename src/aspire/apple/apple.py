@@ -8,7 +8,6 @@ from PIL import Image
 from tqdm import tqdm
 
 from aspire.apple.picking import Picker
-from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)
 
@@ -116,49 +115,44 @@ class Apple:
         self.picker = dict()
 
     def verify_input_values(self):
-        ensure(
-            1 <= self.max_particle_size <= 3000,
-            "Max particle size must be in range [1, 3000]!",
-        )
-        ensure(
-            1 <= self.query_image_size <= 3000,
-            "Query image size must be in range [1, 3000]!",
-        )
-        ensure(
-            5 <= self.particle_size < 3000, "Particle size must be in range [5, 3000]!"
-        )
-        ensure(
-            1 <= self.min_particle_size < 3000,
-            "Min particle size must be in range [1, 3000]!",
-        )
+        assert (
+            1 <= self.max_particle_size <= 3000
+        ), "Max particle size must be in range [1, 3000]!"
+
+        assert (
+            1 <= self.query_image_size <= 3000
+        ), "Query image size must be in range [1, 3000]!"
+
+        assert (
+            5 <= self.particle_size < 3000
+        ), "Particle size must be in range [5, 3000]!"
+
+        assert (
+            1 <= self.min_particle_size < 3000
+        ), "Min particle size must be in range [1, 3000]!"
 
         max_tau1_value = self.q_box
-        ensure(
-            0 <= self.tau1 <= max_tau1_value,
-            f"tau1 must be a in range [0, {max_tau1_value}]!",
-        )
+        assert (
+            0 <= self.tau1 <= max_tau1_value
+        ), f"tau1 must be a in range [0, {max_tau1_value}]!"
 
         max_tau2_value = self.q_box
-        ensure(
-            0 <= self.tau2 <= max_tau2_value,
-            f"tau2 must be in range [0, {max_tau2_value}]!",
-        )
+        assert (
+            0 <= self.tau2 <= max_tau2_value
+        ), f"tau2 must be in range [0, {max_tau2_value}]!"
 
-        ensure(
-            0 <= self.minimum_overlap_amount <= 3000,
-            "overlap must be in range [0, 3000]!",
-        )
+        assert (
+            0 <= self.minimum_overlap_amount <= 3000
+        ), "overlap must be in range [0, 3000]!"
 
         # max container_size condition is (container_size_max * 2 + 200 > 4000), which is 1900
-        ensure(
-            self.particle_size <= self.container_size <= 1900,
-            f"Container size must be within range [{self.particle_size}, 1900]!",
-        )
+        assert (
+            self.particle_size <= self.container_size <= 1900
+        ), f"Container size must be within range [{self.particle_size}, 1900]!"
 
-        ensure(
-            self.particle_size >= self.query_image_size,
-            f"Particle size ({self.particle_size}) must exceed query image size ({self.query_image_size})!",
-        )
+        assert (
+            self.particle_size >= self.query_image_size
+        ), f"Particle size ({self.particle_size}) must exceed query image size ({self.query_image_size})!"
 
     def process_folder(self, folder, create_jpg=False):
         filenames = glob.glob("{}/*.mrc".format(folder))
