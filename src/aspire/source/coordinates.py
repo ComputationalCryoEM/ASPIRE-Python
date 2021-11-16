@@ -10,13 +10,69 @@ logger = logging.getLogger(__name__)
 class CoordinateSourceBase(ImageSource, ABC):
     """Base Class defining CoordinateSource interface."""
 
-    # This is the point where we get down to MRC files and coordinates.
-    # There appears to be a variety of ways to get there,
-    # which can be implemented in subclasses.
-    # Grabbed some of the main ideas from the current PR.
-
     def __init__(self):
+        # The internal representation of micrographs and their picked coords
+        # is mrc2coords, an OrderedDict with micrograph filepaths as keys, and
+        # lists of coordinates as values. Coordinates are lists of integers:
+        # [lower left X, lower left Y, size X, size Y]. Different coordinate
+        # files store this information differently, but all coordinates are
+        # converted to this canonical format
+        # this structure is populated by subclasses via the abstract method
+        # CoordinateSourceBase.populate_mrc2coords()
         self.mrc2coords = OrderedDict()
+
+        # total number of particles given in coord files
+        # before removing those that do not fit
+        original_n = sum(
+            [len(coord_list) for mrc, coord_list in self.mrc2coords.items()]
+        )
+
+        # get first micrograph and coordinate list to report some data the user
+        first_micrograph, first_coords = list(self.mrc2coords.items())[0]
+        with mrcfile.open(first_micrograph) as mrc_file:
+            dtype = np.dtype(mrc_file.data.dtype)
+            shape = mrc_file.data.shape
+        if len(shape) != 2:
+            raise ValueError(
+                "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned micrographs?"
+            )
+
+        self.mrc_shape = shape
+        logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
+
+        # look at first coord to get particle size
+        # here we're checking the final coordinate of the first particle
+        # which is the Y-size of the box (the same as the X-size)
+        L = first_coords[0][3]
+        logger.info(f"Particle size = {L}x{L}")
+        self._original_resolution = L
+
+        # remove particles whose boxes do not fit at given particle_size
+        self.exclude_boundary_particles()
+        # if max_rows is specified, mrc2coords will be cut down to contain
+        # exactly max_rows particles
+        self.get_n_particles(max_rows)
+
+        # final number of particles in *this* source
+        n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
+        logger.info(
+            f"ParticleCoordinateSource from {data_folder} contains {num_micrographs} micrographs, {original_n} picked particles."
+        )
+        if removed > 0:
+            logger.info(
+                f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {original_n - removed}."
+            )
+        logger.info(f"ParticleCoordinateSource object contains {n} particles.")
+
+        ImageSource.__init__(self, L=L, n=n, dtype=dtype)
+
+        # Create filter indices for the source. These are required in order to 
+        # pass through the filter eval code.
+        # Bypassing the filter_indices setter in ImageSource allows us 
+        # create this source with absolutely *no* metadata.
+        # Otherwise, six default Relion columns are created w/defualt values
+        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
+        self.unique_filters = [IdentityFilter()]
 
     @abstractmethod
     def populate_mrc2coords(self):
@@ -33,8 +89,65 @@ class CoordinateSourceBase(ImageSource, ABC):
         pass
 
     def exclude_boundary_particles(self):
-        pass
-        """Remove particles on the boundary."""
+        """
+        Remove particles boxes which do not fit in the micrograph
+        with the given particle_size
+        """
+        for _mrc, coord_list in self.mrc2coords.items():
+            out_of_range = []
+            for i, coord in enumerate(coord_list):
+                coord = coord_list[i]
+                start_x, start_y, size_x, size_y = coord
+                if (
+                    start_x < 0
+                    or start_y < 0
+                    or (start_x + size_x >= self.X)
+                    or (start_y + size_y >= self.Y)
+                ):
+                    out_of_range.append(i)
+
+            self.removed = len(out_of_range)
+
+            # out_of_range stores the indices of the particles in the
+            # unmodified coord_list that we must remove.
+            # If we pop these indices of _coord list going forward, the
+            # following indices will be shifted. Thus we pop in reverse, since
+            # the indices prior to each removed index are unchanged
+            for j in reversed(out_of_range):
+                coordsList.pop(j)
+
+    def get_n_particles(max_rows):
+        """
+        If the `max_rows` argument is given, this method will remove all
+        but the first `max_rows` particles from the source (after boundary
+        particles are removed). This may result in only some particles from
+        one micrograph being included
+        """
+        # max_rows means max number of particles, but each micrograph has a
+        # differing number of particles
+        if max_rows:
+            # we cannot get more particles than we actually have
+            max_rows = min(max_rows, original_n - removed)
+            # cumulative number of particles in each micrograph
+            accum_lengths = list(
+                itertools.accumulate([len(self.mrc2coords[d]) for d in self.mrc2coords])
+            )
+            # get the index of the micrograph that brings us over max_rows
+            i_gt_max_rows = next(
+                elem[0] for elem in enumerate(accum_lengths) if elem[1] > max_rows
+            )
+            # subtract off the difference
+            remainder = max_rows - accum_lengths[i_gt_max_rows - 1]
+            # get items of mrc2coords
+            itms = list(self.mrc2coords.items())
+            # include all the micrographs with coordinates that we don't
+            # need to trim down to get exactly max_rows
+            _tempdict = OrderedDict(
+                {itms[i][0]: itms[i][1] for i in range(i_gt_max_rows)}
+            )
+            # add in the last micrograph, only up to 'remainder' particles
+            _tempdict[itms[i_gt_max_rows][0]] = itms[i_gt_max_rows][1][:remainder]
+            self.mrc2coords = _tempdict
 
     def _images(self):
         pass
@@ -106,7 +219,7 @@ class FromFilesCoordinateSource(CoordinateSourceBase):
 
 
 class EmanCoordinateSource(FromFilesCoordinateSource):
-    """Eman specific implementations."""
+    """Eman .box-format specific implementations."""
 
     def __init__(self, files, data_folder, particle_size):
         super().__init__(self, files, data_folder, particle_size)
@@ -168,8 +281,10 @@ class EmanCoordinateSource(FromFilesCoordinateSource):
             self.mrc2coords = _mrc2coords
 
 
-class GuatoMatchCoordinateSource(FromFilesCoordinateSource):
-    """Guato specific implementations."""
+class CentersCoordinateSource(FromFilesCoordinateSource):
+    """
+    Code specifically handling data sources with coordinate files containing just particle centers
+    """
 
     def __init__(self, files, data_folder, particle_size, pixel_size, B, max_rows):
         super().__init__(self, files, data_folder, particle_size)

@@ -79,9 +79,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
     def testLoadFromCoordWithoutCentersTrue(self):
         # if loading only centers (coord file), centers must be set to true
         with self.assertRaises(ValueError):
-            CoordinateSource(
-                [(self.mrc_path, self.coord_fp)], particle_size=256
-            )
+            CoordinateSource([(self.mrc_path, self.coord_fp)], particle_size=256)
 
     def testLoadFromCoordNoParticleSize(self):
         with self.assertRaises(AssertionError):
@@ -136,9 +134,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testMaxRows(self):
         # make sure max_rows loads the correct particles
-        src_only100 = CoordinateSource(
-            [(self.mrc_path, self.box_fp)], max_rows=100
-        )
+        src_only100 = CoordinateSource([(self.mrc_path, self.box_fp)], max_rows=100)
         imgs = self.src_from_box.images(0, 440)
         only100imgs = src_only100.images(0, src_only100.n)
         for i in range(100):
