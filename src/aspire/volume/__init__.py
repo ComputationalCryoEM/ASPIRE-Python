@@ -306,7 +306,7 @@ class Volume:
 
 def parse_symmetry(symmetry_string):
 
-    subscript = 1
+    order = 1
     sym_type = None
     if symmetry_string is not None:
         # safer to make string consistent
@@ -314,7 +314,7 @@ def parse_symmetry(symmetry_string):
         # get the first letter
         sym_type = symmetry_string[0]
         # if there is a number denoting rotational symmetry, get that
-        subscript = symmetry_string[1:] or None
+        order = symmetry_string[1:] or None
 
     # map our sym_types to classes of Volumes
     map_sym_to_generator = {
@@ -331,7 +331,7 @@ def parse_symmetry(symmetry_string):
             f"{sym_type} type symmetry is not supported. The following symmetry types are currently supported: {sym_types}."
         )
 
-    return map_sym_to_generator[sym_type], subscript
+    return map_sym_to_generator[sym_type], order
 
 
 class CartesianVolume(Volume):
@@ -362,7 +362,7 @@ class FBBasisVolume(BasisVolume):
 
 
 def gaussian_blob_Cn_vols(
-    L=8, C=2, K=16, alpha=1, subscript=1, seed=None, dtype=np.float64
+    L=8, C=2, K=16, alpha=1, order=1, seed=None, dtype=np.float64
 ):
     """
     Generate Cn rotationally symmetric volumes composed of Gaussian blobs.
@@ -374,18 +374,18 @@ def gaussian_blob_Cn_vols(
     :param C: The number of volumes to generate
     :param K: The number of blobs each volume is composed of.
     A Cn symmetric volume will be composed of n times K blobs.
-    :param subscript: The subcript n indicating Cn symmetry.
+    :param order: The order of cyclic symmetry.
     :param alpha: A scale factor of the blob widths
 
     :return: A Volume instance containing C Gaussian blob volumes with Cn symmetry.
     """
 
-    def _eval_gaussian_blobs(L, Q, D, mu, subscript, dtype=np.float64):
+    def _eval_gaussian_blobs(L, Q, D, mu, order, dtype=np.float64):
         try:
-            subscript = int(subscript)
+            order = int(order)
         except Exception:
             raise NotImplementedError(
-                f"C{subscript} symmetry not supported. Only Cn symmetry, where n is an integer, is supported."
+                f"C{order} symmetry not supported. Only Cn symmetry, where n is an integer, is supported."
             )
 
         g = grid_3d(L, dtype=dtype)
@@ -395,25 +395,25 @@ def gaussian_blob_Cn_vols(
 
         K = Q.shape[-1]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(dtype)
-        rot = np.zeros(shape=(3, 3, subscript)).astype(dtype)
+        rot = np.zeros(shape=(3, 3, order)).astype(dtype)
 
-        for k in range(subscript):
+        for k in range(order):
             rot[:, :, k] = [
                 [
-                    np.cos(2 * np.pi * k / subscript),
-                    -np.sin(2 * np.pi * k / subscript),
+                    np.cos(2 * np.pi * k / order),
+                    -np.sin(2 * np.pi * k / order),
                     0,
                 ],
                 [
-                    np.sin(2 * np.pi * k / subscript),
-                    np.cos(2 * np.pi * k / subscript),
+                    np.sin(2 * np.pi * k / order),
+                    np.cos(2 * np.pi * k / order),
                     0,
                 ],
                 [0, 0, 1],
             ]
 
         for k in range(K):
-            for j in range(subscript):
+            for j in range(order):
                 coords_k = rot[:, :, j] @ coords - mu[:, k, np.newaxis]
                 coords_k = (
                     Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
@@ -442,7 +442,7 @@ def gaussian_blob_Cn_vols(
     with Random(seed):
         for k in range(C):
             Q, D, mu = gaussian_blobs(K, alpha)
-            vols[k] = _eval_gaussian_blobs(L, Q, D, mu, subscript, dtype=dtype)
+            vols[k] = _eval_gaussian_blobs(L, Q, D, mu, order, dtype=dtype)
     return Volume(vols)
 
 
