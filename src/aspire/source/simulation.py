@@ -57,9 +57,9 @@ class Simulation(ImageSource):
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
-            generator, subscript = parse_symmetry(symmetry_type)
+            generator, order = parse_symmetry(symmetry_type)
             self.vols = generator(
-                L=L, C=C, subscript=subscript, seed=self.seed, dtype=self.dtype
+                L=L, C=C, order=order, seed=self.seed, dtype=self.dtype
             )
         else:
             assert isinstance(vols, Volume)
