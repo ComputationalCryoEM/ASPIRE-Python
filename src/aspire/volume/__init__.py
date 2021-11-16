@@ -255,13 +255,16 @@ class Volume:
     def shift(self):
         raise NotImplementedError
 
-    def rotate(self, vol_idx, rot_matrices, nyquist=True):
+    def rotate(self, vol_idx, rot_matrices, zero_nyquist=True):
         """
         Using the stack of rot_matrices,
         rotate Volume[vol_idx].
 
         :param vol_idx: Volume index
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
+        Defaults to zero_nyquist=True, removing the Nyquist frequency.
+
         :return: `Volume` instance.
         """
 
@@ -277,7 +280,7 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        data = self[vol_idx].T
+        data = self[vol_idx]
 
         pts_rot = rotated_grids_3d(self.resolution, rot_matrices)
 
@@ -286,7 +289,7 @@ class Volume:
         vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
         # If resolution is even, we zero out the nyquist frequency by default.
-        if self.resolution % 2 == 0 and nyquist is True:
+        if self.resolution % 2 == 0 and zero_nyquist is True:
             vol_f[:, 0, :, :] = 0
             vol_f[:, :, 0, :] = 0
             vol_f[:, :, :, 0] = 0
@@ -500,5 +503,5 @@ def rotated_grids_3d(L, rot_matrices):
         pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
 
     pts_rot = m_reshape(pts_rot, (3, L ** 3 * num_rots))
-    # Note we return grids as (Z, Y, X)
-    return pts_rot[::-1]
+    # Note we return grids as (X,Y,Z)
+    return pts_rot
