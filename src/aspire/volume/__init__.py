@@ -304,7 +304,7 @@ class Volume:
         raise NotImplementedError
 
 
-def parseSymmetry(symmetry_string):
+def parse_symmetry(symmetry_string):
 
     subscript = 1
     sym_type = None
