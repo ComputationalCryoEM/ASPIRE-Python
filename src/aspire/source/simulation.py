@@ -10,7 +10,7 @@ from aspire.source import ImageSource
 from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
 from aspire.utils.coor_trans import uniform_random_angles
 from aspire.utils.random import rand, randi, randn
-from aspire.volume import Volume, parseSymmetry
+from aspire.volume import Volume, parse_symmetry
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class Simulation(ImageSource):
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
-            generator, subscript = parseSymmetry(symmetry_type)
+            generator, subscript = parse_symmetry(symmetry_type)
             self.vols = generator(
                 L=L, C=C, subscript=subscript, seed=self.seed, dtype=self.dtype
             )
