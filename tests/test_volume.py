@@ -170,7 +170,7 @@ class VolumeTestCase(TestCase):
 
         # Rotate the basis volume (contains a 1 on each positive axis, zero elsewhere) by rotation matrices rot_mat.
         # For even resolution we keep the Nyquist frequency. This reduces error for rotations.
-        rot_vols = vol.rotate(0, rot_mat, nyquist=False)
+        rot_vols = vol.rotate(0, rot_mat, zero_nyquist=False)
 
         # Create reference volumes
         ref_vol = np.zeros((8, L, L, L))
