@@ -134,7 +134,7 @@ class PSWFBasis2D(Basis):
                 alpha_all.extend(alpha[:n_end])
                 m += 1
 
-        self.alpha_nn = np.array(alpha_all)
+        self.alpha_nn = np.array(alpha_all).reshape(-1, 1)
         self.max_ns = max_ns
 
         self.samples = self._evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
@@ -163,37 +163,36 @@ class PSWFBasis2D(Basis):
 
         flattened_images = images[:, self._disk_mask]
 
-        return self.samples_conj_transpose.dot(flattened_images.T).T  # RCOPT
+        return flattened_images @ self.samples_conj_transpose
 
     def evaluate(self, coefficients):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
 
         :param coeffcients: A coefficient vector (or an array of coefficient
-            vectors) in PSWF basis to be evaluated.
-        :return : The evaluation of the coefficient vector(s) in standard 2D
-            coordinate basis.
-        """
-        coefficients = coefficients.T  # RCOPT
+        vectors) in PSWF basis to be evaluated. (n_image, count)
+        :return : Image in standard 2D coordinate basis.
 
-        # if we got only one vector
-        if len(coefficients.shape) == 1:
-            coefficients = coefficients[:, np.newaxis]
+        """
+
+        # Handle a single coefficient vector or stack of vectors.
+        coefficients = np.atleast_2d(coefficients)
+        n_images = coefficients.shape[0]
 
         angular_is_zero = np.absolute(self.ang_freqs) == 0
-        flatten_images = self.samples[:, angular_is_zero].dot(
-            coefficients[angular_is_zero]
-        ) + 2.0 * np.real(
-            self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero])
+
+        flatten_images = coefficients[:, angular_is_zero] @ self.samples[
+            angular_is_zero
+        ] + 2.0 * np.real(
+            coefficients[:, ~angular_is_zero] @ self.samples[~angular_is_zero]
         )
 
-        n_images = int(flatten_images.shape[1])
-        images = np.zeros((self._image_height, self._image_height, n_images)).astype(
-            complex_type(self.dtype)
+        images = np.zeros(
+            (n_images, self._image_height, self._image_height), dtype=self.dtype
         )
-        images[self._disk_mask, :] = flatten_images
-        images = np.transpose(images, axes=(1, 0, 2))
-        return Image(np.real(images).T)  # RCOPT
+        images[:, self._disk_mask] = np.real(flatten_images)
+
+        return Image(images)
 
     def _init_pswf_func2d(self, c, eps):
         """
@@ -248,10 +247,10 @@ class PSWFBasis2D(Basis):
         :param theta: Phase part to evaluate
         :param max_ns: List of ints max_ns[i] is max n to to use for N=i, not included.
             If max_ns[i]<1 N=i won't be used
-        :return: (len(r), sum(max_ns)) ndarray
+        :return: sum(max_ns), (len(r)) ndarray
             Indices are corresponding to the list (N, n)
-            (0, 0),..., (0, max_ns[0]), (1, 0),..., (1, max_ns[1]),... , (len(max_ns)-1, 0),
-            (len(max_ns)-1, max_ns[-1])
+            (0, 0),..., (max_ns[0], 0), (0, 1),..., (max_ns[1], 1),... , (0, len(max_ns)-1),
+            (max_ns[-1], len(max_ns)-1)
         """
         max_ns_ints = [int(max_n) for max_n in max_ns]
         out_mat = []
@@ -270,7 +269,7 @@ class PSWFBasis2D(Basis):
             pswf_n_n_mat = phase_part * r_radial_part_mat.T
 
             out_mat.extend(pswf_n_n_mat)
-        out_mat = np.array(out_mat, dtype=complex_type(self.dtype)).T
+        out_mat = np.array(out_mat, dtype=complex_type(self.dtype))
         return out_mat
 
     def pswf_func2d(self, big_n, n, bandlimit, phi_approximate_error, r, w):
