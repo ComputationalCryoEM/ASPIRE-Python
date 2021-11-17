@@ -31,6 +31,7 @@ class PSWFBasis2DTestCase(TestCase):
         coeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
+
         # make sure both real and imaginary parts are consistent.
         self.assertTrue(
             np.allclose(np.real(result), np.real(coeffs))

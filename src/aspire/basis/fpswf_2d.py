@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from numpy import pi
 from numpy.linalg import lstsq
 from scipy.optimize import least_squares
 from scipy.special import jn
@@ -87,9 +86,8 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.quad_rule_radial_wts = e
         self.num_angular_pts = f
 
-        # pre computing variables for forward
-        us_fft_pts = np.row_stack((self.quad_rule_pts_y, self.quad_rule_pts_x))
-        us_fft_pts = self.bandlimit / (self.rcut * np.pi * 2) * us_fft_pts  # for pynfft
+        us_fft_pts = np.row_stack((self.quad_rule_pts_x, self.quad_rule_pts_y))
+        us_fft_pts = self.bandlimit / self.rcut * us_fft_pts
         (
             blk_r,
             num_angular_pts,
@@ -128,45 +126,12 @@ class FPSWFBasis2D(PSWFBasis2D):
         images_disk[:, self._disk_mask] = images[:, self._disk_mask]
 
         # Invoke nufft with the `many` plan (reuse plan/points)
-        nfft_res = nufft(images_disk, 2 * pi * self.us_fft_pts)
+        nfft_res = nufft(images_disk, self.us_fft_pts)
 
         # Accumulate coefficients
         coefficients = self._pswf_integration(nfft_res)
 
         return coefficients
-
-    def evaluate(self, coefficients):
-        """
-        Evaluate coefficients in standard 2D coordinate basis
-        from those in PSWF basis.
-
-        :param coefficients: Stack of coefficient vectors in PSWF basis.
-        :return : Image in standard 2D coordinate basis.
-        """
-
-        coefficients = coefficients.T  # RCOPT
-
-        # if we got only one vector
-        if len(coefficients.shape) == 1:
-            coefficients = coefficients.reshape((len(coefficients), 1))
-
-        angular_is_zero = np.absolute(self.ang_freqs) == 0
-        flatten_images = self.samples[:, angular_is_zero].dot(
-            coefficients[angular_is_zero]
-        ) + (
-            2.0
-            * np.real(
-                self.samples[:, ~angular_is_zero].dot(coefficients[~angular_is_zero])
-            )
-        )
-
-        n_images = int(flatten_images.shape[1])
-        images = np.zeros((self._image_height, self._image_height, n_images)).astype(
-            complex_type(self.dtype)
-        )
-        images[self._disk_mask, :] = flatten_images
-        # TODO: no need to switch x and y any more, need to make consistent with direct method
-        return Image(np.real(images).T)  # RCOPT
 
     def _generate_pswf_quad(
         self, n, bandlimit, phi_approximate_error, lambda_max, epsilon
@@ -357,9 +322,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         for i in range(n_max):
             blk_r[i] = (
                 temp_const
-                * self.pswf_radial_quad[
-                    :, indices_for_n[i] + np.arange(numel_for_n[i])
-                ].T
+                * self.pswf_radial_quad[indices_for_n[i] + np.arange(numel_for_n[i]), :]
             )
 
         return blk_r, num_angular_pts, r_quad_indices, numel_for_n, indices_for_n, n_max
@@ -399,7 +362,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         coeff_vec_quad = np.zeros(
             (num_images, len(self.ang_freqs)), dtype=complex_type(self.dtype)
         )
-        m = len(self.pswf_radial_quad)
+        m = self.pswf_radial_quad.shape[1]
         for i in range(self.n_max):
             coeff_vec_quad[
                 :, self.indices_for_n[i] + np.arange(self.numel_for_n[i])

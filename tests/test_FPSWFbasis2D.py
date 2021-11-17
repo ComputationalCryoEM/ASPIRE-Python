@@ -29,8 +29,9 @@ class FPSWFBasis2DTestCase(TestCase):
         self.assertTrue(np.allclose(result, result_ary))
 
         coeffs = np.load(
-            os.path.join(DATA_DIR, "fpswf2d_vcoeffs_out_8_8.npy")
+            os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
+
         # make sure both real and imaginary parts are consistent.
         self.assertTrue(
             np.allclose(np.real(result), np.real(coeffs))
@@ -39,10 +40,8 @@ class FPSWFBasis2DTestCase(TestCase):
 
     def testFPSWFBasis2DEvaluate(self):
         coeffs = np.load(
-            os.path.join(DATA_DIR, "fpswf2d_vcoeffs_out_8_8.npy")
+            os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
         result = self.basis.evaluate(coeffs)
-        images = np.load(
-            os.path.join(DATA_DIR, "fpswf2d_xcoeffs_out_8_8.npy")
-        ).T  # RCOPT
+        images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         self.assertTrue(np.allclose(result.asnumpy(), images))
