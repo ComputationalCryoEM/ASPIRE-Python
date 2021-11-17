@@ -40,7 +40,9 @@ class CoordinateSourceBase(ImageSource, ABC):
                 "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned micrographs?"
             )
         if self.dtype != mrc_dtype:
-            logger.warn(f"dtype of micrograph is {mrc_dtype}. Will attempt to cast to {self.dtype}")
+            logger.warn(
+                f"dtype of micrograph is {mrc_dtype}. Will attempt to cast to {self.dtype}"
+            )
 
         self.mrc_shape = shape
         logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
@@ -69,6 +71,9 @@ class CoordinateSourceBase(ImageSource, ABC):
             )
         logger.info(f"ParticleCoordinateSource object contains {n} particles.")
 
+        # create a flattened representation of the particles
+        self.particles_flat = self.populate_particles()
+
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
         # Create filter indices for the source. These are required in order to
@@ -82,16 +87,94 @@ class CoordinateSourceBase(ImageSource, ABC):
     @abstractmethod
     def populate_mrc2coords(self):
         """
-        Subclasses use this method to read coordinate files and convert them into the canonical form
-        in self.mrc2coords. Different sources store coordinate information differently, so the
+        Subclasses use this method to read coordinate files, validate them, and
+        convert them into the canonical form in self.mrc2coords. Different
+        sources store coordinate information differently, so the
         arguments and details of this method may vary.
         """
         raise NotImplementedError(
             "Subclasses should implement this method to populate mrc2coords"
         )
 
+    def _populate_mrc2coords(self, mrc_paths, coord_paths):
+        # for each mrc, read its corresponding coordinates file
+        _mrc2coords = OrderedDict()
+        for i, coord_path in enumerate(coord_paths):
+            coord_list = []
+            # We are reading particle centers from the coordinate file
+            # We open the corresponding coordinate file
+            with open(coord_path, "r") as coord_file:
+                # each coordinate is a whitespace separated line in the file
+                lines = coord_file.readlines()
+            for line in lines:
+                coord = self.convert_coords_to_box_format(line)
+                coord_list.append(coord)
+            _mrc2coords[mrc_paths[i]] = coord_list
+        self.mrc2coords = _mrc2coords
+
+    @abstractmethod
+    def convert_coords_to_box_format(self, line):
+        """
+        Given a line from a coordinate file, convert the coordinates into the canonical format
+        That is, a list of [lower left x, lower left y, x size, y size]
+        """
+        raise NotImplementedError(
+            "Subclasses should implement this method to convert coords to our canonical format"
+        )
+
+    def _check_and_get_paths(self, files, data_folder):
+        """
+        Used in subclasses accepting the `files` kwarg
+        Turns all of our paths into absolute paths, checks the data folder provided
+        against the paths of the mrc and coord files.
+        Returns lists mrc_paths, coord_paths
+        """
+        mrc_absolute_paths = False
+        coord_absolute_paths = False
+
+        if data_folder is not None:
+            # get absolute path of data folder
+            if not os.path.isabs(data_folder):
+                data_folder = os.path.join(os.getcwd(), data_folder)
+            # get first pair of files
+            first_mrc, first_coord = files[0]
+            if os.path.isabs(first_mrc):
+                # check that abs paths to mrcs matches data folder
+                if os.path.dirname(first_mrc) != data_folder:
+                    raise ValueError(
+                        f"data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(first_mrc)})"
+                    )
+                mrc_absolute_paths = True
+            if os.path.isabs(first_coord):
+                # check that abs paths to coords matches data folder
+                if os.path.dirname(first_coord) != data_folder:
+                    raise ValueError(
+                        f"data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(first_coord)})"
+                    )
+                coord_absolute_paths = True
+        else:
+            data_folder = os.getcwd()
+
+        # split up the mrc paths from the coordinate file paths
+        mrc_paths = [f[0] for f in files]
+        coord_paths = [f[1] for f in files]
+        # if we weren't given absolute paths, fill in the full paths
+        if not mrc_absolute_paths:
+            mrc_paths = [os.path.join(data_folder, m) for m in mrc_paths]
+        if not coord_absolute_paths:
+            coord_paths = [os.path.join(data_folder, c) for c in coord_paths]
+
+        return mrc_paths, coord_paths
+
     def populate_particles(self):
-        pass
+        """
+        Creates a flattened representation of all the particles in the source
+        """
+        particles_flat = []
+        for mrc in self.mrc2coords.keys():
+            for i, coord_list in self.mrc2coords[mrc]:
+                particles_flat.append((i, mrc))
+        return particles_flat
 
     def exclude_boundary_particles(self):
         """
@@ -155,76 +238,51 @@ class CoordinateSourceBase(ImageSource, ABC):
             _tempdict[itms[i_gt_max_rows][0]] = itms[i_gt_max_rows][1][:remainder]
             self.mrc2coords = _tempdict
 
-    def _images(self):
-        pass
-        """Our image chunker/getter"""
-
-
-class FromFilesCoordinateSource(CoordinateSourceBase):
-    """
-    This class represents data sources that will be read in via the `files` parameter
-    That is, the user will provide micrograph paths and their corresponding coords
-    """
-
-    def __init__(self, files, data_folder, particle_size):
-        # call method common to all subclasses
-        mrc_paths, coord_paths = self._check_and_get_paths(files, data_folder)
-        # call subclass's implementation of populate_mrc2coords
-        self.populate_mrc2coords(mrc_paths, coord_paths, particle_size)
-
-    def populate_mrc2coords(self):
+    @staticmethod
+    def crop_micrograph(data, coord):
         """
-        Not implemented here since this class just stores common code of its subclasses.
+        Crops a particle box defined by `coord` out of `data`
+        :param data: A 2D numpy array representing a micrograph
+        :param coord: A list of integers: (lower left X, lower left Y, X, Y)
         """
-        raise NotImplementedError(
-            "FromFilesCoordinateSource subclasses should implement this method based on the details of the coordinate files they read."
+        start_x, start_y, size_x, size_y = coord
+        # according to MRC 2014 convention, origin represents
+        # bottom-left corner of image
+        return data[start_y : start_y + size_y, start_x : start_x + size_x]
+
+    def _images(self, start=0, num=np.inf, indices=None):
+        # the indices passed to this method refer to the index
+        # of the *particle*, not the micrograph
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n))
+        else:
+            start = indices.min()
+        logger.info(f"Loading {len(indices)} images from micrographs")
+
+        # select the desired particles from this list
+        _particles = [self.particles_flat[i] for i in indices]
+        # initialize empty array to hold particle stack
+        im = np.empty(
+            (len(indices), self._original_resolution, self._original_resolution),
+            dtype=self.dtype,
         )
 
-    def _check_and_get_paths(self, files, data_folder):
-        """
-        Turns all of our paths into absolute paths, checks the data folder provided
-        against the paths of the mrc and coord files.
-        Returns lists mrc_paths, coord_paths
-        """
-        mrc_absolute_paths = False
-        coord_absolute_paths = False
+        # load first micrograph
+        arr = mrcfile.open(_particles[0][1]).data
+        for i, particle in enumerate(_particles):
+            # get the particle number and the micrograph
+            num, fp = particle
+            # load the image data for this micrograph
+            arr = mrcfile.open(fp).data
+            # get the specified particle coordinates
+            coord = self.mrc2coords[fp][num]
+            cropped = self.crop_micrograph(arr, coord)
+            im[i] = cropped
 
-        if data_folder is not None:
-            # get absolute path of data folder
-            if not os.path.isabs(data_folder):
-                data_folder = os.path.join(os.getcwd(), data_folder)
-            # get first pair of files
-            first_mrc, first_coord = files[0]
-            if os.path.isabs(first_mrc):
-                # check that abs paths to mrcs matches data folder
-                if os.path.dirname(first_mrc) != data_folder:
-                    raise ValueError(
-                        f"data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(first_mrc)})"
-                    )
-                mrc_absolute_paths = True
-            if os.path.isabs(first_coord):
-                # check that abs paths to coords matches data folder
-                if os.path.dirname(first_coord) != data_folder:
-                    raise ValueError(
-                        f"data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(first_coord)})"
-                    )
-                coord_absolute_paths = True
-        else:
-            data_folder = os.getcwd()
-
-        # split up the mrc paths from the coordinate file paths
-        mrc_paths = [f[0] for f in files]
-        coord_paths = [f[1] for f in files]
-        # if we weren't given absolute paths, fill in the full paths
-        if not mrc_absolute_paths:
-            mrc_paths = [os.path.join(data_folder, m) for m in mrc_paths]
-        if not coord_absolute_paths:
-            coord_paths = [os.path.join(data_folder, c) for c in coord_paths]
-
-        return mrc_paths, coord_paths
+        return Image(im)
 
 
-class EmanCoordinateSource(FromFilesCoordinateSource):
+class EmanCoordinateSource(CoordinateSourceBase):
     """Eman .box-format specific implementations."""
 
     def __init__(self, files, data_folder, particle_size):
@@ -250,22 +308,7 @@ class EmanCoordinateSource(FromFilesCoordinateSource):
                     f"Coordinate file gives non-square particle size {size_x}x{size_y}, but only square particles are supported"
                 )
 
-        # for each mrc, read its corresponding coordinates file
-        _mrc2coords = OrderedDict()
-        for i, coord_path in enumerate(coord_paths):
-            coord_list = []
-            # We are reading particle centers from the coordinate file
-            # We open the corresponding coordinate file
-            with open(coord_path, "r") as coord_file:
-                # each coordinate is a whitespace separated line in the file
-                lines = coord_file.readlines()
-            for line in lines:
-                lower_left_x, lower_left_y, size_x, size_y = [
-                    int(x) for x in line.split()
-                ]
-                coord = [lower_left_x, lower_left_y, size_x, size_y]
-                coord_list.append(coord)
-            _mrc2coords[mrc_paths[i]] = coord_list
+        self._populate_mrc2coords(mrc_paths, coord_paths)
 
         # if particle size set by user, we have to re-do the coordinates
         if particle_size > 0:
@@ -286,6 +329,9 @@ class EmanCoordinateSource(FromFilesCoordinateSource):
         else:
             self.mrc2coords = _mrc2coords
 
+    def convert_coordinates_to_box_format(self, line):
+        return [int(x) for x in line.split()]
+
 
 class CentersCoordinateSource(FromFilesCoordinateSource):
     """
@@ -300,27 +346,17 @@ class CentersCoordinateSource(FromFilesCoordinateSource):
         Extract coordinates from .coord files, which specify particles by the
         coordinates of their centers.
         """
-        # for each mrc, read its corresponding coordinates file
-        _mrc2coords = OrderedDict()
-        for i, coord_path in enumerate(coord_paths):
-            coord_list = []
-            # We are reading particle centers from the coordinate file
-            # We open the corresponding coordinate file
-            with open(coord_path, "r") as coord_file:
-                # each coordinate is a whitespace separated line in the file
-                lines = coord_file.readlines()
-            for line in lines:
-                center_x, center_y = [int(x) for x in line.split()]
-                # subtract off half the particle size to get the lower left of box
-                coord = [
-                    center_x - particle_size // 2,
-                    center_y - particle_size // 2,
-                    particle_size,
-                    particle_size,
-                ]
-                coord_list.append(coord)
-            _mrc2coords[mrc_paths[i]] = coord_list
-        self.mrc2coords = _mrc2coords
+        self._populate_mrc2coords(mrc_paths, coord_paths)
+
+    def convert_coordinates_to_box_format(self, line, particle_size):
+        center_x, center_y = [int(x) for x in line.split()[:2]]
+        # subtract off half the particle size to get the lower left of box
+        return [
+            center_x - particle_size // 2,
+            center_y - particle_size // 2,
+            particle_size,
+            particle_size,
+        ]
 
 
 class RelionCoordinateSource(CoordinateSourceBase):
