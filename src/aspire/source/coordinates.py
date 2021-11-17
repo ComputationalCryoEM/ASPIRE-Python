@@ -3,6 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from aspire.source.image import ImageSource
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 class CoordinateSourceBase(ImageSource, ABC):
     """Base Class defining CoordinateSource interface."""
 
-    def __init__(self):
+    def __init__(self, pixel_size, B, max_rows, dtype):
         # The internal representation of micrographs and their picked coords
         # is mrc2coords, an OrderedDict with micrograph filepaths as keys, and
         # lists of coordinates as values. Coordinates are lists of integers:
@@ -27,15 +28,19 @@ class CoordinateSourceBase(ImageSource, ABC):
             [len(coord_list) for mrc, coord_list in self.mrc2coords.items()]
         )
 
+        self.dtype = np.dtype(dtype)
+
         # get first micrograph and coordinate list to report some data the user
         first_micrograph, first_coords = list(self.mrc2coords.items())[0]
         with mrcfile.open(first_micrograph) as mrc_file:
-            dtype = np.dtype(mrc_file.data.dtype)
+            mrc_dtype = np.dtype(mrc_file.data.dtype)
             shape = mrc_file.data.shape
         if len(shape) != 2:
             raise ValueError(
                 "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned micrographs?"
             )
+        if self.dtype != mrc_dtype:
+            logger.warn(f"dtype of micrograph is {mrc_dtype}. Will attempt to cast to {self.dtype}")
 
         self.mrc_shape = shape
         logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
@@ -58,17 +63,17 @@ class CoordinateSourceBase(ImageSource, ABC):
         logger.info(
             f"ParticleCoordinateSource from {data_folder} contains {num_micrographs} micrographs, {original_n} picked particles."
         )
-        if removed > 0:
+        if self.removed > 0:
             logger.info(
-                f"{removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {original_n - removed}."
+                f"{self.removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {original_n - self.removed}."
             )
         logger.info(f"ParticleCoordinateSource object contains {n} particles.")
 
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
-        # Create filter indices for the source. These are required in order to 
+        # Create filter indices for the source. These are required in order to
         # pass through the filter eval code.
-        # Bypassing the filter_indices setter in ImageSource allows us 
+        # Bypassing the filter_indices setter in ImageSource allows us
         # create this source with absolutely *no* metadata.
         # Otherwise, six default Relion columns are created w/defualt values
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
@@ -93,6 +98,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         Remove particles boxes which do not fit in the micrograph
         with the given particle_size
         """
+        self.removed = 0
         for _mrc, coord_list in self.mrc2coords.items():
             out_of_range = []
             for i, coord in enumerate(coord_list):
@@ -106,7 +112,7 @@ class CoordinateSourceBase(ImageSource, ABC):
                 ):
                     out_of_range.append(i)
 
-            self.removed = len(out_of_range)
+            self.removed += len(out_of_range)
 
             # out_of_range stores the indices of the particles in the
             # unmodified coord_list that we must remove.
@@ -127,7 +133,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         # differing number of particles
         if max_rows:
             # we cannot get more particles than we actually have
-            max_rows = min(max_rows, original_n - removed)
+            max_rows = min(max_rows, original_n - self.removed)
             # cumulative number of particles in each micrograph
             accum_lengths = list(
                 itertools.accumulate([len(self.mrc2coords[d]) for d in self.mrc2coords])
@@ -385,6 +391,7 @@ class CoordinateSource:
         B=0,
         max_rows=None,
         relion_autopick_star=None,
+        dtype="double",
     ):
         """
         Based on arguments provided to __init__, returns an instance of a
@@ -410,6 +417,7 @@ class CoordinateSource:
                 pixel_size,
                 B,
                 max_rows,
+                dtype,
             )
 
         # Otherwise, we are reading from .box or .coord files and the user must
@@ -422,12 +430,12 @@ class CoordinateSource:
                         "If reading particle centers, a particle_size must be specified"
                     )
                 return GuatoMatchCoordinateSource(
-                    files, data_folder, particle_size, pixel_size, B, max_rows
+                    files, data_folder, particle_size, pixel_size, B, max_rows, dtype
                 )
             # otherwise it is in the EMAN-specified .box format
             else:
                 return EmanCoordinateSource(
-                    files, data_folder, particle_size, pixel_size, B, max_rows
+                    files, data_folder, particle_size, pixel_size, B, max_rows, dtype
                 )
 
 
