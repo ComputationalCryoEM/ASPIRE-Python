@@ -20,7 +20,10 @@ class ParticleCoordinateSourceTestCase(TestCase):
         with importlib_resources.path(
             tests.saved_test_data, "apple_centers.p"
         ) as centers_path:
-            centers = pickle.load(open(str(centers_path), "rb"))
+            # apple_centers.p was pickled with protocol 4
+            centers = pickle.load(
+                open(str(centers_path), "rb"),
+            )
 
         # get path to test .mrc file
         with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
