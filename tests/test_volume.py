@@ -235,7 +235,7 @@ class VolumeTestCase(TestCase):
 
             # Compare rotated volumes to reference volume within the shpere of radius L/4.
             # Check that rotated volumes are within 0.4% of reference volume.
-            selection = grid_3d(L, ...)["r"] <= 1 / 2
+            selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 2
             for i in range(k):
                 ref = ref_vol[0, selection]
                 rot = rot_vol[i, selection]
