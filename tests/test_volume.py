@@ -13,7 +13,7 @@ from aspire.source.simulation import Simulation
 from aspire.utils import Rotation, powerset
 from aspire.utils.coor_trans import grid_3d
 from aspire.utils.types import utest_tolerance
-from aspire.volume import Volume, parseSymmetry
+from aspire.volume import Volume, parse_symmetry
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -227,11 +227,11 @@ class VolumeTestCase(TestCase):
             # ref_vol[0] is a volume rotated by zero degrees.
             sim = Simulation(L=L, C=1, symmetry_type=s, dtype=np.float64)
             vol = sim.vols
-            ref_vol = vol.rotate(0, rot_mat, nyquist=False)
+            ref_vol = vol.rotate(0, rot_mat, zero_nyquist=False)
 
             # We rotate ref_vol[0] by the stack of rotation matrices
             # rot_vol is a stack of rotated ref_vol[0]
-            rot_vol = ref_vol.rotate(0, rot_mat, nyquist=False)
+            rot_vol = ref_vol.rotate(0, rot_mat, zero_nyquist=False)
 
             # Compare rotated volumes to reference volume within the shpere of radius L/4.
             # Check that rotated volumes are within 0.4% of reference volume.
@@ -246,9 +246,9 @@ class VolumeTestCase(TestCase):
             _ = Simulation(symmetry_type="Ch2")
 
     def testParseSymmetryError(self):
-        # Test we raise with expected message from parseSymmetry
+        # Test we raise with expected message from parse_symmetry
         with raises(NotImplementedError, match=r"J type symmetry.*"):
-            _ = parseSymmetry("junk")
+            _ = parse_symmetry("junk")
 
     def to_vec(self):
         """Compute the to_vec method and compare."""

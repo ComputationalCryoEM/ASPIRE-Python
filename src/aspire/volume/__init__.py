@@ -451,7 +451,9 @@ def gaussian_blob_Cn_vols(
         for k in range(K):
             for j in range(order):
                 coords_k = rot[:, :, j] @ coords - mu[:, k, np.newaxis]
-                coords_k = Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ coords_k
+                coords_k = (
+                   np.eye(3) / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
+                )
 
                 vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
 
@@ -532,10 +534,9 @@ def rotated_grids_3d(L, rot_matrices):
             grid3d["z"].flatten(),
         ]
     )
-    pts_rot = np.zeros((3, num_pts, num_rots), dtype=rot_matrices.dtype)
+    pts_rot = np.zeros((3, num_rots, num_pts), dtype=rot_matrices.dtype)
     for i in range(num_rots):
-        pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
+        pts_rot[:, i, :] = rot_matrices[i, :, :] @ pts
 
-    pts_rot = m_reshape(pts_rot, (3, L ** 3 * num_rots))
-    # Note we return grids as (X,Y,Z)
-    return pts_rot
+    # Note we return grids as (Z,Y,X)
+    return pts_rot.reshape(3,-1)
