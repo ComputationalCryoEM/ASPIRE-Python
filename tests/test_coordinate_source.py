@@ -12,6 +12,8 @@ from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import CoordinateSource
 from aspire.storage import StarFile
 
+import pdb
+
 
 class ParticleCoordinateSourceTestCase(TestCase):
     def setUp(self):
@@ -82,7 +84,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
             CoordinateSource([(self.mrc_path, self.coord_fp)], particle_size=256)
 
     def testLoadFromCoordNoParticleSize(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             CoordinateSource([(self.mrc_path, self.coord_fp)], centers=True)
 
     def testNonSquareParticles(self):
@@ -96,7 +98,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # our sample.mrc is located in saved_test_data
         # if we give an absolute path data_folder, and the dirnames do not match
         # there should be an error due to the ambiguity
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             CoordinateSource(
                 [(self.mrc_path, self.box_fp)], data_folder=self.tmpdir.name
             )

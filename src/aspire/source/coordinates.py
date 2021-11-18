@@ -1,9 +1,15 @@
 import logging
-
+import os
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from aspire.source.image import ImageSource
+import mrcfile
 import numpy as np
+import itertools
+
+from aspire.operators import IdentityFilter
+from aspire.source.image import ImageSource
+from aspire.storage import StarFile
+from aspire.image import Image
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +17,38 @@ logger = logging.getLogger(__name__)
 class CoordinateSourceBase(ImageSource, ABC):
     """Base Class defining CoordinateSource interface."""
 
-    def __init__(self, pixel_size, B, max_rows, dtype):
+    def __init__(
+        self,
+        mrc_paths,
+        coord_paths,
+        data_folder,
+        particle_size,
+        pixel_size,
+        B,
+        max_rows,
+        dtype,
+    ):
+
+        self.dtype = np.dtype(dtype)
+
+        # get first micrograph and coordinate list to report some data the user
+        first_micrograph = mrc_paths[0]
+        with mrcfile.open(first_micrograph) as mrc_file:
+            mrc_dtype = np.dtype(mrc_file.data.dtype)
+            shape = mrc_file.data.shape
+        if len(shape) != 2:
+            raise ValueError(
+                "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned\
+ micrographs?"
+            )
+        if self.dtype != mrc_dtype:
+            logger.warn(
+                f"dtype of micrograph is {mrc_dtype}. Will attempt to cast to {self.dtype}"
+            )
+
+        self.mrc_shape = shape
+
+        logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
         # The internal representation of micrographs and their picked coords
         # is mrc2coords, an OrderedDict with micrograph filepaths as keys, and
         # lists of coordinates as values. Coordinates are lists of integers:
@@ -21,35 +58,18 @@ class CoordinateSourceBase(ImageSource, ABC):
         # this structure is populated by subclasses via the abstract method
         # CoordinateSourceBase.populate_mrc2coords()
         self.mrc2coords = OrderedDict()
-
+        self.particle_size = particle_size
+        self.populate_mrc2coords(mrc_paths, coord_paths)
         # total number of particles given in coord files
         # before removing those that do not fit
-        original_n = sum(
+        self.original_n = sum(
             [len(coord_list) for mrc, coord_list in self.mrc2coords.items()]
         )
-
-        self.dtype = np.dtype(dtype)
-
-        # get first micrograph and coordinate list to report some data the user
-        first_micrograph, first_coords = list(self.mrc2coords.items())[0]
-        with mrcfile.open(first_micrograph) as mrc_file:
-            mrc_dtype = np.dtype(mrc_file.data.dtype)
-            shape = mrc_file.data.shape
-        if len(shape) != 2:
-            raise ValueError(
-                "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned micrographs?"
-            )
-        if self.dtype != mrc_dtype:
-            logger.warn(
-                f"dtype of micrograph is {mrc_dtype}. Will attempt to cast to {self.dtype}"
-            )
-
-        self.mrc_shape = shape
-        logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
 
         # look at first coord to get particle size
         # here we're checking the final coordinate of the first particle
         # which is the Y-size of the box (the same as the X-size)
+        first_coords = list(self.mrc2coords.items())[0][1]
         L = first_coords[0][3]
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
@@ -63,11 +83,11 @@ class CoordinateSourceBase(ImageSource, ABC):
         # final number of particles in *this* source
         n = sum([len(self.mrc2coords[x]) for x in self.mrc2coords])
         logger.info(
-            f"ParticleCoordinateSource from {data_folder} contains {num_micrographs} micrographs, {original_n} picked particles."
+            f"ParticleCoordinateSource from {data_folder} contains {len(mrc_paths)} micrographs, {self.original_n} picked particles."
         )
         if self.removed > 0:
             logger.info(
-                f"{self.removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {original_n - self.removed}."
+                f"{self.removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {self.original_n - self.removed}."
             )
         logger.info(f"ParticleCoordinateSource object contains {n} particles.")
 
@@ -92,9 +112,6 @@ class CoordinateSourceBase(ImageSource, ABC):
         sources store coordinate information differently, so the
         arguments and details of this method may vary.
         """
-        raise NotImplementedError(
-            "Subclasses should implement this method to populate mrc2coords"
-        )
 
     def _populate_mrc2coords(self, mrc_paths, coord_paths):
         # for each mrc, read its corresponding coordinates file
@@ -117,10 +134,8 @@ class CoordinateSourceBase(ImageSource, ABC):
         """
         Given a line from a coordinate file, convert the coordinates into the canonical format
         That is, a list of [lower left x, lower left y, x size, y size]
+        Subclasses implement according to the details of the files they read
         """
-        raise NotImplementedError(
-            "Subclasses should implement this method to convert coords to our canonical format"
-        )
 
     def _check_and_get_paths(self, files, data_folder):
         """
@@ -164,7 +179,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         if not coord_absolute_paths:
             coord_paths = [os.path.join(data_folder, c) for c in coord_paths]
 
-        return mrc_paths, coord_paths
+        return mrc_paths, coord_paths, data_folder
 
     def populate_particles(self):
         """
@@ -172,7 +187,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         """
         particles_flat = []
         for mrc in self.mrc2coords.keys():
-            for i, coord_list in self.mrc2coords[mrc]:
+            for i, coord_list in enumerate(self.mrc2coords[mrc]):
                 particles_flat.append((i, mrc))
         return particles_flat
 
@@ -190,8 +205,8 @@ class CoordinateSourceBase(ImageSource, ABC):
                 if (
                     start_x < 0
                     or start_y < 0
-                    or (start_x + size_x >= self.X)
-                    or (start_y + size_y >= self.Y)
+                    or (start_x + size_x >= self.mrc_shape[1])
+                    or (start_y + size_y >= self.mrc_shape[0])
                 ):
                     out_of_range.append(i)
 
@@ -205,7 +220,7 @@ class CoordinateSourceBase(ImageSource, ABC):
             for j in reversed(out_of_range):
                 coordsList.pop(j)
 
-    def get_n_particles(max_rows):
+    def get_n_particles(self, max_rows):
         """
         If the `max_rows` argument is given, this method will remove all
         but the first `max_rows` particles from the source (after boundary
@@ -216,7 +231,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         # differing number of particles
         if max_rows:
             # we cannot get more particles than we actually have
-            max_rows = min(max_rows, original_n - self.removed)
+            max_rows = min(max_rows, self.original_n - self.removed)
             # cumulative number of particles in each micrograph
             accum_lengths = list(
                 itertools.accumulate([len(self.mrc2coords[d]) for d in self.mrc2coords])
@@ -267,13 +282,15 @@ class CoordinateSourceBase(ImageSource, ABC):
             dtype=self.dtype,
         )
 
-        # load first micrograph
-        arr = mrcfile.open(_particles[0][1]).data
         for i, particle in enumerate(_particles):
             # get the particle number and the micrograph
             num, fp = particle
             # load the image data for this micrograph
-            arr = mrcfile.open(fp).data
+            arr = mrcfile.open(fp).data.astype(self.dtype)
+            if arr.shape != self.mrc_shape:
+                raise ValueError(
+                    f"Shape of {fp} is {arr.shape}, but expected {self.mrc_shape}"
+                )
             # get the specified particle coordinates
             coord = self.mrc2coords[fp][num]
             cropped = self.crop_micrograph(arr, coord)
@@ -285,10 +302,26 @@ class CoordinateSourceBase(ImageSource, ABC):
 class EmanCoordinateSource(CoordinateSourceBase):
     """Eman .box-format specific implementations."""
 
-    def __init__(self, files, data_folder, particle_size):
-        super().__init__(self, files, data_folder, particle_size)
+    def __init__(
+        self, files, data_folder, particle_size, pixel_size, B, max_rows, dtype
+    ):
 
-    def populate_mrc2coords(self, mrc_paths, coord_paths, particle_size):
+        mrc_paths, coord_paths, data_folder = self._check_and_get_paths(
+            files, data_folder
+        )
+        CoordinateSourceBase.__init__(
+            self,
+            mrc_paths,
+            coord_paths,
+            data_folder,
+            particle_size,
+            pixel_size,
+            B,
+            max_rows,
+            dtype,
+        )
+
+    def populate_mrc2coords(self, mrc_paths, coord_paths):
         """
         Extract coordinates from .box format particles, which specify particles
         as 'lower_left_x lower_left_y size_x size_y'
@@ -311,35 +344,55 @@ class EmanCoordinateSource(CoordinateSourceBase):
         self._populate_mrc2coords(mrc_paths, coord_paths)
 
         # if particle size set by user, we have to re-do the coordinates
-        if particle_size > 0:
-            # get original size
+        if self.particle_size > 0:
+            # original size from coordinate file
             old_size = size_x
-            # user-specified size
-            new_size = particle_size
-            trim_length = (old_size - new_size) // 2
-            _resized_mrc2coords = OrderedDict()
-            for mrc, coordsList in _mrc2coords.items():
-                _resized_mrc2coords[mrc] = []
-                for coords in coordsList:
-                    temp_coord = [-1, -1, new_size, new_size]
-                    temp_coord[0] = coords[0] + trim_length
-                    temp_coord[1] = coords[1] + trim_length
-                    _resized_mrc2coords[mrc].append(temp_coord)
-            self.mrc2coords = _resized_mrc2coords
-        else:
-            self.mrc2coords = _mrc2coords
+            self.force_new_particle_size(self.particle_size, old_size)
 
-    def convert_coordinates_to_box_format(self, line):
+    def convert_coords_to_box_format(self, line):
+        # box format is the same as our canonical format
+        # so we just read in the line as is
         return [int(x) for x in line.split()]
 
+    def force_new_particle_size(self, new_size, old_size):
+        """
+        Given a new particle size, rewrite the coordinates so that the box shape
+        is changed, but still centered around the particle
+        """
+        trim_length = (old_size - new_size) // 2
+        _resized_mrc2coords = OrderedDict()
+        for mrc, coordsList in self.mrc2coords.items():
+            _resized_mrc2coords[mrc] = []
+            for coords in coordsList:
+                temp_coord = [-1, -1, new_size, new_size]
+                temp_coord[0] = coords[0] + trim_length
+                temp_coord[1] = coords[1] + trim_length
+                _resized_mrc2coords[mrc].append(temp_coord)
+        self.mrc2coords = _resized_mrc2coords
 
-class CentersCoordinateSource(FromFilesCoordinateSource):
+
+class CentersCoordinateSource(CoordinateSourceBase):
     """
     Code specifically handling data sources with coordinate files containing just particle centers
     """
 
-    def __init__(self, files, data_folder, particle_size, pixel_size, B, max_rows):
-        super().__init__(self, files, data_folder, particle_size)
+    def __init__(
+        self, files, data_folder, particle_size, pixel_size, B, max_rows, dtype
+    ):
+        mrc_paths, coord_paths, data_folder = self._check_and_get_paths(
+            files, data_folder
+        )
+        CoordinateSourceBase.__init__(
+            self,
+            mrc_paths,
+            coord_paths,
+            data_folder,
+            particle_size,
+            pixel_size,
+            B,
+            max_rows,
+            dtype,
+        )
 
     def populate_mrc2coords(self, mrc_paths, coord_paths):
         """
@@ -348,14 +401,14 @@ class CentersCoordinateSource(FromFilesCoordinateSource):
         """
         self._populate_mrc2coords(mrc_paths, coord_paths)
 
-    def convert_coordinates_to_box_format(self, line, particle_size):
+    def convert_coords_to_box_format(self, line):
         center_x, center_y = [int(x) for x in line.split()[:2]]
         # subtract off half the particle size to get the lower left of box
         return [
-            center_x - particle_size // 2,
-            center_y - particle_size // 2,
-            particle_size,
-            particle_size,
+            center_x - self.particle_size // 2,
+            center_y - self.particle_size // 2,
+            self.particle_size,
+            self.particle_size,
         ]
 
 
@@ -363,48 +416,67 @@ class RelionCoordinateSource(CoordinateSourceBase):
     """Relion specific implementations."""
 
     def __init__(
-        self, relion_autopick_star, data_folder, particle_size, pixel_size, B, max_rows
+        self,
+        relion_autopick_star,
+        data_folder,
+        particle_size,
+        pixel_size,
+        B,
+        max_rows,
+        dtype,
     ):
-        self.populate_mrc2coords(relion_autopick_star, data_folder, particle_size)
-
-    def populate_mrc2coords(self, relion_autopick_star, data_folder, particle_size):
-        """
-        Extract coordinates from a Relion autopick.star file. This STAR file contains
-        a list of micrographs and corresponding coordinate files (also STAR files)
-        """
         if data_folder is None:
             raise ValueError(
-                "Provide Relion project direcetory when loading from Relion picked coordinates STAR file"
+                "Provide Relion project directory when loading from Relion picked coordinates STAR file"
             )
-
         if not os.path.isabs(relion_autopick_star):
             relion_autopick_star = os.path.join(data_folder, relion_autopick_star)
         df = StarFile(relion_autopick_star)["coordinate_files"]
         files = list(zip(df["_rlnMicrographName"], df["_rlnMicrographCoordinates"]))
         mrc_paths = [os.path.join(data_folder, f[0]) for f in files]
         coord_paths = [os.path.join(data_folder, f[1]) for f in files]
+        CoordinateSourceBase.__init__(
+            self,
+            mrc_paths,
+            coord_paths,
+            data_folder,
+            particle_size,
+            pixel_size,
+            B,
+            max_rows,
+            dtype,
+        )
 
+    def populate_mrc2coords(self, mrc_paths, coord_paths):
+        """
+        Extract coordinates from a Relion autopick.star file.
+        This STAR file contains a list of micrographs and corresponding
+        coordinate files (also STAR files)
+        """
         _mrc2coords = OrderedDict()
-        for i in range(num_files):
-            coordList = []
-            df = StarFile(coord_paths[i]).get_block_by_index(0)
+        for i, coord_path in enumerate(coord_paths):
+            coord_list = []
+            df = StarFile(coord_path).get_block_by_index(0)
             x_coords = list(df["_rlnCoordinateX"])
             y_coords = list(df["_rlnCoordinateY"])
             # subtract off half of the particle size from center to get lower left
             particles = [
                 [
-                    int(float(x_coords[i])) - particle_size // 2,
-                    int(float(y_coords[i])) - particle_size // 2,
-                    particle_size,
-                    particle_size,
+                    int(float(x_coords[i])) - self.particle_size // 2,
+                    int(float(y_coords[i])) - self.particle_size // 2,
+                    self.particle_size,
+                    self.particle_size,
                 ]
                 for i in range(len(df))
             ]
             for particle_coord in particles:
-                coordList.append(particle_coord)
-            _mrc2coords[mrc_paths[i]] = coordList
+                coord_list.append(particle_coord)
+            _mrc2coords[mrc_paths[i]] = coord_list
 
             self.mrc2coords = _mrc2coords
+
+    def convert_coords_to_box_format(self):
+        pass
 
 
 # potentially one or two of these are potentially different
@@ -413,11 +485,15 @@ class XYZProjectDirSource(RelionCoordinateSource):
 
 
 class CoordinateSource:
+    """
+    User-facing interface for constructing a CoordinateSource. This class selects and returns
+    an appropriate subclass of `CoordinateSourceBase` based on the arguments provided
+    """
+
     # Factory for selecting and implementing a concrete subclass of CoordinateSourceBase
     # Pretty much it's only purpose is to select and return the right subclass of CoordinateSourceBase
-    """Our User Facing Class ..."""
 
-    def __init__(
+    def __new__(
         self,
         files=None,
         data_folder=None,
@@ -438,7 +514,7 @@ class CoordinateSource:
         :param centers: Set to true if the coordinates represent particle centers
         :param pixel_size: Pixel size of  micrographs in Angstroms (default: 1)
         :param B: Envelope decay of the CTF in inverse Angstroms (default: 0)
-        :param max_rows: Maximum bumber of particles to read. (If None, will attempt to load all particles)
+        :param max_rows: Maximum number of particles to read. (If None, will attempt to load all particles)
         :param relion_autopick_star: Relion star file from AutoPick or ManualPick jobs (e.g. AutoPick/job006/autopick.star)
         """
 
@@ -465,14 +541,35 @@ class CoordinateSource:
                     raise ValueError(
                         "If reading particle centers, a particle_size must be specified"
                     )
-                return GuatoMatchCoordinateSource(
-                    files, data_folder, particle_size, pixel_size, B, max_rows, dtype
+
+                return CentersCoordinateSource(
+                    files,
+                    data_folder,
+                    particle_size,
+                    pixel_size,
+                    B,
+                    max_rows,
+                    dtype,
                 )
+
             # otherwise it is in the EMAN-specified .box format
             else:
                 return EmanCoordinateSource(
-                    files, data_folder, particle_size, pixel_size, B, max_rows, dtype
+                    files,
+                    data_folder,
+                    particle_size,
+                    pixel_size,
+                    B,
+                    max_rows,
+                    dtype,
                 )
+
+    def return_subclass(self, obj):
+        """
+        Takes the subclass passed by __init__ and simply returns it to the user
+        __init__ can only return None
+        """
+        return obj
 
 
 ### When explaining usually people use different naming scheme
