@@ -1,5 +1,6 @@
 import logging
 
+import mrcfile
 import numpy as np
 from numpy.linalg import qr
 
@@ -258,6 +259,41 @@ class Volume:
 
     def denoise(self):
         raise NotImplementedError
+
+    def save(self, filename, overwrite=False):
+        """
+        Save volume to disk as mrc file
+
+        :param filename: Filepath where volume will be saved
+
+        :param overwrite: Option to overwrite file when set to True.
+        Defaults to overwrite=False.
+        """
+        with mrcfile.new(filename, overwrite=overwrite) as mrc:
+            mrc.set_data(self._data.astype(np.float32))
+
+        if self.dtype != np.float32:
+            logger.info(f"Volume with dtype {self.dtype} saved with dtype float32")
+
+    @staticmethod
+    def load(filename, permissive=True, dtype=np.float32):
+        """
+        Load an mrc file as a Volume instance.
+
+        :param filename: Data filepath to load.
+
+        :param permissive: Allows problematic files to load with warning when True.
+        Defaults to permissive=True.
+
+        :param dtype: Optionally specifiy data type. Defaults to dtype=np.float32.
+
+        :return: Volume instance.
+        """
+        with mrcfile.open(filename, permissive=permissive) as mrc:
+            loaded_data = mrc.data
+        if loaded_data.dtype != dtype:
+            logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
+        return Volume(loaded_data.astype(dtype))
 
 
 class CartesianVolume(Volume):
