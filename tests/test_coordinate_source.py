@@ -6,7 +6,7 @@ from unittest import TestCase
 import importlib_resources
 import mrcfile
 import numpy as np
-
+import pdb
 import tests.saved_test_data
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import CoordinateSource
@@ -157,7 +157,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
-        src = CoordinateSource([(self.mrc_path, self.box_fp)], max_rows=10)
+        src = CoordinateSource([(self.mrc_path, self.box_fp)], max_rows=5)
         src.downsample(60)
         src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)

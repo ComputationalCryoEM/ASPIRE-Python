@@ -1,15 +1,16 @@
+import itertools
 import logging
 import os
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+
 import mrcfile
 import numpy as np
-import itertools
 
+from aspire.image import Image
 from aspire.operators import IdentityFilter
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile
-from aspire.image import Image
 
 logger = logging.getLogger(__name__)
 
@@ -117,23 +118,14 @@ class CoordinateSourceBase(ImageSource, ABC):
         # for each mrc, read its corresponding coordinates file
         _mrc2coords = OrderedDict()
         for i, coord_path in enumerate(coord_paths):
-            coord_list = []
-            # We are reading particle centers from the coordinate file
-            # We open the corresponding coordinate file
-            with open(coord_path, "r") as coord_file:
-                # each coordinate is a whitespace separated line in the file
-                lines = coord_file.readlines()
-            for line in lines:
-                coord = self.convert_coords_to_box_format(line)
-                coord_list.append(coord)
-            _mrc2coords[mrc_paths[i]] = coord_list
+            _mrc2coords[mrc_paths[i]] = self.coords_list_from_file(coord_path)
         self.mrc2coords = _mrc2coords
 
     @abstractmethod
-    def convert_coords_to_box_format(self, line):
+    def coords_list_from_file(self, coord_file):
         """
-        Given a line from a coordinate file, convert the coordinates into the canonical format
-        That is, a list of [lower left x, lower left y, x size, y size]
+        Given a coordinate file, convert the coordinates into the canonical format, that is, a
+        list of [lower left x, lower left y, x size, y size
         Subclasses implement according to the details of the files they read
         """
 
@@ -218,7 +210,7 @@ class CoordinateSourceBase(ImageSource, ABC):
             # following indices will be shifted. Thus we pop in reverse, since
             # the indices prior to each removed index are unchanged
             for j in reversed(out_of_range):
-                coordsList.pop(j)
+                coord_list.pop(j)
 
     def get_n_particles(self, max_rows):
         """
@@ -349,10 +341,10 @@ class EmanCoordinateSource(CoordinateSourceBase):
             old_size = size_x
             self.force_new_particle_size(self.particle_size, old_size)
 
-    def convert_coords_to_box_format(self, line):
-        # box format is the same as our canonical format
-        # so we just read in the line as is
-        return [int(x) for x in line.split()]
+    def coords_list_from_file(self, coord_file):
+        with open(coord_file, "r") as infile:
+            lines = [line.split() for line in infile.readlines()]
+        return [[int(x) for x in line] for line in lines]
 
     def force_new_particle_size(self, new_size, old_size):
         """
@@ -401,14 +393,15 @@ class CentersCoordinateSource(CoordinateSourceBase):
         """
         self._populate_mrc2coords(mrc_paths, coord_paths)
 
-    def convert_coords_to_box_format(self, line):
-        center_x, center_y = [int(x) for x in line.split()[:2]]
-        # subtract off half the particle size to get the lower left of box
+    def coords_list_from_file(self, coord_file):
+        # subtract off half of particle size from center coord
+        # populate final two coordinates with the particle_size
+        with open(coord_file, "r") as infile:
+            lines = [line.split() for line in infile.readlines()]
         return [
-            center_x - self.particle_size // 2,
-            center_y - self.particle_size // 2,
-            self.particle_size,
-            self.particle_size,
+            list(map(lambda x: int(x) - self.particle_size // 2, line[:2]))
+            + [self.particle_size] * 2
+            for line in lines
         ]
 
 
@@ -453,35 +446,16 @@ class RelionCoordinateSource(CoordinateSourceBase):
         )
 
     def populate_mrc2coords(self, mrc_paths, coord_paths):
-        """
-        Extract coordinates from a Relion autopick.star file.
-        This STAR file contains a list of micrographs and corresponding
-        coordinate files (also STAR files)
-        """
-        _mrc2coords = OrderedDict()
-        for i, coord_path in enumerate(coord_paths):
-            coord_list = []
-            df = StarFile(coord_path).get_block_by_index(0)
-            x_coords = list(df["_rlnCoordinateX"])
-            y_coords = list(df["_rlnCoordinateY"])
-            # subtract off half of the particle size from center to get lower left
-            particles = [
-                [
-                    int(float(x_coords[i])) - self.particle_size // 2,
-                    int(float(y_coords[i])) - self.particle_size // 2,
-                    self.particle_size,
-                    self.particle_size,
-                ]
-                for i in range(len(df))
-            ]
-            for particle_coord in particles:
-                coord_list.append(particle_coord)
-            _mrc2coords[mrc_paths[i]] = coord_list
+        self._populate_mrc2coords(mrc_paths, coord_paths)
 
-            self.mrc2coords = _mrc2coords
-
-    def convert_coords_to_box_format(self):
-        pass
+    def coords_list_from_file(self, coord_file):
+        df = StarFile(coord_file).get_block_by_index(0)
+        coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
+        return [
+            list(map(lambda x: int(x) - self.particle_size // 2, coord[:2]))
+            + [self.particle_size] * 2
+            for coord in coords
+        ]
 
 
 # potentially one or two of these are potentially different
