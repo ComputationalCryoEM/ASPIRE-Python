@@ -39,8 +39,7 @@ class CoordinateSourceBase(ImageSource, ABC):
             shape = mrc_file.data.shape
         if len(shape) != 2:
             raise ValueError(
-                "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned\
- micrographs?"
+                "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned micrographs?"
             )
         if self.dtype != mrc_dtype:
             logger.warn(
@@ -179,7 +178,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         """
         particles_flat = []
         for mrc in self.mrc2coords.keys():
-            for i, coord_list in enumerate(self.mrc2coords[mrc]):
+            for i, _ in enumerate(self.mrc2coords[mrc]):
                 particles_flat.append((i, mrc))
         return particles_flat
 

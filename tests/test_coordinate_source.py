@@ -6,7 +6,7 @@ from unittest import TestCase
 import importlib_resources
 import mrcfile
 import numpy as np
-import pdb
+
 import tests.saved_test_data
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import CoordinateSource
