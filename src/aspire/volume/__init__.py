@@ -294,11 +294,11 @@ class Volume:
             vol_f[:, :, 0, :] = 0
             vol_f[:, :, :, 0] = 0
 
-        vol_f = xp.asnumpy(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
+        vol = xp.asnumpy(
+            np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
+        )
 
-        vol_f = np.real(vol_f)
-
-        return Volume(vol_f)
+        return Volume(vol)
 
     def denoise(self):
         raise NotImplementedError
@@ -416,7 +416,7 @@ def gaussian_blob_Cn_vols(
             for j in range(order):
                 coords_k = rot[:, :, j] @ coords - mu[:, k, np.newaxis]
                 coords_k = (
-                   np.eye(3) / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
+                    np.eye(3) / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
                 )
 
                 vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
@@ -503,4 +503,4 @@ def rotated_grids_3d(L, rot_matrices):
         pts_rot[:, i, :] = rot_matrices[i, :, :] @ pts
 
     # Note we return grids as (Z,Y,X)
-    return pts_rot.reshape(3,-1)
+    return pts_rot.reshape(3, -1)
