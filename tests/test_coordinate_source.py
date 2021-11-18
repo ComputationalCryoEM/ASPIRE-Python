@@ -12,8 +12,6 @@ from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import CoordinateSource
 from aspire.storage import StarFile
 
-import pdb
-
 
 class ParticleCoordinateSourceTestCase(TestCase):
     def setUp(self):

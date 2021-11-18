@@ -429,12 +429,17 @@ class RelionCoordinateSource(CoordinateSourceBase):
             raise ValueError(
                 "Provide Relion project directory when loading from Relion picked coordinates STAR file"
             )
+
         if not os.path.isabs(relion_autopick_star):
             relion_autopick_star = os.path.join(data_folder, relion_autopick_star)
+
         df = StarFile(relion_autopick_star)["coordinate_files"]
+
         files = list(zip(df["_rlnMicrographName"], df["_rlnMicrographCoordinates"]))
+
         mrc_paths = [os.path.join(data_folder, f[0]) for f in files]
         coord_paths = [os.path.join(data_folder, f[1]) for f in files]
+
         CoordinateSourceBase.__init__(
             self,
             mrc_paths,
@@ -563,19 +568,3 @@ class CoordinateSource:
                     max_rows,
                     dtype,
                 )
-
-    def return_subclass(self, obj):
-        """
-        Takes the subclass passed by __init__ and simply returns it to the user
-        __init__ can only return None
-        """
-        return obj
-
-
-### When explaining usually people use different naming scheme
-# my CoordinateSourceBase  would be  CoordinateSource
-# my CoordinateSource      would be  CoordinateSourceFactory
-
-## (because CoordinateSourceFactory is a factory that stamps out different CoordinateSource)
-##   However, our users probably don't need to know about any of this... so we change the names
-##   to protect the innocent.
