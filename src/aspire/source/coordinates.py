@@ -42,7 +42,7 @@ class CoordinateSourceBase(ImageSource, ABC):
                 "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned micrographs?"
             )
         if self.dtype != mrc_dtype:
-            logger.warn(
+            logger.warning(
                 f"dtype of micrograph is {mrc_dtype}. Will attempt to cast to {self.dtype}"
             )
 
@@ -85,10 +85,15 @@ class CoordinateSourceBase(ImageSource, ABC):
         logger.info(
             f"ParticleCoordinateSource from {data_folder} contains {len(mrc_paths)} micrographs, {self.original_n} picked particles."
         )
+        
         if self.removed > 0:
             logger.info(
-                f"{self.removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded. Maximum number of particles at this resolution is {self.original_n - self.removed}."
+                f"{self.removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded"
             )
+            logger.info(f"Maximum number of particles at this resolution is {self.original_n -\
+ self.removed}.")
+
+
         logger.info(f"ParticleCoordinateSource object contains {n} particles.")
 
         # create a flattened representation of the particles
