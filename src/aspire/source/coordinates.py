@@ -193,7 +193,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         # following indices will be shifted. Thus we pop in reverse, since
         # the indices prior to each removed index are unchanged
         for j in reversed(out_of_range):
-            self.particle.pop(j)
+            self.particles.pop(j)
 
         return boundary_removed
 
