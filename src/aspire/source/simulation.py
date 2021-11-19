@@ -86,6 +86,7 @@ class Simulation(ImageSource):
         if unique_filters:
             if filter_indices is None:
                 filter_indices = randi(len(unique_filters), n, seed=seed) - 1
+            self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices
 
         self.offsets = offsets
@@ -95,6 +96,41 @@ class Simulation(ImageSource):
         if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
+
+    def _populate_ctf_metadata(self, filter_indices):
+        # Since we are not reading from a starfile, we must construct
+        # metadata based on the CTF filters by hand and set the values
+        # for these columns
+        #
+        # class attributes of CTFFilter:
+        CTFFilter_attributes = (
+            "voltage",
+            "defocus_u",
+            "defocus_v",
+            "defocus_ang",
+            "Cs",
+            "alpha",
+        )
+        # get the CTF parameters, if they exist, for each filter
+        # and for each image (indexed by filter_indices)
+        filter_values = np.zeros((len(filter_indices), len(CTFFilter_attributes)))
+        for i, filt in enumerate(self.unique_filters):
+            filter_values[filter_indices == i] = [
+                getattr(filt, att, np.nan) for att in CTFFilter_attributes
+            ]
+        # set the corresponding Relion metadata values that we would expect
+        # from a STAR file
+        self.set_metadata(
+            [
+                "_rlnVoltage",
+                "_rlnDefocusU",
+                "_rlnDefocusV",
+                "_rlnDefocusAngle",
+                "_rlnSphericalAberration",
+                "_rlnAmplitudeContrast",
+            ],
+            filter_values,
+        )
 
     def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1):
         """
