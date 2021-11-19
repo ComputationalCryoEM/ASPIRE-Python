@@ -60,7 +60,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         # total number of particles given in coord files
         # before removing boundary particles and satisfying max_rows
         original_n = len(self.particles)
-
+        
         logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
@@ -111,7 +111,7 @@ class CoordinateSourceBase(ImageSource, ABC):
     def _populate_particles(self, mrc_paths, coord_paths):
         # for each mrc, read its corresponding coordinates file
         for i, mrc_path in enumerate(mrc_paths):
-            self.particles = [
+            self.particles += [
                 (mrc_path, coord)
                 for coord in self.coords_list_from_file(coord_paths[i])
             ]
@@ -185,8 +185,6 @@ class CoordinateSourceBase(ImageSource, ABC):
             ):
                 out_of_range.append(i)
 
-            boundary_removed += len(out_of_range)
-
         # out_of_range stores the indices of the particles in the
         # unmodified coord_list that we must remove.
         # If we pop these indices of _coord list going forward, the
@@ -195,7 +193,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         for j in reversed(out_of_range):
             self.particles.pop(j)
 
-        return boundary_removed
+        return len(out_of_range)
 
     @staticmethod
     def crop_micrograph(data, coord):
