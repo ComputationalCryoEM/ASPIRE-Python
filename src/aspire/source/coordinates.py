@@ -60,7 +60,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         # total number of particles given in coord files
         # before removing boundary particles and satisfying max_rows
         original_n = len(self.particles)
-        
+
         logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
@@ -173,7 +173,6 @@ class CoordinateSourceBase(ImageSource, ABC):
         Remove particles boxes which do not fit in the micrograph
         with the given particle_size
         """
-        boundary_removed = 0
         out_of_range = []
         for i, particle in enumerate(self.particles):
             start_x, start_y, size_x, size_y = particle[1]
