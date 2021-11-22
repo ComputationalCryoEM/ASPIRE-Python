@@ -443,12 +443,12 @@ def _gaussian_blob_Cn_vols(
             [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
         )
 
-        K = Q.shape[-1]
+        K = Q.shape[0]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(dtype)
-        rot = np.zeros(shape=(3, 3, order)).astype(dtype)
+        rot = np.zeros(shape=(order, 3, 3)).astype(dtype)
 
         for k in range(order):
-            rot[:, :, k] = [
+            rot[k, :, :] = [
                 [
                     np.cos(2 * np.pi * k / order),
                     -np.sin(2 * np.pi * k / order),
@@ -464,9 +464,9 @@ def _gaussian_blob_Cn_vols(
 
         for k in range(K):
             for j in range(order):
-                coords_k = rot[:, :, j] @ coords - mu[:, k, np.newaxis]
+                coords_k = rot[j, :, :] @ coords - mu[k, :, np.newaxis]
                 coords_k = (
-                    np.eye(3) / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
+                    np.eye(3) / np.sqrt(np.diag(D[k, :, :])) @ Q[k, :, :].T @ coords_k
                 )
 
                 vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
@@ -475,23 +475,23 @@ def _gaussian_blob_Cn_vols(
 
         return vol
 
-    def gaussian_blobs(K, alpha):
-        Q = np.zeros(shape=(3, 3, K)).astype(dtype)
-        D = np.zeros(shape=(3, 3, K)).astype(dtype)
-        mu = np.zeros(shape=(3, K)).astype(dtype)
+    def _gen_gaussians(K, alpha):
+        Q = np.zeros(shape=(K, 3, 3)).astype(dtype)
+        D = np.zeros(shape=(K, 3, 3)).astype(dtype)
+        mu = np.zeros(shape=(K, 3)).astype(dtype)
 
         for k in range(K):
             V = randn(3, 3).astype(dtype) / np.sqrt(3)
-            Q[:, :, k] = qr(V)[0]
-            D[:, :, k] = alpha ** 2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
-            mu[:, k] = 0.5 * randn(3) / np.sqrt(3)
+            Q[k, :, :] = qr(V)[0]
+            D[k, :, :] = alpha ** 2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
+            mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
 
         return Q, D, mu
 
     vols = np.zeros(shape=(C, L, L, L)).astype(dtype)
     with Random(seed):
         for k in range(C):
-            Q, D, mu = gaussian_blobs(K, alpha)
+            Q, D, mu = _gen_gaussians(K, alpha)
             vols[k] = _eval_gaussian_blobs(L, Q, D, mu, order, dtype=dtype)
     return Volume(vols)
 
