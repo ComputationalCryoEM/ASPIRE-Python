@@ -370,6 +370,50 @@ def parse_symmetry(symmetry_string):
     return map_sym_to_generator[sym_type], order
 
 
+def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.float64):
+    """
+    Builds gaussian blob volumes with chosen symmetry type.
+
+    :param L: The resolution of the volume.
+    :param C: Number of volumes.
+    :param K: The number of gaussian blobs used to generate the volume.
+    :param symmetry_type: A string indicating the type of symmetry.
+    :param seed: The random seed to produce centers and variances of the gaussian blobs.
+    :param dtype: Data type.
+
+    :return: A volume instance from an appropriate volume generator.
+    """
+
+    order = 1
+    sym_type = None
+    if symmetry_type is not None:
+        # safer to make string consistent
+        symmetry_type = symmetry_type.upper()
+        # get the first letter
+        sym_type = symmetry_type[0]
+        # if there is a number denoting rotational symmetry, get that
+        order = symmetry_type[1:] or None
+
+    # map our sym_types to classes of Volumes
+    map_sym_to_generator = {
+        None: _gaussian_blob_Cn_vols,
+        "C": _gaussian_blob_Cn_vols,
+        # "D": gaussian_blob_Dn_vols,
+        # "T": gaussian_blob_T_vols,
+        # "O": gaussian_blob_O_vols,
+    }
+
+    sym_types = list(map_sym_to_generator.keys())
+    if sym_type not in map_sym_to_generator.keys():
+        raise NotImplementedError(
+            f"{sym_type} type symmetry is not supported. The following symmetry types are currently supported: {sym_types}."
+        )
+
+    vols_generator = map_sym_to_generator[sym_type]
+
+    return vols_generator(L=L, C=C, K=K, order=order, seed=seed, dtype=dtype)
+
+
 class CartesianVolume(Volume):
     def expand(self, basis):
         return BasisVolume(basis)
@@ -397,7 +441,7 @@ class FBBasisVolume(BasisVolume):
     pass
 
 
-def gaussian_blob_Cn_vols(
+def _gaussian_blob_Cn_vols(
     L=8, C=2, K=16, alpha=1, order=1, seed=None, dtype=np.float64
 ):
     """
