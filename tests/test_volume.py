@@ -9,7 +9,6 @@ from parameterized import parameterized
 from pytest import raises
 from scipy.spatial.transform import Rotation as sp_rot
 
-from aspire.source.simulation import Simulation
 from aspire.utils import Rotation, powerset
 from aspire.utils.coor_trans import grid_3d
 from aspire.utils.types import utest_tolerance

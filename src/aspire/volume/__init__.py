@@ -340,36 +340,6 @@ class Volume:
         return Volume(loaded_data.astype(dtype))
 
 
-def parse_symmetry(symmetry_string):
-
-    order = 1
-    sym_type = None
-    if symmetry_string is not None:
-        # safer to make string consistent
-        symmetry_string = symmetry_string.upper()
-        # get the first letter
-        sym_type = symmetry_string[0]
-        # if there is a number denoting rotational symmetry, get that
-        order = symmetry_string[1:] or None
-
-    # map our sym_types to classes of Volumes
-    map_sym_to_generator = {
-        None: gaussian_blob_Cn_vols,
-        "C": gaussian_blob_Cn_vols,
-        # "D": gaussian_blob_Dn_vols,
-        # "T": gaussian_blob_T_vols,
-        # "O": gaussian_blob_O_vols,
-    }
-
-    sym_types = list(map_sym_to_generator.keys())
-    if sym_type not in map_sym_to_generator.keys():
-        raise NotImplementedError(
-            f"{sym_type} type symmetry is not supported. The following symmetry types are currently supported: {sym_types}."
-        )
-
-    return map_sym_to_generator[sym_type], order
-
-
 def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.float64):
     """
     Builds gaussian blob volumes with chosen symmetry type.
