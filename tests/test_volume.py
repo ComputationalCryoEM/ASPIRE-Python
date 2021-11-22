@@ -13,7 +13,7 @@ from aspire.source.simulation import Simulation
 from aspire.utils import Rotation, powerset
 from aspire.utils.coor_trans import grid_3d
 from aspire.utils.types import utest_tolerance
-from aspire.volume import Volume, parse_symmetry
+from aspire.volume import Volume, gaussian_blob_vols
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -232,8 +232,9 @@ class VolumeTestCase(TestCase):
 
             # To build a reference volume we rotate a volume instance.
             # ref_vol[0] is a volume rotated by zero degrees.
-            sim = Simulation(L=L, C=1, symmetry_type=s, dtype=np.float64)
-            vol = sim.vols
+            vol = gaussian_blob_vols(
+                L=L, C=1, symmetry_type=s, seed=0, dtype=self.dtype
+            )
             ref_vol = vol.rotate(0, rot_mat, zero_nyquist=False)
 
             # We rotate ref_vol[0] by the stack of rotation matrices
@@ -241,21 +242,20 @@ class VolumeTestCase(TestCase):
             rot_vol = ref_vol.rotate(0, rot_mat, zero_nyquist=False)
 
             # Compare rotated volumes to reference volume within the shpere of radius L/4.
-            # Check that rotated volumes are within 0.4% of reference volume.
+            # Check that rotated volumes are within 1% of reference volume.
             selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 2
             for i in range(k):
                 ref = ref_vol[0, selection]
                 rot = rot_vol[i, selection]
-                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.004)
+                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.01)
 
-        # Test we raise with expected error message when Simulation() is instantiated with unsupported C-type symmetry.
+        # Test we raise with expected error message when volume is instantiated with unsupported C-type symmetry.
         with raises(NotImplementedError, match=r"CH2 symmetry not supported.*"):
-            _ = Simulation(symmetry_type="Ch2")
+            _ = gaussian_blob_vols(symmetry_type="Ch2")
 
-    def testParseSymmetryError(self):
-        # Test we raise with expected message from parse_symmetry
+        # Test we raise with expected message for junk symmetry.
         with raises(NotImplementedError, match=r"J type symmetry.*"):
-            _ = parse_symmetry("junk")
+            _ = gaussian_blob_vols(symmetry_type="junk")
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
