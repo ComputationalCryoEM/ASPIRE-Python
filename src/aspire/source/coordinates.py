@@ -399,8 +399,10 @@ class RelionCoordinateSource(CoordinateSourceBase):
         if not os.path.isabs(relion_autopick_star):
             relion_autopick_star = os.path.join(os.getcwd(), relion_autopick_star)
 
+        # the 'coordinate_files' block of the starfile specifies
+        # paths to micrographs and coordinate files relative to the 
+        # Relion project dir
         df = StarFile(relion_autopick_star)["coordinate_files"]
-
         files = list(zip(df["_rlnMicrographName"], df["_rlnMicrographCoordinates"]))
 
         # infer relion project dir since autopick.star will be at e.g.
@@ -408,6 +410,7 @@ class RelionCoordinateSource(CoordinateSourceBase):
         # get path 3 directories up
         data_folder = Path(relion_autopick_star).parents[2]
 
+        # get absolute paths based on project dir
         mrc_paths = [os.path.join(data_folder, f[0]) for f in files]
         coord_paths = [os.path.join(data_folder, f[1]) for f in files]
 
@@ -440,12 +443,6 @@ class RelionCoordinateSource(CoordinateSourceBase):
             + [self.particle_size] * 2
             for coord in coords
         ]
-
-
-# potentially one or two of these are potentially different
-class XYZProjectDirSource(RelionCoordinateSource):
-    """just an example..."""
-
 
 class CoordinateSource:
     """
