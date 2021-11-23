@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from itertools import groupby
 from operator import itemgetter
 
+from pathlib import Path
+
 import mrcfile
 import numpy as np
 
@@ -393,17 +395,19 @@ class RelionCoordinateSource(CoordinateSourceBase):
         max_rows,
         dtype,
     ):
-        if data_folder is None:
-            raise ValueError(
-                "Provide Relion project directory when loading from Relion picked coordinates STAR file"
-            )
 
+        # if not absolute, assume relative to working dir
         if not os.path.isabs(relion_autopick_star):
-            relion_autopick_star = os.path.join(data_folder, relion_autopick_star)
+            relion_autopick_star = os.path.join(os.getcwd(), relion_autopick_star)
 
         df = StarFile(relion_autopick_star)["coordinate_files"]
 
         files = list(zip(df["_rlnMicrographName"], df["_rlnMicrographCoordinates"]))
+
+        # infer relion project dir since autopick.star will be at e.g.
+        # /relion/project/dir/Autopick/job00X/autopick.star
+        # get path 3 directories up
+        data_folder = Path(relion_autopick_star).parents[2]
 
         mrc_paths = [os.path.join(data_folder, f[0]) for f in files]
         coord_paths = [os.path.join(data_folder, f[1]) for f in files]
