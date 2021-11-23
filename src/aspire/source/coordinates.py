@@ -1,6 +1,8 @@
 import logging
 import os
 from abc import ABC, abstractmethod
+from itertools import groupby
+from operator import itemgetter
 
 import mrcfile
 import numpy as np
@@ -220,7 +222,7 @@ class CoordinateSourceBase(ImageSource, ABC):
             indices = np.arange(start, min(start + num, self.n))
         else:
             start = indices.min()
-        logger.info(f"Loading {len(indices)} images from micrographs")
+        # logger.info(f"Loading {len(indices)} images from micrographs")
 
         selected_particles = [self.particles[i] for i in indices]
         # initialize empty array to hold particle stack
@@ -229,17 +231,22 @@ class CoordinateSourceBase(ImageSource, ABC):
             dtype=self.dtype,
         )
 
-        for i, particle in enumerate(selected_particles):
-            # get the particle number and the micrograph
-            fp, coord = particle
-            # load the image data for this micrograph
-            arr = mrcfile.open(fp).data.astype(self.dtype)
+        # group particles by micrograph
+        offset = 0
+        for fp, grouped in groupby(selected_particles, itemgetter(0)):
+            # open microrgraph once
+            with mrcfile.open(fp) as mrc_in:
+                arr = mrc_in.data.astype(self.dtype)
             if arr.shape != self.mrc_shape:
                 raise ValueError(
                     f"Shape of {fp} is {arr.shape}, but expected {self.mrc_shape}"
                 )
-            cropped = self.crop_micrograph(arr, coord)
-            im[i] = cropped
+            # get list of coordinates
+            coords = [g[1] for g in list(grouped)]
+            for i, coord in enumerate(coords):
+                cropped = self.crop_micrograph(arr, coord)
+                im[offset + i] = cropped
+            offset = len(coords)
 
         return Image(im)
 
