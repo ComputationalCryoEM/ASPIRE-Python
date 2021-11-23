@@ -1,0 +1,5 @@
+data_coordinate_files
+loop_
+_rlnMicrographName
+_rlnMicrographCoordinates
+sample.mrc sample_relion_coord.star
