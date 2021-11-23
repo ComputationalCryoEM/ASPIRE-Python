@@ -436,7 +436,7 @@ class RelionCoordinateSource(CoordinateSourceBase):
         # subtract off half of particle size from center coord
         # populate final two coordinates with the particle_size
         return [
-            list(map(lambda x: int(x) - self.particle_size // 2, coord[:2]))
+            list(map(lambda x: int(float(x)) - self.particle_size // 2, coord[:2]))
             + [self.particle_size] * 2
             for coord in coords
         ]

@@ -74,8 +74,9 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testLoadFromRelion(self):
         CoordinateSource(
-            data_folder=self.data_folder,
-            relion_autopick_star="sample_relion_autopick.star",
+            relion_autopick_star=os.path.join(
+                self.data_folder, "AutoPick/job006/sample_relion_autopick.star"
+            ),
             particle_size=256,
         )
 
@@ -125,7 +126,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
         )
         src_from_relion = CoordinateSource(
             data_folder=self.data_folder,
-            relion_autopick_star="sample_relion_autopick.star",
+            relion_autopick_star="AutoPick/job006/sample_relion_autopick.star",
             particle_size=256,
         )
         imgs_box = self.src_from_box.images(0, 10)
