@@ -400,7 +400,7 @@ class RelionCoordinateSource(CoordinateSourceBase):
             relion_autopick_star = os.path.join(os.getcwd(), relion_autopick_star)
 
         # the 'coordinate_files' block of the starfile specifies
-        # paths to micrographs and coordinate files relative to the 
+        # paths to micrographs and coordinate files relative to the
         # Relion project dir
         df = StarFile(relion_autopick_star)["coordinate_files"]
         files = list(zip(df["_rlnMicrographName"], df["_rlnMicrographCoordinates"]))
@@ -444,6 +444,7 @@ class RelionCoordinateSource(CoordinateSourceBase):
             for coord in coords
         ]
 
+
 class CoordinateSource:
     """
     User-facing interface for constructing a CoordinateSource. This class selects and returns
@@ -482,6 +483,9 @@ class CoordinateSource:
         # Relion Autopick or ManualPick project directory, and the starfile gives us
         # the paths to the micrographs and coordinates relative to the project dir
         if relion_autopick_star:
+            # must have a particle_size specified as these contain centers
+            if particle_size == 0:
+                raise ValueError("Specify a particle_size to load picked particle coordinates from Relion")
             return RelionCoordinateSource(
                 relion_autopick_star,
                 data_folder,
