@@ -66,6 +66,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         self._original_resolution = L
 
         # remove particles whose boxes do not fit at given particle_size
+        # and get number removed
         boundary_removed = self.exclude_boundary_particles()
         # if max_rows is specified, only return up to max_rows many
         # (after excluding boundary particles)
@@ -75,10 +76,11 @@ class CoordinateSourceBase(ImageSource, ABC):
 
         # final number of particles in *this* source
         n = len(self.particles)
+        # total micrographs and particles represented by source (info)
         logger.info(
             f"ParticleCoordinateSource from {data_folder} contains {len(mrc_paths)} micrographs, {original_n} picked particles."
         )
-
+        # total particles we can load given particle_size (info)
         if boundary_removed > 0:
             logger.info(
                 f"{boundary_removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded"
@@ -86,7 +88,7 @@ class CoordinateSourceBase(ImageSource, ABC):
             logger.info(
                 f"Maximum number of particles at this particle size is {original_n - boundary_removed}."
             )
-
+        # total particles loaded (specific to this instance)
         logger.info(f"ParticleCoordinateSource object contains {n} particles.")
 
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
@@ -109,8 +111,13 @@ class CoordinateSourceBase(ImageSource, ABC):
         """
 
     def _populate_particles(self, mrc_paths, coord_paths):
-        # for each mrc, read its corresponding coordinates file
+        """
+        All subclasses create mrc_paths and coord_paths lists and pass them to
+        this method.
+        """
         for i, mrc_path in enumerate(mrc_paths):
+            # read in all coordinates for the given mrc
+            # using subclass's method of reading the file
             self.particles += [
                 (mrc_path, coord)
                 for coord in self.coords_list_from_file(coord_paths[i])
@@ -120,7 +127,7 @@ class CoordinateSourceBase(ImageSource, ABC):
     def coords_list_from_file(self, coord_file):
         """
         Given a coordinate file, convert the coordinates into the canonical format, that is, a
-        list of [lower left x, lower left y, x size, y size
+        list of the form [lower left x, lower left y, x size, y size
         Subclasses implement according to the details of the files they read
         """
 
@@ -262,7 +269,7 @@ class EmanCoordinateSource(CoordinateSourceBase):
     def populate_particles(self, mrc_paths, coord_paths):
         """
         Extract coordinates from .box format particles, which specify particles
-        as 'lower_left_x lower_left_y size_x size_y'
+        as 'lower_left_x lower_left_y size_x size_y' and populate self.particles
         """
         # Look into the first coordinate path given and validate format
         with open(coord_paths[0], "r") as first_coord_file:
@@ -288,16 +295,19 @@ class EmanCoordinateSource(CoordinateSourceBase):
             self.force_new_particle_size(self.particle_size, old_size)
 
     def coords_list_from_file(self, coord_file):
+        """
+        Given a coordinate file in .box format, returns a list of coordinates
+        """
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
+        # coords are already in canonical .box format, so simply cast to int
         return [[int(x) for x in line] for line in lines]
 
     def force_new_particle_size(self, new_size, old_size):
         """
-        Given a new particle size, rewrite the coordinates so that the box shape
+        Given a new particle size, rewrite the coordinates so that the box size
         is changed, but still centered around the particle
         """
-        trim_length = (old_size - new_size) // 2
         _resized_particles = []
         for particle in self.particles:
             fp, coord = particle
@@ -305,8 +315,8 @@ class EmanCoordinateSource(CoordinateSourceBase):
                 (
                     fp,
                     [
-                        coord[0] + trim_length,
-                        coord[1] + trim_length,
+                        coord[0] + (old_size - new_size) // 2,
+                        coord[1] + (old_size - new_size) // 2,
                         new_size,
                         new_size,
                     ],
@@ -346,6 +356,10 @@ class CentersCoordinateSource(CoordinateSourceBase):
         self._populate_particles(mrc_paths, coord_paths)
 
     def coords_list_from_file(self, coord_file):
+        """
+        Given a coordinate file with (x,y) particle centers,
+        return a list of coordinates in our canonical (.box) format
+        """
         # subtract off half of particle size from center coord
         # populate final two coordinates with the particle_size
         with open(coord_file, "r") as infile:
@@ -401,8 +415,14 @@ class RelionCoordinateSource(CoordinateSourceBase):
         self._populate_particles(mrc_paths, coord_paths)
 
     def coords_list_from_file(self, coord_file):
+        """
+        Given a Relion STAR coordinate file (generally containing particle centers)
+        return a list of coordinates in the canonical (.box) format
+        """
         df = StarFile(coord_file).get_block_by_index(0)
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
+        # subtract off half of particle size from center coord
+        # populate final two coordinates with the particle_size
         return [
             list(map(lambda x: int(x) - self.particle_size // 2, coord[:2]))
             + [self.particle_size] * 2
