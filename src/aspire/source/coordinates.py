@@ -232,6 +232,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         )
 
         # group particles by micrograph
+        # keep track of how many particles were added for each micrograph (offset)
         offset = 0
         for fp, grouped in groupby(selected_particles, itemgetter(0)):
             # open microrgraph once
@@ -246,7 +247,8 @@ class CoordinateSourceBase(ImageSource, ABC):
             for i, coord in enumerate(coords):
                 cropped = self.crop_micrograph(arr, coord)
                 im[offset + i] = cropped
-            offset = len(coords)
+            # offset increases by number of particles we added during this iteration
+            offset += len(coords)
 
         return Image(im)
 
