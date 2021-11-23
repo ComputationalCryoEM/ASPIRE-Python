@@ -7,11 +7,10 @@ from scipy.spatial.transform import Rotation as sp_rot
 import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.utils import ensure, mat_to_vec, vec_to_mat
+from aspire.utils import Rotation, ensure, mat_to_vec, vec_to_mat
 from aspire.utils.coor_trans import grid_2d, grid_3d
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import Random, randn
-from aspire.utils.rotation import Rotation
 
 logger = logging.getLogger(__name__)
 
@@ -411,20 +410,9 @@ def _gaussian_blob_Cn_vols(
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(dtype)
         rot = np.zeros(shape=(order, 3, 3)).astype(dtype)
 
-        for k in range(order):
-            rot[k, :, :] = [
-                [
-                    np.cos(2 * np.pi * k / order),
-                    -np.sin(2 * np.pi * k / order),
-                    0,
-                ],
-                [
-                    np.sin(2 * np.pi * k / order),
-                    np.cos(2 * np.pi * k / order),
-                    0,
-                ],
-                [0, 0, 1],
-            ]
+        angles = np.zeros(shape=(order, 3))
+        angles[:, 2] = 2 * np.pi * np.arange(order) / order
+        rot = Rotation.from_euler(angles).matrices
 
         for k in range(K):
             for j in range(order):
