@@ -3,7 +3,6 @@ import os
 from abc import ABC, abstractmethod
 from itertools import groupby
 from operator import itemgetter
-
 from pathlib import Path
 
 import mrcfile
