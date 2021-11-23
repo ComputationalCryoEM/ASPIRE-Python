@@ -485,7 +485,9 @@ class CoordinateSource:
         if relion_autopick_star:
             # must have a particle_size specified as these contain centers
             if particle_size == 0:
-                raise ValueError("Specify a particle_size to load picked particle coordinates from Relion")
+                raise ValueError(
+                    "Specify a particle_size to load picked particle coordinates from Relion"
+                )
             return RelionCoordinateSource(
                 relion_autopick_star,
                 data_folder,
