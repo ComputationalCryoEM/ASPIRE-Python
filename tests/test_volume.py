@@ -151,7 +151,7 @@ class VolumeTestCase(TestCase):
         # Rotate the basis volume by rotation matrices rot_mat.
         # For even resolution we keep the Nyquist frequency.
         # This reduces error on the rotations.
-        rot_vols = vol.rotate(0, rot_mat, zero_nyquist=False)
+        rot_vols = vol.rotate(rot_mat, zero_nyquist=False)
 
         # Create reference volumes.
         # All possible orientations of rotating the basis volume about each axis by multiples of pi/2.
@@ -215,11 +215,11 @@ class VolumeTestCase(TestCase):
             vol = gaussian_blob_vols(
                 L=L, C=1, symmetry_type=s, seed=0, dtype=self.dtype
             )
-            ref_vol = vol.rotate(0, rot_mat, zero_nyquist=False)
+            ref_vol = vol.rotate(rot_mat, zero_nyquist=False)
 
             # We rotate ref_vol[0] by the stack of rotation matrices
             # rot_vol is a stack of rotated ref_vol[0]
-            rot_vol = ref_vol.rotate(0, rot_mat, zero_nyquist=False)
+            rot_vol = ref_vol.rotate(rot_mat, zero_nyquist=False)
 
             # Compare rotated volumes to reference volume within the shpere of radius L/4.
             # Check that rotated volumes are within 1% of reference volume.
