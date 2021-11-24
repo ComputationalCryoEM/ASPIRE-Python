@@ -255,12 +255,10 @@ class Volume:
     def shift(self):
         raise NotImplementedError
 
-    def rotate(self, vol_idx, rot_matrices, zero_nyquist=True):
+    def rotate(self, rot_matrices, zero_nyquist=True):
         """
-        Using the stack of rot_matrices,
-        rotate Volume[vol_idx].
+        Rotate volumes using the stack of rot_matrices,.
 
-        :param vol_idx: Volume index
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
         Defaults to zero_nyquist=True, removing the Nyquist frequency.
@@ -280,11 +278,9 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        data = self[vol_idx]
-
         pts_rot = rotated_grids_3d(self.resolution, rot_matrices)
 
-        vol_f = nufft(data, pts_rot)
+        vol_f = nufft(self.asnumpy(), pts_rot)
 
         vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
