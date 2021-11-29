@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from aspire.basis import DiracBasis, FFBBasis2D
-from aspire.classification import Align2D, BFRAlign2D, BFSRAlign2D
+from aspire.classification import AveragedAlign2D, BFRAlign2D, BFSRAlign2D
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
@@ -21,7 +21,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 @pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class Align2DTestCase(TestCase):
     # Subclasses should override `aligner` with a different class.
-    aligner = Align2D
+    aligner = AveragedAlign2D
 
     def setUp(self):
 
@@ -48,6 +48,11 @@ class Align2DTestCase(TestCase):
     def tearDown(self):
         pass
 
+    def _getSrc(self):
+        # Base Align2D does not require anything from source.
+        # Subclasses implement specific src
+        return None
+
     def testTypeMismatch(self):
 
         # Intentionally mismatch Basis and Aligner dtypes
@@ -57,7 +62,7 @@ class Align2DTestCase(TestCase):
             test_dtype = np.float32
 
         with self._caplog.at_level(logging.WARN):
-            self.aligner(self.basis, dtype=test_dtype)
+            self.aligner(self.basis, self._getSrc, dtype=test_dtype)
             assert " does not match self.dtype" in self._caplog.text
 
     def _construct_rotations(self):
@@ -91,6 +96,7 @@ class Align2DTestCase(TestCase):
         self.rots = Rotation.from_matrix(_rots)
 
 
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class BFRAlign2DTestCase(Align2DTestCase):
 
     aligner = BFRAlign2D
@@ -135,7 +141,7 @@ class BFRAlign2DTestCase(Align2DTestCase):
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
-            _ = self.aligner(basis)
+            _ = self.aligner(basis, self._getSrc())
 
     def testAlign(self):
         """
@@ -145,9 +151,10 @@ class BFRAlign2DTestCase(Align2DTestCase):
         """
 
         # Construction the Aligner and then call the main `align` method
-        _classes, _reflections, _rotations, _shifts, _ = self.aligner(
-            self.basis, n_angles=self.n_search_angles
-        ).align(self.classes, self.reflections, self.coefs)
+        algnr = self.aligner(self.basis, self._getSrc(), n_angles=self.n_search_angles)
+        _, _classes, _reflections, _rotations, _shifts, _ = algnr.align(
+            self.classes, self.reflections, self.coefs
+        )
 
         self.assertTrue(np.all(_classes == self.classes))
         self.assertTrue(np.all(_reflections == self.reflections))
@@ -162,6 +169,7 @@ class BFRAlign2DTestCase(Align2DTestCase):
         )
 
 
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class BFSRAlign2DTestCase(BFRAlign2DTestCase):
 
     aligner = BFSRAlign2D
@@ -192,7 +200,7 @@ class BFSRAlign2DTestCase(BFRAlign2DTestCase):
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `shift` method."):
-            _ = self.aligner(basis)
+            _ = self.aligner(basis, self._getSrc())
 
     def testAlign(self):
         """
@@ -202,9 +210,16 @@ class BFSRAlign2DTestCase(BFRAlign2DTestCase):
         """
 
         # Construction the Aligner and then call the main `align` method
-        _classes, _reflections, _rotations, _shifts, _ = self.aligner(
-            self.basis, n_angles=self.n_search_angles, n_x_shifts=1, n_y_shifts=1
-        ).align(self.classes, self.reflections, self.coefs)
+        algnr = self.aligner(
+            self.basis,
+            self._getSrc(),
+            n_angles=self.n_search_angles,
+            n_x_shifts=1,
+            n_y_shifts=1,
+        )
+        _, _classes, _reflections, _rotations, _shifts, _ = algnr.align(
+            self.classes, self.reflections, self.coefs
+        )
 
         self.assertTrue(np.all(_classes == self.classes))
         self.assertTrue(np.all(_reflections == self.reflections))

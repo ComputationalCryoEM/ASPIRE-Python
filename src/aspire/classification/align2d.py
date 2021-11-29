@@ -1,51 +1,61 @@
 import logging
+from abc import ABC, abstractmethod
 from itertools import product
 
 import numpy as np
-from tqdm import trange
+from tqdm import tqdm, trange
+
+from aspire.image import Image
+from aspire.source import ArrayImageSource
 
 logger = logging.getLogger(__name__)
 
 
-class Align2D:
+class Align2D(ABC):
     """
     Base class for 2D Image Alignment methods.
     """
 
-    def __init__(self, basis, dtype):
+    def __init__(self, alignment_basis, source, composite_basis=None, dtype=None):
         """
-        :param basis: Basis to be used for any methods during alignment.
+        :param alignment_basis: Basis to be used during alignment (eg FSPCA)
+        :param source: Source of original images.
+        :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param dtype: Numpy dtype to be used during alignment.
         """
 
-        self.basis = basis
+        self.alignment_basis = alignment_basis
+        # if composite_basis is None, use alignment_basis
+        self.composite_basis = composite_basis or self.alignment_basis
+        self.src = source
         if dtype is None:
-            self.dtype = self.basis.dtype
+            self.dtype = self.alignment_basis.dtype
         else:
             self.dtype = np.dtype(dtype)
-            if self.dtype != self.basis.dtype:
+            if self.dtype != self.alignment_basis.dtype:
                 logger.warning(
-                    f"Align2D basis.dtype {self.basis.dtype} does not match self.dtype {self.dtype}."
+                    f"Align2D alignment_basis.dtype {self.alignment_basis.dtype} does not match self.dtype {self.dtype}."
                 )
 
+    @abstractmethod
     def align(self, classes, reflections, basis_coefficients):
         """
         Any align2D alignment method should take in the following arguments
-        and return the described tuple.
+        and return aligned images.
 
-        Generally, the returned `classes` and `reflections` should be same as
-        the input.  They are passed through for convience,
-        considering they would all be required for image output.
+        During this process `rotations`, `reflections`, `shifts` and
+        `correlations` propeties will be computed for aligners
+        that implement them.
 
-        Returned `rotations` is an (n_classes, n_nbor) array of angles,
+        `rotations` would be an (n_classes, n_nbor) array of angles,
         which should represent the rotations needed to align images within
         that class. `rotations` is measured in Radians.
 
-        Returned `correlations` is an (n_classes, n_nbor) array representing
+        `correlations` is an (n_classes, n_nbor) array representing
         a correlation like measure between classified images and their base
         image (image index 0).
 
-        Returned `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
+        `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
         which should represent the translation needed to best align the images
         within that class.
 
@@ -55,12 +65,79 @@ class Align2D:
         :param refl: (n_classes, n_nbor) bool array of corresponding reflections
         :param coef: (n_img, self.pca_basis.count) compressed basis coefficients
 
-        :returns: (classes, reflections, rotations, shifts, correlations)
+        :returns: Image instance (stack of images)
         """
-        raise NotImplementedError("Subclasses must implement align.")
 
 
-class BFRAlign2D(Align2D):
+class AveragedAlign2D(Align2D):
+    """
+    Subclass supporting aligners which perform averaging during output.
+    """
+
+    def align(self, classes, reflections, basis_coefficients):
+        """
+        See Align2D.align
+        """
+        # Correlations are currently unused, but left for future extensions.
+        cls, ref, rot, shf, corrs = self._align(
+            classes, reflections, basis_coefficients
+        )
+        return self.average(cls, ref, rot, shf), cls, ref, rot, shf, corrs
+
+    def average(
+        self,
+        classes,
+        reflections,
+        rotations,
+        shifts=None,
+        coefs=None,
+    ):
+        """
+        Combines images using averaging in provided `basis`.
+
+        :param classes: class indices (refering to src). (n_img, n_nbor)
+        :param reflections: Bool representing whether to reflect image in `classes`
+        :param rotations: Array of in-plane rotation angles (Radians) of image in `classes`
+        :param shifts: Optional array of shifts for image in `classes`.
+        :coefs: Optional Fourier bessel coefs (avoids recomputing).
+        :return: Stack of Synthetic Class Average images as Image instance.
+        """
+        n_classes, n_nbor = classes.shape
+
+        # TODO: don't load all the images here.
+        imgs = self.src.images(0, self.src.n)
+        b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
+
+        for i in tqdm(range(n_classes)):
+            # Get the neighbors
+            neighbors_ids = classes[i]
+
+            # Get coefs in Composite_Basis if not provided as an argument.
+            if coefs is None:
+                neighbors_imgs = Image(imgs[neighbors_ids])
+                if shifts is not None:
+                    neighbors_imgs.shift(shifts[i])
+                neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
+            else:
+                neighbors_coefs = coefs[neighbors_ids]
+                if shifts is not None:
+                    neighbors_coefs = self.composite_basis.shift(
+                        neighbors_coefs, shifts[i]
+                    )
+
+            # Rotate in composite_basis
+            neighbors_coefs = self.composite_basis.rotate(
+                neighbors_coefs, rotations[i], reflections[i]
+            )
+
+            # Averaging in composite_basis
+            b_avgs[i] = np.mean(neighbors_coefs, axis=0)
+
+        # Now we convert the averaged images from Basis to Cartesian.
+        return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
+
+
+class BFRAlign2D(AveragedAlign2D):
     """
     This perfoms a Brute Force Rotational alignment.
 
@@ -69,24 +146,29 @@ class BFRAlign2D(Align2D):
         and then identifies angle yielding largest correlation(dot).
     """
 
-    def __init__(self, basis, n_angles=359, dtype=None):
+    def __init__(
+        self, alignment_basis, source, composite_basis=None, n_angles=359, dtype=None
+    ):
         """
-        :params basis: Basis providing a `rotate` method.
+        :params alignment_basis: Basis providing a `rotate` method.
+        :param source: Source of original images.
         :params n_angles: Number of brute force rotations to attempt, defaults 359.
         """
-        super().__init__(basis, dtype)
+        super().__init__(alignment_basis, source, composite_basis, dtype)
 
         self.n_angles = n_angles
 
-        if not hasattr(self.basis, "rotate"):
+        if not hasattr(self.alignment_basis, "rotate"):
             raise RuntimeError(
-                f"BFRAlign2D's basis {self.basis} must provide a `rotate` method."
+                f"BFRAlign2D's alignment_basis {self.alignment_basis} must provide a `rotate` method."
             )
 
-    def align(self, classes, reflections, basis_coefficients):
+    def _align(self, classes, reflections, basis_coefficients):
         """
-        See `Align2D.align`
+        Performs the actual rotational alignment estimation,
+        returning parameters needed for averaging.
         """
+
         # Admit simple case of single case alignment
         classes = np.atleast_2d(classes)
         reflections = np.atleast_2d(reflections)
@@ -108,7 +190,9 @@ class BFRAlign2D(Align2D):
 
             for i, angle in enumerate(test_angles):
                 # Rotate the set of neighbors by angle,
-                rotated_nbrs = self.basis.rotate(nbr_coef, angle, reflections[k])
+                rotated_nbrs = self.alignment_basis.rotate(
+                    nbr_coef, angle, reflections[k]
+                )
 
                 # then store dot between class base image (0) and each nbor
                 for j, nbor in enumerate(rotated_nbrs):
@@ -124,7 +208,6 @@ class BFRAlign2D(Align2D):
             for j in range(n_nbor):
                 correlations[k, j] = results[j, angle_idx[j]]
 
-        # None is placeholder for shifts
         return classes, reflections, rotations, None, correlations
 
 
@@ -139,7 +222,16 @@ class BFSRAlign2D(BFRAlign2D):
     Return the rotation and shift yielding the best results.
     """
 
-    def __init__(self, basis, n_angles=359, n_x_shifts=1, n_y_shifts=1, dtype=None):
+    def __init__(
+        self,
+        alignment_basis,
+        source,
+        composite_basis=None,
+        n_angles=359,
+        n_x_shifts=1,
+        n_y_shifts=1,
+        dtype=None,
+    ):
         """
         Note that n_x_shifts and n_y_shifts are the number of shifts to perform
         in each direction.
@@ -148,25 +240,25 @@ class BFSRAlign2D(BFRAlign2D):
 
         n_x_shifts=n_y_shifts=0 is the same as calling BFRAlign2D.
 
-        :params basis: Basis providing a `shift` and `rotate` method.
+        :params alignment_basis: Basis providing a `shift` and `rotate` method.
         :params n_angles: Number of brute force rotations to attempt, defaults 359.
         :params n_x_shifts: +- Number of brute force xshifts to attempt, defaults 1.
         :params n_y_shifts: +- Number of brute force xshifts to attempt, defaults 1.
         """
-        super().__init__(basis, n_angles, dtype)
+        super().__init__(alignment_basis, source, composite_basis, n_angles, dtype)
 
         self.n_x_shifts = n_x_shifts
         self.n_y_shifts = n_y_shifts
 
-        if not hasattr(self.basis, "shift"):
+        if not hasattr(self.alignment_basis, "shift"):
             raise RuntimeError(
-                f"BFSRAlign2D's basis {self.basis} must provide a `shift` method."
+                f"BFSRAlign2D's alignment_basis {self.alignment_basis} must provide a `shift` method."
             )
 
-        # Each shift will require calling the parent BFRAlign2D.align
-        self._bfr_align = super().align
+        # Each shift will require calling the parent BFRAlign2D._align
+        self._bfr_align = super()._align
 
-    def align(self, classes, reflections, basis_coefficients):
+    def _align(self, classes, reflections, basis_coefficients):
         """
         See `Align2D.align`
         """
@@ -196,7 +288,7 @@ class BFSRAlign2D(BFRAlign2D):
         # We want to maintain the original coefs for the base images,
         #  because we will mutate them with shifts in the loop.
         original_coef = basis_coefficients[classes[:, 0], :]
-        assert original_coef.shape == (n_classes, self.basis.count)
+        assert original_coef.shape == (n_classes, self.alignment_basis.count)
 
         # Loop over shift search space, updating best result
         for x, y in product(x_shifts, y_shifts):
@@ -206,7 +298,7 @@ class BFSRAlign2D(BFRAlign2D):
             # Shift the coef representing the first (base) entry in each class
             #   by the negation of the shift
             # Shifting one image is more efficient than shifting every neighbor
-            basis_coefficients[classes[:, 0], :] = self.basis.shift(
+            basis_coefficients[classes[:, 0], :] = self.alignment_basis.shift(
                 original_coef, -shift
             )
 
@@ -242,18 +334,9 @@ class EMAlign2D(Align2D):
     Citation needed.
     """
 
-    def __init__(self, basis, dtype=None):
-        super().__init__(basis, dtype)
-
 
 class FTKAlign2D(Align2D):
     """
     Factorization of the translation kernel for fast rigid image alignment.
     Rangan, A.V., Spivak, M., Anden, J., & Barnett, A.H. (2019).
     """
-
-    def __init__(self, basis, dtype=None):
-        super().__init__(basis, dtype)
-
-    def align(self, classes, reflections, basis_coefficients):
-        raise NotImplementedError

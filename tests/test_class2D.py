@@ -191,8 +191,8 @@ class RIRClass2DTestCase(TestCase):
             bispectrum_implementation="legacy",
         )
 
-        result = rir.classify()
-        _ = rir.output(*result[:3])
+        classification_results = rir.classify()
+        _ = rir.averages(*classification_results)
 
     def testRIRDevelBisp(self):
         """
@@ -207,8 +207,8 @@ class RIRClass2DTestCase(TestCase):
             bispectrum_implementation="devel",
         )
 
-        result = rir.classify()
-        _ = rir.output(*result[:3])
+        classification_results = rir.classify()
+        _ = rir.averages(*classification_results)
 
     def testRIRsk(self):
         """
@@ -226,11 +226,17 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
-            aligner=BFSRAlign2D(self.noisy_fspca_basis, n_angles=100, n_x_shifts=0),
+            aligner=BFSRAlign2D(
+                self.noisy_fspca_basis,
+                self.noisy_src,
+                self.basis,
+                n_angles=100,
+                n_x_shifts=0,
+            ),
         )
 
-        result = rir.classify()
-        _ = rir.output(*result[:4])
+        classification_results = rir.classify()
+        _ = rir.averages(*classification_results)
 
     def testEigenImages(self):
         """
