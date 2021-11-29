@@ -46,7 +46,8 @@ class Apple:
             Heimowitz, Ayelet; Andén, Joakim; Singer, Amit.
             Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
 
-        :param particle_size: Particle size (pixels) is required.  Remaining parameters generally have defaults based on Particle size.
+        :param particle_size: Particle size (pixels) is required.
+        Remaining parameters generally have defaults based on particle size.
         :param min_particle_size:
         :param max_particle_size:
         :param query_image_size:
@@ -246,7 +247,7 @@ class Apple:
 
         :param filepath: mrc filepath
         :param centers: Particle centers, typically from `process_micrograph_centers`.
-        :param create_jpg: Optionally writes jpg file with picked particles.
+        :param create_jpg: Optionally writes JPG file with picked particles.
         :return: `particle_image`
         """
 
@@ -262,13 +263,25 @@ class Apple:
             picker.original_im, picker.particle_size, centers
         )
 
+        output_dir = self.output_dir
+
+        # If user wants to create_jpg, but has None output_dir,
+        #  warn them and use local dir instead of crashing.
+        if create_jpg and output_dir is None:
+            output_dir = "."
+            logger.warn(
+                "`create_jpg` called with (default) output_dir=None."
+                f'  Using output_dir = "{output_dir}".'
+                "  To avoid this warning, set `output_dir` when creating JPG files."
+            )
+
         if create_jpg:
             # Create the image
             image_out = Image.fromarray((particle_image).astype(np.uint8))
 
             # Construct filename
             base = os.path.splitext(os.path.basename(picker.filename))[0]
-            filename_out = os.path.join(self.output_dir, f"{base}_result.jpg")
+            filename_out = os.path.join(output_dir, f"{base}_result.jpg")
 
             # Save the image
             image_out.save(filename_out)
@@ -281,7 +294,7 @@ class Apple:
 
         :param filepath: mrc filepath
         :param show_progress: Display progress bar
-        :param create_jpg: Optionally writes jpg file identifying picked particles.
+        :param create_jpg: Optionally writes JPG file identifying picked particles.
         :return: (`centers`, `particle_image`)
         """
 
