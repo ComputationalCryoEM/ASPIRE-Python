@@ -48,11 +48,10 @@ class ImageSource:
     objects, depending on unique CTF values found for _rlnDefocusU/_rlnDefocusV etc.
     """
 
-    """
-    The metadata_fields dictionary below specifies default data types of certain key fields used in the codebase.
-    The STAR file used to initialize subclasses of ImageSource may well contain other columns not found below; these
-    additional columns are available when read, and they default to the pandas data type 'object'.
-    """
+    # The metadata_fields dictionary below specifies default data types of certain key fields used in the codebase.
+    # The STAR file used to initialize subclasses of ImageSource may well contain other columns not found below; these
+    # additional columns are available when read, and they default to the pandas data type 'object'.
+
     metadata_fields = {
         "_rlnVoltage": float,
         "_rlnDefocusU": float,
