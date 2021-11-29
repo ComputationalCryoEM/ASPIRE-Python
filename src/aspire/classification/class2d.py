@@ -1,11 +1,12 @@
 import logging
+from abc import ABC
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-class Class2D:
+class Class2D(ABC):
     """
     Base class for 2D Image Classification methods.
     """
@@ -41,3 +42,15 @@ class Class2D:
         self.n_nbor = n_nbor
         self.n_classes = n_classes
         self.seed = seed
+
+    def classify(self):
+        """
+        Classify the images from Source into classes with similar viewing angles.
+
+        Returns classes and associated metadata (classes, reflections, distances)
+        """
+
+    def averages(self, classes, refl, distances):
+        """
+        Returns class averages using prescribed `aligner`.
+        """
