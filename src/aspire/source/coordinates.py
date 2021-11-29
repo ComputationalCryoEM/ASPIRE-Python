@@ -17,7 +17,35 @@ logger = logging.getLogger(__name__)
 
 
 class CoordinateSourceBase(ImageSource, ABC):
-    """Base Class defining CoordinateSource interface."""
+    """
+    Base class defining common methods for data sources consisting of full
+    micrographs coupled with files specifying the locations of picked
+    particles in each micrograph.
+
+    Broadly, there are two ways this information is represented. Sometimes each
+    coordinate is simply the (X,Y) center location of the picked particle.
+    These sources may be loaded via the `CentersCoordinateSource` class.
+
+    Other formats adhere to the EMAN1 .box file specification, which
+    specifies a coordinate via four numbers:
+    (lower left X coordinate, lower left Y coordinate, X size, Y size)
+    These can be loaded via the `EmanCoordinateSource` class.
+
+    Regardless of source, the coordinates of each particle are represented
+    internally in the EMAN1 .box format.
+
+    An addtional subclass exists for points in the Relion pipeline where
+    particles in a micrograph are represented by coordinates, but not yet
+    cropped out: `RelionCoordinateSource`. This class allows the output of
+    AutoPick and ManualPick jobs to be loaded into an ASPIRE source.
+
+    Particle information is extracted from the micrographs and coordinate files
+    and put into a common data structure (self.particles)
+
+    The `_images()` method, called via `ImageSource.images()` crops
+    the particle images out of the micrograph and returns them as a stack.
+    This also allows the CoordinateSourceBase to be saved to an `.mrcs` stack.
+    """
 
     def __init__(
         self,
@@ -26,20 +54,27 @@ class CoordinateSourceBase(ImageSource, ABC):
         data_folder,
         particle_size,
         pixel_size,
-        B,
         max_rows,
         dtype,
     ):
         self.dtype = np.dtype(dtype)
         self.particle_size = particle_size
+
+        # keep this list to identify micrograph paths by index rather than
+        # storing many copies of the same string
+        self.mrc_paths = mrc_paths
+
         # The internal representation of micrographs and their picked coords
-        # is a list of tuples (micrograph_filepath, coordinate), where the coordinate
-        # is a list of the form [lower left X, lower left Y, size X, size Y].
+        # is a list of tuples (index of micrograph, coordinate), where
+        # the coordinate is a list of the form:
+        # [lower left X, lower left Y, size X, size Y].
+        # the micrograph's filepath can be recovered from self.mrc_paths
         self.particles = []
         self.populate_particles(mrc_paths, coord_paths)
 
-        # get first micrograph and first coordinate to report some data the user
-        first_mrc, first_coord = self.particles[0]
+        # get first micrograph and first coordinate to report some data
+        first_mrc_index, first_coord = self.particles[0]
+        first_mrc = self.mrc_paths[first_mrc_index]
         with mrcfile.open(first_mrc) as mrc_file:
             mrc_dtype = np.dtype(mrc_file.data.dtype)
             shape = mrc_file.data.shape
@@ -118,12 +153,11 @@ class CoordinateSourceBase(ImageSource, ABC):
         All subclasses create mrc_paths and coord_paths lists and pass them to
         this method.
         """
-        for i, mrc_path in enumerate(mrc_paths):
-            # read in all coordinates for the given mrc
-            # using subclass's method of reading the file
+        for i, _mrc in enumerate(mrc_paths):
+            # read in all coordinates for the given mrc using subclass's
+            # method of reading the corresponding coord file
             self.particles += [
-                (mrc_path, coord)
-                for coord in self.coords_list_from_file(coord_paths[i])
+                (i, coord) for coord in self.coords_list_from_file(coord_paths[i])
             ]
 
     @abstractmethod
@@ -223,7 +257,7 @@ class CoordinateSourceBase(ImageSource, ABC):
             indices = np.arange(start, min(start + num, self.n))
         else:
             start = indices.min()
-        # logger.info(f"Loading {len(indices)} images from micrographs")
+        logger.info(f"Loading {len(indices)} images from micrographs")
 
         selected_particles = [self.particles[i] for i in indices]
         # initialize empty array to hold particle stack
@@ -233,9 +267,12 @@ class CoordinateSourceBase(ImageSource, ABC):
         )
 
         # group particles by micrograph
-        # keep track of how many particles were added for each micrograph (offset)
+        # keep track of how many particles were cumulatively added for each
+        # micrograph (to offset indices of the resulting Image)
         offset = 0
-        for fp, grouped in groupby(selected_particles, itemgetter(0)):
+        for mrc_index, grouped in groupby(selected_particles, itemgetter(0)):
+            # get fp of micrograph at position mrc_index
+            fp = self.mrc_paths[mrc_index]
             # open microrgraph once
             with mrcfile.open(fp) as mrc_in:
                 arr = mrc_in.data.astype(self.dtype)
@@ -243,27 +280,51 @@ class CoordinateSourceBase(ImageSource, ABC):
                 raise ValueError(
                     f"Shape of {fp} is {arr.shape}, but expected {self.mrc_shape}"
                 )
-            # get list of coordinates
-            coords = [g[1] for g in list(grouped)]
-            for i, coord in enumerate(coords):
-                cropped = self.crop_micrograph(arr, coord)
+            # cannot get length of iterator 'grouped' w/o consuming it
+            # so we use a counter variable to update the offset
+            particles_added = 0
+            for i, particle in enumerate(grouped):
+                # particle is the tuple (mrc_index, coord)
+                cropped = self.crop_micrograph(arr, particle[1])
                 im[offset + i] = cropped
-            # offset increases by number of particles we added during this iteration
-            offset += len(coords)
+                particles_added += 1
+
+            # offset increases by number of particles we added from this
+            # micrograph
+            offset += particles_added
 
         return Image(im)
 
 
 class EmanCoordinateSource(CoordinateSourceBase):
-    """Eman .box-format specific implementations."""
+    """
+    Represents a data source consisting of micrographs and coordinate files
+    in EMAN1 .box format.
+    """
 
     def __init__(
-        self, files, data_folder, particle_size, pixel_size, B, max_rows, dtype
+        self,
+        files,
+        data_folder=None,
+        particle_size=0,
+        pixel_size=1,
+        max_rows=None,
+        dtype="double",
     ):
+        """
+        :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
+        :param data_folder: Path to which filepaths provided are relative
+        :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
+        :param pixel_size: Pixel size of micrographs in Angstroms (default: 1)
+        :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
+        :param dtype: dtype with which to load images (default: double)
+        """
 
+        # get full filepaths and data folder
         mrc_paths, coord_paths, data_folder = self._check_and_get_paths(
             files, data_folder
         )
+        # instantiate super
         CoordinateSourceBase.__init__(
             self,
             mrc_paths,
@@ -271,7 +332,6 @@ class EmanCoordinateSource(CoordinateSourceBase):
             data_folder,
             particle_size,
             pixel_size,
-            B,
             max_rows,
             dtype,
         )
@@ -279,7 +339,7 @@ class EmanCoordinateSource(CoordinateSourceBase):
     def populate_particles(self, mrc_paths, coord_paths):
         """
         Extract coordinates from .box format particles, which specify particles
-        as 'lower_left_x lower_left_y size_x size_y' and populate self.particles
+        and populate self.particles
         """
         # Look into the first coordinate path given and validate format
         with open(coord_paths[0], "r") as first_coord_file:
@@ -337,15 +397,32 @@ class EmanCoordinateSource(CoordinateSourceBase):
 
 class CentersCoordinateSource(CoordinateSourceBase):
     """
-    Code specifically handling data sources with coordinate files containing just particle centers
+    Represents a data source consisting of micrographs and coordinate files specifying particle centers only
     """
 
     def __init__(
-        self, files, data_folder, particle_size, pixel_size, B, max_rows, dtype
+        self,
+        files,
+        data_folder=None,
+        particle_size=0,
+        pixel_size=1,
+        max_rows=None,
+        dtype="double",
     ):
+        """
+        :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
+        :param data_folder: Path to which filepaths provided are relative
+        :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
+        :param pixel_size: Pixel size of micrographs in Angstroms (default: 1)
+        :param max_rows: Maximum number of particles to read. (If `None`, will
+        attempt to load all particles)
+        :param dtype: dtype with which to load images (default: double)
+        """
+        # get full filepaths and data folder
         mrc_paths, coord_paths, data_folder = self._check_and_get_paths(
             files, data_folder
         )
+        # instantiate super
         CoordinateSourceBase.__init__(
             self,
             mrc_paths,
@@ -353,7 +430,6 @@ class CentersCoordinateSource(CoordinateSourceBase):
             data_folder,
             particle_size,
             pixel_size,
-            B,
             max_rows,
             dtype,
         )
@@ -382,20 +458,29 @@ class CentersCoordinateSource(CoordinateSourceBase):
 
 
 class RelionCoordinateSource(CoordinateSourceBase):
-    """Relion specific implementations."""
+    """
+    Represents a data source derived from an autopick.star file within a Relion
+    project directory.
+    """
 
     def __init__(
         self,
         relion_autopick_star,
-        data_folder,
         particle_size,
         pixel_size,
-        B,
         max_rows,
         dtype,
     ):
+        """
+                :param files: Relion STAR file e.g. autopick.star mapping micrographs to coordinate STAR files.
+                :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
+                :param pixel_size: Pixel size of micrographs in Angstroms (default: 1)
+                :param max_rows: Maximum number of particles to read. (If `None`, will
+        attempt to load all particles)
+                :param dtype: dtype with which to load images (default: double)
+        """
 
-        # if not absolute, assume relative to working dir
+        # if not absolute path to star file, assume relative to working dir
         if not os.path.isabs(relion_autopick_star):
             relion_autopick_star = os.path.join(os.getcwd(), relion_autopick_star)
 
@@ -414,6 +499,7 @@ class RelionCoordinateSource(CoordinateSourceBase):
         mrc_paths = [os.path.join(data_folder, f[0]) for f in files]
         coord_paths = [os.path.join(data_folder, f[1]) for f in files]
 
+        # instantiate super
         CoordinateSourceBase.__init__(
             self,
             mrc_paths,
@@ -421,7 +507,6 @@ class RelionCoordinateSource(CoordinateSourceBase):
             data_folder,
             particle_size,
             pixel_size,
-            B,
             max_rows,
             dtype,
         )
@@ -447,12 +532,10 @@ class RelionCoordinateSource(CoordinateSourceBase):
 
 class CoordinateSource:
     """
-    User-facing interface for constructing a CoordinateSource. This class selects and returns
-    an appropriate subclass of `CoordinateSourceBase` based on the arguments provided
+    Public interface for constructing a CoordinateSourceBase subclass. This
+    class selects and returns an appropriate subclass of `CoordinateSourceBase'
+    based on the arguments provided
     """
-
-    # Factory for selecting and implementing a concrete subclass of CoordinateSourceBase
-    # Pretty much it's only purpose is to select and return the right subclass of CoordinateSourceBase
 
     def __new__(
         self,
@@ -461,7 +544,6 @@ class CoordinateSource:
         particle_size=0,
         centers=False,
         pixel_size=1,
-        B=0,
         max_rows=None,
         relion_autopick_star=None,
         dtype="double",
@@ -474,7 +556,6 @@ class CoordinateSource:
         :param particle_size: Desired size of cropped particles
         :param centers: Set to true if the coordinates represent particle centers
         :param pixel_size: Pixel size of  micrographs in Angstroms (default: 1)
-        :param B: Envelope decay of the CTF in inverse Angstroms (default: 0)
         :param max_rows: Maximum number of particles to read. (If None, will attempt to load all particles)
         :param relion_autopick_star: Relion star file from AutoPick or ManualPick jobs (e.g. AutoPick/job006/autopick.star)
         """
@@ -490,10 +571,8 @@ class CoordinateSource:
                 )
             return RelionCoordinateSource(
                 relion_autopick_star,
-                data_folder,
                 particle_size,
                 pixel_size,
-                B,
                 max_rows,
                 dtype,
             )
@@ -513,7 +592,6 @@ class CoordinateSource:
                     data_folder,
                     particle_size,
                     pixel_size,
-                    B,
                     max_rows,
                     dtype,
                 )
@@ -525,7 +603,6 @@ class CoordinateSource:
                     data_folder,
                     particle_size,
                     pixel_size,
-                    B,
                     max_rows,
                     dtype,
                 )
