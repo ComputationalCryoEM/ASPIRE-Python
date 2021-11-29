@@ -247,7 +247,7 @@ class PSWFBasis2D(Basis):
         :param theta: Phase part to evaluate
         :param max_ns: List of ints max_ns[i] is max n to to use for N=i, not included.
             If max_ns[i]<1 N=i won't be used
-        :return: sum(max_ns), (len(r)) ndarray
+        :return: (sum(max_ns), len(r)) ndarray
             Indices are corresponding to the list (N, n)
             (0, 0),..., (max_ns[0], 0), (0, 1),..., (max_ns[1], 1),... , (0, len(max_ns)-1),
             (max_ns[-1], len(max_ns)-1)
