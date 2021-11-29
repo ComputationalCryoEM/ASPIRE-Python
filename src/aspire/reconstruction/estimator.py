@@ -15,6 +15,15 @@ logger = logging.getLogger(__name__)
 
 class Estimator:
     def __init__(self, src, basis, batch_size=512, preconditioner="circulant"):
+        """
+        An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
+        least-squares estimator kernel.
+        Convolving a volume with this kernel is equal to projecting and backproject-ing that volume in each of the
+        projection directions (with the appropriate amplitude multipliers and CTFs) and averaging over the whole
+        dataset.
+        Note that this is a non-centered Fourier transform, so the zero frequency is found at index 1.
+        """
+
         self.src = src
         self.basis = basis
         self.dtype = self.src.dtype
@@ -35,15 +44,6 @@ class Estimator:
                 "Currently require 2D source and 3D volume resolution to be the same."
                 f" Given src.L={src.L} != {basis.nres}"
             )
-
-        """
-        An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
-        least-squares estimator kernel.
-        Convolving a volume with this kernel is equal to projecting and backproject-ing that volume in each of the
-        projection directions (with the appropriate amplitude multipliers and CTFs) and averaging over the whole
-        dataset.
-        Note that this is a non-centered Fourier transform, so the zero frequency is found at index 1.
-        """
 
     def __getattr__(self, name):
         """Lazy attributes instantiated on first-access"""
