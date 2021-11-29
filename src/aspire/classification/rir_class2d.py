@@ -165,7 +165,6 @@ class RIRClass2D(Class2D):
         #  default of 400 components was taken from legacy code.
         # Instantiate a new compressed (truncated) basis.
         if self.pca_basis is None:
-            # self.pca_basis = self.pca_basis.compress(self.fspca_components)
             self.pca_basis = FSPCABasis(self.src, components=self.fspca_components)
 
         # For convenience, assign the fb_basis used in the pca_basis.
@@ -174,7 +173,9 @@ class RIRClass2D(Class2D):
         # When not provided by a user, the aligner is instantiated after
         #  we are certain our pca_basis has been constructed.
         if self.aligner is None:
-            self.aligner = BFRAlign2D(self.pca_basis, dtype=self.dtype)
+            self.aligner = BFRAlign2D(
+                self.pca_basis, self.src, self.fb_basis, dtype=self.dtype
+            )
 
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
@@ -184,7 +185,7 @@ class RIRClass2D(Class2D):
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info("Calculate Nearest Neighbors")
-        classes, refl, distances = self.nn_classification(coef_b, coef_b_r)
+        classes, reflections, distances = self.nn_classification(coef_b, coef_b_r)
 
         if diagnostics:
             # Lets peek at the distribution of distances
@@ -193,8 +194,14 @@ class RIRClass2D(Class2D):
             plt.show()
 
             # Report some information about reflections
-            logger.info(f"Count reflected: {np.sum(refl)}" f" {100 * np.mean(refl) } %")
+            logger.info(
+                f"Count reflected: {np.sum(reflections)}"
+                f" {100 * np.mean(reflections) } %"
+            )
 
+        return classes, reflections, distances
+
+    def averages(self, classes, reflections, distances):
         # # Stage 3: Class Selection
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
         # This is an area open to active research.
@@ -206,11 +213,21 @@ class RIRClass2D(Class2D):
         logger.info(
             f"Begin Rotational Alignment of {classes.shape[0]} Classes using {self.aligner}."
         )
-        if not self.aligner.basis == self.pca_basis:
-            raise RuntimeError(
-                f"Aligner {self.aligner} basis does not match FSPCA basis."
-            )
-        return self.aligner.align(classes, refl, self.fspca_coef)
+
+        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
+        classes, reflections = self.select_classes(classes, reflections)
+
+        return self.aligner.align(classes, reflections, self.fspca_coef)
+
+    def select_classes(self, classes, reflections):
+        """
+        Select the `n_classes` to align from the (n_images) population of classes.
+        """
+        # generate indices for random sample (can do something smart with corr later).
+        # For testing just take the first n_classes so it matches earlier plots for manual comparison
+        # This is assumed to be reasonably random.
+        selection = np.arange(self.n_classes)
+        return classes[selection], reflections[selection]
 
     def pca(self, M):
         """
@@ -297,61 +314,6 @@ class RIRClass2D(Class2D):
         return classes, refl, distances
 
         return indices
-
-    def output(
-        self,
-        classes,
-        classes_refl,
-        rot,
-        shifts=None,
-        coefs=None,
-    ):
-        """
-        Return class averages.
-
-        :param classes: class indices (refering to src). (n_img, n_nbor)
-        :param classes_refl: Bool representing whether to reflect image in `classes`
-        :param rot: Array of in-plane rotation angles (Radians) of image in `classes`
-        :param shifts: Optional array of shifts for image in `classes`.
-        :coefs: Optional Fourier bessel coefs (avoids recomputing).
-        :return: Stack of Synthetic Class Average images as Image instance.
-        """
-
-        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        # generate indices for random sample (can do something smart with corr later).
-        # For testing just take the first n_classes so it matches earlier plots for manual comparison
-        # This is assumed to be reasonably random.
-        selection = np.arange(self.n_classes)
-
-        imgs = self.src.images(0, self.src.n)
-        fb_avgs = np.empty((self.n_classes, self.fb_basis.count), dtype=self.src.dtype)
-
-        for i in tqdm(range(self.n_classes)):
-            j = selection[i]
-            # Get the neighbors
-            neighbors_ids = classes[j]
-
-            # Get coefs in Fourier Bessel Basis if not provided as an argument.
-            if coefs is None:
-                neighbors_imgs = Image(imgs[neighbors_ids])
-                if shifts is not None:
-                    neighbors_imgs.shift(shifts[i])
-                neighbors_coefs = self.fb_basis.evaluate_t(neighbors_imgs)
-            else:
-                neighbors_coefs = coefs[neighbors_ids]
-                if shifts is not None:
-                    neighbors_coefs = self.fb_basis.shift(neighbors_coefs, shifts[i])
-
-            # Rotate in Fourier Bessel
-            neighbors_coefs = self.fb_basis.rotate(
-                neighbors_coefs, rot[j], classes_refl[j]
-            )
-
-            # Averaging in FB
-            fb_avgs[i] = np.mean(neighbors_coefs, axis=0)
-
-        # Now we convert the averaged images from FB to Cartesian.
-        return ArrayImageSource(self.fb_basis.evaluate(fb_avgs))
 
     def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """
