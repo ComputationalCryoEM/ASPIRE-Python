@@ -14,16 +14,16 @@ logger = logging.getLogger(__name__)
     "--mrc_path",
     help="Path to an mrc file or folder containing all mrcs for particle picking.",
 )
-@click.option(
-    "--create_jpg", is_flag=True, help="save *.jpg files for picked particles."
-)
+@click.option("--create_jpg", is_flag=True, help="save JPG files for picked particles.")
 @click.option(
     "--output_dir",
-    help="Path to folder to save *.star files. If unspecified, no star files are created.",
+    help="Path to folder to save STAR files. If unspecified, no STAR files are created.",
+    default=None,
+    type=str,
 )
 @click.option(
     "--particle_size",
-    help="Particle Size in pixels.  Many other options have internal defaults based off of Particle Size.",
+    help="Particle size in pixels.  Many other options have internal defaults based off of particle size.",
     required=True,
     type=int,
 )
