@@ -12,6 +12,7 @@ from aspire.utils import Rotation, ensure, mat_to_vec, vec_to_mat
 from aspire.utils.coor_trans import grid_2d, grid_3d
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import Random, randn
+from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -257,13 +258,17 @@ class Volume:
 
     def rotate(self, rot_matrices, zero_nyquist=True):
         """
-        Rotate volumes using the stack of rot_matrices,.
+        Rotate volumes using a stack of rotation matrices, a `Rotation` object,
+        or a list of `Rotation` objects of length 1 or n_vols. If a list of
+        length n_vols is supplied, the ith volume will be rotated by the ith
+        `Rotation` object. Otherwise, the stack, or `Rotation` object, will be
+        broadcast across all volumes.
 
-        :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
+        :param rot_matrices: Stack of rotation matrices (ndarray), `Rotation` object, or list of `Rotation` objects
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
         Defaults to zero_nyquist=True, removing the Nyquist frequency.
 
-        :return: `Volume` instance.
+        :return: `Volume` instance or list of `Volume` instances.
         """
 
         # If we are an ASPIRE Rotation, get the numpy representation.
@@ -278,23 +283,71 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        pts_rot = rotated_grids_3d(self.resolution, rot_matrices)
+        # We reshape to a 4dArray to index across Rotation objects
+        # If we have a list of N Rotation objects with shape K x 3 x 3, we reshape as N x K x 3 x 3 array.
+        # If we have a single Rotation object or set of K rotation matrices we reshape as 1 x K x 3 x 3.
+        if isinstance(rot_matrices, list):
+            ensure(
+                len(rot_matrices) == self.n_vols or 1,
+                "Rotation object list length must equal number of volumes or 1.",
+            )
+            rot_matrices = np.reshape(rot_matrices, (len(rot_matrices), -1, 3, 3))
+        else:
+            rot_matrices = np.reshape(rot_matrices, (1, -1, 3, 3))
 
-        vol_f = nufft(self.asnumpy(), pts_rot)
+        N = len(rot_matrices)  # Number of Rotation objects
+        K = len(rot_matrices[0])  # Rotation stack size
 
-        vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
+        # If N = 1 we broadcast the single Rotation object across each volume.
+        # In this case we return a Volume object with n_vols * K volumes.
+        if N == 1:
+            pts_rot = rotated_grids_3d(self.resolution, rot_matrices[0])
+            vol_f = nufft(self.asnumpy(), pts_rot)
+            vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
-        # If resolution is even, we zero out the nyquist frequency by default.
-        if self.resolution % 2 == 0 and zero_nyquist is True:
-            vol_f[:, 0, :, :] = 0
-            vol_f[:, :, 0, :] = 0
-            vol_f[:, :, :, 0] = 0
+            # If resolution is even, we zero out the nyquist frequency by default.
+            if self.resolution % 2 == 0 and zero_nyquist is True:
+                vol_f[:, 0, :, :] = 0
+                vol_f[:, :, 0, :] = 0
+                vol_f[:, :, :, 0] = 0
 
-        vol = xp.asnumpy(
-            np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
-        )
+            vol = xp.asnumpy(
+                np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
+            )
 
-        return Volume(vol)
+            return Volume(vol)
+
+        # If N > 1 we apply a unique Rotation object to each volume.
+        # In this case, we return a list of length N containing Volume objects with K volumes.
+        else:
+            pts_rot = np.zeros((N, 3, K * self.resolution ** 3))
+            vol_f = np.empty(
+                (N, K * self.resolution ** 3), dtype=complex_type(self.dtype)
+            )
+            for i in range(N):
+                pts_rot[i] = rotated_grids_3d(self.resolution, rot_matrices[i])
+
+                vol_f[i] = nufft(self[i], pts_rot[i])
+
+            vol_f = vol_f.reshape(
+                N, K, self.resolution, self.resolution, self.resolution
+            )
+
+            # If resolution is even, we zero out the nyquist frequency by default.
+            if self.resolution % 2 == 0 and zero_nyquist is True:
+                vol_f[:, :, 0, :, :] = 0
+                vol_f[:, :, :, 0, :] = 0
+                vol_f[:, :, :, :, 0] = 0
+
+            vol_list = list()
+            vol = np.zeros((N, K, self.resolution, self.resolution, self.resolution))
+            for i in range(N):
+                vol[i] = xp.asnumpy(
+                    np.real(fft.centered_ifftn(xp.asarray(vol_f[i]), axes=(-3, -2, -1)))
+                )
+                vol_list.append(Volume(vol[i]))
+
+            return vol_list
 
     def denoise(self):
         raise NotImplementedError
