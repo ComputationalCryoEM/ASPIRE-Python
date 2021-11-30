@@ -380,10 +380,10 @@ class EmanCoordinateSource(CoordinateSourceBase):
         """
         _resized_particles = []
         for particle in self.particles:
-            fp, coord = particle
+            mrc_index, coord = particle
             _resized_particles.append(
                 (
-                    fp,
+                    mrc_index,
                     [
                         coord[0] + (old_size - new_size) // 2,
                         coord[1] + (old_size - new_size) // 2,
