@@ -32,9 +32,11 @@ logger = logging.getLogger(__name__)
     help="Path to starfile of the particle stack to be created",
 )
 @click.option(
-    "--particle_size", default=0, help="Desired box size of particles to be extracted"
+    "--particle_size",
+    default=0,
+    help="Desired box size (in pixels) of particles to be extracted",
 )
-@click.option("--pixel_size", default=1, help="Pixel size of images in Angstroms")
+@click.option("--pixel_size", default=1.0, help="Pixel size of images in Angstroms")
 @click.option(
     "--centers",
     default=False,
@@ -64,9 +66,13 @@ def mrc_to_stack(
     overwrite,
 ):
     """
-    Given a dataset of picked particles with full micrographs and particle
-    coordinate files, extract the particles into one or more .mrcs stacks and
-    generate a STAR file.
+    Given a dataset of full micrographs and corresponding coordinate files
+    containing the locations of picked particles in the .mrc, extract the
+    particles into one or more .mrcs stacks and generate a STAR file.
+
+    Example usage:
+
+    aspire mrc-to-stack --mrc_paths my/data/*.mrc --coord_paths my/data/coords/*.coord --starfile_out my_dataset_stack.star --particle_size 256 --pixel_size 1.3
     """
 
     # mrc_paths and coord_paths can be either paths to text files
