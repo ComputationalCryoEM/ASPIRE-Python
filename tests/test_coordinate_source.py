@@ -18,6 +18,7 @@ from aspire.storage import StarFile
 
 class ParticleCoordinateSourceTestCase(TestCase):
     def setUp(self):
+        # temporary directory to set up a toy dataset
         self.tmpdir = tempfile.TemporaryDirectory()
         self.data_folder = self.tmpdir.name
         # load pickled list of picked particle centers
@@ -31,21 +32,22 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # get path to test .mrc file
         with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.original_mrc_path = str(test_path)
-        # get tempdir path as data_folder
-        self.data_folder = self.tmpdir.name
-        # save test data root dir
+        # save test data root dir (for Relion and data_folder tests)
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
+
         # We will construct a source with two micrographs and two coordinate
-        # file, by using the same micrograph, but dividing the coordinates
+        # files by using the same micrograph, but dividing the coordinates
         # among two files
         for i in range(2):
             # copy mrc to temp location
             _new_mrc_path = os.path.join(self.data_folder, f"sample{i+1}.mrc")
             shutil.copyfile(self.original_mrc_path, _new_mrc_path)
-            # this gets the first half of the coordinates for i=0 and
-            # the second half for i=1
+
+            # get the first half of the coordinates for i=0 [0:220] and the
+            # second half for i=1 [220:440]
             _centers = centers[i * 220 : (i + 1) * 220]
-            # create a coord file (only centers listed)
+
+            # create a coord file (only particle centers listed)
             self.coord_fp = os.path.join(self.data_folder, f"sample{i+1}.coord")
             # create a box file (lower left corner and X/Y sizes)
             self.box_fp = os.path.join(self.tmpdir.name, f"sample{i+1}.box")
@@ -53,12 +55,13 @@ class ParticleCoordinateSourceTestCase(TestCase):
             self.box_fp_nonsquare = os.path.join(
                 self.tmpdir.name, f"sample_nonsquare{i+1}.box"
             )
-            # populate box and coord files
+
+            # populate coord file with particle centers
             with open(self.coord_fp, "w") as coord:
                 for center in _centers:
                     # .coord file usually contains just the centers
                     coord.write(f"{center[0]}\t{center[1]}\n")
-
+            # populate box file with coordinates in EMAN1 .box format
             with open(self.box_fp, "w") as box:
                 for center in _centers:
                     # to make a box file, we convert the centers to lower left
@@ -67,6 +70,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
                     box.write(
                         f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n"
                     )
+            # populate the second box file with nonsquare coordinates
             with open(self.box_fp_nonsquare, "w") as box_nonsquare:
                 for center in _centers:
                     # make a bad box file with non square particles
@@ -76,25 +80,25 @@ class ParticleCoordinateSourceTestCase(TestCase):
                     )
 
         # create default object from a .box file, for comparisons in tests
-        # this provides an example of how one might use this in a script
+        # also provides an example of how one might use this in a script
         self.all_mrc_paths = sorted(glob(self.data_folder + "/*.mrc"))
         self.all_box_paths = sorted(glob(self.data_folder + "/*.box"))
-        files = [
-            (self.all_mrc_paths[i], self.all_box_paths[i])
-            for i in range(len(self.all_mrc_paths))
-        ]
-        self.src_from_box = CoordinateSource(files)
-        # cache these lists for later
-        self.all_coord_paths = sorted(glob(self.data_folder + "/*.coord"))
-        self.all_box_nonsquare_paths = sorted(glob(self.data_folder + "/*nonsquare*"))
+        self.files_box = list(zip(self.all_mrc_paths, self.all_box_paths))
+        self.src_from_box = CoordinateSource(self.files_box)
+        # create file lists that will be used several times
+        self.files_coord = list(
+            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/*.coord")))
+        )
+        self.files_box_nonsquare = list(
+            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/*nonsquare*.box")))
+        )
 
     def tearDown(self):
         self.tmpdir.cleanup()
 
     def testLoadFromCoord(self):
-        files = list(zip(self.all_mrc_paths, self.all_coord_paths))
         src = CoordinateSource(
-            files,
+            self.files_coord,
             centers=True,
             particle_size=256,
         )
@@ -111,35 +115,29 @@ class ParticleCoordinateSourceTestCase(TestCase):
     def testLoadFromCoordWithoutCentersTrue(self):
         # if loading only centers (coord file), centers must be set to true
         with self.assertRaises(ValueError):
-            files = list(zip(self.all_mrc_paths, self.all_coord_paths))
-            CoordinateSource(files, particle_size=256)
+            CoordinateSource(self.files_coord, particle_size=256)
 
     def testLoadFromCoordNoParticleSize(self):
         with self.assertRaises(ValueError):
-            files = list(zip(self.all_mrc_paths, self.all_coord_paths))
-            CoordinateSource(files, centers=True)
+            CoordinateSource(self.files_coord, centers=True)
 
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
-            files = list(zip(self.all_mrc_paths, self.all_box_nonsquare_paths))
-            CoordinateSource(files)
+            CoordinateSource(self.files_box_nonsquare)
 
     def testDataFolderMismatch(self):
         # our sample.mrc is located in a tempdir
         # if we give an absolute path data_folder, and the dirnames don't match
         # there should be an error due to the ambiguity
         with self.assertRaises(ValueError):
-            files = list(zip(self.all_mrc_paths, self.all_coord_paths))
-            CoordinateSource(files, data_folder=self.test_dir_root)
+            CoordinateSource(self.files_coord, data_folder=self.test_dir_root)
 
     def testOverrideParticleSize(self):
         # it is possible to override the particle size in the box file
-        src_new_size = CoordinateSource(
-            files=list(zip(self.all_mrc_paths, self.all_box_paths)), particle_size=100
-        )
+        src_new_size = CoordinateSource(self.files_box, particle_size=100)
         src_from_centers = CoordinateSource(
-            files=list(zip(self.all_mrc_paths, self.all_coord_paths)),
+            self.files_coord,
             centers=True,
             particle_size=100,
         )
@@ -152,7 +150,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
         src_from_coord = CoordinateSource(
-            list(zip(self.all_mrc_paths, self.all_coord_paths)),
+            self.files_coord,
             particle_size=256,
             centers=True,
         )
@@ -181,9 +179,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testMaxRows(self):
         # make sure max_rows loads the correct particles
-        src_only100 = CoordinateSource(
-            files=list(zip(self.all_mrc_paths, self.all_box_paths)), max_rows=100
-        )
+        src_only100 = CoordinateSource(self.files_box, max_rows=100)
         imgs = self.src_from_box.images(0, 440)
         only100imgs = src_only100.images(0, src_only100.n)
         for i in range(100):
@@ -191,9 +187,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testSave(self):
         # we can save the source into an .mrcs stack with *no* metadata
-        src = CoordinateSource(
-            list(zip(self.all_mrc_paths, self.all_box_paths)), max_rows=10
-        )
+        src = CoordinateSource(self.files_box, max_rows=10)
         imgs = src.images(0, 10)
         star_path = os.path.join(self.tmpdir.name, "stack.star")
         mrcs_path = os.path.join(self.tmpdir.name, "stack_0_9.mrcs")
@@ -208,9 +202,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
-        src = CoordinateSource(
-            list(zip(self.all_mrc_paths, self.all_box_paths)), max_rows=5
-        )
+        src = CoordinateSource(self.files_box, max_rows=5)
         src.downsample(60)
         src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
