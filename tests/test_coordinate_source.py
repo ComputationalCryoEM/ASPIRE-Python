@@ -1,6 +1,9 @@
 import os
 import pickle
+import shutil
 import tempfile
+from glob import glob
+from random import shuffle
 from unittest import TestCase
 
 import importlib_resources
@@ -11,9 +14,6 @@ import tests.saved_test_data
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import CoordinateSource
 from aspire.storage import StarFile
-
-from glob import glob
-import shutil
 
 
 class ParticleCoordinateSourceTestCase(TestCase):
@@ -168,6 +168,16 @@ class ParticleCoordinateSourceTestCase(TestCase):
         for i in range(10):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
+
+    def testImagesRandomIndices(self):
+        # ensure that we can load a specific, possibly out of order, list of
+        # indices, and that the result is in the order we asked for
+        _indices = [i for i in range(440)]
+        shuffle(_indices)
+        images_in_order = self.src_from_box.images(0, 440)
+        random_order = self.src_from_box._images(indices=np.array(_indices))
+        for i, idx in enumerate(_indices):
+            assert np.array_equal(images_in_order[idx], random_order[i])
 
     def testMaxRows(self):
         # make sure max_rows loads the correct particles
