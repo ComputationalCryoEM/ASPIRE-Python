@@ -97,6 +97,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
         self.tmpdir.cleanup()
 
     def testLoadFromCoord(self):
+        # ensure successful loading from particle center files (.coord)
         src = CoordinateSource(
             self.files_coord,
             centers=True,
@@ -118,6 +119,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
             CoordinateSource(self.files_coord, particle_size=256)
 
     def testLoadFromCoordNoParticleSize(self):
+        # if loading only centers (coord file), particle_size must be specified
         with self.assertRaises(ValueError):
             CoordinateSource(self.files_coord, centers=True)
 
@@ -208,3 +210,6 @@ class ParticleCoordinateSourceTestCase(TestCase):
         noise_estimator = WhiteNoiseEstimator(src)
         src.whiten(noise_estimator.filter)
         src.invert_contrast()
+        # call .images() to ensure the filters are applied
+        # and not just added to pipeline
+        src.images(0, 5)
