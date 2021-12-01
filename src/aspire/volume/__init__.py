@@ -275,14 +275,6 @@ class Volume:
         if isinstance(rot_matrices, Rotation):
             rot_matrices = rot_matrices.matrices
 
-        if rot_matrices.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}"
-                f" rot_matrices.dtype {rot_matrices.dtype}"
-                f" != self.dtype {self.dtype}."
-                " In the future this will raise an error."
-            )
-
         # We reshape to a 4dArray to index across Rotation objects
         # If we have a list of N Rotation objects with shape K x 3 x 3, we reshape as N x K x 3 x 3 array.
         # If we have a single Rotation object or set of K rotation matrices we reshape as 1 x K x 3 x 3.
@@ -294,6 +286,14 @@ class Volume:
             rot_matrices = np.reshape(rot_matrices, (len(rot_matrices), -1, 3, 3))
         else:
             rot_matrices = np.reshape(rot_matrices, (1, -1, 3, 3))
+
+        if rot_matrices.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}"
+                f" rot_matrices.dtype {rot_matrices.dtype}"
+                f" != self.dtype {self.dtype}."
+                " In the future this will raise an error."
+            )
 
         N = len(rot_matrices)  # Number of Rotation objects
         K = len(rot_matrices[0])  # Rotation stack size
