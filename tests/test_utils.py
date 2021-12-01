@@ -6,6 +6,7 @@ from pytest import raises
 
 from aspire import __version__
 from aspire.utils import get_full_version, powerset, utest_tolerance
+from aspire.utils.misc import gaussian_2d, gaussian_3d
 
 
 class UtilsTestCase(TestCase):
@@ -48,3 +49,29 @@ class UtilsTestCase(TestCase):
         self.assertEqual(1e-5, utest_tolerance(np.float32))
         with raises(TypeError):
             utest_tolerance(int)
+
+    def testGaussian2d(self):
+        L = 42
+        X = gaussian_2d(L, x0=2, y0=5, sigma_x=1, sigma_y=2)
+        Y = gaussian_2d(L, x0=0, y0=1, sigma_x=2, sigma_y=3)
+
+        # For jointly distributed gaussians, var(X + Y) = var(X) + var(Y) + 2covar(X,Y)
+        var_X = np.var(X)
+        var_Y = np.var(Y)
+        cov_XY = np.cov(X.flatten(), Y.flatten())[0][1]
+        self.assertTrue(
+            np.allclose(np.var(X + Y), var_X + var_Y + 2 * cov_XY, atol=1e-5)
+        )
+
+    def testGaussian3d(self):
+        L = 42
+        X = gaussian_3d(L, mu=(0, 1, 2), sigma=(1, 2, 3))
+        Y = gaussian_3d(L, mu=(1, 3, 5), sigma=(3, 1, 5))
+
+        # For jointly distributed gaussians, var(X + Y) = var(X) + var(Y) + 2covar(X,Y)
+        var_X = np.var(X)
+        var_Y = np.var(Y)
+        cov_XY = np.cov(X.flatten(), Y.flatten())[0][1]
+        self.assertTrue(
+            np.allclose(np.var(X + Y), var_X + var_Y + 2 * cov_XY, atol=1e-8)
+        )
