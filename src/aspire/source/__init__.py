@@ -1,6 +1,10 @@
 import logging
 
-from aspire.source.coordinates import CoordinateSource
+from aspire.source.coordinates import (
+    EmanCoordinateSource,
+    CentersCoordinateSource,
+    RelionCoordinateSource,
+)
 from aspire.source.image import ArrayImageSource, ImageSource
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation

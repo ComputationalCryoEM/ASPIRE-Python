@@ -47,16 +47,7 @@ class CoordinateSourceBase(ImageSource, ABC):
     This also allows the CoordinateSourceBase to be saved to an `.mrcs` stack.
     """
 
-    def __init__(
-        self,
-        mrc_paths,
-        coord_paths,
-        data_folder,
-        particle_size,
-        pixel_size,
-        max_rows,
-        dtype,
-    ):
+    def __init__(self, mrc_paths, coord_paths, particle_size, max_rows, dtype):
         self.dtype = np.dtype(dtype)
         self.particle_size = particle_size
 
@@ -116,7 +107,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         n = len(self.particles)
         # total micrographs and particles represented by source (info)
         logger.info(
-            f"ParticleCoordinateSource from {data_folder} contains {len(mrc_paths)} micrographs, {original_n} picked particles."
+            f"ParticleCoordinateSource from {os.path.dirname(first_mrc)} contains {len(mrc_paths)} micrographs, {original_n} picked particles."
         )
         # total particles we can load given particle_size (info)
         if boundary_removed > 0:
@@ -127,7 +118,7 @@ class CoordinateSourceBase(ImageSource, ABC):
                 f"Maximum number of particles at this particle size is {original_n - boundary_removed}."
             )
         # total particles loaded (specific to this instance)
-        logger.info(f"ParticleCoordinateSource object contains {n} particles.")
+        logger.info(f"CoordinateSource object contains {n} particles.")
 
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
@@ -168,49 +159,41 @@ class CoordinateSourceBase(ImageSource, ABC):
         Subclasses implement according to the details of the files they read
         """
 
-    def _check_and_get_paths(self, files, data_folder):
+    def coords_list_from_star(self, star_file):
+        """
+        Given a Relion STAR coordinate file (generally containing particle centers)
+        return a list of coordinates in the canonical (.box) format
+        """
+        df = StarFile(star_file).get_block_by_index(0)
+        coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
+        # subtract off half of particle size from center coord
+        # populate final two coordinates with the particle_size
+        return [
+            list(map(lambda x: int(float(x)) - self.particle_size // 2, coord[:2]))
+            + [self.particle_size] * 2
+            for coord in coords
+        ]
+
+    def _check_and_get_paths(self, files):
         """
         Used in subclasses accepting the `files` kwarg
         Turns all of our paths into absolute paths, checks the data folder provided
         against the paths of the mrc and coord files.
         Returns lists mrc_paths, coord_paths
         """
-        mrc_absolute_paths = False
-        coord_absolute_paths = False
-
-        if data_folder is not None:
-            # get absolute path of data folder
-            if not os.path.isabs(data_folder):
-                data_folder = os.path.join(os.getcwd(), data_folder)
-            # get first pair of files
-            first_mrc, first_coord = files[0]
-            if os.path.isabs(first_mrc):
-                # check that abs paths to mrcs matches data folder
-                if os.path.dirname(first_mrc) != data_folder:
-                    raise ValueError(
-                        f"data_folder provided ({data_folder}) does not match dirname of mrc files ({os.path.dirname(first_mrc)})"
-                    )
-                mrc_absolute_paths = True
-            if os.path.isabs(first_coord):
-                # check that abs paths to coords matches data folder
-                if os.path.dirname(first_coord) != data_folder:
-                    raise ValueError(
-                        f"data_folder provided ({data_folder}) does not match dirname of coordinate files ({os.path.dirname(first_coord)})"
-                    )
-                coord_absolute_paths = True
-        else:
-            data_folder = os.getcwd()
-
         # split up the mrc paths from the coordinate file paths
         mrc_paths = [f[0] for f in files]
         coord_paths = [f[1] for f in files]
+        # check whether we were given absolute paths
+        mrc_absolute_paths = os.path.isabs(mrc_paths[0])
+        coord_absolute_paths = os.path.isabs(coord_paths[0])
         # if we weren't given absolute paths, fill in the full paths
         if not mrc_absolute_paths:
-            mrc_paths = [os.path.join(data_folder, m) for m in mrc_paths]
+            mrc_paths = [os.path.join(os.getcwd(), m) for m in mrc_paths]
         if not coord_absolute_paths:
-            coord_paths = [os.path.join(data_folder, c) for c in coord_paths]
+            coord_paths = [os.path.join(os.getcwd(), c) for c in coord_paths]
 
-        return mrc_paths, coord_paths, data_folder
+        return mrc_paths, coord_paths
 
     def exclude_boundary_particles(self):
         """
@@ -305,33 +288,25 @@ class EmanCoordinateSource(CoordinateSourceBase):
     def __init__(
         self,
         files,
-        data_folder=None,
         particle_size=0,
-        pixel_size=1,
         max_rows=None,
         dtype="double",
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
-        :param data_folder: Path to which filepaths provided are relative
         :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
-        :param pixel_size: Pixel size of micrographs in Angstroms (default: 1)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param dtype: dtype with which to load images (default: double)
         """
 
         # get full filepaths and data folder
-        mrc_paths, coord_paths, data_folder = self._check_and_get_paths(
-            files, data_folder
-        )
+        mrc_paths, coord_paths = self._check_and_get_paths(files)
         # instantiate super
         CoordinateSourceBase.__init__(
             self,
             mrc_paths,
             coord_paths,
-            data_folder,
             particle_size,
-            pixel_size,
             max_rows,
             dtype,
         )
@@ -403,9 +378,7 @@ class CentersCoordinateSource(CoordinateSourceBase):
     def __init__(
         self,
         files,
-        data_folder=None,
-        particle_size=0,
-        pixel_size=1,
+        particle_size,
         max_rows=None,
         dtype="double",
     ):
@@ -419,19 +392,10 @@ class CentersCoordinateSource(CoordinateSourceBase):
         :param dtype: dtype with which to load images (default: double)
         """
         # get full filepaths and data folder
-        mrc_paths, coord_paths, data_folder = self._check_and_get_paths(
-            files, data_folder
-        )
+        mrc_paths, coord_paths = self._check_and_get_paths(files)
         # instantiate super
         CoordinateSourceBase.__init__(
-            self,
-            mrc_paths,
-            coord_paths,
-            data_folder,
-            particle_size,
-            pixel_size,
-            max_rows,
-            dtype,
+            self, mrc_paths, coord_paths, particle_size, max_rows, dtype
         )
 
     def populate_particles(self, mrc_paths, coord_paths):
@@ -446,10 +410,14 @@ class CentersCoordinateSource(CoordinateSourceBase):
         Given a coordinate file with (x,y) particle centers,
         return a list of coordinates in our canonical (.box) format
         """
-        # subtract off half of particle size from center coord
-        # populate final two coordinates with the particle_size
+        # check if it's a STAR file list of centers
+        if os.path.splitext(coord_file)[1] == ".star":
+            return self.coords_list_from_star(coord_file)
+        # otherwise we assume text file format with one coord per line:
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
+        # subtract off half of particle size from center coord
+        # populate final two coordinates with the particle_size
         return [
             list(map(lambda x: int(x) - self.particle_size // 2, line[:2]))
             + [self.particle_size] * 2
@@ -464,17 +432,11 @@ class RelionCoordinateSource(CoordinateSourceBase):
     """
 
     def __init__(
-        self,
-        relion_autopick_star,
-        particle_size,
-        pixel_size,
-        max_rows,
-        dtype,
+        self, relion_autopick_star, particle_size, max_rows=None, dtype="double"
     ):
         """
                 :param files: Relion STAR file e.g. autopick.star mapping micrographs to coordinate STAR files.
                 :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
-                :param pixel_size: Pixel size of micrographs in Angstroms (default: 1)
                 :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
                 :param dtype: dtype with which to load images (default: double)
@@ -501,30 +463,11 @@ class RelionCoordinateSource(CoordinateSourceBase):
 
         # instantiate super
         CoordinateSourceBase.__init__(
-            self,
-            mrc_paths,
-            coord_paths,
-            data_folder,
-            particle_size,
-            pixel_size,
-            max_rows,
-            dtype,
+            self, mrc_paths, coord_paths, particle_size, max_rows, dtype
         )
 
     def populate_particles(self, mrc_paths, coord_paths):
         self._populate_particles(mrc_paths, coord_paths)
 
     def coords_list_from_file(self, coord_file):
-        """
-        Given a Relion STAR coordinate file (generally containing particle centers)
-        return a list of coordinates in the canonical (.box) format
-        """
-        df = StarFile(coord_file).get_block_by_index(0)
-        coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
-        # subtract off half of particle size from center coord
-        # populate final two coordinates with the particle_size
-        return [
-            list(map(lambda x: int(float(x)) - self.particle_size // 2, coord[:2]))
-            + [self.particle_size] * 2
-            for coord in coords
-        ]
+        return self.coords_list_from_star(coord_file)

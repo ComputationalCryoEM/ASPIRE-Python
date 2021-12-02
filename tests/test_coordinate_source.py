@@ -12,7 +12,11 @@ import numpy as np
 
 import tests.saved_test_data
 from aspire.noise import WhiteNoiseEstimator
-from aspire.source.coordinates import CoordinateSource
+from aspire.source.coordinates import (
+    EmanCoordinateSource,
+    CentersCoordinateSource,
+    RelionCoordinateSource,
+)
 from aspire.storage import StarFile
 
 
@@ -84,7 +88,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
         self.all_mrc_paths = sorted(glob(self.data_folder + "/*.mrc"))
         self.all_box_paths = sorted(glob(self.data_folder + "/*.box"))
         self.files_box = list(zip(self.all_mrc_paths, self.all_box_paths))
-        self.src_from_box = CoordinateSource(self.files_box)
+        self.src_from_box = EmanCoordinateSource(self.files_box)
         # create file lists that will be used several times
         self.files_coord = list(
             zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/*.coord")))
@@ -98,51 +102,26 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testLoadFromCoord(self):
         # ensure successful loading from particle center files (.coord)
-        src = CoordinateSource(
-            self.files_coord,
-            centers=True,
-            particle_size=256,
-        )
+        src = CentersCoordinateSource(self.files_coord, particle_size=256)
         self.assertEqual(src.n, 440)
 
     def testLoadFromRelion(self):
-        CoordinateSource(
+        RelionCoordinateSource(
             relion_autopick_star=os.path.join(
                 self.test_dir_root, "AutoPick/job006/sample_relion_autopick.star"
             ),
             particle_size=256,
         )
 
-    def testLoadFromCoordWithoutCentersTrue(self):
-        # if loading only centers (coord file), centers must be set to true
-        with self.assertRaises(ValueError):
-            CoordinateSource(self.files_coord, particle_size=256)
-
-    def testLoadFromCoordNoParticleSize(self):
-        # if loading only centers (coord file), particle_size must be specified
-        with self.assertRaises(ValueError):
-            CoordinateSource(self.files_coord, centers=True)
-
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
-            CoordinateSource(self.files_box_nonsquare)
-
-    def testDataFolderMismatch(self):
-        # our sample.mrc is located in a tempdir
-        # if we give an absolute path data_folder, and the dirnames don't match
-        # there should be an error due to the ambiguity
-        with self.assertRaises(ValueError):
-            CoordinateSource(self.files_coord, data_folder=self.test_dir_root)
+            EmanCoordinateSource(self.files_box_nonsquare)
 
     def testOverrideParticleSize(self):
         # it is possible to override the particle size in the box file
-        src_new_size = CoordinateSource(self.files_box, particle_size=100)
-        src_from_centers = CoordinateSource(
-            self.files_coord,
-            centers=True,
-            particle_size=100,
-        )
+        src_new_size = EmanCoordinateSource(self.files_box, particle_size=100)
+        src_from_centers = CentersCoordinateSource(self.files_coord, particle_size=100)
         imgs_new_size = src_new_size.images(0, 10)
         imgs_from_centers = src_from_centers.images(0, 10)
         for i in range(10):
@@ -151,12 +130,8 @@ class ParticleCoordinateSourceTestCase(TestCase):
     def testImages(self):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
-        src_from_coord = CoordinateSource(
-            self.files_coord,
-            particle_size=256,
-            centers=True,
-        )
-        src_from_relion = CoordinateSource(
+        src_from_coord = CentersCoordinateSource(self.files_coord, particle_size=256)
+        src_from_relion = RelionCoordinateSource(
             relion_autopick_star=os.path.join(
                 self.test_dir_root, "AutoPick/job006/sample_relion_autopick.star"
             ),
@@ -195,7 +170,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testMaxRows(self):
         # make sure max_rows loads the correct particles
-        src_only100 = CoordinateSource(self.files_box, max_rows=100)
+        src_only100 = EmanCoordinateSource(self.files_box, max_rows=100)
         imgs = self.src_from_box.images(0, 440)
         only100imgs = src_only100.images(0, src_only100.n)
         for i in range(100):
@@ -203,7 +178,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testSave(self):
         # we can save the source into an .mrcs stack with *no* metadata
-        src = CoordinateSource(self.files_box, max_rows=10)
+        src = EmanCoordinateSource(self.files_box, max_rows=10)
         imgs = src.images(0, 10)
         star_path = os.path.join(self.tmpdir.name, "stack.star")
         mrcs_path = os.path.join(self.tmpdir.name, "stack_0_9.mrcs")
@@ -218,7 +193,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
-        src = CoordinateSource(self.files_box, max_rows=5)
+        src = EmanCoordinateSource(self.files_box, max_rows=5)
         src.downsample(60)
         src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
