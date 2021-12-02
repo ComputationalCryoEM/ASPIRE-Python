@@ -24,7 +24,7 @@ from aspire.source.coordinates import (
 from aspire.storage import StarFile
 
 
-class ParticleCoordinateSourceTestCase(TestCase):
+class CoordinateSourceTestCase(TestCase):
     def setUp(self):
         # temporary directory to set up a toy dataset
         self.tmpdir = tempfile.TemporaryDirectory()
@@ -40,12 +40,12 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # get path to test .mrc file
         with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.original_mrc_path = str(test_path)
-        # save test data root dir (for Relion and data_folder tests)
+        # save test data root dir (for RelionCoordinateSource test)
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
 
         # We will construct a source with two micrographs and two coordinate
         # files by using the same micrograph, but dividing the coordinates
-        # among two files
+        # among two files (this simulates a dataset with multiple micrographs)
         for i in range(2):
             # copy mrc to temp location
             _new_mrc_path = os.path.join(self.data_folder, f"sample{i+1}.mrc")
@@ -113,11 +113,11 @@ class ParticleCoordinateSourceTestCase(TestCase):
         self.files_coord = list(
             zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/sample*.coord")))
         )
-        self.files_box_nonsquare = list(
-            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/nonsquare*.box")))
-        )
         self.files_star = list(
             zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/sample*.star")))
+        )
+        self.files_box_nonsquare = list(
+            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/nonsquare*.box")))
         )
 
     def tearDown(self):
@@ -158,6 +158,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
         src_from_coord = CentersCoordinateSource(self.files_coord, particle_size=256)
+        src_from_star = CentersCoordinateSource(self.files_star, particle_size=256)
         src_from_relion = RelionCoordinateSource(
             relion_autopick_star=os.path.join(
                 self.test_dir_root, "AutoPick/job006/sample_relion_autopick.star"
@@ -166,21 +167,27 @@ class ParticleCoordinateSourceTestCase(TestCase):
         )
         imgs_box = self.src_from_box.images(0, 10)
         imgs_coord = src_from_coord.images(0, 10)
-        imgs_star = src_from_relion.images(0, 10)
+        imgs_star = src_from_star.images(0, 10)
+        imgs_relion = src_from_relion.images(0, 10)
         for i in range(10):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
+            self.assertTrue(np.array_equal(imgs_star[i], imgs_relion[i]))
 
     def testImagesRandomIndices(self):
         # ensure that we can load a specific, possibly out of order, list of
         # indices, and that the result is in the order we asked for
+        # load images in known order
+        images_in_order = self.src_from_box.images(0, 440)
+        # shuffle all indices randomly
         _indices = [i for i in range(440)]
         random.shuffle(_indices)
-        images_in_order = self.src_from_box.images(0, 440)
-        random_order = self.src_from_box._images(indices=np.array(_indices))
+        images_random_order = self.src_from_box._images(indices=np.array(_indices))
         for i, idx in enumerate(_indices):
-            self.assertTrue(np.array_equal(images_in_order[idx], random_order[i]))
-        # test loading every other image
+            self.assertTrue(
+                np.array_equal(images_in_order[idx], images_random_order[i])
+            )
+        # test loading every other image and compare
         odd = np.array([i for i in range(1, 440, 2)])
         even = np.array([i for i in range(0, 439, 2)])
         odd_images = self.src_from_box._images(indices=odd)
@@ -210,11 +217,12 @@ class ParticleCoordinateSourceTestCase(TestCase):
         star_path = os.path.join(self.tmpdir.name, "stack.star")
         mrcs_path = os.path.join(self.tmpdir.name, "stack_0_9.mrcs")
         src.save(star_path)
-        saved_mrc = mrcfile.open(mrcs_path).data
+        # load saved particle stack
+        saved_mrcs_stack = mrcfile.open(mrcs_path).data
         saved_star = StarFile(star_path)
         # assert that the particles saved are correct
         for i in range(10):
-            self.assertTrue(np.array_equal(imgs[i], saved_mrc[i]))
+            self.assertTrue(np.array_equal(imgs[i], saved_mrcs_stack[i]))
         # assert that the star file has no metadata: the only col is _rlnImageName
         self.assertEqual(list(saved_star[""].columns), ["_rlnImageName"])
 
@@ -232,8 +240,8 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testCommand(self):
         # ensure that the command line tool works as expected
-        runner1, runner2, runner3 = CliRunner(), CliRunner(), CliRunner()
-        result_box = runner1.invoke(
+        runner = CliRunner()
+        result_box = runner.invoke(
             extract_particles,
             [
                 f"--mrc_paths={self.data_folder}/*.mrc",
@@ -241,7 +249,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
                 f"--starfile_out={self.data_folder}/saved_box.star",
             ],
         )
-        result_coord = runner2.invoke(
+        result_coord = runner.invoke(
             extract_particles,
             [
                 f"--mrc_paths={self.data_folder}/*.mrc",
@@ -251,7 +259,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
                 "--particle_size=256",
             ],
         )
-        result_star = runner3.invoke(
+        result_star = runner.invoke(
             extract_particles,
             [
                 f"--mrc_paths={self.data_folder}/*.mrc",
@@ -261,7 +269,7 @@ class ParticleCoordinateSourceTestCase(TestCase):
                 "--particle_size=256",
             ],
         )
-
+        # check that all commands completed successfully
         self.assertTrue(result_box.exit_code == 0)
         self.assertTrue(result_coord.exit_code == 0)
         self.assertTrue(result_star.exit_code == 0)
