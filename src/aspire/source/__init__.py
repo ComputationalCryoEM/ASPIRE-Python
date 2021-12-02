@@ -1,8 +1,8 @@
 import logging
 
 from aspire.source.coordinates import (
-    EmanCoordinateSource,
     CentersCoordinateSource,
+    EmanCoordinateSource,
     RelionCoordinateSource,
 )
 from aspire.source.image import ArrayImageSource, ImageSource

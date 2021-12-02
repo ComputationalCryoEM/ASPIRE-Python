@@ -22,11 +22,6 @@ logger = logging.getLogger(__name__)
     help="Text file or glob expression containing paths to coordinate files",
 )
 @click.option(
-    "--data_folder",
-    default=None,
-    help="Relative path for micrograph and coordinate filepaths",
-)
-@click.option(
     "--starfile_out",
     required=True,
     help="Path to starfile of the particle stack to be created",
@@ -36,10 +31,9 @@ logger = logging.getLogger(__name__)
     default=0,
     help="Desired box size (in pixels) of particles to be extracted",
 )
-@click.option("--pixel_size", default=1.0, help="Pixel size of images in Angstroms")
 @click.option(
     "--centers",
-    default=False,
+    is_flag=True,
     help="Set this flag if coordinate files contain (X,Y) particle centers",
 )
 @click.option(
@@ -51,13 +45,13 @@ logger = logging.getLogger(__name__)
     help="Option to save MRC file. If not single, saved to multiple files by batch size",
 )
 @click.option(
-    "--overwrite", default=False, help="Overwrite output if it already exists?"
+    "--overwrite", is_flag=True, help="Overwrite output if it already exists?"
 )
 def extract_particles(
     mrc_paths,
     coord_paths,
     starfile_out,
-    pixel_size,
+    particle_size,
     centers,
     batch_size,
     save_mode,
@@ -76,7 +70,6 @@ def extract_particles(
     # mrc_paths and coord_paths can be either paths to text files
     # listing the micrograph and coordinate file paths, or glob-type
     # expressions
-
     # first try interpreting them as files
     if os.path.exists(mrc_paths) and os.path.exists(coord_paths):
         with open(mrc_paths) as _mrc:
@@ -102,6 +95,10 @@ def extract_particles(
     files = list(zip(mrc_files, coord_files))
 
     if centers:
+        if particle_size == 0:
+            raise ValueError(
+                "A --particle_size must be specified when loading from centers"
+            )
         src = CentersCoordinateSource(
             files,
             particle_size=particle_size,

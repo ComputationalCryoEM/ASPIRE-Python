@@ -3,18 +3,22 @@ import pickle
 import random
 import shutil
 import tempfile
+from collections import OrderedDict
 from glob import glob
 from unittest import TestCase
 
 import importlib_resources
 import mrcfile
 import numpy as np
+from click.testing import CliRunner
+from pandas import DataFrame
 
 import tests.saved_test_data
+from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import (
-    EmanCoordinateSource,
     CentersCoordinateSource,
+    EmanCoordinateSource,
     RelionCoordinateSource,
 )
 from aspire.storage import StarFile
@@ -53,11 +57,13 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
             # create a coord file (only particle centers listed)
             self.coord_fp = os.path.join(self.data_folder, f"sample{i+1}.coord")
+            # create a star file (only particle centers listed)
+            self.star_fp = os.path.join(self.data_folder, f"sample{i+1}.star")
             # create a box file (lower left corner and X/Y sizes)
-            self.box_fp = os.path.join(self.tmpdir.name, f"sample{i+1}.box")
+            self.box_fp = os.path.join(self.data_folder, f"sample{i+1}.box")
             # box file with nonsquare particles
             self.box_fp_nonsquare = os.path.join(
-                self.tmpdir.name, f"sample_nonsquare{i+1}.box"
+                self.data_folder, f"nonsquare_sample{i+1}.box"
             )
 
             # populate coord file with particle centers
@@ -65,6 +71,20 @@ class ParticleCoordinateSourceTestCase(TestCase):
                 for center in _centers:
                     # .coord file usually contains just the centers
                     coord.write(f"{center[0]}\t{center[1]}\n")
+
+            # populate star file with particle centers
+            x_coords = [center[0] for center in _centers]
+            y_coords = [center[1] for center in _centers]
+            blocks = OrderedDict(
+                {
+                    "coordinates": DataFrame(
+                        {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
+                    )
+                }
+            )
+            starfile = StarFile(blocks=blocks)
+            starfile.write(self.star_fp)
+
             # populate box file with coordinates in EMAN1 .box format
             with open(self.box_fp, "w") as box:
                 for center in _centers:
@@ -86,15 +106,18 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # create default object from a .box file, for comparisons in tests
         # also provides an example of how one might use this in a script
         self.all_mrc_paths = sorted(glob(self.data_folder + "/*.mrc"))
-        self.all_box_paths = sorted(glob(self.data_folder + "/*.box"))
+        self.all_box_paths = sorted(glob(self.data_folder + "/sample*.box"))
         self.files_box = list(zip(self.all_mrc_paths, self.all_box_paths))
         self.src_from_box = EmanCoordinateSource(self.files_box)
         # create file lists that will be used several times
         self.files_coord = list(
-            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/*.coord")))
+            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/sample*.coord")))
         )
         self.files_box_nonsquare = list(
-            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/*nonsquare*.box")))
+            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/nonsquare*.box")))
+        )
+        self.files_star = list(
+            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/sample*.star")))
         )
 
     def tearDown(self):
@@ -102,12 +125,16 @@ class ParticleCoordinateSourceTestCase(TestCase):
 
     def testLoadFromCoord(self):
         # ensure successful loading from particle center files (.coord)
-        src = CentersCoordinateSource(self.files_coord, particle_size=256)
-        self.assertEqual(src.n, 440)
+        CentersCoordinateSource(self.files_coord, particle_size=256)
 
-    def testLoadFromRelion(self):
+    def testLoadFromStar(self):
+        # ensure successful loading from particle center files (.star)
+        CentersCoordinateSource(self.files_star, particle_size=256)
+
+    def testLoadFromRelionAutoPick(self):
+        # ensure successfull loading from Relion Autopick
         RelionCoordinateSource(
-            relion_autopick_star=os.path.join(
+            os.path.join(
                 self.test_dir_root, "AutoPick/job006/sample_relion_autopick.star"
             ),
             particle_size=256,
@@ -202,3 +229,39 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # call .images() to ensure the filters are applied
         # and not just added to pipeline
         src.images(0, 5)
+
+    def testCommand(self):
+        # ensure that the command line tool works as expected
+        runner1, runner2, runner3 = CliRunner(), CliRunner(), CliRunner()
+        result_box = runner1.invoke(
+            extract_particles,
+            [
+                f"--mrc_paths={self.data_folder}/*.mrc",
+                f"--coord_paths={self.data_folder}/sample*.box",
+                f"--starfile_out={self.data_folder}/saved_box.star",
+            ],
+        )
+        result_coord = runner2.invoke(
+            extract_particles,
+            [
+                f"--mrc_paths={self.data_folder}/*.mrc",
+                f"--coord_paths={self.data_folder}/sample*.coord",
+                f"--starfile_out={self.data_folder}/saved_coord.star",
+                "--centers",
+                "--particle_size=256",
+            ],
+        )
+        result_star = runner3.invoke(
+            extract_particles,
+            [
+                f"--mrc_paths={self.data_folder}/*.mrc",
+                f"--coord_paths={self.data_folder}/sample*.star",
+                f"--starfile_out={self.data_folder}/saved_star.star",
+                "--centers",
+                "--particle_size=256",
+            ],
+        )
+
+        self.assertTrue(result_box.exit_code == 0)
+        self.assertTrue(result_coord.exit_code == 0)
+        self.assertTrue(result_star.exit_code == 0)
