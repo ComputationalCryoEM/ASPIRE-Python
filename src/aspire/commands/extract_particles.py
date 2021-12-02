@@ -77,8 +77,8 @@ def extract_particles(
         with open(coord_paths) as _coords:
             coord_files = _coords.readlines()
     elif glob.glob(mrc_paths) and glob.glob(coord_paths):
-        mrc_files = sorted(glob.glob(mrc_paths)
-        coord_files = sorted(glob.glob(coord_paths)
+        mrc_files = sorted(glob.glob(mrc_paths))
+        coord_files = sorted(glob.glob(coord_paths))
     else:
         raise UsageError(
             "--mrc_paths and --coord_paths must both be either filepaths or glob-type expressions"

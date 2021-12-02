@@ -384,9 +384,7 @@ class CentersCoordinateSource(CoordinateSourceBase):
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
-        :param data_folder: Path to which filepaths provided are relative
         :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
-        :param pixel_size: Pixel size of micrographs in Angstroms (default: 1)
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
         :param dtype: dtype with which to load images (default: double)
