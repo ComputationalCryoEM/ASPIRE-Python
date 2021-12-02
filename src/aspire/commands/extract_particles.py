@@ -64,7 +64,7 @@ def extract_particles(
 
     Example usage:
 
-    aspire mrc-to-stack --mrc_paths my/data/*.mrc --coord_paths my/data/coords/*.coord --starfile_out my_dataset_stack.star --particle_size 256
+    aspire extract-particles --mrc_paths=my/data/*.mrc --coord_paths=my/data/coords/*.coord --starfile_out=my_dataset_stack.star --particle_size=256 --centers
     """
 
     # mrc_paths and coord_paths can be either paths to text files
@@ -76,22 +76,21 @@ def extract_particles(
             mrc_files = _mrc.readlines()
         with open(coord_paths) as _coords:
             coord_files = _coords.readlines()
-    # next as globs
-    mrc_glob = glob.glob(mrc_paths)
-    coord_glob = glob.glob(coord_paths)
-    if mrc_glob and coord_glob:
-        mrc_files = sorted(mrc_glob)
-        coord_files = sorted(coord_glob)
+    elif glob.glob(mrc_paths) and glob.glob(coord_paths):
+        mrc_files = sorted(glob.glob(mrc_paths)
+        coord_files = sorted(glob.glob(coord_paths)
     else:
         raise UsageError(
             "--mrc_paths and --coord_paths must both be either filepaths or glob-type expressions"
         )
 
+    # must have one-to-one micrographs and coordinate files
     if len(mrc_files) != len(coord_files):
         raise ValueError(
             f"Number of micrographs and coordinate files must match ({len(mrc_files)} micrographs and {len(coord_files)} coordinate files found)"
         )
 
+    # this is the input to the CoordinateSource constructors
     files = list(zip(mrc_files, coord_files))
 
     if centers:
@@ -109,6 +108,7 @@ def extract_particles(
             particle_size=particle_size,
         )
 
+    # saves to .mrcs and STAR file with column "_rlnImageName"
     src.save(
         starfile_out, batch_size=batch_size, save_mode=save_mode, overwrite=overwrite
     )
