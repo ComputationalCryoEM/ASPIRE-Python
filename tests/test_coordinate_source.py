@@ -1,9 +1,9 @@
 import os
 import pickle
+import random
 import shutil
 import tempfile
 from glob import glob
-from random import shuffle
 from unittest import TestCase
 
 import importlib_resources
@@ -173,11 +173,25 @@ class ParticleCoordinateSourceTestCase(TestCase):
         # ensure that we can load a specific, possibly out of order, list of
         # indices, and that the result is in the order we asked for
         _indices = [i for i in range(440)]
-        shuffle(_indices)
+        random.shuffle(_indices)
         images_in_order = self.src_from_box.images(0, 440)
         random_order = self.src_from_box._images(indices=np.array(_indices))
         for i, idx in enumerate(_indices):
-            assert np.array_equal(images_in_order[idx], random_order[i])
+            self.assertTrue(np.array_equal(images_in_order[idx], random_order[i]))
+        # test loading every other image
+        odd = np.array([i for i in range(1, 440, 2)])
+        even = np.array([i for i in range(0, 439, 2)])
+        odd_images = self.src_from_box._images(indices=odd)
+        even_images = self.src_from_box._images(indices=even)
+        for i in range(0, 220):
+            self.assertTrue(np.array_equal(images_in_order[2 * i], even_images[i]))
+            self.assertTrue(np.array_equal(images_in_order[2 * i + 1], odd_images[i]))
+
+        # random sample of [0,440) of length 100
+        random_sample = np.array(random.sample(_indices, 100))
+        random_images = self.src_from_box._images(indices=random_sample)
+        for i, idx in enumerate(random_sample):
+            self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
 
     def testMaxRows(self):
         # make sure max_rows loads the correct particles
