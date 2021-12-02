@@ -53,12 +53,10 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--overwrite", default=False, help="Overwrite output if it already exists?"
 )
-def mrc_to_stack(
+def extract_particles(
     mrc_paths,
     coord_paths,
-    data_folder,
     starfile_out,
-    particle_size,
     pixel_size,
     centers,
     batch_size,
@@ -72,7 +70,7 @@ def mrc_to_stack(
 
     Example usage:
 
-    aspire mrc-to-stack --mrc_paths my/data/*.mrc --coord_paths my/data/coords/*.coord --starfile_out my_dataset_stack.star --particle_size 256 --pixel_size 1.3
+    aspire mrc-to-stack --mrc_paths my/data/*.mrc --coord_paths my/data/coords/*.coord --starfile_out my_dataset_stack.star --particle_size 256
     """
 
     # mrc_paths and coord_paths can be either paths to text files
@@ -106,16 +104,12 @@ def mrc_to_stack(
     if centers:
         src = CentersCoordinateSource(
             files,
-            data_folder=data_folder,
             particle_size=particle_size,
-            pixel_size=pixel_size,
         )
     else:
         src = EmanCoordinateSource(
             files,
-            data_folder=data_folder,
             particle_size=particle_size,
-            pixel_size=pixel_size,
         )
 
     src.save(
