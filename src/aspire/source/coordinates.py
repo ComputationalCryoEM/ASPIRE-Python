@@ -249,7 +249,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
-    
+
         logger.info(f"Loading {len(indices)} images from micrographs")
 
         selected_particles = [self.particles[i] for i in indices]
