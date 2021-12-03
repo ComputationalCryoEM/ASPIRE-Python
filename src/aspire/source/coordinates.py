@@ -15,7 +15,7 @@ from aspire.storage import StarFile
 logger = logging.getLogger(__name__)
 
 
-class CoordinateSourceBase(ImageSource, ABC):
+class CoordinateSource(ImageSource, ABC):
     """
     Base class defining common methods for data sources consisting of full
     micrographs coupled with files specifying the locations of picked
@@ -178,9 +178,8 @@ class CoordinateSourceBase(ImageSource, ABC):
 
     def _check_and_get_paths(self, files):
         """
-        Used in subclasses accepting the `files` kwarg
-        Turns all of our paths into absolute paths, checks the data folder provided
-        against the paths of the mrc and coord files.
+        Used in subclasses accepting the `files` kwarg.
+        Turns all of our paths into absolute paths.
         Returns lists mrc_paths, coord_paths
         """
         # split up the mrc paths from the coordinate file paths
@@ -236,8 +235,18 @@ class CoordinateSourceBase(ImageSource, ABC):
         return data[start_y : start_y + size_y, start_x : start_x + size_x]
 
     def _images(self, start=0, num=np.inf, indices=None):
-        # the indices passed to this method refer to the index
-        # of the *particle*, not the micrograph
+        """
+        Given a range or selection of indices, returns an Image stack
+        of the particles specified. Note that the indices refer to the order
+        of the particles loaded in this *specific* CoordinateSource. This may
+        not correspond to the particles in the original source on disk, if some
+        particles were excluded due to their box not fitting into the mrc
+        dimensions. Thus, the exact particles returned are a function of the
+        particle_size.
+        :param start: Starting index (default: 0)
+        :param num: number of images to return starting from `start` (default: numpy.inf)
+        :param indices: A numpy array of integer indices
+        """
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
         else:
@@ -285,7 +294,7 @@ class CoordinateSourceBase(ImageSource, ABC):
         return Image(im)
 
 
-class EmanCoordinateSource(CoordinateSourceBase):
+class EmanCoordinateSource(CoordinateSource):
     """
     Represents a data source consisting of micrographs and coordinate files
     in EMAN1 .box format.
@@ -308,7 +317,7 @@ class EmanCoordinateSource(CoordinateSourceBase):
         # get full filepaths and data folder
         mrc_paths, coord_paths = self._check_and_get_paths(files)
         # instantiate super
-        CoordinateSourceBase.__init__(
+        CoordinateSource.__init__(
             self,
             mrc_paths,
             coord_paths,
@@ -376,9 +385,9 @@ class EmanCoordinateSource(CoordinateSourceBase):
         self.particles = _resized_particles
 
 
-class CentersCoordinateSource(CoordinateSourceBase):
+class CentersCoordinateSource(CoordinateSource):
     """
-    Represents a data source consisting of micrographs and coordinate files specifying particle centers only
+    Represents a data source consisting of micrographs and coordinate files specifying particle centers only. Files can be text (.coord) or STAR files.
     """
 
     def __init__(
@@ -390,7 +399,7 @@ class CentersCoordinateSource(CoordinateSourceBase):
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
-        :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
+        :particle_size: Desired size of cropped particles (will override the size specified in coordinate file).
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
         :param dtype: dtype with which to load images (default: double)
@@ -398,7 +407,7 @@ class CentersCoordinateSource(CoordinateSourceBase):
         # get full filepaths and data folder
         mrc_paths, coord_paths = self._check_and_get_paths(files)
         # instantiate super
-        CoordinateSourceBase.__init__(
+        CoordinateSource.__init__(
             self, mrc_paths, coord_paths, particle_size, max_rows, dtype
         )
 
@@ -429,7 +438,7 @@ class CentersCoordinateSource(CoordinateSourceBase):
         ]
 
 
-class RelionCoordinateSource(CoordinateSourceBase):
+class RelionCoordinateSource(CoordinateSource):
     """
     Represents a data source derived from an autopick.star file within a Relion
     project directory.
@@ -466,7 +475,7 @@ class RelionCoordinateSource(CoordinateSourceBase):
         coord_paths = [os.path.join(data_folder, f[1]) for f in files]
 
         # instantiate super
-        CoordinateSourceBase.__init__(
+        CoordinateSource.__init__(
             self, mrc_paths, coord_paths, particle_size, max_rows, dtype
         )
 

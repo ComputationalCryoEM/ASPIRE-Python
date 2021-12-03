@@ -132,7 +132,9 @@ class CoordinateSourceTestCase(TestCase):
         CentersCoordinateSource(self.files_star, particle_size=256)
 
     def testLoadFromRelionAutoPick(self):
-        # ensure successfull loading from Relion Autopick
+        # Here we test loading from a Relion project directory's STAR
+        # index file. We are not using the simulated data source constructed
+        # in the setup
         RelionCoordinateSource(
             os.path.join(
                 self.test_dir_root, "AutoPick/job006/sample_relion_autopick.star"
