@@ -109,7 +109,7 @@ class CoordinateSource(ImageSource, ABC):
         n = len(self.particles)
         # total micrographs and particles represented by source (info)
         logger.info(
-            f"ParticleCoordinateSource from {os.path.dirname(first_mrc)} contains {len(mrc_paths)} micrographs, {original_n} picked particles."
+            f"CoordinateSource from {os.path.dirname(first_mrc)} contains {len(mrc_paths)} micrographs, {original_n} picked particles."
         )
         # total particles we can load given particle_size (info)
         if boundary_removed > 0:
@@ -249,8 +249,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
-        else:
-            start = indices.min()
+    
         logger.info(f"Loading {len(indices)} images from micrographs")
 
         selected_particles = [self.particles[i] for i in indices]
