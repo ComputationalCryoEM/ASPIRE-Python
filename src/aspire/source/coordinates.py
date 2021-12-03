@@ -23,8 +23,10 @@ class CoordinateSourceBase(ImageSource, ABC):
     particles in each micrograph.
 
     Broadly, there are two ways this information is represented. Sometimes each
-    coordinate is simply the (X,Y) center location of the picked particle.
-    These sources may be loaded via the `CentersCoordinateSource` class.
+    coordinate is simply the (X,Y) center location of the picked particle. This 
+    is sometimes stored in a `.coord` text file, and sometimes in a STAR file
+    These sources may be loaded via the `CentersCoordinateSource` class for both
+    filetypes.
 
     Other formats adhere to the EMAN1 .box file specification, which
     specifies a coordinate via four numbers:
@@ -37,7 +39,8 @@ class CoordinateSourceBase(ImageSource, ABC):
     An addtional subclass exists for points in the Relion pipeline where
     particles in a micrograph are represented by coordinates, but not yet
     cropped out: `RelionCoordinateSource`. This class allows the output of
-    AutoPick and ManualPick jobs to be loaded into an ASPIRE source.
+    AutoPick and ManualPick jobs to be loaded into an ASPIRE source from a 
+    single index STAR file (usually autopick.star)
 
     Particle information is extracted from the micrographs and coordinate files
     and put into a common data structure (self.particles)
