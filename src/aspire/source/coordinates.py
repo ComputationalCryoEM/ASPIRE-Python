@@ -1,8 +1,7 @@
 import logging
 import os
 from abc import ABC, abstractmethod
-from itertools import groupby
-from operator import itemgetter
+from collections import defaultdict
 from pathlib import Path
 
 import mrcfile
@@ -23,7 +22,7 @@ class CoordinateSourceBase(ImageSource, ABC):
     particles in each micrograph.
 
     Broadly, there are two ways this information is represented. Sometimes each
-    coordinate is simply the (X,Y) center location of the picked particle. This 
+    coordinate is simply the (X,Y) center location of the picked particle. This
     is sometimes stored in a `.coord` text file, and sometimes in a STAR file
     These sources may be loaded via the `CentersCoordinateSource` class for both
     filetypes.
@@ -39,7 +38,7 @@ class CoordinateSourceBase(ImageSource, ABC):
     An addtional subclass exists for points in the Relion pipeline where
     particles in a micrograph are represented by coordinates, but not yet
     cropped out: `RelionCoordinateSource`. This class allows the output of
-    AutoPick and ManualPick jobs to be loaded into an ASPIRE source from a 
+    AutoPick and ManualPick jobs to be loaded into an ASPIRE source from a
     single index STAR file (usually autopick.star)
 
     Particle information is extracted from the micrographs and coordinate files
@@ -252,32 +251,36 @@ class CoordinateSourceBase(ImageSource, ABC):
             dtype=self.dtype,
         )
 
-        # group particles by micrograph
-        # keep track of how many particles were cumulatively added for each
-        # micrograph (to offset indices of the resulting Image)
-        offset = 0
-        for mrc_index, grouped in groupby(selected_particles, itemgetter(0)):
-            # get fp of micrograph at position mrc_index
+        # group particles by micrograph in order to
+        # only open each one once
+        grouped = defaultdict(list)
+        # this creates a dict of the form
+        # { mrc_index : list of coords in that mrc, with order preserved }
+        for particle in selected_particles:
+            grouped[particle[0]].append(particle[1])
+
+        for mrc_index, coord_list in grouped.items():
+            # get explicit filepath from cached list
             fp = self.mrc_paths[mrc_index]
-            # open microrgraph once
             with mrcfile.open(fp) as mrc_in:
                 arr = mrc_in.data.astype(self.dtype)
             if arr.shape != self.mrc_shape:
                 raise ValueError(
                     f"Shape of {fp} is {arr.shape}, but expected {self.mrc_shape}"
                 )
-            # cannot get length of iterator 'grouped' w/o consuming it
-            # so we use a counter variable to update the offset
-            particles_added = 0
-            for i, particle in enumerate(grouped):
-                # particle is the tuple (mrc_index, coord)
-                cropped = self.crop_micrograph(arr, particle[1])
-                im[offset + i] = cropped
-                particles_added += 1
-
-            # offset increases by number of particles we added from this
-            # micrograph
-            offset += particles_added
+            # create iterable of the coordinates in this mrc
+            # we don't need to worry about exhausting this iter
+            # because we know it contains the exact number of particles
+            # selected from this micrograph
+            coord = iter(coord_list)
+            # iterate through selected particles
+            for i, particle in enumerate(selected_particles):
+                idx = particle[0]
+                # we stop and populate the image stack every time
+                # we hit a particle whose location is this micrograph
+                if idx == mrc_index:
+                    cropped = self.crop_micrograph(arr, next(coord))
+                    im[i] = cropped
 
         return Image(im)
 
