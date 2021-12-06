@@ -157,51 +157,50 @@ class VolumeTestCase(TestCase):
         # We then compare to reference volumes containing appropriately located nonzero voxel.
 
         # Create a Volume instance to rotate.
-        # This volume has a value of 1 in the first octant at (1, 1, 1) and zeroes elsewhere.
+        # This volume has a value of 1 in the first octant at (1, 1, 1) and zeros elsewhere.
         data = np.zeros((L, L, L), dtype=self.dtype)
         data[L // 2 + 1, L // 2 + 1, L // 2 + 1] = 1
         vol = Volume(data)
 
         # Create a dict with map from axis and angle of rotation to new location of nonzero voxel.
         ref_pts = {
-            ("x", 0): (L // 2 + 1, L // 2 + 1, L // 2 + 1),
-            ("x", pi / 2): (L // 2 + 1, L // 2 + 1, L // 2 - 1),
-            ("x", pi): (L // 2 + 1, L // 2 - 1, L // 2 - 1),
-            ("x", 3 * pi / 2): (L // 2 + 1, L // 2 - 1, L // 2 + 1),
-            ("y", 0): (L // 2 + 1, L // 2 + 1, L // 2 + 1),
-            ("y", pi / 2): (L // 2 - 1, L // 2 + 1, L // 2 + 1),
-            ("y", pi): (L // 2 - 1, L // 2 + 1, L // 2 - 1),
-            ("y", 3 * pi / 2): (L // 2 + 1, L // 2 + 1, L // 2 - 1),
-            ("z", 0): (L // 2 + 1, L // 2 + 1, L // 2 + 1),
-            ("z", pi / 2): (L // 2 + 1, L // 2 - 1, L // 2 + 1),
-            ("z", pi): (L // 2 - 1, L // 2 - 1, L // 2 + 1),
-            ("z", 3 * pi / 2): (L // 2 - 1, L // 2 + 1, L // 2 + 1),
+            ("x", 0): (1, 1, 1),
+            ("x", pi / 2): (1, 1, -1),
+            ("x", pi): (1, -1, -1),
+            ("x", 3 * pi / 2): (1, -1, 1),
+            ("y", 0): (1, 1, 1),
+            ("y", pi / 2): (-1, 1, 1),
+            ("y", pi): (-1, 1, -1),
+            ("y", 3 * pi / 2): (1, 1, -1),
+            ("z", 0): (1, 1, 1),
+            ("z", pi / 2): (1, -1, 1),
+            ("z", pi): (-1, -1, 1),
+            ("z", 3 * pi / 2): (-1, 1, 1),
         }
+
+        center = np.array([L // 2] * 3)
 
         # Rotate Volume 'vol' and test against reference volumes.
         axes = ["x", "y", "z"]
         angles = [0, pi / 2, pi, 3 * pi / 2]
-        rot_mat = {}
-        rot_vols = {}
-        ref_vols = {}
         for axis, angle in product(axes, angles):
             # Build rotation matrices
-            rot_mat[axis, angle] = Rotation(
+            rot_mat = Rotation(
                 sp_rot.from_euler(axis, angle).as_matrix().astype(self.dtype)
             )
 
             # Rotate Volume 'vol' by rotations 'rot_mat'
-            rot_vols[axis, angle] = vol.rotate(rot_mat[axis, angle], zero_nyquist=False)
+            rot_vol = vol.rotate(rot_mat, zero_nyquist=False)
 
             # Build reference volumes using dict 'ref_pts'
             ref_vol = np.zeros((L, L, L), dtype=np.float32)
-            ref_vol[ref_pts[axis, angle]] = 1
-            ref_vols[axis, angle] = ref_vol
+            # Assign the location of non zero voxel
+            loc = center + np.array(ref_pts[axis, angle])
+            ref_vol[tuple(loc)] = 1
 
             # Test that rotated volumes align with reference volumes
-            atol = 1e-5
             self.assertTrue(
-                np.allclose(ref_vols[axis, angle], rot_vols[axis, angle], atol=atol)
+                np.allclose(ref_vol, rot_vol, atol=utest_tolerance(self.dtype))
             )
 
     def testCnSymmetricVolume(self):
