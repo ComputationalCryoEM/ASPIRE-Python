@@ -4,6 +4,7 @@ from itertools import product
 from unittest import TestCase
 
 import numpy as np
+from numpy import pi
 from parameterized import parameterized
 from pytest import raises
 from scipy.spatial.transform import Rotation as sp_rot
@@ -126,9 +127,9 @@ class VolumeTestCase(TestCase):
         for r, ax in enumerate(["x", "y", "z"]):
             r_stack[r] = sp_rot.from_euler(ax, 0).as_matrix()
             # We'll consider the multiples of pi/2.
-            r_stack[r + 3] = sp_rot.from_euler(ax, np.pi / 2).as_matrix()
-            r_stack[r + 6] = sp_rot.from_euler(ax, np.pi).as_matrix()
-            r_stack[r + 9] = sp_rot.from_euler(ax, 3 * np.pi / 2).as_matrix()
+            r_stack[r + 3] = sp_rot.from_euler(ax, pi / 2).as_matrix()
+            r_stack[r + 6] = sp_rot.from_euler(ax, pi).as_matrix()
+            r_stack[r + 9] = sp_rot.from_euler(ax, 3 * pi / 2).as_matrix()
 
         # Project a Volume with all the test rotations
         vol_id = 1  # select a volume from Volume stack
@@ -150,68 +151,57 @@ class VolumeTestCase(TestCase):
     # Parameterize over even and odd resolutions
     @parameterized.expand([(res,), (res - 1,)])
     def testRotate(self, L):
+        # In this test we instantiate Volume instance `vol`, containing a single nonzero
+        # voxel in the first octant, and rotate it by multiples of pi/2 about each axis.
+        # We then compare to reference volumes containing appropriately located nonzero voxel.
+
         # Create a Volume instance to rotate.
-        # This "basis" volume has a 1 placed along each positive axis, zeros elsewhere.
+        # This volume has a value of 1 in the first octant at (1, 1, 1) and zeroes elsewhere.
         data = np.zeros((L, L, L), dtype=self.dtype)
-        data[L // 2 + 1, L // 2, L // 2] = 1
-        data[L // 2, L // 2 + 1, L // 2] = 1
-        data[L // 2, L // 2, L // 2 + 1] = 1
+        data[L // 2 + 1, L // 2 + 1, L // 2 + 1] = 1
         vol = Volume(data)
 
-        # Create a stack of rotations to test. We will rotate vol by multiples of pi/2 from each axis.
-        _rot_mat = np.empty((12, 3, 3), dtype=self.dtype)
+        # Create a dict with map from axis and angle of rotation to new location of nonzero voxel.
+        ref_pts = {
+            ("x", 0): (L // 2 + 1, L // 2 + 1, L // 2 + 1),
+            ("x", pi / 2): (L // 2 + 1, L // 2 + 1, L // 2 - 1),
+            ("x", pi): (L // 2 + 1, L // 2 - 1, L // 2 - 1),
+            ("x", 3 * pi / 2): (L // 2 + 1, L // 2 - 1, L // 2 + 1),
+            ("y", 0): (L // 2 + 1, L // 2 + 1, L // 2 + 1),
+            ("y", pi / 2): (L // 2 - 1, L // 2 + 1, L // 2 + 1),
+            ("y", pi): (L // 2 - 1, L // 2 + 1, L // 2 - 1),
+            ("y", 3 * pi / 2): (L // 2 + 1, L // 2 + 1, L // 2 - 1),
+            ("z", 0): (L // 2 + 1, L // 2 + 1, L // 2 + 1),
+            ("z", pi / 2): (L // 2 + 1, L // 2 - 1, L // 2 + 1),
+            ("z", pi): (L // 2 - 1, L // 2 - 1, L // 2 + 1),
+            ("z", 3 * pi / 2): (L // 2 - 1, L // 2 + 1, L // 2 + 1),
+        }
+
+        # Rotate Volume 'vol' and test against reference volumes.
         axes = ["x", "y", "z"]
-        angles = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
-        for k, (axis, angle) in enumerate(product(axes, angles)):
-            _rot_mat[k] = sp_rot.from_euler(axis, angle).as_matrix()
-        rot_mat = Rotation(_rot_mat)
-
-        # Rotate the basis volume by rotation matrices rot_mat.
-        # For even resolution we keep the Nyquist frequency.
-        # This reduces error on the rotations.
-        rot_vols = vol.rotate(rot_mat, zero_nyquist=False)
-
-        # Create reference volumes.
-        # All possible orientations of rotating the basis volume about each axis by multiples of pi/2.
-        # For ref_vol[i,j,k], a 1 is place on the positive axis if i,j, or k is 0,
-        # and a 1 is placed on the negative axis if i,j, or k is 1.
-        # For example, ref_vol[0,1,1] has a 1 along the positive x-axis, and 1's on the negative y and z axes.
-        ref_vol = np.zeros((2, 2, 2, L, L, L))
-        for i in range(2):
-            for j in range(2):
-                for k in range(2):
-                    ref_vol[i, j, k, L // 2 + (-1) ** i, L // 2, L // 2] = 1
-                    ref_vol[i, j, k, L // 2, L // 2 + (-1) ** j, L // 2] = 1
-                    ref_vol[i, j, k, L // 2, L // 2, L // 2 + (-1) ** k] = 1
-
-        # Compare rotated volumes with appropriate reference volumes.
-        atol = utest_tolerance(self.dtype)
-        # 3 equivalent cases of rotating by zero degrees about each axis.
-        for k in range(3):
-            self.assertTrue(np.allclose(ref_vol[0, 0, 0], rot_vols[4 * k], atol=atol))
-
-        # Equivalent cases of rotation by pi/2 about y-axis and 3*pi/2 about x-axis.
-        for k in range(2):
-            self.assertTrue(
-                np.allclose(ref_vol[0, 0, 1], rot_vols[6 * k + 1], atol=atol)
+        angles = [0, pi / 2, pi, 3 * pi / 2]
+        rot_mat = {}
+        rot_vols = {}
+        ref_vols = {}
+        for axis, angle in product(axes, angles):
+            # Build rotation matrices
+            rot_mat[axis, angle] = Rotation(
+                sp_rot.from_euler(axis, angle).as_matrix().astype(self.dtype)
             )
 
-        # Equivalent cases of rotation by pi/2 about x-axis and 3*pi/2 about z-axis.
-        for k in range(2):
-            self.assertTrue(
-                np.allclose(ref_vol[0, 1, 0], rot_vols[6 * k + 3], atol=atol)
-            )
+            # Rotate Volume 'vol' by rotations 'rot_mat'
+            rot_vols[axis, angle] = vol.rotate(rot_mat[axis, angle], zero_nyquist=False)
 
-        # Equivalent cases of rotation by pi/2 about z-axis and 3*pi/2 about y-axis.
-        for k in range(2):
-            self.assertTrue(
-                np.allclose(ref_vol[1, 0, 0], rot_vols[6 * k + 5], atol=atol)
-            )
+            # Build reference volumes using dict 'ref_pts'
+            ref_vol = np.zeros((L, L, L), dtype=np.float32)
+            ref_vol[ref_pts[axis, angle]] = 1
+            ref_vols[axis, angle] = ref_vol
 
-        # Rotation by pi about x-axis, pi about y-axis, and pi about z-axis, respectively.
-        self.assertTrue(np.allclose(ref_vol[0, 1, 1], rot_vols[2], atol=atol))
-        self.assertTrue(np.allclose(ref_vol[1, 0, 1], rot_vols[6], atol=atol))
-        self.assertTrue(np.allclose(ref_vol[1, 1, 0], rot_vols[10], atol=atol))
+            # Test that rotated volumes align with reference volumes
+            atol = 1e-5
+            self.assertTrue(
+                np.allclose(ref_vols[axis, angle], rot_vols[axis, angle], atol=atol)
+            )
 
     def testCnSymmetricVolume(self):
         # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
@@ -223,8 +213,8 @@ class VolumeTestCase(TestCase):
             rot_mat = np.zeros((k, 3, 3), dtype=self.dtype)
             for i in range(k):
                 rot_mat[i, :, :] = [
-                    [np.cos(2 * i * np.pi / k), -np.sin(2 * i * np.pi / k), 0],
-                    [np.sin(2 * i * np.pi / k), np.cos(2 * i * np.pi / k), 0],
+                    [np.cos(2 * i * pi / k), -np.sin(2 * i * pi / k), 0],
+                    [np.sin(2 * i * pi / k), np.cos(2 * i * pi / k), 0],
                     [0, 0, 1],
                 ]
 
