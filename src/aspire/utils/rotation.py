@@ -18,6 +18,12 @@ class Rotation:
 
         :param matrices: Rotation matrices to initialize Rotation object.
         """
+        if matrices.ndim == 2:
+            matrices = matrices.reshape((1, 3, 3))
+        assert matrices.ndim == 3 and matrices.shape[-2:] == (
+            3,
+            3,
+        ), f"Bad rotation matrix shape: {matrices.shape}"
         self._matrices = matrices
         self._seq_order = "ZYZ"
 
