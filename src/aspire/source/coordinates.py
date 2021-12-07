@@ -46,7 +46,7 @@ class CoordinateSource(ImageSource, ABC):
 
     The `_images()` method, called via `ImageSource.images()` crops
     the particle images out of the micrograph and returns them as a stack.
-    This also allows the CoordinateSourceBase to be saved to an `.mrcs` stack.
+    This also allows the CoordinateSource to be saved to an `.mrcs` stack.
     """
 
     def __init__(self, mrc_paths, coord_paths, particle_size, max_rows, dtype):
@@ -61,7 +61,7 @@ class CoordinateSource(ImageSource, ABC):
         # is a list of tuples (index of micrograph, coordinate), where
         # the coordinate is a list of the form:
         # [lower left X, lower left Y, size X, size Y].
-        # the micrograph's filepath can be recovered from self.mrc_paths
+        # The micrograph's filepath can be recovered from self.mrc_paths
         self.particles = []
         self.populate_particles(mrc_paths, coord_paths)
 
@@ -109,7 +109,7 @@ class CoordinateSource(ImageSource, ABC):
         n = len(self.particles)
         # total micrographs and particles represented by source (info)
         logger.info(
-            f"CoordinateSource from {os.path.dirname(first_mrc)} contains {len(mrc_paths)} micrographs, {original_n} picked particles."
+            f"{self.__class__.__name__} from {os.path.dirname(first_mrc)} contains {len(mrc_paths)} micrographs, {original_n} picked particles."
         )
         # total particles we can load given particle_size (info)
         if boundary_removed > 0:
@@ -157,8 +157,8 @@ class CoordinateSource(ImageSource, ABC):
     def coords_list_from_file(self, coord_file):
         """
         Given a coordinate file, convert the coordinates into the canonical format, that is, a
-        list of the form [lower left x, lower left y, x size, y size
-        Subclasses implement according to the details of the files they read
+        list of the form [lower left x, lower left y, x size, y size].
+        Subclasses implement according to the details of the files they read.
         """
 
     def coords_list_from_star(self, star_file):
@@ -170,6 +170,9 @@ class CoordinateSource(ImageSource, ABC):
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
         # subtract off half of particle size from center coord
         # populate final two coordinates with the particle_size
+        # Relion coordinates are represented as floats. Here we are reading
+        # the value as a float and then intentionally taking the floor
+        # of the result 
         return [
             list(map(lambda x: int(float(x)) - self.particle_size // 2, coord[:2]))
             + [self.particle_size] * 2
@@ -264,8 +267,8 @@ class CoordinateSource(ImageSource, ABC):
         grouped = defaultdict(list)
         # this creates a dict of the form
         # { mrc_index : list of coords in that mrc, with order preserved }
-        for particle in selected_particles:
-            grouped[particle[0]].append(particle[1])
+        for mrc_index, coord in selected_particles:
+            grouped[mrc_index].append(coord)
 
         for mrc_index, coord_list in grouped.items():
             # get explicit filepath from cached list
@@ -448,7 +451,7 @@ class RelionCoordinateSource(CoordinateSource):
     ):
         """
                 :param files: Relion STAR file e.g. autopick.star mapping micrographs to coordinate STAR files.
-                :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
+                :particle_size: Desired size of cropped particles
                 :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
                 :param dtype: dtype with which to load images (default: double)
