@@ -172,7 +172,7 @@ class CoordinateSource(ImageSource, ABC):
         # populate final two coordinates with the particle_size
         # Relion coordinates are represented as floats. Here we are reading
         # the value as a float and then intentionally taking the floor
-        # of the result 
+        # of the result
         return [
             list(map(lambda x: int(float(x)) - self.particle_size // 2, coord[:2]))
             + [self.particle_size] * 2
