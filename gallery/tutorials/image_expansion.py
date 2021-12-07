@@ -56,7 +56,7 @@ fb_images = fb_basis.evaluate(fb_coeffs)
 logger.info("Finish reconstruction of images from normal FB expansion coefficients.")
 
 # Calculate the mean value of maximum differences between the FB estimated images and the original images
-fb_meanmax = np.mean(np.max(abs(fb_images - org_images), axis=2))
+fb_meanmax = np.mean(np.max(abs(fb_images - org_images), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FB estimated images and original images: {fb_meanmax}"
 )
@@ -100,7 +100,7 @@ logger.info("Finish reconstruction of images from fast FB expansion coefficients
 
 # Calculate the mean value of maximum differences between the fast FB estimated images to the original images
 diff = (ffb_images - org_images).asnumpy()
-ffb_meanmax = np.mean(np.max(abs(diff), axis=2))
+ffb_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FFB estimated images and original images: {ffb_meanmax}"
 )
@@ -144,7 +144,7 @@ logger.info("Finish reconstruction of images from direct PSWF expansion coeffici
 
 # Calculate the mean value of maximum differences between direct PSWF estimated images and original images
 diff = (pswf_images - org_images).asnumpy()
-pswf_meanmax = np.mean(np.max(abs(diff), axis=2))
+pswf_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between PSWF estimated images and original images: {pswf_meanmax}"
 )
@@ -188,7 +188,7 @@ logger.info("Finish reconstruction of images from fast PSWF expansion coefficien
 
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
 diff = (fpswf_images - org_images).asnumpy()
-fpswf_meanmax = np.mean(np.max(abs(diff), axis=0))
+fpswf_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FPSWF estimated images and original images: {fpswf_meanmax}"
 )
