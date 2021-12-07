@@ -270,10 +270,9 @@ class Volume:
         :return: `Volume` instance.
         """
 
-        ensure(
-            isinstance(rot_matrices, Rotation),
-            f"Argument must be an instance of the Rotation class. {type(rot_matrices)} was supplied.",
-        )
+        assert isinstance(
+            rot_matrices, Rotation
+        ), f"Argument must be an instance of the Rotation class. {type(rot_matrices)} was supplied."
 
         # Get numpy representation of Rotation object.
         rot_matrices = rot_matrices.matrices
