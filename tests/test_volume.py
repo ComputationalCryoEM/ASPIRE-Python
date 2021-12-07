@@ -208,35 +208,33 @@ class VolumeTestCase(TestCase):
         sym_type = {2: "C2", 3: "C3", 4: "C4", 5: "C5", 6: "C6"}
 
         for k, s in sym_type.items():
-            # Build rotation matrices that rotate by multiples of 2pi/k about the z axis
-            rot_mat = np.zeros((k, 3, 3), dtype=self.dtype)
-            for i in range(k):
-                rot_mat[i, :, :] = [
-                    [np.cos(2 * i * pi / k), -np.sin(2 * i * pi / k), 0],
-                    [np.sin(2 * i * pi / k), np.cos(2 * i * pi / k), 0],
-                    [0, 0, 1],
-                ]
 
-            # To build a reference volume we rotate a volume instance.
-            # ref_vol[0] is a volume rotated by zero degrees.
+            # Build `Volume` instance with symmetry type s.
             vol = gaussian_blob_vols(
                 L=L, C=1, symmetry_type=s, seed=0, dtype=self.dtype
             )
-            ref_vol = vol.rotate(rot_mat, zero_nyquist=False)
 
-            # We rotate ref_vol[0] by the stack of rotation matrices
-            # rot_vol is a stack of rotated ref_vol[0]
-            rot_vol = ref_vol.rotate(rot_mat, zero_nyquist=False)
+            # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
+            angles = np.zeros(shape=(k, 3))
+            angles[:, 2] = 2 * np.pi * np.arange(k) / k
+            rot_mat = Rotation.from_euler(angles).matrices
 
-            # Compare rotated volumes to reference volume within the shpere of radius L/4.
-            # Check that rotated volumes are within 1% of reference volume.
+            # Create mask to compare volumes on.
             selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 2
-            for i in range(k):
-                ref = ref_vol[0, selection]
-                rot = rot_vol[i, selection]
-                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.01)
 
-        # Test we raise with expected error message when volume is instantiated with unsupported C-type symmetry.
+            for i in range(k):
+                # Rotate volume.
+                rot = Rotation(rot_mat[i])
+                rot_vol = vol.rotate(rot, zero_nyquist=False)
+
+                # Restrict volumes to mask for comparison.
+                ref = vol[0, selection]
+                rot = rot_vol[0, selection]
+
+                # Assert that rotated volume is within .5% of original volume.
+                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.005)
+
+        # Test we raise with expected error message when volume is instantiated with unsupported symmetry.
         with raises(NotImplementedError, match=r"CH2 symmetry not supported.*"):
             _ = gaussian_blob_vols(symmetry_type="Ch2")
 
