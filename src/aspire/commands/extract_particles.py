@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--particle_size",
-    default=0,
+    default=None,
     help="Desired box size (in pixels) of particles to be extracted",
 )
 @click.option(
@@ -94,7 +94,7 @@ def extract_particles(
     files = list(zip(mrc_files, coord_files))
 
     if centers:
-        if particle_size == 0:
+        if not particle_size:
             raise ValueError(
                 "A --particle_size must be specified when loading from centers"
             )

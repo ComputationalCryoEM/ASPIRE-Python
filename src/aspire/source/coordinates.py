@@ -305,7 +305,7 @@ class EmanCoordinateSource(CoordinateSource):
     def __init__(
         self,
         files,
-        particle_size=0,
+        particle_size=None,
         max_rows=None,
         dtype="double",
     ):
@@ -351,7 +351,7 @@ class EmanCoordinateSource(CoordinateSource):
         self._populate_particles(mrc_paths, coord_paths)
 
         # if particle size set by user, we have to re-do the coordinates
-        if self.particle_size > 0:
+        if self.particle_size:
             # original size from coordinate file
             old_size = size_x
             self.force_new_particle_size(self.particle_size, old_size)
@@ -401,7 +401,7 @@ class CentersCoordinateSource(CoordinateSource):
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
-        :particle_size: Desired size of cropped particles (will override the size specified in coordinate file).
+        :particle_size: Desired size of cropped particles
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
         :param dtype: dtype with which to load images (default: double)
