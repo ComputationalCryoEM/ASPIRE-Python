@@ -157,7 +157,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Convert a list [x,y] representing a particle center
         to a list [llx, lly. particle_size, particle_size]
-        representing the lower left corner of the box.
+        representing the box around the particle in .box EMAN1 format
         :param center: a list of length two representing a center
         :param particle_size: the size of the box around the particle
         """
@@ -166,10 +166,11 @@ class CoordinateSource(ImageSource, ABC):
         # Relion coordinates are represented as floats. Here we are reading
         # the value as a float and then intentionally taking the floor
         # of the result
+        r = particle_size // 2
         x, y = center[:2]
         return [
-            int(float(x)) - particle_size // 2,
-            int(float(y)) - particle_size // 2,
+            int(float(x)) - r,
+            int(float(y)) - r,
             particle_size,
             particle_size,
         ]
