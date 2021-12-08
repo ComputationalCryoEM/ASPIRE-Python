@@ -410,6 +410,13 @@ def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.f
             f"{sym_type} type symmetry is not supported. The following symmetry types are currently supported: {sym_types}."
         )
 
+    try:
+        order = int(order)
+    except Exception:
+        raise NotImplementedError(
+            f"{sym_type}{order} symmetry not supported. Only {sym_type}n symmetry, where n is an integer, is supported."
+        )
+
     vols_generator = map_sym_to_generator[sym_type]
 
     return vols_generator(L=L, C=C, K=K, order=order, seed=seed, dtype=dtype)
@@ -462,13 +469,6 @@ def _gaussian_blob_Cn_vols(
     """
 
     def _eval_gaussian_blobs(L, Q, D, mu, order, dtype=np.float64):
-        try:
-            order = int(order)
-        except Exception:
-            raise NotImplementedError(
-                f"C{order} symmetry not supported. Only Cn symmetry, where n is an integer, is supported."
-            )
-
         g = grid_3d(L, dtype=dtype)
         coords = np.array(
             [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
