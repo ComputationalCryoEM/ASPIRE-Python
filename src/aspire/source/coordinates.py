@@ -330,7 +330,7 @@ class EmanCoordinateSource(CoordinateSource):
             # box format requires 4 numbers per coordinate
             if len(first_line.split()) < 4:
                 raise ValueError(
-                    "Coordinate file contains less than 4 numbers per coordinate. If these are particle centers, run with centers=True"
+                    "Coordinate file contains less than 4 numbers per coordinate. If these are particle centers, use CentersCoordinateSource or use the --centers flag in aspire extract-particles"
                 )
             # we can only accept square particles
             size_x, size_y = int(first_line.split()[2]), int(first_line.split()[3])
