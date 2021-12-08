@@ -193,16 +193,7 @@ class CoordinateSourceTestCase(TestCase):
     def testImagesRandomIndices(self):
         # ensure that we can load a specific, possibly out of order, list of
         # indices, and that the result is in the order we asked for
-        # load images in known order
         images_in_order = self.src_from_box.images(0, 440)
-        # shuffle all indices randomly
-        _indices = [i for i in range(440)]
-        random.shuffle(_indices)
-        images_random_order = self.src_from_box._images(indices=np.array(_indices))
-        for i, idx in enumerate(_indices):
-            self.assertTrue(
-                np.array_equal(images_in_order[idx], images_random_order[i])
-            )
         # test loading every other image and compare
         odd = np.array([i for i in range(1, 440, 2)])
         even = np.array([i for i in range(0, 439, 2)])
@@ -213,7 +204,7 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(images_in_order[2 * i + 1], odd_images[i]))
 
         # random sample of [0,440) of length 100
-        random_sample = np.array(random.sample(_indices, 100))
+        random_sample = np.array(random.sample([i for i in range(440)], 100))
         random_images = self.src_from_box._images(indices=random_sample)
         for i, idx in enumerate(random_sample):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
