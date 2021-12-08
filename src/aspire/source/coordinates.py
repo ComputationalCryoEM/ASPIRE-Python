@@ -152,6 +152,28 @@ class CoordinateSource(ImageSource, ABC):
         Subclasses implement according to the details of the files they read.
         """
 
+    @staticmethod
+    def center_to_box_coord(center, particle_size):
+        """
+        Convert a list [x,y] representing a particle center
+        to a list [llx, lly. particle_size, particle_size]
+        representing the lower left corner of the box.
+        :param center: a list of length two representing a center
+        :param particle_size: the size of the box around the particle
+        """
+        # subtract off half of particle size from center coord
+        # populate final two coordinates with the particle_size
+        # Relion coordinates are represented as floats. Here we are reading
+        # the value as a float and then intentionally taking the floor
+        # of the result
+        x, y = center[:2]
+        return [
+            int(float(x)) - particle_size // 2,
+            int(float(y)) - particle_size // 2,
+            particle_size,
+            particle_size,
+        ]
+
     def coords_list_from_star(self, star_file):
         """
         Given a Relion STAR coordinate file (generally containing particle centers)
@@ -159,16 +181,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         df = StarFile(star_file).get_block_by_index(0)
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
-        # subtract off half of particle size from center coord
-        # populate final two coordinates with the particle_size
-        # Relion coordinates are represented as floats. Here we are reading
-        # the value as a float and then intentionally taking the floor
-        # of the result
-        return [
-            list(map(lambda x: int(float(x)) - self.particle_size // 2, coord[:2]))
-            + [self.particle_size] * 2
-            for coord in coords
-        ]
+        return [self.center_to_box_coord(coord, self.particle_size) for coord in coords]
 
     def _check_and_get_paths(self, files):
         """
@@ -416,13 +429,7 @@ class CentersCoordinateSource(CoordinateSource):
         # otherwise we assume text file format with one coord per line:
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
-        # subtract off half of particle size from center coord
-        # populate final two coordinates with the particle_size
-        return [
-            list(map(lambda x: int(x) - self.particle_size // 2, line[:2]))
-            + [self.particle_size] * 2
-            for line in lines
-        ]
+        return [self.center_to_box_coord(line, self.particle_size) for line in lines]
 
 
 class RelionCoordinateSource(CoordinateSource):
