@@ -24,8 +24,8 @@ class CoordinateSource(ImageSource, ABC):
     Broadly, there are two ways this information is represented. Sometimes each
     coordinate is simply the (X,Y) center location of the picked particle. This
     is sometimes stored in a `.coord` text file, and sometimes in a STAR file
-    These sources may be loaded via the `CentersCoordinateSource` class for both
-    filetypes.
+    These sources may be loaded via the `CentersCoordinateSource` class for
+    both filetypes.
 
     Other formats adhere to the EMAN1 .box file specification, which
     specifies a coordinate via four numbers:
@@ -132,16 +132,7 @@ class CoordinateSource(ImageSource, ABC):
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
         self.unique_filters = [IdentityFilter()]
 
-    @abstractmethod
-    def populate_particles(self):
-        """
-        Subclasses use this method to read coordinate files, validate them, and
-        convert them into the canonical form in self.particles. Different
-        sources store coordinate information differently, so the
-        arguments and details of this method may vary.
-        """
-
-    def _populate_particles(self, mrc_paths, coord_paths):
+    def populate_particles(self, mrc_paths, coord_paths):
         """
         All subclasses create mrc_paths and coord_paths lists and pass them to
         this method.
@@ -329,10 +320,10 @@ class EmanCoordinateSource(CoordinateSource):
         )
 
     def populate_particles(self, mrc_paths, coord_paths):
-        """
-        Extract coordinates from .box format particles, which specify particles
-        and populate self.particles
-        """
+        # overrides CoordinateSource.populate_particles because of the
+        # possibility that force_new_particle_size will be called,
+        # which requires self.particles to be populated alraedy
+
         # Look into the first coordinate path given and validate format
         with open(coord_paths[0], "r") as first_coord_file:
             first_line = first_coord_file.readlines()[0]
@@ -348,7 +339,8 @@ class EmanCoordinateSource(CoordinateSource):
                     f"Coordinate file gives non-square particle size {size_x}x{size_y}, but only square particles are supported"
                 )
 
-        self._populate_particles(mrc_paths, coord_paths)
+        # populate self.particles
+        super().populate_particles(mrc_paths, coord_paths)
 
         # if particle size set by user, we have to re-do the coordinates
         if self.particle_size:
@@ -413,13 +405,6 @@ class CentersCoordinateSource(CoordinateSource):
             self, mrc_paths, coord_paths, particle_size, max_rows, dtype
         )
 
-    def populate_particles(self, mrc_paths, coord_paths):
-        """
-        Extract coordinates from .coord files, which specify particles by the
-        coordinates of their centers.
-        """
-        self._populate_particles(mrc_paths, coord_paths)
-
     def coords_list_from_file(self, coord_file):
         """
         Given a coordinate file with (x,y) particle centers,
@@ -480,9 +465,6 @@ class RelionCoordinateSource(CoordinateSource):
         CoordinateSource.__init__(
             self, mrc_paths, coord_paths, particle_size, max_rows, dtype
         )
-
-    def populate_particles(self, mrc_paths, coord_paths):
-        self._populate_particles(mrc_paths, coord_paths)
 
     def coords_list_from_file(self, coord_file):
         return self.coords_list_from_star(coord_file)

@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--particle_size",
     default=None,
+    type=int,
     help="Desired box size (in pixels) of particles to be extracted",
 )
 @click.option(
