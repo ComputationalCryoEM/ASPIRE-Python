@@ -40,21 +40,10 @@ class CoordinateSourceTestCase(TestCase):
         # get path to test .mrc file
         with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.original_mrc_path = str(test_path)
-        # save test data root dir (for RelionCoordinateSource test)
+        # save test data root dir
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
 
-        os.makedirs(os.path.join(self.data_folder, "AutoPick/job006/"))
-        self.autopick_star_path = os.path.join(
-            self.data_folder, "AutoPick/job006/sample_relion_autopick.star"
-        )
-        shutil.copyfile(
-            os.path.join(self.test_dir_root, "sample_relion_autopick.star"),
-            self.autopick_star_path,
-        )
-        shutil.copyfile(
-            os.path.join(self.test_dir_root, "relion_coord.star"),
-            os.path.join(self.data_folder, "relion_coord.star"),
-        )
+        # First set up tests for EmanCoordinateSource and CentersCoordinateSource
         # We will construct a source with two micrographs and two coordinate
         # files by using the same micrograph, but dividing the coordinates
         # among two files (this simulates a dataset with multiple micrographs)
@@ -114,6 +103,23 @@ class CoordinateSourceTestCase(TestCase):
                     box_nonsquare.write(
                         f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
                     )
+
+        # Now construct a simulated Relion directory
+        # to test RelionCoordinateSource
+        # The autopick.star file points to sample1.mrc
+        # (created earlier) and relion_coord.star as the coord file
+        os.makedirs(os.path.join(self.data_folder, "AutoPick/job006/"))
+        self.autopick_star_path = os.path.join(
+            self.data_folder, "AutoPick/job006/sample_relion_autopick.star"
+        )
+        shutil.copyfile(
+            os.path.join(self.test_dir_root, "sample_relion_autopick.star"),
+            self.autopick_star_path,
+        )
+        shutil.copyfile(
+            os.path.join(self.test_dir_root, "relion_coord.star"),
+            os.path.join(self.data_folder, "relion_coord.star"),
+        )
 
         # create default object from a .box file, for comparisons in tests
         # also provides an example of how one might use this in a script
