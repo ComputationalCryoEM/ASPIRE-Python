@@ -43,6 +43,18 @@ class CoordinateSourceTestCase(TestCase):
         # save test data root dir (for RelionCoordinateSource test)
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
 
+        os.makedirs(os.path.join(self.data_folder, "AutoPick/job006/"))
+        self.autopick_star_path = os.path.join(
+            self.data_folder, "AutoPick/job006/sample_relion_autopick.star"
+        )
+        shutil.copyfile(
+            os.path.join(self.test_dir_root, "sample_relion_autopick.star"),
+            self.autopick_star_path,
+        )
+        shutil.copyfile(
+            os.path.join(self.test_dir_root, "relion_coord.star"),
+            os.path.join(self.data_folder, "relion_coord.star"),
+        )
         # We will construct a source with two micrographs and two coordinate
         # files by using the same micrograph, but dividing the coordinates
         # among two files (this simulates a dataset with multiple micrographs)
@@ -136,9 +148,7 @@ class CoordinateSourceTestCase(TestCase):
         # index file. We are not using the simulated data source constructed
         # in the setup
         RelionCoordinateSource(
-            os.path.join(
-                self.test_dir_root, "AutoPick/job006/sample_relion_autopick.star"
-            ),
+            os.path.join(self.autopick_star_path),
             particle_size=256,
         )
 
@@ -162,9 +172,7 @@ class CoordinateSourceTestCase(TestCase):
         src_from_coord = CentersCoordinateSource(self.files_coord, particle_size=256)
         src_from_star = CentersCoordinateSource(self.files_star, particle_size=256)
         src_from_relion = RelionCoordinateSource(
-            relion_autopick_star=os.path.join(
-                self.test_dir_root, "AutoPick/job006/sample_relion_autopick.star"
-            ),
+            self.autopick_star_path,
             particle_size=256,
         )
         imgs_box = self.src_from_box.images(0, 10)
