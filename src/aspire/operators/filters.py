@@ -33,14 +33,14 @@ def wavelength_to_voltage(wavelength):
     ) / (2 * 0.978466)
 
 
-def evaluate_grid_src(src, L, power=1):
+def evaluate_src_filters_on_grid(src, grid_size):
     """
     Given an ImageSource object, compute the source's unique filters
     at the filter_indices specified in its metadata.
-    :return: an `L x L x len(src.filter_indices)` array containing the evaluated
-    filters at each gridpoint
+    :return: an `grid_size x grid_size x len(src.filter_indices)`
+    array containing the evaluated filters at each gridpoint
     """
-    grid2d = grid_2d(L, dtype=src.dtype)
+    grid2d = grid_2d(grid_size, dtype=src.dtype)
     omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
 
     h = np.empty((omega.shape[-1], len(src.filter_indices)), dtype=src.dtype)
@@ -48,8 +48,6 @@ def evaluate_grid_src(src, L, power=1):
         idx_k = np.where(src.filter_indices == i)[0]
         if len(idx_k) > 0:
             filter_values = filt.evaluate(omega)
-            if power != 1:
-                filter_values **= power
             h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
     h = np.reshape(h, grid2d["x"].shape + (len(src.filter_indices),))
