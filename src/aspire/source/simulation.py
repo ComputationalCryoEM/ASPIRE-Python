@@ -183,7 +183,7 @@ class Simulation(ImageSource):
 
         im = self.projections(start=start, num=num, indices=indices)
 
-        im = self.eval_filters(im, start=start, num=num, indices=indices)
+        im = self._apply_filters(im, start=start, num=num, indices=indices)
         im = im.shift(self.offsets[indices, :])
 
         im *= self.amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
