@@ -4,7 +4,7 @@ import numpy as np
 from scipy.fftpack import fft2
 
 from aspire.nufft import anufft
-from aspire.operators import evaluate_grid_src
+from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel
 from aspire.utils.fft import mdim_ifftshift
 from aspire.utils.matlab_compat import m_flatten, m_reshape
@@ -17,7 +17,7 @@ class MeanEstimator(Estimator):
     def compute_kernel(self):
         _2L = 2 * self.L
         kernel = np.zeros((_2L, _2L, _2L), dtype=self.dtype)
-        sq_filters_f = evaluate_grid_src(self.src, self.L, power=2)
+        sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src, self.L))
 
         for i in range(0, self.n, self.batch_size):
             _range = np.arange(i, min(self.n, i + self.batch_size), dtype=int)
