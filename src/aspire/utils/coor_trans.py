@@ -68,33 +68,50 @@ def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     return {"x": x, "r": r}
 
 
-def grid_2d(n, shifted=False, normalized=True, dtype=np.float32):
+def grid_2d(n, shifted=False, normalized=True, indexing="xy", dtype=np.float32):
     """
     Generate two dimensional grid.
 
     :param n: the number of grid points in each dimension.
     :param shifted: shifted by half of grid or not when n is even.
     :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :param indexing: 'yx' (C) or 'xy' (F), defaulting to 'yx'.
+    See https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
     :return: the rectangular and polar coordinates of all grid points.
     """
-    grid = np.ceil(np.arange(-n / 2, n / 2, dtype=dtype))
+
+    grid = slice(-n // 2 + 1, n // 2, n * 1j)
+
+    if n % 2 == 0:
+        grid = slice(-n // 2, n // 2 - 1, n * 1j)
 
     if shifted and n % 2 == 0:
-        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
+        grid = slice((-n + 1) / 2, (n + 1) / 2 - 1, n * 1j)
+
+    y, x = np.mgrid[grid, grid]
+    if indexing == "xy":
+        x, y = y, x
+    elif indexing != "yx":
+        raise RuntimeError(
+            f"grid_2d indexing {indexing} not supported." "  Try 'xy' or 'yx'"
+        )
 
     if normalized:
+        # Compute the denominator for normalization
         if shifted and n % 2 == 0:
-            grid = grid / (n / 2 - 1 / 2)
+            denom = n / 2 - 1 / 2
         else:
-            grid = grid / (n / 2)
+            denom = n / 2
+        # Apply the normalization to each dimension
+        for d in (x, y):
+            d /= denom
 
-    x, y = np.meshgrid(grid, grid, indexing="ij")
     phi, r = cart2pol(x, y)
 
     return {"x": x, "y": y, "phi": phi, "r": r}
 
 
-def grid_3d(n, shifted=False, normalized=True, dtype=np.float32):
+def grid_3d(n, shifted=False, normalized=True, indexing="xyz", dtype=np.float32):
     """
     Generate three dimensional grid.
 
@@ -103,18 +120,35 @@ def grid_3d(n, shifted=False, normalized=True, dtype=np.float32):
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :return: the rectangular and spherical coordinates of all grid points.
     """
-    grid = np.ceil(np.arange(-n / 2, n / 2, dtype=dtype))
+    grid = slice(-n // 2 + 1, n // 2, n * 1j)
+
+    if n % 2 == 0:
+        grid = slice(-n // 2, n // 2 - 1, n * 1j)
 
     if shifted and n % 2 == 0:
-        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
+        grid = slice((-n + 1) / 2, (n + 1) / 2 - 1, n * 1j)
+
+    z, y, x = np.mgrid[grid, grid, grid]
+
+    # ugh y = np.flip(y, axis=1)
+
+    if indexing == "xyz":
+        x, y, z = z, y, x
+    elif indexing != "zyx":
+        raise RuntimeError(
+            f"grid_3d indexing {indexing} not supported." "  Try 'xyz' or 'zyx'"
+        )
 
     if normalized:
+        # Compute the denominator for normalization
         if shifted and n % 2 == 0:
-            grid = grid / (n / 2 - 1 / 2)
+            denom = n / 2 - 1 / 2
         else:
-            grid = grid / (n / 2)
+            denom = n / 2
+        # Apply the normalization to each dimension
+        for d in (x, y, z):
+            d /= denom
 
-    x, y, z = np.meshgrid(grid, grid, grid, indexing="ij")
     phi, theta, r = cart2sph(x, y, z)
 
     # TODO: Should this theta adjustment be moved inside cart2sph?
