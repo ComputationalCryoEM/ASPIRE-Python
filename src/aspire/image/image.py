@@ -78,7 +78,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     :return: The modified images
     """
     L = imgs.shape[-1]
-    grid = grid_2d(L, indexing="xy")
+    grid = grid_2d(L, indexing="yx")
     mask = grid["r"] > bg_radius
 
     if do_ramp:

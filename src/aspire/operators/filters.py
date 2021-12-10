@@ -131,11 +131,11 @@ class Filter:
         """
 
         # Note we can probably unwind the "F"/m_reshape here
-        grid2d = grid_2d(L, indexing="xy", dtype=dtype)
-        omega = np.pi * np.vstack((grid2d["x"].flatten("F"), grid2d["y"].flatten("F")))
+        grid2d = grid_2d(L, indexing="yx", dtype=dtype)
+        omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
         h = self.evaluate(omega, *args, **kwargs)
 
-        h = m_reshape(h, grid2d["x"].shape)
+        h = h.reshape(grid2d["x"].shape)
 
         return h
 
