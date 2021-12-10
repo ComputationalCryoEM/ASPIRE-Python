@@ -2,7 +2,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from math import ceil, floor
+from math import floor
 from pathlib import Path
 
 import mrcfile
@@ -164,12 +164,12 @@ class CoordinateSource(ImageSource, ABC):
         :param particle_size: the size of the box around the particle
         """
         # subtract off floor(particle size/2) from center coords
-        r = ceil(particle_size / 2)
+        r = floor(particle_size / 2)
         x, y = center[:2]
         # Relion coordinates are represented as floats, so we
         # account for this by reading as a float first and then
         # taking the floor of the result to obtain the index of
-        # this coordinate in a pixel array
+        # the corresponding pixel
         return [
             floor(float(x)) - r,
             floor(float(y)) - r,
@@ -187,7 +187,7 @@ class CoordinateSource(ImageSource, ABC):
         :param box_coord: a list of length 4 representing the particle box
         """
         llx, lly, particle_size = box_coord[:3]
-        r = ceil(particle_size / 2)
+        r = floor(particle_size / 2)
         return [llx + r, lly + r]
 
     def coords_list_from_star(self, star_file):
@@ -375,9 +375,7 @@ class EmanCoordinateSource(CoordinateSource):
 
         # if particle size set by user, we have to re-do the coordinates
         if self.particle_size:
-            # original size from coordinate file
-            old_size = size_x
-            self.force_new_particle_size(self.particle_size)
+            self._force_new_particle_size(self.particle_size)
 
     def coords_list_from_file(self, coord_file):
         """
@@ -388,10 +386,10 @@ class EmanCoordinateSource(CoordinateSource):
         # coords are already in canonical .box format, so simply cast to int
         return [[int(x) for x in line] for line in lines]
 
-    def force_new_particle_size(self, new_size):
+    def _force_new_particle_size(self, new_size):
         """
         Given a new particle size, rewrite the coordinates so that the box size
-        is changed, but still centered around the particle
+        is changed, but still centered around the particle.
         """
         _resized_particles = []
         for particle in self.particles:
