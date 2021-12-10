@@ -68,7 +68,7 @@ def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     return {"x": x, "r": r}
 
 
-def grid_2d(n, shifted=False, normalized=True, indexing="xy", dtype=np.float32):
+def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     """
     Generate two dimensional grid.
 
@@ -111,7 +111,7 @@ def grid_2d(n, shifted=False, normalized=True, indexing="xy", dtype=np.float32):
     return {"x": x, "y": y, "phi": phi, "r": r}
 
 
-def grid_3d(n, shifted=False, normalized=True, indexing="xyz", dtype=np.float32):
+def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32):
     """
     Generate three dimensional grid.
 
