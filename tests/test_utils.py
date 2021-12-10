@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import numpy as np
 from pytest import raises
+from scipy.stats import norm
 
 from aspire import __version__
 from aspire.utils import get_full_version, powerset, utest_tolerance
@@ -51,27 +52,44 @@ class UtilsTestCase(TestCase):
             utest_tolerance(int)
 
     def testGaussian2d(self):
-        L = 42
-        X = gaussian_2d(L, x0=2, y0=5, sigma_x=1, sigma_y=2)
-        Y = gaussian_2d(L, x0=0, y0=1, sigma_x=2, sigma_y=3)
+        L = 100
+        mu_x, mu_y = 7, -3
+        s_x, s_y = 10, 15
 
-        # For jointly distributed gaussians, var(X + Y) = var(X) + var(Y) + 2covar(X,Y)
-        var_X = np.var(X)
-        var_Y = np.var(Y)
-        cov_XY = np.cov(X.flatten(), Y.flatten())[0][1]
-        self.assertTrue(
-            np.allclose(np.var(X + Y), var_X + var_Y + 2 * cov_XY, atol=1e-5)
-        )
+        g = gaussian_2d(L, x0=mu_x, y0=mu_y, sigma_x=s_x, sigma_y=s_y)
+
+        # The normalized sum across an axis should correspond to a 1d pdf with associated mu, sigma.
+        g_x = np.sum(g, axis=1) / np.sum(g)
+        g_y = np.sum(g, axis=0) / np.sum(g)
+
+        # Corresponding 1d pdf's.
+        pdf_x = norm.pdf(np.arange(L), L // 2 + mu_x, s_x)
+        pdf_y = norm.pdf(np.arange(L), L // 2 + mu_y, s_y)
+
+        # Assert that error scaled by variance is small.
+        tol = 0.13
+        self.assertTrue(np.max(abs(g_x - pdf_x) * s_x ** 2 < tol))
+        self.assertTrue(np.max(abs(g_y - pdf_y) * s_y ** 2 < tol))
 
     def testGaussian3d(self):
-        L = 42
-        X = gaussian_3d(L, mu=(0, 1, 2), sigma=(1, 2, 3))
-        Y = gaussian_3d(L, mu=(1, 3, 5), sigma=(3, 1, 5))
+        L = 100
+        mu = (0, 5, 10)
+        sigma = (5, 10, 15)
 
-        # For jointly distributed gaussians, var(X + Y) = var(X) + var(Y) + 2covar(X,Y)
-        var_X = np.var(X)
-        var_Y = np.var(Y)
-        cov_XY = np.cov(X.flatten(), Y.flatten())[0][1]
-        self.assertTrue(
-            np.allclose(np.var(X + Y), var_X + var_Y + 2 * cov_XY, atol=1e-8)
-        )
+        G = gaussian_3d(L, mu, sigma)
+
+        # The normalized sum across two axes should correspond to a 1d pdf with proper mu, sigma.
+        G_x = np.sum(G, axis=(1, 2)) / np.sum(G)
+        G_y = np.sum(G, axis=(0, 2)) / np.sum(G)
+        G_z = np.sum(G, axis=(0, 1)) / np.sum(G)
+
+        # Corresponding 1d pdf's.
+        pdf_x = norm.pdf(np.arange(L), L // 2 + mu[0], sigma[0])
+        pdf_y = norm.pdf(np.arange(L), L // 2 + mu[1], sigma[1])
+        pdf_z = norm.pdf(np.arange(L), L // 2 + mu[2], sigma[2])
+
+        # Assert that error, scaled by variance, is small.
+        tol = 0.13
+        self.assertTrue(np.max(abs(G_x - pdf_x) * sigma[0] ** 2 < tol))
+        self.assertTrue(np.max(abs(G_y - pdf_y) * sigma[1] ** 2 < tol))
+        self.assertTrue(np.max(abs(G_z - pdf_z) * sigma[2] ** 2 < tol))
