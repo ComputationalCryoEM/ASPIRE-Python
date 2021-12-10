@@ -257,7 +257,9 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
         ang_unique, ang_idx = np.unique(phi, return_inverse=True)
 
     else:
-        grid = grid_3d(N, shifted=shifted, normalized=normalized, dtype=dtype)
+        grid = grid_3d(
+            N, shifted=shifted, normalized=normalized, indexing="xyz", dtype=dtype
+        )
         mask = grid["r"] <= 1
 
         # In Numpy, elements in the indexed array are always iterated and returned in row-major (C-style) order.

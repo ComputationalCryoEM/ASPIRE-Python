@@ -48,7 +48,7 @@ class PreprocessPLTestCase(TestCase):
 
     def testDownsample(self):
         # generate a 3D map with density decays as Gaussian function
-        g3d = grid_3d(self.L, dtype=self.dtype)
+        g3d = grid_3d(self.L, indexing="xyz", dtype=self.dtype)
         coords = np.array([g3d["x"].flatten(), g3d["y"].flatten(), g3d["z"].flatten()])
         sigma = 0.2
         vol = np.exp(-0.5 * np.sum(np.abs(coords / sigma) ** 2, axis=0)).astype(

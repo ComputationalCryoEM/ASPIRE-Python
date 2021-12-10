@@ -40,7 +40,7 @@ class UtilsTestCase(TestCase):
         )
 
     def testGrid3d(self):
-        grid3d = grid_3d(8)
+        grid3d = grid_3d(8, indexing="xyz")
         self.assertTrue(
             np.allclose(grid3d["x"], np.load(os.path.join(DATA_DIR, "grid3d_8_x.npy")))
         )
