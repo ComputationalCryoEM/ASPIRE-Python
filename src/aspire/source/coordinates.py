@@ -2,6 +2,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from math import ceil, floor
 from pathlib import Path
 
 import mrcfile
@@ -153,27 +154,41 @@ class CoordinateSource(ImageSource, ABC):
         """
 
     @staticmethod
-    def center_to_box_coord(center, particle_size):
+    def box_coord_from_center(center, particle_size):
         """
-        Convert a list [x,y] representing a particle center
-        to a list [llx, lly. particle_size, particle_size]
+        Convert a list `[x,y]` representing a particle center
+        to a list
+        `[lower left x, lower left y, particle_size, particle_size]`
         representing the box around the particle in .box EMAN1 format
         :param center: a list of length two representing a center
         :param particle_size: the size of the box around the particle
         """
-        # subtract off half of particle size from center coord
-        # populate final two coordinates with the particle_size
-        # Relion coordinates are represented as floats. Here we are reading
-        # the value as a float and then intentionally taking the floor
-        # of the result
-        r = particle_size // 2
+        # subtract off floor(particle size/2) from center coords
+        r = ceil(particle_size / 2)
         x, y = center[:2]
+        # Relion coordinates are represented as floats, so we
+        # account for this by reading as a float first and then
+        # taking the floor of the result to obtain the index of
+        # this coordinate in a pixel array
         return [
-            int(float(x)) - r,
-            int(float(y)) - r,
+            floor(float(x)) - r,
+            floor(float(y)) - r,
             particle_size,
             particle_size,
         ]
+
+    @staticmethod
+    def center_from_box_coord(box_coord):
+        """
+        Convert a list
+        `[lower left x, lower left y, particle_size, particle_size]`
+        representing a particle box in EMAN1 .box format to a list
+        `[x, y]` representing the particle center
+        :param box_coord: a list of length 4 representing the particle box
+        """
+        llx, lly, particle_size = box_coord[:3]
+        r = ceil(particle_size / 2)
+        return [llx + r, lly + r]
 
     def coords_list_from_star(self, star_file):
         """
@@ -182,7 +197,9 @@ class CoordinateSource(ImageSource, ABC):
         """
         df = StarFile(star_file).get_block_by_index(0)
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
-        return [self.center_to_box_coord(coord, self.particle_size) for coord in coords]
+        return [
+            self.box_coord_from_center(coord, self.particle_size) for coord in coords
+        ]
 
     def _check_and_get_paths(self, files):
         """
@@ -360,7 +377,7 @@ class EmanCoordinateSource(CoordinateSource):
         if self.particle_size:
             # original size from coordinate file
             old_size = size_x
-            self.force_new_particle_size(self.particle_size, old_size)
+            self.force_new_particle_size(self.particle_size)
 
     def coords_list_from_file(self, coord_file):
         """
@@ -371,25 +388,19 @@ class EmanCoordinateSource(CoordinateSource):
         # coords are already in canonical .box format, so simply cast to int
         return [[int(x) for x in line] for line in lines]
 
-    def force_new_particle_size(self, new_size, old_size):
+    def force_new_particle_size(self, new_size):
         """
         Given a new particle size, rewrite the coordinates so that the box size
         is changed, but still centered around the particle
         """
         _resized_particles = []
         for particle in self.particles:
-            mrc_index, coord = particle
-            _resized_particles.append(
-                (
-                    mrc_index,
-                    [
-                        coord[0] + (old_size - new_size) // 2,
-                        coord[1] + (old_size - new_size) // 2,
-                        new_size,
-                        new_size,
-                    ],
-                )
-            )
+            mrc_index, box_coord = particle
+            # get the coordinates of the center
+            center = self.center_from_box_coord(box_coord)
+            # rewrite to a box coordinate with new size
+            new_coord = self.box_coord_from_center(center, new_size)
+            _resized_particles.append((mrc_index, new_coord))
         self.particles = _resized_particles
 
 
@@ -430,7 +441,7 @@ class CentersCoordinateSource(CoordinateSource):
         # otherwise we assume text file format with one coord per line:
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
-        return [self.center_to_box_coord(line, self.particle_size) for line in lines]
+        return [self.box_coord_from_center(line, self.particle_size) for line in lines]
 
 
 class RelionCoordinateSource(CoordinateSource):

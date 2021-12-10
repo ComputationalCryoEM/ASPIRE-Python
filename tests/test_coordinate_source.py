@@ -117,7 +117,8 @@ class CoordinateSourceTestCase(TestCase):
             self.autopick_star_path,
         )
         shutil.copyfile(
-            os.path.join(self.test_dir_root, "relion_coord.star"),
+            os.path.join(self.test_dir_root, "sample_relion_coord.star"),
+            # renamed because later we glob for sample*star and we don't want this one
             os.path.join(self.data_folder, "relion_coord.star"),
         )
 
@@ -216,6 +217,38 @@ class CoordinateSourceTestCase(TestCase):
         only100imgs = src_only100.images(0, src_only100.n)
         for i in range(100):
             self.assertTrue(np.array_equal(imgs[i], only100imgs[i]))
+        # make sure max_rows > self.n loads max_rows images
+        src_500 = EmanCoordinateSource(self.files_box, max_rows=500)
+        self.assertEqual(src_500.n, 440)
+        imgs_500 = src_500.images(0, 440)
+        for i in range(440):
+            self.assertTrue(np.array_equal(imgs[i], imgs_500[i]))
+
+    def testBoundaryParticlesRemoved(self):
+        src_centers_larger_particles = CentersCoordinateSource(
+            self.files_coord, particle_size=300
+        )
+        src_box_larger_particles = EmanCoordinateSource(
+            self.files_box, particle_size=300
+        )
+        # 2 particles do not fit at this particle size
+        self.assertEqual(src_centers_larger_particles.n, 438)
+        self.assertEqual(src_box_larger_particles.n, 438)
+        # make sure we have the same particles
+        imgs_centers = src_centers_larger_particles.images(0, 438)
+        imgs_resized = src_box_larger_particles.images(0, 438)
+        for i in range(50):
+            self.assertTrue(np.array_equal(imgs_centers[i], imgs_resized[i]))
+
+    def testEvenOddResize(self):
+        # test a range of even and odd resizes
+        for _size in range(252, 260):
+            src_centers = CentersCoordinateSource(self.files_coord, particle_size=_size)
+            src_resized = EmanCoordinateSource(self.files_box, particle_size=_size)
+            imgs_centers = src_centers.images(0, 440)
+            imgs_resized = src_resized.images(0, 440)
+            for i in range(440):
+                self.assertTrue(np.array_equal(imgs_centers[i], imgs_resized[i]))
 
     def testSave(self):
         # we can save the source into an .mrcs stack with *no* metadata
