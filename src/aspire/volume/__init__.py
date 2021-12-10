@@ -161,7 +161,7 @@ class Volume:
 
         n = rot_matrices.shape[0]
 
-        pts_rot = np.moveaxis(rotated_grids(self.resolution, rot_matrices), 1, 2)
+        pts_rot = rotated_grids(self.resolution, rot_matrices)
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
         pts_rot = m_reshape(pts_rot, (3, self.resolution ** 2 * n))
@@ -553,7 +553,7 @@ def rotated_grids(L, rot_matrices):
         Frequencies are in the range [-pi, pi].
     """
 
-    grid2d = grid_2d(L, indexing="xy", dtype=rot_matrices.dtype)
+    grid2d = grid_2d(L, indexing="yx", dtype=rot_matrices.dtype)
     num_pts = L ** 2
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(
