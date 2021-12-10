@@ -466,7 +466,7 @@ class ImageSource:
 
         logger.info("Apply contrast inversion on source object")
         L = self.L
-        grid = grid_2d(L, shifted=True)
+        grid = grid_2d(L, indexing="yx", shifted=True)
         # Get mask indices of signal and noise samples assuming molecule
         signal_mask = grid["r"] < 0.5
         noise_mask = grid["r"] > 0.8

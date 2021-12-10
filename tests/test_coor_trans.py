@@ -23,7 +23,7 @@ class UtilsTestCase(TestCase):
         pass
 
     def testGrid2d(self):
-        grid2d = grid_2d(8)
+        grid2d = grid_2d(8, indexing="xy")
         self.assertTrue(
             np.allclose(grid2d["x"], np.load(os.path.join(DATA_DIR, "grid2d_8_x.npy")))
         )

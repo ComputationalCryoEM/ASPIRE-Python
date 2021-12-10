@@ -242,18 +242,16 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
     ensure(N > 0, "Number of grid points should be greater than 0.")
 
     if ndim == 2:
-        grid = grid_2d(N, shifted=shifted, normalized=normalized, dtype=dtype)
+        grid = grid_2d(
+            N, shifted=shifted, normalized=normalized, indexing="yx", dtype=dtype
+        )
         mask = grid["r"] <= 1
 
         # Minor differences in r/theta/phi values are unimportant for the purpose
         # of this function, so round off before proceeding
 
-        # TODO: numpy boolean indexing will return a 1d array (like MATLAB)
-        # However, it always searches in row-major order, unlike MATLAB (column-major),
-        # with no options to change the search order. The results we'll be getting back are thus not comparable.
-        # We transpose the appropriate ndarrays before applying the mask to obtain the same behavior as MATLAB.
-        r = grid["r"].T[mask].round(5)
-        phi = grid["phi"].T[mask].round(5)
+        r = grid["r"][mask].round(5)
+        phi = grid["phi"][mask].round(5)
 
         r_unique, r_idx = np.unique(r, return_inverse=True)
         ang_unique, ang_idx = np.unique(phi, return_inverse=True)

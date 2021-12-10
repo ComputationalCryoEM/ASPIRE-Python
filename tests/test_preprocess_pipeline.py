@@ -100,7 +100,7 @@ class PreprocessPLTestCase(TestCase):
 
     def testNormBackground(self):
         bg_radius = 1.0
-        grid = grid_2d(self.L)
+        grid = grid_2d(self.L, indexing="yx")
         mask = grid["r"] > bg_radius
         self.sim.normalize_background()
         imgs_nb = self.sim.images(start=0, num=self.n).asnumpy()
