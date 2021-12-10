@@ -157,7 +157,7 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        data = self[vol_idx].T  # RCOPT
+        data = self[vol_idx]
 
         n = rot_matrices.shape[0]
 
@@ -571,7 +571,6 @@ def rotated_grids(L, rot_matrices):
 
     # Note we return grids as (Z, Y, X)
     return pts_rot[::-1]
-
 
 def rotated_grids_3d(L, rot_matrices):
     """
