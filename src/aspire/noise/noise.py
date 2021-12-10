@@ -72,7 +72,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
         # Run estimate using saved parameters
-        g2d = grid_2d(self.L, dtype=self.dtype)
+        g2d = grid_2d(self.L, indexing="yx", dtype=self.dtype)
         mask = g2d["r"] >= self.bgRadius
 
         first_moment = 0
@@ -117,7 +117,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
         # Run estimate using saved parameters
-        g2d = grid_2d(self.L)
+        g2d = grid_2d(self.L, indexing="yx", dtype=self.dtype)
         mask = g2d["r"] >= self.bgRadius
 
         mean_est = 0

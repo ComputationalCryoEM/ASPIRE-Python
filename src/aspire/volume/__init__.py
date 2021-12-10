@@ -553,7 +553,7 @@ def rotated_grids(L, rot_matrices):
         Frequencies are in the range [-pi, pi].
     """
 
-    grid2d = grid_2d(L, dtype=rot_matrices.dtype)
+    grid2d = grid_2d(L, indexing="xy", dtype=rot_matrices.dtype)
     num_pts = L ** 2
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(

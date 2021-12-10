@@ -37,7 +37,9 @@ def adaptive_support(img_src, energy_threshold=0.99):
     L = img_src.L
     N = L // 2
 
-    r = grid_2d(L, shifted=False, normalized=False, dtype=img_src.dtype)["r"]
+    r = grid_2d(L, shifted=False, normalized=False, indexing="yx", dtype=img_src.dtype)[
+        "r"
+    ]
 
     # Estimate noise
     noise_est = WhiteNoiseEstimator(img_src)

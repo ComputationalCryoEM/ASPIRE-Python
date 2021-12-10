@@ -78,7 +78,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     :return: The modified images
     """
     L = imgs.shape[-1]
-    grid = grid_2d(L)
+    grid = grid_2d(L, indexing="xy")
     mask = grid["r"] > bg_radius
 
     if do_ramp:
@@ -211,8 +211,8 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
-        grid = grid_2d(self.res)
-        grid_ds = grid_2d(ds_res)
+        grid = grid_2d(self.res, indexing="yx")
+        grid_ds = grid_2d(ds_res, indexing="yx")
 
         im_ds = np.zeros((self.n_images, ds_res, ds_res), dtype=self.dtype)
 
@@ -232,7 +232,7 @@ class Image:
             interpolator = RegularGridInterpolator(
                 (x, y), im[s], bounds_error=False, fill_value=0
             )
-            im_ds[s] = interpolator(np.dstack([grid_ds["x"], grid_ds["y"]]))
+            im_ds[s] = interpolator(np.dstack([grid_ds["y"], grid_ds["x"]]))
 
         return Image(im_ds)
 
