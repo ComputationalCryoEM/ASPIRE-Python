@@ -239,23 +239,16 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
 
     else:
         grid = grid_3d(
-            N, shifted=shifted, normalized=normalized, indexing="xyz", dtype=dtype
+            N, shifted=shifted, normalized=normalized, indexing="zyx", dtype=dtype
         )
         mask = grid["r"] <= 1
-
-        # In Numpy, elements in the indexed array are always iterated and returned in row-major (C-style) order.
-        # To emulate a behavior where iteration happens in Fortran order, we swap axes 0 and 2 of both the array
-        # being indexed (r/theta/phi), as well as the mask itself.
-        # TODO: This is only for the purpose of getting the same behavior as MATLAB while porting the code, and is
-        # likely not needed in the final version.
 
         # Minor differences in r/theta/phi values are unimportant for the purpose of this function,
         # so we round off before proceeding.
 
-        mask_ = np.swapaxes(mask, 0, 2)
-        r = np.swapaxes(grid["r"], 0, 2)[mask_].round(5)
-        theta = np.swapaxes(grid["theta"], 0, 2)[mask_].round(5)
-        phi = np.swapaxes(grid["phi"], 0, 2)[mask_].round(5)
+        r = grid["r"][mask].round(5)
+        theta = grid["theta"][mask].round(5)
+        phi = grid["phi"][mask].round(5)
 
         r_unique, r_idx = np.unique(r, return_inverse=True)
         ang_unique, ang_idx = np.unique(
