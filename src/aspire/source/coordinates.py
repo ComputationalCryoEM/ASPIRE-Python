@@ -52,6 +52,9 @@ class CoordinateSource(ImageSource, ABC):
 
     def __init__(self, mrc_paths, coord_paths, particle_size, max_rows, dtype):
         self.dtype = np.dtype(dtype)
+        # the particle_size parameter is the *user-specified* argument
+        # and is used in self.populate_particles
+        # it may be None in the case of an EmanCoordinateSource
         self.particle_size = particle_size
 
         # keep this list to identify micrograph paths by index rather than
@@ -84,9 +87,12 @@ class CoordinateSource(ImageSource, ABC):
         # save the shape to compare the rest of the mrcs against
         self.mrc_shape = shape
 
-        # look at first coord to get particle size
+        # look at first coord to get the particle size
+        # this was either provided by the user or read from a .box file
         # here we're checking the final coordinate of the first particle
         # which is the Y-size of the box (the same as the X-size)
+        # this is not the same as the argument particle_size
+        # which can be None
         L = first_coord[3]
 
         # total number of particles given in coord files
