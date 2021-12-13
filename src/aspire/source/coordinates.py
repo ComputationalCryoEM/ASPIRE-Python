@@ -159,7 +159,7 @@ class CoordinateSource(ImageSource, ABC):
         Convert a list `[x,y]` representing a particle center
         to a list
         `[lower left x, lower left y, particle_size, particle_size]`
-        representing the box around the particle in .box EMAN1 format
+        representing the box around the particle in .box EMAN1 format.
         :param center: a list of length two representing a center
         :param particle_size: the size of the box around the particle
         """
@@ -183,7 +183,7 @@ class CoordinateSource(ImageSource, ABC):
         Convert a list
         `[lower left x, lower left y, particle_size, particle_size]`
         representing a particle box in EMAN1 .box format to a list
-        `[x, y]` representing the particle center
+        `[x, y]` representing the particle center.
         :param box_coord: a list of length 4 representing the particle box
         """
         llx, lly, particle_size = box_coord[:3]
@@ -193,7 +193,7 @@ class CoordinateSource(ImageSource, ABC):
     def coords_list_from_star(self, star_file):
         """
         Given a Relion STAR coordinate file (generally containing particle centers)
-        return a list of coordinates in the canonical (.box) format
+        return a list of coordinates in the canonical (.box) format.
         """
         df = StarFile(star_file).get_block_by_index(0)
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
@@ -205,7 +205,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Used in subclasses accepting the `files` kwarg.
         Turns all of our paths into absolute paths.
-        Returns lists mrc_paths, coord_paths
+        Returns lists `mrc_paths`, `coord_paths`.
         """
         # split up the mrc paths from the coordinate file paths
         mrc_paths = [f[0] for f in files]
@@ -224,7 +224,7 @@ class CoordinateSource(ImageSource, ABC):
     def exclude_boundary_particles(self):
         """
         Remove particles boxes which do not fit in the micrograph
-        with the given particle_size
+        with the given `particle_size`.
         """
         out_of_range = []
         for i, particle in enumerate(self.particles):
@@ -250,9 +250,9 @@ class CoordinateSource(ImageSource, ABC):
     @staticmethod
     def crop_micrograph(data, coord):
         """
-        Crops a particle box defined by `coord` out of `data`
-        According to MRC 2014 convention, origin represents the bottom-left
-        corner of the image
+        Crops a particle box defined by `coord` out of `data`.
+        According to MRC 2014 convention, the origin represents the bottom-left
+        corner of the image.
         :param data: A 2D numpy array representing a micrograph
         :param coord: A list of integers: (lower left X, lower left Y, X, Y)
         """
@@ -267,7 +267,7 @@ class CoordinateSource(ImageSource, ABC):
         not correspond to the particles in the original source on disk, if some
         particles were excluded due to their box not fitting into the mrc
         dimensions. Thus, the exact particles returned are a function of the
-        particle_size.
+        `particle_size`.
         :param start: Starting index (default: 0)
         :param num: number of images to return starting from `start` (default: numpy.inf)
         :param indices: A numpy array of integer indices
@@ -379,7 +379,7 @@ class EmanCoordinateSource(CoordinateSource):
 
     def coords_list_from_file(self, coord_file):
         """
-        Given a coordinate file in .box format, returns a list of coordinates
+        Given a coordinate file in .box format, returns a list of coordinates.
         """
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
@@ -431,7 +431,7 @@ class CentersCoordinateSource(CoordinateSource):
     def coords_list_from_file(self, coord_file):
         """
         Given a coordinate file with (x,y) particle centers,
-        return a list of coordinates in our canonical (.box) format
+        return a list of coordinates in our canonical (.box) format.
         """
         # check if it's a STAR file list of centers
         if os.path.splitext(coord_file)[1] == ".star":
