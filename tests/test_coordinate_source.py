@@ -211,18 +211,31 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
 
     def testMaxRows(self):
-        # make sure max_rows loads the correct particles
-        src_only100 = EmanCoordinateSource(self.files_box, max_rows=100)
         imgs = self.src_from_box.images(0, 440)
-        only100imgs = src_only100.images(0, src_only100.n)
+        # make sure max_rows loads the correct particles
+        src_100 = EmanCoordinateSource(self.files_box, max_rows=100)
+        imgs_100 = src_100.images(0, src_100.n)
         for i in range(100):
-            self.assertTrue(np.array_equal(imgs[i], only100imgs[i]))
+            self.assertTrue(np.array_equal(imgs[i], imgs_100[i]))
         # make sure max_rows > self.n loads max_rows images
         src_500 = EmanCoordinateSource(self.files_box, max_rows=500)
         self.assertEqual(src_500.n, 440)
         imgs_500 = src_500.images(0, 440)
         for i in range(440):
             self.assertTrue(np.array_equal(imgs[i], imgs_500[i]))
+        # make sure max_rows loads correct particles
+        # when some have been excluded
+        imgs_newsize = EmanCoordinateSource(self.files_box, particle_size=336).images(
+            0, 50
+        )
+        src_maxrows = EmanCoordinateSource(
+            self.files_box, particle_size=336, max_rows=50
+        )
+        # max_rows still loads 50 images even if some particles were excluded
+        self.assertEqual(src_maxrows.n, 50)
+        imgs_maxrows = src_maxrows.images(0, 50)
+        for i in range(50):
+            self.assertTrue(np.array_equal(imgs_newsize[i], imgs_maxrows[i]))
 
     def testBoundaryParticlesRemoved(self):
         src_centers_larger_particles = CentersCoordinateSource(
