@@ -486,7 +486,9 @@ def _gaussian_blob_Cn_vols(
             for j in range(order):
                 coords_k = rot[j, :, :] @ coords - mu[k, :, np.newaxis]
                 coords_k = (
-                    np.eye(3) / np.sqrt(np.diag(D[k, :, :])) @ Q[k, :, :].T @ coords_k
+                    Q[k, :, :].T
+                    @ coords_k
+                    * np.sqrt(1 / np.diag(D[k, :, :]))[:, np.newaxis]
                 )
 
                 vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
