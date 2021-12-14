@@ -1,4 +1,5 @@
 import os
+import tempfile
 from unittest import TestCase
 
 import numpy as np
@@ -92,6 +93,23 @@ class VolumeTestCase(TestCase):
         result = 123 * self.vols_1
         self.assertTrue(np.all(result == self.data_2))
         self.assertTrue(isinstance(result, Volume))
+
+    def testSaveLoad(self):
+        # Create a tmpdir in a context. It will be cleaned up on exit.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Save the Volume object into an MRC files
+            mrcs_filepath = os.path.join(tmpdir, "test.mrc")
+            self.vols_1.save(mrcs_filepath)
+
+            # Load saved MRC file as a Volume of dtypes single and double.
+            vols_loaded_single = Volume.load(mrcs_filepath, dtype=np.float32)
+            vols_loaded_double = Volume.load(mrcs_filepath, dtype=np.float64)
+
+            # Check that loaded data are Volume instances and compare to original volume.
+            self.assertTrue(isinstance(vols_loaded_single, Volume))
+            self.assertTrue(np.allclose(self.vols_1, vols_loaded_single))
+            self.assertTrue(isinstance(vols_loaded_double, Volume))
+            self.assertTrue(np.allclose(self.vols_1, vols_loaded_double))
 
     def testProject(self):
         # Create a stack of rotations to test.

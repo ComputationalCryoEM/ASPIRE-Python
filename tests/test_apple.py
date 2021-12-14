@@ -463,13 +463,19 @@ class ApplePickerTestCase(TestCase):
         }
 
         with tempfile.TemporaryDirectory() as tmpdir_name:
-            apple_picker = Apple(output_dir=tmpdir_name)
+            apple_picker = Apple(
+                particle_size=78,
+                min_particle_size=19,
+                max_particle_size=156,
+                minimum_overlap_amount=7,
+                tau1=710,
+                tau2=7100,
+                output_dir=tmpdir_name,
+            )
             with importlib_resources.path(
                 tests.saved_test_data, "sample.mrc"
             ) as mrc_path:
-                centers_found = apple_picker.process_micrograph(
-                    mrc_path, create_jpg=True
-                )
+                centers_found = apple_picker.process_micrograph_centers(mrc_path)
                 for center_found in centers_found:
                     _x, _y = tuple(center_found)
                     if (_x, _y) not in centers:
@@ -489,7 +495,9 @@ class ApplePickerTestCase(TestCase):
         with tempfile.TemporaryDirectory() as tmpdir_name:
 
             # Instantiate an Apple instance
-            apple_picker = Apple(output_dir=tmpdir_name)
+            apple_picker = Apple(
+                particle_size=42,
+            )
 
             # Get the path of an input mrcfile
             with importlib_resources.path(
@@ -507,7 +515,7 @@ class ApplePickerTestCase(TestCase):
 
             # Check that we get a WARNING
             with self.assertLogs(level="WARNING") as logs:
-                _ = apple_picker.process_micrograph(bad_mrc_path, create_jpg=False)
+                _ = apple_picker.process_micrograph_centers(bad_mrc_path)
 
             # Check the message prefix
             self.assertTrue(
@@ -516,3 +524,22 @@ class ApplePickerTestCase(TestCase):
 
             # Check the message contains the file path
             self.assertTrue(bad_mrc_path in logs.output[0])
+
+    def testEmptyCenters(self):
+        """
+        Test we handle case were no centers are found.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir_name:
+            apple_picker = Apple(
+                particle_size=78,
+                min_particle_size=90,
+                max_particle_size=90,
+                output_dir=tmpdir_name,
+            )
+
+            with importlib_resources.path(
+                tests.saved_test_data, "sample.mrc"
+            ) as mrc_path:
+                centers_found = apple_picker.process_micrograph_centers(mrc_path)
+
+        self.assertTrue(len(centers_found) == 0)

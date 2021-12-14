@@ -56,7 +56,7 @@ fb_images = fb_basis.evaluate(fb_coeffs)
 logger.info("Finish reconstruction of images from normal FB expansion coefficients.")
 
 # Calculate the mean value of maximum differences between the FB estimated images and the original images
-fb_meanmax = np.mean(np.max(abs(fb_images - org_images), axis=2))
+fb_meanmax = np.mean(np.max(abs(fb_images - org_images), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FB estimated images and original images: {fb_meanmax}"
 )
@@ -100,7 +100,7 @@ logger.info("Finish reconstruction of images from fast FB expansion coefficients
 
 # Calculate the mean value of maximum differences between the fast FB estimated images to the original images
 diff = (ffb_images - org_images).asnumpy()
-ffb_meanmax = np.mean(np.max(abs(diff), axis=2))
+ffb_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FFB estimated images and original images: {ffb_meanmax}"
 )
@@ -143,13 +143,14 @@ pswf_images = pswf_basis.evaluate(pswf_coeffs)
 logger.info("Finish reconstruction of images from direct PSWF expansion coefficients.")
 
 # Calculate the mean value of maximum differences between direct PSWF estimated images and original images
-pswf_meanmax = np.mean(np.max(abs(pswf_images - org_images), axis=2))
+diff = (pswf_images - org_images).asnumpy()
+pswf_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between PSWF estimated images and original images: {pswf_meanmax}"
 )
 
 # Calculate the normalized RMSE of the estimated images
-pswf_nrmse_ims = anorm(pswf_images - org_images) / anorm(org_images)
+pswf_nrmse_ims = anorm(diff) / anorm(org_images)
 logger.info(f"PSWF Estimated images normalized RMSE: {pswf_nrmse_ims}")
 
 # plot the first images using the direct PSWF method
@@ -186,13 +187,14 @@ fpswf_images = fpswf_basis.evaluate(fpswf_coeffs)
 logger.info("Finish reconstruction of images from fast PSWF expansion coefficients.")
 
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
-fpswf_meanmax = np.mean(np.max(abs(fpswf_images - org_images), axis=0))
+diff = (fpswf_images - org_images).asnumpy()
+fpswf_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FPSWF estimated images and original images: {fpswf_meanmax}"
 )
 
 # Calculate the normalized RMSE of the estimated images
-fpswf_nrmse_ims = anorm(fpswf_images - org_images) / anorm(org_images)
+fpswf_nrmse_ims = anorm(diff) / anorm(org_images)
 logger.info(f"FPSWF Estimated images normalized RMSE: {fpswf_nrmse_ims}")
 
 # plot the first images using the fast PSWF method
@@ -264,3 +266,5 @@ plt.subplot(3, 4, 12)
 plt.imshow(np.real(org_images[0] - fpswf_images[0]), cmap="gray")
 plt.title("Differences")
 plt.tight_layout()
+
+plt.show()

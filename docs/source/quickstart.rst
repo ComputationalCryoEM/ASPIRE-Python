@@ -16,7 +16,7 @@ Currently, the following operations can be run with ASPIRE:
 1. Particle-Picking
 ###################
 
-The ``apple`` command takes in a folder of one or more ``*.mrc`` files, picks particles using the Apple-Picker algorithm described at
+The ``apple`` command takes in a file or folder of one or more ``*.mrc`` files, picks particles using the Apple-Picker algorithm described at
 :cite:`DBLP:journals/corr/abs-1802-00469`, and generates ``*.star`` files, one for each ``*.mrc`` file processed, at an output folder location.
 
 For example, to run the command on sample data included in ASPIRE (a single ``sample.mrc`` file provided from the 5.3 GB
@@ -26,7 +26,7 @@ For example, to run the command on sample data included in ASPIRE (a single ``sa
 .. code-block:: console
 
     mkdir apple_output
-    aspire apple --mrc_file /path/to/aspire/data/sample.mrc --output_dir particles
+    aspire apple --mrc_path /path/to/aspire/data/sample.mrc --output_dir particles
 
 Use the ``--help`` argument with the command to see the several options associated with this command.
 
