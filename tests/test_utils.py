@@ -66,10 +66,10 @@ class UtilsTestCase(TestCase):
         pdf_x = norm.pdf(np.arange(L), L // 2 + mu_x, s_x)
         pdf_y = norm.pdf(np.arange(L), L // 2 + mu_y, s_y)
 
-        # Assert that error scaled by variance is small.
-        tol = 0.13
-        self.assertTrue(np.max(abs(g_x - pdf_x) * s_x ** 2 < tol))
-        self.assertTrue(np.max(abs(g_y - pdf_y) * s_y ** 2 < tol))
+        # Assert that the root mean squared error is small.
+        tol = 0.02
+        self.assertTrue(np.sqrt(np.sum((g_x - pdf_x) ** 2) / L) < tol)
+        self.assertTrue(np.sqrt(np.sum((g_y - pdf_y) ** 2) / L) < tol)
 
     def testGaussian3d(self):
         L = 100
@@ -88,8 +88,8 @@ class UtilsTestCase(TestCase):
         pdf_y = norm.pdf(np.arange(L), L // 2 + mu[1], sigma[1])
         pdf_z = norm.pdf(np.arange(L), L // 2 + mu[2], sigma[2])
 
-        # Assert that error, scaled by variance, is small.
-        tol = 0.13
-        self.assertTrue(np.max(abs(G_x - pdf_x) * sigma[0] ** 2 < tol))
-        self.assertTrue(np.max(abs(G_y - pdf_y) * sigma[1] ** 2 < tol))
-        self.assertTrue(np.max(abs(G_z - pdf_z) * sigma[2] ** 2 < tol))
+        # Assert that the root mean squared error is small..
+        tol = 0.02
+        self.assertTrue(np.sqrt(np.sum((G_x - pdf_x) ** 2) / L) < tol)
+        self.assertTrue(np.sqrt(np.sum((G_y - pdf_y) ** 2) / L) < tol)
+        self.assertTrue(np.sqrt(np.sum((G_z - pdf_z) ** 2) / L) < tol)
