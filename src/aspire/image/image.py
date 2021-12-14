@@ -338,8 +338,7 @@ class Image:
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
         pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
-        pts_rot = np.moveaxis(pts_rot, 1, 2)
-        pts_rot = m_reshape(pts_rot, (3, -1))
+        pts_rot = pts_rot.reshape((3, -1))
 
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L ** 2)
         if L % 2 == 0:
@@ -348,7 +347,7 @@ class Image:
 
         im_f = im_f.flatten()
 
-        vol = anufft(im_f, pts_rot, (L, L, L), real=True) / L
+        vol = anufft(im_f, pts_rot[::-1], (L, L, L), real=True) / L
 
         return aspire.volume.Volume(vol)
 
