@@ -67,7 +67,7 @@ class UtilsTestCase(TestCase):
         pdf_y = norm.pdf(np.arange(L), L // 2 + mu_y, s_y)
 
         # Assert that the root mean squared error is small.
-        tol = 0.02
+        tol = 1e-4
         self.assertTrue(np.sqrt(np.sum((g_x - pdf_x) ** 2) / L) < tol)
         self.assertTrue(np.sqrt(np.sum((g_y - pdf_y) ** 2) / L) < tol)
 
@@ -88,8 +88,8 @@ class UtilsTestCase(TestCase):
         pdf_y = norm.pdf(np.arange(L), L // 2 + mu[1], sigma[1])
         pdf_z = norm.pdf(np.arange(L), L // 2 + mu[2], sigma[2])
 
-        # Assert that the root mean squared error is small..
-        tol = 0.02
+        # Assert that the root mean squared error is small.
+        tol = 1e-4
         self.assertTrue(np.sqrt(np.sum((G_x - pdf_x) ** 2) / L) < tol)
         self.assertTrue(np.sqrt(np.sum((G_y - pdf_y) ** 2) / L) < tol)
         self.assertTrue(np.sqrt(np.sum((G_z - pdf_z) ** 2) / L) < tol)
