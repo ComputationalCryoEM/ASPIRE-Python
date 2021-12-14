@@ -41,6 +41,40 @@ def cart2sph(x, y, z):
     return az, el, r
 
 
+def _mgrid_slice(n, shifted, normalized):
+    """
+    Util to generate a `slice` representing a 1d linspace
+    as expected by `np.mgrid`.
+
+    :param shifted: shifted by half of grid or not when n is even.
+    :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :return: `slice` to be used by `np.mgrid`.
+    """
+
+    num_points = n * 1j
+    start = -n // 2 + 1
+    end = n // 2
+
+    if shifted and n % 2 == 0:
+        start -= 1 / 2
+        end -= 1 / 2
+    elif n % 2 == 0:
+        start -= 1
+        end -= 1
+
+    if normalized:
+        # Compute the denominator for normalization
+        denom = n / 2
+        if shifted and n % 2 == 0:
+            denom -= 1 / 2
+
+        # Apply the normalization
+        start /= denom
+        end /= denom
+
+    return slice(start, end, num_points)
+
+
 def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate one dimensional grid.
@@ -51,19 +85,7 @@ def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     :return: the rectangular and polar coordinates of all grid points.
     """
 
-    grid = np.ceil(np.arange(-n / 2, n / 2), dtype=dtype)
-
-    if shifted and n % 2 == 0:
-        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
-
-    if normalized:
-        if shifted and n % 2 == 0:
-            grid = grid / (n / 2 - 1 / 2)
-        else:
-            grid = grid / (n / 2)
-
-    x = np.meshgrid(grid)
-    r = x
+    r = x = np.mgrid[_mgrid_slice(n, shifted, normalized)].astype(dtype)
 
     return {"x": x, "r": r}
 
@@ -80,31 +102,14 @@ def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     :return: the rectangular and polar coordinates of all grid points.
     """
 
-    grid = slice(-n // 2 + 1, n // 2, n * 1j)
-
-    if n % 2 == 0:
-        grid = slice(-n // 2, n // 2 - 1, n * 1j)
-
-    if shifted and n % 2 == 0:
-        grid = slice((-n + 1) / 2, (n + 1) / 2 - 1, n * 1j)
-
-    y, x = np.mgrid[grid, grid]
+    grid = _mgrid_slice(n, shifted, normalized)
+    y, x = np.mgrid[grid, grid].astype(dtype)
     if indexing == "xy":
         x, y = y, x
     elif indexing != "yx":
         raise RuntimeError(
             f"grid_2d indexing {indexing} not supported." "  Try 'xy' or 'yx'"
         )
-
-    if normalized:
-        # Compute the denominator for normalization
-        if shifted and n % 2 == 0:
-            denom = n / 2 - 1 / 2
-        else:
-            denom = n / 2
-        # Apply the normalization to each dimension
-        for d in (x, y):
-            d /= denom
 
     phi, r = cart2pol(x, y)
 
@@ -120,17 +125,9 @@ def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32)
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :return: the rectangular and spherical coordinates of all grid points.
     """
-    grid = slice(-n // 2 + 1, n // 2, n * 1j)
 
-    if n % 2 == 0:
-        grid = slice(-n // 2, n // 2 - 1, n * 1j)
-
-    if shifted and n % 2 == 0:
-        grid = slice((-n + 1) / 2, (n + 1) / 2 - 1, n * 1j)
-
-    z, y, x = np.mgrid[grid, grid, grid]
-
-    # ugh y = np.flip(y, axis=1)
+    grid = _mgrid_slice(n, shifted, normalized)
+    z, y, x = np.mgrid[grid, grid, grid].astype(dtype)
 
     if indexing == "xyz":
         x, y, z = z, y, x
@@ -138,16 +135,6 @@ def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32)
         raise RuntimeError(
             f"grid_3d indexing {indexing} not supported." "  Try 'xyz' or 'zyx'"
         )
-
-    if normalized:
-        # Compute the denominator for normalization
-        if shifted and n % 2 == 0:
-            denom = n / 2 - 1 / 2
-        else:
-            denom = n / 2
-        # Apply the normalization to each dimension
-        for d in (x, y, z):
-            d /= denom
 
     phi, theta, r = cart2sph(x, y, z)
 

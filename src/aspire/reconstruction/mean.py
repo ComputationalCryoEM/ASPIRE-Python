@@ -7,7 +7,6 @@ from aspire.nufft import anufft
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel
 from aspire.utils.fft import mdim_ifftshift
-from aspire.utils.matlab_compat import m_flatten, m_reshape
 from aspire.volume import rotated_grids
 
 logger = logging.getLogger(__name__)

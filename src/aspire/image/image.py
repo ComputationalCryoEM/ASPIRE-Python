@@ -11,7 +11,6 @@ from aspire.nufft import anufft
 from aspire.numeric import fft, xp
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import anorm
 
 logger = logging.getLogger(__name__)
