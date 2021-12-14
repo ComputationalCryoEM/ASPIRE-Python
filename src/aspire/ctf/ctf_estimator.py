@@ -404,7 +404,7 @@ class CtfEstimator:
         center = N // 2
 
         grid = grid_1d(N, normalized=True, dtype=self.dtype)
-        rb = grid["x"][0][center:] / 2
+        rb = grid["x"][center:] / 2
 
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
