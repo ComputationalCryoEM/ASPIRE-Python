@@ -338,10 +338,21 @@ class ImageSource:
             "Subclasses should implement this and return an Image object"
         )
 
-    def eval_filters(self, im_orig, start=0, num=np.inf, indices=None):
+    def _apply_filters(self, im_orig, start=0, num=np.inf, indices=None):
+        """
+        For each image in `im_orig` specified by start, num, or indices,
+        the unique_filters associated with the corresponding index in the
+        `ImageSource` are applied. The images are then returned as an `Image`
+        stack.
+        :param im_orig: An `Image` object
+        :param start: Starting index of images in `im_orig`.
+        :param num: Number of images to work on, starting at `start`.
+        :param indices: A numpy array of image indices. If specified,`start` and `num` are ignored.
+        :return: An `Image` instance with the unique filters of the source applied at the given indices.
+        """
         if not isinstance(im_orig, Image):
             logger.warning(
-                f"eval_filters passed {type(im_orig)} instead of Image instance"
+                f"_apply_filters() passed {type(im_orig)} instead of Image instance"
             )
             # for now just convert it
             im = Image(im_orig)
@@ -513,7 +524,7 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
-        im = self.eval_filters(im, start=start, num=num)
+        im = self._apply_filters(im, start=start, num=num)
 
         vol = im.backproject(self.rots[start : start + num, :, :])[0]
 
@@ -535,7 +546,7 @@ class ImageSource:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
         im = vol.project(0, self.rots[all_idx, :, :])
-        im = self.eval_filters(im, start, num)
+        im = self._apply_filters(im, start, num)
         im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im

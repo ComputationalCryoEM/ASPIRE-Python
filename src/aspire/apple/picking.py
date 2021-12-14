@@ -16,7 +16,6 @@ from scipy.ndimage import (
 from sklearn import preprocessing, svm
 from tqdm import tqdm
 
-from aspire import config
 from aspire.apple.helper import PickerHelper
 from aspire.numeric import fft, xp
 
@@ -24,7 +23,10 @@ logger = logging.getLogger(__name__)
 
 
 class Picker:
-    """This class does the actual picking with help from PickerHelper class."""
+    """
+    This class does the actual picking with help
+    from PickerHelper class.
+    """
 
     def __init__(
         self,
@@ -38,6 +40,17 @@ class Picker:
         container_size,
         filename,
         output_directory,
+        model="svm",
+        model_opts=None,
+        mrc_margin_left=99,
+        mrc_margin_right=100,
+        mrc_margin_top=99,
+        mrc_margin_bottom=100,
+        mrc_shrink_factor=2,
+        mrc_gauss_filter_size=15,
+        mrc_gauss_filter_sigma=0.5,
+        response_thresh_norm_factor=20,
+        conv_map_nthreads=4,
     ):
 
         self.particle_size = int(particle_size / 2)
@@ -52,27 +65,50 @@ class Picker:
         self.filename = filename
         self.output_directory = output_directory
 
+        # MRC processing config
+        # Margins to discard from any processed .mrc file
+        # TODO: Margins are asymmetrical to conform to old behavior - fix going forward
+        self.mrc_margin_left = mrc_margin_left
+        self.mrc_margin_right = mrc_margin_right
+        self.mrc_margin_top = mrc_margin_top
+        self.mrc_margin_bottom = mrc_margin_bottom
+        self.mrc_shrink_factor = mrc_shrink_factor
+        self.mrc_gauss_filter_size = mrc_gauss_filter_size
+        self.mrc_gauss_filter_sigma = mrc_gauss_filter_sigma
+        self.response_thresh_norm_factor = response_thresh_norm_factor
+        self.conv_map_nthreads = conv_map_nthreads
+
         self.original_im = None  # populated in read_mrc()
         self.im = self.read_mrc()
 
-        self._initialize_model()
+        if model_opts is None:
+            model_opts = dict()
+        self.model_opts = model_opts
+        self._initialize_model(model)
 
-    def _initialize_model(self):
+    def _initialize_model(self, model):
         """
-        Initialize a classifier model for the Picker object base on configuration values.
+        Util to initialize a classifier model for the Picker object
+        based on configuration values.
         """
 
-        logger.info(f"Classifier model desired = {config.apple.model}")
-        if config.apple.model == "gaussian_mixture":
+        logger.info(f"Classifier model desired = {model}")
+        if model == "gaussian_mixture":
             from sklearn.mixture import GaussianMixture
 
             self.model = GaussianMixture(n_components=2)
-        elif config.apple.model == "gaussian_naive_bayes":
+        elif model == "gaussian_naive_bayes":
             from sklearn.naive_bayes import GaussianNB
 
             self.model = GaussianNB()
-        elif config.apple.model == "xgboost":
-            import xgboost as xgb
+        elif model == "xgboost":
+            try:
+                import xgboost as xgb
+            except ModuleNotFoundError as e:
+                logger.error(
+                    "`xgboost` import failed. xgboost is an optional package, ensure it is installed."
+                )
+                raise e
 
             self.model = xgb.XGBClassifier(
                 objective="binary:hinge",
@@ -81,28 +117,35 @@ class Picker:
                 n_estimators=10,
                 method="gpu_hist",
             )
-        elif config.apple.model == "thunder_svm":
-            import thundersvm
+        elif model == "thunder_svm":
+            try:
+                import thundersvm
+            except ModuleNotFoundError as e:
+                logger.error(
+                    "`thundersvm` import failed. thundersvm is an optional package, ensure it is installed."
+                )
+                raise e
 
             self.model = thundersvm.SVC(
-                kernel=config.apple.svm.kernel, gamma=config.apple.svm.gamma
+                kernel=self.model_opts.get("svm_kernel", "rbf"),
+                gamma=float(self.model_opts.get("svm_gamma", 0.5)),
             )
         else:
             logger.info("Using SVM Classifier")
+
             self.model = svm.SVC(
                 C=1,
-                kernel=config.apple.svm_kernel,
-                gamma=config.apple.svm_gamma,
+                kernel=self.model_opts.get("svm_kernel", "rbf"),
+                gamma=float(self.model_opts.get("svm_gamma", 0.5)),
                 class_weight="balanced",
             )
 
     def read_mrc(self):
-        """Gets and preprocesses micrograph.
+        """
+        Reads the micrograph.
+        Applies binning and a low-pass filter.
 
-        Reads the micrograph, applies binning and a low-pass filter.
-
-        Returns:
-            Micrograph image.
+        :return: Micrograph image
         """
 
         # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
@@ -137,15 +180,15 @@ class Picker:
 
         # Discard outer pixels
         im = im[
-            config.apple.mrc_margin_top : -config.apple.mrc_margin_bottom,
-            config.apple.mrc_margin_left : -config.apple.mrc_margin_right,
+            self.mrc_margin_top : -self.mrc_margin_bottom,
+            self.mrc_margin_left : -self.mrc_margin_right,
         ]
 
         # Make square
         side_length = min(im.shape)
         im = im[:side_length, :side_length]
 
-        size = tuple((np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int))
+        size = tuple((np.array(im.shape) / self.mrc_shrink_factor).astype(int))
 
         # Note, float64 required for signal.correlate call accuracy.
         im = np.asarray(Image.fromarray(im).resize(size, Image.BICUBIC)).astype(
@@ -155,7 +198,7 @@ class Picker:
         im = signal.correlate(
             im,
             PickerHelper.gaussian_filter(
-                config.apple.mrc_gauss_filter_size, config.apple.mrc_gauss_filter_sigma
+                self.mrc_gauss_filter_size, self.mrc_gauss_filter_sigma
             ),
             "same",
         )
@@ -163,16 +206,15 @@ class Picker:
         return im
 
     def query_score(self, show_progress=True):
-        """Calculates score for each query image.
+        """
+        Calculates score for each query image.
 
-        Extracts query images and reference windows. Computes the cross-correlation between these
-        windows, and applies a threshold to compute a score for each query image.
+        Extracts query images and reference windows.
+        Computes the cross-correlation between these windows,
+        and applies a threshold to compute a score for each query image.
 
-        Args:
-            show_progress: Whether to show a progress bar
-
-        Returns:
-            Matrix containing a score for each query image.
+        :param show_progress: Whether to show a progress bar
+        :return: Matrix containing a score for each query image.
         """
 
         micro_img = xp.asarray(self.im)
@@ -196,13 +238,12 @@ class Picker:
             return index, cc.real.max((2, 3)) - cc.real.mean((2, 3))
 
         n_works = reference_size
-        n_threads = config.apple.conv_map_nthreads
         pbar = tqdm(total=reference_size, disable=not show_progress)
 
         # Ideally we'd like something like 'SerialExecutor' to enable easy debugging
         # but for now do an if-else
-        if n_threads > 1:
-            with futures.ThreadPoolExecutor(n_threads) as executor:
+        if self.conv_map_nthreads > 1:
+            with futures.ThreadPoolExecutor(self.conv_map_nthreads) as executor:
                 to_do = [executor.submit(_work, i) for i in range(n_works)]
 
                 for future in futures.as_completed(to_do):
@@ -220,25 +261,21 @@ class Picker:
 
         min_val = xp.min(conv_map)
         max_val = xp.max(conv_map)
-        thresh = (
-            min_val + (max_val - min_val) / config.apple.response_thresh_norm_factor
-        )
+        thresh = min_val + (max_val - min_val) / self.response_thresh_norm_factor
         return xp.asnumpy(xp.sum(conv_map >= thresh, axis=2))
 
     def run_svm(self, score):
         """
         Trains and uses an SVM classifier.
 
-        Trains an SVM classifier to distinguish between noise and particle projections based on
-        mean intensity and variance. Every possible window in the micrograph is then classified
-        as either noise or particle, resulting in a segmentation of the micrograph.
+        Trains an SVM classifier to distinguish between noise
+        and particle projections based on mean intensity and variance.
+        Every possible window in the micrograph is then classified as either noise or particle.
 
-        Args:
+        This results in a segmentation of the micrograph.
 
-            score: Matrix containing a score for each query image.
-
-        Returns:
-            Segmentation of the micrograph into noise and particle projections.
+        :param score: Matrix containing a score for each query image.
+        :return: Segmentation of the micrograph into noise and particle projections.
         """
 
         micro_img = xp.asarray(self.im)
@@ -293,11 +330,9 @@ class Picker:
         """
         Discards suspected artifacts from segmentation.
 
-        Args:
-            segmentation: Segmentation of the micrograph into noise and particle projections.
+        :param segmentation: Segmentation of the micrograph into noise and particle projections.
 
-        Returns:
-            Segmentation of the micrograph into noise and particle projections.
+        :return: Updated segmentation of the micrograph into noise and particle projections.
         """
 
         if (binary_fill_holes(segmentation) == np.ones(segmentation.shape)).all():
@@ -341,11 +376,13 @@ class Picker:
 
     def extract_particles(self, segmentation):
         """
-        Saves particle centers into output .star file, after dismissing regions
-        that are too big to contain a particle.
+        Saves particle centers into output .star file,
+        after dismissing regions that are too big to
+        contain a particle.
 
-        Args:
-            segmentation: Segmentation of the micrograph into noise and particle projections.
+        :param segmentation: Segmentation of the micrograph into noise and particle projections.
+        :return: centers
+
         """
         segmentation = segmentation[
             self.query_size // 2 - 1 : -self.query_size // 2,
@@ -379,6 +416,13 @@ class Picker:
         center = center_of_mass(segmentation, labeled_segments, np.arange(1, max_val))
         center = np.rint(center)
 
+        if len(center) == 0:
+            logger.warning(
+                "Picker did not find any centers.  "
+                "Review micrograph, particle_size, min, and max particle sizes."
+            )
+            return center
+
         img = np.zeros((segmentation.shape[0], segmentation.shape[1]))
         img[center[:, 0].astype(int), center[:, 1].astype(int)] = 1
         y, x = np.ogrid[-self.moa : self.moa + 1, -self.moa : self.moa + 1]
@@ -397,14 +441,14 @@ class Picker:
         center = center + (self.query_size // 2 - 1) * np.ones(center.shape)
         center = center + np.ones(center.shape)
 
-        center = config.apple.mrc_shrink_factor * center
+        center = self.mrc_shrink_factor * center
 
         # swap columns to align with Relion
         center = center[:, [1, 0]]
 
         # first column is x; second column is y - offset by margins that were discarded from the image
-        center[:, 0] += config.apple.mrc_margin_left
-        center[:, 1] += config.apple.mrc_margin_top
+        center[:, 0] += self.mrc_margin_left
+        center[:, 1] += self.mrc_margin_top
 
         if self.output_directory is not None:
             basename = os.path.basename(self.filename)
@@ -425,13 +469,14 @@ class Picker:
 
     def get_maps(self, score, micro_img, particle_windows, non_noise_windows):
         """
-        Gets maps of regions from which to extract particle training for the SVM classifier.
+        Gets maps of regions from which to extract particle
+        training for the SVM classifier.
 
-        Args:
-            score: Matrix containing a score for each query image.
-            micro_img: Micrograph image.
-            particle_windows: Number of windows that must contain a particle.
-            non_noise_windows: Number of windows that contain neither noise nor particles.
+        :param score: Matrix containing a score for each query image.
+        :param micro_img: Micrograph image.
+        :param particle_windows: Number of windows that must contain a particle.
+        :param non_noise_windows: Number of windows that contain neither noise nor particles.
+        :return: 2-Tuple of particle and noise masks
         """
         particles = particle_windows.astype(int)
         non_noise = non_noise_windows.astype(int)
