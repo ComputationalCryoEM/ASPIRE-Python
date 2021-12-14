@@ -38,10 +38,11 @@ class PickerHelper:
             3D Matrix of blocks. For example, img[0] is the first block.
         """
 
-        # keep only the portion of the image that can be split into blocks with no remainder
-        img = xp.asarray(
-            img[: -(img.shape[0] % block_size), : -(img.shape[1] % block_size)]
-        )
+        # Compute x,y boundary using block_size
+        xbnd, ybnd = img.shape - np.mod(img.shape, block_size)
+        # Keep only the portion of the image that can be split into blocks with no remainder
+        # TODO: It might be nicer to apply any trimming to all micrograph sides
+        img = xp.asarray(img[:xbnd, :ybnd])
 
         dim3_size = np.sqrt(np.prod(img.shape) // (block_size ** 2)).astype(int)
 
