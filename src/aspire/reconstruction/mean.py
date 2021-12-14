@@ -29,13 +29,13 @@ class MeanEstimator(Estimator):
                 weights[0, :, :] = 0
                 weights[:, 0, :] = 0
 
-            pts_rot = m_reshape(pts_rot, (3, -1))
-            weights = m_flatten(weights)
+            pts_rot = pts_rot.reshape((3, -1))
+            weights = np.transpose(weights, (2, 0, 1)).flatten()
 
             kernel += (
                 1
                 / (self.n * self.L ** 4)
-                * anufft(weights, pts_rot, (_2L, _2L, _2L), real=True)
+                * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
             )
 
         # Ensure symmetric kernel
