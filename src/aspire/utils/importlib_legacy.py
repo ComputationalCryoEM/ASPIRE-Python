@@ -13,10 +13,20 @@ Resource = str
 # The methods below are still supported in importlib_resources._legacy
 # but they raise warnings alerting that the new API should be used.
 
+# Details on the deprecation can be found at:
+# https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
+
+# We have copied the methods required as a temporary measure from:
+# from https://github.com/python/importlib_resources/blob/main/importlib_resources/_legacy.py
+# These are wrappers for code using the preferred files() API that can be
+# dropped in to replace the deprecated methods
+
 # We plan to move to importlib.resources, which importlib_resources is a
 # backport of, once we have dropped support for Python 3.6. At that point
 # the package resource management code in the tests will need to be
 # rewritten with importlib.resources. This file will then be deleted.
+# importlib.resources is in the standard library from 3.7 on:
+# https://docs.python.org/3/library/importlib.html
 
 
 def normalize_path(path):
