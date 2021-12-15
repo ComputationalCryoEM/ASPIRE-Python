@@ -203,6 +203,24 @@ class VolumeTestCase(TestCase):
                 np.allclose(ref_vol, rot_vol, atol=utest_tolerance(self.dtype))
             )
 
+    def testRotateBroadcastUnicast(self):
+        # Build `Rotation` objects. A singleton for broadcasting and a stack for unicasting.
+        # The stack consists of copies of the singleton.
+        angles = np.array([pi, pi / 2, 0])
+        angles = np.tile(angles, (3, 1))
+        rot_mat = Rotation.from_euler(angles).matrices
+        rot = Rotation(rot_mat[0])
+        rots = Rotation(rot_mat)
+
+        # Broadcast the singleton `Rotation` across the `Volume` stack.
+        vols_broadcast = self.vols_1.rotate(rot)
+
+        # Unicast the `Rotation` stack across the `Volume` stack.
+        vols_unicast = self.vols_1.rotate(rots)
+
+        for i in range(self.n):
+            self.assertTrue(np.allclose(vols_broadcast[i], vols_unicast[i]))
+
     def testCnSymmetricVolume(self):
         # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
         L = self.res
