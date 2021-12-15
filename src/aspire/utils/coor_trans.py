@@ -123,6 +123,8 @@ def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32)
     :param n: the number of grid points in each dimension.
     :param shifted: shifted by half of grid or not when n is even.
     :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :param indexing: 'zyx' (C) or 'xyz' (F), defaulting to 'zyx'.
+    See https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
     :return: the rectangular and spherical coordinates of all grid points.
     """
 
