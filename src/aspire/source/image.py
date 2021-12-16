@@ -135,7 +135,7 @@ class ImageSource:
         Returns total number of images in source.
         """
         return self.n
-        
+
     @property
     def states(self):
         return np.atleast_1d(self.get_metadata("_rlnClassNumber"))
@@ -800,7 +800,6 @@ class ArrayImageSource(ImageSource):
             #   which is exposed by properties `angles` and `rots`.
             self.angles = angles
 
-    
     def _rots(self):
         """
         Private method, checks if `_rotations` has been set,
