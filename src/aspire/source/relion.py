@@ -146,6 +146,9 @@ class RelionSource(ImageSource):
         self.unique_filters = filters
         self.filter_indices = filter_indices
 
+    def __len__(self):
+        return self.n
+
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
 
