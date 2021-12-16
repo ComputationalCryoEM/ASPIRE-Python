@@ -128,6 +128,11 @@ class ImageSource:
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
 
+        logger.info(f"Creating {self.__class__.__name} with {len(self)} images.")
+
+    def __len__(self):
+        return self.n
+        
     @property
     def states(self):
         return np.atleast_1d(self.get_metadata("_rlnClassNumber"))
@@ -792,6 +797,7 @@ class ArrayImageSource(ImageSource):
             #   which is exposed by properties `angles` and `rots`.
             self.angles = angles
 
+    
     def _rots(self):
         """
         Private method, checks if `_rotations` has been set,
