@@ -4,11 +4,11 @@ from collections import OrderedDict
 from itertools import zip_longest
 from unittest import TestCase
 
-import importlib_resources
 import numpy as np
 from pandas import DataFrame
 from scipy import misc
 
+import aspire.utils.importlib_legacy as importlib_resources
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
