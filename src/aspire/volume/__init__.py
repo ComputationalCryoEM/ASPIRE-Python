@@ -468,34 +468,43 @@ def _gaussian_blob_Cn_vols(
     :return: A Volume instance containing C Gaussian blob volumes with Cn symmetry.
     """
 
-    def _eval_gaussian_blobs(L, Q, D, mu, order, dtype=np.float64):
+    def _eval_gaussians(L, K, Q, D, mu, dtype=np.float64):
         g = grid_3d(L, dtype=dtype)
         coords = np.array(
             [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
         )
 
-        K = Q.shape[0]
+        n_blobs = Q.shape[0]
         vol = np.zeros(shape=(1, coords.shape[-1])).astype(dtype)
-        rot = np.zeros(shape=(order, 3, 3)).astype(dtype)
 
-        angles = np.zeros(shape=(order, 3))
-        angles[:, 2] = 2 * np.pi * np.arange(order) / order
-        rot = Rotation.from_euler(angles).matrices
+        for k in range(n_blobs):
+            coords_k = coords - mu[k, :, np.newaxis]
+            coords_k = (
+                Q[k].T @ coords_k * np.sqrt(1 / np.diag(D[k % K, :, :]))[:, np.newaxis]
+            )
 
-        for k in range(K):
-            for j in range(order):
-                coords_k = rot[j, :, :] @ coords - mu[k, :, np.newaxis]
-                coords_k = (
-                    Q[k, :, :].T
-                    @ coords_k
-                    * np.sqrt(1 / np.diag(D[k, :, :]))[:, np.newaxis]
-                )
-
-                vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
+            vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
 
         vol = np.reshape(vol, g["x"].shape)
 
         return vol
+
+    def _symmetrize_gaussians(Q, mu, order):
+        angles = np.zeros(shape=(order, 3))
+        angles[:, 2] = 2 * np.pi * np.arange(order) / order
+        rot = Rotation.from_euler(angles).matrices
+
+        K = Q.shape[0]
+        Q_rot = np.zeros(shape=(order * K, 3, 3)).astype(dtype)
+        mu_rot = np.zeros(shape=(order * K, 3)).astype(dtype)
+        idx = 0
+
+        for j in range(order):
+            for k in range(K):
+                Q_rot[idx] = rot[j].T @ Q[k]
+                mu_rot[idx] = rot[j].T @ mu[k]
+                idx += 1
+        return Q_rot, mu_rot
 
     def _gen_gaussians(K, alpha):
         Q = np.zeros(shape=(K, 3, 3)).astype(dtype)
@@ -512,9 +521,10 @@ def _gaussian_blob_Cn_vols(
 
     vols = np.zeros(shape=(C, L, L, L)).astype(dtype)
     with Random(seed):
-        for k in range(C):
+        for c in range(C):
             Q, D, mu = _gen_gaussians(K, alpha)
-            vols[k] = _eval_gaussian_blobs(L, Q, D, mu, order, dtype=dtype)
+            Q_rot, mu_rot = _symmetrize_gaussians(Q, mu, order)
+            vols[c] = _eval_gaussians(L, K, Q_rot, D, mu_rot, dtype=dtype)
     return Volume(vols)
 
 
