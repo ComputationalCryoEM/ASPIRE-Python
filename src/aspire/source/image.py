@@ -369,23 +369,6 @@ class ImageSource:
 
         return im
 
-    def eval_filter_grid(self, L, power=1):
-        grid2d = grid_2d(L, dtype=self.dtype)
-        omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
-
-        h = np.empty((omega.shape[-1], len(self.filter_indices)), dtype=self.dtype)
-        for i, filt in enumerate(self.unique_filters):
-            idx_k = np.where(self.filter_indices == i)[0]
-            if len(idx_k) > 0:
-                filter_values = filt.evaluate(omega)
-                if power != 1:
-                    filter_values **= power
-                h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
-
-        h = np.reshape(h, grid2d["x"].shape + (len(self.filter_indices),))
-
-        return h
-
     def cache(self):
         logger.info("Caching source images")
         self._cached_im = self.images(start=0, num=np.inf)
