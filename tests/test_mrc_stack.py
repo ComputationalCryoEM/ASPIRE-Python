@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-import importlib_resources
 import numpy as np
 
+import aspire.utils.importlib_legacy as importlib_resources
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source.mrcstack import MrcStack
