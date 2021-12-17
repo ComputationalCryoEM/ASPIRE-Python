@@ -128,6 +128,14 @@ class ImageSource:
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
 
+        logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
+
+    def __len__(self):
+        """
+        Returns total number of images in source.
+        """
+        return self.n
+
     @property
     def states(self):
         return np.atleast_1d(self.get_metadata("_rlnClassNumber"))
