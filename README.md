@@ -29,10 +29,10 @@ ComputationalCryoEM/ASPIRE-Python: v0.8.1 https://doi.org/10.5281/zenodo.5657281
 For end-users
 -------------
 
-ASPIRE is a pip-installable package that works on Linux/Mac/Windows, and requires Python 3.6. The simplest option is to use Anaconda 64-bit for your platform with a minimum of Python 3.6 and `pip`, and then use `pip` to install `aspire` in that environment.
+ASPIRE is a pip-installable package that works on Linux/Mac/Windows, and requires Python 3.7. The simplest option is to use Anaconda 64-bit for your platform with a minimum of Python 3.7 and `pip`, and then use `pip` to install `aspire` in that environment.
 
 ```
-conda create -n aspire_env python=3.6 pip
+conda create -n aspire_env python=3.7 pip
 conda activate aspire_env
 pip install aspire
 ```
@@ -61,7 +61,7 @@ pip install -e ".[dev]"
 
 ```
 
-If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.6.
+If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.7.
 Please see the full documentation for details.
 
 You may optionally install additional packages for GPU extensions:
