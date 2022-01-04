@@ -12,7 +12,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.6
+        python-version: 3.7
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -25,15 +25,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.7, 3.8]
         pyenv: [stable, dev]
         exclude:
-          # Exclude 3.6-stable so we can add pre and post tasks to that environment.
-          - python-version: 3.6
+          # Exclude 3.7-stable so we can add pre and post tasks to that environment.
+          - python-version: 3.7
             pyenv: stable
         include:
-          # Re-include 3.6-stable with additional tox tasks.
-          - python-version: 3.6
+          # Re-include 3.7-stable with additional tox tasks.
+          - python-version: 3.7
             pyenv: stable,docs
 
 
@@ -61,7 +61,7 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.6
+        python-version: 3.7
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
