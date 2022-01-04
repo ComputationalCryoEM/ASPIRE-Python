@@ -139,28 +139,3 @@ jobs:
       pip install -e .[dev]
       pytest --random-order 
     displayName: pytest
-
-- job:
-  displayName: vs2017-win2016
-  pool:
-    vmImage: 'vs2017-win2016'
-  strategy:
-    matrix:
-      Python37:
-        python.version: '3.7'
-
-  steps:
-  - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
-    displayName: Add conda to PATH
-
-  - script: conda env create --name myEnvironment --file environment.yml
-    displayName: Create Anaconda environment
-
-  - script: conda update -q -y conda
-    displayName: Update conda
-
-  - script: |
-      call activate myEnvironment
-      pip install -e .[dev]
-      pytest --random-order
-    displayName: pytest
