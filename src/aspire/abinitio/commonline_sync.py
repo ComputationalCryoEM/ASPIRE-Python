@@ -179,7 +179,7 @@ class CLSyncVoting(CLOrient3D):
 
         rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
 
-        if rots.shape[0] > 0:
+        if rots is not None:
             rot_mean = np.mean(rots, 0)
             # The error to mean value can be calculated as
             #    rot_block = rots[:2, :2]
@@ -230,6 +230,8 @@ class CLSyncVoting(CLOrient3D):
 
         # Calculate the cos values of rotation angles between i an j images for good k images
         c_alpha, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
+        if len(c_alpha) == 0:
+            return None
         alpha = np.arccos(c_alpha)
 
         # Convert the Euler angles with ZXZ conversion to rotation matrices
