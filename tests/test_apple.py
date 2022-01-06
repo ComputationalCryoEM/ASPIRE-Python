@@ -3,9 +3,9 @@ import tempfile
 from shutil import copyfile
 from unittest import TestCase
 
-import importlib_resources
 import mrcfile
 
+import aspire.utils.importlib_legacy as importlib_resources
 import tests.saved_test_data
 from aspire.apple.apple import Apple
 

@@ -11,6 +11,7 @@ from tqdm import tqdm
 from aspire import config
 from aspire.image import Image
 from aspire.nufft import anufft
+from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import (
     ensure,
@@ -47,7 +48,7 @@ class CovarianceEstimator(Estimator):
         _2L = 2 * self.L
 
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.dtype)
-        sq_filters_f = self.src.eval_filter_grid(self.L, power=2)
+        sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
         for i in tqdm(range(0, n, self.batch_size)):
             _range = np.arange(i, min(n, i + self.batch_size))
