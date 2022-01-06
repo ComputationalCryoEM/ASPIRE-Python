@@ -468,6 +468,7 @@ def _gaussian_blob_Cn_vols(
     :return: A Volume instance containing C Gaussian blob volumes with Cn symmetry.
     """
 
+    # Evaluate the symmetrized gaussian blobs.
     def _eval_gaussians(L, K, Q, D, mu, dtype=np.float64):
         g = grid_3d(L, dtype=dtype)
         coords = np.array(
@@ -489,6 +490,7 @@ def _gaussian_blob_Cn_vols(
 
         return vol
 
+    # Apply symmetry to Q and mu by generating duplicates rotated by symmetry order.
     def _symmetrize_gaussians(Q, mu, order):
         angles = np.zeros(shape=(order, 3))
         angles[:, 2] = 2 * np.pi * np.arange(order) / order
@@ -506,6 +508,7 @@ def _gaussian_blob_Cn_vols(
                 idx += 1
         return Q_rot, mu_rot
 
+    # For K gaussians, generate random orientation (Q), mean (mu), and variance (D).
     def _gen_gaussians(K, alpha):
         Q = np.zeros(shape=(K, 3, 3)).astype(dtype)
         D = np.zeros(shape=(K, 3, 3)).astype(dtype)
