@@ -1,3 +1,4 @@
+import importlib.resources
 import os
 import os.path
 from unittest import TestCase
@@ -5,7 +6,6 @@ from unittest import TestCase
 import mrcfile
 import numpy as np
 
-import importlib.resources
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.operators import ScalarFilter

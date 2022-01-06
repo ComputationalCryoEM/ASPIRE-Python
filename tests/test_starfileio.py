@@ -1,3 +1,4 @@
+import importlib.resources
 import os.path
 import tempfile
 from collections import OrderedDict
@@ -8,7 +9,6 @@ import numpy as np
 from pandas import DataFrame
 from scipy import misc
 
-import importlib.resources
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource

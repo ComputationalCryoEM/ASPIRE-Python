@@ -1,3 +1,4 @@
+import importlib.resources
 import os
 import tempfile
 from shutil import copyfile
@@ -5,7 +6,6 @@ from unittest import TestCase
 
 import mrcfile
 
-import importlib.resources
 import tests.saved_test_data
 from aspire.apple.apple import Apple
 

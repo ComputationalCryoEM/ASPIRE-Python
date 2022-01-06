@@ -1,6 +1,6 @@
+import importlib.resources
 from unittest import TestCase
 
-import importlib.resources
 import tests.saved_test_data
 from aspire.storage import Micrograph
 
