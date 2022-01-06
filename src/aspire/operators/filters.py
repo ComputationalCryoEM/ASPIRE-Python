@@ -39,7 +39,8 @@ def evaluate_src_filters_on_grid(src):
     :return: an `src.L x src.L x len(src.filter_indices)`
     array containing the evaluated filters at each gridpoint
     """
-    grid2d = grid_2d(src.L, dtype=src.dtype)
+
+    grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
     omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
 
     h = np.empty((omega.shape[-1], len(src.filter_indices)), dtype=src.dtype)
