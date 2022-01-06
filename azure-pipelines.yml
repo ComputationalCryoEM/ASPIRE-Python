@@ -14,8 +14,8 @@ jobs:
     vmImage: 'ubuntu-latest'
   strategy:
     matrix:
-      Python36:
-        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
@@ -36,8 +36,8 @@ jobs:
     vmImage: 'ubuntu-18.04'
   strategy:
     matrix:
-      Python36:
-        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
@@ -61,8 +61,8 @@ jobs:
     vmImage: 'macOS-latest'
   strategy:
     matrix:
-      Python36:
-        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
 
   steps:
   - bash: |
@@ -91,8 +91,8 @@ jobs:
     vmImage: 'macOS-10.15'
   strategy:
     matrix:
-      Python36:
-        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
 
   steps:
   - bash: |
@@ -121,8 +121,8 @@ jobs:
     vmImage: 'windows-latest'
   strategy:
     matrix:
-      Python36:
-        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
 
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
@@ -138,29 +138,4 @@ jobs:
       call activate myEnvironment
       pip install -e .[dev]
       pytest --random-order 
-    displayName: pytest
-
-- job:
-  displayName: vs2017-win2016
-  pool:
-    vmImage: 'vs2017-win2016'
-  strategy:
-    matrix:
-      Python36:
-        python.version: '3.6'
-
-  steps:
-  - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
-    displayName: Add conda to PATH
-
-  - script: conda env create --name myEnvironment --file environment.yml
-    displayName: Create Anaconda environment
-
-  - script: conda update -q -y conda
-    displayName: Update conda
-
-  - script: |
-      call activate myEnvironment
-      pip install -e .[dev]
-      pytest --random-order
     displayName: pytest

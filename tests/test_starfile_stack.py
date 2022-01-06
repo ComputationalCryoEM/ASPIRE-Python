@@ -2,10 +2,10 @@ import os
 import os.path
 from unittest import TestCase
 
-import importlib_resources
 import mrcfile
 import numpy as np
 
+import aspire.utils.importlib_legacy as importlib_resources
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.operators import ScalarFilter
