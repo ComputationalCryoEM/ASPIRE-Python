@@ -4,7 +4,6 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 
-from aspire import config
 from aspire.abinitio.orientation_src import OrientEstSource
 from aspire.basis import PolarBasis2D
 from aspire.utils.coor_trans import common_line_from_rots
