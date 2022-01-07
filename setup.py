@@ -36,6 +36,7 @@ setup(
         "pillow",
         "scipy==1.7.3",
         "scikit-learn",
+        "scikit-image",
         "setuptools>=0.41",
         "tqdm",
     ],
