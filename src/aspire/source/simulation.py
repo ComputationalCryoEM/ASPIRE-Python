@@ -4,8 +4,8 @@ import numpy as np
 from scipy.linalg import eigh, qr
 
 from aspire.image import Image
-from aspire.image.xform import NoiseAdder
-from aspire.operators import ZeroFilter
+from aspire.image.xform import FilterXform, NoiseAdder
+from aspire.operators import PowerFilter, ZeroFilter
 from aspire.source import ImageSource
 from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
@@ -192,6 +192,25 @@ class Simulation(ImageSource):
             im = self.noise_adder.forward(im, indices=indices)
 
         return im
+
+    def whiten(self, noise_filter):
+        """
+        Apply a whitening filter to the `Simulation` object based on estimated
+        power spectral density of the simulated data. This method overrides `ImageSource.whiten()`.
+        :param noise_filter: The noise psd of the images as a `Filter` object. Typically
+        determined by a `NoiseEstimator` class, and available as its `filter` attribute.
+        :return: On return, the `Simulation` object has been modified in place.
+        """
+        logger.info("Whitening Simulation object")
+        whiten_filter = PowerFilter(noise_filter, power=-0.5)
+
+        # We do not multiply the CTF filters by the whiten_filter as we do
+        # in the parent class's whiten() method, because
+        # we would like to simulate the distorting effect of the CTF
+        logger.info("CTF Filters will NOT have whitening filter applied")
+
+        logger.info("Adding Whitening Filter Xform to the end of generation pipeline")
+        self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
