@@ -45,7 +45,7 @@ class CLOrient3D:
         self.n_theta = n_theta
         self.n_check = n_check
         self.clmatrix = None
-        self.max_shift = max_shift * self.n_res
+        self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
         self.rotations = None
 
