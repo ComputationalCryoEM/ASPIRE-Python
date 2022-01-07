@@ -29,7 +29,15 @@ logger = logging.getLogger(__name__)
     type=int,
     help="Max number of image rows to read from STAR file",
 )
-def orient3d(data_folder, starfile_in, starfile_out, pixel_size, max_rows):
+@click.option(
+    "--n_rad", default=None, type=int, help="Number of points in the radial direction"
+)
+@click.option(
+    "--n_theta", default=360, type=int, help="Number of points in the theta direction"
+)
+def orient3d(
+    data_folder, starfile_in, starfile_out, pixel_size, max_rows, n_rad, n_theta
+):
     """
     Input images from STAR file and estimate orientational angles
     """
@@ -41,7 +49,7 @@ def orient3d(data_folder, starfile_in, starfile_out, pixel_size, max_rows):
 
     # Estimate rotation matrices
     logger.info("Estimate rotation matrices.")
-    orient_est = CLSyncVoting(source)
+    orient_est = CLSyncVoting(source, n_rad=n_rad, n_theta=n_theta)
     orient_est.estimate_rotations()
 
     # Create new source object and save Estimate rotation matrices

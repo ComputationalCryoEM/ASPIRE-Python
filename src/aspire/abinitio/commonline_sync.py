@@ -24,7 +24,7 @@ class CLSyncVoting(CLOrient3D):
     Journal of Structural Biology, 169, 312-322 (2010).
     """
 
-    def __init__(self, src, n_rad=None, n_theta=None):
+    def __init__(self, src, n_rad=None, n_theta=360, max_shift=0.15, shift_step=1):
         """
         Initialize an object for estimating 3D orientations using synchronization matrix
 
@@ -32,7 +32,13 @@ class CLSyncVoting(CLOrient3D):
         :param n_rad: The number of points in the radial direction
         :param n_theta: The number of points in the theta direction
         """
-        super().__init__(src, n_rad=n_rad, n_theta=n_theta)
+        super().__init__(
+            src,
+            n_rad=n_rad,
+            n_theta=n_theta,
+            max_shift=max_shift,
+            shift_step=shift_step,
+        )
         self.syncmatrix = None
 
     def estimate_rotations(self):
