@@ -6,11 +6,10 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
-from aspire.classification import BFRAlign2D, Class2D
+from aspire.classification import Class2D
+from aspire.classification.align2d import BFSReddyChatterjiAlign2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
-from aspire.image import Image
 from aspire.numeric import ComplexPCA
-from aspire.source import ArrayImageSource
 from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
@@ -173,8 +172,8 @@ class RIRClass2D(Class2D):
         # When not provided by a user, the aligner is instantiated after
         #  we are certain our pca_basis has been constructed.
         if self.aligner is None:
-            self.aligner = BFRAlign2D(
-                self.pca_basis, self.src, self.fb_basis, dtype=self.dtype
+            self.aligner = BFSReddyChatterjiAlign2D(
+                None, self.src, self.fb_basis, dtype=self.dtype
             )
 
         # Get the expanded coefs in the compressed FSPCA space.

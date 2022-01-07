@@ -116,13 +116,15 @@ rir = RIRClass2D(
     bispectrum_implementation="legacy",
 )
 
-classes, reflections, rotations, shifts, corr = rir.classify()
+classes, reflections, dists = rir.classify()
+avgs, classes, reflections, rotations, shifts, corrs = rir.averages(
+    classes, reflections, dists
+)
 
 # %%
 # Display Classes
 # ^^^^^^^^^^^^^^^
 
-avgs = rir.output(classes, reflections, rotations)
 avgs.images(0, 10).show()
 
 # %%
@@ -169,13 +171,15 @@ noisy_rir = RIRClass2D(
     bispectrum_implementation="legacy",
 )
 
-classes, reflections, rotations, shifts, corr = noisy_rir.classify()
+classes, reflections, dists = noisy_rir.classify()
+avgs, classes, reflections, rotations, shifts, corrs = noisy_rir.averages(
+    classes, reflections, dists
+)
 
 # %%
 # Display Classes
 # ^^^^^^^^^^^^^^^
 
-avgs = noisy_rir.output(classes, reflections, rotations)
 avgs.images(0, 10).show()
 
 

@@ -62,8 +62,8 @@ class Align2DTestCase(TestCase):
             test_dtype = np.float32
 
         with self._caplog.at_level(logging.WARN):
-            self.aligner(self.basis, self._getSrc, dtype=test_dtype)
-            assert " does not match self.dtype" in self._caplog.text
+            self.aligner(self.basis, self._getSrc(), dtype=test_dtype)
+            assert "does not match dtype" in self._caplog.text
 
     def _construct_rotations(self):
         """
