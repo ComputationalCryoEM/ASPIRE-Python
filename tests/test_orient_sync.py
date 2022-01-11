@@ -1,10 +1,13 @@
 import os
 import os.path
+import tempfile
 from unittest import TestCase
 
 import numpy as np
+from click.testing import CliRunner
 
 from aspire.abinitio import CLSyncVoting
+from aspire.commands.orient3d import orient3d
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.utils import utest_tolerance
@@ -82,3 +85,24 @@ class OrientSyncTestCase(TestCase):
         self.assertTrue(
             np.allclose(results, self.est_shifts, atol=utest_tolerance(self.dtype))
         )
+
+    def testCommandLine(self):
+        # Ensure that the command line tool works as expected
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Save the simulation object into STAR and MRCS files
+            starfile_out = os.path.join(tmpdir, "save_test.star")
+            starfile_in = os.path.join(DATA_DIR, "sample_relion_data.star")
+            result = runner.invoke(
+                orient3d,
+                [
+                    f"--starfile_in={starfile_in}",
+                    "--n_rad=10",
+                    "--n_theta=60",
+                    "--max_shift=0.15",
+                    "--shift_step=1",
+                    f"--starfile_out={starfile_out}",
+                ],
+            )
+            # check that the command completed successfully
+            self.assertTrue(result.exit_code == 0)
