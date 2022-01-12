@@ -26,7 +26,6 @@ setup(
         "click",
         "finufft",
         "gemmi>=0.4.8",
-        "importlib_resources>=1.0.2",
         "joblib",
         "matplotlib>=3.2.0",
         "mrcfile",

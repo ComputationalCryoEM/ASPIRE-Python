@@ -1,3 +1,4 @@
+import importlib.resources
 import os
 import tempfile
 from shutil import copyfile
@@ -5,7 +6,6 @@ from unittest import TestCase
 
 import mrcfile
 
-import aspire.utils.importlib_legacy as importlib_resources
 import tests.saved_test_data
 from aspire.apple.apple import Apple
 
@@ -472,7 +472,7 @@ class ApplePickerTestCase(TestCase):
                 tau2=7100,
                 output_dir=tmpdir_name,
             )
-            with importlib_resources.path(
+            with importlib.resources.path(
                 tests.saved_test_data, "sample.mrc"
             ) as mrc_path:
                 centers_found = apple_picker.process_micrograph_centers(mrc_path)
@@ -500,7 +500,7 @@ class ApplePickerTestCase(TestCase):
             )
 
             # Get the path of an input mrcfile
-            with importlib_resources.path(
+            with importlib.resources.path(
                 tests.saved_test_data, "sample.mrc"
             ) as good_mrc_path:
                 # Store bad mrc in tmp test dir so it gets cleaned up
@@ -537,7 +537,7 @@ class ApplePickerTestCase(TestCase):
                 output_dir=tmpdir_name,
             )
 
-            with importlib_resources.path(
+            with importlib.resources.path(
                 tests.saved_test_data, "sample.mrc"
             ) as mrc_path:
                 centers_found = apple_picker.process_micrograph_centers(mrc_path)
