@@ -98,18 +98,10 @@ def norm_assoc_legendre(j, m, x):
         y = (-1) ** m * norm_assoc_legendre(j, m, x)
     else:
         y = lpmv(m, j, x)
-        # Beware of using just np.prod in the denominator here
-        # Unless we use float64, values in the denominator > 13! will be incorrect
-        try:
-            y = (
-                np.sqrt(
-                    (2 * j + 1)
-                    / (2 * np.prod(range(j - m + 1, j + m + 1), dtype=np.float64))
-                )
-                * y
-            )
-        except RuntimeWarning:
-            logger.error("debug")
+        y *= np.sqrt((2 * j + 1) / 2)
+        # Beware of overflow here.
+        y /= np.prod(np.sqrt(np.arange(j - m + 1, j + m + 1), dtype=np.float64))
+
     return y
 
 
