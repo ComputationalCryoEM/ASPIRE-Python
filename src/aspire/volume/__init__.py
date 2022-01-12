@@ -468,28 +468,6 @@ def _gaussian_blob_Cn_vols(
     :return: A Volume instance containing C Gaussian blob volumes with Cn symmetry.
     """
 
-    # Evaluate the symmetrized gaussian blobs.
-    def _eval_gaussians(L, K, Q, D, mu, dtype=np.float64):
-        g = grid_3d(L, dtype=dtype)
-        coords = np.array(
-            [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
-        )
-
-        n_blobs = Q.shape[0]
-        vol = np.zeros(shape=(1, coords.shape[-1])).astype(dtype)
-
-        for k in range(n_blobs):
-            coords_k = coords - mu[k, :, np.newaxis]
-            coords_k = (
-                Q[k].T @ coords_k * np.sqrt(1 / np.diag(D[k, :, :]))[:, np.newaxis]
-            )
-
-            vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
-
-        vol = np.reshape(vol, g["x"].shape)
-
-        return vol
-
     # Apply symmetry to Q and mu by generating duplicates rotated by symmetry order.
     def _symmetrize_gaussians(Q, D, mu, order):
         angles = np.zeros(shape=(order, 3))
@@ -510,27 +488,67 @@ def _gaussian_blob_Cn_vols(
                 idx += 1
         return Q_rot, D_sym, mu_rot
 
-    # For K gaussians, generate random orientation (Q), mean (mu), and variance (D).
-    def _gen_gaussians(K, alpha):
-        Q = np.zeros(shape=(K, 3, 3)).astype(dtype)
-        D = np.zeros(shape=(K, 3, 3)).astype(dtype)
-        mu = np.zeros(shape=(K, 3)).astype(dtype)
-
-        for k in range(K):
-            V = randn(3, 3).astype(dtype) / np.sqrt(3)
-            Q[k, :, :] = qr(V)[0]
-            D[k, :, :] = alpha ** 2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
-            mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
-
-        return Q, D, mu
-
     vols = np.zeros(shape=(C, L, L, L)).astype(dtype)
     with Random(seed):
         for c in range(C):
             Q, D, mu = _gen_gaussians(K, alpha)
             Q_rot, D_sym, mu_rot = _symmetrize_gaussians(Q, D, mu, order)
-            vols[c] = _eval_gaussians(L, K, Q_rot, D_sym, mu_rot, dtype=dtype)
+            vols[c] = _eval_gaussians(L, Q_rot, D_sym, mu_rot, dtype=dtype)
     return Volume(vols)
+
+
+def _eval_gaussians(L, Q, D, mu, dtype=np.float64):
+    """
+    Evaluate Gaussian blobs over a 3D grid with centers, mu, orientations, Q, and variances, D.
+
+    :param L: Size of the volume to be populated with Gaussian blobs.
+    :param Q: A stack of size (n_blobs) x 3 x 3 of rotation matrices,
+        determining the orientation of each blob.
+    :param D: A stack of size (n_blobs) x 3 x 3 diagonal matrices,
+        whose diagonal entries are the variances of each blob.
+    :param mu: An array of size (n_blobs) x 3 containing the centers for each blob.
+
+    :return: An L x L x L array.
+    """
+    g = grid_3d(L, dtype=dtype)
+    coords = np.array(
+        [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
+    )
+
+    n_blobs = Q.shape[0]
+    vol = np.zeros(shape=(1, coords.shape[-1])).astype(dtype)
+
+    for k in range(n_blobs):
+        coords_k = coords - mu[k, :, np.newaxis]
+        coords_k = Q[k].T @ coords_k * np.sqrt(1 / np.diag(D[k, :, :]))[:, np.newaxis]
+
+        vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
+
+    vol = np.reshape(vol, g["x"].shape)
+
+    return vol
+
+
+def _gen_gaussians(K, alpha, dtype=np.float64):
+    """
+    For K gaussians, generate random orientation (Q), mean (mu), and variance (D).
+
+    :param K: Number of gaussians to generate.
+    :param alpha: Scalar for peak of gaussians.
+
+    :return: Orientations Q, Variances D, Means mu.
+    """
+    Q = np.zeros(shape=(K, 3, 3)).astype(dtype)
+    D = np.zeros(shape=(K, 3, 3)).astype(dtype)
+    mu = np.zeros(shape=(K, 3)).astype(dtype)
+
+    for k in range(K):
+        V = randn(3, 3).astype(dtype) / np.sqrt(3)
+        Q[k, :, :] = qr(V)[0]
+        D[k, :, :] = alpha ** 2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
+        mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
+
+    return Q, D, mu
 
 
 # TODO: The following functions likely all need to be moved inside the Volume class
