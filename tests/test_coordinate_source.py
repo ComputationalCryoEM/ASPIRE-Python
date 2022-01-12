@@ -152,8 +152,7 @@ class CoordinateSourceTestCase(TestCase):
 
     def testLoadFromRelionAutoPick(self):
         # Here we test loading from a Relion project directory's STAR
-        # index file. We are not using the simulated data source constructed
-        # in the setup
+        # index file.
         RelionCoordinateSource(
             os.path.join(self.autopick_star_path),
             particle_size=256,
