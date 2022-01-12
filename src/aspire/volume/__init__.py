@@ -481,7 +481,7 @@ def _gaussian_blob_Cn_vols(
         for k in range(n_blobs):
             coords_k = coords - mu[k, :, np.newaxis]
             coords_k = (
-                Q[k].T @ coords_k * np.sqrt(1 / np.diag(D[k % K, :, :]))[:, np.newaxis]
+                Q[k].T @ coords_k * np.sqrt(1 / np.diag(D[k, :, :]))[:, np.newaxis]
             )
 
             vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
@@ -491,22 +491,24 @@ def _gaussian_blob_Cn_vols(
         return vol
 
     # Apply symmetry to Q and mu by generating duplicates rotated by symmetry order.
-    def _symmetrize_gaussians(Q, mu, order):
+    def _symmetrize_gaussians(Q, D, mu, order):
         angles = np.zeros(shape=(order, 3))
         angles[:, 2] = 2 * np.pi * np.arange(order) / order
         rot = Rotation.from_euler(angles).matrices
 
         K = Q.shape[0]
         Q_rot = np.zeros(shape=(order * K, 3, 3)).astype(dtype)
+        D_sym = np.zeros(shape=(order * K, 3, 3)).astype(dtype)
         mu_rot = np.zeros(shape=(order * K, 3)).astype(dtype)
         idx = 0
 
         for j in range(order):
             for k in range(K):
                 Q_rot[idx] = rot[j].T @ Q[k]
+                D_sym[idx] = D[k]
                 mu_rot[idx] = rot[j].T @ mu[k]
                 idx += 1
-        return Q_rot, mu_rot
+        return Q_rot, D_sym, mu_rot
 
     # For K gaussians, generate random orientation (Q), mean (mu), and variance (D).
     def _gen_gaussians(K, alpha):
@@ -526,8 +528,8 @@ def _gaussian_blob_Cn_vols(
     with Random(seed):
         for c in range(C):
             Q, D, mu = _gen_gaussians(K, alpha)
-            Q_rot, mu_rot = _symmetrize_gaussians(Q, mu, order)
-            vols[c] = _eval_gaussians(L, K, Q_rot, D, mu_rot, dtype=dtype)
+            Q_rot, D_sym, mu_rot = _symmetrize_gaussians(Q, D, mu, order)
+            vols[c] = _eval_gaussians(L, K, Q_rot, D_sym, mu_rot, dtype=dtype)
     return Volume(vols)
 
 
