@@ -73,7 +73,7 @@ We recommend using ``conda`` or a ``virtualenv`` environment managing solutions 
 Again, we recommend the above for consistency.
 However, ASPIRE is a ``pip`` package,
 so you can attempt to install it using standard ``pip`` or ``setup.py`` commands.  There are methods such as ``pip --no-deps`` that can leave your other packages undisturbed, but this is left to the developer.
-ASPIRE should generally be compatible with newer version of Python, and newer dependent packages. We are currently testing 3.7, 3.8, 3.9 base Python as configured by ASPIRE, and with upgrading packages to the latest for each of those bases.
+ASPIRE should generally be compatible with newer version of Python, and newer dependent packages. We are currently testing 3.7, 3.8, 3.9, and 3.10 base Python as configured by ASPIRE, and with upgrading packages to the latest for each of those bases.
 If you encounter an issue with a custom pip install, we will try to help, but you may be on your own for support of this method of installation.
 
 ::
