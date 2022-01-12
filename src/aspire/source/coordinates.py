@@ -24,12 +24,13 @@ class CoordinateSource(ImageSource, ABC):
 
     Broadly, there are two ways this information is represented. Sometimes each
     coordinate is simply the (X,Y) center location of the picked particle. This
-    is sometimes stored in a `.coord` text file, and sometimes in a STAR file
+    is sometimes stored in a `.coord` text file, and sometimes in a STAR file.
+    The particle box is then computed using an externally supplied box size.
     These sources may be loaded via the `CentersCoordinateSource` class for
     both filetypes.
 
     Other formats adhere to the EMAN1 .box file specification, which
-    specifies a coordinate via four numbers:
+    specifies a particle via four numbers:
     (lower left X coordinate, lower left Y coordinate, X size, Y size)
     These can be loaded via the `EmanCoordinateSource` class.
 
@@ -77,7 +78,7 @@ class CoordinateSource(ImageSource, ABC):
             shape = mrc_file.data.shape
         if len(shape) != 2:
             raise ValueError(
-                "Shape of mrc file is {shape} but expected shape of size 2. Are these unaligned micrographs?"
+                f"Shape of mrc file is {shape} but expected shape of size 2. Is this a stack of unaligned micrographs?"
             )
         if self.dtype != mrc_dtype:
             logger.warning(
