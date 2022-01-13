@@ -9,7 +9,7 @@ from itertools import chain, combinations
 
 import numpy as np
 
-from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +115,28 @@ def sha256sum(filename):
     return h.hexdigest()
 
 
+def gaussian_1d(size, mu=0, sigma=1, peak=1, dtype=np.float64):
+    """
+    Returns a 1d Gaussian in a 1D numpy array.
+
+    Default is a centered disc of spread=peak=1.
+
+    :param size: The height and width of returned array (pixels)
+    :param mu: mean or center (pixels)
+    :param sigma: spread
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (1D)
+    """
+
+    # Construct centered mesh
+    g = grid_1d(size, normalized=False, dtype=dtype)
+
+    p = (g["x"][0] - mu) ** 2 / (2 * sigma ** 2)
+
+    return (peak * np.exp(-p)).astype(dtype, copy=False)
+
+
 def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64):
     """
     Returns a 2d Gaussian in a square 2d numpy array.
@@ -122,8 +144,8 @@ def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64
     Default is a centered disc of spread=peak=1.
 
     :param size: The height and width of returned array (pixels)
-    :param x0: x cordinate of center (pixels)
-    :param y0: y cordinate of center (pixels)
+    :param x0: x coordinate of center (pixels)
+    :param y0: y coordinate of center (pixels)
     :param sigma_x: spread in x direction
     :param sigma_y: spread in y direction
     :param peak: peak height at center
