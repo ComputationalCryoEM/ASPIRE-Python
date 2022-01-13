@@ -32,7 +32,7 @@ class CoordinateSource(ImageSource, ABC):
     Other formats adhere to the EMAN1 .box file specification, which
     specifies a particle via four numbers:
     (lower left X coordinate, lower left Y coordinate, X size, Y size)
-    These can be loaded via the `EmanCoordinateSource` class.
+    These can be loaded via the `BoxesCoordinateSource` class.
 
     Regardless of source, the coordinates of each particle are represented
     internally in the EMAN1 .box format.
@@ -55,7 +55,7 @@ class CoordinateSource(ImageSource, ABC):
         self.dtype = np.dtype(dtype)
         # the particle_size parameter is the *user-specified* argument
         # and is used in self.populate_particles
-        # it may be None in the case of an EmanCoordinateSource
+        # it may be None in the case of an BoxesCoordinateSource
         self.particle_size = particle_size
 
         # keep this list to identify micrograph paths by index rather than
@@ -326,10 +326,10 @@ class CoordinateSource(ImageSource, ABC):
         return Image(im)
 
 
-class EmanCoordinateSource(CoordinateSource):
+class BoxesCoordinateSource(CoordinateSource):
     """
     Represents a data source consisting of micrographs and coordinate files
-    in EMAN1 .box format.
+    in box format.
     """
 
     def __init__(

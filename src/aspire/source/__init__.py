@@ -2,7 +2,7 @@ import logging
 
 from aspire.source.coordinates import (
     CentersCoordinateSource,
-    EmanCoordinateSource,
+    BoxesCoordinateSource,
     RelionCoordinateSource,
 )
 from aspire.source.image import ArrayImageSource, ImageSource

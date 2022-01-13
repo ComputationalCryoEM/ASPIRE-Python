@@ -5,7 +5,7 @@ import os
 import click
 from click import UsageError
 
-from aspire.source.coordinates import CentersCoordinateSource, EmanCoordinateSource
+from aspire.source.coordinates import CentersCoordinateSource, BoxesCoordinateSource
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ def extract_particles(
             particle_size=particle_size,
         )
     else:
-        src = EmanCoordinateSource(
+        src = BoxesCoordinateSource(
             files,
             particle_size=particle_size,
         )

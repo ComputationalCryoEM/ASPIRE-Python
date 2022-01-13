@@ -18,7 +18,7 @@ from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source import (
     CentersCoordinateSource,
-    EmanCoordinateSource,
+    BoxesCoordinateSource,
     RelionCoordinateSource,
 )
 from aspire.storage import StarFile
@@ -43,7 +43,7 @@ class CoordinateSourceTestCase(TestCase):
         # save test data root dir
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
 
-        # First set up tests for EmanCoordinateSource and CentersCoordinateSource
+        # First set up tests for BoxesCoordinateSource and CentersCoordinateSource
         # We will construct a source with two micrographs and two coordinate
         # files by using the same micrograph, but dividing the coordinates
         # among two files (this simulates a dataset with multiple micrographs)
@@ -127,7 +127,7 @@ class CoordinateSourceTestCase(TestCase):
         self.all_mrc_paths = sorted(glob(self.data_folder + "/*.mrc"))
         self.all_box_paths = sorted(glob(self.data_folder + "/sample*.box"))
         self.files_box = list(zip(self.all_mrc_paths, self.all_box_paths))
-        self.src_from_box = EmanCoordinateSource(self.files_box)
+        self.src_from_box = BoxesCoordinateSource(self.files_box)
         # create file lists that will be used several times
         self.files_coord = list(
             zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/sample*.coord")))
@@ -161,11 +161,11 @@ class CoordinateSourceTestCase(TestCase):
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
-            EmanCoordinateSource(self.files_box_nonsquare)
+            BoxesCoordinateSource(self.files_box_nonsquare)
 
     def testOverrideParticleSize(self):
         # it is possible to override the particle size in the box file
-        src_new_size = EmanCoordinateSource(self.files_box, particle_size=100)
+        src_new_size = BoxesCoordinateSource(self.files_box, particle_size=100)
         src_from_centers = CentersCoordinateSource(self.files_coord, particle_size=100)
         imgs_new_size = src_new_size.images(0, 10)
         imgs_from_centers = src_from_centers.images(0, 10)
@@ -212,22 +212,22 @@ class CoordinateSourceTestCase(TestCase):
     def testMaxRows(self):
         imgs = self.src_from_box.images(0, 440)
         # make sure max_rows loads the correct particles
-        src_100 = EmanCoordinateSource(self.files_box, max_rows=100)
+        src_100 = BoxesCoordinateSource(self.files_box, max_rows=100)
         imgs_100 = src_100.images(0, src_100.n)
         for i in range(100):
             self.assertTrue(np.array_equal(imgs[i], imgs_100[i]))
         # make sure max_rows > self.n loads max_rows images
-        src_500 = EmanCoordinateSource(self.files_box, max_rows=500)
+        src_500 = BoxesCoordinateSource(self.files_box, max_rows=500)
         self.assertEqual(src_500.n, 440)
         imgs_500 = src_500.images(0, 440)
         for i in range(440):
             self.assertTrue(np.array_equal(imgs[i], imgs_500[i]))
         # make sure max_rows loads correct particles
         # when some have been excluded
-        imgs_newsize = EmanCoordinateSource(self.files_box, particle_size=336).images(
+        imgs_newsize = BoxesCoordinateSource(self.files_box, particle_size=336).images(
             0, 50
         )
-        src_maxrows = EmanCoordinateSource(
+        src_maxrows = BoxesCoordinateSource(
             self.files_box, particle_size=336, max_rows=50
         )
         # max_rows still loads 50 images even if some particles were excluded
@@ -240,7 +240,7 @@ class CoordinateSourceTestCase(TestCase):
         src_centers_larger_particles = CentersCoordinateSource(
             self.files_coord, particle_size=300
         )
-        src_box_larger_particles = EmanCoordinateSource(
+        src_box_larger_particles = BoxesCoordinateSource(
             self.files_box, particle_size=300
         )
         # 2 particles do not fit at this particle size
@@ -256,7 +256,7 @@ class CoordinateSourceTestCase(TestCase):
         # test a range of even and odd resizes
         for _size in range(252, 260):
             src_centers = CentersCoordinateSource(self.files_coord, particle_size=_size)
-            src_resized = EmanCoordinateSource(self.files_box, particle_size=_size)
+            src_resized = BoxesCoordinateSource(self.files_box, particle_size=_size)
             imgs_centers = src_centers.images(0, 440)
             imgs_resized = src_resized.images(0, 440)
             for i in range(440):
@@ -264,7 +264,7 @@ class CoordinateSourceTestCase(TestCase):
 
     def testSave(self):
         # we can save the source into an .mrcs stack with *no* metadata
-        src = EmanCoordinateSource(self.files_box, max_rows=10)
+        src = BoxesCoordinateSource(self.files_box, max_rows=10)
         imgs = src.images(0, 10)
         star_path = os.path.join(self.tmpdir.name, "stack.star")
         mrcs_path = os.path.join(self.tmpdir.name, "stack_0_9.mrcs")
@@ -280,7 +280,7 @@ class CoordinateSourceTestCase(TestCase):
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
-        src = EmanCoordinateSource(self.files_box, max_rows=5)
+        src = BoxesCoordinateSource(self.files_box, max_rows=5)
         src.downsample(60)
         src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
