@@ -189,7 +189,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Convert a list
         `[lower left x, lower left y, particle_size, particle_size]`
-        representing a particle box in EMAN1 .box format to a list
+        representing a particle in the box format to a list
         `[x, y]` representing the particle center.
         :param box_coord: a list of length 4 representing the particle box
         """
@@ -277,7 +277,8 @@ class CoordinateSource(ImageSource, ABC):
         `particle_size`.
         :param start: Starting index (default: 0)
         :param num: number of images to return starting from `start` (default: numpy.inf)
-        :param indices: A numpy array of integer indices
+        :param indices: A numpy array of integer indices. If specified, supersedes
+        `start` and `num`. 
         """
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
@@ -438,7 +439,7 @@ class CentersCoordinateSource(CoordinateSource):
     def coords_list_from_file(self, coord_file):
         """
         Given a coordinate file with (x,y) particle centers,
-        return a list of coordinates in our canonical (.box) format.
+        return a list of coordinates in box format.
         """
         # check if it's a STAR file list of centers
         if os.path.splitext(coord_file)[1] == ".star":

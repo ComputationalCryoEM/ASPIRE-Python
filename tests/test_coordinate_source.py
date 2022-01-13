@@ -16,7 +16,7 @@ from pandas import DataFrame
 import tests.saved_test_data
 from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
-from aspire.source.coordinates import (
+from aspire.source import (
     CentersCoordinateSource,
     EmanCoordinateSource,
     RelionCoordinateSource,
