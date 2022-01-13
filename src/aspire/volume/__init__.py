@@ -296,16 +296,6 @@ class Volume:
             vol_f = nufft(self.asnumpy(), pts_rot)
             vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
-            # If resolution is even, we zero out the nyquist frequency by default.
-            if self.resolution % 2 == 0 and zero_nyquist is True:
-                vol_f[:, 0, :, :] = 0
-                vol_f[:, :, 0, :] = 0
-                vol_f[:, :, :, 0] = 0
-
-            vol = xp.asnumpy(
-                np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
-            )
-
         # If K = n_vols, we apply the ith rotation to ith volume.
         else:
             rot_matrices = rot_matrices.reshape((K, 1, 3, 3))
@@ -320,15 +310,15 @@ class Volume:
 
             vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
-            # If resolution is even, we zero out the nyquist frequency by default.
-            if self.resolution % 2 == 0 and zero_nyquist is True:
-                vol_f[:, 0, :, :] = 0
-                vol_f[:, :, 0, :] = 0
-                vol_f[:, :, :, 0] = 0
+        # If resolution is even, we zero out the nyquist frequency by default.
+        if self.resolution % 2 == 0 and zero_nyquist is True:
+            vol_f[:, 0, :, :] = 0
+            vol_f[:, :, 0, :] = 0
+            vol_f[:, :, :, 0] = 0
 
-            vol = xp.asnumpy(
-                np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
-            )
+        vol = xp.asnumpy(
+            np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
+        )
 
         return Volume(vol)
 
