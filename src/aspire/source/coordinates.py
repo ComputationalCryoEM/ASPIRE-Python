@@ -345,7 +345,6 @@ class BoxesCoordinateSource(CoordinateSource):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param dtype: dtype with which to load images (default: double)
         """
-
         # get full filepaths and data folder
         mrc_paths, coord_paths = self._check_and_get_paths(files)
         # instantiate super
@@ -358,25 +357,62 @@ class BoxesCoordinateSource(CoordinateSource):
             dtype,
         )
 
+    def _extract_box_size(self, box_file):
+        with open(box_file, "r") as box:
+            first_line = box.readlines()[0].split()
+            if len(first_line) >= 4:
+                box_size = int(first_line[2])  # x size or y size works
+                return box_size
+            else:
+                logger.error(f"Problem with coordinate file: {box_file}")
+                raise ValueError(
+                    "Coordinate file contains less than 4 numbers "
+                    "per line. If these are particle centers,"
+                    "use CentersCoordinateSource or  use the --centers"
+                    "flag in aspire extract-particles."
+                )
+
+    def _validate_box_file(self, box_file, global_particle_size):
+        with open(box_file, "r") as box:
+            # validate each line, i.e. each particle
+            for line in box.readlines():
+                # box format requires 4 numbers per particle
+                if len(line.split()) < 4:
+                    logger.error(f"Problem with coordinate file: {box_file}")
+                    raise ValueError(
+                        "Coordinate file contains less than 4 numbers "
+                        "per line. If these are particle centers,"
+                        "use CentersCoordinateSource or  use the --centers"
+                        "flag in aspire extract-particles."
+                    )
+
+                # we can only accept square particles
+                size_x, size_y = int(line.split()[2]), int(line.split()[3])
+                if size_x != size_y:
+                    logger.error(f"Problem with coordinate file: {box_file}")
+                    raise ValueError(
+                        "Coordinate file specifies non-square particle size "
+                        f"{size_x}x{size_y}, but only square particles are supported."
+                    )
+                # check that this particle size is the *right* particle size
+                if size_x != global_particle_size:
+                    logger.error(f"Problem with coordinate file: {box_file}")
+                    raise ValueError(
+                        f"Coordinate file specifies a box size {size_x}x{size_x} "
+                        "different from the box size found in the first "
+                        f"coordinate file ({global_particle_size}x{global_particle_size})."
+                        " Particle size must be consistent."
+                    )
+
     def _populate_particles(self, num_micrographs, coord_paths):
         # overrides CoordinateSource._populate_particles because of the
         # possibility that force_new_particle_size will be called,
         # which requires self.particles to be populated alraedy
 
-        # Look into the first coordinate path given and validate format
-        with open(coord_paths[0], "r") as first_coord_file:
-            first_line = first_coord_file.readlines()[0]
-            # box format requires 4 numbers per coordinate
-            if len(first_line.split()) < 4:
-                raise ValueError(
-                    "Coordinate file contains less than 4 numbers per coordinate. If these are particle centers, use CentersCoordinateSource or use the --centers flag in aspire extract-particles."
-                )
-            # we can only accept square particles
-            size_x, size_y = int(first_line.split()[2]), int(first_line.split()[3])
-            if size_x != size_y:
-                raise ValueError(
-                    f"Coordinate file gives non-square particle size {size_x}x{size_y}, but only square particles are supported."
-                )
+        global_particle_size = self._extract_box_size(coord_paths[0])
+        # validate the rest of the box files
+        for coord_path in coord_paths:
+            self._validate_box_file(coord_path, global_particle_size)
 
         # populate self.particles
         super()._populate_particles(num_micrographs, coord_paths)
