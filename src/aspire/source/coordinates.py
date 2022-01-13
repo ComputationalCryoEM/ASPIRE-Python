@@ -54,7 +54,7 @@ class CoordinateSource(ImageSource, ABC):
     def __init__(self, mrc_paths, coord_paths, particle_size, max_rows, dtype):
         self.dtype = np.dtype(dtype)
         # the particle_size parameter is the *user-specified* argument
-        # and is used in self.populate_particles
+        # and is used in self._populate_particles
         # it may be None in the case of an BoxesCoordinateSource
         self.particle_size = particle_size
 
@@ -68,7 +68,7 @@ class CoordinateSource(ImageSource, ABC):
         # [lower left X, lower left Y, size X, size Y].
         # The micrograph's filepath can be recovered from self.mrc_paths
         self.particles = []
-        self.populate_particles(mrc_paths, coord_paths)
+        self._populate_particles(mrc_paths, coord_paths)
 
         # get first micrograph and first coordinate to report some data
         first_mrc_index, first_coord = self.particles[0]
@@ -144,7 +144,7 @@ class CoordinateSource(ImageSource, ABC):
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
         self.unique_filters = [IdentityFilter()]
 
-    def populate_particles(self, mrc_paths, coord_paths):
+    def _populate_particles(self, mrc_paths, coord_paths):
         """
         All subclasses create mrc_paths and coord_paths lists and pass them to
         this method.
@@ -362,8 +362,8 @@ class BoxesCoordinateSource(CoordinateSource):
             dtype,
         )
 
-    def populate_particles(self, mrc_paths, coord_paths):
-        # overrides CoordinateSource.populate_particles because of the
+    def _populate_particles(self, mrc_paths, coord_paths):
+        # overrides CoordinateSource._populate_particles because of the
         # possibility that force_new_particle_size will be called,
         # which requires self.particles to be populated alraedy
 
@@ -383,7 +383,7 @@ class BoxesCoordinateSource(CoordinateSource):
                 )
 
         # populate self.particles
-        super().populate_particles(mrc_paths, coord_paths)
+        super()._populate_particles(mrc_paths, coord_paths)
 
         # if particle size set by user, we have to re-do the coordinates
         if self.particle_size:
