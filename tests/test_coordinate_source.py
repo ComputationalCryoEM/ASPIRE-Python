@@ -7,7 +7,7 @@ from collections import OrderedDict
 from glob import glob
 from unittest import TestCase
 
-import importlib_resources
+import importlib.resources
 import mrcfile
 import numpy as np
 from click.testing import CliRunner
@@ -30,7 +30,7 @@ class CoordinateSourceTestCase(TestCase):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.data_folder = self.tmpdir.name
         # load pickled list of picked particle centers
-        with importlib_resources.path(
+        with importlib.resources.path(
             tests.saved_test_data, "apple_centers.p"
         ) as centers_path:
             # apple_centers.p was pickled with protocol 4
@@ -38,7 +38,7 @@ class CoordinateSourceTestCase(TestCase):
                 open(str(centers_path), "rb"),
             )
         # get path to test .mrc file
-        with importlib_resources.path(tests.saved_test_data, "sample.mrc") as test_path:
+        with importlib.resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.original_mrc_path = str(test_path)
         # save test data root dir
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
