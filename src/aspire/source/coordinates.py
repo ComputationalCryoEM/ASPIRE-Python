@@ -41,10 +41,10 @@ class CoordinateSource(ImageSource, ABC):
     particles in a micrograph are represented by coordinates, but not yet
     cropped out: `RelionCoordinateSource`. This class allows the output of
     AutoPick and ManualPick jobs to be loaded into an ASPIRE source from a
-    single index STAR file (usually autopick.star)
+    single index STAR file (usually autopick.star).
 
     Particle information is extracted from the micrographs and coordinate files
-    and put into a common data structure (self.particles)
+    and put into a common data structure (self.particles).
 
     The `_images()` method, called via `ImageSource.images()` crops
     the particle images out of the micrograph and returns them as a stack.
@@ -104,29 +104,33 @@ class CoordinateSource(ImageSource, ABC):
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
 
+        # total micrographs and particles represented by source (info)
+        logger.info(
+            f"{self.__class__.__name__} from {os.path.dirname(first_mrc)} contains {len(mrc_paths)} micrographs, {len(self.particles)} picked particles."
+        )
+
         # remove particles whose boxes do not fit at given particle_size
         # and get number removed
         boundary_removed = self.exclude_boundary_particles()
-        # if max_rows is specified, only return up to max_rows many
-        # (after excluding boundary particles)
-        if max_rows:
-            max_rows = min(max_rows, original_n - boundary_removed)
-            self.particles = self.particles[:max_rows]
 
-        # final number of particles in *this* source
-        n = len(self.particles)
-        # total micrographs and particles represented by source (info)
-        logger.info(
-            f"{self.__class__.__name__} from {os.path.dirname(first_mrc)} contains {len(mrc_paths)} micrographs, {original_n} picked particles."
-        )
         # total particles we can load given particle_size (info)
         if boundary_removed > 0:
             logger.info(
                 f"{boundary_removed} particles did not fit into micrograph dimensions at particle size {L}, so were excluded"
             )
             logger.info(
-                f"Maximum number of particles at this particle size is {original_n - boundary_removed}."
+                f"Maximum number of particles at this particle size is {len(self.particles)}."
             )
+
+        # if max_rows is specified, only return up to max_rows many
+        # (after excluding boundary particles)
+        if max_rows:
+            max_rows = min(max_rows, len(self.particles))
+            self.particles = self.particles[:max_rows]
+
+        # final number of particles in *this* source
+        n = len(self.particles)
+
         # total particles loaded (specific to this instance)
         logger.info(f"CoordinateSource object contains {n} particles.")
 
@@ -278,7 +282,7 @@ class CoordinateSource(ImageSource, ABC):
         :param start: Starting index (default: 0)
         :param num: number of images to return starting from `start` (default: numpy.inf)
         :param indices: A numpy array of integer indices. If specified, supersedes
-        `start` and `num`. 
+        `start` and `num`.
         """
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))

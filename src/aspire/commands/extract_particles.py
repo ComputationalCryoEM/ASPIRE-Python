@@ -5,7 +5,7 @@ import os
 import click
 from click import UsageError
 
-from aspire.source.coordinates import CentersCoordinateSource, BoxesCoordinateSource
+from aspire.source.coordinates import BoxesCoordinateSource, CentersCoordinateSource
 
 logger = logging.getLogger(__name__)
 
