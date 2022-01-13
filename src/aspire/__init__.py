@@ -1,12 +1,12 @@
 import logging.config
 import os
 from datetime import datetime
+from importlib.resources import read_text
 from pathlib import Path
 
 import aspire
 from aspire.config import Config
 from aspire.exceptions import handle_exception
-from aspire.utils.importlib_legacy import read_text
 
 # version in maj.min.bld format
 __version__ = "0.8.1"
