@@ -96,10 +96,6 @@ class CoordinateSource(ImageSource, ABC):
         # which can be None
         L = first_coord[3]
 
-        # total number of particles given in coord files
-        # before removing boundary particles and satisfying max_rows
-        original_n = len(self.particles)
-
         logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L

@@ -1,3 +1,4 @@
+import importlib.resources
 import os
 import pickle
 import random
@@ -7,7 +8,6 @@ from collections import OrderedDict
 from glob import glob
 from unittest import TestCase
 
-import importlib.resources
 import mrcfile
 import numpy as np
 from click.testing import CliRunner
