@@ -29,13 +29,13 @@ class CoordinateSource(ImageSource, ABC):
     These sources may be loaded via the `CentersCoordinateSource` class for
     both filetypes.
 
-    Other formats adhere to the EMAN1 .box file specification, which
+    Other formats adhere to the box file specification, which
     specifies a particle via four numbers:
     (lower left X coordinate, lower left Y coordinate, X size, Y size)
     These can be loaded via the `BoxesCoordinateSource` class.
 
     Regardless of source, the coordinates of each particle are represented
-    internally in the EMAN1 .box format.
+    internally in the box format.
 
     An addtional subclass exists for points in the Relion pipeline where
     particles in a micrograph are represented by coordinates, but not yet
@@ -155,7 +155,7 @@ class CoordinateSource(ImageSource, ABC):
     @abstractmethod
     def coords_list_from_file(self, coord_file):
         """
-        Given a coordinate file, convert the coordinates into the canonical format, that is, a
+        Given a coordinate file, convert the coordinates into box format, i.e. a
         list of the form [lower left x, lower left y, x size, y size].
         Subclasses implement according to the details of the files they read.
         """
@@ -166,7 +166,7 @@ class CoordinateSource(ImageSource, ABC):
         Convert a list `[x,y]` representing a particle center
         to a list
         `[lower left x, lower left y, particle_size, particle_size]`
-        representing the box around the particle in .box EMAN1 format.
+        representing the box around the particle in box format.
         :param center: a list of length two representing a center
         :param particle_size: the size of the box around the particle
         """
@@ -200,7 +200,7 @@ class CoordinateSource(ImageSource, ABC):
     def coords_list_from_star(self, star_file):
         """
         Given a Relion STAR coordinate file (generally containing particle centers)
-        return a list of coordinates in the canonical (.box) format.
+        return a list of coordinates in box format.
         """
         df = StarFile(star_file).get_block_by_index(0)
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
@@ -211,7 +211,7 @@ class CoordinateSource(ImageSource, ABC):
     def _check_and_get_paths(self, files):
         """
         Used in subclasses accepting the `files` kwarg.
-        Turns all of our paths into absolute paths.
+        Turns all paths into absolute paths.
         Returns lists `mrc_paths`, `coord_paths`.
         """
         # split up the mrc paths from the coordinate file paths
@@ -369,13 +369,13 @@ class BoxesCoordinateSource(CoordinateSource):
             # box format requires 4 numbers per coordinate
             if len(first_line.split()) < 4:
                 raise ValueError(
-                    "Coordinate file contains less than 4 numbers per coordinate. If these are particle centers, use CentersCoordinateSource or use the --centers flag in aspire extract-particles"
+                    "Coordinate file contains less than 4 numbers per coordinate. If these are particle centers, use CentersCoordinateSource or use the --centers flag in aspire extract-particles."
                 )
             # we can only accept square particles
             size_x, size_y = int(first_line.split()[2]), int(first_line.split()[3])
             if size_x != size_y:
                 raise ValueError(
-                    f"Coordinate file gives non-square particle size {size_x}x{size_y}, but only square particles are supported"
+                    f"Coordinate file gives non-square particle size {size_x}x{size_y}, but only square particles are supported."
                 )
 
         # populate self.particles
@@ -387,11 +387,11 @@ class BoxesCoordinateSource(CoordinateSource):
 
     def coords_list_from_file(self, coord_file):
         """
-        Given a coordinate file in .box format, returns a list of coordinates.
+        Given a coordinate file in box format, returns a list of coordinates.
         """
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
-        # coords are already in canonical .box format, so simply cast to int
+        # coords are already in box format, so simply cast to int
         return [[int(x) for x in line] for line in lines]
 
     def _force_new_particle_size(self, new_size):

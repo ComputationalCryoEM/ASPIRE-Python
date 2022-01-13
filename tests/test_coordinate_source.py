@@ -86,7 +86,7 @@ class CoordinateSourceTestCase(TestCase):
             starfile = StarFile(blocks=blocks)
             starfile.write(self.star_fp)
 
-            # populate box file with coordinates in EMAN1 .box format
+            # populate box file with coordinates in box format
             with open(self.box_fp, "w") as box:
                 for center in _centers:
                     # to make a box file, we convert the centers to lower left
