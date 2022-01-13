@@ -68,7 +68,7 @@ class CoordinateSource(ImageSource, ABC):
         # [lower left X, lower left Y, size X, size Y].
         # The micrograph's filepath can be recovered from self.mrc_paths
         self.particles = []
-        self._populate_particles(mrc_paths, coord_paths)
+        self._populate_particles(len(mrc_paths), coord_paths)
 
         # get first micrograph and first coordinate to report some data
         first_mrc_index, first_coord = self.particles[0]
@@ -144,12 +144,12 @@ class CoordinateSource(ImageSource, ABC):
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
         self.unique_filters = [IdentityFilter()]
 
-    def _populate_particles(self, mrc_paths, coord_paths):
+    def _populate_particles(self, num_micrographs, coord_paths):
         """
         All subclasses create mrc_paths and coord_paths lists and pass them to
         this method.
         """
-        for i, _mrc in enumerate(mrc_paths):
+        for i in range(num_micrographs):
             # read in all coordinates for the given mrc using subclass's
             # method of reading the corresponding coord file
             self.particles += [
@@ -362,7 +362,7 @@ class BoxesCoordinateSource(CoordinateSource):
             dtype,
         )
 
-    def _populate_particles(self, mrc_paths, coord_paths):
+    def _populate_particles(self, num_micrographs, coord_paths):
         # overrides CoordinateSource._populate_particles because of the
         # possibility that force_new_particle_size will be called,
         # which requires self.particles to be populated alraedy
@@ -383,7 +383,7 @@ class BoxesCoordinateSource(CoordinateSource):
                 )
 
         # populate self.particles
-        super()._populate_particles(mrc_paths, coord_paths)
+        super()._populate_particles(num_micrographs, coord_paths)
 
         # if particle size set by user, we have to re-do the coordinates
         if self.particle_size:
