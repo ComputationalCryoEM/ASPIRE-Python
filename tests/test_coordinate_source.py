@@ -1,6 +1,5 @@
 import importlib.resources
 import os
-import pickle
 import random
 import shutil
 import tempfile
@@ -25,14 +24,6 @@ class CoordinateSourceTestCase(TestCase):
         # temporary directory to set up a toy dataset
         self.tmpdir = tempfile.TemporaryDirectory()
         self.data_folder = self.tmpdir.name
-        # load pickled list of picked particle centers
-        with importlib.resources.path(
-            tests.saved_test_data, "apple_centers.p"
-        ) as centers_path:
-            # apple_centers.p was pickled with protocol 4
-            centers = pickle.load(
-                open(str(centers_path), "rb"),
-            )
         # get path to test .mrc file
         with importlib.resources.path(tests.saved_test_data, "sample.mrc") as test_path:
             self.original_mrc_path = str(test_path)
@@ -42,6 +33,45 @@ class CoordinateSourceTestCase(TestCase):
         # We will construct a source with two micrographs and two coordinate
         # files by using the same micrograph, but dividing the coordinates
         # among two files (this simulates a dataset with multiple micrographs)
+
+        # generate random particle centers
+        centers = []
+        # randomly generate 300 particles that fit on the micrograph with box size
+        # 256 AND box size 300 (these will be included for particle_size <= 300)
+        num_particles_fit = 300
+        # randomly generate an additional 100 particles that fit with box size 256
+        # but not with box size 300 (these will be excluded with the particle_size
+        # is set to 300)
+        num_particles_excl = 100
+
+        # get micrograph dimensions
+        with mrcfile.open(self.original_mrc_path) as mrc:
+            shape_y, shape_x = mrc.data.shape
+        for _i in range(num_particles_fit):
+            # particle center must be at least half of
+            # the max particle_size into the micrograph
+            # in this case, the particles must fit into
+            # a box of at least size 300
+            x = random.choice([j for j in range(150, shape_x - 150)])
+            y = random.choice([j for j in range(150, shape_y - 150)])
+            centers.append((x, y))
+
+        for _i in range(num_particles_excl):
+            # now the particles must fit into a 256x256 box
+            # but NOT into a 300x300 box
+            x = random.choice(
+                [j for j in range(128, 150)]
+                + [j for j in range(shape_x - 150, shape_x - 128)]
+            )
+            y = random.choice(
+                [j for j in range(128, 150)]
+                + [j for j in range(shape_y - 150, shape_y - 128)]
+            )
+            centers.append((x, y))
+
+        # randomize order of centers for when they are written to files
+        random.shuffle(centers)
+
         for i in range(2):
             # copy mrc to temp location
             _new_mrc_path = os.path.join(self.data_folder, f"sample{i+1}.mrc")
@@ -179,25 +209,25 @@ class CoordinateSourceTestCase(TestCase):
         # ensure that we can load a specific, possibly out of order, list of
         # indices, and that the result is in the order we asked for
         src_from_box = BoxesCoordinateSource(self.files_box)
-        images_in_order = src_from_box.images(0, 440)
+        images_in_order = src_from_box.images(0, 400)
         # test loading every other image and compare
-        odd = np.array([i for i in range(1, 440, 2)])
-        even = np.array([i for i in range(0, 439, 2)])
+        odd = np.array([i for i in range(1, 400, 2)])
+        even = np.array([i for i in range(0, 399, 2)])
         odd_images = src_from_box._images(indices=odd)
         even_images = src_from_box._images(indices=even)
-        for i in range(0, 220):
+        for i in range(0, 200):
             self.assertTrue(np.array_equal(images_in_order[2 * i], even_images[i]))
             self.assertTrue(np.array_equal(images_in_order[2 * i + 1], odd_images[i]))
 
         # random sample of [0,440) of length 100
-        random_sample = np.array(random.sample([i for i in range(440)], 100))
+        random_sample = np.array(random.sample([i for i in range(400)], 100))
         random_images = src_from_box._images(indices=random_sample)
         for i, idx in enumerate(random_sample):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
 
     def testMaxRows(self):
         src_from_box = BoxesCoordinateSource(self.files_box)
-        imgs = src_from_box.images(0, 440)
+        imgs = src_from_box.images(0, 400)
         # make sure max_rows loads the correct particles
         src_100 = BoxesCoordinateSource(self.files_box, max_rows=100)
         imgs_100 = src_100.images(0, src_100.n)
@@ -205,9 +235,9 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs[i], imgs_100[i]))
         # make sure max_rows > self.n loads max_rows images
         src_500 = BoxesCoordinateSource(self.files_box, max_rows=500)
-        self.assertEqual(src_500.n, 440)
-        imgs_500 = src_500.images(0, 440)
-        for i in range(440):
+        self.assertEqual(src_500.n, 400)
+        imgs_500 = src_500.images(0, 400)
+        for i in range(400):
             self.assertTrue(np.array_equal(imgs[i], imgs_500[i]))
         # make sure max_rows loads correct particles
         # when some have been excluded
@@ -231,11 +261,11 @@ class CoordinateSourceTestCase(TestCase):
             self.files_box, particle_size=300
         )
         # 2 particles do not fit at this particle size
-        self.assertEqual(src_centers_larger_particles.n, 438)
-        self.assertEqual(src_box_larger_particles.n, 438)
+        self.assertEqual(src_centers_larger_particles.n, 300)
+        self.assertEqual(src_box_larger_particles.n, 300)
         # make sure we have the same particles
-        imgs_centers = src_centers_larger_particles.images(0, 438)
-        imgs_resized = src_box_larger_particles.images(0, 438)
+        imgs_centers = src_centers_larger_particles.images(0, 300)
+        imgs_resized = src_box_larger_particles.images(0, 300)
         for i in range(50):
             self.assertTrue(np.array_equal(imgs_centers[i], imgs_resized[i]))
 
@@ -244,9 +274,11 @@ class CoordinateSourceTestCase(TestCase):
         for _size in range(252, 260):
             src_centers = CentersCoordinateSource(self.files_coord, particle_size=_size)
             src_resized = BoxesCoordinateSource(self.files_box, particle_size=_size)
-            imgs_centers = src_centers.images(0, 440)
-            imgs_resized = src_resized.images(0, 440)
-            for i in range(440):
+            # some particles might be chopped off for sizes greater than
+            # 256, so we just load the first 300 images for comparison
+            imgs_centers = src_centers.images(0, 300)
+            imgs_resized = src_resized.images(0, 300)
+            for i in range(300):
                 self.assertTrue(np.array_equal(imgs_centers[i], imgs_resized[i]))
 
     def testSave(self):
