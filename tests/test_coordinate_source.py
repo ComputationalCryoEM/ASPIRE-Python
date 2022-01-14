@@ -77,9 +77,9 @@ class CoordinateSourceTestCase(TestCase):
             _new_mrc_path = os.path.join(self.data_folder, f"sample{i+1}.mrc")
             shutil.copyfile(self.original_mrc_path, _new_mrc_path)
 
-            # get the first half of the coordinates for i=0 [0:220] and the
-            # second half for i=1 [220:440]
-            _centers = centers[i * 220 : (i + 1) * 220]
+            # get the first half of the coordinates for i=0 [0:200] and the
+            # second half for i=1 [200:400]
+            _centers = centers[i * 200 : (i + 1) * 200]
 
             self.createTestBoxFiles(_centers, i)
             self.createTestCoordFiles(_centers, i)
@@ -219,7 +219,7 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(images_in_order[2 * i], even_images[i]))
             self.assertTrue(np.array_equal(images_in_order[2 * i + 1], odd_images[i]))
 
-        # random sample of [0,440) of length 100
+        # random sample of [0,400) of length 100
         random_sample = np.array(random.sample([i for i in range(400)], 100))
         random_images = src_from_box._images(indices=random_sample)
         for i, idx in enumerate(random_sample):
@@ -260,7 +260,7 @@ class CoordinateSourceTestCase(TestCase):
         src_box_larger_particles = BoxesCoordinateSource(
             self.files_box, particle_size=300
         )
-        # 2 particles do not fit at this particle size
+        # 100 particles do not fit at this particle size
         self.assertEqual(src_centers_larger_particles.n, 300)
         self.assertEqual(src_box_larger_particles.n, 300)
         # make sure we have the same particles
