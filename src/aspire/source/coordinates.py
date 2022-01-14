@@ -205,17 +205,16 @@ class CoordinateSource(ImageSource, ABC):
         Turns all paths into absolute paths.
         Returns lists `mrc_paths`, `coord_paths`.
         """
+        cwd = os.getcwd()
         # split up the mrc paths from the coordinate file paths
-        mrc_paths = [f[0] for f in files]
-        coord_paths = [f[1] for f in files]
-        # check whether we were given absolute paths
-        mrc_absolute_paths = os.path.isabs(mrc_paths[0])
-        coord_absolute_paths = os.path.isabs(coord_paths[0])
-        # if we weren't given absolute paths, fill in the full paths
-        if not mrc_absolute_paths:
-            mrc_paths = [os.path.join(os.getcwd(), m) for m in mrc_paths]
-        if not coord_absolute_paths:
-            coord_paths = [os.path.join(os.getcwd(), c) for c in coord_paths]
+        # and fill in absolute path from current working directory
+        # if the path is not absolute
+        mrc_paths = [
+            f[0] if os.path.isabs(f[0]) else os.path.join(cwd, f[0]) for f in files
+        ]
+        coord_paths = [
+            f[1] if os.path.isabs(f[1]) else os.path.join(cwd, f[1]) for f in files
+        ]
 
         return mrc_paths, coord_paths
 
