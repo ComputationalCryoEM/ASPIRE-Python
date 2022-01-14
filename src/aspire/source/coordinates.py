@@ -63,23 +63,11 @@ class CoordinateSource(ImageSource, ABC):
         self.particles = []
         self._populate_particles(len(mrc_paths), coord_paths)
 
-        # get first micrograph and first coordinate to report some data
-        first_mrc_index, first_coord = self.particles[0]
-        first_mrc = self.mrc_paths[first_mrc_index]
-        with mrcfile.open(first_mrc) as mrc_file:
-            mrc_dtype = np.dtype(mrc_file.data.dtype)
-            shape = mrc_file.data.shape
-        if len(shape) != 2:
-            raise ValueError(
-                f"Shape of mrc file is {shape} but expected shape of size 2. Is this a stack of unaligned micrographs?"
-            )
-        if self.dtype != mrc_dtype:
-            logger.warning(
-                f"dtype of micrograph is {mrc_dtype}. Will attempt to cast to {self.dtype}"
-            )
+        # Read shapes of all micrographs
+        self.mrc_shapes = self._get_mrc_shapes()
 
-        # save the shape to compare the rest of the mrcs against
-        self.mrc_shape = shape
+        # get first coordinate file to report some data
+        _, first_coord = self.particles[0]
 
         # look at first coord to get the particle size
         # this was either provided by the user or read from a .box file
@@ -89,18 +77,19 @@ class CoordinateSource(ImageSource, ABC):
         # which can be None
         L = first_coord[3]
 
-        logger.info(f"Micrograph size = {self.mrc_shape[1]}x{self.mrc_shape[0]}")
         logger.info(f"Particle size = {L}x{L}")
         self._original_resolution = L
 
         # total micrographs and particles represented by source (info)
         logger.info(
-            f"{self.__class__.__name__} from {os.path.dirname(first_mrc)} contains {len(mrc_paths)} micrographs, {len(self.particles)} picked particles."
+            f"{self.__class__.__name__} from {os.path.dirname(self.mrc_paths[0])} contains {len(mrc_paths)} micrographs, {len(self.particles)} picked particles."
         )
+        # report different mrc shapes
+        logger.info(f"Micrographs have the following shapes: {*self.mrc_shapes,}")
 
         # remove particles whose boxes do not fit at given particle_size
         # and get number removed
-        boundary_removed = self.exclude_boundary_particles()
+        boundary_removed = self._exclude_boundary_particles()
 
         # total particles we can load given particle_size (info)
         if boundary_removed > 0:
@@ -218,7 +207,7 @@ class CoordinateSource(ImageSource, ABC):
 
         return mrc_paths, coord_paths
 
-    def exclude_boundary_particles(self):
+    def _exclude_boundary_particles(self):
         """
         Remove particles boxes which do not fit in the micrograph
         with the given `particle_size`.
@@ -226,11 +215,14 @@ class CoordinateSource(ImageSource, ABC):
         out_of_range = []
         for i, particle in enumerate(self.particles):
             start_x, start_y, size_x, size_y = particle[1]
+            # get shape of corresponding micrograph
+            mrc_index = particle[0]
+            mrc_shape = self.mrc_shapes[mrc_index]
             if (
                 start_x < 0
                 or start_y < 0
-                or (start_x + size_x >= self.mrc_shape[1])
-                or (start_y + size_y >= self.mrc_shape[0])
+                or (start_x + size_x >= mrc_shape[1])
+                or (start_y + size_y >= mrc_shape[0])
             ):
                 out_of_range.append(i)
 
@@ -243,6 +235,24 @@ class CoordinateSource(ImageSource, ABC):
             self.particles.pop(j)
 
         return len(out_of_range)
+
+    def _get_mrc_shapes(self):
+        """
+        Iterate through self.mrc_shapes and read the dimensions of each micrograph
+        :return mrc_shapes: A list of tuples representing the corresponding shapes
+        """
+        mrc_shapes = [(0, 0) for mrc in self.mrc_paths]
+        for i, mrc in enumerate(self.mrc_paths):
+            with mrcfile.open(mrc) as mrc_file:
+                shape = mrc_file.data.shape
+                if len(shape) != 2:
+                    raise ValueError(
+                        f"Shape of mrc file is {shape} but expected shape of size 2."
+                        "Is this a stack of unaligned micrographs?"
+                    )
+                mrc_shapes[i] = shape
+
+        return mrc_shapes
 
     @staticmethod
     def crop_micrograph(data, coord):
@@ -295,10 +305,6 @@ class CoordinateSource(ImageSource, ABC):
             fp = self.mrc_paths[mrc_index]
             with mrcfile.open(fp) as mrc_in:
                 arr = mrc_in.data.astype(self.dtype)
-            if arr.shape != self.mrc_shape:
-                raise ValueError(
-                    f"Shape of {fp} is {arr.shape}, but expected {self.mrc_shape}"
-                )
             # create iterable of the coordinates in this mrc
             # we don't need to worry about exhausting this iter
             # because we know it contains the exact number of particles
