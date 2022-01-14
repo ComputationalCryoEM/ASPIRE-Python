@@ -166,13 +166,11 @@ class CoordinateSource(ImageSource, ABC):
         # subtract off floor(particle size/2) from center coords
         r = floor(particle_size / 2)
         x, y = center[:2]
-        # Relion coordinates are represented as floats, so we
-        # account for this by reading as a float first and then
-        # taking the floor of the result to obtain the index of
-        # the corresponding pixel
         return [
-            floor(float(x)) - r,
-            floor(float(y)) - r,
+            # centers may be represented as floats in STAR files
+            # chop off the non integer part to account for this
+            int(x) - r,
+            int(y) - r,
             particle_size,
             particle_size,
         ]
@@ -195,7 +193,7 @@ class CoordinateSource(ImageSource, ABC):
         Given a Relion STAR coordinate file (generally containing particle centers)
         return a list of coordinates in box format.
         """
-        df = StarFile(star_file).get_block_by_index(0)
+        df = StarFile(star_file).get_block_by_index(0).astype(float)
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
         return [
             self.box_coord_from_center(coord, self.particle_size) for coord in coords
