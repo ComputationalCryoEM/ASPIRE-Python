@@ -59,7 +59,10 @@ class CoordinateSourceTestCase(TestCase):
         self.all_mrc_paths = sorted(glob(os.path.join(self.data_folder, "sample*.mrc")))
         # create file lists that will be used several times
         self.files_box = list(
-            zip(self.all_mrc_paths, os.path.join(self.data_folder, "sample*.box"))
+            zip(
+                self.all_mrc_paths,
+                sorted(glob(os.path.join(self.data_folder, "sample*.box"))),
+            )
         )
         self.files_coord = list(
             zip(
@@ -133,7 +136,11 @@ class CoordinateSourceTestCase(TestCase):
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
 
-    def testLoadFromCoord(self):
+    def testLoadFromBox(self):
+        # ensure successful loading from box files
+        BoxesCoordinateSource(self.files_box)
+
+    def testLoadFromCenters(self):
         # ensure successful loading from particle center files (.coord)
         CentersCoordinateSource(self.files_coord, particle_size=256)
 
@@ -158,9 +165,10 @@ class CoordinateSourceTestCase(TestCase):
     def testImages(self):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
+        src_from_box = BoxesCoordinateSource(self.files_box)
         src_from_coord = CentersCoordinateSource(self.files_coord, particle_size=256)
         src_from_star = CentersCoordinateSource(self.files_star, particle_size=256)
-        imgs_box = self.src_from_box.images(0, 10)
+        imgs_box = src_from_box.images(0, 10)
         imgs_coord = src_from_coord.images(0, 10)
         imgs_star = src_from_star.images(0, 10)
         for i in range(10):
@@ -170,24 +178,26 @@ class CoordinateSourceTestCase(TestCase):
     def testImagesRandomIndices(self):
         # ensure that we can load a specific, possibly out of order, list of
         # indices, and that the result is in the order we asked for
-        images_in_order = self.src_from_box.images(0, 440)
+        src_from_box = BoxesCoordinateSource(self.files_box)
+        images_in_order = src_from_box.images(0, 440)
         # test loading every other image and compare
         odd = np.array([i for i in range(1, 440, 2)])
         even = np.array([i for i in range(0, 439, 2)])
-        odd_images = self.src_from_box._images(indices=odd)
-        even_images = self.src_from_box._images(indices=even)
+        odd_images = src_from_box._images(indices=odd)
+        even_images = src_from_box._images(indices=even)
         for i in range(0, 220):
             self.assertTrue(np.array_equal(images_in_order[2 * i], even_images[i]))
             self.assertTrue(np.array_equal(images_in_order[2 * i + 1], odd_images[i]))
 
         # random sample of [0,440) of length 100
         random_sample = np.array(random.sample([i for i in range(440)], 100))
-        random_images = self.src_from_box._images(indices=random_sample)
+        random_images = src_from_box._images(indices=random_sample)
         for i, idx in enumerate(random_sample):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
 
     def testMaxRows(self):
-        imgs = self.src_from_box.images(0, 440)
+        src_from_box = BoxesCoordinateSource(self.files_box)
+        imgs = src_from_box.images(0, 440)
         # make sure max_rows loads the correct particles
         src_100 = BoxesCoordinateSource(self.files_box, max_rows=100)
         imgs_100 = src_100.images(0, src_100.n)
