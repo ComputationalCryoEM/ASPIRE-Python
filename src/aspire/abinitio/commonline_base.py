@@ -4,7 +4,6 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 
-from aspire import config
 from aspire.abinitio.orientation_src import OrientEstSource
 from aspire.basis import PolarBasis2D
 from aspire.utils.coor_trans import common_line_from_rots
@@ -18,16 +17,24 @@ class CLOrient3D:
     Define a base class for estimating 3D orientations using common lines methods
     """
 
-    def __init__(self, src, n_rad=None, n_theta=None, n_check=None):
+    def __init__(
+        self, src, n_rad=None, n_theta=360, n_check=None, max_shift=0.15, shift_step=1
+    ):
         """
         Initialize an object for estimating 3D orientations using common lines
 
         :param src: The source object of 2D denoised or class-averaged imag
-        :param n_rad: The number of points in the radial direction
-        :param n_theta: The number of points in the theta direction
+        :param n_rad: The number of points in the radial direction. If None,
+            n_rad will default to the ceiling of half the resolution of the source.
+        :param n_theta: The number of points in the theta direction.
+            Default is 360.
         :param n_check: For each image/projection find its common-lines with
             n_check images. If n_check is less than the total number of images,
             a random subset of n_check images is used.
+        :param max_shift: Determines maximum range for shifts as a proportion
+            of the resolution. Default is 0.15.
+        :param shift_step: Resolution of shift estimation in pixels.
+            Default is 1 pixel.
         """
         self.src = src
         # Note dtype is inferred from self.src
@@ -38,7 +45,8 @@ class CLOrient3D:
         self.n_theta = n_theta
         self.n_check = n_check
         self.clmatrix = None
-
+        self.max_shift = math.ceil(max_shift * self.n_res)
+        self.shift_step = shift_step
         self.rotations = None
 
         self._build()
@@ -48,14 +56,9 @@ class CLOrient3D:
         Build the internal data structure for orientation estimation
         """
         if self.n_rad is None:
-            self.n_rad = math.ceil(config.orient.r_ratio * self.n_res)
-        if self.n_theta is None:
-            self.n_theta = config.orient.n_theta
+            self.n_rad = math.ceil(0.5 * self.n_res)
         if self.n_check is None:
             self.n_check = self.n_img
-
-        self.max_shift = math.ceil(config.orient.max_shift * self.n_res)
-        self.shift_step = config.orient.shift_step
 
         imgs = self.src.images(start=0, num=np.inf)
 

@@ -24,15 +24,25 @@ class CLSyncVoting(CLOrient3D):
     Journal of Structural Biology, 169, 312-322 (2010).
     """
 
-    def __init__(self, src, n_rad=None, n_theta=None):
+    def __init__(self, src, n_rad=None, n_theta=360, max_shift=0.15, shift_step=1):
         """
         Initialize an object for estimating 3D orientations using synchronization matrix
 
         :param src: The source object of 2D denoised or class-averaged images with metadata
         :param n_rad: The number of points in the radial direction
-        :param n_theta: The number of points in the theta direction
+        :param n_theta: The number of points in the theta direction.
+            Default is 360.
+        :param max_shift: Determines maximum range for shifts as a proportion
+            of the resolution. Default is 0.15.
+        :param shift_step: Resolution for shift estimation in pixels. Default is 1 pixel.
         """
-        super().__init__(src, n_rad=n_rad, n_theta=n_theta)
+        super().__init__(
+            src,
+            n_rad=n_rad,
+            n_theta=n_theta,
+            max_shift=max_shift,
+            shift_step=shift_step,
+        )
         self.syncmatrix = None
 
     def estimate_rotations(self):
@@ -179,7 +189,7 @@ class CLSyncVoting(CLOrient3D):
 
         rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
 
-        if rots.shape[0] > 0:
+        if rots is not None:
             rot_mean = np.mean(rots, 0)
             # The error to mean value can be calculated as
             #    rot_block = rots[:2, :2]
@@ -230,6 +240,8 @@ class CLSyncVoting(CLOrient3D):
 
         # Calculate the cos values of rotation angles between i an j images for good k images
         c_alpha, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
+        if len(c_alpha) == 0:
+            return None
         alpha = np.arccos(c_alpha)
 
         # Convert the Euler angles with ZXZ conversion to rotation matrices
