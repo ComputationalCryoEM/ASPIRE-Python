@@ -16,11 +16,7 @@ from pandas import DataFrame
 import tests.saved_test_data
 from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
-from aspire.source import (
-    BoxesCoordinateSource,
-    CentersCoordinateSource,
-    RelionCoordinateSource,
-)
+from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
 
 
@@ -104,24 +100,6 @@ class CoordinateSourceTestCase(TestCase):
                         f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
                     )
 
-        # Now construct a simulated Relion directory
-        # to test RelionCoordinateSource
-        # The autopick.star file points to sample1.mrc
-        # (created earlier) and relion_coord.star as the coord file
-        os.makedirs(os.path.join(self.data_folder, "AutoPick/job006/"))
-        self.autopick_star_path = os.path.join(
-            self.data_folder, "AutoPick/job006/sample_relion_autopick.star"
-        )
-        shutil.copyfile(
-            os.path.join(self.test_dir_root, "sample_relion_autopick.star"),
-            self.autopick_star_path,
-        )
-        shutil.copyfile(
-            os.path.join(self.test_dir_root, "sample_relion_coord.star"),
-            # renamed because later we glob for sample*star and we don't want this one
-            os.path.join(self.data_folder, "relion_coord.star"),
-        )
-
         # create default object from a .box file, for comparisons in tests
         # also provides an example of how one might use this in a script
         self.all_mrc_paths = sorted(glob(self.data_folder + "/*.mrc"))
@@ -150,14 +128,6 @@ class CoordinateSourceTestCase(TestCase):
         # ensure successful loading from particle center files (.star)
         CentersCoordinateSource(self.files_star, particle_size=256)
 
-    def testLoadFromRelionAutoPick(self):
-        # Here we test loading from a Relion project directory's STAR
-        # index file.
-        RelionCoordinateSource(
-            os.path.join(self.autopick_star_path),
-            particle_size=256,
-        )
-
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
@@ -177,18 +147,12 @@ class CoordinateSourceTestCase(TestCase):
         # ensure the images obtained are the same
         src_from_coord = CentersCoordinateSource(self.files_coord, particle_size=256)
         src_from_star = CentersCoordinateSource(self.files_star, particle_size=256)
-        src_from_relion = RelionCoordinateSource(
-            self.autopick_star_path,
-            particle_size=256,
-        )
         imgs_box = self.src_from_box.images(0, 10)
         imgs_coord = src_from_coord.images(0, 10)
         imgs_star = src_from_star.images(0, 10)
-        imgs_relion = src_from_relion.images(0, 10)
         for i in range(10):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
-            self.assertTrue(np.array_equal(imgs_star[i], imgs_relion[i]))
 
     def testImagesRandomIndices(self):
         # ensure that we can load a specific, possibly out of order, list of

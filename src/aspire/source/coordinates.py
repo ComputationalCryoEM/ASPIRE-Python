@@ -3,7 +3,6 @@ import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from math import floor
-from pathlib import Path
 
 import mrcfile
 import numpy as np
@@ -36,12 +35,6 @@ class CoordinateSource(ImageSource, ABC):
 
     Regardless of source, the coordinates of each particle are represented
     internally in the box format.
-
-    An addtional subclass exists for points in the Relion pipeline where
-    particles in a micrograph are represented by coordinates, but not yet
-    cropped out: `RelionCoordinateSource`. This class allows the output of
-    AutoPick and ManualPick jobs to be loaded into an ASPIRE source from a
-    single index STAR file (usually autopick.star).
 
     Particle information is extracted from the micrographs and coordinate files
     and put into a common data structure (self.particles).
@@ -484,48 +477,3 @@ class CentersCoordinateSource(CoordinateSource):
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
         return [self.box_coord_from_center(line, self.particle_size) for line in lines]
-
-
-class RelionCoordinateSource(CoordinateSource):
-    """
-    Represents a data source derived from an autopick.star file within a Relion
-    project directory.
-    """
-
-    def __init__(
-        self, relion_autopick_star, particle_size, max_rows=None, dtype="double"
-    ):
-        """
-                :param files: Relion STAR file e.g. autopick.star mapping micrographs to coordinate STAR files.
-                :particle_size: Desired size of cropped particles
-                :param max_rows: Maximum number of particles to read. (If `None`, will
-        attempt to load all particles)
-                :param dtype: dtype with which to load images (default: double)
-        """
-
-        # if not absolute path to star file, assume relative to working dir
-        if not os.path.isabs(relion_autopick_star):
-            relion_autopick_star = os.path.join(os.getcwd(), relion_autopick_star)
-
-        # the 'coordinate_files' block of the starfile specifies
-        # paths to micrographs and coordinate files relative to the
-        # Relion project dir
-        df = StarFile(relion_autopick_star)["coordinate_files"]
-        files = list(zip(df["_rlnMicrographName"], df["_rlnMicrographCoordinates"]))
-
-        # infer relion project dir since autopick.star will be at e.g.
-        # /relion/project/dir/Autopick/job00X/autopick.star
-        # get path 3 directories up
-        data_folder = Path(relion_autopick_star).parents[2]
-
-        # get absolute paths based on project dir
-        mrc_paths = [os.path.join(data_folder, f[0]) for f in files]
-        coord_paths = [os.path.join(data_folder, f[1]) for f in files]
-
-        # instantiate super
-        CoordinateSource.__init__(
-            self, mrc_paths, coord_paths, particle_size, max_rows, dtype
-        )
-
-    def coords_list_from_file(self, coord_file):
-        return self.coords_list_from_star(coord_file)
