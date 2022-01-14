@@ -102,19 +102,19 @@ class CoordinateSourceTestCase(TestCase):
 
         # create default object from a .box file, for comparisons in tests
         # also provides an example of how one might use this in a script
-        self.all_mrc_paths = sorted(glob(self.data_folder + "/*.mrc"))
-        self.all_box_paths = sorted(glob(self.data_folder + "/sample*.box"))
+        self.all_mrc_paths = sorted(glob(os.path.join(self.data_folder, "/*.mrc")))
+        self.all_box_paths = sorted(glob(os.path.join(self.data_folder, "/sample*.box")))
         self.files_box = list(zip(self.all_mrc_paths, self.all_box_paths))
         self.src_from_box = BoxesCoordinateSource(self.files_box)
         # create file lists that will be used several times
         self.files_coord = list(
-            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/sample*.coord")))
+            zip(self.all_mrc_paths, sorted(glob(os.path.join(self.data_folder,"/sample*.coord"))))
         )
         self.files_star = list(
-            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/sample*.star")))
+            zip(self.all_mrc_paths, sorted(glob(os.path.join(self.data_folder, "/sample*.star"))))
         )
         self.files_box_nonsquare = list(
-            zip(self.all_mrc_paths, sorted(glob(self.data_folder + "/nonsquare*.box")))
+            zip(self.all_mrc_paths, sorted(glob(os.path.join(self.data_folder, "/nonsquare*.box"))))
         )
 
     def tearDown(self):
