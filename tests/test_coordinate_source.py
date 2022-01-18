@@ -285,12 +285,15 @@ class CoordinateSourceTestCase(TestCase):
         # we can save the source into an .mrcs stack with *no* metadata
         src = BoxesCoordinateSource(self.files_box, max_rows=10)
         imgs = src.images(0, 10)
-        star_path = os.path.join(self.tmpdir.name, "stack.star")
-        mrcs_path = os.path.join(self.tmpdir.name, "stack_0_9.mrcs")
+        star_path = os.path.join(self.data_folder, "stack.star")
         src.save(star_path)
         # load saved particle stack
-        saved_mrcs_stack = mrcfile.open(mrcs_path).data
         saved_star = StarFile(star_path)
+        # we want to read the saved mrcs file from the STAR file
+        image_name_column = saved_star.get_block_by_index(0)["_rlnImageName"]
+        # we're reading a string of the form 0000X@mrcs_path.mrcs
+        _particle, mrcs_path = image_name_column.iloc[0].split("@")
+        saved_mrcs_stack = mrcfile.open(os.path.join(self.data_folder, mrcs_path)).data
         # assert that the particles saved are correct
         for i in range(10):
             self.assertTrue(np.array_equal(imgs[i], saved_mrcs_stack[i]))
