@@ -8,7 +8,7 @@ import logging
 import numpy as np
 from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
-from scipy.special import jn, jv, lpmv, sph_harm
+from scipy.special import jn, jv, sph_harm
 
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, grid_3d
@@ -93,16 +93,43 @@ def norm_assoc_legendre(j, m, x):
 
     """
 
+    # For negative m, flip sign and use the symmetry identity.
+    # In the rest, we assume that m is non-negative.
     if m < 0:
         m = -m
-        y = (-1) ** m * norm_assoc_legendre(j, m, x)
-    else:
-        y = lpmv(m, j, x)
-        y *= np.sqrt((2 * j + 1) / 2)
-        # Beware of overflow here.
-        y /= np.prod(np.sqrt(np.arange(j - m + 1, j + m + 1), dtype=np.float64))
+        px = (-1) ** m * norm_assoc_legendre(j, m, x)
+        px *= (-1) ** m
+        return px
 
-    return y
+    # Initialize the recurrence at (m, m) and (m, m+1).
+    p0 = (
+        (-1) ** m
+        * np.sqrt(
+            (2 * m + 1)
+            / 2
+            * np.prod(np.arange(2 * m - 1, 0, -2) / np.arange(2 * m, 0, -2))
+        )
+        * (1 - x * x) ** (m / 2)
+    )
+
+    p1 = x * np.sqrt(2 * m + 3) * p0
+
+    # If these are the desired indices, return these initial values.
+    if j == m:
+        px = p0
+    elif j == m + 1:
+        px = p1
+    else:
+        # Fixing m, work our way up from (m, m+1) to (m, j).
+        for n in range(m + 1, j):
+            px = np.sqrt((2 * n + 3) / ((n + 1 + m) * (n + 1 - m))) * (
+                np.sqrt(2 * n + 1) * x * p1
+                - np.sqrt((n + m) * (n - m) / (2 * n - 1)) * p0
+            )
+            p0 = p1
+            p1 = px
+
+    return px
 
 
 def real_sph_harmonic(j, m, theta, phi):
