@@ -296,10 +296,13 @@ class CoordinateSource(ImageSource, ABC):
         # only open each one once
         grouped = defaultdict(list)
         # this creates a dict of the form
-        # { mrc_index : list of coords in that mrc, with order preserved }
+        # { mrc_index : list of coords in that mrc, with relative order preserved }
         for mrc_index, coord in selected_particles:
             grouped[mrc_index].append(coord)
 
+        # this loops over the micrographs
+        # now that the particles have been grouped by
+        # their origin micrograph
         for mrc_index, coord_list in grouped.items():
             # get explicit filepath from cached list
             fp = self.mrc_paths[mrc_index]
@@ -308,9 +311,14 @@ class CoordinateSource(ImageSource, ABC):
             # create iterable of the coordinates in this mrc
             # we don't need to worry about exhausting this iter
             # because we know it contains the exact number of particles
-            # selected from this micrograph
+            # selected from this micrograph.
+            # the next()  method on this iterable will give us the next
+            # particle from this micrograph to appear in selected_particles
             coord = iter(coord_list)
             # iterate through selected particles
+            # we are potentially populating the particles
+            # out of order, to optimize the slower operation
+            # of opening the micrograph file
             for i, particle in enumerate(selected_particles):
                 idx = particle[0]
                 # we stop and populate the image stack every time
