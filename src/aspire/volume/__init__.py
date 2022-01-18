@@ -500,7 +500,7 @@ def _eval_gaussians(L, Q, D, mu, dtype=np.float64):
 
     :return: An L x L x L array.
     """
-    g = grid_3d(L, dtype=dtype)
+    g = grid_3d(L, indexing="xyz", dtype=dtype)
     coords = np.array(
         [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
     )
@@ -569,8 +569,8 @@ def rotated_grids(L, rot_matrices):
 
     pts_rot = pts_rot.reshape((3, num_rots, L, L))
 
-    # Note we return grids as (Z, Y, X)
-    return pts_rot[::-1]
+    return pts_rot
+
 
 def rotated_grids_3d(L, rot_matrices):
     """
@@ -582,7 +582,7 @@ def rotated_grids_3d(L, rot_matrices):
         Frequencies are in the range [-pi, pi].
     """
 
-    grid3d = grid_3d(L, dtype=rot_matrices.dtype)
+    grid3d = grid_3d(L, indexing="xyz", dtype=rot_matrices.dtype)
     num_pts = L ** 3
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(
