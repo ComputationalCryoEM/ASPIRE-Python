@@ -1,29 +1,39 @@
 import os
 import tempfile
+from itertools import product
 from unittest import TestCase
 
 import numpy as np
-from scipy.spatial.transform import Rotation
+from numpy import pi
+from parameterized import parameterized
+from pytest import raises
+from scipy.spatial.transform import Rotation as sp_rot
 
-from aspire.utils import powerset
-from aspire.volume import Volume
+from aspire.utils import Rotation, powerset
+from aspire.utils.coor_trans import grid_3d
+from aspire.utils.types import utest_tolerance
+from aspire.volume import Volume, gaussian_blob_vols
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class VolumeTestCase(TestCase):
+    # res is at this scope to be picked up by parameterization in testRotate.
+    res = 42
+
     def setUp(self):
         self.dtype = np.float32
         self.n = n = 3
-        self.res = res = 42
-        self.data_1 = np.arange(n * res ** 3, dtype=self.dtype).reshape(
-            n, res, res, res
+        self.data_1 = np.arange(n * self.res ** 3, dtype=self.dtype).reshape(
+            n, self.res, self.res, self.res
         )
         self.data_2 = 123 * self.data_1.copy()
         self.vols_1 = Volume(self.data_1)
         self.vols_2 = Volume(self.data_2)
-        self.random_data = np.random.randn(res, res, res).astype(self.dtype)
-        self.vec = self.data_1.reshape(n, res ** 3)
+        self.random_data = np.random.randn(self.res, self.res, self.res).astype(
+            self.dtype
+        )
+        self.vec = self.data_1.reshape(n, self.res ** 3)
 
     def tearDown(self):
         pass
@@ -115,11 +125,11 @@ class VolumeTestCase(TestCase):
         # Create a stack of rotations to test.
         r_stack = np.empty((12, 3, 3), dtype=self.dtype)
         for r, ax in enumerate(["x", "y", "z"]):
-            r_stack[r] = Rotation.from_euler(ax, 0).as_matrix()
+            r_stack[r] = sp_rot.from_euler(ax, 0).as_matrix()
             # We'll consider the multiples of pi/2.
-            r_stack[r + 3] = Rotation.from_euler(ax, np.pi / 2).as_matrix()
-            r_stack[r + 6] = Rotation.from_euler(ax, np.pi).as_matrix()
-            r_stack[r + 9] = Rotation.from_euler(ax, 3 * np.pi / 2).as_matrix()
+            r_stack[r + 3] = sp_rot.from_euler(ax, pi / 2).as_matrix()
+            r_stack[r + 6] = sp_rot.from_euler(ax, pi).as_matrix()
+            r_stack[r + 9] = sp_rot.from_euler(ax, 3 * pi / 2).as_matrix()
 
         # Project a Volume with all the test rotations
         vol_id = 1  # select a volume from Volume stack
@@ -137,6 +147,118 @@ class VolumeTestCase(TestCase):
             # The projection and Volume should be equivalent
             #  centered along the rotation axis for multiples of pi/2.
             self.assertTrue(np.allclose(vol_along_axis, prj_along_axis))
+
+    # Parameterize over even and odd resolutions
+    @parameterized.expand([(res,), (res - 1,)])
+    def testRotate(self, L):
+        # In this test we instantiate Volume instance `vol`, containing a single nonzero
+        # voxel in the first octant, and rotate it by multiples of pi/2 about each axis.
+        # We then compare to reference volumes containing appropriately located nonzero voxel.
+
+        # Create a Volume instance to rotate.
+        # This volume has a value of 1 in the first octant at (1, 1, 1) and zeros elsewhere.
+        data = np.zeros((L, L, L), dtype=self.dtype)
+        data[L // 2 + 1, L // 2 + 1, L // 2 + 1] = 1
+        vol = Volume(data)
+
+        # Create a dict with map from axis and angle of rotation to new location of nonzero voxel.
+        ref_pts = {
+            ("x", 0): (1, 1, 1),
+            ("x", pi / 2): (1, 1, -1),
+            ("x", pi): (1, -1, -1),
+            ("x", 3 * pi / 2): (1, -1, 1),
+            ("y", 0): (1, 1, 1),
+            ("y", pi / 2): (-1, 1, 1),
+            ("y", pi): (-1, 1, -1),
+            ("y", 3 * pi / 2): (1, 1, -1),
+            ("z", 0): (1, 1, 1),
+            ("z", pi / 2): (1, -1, 1),
+            ("z", pi): (-1, -1, 1),
+            ("z", 3 * pi / 2): (-1, 1, 1),
+        }
+
+        center = np.array([L // 2] * 3)
+
+        # Rotate Volume 'vol' and test against reference volumes.
+        axes = ["x", "y", "z"]
+        angles = [0, pi / 2, pi, 3 * pi / 2]
+        for axis, angle in product(axes, angles):
+            # Build rotation matrices
+            rot_mat = Rotation(
+                sp_rot.from_euler(axis, angle).as_matrix().astype(self.dtype)
+            )
+
+            # Rotate Volume 'vol' by rotations 'rot_mat'
+            rot_vol = vol.rotate(rot_mat, zero_nyquist=False)
+
+            # Build reference volumes using dict 'ref_pts'
+            ref_vol = np.zeros((L, L, L), dtype=np.float32)
+            # Assign the location of non zero voxel
+            loc = center + np.array(ref_pts[axis, angle])
+            ref_vol[tuple(loc)] = 1
+
+            # Test that rotated volumes align with reference volumes
+            self.assertTrue(
+                np.allclose(ref_vol, rot_vol, atol=utest_tolerance(self.dtype))
+            )
+
+    def testRotateBroadcastUnicast(self):
+        # Build `Rotation` objects. A singleton for broadcasting and a stack for unicasting.
+        # The stack consists of copies of the singleton.
+        angles = np.array([pi, pi / 2, 0])
+        angles = np.tile(angles, (3, 1))
+        rot_mat = Rotation.from_euler(angles).matrices
+        rot = Rotation(rot_mat[0])
+        rots = Rotation(rot_mat)
+
+        # Broadcast the singleton `Rotation` across the `Volume` stack.
+        vols_broadcast = self.vols_1.rotate(rot)
+
+        # Unicast the `Rotation` stack across the `Volume` stack.
+        vols_unicast = self.vols_1.rotate(rots)
+
+        for i in range(self.n):
+            self.assertTrue(np.allclose(vols_broadcast[i], vols_unicast[i]))
+
+    def testCnSymmetricVolume(self):
+        # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
+        L = self.res
+        sym_type = {2: "C2", 3: "C3", 4: "C4", 5: "C5", 6: "C6"}
+
+        for k, s in sym_type.items():
+
+            # Build `Volume` instance with symmetry type s.
+            vol = gaussian_blob_vols(
+                L=L, C=1, symmetry_type=s, seed=0, dtype=self.dtype
+            )
+
+            # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
+            angles = np.zeros(shape=(k, 3))
+            angles[:, 2] = 2 * np.pi * np.arange(k) / k
+            rot_mat = Rotation.from_euler(angles).matrices
+
+            # Create mask to compare volumes on.
+            selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 2
+
+            for i in range(k):
+                # Rotate volume.
+                rot = Rotation(rot_mat[i])
+                rot_vol = vol.rotate(rot, zero_nyquist=False)
+
+                # Restrict volumes to mask for comparison.
+                ref = vol[0, selection]
+                rot = rot_vol[0, selection]
+
+                # Assert that rotated volume is within .5% of original volume.
+                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.005)
+
+        # Test we raise with expected error message when volume is instantiated with unsupported symmetry.
+        with raises(NotImplementedError, match=r"CH2 symmetry not supported.*"):
+            _ = gaussian_blob_vols(symmetry_type="Ch2")
+
+        # Test we raise with expected message for junk symmetry.
+        with raises(NotImplementedError, match=r"J type symmetry.*"):
+            _ = gaussian_blob_vols(symmetry_type="junk")
 
     def to_vec(self):
         """Compute the to_vec method and compare."""

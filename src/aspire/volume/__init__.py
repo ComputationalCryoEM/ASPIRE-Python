@@ -3,14 +3,16 @@ import logging
 import mrcfile
 import numpy as np
 from numpy.linalg import qr
+from scipy.spatial.transform import Rotation as sp_rot
 
 import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.utils import ensure, mat_to_vec, vec_to_mat
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils import Rotation, ensure, mat_to_vec, vec_to_mat
+from aspire.utils.coor_trans import grid_2d, grid_3d
 from aspire.utils.matlab_compat import m_reshape
-from aspire.utils.rotation import Rotation
+from aspire.utils.random import Random, randn
+from aspire.utils.types import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ class Volume:
 
     def __init__(self, data):
         """
-        Create a volume initialized with data.
+        Create a volume initialized with `data`.
 
         Volumes should be N x L x L x L,
         or L x L x L which implies N=1.
@@ -254,8 +256,71 @@ class Volume:
     def shift(self):
         raise NotImplementedError
 
-    def rotate(self):
-        raise NotImplementedError
+    def rotate(self, rot_matrices, zero_nyquist=True):
+        """
+        Rotate volumes using a `Rotation` object. If the `Rotation` object
+        is a single rotation, each volume will be rotated by that rotation.
+        If the `Rotation` object is a stack of rotations of length n_vols,
+        the ith volume is rotated by the ith rotation.
+
+        :param rot_matrices: `Rotation` object of length 1 or n_vols.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
+        Defaults to zero_nyquist=True, removing the Nyquist frequency.
+
+        :return: `Volume` instance.
+        """
+
+        assert isinstance(
+            rot_matrices, Rotation
+        ), f"Argument must be an instance of the Rotation class. {type(rot_matrices)} was supplied."
+
+        # Get numpy representation of Rotation object.
+        rot_matrices = rot_matrices.matrices
+
+        K = len(rot_matrices)  # Rotation stack size
+        ensure(
+            K == self.n_vols or K == 1, "Rotation object must be length 1 or n_vols."
+        )
+
+        if rot_matrices.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}"
+                f" rot_matrices.dtype {rot_matrices.dtype}"
+                f" != self.dtype {self.dtype}."
+                " In the future this will raise an error."
+            )
+
+        # If K = 1 we broadcast the single Rotation object across each volume.
+        if K == 1:
+            pts_rot = rotated_grids_3d(self.resolution, rot_matrices)
+            vol_f = nufft(self.asnumpy(), pts_rot)
+            vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
+
+        # If K = n_vols, we apply the ith rotation to ith volume.
+        else:
+            rot_matrices = rot_matrices.reshape((K, 1, 3, 3))
+            pts_rot = np.zeros((K, 3, self.resolution ** 3))
+            vol_f = np.empty(
+                (self.n_vols, self.resolution ** 3), dtype=complex_type(self.dtype)
+            )
+            for i in range(K):
+                pts_rot[i] = rotated_grids_3d(self.resolution, rot_matrices[i])
+
+                vol_f[i] = nufft(self[i], pts_rot[i])
+
+            vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
+
+        # If resolution is even, we zero out the nyquist frequency by default.
+        if self.resolution % 2 == 0 and zero_nyquist is True:
+            vol_f[:, 0, :, :] = 0
+            vol_f[:, :, 0, :] = 0
+            vol_f[:, :, :, 0] = 0
+
+        vol = xp.asnumpy(
+            np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
+        )
+
+        return Volume(vol)
 
     def denoise(self):
         raise NotImplementedError
@@ -296,6 +361,57 @@ class Volume:
         return Volume(loaded_data.astype(dtype))
 
 
+def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.float64):
+    """
+    Builds gaussian blob volumes with chosen symmetry type.
+
+    :param L: The resolution of the volume.
+    :param C: Number of volumes.
+    :param K: The number of gaussian blobs used to generate the volume.
+    :param symmetry_type: A string indicating the type of symmetry.
+    :param seed: The random seed to produce centers and variances of the gaussian blobs.
+    :param dtype: Data type.
+
+    :return: A volume instance from an appropriate volume generator.
+    """
+
+    order = 1
+    sym_type = None
+    if symmetry_type is not None:
+        # safer to make string consistent
+        symmetry_type = symmetry_type.upper()
+        # get the first letter
+        sym_type = symmetry_type[0]
+        # if there is a number denoting rotational symmetry, get that
+        order = symmetry_type[1:] or None
+
+    # map our sym_types to classes of Volumes
+    map_sym_to_generator = {
+        None: _gaussian_blob_Cn_vols,
+        "C": _gaussian_blob_Cn_vols,
+        # "D": gaussian_blob_Dn_vols,
+        # "T": gaussian_blob_T_vols,
+        # "O": gaussian_blob_O_vols,
+    }
+
+    sym_types = list(map_sym_to_generator.keys())
+    if sym_type not in map_sym_to_generator.keys():
+        raise NotImplementedError(
+            f"{sym_type} type symmetry is not supported. The following symmetry types are currently supported: {sym_types}."
+        )
+
+    try:
+        order = int(order)
+    except Exception:
+        raise NotImplementedError(
+            f"{sym_type}{order} symmetry not supported. Only {sym_type}n symmetry, where n is an integer, is supported."
+        )
+
+    vols_generator = map_sym_to_generator[sym_type]
+
+    return vols_generator(L=L, C=C, K=K, order=order, seed=seed, dtype=dtype)
+
+
 class CartesianVolume(Volume):
     def expand(self, basis):
         return BasisVolume(basis)
@@ -321,6 +437,108 @@ class BasisVolume(Volume):
 
 class FBBasisVolume(BasisVolume):
     pass
+
+
+def _gaussian_blob_Cn_vols(
+    L=8, C=2, K=16, alpha=1, order=1, seed=None, dtype=np.float64
+):
+    """
+    Generate Cn rotationally symmetric volumes composed of Gaussian blobs.
+    The volumes are symmetric about the z-axis.
+
+    Defaults to volumes with no symmetry.
+
+    :param L: The size of the volumes
+    :param C: The number of volumes to generate
+    :param K: The number of blobs each volume is composed of.
+    A Cn symmetric volume will be composed of n times K blobs.
+    :param order: The order of cyclic symmetry.
+    :param alpha: A scale factor of the blob widths
+
+    :return: A Volume instance containing C Gaussian blob volumes with Cn symmetry.
+    """
+
+    # Apply symmetry to Q and mu by generating duplicates rotated by symmetry order.
+    def _symmetrize_gaussians(Q, D, mu, order):
+        angles = np.zeros(shape=(order, 3))
+        angles[:, 2] = 2 * np.pi * np.arange(order) / order
+        rot = Rotation.from_euler(angles).matrices
+
+        K = Q.shape[0]
+        Q_rot = np.zeros(shape=(order * K, 3, 3)).astype(dtype)
+        D_sym = np.zeros(shape=(order * K, 3, 3)).astype(dtype)
+        mu_rot = np.zeros(shape=(order * K, 3)).astype(dtype)
+        idx = 0
+
+        for j in range(order):
+            for k in range(K):
+                Q_rot[idx] = rot[j].T @ Q[k]
+                D_sym[idx] = D[k]
+                mu_rot[idx] = rot[j].T @ mu[k]
+                idx += 1
+        return Q_rot, D_sym, mu_rot
+
+    vols = np.zeros(shape=(C, L, L, L)).astype(dtype)
+    with Random(seed):
+        for c in range(C):
+            Q, D, mu = _gen_gaussians(K, alpha)
+            Q_rot, D_sym, mu_rot = _symmetrize_gaussians(Q, D, mu, order)
+            vols[c] = _eval_gaussians(L, Q_rot, D_sym, mu_rot, dtype=dtype)
+    return Volume(vols)
+
+
+def _eval_gaussians(L, Q, D, mu, dtype=np.float64):
+    """
+    Evaluate Gaussian blobs over a 3D grid with centers, mu, orientations, Q, and variances, D.
+
+    :param L: Size of the volume to be populated with Gaussian blobs.
+    :param Q: A stack of size (n_blobs) x 3 x 3 of rotation matrices,
+        determining the orientation of each blob.
+    :param D: A stack of size (n_blobs) x 3 x 3 diagonal matrices,
+        whose diagonal entries are the variances of each blob.
+    :param mu: An array of size (n_blobs) x 3 containing the centers for each blob.
+
+    :return: An L x L x L array.
+    """
+    g = grid_3d(L, dtype=dtype)
+    coords = np.array(
+        [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
+    )
+
+    n_blobs = Q.shape[0]
+    vol = np.zeros(shape=(1, coords.shape[-1])).astype(dtype)
+
+    for k in range(n_blobs):
+        coords_k = coords - mu[k, :, np.newaxis]
+        coords_k = Q[k].T @ coords_k * np.sqrt(1 / np.diag(D[k, :, :]))[:, np.newaxis]
+
+        vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
+
+    vol = np.reshape(vol, g["x"].shape)
+
+    return vol
+
+
+def _gen_gaussians(K, alpha, dtype=np.float64):
+    """
+    For K gaussians, generate random orientation (Q), mean (mu), and variance (D).
+
+    :param K: Number of gaussians to generate.
+    :param alpha: Scalar for peak of gaussians.
+
+    :return: Orientations Q, Variances D, Means mu.
+    """
+    Q = np.zeros(shape=(K, 3, 3)).astype(dtype)
+    D = np.zeros(shape=(K, 3, 3)).astype(dtype)
+    mu = np.zeros(shape=(K, 3)).astype(dtype)
+
+    for k in range(K):
+        V = randn(3, 3).astype(dtype) / np.sqrt(3)
+        Q[k, :, :] = qr(V)[0]
+        D[k, :, :] = alpha ** 2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
+        mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
+
+    return Q, D, mu
 
 
 # TODO: The following functions likely all need to be moved inside the Volume class
@@ -353,3 +571,31 @@ def rotated_grids(L, rot_matrices):
 
     # Note we return grids as (Z, Y, X)
     return pts_rot[::-1]
+
+
+def rotated_grids_3d(L, rot_matrices):
+    """
+    Generate rotated Fourier grids in 3D from rotation matrices.
+
+    :param L: The resolution of the desired grids.
+    :param rot_matrices: An array of size k-by-3-by-3 containing K rotation matrices
+    :return: A set of rotated Fourier grids in three dimensions as specified by the rotation matrices.
+        Frequencies are in the range [-pi, pi].
+    """
+
+    grid3d = grid_3d(L, dtype=rot_matrices.dtype)
+    num_pts = L ** 3
+    num_rots = rot_matrices.shape[0]
+    pts = np.pi * np.vstack(
+        [
+            grid3d["x"].flatten(),
+            grid3d["y"].flatten(),
+            grid3d["z"].flatten(),
+        ]
+    )
+    pts_rot = np.zeros((3, num_rots, num_pts), dtype=rot_matrices.dtype)
+    for i in range(num_rots):
+        pts_rot[:, i, :] = rot_matrices[i, :, :] @ pts
+
+    # Note we return grids as (Z,Y,X)
+    return pts_rot.reshape(3, -1)

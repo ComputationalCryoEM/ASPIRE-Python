@@ -8,9 +8,9 @@ from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
 from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
-from aspire.utils.coor_trans import grid_3d, uniform_random_angles
-from aspire.utils.random import Random, rand, randi, randn
-from aspire.volume import Volume
+from aspire.utils.coor_trans import uniform_random_angles
+from aspire.utils.random import rand, randi, randn
+from aspire.volume import Volume, gaussian_blob_vols
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ class Simulation(ImageSource):
         amplitudes=None,
         dtype=np.float32,
         C=2,
+        symmetry_type=None,
         angles=None,
         seed=0,
         memory=None,
@@ -56,7 +57,9 @@ class Simulation(ImageSource):
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
-            self.vols = self._gaussian_blob_vols(L=self.L, C=C)
+            self.vols = gaussian_blob_vols(
+                L=L, C=C, symmetry_type=symmetry_type, seed=self.seed, dtype=self.dtype
+            )
         else:
             assert isinstance(vols, Volume)
             self.vols = vols
@@ -95,58 +98,6 @@ class Simulation(ImageSource):
         if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
-
-    def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1):
-        """
-        Generate Gaussian blob volumes
-        :param L: The size of the volumes
-        :param C: The number of volumes to generate
-        :param K: The number of blobs
-        :param alpha: A scale factor of the blob widths
-
-        :return: A Volume instance containing C Gaussian blob volumes.
-        """
-
-        def gaussian_blobs(K, alpha):
-            Q = np.zeros(shape=(3, 3, K)).astype(self.dtype)
-            D = np.zeros(shape=(3, 3, K)).astype(self.dtype)
-            mu = np.zeros(shape=(3, K)).astype(self.dtype)
-
-            for k in range(K):
-                V = randn(3, 3).astype(self.dtype) / np.sqrt(3)
-                Q[:, :, k] = qr(V)[0]
-                D[:, :, k] = alpha ** 2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
-                mu[:, k] = 0.5 * randn(3) / np.sqrt(3)
-
-            return Q, D, mu
-
-        with Random(self.seed):
-            vols = np.zeros(shape=(C, L, L, L)).astype(self.dtype)
-            for k in range(C):
-                Q, D, mu = gaussian_blobs(K, alpha)
-                vols[k] = self.eval_gaussian_blobs(L, Q, D, mu)
-            return Volume(vols)
-
-    def eval_gaussian_blobs(self, L, Q, D, mu):
-        g = grid_3d(L, dtype=self.dtype)
-        coords = np.array(
-            [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=self.dtype
-        )
-
-        K = Q.shape[-1]
-        vol = np.zeros(shape=(1, coords.shape[-1])).astype(self.dtype)
-
-        for k in range(K):
-            coords_k = coords - mu[:, k, np.newaxis]
-            coords_k = (
-                Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
-            )
-
-            vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
-
-        vol = np.reshape(vol, g["x"].shape)
-
-        return vol
 
     def projections(self, start=0, num=np.inf, indices=None):
         """
