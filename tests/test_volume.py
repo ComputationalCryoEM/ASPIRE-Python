@@ -185,9 +185,7 @@ class VolumeTestCase(TestCase):
         angles = [0, pi / 2, pi, 3 * pi / 2]
         for axis, angle in product(axes, angles):
             # Build rotation matrices
-            rot_mat = Rotation(
-                sp_rot.from_euler(axis, angle).as_matrix().astype(self.dtype)
-            )
+            rot_mat = Rotation.about_xyz(axis, angle)
 
             # Rotate Volume 'vol' by rotations 'rot_mat'
             rot_vol = vol.rotate(rot_mat, zero_nyquist=False)

@@ -246,13 +246,13 @@ class Rotation:
         :param axis: A string denoting the axis of rotation. "x", "y", or "z".
         :param angle: Rotation angle in radians.
         :param dtype: Data type for rotational angles and matrix.
-        
+
         :return: Rotation object
         """
-        rotation = sp_rot.from_euler(axis, angle.astype(dtype), degrees=False)
-        matrix = rotations.as_matrix().astype(dtype)
+        rotation = sp_rot.from_euler(axis, angle, degrees=False)
+        matrix = rotation.as_matrix().astype(dtype)
         return Rotation(matrix)
-    
+
     @staticmethod
     def from_matrix(values, dtype=np.float32):
         """
