@@ -239,16 +239,20 @@ class Rotation:
         return Rotation(matrices)
 
     @staticmethod
-    def about_xyz(axis, angles, dtype=np.float32):
+    def about_axis(axis, angles, dtype=np.float32):
         """
-        Build rotation object from axis and angle of rotation.
+        Build rotation object from axis and angles of rotation.
 
         :param axis: A string denoting the axis of rotation. "x", "y", or "z".
-        :param angle: Rotation angles in radians.
+        :param angles: Rotation angles in radians.
         :param dtype: Data type for rotation matrices.
 
         :return: Rotation object
         """
+        axes = ["x", "y", "z"]
+        if axis.lower() not in axes:
+            raise AssertionError("Axis must be 'x', 'y', or 'z'")
+
         rotation = sp_rot.from_euler(axis, angles, degrees=False)
         matrix = rotation.as_matrix().astype(dtype)
         return Rotation(matrix)
