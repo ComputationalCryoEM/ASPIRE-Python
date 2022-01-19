@@ -10,8 +10,8 @@ from scipy.spatial.transform import Rotation as R
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
     Downsample,
-    FilterXform,
     IndexedXform,
+    FilterXform,
     LambdaXform,
     Multiply,
     Pipeline,
@@ -346,13 +346,17 @@ class ImageSource:
             "Subclasses should implement this and return an Image object"
         )
 
-    def _apply_filters(self, im_orig, start=0, num=np.inf, indices=None):
+    def _apply_filters(
+        self, im_orig, filters, filter_indices, start=0, num=np.inf, indices=None
+    ):
         """
         For each image in `im_orig` specified by start, num, or indices,
-        the unique_filters associated with the corresponding index in the
-        `ImageSource` are applied. The images are then returned as an `Image`
-        stack.
+        the `filters` associated with the corresponding index in the
+        `ImageSource` with reference to the supplied `filter_indices` are applied.
+        The images are then returned as an `Image` stack.
         :param im_orig: An `Image` object
+        :param filters: A list of `Filter` objects
+        :param filter_indices: A list of indices indicating the corresponding filter in `filters`
         :param start: Starting index of images in `im_orig`.
         :param num: Number of images to work on, starting at `start`.
         :param indices: A numpy array of image indices. If specified,`start` and `num` are ignored.
@@ -370,12 +374,22 @@ class ImageSource:
         if indices is None:
             indices = np.arange(start, min(start + num, self.n))
 
-        for i, filt in enumerate(self.unique_filters):
-            idx_k = np.where(self.filter_indices[indices] == i)[0]
+        for i, filt in enumerate(filters):
+            idx_k = np.where(filter_indices[indices] == i)[0]
             if len(idx_k) > 0:
                 im[idx_k] = Image(im[idx_k]).filter(filt).asnumpy()
 
         return im
+
+    def _apply_unique_filters(self, im_orig, start=0, num=np.inf, indices=None):
+        return self._apply_filters(
+            im_orig,
+            self.unique_filters,
+            self.filter_indices,
+            start=start,
+            num=num,
+            indices=indices,
+        )
 
     def cache(self):
         logger.info("Caching source images")
@@ -532,7 +546,7 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
-        im = self._apply_filters(im, start=start, num=num)
+        im = self._apply_unique_filters(im, start=start, num=num)
 
         vol = im.backproject(self.rots[start : start + num, :, :])[0]
 
@@ -554,7 +568,7 @@ class ImageSource:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
         im = vol.project(0, self.rots[all_idx, :, :])
-        im = self._apply_filters(im, start, num)
+        im = self._apply_unique_filters(im, start, num)
         im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
