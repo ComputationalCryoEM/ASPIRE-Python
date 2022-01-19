@@ -30,7 +30,7 @@ class CoordinateSource(ImageSource, ABC):
 
     Other formats adhere to the box file specification, which
     specifies a particle via four numbers:
-    (lower left X coordinate, lower left Y coordinate, X size, Y size)
+    (lower left X coordinate, lower left Y coordinate, X size, Y size).
     These can be loaded via the `BoxesCoordinateSource` class.
 
     Regardless of source, the coordinates of each particle are represented
@@ -131,11 +131,11 @@ class CoordinateSource(ImageSource, ABC):
             # read in all coordinates for the given mrc using subclass's
             # method of reading the corresponding coord file
             self.particles += [
-                (i, coord) for coord in self.coords_list_from_file(coord_paths[i])
+                (i, coord) for coord in self._coords_list_from_file(coord_paths[i])
             ]
 
     @abstractmethod
-    def coords_list_from_file(self, coord_file):
+    def _coords_list_from_file(self, coord_file):
         """
         Given a coordinate file, convert the coordinates into box format, i.e. a
         list of the form [lower left x, lower left y, x size, y size].
@@ -143,7 +143,7 @@ class CoordinateSource(ImageSource, ABC):
         """
 
     @staticmethod
-    def box_coord_from_center(center, particle_size):
+    def _box_coord_from_center(center, particle_size):
         """
         Convert a list `[x,y]` representing a particle center
         to a list
@@ -165,7 +165,7 @@ class CoordinateSource(ImageSource, ABC):
         ]
 
     @staticmethod
-    def center_from_box_coord(box_coord):
+    def _center_from_box_coord(box_coord):
         """
         Convert a list
         `[lower left x, lower left y, particle_size, particle_size]`
@@ -173,24 +173,27 @@ class CoordinateSource(ImageSource, ABC):
         `[x, y]` representing the particle center.
         :param box_coord: a list of length 4 representing the particle box
         """
+        # Get lower left corner x and y coordinates
+        # and particle size from the box coordinate
         llx, lly, particle_size = box_coord[:3]
+        # turn lower left corner coordinate into center coordinate
         r = floor(particle_size / 2)
         return [llx + r, lly + r]
 
-    def coords_list_from_star(self, star_file):
+    def _coords_list_from_star(self, star_file):
         """
         Given a Relion STAR coordinate file (generally containing particle centers)
         return a list of coordinates in box format.
+        :param star_file: A path to a STAR file containing particle centers
         """
         df = StarFile(star_file).get_block_by_index(0).astype(float)
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
         return [
-            self.box_coord_from_center(coord, self.particle_size) for coord in coords
+            self._box_coord_from_center(coord, self.particle_size) for coord in coords
         ]
 
     def _check_and_get_paths(self, files):
         """
-        Used in subclasses accepting the `files` kwarg.
         Turns all paths into absolute paths.
         Returns lists `mrc_paths`, `coord_paths`.
         """
@@ -211,6 +214,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Remove particles boxes which do not fit in the micrograph
         with the given `particle_size`.
+        :return: Number of particles removed
         """
         out_of_range = []
         for i, particle in enumerate(self.particles):
@@ -255,7 +259,7 @@ class CoordinateSource(ImageSource, ABC):
         return mrc_shapes
 
     @staticmethod
-    def crop_micrograph(data, coord):
+    def _crop_micrograph(data, coord):
         """
         Crops a particle box defined by `coord` out of `data`.
         According to MRC 2014 convention, the origin represents the bottom-left
@@ -324,7 +328,7 @@ class CoordinateSource(ImageSource, ABC):
                 # we stop and populate the image stack every time
                 # we hit a particle whose location is this micrograph
                 if idx == mrc_index:
-                    cropped = self.crop_micrograph(arr, next(coord))
+                    cropped = self._crop_micrograph(arr, next(coord))
                     im[i] = cropped
 
         return Image(im)
@@ -425,7 +429,7 @@ class BoxesCoordinateSource(CoordinateSource):
         if self.particle_size:
             self._force_new_particle_size(self.particle_size)
 
-    def coords_list_from_file(self, coord_file):
+    def _coords_list_from_file(self, coord_file):
         """
         Given a coordinate file in box format, returns a list of coordinates.
         """
@@ -443,9 +447,9 @@ class BoxesCoordinateSource(CoordinateSource):
         for particle in self.particles:
             mrc_index, box_coord = particle
             # get the coordinates of the center
-            center = self.center_from_box_coord(box_coord)
+            center = self._center_from_box_coord(box_coord)
             # rewrite to a box coordinate with new size
-            new_coord = self.box_coord_from_center(center, new_size)
+            new_coord = self._box_coord_from_center(center, new_size)
             _resized_particles.append((mrc_index, new_coord))
         self.particles = _resized_particles
 
@@ -464,7 +468,7 @@ class CentersCoordinateSource(CoordinateSource):
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
-        :particle_size: Desired size of cropped particles
+        :particle_size: Desired size of cropped particles (mandatory)
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
         :param dtype: dtype with which to load images (default: double)
@@ -476,15 +480,15 @@ class CentersCoordinateSource(CoordinateSource):
             self, mrc_paths, coord_paths, particle_size, max_rows, dtype
         )
 
-    def coords_list_from_file(self, coord_file):
+    def _coords_list_from_file(self, coord_file):
         """
         Given a coordinate file with (x,y) particle centers,
         return a list of coordinates in box format.
         """
         # check if it's a STAR file list of centers
         if os.path.splitext(coord_file)[1] == ".star":
-            return self.coords_list_from_star(coord_file)
+            return self._coords_list_from_star(coord_file)
         # otherwise we assume text file format with one coord per line:
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
-        return [self.box_coord_from_center(line, self.particle_size) for line in lines]
+        return [self._box_coord_from_center(line, self.particle_size) for line in lines]
