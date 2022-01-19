@@ -44,8 +44,7 @@ class CoordinateSource(ImageSource, ABC):
     This also allows the CoordinateSource to be saved to an `.mrcs` stack.
     """
 
-    def __init__(self, mrc_paths, coord_paths, particle_size, max_rows, dtype):
-        self.dtype = np.dtype(dtype)
+    def __init__(self, mrc_paths, coord_paths, particle_size, max_rows):
         # the particle_size parameter is the *user-specified* argument
         # and is used in self._populate_particles
         # it may be None in the case of an BoxesCoordinateSource
@@ -66,8 +65,18 @@ class CoordinateSource(ImageSource, ABC):
         # Read shapes of all micrographs
         self.mrc_shapes = self._get_mrc_shapes()
 
-        # get first coordinate file to report some data
-        _, first_coord = self.particles[0]
+        # get first mrc and coordinate file to report some data
+        first_mrc_index, first_coord = self.particles[0]
+        first_mrc = self.mrc_paths[first_mrc_index]
+
+        with mrcfile.open(first_mrc) as mrc:
+            # get dtype from first micrograph
+            mode = int(mrc.header.mode)
+            dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
+            assert (
+                mode in dtypes
+            ), f"Only modes={list(dtypes.keys())} in MRC files are supported for now."
+            dtype = dtypes[mode]
 
         # look at first coord to get the particle size
         # this was either provided by the user or read from a .box file
@@ -311,7 +320,7 @@ class CoordinateSource(ImageSource, ABC):
             # get explicit filepath from cached list
             fp = self.mrc_paths[mrc_index]
             with mrcfile.open(fp) as mrc_in:
-                arr = mrc_in.data.astype(self.dtype)
+                arr = mrc_in.data
             # create iterable of the coordinates in this mrc
             # we don't need to worry about exhausting this iter
             # because we know it contains the exact number of particles
@@ -345,13 +354,11 @@ class BoxesCoordinateSource(CoordinateSource):
         files,
         particle_size=None,
         max_rows=None,
-        dtype="double",
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
         :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
-        :param dtype: dtype with which to load images (default: double)
         """
         # get full filepaths and data folder
         mrc_paths, coord_paths = self._check_and_get_paths(files)
@@ -362,7 +369,6 @@ class BoxesCoordinateSource(CoordinateSource):
             coord_paths,
             particle_size,
             max_rows,
-            dtype,
         )
 
     def _extract_box_size(self, box_file):
@@ -464,20 +470,22 @@ class CentersCoordinateSource(CoordinateSource):
         files,
         particle_size,
         max_rows=None,
-        dtype="double",
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
         :particle_size: Desired size of cropped particles (mandatory)
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
-        :param dtype: dtype with which to load images (default: double)
         """
         # get full filepaths and data folder
         mrc_paths, coord_paths = self._check_and_get_paths(files)
         # instantiate super
         CoordinateSource.__init__(
-            self, mrc_paths, coord_paths, particle_size, max_rows, dtype
+            self,
+            mrc_paths,
+            coord_paths,
+            particle_size,
+            max_rows,
         )
 
     def _coords_list_from_file(self, coord_file):
