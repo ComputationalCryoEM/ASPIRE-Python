@@ -185,7 +185,7 @@ class Simulation(ImageSource):
 
         im = self.projections(start=start, num=num, indices=indices)
 
-        im = self._apply_unique_filters(im, start=start, num=num, indices=indices)
+        # apply original CTF distortion to image
         im = self._apply_sim_filters(im, start=start, num=num, indices=indices)
 
         im = im.shift(self.offsets[indices, :])
