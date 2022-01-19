@@ -3,7 +3,6 @@ import logging
 import mrcfile
 import numpy as np
 from numpy.linalg import qr
-from scipy.spatial.transform import Rotation as sp_rot
 
 import aspire.image
 from aspire.nufft import nufft
