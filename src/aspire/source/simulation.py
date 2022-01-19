@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import numpy as np
@@ -11,7 +12,6 @@ from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_vo
 from aspire.utils.coor_trans import grid_3d, uniform_random_angles
 from aspire.utils.random import Random, rand, randi, randn
 from aspire.volume import Volume
-import copy
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +82,8 @@ class Simulation(ImageSource):
         if unique_filters is None:
             unique_filters = []
         self.unique_filters = unique_filters
+        # sim_filters must be a deep copy so that it is not changed
+        # when unique_filters is changed
         self.sim_filters = copy.deepcopy(unique_filters)
 
         # Create filter indices and fill the metadata based on unique filters
@@ -91,6 +93,7 @@ class Simulation(ImageSource):
             self.filter_indices = filter_indices
         else:
             self.filter_indices = np.array([0] * n)
+
         self.offsets = offsets
         self.amplitudes = amplitudes
 
