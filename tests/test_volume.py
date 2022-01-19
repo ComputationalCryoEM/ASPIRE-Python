@@ -7,7 +7,6 @@ import numpy as np
 from numpy import pi
 from parameterized import parameterized
 from pytest import raises
-from scipy.spatial.transform import Rotation as sp_rot
 
 from aspire.utils import Rotation, powerset
 from aspire.utils.coor_trans import grid_3d
@@ -125,11 +124,11 @@ class VolumeTestCase(TestCase):
         # Create a stack of rotations to test.
         r_stack = np.empty((12, 3, 3), dtype=self.dtype)
         for r, ax in enumerate(["x", "y", "z"]):
-            r_stack[r] = sp_rot.from_euler(ax, 0).as_matrix()
+            r_stack[r] = Rotation.about_xyz(ax, 0).matrices
             # We'll consider the multiples of pi/2.
-            r_stack[r + 3] = sp_rot.from_euler(ax, pi / 2).as_matrix()
-            r_stack[r + 6] = sp_rot.from_euler(ax, pi).as_matrix()
-            r_stack[r + 9] = sp_rot.from_euler(ax, 3 * pi / 2).as_matrix()
+            r_stack[r + 3] = Rotation.about_xyz(ax, pi / 2).matrices
+            r_stack[r + 6] = Rotation.about_xyz(ax, pi).matrices
+            r_stack[r + 9] = Rotation.about_xyz(ax, 3 * pi / 2).matrices
 
         # Project a Volume with all the test rotations
         vol_id = 1  # select a volume from Volume stack
