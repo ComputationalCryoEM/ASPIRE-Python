@@ -10,8 +10,8 @@ from scipy.spatial.transform import Rotation as R
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
     Downsample,
-    IndexedXform,
     FilterXform,
+    IndexedXform,
     LambdaXform,
     Multiply,
     Pipeline,
