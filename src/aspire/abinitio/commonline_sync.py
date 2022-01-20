@@ -1,10 +1,9 @@
 import logging
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from aspire.abinitio import CLOrient3D
-from aspire.utils import ensure
+from aspire.utils import Rotation, ensure
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
@@ -244,12 +243,12 @@ class CLSyncVoting(CLOrient3D):
             return None
         alpha = np.arccos(c_alpha)
 
-        # Convert the Euler angles with ZXZ conversion to rotation matrices
+        # Convert the Euler angles with ZYZ conversion to rotation matrices
         angles = np.zeros((alpha.shape[0], 3))
-        angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
+        angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta - 3 * np.pi / 2
         angles[:, 1] = alpha
-        angles[:, 2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
-        r = Rotation.from_euler("ZXZ", angles).as_matrix()
+        angles[:, 2] = 3 * np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
+        r = Rotation.from_euler(angles).matrices
 
         return r[good_idx, :, :]
 
