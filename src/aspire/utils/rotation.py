@@ -234,7 +234,7 @@ class Rotation:
         :param values: Rotation angles in radians, as a n x 3 array
         :return: new Rotation object
         """
-        rotations = sp_rot.from_euler("ZYZ", values.astype(dtype), degrees=False)
+        rotations = sp_rot.from_euler("ZYZ", values, degrees=False)
         matrices = rotations.as_matrix().astype(dtype)
         return Rotation(matrices)
 
