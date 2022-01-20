@@ -12,9 +12,6 @@ from aspire.utils.coor_trans import (
     uniform_random_angles,
 )
 
-# from scipy.spatial.transform import Rotation
-
-
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
