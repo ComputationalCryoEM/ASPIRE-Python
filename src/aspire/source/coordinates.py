@@ -500,15 +500,15 @@ class CentersCoordinateSource(CoordinateSource):
         Ensures that a text file contains numeric particle centers.
         """
         with open(coord_file, "r") as infile:
-            for center in [line.split() for line in infile.readlines()]:
+            for line in infile.readlines():
                 # need at least two numbers
-                if len(center) < 2:
+                if len(line.split()) < 2:
                     logger.error(f"Problem with coordinate file: {coord_file}")
                     raise ValueError(
                         "Coordinate file contains a line with less than 2 numbers."
                     )
                 # check that the coordinate has numeric values
-                if not all(c.isnumeric() for c in center):
+                if not all(c.isnumeric() for c in line.split()):
                     logger.error(f"Problem with coordinate file: {coord_file}")
                     raise ValueError(
                         "Coordinate file contains non-numeric coordinate value."
@@ -523,7 +523,7 @@ class CentersCoordinateSource(CoordinateSource):
         if not all(col in df.columns for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
             logger.error(f"Problem with coordinate file: {coord_file}")
             raise ValueError(
-                "STAR file does not contains _rlnCoordinateX, _rlnCoordinateY columns."
+                "STAR file does not contain _rlnCoordinateX, _rlnCoordinateY columns."
             )
         # check that all values in each column are numeric
         if not all(
