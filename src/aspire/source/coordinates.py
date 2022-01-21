@@ -381,8 +381,8 @@ class BoxesCoordinateSource(CoordinateSource):
                 logger.error(f"Problem with coordinate file: {box_file}")
                 raise ValueError(
                     "Coordinate file contains less than 4 numbers "
-                    "per line. If these are particle centers,"
-                    "use CentersCoordinateSource or  use the --centers"
+                    "per line. If these are particle centers, "
+                    "use CentersCoordinateSource or  use the --centers "
                     "flag in aspire extract-particles."
                 )
 
@@ -395,8 +395,8 @@ class BoxesCoordinateSource(CoordinateSource):
                     logger.error(f"Problem with coordinate file: {box_file}")
                     raise ValueError(
                         "Coordinate file contains less than 4 numbers "
-                        "per line. If these are particle centers,"
-                        "use CentersCoordinateSource or  use the --centers"
+                        "per line. If these are particle centers, "
+                        "use CentersCoordinateSource or  use the --centers "
                         "flag in aspire extract-particles."
                     )
 
@@ -420,8 +420,8 @@ class BoxesCoordinateSource(CoordinateSource):
                     raise ValueError(
                         f"Coordinate file specifies a box size {size_x}x{size_x} "
                         "different from the box size found in the first "
-                        f"coordinate file ({global_particle_size}x{global_particle_size})."
-                        " Particle size must be consistent."
+                        f"coordinate file ({global_particle_size}x{global_particle_size}). "
+                        "Particle size must be consistent."
                     )
 
     def _populate_particles(self, num_micrographs, coord_paths):
@@ -511,7 +511,7 @@ class CentersCoordinateSource(CoordinateSource):
                 if not all(c.isnumeric() for c in line.split()):
                     logger.error(f"Problem with coordinate file: {coord_file}")
                     raise ValueError(
-                        "Coordinate file contains non-numeric coordinate value."
+                        "Coordinate file contains non-numeric coordinate values."
                     )
 
     def _validate_starfile(self, coord_file):
