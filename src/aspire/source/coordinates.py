@@ -427,10 +427,8 @@ class BoxesCoordinateSource(CoordinateSource):
     def _populate_particles(self, num_micrographs, coord_paths):
         # overrides CoordinateSource._populate_particles because of the
         # possibility that force_new_particle_size will be called,
-        # which requires self.particles to be populated already
-
-        # also allows for validation of .box files prior to
-        # parsing them
+        # which requires self.particles to be populated already.
+        # Also allows for validation of .box files prior to parsing them
 
         global_particle_size = self._extract_box_size(coord_paths[0])
         # validate the rest of the box files
@@ -499,9 +497,8 @@ class CentersCoordinateSource(CoordinateSource):
 
     def _validate_centers_file(self, coord_file):
         """
-        Makes sure text or STAR files contain proper centers.
+        Ensures that a text file contains numeric particle centers.
         """
-        # assume text/.coord format
         with open(coord_file, "r") as infile:
             for center in [line.split() for line in infile.readlines()]:
                 # need at least two numbers
@@ -518,6 +515,9 @@ class CentersCoordinateSource(CoordinateSource):
                     )
 
     def _validate_starfile(self, coord_file):
+        """
+        Ensures that a STAR file contains numeric particle centers.
+        """
         df = StarFile(coord_file).get_block_by_index(0)
         # We're looking for specific columns for the X and Y coordinates
         if not all(col in df.columns for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
