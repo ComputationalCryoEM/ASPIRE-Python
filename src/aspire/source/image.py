@@ -381,7 +381,7 @@ class ImageSource:
 
         return im
 
-    def _apply_unique_filters(self, im_orig, start=0, num=np.inf, indices=None):
+    def _apply_source_filters(self, im_orig, start=0, num=np.inf, indices=None):
         return self._apply_filters(
             im_orig,
             self.unique_filters,
@@ -546,7 +546,7 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
-        im = self._apply_unique_filters(im, start=start, num=num)
+        im = self._apply_source_filters(im, start=start, num=num)
 
         vol = im.backproject(self.rots[start : start + num, :, :])[0]
 
@@ -568,7 +568,7 @@ class ImageSource:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
         im = vol.project(0, self.rots[all_idx, :, :])
-        im = self._apply_unique_filters(im, start, num)
+        im = self._apply_source_filters(im, start, num)
         im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
