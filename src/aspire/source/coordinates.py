@@ -403,7 +403,7 @@ class BoxesCoordinateSource(CoordinateSource):
                 if not all(p.isnumeric() for p in line.split()):
                     logger.error(f"Problem with coordinate file: {box_file}")
                     raise ValueError(
-                        "Coordinate file contains non-numeric coordinate value."
+                        "Coordinate file contains non-numeric coordinate values."
                     )
 
                 # we can only accept square particles
