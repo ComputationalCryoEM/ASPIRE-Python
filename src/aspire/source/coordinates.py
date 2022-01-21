@@ -400,6 +400,12 @@ class BoxesCoordinateSource(CoordinateSource):
                         "flag in aspire extract-particles."
                     )
 
+                if not all(p.isnumeric() for p in line.split()):
+                    logger.error(f"Problem with coordinate file: {box_file}")
+                    raise ValueError(
+                        "Coordinate file contains non-numeric coordinate value."
+                    )
+
                 # we can only accept square particles
                 size_x, size_y = int(line.split()[2]), int(line.split()[3])
                 if size_x != size_y:
@@ -421,7 +427,10 @@ class BoxesCoordinateSource(CoordinateSource):
     def _populate_particles(self, num_micrographs, coord_paths):
         # overrides CoordinateSource._populate_particles because of the
         # possibility that force_new_particle_size will be called,
-        # which requires self.particles to be populated alraedy
+        # which requires self.particles to be populated already
+
+        # also allows for validation of .box files prior to
+        # parsing them
 
         global_particle_size = self._extract_box_size(coord_paths[0])
         # validate the rest of the box files
@@ -487,6 +496,53 @@ class CentersCoordinateSource(CoordinateSource):
             particle_size,
             max_rows,
         )
+
+    def _validate_centers_file(self, coord_file):
+        """
+        Makes sure text or STAR files contain proper centers.
+        """
+        # assume text/.coord format
+        with open(coord_file, "r") as infile:
+            for center in [line.split() for line in infile.readlines()]:
+                # need at least two numbers
+                if len(center) < 2:
+                    logger.error(f"Problem with coordinate file: {coord_file}")
+                    raise ValueError(
+                        "Coordinate file contains a line with less than 2 numbers."
+                    )
+                # check that the coordinate has numeric values
+                if not all(c.isnumeric() for c in center):
+                    logger.error(f"Problem with coordinate file: {coord_file}")
+                    raise ValueError(
+                        "Coordinate file contains non-numeric coordinate value."
+                    )
+
+    def _validate_starfile(self, coord_file):
+        df = StarFile(coord_file).get_block_by_index(0)
+        # We're looking for specific columns for the X and Y coordinates
+        if not all(col in df.columns for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
+            logger.error(f"Problem with coordinate file: {coord_file}")
+            raise ValueError(
+                "STAR file does not contains _rlnCoordinateX, _rlnCoordinateY columns."
+            )
+        # check that all values in each column are numeric
+        if not all(
+            all(df[col].str.isnumeric())
+            for col in ["_rlnCoordinateX", "_rlnCoordinateY"]
+        ):
+            logger.error(f"Problem with coordinate file: {coord_file}")
+            raise ValueError("STAR file contains non-numeric coordinate values.")
+
+    def _populate_particles(self, num_micrographs, coord_paths):
+        # overrides CoordinateSource._populate_particles() in order
+        # to validate coordinate files
+        for coord_file in coord_paths:
+            if os.path.splitext(coord_file)[1] == ".star":
+                self._validate_starfile(coord_file)
+            else:
+                # assume text/.coord format
+                self._validate_centers_file(coord_file)
+        super()._populate_particles(num_micrographs, coord_paths)
 
     def _coords_list_from_file(self, coord_file):
         """
