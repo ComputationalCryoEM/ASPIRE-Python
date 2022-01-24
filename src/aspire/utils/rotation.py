@@ -244,14 +244,25 @@ class Rotation:
         Build rotation object from axis and angles of rotation.
 
         :param axis: A string denoting the axis of rotation. "x", "y", or "z".
-        :param angles: Rotation angles in radians.
+        :param angles: Rotation angles in radians. `angles` can be a single value,
+            or an array of shape (N,) or (N,1).
         :param dtype: Data type for rotation matrices.
 
         :return: Rotation object
         """
         axes = ["x", "y", "z"]
         if axis.lower() not in axes:
-            raise AssertionError("Axis must be 'x', 'y', or 'z'")
+            raise ValueError("`axis` must be 'x', 'y', or 'z'.")
+
+        angles = np.asarray(angles, dtype=dtype)
+        if angles.ndim > 2:
+            raise ValueError(
+                f"`angles` must be float, 1D array, or 2D array. Got shape {angles.shape}."
+            )
+        elif angles.ndim == 2 and angles.shape[-1] != 1:
+            raise ValueError(
+                f"Expected `angles` to have shape (N,1), got {angles.shape}"
+            )
 
         rotation = sp_rot.from_euler(axis, angles, degrees=False)
         matrix = rotation.as_matrix().astype(dtype)
