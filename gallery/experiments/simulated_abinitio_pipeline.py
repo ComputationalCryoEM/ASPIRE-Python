@@ -35,8 +35,23 @@ from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
-# Do we want to draw blocking interactive plots?
-interactive = False
+
+# %%
+# Parameters
+# ---------------
+# Some example simulation configurations.
+# Small sim: img_size 32, num_imgs 10000, n_classes 1000, n_nbor 10
+# Medium sim: img_size 64, num_imgs 20000, n_classes 2000, n_nbor 10
+# Large sim: img_size 129, num_imgs 30000, n_classes 2000, n_nbor 20
+
+interactive = True  # Do we want to draw blocking interactive plots?
+do_cov2d = False  # Use CWF coefficients
+img_size = 32  # Downsample the volume to a desired resolution
+num_imgs = 10000  # How many images in our source.
+n_classes = 1000  # How many class averages to compute.
+n_nbor = 10  # How many neighbors to stack
+noise_variance = 1e-4  # Set a target noise variance
+
 
 # %%
 # Simulation Data
@@ -47,19 +62,9 @@ interactive = False
 og_v = Volume.load("emd_2660.map", dtype=np.float64)
 logger.info("Original volume map data" f" shape: {og_v.shape} dtype:{og_v.dtype}")
 
-# Downsample the volume to a desired resolution
-img_size = 64
-
 logger.info(f"Downsampling to {(img_size,)*3}")
 v = og_v.downsample(img_size)
 L = v.resolution
-
-num_imgs = 20000  # How many images in our source.
-n_classes = 2000  # How many class averages to compute.
-n_nbor = 10  # How many neighbors to stack
-
-# Set a target noise variance
-noise_variance = 1e-4
 
 
 # Then create a filter based on that variance
@@ -130,9 +135,11 @@ if interactive:
 # logger.info("Invert the global density contrast")
 # src.invert_contrast()
 
-# Use CWF denoising
-cwf_denoiser = DenoiserCov2D(src)
-src = cwf_denoiser.denoise()
+# # On Simulation data, better results so far were achieved without cov2d.
+if do_cov2d:
+    # Use CWF denoising
+    cwf_denoiser = DenoiserCov2D(src)
+    src = cwf_denoiser.denoise()
 
 # Peek, what do the denoised images look like...
 if interactive:
