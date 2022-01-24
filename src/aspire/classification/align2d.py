@@ -107,9 +107,9 @@ class Align2D(ABC):
         # We want to only process batches that actually
         # contain images for this class.
         #   First compute the batches' indices.
-        for start in range(0, self.src.n + 1, self.batch_size):
+        for start in range(0, self.src.n, self.batch_size):
             # First cook up the batch boundaries
-            end = start + self.batch_size
+            end = start + self.batch_size - 1
             # UBound, these are inclusive bounds
             start = min(start, self.src.n - 1)
             end = min(end, self.src.n - 1)
