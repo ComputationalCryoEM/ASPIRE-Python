@@ -245,9 +245,9 @@ class CLSyncVoting(CLOrient3D):
 
         # Convert the Euler angles with ZYZ conversion to rotation matrices
         angles = np.zeros((alpha.shape[0], 3))
-        angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta - 3 * np.pi / 2
+        angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta + np.pi / 2
         angles[:, 1] = alpha
-        angles[:, 2] = 3 * np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
+        angles[:, 2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
         r = Rotation.from_euler(angles).matrices
 
         return r[good_idx, :, :]
