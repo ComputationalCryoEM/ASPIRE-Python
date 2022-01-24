@@ -92,7 +92,7 @@ class Simulation(ImageSource):
                 filter_indices = randi(len(unique_filters), n, seed=seed) - 1
             self.filter_indices = filter_indices
         else:
-            self.filter_indices = np.array([0] * n)
+            self.filter_indices = np.zeros(n)
 
         self.offsets = offsets
         self.amplitudes = amplitudes
