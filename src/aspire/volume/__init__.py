@@ -157,14 +157,14 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        data = self[vol_idx].T  # RCOPT
+        data = self[vol_idx]
 
         n = rot_matrices.shape[0]
 
-        pts_rot = np.moveaxis(rotated_grids(self.resolution, rot_matrices), 1, 2)
+        pts_rot = rotated_grids(self.resolution, rot_matrices)
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = m_reshape(pts_rot, (3, self.resolution ** 2 * n))
+        pts_rot = pts_rot.reshape((3, n * self.resolution ** 2))
 
         im_f = nufft(data, pts_rot) / self.resolution
 
@@ -500,7 +500,7 @@ def _eval_gaussians(L, Q, D, mu, dtype=np.float64):
 
     :return: An L x L x L array.
     """
-    g = grid_3d(L, dtype=dtype)
+    g = grid_3d(L, indexing="xyz", dtype=dtype)
     coords = np.array(
         [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=dtype
     )
@@ -553,7 +553,7 @@ def rotated_grids(L, rot_matrices):
         Frequencies are in the range [-pi, pi].
     """
 
-    grid2d = grid_2d(L, dtype=rot_matrices.dtype)
+    grid2d = grid_2d(L, indexing="xy", dtype=rot_matrices.dtype)
     num_pts = L ** 2
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(
@@ -563,14 +563,13 @@ def rotated_grids(L, rot_matrices):
             np.zeros(num_pts, dtype=rot_matrices.dtype),
         ]
     )
-    pts_rot = np.zeros((3, num_pts, num_rots), dtype=rot_matrices.dtype)
+    pts_rot = np.zeros((3, num_rots, num_pts), dtype=rot_matrices.dtype)
     for i in range(num_rots):
-        pts_rot[:, :, i] = rot_matrices[i, :, :] @ pts
+        pts_rot[:, i, :] = rot_matrices[i, :, :] @ pts
 
-    pts_rot = pts_rot.reshape((3, L, L, num_rots))
+    pts_rot = pts_rot.reshape((3, num_rots, L, L))
 
-    # Note we return grids as (Z, Y, X)
-    return pts_rot[::-1]
+    return pts_rot
 
 
 def rotated_grids_3d(L, rot_matrices):
@@ -583,7 +582,7 @@ def rotated_grids_3d(L, rot_matrices):
         Frequencies are in the range [-pi, pi].
     """
 
-    grid3d = grid_3d(L, dtype=rot_matrices.dtype)
+    grid3d = grid_3d(L, indexing="xyz", dtype=rot_matrices.dtype)
     num_pts = L ** 3
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(

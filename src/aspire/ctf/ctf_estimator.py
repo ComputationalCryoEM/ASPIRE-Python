@@ -63,14 +63,12 @@ class CtfEstimator:
         self.lmbd = voltage_to_wavelength(voltage) / 10.0  # (Angstrom)
         self.dtype = np.dtype(dtype)
 
-        grid = grid_2d(psd_size, normalized=True, dtype=self.dtype)
+        grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
 
-        # Note this mesh for x,y is transposed, and range is -half to half.
-        rb = np.sqrt((grid["x"] / 2) ** 2 + (grid["y"] / 2) ** 2).T
+        # Note range is -half to half.
+        self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
 
-        self.r_ctf = rb * (10 / pixel_size)  # units: inverse nm
-        # Note this mesh for theta is transposed.
-        self.theta = grid["phi"].T
+        self.theta = grid["phi"]
         self.defocus1 = 0
         self.defocus2 = 0
         self.angle = 0  # Radians
@@ -406,7 +404,7 @@ class CtfEstimator:
         center = N // 2
 
         grid = grid_1d(N, normalized=True, dtype=self.dtype)
-        rb = grid["x"][0][center:] / 2
+        rb = grid["x"][center:] / 2
 
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
@@ -459,9 +457,9 @@ class CtfEstimator:
         signal = signal.asnumpy()
 
         N = signal.shape[1]
-        grid = grid_2d(N, normalized=False, dtype=self.dtype)
+        grid = grid_2d(N, normalized=False, indexing="yx", dtype=self.dtype)
 
-        radii = np.sqrt((grid["x"] / 2) ** 2 + (grid["y"] / 2) ** 2).T
+        radii = np.sqrt((grid["x"] / 2) ** 2 + (grid["y"] / 2) ** 2)
 
         background = np.zeros(signal.shape, dtype=self.dtype)
         for r in range(max_col + 2, background_p1.shape[1]):
@@ -490,14 +488,13 @@ class CtfEstimator:
         N = signal.shape[0]
         center = N // 2
 
-        grid = grid_2d(N, normalized=True, dtype=self.dtype)
-        rb = np.sqrt((grid["x"] / 2) ** 2 + (grid["y"] / 2) ** 2).T
+        grid = grid_2d(N, normalized=True, indexing="yx", dtype=self.dtype)
 
-        r_ctf = rb * (10 / pixel_size)
+        r_ctf = grid["r"] / 2 * (10 / pixel_size)
 
-        grid = grid_2d(N, normalized=False, dtype=self.dtype)
-        X = grid["x"].T
-        Y = grid["y"].T
+        grid = grid_2d(N, normalized=False, indexing="yx", dtype=self.dtype)
+        X = grid["x"]
+        Y = grid["y"]
 
         signal -= np.min(signal)
 
@@ -791,11 +788,10 @@ def estimate_ctf(
         initial_df1 = (avg_defocus * 2) / (1 + ratio)
         initial_df2 = (avg_defocus * 2) - initial_df1
 
-        grid = grid_2d(psd_size, normalized=True, dtype=dtype)
+        grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=dtype)
 
-        rb = np.sqrt((grid["x"] / 2) ** 2 + (grid["y"] / 2) ** 2).T
-        r_ctf = rb * (10 / pixel_size)
-        theta = grid["phi"].T
+        r_ctf = grid["r"] / 2 * (10 / pixel_size)
+        theta = grid["phi"]
 
         angle = -5 / 12 * np.pi  # Radians (-75 degrees)
         cc_array = np.zeros((6, 4))

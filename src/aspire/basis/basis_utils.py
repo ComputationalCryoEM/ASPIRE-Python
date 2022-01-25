@@ -242,39 +242,32 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
     ensure(N > 0, "Number of grid points should be greater than 0.")
 
     if ndim == 2:
-        grid = grid_2d(N, shifted=shifted, normalized=normalized, dtype=dtype)
+        grid = grid_2d(
+            N, shifted=shifted, normalized=normalized, indexing="yx", dtype=dtype
+        )
         mask = grid["r"] <= 1
 
         # Minor differences in r/theta/phi values are unimportant for the purpose
         # of this function, so round off before proceeding
 
-        # TODO: numpy boolean indexing will return a 1d array (like MATLAB)
-        # However, it always searches in row-major order, unlike MATLAB (column-major),
-        # with no options to change the search order. The results we'll be getting back are thus not comparable.
-        # We transpose the appropriate ndarrays before applying the mask to obtain the same behavior as MATLAB.
-        r = grid["r"].T[mask].round(5)
-        phi = grid["phi"].T[mask].round(5)
+        r = grid["r"][mask].round(5)
+        phi = grid["phi"][mask].round(5)
 
         r_unique, r_idx = np.unique(r, return_inverse=True)
         ang_unique, ang_idx = np.unique(phi, return_inverse=True)
 
     else:
-        grid = grid_3d(N, shifted=shifted, normalized=normalized, dtype=dtype)
+        grid = grid_3d(
+            N, shifted=shifted, normalized=normalized, indexing="zyx", dtype=dtype
+        )
         mask = grid["r"] <= 1
-
-        # In Numpy, elements in the indexed array are always iterated and returned in row-major (C-style) order.
-        # To emulate a behavior where iteration happens in Fortran order, we swap axes 0 and 2 of both the array
-        # being indexed (r/theta/phi), as well as the mask itself.
-        # TODO: This is only for the purpose of getting the same behavior as MATLAB while porting the code, and is
-        # likely not needed in the final version.
 
         # Minor differences in r/theta/phi values are unimportant for the purpose of this function,
         # so we round off before proceeding.
 
-        mask_ = np.swapaxes(mask, 0, 2)
-        r = np.swapaxes(grid["r"], 0, 2)[mask_].round(5)
-        theta = np.swapaxes(grid["theta"], 0, 2)[mask_].round(5)
-        phi = np.swapaxes(grid["phi"], 0, 2)[mask_].round(5)
+        r = grid["r"][mask].round(5)
+        theta = grid["theta"][mask].round(5)
+        phi = grid["phi"][mask].round(5)
 
         r_unique, r_idx = np.unique(r, return_inverse=True)
         ang_unique, ang_idx = np.unique(

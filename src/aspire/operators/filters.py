@@ -8,7 +8,6 @@ from scipy.interpolate import RegularGridInterpolator
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
-from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,8 @@ def evaluate_src_filters_on_grid(src):
     :return: an `src.L x src.L x len(src.filter_indices)`
     array containing the evaluated filters at each gridpoint
     """
-    grid2d = grid_2d(src.L, dtype=src.dtype)
+
+    grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
     omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
 
     h = np.empty((omega.shape[-1], len(src.filter_indices)), dtype=src.dtype)
@@ -130,11 +130,12 @@ class Filter:
         :return: Filter values at omega's points.
         """
 
-        grid2d = grid_2d(L, dtype=dtype)
-        omega = np.pi * np.vstack((grid2d["x"].flatten("F"), grid2d["y"].flatten("F")))
+        # Note we can probably unwind the "F"/m_reshape here
+        grid2d = grid_2d(L, indexing="yx", dtype=dtype)
+        omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
         h = self.evaluate(omega, *args, **kwargs)
 
-        h = m_reshape(h, grid2d["x"].shape)
+        h = h.reshape(grid2d["x"].shape)
 
         return h
 

@@ -48,7 +48,7 @@ class PreprocessPLTestCase(TestCase):
 
     def testDownsample(self):
         # generate a 3D map with density decays as Gaussian function
-        g3d = grid_3d(self.L, dtype=self.dtype)
+        g3d = grid_3d(self.L, indexing="zyx", dtype=self.dtype)
         coords = np.array([g3d["x"].flatten(), g3d["y"].flatten(), g3d["z"].flatten()])
         sigma = 0.2
         vol = np.exp(-0.5 * np.sum(np.abs(coords / sigma) ** 2, axis=0)).astype(
@@ -100,7 +100,7 @@ class PreprocessPLTestCase(TestCase):
 
     def testNormBackground(self):
         bg_radius = 1.0
-        grid = grid_2d(self.L)
+        grid = grid_2d(self.L, indexing="yx")
         mask = grid["r"] > bg_radius
         self.sim.normalize_background()
         imgs_nb = self.sim.images(start=0, num=self.n).asnumpy()

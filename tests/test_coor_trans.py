@@ -23,7 +23,8 @@ class UtilsTestCase(TestCase):
         pass
 
     def testGrid2d(self):
-        grid2d = grid_2d(8)
+        # Note these reference files were created using Matlab compat grid indexing.
+        grid2d = grid_2d(8, indexing="xy")
         self.assertTrue(
             np.allclose(grid2d["x"], np.load(os.path.join(DATA_DIR, "grid2d_8_x.npy")))
         )
@@ -40,7 +41,8 @@ class UtilsTestCase(TestCase):
         )
 
     def testGrid3d(self):
-        grid3d = grid_3d(8)
+        # Note these reference files were created using Matlab compat grid indexing.
+        grid3d = grid_3d(8, indexing="xyz")
         self.assertTrue(
             np.allclose(grid3d["x"], np.load(os.path.join(DATA_DIR, "grid3d_8_x.npy")))
         )
