@@ -201,24 +201,6 @@ class CoordinateSource(ImageSource, ABC):
             self._box_coord_from_center(coord, self.particle_size) for coord in coords
         ]
 
-    def _check_and_get_paths(self, files):
-        """
-        Turns all paths into absolute paths.
-        Returns lists `mrc_paths`, `coord_paths`.
-        """
-        cwd = os.getcwd()
-        # split up the mrc paths from the coordinate file paths
-        # and fill in absolute path from current working directory
-        # if the path is not absolute
-        mrc_paths = [
-            f[0] if os.path.isabs(f[0]) else os.path.join(cwd, f[0]) for f in files
-        ]
-        coord_paths = [
-            f[1] if os.path.isabs(f[1]) else os.path.join(cwd, f[1]) for f in files
-        ]
-
-        return mrc_paths, coord_paths
-
     def _exclude_boundary_particles(self):
         """
         Remove particles boxes which do not fit in the micrograph
@@ -361,7 +343,7 @@ class BoxesCoordinateSource(CoordinateSource):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         """
         # get full filepaths and data folder
-        mrc_paths, coord_paths = self._check_and_get_paths(files)
+        mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # instantiate super
         CoordinateSource.__init__(
             self,
@@ -485,7 +467,7 @@ class CentersCoordinateSource(CoordinateSource):
         attempt to load all particles)
         """
         # get full filepaths and data folder
-        mrc_paths, coord_paths = self._check_and_get_paths(files)
+        mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # instantiate super
         CoordinateSource.__init__(
             self,
