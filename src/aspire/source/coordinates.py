@@ -44,7 +44,8 @@ class CoordinateSource(ImageSource, ABC):
     This also allows the CoordinateSource to be saved to an `.mrcs` stack.
     """
 
-    def __init__(self, mrc_paths, coord_paths, particle_size, max_rows):
+    def __init__(self, files, particle_size, max_rows):
+        mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
         # and is used in self._populate_particles
         # it may be None in the case of an BoxesCoordinateSource
@@ -342,13 +343,10 @@ class BoxesCoordinateSource(CoordinateSource):
         :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         """
-        # get full filepaths and data folder
-        mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # instantiate super
         CoordinateSource.__init__(
             self,
-            mrc_paths,
-            coord_paths,
+            files,
             particle_size,
             max_rows,
         )
@@ -466,13 +464,10 @@ class CentersCoordinateSource(CoordinateSource):
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
         """
-        # get full filepaths and data folder
-        mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # instantiate super
         CoordinateSource.__init__(
             self,
-            mrc_paths,
-            coord_paths,
+            files,
             particle_size,
             max_rows,
         )
