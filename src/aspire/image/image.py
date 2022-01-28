@@ -1,12 +1,10 @@
 import logging
+from math import floor
 
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
-from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
-from math import floor
-
-from scipy.interpolate import RegularGridInterpolator
+from numpy.fft import fft2, fftshift, ifft2, ifftshift
 from scipy.linalg import lstsq
 
 import aspire.volume
@@ -15,7 +13,7 @@ from aspire.numeric import fft, xp
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matrix import anorm
-import pdb
+
 logger = logging.getLogger(__name__)
 
 
@@ -213,13 +211,21 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
-        pdb.set_trace()
-        # compute FT and shift freq
-        fx = np.array([fftshift(fft2(self.data[i])) for i in range(self.n_images)])
-        # crop in freq space
+        # this method uses methods from numpy.fft
+
+        # compute FT and center 0-frequency
+        fx = np.array(
+            [fftshift(fft2(self.data[i, :, :])) for i in range(self.n_images)]
+        )
+        # offset to start crop in Fourier space
         start = floor(self.res / 2 - ds_res / 2)
-        crop_fx = fx[:,start:start+ds_res, start:start+ds_res]
-        out =  ifft2(ifftshift(crop_fx)).astype("float32") * (ds_res**2 / self.res**2)
+        # crop 2D Fourier transform for each image
+        crop_fx = fx[:, start : start + ds_res, start : start + ds_res]
+        # take back to real space, discard complex part, and scale
+        out = np.array(
+            [ifft2(ifftshift(crop_fx[i, :, :])) for i in range(self.n_images)]
+        ).astype("float32") * (ds_res ** 2 / self.res ** 2)
+
         return Image(out)
 
     def filter(self, filter):
