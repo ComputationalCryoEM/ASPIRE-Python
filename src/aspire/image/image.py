@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 from numpy.fft import fftshift, fft, ifft, ifftshift, fft2, ifft2, fftn, ifftn
+from math import floor
 
 from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import lstsq
@@ -14,7 +15,7 @@ from aspire.numeric import fft, xp
 from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matrix import anorm
-
+import pdb
 logger = logging.getLogger(__name__)
 
 
@@ -212,30 +213,14 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
-        grid = grid_2d(self.res, indexing="yx")
-        grid_ds = grid_2d(ds_res, indexing="yx")
-
-        im_ds = np.zeros((self.n_images, ds_res, ds_res), dtype=self.dtype)
-
-        # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
-        res_by_2 = self.res / 2
-        x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
-
-        mask = (np.abs(grid["x"]) < ds_res / self.res) & (
-            np.abs(grid["y"]) < ds_res / self.res
-        )
-        im_shifted = fft.centered_ifft2(
-            fft.centered_fft2(xp.asarray(self.data)) * xp.asarray(mask)
-        )
-        im = np.real(xp.asnumpy(im_shifted))
-
-        for s in range(im_ds.shape[0]):
-            interpolator = RegularGridInterpolator(
-                (x, y), im[s], bounds_error=False, fill_value=0
-            )
-            im_ds[s] = interpolator(np.dstack([grid_ds["y"], grid_ds["x"]]))
-
-        return Image(im_ds)
+        pdb.set_trace()
+        # compute FT and shift freq
+        fx = np.array([fftshift(fft2(self.data[i])) for i in range(self.n_images)])
+        # crop in freq space
+        start = floor(self.res / 2 - ds_res / 2)
+        crop_fx = fx[:,start:start+ds_res, start:start+ds_res]
+        out =  ifft2(ifftshift(crop_fx)).astype("float32") * (ds_res**2 / self.res**2)
+        return Image(out)
 
     def filter(self, filter):
         """
