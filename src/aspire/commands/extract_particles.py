@@ -48,6 +48,12 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--overwrite", is_flag=True, help="Overwrite output if it already exists?"
 )
+@click.option(
+    "--downsample",
+    default=0,
+    type=int,
+    help="Optionally downsample the data to this resolution prior to saving to starfile/.mrcs stack.",
+)
 def extract_particles(
     mrc_paths,
     coord_paths,
@@ -57,6 +63,7 @@ def extract_particles(
     batch_size,
     save_mode,
     overwrite,
+    downsample,
 ):
     """
     Given a dataset of full micrographs and corresponding coordinate files
@@ -108,6 +115,9 @@ def extract_particles(
             files,
             particle_size=particle_size,
         )
+
+    if downsample > 0:
+        src.downsample(downsample)
 
     # saves to .mrcs and STAR file with column "_rlnImageName"
     src.save(
