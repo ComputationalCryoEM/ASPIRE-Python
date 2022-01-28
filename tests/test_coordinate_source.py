@@ -343,17 +343,19 @@ class CoordinateSourceTestCase(TestCase):
                 "--particle_size=256",
             ],
         )
-        result_downsample = runner.invoke(
+        result_preprocess = runner.invoke(
             extract_particles,
             [
                 f"--mrc_paths={self.data_folder}/*.mrc",
                 f"--coord_paths={self.data_folder}/sample*.box",
                 f"--starfile_out={self.data_folder}/saved_star_ds.star",
                 "--downsample=33",
+                "--normalize_bg",
+                "--invert_contrast",
             ],
         )
         # check that all commands completed successfully
         self.assertTrue(result_box.exit_code == 0)
         self.assertTrue(result_coord.exit_code == 0)
         self.assertTrue(result_star.exit_code == 0)
-        self.assertTrue(result_downsample.exit_code == 0)
+        self.assertTrue(result_preprocess.exit_code == 0)

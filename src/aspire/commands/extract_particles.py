@@ -38,6 +38,22 @@ logger = logging.getLogger(__name__)
     help="Set this flag if coordinate files contain (X,Y) particle centers",
 )
 @click.option(
+    "--downsample",
+    default=0,
+    type=int,
+    help="Downsample the data to this resolution prior to saving to starfile/.mrcs stack",
+)
+@click.option(
+    "--normalize_bg",
+    is_flag=True,
+    help="Normalize images to the background noise",
+)
+@click.option(
+    "--invert_contrast",
+    is_flag=True,
+    help="Invert the contrast of the images so molecules are shown in white",
+)
+@click.option(
     "--batch_size", default=512, help="Batch size to load images from .mrc files"
 )
 @click.option(
@@ -48,22 +64,18 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--overwrite", is_flag=True, help="Overwrite output if it already exists?"
 )
-@click.option(
-    "--downsample",
-    default=0,
-    type=int,
-    help="Optionally downsample the data to this resolution prior to saving to starfile/.mrcs stack.",
-)
 def extract_particles(
     mrc_paths,
     coord_paths,
     starfile_out,
     particle_size,
     centers,
+    downsample,
+    normalize_bg,
+    invert_contrast,
     batch_size,
     save_mode,
     overwrite,
-    downsample,
 ):
     """
     Given a dataset of full micrographs and corresponding coordinate files
@@ -116,8 +128,13 @@ def extract_particles(
             particle_size=particle_size,
         )
 
+    # optional preprocessing steps
     if downsample > 0:
         src.downsample(downsample)
+    if normalize_bg:
+        src.normalize_background()
+    if invert_contrast:
+        src.invert_contrast()
 
     # saves to .mrcs and STAR file with column "_rlnImageName"
     src.save(
