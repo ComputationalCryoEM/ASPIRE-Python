@@ -351,6 +351,7 @@ class CoordinateSourceTestCase(TestCase):
                 f"--starfile_out={self.data_folder}/saved_star_ds.star",
                 "--downsample=33",
                 "--normalize_bg",
+                "--whiten",
                 "--invert_contrast",
             ],
         )

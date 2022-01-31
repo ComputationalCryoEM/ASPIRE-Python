@@ -5,6 +5,7 @@ import os
 import click
 from click import UsageError
 
+from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import BoxesCoordinateSource, CentersCoordinateSource
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,11 @@ logger = logging.getLogger(__name__)
     help="Normalize images to the background noise",
 )
 @click.option(
+    "--whiten",
+    is_flag=True,
+    help="Estimate the noise variance of the images and whiten",
+)
+@click.option(
     "--invert_contrast",
     is_flag=True,
     help="Invert the contrast of the images so molecules are shown in white",
@@ -72,6 +78,7 @@ def extract_particles(
     centers,
     downsample,
     normalize_bg,
+    whiten,
     invert_contrast,
     batch_size,
     save_mode,
@@ -133,6 +140,9 @@ def extract_particles(
         src.downsample(downsample)
     if normalize_bg:
         src.normalize_background()
+    if whiten:
+        estimator = WhiteNoiseEstimator(src)
+        src.whiten(estimator.filter)
     if invert_contrast:
         src.invert_contrast()
 
