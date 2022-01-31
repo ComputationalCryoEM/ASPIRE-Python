@@ -416,10 +416,10 @@ class CLOrient3D:
         memory_total = equations_factor * (
             n_equations_total * 2 * n_img * self.dtype.itemsize
         )
-        if memory_total < (max_memory * 10 ** 6):
+        if memory_total < (max_memory * 10**6):
             n_equations = int(np.ceil(equations_factor * n_equations_total))
         else:
-            subsampling_factor = (max_memory * 10 ** 6) / memory_total
+            subsampling_factor = (max_memory * 10**6) / memory_total
             subsampling_factor = min(1.0, subsampling_factor)
             n_equations = int(np.ceil(n_equations_total * subsampling_factor))
 

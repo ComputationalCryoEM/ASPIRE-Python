@@ -18,7 +18,7 @@ def voltage_to_wavelength(voltage):
     :param voltage: float, The electron voltage in kV.
     :return: float, The electron wavelength in nm.
     """
-    return 12.2643247 / math.sqrt(voltage * 1e3 + 0.978466 * voltage ** 2)
+    return 12.2643247 / math.sqrt(voltage * 1e3 + 0.978466 * voltage**2)
 
 
 def wavelength_to_voltage(wavelength):
@@ -28,7 +28,7 @@ def wavelength_to_voltage(wavelength):
     :return: float, The electron voltage in kV.
     """
     return (
-        -1e3 + math.sqrt(1e6 + 4 * 12.2643247 ** 2 * 0.978466 / wavelength ** 2)
+        -1e3 + math.sqrt(1e6 + 4 * 12.2643247**2 * 0.978466 / wavelength**2)
     ) / (2 * 0.978466)
 
 
@@ -88,7 +88,7 @@ class Filter:
 
         if self.radial:
             if omega.ndim > 1:
-                omega = np.sqrt(np.sum(omega ** 2, axis=0))
+                omega = np.sqrt(np.sum(omega**2, axis=0))
             omega, idx = np.unique(omega, return_inverse=True)
             omega = np.vstack((omega, np.zeros_like(omega)))
 
@@ -424,12 +424,12 @@ class CTFFilter(Filter):
         defocus[ind_nz] = self.defocus_mean + self.defocus_diff * np.cos(2 * angles_nz)
 
         c2 = -np.pi * self.wavelength * defocus
-        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength ** 3
+        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength**3
 
-        r2 = om_x ** 2 + om_y ** 2
-        r4 = r2 ** 2
+        r2 = om_x**2 + om_y**2
+        r4 = r2**2
         gamma = c2 * r2 + c4 * r4
-        h = np.sqrt(1 - self.alpha ** 2) * np.sin(gamma) - self.alpha * np.cos(gamma)
+        h = np.sqrt(1 - self.alpha**2) * np.sin(gamma) - self.alpha * np.cos(gamma)
 
         if self.B:
             h *= np.exp(-self.B * r2)

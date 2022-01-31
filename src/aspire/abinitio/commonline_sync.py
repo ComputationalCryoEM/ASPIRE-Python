@@ -335,7 +335,7 @@ class CLSyncVoting(CLOrient3D):
         angles_hist = np.sum(
             np.exp(
                 (2 * np.multiply.outer(angles, angles_grid) - squared_values)
-                / (2 * sigma ** 2)
+                / (2 * sigma**2)
             ),
             0,
         )

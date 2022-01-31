@@ -75,7 +75,7 @@ class SteerableBasis2D(Basis):
 
         # Default array to fill_value, we can use a value
         # k should never achieve..
-        fill_value = self.complex_count ** 2
+        fill_value = self.complex_count**2
         compressed_radial_map = (
             np.ones(np.max(unique_radial_indices) + 1, dtype=int) * fill_value
         )

@@ -86,7 +86,7 @@ class Apple:
         self.query_image_size = query_image_size
 
         # q_box is the query box (or "container") size
-        self.q_box = (4000 ** 2) / (self.query_image_size ** 2) * 4
+        self.q_box = (4000**2) / (self.query_image_size**2) * 4
         # tau1 and tau2 correspond to particle and noise windows respectively
         self.tau1 = tau1 or int(self.q_box * 0.03)
         self.tau2 = tau2 or int(self.q_box * 0.3)

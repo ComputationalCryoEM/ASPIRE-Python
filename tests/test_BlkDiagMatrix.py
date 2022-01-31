@@ -310,9 +310,9 @@ class BlkDiagMatrixTestCase(TestCase):
         self.allallfunc(blk_c, result)
 
     def testBlkDiagMatrixPow(self):
-        result = [blk ** 2 for blk in self.blk_a]
+        result = [blk**2 for blk in self.blk_a]
 
-        blk_c = self.blk_a ** 2.0
+        blk_c = self.blk_a**2.0
         self.allallfunc(blk_c, result)
 
         # In place power
