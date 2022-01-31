@@ -122,12 +122,12 @@ class CtfEstimator:
         )
         defocus_factor = np.pi * self.lmbd * self.r_ctf * defocus / 2
         amplitude_contrast_term = self.amplitude_contrast / np.sqrt(
-            1 - self.amplitude_contrast ** 2
+            1 - self.amplitude_contrast**2
         )
 
         chi = (
             defocus_factor
-            - np.pi * self.lmbd ** 3 * self.cs * 1e6 * self.r_ctf ** 2 / 2
+            - np.pi * self.lmbd**3 * self.cs * 1e6 * self.r_ctf**2 / 2
             + amplitude_contrast_term
         )
         h = -np.sin(chi)
@@ -178,7 +178,7 @@ class CtfEstimator:
         # Create a sum and reshape so it may be broadcast with `block`.
         blocks_sum = np.sum(blocks, axis=(-1, -2))[:, np.newaxis, np.newaxis]
 
-        blocks -= blocks_sum / (block_size ** 2)
+        blocks -= blocks_sum / (block_size**2)
 
         return blocks
 
@@ -413,14 +413,14 @@ class CtfEstimator:
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
 
-        r_ctf_sq = r_ctf ** 2
+        r_ctf_sq = r_ctf**2
         c = np.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
 
         for f in range(min_defocus, max_defocus):
             ctf_im = np.abs(
                 np.sin(
                     np.pi * lmbd * f * r_ctf_sq
-                    - 0.5 * np.pi * (lmbd ** 3) * cs * 1e6 * r_ctf_sq ** 2
+                    - 0.5 * np.pi * (lmbd**3) * cs * 1e6 * r_ctf_sq**2
                     + w
                 )
             )
@@ -435,8 +435,8 @@ class CtfEstimator:
                 ctf_im[: m + 1, m] = np.zeros((m + 1))
                 signal[: m + 1, m] = np.zeros((m + 1))
 
-            Sx = np.sqrt(np.sum(ctf_im ** 2, axis=0))
-            Sy = np.sqrt(np.sum(signal ** 2, axis=0))
+            Sx = np.sqrt(np.sum(ctf_im**2, axis=0))
+            Sy = np.sqrt(np.sum(signal**2, axis=0))
             c[f - min_defocus, :] = np.sum(ctf_im * signal, axis=0) / (Sx * Sy)
 
         avg_defocus, low_freq_cutoff = np.unravel_index(np.argmax(c), c.shape)[:2]
@@ -507,13 +507,13 @@ class CtfEstimator:
         max_limit = r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
         signal = np.where(r_ctf > max_limit, 0, signal)
 
-        moment_02 = Y ** 2 * signal
+        moment_02 = Y**2 * signal
         moment_02 = np.sum(moment_02, axis=(0, 1))
 
         moment_11 = Y * X * signal
         moment_11 = np.sum(moment_11, axis=(0, 1))
 
-        moment_20 = X ** 2 * signal
+        moment_20 = X**2 * signal
         moment_20 = np.sum(moment_20, axis=(0, 1))
 
         moment_mat = np.zeros((2, 2))
@@ -569,8 +569,8 @@ class CtfEstimator:
         y = (df1 - df2) * np.cos(2 * angle_ast)
         z = (df1 - df2) * np.sin(2 * angle_ast)
 
-        a = np.pi * lmbd * r ** 2 / 2
-        b = np.pi * lmbd ** 3 * cs * 1e6 * r ** 4 / 2 - np.full(
+        a = np.pi * lmbd * r**2 / 2
+        b = np.pi * lmbd**3 * cs * 1e6 * r**4 / 2 - np.full(
             shape=r.shape, fill_value=amplitude_contrast, dtype=self.dtype
         )
 
@@ -591,7 +591,7 @@ class CtfEstimator:
         r = r[mask]
         theta = theta[mask]
 
-        sum_A = np.sum(signal ** 2)
+        sum_A = np.sum(signal**2)
 
         dx = 1
         dy = 1
@@ -611,7 +611,7 @@ class CtfEstimator:
             sine_z_term = a * np.sin(2 * theta)
 
             c1 = np.sum(np.abs(outer_sine) * signal)
-            c2 = np.sqrt(sum_A * np.sum(outer_sine ** 2))
+            c2 = np.sqrt(sum_A * np.sum(outer_sine**2))
 
             # gradients of numerator
             dx_c1 = np.sum(np.sign(outer_sine) * outer_cosine * a * signal)
@@ -623,7 +623,7 @@ class CtfEstimator:
                 np.sign(outer_sine) * outer_cosine * a * np.sin(2 * theta) * signal
             )
 
-            derivative_sqrt = 1 / (2 * np.sqrt(sum_A * np.sum(outer_sine ** 2)))
+            derivative_sqrt = 1 / (2 * np.sqrt(sum_A * np.sum(outer_sine**2)))
 
             derivative_sine2 = 2 * outer_sine * outer_cosine
 
@@ -633,9 +633,9 @@ class CtfEstimator:
             dz_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_z_term)
 
             # gradients
-            dx = (dx_c1 * c2 - dx_c2 * c1) / c2 ** 2
-            dy = (dy_c1 * c2 - dy_c2 * c1) / c2 ** 2
-            dz = (dz_c1 * c2 - dz_c2 * c1) / c2 ** 2
+            dx = (dx_c1 * c2 - dx_c2 * c1) / c2**2
+            dy = (dy_c1 * c2 - dy_c2 * c1) / c2**2
+            dz = (dz_c1 * c2 - dz_c2 * c1) / c2**2
 
             # update
             x = x + alpha1 * dx
@@ -663,7 +663,7 @@ class CtfEstimator:
         sine_z_term = a * np.sin(2 * theta)
 
         c1 = np.sum(np.abs(outer_sine) * signal)
-        c2 = np.sqrt(sum_A * np.sum(outer_sine ** 2))
+        c2 = np.sqrt(sum_A * np.sum(outer_sine**2))
 
         p = c1 / c2
 
@@ -724,7 +724,7 @@ def estimate_ctf(
 
     amp = amplitude_contrast
     amplitude_contrast = np.arctan(
-        amplitude_contrast / np.sqrt(1 - amplitude_contrast ** 2)
+        amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
 
     lmbd = voltage_to_wavelength(voltage) / 10  # (Angstrom)
@@ -847,7 +847,7 @@ def estimate_ctf(
             cc_array[ml, 0] - cc_array[ml, 1]
         ) * np.cos(2 * theta - 2 * cc_array[ml, 2] * np.ones(theta.shape, theta.dtype))
         ctf_im = -np.sin(
-            np.pi * lmbd * r_ctf ** 2 / 2 * (df - lmbd ** 2 * r_ctf ** 2 * cs * 1e6)
+            np.pi * lmbd * r_ctf**2 / 2 * (df - lmbd**2 * r_ctf**2 * cs * 1e6)
             + amplitude_contrast
         )
         ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)

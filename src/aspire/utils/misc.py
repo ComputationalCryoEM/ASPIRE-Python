@@ -19,7 +19,7 @@ def abs2(x):
     Compute complex modulus squared.
     """
 
-    return x.real ** 2 + x.imag ** 2
+    return x.real**2 + x.imag**2
 
 
 def ensure(cond, error_message=None):
@@ -132,7 +132,7 @@ def gaussian_1d(size, mu=0, sigma=1, peak=1, dtype=np.float64):
     # Construct centered mesh
     g = grid_1d(size, normalized=False, dtype=dtype)
 
-    p = (g["x"] - mu) ** 2 / (2 * sigma ** 2)
+    p = (g["x"] - mu) ** 2 / (2 * sigma**2)
 
     return (peak * np.exp(-p)).astype(dtype, copy=False)
 
@@ -156,8 +156,8 @@ def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64
     # Construct centered mesh
     g = grid_2d(size, shifted=False, normalized=False, indexing="xy", dtype=dtype)
 
-    p = (g["x"] - x0) ** 2 / (2 * sigma_x ** 2) + (g["y"] - y0) ** 2 / (
-        2 * sigma_y ** 2
+    p = (g["x"] - x0) ** 2 / (2 * sigma_x**2) + (g["y"] - y0) ** 2 / (
+        2 * sigma_y**2
     )
     return (peak * np.exp(-p)).astype(dtype, copy=False)
 

@@ -92,7 +92,7 @@ imgs = Image(imgs_data)
 # Lets say we want to add different kind of noise to the images.
 # We can create our own function. Here we want to apply in two dimensions.
 def noise_function(x, y):
-    return np.exp(-(x * x + y * y) / (2 * 0.3 ** 2))
+    return np.exp(-(x * x + y * y) / (2 * 0.3**2))
 
 
 # We can create a custom filter from that function.
@@ -168,7 +168,7 @@ plt.show()
 def radial_profile(data):
     y, x = np.indices((data.shape))
     # Distance from origin to lower left corner
-    r = np.sqrt(x ** 2 + y ** 2).astype(int)
+    r = np.sqrt(x**2 + y**2).astype(int)
     binsum = np.bincount(r.ravel(), np.log(1 + data.ravel()))
     bincount = np.bincount(r.ravel())
     # Return the mean per bin

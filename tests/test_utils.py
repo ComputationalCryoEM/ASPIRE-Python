@@ -62,8 +62,8 @@ class UtilsTestCase(TestCase):
         g_y = np.sum(g, axis=0) / np.sum(g)
 
         # Corresponding 1d gaussians
-        peak_x = 1 / np.sqrt(2 * np.pi * s_x ** 2)
-        peak_y = 1 / np.sqrt(2 * np.pi * s_y ** 2)
+        peak_x = 1 / np.sqrt(2 * np.pi * s_x**2)
+        peak_y = 1 / np.sqrt(2 * np.pi * s_y**2)
         g_1d_x = gaussian_1d(L, mu=mu_x, sigma=s_x, peak=peak_x)
         g_1d_y = gaussian_1d(L, mu=mu_y, sigma=s_y, peak=peak_y)
 

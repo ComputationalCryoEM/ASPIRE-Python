@@ -260,7 +260,7 @@ class Simulation(ImageSource):
         norm_est = anorm(lambdas_est)
 
         inner = ainner(B @ lambdas_true, lambdas_est @ B)
-        err = np.sqrt(norm_true ** 2 + norm_est ** 2 - 2 * inner)
+        err = np.sqrt(norm_true**2 + norm_est**2 - 2 * inner)
         rel_err = err / norm_true
         corr = inner / (norm_true * norm_est)
 
@@ -309,7 +309,7 @@ class Simulation(ImageSource):
 
         mean_vol_norm2 = anorm(mean_vol) ** 2
         norm_true = np.sqrt(
-            coords_true ** 2
+            coords_true**2
             + mean_vol_norm2
             + 2 * res_inners
             + 2 * mean_eigs_inners * coords_true
@@ -324,7 +324,7 @@ class Simulation(ImageSource):
             + res_inners
         )
         norm_est = np.sqrt(
-            coords_est ** 2 + mean_vol_norm2 + 2 * mean_eigs_inners * coords_est
+            coords_est**2 + mean_vol_norm2 + 2 * mean_eigs_inners * coords_est
         )
 
         corr = inner / (norm_true * norm_est)

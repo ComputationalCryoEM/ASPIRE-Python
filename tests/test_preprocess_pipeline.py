@@ -21,7 +21,7 @@ class PreprocessPLTestCase(TestCase):
         self.L = 64
         self.n = 128
         self.dtype = np.float32
-        self.noise_filter = FunctionFilter(lambda x, y: np.exp(-(x ** 2 + y ** 2) / 2))
+        self.noise_filter = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
 
         self.sim = Simulation(
             L=self.L,

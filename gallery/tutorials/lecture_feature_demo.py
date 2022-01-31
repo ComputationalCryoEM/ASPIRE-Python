@@ -335,7 +335,7 @@ noise_estimator = WhiteNoiseEstimator(sim_wht)
 
 
 def noise_function(x, y):
-    return 1e-7 * np.exp(-(x * x + y * y) / (2 * 0.3 ** 2))
+    return 1e-7 * np.exp(-(x * x + y * y) / (2 * 0.3**2))
 
 
 # In python, functions are first class objects.
