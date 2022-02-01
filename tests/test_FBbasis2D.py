@@ -221,7 +221,7 @@ class FBBasis2DTestCase(TestCase):
 
         self.assertTrue(
             np.allclose(
-                result,
+                result.asnumpy(),
                 np.load(
                     os.path.join(DATA_DIR, "fbbasis_evaluation_8_8.npy")
                 ).T,  # RCOPT

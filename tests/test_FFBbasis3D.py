@@ -469,12 +469,15 @@ class FFBBasis3DTestCase(TestCase):
             dtype=self.dtype,
         )
         result = self.basis.evaluate(coeffs)
-
-        ref = np.load(
-            os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_out_8_8_8.npy")
-        ).T  # RCOPT
-
-        self.assertTrue(np.allclose(result, ref, atol=utest_tolerance(self.dtype)))
+        self.assertTrue(
+            np.allclose(
+                result.asnumpy(),
+                np.load(
+                    os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_out_8_8_8.npy").T,
+                ),
+                atol=utest_tolerance(self.dtype),
+            )
+        )
 
     def testFFBBasis3DEvaluate_t(self):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT

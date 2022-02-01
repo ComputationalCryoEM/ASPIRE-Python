@@ -472,7 +472,7 @@ class FBBasis3DTestCase(TestCase):
 
         self.assertTrue(
             np.allclose(
-                result,
+                result.asnumpy(),
                 np.load(os.path.join(DATA_DIR, "hbbasis_evaluation_8_8_8.npy")).T,
                 atol=utest_tolerance(self.dtype),
             )

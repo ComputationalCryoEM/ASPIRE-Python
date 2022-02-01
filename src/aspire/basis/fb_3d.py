@@ -181,7 +181,7 @@ class FBBasis3D(Basis):
         x = m_reshape(x, self.sz + x.shape[1:])
         x = roll_dim(x, sz_roll)
 
-        return x.T
+        return Image(x.T)
 
     def evaluate_t(self, v):
         """

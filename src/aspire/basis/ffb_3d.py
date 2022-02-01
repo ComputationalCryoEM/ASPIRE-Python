@@ -81,7 +81,7 @@ class FFBBasis3D(FBBasis3D):
                 radial_ell[:, ik] = sph_bessel(ell, rmat[:, ik])
             nrm = np.abs(sph_bessel(ell + 1, self.r0[0:k_max_ell, ell].T) / 4)
             radial_ell = radial_ell / nrm
-            radial_ell_wtd = r ** 2 * wt_r * radial_ell
+            radial_ell_wtd = r**2 * wt_r * radial_ell
             radial_wtd[:, 0:k_max_ell, ell] = radial_ell_wtd
 
         # evaluate basis function in the phi dimension
@@ -276,7 +276,7 @@ class FFBBasis3D(FBBasis3D):
         # Roll, return the x with the last three dimensions as self.sz
         # Higher dimensions should be like v.
         x = x.reshape((*sz_roll, *self.sz))
-        return x
+        return Image(x)
 
     def evaluate_t(self, x):
         """

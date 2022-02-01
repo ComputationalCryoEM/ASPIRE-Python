@@ -51,7 +51,7 @@ class DiracBasis(Basis):
         x = m_reshape(x, self.sz + x.shape[1:])
         x = roll_dim(x, sz_roll)
 
-        return x
+        return Image(x)
 
     def evaluate_t(self, x):
         """

@@ -235,7 +235,7 @@ class FBBasis2D(SteerableBasis2D):
 
             ind_radial += len(idx_radial)
 
-        x = x.T.reshape(-1, *self.sz)  # RCOPT
+        x = Image(x.T.reshape(-1, *self.sz))  # RCOPT
 
         return x
 
