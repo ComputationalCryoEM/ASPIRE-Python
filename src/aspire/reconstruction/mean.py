@@ -33,7 +33,7 @@ class MeanEstimator(Estimator):
 
             kernel += (
                 1
-                / (self.src.n * self.src,L**4)
+                / (self.src.n * self.src.L**4)
                 * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
             )
 
