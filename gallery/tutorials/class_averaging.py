@@ -136,7 +136,7 @@ avgs.images(0, 10).show()
 # Using the sample variance, we'll compute a target noise variance
 # Noise
 var = np.var(src.images(0, src.n).asnumpy())
-noise_var = var * 2 ** 4
+noise_var = var * 2**4
 
 # We create a uniform noise to apply to the 2D images
 noise_filter = ScalarFilter(dim=2, value=noise_var)

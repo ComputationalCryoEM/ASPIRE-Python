@@ -105,9 +105,9 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     imgs_masked = imgs * mask
     denominator = np.sum(mask)
     first_moment = np.sum(imgs_masked, axis=(1, 2)) / denominator
-    second_moment = np.sum(imgs_masked ** 2, axis=(1, 2)) / denominator
+    second_moment = np.sum(imgs_masked**2, axis=(1, 2)) / denominator
     mean = first_moment.reshape(-1, 1, 1)
-    variance = second_moment.reshape(-1, 1, 1) - mean ** 2
+    variance = second_moment.reshape(-1, 1, 1) - mean**2
     std = np.sqrt(variance)
 
     return (imgs - mean) / std
@@ -339,7 +339,7 @@ class Image:
         pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
         pts_rot = pts_rot.reshape((3, -1))
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L ** 2)
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L**2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0

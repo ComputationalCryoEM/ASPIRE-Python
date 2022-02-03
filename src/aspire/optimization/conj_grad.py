@@ -164,7 +164,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
         obj = np.real(
             np.sum(x.conj() * a_x, -1) - 2 * np.real(np.sum(np.conj(b * x), -1))
         )
-        res = np.sqrt(np.sum(r ** 2, -1))
+        res = np.sqrt(np.sum(r**2, -1))
         info["iter"].append(i)
         info["res"].append(res)
         info["obj"].append(obj)

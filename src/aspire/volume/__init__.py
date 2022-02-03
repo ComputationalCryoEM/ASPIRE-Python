@@ -34,7 +34,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     ims = np.swapaxes(ims, 1, 3)
     ims = np.swapaxes(ims, 0, 2)
 
-    Q_vecs = np.zeros((sim.L ** 2, k, n), dtype=vols.dtype)
+    Q_vecs = np.zeros((sim.L**2, k, n), dtype=vols.dtype)
     Rs = np.zeros((k, k, n), dtype=vols.dtype)
 
     im_vecs = mat_to_vec(ims)
@@ -163,7 +163,7 @@ class Volume:
         pts_rot = rotated_grids(self.resolution, rot_matrices)
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = pts_rot.reshape((3, n * self.resolution ** 2))
+        pts_rot = pts_rot.reshape((3, n * self.resolution**2))
 
         im_f = nufft(data, pts_rot) / self.resolution
 
@@ -179,7 +179,7 @@ class Volume:
 
     def to_vec(self):
         """Returns an N x resolution ** 3 array."""
-        return self._data.reshape((self.n_vols, self.resolution ** 3))
+        return self._data.reshape((self.n_vols, self.resolution**3))
 
     @staticmethod
     def from_vec(vec):
@@ -196,7 +196,7 @@ class Volume:
         n_vols = vec.shape[0]
 
         resolution = round(vec.shape[1] ** (1 / 3))
-        assert resolution ** 3 == vec.shape[1]
+        assert resolution**3 == vec.shape[1]
 
         data = vec.reshape((n_vols, resolution, resolution, resolution))
 
@@ -298,9 +298,9 @@ class Volume:
         # If K = n_vols, we apply the ith rotation to ith volume.
         else:
             rot_matrices = rot_matrices.reshape((K, 1, 3, 3))
-            pts_rot = np.zeros((K, 3, self.resolution ** 3))
+            pts_rot = np.zeros((K, 3, self.resolution**3))
             vol_f = np.empty(
-                (self.n_vols, self.resolution ** 3), dtype=complex_type(self.dtype)
+                (self.n_vols, self.resolution**3), dtype=complex_type(self.dtype)
             )
             for i in range(K):
                 pts_rot[i] = rotated_grids_3d(self.resolution, rot_matrices[i])
@@ -534,7 +534,7 @@ def _gen_gaussians(K, alpha, dtype=np.float64):
     for k in range(K):
         V = randn(3, 3).astype(dtype) / np.sqrt(3)
         Q[k, :, :] = qr(V)[0]
-        D[k, :, :] = alpha ** 2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
+        D[k, :, :] = alpha**2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
         mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
 
     return Q, D, mu
@@ -553,7 +553,7 @@ def rotated_grids(L, rot_matrices):
     """
 
     grid2d = grid_2d(L, indexing="xy", dtype=rot_matrices.dtype)
-    num_pts = L ** 2
+    num_pts = L**2
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(
         [
@@ -582,7 +582,7 @@ def rotated_grids_3d(L, rot_matrices):
     """
 
     grid3d = grid_3d(L, indexing="xyz", dtype=rot_matrices.dtype)
-    num_pts = L ** 3
+    num_pts = L**3
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(
         [
