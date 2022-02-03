@@ -28,7 +28,7 @@ class SimTestCase(TestCase):
         pass
 
     def testFunctionFilter(self):
-        filt = FunctionFilter(lambda x, y: np.exp(-(x ** 2 + y ** 2) / 2))
+        filt = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
         result = filt.evaluate(self.omega)
         self.assertEqual(result.shape, (256,))
         self.assertTrue(
@@ -63,7 +63,7 @@ class SimTestCase(TestCase):
 
     def testPowerFilter(self):
         filt = PowerFilter(
-            filter=FunctionFilter(lambda x, y: np.exp(-(x ** 2 + y ** 2) / 2)),
+            filter=FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2)),
             power=0.5,
         )
         result = filt.evaluate(self.omega)

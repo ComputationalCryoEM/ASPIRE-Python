@@ -23,7 +23,7 @@ class VolumeTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.n = n = 3
-        self.data_1 = np.arange(n * self.res ** 3, dtype=self.dtype).reshape(
+        self.data_1 = np.arange(n * self.res**3, dtype=self.dtype).reshape(
             n, self.res, self.res, self.res
         )
         self.data_2 = 123 * self.data_1.copy()
@@ -32,7 +32,7 @@ class VolumeTestCase(TestCase):
         self.random_data = np.random.randn(self.res, self.res, self.res).astype(
             self.dtype
         )
-        self.vec = self.data_1.reshape(n, self.res ** 3)
+        self.vec = self.data_1.reshape(n, self.res**3)
 
     def tearDown(self):
         pass

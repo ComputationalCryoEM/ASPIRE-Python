@@ -33,7 +33,7 @@ class DiracBasis(Basis):
         """
         logger.info("Expanding object in a Dirac basis.")
         self.count = np.sum(self._mask)
-        self._sz_prod = self.nres ** self.ndim
+        self._sz_prod = self.nres**self.ndim
 
     def evaluate(self, v):
         """

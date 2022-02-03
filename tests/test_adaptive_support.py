@@ -26,8 +26,8 @@ class AdaptiveSupportTest(TestCase):
         # three standard deviations are the following.
         self.references = {
             1: 1 - np.exp(-1 / 2),
-            2: 1 - np.exp(-(2 ** 2) / 2),
-            3: 1 - np.exp(-(3 ** 2) / 2),
+            2: 1 - np.exp(-(2**2) / 2),
+            3: 1 - np.exp(-(3**2) / 2),
         }
 
     def testAdaptiveSupportBadThreshold(self):

@@ -81,8 +81,8 @@ class WhiteNoiseEstimator(NoiseEstimator):
 
             _denominator = self.src.n * np.sum(mask)
             first_moment += np.sum(images_masked) / _denominator
-            second_moment += np.sum(np.abs(images_masked ** 2)) / _denominator
-        return second_moment - first_moment ** 2
+            second_moment += np.sum(np.abs(images_masked**2)) / _denominator
+        return second_moment - first_moment**2
 
 
 class AnisotropicNoiseEstimator(NoiseEstimator):
@@ -127,9 +127,9 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
             _denominator = self.src.n * np.sum(mask)
             mean_est += np.sum(images_masked) / _denominator
             im_masked_f = xp.asnumpy(fft.centered_fft2(xp.asarray(images_masked)))
-            noise_psd_est += np.sum(np.abs(im_masked_f ** 2), axis=0) / _denominator
+            noise_psd_est += np.sum(np.abs(im_masked_f**2), axis=0) / _denominator
 
         mid = self.src.L // 2
-        noise_psd_est[mid, mid] -= mean_est ** 2
+        noise_psd_est[mid, mid] -= mean_est**2
 
         return noise_psd_est
