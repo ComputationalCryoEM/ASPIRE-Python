@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def _smoothed_disk_image(x, y, radius, width, height):
     (Y, X) = mgrid[:height, :width]
-    ratio = ((X - x) ** 2 + (Y - y) ** 2) / (radius ** 2)
+    ratio = ((X - x) ** 2 + (Y - y) ** 2) / (radius**2)
     return 2.0 - 2 / (1 + np.exp(-ratio))  # Scaled sigmoid funciton
 
 

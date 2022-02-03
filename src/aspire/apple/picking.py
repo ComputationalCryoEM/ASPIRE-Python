@@ -391,7 +391,7 @@ class Picker:
         labeled_segments, _ = ndimage.label(segmentation, np.ones((3, 3)))
         values, repeats = np.unique(labeled_segments, return_counts=True)
 
-        values_to_remove = np.where(repeats > self.max_size ** 2)
+        values_to_remove = np.where(repeats > self.max_size**2)
         values = np.take(values, values_to_remove)
         values = np.reshape(values, (1, 1, np.prod(values.shape)), "F")
 
