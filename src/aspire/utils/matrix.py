@@ -73,7 +73,7 @@ def vec_to_im(X):
     """
     shape = X.shape
     N = round(shape[0] ** (1 / 2))
-    ensure(N ** 2 == shape[0], "First dimension of X must be square")
+    ensure(N**2 == shape[0], "First dimension of X must be square")
 
     return m_reshape(X, (N, N) + (shape[1:]))
 
@@ -86,7 +86,7 @@ def vec_to_vol(X):
     """
     shape = X.shape
     N = round(shape[0] ** (1 / 3))
-    ensure(N ** 3 == shape[0], "First dimension of X must be cubic")
+    ensure(N**3 == shape[0], "First dimension of X must be cubic")
 
     return m_reshape(X, (N, N, N) + (shape[1:]))
 
@@ -104,8 +104,8 @@ def vecmat_to_volmat(X):
     L1 = round(shape[0] ** (1 / 3))
     L2 = round(shape[1] ** (1 / 3))
 
-    ensure(L1 ** 3 == shape[0], "First dimension of X must be cubic")
-    ensure(L2 ** 3 == shape[1], "Second dimension of X must be cubic")
+    ensure(L1**3 == shape[0], "First dimension of X must be cubic")
+    ensure(L2**3 == shape[1], "Second dimension of X must be cubic")
 
     return m_reshape(X, (L1, L1, L1, L2, L2, L2) + (shape[2:]))
 
@@ -125,7 +125,7 @@ def volmat_to_vecmat(X):
     l1 = shape[0]
     l2 = shape[3]
 
-    return m_reshape(X, (l1 ** 3, l2 ** 3) + (shape[6:]))
+    return m_reshape(X, (l1**3, l2**3) + (shape[6:]))
 
 
 def mdim_mat_fun_conj(X, d1, d2, f):
@@ -181,7 +181,7 @@ def symmat_to_vec_iso(mat):
     mat, sz_roll = unroll_dim(mat, 3)
     N = mat.shape[0]
     mat = mat_to_vec(mat)
-    mat[np.arange(0, N ** 2, N + 1)] *= SQRT2_R
+    mat[np.arange(0, N**2, N + 1)] *= SQRT2_R
     mat *= SQRT2
     mat = vec_to_mat(mat)
     mat = roll_dim(mat, sz_roll)
@@ -202,7 +202,7 @@ def vec_to_symmat_iso(vec):
     mat, sz_roll = unroll_dim(mat, 3)
     N = mat.shape[0]
     mat = mat_to_vec(mat)
-    mat[np.arange(0, N ** 2, N + 1)] *= SQRT2
+    mat[np.arange(0, N**2, N + 1)] *= SQRT2
     mat *= SQRT2_R
     mat = vec_to_mat(mat)
     mat = roll_dim(mat, sz_roll)
@@ -278,7 +278,7 @@ def mat_to_vec(mat, is_symmat=False):
         sz = mat.shape
         N = sz[0]
         ensure(sz[1] == N, "Matrix must be square")
-        return m_reshape(mat, (N ** 2,) + sz[2:])
+        return m_reshape(mat, (N**2,) + sz[2:])
     else:
         return symmat_to_vec(mat)
 
@@ -294,7 +294,7 @@ def vec_to_mat(vec, is_symmat=False):
     if not is_symmat:
         sz = vec.shape
         N = int(round(np.sqrt(sz[0])))
-        ensure(sz[0] == N ** 2, "Vector must represent square matrix.")
+        ensure(sz[0] == N**2, "Vector must represent square matrix.")
         return m_reshape(vec, (N, N) + sz[1:])
     else:
         return vec_to_symmat(vec)

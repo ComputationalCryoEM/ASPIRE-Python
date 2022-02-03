@@ -5,7 +5,6 @@ from collections import OrderedDict
 import mrcfile
 import numpy as np
 import pandas as pd
-from scipy.spatial.transform import Rotation as R
 
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
@@ -23,7 +22,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import ensure
+from aspire.utils import Rotation, ensure
 from aspire.utils.coor_trans import grid_2d
 
 logger = logging.getLogger(__name__)
@@ -116,12 +115,12 @@ class ImageSource:
         else:
             self._metadata = metadata
             if self.has_metadata(["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]):
-                self._rotations = R.from_euler(
-                    "ZYZ",
-                    self.get_metadata(
-                        ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
-                    ),
-                    degrees=True,
+                self._rotations = Rotation.from_euler(
+                    np.deg2rad(
+                        self.get_metadata(
+                            ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
+                        )
+                    )
                 )
 
         self.unique_filters = []
@@ -211,7 +210,7 @@ class ImageSource:
         """
         Converts internal _rotations representation to expected matrix form.
         """
-        return self._rotations.as_euler("ZYZ", degrees=False).astype(self.dtype)
+        return self._rotations.angles.astype(self.dtype)
 
     @property
     def rots(self):
@@ -226,7 +225,7 @@ class ImageSource:
         Converts internal `_rotations` representation to expected matrix form.
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        return self._rotations.as_matrix().astype(self.dtype)
+        return self._rotations.matrices.astype(self.dtype)
 
     @angles.setter
     def angles(self, values):
@@ -235,7 +234,7 @@ class ImageSource:
         :param values: Rotation angles in radians, as a n x 3 array
         :return: None
         """
-        self._rotations = R.from_euler("ZYZ", values)
+        self._rotations = Rotation.from_euler(values)
         self.set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
         )
@@ -247,10 +246,10 @@ class ImageSource:
         :param values: Rotation matrices as a n x 3 x 3 array
         :return: None
         """
-        self._rotations = R.from_matrix(values)
+        self._rotations = Rotation.from_matrix(values)
         self.set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
-            self._rotations.as_euler("ZYZ", degrees=True),
+            np.rad2deg(self._rotations.angles),
         )
 
     def set_metadata(self, metadata_fields, values, indices=None):
@@ -480,7 +479,7 @@ class ImageSource:
 
         logger.info("Apply contrast inversion on source object")
         L = self.L
-        grid = grid_2d(L, shifted=True)
+        grid = grid_2d(L, indexing="yx", shifted=True)
         # Get mask indices of signal and noise samples assuming molecule
         signal_mask = grid["r"] < 0.5
         noise_mask = grid["r"] > 0.8

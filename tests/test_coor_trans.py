@@ -2,8 +2,8 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
+from aspire.utils import Rotation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     grid_2d,
@@ -23,7 +23,8 @@ class UtilsTestCase(TestCase):
         pass
 
     def testGrid2d(self):
-        grid2d = grid_2d(8)
+        # Note these reference files were created using Matlab compat grid indexing.
+        grid2d = grid_2d(8, indexing="xy")
         self.assertTrue(
             np.allclose(grid2d["x"], np.load(os.path.join(DATA_DIR, "grid2d_8_x.npy")))
         )
@@ -40,7 +41,8 @@ class UtilsTestCase(TestCase):
         )
 
     def testGrid3d(self):
-        grid3d = grid_3d(8)
+        # Note these reference files were created using Matlab compat grid indexing.
+        grid3d = grid_3d(8, indexing="xyz")
         self.assertTrue(
             np.allclose(grid3d["x"], np.load(os.path.join(DATA_DIR, "grid3d_8_x.npy")))
         )
@@ -66,10 +68,10 @@ class UtilsTestCase(TestCase):
 
     def testRegisterRots(self):
         angles = uniform_random_angles(32, seed=0)
-        rots_ref = Rotation.from_euler("ZYZ", angles).as_matrix()
+        rots_ref = Rotation.from_euler(angles).matrices
 
-        q_ang = [[45, 45, 45]]
-        q_mat = Rotation.from_euler("ZYZ", q_ang, degrees=True).as_matrix()[0]
+        q_ang = [[np.pi / 4, np.pi / 4, np.pi / 4]]
+        q_mat = Rotation.from_euler(q_ang).matrices[0]
         flag = 0
         regrots_ref = get_aligned_rotations(rots_ref, q_mat, flag)
         q_mat_est, flag_est = register_rotations(rots_ref, regrots_ref)

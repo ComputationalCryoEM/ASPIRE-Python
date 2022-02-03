@@ -41,6 +41,40 @@ def cart2sph(x, y, z):
     return az, el, r
 
 
+def _mgrid_slice(n, shifted, normalized):
+    """
+    Util to generate a `slice` representing a 1d linspace
+    as expected by `np.mgrid`.
+
+    :param shifted: shifted by half of grid or not when n is even.
+    :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :return: `slice` to be used by `np.mgrid`.
+    """
+
+    num_points = n * 1j
+    start = -n // 2 + 1
+    end = n // 2
+
+    if shifted and n % 2 == 0:
+        start -= 1 / 2
+        end -= 1 / 2
+    elif n % 2 == 0:
+        start -= 1
+        end -= 1
+
+    if normalized:
+        # Compute the denominator for normalization
+        denom = n / 2
+        if shifted and n % 2 == 0:
+            denom -= 1 / 2
+
+        # Apply the normalization
+        start /= denom
+        end /= denom
+
+    return slice(start, end, num_points)
+
+
 def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate one dimensional grid.
@@ -51,70 +85,59 @@ def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     :return: the rectangular and polar coordinates of all grid points.
     """
 
-    grid = np.ceil(np.arange(-n / 2, n / 2), dtype=dtype)
-
-    if shifted and n % 2 == 0:
-        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
-
-    if normalized:
-        if shifted and n % 2 == 0:
-            grid = grid / (n / 2 - 1 / 2)
-        else:
-            grid = grid / (n / 2)
-
-    x = np.meshgrid(grid)
-    r = x
+    r = x = np.mgrid[_mgrid_slice(n, shifted, normalized)].astype(dtype)
 
     return {"x": x, "r": r}
 
 
-def grid_2d(n, shifted=False, normalized=True, dtype=np.float32):
+def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     """
     Generate two dimensional grid.
 
     :param n: the number of grid points in each dimension.
     :param shifted: shifted by half of grid or not when n is even.
     :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :param indexing: 'yx' (C) or 'xy' (F), defaulting to 'yx'.
+    See https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
     :return: the rectangular and polar coordinates of all grid points.
     """
-    grid = np.ceil(np.arange(-n / 2, n / 2, dtype=dtype))
 
-    if shifted and n % 2 == 0:
-        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
+    grid = _mgrid_slice(n, shifted, normalized)
+    y, x = np.mgrid[grid, grid].astype(dtype)
+    if indexing == "xy":
+        x, y = y, x
+    elif indexing != "yx":
+        raise RuntimeError(
+            f"grid_2d indexing {indexing} not supported." "  Try 'xy' or 'yx'"
+        )
 
-    if normalized:
-        if shifted and n % 2 == 0:
-            grid = grid / (n / 2 - 1 / 2)
-        else:
-            grid = grid / (n / 2)
-
-    x, y = np.meshgrid(grid, grid, indexing="ij")
     phi, r = cart2pol(x, y)
 
     return {"x": x, "y": y, "phi": phi, "r": r}
 
 
-def grid_3d(n, shifted=False, normalized=True, dtype=np.float32):
+def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32):
     """
     Generate three dimensional grid.
 
     :param n: the number of grid points in each dimension.
     :param shifted: shifted by half of grid or not when n is even.
     :param normalized: normalize the grid in the range of (-1, 1) or not.
+    :param indexing: 'zyx' (C) or 'xyz' (F), defaulting to 'zyx'.
+    See https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
     :return: the rectangular and spherical coordinates of all grid points.
     """
-    grid = np.ceil(np.arange(-n / 2, n / 2, dtype=dtype))
 
-    if shifted and n % 2 == 0:
-        grid = np.arange(-n / 2 + 1 / 2, n / 2 + 1 / 2, dtype=dtype)
+    grid = _mgrid_slice(n, shifted, normalized)
+    z, y, x = np.mgrid[grid, grid, grid].astype(dtype)
 
-    if normalized:
-        if shifted and n % 2 == 0:
-            grid = grid / (n / 2 - 1 / 2)
-        else:
-            grid = grid / (n / 2)
+    if indexing == "xyz":
+        x, y, z = z, y, x
+    elif indexing != "zyx":
+        raise RuntimeError(
+            f"grid_3d indexing {indexing} not supported." "  Try 'xyz' or 'zyx'"
+        )
 
-    x, y, z = np.meshgrid(grid, grid, grid, indexing="ij")
     phi, theta, r = cart2sph(x, y, z)
 
     # TODO: Should this theta adjustment be moved inside cart2sph?

@@ -4,14 +4,13 @@ from unittest import TestCase
 
 import numpy as np
 from pytest import raises
-from scipy.spatial.transform import Rotation as R
 
 from aspire.basis import FBBasis3D
 from aspire.image import Image
 from aspire.operators import IdentityFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, Simulation
-from aspire.utils import utest_tolerance
+from aspire.utils import Rotation, utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -164,7 +163,7 @@ class ImageTestCase(TestCase):
         self.assertTrue(angles.shape == (src.n, 3))
 
         # Convert to rotation matrix (n,3,3)
-        rotations = R.from_euler("ZYZ", angles).as_matrix()
+        rotations = Rotation.from_euler(angles).matrices
         self.assertTrue(rotations.shape == (src.n, 3, 3))
 
         # Excercise the setter

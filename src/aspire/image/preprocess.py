@@ -162,7 +162,7 @@ def downsample(insamples, szout, mask=None):
 
             outsamples_shifted = fft.ifft2(fft.ifftshift(xp.asarray(insamples_fft)))
             outsamples[idata] = np.real(
-                xp.asnumpy(outsamples_shifted) * (L_out ** 2 / L_in ** 2)
+                xp.asnumpy(outsamples_shifted) * (L_out**2 / L_in**2)
             )
 
     elif insamples.ndim == 4:
@@ -177,7 +177,7 @@ def downsample(insamples, szout, mask=None):
                 fft.ifftshift(xp.asarray(insamples_fft)), axes=(0, 1, 2)
             )
             outsamples[idata] = np.real(
-                xp.asnumpy(outsamples_shifted) * (L_out ** 3 / L_in ** 3)
+                xp.asnumpy(outsamples_shifted) * (L_out**3 / L_in**3)
             )
 
     else:
@@ -204,7 +204,7 @@ def fuzzy_mask(L, r0, risetime, origin=None):
 
     grids = [np.arange(1 - org, ell - org + 1) for ell, org in zip(L, origin)]
     XYZ = np.meshgrid(*grids, indexing="ij")
-    XYZ_sq = [X ** 2 for X in XYZ]
+    XYZ_sq = [X**2 for X in XYZ]
     R = np.sqrt(np.sum(XYZ_sq, axis=0))
     k = 1.782 / risetime
     m = 0.5 * (1 - erf(k * (R - r0)))
