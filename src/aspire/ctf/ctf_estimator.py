@@ -147,8 +147,8 @@ class CtfEstimator:
         # verify block_size is even
         assert block_size % 2 == 0
 
-        size_x = micrograph.shape[1]
-        size_y = micrograph.shape[0]
+        size_x = micrograph.shape[0]
+        size_y = micrograph.shape[1]
 
         step_size = block_size // 2
         range_y = size_y // step_size - 1
