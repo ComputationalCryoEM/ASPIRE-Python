@@ -145,7 +145,7 @@ class ImageSource:
 
     @property
     def filter_indices(self):
-        return self.get_metadata("__filter_indices")
+        return np.at_least1D(self.get_metadata("__filter_indices"))
 
     @filter_indices.setter
     def filter_indices(self, indices):
@@ -330,15 +330,7 @@ class ImageSource:
             else:
                 raise RuntimeError("Missing columns and no default value provided")
 
-        # remove axes of length 1
-        squeezed = result.to_numpy().squeeze()
-        # if result was 1x1, squeeze() will convert it to a 0-D array
-        # (shape is an empty tuple), which can't be used by downstream code
-        # so, convert it to 1-D via flatten()
-        if squeezed.shape:
-            return squeezed
-        else:
-            return squeezed.flatten()
+        return result.to_numpy().squeeze()
 
     def _images(self, start=0, num=np.inf, indices=None):
         """
