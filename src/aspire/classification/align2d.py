@@ -135,7 +135,7 @@ class AveragedAlign2D(Align2D):
         coefs=None,
     ):
         """
-        Combines images using averaging in provided `basis`.
+        Combines images using averaging in `composite_basis`.
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
         :param reflections: Bool representing whether to reflect image in `classes`
@@ -515,7 +515,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         self, k, images, classes, reflections, rotations, correlations, shifts
     ):
         """
-        Compute the Reddy Chatterji registering  images[1:] to image[0].
+        Compute the Reddy Chatterji registering images[1:] to image[0].
 
         This differs from papers and published scikit implimentations by
         computing the fixed base image[0] pipeline once then reusing.
@@ -612,14 +612,10 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             else:
                 r = -recovered_angle_degrees
 
-            # Dont like this, but I got stumped/frustrated.
             # For now, try the hack below, attempting two cases ...
-            # Most of the papers mention running the whole algo /twice/,
+            # Some papers mention running entire algos /twice/,
             #   when admitting reflections, so this hack is not
             #   the worst you could do :).
-            # if reflections[k][m]:
-            #     if 0<= r < 90:
-            #         r -= 180
             # Hack
             regis_img_estimated = rotate(regis_img, r)
             regis_img_rotated_p180 = rotate(regis_img, r + 180)
