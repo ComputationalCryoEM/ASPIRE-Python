@@ -19,8 +19,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
-from aspire.basis import FFBBasis3D
-from aspire.classification import RIRClass2D
+from aspire.basis import FFBBasis2D, FFBBasis3D
+from aspire.classification import BFSReddyChatterjiAlign2D, RIRClass2D
 from aspire.denoising import DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators import FunctionFilter, RadialCTFFilter
@@ -132,22 +132,32 @@ if interactive:
 if interactive:
     src.images(0, 10).show()
 
+# # Optionally invert image contrast, depends on data.
 # logger.info("Invert the global density contrast")
 # src.invert_contrast()
 
-# # On Simulation data, better results so far were achieved without cov2d.
+# Cache to memory for some speedup
+src = ArrayImageSource(src.images(0, num_imgs).asnumpy(), angles=src.angles)
+
+# On Simulation data, better results so far were achieved without cov2d
+# However, we can demonstrate using CWF denoised images for classification.
+classification_src = src
+custom_aligner = None
 if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
-    src = cwf_denoiser.denoise()
+    # Use denoised src for classification
+    classification_src = cwf_denoiser.denoise()
+    # Peek, what do the denoised images look like...
+    if interactive:
+        classification_src.images(0, 10).show()
 
-# Peek, what do the denoised images look like...
-if interactive:
-    src.images(0, 10).show()
+    # Use regular `src` for the alignment and composition (averaging).
+    composite_basis = FFBBasis2D((src.L,) * 2, dtype=src.dtype)
+    custom_aligner = BFSReddyChatterjiAlign2D(
+        None, src, composite_basis, dtype=src.dtype
+    )
 
-
-# Cache to memory for some speedup
-src = ArrayImageSource(src.images(0, num_imgs).asnumpy(), angles=src.angles)
 
 # %%
 # Class Averaging
@@ -158,7 +168,7 @@ src = ArrayImageSource(src.images(0, num_imgs).asnumpy(), angles=src.angles)
 logger.info("Begin Class Averaging")
 
 rir = RIRClass2D(
-    src,
+    classification_src,  # Source used for classification
     fspca_components=400,
     bispectrum_components=300,  # Compressed Features after last PCA stage.
     n_nbor=n_nbor,
@@ -166,6 +176,7 @@ rir = RIRClass2D(
     large_pca_implementation="legacy",
     nn_implementation="sklearn",
     bispectrum_implementation="legacy",
+    aligner=custom_aligner,
 )
 
 classes, reflections, distances = rir.classify()

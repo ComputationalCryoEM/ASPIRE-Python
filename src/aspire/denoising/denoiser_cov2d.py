@@ -123,7 +123,7 @@ class DenoiserCov2D(Denoiser):
         self.var_noise = var_noise
 
         if basis is None:
-            basis = FFBBasis2D((self.src.L, self.src.L))
+            basis = FFBBasis2D((self.src.L, self.src.L), dtype=src.dtype)
 
         if not isinstance(basis, FFBBasis2D):
             raise NotImplementedError("Currently only fast FB method is supported")

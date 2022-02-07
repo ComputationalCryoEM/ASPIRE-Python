@@ -421,9 +421,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         Instead see `alignment_source`.
         :param source: Source of original images.
         :param composite_basis:  Basis to be used during class average composition.
-        For current implementation of ReddyChatterjiAlign2D this should be `None`.
-        Instead this method uses `source` for composition of the averaged stack.
-        :param alignment_source:  Basis to be used during class average composition.
+        :param alignment_source: Optional, source to be used during class average alignment.
         Must be the same resolution as `source`.
         :param dtype: Numpy dtype to be used during alignment.
         """
@@ -888,9 +886,7 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
         Instead see `alignment_source`.
         :param source: Source of original images.
         :param composite_basis:  Basis to be used during class average composition.
-        For current implementation of ReddyChatterjiAlign2D this should be `None`.
-        Instead this method uses `source` for composition of the averaged stack.
-        :param alignment_source:  Basis to be used during class average composition.
+        :param alignment_source: Optional, source to be used during class average alignment.
         Must be the same resolution as `source`.
         :param radius: Brute force translation search radius.
         Defaults to source.L//8.
