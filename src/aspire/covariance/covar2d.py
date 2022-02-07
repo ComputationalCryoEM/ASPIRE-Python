@@ -284,7 +284,7 @@ class RotCov2D:
 
         for k in np.unique(ctf_idx[:]):
 
-            coeff_k = coeffs[ctf_idx == k]
+            coeff_k = coeffs[ctf_idx == k].astype(self.dtype)
             weight = coeff_k.shape[0] / coeffs.shape[0]
 
             ctf_fb_k = ctf_fb[k]
