@@ -28,7 +28,7 @@ class Align2D(ABC):
         """
         :param alignment_basis: Basis to be used during alignment (eg FSPCA)
         :param source: Source of original images.
-        :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
+        :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D)
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -89,43 +89,24 @@ class Align2D(ABC):
         :returns: Image instance (stack of images)
         """
 
-    def _images(self, cls):
+    def _images(self, cls, src=None):
         """
         Util to return images as an array for class k (provided as array `cls` ),
         preserving the class/nbor order.
 
-        :param cls: An iterable (0/1-D array or list) that holds the indices of images to align. In Class Averaging, this would be a class.
+        :param cls: An iterable (0/1-D array or list) that holds the indices of images to align.
+        In Class Averaging, this would be a class.
+        :param src: Optionally overridee the src, for example, if you want to use a different
+        source for a certain operation (ie aignment).
         """
+        src = src or self.src
 
         n_nbor = cls.shape[-1]  # Includes zero'th neighbor
 
-        # Get the images. We'll loop over the source in batches.
-        #  Note one day when the Source.images is more flexible,
-        #  this code would mostly go away.
-        images = np.empty((n_nbor, self.src.L, self.src.L), dtype=self.dtype)
+        images = np.empty((n_nbor, src.L, src.L), dtype=self.dtype)
 
-        # We want to only process batches that actually
-        # contain images for this class.
-        #   First compute the batches' indices.
-        for start in range(0, self.src.n + 1, self.batch_size):
-            # First cook up the batch boundaries
-            end = start + self.batch_size
-            # UBound, these are inclusive bounds
-            start = min(start, self.src.n - 1)
-            end = min(end, self.src.n - 1)
-            num = end - start + 1
-
-            # Second, loop over the cls members
-            image_batch = None
-            for i, index in enumerate(cls):
-                # Check if the member is in this chunk
-                if start <= index <= end:
-                    # Get and cache this image_batch on first hit.
-                    if image_batch is None:
-                        image_batch = self.src.images(start, num)
-                    # Translate the cls's index into this batch's
-                    batch_index = index % self.batch_size
-                    images[i] = image_batch[batch_index]
+        for i, index in enumerate(cls):
+            images[i] = src.images(index, 1).asnumpy()
 
         return images
 
@@ -429,20 +410,44 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         alignment_basis,
         source,
         composite_basis=None,
+        alignment_source=None,
         diagnostics=False,
         batch_size=512,
         dtype=None,
     ):
         """
-        :param alignment_basis: Basis to be used during alignment (eg FSPCA)
+        :param alignment_basis: Basis to be used during alignment.
+        For current implementation of ReddyChatterjiAlign2D this should be `None`.
+        Instead see `alignment_source`.
         :param source: Source of original images.
-        :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
+        :param composite_basis:  Basis to be used during class average composition.
+        For current implementation of ReddyChatterjiAlign2D this should be `None`.
+        Instead this method uses `source` for composition of the averaged stack.
+        :param alignment_source:  Basis to be used during class average composition.
+        Must be the same resolution as `source`.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         self.__cache = dict()
         self.diagnostics = diagnostics
         self.do_cross_corr_translations = True
+        self.alignment_src = alignment_source or source
+
+        # TODO, for accomodating different resolutions we minimally need to adapt shifting.
+        # Outside of scope right now, but would make a nice PR later.
+        if self.alignment_src.L != source.L:
+            raise RuntimeError("Currently `alignment_src.L` must equal `source.L`")
+        if self.alignment_src.dtype != source.dtype:
+            raise RuntimeError(
+                "Currently `alignment_src.dtype` must equal `source.dtype`"
+            )
+
+        # Sanity check. This API should be rethought once all basis and
+        # alignment methods have been incorporated.
+        assert alignment_basis is None  # We use sources directly for alignment
+        assert (
+            composite_basis is not None
+        )  # However, we require a basis for rotating etc.
 
         super().__init__(
             alignment_basis, source, composite_basis, batch_size=batch_size, dtype=dtype
@@ -497,8 +502,8 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
         for k in trange(n_classes):
-            # # Get the array of images for this class
-            images = self._images(classes[k])
+            # # Get the array of images for this class, using the `alignment_src`.
+            images = self._images(classes[k], src=self.alignment_src)
 
             self._reddychatterji(
                 k, images, classes, reflections, rotations, correlations, shifts
@@ -817,7 +822,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         plt.imshow(cross_correlation)
         plt.xlabel("x shift (pixels)")
         plt.ylabel("y shift (pixels)")
-        L = self.src.L
+        L = self.alignment_src.L
         labels = [0, 10, 20, 30, 0, -10, -20, -30]
         tick_location = [0, 10, 20, 30, L, L - 10, L - 20, L - 30]
         plt.xticks(tick_location, labels)
@@ -875,17 +880,26 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
         alignment_basis,
         source,
         composite_basis=None,
+        alignment_source=None,
         radius=None,
         diagnostics=False,
         batch_size=512,
         dtype=None,
     ):
         """
-        :param alignment_basis: Basis to be used during alignment (eg FSPCA)
+        :param alignment_basis: Basis to be used during alignment.
+        For current implementation of ReddyChatterjiAlign2D this should be `None`.
+        Instead see `alignment_source`.
         :param source: Source of original images.
-        :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
+        :param composite_basis:  Basis to be used during class average composition.
+        For current implementation of ReddyChatterjiAlign2D this should be `None`.
+        Instead this method uses `source` for composition of the averaged stack.
+        :param alignment_source:  Basis to be used during class average composition.
+        Must be the same resolution as `source`.
         :param radius: Brute force translation search radius.
         Defaults to source.L//8.
+        :param dtype: Numpy dtype to be used during alignment.
+
         :param diagnostics: Plot interactive diagnostic graphics (for debugging).
         :param dtype: Numpy dtype to be used during alignment.
         """
@@ -894,6 +908,7 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
             alignment_basis,
             source,
             composite_basis,
+            alignment_source,
             diagnostics,
             batch_size=batch_size,
             dtype=dtype,
@@ -915,7 +930,7 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
         reflections = np.atleast_2d(reflections)
 
         n_classes, n_nbor = classes.shape
-        L = self.src.L
+        L = self.alignment_src.L
 
         # Instantiate matrices for inner loop, and best results.
         _rotations = np.zeros(classes.shape, dtype=self.dtype)
