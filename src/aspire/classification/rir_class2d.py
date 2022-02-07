@@ -6,8 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
-from aspire.classification import Class2D
-from aspire.classification.align2d import BFSReddyChatterjiAlign2D
+from aspire.classification import BFSReddyChatterjiAlign2D, Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
 from aspire.utils.random import rand
@@ -207,19 +206,16 @@ class RIRClass2D(Class2D):
 
     def averages(self, classes, reflections, distances):
         # # Stage 3: Class Selection
-        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
         # This is an area open to active research.
         # Currently we take a naive approach by selecting the
         # first n_classes assuming they are quasi random.
-        classes = classes[: self.n_classes]
+        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
+        classes, reflections = self.select_classes(classes, reflections)
 
         # # Stage 4: Align
         logger.info(
             f"Begin Rotational Alignment of {classes.shape[0]} Classes using {self.aligner}."
         )
-
-        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        classes, reflections = self.select_classes(classes, reflections)
 
         return self.aligner.align(classes, reflections, self.fspca_coef)
 
@@ -227,9 +223,11 @@ class RIRClass2D(Class2D):
         """
         Select the `n_classes` to align from the (n_images) population of classes.
         """
-        # generate indices for random sample (can do something smart with corr later).
-        # For testing just take the first n_classes so it matches earlier plots for manual comparison
-        # This is assumed to be reasonably random.
+        # Generate indices for random sample (can do something smarter, or build this out later).
+        # For testing/poc just take the first n_classes so it matches earlier plots for manual comparison
+        # If image stack is assumed to be reasonably random, this is a reasonable thing to do.
+        # Another reasonable thing would be to take a random selection over the whole dataset,
+        # in case the head of a dataset is too similar or has artifacts.
         selection = np.arange(self.n_classes)
         return classes[selection], reflections[selection]
 
