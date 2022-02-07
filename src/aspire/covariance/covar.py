@@ -61,7 +61,7 @@ class CovarianceEstimator(Estimator):
                 weights[:, 0, :] = 0
 
             # TODO: This is where this differs from MeanEstimator
-            pts_rot = np.moveaxis(pts_rot, -1, 0).reshape(-1, 3, L**2)
+            pts_rot = np.moveaxis(pts_rot[::-1], 1, 0).reshape(-1, 3, L**2)
             weights = weights.T.reshape((-1, L**2))
 
             batch_n = weights.shape[0]
