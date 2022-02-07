@@ -141,7 +141,7 @@ class Simulation(ImageSource):
         im = self.projections(start=start, num=num, indices=indices)
 
         # apply original CTF distortion to image
-        im = self._apply_sim_filters(im, start=start, num=num, indices=indices)
+        im = self._apply_sim_filters(im, indices)
 
         im = im.shift(self.offsets[indices, :])
 
@@ -152,14 +152,11 @@ class Simulation(ImageSource):
 
         return im
 
-    def _apply_sim_filters(self, im, start=0, num=np.inf, indices=None):
+    def _apply_sim_filters(self, im, indices):
         return self._apply_filters(
             im,
             self.sim_filters,
-            self.filter_indices,
-            start=start,
-            num=num,
-            indices=indices,
+            self.filter_indices[indices],
         )
 
     def vol_coords(self, mean_vol=None, eig_vols=None):

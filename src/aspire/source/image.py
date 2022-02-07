@@ -1,7 +1,6 @@
 import logging
 import os.path
 from collections import OrderedDict
-
 import mrcfile
 import numpy as np
 import pandas as pd
@@ -330,7 +329,15 @@ class ImageSource:
             else:
                 raise RuntimeError("Missing columns and no default value provided")
 
-        return result.to_numpy().squeeze()
+        # remove axes of length 1
+        squeezed = result.to_numpy().squeeze()
+        # if result was 1x1, squeeze() will convert it to a 0-D array
+        # (shape is an empty tuple), which can't be used by downstream code
+        # so, convert it to 1-D via flatten()
+        if squeezed.shape:
+            return squeezed
+        else:
+            return squeezed.flatten()
 
     def _images(self, start=0, num=np.inf, indices=None):
         """
@@ -346,7 +353,10 @@ class ImageSource:
         )
 
     def _apply_filters(
-        self, im_orig, filters, filter_indices, start=0, num=np.inf, indices=None
+        self,
+        im_orig,
+        filters,
+        indices,
     ):
         """
         For each image in `im_orig` specified by start, num, or indices,
@@ -370,24 +380,18 @@ class ImageSource:
 
         im = im_orig.copy()
 
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
-
         for i, filt in enumerate(filters):
-            idx_k = np.where(filter_indices[indices] == i)[0]
+            idx_k = np.where(indices == i)[0]
             if len(idx_k) > 0:
                 im[idx_k] = Image(im[idx_k]).filter(filt).asnumpy()
 
         return im
 
-    def _apply_source_filters(self, im_orig, start=0, num=np.inf, indices=None):
+    def _apply_source_filters(self, im_orig, indices):
         return self._apply_filters(
             im_orig,
             self.unique_filters,
-            self.filter_indices,
-            start=start,
-            num=num,
-            indices=indices,
+            self.filter_indices[indices],
         )
 
     def cache(self):
@@ -545,7 +549,7 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
-        im = self._apply_source_filters(im, start=start, num=num)
+        im = self._apply_source_filters(im, all_idx)
 
         vol = im.backproject(self.rots[start : start + num, :, :])[0]
 
@@ -567,7 +571,7 @@ class ImageSource:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
         im = vol.project(0, self.rots[all_idx, :, :])
-        im = self._apply_source_filters(im, start, num)
+        im = self._apply_source_filters(im, all_idx)
         im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
