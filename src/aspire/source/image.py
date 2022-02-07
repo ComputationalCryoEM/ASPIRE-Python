@@ -145,7 +145,7 @@ class ImageSource:
 
     @property
     def filter_indices(self):
-        return np.at_least1D(self.get_metadata("__filter_indices"))
+        return np.atleast_1d(self.get_metadata("__filter_indices"))
 
     @filter_indices.setter
     def filter_indices(self, indices):
