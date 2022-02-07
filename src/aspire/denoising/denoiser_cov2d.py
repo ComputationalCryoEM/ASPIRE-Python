@@ -103,7 +103,7 @@ class DenoiserCov2D(Denoiser):
     Define a derived class for denoising 2D images using Cov2D method
     """
 
-    def __init__(self, src, basis, var_noise=None):
+    def __init__(self, src, basis=None, var_noise=None):
         """
         Initialize an object for denoising 2D images using Cov2D method
 
@@ -122,8 +122,12 @@ class DenoiserCov2D(Denoiser):
             logger.info(f"Estimated Noise Variance: {var_noise}")
         self.var_noise = var_noise
 
+        if basis is None:
+            basis = FFBBasis2D((self.src.L, self.src.L))
+
         if not isinstance(basis, FFBBasis2D):
             raise NotImplementedError("Currently only fast FB method is supported")
+
         self.basis = basis
         self.cov2d = None
         self.mean_est = None
