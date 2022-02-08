@@ -1,4 +1,4 @@
-"""
+"""OA
 General purpose math functions, mostly geometric in nature.
 """
 
@@ -306,7 +306,7 @@ def common_line_from_rots(r1, r2, ell):
     return ell_ij, ell_ji
 
 
-def crop_2d(mat, size):
+def crop_2d(mat, size, fill_value=0):
     """
     :param mat: A 2-dimensional numpy array
     :param size: Integer size of cropped/padded output
@@ -315,9 +315,14 @@ def crop_2d(mat, size):
 
     mat_x, mat_y = mat.shape
     # shift terms
-    start_x, start_y = math.floor(0.5 * (mat_x - size)), math.floor(
-        0.5 * (mat_y - size)
-    )
+    start_x = math.floor(mat_x / 2) - math.floor(size / 2)
+    start_y = math.floor(mat_y / 2) - math.floor(size / 2)
 
+    # cropping
     if start_x >= 0 and start_y >= 0:
         return mat[start_x : start_x + size, start_y : start_y + size]
+    # padding
+    elif start_x < 0 and start_y < 0:
+        to_return = fill_value * np.ones((size, size), dtype="complex")
+        to_return[start_x : start_x + size, start_y : start_y + size] = mat
+        return to_return
