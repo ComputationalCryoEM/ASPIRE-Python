@@ -1,18 +1,26 @@
 """
-ASPIRE-Python Abinitio Pipeline
-================================
+Abinitio Pipeline - Experimental Data
+=====================================
 
-In this notebook we will introduce a selection of
-components corresponding to a pipeline using
-the EMD-10028 picked particles dataset.
+This notebook introduces a selection of
+components corresponding to loading real Relion picked
+particle Cryo-EM data and running key ASPIRE-Python
+Abinitio model components as a pipeline.
+
+Specifically in this pipeline uses the
+EMPIAR 10028 picked particles data, available here:
+
+https://www.ebi.ac.uk/empiar/EMPIAR-10028
+
+https://www.ebi.ac.uk/emdb/EMD-10028
 """
 
 # %%
 # Imports
 # -------
-# First we import some of the usual suspects.
-# In addition, we import some classes from
-# the ASPIRE package that we will use throughout this experiment.
+# First import some of the usual suspects.
+# In addition, import some classes from
+# the ASPIRE package that will be used throughout this experiment.
 
 import logging
 
@@ -35,7 +43,7 @@ logger = logging.getLogger(__name__)
 # ---------------
 # Example simulation configuration.
 
-interactive = False  # Do we want to draw blocking interactive plots?
+interactive = False  # Draw blocking interactive plots?
 do_cov2d = True  # Use CWF coefficients
 n_imgs = None  # Set to None for all images in starfile, can set smaller for tests.
 img_size = 77  # Downsample the images/reconstruction to a desired resolution
@@ -44,6 +52,14 @@ n_nbor = 100  # How many neighbors to stack
 starfile_in = "10028/data/shiny_2sets.star"
 volume_filename_prefix_out = f"10028_recon_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.34
+
+# %%
+# Source data and Preprocessing
+# -----------------------------
+#
+# `RelionSource` is used to access the experimental data via a `starfile`.
+# Begin by downsampling to our chosen resolution, then preprocess
+# to correct for CTF and noise.
 
 # Create a source object for the experimental images
 src = RelionSource(starfile_in, pixel_size=pixel_size, max_rows=n_imgs)
@@ -56,11 +72,11 @@ src.downsample(img_size)
 if interactive:
     src.images(0, 10).show()
 
-# Currently we use phase_flip to attempt correcting for CTF.
+# Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
 src.phase_flip()
 
-# We should estimate the noise and `Whiten` based on the estimated noise
+# Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
 src.whiten(aiso_noise_estimator.filter)
 
@@ -73,12 +89,25 @@ if interactive:
 if interactive:
     src.images(0, 10).show()
 
-# # Optionally invert image contrast, depends on data.
+# # Optionally invert image contrast, depends on data convention.
+# # This is not needed for 10028, but included anyway.
 # logger.info("Invert the global density contrast")
 # src.invert_contrast()
 
-# On Simulation data, better results so far were achieved without cov2d
-# However, we can demonstrate using CWF denoised images for classification.
+# %%
+# Optional: CWF Denoising
+# -----------------------
+#
+# Optionally generate an alternative source that is denoised with `cov2d`,
+# then configure a customized aligner. This allows the use of CWF denoised
+# images for classification, but stacks the original images for averages
+# used in the remainder of the reconstruction pipeline.
+#
+# In this example, this behavior is controlled by the `do_cov2d` boolean variable.
+# When disabled, the original src and default aligner is used.
+# If you will not be using cov2d,
+# you may remove this code block and associated variables.
+
 classification_src = src
 custom_aligner = None
 if do_cov2d:
@@ -101,7 +130,7 @@ if do_cov2d:
 # Class Averaging
 # ----------------------
 #
-# Now we perform classification and averaging for each class.
+# Now perform classification and averaging for each class.
 
 logger.info("Begin Class Averaging")
 
@@ -118,7 +147,7 @@ rir = RIRClass2D(
 )
 
 classes, reflections, distances = rir.classify()
-# Only care about the averages returned right now.
+# Only care about the averages returned right now (index 0)
 avgs = rir.averages(classes, reflections, distances)[0]
 if interactive:
     avgs.images(0, 10).show()
@@ -127,7 +156,7 @@ if interactive:
 # Common Line Estimation
 # ----------------------
 #
-# Now we can create a CL instance for estimating orientation of projections
+# Next create a CL instance for estimating orientation of projections
 # using the Common Line with Synchronization Voting method.
 
 logger.info("Begin Orientation Estimation")
