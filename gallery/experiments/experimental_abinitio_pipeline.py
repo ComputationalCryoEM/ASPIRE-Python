@@ -45,10 +45,10 @@ logger = logging.getLogger(__name__)
 
 interactive = False  # Draw blocking interactive plots?
 do_cov2d = True  # Use CWF coefficients
-n_imgs = None  # Set to None for all images in starfile, can set smaller for tests.
-img_size = 77  # Downsample the images/reconstruction to a desired resolution
-n_classes = 2000  # How many class averages to compute.
-n_nbor = 100  # How many neighbors to stack
+n_imgs = 20000  # Set to None for all images in starfile, can set smaller for tests.
+img_size = 32  # Downsample the images/reconstruction to a desired resolution
+n_classes = 1000  # How many class averages to compute.
+n_nbor = 50  # How many neighbors to stack
 starfile_in = "10028/data/shiny_2sets.star"
 volume_filename_prefix_out = f"10028_recon_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.34
