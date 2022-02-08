@@ -352,7 +352,7 @@ class ImageSource:
         indices,
     ):
         """
-        For images in `im_orig`, `filters` associated with the corresponding 
+        For images in `im_orig`, `filters` associated with the corresponding
         index in the supplied `indices` are applied. The images are then returned as an `Image` stack.
         :param im_orig: An `Image` object
         :param filters: A list of `Filter` objects
