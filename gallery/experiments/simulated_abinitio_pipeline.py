@@ -1,17 +1,19 @@
 """
-ASPIRE-Python Abinitio Pipeline
-================================
+Abinitio Pipeline - Simulated Data
+==================================
 
-In this notebook we will introduce a selection of
-components corresponding to a pipeline.
+This notebook introduces a selection of
+components corresponding to generating realistic
+simulated Cryo-EM data and running key ASPIRE-Python
+Abinitio model components as a pipeline.
 """
 
 # %%
 # Imports
 # -------
-# First we import some of the usual suspects.
-# In addition, we import some classes from
-# the ASPIRE package that we will use throughout this experiment.
+# First import some of the usual suspects.
+# In addition, import some classes from
+# the ASPIRE package that will be used throughout this experiment.
 
 import logging
 
@@ -44,7 +46,7 @@ logger = logging.getLogger(__name__)
 # Medium sim: img_size 64, num_imgs 20000, n_classes 2000, n_nbor 10
 # Large sim: img_size 129, num_imgs 30000, n_classes 2000, n_nbor 20
 
-interactive = True  # Do we want to draw blocking interactive plots?
+interactive = True  # Draw blocking interactive plots?
 do_cov2d = False  # Use CWF coefficients
 img_size = 32  # Downsample the volume to a desired resolution
 num_imgs = 10000  # How many images in our source.
@@ -56,7 +58,7 @@ noise_variance = 1e-4  # Set a target noise variance
 # %%
 # Simulation Data
 # ---------------
-# We'll start with a fairly hi-res volume available from EMPIAR/EMDB.
+# Start with a fairly hi-res volume available from EMPIAR/EMDB.
 # https://www.ebi.ac.uk/emdb/EMD-2660
 # https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz
 og_v = Volume.load("emd_2660.map", dtype=np.float64)
@@ -109,11 +111,11 @@ src = Simulation(
 if interactive:
     src.images(0, 10).show()
 
-# Currently we use phase_flip to attempt correcting for CTF.
+# Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
 src.phase_flip()
 
-# We should estimate the noise and `Whiten` based on the estimated noise
+# Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
 src.whiten(aiso_noise_estimator.filter)
 
@@ -126,15 +128,23 @@ if interactive:
 if interactive:
     src.images(0, 10).show()
 
-# # Optionally invert image contrast, depends on data.
-# logger.info("Invert the global density contrast")
-# src.invert_contrast()
-
 # Cache to memory for some speedup
 src = ArrayImageSource(src.images(0, num_imgs).asnumpy(), angles=src.angles)
 
-# On Simulation data, better results so far were achieved without cov2d
-# However, we can demonstrate using CWF denoised images for classification.
+# %%
+# Optional: CWF Denoising
+# -----------------------
+#
+# Optionally generate an alternative source that is denoised with `cov2d`,
+# then configure a customized aligner. This allows the use of CWF denoised
+# images for classification, but stacks the original images for averages
+# used in the remainder of the reconstruction pipeline.
+#
+# In this example, this behavior is controlled by the `do_cov2d` boolean variable.
+# When disabled, the original src and default aligner is used.
+# If you will not be using cov2d,
+# you may remove this code block and associated variables.
+
 classification_src = src
 custom_aligner = None
 if do_cov2d:
@@ -157,7 +167,7 @@ if do_cov2d:
 # Class Averaging
 # ----------------------
 #
-# Now we perform classification and averaging for each class.
+# Now perform classification and averaging for each class.
 
 logger.info("Begin Class Averaging")
 
@@ -174,7 +184,7 @@ rir = RIRClass2D(
 )
 
 classes, reflections, distances = rir.classify()
-# Only care about the averages returned right now.
+# Only care about the averages returned right now (index 0)
 avgs = rir.averages(classes, reflections, distances)[0]
 if interactive:
     avgs.images(0, 10).show()
@@ -183,7 +193,7 @@ if interactive:
 # Common Line Estimation
 # ----------------------
 #
-# Now we can create a CL instance for estimating orientation of projections
+# Next create a CL instance for estimating orientation of projections
 # using the Common Line with Synchronization Voting method.
 
 logger.info("Begin Orientation Estimation")
