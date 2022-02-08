@@ -26,12 +26,13 @@ class PolarBasis2D(Basis):
         """
 
         ndim = len(size)
+        nres = size[0]
         ensure(ndim == 2, "Only two-dimensional grids are supported.")
         ensure(len(set(size)) == 1, "Only square domains are supported.")
 
         self.nrad = nrad
         if nrad is None:
-            self.nrad = self.nres // 2
+            self.nrad = nres // 2
 
         self.ntheta = ntheta
         if ntheta is None:
