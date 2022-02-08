@@ -352,17 +352,11 @@ class ImageSource:
         indices,
     ):
         """
-        For each image in `im_orig` specified by start, num, or indices,
-        the `filters` associated with the corresponding index in the
-        `ImageSource` with reference to the supplied `filter_indices` are applied.
-        The images are then returned as an `Image` stack.
+        For images in `im_orig`, `filters` associated with the corresponding 
+        index in the supplied `indices` are applied. The images are then returned as an `Image` stack.
         :param im_orig: An `Image` object
         :param filters: A list of `Filter` objects
-        :param filter_indices: A list of indices indicating the corresponding filter in `filters`
-        :param start: Starting index of images in `im_orig`.
-        :param num: Number of images to work on, starting at `start`.
-        :param indices: A numpy array of image indices. If specified,`start` and `num` are ignored.
-        :return: An `Image` instance with the unique filters of the source applied at the given indices.
+        :param indices: A list of indices indicating the corresponding filter in `filters`
         """
         if not isinstance(im_orig, Image):
             logger.warning(
