@@ -40,10 +40,11 @@ logger = logging.getLogger(__name__)
 interactive = False  # Do we want to draw blocking interactive plots?
 do_cov2d = True  # Use CWF coefficients
 n_imgs = None  # Set to None for all images in starfile
-img_size = 64  # Downsample the images/reconstruction to a desired resolution
+img_size = 77  # Downsample the images/reconstruction to a desired resolution
 n_classes = 2000  # How many class averages to compute.
-n_nbor = 50  # How many neighbors to stack
+n_nbor = 100  # How many neighbors to stack
 starfile_in = "10028/data/shiny_2sets.star"
+volume_filename_prefix_out = f"10028_recon_{num_imgs}_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.34
 
 # Create a source object for the experimental images
@@ -159,8 +160,7 @@ estimator = MeanEstimator(avgs, basis)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
-fn = f"estimated_volume_n{num_imgs}_c{n_classes}_m{n_nbor}_{img_size}.mrc"
-estimated_volume.save(fn, overwrite=True)
+estimated_volume.save(volume_filename_prefix_out, overwrite=True)
 
 # Peek at result
 if interactive:
