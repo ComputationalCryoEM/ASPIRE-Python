@@ -24,10 +24,8 @@ from aspire.basis import FFBBasis2D, FFBBasis3D
 from aspire.classification import BFSReddyChatterjiAlign2D, RIRClass2D
 from aspire.denoising import DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
-from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import RelionSource
-from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -39,18 +37,16 @@ logger = logging.getLogger(__name__)
 
 interactive = False  # Do we want to draw blocking interactive plots?
 do_cov2d = True  # Use CWF coefficients
-n_imgs = None  # Set to None for all images in starfile
+n_imgs = None  # Set to None for all images in starfile, can set smaller for tests.
 img_size = 77  # Downsample the images/reconstruction to a desired resolution
 n_classes = 2000  # How many class averages to compute.
 n_nbor = 100  # How many neighbors to stack
 starfile_in = "10028/data/shiny_2sets.star"
-volume_filename_prefix_out = f"10028_recon_{num_imgs}_c{n_classes}_m{n_nbor}_{img_size}.mrc"
+volume_filename_prefix_out = f"10028_recon_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.34
 
 # Create a source object for the experimental images
-src = RelionSource(
-    starfile_in, pixel_size=pixel_size, max_rows=n_imgs
-)
+src = RelionSource(starfile_in, pixel_size=pixel_size, max_rows=n_imgs)
 
 # Downsample the images
 logger.info(f"Set the resolution to {img_size} X {img_size}")
