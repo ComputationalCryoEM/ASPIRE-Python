@@ -7,8 +7,7 @@ from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter, ScalarFilter
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
-from aspire.utils import utest_tolerance
-from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils import grid_2d, grid_3d, utest_tolerance
 from aspire.utils.matrix import anorm
 from aspire.volume import Volume
 

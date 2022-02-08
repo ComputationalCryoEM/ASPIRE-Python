@@ -7,8 +7,15 @@ from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
-from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
-from aspire.utils.coor_trans import uniform_random_angles
+from aspire.utils import (
+    acorr,
+    ainner,
+    anorm,
+    ensure,
+    make_symmat,
+    uniform_random_angles,
+    vecmat_to_volmat,
+)
 from aspire.utils.random import rand, randi, randn
 from aspire.volume import Volume, gaussian_blob_vols
 

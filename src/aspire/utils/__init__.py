@@ -1,4 +1,13 @@
-from .misc import abs2, ensure, get_full_version, powerset, sha256sum  # isort:skip
+from .coor_trans import (
+    common_line_from_rots,
+    get_aligned_rotations,
+    get_rots_mse,
+    grid_1d,
+    grid_2d,
+    grid_3d,
+    register_rotations,
+    uniform_random_angles,
+)
 from .matrix import (
     acorr,
     ainner,
@@ -26,3 +35,5 @@ from .matrix import (
 from .misc import circ, gaussian_2d, inverse_r
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance
+
+from .misc import abs2, ensure, get_full_version, powerset, sha256sum  # isort:skip

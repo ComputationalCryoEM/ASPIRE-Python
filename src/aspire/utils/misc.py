@@ -9,7 +9,7 @@ from itertools import chain, combinations
 
 import numpy as np
 
-from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
+from aspire.utils import grid_1d, grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
 

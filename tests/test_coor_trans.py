@@ -3,8 +3,8 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.utils import Rotation
-from aspire.utils.coor_trans import (
+from aspire.utils import (
+    Rotation,
     get_aligned_rotations,
     grid_2d,
     grid_3d,
