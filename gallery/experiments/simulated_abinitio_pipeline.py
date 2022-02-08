@@ -109,12 +109,6 @@ src = Simulation(
 if interactive:
     src.images(0, 10).show()
 
-# # TODO: Seemed to cause a crash, maybe dtype/blkdiag related
-# logger.info("Normalize images to background noise.")
-# src.normalize_background()
-# # Peek
-# if interactive: src.images(0, 10).show()
-
 # Currently we use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
 src.phase_flip()

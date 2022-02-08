@@ -61,12 +61,13 @@ class Align2D(ABC):
     @abstractmethod
     def align(self, classes, reflections, basis_coefficients):
         """
-        Any align2D alignment method should take in the following arguments
+        Any align2D alignment method should take in the below arguments
         and return aligned images.
 
         During this process `rotations`, `reflections`, `shifts` and
         `correlations` properties will be computed for aligners
-        that implement them.
+        that implement them.  Some future aligners (example. EM based)
+        may not produce these intermediates.
 
         `rotations` is an (n_classes, n_nbor) array of angles,
         which should represent the rotations needed to align images within
@@ -83,13 +84,13 @@ class Align2D(ABC):
         Subclasses of `align` should extend this method with optional arguments.
 
         :param classes: (n_classes, n_nbor) integer array of img indices
-        :param refl: (n_classes, n_nbor) bool array of corresponding reflections
-        :param coef: (n_img, self.pca_basis.count) compressed basis coefficients
+        :param reflections: (n_classes, n_nbor) bool array of corresponding reflections
+        :param basis_coefficients: (n_img, self.pca_basis.count) compressed basis coefficients
 
         :returns: Image instance (stack of images)
         """
 
-    def _images(self, cls, src=None):
+    def _cls_images(self, cls, src=None):
         """
         Util to return images as an array for class k (provided as array `cls` ),
         preserving the class/nbor order.
@@ -135,7 +136,7 @@ class AveragedAlign2D(Align2D):
         coefs=None,
     ):
         """
-        Combines images using averaging in `composite_basis`.
+        Combines images using averaging in `self.composite_basis`.
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
         :param reflections: Bool representing whether to reflect image in `classes`
@@ -153,7 +154,7 @@ class AveragedAlign2D(Align2D):
             # Get coefs in Composite_Basis if not provided as an argumen.
             if coefs is None:
                 # Retrieve relavent images directly from source.
-                neighbors_imgs = Image(self._images(classes[i]))
+                neighbors_imgs = Image(self._cls_images(classes[i]))
 
                 # Do shifts
                 if shifts is not None:
@@ -501,7 +502,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
 
         for k in trange(n_classes):
             # # Get the array of images for this class, using the `alignment_src`.
-            images = self._images(classes[k], src=self.alignment_src)
+            images = self._cls_images(classes[k], src=self.alignment_src)
 
             self._reddychatterji(
                 k, images, classes, reflections, rotations, correlations, shifts
@@ -513,7 +514,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         self, k, images, classes, reflections, rotations, correlations, shifts
     ):
         """
-        Compute the Reddy Chatterji registering images[1:] to image[0].
+        Compute the Reddy Chatterji method registering images[1:] to image[0].
 
         This differs from papers and published scikit implimentations by
         computing the fixed base image[0] pipeline once then reusing.
@@ -551,7 +552,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             # Get the image to register
             regis_img = images[m]
 
-            # Reflect images when nessecary
+            # Reflect images when necessary
             if reflections[k][m]:
                 regis_img = np.flipud(regis_img)
 
@@ -698,7 +699,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
                 # Retrieve relavent images directly from source.
-                neighbors_imgs = Image(self._images(classes[i]))
+                neighbors_imgs = Image(self._cls_images(classes[i]))
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
                 # Get the neighbors
@@ -938,7 +939,7 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
         X, Y = g["x"][disc], g["y"][disc]
 
         for k in trange(n_classes):
-            unshifted_images = self._images(classes[k])
+            unshifted_images = self._cls_images(classes[k])
 
             for xs, ys in zip(X, Y):
                 s = np.array([xs, ys])
