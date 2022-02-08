@@ -2,6 +2,8 @@
 General purpose math functions, mostly geometric in nature.
 """
 
+import math
+
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import svd
@@ -302,3 +304,20 @@ def common_line_from_rots(r1, r2, ell):
     ell_ji = int(np.mod(np.round(ell_ji), ell))
 
     return ell_ij, ell_ji
+
+
+def crop_2d(mat, size):
+    """
+    :param mat: A 2-dimensional numpy array
+    :param size: Integer size of cropped/padded output
+    :return: A numpy array of shape (size, size)
+    """
+
+    mat_x, mat_y = mat.shape
+    # shift terms
+    start_x, start_y = math.floor(0.5 * (mat_x - size)), math.floor(
+        0.5 * (mat_y - size)
+    )
+
+    if start_x >= 0 and start_y >= 0:
+        return mat[start_x : start_x + size, start_y : start_y + size]

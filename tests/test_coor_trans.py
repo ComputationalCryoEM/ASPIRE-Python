@@ -1,10 +1,11 @@
-import os.path
 from unittest import TestCase
 
 import numpy as np
+import os.path
 
 from aspire.utils import (
     Rotation,
+    crop_2d,
     get_aligned_rotations,
     grid_2d,
     grid_3d,
@@ -77,3 +78,7 @@ class UtilsTestCase(TestCase):
         q_mat_est, flag_est = register_rotations(rots_ref, regrots_ref)
 
         self.assertTrue(np.allclose(flag_est, flag) and np.allclose(q_mat_est, q_mat))
+
+    def testCrop2D(self):
+        cropped = crop_2d(np.eye(60, 30))
+        self.assertTrue(np.array_equal(cropped, np.eye(30)))
