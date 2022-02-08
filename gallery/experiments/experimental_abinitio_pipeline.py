@@ -7,7 +7,7 @@ components corresponding to loading real Relion picked
 particle Cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 
-Specifically in this pipeline uses the
+Specifically this pipeline uses the
 EMPIAR 10028 picked particles data, available here:
 
 https://www.ebi.ac.uk/empiar/EMPIAR-10028
