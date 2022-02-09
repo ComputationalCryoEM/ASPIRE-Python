@@ -10,6 +10,7 @@ import tests.saved_test_data
 from aspire.image import Image
 from aspire.operators import ScalarFilter
 from aspire.source.relion import RelionSource
+from aspire.utils.coor_trans import grid_2d
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -57,6 +58,13 @@ class StarFileMainCase(StarFileTestCase):
         )
 
     def testImageDownsample(self):
+        # create gaussian density in 2D
+        g2d = grid_2d(self.src.L, dtype=self.src.dtype)
+        coords = np.array([g2d["x"].flatten(), g2d["y"].flatten()])
+        sigma = 0.2
+        img = np.exp(-0.5 * np.sum(np.abs(coords / sigma) ** 2, axis=0)).astype(self.src.dtype)
+        img = img.reshape(g2d["x"].shape)
+        img = Image(img)
         self.src.downsample(16)
         first_image = self.src.images(0, 1)[0]
         self.assertEqual(first_image.shape, (16, 16))
