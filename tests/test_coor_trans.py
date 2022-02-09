@@ -80,5 +80,83 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(flag_est, flag) and np.allclose(q_mat_est, q_mat))
 
     def testCrop2D(self):
-        cropped = crop_2d(np.eye(60), 30)
-        self.assertTrue(np.array_equal(cropped, np.eye(30)))
+        # test even/odd cases
+        # based on the choice that the center of a sequence of length n is (n+1)/2
+        # if n is odd and n/2 + 1 if even. 
+        
+        # even to even
+        # the center is preserved
+        a = np.zeros((8,8))
+        np.fill_diagonal(a, np.arange(8))
+        test_a = np.zeros((6,6))
+        np.fill_diagonal(test_a, np.arange(1,7))
+        self.assertTrue(np.array_equal(test_a, crop_2d(a, 6)))
+        
+        # even to odd
+        # the crop gives us a[1:,1:] since we shift towards
+        # higher x and y values due to the centering convention
+        a = np.zeros((8, 8))
+        np.fill_diagonal(a, np.arange(8))
+        test_a = np.zeros((7, 7))
+        np.fill_diagonal(test_a, np.arange(1, 8))
+        self.assertTrue(np.array_equal(test_a, crop_2d(a, 7)))
+        
+        # odd to odd
+        # the center is preserved
+        a = np.zeros((9,9))
+        np.fill_diagonal(a, np.arange(9))
+        test_a = np.zeros((7,7))
+        np.fill_diagonal(test_a, np.arange(1,8))
+        self.assertTrue(np.array_equal(test_a, crop_2d(a, 7)))
+        
+        # odd to even
+        # the crop gives us a[:8, :8] since we shift towards
+        # lower x and y values due to the centering convention
+        a = np.zeros((9,9))
+        np.fill_diagonal(a, np.arange(9))
+        test_a = np.zeros((8,8))
+        np.fill_diagonal(test_a, np.arange(8))
+        self.assertTrue(np.array_equal(test_a, crop_2d(a, 8)))
+
+    def testPad2D(self):
+        # test even/odd cases of padding operation of crop_2d
+
+        # even to even
+        # the center is preserved
+        a = np.zeros((8,8))
+        np.fill_diagonal(a, np.arange(1,9))
+        test_a = np.zeros((10,10))
+        np.fill_diagonal(test_a, [0,1,2,3,4,5,6,7,8,0])
+        self.assertTrue(np.array_equal(test_a, crop_2d(a,10)))
+
+        # even to odd
+        # the shift is towards lower x and y values
+        # due to the centering convention
+        a = np.zeros((8,8))
+        np.fill_diagonal(a, np.arange(1,9))
+        test_a = np.zeros((11,11))
+        np.fill_diagonal(test_a, [0,1,2,3,4,5,6,7,8,0,0])
+        self.assertTrue(np.array_equal(test_a, crop_2d(a,11)))
+
+        # odd to odd
+        # the center is preserved
+        a = np.zeros((9,9))
+        np.fill_diagonal(a, np.arange(1,10))
+        test_a = np.zeros((11,11))
+        np.fill_diagonal(test_a, [0,1,2,3,4,5,6,7,8,9,0])
+        self.assertTrue(np.array_equal(test_a, crop_2d(a,11)))
+
+        # odd to even
+        # the shift is towards higher x and y values
+        # due to the centering convention
+        a = np.zeros((9,9))
+        np.fill_diagonal(a, np.arange(1,10))
+        test_a = np.zeros((12,12))
+        np.fill_diagonal(test_a, [0,0,1,2,3,4,5,6,7,8,9,0])
+        self.assertTrue(np.array_equal(test_a, crop_2d(a, 12)))
+        
+    def testCrop2DComplex(self):
+        # The output of crop2D must be complex because
+        # of its use in Fourier downsampling methods
+        self.assertEqual(crop_2d(np.eye(10),5).dtype, np.dtype("complex128"))
+    

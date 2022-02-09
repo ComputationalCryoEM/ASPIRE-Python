@@ -2,6 +2,7 @@
 General purpose math functions, mostly geometric in nature.
 """
 
+import pdb
 import math
 
 import numpy as np
@@ -317,12 +318,11 @@ def crop_2d(mat, size, fill_value=0):
     # shift terms
     start_x = math.floor(mat_x / 2) - math.floor(size / 2)
     start_y = math.floor(mat_y / 2) - math.floor(size / 2)
-
     # cropping
     if start_x >= 0 and start_y >= 0:
-        return mat[start_x : start_x + size, start_y : start_y + size]
+        return mat[start_x : start_x + size, start_y : start_y + size].astype("complex")
     # padding
     elif start_x < 0 and start_y < 0:
         to_return = fill_value * np.ones((size, size), dtype="complex")
-        to_return[start_x : start_x + size, start_y : start_y + size] = mat
+        to_return[-start_x : mat_x - start_x, -start_y : mat_y - start_y] = mat
         return to_return
