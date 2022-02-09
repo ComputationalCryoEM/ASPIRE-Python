@@ -2,7 +2,6 @@
 General purpose math functions, mostly geometric in nature.
 """
 
-import pdb
 import math
 
 import numpy as np
