@@ -62,7 +62,9 @@ class StarFileMainCase(StarFileTestCase):
         g2d = grid_2d(self.src.L, dtype=self.src.dtype)
         coords = np.array([g2d["x"].flatten(), g2d["y"].flatten()])
         sigma = 0.2
-        img = np.exp(-0.5 * np.sum(np.abs(coords / sigma) ** 2, axis=0)).astype(self.src.dtype)
+        img = np.exp(-0.5 * np.sum(np.abs(coords / sigma) ** 2, axis=0)).astype(
+            self.src.dtype
+        )
         img = img.reshape(g2d["x"].shape)
         img = Image(img)
         self.src.downsample(16)

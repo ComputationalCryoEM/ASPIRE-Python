@@ -1,5 +1,5 @@
 import logging
-
+from math import floor
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
@@ -210,30 +210,19 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
-        grid = grid_2d(self.res, indexing="yx")
-        grid_ds = grid_2d(ds_res, indexing="yx")
-
-        im_ds = np.zeros((self.n_images, ds_res, ds_res), dtype=self.dtype)
-
-        # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
-        res_by_2 = self.res / 2
-        x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
-
-        mask = (np.abs(grid["x"]) < ds_res / self.res) & (
-            np.abs(grid["y"]) < ds_res / self.res
+        fx = np.array(
+            [fft.fftshift(fft.fft2(self.data[i, :, :])) for i in range(self.n_images)]
         )
-        im_shifted = fft.centered_ifft2(
-            fft.centered_fft2(xp.asarray(self.data)) * xp.asarray(mask)
-        )
-        im = np.real(xp.asnumpy(im_shifted))
+        # offset to start crop in Fourier space
+        start = floor(self.res / 2 - ds_res / 2)
+        # crop 2D Fourier transform for each image
+        crop_fx = fx[:, start : start + ds_res, start : start + ds_res]
+        # take back to real space, discard complex part, and scale
+        out = np.array(
+            [fft.ifft2(fft.ifftshift(crop_fx[i, :, :])) for i in range(self.n_images)]
+        ).astype("float32") * (ds_res**2 / self.res**2)
 
-        for s in range(im_ds.shape[0]):
-            interpolator = RegularGridInterpolator(
-                (x, y), im[s], bounds_error=False, fill_value=0
-            )
-            im_ds[s] = interpolator(np.dstack([grid_ds["y"], grid_ds["x"]]))
-
-        return Image(im_ds)
+        return Image(out)
 
     def filter(self, filter):
         """
