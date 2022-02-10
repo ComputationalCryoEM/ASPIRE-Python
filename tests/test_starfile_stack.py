@@ -8,7 +8,6 @@ import numpy as np
 
 import tests.saved_test_data
 from aspire.image import Image
-from aspire.operators import ScalarFilter
 from aspire.source.relion import RelionSource
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
