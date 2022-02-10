@@ -323,10 +323,11 @@ def crop_2d(mat, size, fill_value=0):
     # when n is odd and for n->n-1 when n is odd. Adding the size check
     # ensures that we discriminate between these two cases
     if start_x >= 0 and start_y >= 0 and size < min(mat_x, mat_y):
-        return mat[start_x : start_x + size, start_y : start_y + size].astype("complex")
+        return mat[start_x : start_x + size, start_y : start_y + size]
     # padding
     elif start_x <= 0 and start_y <= 0:
-        to_return = fill_value * np.ones((size, size), dtype="complex")
+        # ensure that we return in the same dtype as the input
+        to_return = fill_value * np.ones((size, size), dtype=mat.dtype)
         to_return[-start_x : mat_x - start_x, -start_y : mat_y - start_y] = mat
         return to_return
     else:

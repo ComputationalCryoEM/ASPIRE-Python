@@ -79,7 +79,7 @@ class UtilsTestCase(TestCase):
 
         self.assertTrue(np.allclose(flag_est, flag) and np.allclose(q_mat_est, q_mat))
 
-    def testCrop2D(self):
+    def testSquareCrop2D(self):
         # test even/odd cases
         # based on the choice that the center of a sequence of length n is (n+1)/2
         # if n is odd and n/2 + 1 if even.
@@ -118,7 +118,7 @@ class UtilsTestCase(TestCase):
         np.fill_diagonal(test_a, np.arange(8))
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 8)))
 
-    def testPad2D(self):
+    def testSquarePad2D(self):
         # test even/odd cases of padding operation of crop_2d
 
         # even to even
@@ -155,7 +155,10 @@ class UtilsTestCase(TestCase):
         np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
 
-    def testCrop2DComplex(self):
-        # The output of crop2D must be complex because
-        # of its use in Fourier downsampling methods
-        self.assertEqual(crop_2d(np.eye(10), 5).dtype, np.dtype("complex128"))
+    def testCrop2DDtype(self):
+        # crop_2d must return an array of the same dtype it was given
+        # in particular, because the method is used for Fourier downsampling
+        # methods involving cropping complex arrays
+        self.assertEqual(
+            crop_2d(np.eye(10).astype("complex"), 5).dtype, np.dtype("complex128")
+        )
