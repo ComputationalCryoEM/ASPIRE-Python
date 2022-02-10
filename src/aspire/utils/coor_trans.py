@@ -317,11 +317,17 @@ def crop_2d(mat, size, fill_value=0):
     # shift terms
     start_x = math.floor(mat_x / 2) - math.floor(size / 2)
     start_y = math.floor(mat_y / 2) - math.floor(size / 2)
+
     # cropping
-    if start_x >= 0 and start_y >= 0:
+    # start_x == 0 and start_y == 0 can be true for padding from n to n+1
+    # when n is odd. Checking the size ensures that this situation is
+    # passed to the padding code below rather than the cropping code
+    if start_x >= 0 and start_y >= 0 and size < min(mat_x, mat_y):
         return mat[start_x : start_x + size, start_y : start_y + size].astype("complex")
     # padding
-    elif start_x < 0 and start_y < 0:
+    elif start_x <= 0 and start_y <= 0:
         to_return = fill_value * np.ones((size, size), dtype="complex")
         to_return[-start_x : mat_x - start_x, -start_y : mat_y - start_y] = mat
         return to_return
+    else:
+        raise ValueError("Cannot crop and pad an image at the same time.")

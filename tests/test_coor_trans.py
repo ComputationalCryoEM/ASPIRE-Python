@@ -151,9 +151,9 @@ class UtilsTestCase(TestCase):
         # due to the centering convention
         a = np.zeros((9, 9))
         np.fill_diagonal(a, np.arange(1, 10))
-        test_a = np.zeros((12, 12))
-        np.fill_diagonal(test_a, [0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0])
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 12)))
+        test_a = np.zeros((10, 10))
+        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
 
     def testCrop2DComplex(self):
         # The output of crop2D must be complex because
