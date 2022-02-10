@@ -5,7 +5,7 @@ import mrcfile
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import lstsq
-
+from aspire.utils import crop_2d
 import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
@@ -212,14 +212,11 @@ class Image:
         fx = np.array(
             [fft.fftshift(fft.fft2(self.data[i, :, :])) for i in range(self.n_images)]
         )
-        # offset to start crop in Fourier space
-        start = floor(self.res / 2 - ds_res / 2)
-        # crop 2D Fourier transform for each image
-        crop_fx = fx[:, start : start + ds_res, start : start + ds_res]
+        crop_fx = np.array([crop_2d(fx[i,:,:], ds_res) for i in range(self.n_images)])
         # take back to real space, discard complex part, and scale
         out = np.array(
             [fft.ifft2(fft.ifftshift(crop_fx[i, :, :])) for i in range(self.n_images)]
-        ).astype("float32") * (ds_res**2 / self.res**2)
+        ).astype(self.dtype) * (ds_res**2 / self.res**2)
 
         return Image(out)
 
