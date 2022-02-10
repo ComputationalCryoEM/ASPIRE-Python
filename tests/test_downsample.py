@@ -2,12 +2,10 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
-from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils.coor_trans import grid_3d
 from aspire.utils.matrix import anorm
-from aspire.utils.misc import gaussian_1d, gaussian_2d, gaussian_3d
 from aspire.volume import Volume
 
 
@@ -30,7 +28,7 @@ class DownsampleTestCase(TestCase):
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
 
-    ### Signal energy test fails for this case in current DS implementation
+    # Signal energy test fails for this case in current DS implementation
     def _testDownsample2D_EvenOdd(self):
         # source resolution: 64
         # target resolution: 33
@@ -97,10 +95,10 @@ class DownsampleTestCase(TestCase):
         sim = Simulation(
             L, self.n, vols=Volume(vol), offsets=0.0, amplitudes=1.0, dtype=self.dtype
         )
-        
+
         # get images before downsample
         imgs_org = sim.images(start=0, num=self.n)
-        
+
         # get images after downsample
         sim.downsample(max_resolution)
         imgs_ds = sim.images(start=0, num=self.n)
