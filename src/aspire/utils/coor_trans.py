@@ -320,8 +320,8 @@ def crop_2d(mat, size, fill_value=0):
 
     # cropping
     # start_x == 0 and start_y == 0 can be true for padding from n to n+1
-    # when n is odd. Checking the size ensures that this situation is
-    # passed to the padding code below rather than the cropping code
+    # when n is odd and for n->n-1 when n is odd. Adding the size check
+    # ensures that we discriminate between these two cases
     if start_x >= 0 and start_y >= 0 and size < min(mat_x, mat_y):
         return mat[start_x : start_x + size, start_y : start_y + size].astype("complex")
     # padding
