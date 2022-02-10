@@ -21,8 +21,7 @@ from aspire.image import Image
 from aspire.numeric import fft
 from aspire.operators import voltage_to_wavelength
 from aspire.storage import StarFile
-from aspire.utils import abs2, complex_type
-from aspire.utils.coor_trans import grid_1d, grid_2d
+from aspire.utils import abs2, complex_type, grid_1d, grid_2d
 
 logger = logging.getLogger(__name__)
 

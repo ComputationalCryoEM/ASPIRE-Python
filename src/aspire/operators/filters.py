@@ -5,8 +5,7 @@ import math
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-from aspire.utils import ensure
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils import ensure, grid_2d
 from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 
 logger = logging.getLogger(__name__)

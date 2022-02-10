@@ -8,8 +8,7 @@ from numpy import pi
 from parameterized import parameterized
 from pytest import raises
 
-from aspire.utils import Rotation, powerset
-from aspire.utils.coor_trans import grid_3d
+from aspire.utils import Rotation, grid_3d, powerset
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume, gaussian_blob_vols
 

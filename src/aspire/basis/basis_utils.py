@@ -10,8 +10,7 @@ from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
 from scipy.special import jn, jv, sph_harm
 
-from aspire.utils import ensure
-from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils import ensure, grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
 
