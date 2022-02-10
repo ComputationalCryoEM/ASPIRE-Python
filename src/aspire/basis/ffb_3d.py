@@ -54,7 +54,7 @@ class FFBBasis3D(FBBasis3D):
         Gaussian quadrature points and weights are also generated
         in radical and phi dimensions.
         """
-        n_r = int(self.ell_max + 1)
+        n_r = int(np.ceil(4 * self.rcut * self.kcut))
         n_theta = int(2 * self.sz[0])
         n_phi = int(self.ell_max + 1)
 
