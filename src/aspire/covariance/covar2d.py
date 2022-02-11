@@ -64,7 +64,7 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
             - noise_var
         )
         c = np.divide(
-            (1 - np.divide(noise_var ** 2 * gamma, lambdas ** 2)),
+            (1 - np.divide(noise_var**2 * gamma, lambdas**2)),
             (1 + np.divide(noise_var * gamma, lambdas)),
         )
         lambdas = lambdas * c
@@ -330,7 +330,7 @@ class RotCov2D:
             ensure(np.size(x) == p * p, "The sizes of S and x are not consistent.")
             x = m_reshape(x, (p, p))
             y = S @ x @ S
-            y = m_reshape(y, (p ** 2,))
+            y = m_reshape(y, (p**2,))
             return y
 
         def apply(A, x):
@@ -339,7 +339,7 @@ class RotCov2D:
             y = np.zeros_like(x)
             for k in range(0, len(A)):
                 y = y + A[k] @ x @ A[k].T
-            y = m_reshape(y, (p ** 2,))
+            y = m_reshape(y, (p**2,))
             return y
 
         for ell in range(0, len(b)):
@@ -347,7 +347,7 @@ class RotCov2D:
             for k in range(0, len(A)):
                 A_ell.append(A[k][ell])
             p = np.size(A_ell[0], 0)
-            b_ell = m_reshape(b[ell], (p ** 2,))
+            b_ell = m_reshape(b[ell], (p**2,))
             S = inv(M[ell])
             cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
             covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
@@ -635,7 +635,7 @@ class BatchedRotCov2D(RotCov2D):
             ensure(np.size(x) == p * p, "The sizes of S and x are not consistent.")
             x = m_reshape(x, (p, p))
             y = S @ x @ S
-            y = m_reshape(y, (p ** 2,))
+            y = m_reshape(y, (p**2,))
             return y
 
         def apply(A, x):
@@ -644,7 +644,7 @@ class BatchedRotCov2D(RotCov2D):
             y = np.zeros_like(x)
             for k in range(0, len(A)):
                 y = y + A[k] @ x @ A[k].T
-            y = m_reshape(y, (p ** 2,))
+            y = m_reshape(y, (p**2,))
             return y
 
         cg_opt = covar_est_opt
@@ -655,7 +655,7 @@ class BatchedRotCov2D(RotCov2D):
             for k in range(0, len(A_covar)):
                 A_ell.append(A_covar[k][ell])
             p = np.size(A_ell[0], 0)
-            b_ell = m_reshape(b_covar[ell], (p ** 2,))
+            b_ell = m_reshape(b_covar[ell], (p**2,))
             S = inv(M[ell])
             cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
             covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)

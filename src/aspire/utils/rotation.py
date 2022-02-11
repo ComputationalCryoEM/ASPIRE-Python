@@ -18,6 +18,12 @@ class Rotation:
 
         :param matrices: Rotation matrices to initialize Rotation object.
         """
+        if matrices.ndim == 2:
+            matrices = matrices.reshape((1, 3, 3))
+        assert matrices.ndim == 3 and matrices.shape[-2:] == (
+            3,
+            3,
+        ), f"Bad rotation matrix shape: {matrices.shape}"
         self._matrices = matrices
         self._seq_order = "ZYZ"
 
@@ -228,9 +234,39 @@ class Rotation:
         :param values: Rotation angles in radians, as a n x 3 array
         :return: new Rotation object
         """
-        rotations = sp_rot.from_euler("ZYZ", values.astype(dtype), degrees=False)
+        rotations = sp_rot.from_euler("ZYZ", values, degrees=False)
         matrices = rotations.as_matrix().astype(dtype)
         return Rotation(matrices)
+
+    @staticmethod
+    def about_axis(axis, angles, dtype=np.float32):
+        """
+        Build rotation object from axis and angles of rotation.
+
+        :param axis: A string denoting the axis of rotation. "x", "y", or "z".
+        :param angles: Rotation angles in radians. `angles` can be a single value,
+            or an array of shape (N,) or (N,1).
+        :param dtype: Data type for rotation matrices.
+
+        :return: Rotation object
+        """
+        axes = ["x", "y", "z"]
+        if axis.lower() not in axes:
+            raise ValueError("`axis` must be 'x', 'y', or 'z'.")
+
+        angles = np.asarray(angles, dtype=dtype)
+        if angles.ndim > 2:
+            raise ValueError(
+                f"`angles` must be float, 1D array, or 2D array. Got shape {angles.shape}."
+            )
+        elif angles.ndim == 2 and angles.shape[-1] != 1:
+            raise ValueError(
+                f"Expected `angles` to have shape (N,1), got {angles.shape}"
+            )
+
+        rotation = sp_rot.from_euler(axis, angles, degrees=False)
+        matrix = rotation.as_matrix().astype(dtype)
+        return Rotation(matrix)
 
     @staticmethod
     def from_matrix(values, dtype=np.float32):

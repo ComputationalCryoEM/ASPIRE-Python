@@ -115,7 +115,7 @@ class Micrograph:
             -(size_filter - 1) // 2 : (size_filter - 1) // 2 + 1,
         ]
 
-        response = xp.exp(-xp.square(x) - xp.square(y) / (2 * (std ** 2))) / (
+        response = xp.exp(-xp.square(x) - xp.square(y) / (2 * (std**2))) / (
             xp.sqrt(2 * xp.pi) * std
         )
         response[response < xp.finfo("float").eps] = 0

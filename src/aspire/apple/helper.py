@@ -18,7 +18,7 @@ class PickerHelper:
             -(size_filter - 1) // 2 : (size_filter - 1) // 2 + 1,
         ]
 
-        response = xp.exp(-xp.square(x) - xp.square(y) / (2 * (std ** 2))) / (
+        response = xp.exp(-xp.square(x) - xp.square(y) / (2 * (std**2))) / (
             xp.sqrt(2 * xp.pi) * std
         )
         response[response < xp.finfo("float").eps] = 0
@@ -44,7 +44,7 @@ class PickerHelper:
         # TODO: It might be nicer to apply any trimming to all micrograph sides
         img = xp.asarray(img[:xbnd, :ybnd])
 
-        dim3_size = np.sqrt(np.prod(img.shape) // (block_size ** 2)).astype(int)
+        dim3_size = np.sqrt(np.prod(img.shape) // (block_size**2)).astype(int)
 
         img = xp.reshape(img, (block_size, dim3_size, block_size, dim3_size), "F")
 
@@ -73,7 +73,7 @@ class PickerHelper:
             img[: -(img.shape[0] % block_size), : -(img.shape[1] % block_size)]
         )
 
-        dim3_size = np.sqrt(np.prod(blocks.shape) // (block_size ** 2)).astype(int)
+        dim3_size = np.sqrt(np.prod(blocks.shape) // (block_size**2)).astype(int)
         blocks = xp.reshape(blocks, (block_size, dim3_size, block_size, dim3_size), "F")
 
         blocks = xp.transpose(blocks, (0, 2, 1, 3))

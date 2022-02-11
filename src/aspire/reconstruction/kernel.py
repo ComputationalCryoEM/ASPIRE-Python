@@ -159,8 +159,8 @@ class FourierKernel(Kernel):
         if L is None:
             L = int(self.M / 2)
 
-        A = np.eye(L ** 3, dtype=self.dtype)
-        for i in range(L ** 3):
+        A = np.eye(L**3, dtype=self.dtype)
+        for i in range(L**3):
             A[:, i] = np.real(vol_to_vec(self.convolve_volume(vec_to_vol(A[:, i]))))
 
         A = vecmat_to_volmat(A)

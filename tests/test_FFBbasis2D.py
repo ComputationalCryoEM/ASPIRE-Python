@@ -339,7 +339,7 @@ class FFBBasis2DTestCase(TestCase):
         diff = shifted_imgs.asnumpy() - self.basis.evaluate(f_shifted_imgs).asnumpy()
 
         # Compute mask to compare only the core of the shifted images
-        g = grid_2d(self.L, normalized=False)
+        g = grid_2d(self.L, indexing="yx", normalized=False)
         mask = g["r"] > self.L / 2
         # Masking values outside radius to 0
         diff = np.where(mask, 0, diff)
