@@ -129,7 +129,7 @@ if interactive:
     src.images(0, 10).show()
 
 # Cache to memory for some speedup
-src = ArrayImageSource(src.images(0, num_imgs).asnumpy(), angles=src.angles)
+src.cache()
 
 # %%
 # Optional: CWF Denoising
