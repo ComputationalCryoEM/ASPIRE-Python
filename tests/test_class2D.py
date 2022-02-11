@@ -7,7 +7,7 @@ import pytest
 from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
-from aspire.classification import BFSRAlign2D, Class2D, RIRClass2D
+from aspire.classification import BFSRAlign2D, RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
@@ -138,14 +138,6 @@ class RIRClass2DTestCase(TestCase):
 
         # Ceate another fspca_basis, use autogeneration FFB2D Basis
         self.noisy_fspca_basis = FSPCABasis(self.noisy_src)
-
-    def testClass2DBase(self):
-        """
-        Make sure the base class doesn't crash when using arguments.
-        """
-        _ = Class2D(self.clean_src)  # Default dtype
-        _ = Class2D(self.clean_src, dtype=self.dtype)  # Consistent dtype
-        _ = Class2D(self.clean_src, dtype=np.float16)  # Different dtype
 
     def testIncorrectComponents(self):
         """
