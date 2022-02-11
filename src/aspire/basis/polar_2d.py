@@ -21,15 +21,15 @@ class PolarBasis2D(Basis):
 
         :param size: The shape of the vectors for which to define the grid.
             Currently only square images are supported.
-        :param nrad: The number of points in the radial dimension.
-        :param ntheta: The number of points in the angular dimension.
+        :param nrad: The number of points in the radial dimension. Default is resoltuion // 2.
+        :param ntheta: The number of points in the angular dimension. Default is 8 * nrad.
         """
 
         ndim = len(size)
-        nres = size[0]
         ensure(ndim == 2, "Only two-dimensional grids are supported.")
         ensure(len(set(size)) == 1, "Only square domains are supported.")
 
+        nres = size[0]
         self.nrad = nrad
         if nrad is None:
             self.nrad = nres // 2
