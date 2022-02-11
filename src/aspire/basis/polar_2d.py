@@ -29,15 +29,8 @@ class PolarBasis2D(Basis):
         ensure(ndim == 2, "Only two-dimensional grids are supported.")
         ensure(len(set(size)) == 1, "Only square domains are supported.")
 
-        nres = size[0]
         self.nrad = nrad
-        if nrad is None:
-            self.nrad = nres // 2
-
         self.ntheta = ntheta
-        if ntheta is None:
-            # try to use the same number as Fast FB basis
-            self.ntheta = 8 * self.nrad
 
         super().__init__(size, dtype=dtype)
 
@@ -46,6 +39,13 @@ class PolarBasis2D(Basis):
         Build the internal data structure to 2D polar Fourier grid
         """
         logger.info("Represent 2D image in a polar Fourier grid")
+
+        if self.nrad is None:
+            self.nrad = self.nres // 2
+
+        if self.ntheta is None:
+            # try to use the same number as Fast FB basis
+            self.ntheta = 8 * self.nrad
 
         self.count = self.nrad * self.ntheta
         self._sz_prod = self.sz[0] * self.sz[1]
