@@ -107,7 +107,7 @@ class ImageSource:
 
     @property
     def filter_indices(self):
-        return self.get_metadata("__filter_indices")
+        return np.atleast_1d(self.get_metadata("__filter_indices"))
 
     @filter_indices.setter
     def filter_indices(self, indices):
@@ -279,17 +279,18 @@ class ImageSource:
             "Subclasses should implement this and return an Image object"
         )
 
-    def _apply_filters(self, im_orig, start=0, num=np.inf, indices=None):
+    def _apply_filters(
+        self,
+        im_orig,
+        filters,
+        indices,
+    ):
         """
-        For each image in `im_orig` specified by start, num, or indices,
-        the unique_filters associated with the corresponding index in the
-        `ImageSource` are applied. The images are then returned as an `Image`
-        stack.
+        For images in `im_orig`, `filters` associated with the corresponding
+        index in the supplied `indices` are applied. The images are then returned as an `Image` stack.
         :param im_orig: An `Image` object
-        :param start: Starting index of images in `im_orig`.
-        :param num: Number of images to work on, starting at `start`.
-        :param indices: A numpy array of image indices. If specified,`start` and `num` are ignored.
-        :return: An `Image` instance with the unique filters of the source applied at the given indices.
+        :param filters: A list of `Filter` objects
+        :param indices: A list of indices indicating the corresponding filter in `filters`
         """
         if not isinstance(im_orig, Image):
             logger.warning(
@@ -300,15 +301,19 @@ class ImageSource:
 
         im = im_orig.copy()
 
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
-
-        for i, filt in enumerate(self.unique_filters):
-            idx_k = np.where(self.filter_indices[indices] == i)[0]
+        for i, filt in enumerate(filters):
+            idx_k = np.where(indices == i)[0]
             if len(idx_k) > 0:
                 im[idx_k] = Image(im[idx_k]).filter(filt).asnumpy()
 
         return im
+
+    def _apply_source_filters(self, im_orig, indices):
+        return self._apply_filters(
+            im_orig,
+            self.unique_filters,
+            self.filter_indices[indices],
+        )
 
     def cache(self):
         logger.info("Caching source images")
@@ -465,7 +470,7 @@ class ImageSource:
         all_idx = np.arange(start, min(start + num, self.n))
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         im = im.shift(-self.offsets[all_idx, :])
-        im = self._apply_filters(im, start=start, num=num)
+        im = self._apply_source_filters(im, all_idx)
 
         vol = im.backproject(self.rots[start : start + num, :, :])[0]
 
@@ -487,7 +492,7 @@ class ImageSource:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
         im = vol.project(0, self.rots[all_idx, :, :])
-        im = self._apply_filters(im, start, num)
+        im = self._apply_source_filters(im, all_idx)
         im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
