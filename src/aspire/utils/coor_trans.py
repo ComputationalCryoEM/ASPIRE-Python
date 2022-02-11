@@ -1,4 +1,4 @@
-"""OA
+"""
 General purpose math functions, mostly geometric in nature.
 """
 
