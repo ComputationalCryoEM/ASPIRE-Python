@@ -1,5 +1,5 @@
 import logging
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import numpy as np
 
@@ -43,6 +43,7 @@ class Class2D(ABC):
         self.n_classes = n_classes
         self.seed = seed
 
+    @abstractmethod
     def classify(self):
         """
         Classify the images from Source into classes with similar viewing angles.
@@ -50,6 +51,7 @@ class Class2D(ABC):
         Returns classes and associated metadata (classes, reflections, distances)
         """
 
+    @abstractmethod
     def averages(self, classes, refl, distances):
         """
         Returns class averages using prescribed `aligner`.
