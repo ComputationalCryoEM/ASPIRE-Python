@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 from scipy.fftpack import fftn, fftshift
 
-from aspire.image import crop_pad, downsample, fuzzy_mask
+from aspire.image import crop_pad, fuzzy_mask
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
