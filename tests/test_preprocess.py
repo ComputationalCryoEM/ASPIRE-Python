@@ -24,14 +24,6 @@ class PreprocessTestCase(TestCase):
         vols_f = crop_pad(fftshift(fftn(vols[:, :, :, 0])), 8)
         self.assertTrue(np.allclose(results, vols_f, atol=1e-7))
 
-    def test02Downsample(self):
-        results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy"))
-        results = results[np.newaxis, ...]
-        vols = np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy"))
-        vols = vols[np.newaxis, ...]
-        vols = downsample(vols, (8, 8, 8))
-        self.assertTrue(np.allclose(results, vols, atol=1e-7))
-
     def test03Vol2img(self):
         results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_down8_imgs32.npy"))
         vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
