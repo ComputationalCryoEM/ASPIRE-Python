@@ -27,7 +27,7 @@ from aspire.denoising import DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source import ArrayImageSource, Simulation
+from aspire.source import Simulation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
