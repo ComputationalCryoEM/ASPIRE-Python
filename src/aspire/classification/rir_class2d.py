@@ -60,7 +60,7 @@ class RIRClass2D(Class2D):
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
-        :param aligner: An Align2D subclass. Defaults to BFRAlign2D.
+        :param aligner: An Align2D subclass. Defaults to BFSReddyChatterjiAlign2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
