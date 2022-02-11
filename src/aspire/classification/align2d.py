@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.filters import difference_of_gaussians, window
 
-# import skimage.io
 from skimage.transform import rotate, warp_polar
 from tqdm import tqdm, trange
 
