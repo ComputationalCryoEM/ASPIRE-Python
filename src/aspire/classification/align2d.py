@@ -10,6 +10,7 @@ from skimage.transform import rotate, warp_polar
 from tqdm import tqdm, trange
 
 from aspire.image import Image
+from aspire.numeric import fft
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import grid_2d
 
@@ -462,14 +463,14 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
 
         # Cache img0 transform, this saves n_classes*(n_nbor-1) transforms
         # Note we use the `id` because ndarray are unhashable
-        src_f = self.__cache.setdefault(id(img0), np.fft.fft2(img0))
+        src_f = self.__cache.setdefault(id(img0), fft.fft2(img0))
 
-        target_f = np.fft.fft2(img1)
+        target_f = fft.fft2(img1)
 
         # Whole-pixel shifts - Compute cross-correlation by an IFFT
         shape = src_f.shape
         image_product = src_f * target_f.conj()
-        cross_correlation = np.fft.ifft2(image_product)
+        cross_correlation = fft.ifft2(image_product)
 
         # Locate maximum
         maxima = np.unravel_index(
@@ -529,7 +530,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         # Window Images (Fix spectral boundary)
         wfixed_img = fixed_img_dog * window("hann", fixed_img.shape)
         # Transform image to Fourier space
-        fixed_img_fs = np.abs(np.fft.fftshift(np.fft.fft2(wfixed_img))) ** 2
+        fixed_img_fs = np.abs(fft.fftshift(fft.fft2(wfixed_img))) ** 2
         # Compute Log Polar Transform
         radius = fixed_img_fs.shape[0] // 8  # Low Pass
         warped_fixed_img_fs = warp_polar(
@@ -566,7 +567,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             )
 
             # Transform image to Fourier space
-            regis_img_fs = np.abs(np.fft.fftshift(np.fft.fft2(wregis_img))) ** 2
+            regis_img_fs = np.abs(fft.fftshift(fft.fft2(wregis_img))) ** 2
 
             self._windowed_psd_diagnostic(
                 classes[k][0], fixed_img_fs, classes[k][m], regis_img_fs
