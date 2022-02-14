@@ -5,9 +5,9 @@ from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.basis.basis_utils import num_besselj_zeros
 from aspire.image import Image
-from aspire.volume import Volume
 from aspire.utils import ensure, mdim_mat_fun_conj
 from aspire.utils.matlab_compat import m_reshape
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +177,7 @@ class Basis:
 
         """
 
-        if isinstance(x, Image) or isinstance(x,Volume):
+        if isinstance(x, Image) or isinstance(x, Volume):
             x = x.asnumpy()
 
         # ensure the first dimensions with size of self.sz
