@@ -7,7 +7,7 @@ import pytest
 from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
-from aspire.classification import BFSRAlign2D, RIRClass2D
+from aspire.classification import BFRAverager2D, RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
@@ -218,12 +218,11 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
-            aligner=BFSRAlign2D(
+            averager=BFRAverager2D(
                 self.noisy_fspca_basis,
                 self.noisy_src,
                 self.basis,
                 n_angles=100,
-                n_x_shifts=0,
             ),
         )
 

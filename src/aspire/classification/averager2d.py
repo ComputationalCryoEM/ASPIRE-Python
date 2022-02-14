@@ -16,9 +16,9 @@ from aspire.utils.coor_trans import grid_2d
 logger = logging.getLogger(__name__)
 
 
-class Align2D(ABC):
+class Averager2D(ABC):
     """
-    Base class for 2D Image Alignment methods.
+    Base class for 2D Image Averaging methods.
     """
 
     def __init__(
@@ -58,35 +58,24 @@ class Align2D(ABC):
             )
 
     @abstractmethod
-    def align(self, classes, reflections, basis_coefficients):
+    def average(
+        self,
+        classes,
+        reflections,
+        coefs=None,
+    ):
         """
-        Any align2D alignment method should take in the below arguments
-        and return aligned images.
+        Combines images using stacking in `self.composite_basis`.
 
-        During this process `rotations`, `reflections`, `shifts` and
-        `correlations` properties will be computed for aligners
-        that implement them.  Some future aligners (example. EM based)
-        may not produce these intermediates.
+        Subclasses should implement this.
+        (Example EM algos use radically different averaging).
 
-        `rotations` is an (n_classes, n_nbor) array of angles,
-        which should represent the rotations needed to align images within
-        that class. `rotations` is measured in Radians.
+        Should return an Image source of synthetic class averages.
 
-        `correlations` is an (n_classes, n_nbor) array representing
-        a correlation like measure between classified images and their base
-        image (image index 0).
-
-        `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
-        which should represent the translation needed to best align the images
-        within that class.
-
-        Subclasses of `align` should extend this method with optional arguments.
-
-        :param classes: (n_classes, n_nbor) integer array of img indices
-        :param reflections: (n_classes, n_nbor) bool array of corresponding reflections
-        :param basis_coefficients: (n_img, self.pca_basis.count) compressed basis coefficients
-
-        :returns: Image instance (stack of images)
+        :param classes: class indices (refering to src). (n_img, n_nbor)
+        :param reflections: Bool representing whether to reflect image in `classes`
+        :coefs: Optional Fourier bessel coefs (avoids recomputing).
+        :return: Stack of Synthetic Class Average images as Image instance.
         """
 
     def _cls_images(self, cls, src=None):
@@ -111,39 +100,50 @@ class Align2D(ABC):
         return images
 
 
-class AveragedAlign2D(Align2D):
+class AligningAverager2D(Averager2D):
     """
-    Subclass supporting aligners which perform averaging during output.
+    Subclass supporting averagers which perfom an aligning stage.
     """
 
+    @abstractmethod
     def align(self, classes, reflections, basis_coefficients):
         """
-        See Align2D.align
+        During this process `rotations`, `reflections`, `shifts` and
+        `correlations` properties will be computed for aligners.
+
+        `rotations` is an (n_classes, n_nbor) array of angles,
+        which should represent the rotations needed to align images within
+        that class. `rotations` is measured in Radians.
+
+        `correlations` is an (n_classes, n_nbor) array representing
+        a correlation like measure between classified images and their base
+        image (image index 0).
+
+        `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
+        which should represent the translation needed to best align the images
+        within that class.
+
+        Subclasses of should implement and extend this method.
+
+        :param classes: (n_classes, n_nbor) integer array of img indices
+        :param reflections: (n_classes, n_nbor) bool array of corresponding reflections
+        :param basis_coefficients: (n_img, self.pca_basis.count) compressed basis coefficients
+
+        :returns: (reflections, rotations, shifts)
         """
-        # Correlations are currently unused, but left for future extensions.
-        cls, ref, rot, shf, corrs = self._align(
-            classes, reflections, basis_coefficients
-        )
-        return self.average(cls, ref, rot, shf), cls, ref, rot, shf, corrs
 
     def average(
         self,
         classes,
         reflections,
-        rotations,
-        shifts=None,
         coefs=None,
     ):
         """
-        Combines images using averaging in `self.composite_basis`.
-
-        :param classes: class indices (refering to src). (n_img, n_nbor)
-        :param reflections: Bool representing whether to reflect image in `classes`
-        :param rotations: Array of in-plane rotation angles (Radians) of image in `classes`
-        :param shifts: Optional array of shifts for image in `classes`.
-        :coefs: Optional Fourier bessel coefs (avoids recomputing).
-        :return: Stack of Synthetic Class Average images as Image instance.
+        This subclass assumes we get alignment details from `align` method. Otherwise. see Averager2D.average
         """
+
+        rotations, shifts, _ = self.align(classes, reflections, coefs)
+
         n_classes, n_nbor = classes.shape
 
         b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
@@ -181,7 +181,7 @@ class AveragedAlign2D(Align2D):
         return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
 
 
-class BFRAlign2D(AveragedAlign2D):
+class BFRAverager2D(AligningAverager2D):
     """
     This perfoms a Brute Force Rotational alignment.
 
@@ -210,10 +210,10 @@ class BFRAlign2D(AveragedAlign2D):
 
         if not hasattr(self.alignment_basis, "rotate"):
             raise RuntimeError(
-                f"BFRAlign2D's alignment_basis {self.alignment_basis} must provide a `rotate` method."
+                f"BFRAverager2D's alignment_basis {self.alignment_basis} must provide a `rotate` method."
             )
 
-    def _align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients):
         """
         Performs the actual rotational alignment estimation,
         returning parameters needed for averaging.
@@ -258,10 +258,10 @@ class BFRAlign2D(AveragedAlign2D):
             for j in range(n_nbor):
                 correlations[k, j] = results[j, angle_idx[j]]
 
-        return classes, reflections, rotations, None, correlations
+        return rotations, None, correlations
 
 
-class BFSRAlign2D(BFRAlign2D):
+class BFSRAverager2D(BFRAverager2D):
     """
     This perfoms a Brute Force Shift and Rotational alignment.
     It is potentially expensive to brute force this search space.
@@ -289,7 +289,7 @@ class BFSRAlign2D(BFRAlign2D):
 
         Example: n_x_shifts=1, n_y_shifts=0 would test {-1,0,1} X {0}.
 
-        n_x_shifts=n_y_shifts=0 is the same as calling BFRAlign2D.
+        n_x_shifts=n_y_shifts=0 is the same as calling BFRAverager2D.
 
         :params alignment_basis: Basis providing a `shift` and `rotate` method.
         :params n_angles: Number of brute force rotations to attempt, defaults 359.
@@ -310,15 +310,15 @@ class BFSRAlign2D(BFRAlign2D):
 
         if not hasattr(self.alignment_basis, "shift"):
             raise RuntimeError(
-                f"BFSRAlign2D's alignment_basis {self.alignment_basis} must provide a `shift` method."
+                f"BFSRAverager2D's alignment_basis {self.alignment_basis} must provide a `shift` method."
             )
 
-        # Each shift will require calling the parent BFRAlign2D._align
-        self._bfr_align = super()._align
+        # Each shift will require calling the parent BFRAverager2D.align
+        self._bfr_align = super().align
 
-    def _align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients):
         """
-        See `Align2D.align`
+        See `AligningAverager2D.align`
         """
 
         # Admit simple case of single case alignment
@@ -360,7 +360,7 @@ class BFSRAlign2D(BFRAlign2D):
                 original_coef, -shift
             )
 
-            _, _, _rotations, _, _correlations = self._bfr_align(
+            _rotations, _, _correlations = self._bfr_align(
                 classes, reflections, basis_coefficients
             )
 
@@ -384,10 +384,10 @@ class BFSRAlign2D(BFRAlign2D):
                     f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
                 )
 
-        return classes, reflections, rotations, shifts, correlations
+        return rotations, shifts, correlations
 
 
-class ReddyChatterjiAlign2D(AveragedAlign2D):
+class ReddyChatterjiAverager2D(AligningAverager2D):
     """
     Attempts rotational estimation using Reddy Chatterji log polar Fourier cross correlation.
     Then attempts shift (translational) estimation using cross correlation.
@@ -417,7 +417,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
     ):
         """
         :param alignment_basis: Basis to be used during alignment.
-        For current implementation of ReddyChatterjiAlign2D this should be `None`.
+        For current implementation of ReddyChatterjiAverager2D this should be `None`.
         Instead see `alignment_source`.
         :param source: Source of original images.
         :param composite_basis:  Basis to be used during class average composition.
@@ -482,7 +482,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
 
         return np.abs(cross_correlation), shifts
 
-    def _align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients):
         """
         Performs the actual rotational alignment estimation,
         returning parameters needed for averaging.
@@ -507,7 +507,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
                 images, classes[k], reflections[k]
             )
 
-        return classes, reflections, rotations, shifts, correlations
+        return rotations, shifts, correlations
 
     def _reddychatterji(self, images, class_k, reflection_k):
         """
@@ -698,14 +698,15 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         self,
         classes,
         reflections,
-        rotations,
-        shifts=None,
         coefs=None,
     ):
         """
         This averages classes performing rotations then shifts.
-        Otherwise is similar to `AveragedAlign2D.average`.
+        Otherwise is similar to `AligningAverager2D.average`.
         """
+
+        rotations, shifts, _ = self.align(classes, reflections, coefs)
+
         n_classes, n_nbor = classes.shape
 
         b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
@@ -870,7 +871,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
         plt.show()
 
 
-class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
+class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
     """
     Brute Force Shifts (Translations) - ReddyChatterji (Log-Polar) Rotations
 
@@ -899,7 +900,7 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
     ):
         """
         :param alignment_basis: Basis to be used during alignment.
-        For current implementation of ReddyChatterjiAlign2D this should be `None`.
+        For current implementation of ReddyChatterjiAverager2D this should be `None`.
         Instead see `alignment_source`.
         :param source: Source of original images.
         :param composite_basis:  Basis to be used during class average composition.
@@ -928,7 +929,7 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
         # Assign search radius
         self.radius = radius or source.L // 8
 
-    def _align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients):
         """
         Performs the actual rotational alignment estimation,
         returning parameters needed for averaging.
@@ -979,34 +980,30 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
                 shifts = np.where(shifts, _shifts, shifts)
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
 
-        return classes, reflections, rotations, shifts, correlations
+        return rotations, shifts, correlations
 
     def average(
         self,
         classes,
         reflections,
-        rotations,
-        shifts=None,
         coefs=None,
     ):
         """
-        See AveragedAlign2D.average.
+        See Averager2D.average.
         """
-        # ReddyChatterjiAlign2D does rotations then shifts.
+        # ReddyChatterjiAverager2D does rotations then shifts.
         # For brute force, we'd like shifts then rotations,
-        #   as is done in gerneral via AveragedAlign2D.
-        return AveragedAlign2D.average(
-            self, classes, reflections, rotations, shifts, coefs
-        )
+        #   as is done in general in AligningAverager2D
+        return Averager2D.average(self, classes, reflections, coefs)
 
 
-class EMAlign2D(Align2D):
+class EMAverager2D(Averager2D):
     """
     Citation needed.
     """
 
 
-class FTKAlign2D(Align2D):
+class FTKAverager2D(Averager2D):
     """
     Factorization of the translation kernel for fast rigid image alignment.
     Rangan, A.V., Spivak, M., Anden, J., & Barnett, A.H. (2019).

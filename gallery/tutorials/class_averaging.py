@@ -117,9 +117,7 @@ rir = RIRClass2D(
 )
 
 classes, reflections, dists = rir.classify()
-avgs, classes, reflections, rotations, shifts, corrs = rir.averages(
-    classes, reflections, dists
-)
+avgs = rir.averages(classes, reflections, dists)
 
 # %%
 # Display Classes

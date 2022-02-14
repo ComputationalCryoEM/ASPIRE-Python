@@ -22,7 +22,7 @@ import numpy as np
 
 from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis2D, FFBBasis3D
-from aspire.classification import BFSReddyChatterjiAlign2D, RIRClass2D
+from aspire.classification import BFSReddyChatterjiAverager2D, RIRClass2D
 from aspire.denoising import DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators import FunctionFilter, RadialCTFFilter
@@ -146,7 +146,7 @@ src.cache()
 # you may remove this code block and associated variables.
 
 classification_src = src
-custom_aligner = None
+custom_averager = None
 if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
@@ -158,7 +158,7 @@ if do_cov2d:
 
     # Use regular `src` for the alignment and composition (averaging).
     composite_basis = FFBBasis2D((src.L,) * 2, dtype=src.dtype)
-    custom_aligner = BFSReddyChatterjiAlign2D(
+    custom_averager = BFSReddyChatterjiAverager2D(
         None, src, composite_basis, dtype=src.dtype
     )
 
@@ -180,12 +180,11 @@ rir = RIRClass2D(
     large_pca_implementation="legacy",
     nn_implementation="sklearn",
     bispectrum_implementation="legacy",
-    aligner=custom_aligner,
+    averager=custom_averager,
 )
 
 classes, reflections, distances = rir.classify()
-# Only care about the averages returned right now (index 0)
-avgs = rir.averages(classes, reflections, distances)[0]
+avgs = rir.averages(classes, reflections, distances)
 if interactive:
     avgs.images(0, 10).show()
 
