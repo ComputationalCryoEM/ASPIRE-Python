@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
-from aspire.classification import BFSReddyChatterjiAlign2D, Class2D
+from aspire.classification import BFSReddyChatterjiAverager2D, Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
 from aspire.utils.random import rand
@@ -29,7 +29,7 @@ class RIRClass2D(Class2D):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        aligner=None,
+        averager=None,
         dtype=None,
         seed=None,
     ):
@@ -47,7 +47,7 @@ class RIRClass2D(Class2D):
         for Viewing Direction Classification in Cryo-EM. (2014)
 
         :param src: Source instance.  Note it is possible to use one `source` for classification (ie CWF),
-        and a different `source` for stacking in the `aligner`.
+        and a different `source` for stacking in the `averager`.
         :param pca_basis: Optional FSPCA Basis instance
         :param fspca_components: Components (top eigvals) to keep from full FSCPA, default truncates to  400.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
@@ -59,7 +59,7 @@ class RIRClass2D(Class2D):
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
-        :param aligner: An Align2D subclass. Defaults to BFSReddyChatterjiAlign2D.
+        :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
@@ -100,7 +100,7 @@ class RIRClass2D(Class2D):
         self.alpha = alpha
         self.bispectrum_components = bispectrum_components
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
-        self.aligner = aligner
+        self.averager = averager
 
         if self.src.n < self.bispectrum_components:
             raise RuntimeError(
@@ -169,10 +169,10 @@ class RIRClass2D(Class2D):
         # For convenience, assign the fb_basis used in the pca_basis.
         self.fb_basis = self.pca_basis.basis
 
-        # When not provided by a user, the aligner is instantiated after
+        # When not provided by a user, the averager is instantiated after
         #  we are certain our pca_basis has been constructed.
-        if self.aligner is None:
-            self.aligner = BFSReddyChatterjiAlign2D(
+        if self.averager is None:
+            self.averager = BFSReddyChatterjiAverager2D(
                 None, self.src, self.fb_basis, dtype=self.dtype
             )
 
@@ -208,16 +208,16 @@ class RIRClass2D(Class2D):
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
         classes, reflections = self.select_classes(classes, reflections)
 
-        # # Stage 4: Align
+        # # Stage 4: Averager
         logger.info(
-            f"Begin Rotational Alignment of {classes.shape[0]} Classes using {self.aligner}."
+            f"Begin Averaging of {classes.shape[0]} Classes using {self.averager}."
         )
 
-        return self.aligner.align(classes, reflections, self.fspca_coef)
+        return self.averager.average(classes, reflections, self.fspca_coef)
 
     def select_classes(self, classes, reflections):
         """
-        Select the `n_classes` to align from the (n_images) population of classes.
+        Select the `n_classes` to average from the (n_images) population of classes.
         """
         # Generate indices for random sample (can do something smarter, or build this out later).
         # For testing/poc just take the first n_classes so it matches earlier plots for manual comparison
@@ -315,7 +315,7 @@ class RIRClass2D(Class2D):
 
     def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """
-        Perform nearest neighbor classification and alignment.
+        Perform nearest neighbor classification.
         """
 
         # Note kept ordering from legacy code (n_features, n_img)
