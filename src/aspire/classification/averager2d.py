@@ -365,7 +365,9 @@ class BFSRAverager2D(BFRAverager2D):
 
         if basis_coefficients is None:
             # Retrieve image coefficients, this is bad, but should be deleted anyway.
-            basis_coefficients = self.composite_basis.evaluate_t(self.src.images(0, np.inf))
+            basis_coefficients = self.composite_basis.evaluate_t(
+                self.src.images(0, np.inf)
+            )
 
         # We want to maintain the original coefs for the base images,
         #  because we will mutate them with shifts in the loop.
