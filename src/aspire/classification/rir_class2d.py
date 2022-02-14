@@ -213,7 +213,7 @@ class RIRClass2D(Class2D):
             f"Begin Averaging of {classes.shape[0]} Classes using {self.averager}."
         )
 
-        return self.averager.average(classes, reflections, self.fspca_coef)
+        return self.averager.average(classes, reflections)
 
     def select_classes(self, classes, reflections):
         """
