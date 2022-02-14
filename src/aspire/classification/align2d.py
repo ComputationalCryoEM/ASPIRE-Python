@@ -159,7 +159,7 @@ class AveragedAlign2D(Align2D):
                 if shifts is not None:
                     neighbors_imgs.shift(shifts[i])
 
-                neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
+                neighbors_coefs = self.composite_basis.expand(neighbors_imgs)
             else:
                 # Get the neighbors
                 neighbors_ids = classes[i]
@@ -699,7 +699,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             if coefs is None:
                 # Retrieve relavent images directly from source.
                 neighbors_imgs = Image(self._cls_images(classes[i]))
-                neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
+                neighbors_coefs = self.composite_basis.expand(neighbors_imgs)
             else:
                 # Get the neighbors
                 neighbors_ids = classes[i]
