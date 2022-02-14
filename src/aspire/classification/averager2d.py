@@ -994,7 +994,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         # ReddyChatterjiAverager2D does rotations then shifts.
         # For brute force, we'd like shifts then rotations,
         #   as is done in general in AligningAverager2D
-        return Averager2D.average(self, classes, reflections, coefs)
+        return AligningAverager2D.average(self, classes, reflections, coefs)
 
 
 class EMAverager2D(Averager2D):

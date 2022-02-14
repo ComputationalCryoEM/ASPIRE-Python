@@ -188,4 +188,4 @@ class SteerableBasis2D(Basis):
                 f" received {shifts.shape}."
             )
 
-        return self.evaluate_t(self.evaluate(coef).shift(shifts))
+        return self.expand(self.evaluate(coef).shift(shifts))
