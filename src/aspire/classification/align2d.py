@@ -503,23 +503,38 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             # # Get the array of images for this class, using the `alignment_src`.
             images = self._cls_images(classes[k], src=self.alignment_src)
 
-            self._reddychatterji(
-                k, images, classes, reflections, rotations, correlations, shifts
+            rotations[k], correlations[k], shifts[k] = self._reddychatterji(
+                images, classes[k], reflections[k]
             )
 
         return classes, reflections, rotations, shifts, correlations
 
-    def _reddychatterji(
-        self, k, images, classes, reflections, rotations, correlations, shifts
-    ):
+    def _reddychatterji(self, images, class_k, reflection_k):
         """
         Compute the Reddy Chatterji method registering images[1:] to image[0].
 
         This differs from papers and published scikit implimentations by
         computing the fixed base image[0] pipeline once then reusing.
+
+        This is a util function to help loop over `classes`.
+
+        :param images: Image data
+        :param class_k: Image indices
+        :param reflection_k: Image reflections
+        :returns: (rotations_k, correlations_k, shifts_k) corresponding to `images`
         """
 
-        # De-Mean
+        # Result arrays
+        M = len(images)
+        rotations_k = np.empty(M, dtype=self.dtype)
+        correlations_k = np.empty(M, dtype=self.dtype)
+        shifts_k = np.empty((M, 2), dtype=self.dtype)
+        # Initialize for Image 0, others will populate in loop.
+        rotations_k[0] = 0
+        correlations_k[0] = 0
+        shifts_k[0] = 0
+
+        # De-Mean, note images is mutated and should be a `copy`.
         images -= images.mean(axis=(-1, -2))[:, np.newaxis, np.newaxis]
 
         # Precompute fixed_img data used repeatedly in the loop below.
@@ -552,7 +567,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             regis_img = images[m]
 
             # Reflect images when necessary
-            if reflections[k][m]:
+            if reflection_k[m]:
                 regis_img = np.flipud(regis_img)
 
             # Difference of Gaussians (Band Filter)
@@ -562,14 +577,14 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             wregis_img = regis_img_dog * window("hann", regis_img.shape)
 
             self._input_images_diagnostic(
-                classes[k][0], wfixed_img, classes[k][m], wregis_img
+                class_k[0], wfixed_img, class_k[m], wregis_img
             )
 
             # Transform image to Fourier space
             regis_img_fs = np.abs(fft.fftshift(fft.fft2(wregis_img))) ** 2
 
             self._windowed_psd_diagnostic(
-                classes[k][0], fixed_img_fs, classes[k][m], regis_img_fs
+                class_k[0], fixed_img_fs, class_k[m], regis_img_fs
             )
 
             # Compute Log Polar Transform
@@ -581,7 +596,7 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
             )
 
             self._log_polar_diagnostic(
-                classes[k][0], warped_fixed_img_fs, classes[k][m], warped_regis_img_fs
+                class_k[0], warped_fixed_img_fs, class_k[m], warped_regis_img_fs
             )
 
             # Only use half of FFT, because it's symmetrical
@@ -624,16 +639,16 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
                 r += 180
 
             self._rotated_diagnostic(
-                classes[k][0],
+                class_k[0],
                 fixed_img,
-                classes[k][m],
+                class_k[m],
                 regis_img_estimated,
-                reflections[k][m],
+                reflection_k[m],
                 r,
             )
 
             # Assign estimated rotations results
-            rotations[k][m] = -r * np.pi / 180  # Reverse rot and convert to radians
+            rotations_k[m] = -r * np.pi / 180  # Reverse rot and convert to radians
 
             if self.do_cross_corr_translations:
                 # Prepare for searching over translations using cross-correlation with the rotated image.
@@ -650,14 +665,14 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
                 regis_img_estimated = np.roll(regis_img_estimated, shift_y, axis=0)
                 regis_img_estimated = np.roll(regis_img_estimated, shift_x, axis=1)
                 # Assign estimated shift to results
-                shifts[k][m] = shift[::-1].astype(int)
+                shifts_k[m] = shift[::-1].astype(int)
 
                 self._averaged_diagnostic(
-                    classes[k][0],
+                    class_k[0],
                     fixed_img,
-                    classes[k][m],
+                    class_k[m],
                     regis_img_estimated,
-                    reflections[k][m],
+                    reflection_k[m],
                     r,
                 )
             else:
@@ -665,17 +680,19 @@ class ReddyChatterjiAlign2D(AveragedAlign2D):
 
             # Estimated `corr` metric
             corr = np.dot(fixed_img.flatten(), regis_img_estimated.flatten())
-            correlations[k][m] = corr
+            correlations_k[m] = corr
 
             logger.debug(
-                f"Class {k}, ref {classes[k][0]}, Neighbor {m} Index {classes[k][m]}"
+                f"ref {class_k[0]}, Neighbor {m} Index {class_k[m]}"
                 f" Estimates: {r}*, Shift: {shift},"
-                f" Corr: {corr}, Refl?: {reflections[k][m]}"
+                f" Corr: {corr}, Refl?: {reflection_k[m]}"
             )
 
         # Cleanup some cached stuff for this class
         self.__cache.pop(id(warped_fixed_img_fs), None)
         self.__cache.pop(id(twfixed_img), None)
+
+        return rotations_k, correlations_k, shifts_k
 
     def average(
         self,
@@ -944,12 +961,14 @@ class BFSReddyChatterjiAlign2D(ReddyChatterjiAlign2D):
                 s = np.array([xs, ys])
                 # Get the array of images for this class
 
+                # Note we mutate `images` here with shifting,
+                #   then later in `_reddychatterji`
                 images = unshifted_images.copy()
                 # Don't shift the base image
                 images[1:] = Image(unshifted_images[1:]).shift(s).asnumpy()
 
-                self._reddychatterji(
-                    k, images, classes, reflections, _rotations, _correlations, _shifts
+                rotations[k], correlations[k], shifts[k] = self._reddychatterji(
+                    images, classes[k], reflections[k]
                 )
 
                 # Where corr has improved
