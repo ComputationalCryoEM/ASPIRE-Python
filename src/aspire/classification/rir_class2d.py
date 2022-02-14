@@ -28,7 +28,6 @@ class RIRClass2D(Class2D):
         bispectrum_freq_cutoff=None,
         large_pca_implementation="legacy",
         nn_implementation="legacy",
-        output_nn_filename=None,
         bispectrum_implementation="legacy",
         aligner=None,
         dtype=None,
@@ -120,7 +119,6 @@ class RIRClass2D(Class2D):
                 f"Provided nn_implementation={nn_implementation} not in {nn_implementations.keys()}"
             )
         self._nn_classification = nn_implementations[nn_implementation]
-        self.output_nn_filename = output_nn_filename
 
         # # Do we have a sane Large Dataset PCA
         large_pca_implementations = {
@@ -187,8 +185,6 @@ class RIRClass2D(Class2D):
         # # Stage 2: Compute Nearest Neighbors
         logger.info("Calculate Nearest Neighbors")
         classes, reflections, distances = self.nn_classification(coef_b, coef_b_r)
-        if self.output_nn_filename is not None:
-            self._save_nn(classes, reflections, distances)
 
         if diagnostics:
             # Lets peek at the distribution of distances
@@ -368,59 +364,6 @@ class RIRClass2D(Class2D):
         classes %= n_im
 
         return classes, refl, distances
-
-    def _save_nn(self, classes, reflections, distances):
-        """
-        Output the Nearest Neighbors graph as a weighted adjacency list.
-
-        Vertices are indexed by their natural index in `source`.
-        Note reflected images are represented by `index + src.n`.
-
-        Only the output of the Nearest Neighbor call is saved.
-        If you want a complete graph, specify 2*src.n neighbors,
-        that is all images and their reflections.
-
-        Because this is mixed datatypes (int and floating),
-        this will be output as a space delimited text file.
-
-        Vi1 Vj1 W_i1_j1 Vj2 Wi1_j2 ...
-        Vi2 Vj1 W_i2_j1 Vj2 Wi2_j2 ...
-        ...
-
-        """
-
-        # Construct the weighted adjacency list
-        AdjList = []
-        for k in range(len(classes)):
-
-            row = []
-            vik = classes[k][0]
-            row.append(vik)
-
-            for j in range(1, len(classes[k])):
-
-                # Neighbor index
-                vj = classes[k][j]
-                if reflections[k][j]:
-                    vj += self.src.n
-                row.append(vj)
-
-                # Neighbor Weight (distance)
-                wt = distances[k][j]
-                row.append(wt)
-
-            # Store this row of the AdjList
-            AdjList.append(row)
-
-        logger.info(
-            "Writing Nearest Neighbors as Weighted Adjacency List"
-            f" to {self.output_nn_filename}"
-        )
-
-        # Output
-        with open(self.output_nn_filename, "w") as fh:
-            for row in AdjList:
-                fh.write(" ".join(str(x) for x in row) + "\n")
 
     def _legacy_pca(self, M):
         """
