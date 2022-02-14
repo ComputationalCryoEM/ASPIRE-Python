@@ -219,9 +219,8 @@ class RIRClass2DTestCase(TestCase):
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
             averager=BFRAverager2D(
-                self.noisy_fspca_basis,
+                self.noisy_fspca_basis.basis,  # FFB basis
                 self.noisy_src,
-                self.basis,
                 n_angles=100,
             ),
         )

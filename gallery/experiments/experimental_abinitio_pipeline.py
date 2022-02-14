@@ -121,9 +121,7 @@ if do_cov2d:
 
     # Use regular `src` for the alignment and composition (averaging).
     composite_basis = FFBBasis2D((src.L,) * 2, dtype=src.dtype)
-    custom_averager = BFSReddyChatterjiAverager2D(
-        None, src, composite_basis, dtype=src.dtype
-    )
+    custom_averager = BFSReddyChatterjiAverager2D(composite_basis, src, dtype=src.dtype)
 
 
 # %%

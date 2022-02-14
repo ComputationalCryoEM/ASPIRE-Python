@@ -6,7 +6,13 @@ import numpy as np
 import pytest
 
 from aspire.basis import DiracBasis, FFBBasis2D
-from aspire.classification import Averager2D, BFRAverager2D, BFSRAverager2D
+from aspire.classification import (
+    Averager2D,
+    BFRAverager2D,
+    BFSRAverager2D,
+    BFSReddyChatterjiAverager2D,
+    ReddyChatterjiAverager2D,
+)
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
@@ -153,7 +159,7 @@ class BFRAverager2DTestCase(Averager2DTestCase):
         Rotationally averager the stack and compare output with known rotations.
         """
 
-        # Construction the Averager and then call the `align` method
+        # Construct the Averager and then call the `align` method
         avgr = self.averager(self.basis, self._getSrc(), n_angles=self.n_search_angles)
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
@@ -208,7 +214,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
         Rotationally averager the stack and compare output with known rotations.
         """
 
-        # Construction the Averager and then call the main `align` method
+        # Construct the Averager and then call the main `align` method
         avgr = self.averager(
             self.basis,
             self._getSrc(),
@@ -234,3 +240,45 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
         #  non zero shift+rot improved corr.
         #  Perhaps in the future should check more details.
         self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
+
+
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
+
+    averager = ReddyChatterjiAverager2D
+
+    def testAverager(self):
+        """
+        Construct a stack of images with known rotations.
+
+        Rotationally averager the stack and compare output with known rotations.
+        """
+
+        # Construct the Averager and then call the main `align` method
+        avgr = self.averager(
+            composite_basis=self.basis,
+            source=self._getSrc(),
+            dtype=self.dtype,
+        )
+        _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
+
+        # Crude check that we are closer to known angle than the next rotation
+        self.assertTrue(np.all((_rotations - self.thetas) <= (self.step / 2)))
+
+        # Fine check that we are within one degree.
+        self.assertTrue(np.all((_rotations - self.thetas) <= (2 * np.pi / 360.0)))
+
+        # Check that we are _not_ shifting the base image
+        self.assertTrue(np.all(_shifts[0][0] == 0))
+        # Check that we produced estimated shifts away from origin
+        #  Note that Simulation's rot+shift is generally not equal to shift+rot.
+        #  Instead we check that some combination of
+        #  non zero shift+rot improved corr.
+        #  Perhaps in the future should check more details.
+        self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
+
+
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+class BFSReddyChatterjiAverager2DTestCase(ReddyChatterjiAverager2DTestCase):
+
+    averager = BFSReddyChatterjiAverager2D
