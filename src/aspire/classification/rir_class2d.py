@@ -173,7 +173,7 @@ class RIRClass2D(Class2D):
         #  we are certain our pca_basis has been constructed.
         if self.averager is None:
             self.averager = BFSReddyChatterjiAverager2D(
-                None, self.src, self.fb_basis, dtype=self.dtype
+                self.fb_basis, self.src, dtype=self.dtype
             )
 
         # Get the expanded coefs in the compressed FSPCA space.

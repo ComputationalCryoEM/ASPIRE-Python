@@ -21,19 +21,14 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(
-        self, alignment_basis, source, composite_basis=None, batch_size=512, dtype=None
-    ):
+    def __init__(self, composite_basis, source, batch_size=512, dtype=None):
         """
-        :param alignment_basis: Basis to be used during alignment (eg FSPCA)
-        :param source: Source of original images.
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D)
+        :param source: Source of original images.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
-        self.alignment_basis = alignment_basis
-        # if composite_basis is None, use alignment_basis
-        self.composite_basis = composite_basis or self.alignment_basis
+        self.composite_basis = composite_basis
         self.src = source
         self.batch_size = batch_size
         if dtype is None:
@@ -74,7 +69,7 @@ class Averager2D(ABC):
 
         :param classes: class indices (refering to src). (n_img, n_nbor)
         :param reflections: Bool representing whether to reflect image in `classes`
-        :coefs: Optional Fourier bessel coefs (avoids recomputing).
+        :coefs: Optional basis coefs (could avoid recomputing).
         :return: Stack of Synthetic Class Average images as Image instance.
         """
 
@@ -105,6 +100,34 @@ class AligningAverager2D(Averager2D):
     Subclass supporting averagers which perfom an aligning stage.
     """
 
+    def __init__(
+        self, composite_basis, source, alignment_basis=None, batch_size=512, dtype=None
+    ):
+        """
+        :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D)
+        :param source: Source of original images.
+        :param alignment_basis: Optional, basis to be used during alignment (eg FSPCA)
+        :param dtype: Numpy dtype to be used during alignment.
+        """
+
+        super().__init__(
+            composite_basis=composite_basis,
+            source=source,
+            batch_size=batch_size,
+            dtype=dtype,
+        )
+        # If alignment_basis is None, use composite_basis
+        self.alignment_basis = alignment_basis or self.composite_basis
+
+        if not hasattr(self.alignment_basis, "rotate"):
+            raise RuntimeError(
+                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
+            )
+        if not hasattr(self.alignment_basis, "shift"):
+            raise RuntimeError(
+                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
+            )
+
     @abstractmethod
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -129,7 +152,7 @@ class AligningAverager2D(Averager2D):
         :param reflections: (n_classes, n_nbor) bool array of corresponding reflections
         :param basis_coefficients: (n_img, self.pca_basis.count) compressed basis coefficients
 
-        :returns: (reflections, rotations, shifts)
+        :returns: (rotations, shifts, correlations)
         """
 
     def average(
@@ -159,7 +182,7 @@ class AligningAverager2D(Averager2D):
                 if shifts is not None:
                     neighbors_imgs.shift(shifts[i])
 
-                neighbors_coefs = self.composite_basis.expand(neighbors_imgs)
+                neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
                 # Get the neighbors
                 neighbors_ids = classes[i]
@@ -192,26 +215,21 @@ class BFRAverager2D(AligningAverager2D):
 
     def __init__(
         self,
-        alignment_basis,
+        composite_basis,
         source,
-        composite_basis=None,
+        alignment_basis=None,
         n_angles=359,
         batch_size=512,
         dtype=None,
     ):
         """
-        :params alignment_basis: Basis providing a `rotate` method.
-        :param source: Source of original images.
+        See AligningAverager2D, adds:
+
         :params n_angles: Number of brute force rotations to attempt, defaults 359.
         """
-        super().__init__(alignment_basis, source, composite_basis, batch_size, dtype)
+        super().__init__(composite_basis, source, alignment_basis, batch_size, dtype)
 
         self.n_angles = n_angles
-
-        if not hasattr(self.alignment_basis, "rotate"):
-            raise RuntimeError(
-                f"BFRAverager2D's alignment_basis {self.alignment_basis} must provide a `rotate` method."
-            )
 
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -236,7 +254,13 @@ class BFRAverager2D(AligningAverager2D):
         for k in trange(n_classes):
 
             # Get the coefs for these neighbors
-            nbr_coef = basis_coefficients[classes[k]]
+            if basis_coefficients is None:
+                # Retrieve relavent images
+                neighbors_imgs = Image(self._cls_images(classes[k]))
+                # Evaluate_T into basis
+                nbr_coef = self.composite_basis.evaluate_t(neighbors_imgs)
+            else:
+                nbr_coef = basis_coefficients[classes[k]]
 
             for i, angle in enumerate(test_angles):
                 # Rotate the set of neighbors by angle,
@@ -274,9 +298,9 @@ class BFSRAverager2D(BFRAverager2D):
 
     def __init__(
         self,
-        alignment_basis,
+        composite_basis,
         source,
-        composite_basis=None,
+        alignment_basis=None,
         n_angles=359,
         n_x_shifts=1,
         n_y_shifts=1,
@@ -284,22 +308,23 @@ class BFSRAverager2D(BFRAverager2D):
         dtype=None,
     ):
         """
-        Note that n_x_shifts and n_y_shifts are the number of shifts to perform
-        in each direction.
+        See AligningAverager2D and BFRAverager2D, adds: `n_x_shifts`, `n_y_shifts`.
+
+        Note that `n_x_shifts` and `n_y_shifts` are the number of shifts
+        to perform in each direction.
 
         Example: n_x_shifts=1, n_y_shifts=0 would test {-1,0,1} X {0}.
 
         n_x_shifts=n_y_shifts=0 is the same as calling BFRAverager2D.
 
-        :params alignment_basis: Basis providing a `shift` and `rotate` method.
         :params n_angles: Number of brute force rotations to attempt, defaults 359.
         :params n_x_shifts: +- Number of brute force xshifts to attempt, defaults 1.
         :params n_y_shifts: +- Number of brute force xshifts to attempt, defaults 1.
         """
         super().__init__(
-            alignment_basis,
-            source,
             composite_basis,
+            source,
+            alignment_basis,
             n_angles,
             batch_size=batch_size,
             dtype=dtype,
@@ -307,11 +332,6 @@ class BFSRAverager2D(BFRAverager2D):
 
         self.n_x_shifts = n_x_shifts
         self.n_y_shifts = n_y_shifts
-
-        if not hasattr(self.alignment_basis, "shift"):
-            raise RuntimeError(
-                f"BFSRAverager2D's alignment_basis {self.alignment_basis} must provide a `shift` method."
-            )
 
         # Each shift will require calling the parent BFRAverager2D.align
         self._bfr_align = super().align
@@ -342,6 +362,10 @@ class BFSRAverager2D(BFRAverager2D):
         rotations = np.empty(classes.shape, dtype=self.dtype)
         correlations = np.ones(classes.shape, dtype=self.dtype) * -np.inf
         shifts = np.empty((*classes.shape, 2), dtype=int)
+
+        if basis_coefficients is None:
+            # Retrieve image coefficients, this is bad, but should be deleted anyway.
+            basis_coefficients = self.composite_basis.evaluate_t(self.src.images(0, np.inf))
 
         # We want to maintain the original coefs for the base images,
         #  because we will mutate them with shifts in the loop.
@@ -407,20 +431,16 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
     def __init__(
         self,
-        alignment_basis,
+        composite_basis,
         source,
-        composite_basis=None,
         alignment_source=None,
         diagnostics=False,
         batch_size=512,
         dtype=None,
     ):
         """
-        :param alignment_basis: Basis to be used during alignment.
-        For current implementation of ReddyChatterjiAverager2D this should be `None`.
-        Instead see `alignment_source`.
-        :param source: Source of original images.
         :param composite_basis:  Basis to be used during class average composition.
+        :param source: Source of original images.
         :param alignment_source: Optional, source to be used during class average alignment.
         Must be the same resolution as `source`.
         :param dtype: Numpy dtype to be used during alignment.
@@ -440,15 +460,8 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 "Currently `alignment_src.dtype` must equal `source.dtype`"
             )
 
-        # Sanity check. This API should be rethought once all basis and
-        # alignment methods have been incorporated.
-        assert alignment_basis is None  # We use sources directly for alignment
-        assert (
-            composite_basis is not None
-        )  # However, we require a basis for rotating etc.
-
         super().__init__(
-            alignment_basis, source, composite_basis, batch_size=batch_size, dtype=dtype
+            composite_basis, source, composite_basis, batch_size=batch_size, dtype=dtype
         )
 
     def _phase_cross_correlation(self, img0, img1):
@@ -503,7 +516,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # # Get the array of images for this class, using the `alignment_src`.
             images = self._cls_images(classes[k], src=self.alignment_src)
 
-            rotations[k], correlations[k], shifts[k] = self._reddychatterji(
+            rotations[k], shifts[k], correlations[k] = self._reddychatterji(
                 images, classes[k], reflections[k]
             )
 
@@ -692,7 +705,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         self.__cache.pop(id(warped_fixed_img_fs), None)
         self.__cache.pop(id(twfixed_img), None)
 
-        return rotations_k, correlations_k, shifts_k
+        return rotations_k, shifts_k, correlations_k
 
     def average(
         self,
@@ -717,7 +730,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             if coefs is None:
                 # Retrieve relavent images directly from source.
                 neighbors_imgs = Image(self._cls_images(classes[i]))
-                neighbors_coefs = self.composite_basis.expand(neighbors_imgs)
+                neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
                 # Get the neighbors
                 neighbors_ids = classes[i]
@@ -889,9 +902,8 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
     def __init__(
         self,
-        alignment_basis,
+        composite_basis,
         source,
-        composite_basis=None,
         alignment_source=None,
         radius=None,
         diagnostics=False,
@@ -915,9 +927,8 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         """
 
         super().__init__(
-            alignment_basis,
-            source,
             composite_basis,
+            source,
             alignment_source,
             diagnostics,
             batch_size=batch_size,
@@ -947,7 +958,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         rotations = np.zeros(classes.shape, dtype=self.dtype)
         _correlations = np.zeros(classes.shape, dtype=self.dtype)
         correlations = np.ones(classes.shape, dtype=self.dtype) * -np.inf
-        _shifts = np.zeros((*classes.shape, 2), dtype=int)
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
         # We'll brute force all shifts in a grid.
@@ -968,7 +978,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 # Don't shift the base image
                 images[1:] = Image(unshifted_images[1:]).shift(s).asnumpy()
 
-                rotations[k], correlations[k], shifts[k] = self._reddychatterji(
+                rotations[k], _, correlations[k] = self._reddychatterji(
                     images, classes[k], reflections[k]
                 )
 
@@ -977,7 +987,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 improved = _correlations > correlations
                 correlations = np.where(improved, _correlations, correlations)
                 rotations = np.where(improved, _rotations, rotations)
-                shifts = np.where(shifts, _shifts, shifts)
+                shifts = np.where(improved[..., np.newaxis], s, shifts)
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
 
         return rotations, shifts, correlations
