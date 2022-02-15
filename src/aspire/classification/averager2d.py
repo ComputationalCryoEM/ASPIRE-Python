@@ -23,7 +23,7 @@ class Averager2D(ABC):
 
     def __init__(self, composite_basis, source, batch_size=512, dtype=None):
         """
-        :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D)
+        :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param source: Source of original images.
         :param dtype: Numpy dtype to be used during alignment.
         """
@@ -67,8 +67,8 @@ class Averager2D(ABC):
 
         Should return an Image source of synthetic class averages.
 
-        :param classes: class indices (refering to src). (n_img, n_nbor)
-        :param reflections: Bool representing whether to reflect image in `classes`
+        :param classes: class indices (refering to src). (n_img, n_nbor).
+        :param reflections: Bool representing whether to reflect image in `classes`.
         :coefs: Optional basis coefs (could avoid recomputing).
         :return: Stack of Synthetic Class Average images as Image instance.
         """
@@ -106,7 +106,7 @@ class AligningAverager2D(Averager2D):
         """
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D)
         :param source: Source of original images.
-        :param alignment_basis: Optional, basis to be used during alignment (eg FSPCA)
+        :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA)
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -541,13 +541,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         # Result arrays
         M = len(images)
-        rotations_k = np.empty(M, dtype=self.dtype)
-        correlations_k = np.empty(M, dtype=self.dtype)
-        shifts_k = np.empty((M, 2), dtype=self.dtype)
-        # Initialize for Image 0, others will populate in loop.
-        rotations_k[0] = 0
-        correlations_k[0] = 0
-        shifts_k[0] = 0
+        rotations_k = np.zeros(M, dtype=self.dtype)
+        correlations_k = np.zeros(M, dtype=self.dtype)
+        shifts_k = np.zeros((M, 2), dtype=int)
 
         # De-Mean, note images is mutated and should be a `copy`.
         images -= images.mean(axis=(-1, -2))[:, np.newaxis, np.newaxis]
@@ -964,7 +960,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
         # We'll brute force all shifts in a grid.
         g = grid_2d(L, normalized=False)
-        disc = g["r"] <= L // 8  # make param later
+        disc = g["r"] <= self.radius
         X, Y = g["x"][disc], g["y"][disc]
 
         for k in trange(n_classes):
