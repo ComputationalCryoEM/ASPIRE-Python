@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
     "--downsample",
     default=0,
     type=int,
-    help="Downsample the data to this resolution prior to saving to starfile/.mrcs stack",
+    help="Downsample the images to this resolution prior to saving to starfile/.mrcs stack",
 )
 @click.option(
     "--normalize_bg",
