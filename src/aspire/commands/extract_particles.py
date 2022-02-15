@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--normalize_bg",
     is_flag=True,
-    help="Normalize images to the background noise",
+    help="Normalize the images to have mean zero and variance one in the corners",
 )
 @click.option(
     "--whiten",
@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--invert_contrast",
     is_flag=True,
-    help="Invert the contrast of the images so molecules are shown in white",
+    help="Invert the contrast of the images to ensure that clean particles have positive intensity",
 )
 @click.option(
     "--batch_size", default=512, help="Batch size to load images from .mrc files"
@@ -136,7 +136,7 @@ def extract_particles(
         )
 
     # optional preprocessing steps
-    if downsample > 0:
+    if 0 < downsample < src.L:
         src.downsample(downsample)
     if normalize_bg:
         src.normalize_background()
