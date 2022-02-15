@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import numpy as np
@@ -84,12 +85,17 @@ class Simulation(ImageSource):
         if unique_filters is None:
             unique_filters = []
         self.unique_filters = unique_filters
+        # sim_filters must be a deep copy so that it is not changed
+        # when unique_filters is changed
+        self.sim_filters = copy.deepcopy(unique_filters)
 
         # Create filter indices and fill the metadata based on unique filters
         if unique_filters:
             if filter_indices is None:
                 filter_indices = randi(len(unique_filters), n, seed=seed) - 1
             self.filter_indices = filter_indices
+        else:
+            self.filter_indices = np.zeros(n)
 
         self.offsets = offsets
         self.amplitudes = amplitudes
@@ -134,7 +140,9 @@ class Simulation(ImageSource):
 
         im = self.projections(start=start, num=num, indices=indices)
 
-        im = self._apply_filters(im, start=start, num=num, indices=indices)
+        # apply original CTF distortion to image
+        im = self._apply_sim_filters(im, indices)
+
         im = im.shift(self.offsets[indices, :])
 
         im *= self.amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
@@ -143,6 +151,13 @@ class Simulation(ImageSource):
             im = self.noise_adder.forward(im, indices=indices)
 
         return im
+
+    def _apply_sim_filters(self, im, indices):
+        return self._apply_filters(
+            im,
+            self.sim_filters,
+            self.filter_indices[indices],
+        )
 
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
