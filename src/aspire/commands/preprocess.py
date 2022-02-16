@@ -31,24 +31,28 @@ logger = logging.getLogger(__name__)
 )
 @click.option("--flip_phase", default=True, help="Perform phase flip or not")
 @click.option(
-    "--max_resolution",
-    default=16,
+    "--downsample",
+    default=0,
     type=int,
-    help="Resolution for downsampling images read from STAR file",
+    help="Downsample the images to this resolution prior to saving to starfile/.mrcs stack",
 )
 @click.option(
-    "--normalize_background",
+    "--normalize_bg",
     default=True,
-    help="Whether to normalize images to background noise",
+    help="Normalize the images to have mean zero and variance one in the corners",
 )
-@click.option("--whiten_noise", default=True, help="Whiten background noise")
+@click.option(
+    "--whiten",
+    default=True,
+    help="Estimate the noise variance of the images and whiten",
+)
 @click.option(
     "--invert_contrast",
     default=True,
-    help="Invert the contrast of images so molecules are shown in white",
+    help="Invert the contrast of the images to ensure that clean particles have positive intensity",
 )
 @click.option(
-    "--batch_size", default=512, help="Batch size to load images from MRC files."
+    "--batch_size", default=512, help="Batch size to load images from MRC files"
 )
 @click.option(
     "--save_mode",
@@ -67,9 +71,9 @@ def preprocess(
     pixel_size,
     max_rows,
     flip_phase,
-    max_resolution,
-    normalize_background,
-    whiten_noise,
+    downsample,
+    normalize_bg,
+    whiten,
     invert_contrast,
     batch_size,
     save_mode,
@@ -88,15 +92,15 @@ def preprocess(
         logger.info("Perform phase flip to input images")
         source.phase_flip()
 
-    if max_resolution < source.L:
-        logger.info(f"Downsample resolution to {max_resolution} X {max_resolution}")
-        source.downsample(max_resolution)
+    if 0 < downsample < source.L:
+        logger.info(f"Downsample resolution to {downsample} X {downsample}")
+        source.downsample(downsample)
 
-    if normalize_background:
+    if normalize_bg:
         logger.info("Normalize images to noise background")
         source.normalize_background()
 
-    if whiten_noise:
+    if whiten:
         logger.info("Whiten noise of images")
         noise_estimator = WhiteNoiseEstimator(source)
         source.whiten(noise_estimator.filter)
