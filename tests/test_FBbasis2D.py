@@ -1,5 +1,6 @@
 import os.path
 from unittest import TestCase
+from unittest.case import SkipTest
 
 import numpy as np
 from pytest import raises
@@ -7,6 +8,7 @@ from pytest import raises
 from aspire.basis import FBBasis2D
 from aspire.image import Image
 from aspire.utils import complex_type, gaussian_2d, real_type, utest_tolerance
+from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -348,6 +350,48 @@ class FBBasis2DTestCase(TestCase):
             atol = 1e-3
 
         self.assertTrue(np.allclose(im1, im2, atol=atol))
+
+    def testIsotropic(self):
+        sigma = self.L / 8
+        im = gaussian_2d(self.L, sigma_x=sigma, sigma_y=sigma)
+        im = im.astype(self.dtype)
+
+        coef = self.basis.expand(im)
+
+        ells = self.basis.indices()["ells"]
+
+        energy_outside = np.sum(np.abs(coef[ells != 0]) ** 2)
+        energy_total = np.sum(np.abs(coef) ** 2)
+
+        energy_ratio = energy_outside / energy_total
+
+        self.assertTrue(energy_ratio < 0.01)
+
+    def testModulated(self):
+        if self.L < 32:
+            raise SkipTest
+
+        ell = 1
+
+        sigma = self.L / 8
+        im = gaussian_2d(self.L, sigma_x=sigma, sigma_y=sigma)
+        im = im.astype(self.dtype)
+
+        g2d = grid_2d(self.L)
+
+        for trig_fun in (np.sin, np.cos):
+            im1 = im * trig_fun(ell * g2d["phi"])
+
+            coef = self.basis.expand(im1)
+
+            ells = self.basis.indices()["ells"]
+
+            energy_outside = np.sum(np.abs(coef[ells != ell]) ** 2)
+            energy_total = np.sum(np.abs(coef) ** 2)
+
+            energy_ratio = energy_outside / energy_total
+
+            self.assertTrue(energy_ratio < 0.10)
 
     def testEvaluateExpand(self):
         coef1 = randn(self.basis.count, seed=self.seed)
