@@ -6,7 +6,7 @@ from pytest import raises
 
 from aspire.basis import FBBasis2D
 from aspire.image import Image
-from aspire.utils import complex_type, real_type, utest_tolerance
+from aspire.utils import complex_type, gaussian_2d, real_type, utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -323,6 +323,29 @@ class FBBasis2DTestCase(TestCase):
                 atol=utest_tolerance(self.dtype),
             )
         )
+
+    def testGaussianExpand(self):
+        # Offset slightly
+        x0 = 0.50
+        y0 = 0.75
+
+        # Want sigma to be as large as possible without the Gaussian
+        # spilling too much outside the central disk.
+        sigma = self.L / 8
+        im1 = gaussian_2d(self.L, x0=x0, y0=y0, sigma_x=sigma, sigma_y=sigma)
+        im1 = im1.astype(self.dtype)
+
+        coef = self.basis.expand(im1)
+        im2 = self.basis.evaluate(coef)
+
+        # For small L there's too much clipping at high freqs to get 1e-3
+        # accuracy.
+        if self.L < 32:
+            atol = 1e-2
+        else:
+            atol = 1e-3
+
+        self.assertTrue(np.allclose(im1, im2, atol=atol))
 
     def testComplexCoversion(self):
         # Load a reasonable input
