@@ -9,6 +9,7 @@ from aspire.basis import FBBasis2D
 from aspire.image import Image
 from aspire.utils import complex_type, real_type, utest_tolerance
 from aspire.utils.coor_trans import grid_2d
+from aspire.utils.random import randn
 
 from ._basis_util import Steerable2DMixin
 
@@ -366,8 +367,7 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
         self.assertTrue(np.allclose(coef, coef_ref, atol=1e-4))
 
     def testComplexCoversion(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+        x = randn(*self.basis.sz, seed=self.seed)
 
         # Express in an FB basis
         v1 = self.basis.expand(x.astype(self.dtype))
@@ -381,8 +381,7 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
         self.assertTrue(np.allclose(v1, v2))
 
     def testComplexCoversionErrorsToComplex(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+        x = randn(*self.basis.sz, seed=self.seed)
 
         # Express in an FB basis
         v1 = self.basis.expand(x.astype(self.dtype))
@@ -407,8 +406,7 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
         _ = self.basis.to_complex(v1.reshape(-1))
 
     def testComplexCoversionErrorsToReal(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+        x = randn(*self.basis.sz, seed=self.seed)
 
         # Express in an FB basis
         cv1 = self.basis.to_complex(self.basis.expand(x.astype(self.dtype)))
