@@ -328,6 +328,28 @@ class FBBasis2DTestCase(TestCase):
             )
         )
 
+    def testIndices(self):
+        ell_max = self.basis.ell_max
+        k_max = self.basis.k_max
+
+        indices = self.basis.indices()
+
+        i = 0
+
+        for ell in range(ell_max + 1):
+            if ell == 0:
+                sgns = [1]
+            else:
+                sgns = [1, -1]
+
+            for sgn in sgns:
+                for k in range(k_max[ell]):
+                    self.assertTrue(indices["ells"][i] == ell)
+                    self.assertTrue(indices["sgns"][i] == sgn)
+                    self.assertTrue(indices["ks"][i] == k)
+
+                    i += 1
+
     def testGaussianExpand(self):
         # Offset slightly
         x0 = 0.50
