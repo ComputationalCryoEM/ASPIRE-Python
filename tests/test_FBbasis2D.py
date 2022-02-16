@@ -7,6 +7,7 @@ from pytest import raises
 from aspire.basis import FBBasis2D
 from aspire.image import Image
 from aspire.utils import complex_type, gaussian_2d, real_type, utest_tolerance
+from aspire.utils.random import randn
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -16,6 +17,7 @@ class FBBasis2DTestCase(TestCase):
         self.dtype = np.float32
         self.L = 8
         self.basis = FBBasis2D((self.L, self.L), dtype=self.dtype)
+        self.seed = 9161341
 
     def tearDown(self):
         pass
@@ -346,6 +348,15 @@ class FBBasis2DTestCase(TestCase):
             atol = 1e-3
 
         self.assertTrue(np.allclose(im1, im2, atol=atol))
+
+    def testEvaluateExpand(self):
+        coef1 = randn(self.basis.count, seed=self.seed)
+        coef1 = coef1.astype(self.dtype)
+
+        im = self.basis.evaluate(coef1)
+        coef2 = self.basis.expand(im)[:, 0]
+
+        self.assertTrue(np.allclose(coef1, coef2, atol=utest_tolerance(self.dtype)))
 
     def testComplexCoversion(self):
         # Load a reasonable input
