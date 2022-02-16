@@ -1,5 +1,4 @@
 import logging
-import math
 
 import numpy as np
 from numpy import linalg
@@ -95,7 +94,8 @@ class CLSymmetryC3C4(CLOrient3D):
         # return vijs, viis
         pass
 
-    def estimate_third_rows(self, vijs, viis, n_symm):
+    @staticmethod
+    def estimate_third_rows(vijs, viis):
         """
         Find the third row of each rotation matrix given third row outer products.
 
@@ -112,9 +112,10 @@ class CLSymmetryC3C4(CLOrient3D):
 
         n_ims = viis.shape[0]
         n_vijs = vijs.shape[0]
+        nchoose2 = int(n_ims * (n_ims - 1) / 2)
         assert viis.shape[1:] == (3, 3), "viis must be 3x3 matrices."
         assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
-        assert n_vijs == math.comb(n_ims, 2), "There must be n_ims-choose-2 vijs."
+        assert n_vijs == nchoose2, "There must be n_ims-choose-2 vijs."
 
         # Build 3nx3n matrix V whose (i,j)-th block of size 3x3 holds the outer product vij
         V = np.zeros((3 * n_ims, 3 * n_ims), dtype=vijs.dtype)
@@ -142,6 +143,8 @@ class CLSymmetryC3C4(CLOrient3D):
         lead_vec = vec[:, lead_idx]
 
         vis = lead_vec.reshape((n_ims, 3))
+        for i in range(n_ims):
+            vis[i] = vis[i] / linalg.norm(vis[i])
 
         return vis
 

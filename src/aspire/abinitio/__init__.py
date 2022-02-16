@@ -1,4 +1,4 @@
 from .commonline_base import CLOrient3D
+from .commonline_c3_c4 import CLSymmetryC3C4
 from .commonline_sync import CLSyncVoting
 from .orientation_src import OrientEstSource
-from .commonline_c3_c4 import CLSymmetryC3C4
