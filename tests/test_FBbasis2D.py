@@ -4,6 +4,7 @@ from unittest.case import SkipTest
 
 import numpy as np
 from pytest import raises
+from scipy.special import jv
 
 from aspire.basis import FBBasis2D
 from aspire.image import Image
@@ -349,6 +350,42 @@ class FBBasis2DTestCase(TestCase):
                     self.assertTrue(indices["ks"][i] == k)
 
                     i += 1
+
+    def testElement(self):
+        ell = 1
+        sgn = -1
+        k = 2
+
+        indices = self.basis.indices()
+        ells = indices["ells"]
+        sgns = indices["sgns"]
+        ks = indices["ks"]
+
+        g2d = grid_2d(self.L, dtype=self.dtype)
+        mask = g2d["r"] < 1
+
+        r0 = self.basis.r0[k, ell]
+
+        im = np.zeros((self.L, self.L), dtype=self.dtype)
+        im[mask] = jv(ell, g2d["r"][mask] * r0)
+        im *= np.sqrt(2**2 / self.L**2)
+        im *= 1 / (np.sqrt(np.pi) * np.abs(jv(ell + 1, r0)))
+
+        if sgn == 1:
+            im *= np.sqrt(2) * np.cos(ell * g2d["phi"])
+        else:
+            im *= np.sqrt(2) * np.sin(ell * g2d["phi"])
+
+        coef_ref = np.zeros(self.basis.count, dtype=self.dtype)
+        coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
+
+        im_ref = self.basis.evaluate(coef_ref)
+
+        coef = self.basis.expand(im)
+
+        # TODO: These tolerances should be tighter.
+        self.assertTrue(np.allclose(im, im_ref, atol=1e-4))
+        self.assertTrue(np.allclose(coef, coef_ref, atol=1e-4))
 
     def testGaussianExpand(self):
         # Offset slightly
