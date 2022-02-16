@@ -401,6 +401,9 @@ class FBBasis2DTestCase(TestCase):
         coef = self.basis.expand(im1)
         im2 = self.basis.evaluate(coef)
 
+        if isinstance(im2, Image):
+            im2 = im2.asnumpy()
+
         # For small L there's too much clipping at high freqs to get 1e-3
         # accuracy.
         if self.L < 32:
@@ -457,6 +460,8 @@ class FBBasis2DTestCase(TestCase):
         coef1 = coef1.astype(self.dtype)
 
         im = self.basis.evaluate(coef1)
+        if isinstance(im, Image):
+            im = im.asnumpy()
         coef2 = self.basis.expand(im)[:, 0]
 
         self.assertTrue(np.allclose(coef1, coef2, atol=utest_tolerance(self.dtype)))
@@ -466,6 +471,8 @@ class FBBasis2DTestCase(TestCase):
         u = u.astype(self.dtype)
 
         Au = self.basis.evaluate(u)
+        if isinstance(Au, Image):
+            Au = Au.asnumpy()
 
         x = randn(*self.basis.sz, seed=self.seed)
         x = x.astype(self.dtype)
