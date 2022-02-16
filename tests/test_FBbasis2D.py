@@ -358,6 +358,22 @@ class FBBasis2DTestCase(TestCase):
 
         self.assertTrue(np.allclose(coef1, coef2, atol=utest_tolerance(self.dtype)))
 
+    def testAdjoint(self):
+        u = randn(self.basis.count, seed=self.seed)
+        u = u.astype(self.dtype)
+
+        Au = self.basis.evaluate(u)
+
+        x = randn(*self.basis.sz, seed=self.seed)
+        x = x.astype(self.dtype)
+
+        ATx = self.basis.evaluate_t(x)
+
+        Au_dot_x = np.sum(Au * x)
+        u_dot_ATx = np.sum(u * ATx)
+
+        self.assertTrue(np.isclose(Au_dot_x, u_dot_ATx))
+
     def testComplexCoversion(self):
         # Load a reasonable input
         x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
