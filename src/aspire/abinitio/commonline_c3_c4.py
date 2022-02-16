@@ -1,4 +1,8 @@
 import logging
+import math
+
+import numpy as np
+from numpy import linalg
 
 from aspire.abinitio import CLOrient3D
 
@@ -51,8 +55,6 @@ class CLSymmetryC3C4(CLOrient3D):
     def compute_third_row_outer_prod_c34(self, max_shift_1d):
         """
         Compute the outer products of the third rows of the rotation matrices Rij and Rii.
-
-        A pre-computed common line matrix is required as input.
         """
 
         pf = self.pf
@@ -94,8 +96,54 @@ class CLSymmetryC3C4(CLOrient3D):
         pass
 
     def estimate_third_rows(self, vijs, viis, n_symm):
-        # return vis
-        pass
+        """
+        Find the third row of each rotation matrix given third row outer products.
+
+        :param vijs: An n-choose-2x3x3 array where each 3x3 slice holds the third rows
+        outer product of the corresponding pair of matrices.
+
+        :param viis: An nx3x3 array where the i-th 3x3 slice holds the outer product of
+        the third row of Ri with itself.
+
+        :param n_symm: The underlying molecular symmetry.
+
+        :return: vis, An n_imagesx3 matrix whose i-th row is the third row of the rotation matrix Ri.
+        """
+
+        n_ims = viis.shape[0]
+        n_vijs = vijs.shape[0]
+        assert viis.shape[1:] == (3, 3), "viis must be 3x3 matrices."
+        assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
+        assert n_vijs == math.comb(n_ims, 2), "There must be n_ims-choose-2 vijs."
+
+        # Build 3nx3n matrix V whose (i,j)-th block of size 3x3 holds the outer product vij
+        V = np.zeros((3 * n_ims, 3 * n_ims), dtype=vijs.dtype)
+
+        # All pairs (i,j) where i<j
+        indices = np.arange(n_ims)
+        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+
+        # Populate upper triangle of V with vijs
+        for idx, (i, j) in enumerate(pairs):
+            V[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)] = vijs[idx]
+
+        # Populate lower triangle of V with vjis, where vji = vij^T
+        V = V + V.T
+
+        # Populate diagonal of V with viis
+        for i in range(n_ims):
+            V[3 * i : 3 * (i + 1), 3 * i : 3 * (i + 1)] = viis[i]
+
+        # In a clean setting V is of rank 1 and its eigenvector is the concatenation
+        # of the third rows of all rotation matrices.
+        # In the noisy setting we use the eigenvector corresponding to the leading eigenvalue
+        val, vec = linalg.eig(V)
+        lead_idx = np.argsort(val)[-1]
+        lead_vec = vec[:, lead_idx]
+
+        vis = lead_vec.reshape((n_ims, 3))
+
+        return vis
 
     def estimate_inplane_rotations(
         self, pf, vis, inplane_rot_res, max_shift, shift_step
@@ -104,7 +152,7 @@ class CLSymmetryC3C4(CLOrient3D):
         pass
 
     #################################################
-    # Secondary methods                             #
+    # Secondary Methods for computing outer product #
     #################################################
 
     def self_clmatrix_c3_c4(
