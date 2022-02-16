@@ -14,7 +14,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class FBBasis2DTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
-        self.basis = FBBasis2D((8, 8), dtype=self.dtype)
+        self.L = 8
+        self.basis = FBBasis2D((self.L, self.L), dtype=self.dtype)
 
     def tearDown(self):
         pass
