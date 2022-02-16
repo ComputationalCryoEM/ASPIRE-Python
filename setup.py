@@ -24,7 +24,7 @@ setup(
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
-        "finufft",
+        "finufft<2.0.4",
         "gemmi>=0.4.8",
         "joblib",
         "matplotlib>=3.2.0",
