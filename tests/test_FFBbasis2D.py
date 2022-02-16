@@ -11,15 +11,18 @@ from aspire.utils import utest_tolerance
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
+from ._basis_util import Steerable2DMixin
+
 logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class FFBBasis2DTestCase(TestCase):
+class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
     def setUp(self):
         self.dtype = np.float32  # Required for convergence of this test
         self.L = 8
         self.basis = FFBBasis2D((self.L, self.L), dtype=self.dtype)
+        self.seed = 9161341
 
     def tearDown(self):
         pass
