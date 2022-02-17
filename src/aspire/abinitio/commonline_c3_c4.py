@@ -90,8 +90,30 @@ class CLSymmetryC3C4(CLOrient3D):
 
         return vijs, viis
 
-    def global_sync_J(self, vijs, viis):
-        # return vijs, viis
+    @staticmethod
+    def global_sync_J(vijs, viis):
+        """
+        Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
+        of which might contain a spurious J, we return vijs and viis that all have either a spurious J
+        or not.
+
+        :param vijs: An nchoose2x3x3 array where each 3x3 slice holds an estimate for the corresponding
+        outer-product vi*vj^T between the third rows of matrices Ri and Rj. Each estimate might have a
+        spurious J independently of other estimates.
+
+        :param viis: An nx3x3 array where the ith slice holds an estimate for the outer product vi*vi^T
+        between the third row of matrix Ri and itself. Each estimate might have a spurious J independently
+        of other estimates.
+
+        :return: vijs, viis all of which have a spurious J or not.
+        """
+
+        n_ims = viis.shape[0]
+        n_vijs = vijs.shape[0]
+        nchoose2 = int(n_ims * (n_ims - 1) / 2)
+        assert viis.shape[1:] == (3, 3), "viis must be 3x3 matrices."
+        assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
+        assert n_vijs == nchoose2, "There must be n_ims-choose-2 vijs."
         pass
 
     @staticmethod
