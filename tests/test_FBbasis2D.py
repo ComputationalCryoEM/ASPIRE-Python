@@ -2,6 +2,7 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+from parameterized import parameterized_class
 from pytest import raises
 from scipy.special import jv
 
@@ -15,10 +16,22 @@ from ._basis_util import Steerable2DMixin
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
+# NOTE: Class with default values is already present, so don't list it below.
+@parameterized_class(
+    ("L", "dtype"),
+    [
+        (8, np.float64),
+        (16, np.float32),
+        (16, np.float64),
+        (32, np.float32),
+        (32, np.float64),
+    ],
+)
 class FBBasis2DTestCase(TestCase, Steerable2DMixin):
+    L = 8
+    dtype = np.float32
+
     def setUp(self):
-        self.dtype = np.float32
-        self.L = 8
         self.basis = FBBasis2D((self.L, self.L), dtype=self.dtype)
         self.seed = 9161341
 
