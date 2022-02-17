@@ -55,8 +55,8 @@ class FFBBasis3D(FBBasis3D):
         in radical and phi dimensions.
         """
         n_r = int(np.ceil(4 * self.rcut * self.kcut))
-        n_theta = int(2 * self.sz[0])
-        n_phi = int(self.ell_max + 1)
+        n_theta = int(2 * self.nres)
+        n_phi = int(2 * self.nres + 1)
 
         r, wt_r = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
         z, wt_z = lgwt(n_phi, -1, 1, dtype=self.dtype)
