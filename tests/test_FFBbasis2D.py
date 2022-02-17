@@ -3,6 +3,7 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+from scipy.special import jv
 
 from aspire.basis import FFBBasis2D
 from aspire.image import Image
@@ -262,6 +263,52 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
                 atol=utest_tolerance(self.dtype),
             )
         )
+
+    def testElement(self):
+        ell = 1
+        sgn = -1
+        k = 2
+
+        indices = self.basis.indices()
+        ells = indices["ells"]
+        sgns = indices["sgns"]
+        ks = indices["ks"]
+
+        g2d = grid_2d(self.L, dtype=self.dtype)
+        mask = g2d["r"] < 1
+
+        r0 = self.basis.r0[k, ell]
+
+        # TODO: Figure out where these factors of 1 / 2 are coming from.
+        r = g2d["r"] * self.L / 4
+
+        im = np.zeros((self.L, self.L), dtype=self.dtype)
+        im[mask] = (
+            (-1) ** k
+            * np.sqrt(np.pi)
+            * r0
+            * jv(ell, 2 * np.pi * r[mask])
+            / ((2 * np.pi * r[mask]) ** 2 - r0**2)
+        )
+
+        if sgn == 1:
+            im *= np.sqrt(2) * np.cos(ell * g2d["phi"])
+        else:
+            im *= np.sqrt(2) * np.sin(ell * g2d["phi"])
+
+        coef_ref = np.zeros(self.basis.count, dtype=self.dtype)
+        coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
+
+        im_ref = self.basis.evaluate(coef_ref).asnumpy()[0]
+
+        coef = self.basis.expand(im)
+
+        # NOTE: These tolerances are expected to be rather loose since the
+        # above expression for `im` is derived from the analytical formulation
+        # (eq. 6 in Zhao and Singer, 2013) and does not take into account
+        # discretization and other approximations.
+        self.assertTrue(np.allclose(im, im_ref, atol=1e-1))
+        self.assertTrue(np.allclose(coef, coef_ref, atol=1e-1))
 
     def testRotate(self):
         # Now low res (8x8) had problems;
