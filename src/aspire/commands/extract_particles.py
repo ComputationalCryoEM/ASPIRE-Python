@@ -5,6 +5,7 @@ import os
 import click
 from click import UsageError
 
+from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import BoxesCoordinateSource, CentersCoordinateSource
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,27 @@ logger = logging.getLogger(__name__)
     help="Set this flag if coordinate files contain (X,Y) particle centers",
 )
 @click.option(
+    "--downsample",
+    default=0,
+    type=int,
+    help="Downsample the images to this resolution prior to saving to starfile/.mrcs stack",
+)
+@click.option(
+    "--normalize_bg",
+    is_flag=True,
+    help="Normalize the images to have mean zero and variance one in the corners",
+)
+@click.option(
+    "--whiten",
+    is_flag=True,
+    help="Estimate the noise variance of the images and whiten",
+)
+@click.option(
+    "--invert_contrast",
+    is_flag=True,
+    help="Invert the contrast of the images to ensure that clean particles have positive intensity",
+)
+@click.option(
     "--batch_size", default=512, help="Batch size to load images from .mrc files"
 )
 @click.option(
@@ -54,6 +76,10 @@ def extract_particles(
     starfile_out,
     particle_size,
     centers,
+    downsample,
+    normalize_bg,
+    whiten,
+    invert_contrast,
     batch_size,
     save_mode,
     overwrite,
@@ -108,6 +134,17 @@ def extract_particles(
             files,
             particle_size=particle_size,
         )
+
+    # optional preprocessing steps
+    if 0 < downsample < src.L:
+        src.downsample(downsample)
+    if normalize_bg:
+        src.normalize_background()
+    if whiten:
+        estimator = WhiteNoiseEstimator(src)
+        src.whiten(estimator.filter)
+    if invert_contrast:
+        src.invert_contrast()
 
     # saves to .mrcs and STAR file with column "_rlnImageName"
     src.save(
