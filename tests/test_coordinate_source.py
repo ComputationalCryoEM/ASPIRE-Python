@@ -152,7 +152,7 @@ class CoordinateSourceTestCase(TestCase):
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
                 )
 
-    def createTestCoordFiles(self, centers, index, dtype=int):
+    def createTestCoordFiles(self, centers, index):
         # create a coord file (only particle centers listed)
         coord_fp = os.path.join(self.data_folder, f"sample{index+1}.coord")
         # populate coord file with particle centers
@@ -161,7 +161,7 @@ class CoordinateSourceTestCase(TestCase):
                 # .coord file usually contains just the centers
                 coord.write(f"{center[0]}\t{center[1]}\n")
 
-    def createTestStarFiles(self, centers, index, dtype=int):
+    def createTestStarFiles(self, centers, index):
         # create a star file (only particle centers listed)
         star_fp = os.path.join(self.data_folder, f"sample{index+1}.star")
         # populate star file with particle centers
