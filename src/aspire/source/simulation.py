@@ -8,7 +8,7 @@ from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
-from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
+from aspire.utils import acorr, ainner, anorm, make_symmat, vecmat_to_volmat
 from aspire.utils.coor_trans import uniform_random_angles
 from aspire.utils.random import rand, randi, randn
 from aspire.volume import Volume, gaussian_blob_vols
@@ -325,9 +325,7 @@ class Simulation(ImageSource):
         :param vol_idx: Indexes of the volumes determined (0-indexed)
         :return: Accuracy [0-1] in terms of proportion of correctly assigned labels
         """
-        ensure(
-            len(vol_idx) == self.n, f"Need {self.n} vol indexes to evaluate clustering"
-        )
+        ensure(            len(vol_idx) == self.n, f"Need {self.n} vol indexes to evaluate clustering"        )
         # Remember that `states` is 1-indexed while vol_idx is 0-indexed
         correctly_classified = np.sum(self.states - 1 == vol_idx)
 

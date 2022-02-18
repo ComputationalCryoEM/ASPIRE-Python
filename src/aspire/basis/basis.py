@@ -5,7 +5,7 @@ from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.basis.basis_utils import num_besselj_zeros
 from aspire.image import Image
-from aspire.utils import ensure, mdim_mat_fun_conj
+from aspire.utils import mdim_mat_fun_conj
 from aspire.utils.matlab_compat import m_reshape
 from aspire.volume import Volume
 
@@ -185,10 +185,7 @@ class Basis:
 
         x = x.reshape((-1, *self.sz))
 
-        ensure(
-            x.shape[-self.ndim :] == self.sz,
-            f"Last {self.ndim} dimensions of x must match {self.sz}.",
-        )
+        assert x.shape[-self.ndim :] == self.sz, f"Last {self.ndim} dimensions of x must match {self.sz}."
 
         operator = LinearOperator(
             shape=(self.count, self.count),

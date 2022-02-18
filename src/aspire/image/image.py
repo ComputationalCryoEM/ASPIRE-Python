@@ -9,7 +9,6 @@ from scipy.linalg import lstsq
 import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
-from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.matrix import anorm
 
@@ -281,10 +280,7 @@ class Image:
 
         ensure(shifts.shape[-1] == 2, "shifts must be nx2")
 
-        ensure(
-            n_shifts == 1 or n_shifts == self.n_images,
-            "number of shifts must be 1 or match the number of images",
-        )
+        ensure(            n_shifts == 1 or n_shifts == self.n_images,            "number of shifts must be 1 or match the number of images"        )
         # Cast shifts to this instance's internal dtype
         shifts = shifts.astype(self.dtype)
 
@@ -330,10 +326,7 @@ class Image:
 
         L = self.res
 
-        ensure(
-            self.n_images == rot_matrices.shape[0],
-            "Number of rotation matrices must match the number of images",
-        )
+        ensure(            self.n_images == rot_matrices.shape[0],            "Number of rotation matrices must match the number of images"        )
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
         pts_rot = aspire.volume.rotated_grids(L, rot_matrices)

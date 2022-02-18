@@ -5,7 +5,6 @@ import math
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 
@@ -80,9 +79,7 @@ class Filter:
         :return: The value of the filter at the specified frequencies.
         """
         if omega.ndim == 1:
-            ensure(
-                self.radial, "Cannot evaluate a non-radial filter on 1D input array."
-            )
+            ensure(                self.radial, "Cannot evaluate a non-radial filter on 1D input array."            )
         elif omega.ndim == 2 and self.dim:
             ensure(omega.shape[0] == self.dim, f"Omega must be of size {self.dim} x n")
 

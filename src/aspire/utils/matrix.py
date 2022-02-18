@@ -5,7 +5,6 @@ Utilties for arrays/n-dimensional matrices.
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 
 SQRT2 = np.sqrt(2)
@@ -57,10 +56,7 @@ def vol_to_vec(X):
     """
     shape = X.shape
     ensure(X.ndim >= 3, "Array should have at least 3 dimensions")
-    ensure(
-        shape[0] == shape[1] == shape[2],
-        "Array should have first 3 dimensions identical",
-    )
+    ensure(        shape[0] == shape[1] == shape[2],        "Array should have first 3 dimensions identical"    )
 
     return m_reshape(X, (shape[0] ** 3,) + (shape[3:]))
 
@@ -245,10 +241,7 @@ def vec_to_symmat(vec):
     # M represents N(N+1)/2
     M = vec.shape[0]
     N = int(round(np.sqrt(2 * M + 0.25) - 0.5))
-    ensure(
-        (M == 0.5 * N * (N + 1)) and N != 0,
-        "Vector must be of size N*(N+1)/2 for some N>0.",
-    )
+    ensure(        (M == 0.5 * N * (N + 1)) and N != 0,  "Vector must be of size N*(N+1)/2 for some N>0."    )
 
     vec, sz_roll = unroll_dim(vec, 2)
     index_matrix = np.empty((N, N))

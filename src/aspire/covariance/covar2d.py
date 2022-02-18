@@ -6,7 +6,7 @@ from scipy.linalg import solve, sqrtm
 
 from aspire.operators import BlkDiagMatrix, RadialCTFFilter
 from aspire.optimization import conj_grad, fill_struct
-from aspire.utils import ensure, make_symmat
+from aspire.utils import make_symmat
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
@@ -22,10 +22,7 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
     :return: The shrinked covariance matrix
     """
 
-    ensure(
-        shrinker in ("frobenius_norm", "operator_norm", "soft_threshold"),
-        "Unsupported shrink method",
-    )
+    ensure(        shrinker in ("frobenius_norm", "operator_norm", "soft_threshold"),        "Unsupported shrink method"    )
 
     lambs, eig_vec = eig(make_symmat(covar))
 

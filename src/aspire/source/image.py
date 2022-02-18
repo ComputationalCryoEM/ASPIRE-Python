@@ -22,7 +22,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, ensure
+from aspire.utils import Rotation
 from aspire.utils.coor_trans import grid_2d
 
 logger = logging.getLogger(__name__)
@@ -342,10 +342,7 @@ class ImageSource:
         return im
 
     def downsample(self, L):
-        ensure(
-            L <= self.L,
-            "Max desired resolution should be less than the current resolution",
-        )
+        ensure(            L <= self.L,            "Max desired resolution should be less than the current resolution"        )
         logger.info(f"Setting max. resolution of source = {L}")
 
         self.generation_pipeline.add_xform(Downsample(resolution=L))
