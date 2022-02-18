@@ -21,15 +21,15 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, source, dtype=None):
+    def __init__(self, composite_basis, src, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
-        :param source: Source of original images.
+        :param src: Source of original images.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         self.composite_basis = composite_basis
-        self.src = source
+        self.src = src
         if dtype is None:
             if self.composite_basis:
                 self.dtype = self.composite_basis.dtype
@@ -101,17 +101,17 @@ class AligningAverager2D(Averager2D):
     Subclass supporting averagers which perfom an aligning stage.
     """
 
-    def __init__(self, composite_basis, source, alignment_basis=None, dtype=None):
+    def __init__(self, composite_basis, src, alignment_basis=None, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D).
-        :param source: Source of original images.
+        :param src: Source of original images.
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         super().__init__(
             composite_basis=composite_basis,
-            source=source,
+            src=src,
             dtype=dtype,
         )
         # If alignment_basis is None, use composite_basis
@@ -214,7 +214,7 @@ class BFRAverager2D(AligningAverager2D):
     def __init__(
         self,
         composite_basis,
-        source,
+        src,
         alignment_basis=None,
         n_angles=360,
         dtype=None,
@@ -224,7 +224,7 @@ class BFRAverager2D(AligningAverager2D):
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         """
-        super().__init__(composite_basis, source, alignment_basis, dtype)
+        super().__init__(composite_basis, src, alignment_basis, dtype)
 
         self.n_angles = n_angles
 
@@ -301,7 +301,7 @@ class BFSRAverager2D(BFRAverager2D):
     def __init__(
         self,
         composite_basis,
-        source,
+        src,
         alignment_basis=None,
         n_angles=360,
         n_x_shifts=1,
@@ -324,7 +324,7 @@ class BFSRAverager2D(BFRAverager2D):
         """
         super().__init__(
             composite_basis,
-            source,
+            src,
             alignment_basis,
             n_angles,
             dtype=dtype,
@@ -441,34 +441,32 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
     def __init__(
         self,
         composite_basis,
-        source,
-        alignment_source=None,
+        src,
+        alignment_src=None,
         diagnostics=False,
         dtype=None,
     ):
         """
         :param composite_basis:  Basis to be used during class average composition.
-        :param source: Source of original images.
-        :param alignment_source: Optional, source to be used during class average alignment.
-        Must be the same resolution as `source`.
+        :param src: Source of original images.
+        :param alignment_src: Optional, source to be used during class average alignment.
+        Must be the same resolution as `src`.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         self.__cache = dict()
         self.diagnostics = diagnostics
         self.do_cross_corr_translations = True
-        self.alignment_src = alignment_source or source
+        self.alignment_src = alignment_src or src
 
         # TODO, for accomodating different resolutions we minimally need to adapt shifting.
         # Outside of scope right now, but would make a nice PR later.
-        if self.alignment_src.L != source.L:
-            raise RuntimeError("Currently `alignment_src.L` must equal `source.L`")
-        if self.alignment_src.dtype != source.dtype:
-            raise RuntimeError(
-                "Currently `alignment_src.dtype` must equal `source.dtype`"
-            )
+        if self.alignment_src.L != src.L:
+            raise RuntimeError("Currently `alignment_src.L` must equal `src.L`")
+        if self.alignment_src.dtype != src.dtype:
+            raise RuntimeError("Currently `alignment_src.dtype` must equal `src.dtype`")
 
-        super().__init__(composite_basis, source, composite_basis, dtype=dtype)
+        super().__init__(composite_basis, src, composite_basis, dtype=dtype)
 
     def _phase_cross_correlation(self, img0, img1):
         """
@@ -905,8 +903,8 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
     def __init__(
         self,
         composite_basis,
-        source,
-        alignment_source=None,
+        src,
+        alignment_src=None,
         radius=None,
         diagnostics=False,
         dtype=None,
@@ -914,13 +912,13 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         """
         :param alignment_basis: Basis to be used during alignment.
         For current implementation of ReddyChatterjiAverager2D this should be `None`.
-        Instead see `alignment_source`.
-        :param source: Source of original images.
+        Instead see `alignment_src`.
+        :param src: Source of original images.
         :param composite_basis:  Basis to be used during class average composition.
-        :param alignment_source: Optional, source to be used during class average alignment.
-        Must be the same resolution as `source`.
+        :param alignment_src: Optional, source to be used during class average alignment.
+        Must be the same resolution as `src`.
         :param radius: Brute force translation search radius.
-        Defaults to source.L//8.
+        Defaults to src.L//8.
         :param dtype: Numpy dtype to be used during alignment.
 
         :param diagnostics: Plot interactive diagnostic graphics (for debugging).
@@ -929,8 +927,8 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
         super().__init__(
             composite_basis,
-            source,
-            alignment_source,
+            src,
+            alignment_src,
             diagnostics,
             dtype=dtype,
         )
@@ -938,7 +936,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         # For brute force we disable the cross_corr translation code
         self.do_cross_corr_translations = False
         # Assign search radius
-        self.radius = radius or source.L // 8
+        self.radius = radius or src.L // 8
 
     def align(self, classes, reflections, basis_coefficients):
         """
