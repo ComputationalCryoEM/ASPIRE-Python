@@ -37,8 +37,8 @@ class FBBasis2D(SteerableBasis2D):
         """
 
         ndim = len(size)
-        assert ndim == 2,  "Only two-dimensional basis functions are supported."
-        assert len(set(size)) == 1,  "Only square domains are supported."
+        assert ndim == 2, "Only two-dimensional basis functions are supported."
+        assert len(set(size)) == 1, "Only square domains are supported."
         super().__init__(size, ell_max, dtype=dtype)
 
     def _build(self):

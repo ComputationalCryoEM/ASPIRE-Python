@@ -42,7 +42,9 @@ class Micrograph:
         if margin is None:
             t = r = b = left = None
         elif isinstance(margin, (tuple, list)):
-            assert                 len(margin) == 4,                 "If specifying margins a a tuple/list, specify the top/right/bottom/left margins."            
+            assert (
+                len(margin) == 4
+            ), "If specifying margins a a tuple/list, specify the top/right/bottom/left margins."
             t, r, b, left = margin
         else:  # assume scalar
             t = r = b = left = int(margin)

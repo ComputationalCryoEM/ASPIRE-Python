@@ -185,7 +185,9 @@ class Basis:
 
         x = x.reshape((-1, *self.sz))
 
-        assert x.shape[-self.ndim :] == self.sz, f"Last {self.ndim} dimensions of x must match {self.sz}."
+        assert (
+            x.shape[-self.ndim :] == self.sz
+        ), f"Last {self.ndim} dimensions of x must match {self.sz}."
 
         operator = LinearOperator(
             shape=(self.count, self.count),
