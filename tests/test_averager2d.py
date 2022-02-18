@@ -257,7 +257,7 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         # Construct the Averager and then call the main `align` method
         avgr = self.averager(
             composite_basis=self.basis,
-            source=self._getSrc(),
+            src=self._getSrc(),
             dtype=self.dtype,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
