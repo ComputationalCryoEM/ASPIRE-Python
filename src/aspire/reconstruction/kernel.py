@@ -4,7 +4,6 @@ import numpy as np
 from scipy.fftpack import fft, fftn, fftshift, ifft, ifftn
 
 from aspire.utils import (
-    ensure,
     roll_dim,
     unroll_dim,
     vec_to_vol,
@@ -92,9 +91,7 @@ class FourierKernel(Kernel):
         N_ker = kernel_f.shape[0]
 
         x, sz_roll = unroll_dim(x, 4)
-        ensure(
-            x.shape[0] == x.shape[1] == x.shape[2] == N, "Volumes in x must be cubic"
-        )
+        ensure(            x.shape[0] == x.shape[1] == x.shape[2] == N, "Volumes in x must be cubic"        )
         ensure(kernel_f.shape[3] == 1, "Convolution kernel must be cubic")
         ensure(len(set(kernel_f.shape[:3])) == 1, "Convolution kernel must be cubic")
 
@@ -126,10 +123,7 @@ class FourierKernel(Kernel):
         shape = x.shape
         N = shape[0]
         kernel_f = self.kernel
-        ensure(
-            len(set(shape[i] for i in range(5))) == 1,
-            "Volume matrix must be cubic and square",
-        )
+        ensure(            len(set(shape[i] for i in range(5))) == 1,            "Volume matrix must be cubic and square"        )
 
         # TODO from MATLAB code: Deal with rolled dimensions
         N_ker = kernel_f.shape[0]

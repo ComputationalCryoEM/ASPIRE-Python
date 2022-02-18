@@ -22,19 +22,6 @@ def abs2(x):
     return x.real**2 + x.imag**2
 
 
-def ensure(cond, error_message=None):
-    """
-    assert statements in Python are sometimes optimized away by the compiler, and are for internal testing purposes.
-    For user-facing assertions, we use this simple wrapper to ensure conditions are met at relevant parts of the code.
-
-    :param cond: Condition to be ensured
-    :param error_message: An optional error message if condition is not met
-    :return: If condition is met, returns nothing, otherwise raises AssertionError
-    """
-    if not cond:
-        raise AssertionError(error_message)
-
-
 def get_full_version():
     """
     Get as much version information as we can, including git info (if applicable)

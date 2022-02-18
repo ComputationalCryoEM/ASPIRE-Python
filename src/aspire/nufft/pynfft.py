@@ -3,7 +3,6 @@ from pynfft.nfft import NFFT
 
 from aspire.nufft import Plan
 from aspire.nufft.utils import nextpow2
-from aspire.utils import ensure
 
 
 class PyNfftPlan(Plan):
@@ -46,10 +45,7 @@ class PyNfftPlan(Plan):
         self._plan.precompute()
 
     def transform(self, signal):
-        ensure(
-            signal.shape == self.sz,
-            f"Signal to be transformed must have shape {self.sz}",
-        )
+        ensure(            signal.shape == self.sz,            f"Signal to be transformed must have shape {self.sz}"        )
 
         self._plan.f_hat = signal.astype("complex64")
         f = self._plan.trafo()

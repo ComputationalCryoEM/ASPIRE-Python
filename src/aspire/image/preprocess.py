@@ -5,7 +5,6 @@ import numpy as np
 from scipy.special import erf
 
 from aspire.numeric import fft, xp
-from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)
 
@@ -129,10 +128,7 @@ def downsample(insamples, szout, mask=None):
     :return: An array consists of the blurred and downsampled objects.
     """
 
-    ensure(
-        insamples.ndim - 1 == np.size(szout),
-        "The number of downsampling dimensions is not the same as that of objects.",
-    )
+    ensure(        insamples.ndim - 1 == np.size(szout),        "The number of downsampling dimensions is not the same as that of objects."    )
 
     L_in = insamples.shape[1]
     L_out = szout[0]

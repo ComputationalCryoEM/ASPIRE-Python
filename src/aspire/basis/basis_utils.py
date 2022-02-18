@@ -10,7 +10,6 @@ from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
 from scipy.special import jn, jv, sph_harm
 
-from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
@@ -198,10 +197,7 @@ def besselj_zeros(nu, k):
         z[n : n + j] = besselj_newton(nu, z0)
 
         # Check to see that the sequence of zeros makes sense
-        ensure(
-            check_besselj_zeros(nu, z[n - 2 : n + j]),
-            "Unable to properly estimate Bessel function zeros.",
-        )
+        ensure(            check_besselj_zeros(nu, z[n - 2 : n + j]),            "Unable to properly estimate Bessel function zeros."        )
 
         # Check how far off we are
         err = (z[n : n + j] - z0) / np.diff(z[n - 1 : n + j])
@@ -236,9 +232,7 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
     :param normalized: normalize the grid or not.
     :return: The unique polar coordinates in 2D or 3D
     """
-    ensure(
-        ndim in (2, 3), "Only two- or three-dimensional basis functions are supported."
-    )
+    ensure(        ndim in (2, 3), "Only two- or three-dimensional basis functions are supported."    )
     ensure(N > 0, "Number of grid points should be greater than 0.")
 
     if ndim == 2:
