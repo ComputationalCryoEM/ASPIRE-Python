@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aspire.abinitio import CLOrient3D
-from aspire.utils import Rotation, ensure
+from aspire.utils import Rotation
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)

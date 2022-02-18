@@ -107,10 +107,10 @@ class CufinufftPlan(Plan):
         if self.ntransforms > 1 or (
             self.ntransforms == 1 and len(signal.shape) == self.dim + 1
         ):
-            ensure(
-                len(signal.shape) == self.dim + 1,
-                f"For multiple transforms, {self.dim}D signal should be a {self.ntransforms} element stack of {self.sz}.",
-            )
+            assert (
+                len(signal.shape) == self.dim + 1
+            ), f"For multiple transforms, {self.dim}D signal should be a {self.ntransforms} element stack of {self.sz}."
+
             assert (
                 signal.shape[0] == self.ntransforms
             ), "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."

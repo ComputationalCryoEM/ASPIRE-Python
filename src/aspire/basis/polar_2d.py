@@ -5,7 +5,7 @@ import numpy as np
 from aspire.basis import Basis
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
-from aspire.utils import ensure, real_type
+from aspire.utils import real_type
 
 logger = logging.getLogger(__name__)
 
