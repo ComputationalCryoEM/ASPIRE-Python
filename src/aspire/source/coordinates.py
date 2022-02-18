@@ -95,7 +95,7 @@ class CoordinateSource(ImageSource, ABC):
             f"{self.__class__.__name__} from {os.path.dirname(self.mrc_paths[0])} contains {len(mrc_paths)} micrographs, {len(self.particles)} picked particles."
         )
         # report different mrc shapes
-        logger.info(f"Micrographs have the following shapes: {*self.mrc_shapes,}")
+        logger.info(f"Micrographs have the following shapes: {*set(self.mrc_shapes),}")
 
         # remove particles whose boxes do not fit at given particle_size
         # and get number removed
