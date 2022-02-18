@@ -6,7 +6,13 @@ import numpy as np
 import pytest
 
 from aspire.basis import DiracBasis, FFBBasis2D
-from aspire.classification import Align2D, BFRAlign2D, BFSRAlign2D
+from aspire.classification import (
+    Averager2D,
+    BFRAverager2D,
+    BFSRAverager2D,
+    BFSReddyChatterjiAverager2D,
+    ReddyChatterjiAverager2D,
+)
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
@@ -19,9 +25,9 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 # Ignore Gimbal lock warning for our in plane rotations.
 @pytest.mark.filterwarnings("ignore:Gimbal lock detected")
-class Align2DTestCase(TestCase):
-    # Subclasses should override `aligner` with a different class.
-    aligner = Align2D
+class Averager2DTestCase(TestCase):
+    # Subclasses should override `averager` with a different class.
+    averager = Averager2D
 
     def setUp(self):
 
@@ -33,7 +39,7 @@ class Align2DTestCase(TestCase):
         self.n_img = 3
         self.dtype = np.float64
 
-        # Create a Basis to use in alignment.
+        # Create a Basis to use in averager.
         self.basis = FFBBasis2D((self.resolution, self.resolution), dtype=self.dtype)
 
         # This sets up a trivial class, where there is one group having all images.
@@ -48,17 +54,25 @@ class Align2DTestCase(TestCase):
     def tearDown(self):
         pass
 
+    def _getSrc(self):
+        # Base Averager2D does not require anything from source.
+        # Subclasses implement specific src
+        return None
+
     def testTypeMismatch(self):
 
-        # Intentionally mismatch Basis and Aligner dtypes
+        # Work around ABC, which won't let us test the unimplemented base case.
+        self.averager.__abstractmethods__ = set()
+
+        # Intentionally mismatch Basis and Averager dtypes
         if self.dtype == np.float32:
             test_dtype = np.float64
         else:
             test_dtype = np.float32
 
         with self._caplog.at_level(logging.WARN):
-            self.aligner(self.basis, dtype=test_dtype)
-            assert " does not match self.dtype" in self._caplog.text
+            self.averager(self.basis, self._getSrc(), dtype=test_dtype)
+            assert "does not match dtype" in self._caplog.text
 
     def _construct_rotations(self):
         """
@@ -91,9 +105,10 @@ class Align2DTestCase(TestCase):
         self.rots = Rotation.from_matrix(_rots)
 
 
-class BFRAlign2DTestCase(Align2DTestCase):
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+class BFRAverager2DTestCase(Averager2DTestCase):
 
-    aligner = BFRAlign2D
+    averager = BFRAverager2D
 
     def setUp(self):
 
@@ -135,22 +150,19 @@ class BFRAlign2DTestCase(Align2DTestCase):
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
-            _ = self.aligner(basis)
+            _ = self.averager(basis, self._getSrc())
 
-    def testAlign(self):
+    def testAverager(self):
         """
         Construct a stack of images with known rotations.
 
-        Rotationally align the stack and compare output with known rotations.
+        Rotationally averager the stack and compare output with known rotations.
         """
 
-        # Construction the Aligner and then call the main `align` method
-        _classes, _reflections, _rotations, _shifts, _ = self.aligner(
-            self.basis, n_angles=self.n_search_angles
-        ).align(self.classes, self.reflections, self.coefs)
+        # Construct the Averager and then call the `align` method
+        avgr = self.averager(self.basis, self._getSrc(), n_angles=self.n_search_angles)
+        _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
-        self.assertTrue(np.all(_classes == self.classes))
-        self.assertTrue(np.all(_reflections == self.reflections))
         self.assertIsNone(_shifts)
 
         # Crude check that we are closer to known angle than the next rotation
@@ -162,20 +174,21 @@ class BFRAlign2DTestCase(Align2DTestCase):
         )
 
 
-class BFSRAlign2DTestCase(BFRAlign2DTestCase):
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 
-    aligner = BFSRAlign2D
+    averager = BFSRAverager2D
 
     def setUp(self):
         # Inherit basic params from the base class
-        super(BFRAlign2DTestCase, self).setUp()
+        super(BFRAverager2DTestCase, self).setUp()
 
         # Setup shifts, don't shift the base image
         self.shifts = np.zeros((self.n_img, 2))
         self.shifts[1:, 0] = 2
         self.shifts[1:, 1] = 4
 
-        # Execute the remaining setup from BFRAlign2DTestCase
+        # Execute the remaining setup from BFRAverager2DTestCase
         super().setUp()
 
     def testNoShift(self):
@@ -192,22 +205,24 @@ class BFSRAlign2DTestCase(BFRAlign2DTestCase):
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `shift` method."):
-            _ = self.aligner(basis)
+            _ = self.averager(basis, self._getSrc())
 
-    def testAlign(self):
+    def testAverager(self):
         """
         Construct a stack of images with known rotations.
 
-        Rotationally align the stack and compare output with known rotations.
+        Rotationally averager the stack and compare output with known rotations.
         """
 
-        # Construction the Aligner and then call the main `align` method
-        _classes, _reflections, _rotations, _shifts, _ = self.aligner(
-            self.basis, n_angles=self.n_search_angles, n_x_shifts=1, n_y_shifts=1
-        ).align(self.classes, self.reflections, self.coefs)
-
-        self.assertTrue(np.all(_classes == self.classes))
-        self.assertTrue(np.all(_reflections == self.reflections))
+        # Construct the Averager and then call the main `align` method
+        avgr = self.averager(
+            self.basis,
+            self._getSrc(),
+            n_angles=self.n_search_angles,
+            n_x_shifts=1,
+            n_y_shifts=1,
+        )
+        _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         # Crude check that we are closer to known angle than the next rotation
         self.assertTrue(np.all((_rotations - self.thetas) <= (self.step / 2)))
@@ -225,3 +240,45 @@ class BFSRAlign2DTestCase(BFRAlign2DTestCase):
         #  non zero shift+rot improved corr.
         #  Perhaps in the future should check more details.
         self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
+
+
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
+
+    averager = ReddyChatterjiAverager2D
+
+    def testAverager(self):
+        """
+        Construct a stack of images with known rotations.
+
+        Rotationally averager the stack and compare output with known rotations.
+        """
+
+        # Construct the Averager and then call the main `align` method
+        avgr = self.averager(
+            composite_basis=self.basis,
+            src=self._getSrc(),
+            dtype=self.dtype,
+        )
+        _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
+
+        # Crude check that we are closer to known angle than the next rotation
+        self.assertTrue(np.all((_rotations - self.thetas) <= (self.step / 2)))
+
+        # Fine check that we are within one degree.
+        self.assertTrue(np.all((_rotations - self.thetas) <= (2 * np.pi / 360.0)))
+
+        # Check that we are _not_ shifting the base image
+        self.assertTrue(np.all(_shifts[0][0] == 0))
+        # Check that we produced estimated shifts away from origin
+        #  Note that Simulation's rot+shift is generally not equal to shift+rot.
+        #  Instead we check that some combination of
+        #  non zero shift+rot improved corr.
+        #  Perhaps in the future should check more details.
+        self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
+
+
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+class BFSReddyChatterjiAverager2DTestCase(ReddyChatterjiAverager2DTestCase):
+
+    averager = BFSReddyChatterjiAverager2D

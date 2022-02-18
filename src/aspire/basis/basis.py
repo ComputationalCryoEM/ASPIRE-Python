@@ -4,8 +4,10 @@ import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.basis.basis_utils import num_besselj_zeros
+from aspire.image import Image
 from aspire.utils import ensure, mdim_mat_fun_conj
 from aspire.utils.matlab_compat import m_reshape
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +176,10 @@ class Basis:
             those first dimensions of `x`.
 
         """
+
+        if isinstance(x, Image) or isinstance(x, Volume):
+            x = x.asnumpy()
+
         # ensure the first dimensions with size of self.sz
         sz_roll = x.shape[: -self.ndim]
 
@@ -206,5 +212,5 @@ class Basis:
                 raise RuntimeError("Unable to converge!")
 
         # return v coefficients with the last dimension of self.count
-        v = v.reshape((-1, *sz_roll))
+        v = v.reshape((*sz_roll, -1))
         return v

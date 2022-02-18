@@ -45,6 +45,9 @@ class DenoisedImageSource(ImageSource):
         nimgs = len(indices)
         im = np.empty((nimgs, self.L, self.L))
 
+        # If we request less than a whole batch, don't crash
+        batch_size = min(nimgs, batch_size)
+
         logger.info(f"Loading {nimgs} images complete")
         for batch_start in range(start, end + 1, batch_size):
             imgs_denoised = self.denoiser.images(batch_start, batch_size)
