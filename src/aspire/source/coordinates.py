@@ -168,8 +168,8 @@ class CoordinateSource(ImageSource, ABC):
         return [
             # centers may be represented as floats in STAR files
             # chop off the non integer part to account for this
-            int(x) - r,
-            int(y) - r,
+            int(float(x)) - r,
+            int(float(y)) - r,
             particle_size,
             particle_size,
         ]
@@ -363,7 +363,7 @@ class BoxesCoordinateSource(CoordinateSource):
         with open(box_file, "r") as box:
             first_line = box.readlines()[0].split()
             if len(first_line) >= 4:
-                box_size = int(first_line[2])  # x size or y size works
+                box_size = int(float(first_line[2]))  # x size or y size works
                 return box_size
             else:
                 logger.error(f"Problem with coordinate file: {box_file}")
@@ -395,7 +395,7 @@ class BoxesCoordinateSource(CoordinateSource):
                     )
 
                 # we can only accept square particles
-                size_x, size_y = int(line.split()[2]), int(line.split()[3])
+                size_x, size_y = float(line.split()[2]), float(line.split()[3])
                 if size_x != size_y:
                     logger.error(f"Problem with coordinate file: {box_file}")
                     raise ValueError(
@@ -437,7 +437,7 @@ class BoxesCoordinateSource(CoordinateSource):
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
         # coords are already in box format, so simply cast to int
-        return [[int(x) for x in line] for line in lines]
+        return [[int(float(x)) for x in line] for line in lines]
 
     def _force_new_particle_size(self, new_size):
         """
