@@ -66,10 +66,12 @@ class Averager2D(ABC):
 
         Should return an Image source of synthetic class averages.
 
-        :param classes: class indices (refering to src). (n_img, n_nbor).
+        :param classes: class indices, refering to src. (n_img, n_nbor).
         :param reflections: Bool representing whether to reflect image in `classes`.
-        :coefs: Optional basis coefs (could avoid recomputing).
-        :return: Stack of Synthetic Class Average images as Image instance.
+        (n_img, n_nbor)
+        :param coefs: Optional basis coefs (could avoid recomputing).
+        (n_img, coef_count)
+        :return: Stack of synthetic class average images as Image instance.
         """
 
     def _cls_images(self, cls, src=None):
@@ -78,9 +80,9 @@ class Averager2D(ABC):
         preserving the class/nbor order.
 
         :param cls: An iterable (0/1-D array or list) that holds the indices of images to align.
-        In Class Averaging, this would be a class.
-        :param src: Optionally overridee the src, for example, if you want to use a different
-        source for a certain operation (ie aignment).
+        In class averaging, this would be a class.
+        :param src: Optionally override the src, for example, if you want to use a different
+        source for a certain operation (ie alignment).
         """
         src = src or self.src
 
@@ -101,9 +103,9 @@ class AligningAverager2D(Averager2D):
 
     def __init__(self, composite_basis, source, alignment_basis=None, dtype=None):
         """
-        :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D)
+        :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D).
         :param source: Source of original images.
-        :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA)
+        :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -115,13 +117,13 @@ class AligningAverager2D(Averager2D):
         # If alignment_basis is None, use composite_basis
         self.alignment_basis = alignment_basis or self.composite_basis
 
-        if not hasattr(self.alignment_basis, "rotate"):
+        if not hasattr(self.composite_basis, "rotate"):
             raise RuntimeError(
-                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
+                f"{self.__class__.__name__}'s composite_basis {self.composite_basis} must provide a `rotate` method."
             )
-        if not hasattr(self.alignment_basis, "shift"):
+        if not hasattr(self.composite_basis, "shift"):
             raise RuntimeError(
-                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
+                f"{self.__class__.__name__}'s composite_basis {self.composite_basis} must provide a `shift` method."
             )
 
     @abstractmethod
@@ -226,6 +228,11 @@ class BFRAverager2D(AligningAverager2D):
 
         self.n_angles = n_angles
 
+        if not hasattr(self.alignment_basis, "rotate"):
+            raise RuntimeError(
+                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
+            )
+
     def align(self, classes, reflections, basis_coefficients):
         """
         Performs the actual rotational alignment estimation,
@@ -328,6 +335,11 @@ class BFSRAverager2D(BFRAverager2D):
 
         # Each shift will require calling the parent BFRAverager2D.align
         self._bfr_align = super().align
+
+        if not hasattr(self.alignment_basis, "shift"):
+            raise RuntimeError(
+                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
+            )
 
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -523,9 +535,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         This is a util function to help loop over `classes`.
 
-        :param images: Image data
-        :param class_k: Image indices
-        :param reflection_k: Image reflections
+        :param images: Image data (m_img, L, L)
+        :param class_k: Image indices (m_img,)
+        :param reflection_k: Image reflections (m_img,)
         :returns: (rotations_k, correlations_k, shifts_k) corresponding to `images`
         """
 
