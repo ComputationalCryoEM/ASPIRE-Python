@@ -621,10 +621,17 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # Compute the Cross_Correlation to estimate rotation
             # Note that _phase_cross_correlation uses the mangnitudes (abs()),
             #  ie it is using both freq and phase information.
-            cross_correlation, shift = self._phase_cross_correlation(
+            cross_correlation, _ = self._phase_cross_correlation(
                 warped_fixed_img_fs, warped_regis_img_fs
             )
 
+            # Rotating Cartesian space translates the angular log polar component.
+            # Scaling Cartesian space translates the radial log polar component.
+            # In common image resgistration problems, both components are used
+            #   to simultaneously estimate scaling and rotation.
+            # Since we are not currently concerned with scaling transformation,
+            #   disregard the second axis of the `cross_correlation` returned by
+            #   `_phase_cross_correlation`.
             cross_correlation_score = cross_correlation[:, 0].ravel()
 
             self._rotation_cross_corr_diagnostic(

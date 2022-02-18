@@ -54,5 +54,5 @@ class Class2D(ABC):
     @abstractmethod
     def averages(self, classes, refl, distances):
         """
-        Returns class averages using prescribed `aligner`.
+        Returns class averages.
         """
