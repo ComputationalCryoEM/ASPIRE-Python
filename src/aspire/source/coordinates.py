@@ -325,6 +325,14 @@ class CoordinateSource(ImageSource, ABC):
 
         return Image(im)
 
+    @staticmethod
+    def _is_number(text):
+        """
+        Used in validation of coordinate files. We allow strings containing
+        - or . to account for negative values and floats.
+        """
+        return text.replace("-", "1").replace(".", "1").isdigit()
+
 
 class BoxesCoordinateSource(CoordinateSource):
     """
@@ -380,7 +388,7 @@ class BoxesCoordinateSource(CoordinateSource):
                         "flag in aspire extract-particles."
                     )
 
-                if not all(p.isnumeric() for p in line.split()):
+                if not all(self._is_number(p) for p in line.split()):
                     logger.error(f"Problem with coordinate file: {box_file}")
                     raise ValueError(
                         "Coordinate file contains non-numeric coordinate values."
@@ -485,7 +493,7 @@ class CentersCoordinateSource(CoordinateSource):
                         "Coordinate file contains a line with less than 2 numbers."
                     )
                 # check that the coordinate has numeric values
-                if not all(c.isnumeric() for c in line.split()):
+                if not all(self._is_number(c) for c in line.split()):
                     logger.error(f"Problem with coordinate file: {coord_file}")
                     raise ValueError(
                         "Coordinate file contains non-numeric coordinate values."
@@ -504,7 +512,7 @@ class CentersCoordinateSource(CoordinateSource):
             )
         # check that all values in each column are numeric
         if not all(
-            all(df[col].str.isnumeric())
+            all(df[col].apply(self._is_number))
             for col in ["_rlnCoordinateX", "_rlnCoordinateY"]
         ):
             logger.error(f"Problem with coordinate file: {coord_file}")
