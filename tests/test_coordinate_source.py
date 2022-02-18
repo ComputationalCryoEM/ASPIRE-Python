@@ -139,8 +139,6 @@ class CoordinateSourceTestCase(TestCase):
             for center in centers:
                 # to make a box file, we convert the centers to lower left
                 # corners by subtracting half the particle size (here: 256)
-                # make some of the values floats to ensure floats/ints are loaded
-                # correctly
                 lower_left_corners = (center[0] - 128, center[1] - 128)
                 box.write(
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n"
@@ -158,8 +156,6 @@ class CoordinateSourceTestCase(TestCase):
         # create a coord file (only particle centers listed)
         coord_fp = os.path.join(self.data_folder, f"sample{index+1}.coord")
         # populate coord file with particle centers
-        # make some of the values floats to ensure floats/ints are loaded
-        # correctly
         with open(coord_fp, "w") as coord:
             for center in centers:
                 # .coord file usually contains just the centers
@@ -182,6 +178,7 @@ class CoordinateSourceTestCase(TestCase):
         starfile.write(star_fp)
 
     def createFloatBoxFile(self, centers):
+        # for testing float coordinates
         # create a box file (lower left corner and X/Y sizes)
         box_fp = os.path.join(self.data_folder, f"float.box")
         # populate box file with coordinates in box format
@@ -195,6 +192,7 @@ class CoordinateSourceTestCase(TestCase):
                 )
 
     def createFloatCoordFile(self, centers):
+        # for testing float coordinates
         # create a coord file (only particle centers listed)
         coord_fp = os.path.join(self.data_folder, f"float.coord")
         # populate coord file with particle centers
@@ -204,6 +202,7 @@ class CoordinateSourceTestCase(TestCase):
                 coord.write(f"{center[0]}.000\t{center[1]}.000\n")
 
     def createFloatStarFile(self, centers):
+        # for testing float coordinates
         # create a star file (only particle centers listed)
         star_fp = os.path.join(self.data_folder, f"float.star")
         # populate star file with particle centers
