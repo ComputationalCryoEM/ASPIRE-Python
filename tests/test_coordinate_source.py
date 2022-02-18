@@ -85,6 +85,13 @@ class CoordinateSourceTestCase(TestCase):
             self.createTestCoordFiles(_centers, i)
             self.createTestStarFiles(_centers, i)
 
+        # Create extra coordinate files with float
+        # coordinates to make sure we can process these
+        # as well
+        self.createFloatBoxFile(centers)
+        self.createFloatCoordFile(centers)
+        self.createFloatStarFile(centers)
+
         # create lists of files
         self.all_mrc_paths = sorted(glob(os.path.join(self.data_folder, "sample*.mrc")))
         # create file lists that will be used several times
@@ -113,6 +120,10 @@ class CoordinateSourceTestCase(TestCase):
             )
         )
 
+        self.float_box = os.path.join(self.data_folder, "float.box")
+        self.float_coord = os.path.join(self.data_folder, "float.coord")
+        self.float_star = os.path.join(self.data_folder, "float.star")
+
     def tearDown(self):
         self.tmpdir.cleanup()
 
@@ -132,7 +143,7 @@ class CoordinateSourceTestCase(TestCase):
                 # correctly
                 lower_left_corners = (center[0] - 128, center[1] - 128)
                 box.write(
-                    f"{lower_left_corners[0]}\t{lower_left_corners[1]}.0\t256\t256.0\n"
+                    f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n"
                 )
         # populate the second box file with nonsquare coordinates
         with open(box_fp_nonsquare, "w") as box_nonsquare:
@@ -143,7 +154,7 @@ class CoordinateSourceTestCase(TestCase):
                     f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t100\n"
                 )
 
-    def createTestCoordFiles(self, centers, index):
+    def createTestCoordFiles(self, centers, index, dtype=int):
         # create a coord file (only particle centers listed)
         coord_fp = os.path.join(self.data_folder, f"sample{index+1}.coord")
         # populate coord file with particle centers
@@ -152,14 +163,52 @@ class CoordinateSourceTestCase(TestCase):
         with open(coord_fp, "w") as coord:
             for center in centers:
                 # .coord file usually contains just the centers
-                coord.write(f"{center[0]}\t{center[1]}.0\n")
+                coord.write(f"{center[0]}\t{center[1]}\n")
 
-    def createTestStarFiles(self, centers, index):
+    def createTestStarFiles(self, centers, index, dtype=int):
         # create a star file (only particle centers listed)
         star_fp = os.path.join(self.data_folder, f"sample{index+1}.star")
         # populate star file with particle centers
         x_coords = [center[0] for center in centers]
         y_coords = [center[1] for center in centers]
+        blocks = OrderedDict(
+            {
+                "coordinates": DataFrame(
+                    {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
+                )
+            }
+        )
+        starfile = StarFile(blocks=blocks)
+        starfile.write(star_fp)
+
+    def createFloatBoxFile(self, centers):
+        # create a box file (lower left corner and X/Y sizes)
+        box_fp = os.path.join(self.data_folder, f"float.box")
+        # populate box file with coordinates in box format
+        with open(box_fp, "w") as box:
+            for center in centers:
+                # to make a box file, we convert the centers to lower left
+                # corners by subtracting half the particle size (here: 256)
+                lower_left_corners = (center[0] - 128, center[1] - 128)
+                box.write(
+                    f"{lower_left_corners[0]}.000\t{lower_left_corners[1]}.000\t256.000\t256.000\n"
+                )
+
+    def createFloatCoordFile(self, centers):
+        # create a coord file (only particle centers listed)
+        coord_fp = os.path.join(self.data_folder, f"float.coord")
+        # populate coord file with particle centers
+        with open(coord_fp, "w") as coord:
+            for center in centers:
+                # .coord file usually contains just the centers
+                coord.write(f"{center[0]}.000\t{center[1]}.000\n")
+
+    def createFloatStarFile(self, centers):
+        # create a star file (only particle centers listed)
+        star_fp = os.path.join(self.data_folder, f"float.star")
+        # populate star file with particle centers
+        x_coords = [str(center[0]) + ".000" for center in centers]
+        y_coords = [str(center[1]) + ".000" for center in centers]
         blocks = OrderedDict(
             {
                 "coordinates": DataFrame(
@@ -181,6 +230,24 @@ class CoordinateSourceTestCase(TestCase):
     def testLoadFromStar(self):
         # ensure successful loading from particle center files (.star)
         CentersCoordinateSource(self.files_star, particle_size=256)
+
+    def testLoadFromBox_Floats(self):
+        # ensure successful loading from box files with float coordinates
+        BoxesCoordinateSource([(self.all_mrc_paths[0], self.float_box)])
+
+    def testLoadFromCenters_Floats(self):
+        # ensure successful loading from particle center files (.coord)
+        # with float coordinates
+        CentersCoordinateSource(
+            [(self.all_mrc_paths[0], self.float_coord)], particle_size=256
+        )
+
+    def testLoadFromStar_Floats(self):
+        # ensure successful loading from particle center files (.star)
+        # with float coordinates
+        CentersCoordinateSource(
+            [(self.all_mrc_paths[0], self.float_star)], particle_size=256
+        )
 
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
