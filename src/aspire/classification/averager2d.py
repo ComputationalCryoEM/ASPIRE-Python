@@ -21,7 +21,7 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, source, batch_size=512, dtype=None):
+    def __init__(self, composite_basis, source, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param source: Source of original images.
@@ -30,7 +30,6 @@ class Averager2D(ABC):
 
         self.composite_basis = composite_basis
         self.src = source
-        self.batch_size = batch_size
         if dtype is None:
             if self.composite_basis:
                 self.dtype = self.composite_basis.dtype
@@ -100,9 +99,7 @@ class AligningAverager2D(Averager2D):
     Subclass supporting averagers which perfom an aligning stage.
     """
 
-    def __init__(
-        self, composite_basis, source, alignment_basis=None, batch_size=512, dtype=None
-    ):
+    def __init__(self, composite_basis, source, alignment_basis=None, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D)
         :param source: Source of original images.
@@ -113,7 +110,6 @@ class AligningAverager2D(Averager2D):
         super().__init__(
             composite_basis=composite_basis,
             source=source,
-            batch_size=batch_size,
             dtype=dtype,
         )
         # If alignment_basis is None, use composite_basis
@@ -219,7 +215,6 @@ class BFRAverager2D(AligningAverager2D):
         source,
         alignment_basis=None,
         n_angles=359,
-        batch_size=512,
         dtype=None,
     ):
         """
@@ -227,7 +222,7 @@ class BFRAverager2D(AligningAverager2D):
 
         :params n_angles: Number of brute force rotations to attempt, defaults 359.
         """
-        super().__init__(composite_basis, source, alignment_basis, batch_size, dtype)
+        super().__init__(composite_basis, source, alignment_basis, dtype)
 
         self.n_angles = n_angles
 
@@ -304,7 +299,6 @@ class BFSRAverager2D(BFRAverager2D):
         n_angles=359,
         n_x_shifts=1,
         n_y_shifts=1,
-        batch_size=512,
         dtype=None,
     ):
         """
@@ -326,7 +320,6 @@ class BFSRAverager2D(BFRAverager2D):
             source,
             alignment_basis,
             n_angles,
-            batch_size=batch_size,
             dtype=dtype,
         )
 
@@ -437,7 +430,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         source,
         alignment_source=None,
         diagnostics=False,
-        batch_size=512,
         dtype=None,
     ):
         """
@@ -462,9 +454,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 "Currently `alignment_src.dtype` must equal `source.dtype`"
             )
 
-        super().__init__(
-            composite_basis, source, composite_basis, batch_size=batch_size, dtype=dtype
-        )
+        super().__init__(composite_basis, source, composite_basis, dtype=dtype)
 
     def _phase_cross_correlation(self, img0, img1):
         """
@@ -905,7 +895,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         alignment_source=None,
         radius=None,
         diagnostics=False,
-        batch_size=512,
         dtype=None,
     ):
         """
@@ -929,7 +918,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             source,
             alignment_source,
             diagnostics,
-            batch_size=batch_size,
             dtype=dtype,
         )
 
