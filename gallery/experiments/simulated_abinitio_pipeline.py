@@ -52,7 +52,7 @@ img_size = 32  # Downsample the volume to a desired resolution
 num_imgs = 10000  # How many images in our source.
 n_classes = 1000  # How many class averages to compute.
 n_nbor = 10  # How many neighbors to stack
-noise_variance = 1e-4  # Set a target noise variance
+noise_variance = 5e-7  # Set a target noise variance
 
 
 # %%
