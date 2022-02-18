@@ -128,9 +128,11 @@ class CoordinateSourceTestCase(TestCase):
             for center in centers:
                 # to make a box file, we convert the centers to lower left
                 # corners by subtracting half the particle size (here: 256)
+                # make some of the values floats to ensure floats/ints are loaded
+                # correctly
                 lower_left_corners = (center[0] - 128, center[1] - 128)
                 box.write(
-                    f"{lower_left_corners[0]}\t{lower_left_corners[1]}\t256\t256\n"
+                    f"{lower_left_corners[0]}\t{lower_left_corners[1]}.0\t256\t256.0\n"
                 )
         # populate the second box file with nonsquare coordinates
         with open(box_fp_nonsquare, "w") as box_nonsquare:
@@ -145,10 +147,12 @@ class CoordinateSourceTestCase(TestCase):
         # create a coord file (only particle centers listed)
         coord_fp = os.path.join(self.data_folder, f"sample{index+1}.coord")
         # populate coord file with particle centers
+        # make some of the values floats to ensure floats/ints are loaded
+        # correctly
         with open(coord_fp, "w") as coord:
             for center in centers:
                 # .coord file usually contains just the centers
-                coord.write(f"{center[0]}\t{center[1]}\n")
+                coord.write(f"{center[0]}\t{center[1]}.0\n")
 
     def createTestStarFiles(self, centers, index):
         # create a star file (only particle centers listed)
