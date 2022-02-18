@@ -109,12 +109,12 @@ class CufinufftPlan(Plan):
         ):
             ensure(                len(signal.shape) == self.dim + 1,                f"For multiple transforms, {self.dim}D signal should be a {self.ntransforms} element stack of {self.sz}.",
             )
-            ensure(                signal.shape[0] == self.ntransforms,                "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."            )
+            assert                 signal.shape[0] == self.ntransforms,                 "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."            
 
             sig_shape = signal.shape[1:]  # order...
             res_shape = (self.ntransforms, self.num_pts)
 
-        ensure(            sig_shape == self.sz,            f"Signal frame to be transformed must have shape {self.sz}"        )
+        assert             sig_shape == self.sz,             f"Signal frame to be transformed must have shape {self.sz}"        
 
         signal_gpu = gpuarray.to_gpu(
             np.ascontiguousarray(signal, dtype=self.complex_dtype)
@@ -148,8 +148,8 @@ class CufinufftPlan(Plan):
         res_shape = self.sz
         # Note, there is a corner case for ntransforms == 1.
         if self.ntransforms > 1 or (self.ntransforms == 1 and len(signal.shape) == 2):
-            ensure(                len(signal.shape) == 2,  f"For multiple {self.dim}D adjoints, signal should be a {self.ntransforms} element stack of {self.num_pts}."            )
-            ensure(                signal.shape[0] == self.ntransforms,                "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."            )
+            assert                 len(signal.shape) == 2,   f"For multiple {self.dim}D adjoints, signal should be a {self.ntransforms} element stack of {self.num_pts}."            
+            assert                 signal.shape[0] == self.ntransforms,                 "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."            
             res_shape = (self.ntransforms, *self.sz)
 
         signal_gpu = gpuarray.to_gpu(

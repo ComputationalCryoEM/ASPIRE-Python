@@ -79,9 +79,9 @@ class Filter:
         :return: The value of the filter at the specified frequencies.
         """
         if omega.ndim == 1:
-            ensure(                self.radial, "Cannot evaluate a non-radial filter on 1D input array."            )
+            assert                 self.radial,  "Cannot evaluate a non-radial filter on 1D input array."            
         elif omega.ndim == 2 and self.dim:
-            ensure(omega.shape[0] == self.dim, f"Omega must be of size {self.dim} x n")
+            assert omega.shape[0] == self.dim,  f"Omega must be of size {self.dim} x n"
 
         if self.radial:
             if omega.ndim > 1:
@@ -261,7 +261,7 @@ class ArrayFilter(Filter):
         :param xfer_fn_array: The transfer function of the filter in the form of an array of one or two dimensions.
         """
         dim = xfer_fn_array.ndim
-        ensure(dim in (1, 2), "Only dimensions 1 and 2 supported.")
+        assert dim in (1,  2), "Only dimensions 1 and 2 supported."
 
         super().__init__(dim=dim, radial=False)
 

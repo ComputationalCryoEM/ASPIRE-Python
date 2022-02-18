@@ -271,7 +271,7 @@ class Volume:
         rot_matrices = rot_matrices.matrices
 
         K = len(rot_matrices)  # Rotation stack size
-        ensure(K == self.n_vols or K == 1, "Rotation object must be length 1 or n_vols."     )
+        assert K == self.n_vols or K == 1,  "Rotation object must be length 1 or n_vols."     
 
         if rot_matrices.dtype != self.dtype:
             logger.warning(

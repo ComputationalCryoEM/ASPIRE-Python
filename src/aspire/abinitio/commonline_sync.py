@@ -53,8 +53,8 @@ class CLSyncVoting(CLOrient3D):
 
         S = self.syncmatrix
         sz = S.shape
-        ensure(sz[0] == sz[1], "syncmatrix must be a square matrix.")
-        ensure(sz[0] % 2 == 0, "syncmatrix must be a square matrix of size 2Kx2K.")
+        assert sz[0] == sz[1],  "syncmatrix must be a square matrix."
+        assert sz[0] % 2 == 0,  "syncmatrix must be a square matrix of size 2Kx2K."
 
         n_img = sz[0] // 2
 
@@ -153,7 +153,7 @@ class CLSyncVoting(CLOrient3D):
         sz = clmatrix.shape
         n_theta = self.n_theta
 
-        ensure(sz[0] == sz[1], "clmatrix must be a square matrix.")
+        assert sz[0] == sz[1],  "clmatrix must be a square matrix."
 
         n_img = sz[0]
         S = np.eye(2 * n_img, dtype=self.dtype).reshape(n_img, 2, n_img, 2)
