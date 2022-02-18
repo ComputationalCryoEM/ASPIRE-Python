@@ -128,7 +128,9 @@ def downsample(insamples, szout, mask=None):
     :return: An array consists of the blurred and downsampled objects.
     """
 
-    assert         insamples.ndim - 1 == np.size(szout),         "The number of downsampling dimensions is not the same as that of objects."    
+    assert insamples.ndim - 1 == np.size(
+        szout
+    ), "The number of downsampling dimensions is not the same as that of objects."
 
     L_in = insamples.shape[1]
     L_out = szout[0]

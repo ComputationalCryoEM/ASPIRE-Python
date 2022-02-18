@@ -30,8 +30,8 @@ class FBBasis3D(Basis):
             below the Nyquist frequency (default Inf).
         """
         ndim = len(size)
-        assert ndim == 3,  "Only three-dimensional basis functions are supported."
-        assert len(set(size)) == 1,  "Only cubic domains are supported."
+        assert ndim == 3, "Only three-dimensional basis functions are supported."
+        assert len(set(size)) == 1, "Only cubic domains are supported."
 
         super().__init__(size, ell_max, dtype=dtype)
 

@@ -196,7 +196,12 @@ class CovarianceEstimator(Estimator):
         :param method: One of None/'frobenius_norm'/'operator_norm'/'soft_threshold'
         :return: Shrunk covariance matrix
         """
-        assert             method in (None,  "frobenius_norm", "operator_norm", "soft_threshold"),            "Unsupported shrink method"        
+        assert method in (
+            None,
+            "frobenius_norm",
+            "operator_norm",
+            "soft_threshold",
+        ), "Unsupported shrink method"
 
         An = self.basis.mat_evaluate_t(self.mean_kernel.toeplitz())
         if method is None:

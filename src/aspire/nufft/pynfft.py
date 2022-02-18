@@ -45,7 +45,9 @@ class PyNfftPlan(Plan):
         self._plan.precompute()
 
     def transform(self, signal):
-        assert             signal.shape == self.sz,             f"Signal to be transformed must have shape {self.sz}"        
+        assert (
+            signal.shape == self.sz
+        ), f"Signal to be transformed must have shape {self.sz}"
 
         self._plan.f_hat = signal.astype("complex64")
         f = self._plan.trafo()

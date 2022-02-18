@@ -81,8 +81,12 @@ class FinufftPlan(Plan):
         if self.ntransforms > 1 or (
             self.ntransforms == 1 and len(signal.shape) == self.dim + 1
         ):
-            assert                 len(signal.shape) == self.dim + 1,                 f"For multiple transforms, {self.dim}D signal should be a {self.ntransforms} element stack of {self.sz}."  
-            assert                 signal.shape[0] == self.ntransforms,                 "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."            
+            assert (
+                len(signal.shape) == self.dim + 1
+            ), f"For multiple transforms, {self.dim}D signal should be a {self.ntransforms} element stack of {self.sz}."
+            assert (
+                signal.shape[0] == self.ntransforms
+            ), "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."
 
             sig_frame_shape = signal.shape[1:]
 
@@ -90,7 +94,9 @@ class FinufftPlan(Plan):
             if self.ntransforms == 1:
                 signal = signal.reshape(self.sz)
 
-        assert             sig_frame_shape == self.sz,             f"Signal frame to be transformed must have shape {self.sz}"        
+        assert (
+            sig_frame_shape == self.sz
+        ), f"Signal frame to be transformed must have shape {self.sz}"
 
         # FINUFFT was designed for a complex input array
         signal = np.array(signal, copy=False, dtype=self.complex_dtype, order="C")
@@ -112,8 +118,12 @@ class FinufftPlan(Plan):
 
         # Note, there is a corner case for ntransforms == 1.
         if self.ntransforms > 1 or (self.ntransforms == 1 and len(signal.shape) == 2):
-            assert                 len(signal.shape) == 2,                 f"For multiple {self.dim}D adjoints, signal should be a {self.ntransforms} element stack of {self.num_pts}."   
-            assert                 signal.shape[0] == self.ntransforms,                 "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."            
+            assert (
+                len(signal.shape) == 2
+            ), f"For multiple {self.dim}D adjoints, signal should be a {self.ntransforms} element stack of {self.num_pts}."
+            assert (
+                signal.shape[0] == self.ntransforms
+            ), "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."
 
             # finufft is expecting flat array for 1D case.
             if self.ntransforms == 1:
