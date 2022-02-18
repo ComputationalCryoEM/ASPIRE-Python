@@ -14,10 +14,13 @@ class SteerableMixin:
         coef1 = randn(self.basis.count, seed=self.seed)
         coef1 = coef1.astype(self.dtype)
 
-        im = self.basis.evaluate(coef1)
-        if isinstance(im, Image):
-            im = im.asnumpy()
-        coef2 = self.basis.expand(im)[0]
+        x = self.basis.evaluate(coef1)
+        if isinstance(x, Image) or isinstance(x, Volume):
+            x = x.asnumpy()
+
+        coef2 = self.basis.expand(x)
+        if coef2.ndim == 2:
+            coef2 = coef2[0]
 
         self.assertTrue(coef1.shape == coef2.shape)
         self.assertTrue(np.allclose(coef1, coef2, atol=utest_tolerance(self.dtype)))
@@ -27,7 +30,7 @@ class SteerableMixin:
         u = u.astype(self.dtype)
 
         Au = self.basis.evaluate(u)
-        if isinstance(Au, Image):
+        if isinstance(Au, Image) or isinstance(Au, Volume):
             Au = Au.asnumpy()
 
         x = randn(*self.basis.sz, seed=self.seed)
@@ -132,36 +135,9 @@ class Steerable2DMixin(SteerableMixin):
 
             self.assertTrue(energy_ratio < 0.10)
 
-    def testEvaluateExpand(self):
-        coef1 = randn(self.basis.count, seed=self.seed)
-        coef1 = coef1.astype(self.dtype)
 
-        im = self.basis.evaluate(coef1)
-        if isinstance(im, Image):
-            im = im.asnumpy()
-        coef2 = self.basis.expand(im)[0]
-
-        self.assertTrue(coef1.shape == coef2.shape)
-        self.assertTrue(np.allclose(coef1, coef2, atol=utest_tolerance(self.dtype)))
-
-    def testAdjoint(self):
-        u = randn(self.basis.count, seed=self.seed)
-        u = u.astype(self.dtype)
-
-        Au = self.basis.evaluate(u)
-        if isinstance(Au, Image):
-            Au = Au.asnumpy()
-
-        x = randn(*self.basis.sz, seed=self.seed)
-        x = x.astype(self.dtype)
-
-        ATx = self.basis.evaluate_t(x)
-
-        Au_dot_x = np.sum(Au * x)
-        u_dot_ATx = np.sum(u * ATx)
-
-        self.assertTrue(Au_dot_x.shape == u_dot_ATx.shape)
-        self.assertTrue(np.isclose(Au_dot_x, u_dot_ATx))
+class Steerable3DMixin(SteerableMixin):
+    pass
 
 
 class UniversalBasisMixin:
