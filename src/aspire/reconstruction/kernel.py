@@ -91,9 +91,9 @@ class FourierKernel(Kernel):
         N_ker = kernel_f.shape[0]
 
         x, sz_roll = unroll_dim(x, 4)
-        ensure(            x.shape[0] == x.shape[1] == x.shape[2] == N, "Volumes in x must be cubic"        )
-        ensure(kernel_f.shape[3] == 1, "Convolution kernel must be cubic")
-        ensure(len(set(kernel_f.shape[:3])) == 1, "Convolution kernel must be cubic")
+        assert             x.shape[0] == x.shape[1] == x.shape[2] == N,  "Volumes in x must be cubic"        
+        assert kernel_f.shape[3] == 1,  "Convolution kernel must be cubic"
+        assert len(set(kernel_f.shape[:3])) == 1,  "Convolution kernel must be cubic"
 
         is_singleton = x.shape[3] == 1
 
@@ -123,7 +123,7 @@ class FourierKernel(Kernel):
         shape = x.shape
         N = shape[0]
         kernel_f = self.kernel
-        ensure(            len(set(shape[i] for i in range(5))) == 1,            "Volume matrix must be cubic and square"        )
+        assert             len(set(shape[i] for i in range(5))) == 1,             "Volume matrix must be cubic and square"        
 
         # TODO from MATLAB code: Deal with rolled dimensions
         N_ker = kernel_f.shape[0]

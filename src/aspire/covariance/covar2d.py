@@ -22,7 +22,7 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
     :return: The shrinked covariance matrix
     """
 
-    ensure(        shrinker in ("frobenius_norm", "operator_norm", "soft_threshold"),        "Unsupported shrink method"    )
+    assert         shrinker in ("frobenius_norm",  "operator_norm", "soft_threshold"),        "Unsupported shrink method"    
 
     lambs, eig_vec = eig(make_symmat(covar))
 
@@ -93,7 +93,7 @@ class RotCov2D:
         """
         self.basis = basis
         self.dtype = self.basis.dtype
-        ensure(basis.ndim == 2, "Only two-dimensional basis functions are needed.")
+        assert basis.ndim == 2,  "Only two-dimensional basis functions are needed."
 
     def _get_mean(self, coeffs):
         """
@@ -324,7 +324,7 @@ class RotCov2D:
 
         def precond_fun(S, x):
             p = np.size(S, 0)
-            ensure(np.size(x) == p * p, "The sizes of S and x are not consistent.")
+            assert np.size(x) == p * p,  "The sizes of S and x are not consistent."
             x = m_reshape(x, (p, p))
             y = S @ x @ S
             y = m_reshape(y, (p**2,))
@@ -629,7 +629,7 @@ class BatchedRotCov2D(RotCov2D):
 
         def precond_fun(S, x):
             p = np.size(S, 0)
-            ensure(np.size(x) == p * p, "The sizes of S and x are not consistent.")
+            assert np.size(x) == p * p,  "The sizes of S and x are not consistent."
             x = m_reshape(x, (p, p))
             y = S @ x @ S
             y = m_reshape(y, (p**2,))

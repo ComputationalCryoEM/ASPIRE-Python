@@ -91,7 +91,7 @@ class Rotation:
         """
         rots = self._matrices
         rots_ref = rots_ref.matrices.astype(self.dtype)
-        ensure(            rots.shape == rots_ref.shape,            "Two sets of rotations must have same dimensions.")
+        assert             rots.shape == rots_ref.shape,             "Two sets of rotations must have same dimensions."
         K = rots.shape[0]
 
         # Reflection matrix
@@ -184,7 +184,7 @@ class Rotation:
         aligned_rots = self.register(rots_ref)
         rots_reg = aligned_rots.matrices
         rots_ref = rots_ref.matrices
-        ensure(            rots_reg.shape == rots_ref.shape,            "Two sets of rotations must have same dimensions."        )
+        assert             rots_reg.shape == rots_ref.shape,             "Two sets of rotations must have same dimensions."        
         K = rots_reg.shape[0]
 
         diff = np.zeros(K)
