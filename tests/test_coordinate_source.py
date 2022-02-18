@@ -180,7 +180,7 @@ class CoordinateSourceTestCase(TestCase):
     def createFloatBoxFile(self, centers):
         # for testing float coordinates
         # create a box file (lower left corner and X/Y sizes)
-        box_fp = os.path.join(self.data_folder, f"float.box")
+        box_fp = os.path.join(self.data_folder, "float.box")
         # populate box file with coordinates in box format
         with open(box_fp, "w") as box:
             for center in centers:
@@ -194,7 +194,7 @@ class CoordinateSourceTestCase(TestCase):
     def createFloatCoordFile(self, centers):
         # for testing float coordinates
         # create a coord file (only particle centers listed)
-        coord_fp = os.path.join(self.data_folder, f"float.coord")
+        coord_fp = os.path.join(self.data_folder, "float.coord")
         # populate coord file with particle centers
         with open(coord_fp, "w") as coord:
             for center in centers:
@@ -204,7 +204,7 @@ class CoordinateSourceTestCase(TestCase):
     def createFloatStarFile(self, centers):
         # for testing float coordinates
         # create a star file (only particle centers listed)
-        star_fp = os.path.join(self.data_folder, f"float.star")
+        star_fp = os.path.join(self.data_folder, "float.star")
         # populate star file with particle centers
         x_coords = [str(center[0]) + ".000" for center in centers]
         y_coords = [str(center[1]) + ".000" for center in centers]
