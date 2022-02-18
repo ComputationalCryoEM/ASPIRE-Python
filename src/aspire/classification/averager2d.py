@@ -66,11 +66,11 @@ class Averager2D(ABC):
 
         Should return an Image source of synthetic class averages.
 
-        :param classes: class indices, refering to src. (n_img, n_nbor).
+        :param classes: class indices, refering to src. (n_classes, n_nbor).
         :param reflections: Bool representing whether to reflect image in `classes`.
-        (n_img, n_nbor)
+        (n_clases, n_nbor)
         :param coefs: Optional basis coefs (could avoid recomputing).
-        (n_img, coef_count)
+        (n_classes, coef_count)
         :return: Stack of synthetic class average images as Image instance.
         """
 
@@ -134,21 +134,21 @@ class AligningAverager2D(Averager2D):
 
         `rotations` is an (n_classes, n_nbor) array of angles,
         which should represent the rotations needed to align images within
-        that class. `rotations` is measured in Radians.
-
-        `correlations` is an (n_classes, n_nbor) array representing
-        a correlation like measure between classified images and their base
-        image (image index 0).
+        that class. `rotations` is measured in radians.
 
         `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
         which should represent the translation needed to best align the images
         within that class.
 
+        `correlations` is an (n_classes, n_nbor) array representing
+        a correlation like measure between classified images and their base
+        image (image index 0).
+
         Subclasses of should implement and extend this method.
 
-        :param classes: (n_classes, n_nbor) integer array of img indices
-        :param reflections: (n_classes, n_nbor) bool array of corresponding reflections
-        :param basis_coefficients: (n_img, self.pca_basis.count) compressed basis coefficients
+        :param classes: (n_classes, n_nbor) integer array of img indices.
+        :param reflections: (n_classes, n_nbor) bool array of corresponding reflections,
+        :param basis_coefficients: (n_img, self.alignment_basis.count) basis coefficients,
 
         :returns: (rotations, shifts, correlations)
         """
@@ -216,13 +216,13 @@ class BFRAverager2D(AligningAverager2D):
         composite_basis,
         source,
         alignment_basis=None,
-        n_angles=359,
+        n_angles=360,
         dtype=None,
     ):
         """
         See AligningAverager2D, adds:
 
-        :params n_angles: Number of brute force rotations to attempt, defaults 359.
+        :params n_angles: Number of brute force rotations to attempt, defaults 360.
         """
         super().__init__(composite_basis, source, alignment_basis, dtype)
 
@@ -303,7 +303,7 @@ class BFSRAverager2D(BFRAverager2D):
         composite_basis,
         source,
         alignment_basis=None,
-        n_angles=359,
+        n_angles=360,
         n_x_shifts=1,
         n_y_shifts=1,
         dtype=None,
@@ -318,7 +318,7 @@ class BFSRAverager2D(BFRAverager2D):
 
         n_x_shifts=n_y_shifts=0 is the same as calling BFRAverager2D.
 
-        :params n_angles: Number of brute force rotations to attempt, defaults 359.
+        :params n_angles: Number of brute force rotations to attempt, defaults 360.
         :params n_x_shifts: +- Number of brute force xshifts to attempt, defaults 1.
         :params n_y_shifts: +- Number of brute force xshifts to attempt, defaults 1.
         """
@@ -369,7 +369,9 @@ class BFSRAverager2D(BFRAverager2D):
         shifts = np.empty((*classes.shape, 2), dtype=int)
 
         if basis_coefficients is None:
-            # Retrieve image coefficients, this is bad, but should be deleted anyway.
+            # Retrieve image coefficients, this is bad, it load all images.
+            # TODO: Refactor this s.t. the following code blocks and super().align
+            #   only require coefficients relating to their class.  See _cls_images.
             basis_coefficients = self.composite_basis.evaluate_t(
                 self.src.images(0, np.inf)
             )
@@ -382,7 +384,7 @@ class BFSRAverager2D(BFRAverager2D):
         # Loop over shift search space, updating best result
         for x, y in product(x_shifts, y_shifts):
             shift = np.array([x, y], dtype=int)
-            logger.debug(f"Computing Rotational alignment after shift ({x},{y}).")
+            logger.debug(f"Computing rotational alignment after shift ({x},{y}).")
 
             # Shift the coef representing the first (base) entry in each class
             #   by the negation of the shift
