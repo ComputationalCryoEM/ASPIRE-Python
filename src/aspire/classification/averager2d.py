@@ -479,7 +479,10 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         # Cache img0 transform, this saves n_classes*(n_nbor-1) transforms
         # Note we use the `id` because ndarray are unhashable
-        src_f = self.__cache.setdefault(id(img0), fft.fft2(img0))
+        key = id(img0)
+        if key not in self.__cache:
+            self.__cache[key] = fft.fft2(img0)
+        src_f = self.__cache[key]
 
         target_f = fft.fft2(img1)
 
