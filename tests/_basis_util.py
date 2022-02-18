@@ -9,7 +9,40 @@ from aspire.utils.random import randn
 from aspire.volume import Volume
 
 
-class Steerable2DMixin:
+class SteerableMixin:
+    def testEvaluateExpand(self):
+        coef1 = randn(self.basis.count, seed=self.seed)
+        coef1 = coef1.astype(self.dtype)
+
+        im = self.basis.evaluate(coef1)
+        if isinstance(im, Image):
+            im = im.asnumpy()
+        coef2 = self.basis.expand(im)[0]
+
+        self.assertTrue(coef1.shape == coef2.shape)
+        self.assertTrue(np.allclose(coef1, coef2, atol=utest_tolerance(self.dtype)))
+
+    def testAdjoint(self):
+        u = randn(self.basis.count, seed=self.seed)
+        u = u.astype(self.dtype)
+
+        Au = self.basis.evaluate(u)
+        if isinstance(Au, Image):
+            Au = Au.asnumpy()
+
+        x = randn(*self.basis.sz, seed=self.seed)
+        x = x.astype(self.dtype)
+
+        ATx = self.basis.evaluate_t(x)
+
+        Au_dot_x = np.sum(Au * x)
+        u_dot_ATx = np.sum(u * ATx)
+
+        self.assertTrue(Au_dot_x.shape == u_dot_ATx.shape)
+        self.assertTrue(np.isclose(Au_dot_x, u_dot_ATx))
+
+
+class Steerable2DMixin(SteerableMixin):
     def testIndices(self):
         ell_max = self.basis.ell_max
         k_max = self.basis.k_max
