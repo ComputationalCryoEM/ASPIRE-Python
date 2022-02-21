@@ -168,8 +168,8 @@ class CoordinateSource(ImageSource, ABC):
         return [
             # centers may be represented as floats in STAR files
             # chop off the non integer part to account for this
-            int(float(x)) - r,
-            int(float(y)) - r,
+            int(x) - r,
+            int(y) - r,
             particle_size,
             particle_size,
         ]
@@ -539,5 +539,5 @@ class CentersCoordinateSource(CoordinateSource):
             return self._coords_list_from_star(coord_file)
         # otherwise we assume text file format with one coord per line:
         with open(coord_file, "r") as infile:
-            lines = [line.split() for line in infile.readlines()]
+            lines = [[float(c) for c in line.split()] for line in infile.readlines()]
         return [self._box_coord_from_center(line, self.particle_size) for line in lines]
