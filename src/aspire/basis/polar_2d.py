@@ -5,7 +5,7 @@ import numpy as np
 from aspire.basis import Basis
 from aspire.image import Image
 from aspire.nufft import anufft, nufft
-from aspire.utils import ensure, real_type
+from aspire.utils import real_type
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +26,8 @@ class PolarBasis2D(Basis):
         """
 
         ndim = len(size)
-        ensure(ndim == 2, "Only two-dimensional grids are supported.")
-        ensure(len(set(size)) == 1, "Only square domains are supported.")
+        assert ndim == 2, "Only two-dimensional grids are supported."
+        assert len(set(size)) == 1, "Only square domains are supported."
 
         self.nrad = nrad
         self.ntheta = ntheta

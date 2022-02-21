@@ -14,7 +14,6 @@ from aspire.nufft import anufft
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import (
-    ensure,
     make_symmat,
     symmat_to_vec_iso,
     vec_to_symmat_iso,
@@ -197,10 +196,12 @@ class CovarianceEstimator(Estimator):
         :param method: One of None/'frobenius_norm'/'operator_norm'/'soft_threshold'
         :return: Shrunk covariance matrix
         """
-        ensure(
-            method in (None, "frobenius_norm", "operator_norm", "soft_threshold"),
-            "Unsupported shrink method",
-        )
+        assert method in (
+            None,
+            "frobenius_norm",
+            "operator_norm",
+            "soft_threshold",
+        ), "Unsupported shrink method"
 
         An = self.basis.mat_evaluate_t(self.mean_kernel.toeplitz())
         if method is None:
