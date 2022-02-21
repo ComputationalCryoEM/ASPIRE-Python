@@ -95,7 +95,7 @@ class CoordinateSource(ImageSource, ABC):
             f"{self.__class__.__name__} from {os.path.dirname(self.mrc_paths[0])} contains {len(mrc_paths)} micrographs, {len(self.particles)} picked particles."
         )
         # report different mrc shapes
-        logger.info(f"Micrographs have the following shapes: {*self.mrc_shapes,}")
+        logger.info(f"Micrographs have the following shapes: {*set(self.mrc_shapes),}")
 
         # remove particles whose boxes do not fit at given particle_size
         # and get number removed
@@ -325,6 +325,14 @@ class CoordinateSource(ImageSource, ABC):
 
         return Image(im)
 
+    @staticmethod
+    def _is_number(text):
+        """
+        Used in validation of coordinate files. We allow strings containing
+        - or . to account for negative values and floats.
+        """
+        return text.replace("-", "1").replace(".", "1").isdigit()
+
 
 class BoxesCoordinateSource(CoordinateSource):
     """
@@ -355,7 +363,7 @@ class BoxesCoordinateSource(CoordinateSource):
         with open(box_file, "r") as box:
             first_line = box.readlines()[0].split()
             if len(first_line) >= 4:
-                box_size = int(first_line[2])  # x size or y size works
+                box_size = int(float(first_line[2]))  # x size or y size works
                 return box_size
             else:
                 logger.error(f"Problem with coordinate file: {box_file}")
@@ -380,14 +388,14 @@ class BoxesCoordinateSource(CoordinateSource):
                         "flag in aspire extract-particles."
                     )
 
-                if not all(p.isnumeric() for p in line.split()):
+                if not all(self._is_number(p) for p in line.split()):
                     logger.error(f"Problem with coordinate file: {box_file}")
                     raise ValueError(
                         "Coordinate file contains non-numeric coordinate values."
                     )
 
                 # we can only accept square particles
-                size_x, size_y = int(line.split()[2]), int(line.split()[3])
+                size_x, size_y = float(line.split()[2]), float(line.split()[3])
                 if size_x != size_y:
                     logger.error(f"Problem with coordinate file: {box_file}")
                     raise ValueError(
@@ -429,7 +437,7 @@ class BoxesCoordinateSource(CoordinateSource):
         with open(coord_file, "r") as infile:
             lines = [line.split() for line in infile.readlines()]
         # coords are already in box format, so simply cast to int
-        return [[int(x) for x in line] for line in lines]
+        return [[int(float(x)) for x in line] for line in lines]
 
     def _force_new_particle_size(self, new_size):
         """
@@ -485,7 +493,7 @@ class CentersCoordinateSource(CoordinateSource):
                         "Coordinate file contains a line with less than 2 numbers."
                     )
                 # check that the coordinate has numeric values
-                if not all(c.isnumeric() for c in line.split()):
+                if not all(self._is_number(c) for c in line.split()):
                     logger.error(f"Problem with coordinate file: {coord_file}")
                     raise ValueError(
                         "Coordinate file contains non-numeric coordinate values."
@@ -504,7 +512,7 @@ class CentersCoordinateSource(CoordinateSource):
             )
         # check that all values in each column are numeric
         if not all(
-            all(df[col].str.isnumeric())
+            all(df[col].apply(self._is_number))
             for col in ["_rlnCoordinateX", "_rlnCoordinateY"]
         ):
             logger.error(f"Problem with coordinate file: {coord_file}")
@@ -531,5 +539,5 @@ class CentersCoordinateSource(CoordinateSource):
             return self._coords_list_from_star(coord_file)
         # otherwise we assume text file format with one coord per line:
         with open(coord_file, "r") as infile:
-            lines = [line.split() for line in infile.readlines()]
+            lines = [[float(c) for c in line.split()] for line in infile.readlines()]
         return [self._box_coord_from_center(line, self.particle_size) for line in lines]
