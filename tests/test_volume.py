@@ -1,5 +1,4 @@
 import os
-
 import tempfile
 from itertools import product
 from unittest import TestCase
