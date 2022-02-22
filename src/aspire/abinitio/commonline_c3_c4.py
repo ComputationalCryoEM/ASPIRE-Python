@@ -91,7 +91,7 @@ class CLSymmetryC3C4(CLOrient3D):
         return vijs, viis
 
     @staticmethod
-    def global_sync_J(vijs, viis):
+    def global_J_sync(self, vijs, viis):
         """
         Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
         of which might contain a spurious J, we return vijs and viis that all have either a spurious J
@@ -114,6 +114,23 @@ class CLSymmetryC3C4(CLOrient3D):
         assert viis.shape[1:] == (3, 3), "viis must be 3x3 matrices."
         assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
         assert n_vijs == nchoose2, "There must be n_ims-choose-2 vijs."
+
+        # Synchronize vijs
+        n_eigs = 1
+        sign_ij_J = self.J_sync_power_method(vijs, n_eigs)
+        n_signs = sign_ij_J[0]
+        assert n_signs == n_vijs, "There must be a sign associated with each vij."
+
+        vijs_sync = np.zeros((vijs.shape), dtype=vijs.dtype)
+        J = np.diag((1, 1, -1))
+
+        for i in range(n_signs):
+            if sign_ij_J[i] == 1:
+                vijs_sync[i] = vijs[i]
+            else:
+                vijs_sync[i] = J @ vijs[i] @ J
+
+        # Synchronize viis
         pass
 
     @staticmethod
@@ -196,4 +213,58 @@ class CLSymmetryC3C4(CLOrient3D):
 
     def local_sync_J_c3_c4(n_symm, Rijs, Riis):
         # return vijs, viis
+        pass
+
+    #######################################
+    # Secondary Methods for Global J Sync #
+    #######################################
+
+    def J_sync_power_method(self, vijs, n_eigs):
+        """
+        Calculate n_eigs eigenvalues and eigenvectors of the J-synchronization matrix
+        using the power method.
+
+        As the J-synchronization matrix is of size (N choose 2)x(N choose 2), the
+        matrix uses the power method to the compute the eigenvalues and eigenvectors,
+        while constructing the matrix on-the-fly.
+
+        :param vijs: nchoose2x3x3 array of estimates of relative orientation matrices.
+
+        :param n_eigs: The number eigenvalues and eigenvectors to compute.
+
+        :return: Array of length N-choose-2 where the i-th entry indicates if vijs[i]
+        should be J-conjugated or not to achieve global handedness consistency. This array
+        consists only of +1 and -1.
+        """
+
+        n_vijs = vijs.shape[0]
+        nchoose2 = (1 + np.sqrt(1 + 8 * n_vijs)) / 2
+        assert nchoose2 == int(nchoose2), "There must be n_ims-choose-2 vijs."
+        assert n_eigs > 0, "n_eigs must be a positive integer."
+
+        epsilon = 1e-2
+        max_iters = 100
+
+        # Initialize candidate eigenvectors
+        vec = np.random.randn(n_eigs, n_vijs)
+        vec = np.linalg.qr(vec)[0]
+        dd = 1
+        itr = 0
+
+        # Power method iterations
+        while itr < max_iters and dd > epsilon:
+            itr = itr + 1
+            vec_new = self.signs_times_v(vijs, vec, n_eigs)
+            vec_new, eigenvalues = np.linalg.qr(vec_new)
+            dd = np.linalg.norm(vec_new[0] - vec[0])
+            vec = vec_new
+
+        logger.info(f"Power method used {itr} iterations.")
+
+        eigenvalues = np.diag(eigenvalues)
+        J_sync = np.sign(vec[0])
+
+        return J_sync
+
+    def signs_times_v(vijs, vec, n_eigs):
         pass
