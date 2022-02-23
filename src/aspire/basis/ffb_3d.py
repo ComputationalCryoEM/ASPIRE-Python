@@ -54,9 +54,9 @@ class FFBBasis3D(FBBasis3D):
         Gaussian quadrature points and weights are also generated
         in radical and phi dimensions.
         """
-        n_r = int(self.ell_max + 1)
-        n_theta = int(2 * self.sz[0])
-        n_phi = int(self.ell_max + 1)
+        n_r = int(np.ceil(4 * self.rcut * self.kcut))
+        n_theta = int(2 * self.nres)
+        n_phi = int(2 * self.nres + 1)
 
         r, wt_r = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
         z, wt_z = lgwt(n_phi, -1, 1, dtype=self.dtype)
@@ -81,7 +81,7 @@ class FFBBasis3D(FBBasis3D):
                 radial_ell[:, ik] = sph_bessel(ell, rmat[:, ik])
             nrm = np.abs(sph_bessel(ell + 1, self.r0[0:k_max_ell, ell].T) / 4)
             radial_ell = radial_ell / nrm
-            radial_ell_wtd = r ** 2 * wt_r * radial_ell
+            radial_ell_wtd = r**2 * wt_r * radial_ell
             radial_wtd[:, 0:k_max_ell, ell] = radial_ell_wtd
 
         # evaluate basis function in the phi dimension

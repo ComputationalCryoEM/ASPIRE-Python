@@ -8,9 +8,8 @@ import logging
 import numpy as np
 from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
-from scipy.special import jn, jv, lpmv, sph_harm
+from scipy.special import jn, jv, sph_harm
 
-from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
@@ -93,24 +92,43 @@ def norm_assoc_legendre(j, m, x):
 
     """
 
+    # For negative m, flip sign and use the symmetry identity.
+    # In the rest, we assume that m is non-negative.
     if m < 0:
         m = -m
-        y = (-1) ** m * norm_assoc_legendre(j, m, x)
+        px = (-1) ** m * norm_assoc_legendre(j, m, x)
+        px *= (-1) ** m
+        return px
+
+    # Initialize the recurrence at (m, m) and (m, m+1).
+    p0 = (
+        (-1) ** m
+        * np.sqrt(
+            (2 * m + 1)
+            / 2
+            * np.prod(np.arange(2 * m - 1, 0, -2) / np.arange(2 * m, 0, -2))
+        )
+        * (1 - x * x) ** (m / 2)
+    )
+
+    p1 = x * np.sqrt(2 * m + 3) * p0
+
+    # If these are the desired indices, return these initial values.
+    if j == m:
+        px = p0
+    elif j == m + 1:
+        px = p1
     else:
-        y = lpmv(m, j, x)
-        # Beware of using just np.prod in the denominator here
-        # Unless we use float64, values in the denominator > 13! will be incorrect
-        try:
-            y = (
-                np.sqrt(
-                    (2 * j + 1)
-                    / (2 * np.prod(range(j - m + 1, j + m + 1), dtype=np.float64))
-                )
-                * y
+        # Fixing m, work our way up from (m, m+1) to (m, j).
+        for n in range(m + 1, j):
+            px = np.sqrt((2 * n + 3) / ((n + 1 + m) * (n + 1 - m))) * (
+                np.sqrt(2 * n + 1) * x * p1
+                - np.sqrt((n + m) * (n - m) / (2 * n - 1)) * p0
             )
-        except RuntimeWarning:
-            logger.error("debug")
-    return y
+            p0 = p1
+            p1 = px
+
+    return px
 
 
 def real_sph_harmonic(j, m, theta, phi):
@@ -139,8 +157,8 @@ def real_sph_harmonic(j, m, theta, phi):
 
 
 def besselj_zeros(nu, k):
-    ensure(k >= 3, "k must be >= 3")
-    ensure(0 <= nu <= 1e7, "nu must be between 0 and 1e7")
+    assert k >= 3, "k must be >= 3"
+    assert 0 <= nu <= 1e7, "nu must be between 0 and 1e7"
 
     z = np.zeros(k)
 
@@ -179,10 +197,9 @@ def besselj_zeros(nu, k):
         z[n : n + j] = besselj_newton(nu, z0)
 
         # Check to see that the sequence of zeros makes sense
-        ensure(
-            check_besselj_zeros(nu, z[n - 2 : n + j]),
-            "Unable to properly estimate Bessel function zeros.",
-        )
+        assert check_besselj_zeros(
+            nu, z[n - 2 : n + j]
+        ), "Unable to properly estimate Bessel function zeros."
 
         # Check how far off we are
         err = (z[n : n + j] - z0) / np.diff(z[n - 1 : n + j])
@@ -217,45 +234,39 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
     :param normalized: normalize the grid or not.
     :return: The unique polar coordinates in 2D or 3D
     """
-    ensure(
-        ndim in (2, 3), "Only two- or three-dimensional basis functions are supported."
-    )
-    ensure(N > 0, "Number of grid points should be greater than 0.")
+    assert ndim in (
+        2,
+        3,
+    ), "Only two- or three-dimensional basis functions are supported."
+    assert N > 0, "Number of grid points should be greater than 0."
 
     if ndim == 2:
-        grid = grid_2d(N, shifted=shifted, normalized=normalized, dtype=dtype)
+        grid = grid_2d(
+            N, shifted=shifted, normalized=normalized, indexing="yx", dtype=dtype
+        )
         mask = grid["r"] <= 1
 
         # Minor differences in r/theta/phi values are unimportant for the purpose
         # of this function, so round off before proceeding
 
-        # TODO: numpy boolean indexing will return a 1d array (like MATLAB)
-        # However, it always searches in row-major order, unlike MATLAB (column-major),
-        # with no options to change the search order. The results we'll be getting back are thus not comparable.
-        # We transpose the appropriate ndarrays before applying the mask to obtain the same behavior as MATLAB.
-        r = grid["r"].T[mask].round(5)
-        phi = grid["phi"].T[mask].round(5)
+        r = grid["r"][mask].round(5)
+        phi = grid["phi"][mask].round(5)
 
         r_unique, r_idx = np.unique(r, return_inverse=True)
         ang_unique, ang_idx = np.unique(phi, return_inverse=True)
 
     else:
-        grid = grid_3d(N, shifted=shifted, normalized=normalized, dtype=dtype)
+        grid = grid_3d(
+            N, shifted=shifted, normalized=normalized, indexing="zyx", dtype=dtype
+        )
         mask = grid["r"] <= 1
-
-        # In Numpy, elements in the indexed array are always iterated and returned in row-major (C-style) order.
-        # To emulate a behavior where iteration happens in Fortran order, we swap axes 0 and 2 of both the array
-        # being indexed (r/theta/phi), as well as the mask itself.
-        # TODO: This is only for the purpose of getting the same behavior as MATLAB while porting the code, and is
-        # likely not needed in the final version.
 
         # Minor differences in r/theta/phi values are unimportant for the purpose of this function,
         # so we round off before proceeding.
 
-        mask_ = np.swapaxes(mask, 0, 2)
-        r = np.swapaxes(grid["r"], 0, 2)[mask_].round(5)
-        theta = np.swapaxes(grid["theta"], 0, 2)[mask_].round(5)
-        phi = np.swapaxes(grid["phi"], 0, 2)[mask_].round(5)
+        r = grid["r"][mask].round(5)
+        theta = grid["theta"][mask].round(5)
+        phi = grid["phi"][mask].round(5)
 
         r_unique, r_idx = np.unique(r, return_inverse=True)
         ang_unique, ang_idx = np.unique(

@@ -3,14 +3,7 @@ import logging
 import numpy as np
 from scipy.fftpack import fft, fftn, fftshift, ifft, ifftn
 
-from aspire.utils import (
-    ensure,
-    roll_dim,
-    unroll_dim,
-    vec_to_vol,
-    vecmat_to_volmat,
-    vol_to_vec,
-)
+from aspire.utils import roll_dim, unroll_dim, vec_to_vol, vecmat_to_volmat, vol_to_vec
 from aspire.utils.fft import mdim_fftshift, mdim_ifftshift
 from aspire.utils.matlab_compat import m_reshape
 
@@ -92,11 +85,9 @@ class FourierKernel(Kernel):
         N_ker = kernel_f.shape[0]
 
         x, sz_roll = unroll_dim(x, 4)
-        ensure(
-            x.shape[0] == x.shape[1] == x.shape[2] == N, "Volumes in x must be cubic"
-        )
-        ensure(kernel_f.shape[3] == 1, "Convolution kernel must be cubic")
-        ensure(len(set(kernel_f.shape[:3])) == 1, "Convolution kernel must be cubic")
+        assert x.shape[0] == x.shape[1] == x.shape[2] == N, "Volumes in x must be cubic"
+        assert kernel_f.shape[3] == 1, "Convolution kernel must be cubic"
+        assert len(set(kernel_f.shape[:3])) == 1, "Convolution kernel must be cubic"
 
         is_singleton = x.shape[3] == 1
 
@@ -126,10 +117,9 @@ class FourierKernel(Kernel):
         shape = x.shape
         N = shape[0]
         kernel_f = self.kernel
-        ensure(
-            len(set(shape[i] for i in range(5))) == 1,
-            "Volume matrix must be cubic and square",
-        )
+        assert (
+            len(set(shape[i] for i in range(5))) == 1
+        ), "Volume matrix must be cubic and square"
 
         # TODO from MATLAB code: Deal with rolled dimensions
         N_ker = kernel_f.shape[0]
@@ -159,8 +149,8 @@ class FourierKernel(Kernel):
         if L is None:
             L = int(self.M / 2)
 
-        A = np.eye(L ** 3, dtype=self.dtype)
-        for i in range(L ** 3):
+        A = np.eye(L**3, dtype=self.dtype)
+        for i in range(L**3):
             A[:, i] = np.real(vol_to_vec(self.convolve_volume(vec_to_vol(A[:, i]))))
 
         A = vecmat_to_volmat(A)

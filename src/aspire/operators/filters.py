@@ -5,10 +5,8 @@ import math
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
-from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +17,7 @@ def voltage_to_wavelength(voltage):
     :param voltage: float, The electron voltage in kV.
     :return: float, The electron wavelength in nm.
     """
-    return 12.2643247 / math.sqrt(voltage * 1e3 + 0.978466 * voltage ** 2)
+    return 12.2643247 / math.sqrt(voltage * 1e3 + 0.978466 * voltage**2)
 
 
 def wavelength_to_voltage(wavelength):
@@ -29,8 +27,31 @@ def wavelength_to_voltage(wavelength):
     :return: float, The electron voltage in kV.
     """
     return (
-        -1e3 + math.sqrt(1e6 + 4 * 12.2643247 ** 2 * 0.978466 / wavelength ** 2)
+        -1e3 + math.sqrt(1e6 + 4 * 12.2643247**2 * 0.978466 / wavelength**2)
     ) / (2 * 0.978466)
+
+
+def evaluate_src_filters_on_grid(src):
+    """
+    Given an ImageSource object, compute the source's unique filters
+    at the filter_indices specified in its metadata.
+    :return: an `src.L x src.L x len(src.filter_indices)`
+    array containing the evaluated filters at each gridpoint
+    """
+
+    grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
+    omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
+
+    h = np.empty((omega.shape[-1], len(src.filter_indices)), dtype=src.dtype)
+    for i, filt in enumerate(src.unique_filters):
+        idx_k = np.where(src.filter_indices == i)[0]
+        if len(idx_k) > 0:
+            filter_values = filt.evaluate(omega)
+            h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
+
+    h = np.reshape(h, grid2d["x"].shape + (len(src.filter_indices),))
+
+    return h
 
 
 # TODO: filters should probably be dtyped...
@@ -58,15 +79,13 @@ class Filter:
         :return: The value of the filter at the specified frequencies.
         """
         if omega.ndim == 1:
-            ensure(
-                self.radial, "Cannot evaluate a non-radial filter on 1D input array."
-            )
+            assert self.radial, "Cannot evaluate a non-radial filter on 1D input array."
         elif omega.ndim == 2 and self.dim:
-            ensure(omega.shape[0] == self.dim, f"Omega must be of size {self.dim} x n")
+            assert omega.shape[0] == self.dim, f"Omega must be of size {self.dim} x n"
 
         if self.radial:
             if omega.ndim > 1:
-                omega = np.sqrt(np.sum(omega ** 2, axis=0))
+                omega = np.sqrt(np.sum(omega**2, axis=0))
             omega, idx = np.unique(omega, return_inverse=True)
             omega = np.vstack((omega, np.zeros_like(omega)))
 
@@ -108,11 +127,12 @@ class Filter:
         :return: Filter values at omega's points.
         """
 
-        grid2d = grid_2d(L, dtype=dtype)
-        omega = np.pi * np.vstack((grid2d["x"].flatten("F"), grid2d["y"].flatten("F")))
+        # Note we can probably unwind the "F"/m_reshape here
+        grid2d = grid_2d(L, indexing="yx", dtype=dtype)
+        omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
         h = self.evaluate(omega, *args, **kwargs)
 
-        h = m_reshape(h, grid2d["x"].shape)
+        h = h.reshape(grid2d["x"].shape)
 
         return h
 
@@ -241,7 +261,7 @@ class ArrayFilter(Filter):
         :param xfer_fn_array: The transfer function of the filter in the form of an array of one or two dimensions.
         """
         dim = xfer_fn_array.ndim
-        ensure(dim in (1, 2), "Only dimensions 1 and 2 supported.")
+        assert dim in (1, 2), "Only dimensions 1 and 2 supported."
 
         super().__init__(dim=dim, radial=False)
 
@@ -401,12 +421,12 @@ class CTFFilter(Filter):
         defocus[ind_nz] = self.defocus_mean + self.defocus_diff * np.cos(2 * angles_nz)
 
         c2 = -np.pi * self.wavelength * defocus
-        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength ** 3
+        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength**3
 
-        r2 = om_x ** 2 + om_y ** 2
-        r4 = r2 ** 2
+        r2 = om_x**2 + om_y**2
+        r4 = r2**2
         gamma = c2 * r2 + c4 * r4
-        h = np.sqrt(1 - self.alpha ** 2) * np.sin(gamma) - self.alpha * np.cos(gamma)
+        h = np.sqrt(1 - self.alpha**2) * np.sin(gamma) - self.alpha * np.cos(gamma)
 
         if self.B:
             h *= np.exp(-self.B * r2)

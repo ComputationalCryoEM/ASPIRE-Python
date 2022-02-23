@@ -9,7 +9,7 @@ from itertools import chain, combinations
 
 import numpy as np
 
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils.coor_trans import grid_1d, grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
 
@@ -19,20 +19,7 @@ def abs2(x):
     Compute complex modulus squared.
     """
 
-    return x.real ** 2 + x.imag ** 2
-
-
-def ensure(cond, error_message=None):
-    """
-    assert statements in Python are sometimes optimized away by the compiler, and are for internal testing purposes.
-    For user-facing assertions, we use this simple wrapper to ensure conditions are met at relevant parts of the code.
-
-    :param cond: Condition to be ensured
-    :param error_message: An optional error message if condition is not met
-    :return: If condition is met, returns nothing, otherwise raises AssertionError
-    """
-    if not cond:
-        raise AssertionError(error_message)
+    return x.real**2 + x.imag**2
 
 
 def get_full_version():
@@ -115,6 +102,28 @@ def sha256sum(filename):
     return h.hexdigest()
 
 
+def gaussian_1d(size, mu=0, sigma=1, peak=1, dtype=np.float64):
+    """
+    Returns a 1d Gaussian in a 1D numpy array.
+
+    Default is a centered disc of spread=peak=1.
+
+    :param size: The height and width of returned array (pixels)
+    :param mu: mean or center (pixels)
+    :param sigma: spread
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (1D)
+    """
+
+    # Construct centered mesh
+    g = grid_1d(size, normalized=False, dtype=dtype)
+
+    p = (g["x"] - mu) ** 2 / (2 * sigma**2)
+
+    return (peak * np.exp(-p)).astype(dtype, copy=False)
+
+
 def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64):
     """
     Returns a 2d Gaussian in a square 2d numpy array.
@@ -122,8 +131,8 @@ def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64
     Default is a centered disc of spread=peak=1.
 
     :param size: The height and width of returned array (pixels)
-    :param x0: x cordinate of center (pixels)
-    :param y0: y cordinate of center (pixels)
+    :param x0: x coordinate of center (pixels)
+    :param y0: y coordinate of center (pixels)
     :param sigma_x: spread in x direction
     :param sigma_y: spread in y direction
     :param peak: peak height at center
@@ -132,10 +141,35 @@ def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64
     """
 
     # Construct centered mesh
-    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
+    g = grid_2d(size, shifted=False, normalized=False, indexing="xy", dtype=dtype)
 
-    p = (g["x"] - x0) ** 2 / (2 * sigma_x ** 2) + (g["y"] - y0) ** 2 / (
-        2 * sigma_y ** 2
+    p = (g["x"] - x0) ** 2 / (2 * sigma_x**2) + (g["y"] - y0) ** 2 / (
+        2 * sigma_y**2
+    )
+    return (peak * np.exp(-p)).astype(dtype, copy=False)
+
+
+def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), peak=1, dtype=np.float64):
+    """
+    Returns a 3d Gaussian in a size-by-size-by-size 3d numpy array.
+
+    Default is a centered volume of spread=peak=1.
+
+    :param size: The height and width of returned array (pixels)
+    :param mu: A 3-tuple indicating the center of the Gaussian
+    :param sigma: A 3-tuple of spreads corresponding to mu
+    :param peak: peak height at center
+    :param dtype: dtype of returned array
+    :return: Numpy array (3D)
+    """
+
+    # Construct centered mesh
+    g = grid_3d(size, shifted=False, normalized=False, indexing="xyz", dtype=dtype)
+
+    p = (
+        (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2)
+        + (g["y"] - mu[1]) ** 2 / (2 * sigma[1] ** 2)
+        + (g["z"] - mu[2]) ** 2 / (2 * sigma[2] ** 2)
     )
     return (peak * np.exp(-p)).astype(dtype, copy=False)
 
@@ -161,7 +195,7 @@ def circ(size, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
     """
 
     # Construct centered mesh
-    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
+    g = grid_2d(size, shifted=True, normalized=False, indexing="yx", dtype=dtype)
 
     vals = ((g["x"] - x0) ** 2 + (g["y"] - y0) ** 2) < radius * radius
     return (peak * vals).astype(dtype)
@@ -184,7 +218,7 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     """
 
     # Construct centered mesh
-    g = grid_2d(size, shifted=True, normalized=False, dtype=dtype)
+    g = grid_2d(size, shifted=True, normalized=False, indexing="yx", dtype=dtype)
 
     # Compute the denominator
     vals = np.sqrt(1 + (g["x"] - x0) ** 2 + (g["y"] - y0) ** 2)

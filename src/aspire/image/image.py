@@ -9,9 +9,7 @@ from scipy.linalg import lstsq
 import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
-from aspire.utils import ensure
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.matrix import anorm
 
 logger = logging.getLogger(__name__)
@@ -78,7 +76,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     :return: The modified images
     """
     L = imgs.shape[-1]
-    grid = grid_2d(L)
+    grid = grid_2d(L, indexing="yx")
     mask = grid["r"] > bg_radius
 
     if do_ramp:
@@ -106,9 +104,9 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     imgs_masked = imgs * mask
     denominator = np.sum(mask)
     first_moment = np.sum(imgs_masked, axis=(1, 2)) / denominator
-    second_moment = np.sum(imgs_masked ** 2, axis=(1, 2)) / denominator
+    second_moment = np.sum(imgs_masked**2, axis=(1, 2)) / denominator
     mean = first_moment.reshape(-1, 1, 1)
-    variance = second_moment.reshape(-1, 1, 1) - mean ** 2
+    variance = second_moment.reshape(-1, 1, 1) - mean**2
     std = np.sqrt(variance)
 
     return (imgs - mean) / std
@@ -145,7 +143,7 @@ class Image:
         self.n_images = self.shape[0]
         self.res = self.shape[1]
 
-        ensure(data.shape[1] == data.shape[2], "Only square ndarrays are supported.")
+        assert data.shape[1] == data.shape[2], "Only square ndarrays are supported."
 
     def __getitem__(self, item):
         return self.data[item]
@@ -211,8 +209,8 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
-        grid = grid_2d(self.res)
-        grid_ds = grid_2d(ds_res)
+        grid = grid_2d(self.res, indexing="yx")
+        grid_ds = grid_2d(ds_res, indexing="yx")
 
         im_ds = np.zeros((self.n_images, ds_res, ds_res), dtype=self.dtype)
 
@@ -232,7 +230,7 @@ class Image:
             interpolator = RegularGridInterpolator(
                 (x, y), im[s], bounds_error=False, fill_value=0
             )
-            im_ds[s] = interpolator(np.dstack([grid_ds["x"], grid_ds["y"]]))
+            im_ds[s] = interpolator(np.dstack([grid_ds["y"], grid_ds["x"]]))
 
         return Image(im_ds)
 
@@ -280,12 +278,11 @@ class Image:
             shifts = shifts[np.newaxis, :]
         n_shifts = shifts.shape[0]
 
-        ensure(shifts.shape[-1] == 2, "shifts must be nx2")
+        assert shifts.shape[-1] == 2, "shifts must be nx2"
 
-        ensure(
-            n_shifts == 1 or n_shifts == self.n_images,
-            "number of shifts must be 1 or match the number of images",
-        )
+        assert (
+            n_shifts == 1 or n_shifts == self.n_images
+        ), "number of shifts must be 1 or match the number of images"
         # Cast shifts to this instance's internal dtype
         shifts = shifts.astype(self.dtype)
 
@@ -331,24 +328,22 @@ class Image:
 
         L = self.res
 
-        ensure(
-            self.n_images == rot_matrices.shape[0],
-            "Number of rotation matrices must match the number of images",
-        )
+        assert (
+            self.n_images == rot_matrices.shape[0]
+        ), "Number of rotation matrices must match the number of images"
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
         pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
-        pts_rot = np.moveaxis(pts_rot, 1, 2)
-        pts_rot = m_reshape(pts_rot, (3, -1))
+        pts_rot = pts_rot.reshape((3, -1))
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L ** 2)
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L**2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
         im_f = im_f.flatten()
 
-        vol = anufft(im_f, pts_rot, (L, L, L), real=True) / L
+        vol = anufft(im_f, pts_rot[::-1], (L, L, L), real=True) / L
 
         return aspire.volume.Volume(vol)
 

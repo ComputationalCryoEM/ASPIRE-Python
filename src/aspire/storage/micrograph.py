@@ -5,10 +5,8 @@ import numpy as np
 from PIL import Image as PILImage
 from scipy import signal
 
-from aspire import config
 from aspire.image import Image
 from aspire.numeric import xp
-from aspire.utils import ensure
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +42,9 @@ class Micrograph:
         if margin is None:
             t = r = b = left = None
         elif isinstance(margin, (tuple, list)):
-            ensure(
-                len(margin) == 4,
-                "If specifying margins a a tuple/list, specify the top/right/bottom/left margins.",
-            )
+            assert (
+                len(margin) == 4
+            ), "If specifying margins a a tuple/list, specify the top/right/bottom/left margins."
             t, r, b, left = margin
         else:  # assume scalar
             t = r = b = left = int(margin)
@@ -87,9 +84,7 @@ class Micrograph:
             im = im[..., :side_length, :side_length]
 
         if self.shrink_factor is not None:
-            size = tuple(
-                (np.array(im.shape) / config.apple.mrc_shrink_factor).astype(int)
-            )
+            size = tuple((np.array(im.shape) / self.shrink_factor).astype(int))
             im = np.array(PILImage.fromarray(im).resize(size, PILImage.BICUBIC))
 
         if self.gauss_filter_size is not None:
@@ -118,7 +113,7 @@ class Micrograph:
             -(size_filter - 1) // 2 : (size_filter - 1) // 2 + 1,
         ]
 
-        response = xp.exp(-xp.square(x) - xp.square(y) / (2 * (std ** 2))) / (
+        response = xp.exp(-xp.square(x) - xp.square(y) / (2 * (std**2))) / (
             xp.sqrt(2 * xp.pi) * std
         )
         response[response < xp.finfo("float").eps] = 0

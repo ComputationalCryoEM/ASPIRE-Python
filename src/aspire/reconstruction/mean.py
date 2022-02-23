@@ -4,9 +4,9 @@ import numpy as np
 from scipy.fftpack import fft2
 
 from aspire.nufft import anufft
+from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel
 from aspire.utils.fft import mdim_ifftshift
-from aspire.utils.matlab_compat import m_flatten, m_reshape
 from aspire.volume import rotated_grids
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class MeanEstimator(Estimator):
     def compute_kernel(self):
         _2L = 2 * self.L
         kernel = np.zeros((_2L, _2L, _2L), dtype=self.dtype)
-        sq_filters_f = self.src.eval_filter_grid(self.L, power=2)
+        sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
         for i in range(0, self.n, self.batch_size):
             _range = np.arange(i, min(self.n, i + self.batch_size), dtype=int)
@@ -28,13 +28,13 @@ class MeanEstimator(Estimator):
                 weights[0, :, :] = 0
                 weights[:, 0, :] = 0
 
-            pts_rot = m_reshape(pts_rot, (3, -1))
-            weights = m_flatten(weights)
+            pts_rot = pts_rot.reshape((3, -1))
+            weights = np.transpose(weights, (2, 0, 1)).flatten()
 
             kernel += (
                 1
-                / (self.n * self.L ** 4)
-                * anufft(weights, pts_rot, (_2L, _2L, _2L), real=True)
+                / (self.n * self.L**4)
+                * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
             )
 
         # Ensure symmetric kernel

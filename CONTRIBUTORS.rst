@@ -9,29 +9,35 @@ Developers of the Python and Matlab collection of ASPIRE codes are listed below.
 
 .. table:: Python Contributors
 
-   +------------------+--------------+---------------------------+----------------------+
-   | Name             | GithubID     | Email                     | Affiliations         |
-   +==================+==============+===========================+======================+
-   | Joakim Andén     | janden       | janden@kth.se             | Princeton University |
-   +------------------+--------------+---------------------------+----------------------+
-   | Vineet Bansal    | vineetbansal | vineetb@princeton.edu     | Princeton University |
-   +------------------+--------------+---------------------------+----------------------+
-   | Robbie Brook     | rbrook       | cs123k@gmail.com          | Princeton University |
-   +------------------+--------------+---------------------------+----------------------+
-   | Ayelet Heimowitz | ayeltg       | ayeleth@princeton.edu     | Princeton University |
-   +------------------+--------------+---------------------------+----------------------+
-   | Gabi Pragier     | pgabi        | gabipragier@gmail.com     | Tel Aviv University  |
-   +------------------+--------------+---------------------------+----------------------+
-   | Itay Sason       | itaysason    | itaysason@mail.tau.ac.il  | Tel Aviv University  |
-   +------------------+--------------+---------------------------+----------------------+
-   | Yoel Shkolnisky  | yoelsh       | yoelsh@tauex.tau.ac.il    | Tel Aviv University  |
-   +------------------+--------------+---------------------------+----------------------+
-   | Amit Singer      | amitsinger   | amits@princeton.edu       | Princeton University |
-   +------------------+--------------+---------------------------+----------------------+
-   | Garrett Wright   | garrettwrong | gbwright@princeton.edu    | Princeton University |
-   +------------------+--------------+---------------------------+----------------------+
-   | Junchao Xia      | junchaoxia   | junchao.xia@princeton.edu | Princeton University |
-   +------------------+--------------+---------------------------+----------------------+
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Name             | GithubID        | Email                     | Affiliations                      |
+   +==================+=================+===========================+===================================+
+   | Joakim Andén     | janden          | janden@kth.se             | KTH Royal Institute of Technology |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Vineet Bansal    | vineetbansal    | vineetb@princeton.edu     | Princeton University              |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Robbie Brook     | rbrook          | cs123k@gmail.com          | Princeton University              |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Josh Carmichael  | j-c-c           | carmichael@princeton.edu  | Princeton University              |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Ayelet Heimowitz | ayeltg          | ayeleth@ariel.ac.il       | Ariel University                  |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Chris Langfield  | chris-langfield | langfield@princeton.edu   | Princeton University              |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Amit Moscovich   | mosco           | mosco@tauex.tau.ac.il     | Tel Aviv University               |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Gabi Pragier     | pgabi           | gabipragier@gmail.com     | Tel Aviv University               |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Itay Sason       | itaysason       | itaysason@mail.tau.ac.il  | Tel Aviv University               |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Yoel Shkolnisky  | yoelsh          | yoelsh@tauex.tau.ac.il    | Tel Aviv University               |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Amit Singer      | amitsinger      | amits@princeton.edu       | Princeton University              |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Garrett Wright   | garrettwrong    | gbwright@princeton.edu    | Princeton University              |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Junchao Xia      | junchaoxia      | junchao.xia@princeton.edu | Princeton University              |
+   +------------------+-----------------+---------------------------+-----------------------------------+
 
 |
 

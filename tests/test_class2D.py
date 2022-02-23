@@ -7,7 +7,7 @@ import pytest
 from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
-from aspire.classification import BFSRAlign2D, Class2D, RIRClass2D
+from aspire.classification import BFRAverager2D, RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
@@ -40,6 +40,7 @@ class FSPCATestCase(TestCase):
             vols=v,
             dtype=self.dtype,
         )
+        self.src.cache()  # Precompute image stack
 
         # Calculate some projection images
         self.imgs = self.src.images(0, self.src.n)
@@ -139,14 +140,6 @@ class RIRClass2DTestCase(TestCase):
         # Ceate another fspca_basis, use autogeneration FFB2D Basis
         self.noisy_fspca_basis = FSPCABasis(self.noisy_src)
 
-    def testClass2DBase(self):
-        """
-        Make sure the base class doesn't crash when using arguments.
-        """
-        _ = Class2D(self.clean_src)  # Default dtype
-        _ = Class2D(self.clean_src, dtype=self.dtype)  # Consistent dtype
-        _ = Class2D(self.clean_src, dtype=np.float16)  # Different dtype
-
     def testIncorrectComponents(self):
         """
         Check we raise with inconsistent configuration of FSPCA components.
@@ -191,8 +184,8 @@ class RIRClass2DTestCase(TestCase):
             bispectrum_implementation="legacy",
         )
 
-        result = rir.classify()
-        _ = rir.output(*result[:3])
+        classification_results = rir.classify()
+        _ = rir.averages(*classification_results)
 
     def testRIRDevelBisp(self):
         """
@@ -207,8 +200,8 @@ class RIRClass2DTestCase(TestCase):
             bispectrum_implementation="devel",
         )
 
-        result = rir.classify()
-        _ = rir.output(*result[:3])
+        classification_results = rir.classify()
+        _ = rir.averages(*classification_results)
 
     def testRIRsk(self):
         """
@@ -226,11 +219,15 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
-            aligner=BFSRAlign2D(self.noisy_fspca_basis, n_angles=100, n_x_shifts=0),
+            averager=BFRAverager2D(
+                self.noisy_fspca_basis.basis,  # FFB basis
+                self.noisy_src,
+                n_angles=100,
+            ),
         )
 
-        result = rir.classify()
-        _ = rir.output(*result[:4])
+        classification_results = rir.classify()
+        _ = rir.averages(*classification_results)
 
     def testEigenImages(self):
         """

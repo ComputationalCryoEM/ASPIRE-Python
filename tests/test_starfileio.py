@@ -1,10 +1,10 @@
+import importlib.resources
 import os.path
 import tempfile
 from collections import OrderedDict
 from itertools import zip_longest
 from unittest import TestCase
 
-import importlib_resources
 import numpy as np
 from pandas import DataFrame
 from scipy import misc
@@ -36,7 +36,7 @@ def grouper(iterable, n, fillvalue=None):
 
 class StarFileTestCase(TestCase):
     def setUp(self):
-        with importlib_resources.path(
+        with importlib.resources.path(
             tests.saved_test_data, "sample_data_model.star"
         ) as path:
             self.starfile = StarFile(path)
@@ -168,7 +168,7 @@ class StarFileTestCase(TestCase):
         with self.assertRaises(StarFileError):
             _blocks = OrderedDict()
             _blocks[""] = DataFrame(["test", "data"])
-            with importlib_resources.path(
+            with importlib.resources.path(
                 tests.saved_test_data, "sample_data_model.star"
             ) as path:
                 StarFile(filepath=path, blocks=_blocks)

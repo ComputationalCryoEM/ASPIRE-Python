@@ -10,7 +10,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class FFBBasis3DTestCase(TestCase):
     def setUp(self):
-        self.basis = FFBBasis3D((8, 8, 8))
+        self.dtype = np.float32
+        self.basis = FFBBasis3D((8, 8, 8), dtype=self.dtype)
 
     def tearDown(self):
         pass
@@ -463,39 +464,31 @@ class FFBBasis3DTestCase(TestCase):
                 -7.98651783e-04,
                 -9.82705453e-04,
                 6.46337066e-05,
-            ]
+            ],
+            dtype=self.dtype,
         )
         result = self.basis.evaluate(coeffs)
 
-        self.assertTrue(
-            np.allclose(
-                result,
-                np.load(
-                    os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_out_8_8_8.npy")
-                ).T,  # RCOPT
-            )
-        )
+        ref = np.load(
+            os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_out_8_8_8.npy")
+        ).T  # RCOPT
+
+        self.assertTrue(np.allclose(result, ref, atol=1e-2))
 
     def testFFBBasis3DEvaluate_t(self):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
         result = self.basis.evaluate_t(x)
-        self.assertTrue(
-            np.allclose(
-                result,
-                np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_8_8_8.npy"))[
-                    ..., 0
-                ],
-            )
-        )
+
+        ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_8_8_8.npy"))[..., 0]
+
+        self.assertTrue(np.allclose(result, ref, atol=1e-2))
 
     def testFFBBasis3DExpand(self):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
         result = self.basis.expand(x)
-        self.assertTrue(
-            np.allclose(
-                result,
-                np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_exp_8_8_8.npy"))[
-                    ..., 0
-                ],
-            )
-        )
+
+        ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_exp_8_8_8.npy"))[
+            ..., 0
+        ]
+
+        self.assertTrue(np.allclose(result, ref, atol=1e-2))

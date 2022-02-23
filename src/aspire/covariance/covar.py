@@ -11,9 +11,9 @@ from tqdm import tqdm
 from aspire import config
 from aspire.image import Image
 from aspire.nufft import anufft
+from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import (
-    ensure,
     make_symmat,
     symmat_to_vec_iso,
     vec_to_symmat_iso,
@@ -47,7 +47,7 @@ class CovarianceEstimator(Estimator):
         _2L = 2 * self.L
 
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.dtype)
-        sq_filters_f = self.src.eval_filter_grid(self.L, power=2)
+        sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
         for i in tqdm(range(0, n, self.batch_size)):
             _range = np.arange(i, min(n, i + self.batch_size))
@@ -60,8 +60,8 @@ class CovarianceEstimator(Estimator):
                 weights[:, 0, :] = 0
 
             # TODO: This is where this differs from MeanEstimator
-            pts_rot = np.moveaxis(pts_rot, -1, 0).reshape(-1, 3, L ** 2)
-            weights = weights.T.reshape((-1, L ** 2))
+            pts_rot = np.moveaxis(pts_rot[::-1], 1, 0).reshape(-1, 3, L**2)
+            weights = weights.T.reshape((-1, L**2))
 
             batch_n = weights.shape[0]
             factors = np.zeros((batch_n, _2L, _2L, _2L), dtype=self.dtype)
@@ -70,7 +70,7 @@ class CovarianceEstimator(Estimator):
                 factors[j] = anufft(weights[j], pts_rot[j], (_2L, _2L, _2L), real=True)
 
             factors = Volume(factors).to_vec()
-            kernel += vecmat_to_volmat(factors.T @ factors) / (n * L ** 8)
+            kernel += vecmat_to_volmat(factors.T @ factors) / (n * L**8)
 
         # Ensure symmetric kernel
         kernel[0, :, :, :, :, :] = 0
@@ -196,10 +196,12 @@ class CovarianceEstimator(Estimator):
         :param method: One of None/'frobenius_norm'/'operator_norm'/'soft_threshold'
         :return: Shrunk covariance matrix
         """
-        ensure(
-            method in (None, "frobenius_norm", "operator_norm", "soft_threshold"),
-            "Unsupported shrink method",
-        )
+        assert method in (
+            None,
+            "frobenius_norm",
+            "operator_norm",
+            "soft_threshold",
+        ), "Unsupported shrink method"
 
         An = self.basis.mat_evaluate_t(self.mean_kernel.toeplitz())
         if method is None:

@@ -1,16 +1,15 @@
 import logging.config
 import os
 from datetime import datetime
+from importlib.resources import read_text
 from pathlib import Path
-
-from importlib_resources import read_text
 
 import aspire
 from aspire.config import Config
 from aspire.exceptions import handle_exception
 
 # version in maj.min.bld format
-__version__ = "0.8.1"
+__version__ = "0.9.0"
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 config = Config(read_text(aspire, "config.ini"))

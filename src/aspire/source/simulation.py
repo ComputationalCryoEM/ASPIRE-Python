@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import numpy as np
@@ -7,10 +8,10 @@ from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
-from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
-from aspire.utils.coor_trans import grid_3d, uniform_random_angles
-from aspire.utils.random import Random, rand, randi, randn
-from aspire.volume import Volume
+from aspire.utils import acorr, ainner, anorm, make_symmat, vecmat_to_volmat
+from aspire.utils.coor_trans import uniform_random_angles
+from aspire.utils.random import rand, randi, randn
+from aspire.volume import Volume, gaussian_blob_vols
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ class Simulation(ImageSource):
         amplitudes=None,
         dtype=np.float32,
         C=2,
+        symmetry_type=None,
         angles=None,
         seed=0,
         memory=None,
@@ -56,7 +58,9 @@ class Simulation(ImageSource):
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
-            self.vols = self._gaussian_blob_vols(L=self.L, C=C)
+            self.vols = gaussian_blob_vols(
+                L=L, C=C, symmetry_type=symmetry_type, seed=self.seed, dtype=self.dtype
+            )
         else:
             assert isinstance(vols, Volume)
             self.vols = vols
@@ -81,12 +85,18 @@ class Simulation(ImageSource):
         if unique_filters is None:
             unique_filters = []
         self.unique_filters = unique_filters
+        # sim_filters must be a deep copy so that it is not changed
+        # when unique_filters is changed
+        self.sim_filters = copy.deepcopy(unique_filters)
 
         # Create filter indices and fill the metadata based on unique filters
         if unique_filters:
             if filter_indices is None:
                 filter_indices = randi(len(unique_filters), n, seed=seed) - 1
+            self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices
+        else:
+            self.filter_indices = np.zeros(n)
 
         self.offsets = offsets
         self.amplitudes = amplitudes
@@ -96,57 +106,40 @@ class Simulation(ImageSource):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
-    def _gaussian_blob_vols(self, L=8, C=2, K=16, alpha=1):
-        """
-        Generate Gaussian blob volumes
-        :param L: The size of the volumes
-        :param C: The number of volumes to generate
-        :param K: The number of blobs
-        :param alpha: A scale factor of the blob widths
-
-        :return: A Volume instance containing C Gaussian blob volumes.
-        """
-
-        def gaussian_blobs(K, alpha):
-            Q = np.zeros(shape=(3, 3, K)).astype(self.dtype)
-            D = np.zeros(shape=(3, 3, K)).astype(self.dtype)
-            mu = np.zeros(shape=(3, K)).astype(self.dtype)
-
-            for k in range(K):
-                V = randn(3, 3).astype(self.dtype) / np.sqrt(3)
-                Q[:, :, k] = qr(V)[0]
-                D[:, :, k] = alpha ** 2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
-                mu[:, k] = 0.5 * randn(3) / np.sqrt(3)
-
-            return Q, D, mu
-
-        with Random(self.seed):
-            vols = np.zeros(shape=(C, L, L, L)).astype(self.dtype)
-            for k in range(C):
-                Q, D, mu = gaussian_blobs(K, alpha)
-                vols[k] = self.eval_gaussian_blobs(L, Q, D, mu)
-            return Volume(vols)
-
-    def eval_gaussian_blobs(self, L, Q, D, mu):
-        g = grid_3d(L, dtype=self.dtype)
-        coords = np.array(
-            [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=self.dtype
+    def _populate_ctf_metadata(self, filter_indices):
+        # Since we are not reading from a starfile, we must construct
+        # metadata based on the CTF filters by hand and set the values
+        # for these columns
+        #
+        # class attributes of CTFFilter:
+        CTFFilter_attributes = (
+            "voltage",
+            "defocus_u",
+            "defocus_v",
+            "defocus_ang",
+            "Cs",
+            "alpha",
         )
-
-        K = Q.shape[-1]
-        vol = np.zeros(shape=(1, coords.shape[-1])).astype(self.dtype)
-
-        for k in range(K):
-            coords_k = coords - mu[:, k, np.newaxis]
-            coords_k = (
-                Q[:, :, k] / np.sqrt(np.diag(D[:, :, k])) @ Q[:, :, k].T @ coords_k
-            )
-
-            vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
-
-        vol = np.reshape(vol, g["x"].shape)
-
-        return vol
+        # get the CTF parameters, if they exist, for each filter
+        # and for each image (indexed by filter_indices)
+        filter_values = np.zeros((len(filter_indices), len(CTFFilter_attributes)))
+        for i, filt in enumerate(self.unique_filters):
+            filter_values[filter_indices == i] = [
+                getattr(filt, att, np.nan) for att in CTFFilter_attributes
+            ]
+        # set the corresponding Relion metadata values that we would expect
+        # from a STAR file
+        self.set_metadata(
+            [
+                "_rlnVoltage",
+                "_rlnDefocusU",
+                "_rlnDefocusV",
+                "_rlnDefocusAngle",
+                "_rlnSphericalAberration",
+                "_rlnAmplitudeContrast",
+            ],
+            filter_values,
+        )
 
     def projections(self, start=0, num=np.inf, indices=None):
         """
@@ -183,7 +176,9 @@ class Simulation(ImageSource):
 
         im = self.projections(start=start, num=num, indices=indices)
 
-        im = self.eval_filters(im, start=start, num=num, indices=indices)
+        # apply original CTF distortion to image
+        im = self._apply_sim_filters(im, indices)
+
         im = im.shift(self.offsets[indices, :])
 
         im *= self.amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
@@ -192,6 +187,13 @@ class Simulation(ImageSource):
             im = self.noise_adder.forward(im, indices=indices)
 
         return im
+
+    def _apply_sim_filters(self, im, indices):
+        return self._apply_filters(
+            im,
+            self.sim_filters,
+            self.filter_indices[indices],
+        )
 
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
@@ -309,7 +311,7 @@ class Simulation(ImageSource):
         norm_est = anorm(lambdas_est)
 
         inner = ainner(B @ lambdas_true, lambdas_est @ B)
-        err = np.sqrt(norm_true ** 2 + norm_est ** 2 - 2 * inner)
+        err = np.sqrt(norm_true**2 + norm_est**2 - 2 * inner)
         rel_err = err / norm_true
         corr = inner / (norm_true * norm_est)
 
@@ -323,9 +325,9 @@ class Simulation(ImageSource):
         :param vol_idx: Indexes of the volumes determined (0-indexed)
         :return: Accuracy [0-1] in terms of proportion of correctly assigned labels
         """
-        ensure(
-            len(vol_idx) == self.n, f"Need {self.n} vol indexes to evaluate clustering"
-        )
+        assert (
+            len(vol_idx) == self.n
+        ), f"Need {self.n} vol indexes to evaluate clustering"
         # Remember that `states` is 1-indexed while vol_idx is 0-indexed
         correctly_classified = np.sum(self.states - 1 == vol_idx)
 
@@ -358,7 +360,7 @@ class Simulation(ImageSource):
 
         mean_vol_norm2 = anorm(mean_vol) ** 2
         norm_true = np.sqrt(
-            coords_true ** 2
+            coords_true**2
             + mean_vol_norm2
             + 2 * res_inners
             + 2 * mean_eigs_inners * coords_true
@@ -373,7 +375,7 @@ class Simulation(ImageSource):
             + res_inners
         )
         norm_est = np.sqrt(
-            coords_est ** 2 + mean_vol_norm2 + 2 * mean_eigs_inners * coords_est
+            coords_est**2 + mean_vol_norm2 + 2 * mean_eigs_inners * coords_est
         )
 
         corr = inner / (norm_true * norm_est)
