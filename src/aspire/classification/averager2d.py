@@ -547,7 +547,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         # Result arrays
         M = len(images)
         rotations_k = np.zeros(M, dtype=self.dtype)
-        correlations_k = np.zeros(M, dtype=self.dtype)
+        correlations_k = np.full(M, -np.inf, dtype=self.dtype)
         shifts_k = np.zeros((M, 2), dtype=int)
 
         # De-Mean, note images is mutated and should be a `copy`.
@@ -962,9 +962,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         L = self.alignment_src.L
 
         # Instantiate matrices for inner loop, and best results.
-        _rotations = np.zeros(classes.shape, dtype=self.dtype)
         rotations = np.zeros(classes.shape, dtype=self.dtype)
-        _correlations = np.zeros(classes.shape, dtype=self.dtype)
         correlations = np.ones(classes.shape, dtype=self.dtype) * -np.inf
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
@@ -986,16 +984,16 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 # Don't shift the base image
                 images[1:] = Image(unshifted_images[1:]).shift(s).asnumpy()
 
-                rotations[k], _, correlations[k] = self._reddychatterji(
+                _rotations, _, _correlations = self._reddychatterji(
                     images, classes[k], reflections[k]
                 )
 
                 # Where corr has improved
                 #  update our rolling best results with this loop.
-                improved = _correlations > correlations
-                correlations = np.where(improved, _correlations, correlations)
-                rotations = np.where(improved, _rotations, rotations)
-                shifts = np.where(improved[..., np.newaxis], s, shifts)
+                improved = _correlations > correlations[k]
+                correlations[k] = np.where(improved, _correlations, correlations[k])
+                rotations[k] = np.where(improved, _rotations, rotations[k])
+                shifts[k] = np.where(improved[..., np.newaxis], s, shifts[k])
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
 
         return rotations, shifts, correlations
