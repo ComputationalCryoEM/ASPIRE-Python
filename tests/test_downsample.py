@@ -23,7 +23,7 @@ class DownsampleTestCase(TestCase):
         imgs_org, imgs_ds = self.createImages(64, 32)
         # check resolution is correct
         self.assertEqual((self.n, 32, 32), imgs_ds.shape)
-        # check invidual gridpoints for all images
+        # check individual gridpoints for all images
         self.assertTrue(self.checkGridPoints(imgs_org, imgs_ds))
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
