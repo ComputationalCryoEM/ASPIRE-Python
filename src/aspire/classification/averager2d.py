@@ -466,6 +466,8 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         if self.alignment_src.dtype != src.dtype:
             raise RuntimeError("Currently `alignment_src.dtype` must equal `src.dtype`")
 
+        self.mask = grid_2d(src.L, normalized=False)["r"] < src.L // 2
+
         super().__init__(composite_basis, src, composite_basis, dtype=dtype)
 
     def _phase_cross_correlation(self, img0, img1):
@@ -655,8 +657,8 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # Hack
             regis_img_estimated = rotate(regis_img, r)
             regis_img_rotated_p180 = rotate(regis_img, r + 180)
-            da = np.dot(fixed_img.flatten(), regis_img_estimated.flatten())
-            db = np.dot(fixed_img.flatten(), regis_img_rotated_p180.flatten())
+            da = np.dot(fixed_img[self.mask], regis_img_estimated[self.mask])
+            db = np.dot(fixed_img[self.mask], regis_img_rotated_p180[self.mask])
             if db > da:
                 regis_img_estimated = regis_img_rotated_p180
                 r += 180
@@ -702,7 +704,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 shift = None  # For logger line
 
             # Estimated `corr` metric
-            corr = np.dot(fixed_img.flatten(), regis_img_estimated.flatten())
+            corr = np.dot(fixed_img[self.mask], regis_img_estimated[self.mask])
             correlations_k[m] = corr
 
             logger.debug(
