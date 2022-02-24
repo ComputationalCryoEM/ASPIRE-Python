@@ -7,7 +7,7 @@ from aspire.utils import utest_tolerance
 from aspire.utils.coor_trans import grid_3d
 from aspire.utils.matrix import anorm
 from aspire.volume import Volume
-
+from aspire.utils.misc import gaussian_3d
 
 class DownsampleTestCase(TestCase):
     def setUp(self):
@@ -28,8 +28,8 @@ class DownsampleTestCase(TestCase):
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
 
-    # Signal energy test fails for this case in current DS implementation
-    def _testDownsample2D_EvenOdd(self):
+    @unittest.skip("Signal energy test fails for this case in current DS implementation")
+    def testDownsample2D_EvenOdd(self):
         # source resolution: 64
         # target resolution: 33
         imgs_org, imgs_ds = self.createImages(64, 33)
