@@ -4,7 +4,7 @@ import numpy as np
 
 from aspire.basis import Basis
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
-from aspire.utils import ensure, roll_dim, unroll_dim
+from aspire.utils import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,8 @@ class FBBasis3D(Basis):
             below the Nyquist frequency (default Inf).
         """
         ndim = len(size)
-        ensure(ndim == 3, "Only three-dimensional basis functions are supported.")
-        ensure(len(set(size)) == 1, "Only cubic domains are supported.")
+        assert ndim == 3, "Only three-dimensional basis functions are supported."
+        assert len(set(size)) == 1, "Only cubic domains are supported."
 
         super().__init__(size, ell_max, dtype=dtype)
 

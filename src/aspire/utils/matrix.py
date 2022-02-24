@@ -5,7 +5,6 @@ Utilties for arrays/n-dimensional matrices.
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.utils import ensure
 from aspire.utils.matlab_compat import m_reshape
 
 SQRT2 = np.sqrt(2)
@@ -43,8 +42,8 @@ def im_to_vec(im):
     :return: An N^2-by-... array.
     """
     shape = im.shape
-    ensure(im.ndim >= 2, "Array should have at least 2 dimensions")
-    ensure(shape[0] == shape[1], "Array should have first 2 dimensions identical")
+    assert im.ndim >= 2, "Array should have at least 2 dimensions"
+    assert shape[0] == shape[1], "Array should have first 2 dimensions identical"
 
     return m_reshape(im, (shape[0] ** 2,) + (shape[2:]))
 
@@ -56,11 +55,10 @@ def vol_to_vec(X):
     :return: An N^3-by-... array.
     """
     shape = X.shape
-    ensure(X.ndim >= 3, "Array should have at least 3 dimensions")
-    ensure(
-        shape[0] == shape[1] == shape[2],
-        "Array should have first 3 dimensions identical",
-    )
+    assert X.ndim >= 3, "Array should have at least 3 dimensions"
+    assert (
+        shape[0] == shape[1] == shape[2]
+    ), "Array should have first 3 dimensions identical"
 
     return m_reshape(X, (shape[0] ** 3,) + (shape[3:]))
 
@@ -73,7 +71,7 @@ def vec_to_im(X):
     """
     shape = X.shape
     N = round(shape[0] ** (1 / 2))
-    ensure(N**2 == shape[0], "First dimension of X must be square")
+    assert N**2 == shape[0], "First dimension of X must be square"
 
     return m_reshape(X, (N, N) + (shape[1:]))
 
@@ -86,7 +84,7 @@ def vec_to_vol(X):
     """
     shape = X.shape
     N = round(shape[0] ** (1 / 3))
-    ensure(N**3 == shape[0], "First dimension of X must be cubic")
+    assert N**3 == shape[0], "First dimension of X must be cubic"
 
     return m_reshape(X, (N, N, N) + (shape[1:]))
 
@@ -99,13 +97,13 @@ def vecmat_to_volmat(X):
     """
     # TODO: Use context manager?
     shape = X.shape
-    ensure(X.ndim >= 2, "Array should have at least 2 dimensions")
+    assert X.ndim >= 2, "Array should have at least 2 dimensions"
 
     L1 = round(shape[0] ** (1 / 3))
     L2 = round(shape[1] ** (1 / 3))
 
-    ensure(L1**3 == shape[0], "First dimension of X must be cubic")
-    ensure(L2**3 == shape[1], "Second dimension of X must be cubic")
+    assert L1**3 == shape[0], "First dimension of X must be cubic"
+    assert L2**3 == shape[1], "Second dimension of X must be cubic"
 
     return m_reshape(X, (L1, L1, L1, L2, L2, L2) + (shape[2:]))
 
@@ -118,9 +116,9 @@ def volmat_to_vecmat(X):
     """
     # TODO: Use context manager?
     shape = X.shape
-    ensure(X.ndim >= 6, "Array should have at least 6 dimensions")
-    ensure(shape[0] == shape[1] == shape[2], "Dimensions 1-3 should be identical")
-    ensure(shape[3] == shape[4] == shape[5], "Dimensions 4-6 should be identical")
+    assert X.ndim >= 6, "Array should have at least 6 dimensions"
+    assert shape[0] == shape[1] == shape[2], "Dimensions 1-3 should be identical"
+    assert shape[3] == shape[4] == shape[5], "Dimensions 4-6 should be identical"
 
     l1 = shape[0]
     l2 = shape[3]
@@ -221,7 +219,7 @@ def symmat_to_vec(mat):
     data in row-major order.
     """
     N = mat.shape[0]
-    ensure(mat.shape[1] == N, "Matrix must be square")
+    assert mat.shape[1] == N, "Matrix must be square"
 
     mat, sz_roll = unroll_dim(mat, 3)
     triu_indices = np.triu_indices(N)
@@ -245,10 +243,9 @@ def vec_to_symmat(vec):
     # M represents N(N+1)/2
     M = vec.shape[0]
     N = int(round(np.sqrt(2 * M + 0.25) - 0.5))
-    ensure(
-        (M == 0.5 * N * (N + 1)) and N != 0,
-        "Vector must be of size N*(N+1)/2 for some N>0.",
-    )
+    assert (
+        M == 0.5 * N * (N + 1)
+    ) and N != 0, "Vector must be of size N*(N+1)/2 for some N>0."
 
     vec, sz_roll = unroll_dim(vec, 2)
     index_matrix = np.empty((N, N))
@@ -277,7 +274,7 @@ def mat_to_vec(mat, is_symmat=False):
     if not is_symmat:
         sz = mat.shape
         N = sz[0]
-        ensure(sz[1] == N, "Matrix must be square")
+        assert sz[1] == N, "Matrix must be square"
         return m_reshape(mat, (N**2,) + sz[2:])
     else:
         return symmat_to_vec(mat)
@@ -294,7 +291,7 @@ def vec_to_mat(vec, is_symmat=False):
     if not is_symmat:
         sz = vec.shape
         N = int(round(np.sqrt(sz[0])))
-        ensure(sz[0] == N**2, "Vector must represent square matrix.")
+        assert sz[0] == N**2, "Vector must represent square matrix."
         return m_reshape(vec, (N, N) + sz[1:])
     else:
         return vec_to_symmat(vec)
@@ -347,7 +344,7 @@ def acorr(x, y, axes=None):
     :param axes: The axis along which to compute the correlation. If None, the correlation is calculated along all axes.
     :return: The correlation of x along specified axes.
     """
-    ensure(x.shape == y.shape, "The shapes of the inputs have to match")
+    assert x.shape == y.shape, "The shapes of the inputs have to match"
 
     if axes is None:
         axes = range(x.ndim)
@@ -362,7 +359,7 @@ def ainner(x, y, axes=None):
     :param axes: The axis along which to compute the inner product. If None, the product is calculated along all axes.
     :return:
     """
-    ensure(x.shape == y.shape, "The shapes of the inputs have to match")
+    assert x.shape == y.shape, "The shapes of the inputs have to match"
 
     if axes is not None:
         axes = tuple(axes)  # Unrolls any generators, like `range`.

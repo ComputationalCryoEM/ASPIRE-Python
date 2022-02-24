@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.8.1",
+    version="0.9.0",
     data_files=[
         ("", ["src/aspire/config.ini"]),
         ("", ["src/aspire/logging.conf"]),
@@ -36,6 +36,7 @@ setup(
         "pillow",
         "scipy==1.7.3",
         "scikit-learn",
+        "scikit-image",
         "setuptools>=0.41",
         "tqdm",
     ],
