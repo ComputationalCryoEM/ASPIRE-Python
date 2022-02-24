@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from numpy import linalg
+from numpy.linalg import eig, norm, qr
 
 from aspire.abinitio import CLOrient3D
 
@@ -40,6 +40,7 @@ class CLSymmetryC3C4(CLOrient3D):
         super().__init__(src, n_rad=n_rad, n_theta=n_theta)
 
         self.n_symm = n_symm
+        self.n_ims = self.n_img
 
     def orientation_estimation(self):
         """
@@ -177,13 +178,13 @@ class CLSymmetryC3C4(CLOrient3D):
         # In a clean setting V is of rank 1 and its eigenvector is the concatenation
         # of the third rows of all rotation matrices.
         # In the noisy setting we use the eigenvector corresponding to the leading eigenvalue
-        val, vec = linalg.eig(V)
+        val, vec = eig(V)
         lead_idx = np.argsort(val)[-1]
         lead_vec = vec[:, lead_idx]
 
         vis = lead_vec.reshape((n_ims, 3))
         for i in range(n_ims):
-            vis[i] = vis[i] / linalg.norm(vis[i])
+            vis[i] = vis[i] / norm(vis[i])
 
         return vis
 
@@ -224,8 +225,8 @@ class CLSymmetryC3C4(CLOrient3D):
         Calculate n_eigs eigenvalues and eigenvectors of the J-synchronization matrix
         using the power method.
 
-        As the J-synchronization matrix is of size (N choose 2)x(N choose 2), the
-        matrix uses the power method to the compute the eigenvalues and eigenvectors,
+        As the J-synchronization matrix is of size (N choose 2)x(N choose 2), we
+        use the power method to the compute the eigenvalues and eigenvectors,
         while constructing the matrix on-the-fly.
 
         :param vijs: nchoose2x3x3 array of estimates of relative orientation matrices.
@@ -243,11 +244,11 @@ class CLSymmetryC3C4(CLOrient3D):
         assert n_eigs > 0, "n_eigs must be a positive integer."
 
         epsilon = 1e-2
-        max_iters = 100
+        max_iters = 1000
 
         # Initialize candidate eigenvectors
         vec = np.random.randn(n_eigs, n_vijs)
-        vec = np.linalg.qr(vec)[0]
+        vec = qr(vec)[0]
         dd = 1
         itr = 0
 
@@ -255,16 +256,69 @@ class CLSymmetryC3C4(CLOrient3D):
         while itr < max_iters and dd > epsilon:
             itr = itr + 1
             vec_new = self.signs_times_v(vijs, vec, n_eigs)
-            vec_new, eigenvalues = np.linalg.qr(vec_new)
-            dd = np.linalg.norm(vec_new[0] - vec[0])
+            vec_new, eigenvalues = qr(vec_new)
+            dd = norm(vec_new[0] - vec[0])
             vec = vec_new
 
         logger.info(f"Power method used {itr} iterations.")
 
         eigenvalues = np.diag(eigenvalues)
+        logger.info(f"The first {n_eigs} eigenvalues are {eigenvalues}.")
+
+        # We need only the signs of the eigenvector
         J_sync = np.sign(vec[0])
 
         return J_sync
 
-    def signs_times_v(vijs, vec, n_eigs):
-        pass
+    def signs_times_v(self, vijs, vec, n_eigs):
+        """ """
+        n_ims = self.n_ims
+
+        # All pairs (i,j) and triplets (i,j,k) where i<j<k
+        indices = np.arange(n_ims)
+        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+        trips = [
+            (i, j, k)
+            for idx, i in enumerate(indices)
+            for j in indices[idx + 1 :]
+            for k in indices[j + 1 :]
+        ]
+
+        # There are four possible signs configurations for each triplet of nodes vij, vik, vjk.
+        signs = np.zeros((4, 3))
+        signs[0] = [1, 1, 1]
+        signs[1] = [-1, 1, -1]
+        signs[2] = [-1, -1, 1]
+        signs[3] = [1, -1, -1]
+
+        J = np.diag((1, 1, -1))
+        v = vijs
+        new_vec = np.zeros_like(vec)
+
+        for _, (i, j, k) in enumerate(trips):
+            ij = pairs.index((i, j))
+            jk = pairs.index((j, k))
+            ik = pairs.index((i, k))
+
+            # Conditions for relative handedness. The minimum of these conditions determines
+            # the relative handedness of the triplet of vijs.
+            c = np.zeros(4)
+            c[0] = norm(v[ij] @ v[jk] - v[ik])
+            c[1] = norm(J @ v[ij] @ J @ v[jk] - v[ik])
+            c[2] = norm(v[ij] @ J @ v[jk] @ J - v[ik])
+            c[3] = norm(v[ij] @ v[jk] - J @ v[ik] @ J)
+
+            min_c = np.argmin(c)
+
+            # Assign signs +-1 to edges between nodes vij, vik, vjk.
+            s_ij_jk = signs[min_c][0]
+            s_ik_jk = signs[min_c][1]
+            s_ij_ik = signs[min_c][2]
+
+            # Update multiplication of signs times vec
+            for n in range(n_eigs):
+                new_vec[n][ij] += s_ij_jk * vec[n][jk] + s_ij_ik * vec[n][ik]
+                new_vec[n][jk] += s_ij_jk * vec[n][ij] + s_ik_jk * vec[n][ik]
+                new_vec[n][ik] += s_ij_jk * vec[n][ij] + s_ik_jk * vec[n][jk]
+
+        return new_vec
