@@ -17,14 +17,14 @@ class PreprocessTestCase(TestCase):
     def tearDown(self):
         pass
 
-    def test01CropPad(self):
+    def testCropPad(self):
         results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_crop8.npy"))
         vols = np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy"))
         vols = vols[..., np.newaxis]
         vols_f = crop_pad(fftshift(fftn(vols[:, :, :, 0])), 8)
         self.assertTrue(np.allclose(results, vols_f, atol=1e-7))
 
-    def test03Vol2img(self):
+    def testVol2img(self):
         results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_down8_imgs32.npy"))
         vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
         rots = np.load(os.path.join(DATA_DIR, "rand_rot_matrices32.npy"))
@@ -32,7 +32,7 @@ class PreprocessTestCase(TestCase):
         imgs_clean = vols.project(0, rots).asnumpy()
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
-    def test04FuzzyMask(self):
+    def testFuzzyMask(self):
         results = np.array(
             [
                 [
