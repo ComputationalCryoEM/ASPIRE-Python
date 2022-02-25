@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from numpy.linalg import eig, norm, qr
+from numpy.linalg import eig, norm
 
 from aspire.abinitio import CLOrient3D
 
@@ -91,7 +91,6 @@ class CLSymmetryC3C4(CLOrient3D):
 
         return vijs, viis
 
-    @staticmethod
     def global_J_sync(self, vijs, viis):
         """
         Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
@@ -117,10 +116,11 @@ class CLSymmetryC3C4(CLOrient3D):
         assert n_vijs == nchoose2, "There must be n_ims-choose-2 vijs."
 
         # Synchronize vijs
-        n_eigs = 1
-        sign_ij_J = self.J_sync_power_method(vijs, n_eigs)
-        n_signs = sign_ij_J[0]
-        assert n_signs == n_vijs, "There must be a sign associated with each vij."
+        sign_ij_J = self.J_sync_power_method(vijs)
+        n_signs = len(sign_ij_J)
+        assert (
+            n_signs == n_vijs
+        ), f"There must be a sign associated with each vij. There are {n_signs} signs and {n_vijs} vijs."
 
         vijs_sync = np.zeros((vijs.shape), dtype=vijs.dtype)
         J = np.diag((1, 1, -1))
@@ -132,10 +132,39 @@ class CLSymmetryC3C4(CLOrient3D):
                 vijs_sync[i] = J @ vijs[i] @ J
 
         # Synchronize viis
-        pass
+        # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
+        # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all v_ij
+        # to get a consensus on the handedness of v_ii.
 
-    @staticmethod
-    def estimate_third_rows(vijs, viis):
+        # All pairs (i,j) where i<j
+        indices = np.arange(n_ims)
+        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+
+        for i in range(n_ims):
+            vii = viis[i]
+            J_consensus = 0
+            for j in range(n_ims):
+                if j < i:
+                    idx = pairs.index((j, i))
+                    vij = vijs[idx]
+                elif j > i:
+                    idx = pairs.index((i, j))
+                    vij = vijs[idx]
+                else:
+                    continue
+
+                # Accumulate J consensus
+                err1 = norm(vii @ vij - vij)
+                err2 = norm(J @ vii @ J @ vij - vij)
+                if err1 < err2:
+                    J_consensus -= 1
+                else:
+                    J_consensus += 1
+            if J_consensus > 0:
+                viis[i] = J @ viis[i] @ J
+        return vijs, viis
+
+    def estimate_third_rows(self, vijs, viis):
         """
         Find the third row of each rotation matrix given third row outer products.
 
@@ -220,9 +249,9 @@ class CLSymmetryC3C4(CLOrient3D):
     # Secondary Methods for Global J Sync #
     #######################################
 
-    def J_sync_power_method(self, vijs, n_eigs):
+    def J_sync_power_method(self, vijs):
         """
-        Calculate n_eigs eigenvalues and eigenvectors of the J-synchronization matrix
+        Calculate the leading eigenvector of the J-synchronization matrix
         using the power method.
 
         As the J-synchronization matrix is of size (N choose 2)x(N choose 2), we
@@ -230,8 +259,6 @@ class CLSymmetryC3C4(CLOrient3D):
         while constructing the matrix on-the-fly.
 
         :param vijs: nchoose2x3x3 array of estimates of relative orientation matrices.
-
-        :param n_eigs: The number eigenvalues and eigenvectors to compute.
 
         :return: Array of length N-choose-2 where the i-th entry indicates if vijs[i]
         should be J-conjugated or not to achieve global handedness consistency. This array
@@ -241,41 +268,40 @@ class CLSymmetryC3C4(CLOrient3D):
         n_vijs = vijs.shape[0]
         nchoose2 = (1 + np.sqrt(1 + 8 * n_vijs)) / 2
         assert nchoose2 == int(nchoose2), "There must be n_ims-choose-2 vijs."
-        assert n_eigs > 0, "n_eigs must be a positive integer."
+        # assert n_eigs > 0, "n_eigs must be a positive integer."
 
         epsilon = 1e-2
         max_iters = 1000
 
         # Initialize candidate eigenvectors
-        vec = np.random.randn(n_eigs, n_vijs)
-        vec = qr(vec)[0]
+        vec = np.random.randn(n_vijs)
+        vec = vec / norm(vec)
         dd = 1
         itr = 0
 
         # Power method iterations
         while itr < max_iters and dd > epsilon:
-            itr = itr + 1
-            vec_new = self.signs_times_v(vijs, vec, n_eigs)
-            vec_new, eigenvalues = qr(vec_new)
-            dd = norm(vec_new[0] - vec[0])
+            itr += 1
+            vec_new = self.signs_times_v(vijs, vec)
+            # vec_new, eigenvalues = qr(vec_new)
+            vec_new = vec_new / norm(vec_new)
+            dd = norm(vec_new - vec)
             vec = vec_new
 
         logger.info(f"Power method used {itr} iterations.")
 
-        eigenvalues = np.diag(eigenvalues)
-        logger.info(f"The first {n_eigs} eigenvalues are {eigenvalues}.")
+        # eigenvalues = np.diag(eigenvalues)
+        # logger.info(f"The first {n_eigs} eigenvalues are {eigenvalues}.")
 
         # We need only the signs of the eigenvector
-        J_sync = np.sign(vec[0])
+        J_sync = np.sign(vec)
 
         return J_sync
 
-    def signs_times_v(self, vijs, vec, n_eigs):
+    def signs_times_v(self, vijs, vec):
         """ """
-        n_ims = self.n_ims
-
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
-        indices = np.arange(n_ims)
+        indices = np.arange(self.n_ims)
         pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
         trips = [
             (i, j, k)
@@ -316,9 +342,8 @@ class CLSymmetryC3C4(CLOrient3D):
             s_ij_ik = signs[min_c][2]
 
             # Update multiplication of signs times vec
-            for n in range(n_eigs):
-                new_vec[n][ij] += s_ij_jk * vec[n][jk] + s_ij_ik * vec[n][ik]
-                new_vec[n][jk] += s_ij_jk * vec[n][ij] + s_ik_jk * vec[n][ik]
-                new_vec[n][ik] += s_ij_jk * vec[n][ij] + s_ik_jk * vec[n][jk]
+            new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
+            new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
+            new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]
 
         return new_vec
