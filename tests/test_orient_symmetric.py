@@ -4,11 +4,15 @@ import numpy as np
 from numpy import linalg, random
 
 from aspire.abinitio import CLSymmetryC3C4
+from aspire.source import Simulation
 
 
 class OrientSymmTestCase(TestCase):
     def setUp(self):
-        pass
+        L = 32
+        symm = "C4"
+        src = Simulation(L=L, symmetry_type=symm)
+        self.cl_class = CLSymmetryC3C4(src, n_symm=4, n_theta=360)
 
     def tearDown(self):
         pass
@@ -38,7 +42,7 @@ class OrientSymmTestCase(TestCase):
             viis[i] = np.outer(gt_vis[i], gt_vis[i])
 
         # Estimate third rows from outer products
-        vis = CLSymmetryC3C4.estimate_third_rows(vijs, viis)
+        vis = self.cl_class.estimate_third_rows(vijs, viis)
 
         # Check if all-close up to difference of sign
         ground_truth = np.sign(gt_vis) * gt_vis
