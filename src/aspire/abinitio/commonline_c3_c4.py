@@ -271,7 +271,7 @@ class CLSymmetryC3C4(CLOrient3D):
         # assert n_eigs > 0, "n_eigs must be a positive integer."
 
         epsilon = 1e-2
-        max_iters = 1000
+        max_iters = 100
 
         # Initialize candidate eigenvectors
         vec = np.random.randn(n_vijs)
@@ -288,7 +288,9 @@ class CLSymmetryC3C4(CLOrient3D):
             dd = norm(vec_new - vec)
             vec = vec_new
 
-        logger.info(f"Power method used {itr} iterations.")
+        logger.info(
+            f"Power method used {itr} iterations. Maximum iterations set to {max_iters}."
+        )
 
         # eigenvalues = np.diag(eigenvalues)
         # logger.info(f"The first {n_eigs} eigenvalues are {eigenvalues}.")
@@ -299,7 +301,18 @@ class CLSymmetryC3C4(CLOrient3D):
         return J_sync
 
     def signs_times_v(self, vijs, vec):
-        """ """
+        """
+        For each triplet of outer products vij, vjk, and vik, the associated elements of the "signs"
+        matrix are populated with +1 or -1 and multiplied by the corresponding elements of
+        the current candidate eigenvector supplied by the power method. The new candidate eigenvector
+        is updated for each triplet.
+
+        :param vijs: Nchoose2 x 3 x 3 array, where each 3x3 slice holds the outer product of vi and vj.
+
+        :param vec: The current candidate eigenvector of length Nchoose2 from the power method.
+
+        :return: New candidate eigenvector of length Nchoose2. The product of the signs matrix and vec.
+        """
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         indices = np.arange(self.n_ims)
         pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
