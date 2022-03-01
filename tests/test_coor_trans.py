@@ -130,7 +130,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
 
         # even to odd
-        # the shift is towards lower x and y values
+        # the shift is towards the bottom and right
         # due to the centering convention
         a = np.zeros((8, 8))
         np.fill_diagonal(a, np.arange(1, 9))
@@ -147,7 +147,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 11)))
 
         # odd to even
-        # the shift is towards higher x and y values
+        # the extra padding is to the top and left
         # due to the centering convention
         a = np.zeros((9, 9))
         np.fill_diagonal(a, np.arange(1, 10))
@@ -156,85 +156,98 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
 
     def testRectCrop2D(self):
-        # test even/odd cases
-        # based on the choice that the center of a sequence of length n is (n+1)/2
-        # if n is odd and n/2 + 1 if even.
-        
-        # even to even
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(8))
-        # expand number of rows
-        a = np.vstack([a, np.zeros(8)])
-        a = np.vstack([np.zeros(8), a])
-        test_a = np.zeros((8, 8))
-        np.fill_diagonal(test_a, np.arange(8))
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 8)))
+        # Additional sanity checks for rectangular cropping case
 
-        # even to odd
-        # the crop gives us a[2:9,1:8] since we shift towards
-        # higher x and y values due to the centering convention
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(8))
-        # expand number of rows
-        a = np.vstack([a, np.zeros(8)])
-        a = np.vstack([np.zeros(8), a])
-        test_a = np.zeros((7, 7))
-        np.fill_diagonal(test_a, np.arange(1,8))
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 7)))
+        # 12x10 -> 10x10
+        a = np.zeros((10, 10))
+        np.fill_diagonal(a, np.arange(1, 11))
+        # augment to 12 rows
+        aug = np.vstack([a, np.zeros(10)])
+        aug = np.vstack([np.zeros(10), aug])
+        # make sure the top and bottom rows are stripped
+        self.assertTrue(np.array_equal(a, crop_2d(aug, 10)))
 
-        # odd to odd
-        # the center is preserved
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(8))
-        a = np.vstack([a, np.zeros(8)])
-        test_a = np.zeros((7, 7))
-        np.fill_diagonal(test_a, np.arange(1, 8))
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 7)))
+        # 10x12 -> 10x10
+        a = np.zeros((10, 10))
+        np.fill_diagonal(a, np.arange(1, 11))
+        # augment to 12 columns
+        aug = np.column_stack([a, np.zeros(10)])
+        aug = np.column_stack([np.zeros(10), aug])
+        # make sure the left and right columns are stripped
+        self.assertTrue(np.array_equal(a, crop_2d(aug, 10)))
 
-        # odd to even
-        # the crop gives us a[:-1, :] since we shift towards
-        # lower x and y values due to the centering convention
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(9))
-        a = np.vstack([a, np.zeros(8)])
-        test_a = np.zeros((8, 8))
-        np.fill_diagonal(test_a, np.arange(8))
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 8)))
+        # 9x7 -> 7x7
+        a = np.zeros((7, 7))
+        np.fill_diagonal(a, np.arange(1, 8))
+        # augment to 9 rows
+        aug = np.vstack([a, np.zeros(7)])
+        aug = np.vstack([np.zeros(7), aug])
+        # make sure the top and bottom rows are stripped
+        self.assertTrue(np.array_equal(a, crop_2d(aug, 7)))
+
+        # 7x9 -> 7x7
+        a = np.zeros((7, 7))
+        np.fill_diagonal(a, np.arange(1, 8))
+        # augment to 9 columns
+        aug = np.column_stack([a, np.zeros(7)])
+        aug = np.column_stack([np.zeros(7), aug])
+        # make sure the left and right columns are stripped
+        self.assertTrue(np.array_equal(a, crop_2d(aug, 7)))
 
     def testRectPad2D(self):
-        # test even/odd cases of padding operation of crop_2d                                                           
-        # even to even                                                                                                 
-        # the center is preserved                                                                                      
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(1, 9))
-        test_a = np.zeros((10, 10))
-        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 0])
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
+        # Additional sanity checks for rectangular padding case
 
-        # even to odd                                                                                                  
-        # the shift is towards lower x and y values                                                                    
-        # due to the centering convention                                                                              
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(1, 9))
-        test_a = np.zeros((11, 11))
-        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0])
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 11)))
-        # odd to odd                                                                                                   
-        # the center is preserved                                                                                      
-        a = np.zeros((9, 9))
-        np.fill_diagonal(a, np.arange(1, 10))
-        test_a = np.zeros((11, 11))
-        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0])
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 11)))
+        # 12x10 -> 12x12
+        a = np.zeros((10, 10))
+        np.fill_diagonal(a, np.arange(1, 11))
+        # augment to 12 rows
+        aug = np.vstack([a, np.zeros(10)])
+        aug = np.vstack([np.zeros(10), aug])
+        # expected result
+        padded = np.column_stack([aug, np.zeros(12)])
+        padded = np.column_stack([np.zeros(12), padded])
+        # make sure columns of fill value (0) are added to the
+        # left and right
+        self.assertTrue(np.array_equal(padded, crop_2d(aug, 12)))
 
-        # odd to even                                                                                                  
-        # the shift is towards higher x and y values                                                                   
-        # due to the centering convention                                                                              
-        a = np.zeros((9, 9))
-        np.fill_diagonal(a, np.arange(1, 10))
-        test_a = np.zeros((10, 10))
-        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-        self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
+        # 10x12 -> 12x12
+        a = np.zeros((10, 10))
+        np.fill_diagonal(a, np.arange(1, 11))
+        # augment to 12 columns
+        aug = np.column_stack([a, np.zeros(10)])
+        aug = np.column_stack([np.zeros(10), aug])
+        # expected result
+        padded = np.vstack([aug, np.zeros(12)])
+        padded = np.vstack([np.zeros(12), padded])
+        # make sure rows of fill value (0) are added to the
+        # top and bottom
+        self.assertTrue(np.array_equal(padded, crop_2d(aug, 12)))
+
+        # 9x7 -> 9x9
+        a = np.zeros((7, 7))
+        np.fill_diagonal(a, np.arange(1, 8))
+        # augment to 9 rows
+        aug = np.vstack([a, np.zeros(7)])
+        aug = np.vstack([np.zeros(7), aug])
+        # expected result
+        padded = np.column_stack([aug, np.zeros(9)])
+        padded = np.column_stack([np.zeros(9), padded])
+        # make sure columns of fill value (0) are added to the
+        # left and right
+        self.assertTrue(np.array_equal(padded, crop_2d(aug, 9)))
+
+        # 7x9 -> 9x9
+        a = np.zeros((7, 7))
+        np.fill_diagonal(a, np.arange(1, 8))
+        # augment to 9 columns
+        aug = np.column_stack([a, np.zeros(7)])
+        aug = np.column_stack([np.zeros(7), aug])
+        # expected result
+        padded = np.vstack([aug, np.zeros(9)])
+        padded = np.vstack([np.zeros(9), padded])
+        # make sure rows of fill value (0) are added to the
+        # top and bottom
+        self.assertTrue(np.array_equal(padded, crop_2d(aug, 9)))
 
     def testCrop2DDtype(self):
         # crop_2d must return an array of the same dtype it was given
@@ -243,3 +256,11 @@ class UtilsTestCase(TestCase):
         self.assertEqual(
             crop_2d(np.eye(10).astype("complex"), 5).dtype, np.dtype("complex128")
         )
+
+    def testCrop2DFillValue(self):
+        # make sure the fill value is as expected
+        # we are cropping from an odd to an even dimension
+        # so the padded column is added to the left
+        a = np.ones((4, 3))
+        b = crop_2d(a, 4, fill_value=-1)
+        self.assertTrue(np.array_equal(b[:, 0], np.array([-1, -1, -1, -1])))
