@@ -1,12 +1,13 @@
-from unittest import TestCase
 import unittest
+from unittest import TestCase
+
 import numpy as np
 
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.utils.matrix import anorm
-from aspire.volume import Volume
 from aspire.utils.misc import gaussian_3d
+from aspire.volume import Volume
 
 
 class DownsampleTestCase(TestCase):
@@ -86,8 +87,8 @@ class DownsampleTestCase(TestCase):
 
     def createImages(self, L, max_resolution):
         # generate a 3D Gaussian volume
-        sigma = 0.2
-        vol = gaussian_3d(L, sigma=((L / 2) * sigma,) * 3, dtype=self.dtype)
+        sigma = 0.1
+        vol = gaussian_3d(L, sigma=(L * sigma,) * 3, dtype=self.dtype)
         # initialize a Simulation object to generate projections of the volume
         sim = Simulation(
             L, self.n, vols=Volume(vol), offsets=0.0, amplitudes=1.0, dtype=self.dtype
