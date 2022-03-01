@@ -19,7 +19,6 @@ from .misc import (  # isort:skip
     powerset,
     sha256sum,
 )
-
 from .matrix import (
     acorr,
     ainner,

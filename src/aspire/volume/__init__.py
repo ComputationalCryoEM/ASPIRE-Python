@@ -8,6 +8,7 @@ import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.utils import Rotation, ensure, grid_2d, grid_3d, mat_to_vec, vec_to_mat
+
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import Random, randn
 from aspire.utils.types import complex_type
@@ -64,15 +65,13 @@ class Volume:
         if data.ndim == 3:
             data = data[np.newaxis, :, :, :]
 
-        ensure(
-            data.ndim == 4,
-            "Volume data should be ndarray with shape NxLxLxL" " or LxLxL.",
+        assert data.ndim == 4, (
+            "Volume data should be ndarray with shape NxLxLxL" " or LxLxL."
         )
 
-        ensure(
-            data.shape[1] == data.shape[2] == data.shape[3],
-            "Only cubed ndarrays are supported.",
-        )
+        assert (
+            data.shape[1] == data.shape[2] == data.shape[3]
+        ), "Only cubed ndarrays are supported."
 
         self._data = data
         self.n_vols = self._data.shape[0]
@@ -276,9 +275,7 @@ class Volume:
         rot_matrices = rot_matrices.matrices
 
         K = len(rot_matrices)  # Rotation stack size
-        ensure(
-            K == self.n_vols or K == 1, "Rotation object must be length 1 or n_vols."
-        )
+        assert K == self.n_vols or K == 1, "Rotation object must be length 1 or n_vols."
 
         if rot_matrices.dtype != self.dtype:
             logger.warning(
