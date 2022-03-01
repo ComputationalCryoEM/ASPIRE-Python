@@ -9,7 +9,7 @@ from scipy.linalg import lstsq
 import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
-from aspire.utils import ensure, grid_2d
+from aspire.utils import grid_2d
 from aspire.utils.matrix import anorm
 
 logger = logging.getLogger(__name__)

@@ -7,8 +7,7 @@ from numpy.linalg import qr
 import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.utils import Rotation, ensure, grid_2d, grid_3d, mat_to_vec, vec_to_mat
-
+from aspire.utils import Rotation, grid_2d, grid_3d, mat_to_vec, vec_to_mat
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import Random, randn
 from aspire.utils.types import complex_type

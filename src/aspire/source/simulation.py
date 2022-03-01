@@ -12,7 +12,6 @@ from aspire.utils import (
     acorr,
     ainner,
     anorm,
-    ensure,
     make_symmat,
     uniform_random_angles,
     vecmat_to_volmat,
