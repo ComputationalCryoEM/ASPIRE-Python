@@ -1,13 +1,13 @@
 from unittest import TestCase
-
+import unittest
 import numpy as np
 
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
-from aspire.utils.coor_trans import grid_3d
 from aspire.utils.matrix import anorm
 from aspire.volume import Volume
 from aspire.utils.misc import gaussian_3d
+
 
 class DownsampleTestCase(TestCase):
     def setUp(self):
@@ -28,7 +28,9 @@ class DownsampleTestCase(TestCase):
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
 
-    @unittest.skip("Signal energy test fails for this case in current DS implementation")
+    @unittest.skip(
+        "Signal energy test fails for this case in current DS implementation"
+    )
     def testDownsample2D_EvenOdd(self):
         # source resolution: 64
         # target resolution: 33
@@ -84,13 +86,8 @@ class DownsampleTestCase(TestCase):
 
     def createImages(self, L, max_resolution):
         # generate a 3D Gaussian volume
-        g3d = grid_3d(L, indexing="zyx", dtype=self.dtype)
-        coords = np.array([g3d["x"].flatten(), g3d["y"].flatten(), g3d["z"].flatten()])
         sigma = 0.2
-        vol = np.exp(-0.5 * np.sum(np.abs(coords / sigma) ** 2, axis=0)).astype(
-            self.dtype
-        )
-        vol = np.reshape(vol, g3d["x"].shape)
+        vol = gaussian_3d(L, sigma=((L / 2) * sigma,) * 3, dtype=self.dtype)
         # initialize a Simulation object to generate projections of the volume
         sim = Simulation(
             L, self.n, vols=Volume(vol), offsets=0.0, amplitudes=1.0, dtype=self.dtype
