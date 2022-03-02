@@ -52,9 +52,10 @@ class CLSymmetryC3C4(CLOrient3D):
     # Primary Methods                         #
     ###########################################
 
-    def compute_third_row_outer_prod_c34(self, max_shift_1d):
+    def estimate_relative_viewing_directions_c3_c4(self, max_shift_1d):
         """
-        Compute the outer products of the third rows of the rotation matrices Rij and Rii.
+        Estimate the relative viewing directions vij = vi'vj, i<j, and vii = vi'vi, where
+        vi is the third row of the i'th rotation matrix Ri.
         """
 
         pf = self.pf
@@ -230,6 +231,10 @@ class CLSymmetryC3C4(CLOrient3D):
     def self_clmatrix_c3_c4(
         self, pf, n_symm, max_shift, shift_step, is_handle_equator_ims
     ):
+        """
+        Find the single pair of self-common-lines in each image assuming that the underlying
+        symmetry is C3 or C4.
+        """
         # return sclmatrix
         pass
 
