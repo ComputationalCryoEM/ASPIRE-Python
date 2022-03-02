@@ -319,9 +319,6 @@ def crop_2d(mat, size, fill_value=0):
     start_y = math.floor(mat_y / 2) - math.floor(size / 2)
 
     # cropping
-    # start_x == 0 and start_y == 0 can be true for padding from n to n+1
-    # when n is odd and for n->n-1 when n is odd. Adding the size check
-    # ensures that we discriminate between these two cases
     if size <= min(mat_x, mat_y):
         return mat[start_x : start_x + size, start_y : start_y + size]
     # padding
@@ -331,4 +328,5 @@ def crop_2d(mat, size, fill_value=0):
         to_return[-start_x : mat_x - start_x, -start_y : mat_y - start_y] = mat
         return to_return
     else:
+        # target size is between mat_x and mat_y
         raise ValueError("Cannot crop and pad an image at the same time.")

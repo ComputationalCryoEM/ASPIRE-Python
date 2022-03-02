@@ -80,12 +80,18 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(flag_est, flag) and np.allclose(q_mat_est, q_mat))
 
     def testSquareCrop2D(self):
-        # test even/odd cases
-        # based on the choice that the center of a sequence of length n is (n+1)/2
-        # if n is odd and n/2 + 1 if even.
+        # Test even/odd cases based on the convention that the center of a sequence of length n
+        # is (n+1)/2 if n is odd and n/2 + 1 if even.
+        # Cropping is done to keep the center of the sequence the same value before and after.
+        # Therefore the following apply:
+        # Cropping even to odd will result in the 0-index (beginning)
+        # of the sequence being chopped off (x marks the center, ~ marks deleted data):
+        # ---x-- => ~--x--
+        # Cropping odd to even will result in the -1-index (end)
+        # of the sequence being chopped off:
+        # ---x--- => ---x--~
 
         # even to even
-        # the center is preserved
         a = np.zeros((8, 8))
         np.fill_diagonal(a, np.arange(8))
         test_a = np.zeros((6, 6))
@@ -93,8 +99,8 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 6)))
 
         # even to odd
-        # the crop gives us a[1:,1:] since we shift towards
-        # higher x and y values due to the centering convention
+        # the extra row/column cut off are the top and left
+        # due to the centering convention
         a = np.zeros((8, 8))
         np.fill_diagonal(a, np.arange(8))
         test_a = np.zeros((7, 7))
@@ -102,7 +108,6 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 7)))
 
         # odd to odd
-        # the center is preserved
         a = np.zeros((9, 9))
         np.fill_diagonal(a, np.arange(9))
         test_a = np.zeros((7, 7))
@@ -110,8 +115,8 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 7)))
 
         # odd to even
-        # the crop gives us a[:8, :8] since we shift towards
-        # lower x and y values due to the centering convention
+        # the extra row/column cut off are the bottom and right
+        # due to the centering convention
         a = np.zeros((9, 9))
         np.fill_diagonal(a, np.arange(9))
         test_a = np.zeros((8, 8))
@@ -120,6 +125,13 @@ class UtilsTestCase(TestCase):
 
     def testSquarePad2D(self):
         # test even/odd cases of padding operation of crop_2d
+        # In general when padding from even to odd, the spare padding
+        # is added to the -1-end (end) of the sequence so that the center is preserved:
+        # (X represents the center, + represents padding)
+        # ---x-- => ---x--+
+        # When padding from odd to even, the spare padding
+        # is added to the 0-end (beginning) of the sequence:
+        # --x-- => +--x--
 
         # even to even
         # the center is preserved
@@ -130,7 +142,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
 
         # even to odd
-        # the shift is towards the bottom and right
+        # the extra padding is to the bottom and right
         # due to the centering convention
         a = np.zeros((8, 8))
         np.fill_diagonal(a, np.arange(1, 9))
@@ -248,6 +260,13 @@ class UtilsTestCase(TestCase):
         # make sure rows of fill value (0) are added to the
         # top and bottom
         self.assertTrue(np.array_equal(padded, crop_2d(aug, 9)))
+
+    def testCropPad2DError(self):
+        with self.assertRaises(ValueError) as e:
+            _ = crop_2d(np.zeros((6, 10)), 8)
+            self.assertTrue(
+                "Cannot crop and pad an image at the same time.", str(e.exception)
+            )
 
     def testCrop2DDtype(self):
         # crop_2d must return an array of the same dtype it was given
