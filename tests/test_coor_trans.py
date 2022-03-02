@@ -124,17 +124,18 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 8)))
 
     def testSquarePad2D(self):
-        # test even/odd cases of padding operation of crop_2d
-        # In general when padding from even to odd, the spare padding
-        # is added to the -1-end (end) of the sequence so that the center is preserved:
-        # (X represents the center, + represents padding)
+        # Test even/odd cases based on the convention that the center of a sequence of length n
+        # is (n+1)/2 if n is odd and n/2 + 1 if even.
+        # Padding is done to keep the center of the sequence the same value before and after.
+        # Therefore the following apply:
+        # Padding from even to odd results in the spare padding being added to the -1-index (end)
+        # of the sequence (x represents the center, + represents padding):
         # ---x-- => ---x--+
-        # When padding from odd to even, the spare padding
-        # is added to the 0-end (beginning) of the sequence:
+        # Padding from odd to even results in the spare padding being added to the 0-index (beginning)
+        # of the sequence:
         # --x-- => +--x--
 
         # even to even
-        # the center is preserved
         a = np.zeros((8, 8))
         np.fill_diagonal(a, np.arange(1, 9))
         test_a = np.zeros((10, 10))
@@ -151,7 +152,6 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 11)))
 
         # odd to odd
-        # the center is preserved
         a = np.zeros((9, 9))
         np.fill_diagonal(a, np.arange(1, 10))
         test_a = np.zeros((11, 11))
@@ -278,7 +278,7 @@ class UtilsTestCase(TestCase):
 
     def testCrop2DFillValue(self):
         # make sure the fill value is as expected
-        # we are cropping from an odd to an even dimension
+        # we are padding from an odd to an even dimension
         # so the padded column is added to the left
         a = np.ones((4, 3))
         b = crop_2d(a, 4, fill_value=-1)
