@@ -92,35 +92,27 @@ class UtilsTestCase(TestCase):
         # ---x--- => ---x--~
 
         # even to even
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(8))
-        test_a = np.zeros((6, 6))
-        np.fill_diagonal(test_a, np.arange(1, 7))
+        a = np.diag(np.arange(8))
+        test_a = np.diag(np.arange(1, 7))
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 6)))
 
         # even to odd
         # the extra row/column cut off are the top and left
         # due to the centering convention
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(8))
-        test_a = np.zeros((7, 7))
-        np.fill_diagonal(test_a, np.arange(1, 8))
+        a = np.diag(np.arange(8))
+        test_a = np.diag(np.arange(1, 8))
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 7)))
 
         # odd to odd
-        a = np.zeros((9, 9))
-        np.fill_diagonal(a, np.arange(9))
-        test_a = np.zeros((7, 7))
-        np.fill_diagonal(test_a, np.arange(1, 8))
+        a = np.diag(np.arange(9))
+        test_a = np.diag(np.arange(1, 8))
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 7)))
 
         # odd to even
         # the extra row/column cut off are the bottom and right
         # due to the centering convention
-        a = np.zeros((9, 9))
-        np.fill_diagonal(a, np.arange(9))
-        test_a = np.zeros((8, 8))
-        np.fill_diagonal(test_a, np.arange(8))
+        a = np.diag(np.arange(9))
+        test_a = np.diag(np.arange(8))
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 8)))
 
     def testSquarePad2D(self):
@@ -136,43 +128,34 @@ class UtilsTestCase(TestCase):
         # --x-- => +--x--
 
         # even to even
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(1, 9))
-        test_a = np.zeros((10, 10))
-        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 0])
+        a = np.diag(np.arange(1, 9))
+        test_a = np.diag([0, 1, 2, 3, 4, 5, 6, 7, 8, 0])
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
 
         # even to odd
         # the extra padding is to the bottom and right
         # due to the centering convention
-        a = np.zeros((8, 8))
-        np.fill_diagonal(a, np.arange(1, 9))
-        test_a = np.zeros((11, 11))
-        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0])
+        a = np.diag(np.arange(1, 9))
+        test_a = np.diag([0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0])
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 11)))
 
         # odd to odd
-        a = np.zeros((9, 9))
-        np.fill_diagonal(a, np.arange(1, 10))
-        test_a = np.zeros((11, 11))
-        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0])
+        a = np.diag(np.arange(1, 10))
+        test_a = np.diag([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0])
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 11)))
 
         # odd to even
         # the extra padding is to the top and left
         # due to the centering convention
-        a = np.zeros((9, 9))
-        np.fill_diagonal(a, np.arange(1, 10))
-        test_a = np.zeros((10, 10))
-        np.fill_diagonal(test_a, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        a = np.diag(np.arange(1, 10))
+        test_a = np.diag([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.assertTrue(np.array_equal(test_a, crop_2d(a, 10)))
 
     def testRectCrop2D(self):
         # Additional sanity checks for rectangular cropping case
 
         # 12x10 -> 10x10
-        a = np.zeros((10, 10))
-        np.fill_diagonal(a, np.arange(1, 11))
+        a = np.diag(np.arange(1, 11))
         # augment to 12 rows
         aug = np.vstack([a, np.zeros(10)])
         aug = np.vstack([np.zeros(10), aug])
@@ -180,8 +163,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(a, crop_2d(aug, 10)))
 
         # 10x12 -> 10x10
-        a = np.zeros((10, 10))
-        np.fill_diagonal(a, np.arange(1, 11))
+        a = np.diag(np.arange(1, 11))
         # augment to 12 columns
         aug = np.column_stack([a, np.zeros(10)])
         aug = np.column_stack([np.zeros(10), aug])
@@ -189,8 +171,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(a, crop_2d(aug, 10)))
 
         # 9x7 -> 7x7
-        a = np.zeros((7, 7))
-        np.fill_diagonal(a, np.arange(1, 8))
+        a = np.diag(np.arange(1, 8))
         # augment to 9 rows
         aug = np.vstack([a, np.zeros(7)])
         aug = np.vstack([np.zeros(7), aug])
@@ -198,8 +179,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(a, crop_2d(aug, 7)))
 
         # 7x9 -> 7x7
-        a = np.zeros((7, 7))
-        np.fill_diagonal(a, np.arange(1, 8))
+        a = np.diag(np.arange(1, 8))
         # augment to 9 columns
         aug = np.column_stack([a, np.zeros(7)])
         aug = np.column_stack([np.zeros(7), aug])
@@ -210,8 +190,7 @@ class UtilsTestCase(TestCase):
         # Additional sanity checks for rectangular padding case
 
         # 12x10 -> 12x12
-        a = np.zeros((10, 10))
-        np.fill_diagonal(a, np.arange(1, 11))
+        a = np.diag(np.arange(1, 11))
         # augment to 12 rows
         aug = np.vstack([a, np.zeros(10)])
         aug = np.vstack([np.zeros(10), aug])
@@ -223,8 +202,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(padded, crop_2d(aug, 12)))
 
         # 10x12 -> 12x12
-        a = np.zeros((10, 10))
-        np.fill_diagonal(a, np.arange(1, 11))
+        a = np.diag(np.arange(1, 11))
         # augment to 12 columns
         aug = np.column_stack([a, np.zeros(10)])
         aug = np.column_stack([np.zeros(10), aug])
@@ -236,8 +214,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(padded, crop_2d(aug, 12)))
 
         # 9x7 -> 9x9
-        a = np.zeros((7, 7))
-        np.fill_diagonal(a, np.arange(1, 8))
+        a = np.diag(np.arange(1, 8))
         # augment to 9 rows
         aug = np.vstack([a, np.zeros(7)])
         aug = np.vstack([np.zeros(7), aug])
@@ -249,8 +226,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(padded, crop_2d(aug, 9)))
 
         # 7x9 -> 9x9
-        a = np.zeros((7, 7))
-        np.fill_diagonal(a, np.arange(1, 8))
+        a = np.diag(np.arange(1, 8))
         # augment to 9 columns
         aug = np.column_stack([a, np.zeros(7)])
         aug = np.column_stack([np.zeros(7), aug])
