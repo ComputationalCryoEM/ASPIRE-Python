@@ -115,21 +115,18 @@ class CLSymmetryC3C4(CLOrient3D):
         assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
         assert n_vijs == nchoose2, "There must be n_ims-choose-2 vijs."
 
-        # Synchronize vijs
+        # Determine relative handedness of vijs.
         sign_ij_J = self._J_sync_power_method(vijs)
         n_signs = len(sign_ij_J)
         assert (
             n_signs == n_vijs
         ), f"There must be a sign associated with each vij. There are {n_signs} signs and {n_vijs} vijs."
 
-        vijs_sync = np.zeros((vijs.shape), dtype=vijs.dtype)
+        # Synchronize vijs
         J = np.diag((-1, -1, 1))
-
         for i in range(n_signs):
-            if sign_ij_J[i] == 1:
-                vijs_sync[i] = vijs[i]
-            else:
-                vijs_sync[i] = J @ vijs[i] @ J
+            if sign_ij_J[i] == -1:
+                vijs[i] = J @ vijs[i] @ J
 
         # Synchronize viis
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
@@ -146,14 +143,14 @@ class CLSymmetryC3C4(CLOrient3D):
             for j in range(n_ims):
                 if j < i:
                     idx = pairs.index((j, i))
-                    vji = vijs_sync[idx]
+                    vji = vijs[idx]
 
                     err1 = norm(vji @ vii - vji)
                     err2 = norm(vji @ J @ vii @ J - vji)
 
                 elif j > i:
                     idx = pairs.index((i, j))
-                    vij = vijs_sync[idx]
+                    vij = vijs[idx]
 
                     err1 = norm(vii @ vij - vij)
                     err2 = norm(J @ vii @ J @ vij - vij)
@@ -169,7 +166,7 @@ class CLSymmetryC3C4(CLOrient3D):
 
             if J_consensus > 0:
                 viis[i] = J @ viis[i] @ J
-        return vijs_sync, viis
+        return vijs, viis
 
     def _estimate_third_rows(self, vijs, viis):
         """
