@@ -1,7 +1,9 @@
 import logging
 
 import numpy as np
+from numpy import pi
 from numpy.linalg import eig, norm
+from tqdm import tqdm
 
 from aspire.abinitio import CLOrient3D
 
@@ -58,10 +60,7 @@ class CLSymmetryC3C4(CLOrient3D):
         vi is the third row of the i'th rotation matrix Ri.
         """
 
-        pf = self.pf
         n_symm = self.n_symm
-        max_shift = self.max_shift
-        shift_step = self.shift_step
         n_theta = self.n_theta
 
         # Step 1: Detect a single pair of common-lines between each pair of images
@@ -77,8 +76,8 @@ class CLSymmetryC3C4(CLOrient3D):
         else:
             is_handle_equator_ims = True
 
-        sclmatrix = self.self_clmatrix_c3_c4(
-            pf, n_symm, max_shift, shift_step, is_handle_equator_ims
+        sclmatrix, corrs_stats, shifts_stats = self.self_clmatrix_c3_c4(
+            is_handle_equator_ims
         )
 
         # Step 3: Calculate self-relative-rotations
@@ -228,15 +227,88 @@ class CLSymmetryC3C4(CLOrient3D):
     # Secondary Methods for computing outer product #
     #################################################
 
-    def self_clmatrix_c3_c4(
-        self, pf, n_symm, max_shift, shift_step, is_handle_equator_ims
-    ):
+    def self_clmatrix_c3_c4(self, is_handle_equator_ims):
         """
         Find the single pair of self-common-lines in each image assuming that the underlying
         symmetry is C3 or C4.
         """
-        # return sclmatrix
-        pass
+        pf = self.pf.copy()
+        n_ims = self.n_ims
+        n_theta = self.n_theta
+        max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
+        shift_step = self.shift_step
+        n_symm = self.n_symm
+        assert n_symm in [3, 4], f"n_symm must be 3 or 4. Got n_symm:{n_symm}."
+
+        # The angle between self-common-lines is in the range [60, 180] for C3 symmetry
+        # and [90, 180] for C4 symmetry. Since antipodal lines are perfectly correlated
+        # we search for common lines in a smaller window.
+        if n_symm == 3:
+            min_angle_diff = 60 * pi / 180
+            max_angle_diff = 165 * pi / 180
+        else:
+            min_angle_diff = 90 * pi / 180
+            max_angle_diff = 160 * pi / 180
+
+        # The self-common-lines matrix holds two indices per image that represent
+        # the two self common-lines in the image.
+        sclmatrix = np.zeros((n_ims, 2))
+        corrs_stats = np.zeros(n_ims)
+        shifts_stats = np.zeros(n_ims)
+
+        # We create a mask associated with angle differences that fall in the
+        # range [min_angle_diff, max_angle_diff].
+        X, Y = np.meshgrid(range(n_theta), range(n_theta // 2))
+        diff = Y - X
+        unsigned_angle_diff = np.arccos(np.cos(diff * 2 * pi / n_theta))
+        good_diffs = np.logical_and(
+            min_angle_diff < unsigned_angle_diff, unsigned_angle_diff < max_angle_diff
+        )
+
+        # Compute the correlation over all shifts.
+        # Generate Shifts.
+        r_max = pf.shape[0]
+        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
+            r_max, max_shift_1d, shift_step
+        )
+        n_shifts = len(shifts)
+        all_shift_phases = shift_phases.T
+
+        # Transpose pf and reconstruct the full polar Fourier for use in correlation.
+        # self.pf only consists of rays in the range [180, 360).
+        pf = pf.transpose((2, 1, 0))
+        pf_full = np.concatenate((np.conjugate(pf), pf), axis=1)
+
+        for i in tqdm(range(n_ims)):
+            pf_i = pf[i]
+            pf_full_i = pf_full[i]
+
+            # Generate shifted versions of images.
+            pf_i_shifted = np.array(
+                [pf_i * shift_phase for shift_phase in all_shift_phases]
+            )
+            pf_i_shifted = np.reshape(pf_i_shifted, (-1, r_max))
+
+            # Normalize each ray.
+            for ray in pf_full_i:
+                ray /= norm(ray)
+            for ray in pf_i_shifted:
+                ray /= norm(ray)
+
+            # Compute correlation.
+            corrs = np.dot(pf_i_shifted, pf_full_i.T)
+            corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
+
+            # Mask with allowed combinations.
+            corrs = np.array([corr * good_diffs for corr in corrs])
+
+            # Find maximum correlation.
+            shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
+            sclmatrix[i] = [scl1, scl2]
+            corrs_stats[i] = np.real(corrs[(shift, scl1, scl2)])
+            shifts_stats[i] = shift
+
+        return sclmatrix, corrs_stats, shifts_stats
 
     def estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta):
         # return Riis
