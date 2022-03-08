@@ -58,6 +58,9 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
         r0 = self.basis.r0[k, ell]
 
         # TODO: Figure out where these factors of 1 / 2 are coming from.
+        # Intuitively, the grid should go from -L / 2 to L / 2, not -L / 2 to
+        # L / 4. Furthermore, there's an extra factor of 1 / 2 in the
+        # definition of `im` below that may be related.
         r = g2d["r"] * self.L / 4
 
         im = np.zeros((self.L, self.L), dtype=self.dtype)
