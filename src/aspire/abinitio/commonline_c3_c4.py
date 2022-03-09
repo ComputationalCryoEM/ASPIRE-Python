@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class CLSymmetryC3C4(CLOrient3D):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
-    C3 and C4 cyclical symmetry.
+    C3 and C4 cyclic symmetry.
 
     The related publications are listed below:
     G. Pragier and Y. Shkolnisky,
@@ -44,7 +44,7 @@ class CLSymmetryC3C4(CLOrient3D):
         self.n_symm = n_symm
         self.n_ims = self.n_img
 
-    def orientation_estimation(self):
+    def estimate_rotations(self):
         """
         Estimate rotation matrices for symmetric molecules.
         """
@@ -54,7 +54,7 @@ class CLSymmetryC3C4(CLOrient3D):
     # Primary Methods                         #
     ###########################################
 
-    def estimate_relative_viewing_directions_c3_c4(self, max_shift_1d):
+    def _estimate_relative_viewing_directions_c3_c4(self, max_shift_1d):
         """
         Estimate the relative viewing directions vij = vi'vj, i<j, and vii = vi'vi, where
         vi is the third row of the i'th rotation matrix Ri.
@@ -76,22 +76,22 @@ class CLSymmetryC3C4(CLOrient3D):
         else:
             is_handle_equator_ims = True
 
-        sclmatrix, corrs_stats, shifts_stats = self.self_clmatrix_c3_c4(
+        sclmatrix, corrs_stats, shifts_stats = self._self_clmatrix_c3_c4(
             is_handle_equator_ims
         )
 
         # Step 3: Calculate self-relative-rotations
-        Riis = self.estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta)
+        Riis = self._estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta)
 
         # Step 4: Calculate relative rotations
-        Rijs = self.estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta)
+        Rijs = self._estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta)
 
         # Step 5: Inner J-synchronization
-        vijs, viis = self.local_sync_J_c3_c4(n_symm, Rijs, Riis)
+        vijs, viis = self._local_sync_J_c3_c4(n_symm, Rijs, Riis)
 
         return vijs, viis
 
-    def global_J_sync(self, vijs, viis):
+    def _global_J_sync(self, vijs, viis):
         """
         Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
         of which might contain a spurious J, we return vijs and viis that all have either a spurious J
@@ -115,26 +115,23 @@ class CLSymmetryC3C4(CLOrient3D):
         assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
         assert n_vijs == nchoose2, "There must be n_ims-choose-2 vijs."
 
-        # Synchronize vijs
-        sign_ij_J = self.J_sync_power_method(vijs)
+        # Determine relative handedness of vijs.
+        sign_ij_J = self._J_sync_power_method(vijs)
         n_signs = len(sign_ij_J)
         assert (
             n_signs == n_vijs
         ), f"There must be a sign associated with each vij. There are {n_signs} signs and {n_vijs} vijs."
 
-        vijs_sync = np.zeros((vijs.shape), dtype=vijs.dtype)
-        J = np.diag((1, 1, -1))
-
+        # Synchronize vijs
+        J = np.diag((-1, -1, 1))
         for i in range(n_signs):
-            if sign_ij_J[i] == 1:
-                vijs_sync[i] = vijs[i]
-            else:
-                vijs_sync[i] = J @ vijs[i] @ J
+            if sign_ij_J[i] == -1:
+                vijs[i] = J @ vijs[i] @ J
 
         # Synchronize viis
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
-        # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all v_ij
-        # to get a consensus on the handedness of v_ii.
+        # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
+        # previously synchronized v_ij to get a consensus on the handedness of v_ii.
 
         # All pairs (i,j) where i<j
         indices = np.arange(n_ims)
@@ -146,25 +143,32 @@ class CLSymmetryC3C4(CLOrient3D):
             for j in range(n_ims):
                 if j < i:
                     idx = pairs.index((j, i))
-                    vij = vijs[idx]
+                    vji = vijs[idx]
+
+                    err1 = norm(vji @ vii - vji)
+                    err2 = norm(vji @ J @ vii @ J - vji)
+
                 elif j > i:
                     idx = pairs.index((i, j))
                     vij = vijs[idx]
+
+                    err1 = norm(vii @ vij - vij)
+                    err2 = norm(J @ vii @ J @ vij - vij)
+
                 else:
                     continue
 
                 # Accumulate J consensus
-                err1 = norm(vii @ vij - vij)
-                err2 = norm(J @ vii @ J @ vij - vij)
                 if err1 < err2:
                     J_consensus -= 1
                 else:
                     J_consensus += 1
+
             if J_consensus > 0:
                 viis[i] = J @ viis[i] @ J
         return vijs, viis
 
-    def estimate_third_rows(self, vijs, viis):
+    def _estimate_third_rows(self, vijs, viis):
         """
         Find the third row of each rotation matrix given third row outer products.
 
@@ -217,7 +221,7 @@ class CLSymmetryC3C4(CLOrient3D):
 
         return vis
 
-    def estimate_inplane_rotations(
+    def _estimate_inplane_rotations(
         self, pf, vis, inplane_rot_res, max_shift, shift_step
     ):
         # return rots
@@ -227,7 +231,7 @@ class CLSymmetryC3C4(CLOrient3D):
     # Secondary Methods for computing outer product #
     #################################################
 
-    def self_clmatrix_c3_c4(self, is_handle_equator_ims):
+    def _self_clmatrix_c3_c4(self, is_handle_equator_ims):
         """
         Find the single pair of self-common-lines in each image assuming that the underlying
         symmetry is C3 or C4.
@@ -310,11 +314,11 @@ class CLSymmetryC3C4(CLOrient3D):
 
         return sclmatrix, corrs_stats, shifts_stats
 
-    def estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta):
+    def _estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta):
         # return Riis
         pass
 
-    def estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta):
+    def _estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta):
         # return Rijs
         pass
 
@@ -326,7 +330,7 @@ class CLSymmetryC3C4(CLOrient3D):
     # Secondary Methods for Global J Sync #
     #######################################
 
-    def J_sync_power_method(self, vijs):
+    def _J_sync_power_method(self, vijs):
         """
         Calculate the leading eigenvector of the J-synchronization matrix
         using the power method.
@@ -359,7 +363,7 @@ class CLSymmetryC3C4(CLOrient3D):
         # Power method iterations
         while itr < max_iters and dd > epsilon:
             itr += 1
-            vec_new = self.signs_times_v(vijs, vec)
+            vec_new = self._signs_times_v(vijs, vec)
             # vec_new, eigenvalues = qr(vec_new)
             vec_new = vec_new / norm(vec_new)
             dd = norm(vec_new - vec)
@@ -369,15 +373,12 @@ class CLSymmetryC3C4(CLOrient3D):
             f"Power method used {itr} iterations. Maximum iterations set to {max_iters}."
         )
 
-        # eigenvalues = np.diag(eigenvalues)
-        # logger.info(f"The first {n_eigs} eigenvalues are {eigenvalues}.")
-
         # We need only the signs of the eigenvector
         J_sync = np.sign(vec)
 
         return J_sync
 
-    def signs_times_v(self, vijs, vec):
+    def _signs_times_v(self, vijs, vec):
         """
         For each triplet of outer products vij, vjk, and vik, the associated elements of the "signs"
         matrix are populated with +1 or -1 and multiplied by the corresponding elements of
@@ -407,7 +408,7 @@ class CLSymmetryC3C4(CLOrient3D):
         signs[2] = [-1, -1, 1]
         signs[3] = [1, -1, -1]
 
-        J = np.diag((1, 1, -1))
+        J = np.diag((-1, -1, 1))
         v = vijs
         new_vec = np.zeros_like(vec)
 
