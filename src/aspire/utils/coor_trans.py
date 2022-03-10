@@ -306,26 +306,26 @@ def common_line_from_rots(r1, r2, ell):
     return ell_ij, ell_ji
 
 
-def crop_2d(mat, size, fill_value=0):
+def crop_pad_2d(im, size, fill_value=0):
     """
-    :param mat: A 2-dimensional numpy array
+    :param im: A 2-dimensional numpy array
     :param size: Integer size of cropped/padded output
     :return: A numpy array of shape (size, size)
     """
 
-    mat_x, mat_y = mat.shape
+    im_y, im_x = im.shape
     # shift terms
-    start_x = math.floor(mat_x / 2) - math.floor(size / 2)
-    start_y = math.floor(mat_y / 2) - math.floor(size / 2)
+    start_x = math.floor(im_x / 2) - math.floor(size / 2)
+    start_y = math.floor(im_y / 2) - math.floor(size / 2)
 
     # cropping
-    if size <= min(mat_x, mat_y):
-        return mat[start_x : start_x + size, start_y : start_y + size]
+    if size <= min(im_y, im_x):
+        return im[start_y : start_y + size, start_x : start_x + size]
     # padding
-    elif size >= max(mat_x, mat_y):
+    elif size >= max(im_y, im_x):
         # ensure that we return in the same dtype as the input
-        to_return = fill_value * np.ones((size, size), dtype=mat.dtype)
-        to_return[-start_x : mat_x - start_x, -start_y : mat_y - start_y] = mat
+        to_return = fill_value * np.ones((size, size), dtype=im.dtype)
+        to_return[-start_y : im_y - start_y, -start_x : im_x - start_x] = im
         return to_return
     else:
         # target size is between mat_x and mat_y
