@@ -105,7 +105,7 @@ class Steerable2DMixin:
         im = self.basis.evaluate(coef1)
         if isinstance(im, Image):
             im = im.asnumpy()
-        coef2 = self.basis.expand(im)[:, 0]
+        coef2 = self.basis.expand(im)[0]
 
         self.assertTrue(np.allclose(coef1, coef2, atol=utest_tolerance(self.dtype)))
 
