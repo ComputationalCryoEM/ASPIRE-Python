@@ -6,6 +6,7 @@ from numpy.linalg import eig, norm
 from tqdm import tqdm
 
 from aspire.abinitio import CLOrient3D
+from aspire.utils import Rotation
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +236,8 @@ class CLSymmetryC3C4(CLOrient3D):
         """
         Find the single pair of self-common-lines in each image assuming that the underlying
         symmetry is C3 or C4.
+
+
         """
         pf = self.pf.copy()
         n_ims = self.n_ims
@@ -314,9 +317,50 @@ class CLSymmetryC3C4(CLOrient3D):
 
         return sclmatrix, corrs_stats, shifts_stats
 
-    def _estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta):
-        # return Riis
-        pass
+    def _estimate_all_Riis_c3_c4(self, sclmatrix):
+        """
+        Compute estimates for the self relative rotations Rii for every rotation matrix Ri.
+        """
+
+        n_symm = self.n_symm
+        n_theta = self.n_theta
+
+        # Calculate the cosine of angle between self-common-lines.
+        cos_diff = np.cos((sclmatrix[:, 1] - sclmatrix[:, 0]) * 2 * np.pi / n_theta)
+
+        # Calculate Euler angle gamma.
+        if n_symm == 3:
+            # cos_diff should be <= 0.5, but due to discretization that might be violated.
+            if np.max(cos_diff) > 0.5:
+                bad_diffs = np.count_nonzero([cos_diff > 0.5])
+                logger.warning(
+                    "cos(angular_diff) should be < 0.5."
+                    f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}"
+                )
+
+                cos_diff[cos_diff > 0.5] = 0.5
+            gammas = np.arccos(cos_diff / (1 - cos_diff))
+
+        else:
+            # cos_diff should be <= 0, but due to discretization that might be violated.
+            if np.max(cos_diff) > 0:
+                bad_diffs = np.count_nonzero([cos_diff > 0])
+                logger.warning(
+                    "cos(angular_diff) should be < 0."
+                    f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}"
+                )
+
+                cos_diff[cos_diff > 0.5] = 0.5
+            gammas = np.arccos((1 + cos_diff) / (1 - cos_diff))
+
+        # Calculate remaining Euler angles.
+        alphas = sclmatrix[:, 0] * 2 * np.pi / n_theta + np.pi / 2
+        betas = sclmatrix[:, 1] * 2 * np.pi / n_theta - np.pi / 2
+
+        angles = [-betas, gammas, alphas]
+        Riis = Rotation.from_euler(angles, dtype=self.dtype).matrices
+
+        return Riis
 
     def _estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta):
         # return Rijs
