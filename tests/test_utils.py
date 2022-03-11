@@ -5,7 +5,7 @@ import numpy as np
 from pytest import raises
 
 from aspire import __version__
-from aspire.utils import get_full_version, powerset, utest_tolerance
+from aspire.utils import all_pairs, get_full_version, powerset, utest_tolerance
 from aspire.utils.misc import gaussian_1d, gaussian_2d, gaussian_3d
 
 
@@ -95,3 +95,9 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(G_x, g_1d_x))
         self.assertTrue(np.allclose(G_y, g_1d_y))
         self.assertTrue(np.allclose(G_z, g_1d_z))
+
+    def testAllPairs(self):
+        n = 25
+        pairs = all_pairs(n)
+        nchoose2 = int(n * (n - 1) / 2)
+        self.assertTrue(len(pairs) == nchoose2)
