@@ -5,13 +5,13 @@ from numpy import pi
 from numpy.linalg import eig, norm
 from tqdm import tqdm
 
-from aspire.abinitio import CLOrient3D
+from aspire.abinitio import CLSyncVoting
 from aspire.utils import Rotation
 
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC3C4(CLOrient3D):
+class CLSymmetryC3C4(CLSyncVoting):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
     C3 and C4 cyclic symmetry.
@@ -82,7 +82,7 @@ class CLSymmetryC3C4(CLOrient3D):
         )
 
         # Step 3: Calculate self-relative-rotations
-        Riis = self._estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta)
+        Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
 
         # Step 4: Calculate relative rotations
         Rijs = self._estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta)
@@ -353,11 +353,13 @@ class CLSymmetryC3C4(CLOrient3D):
                 cos_diff[cos_diff > 0.5] = 0.5
             gammas = np.arccos((1 + cos_diff) / (1 - cos_diff))
 
-        # Calculate remaining Euler angles.
+        # Calculate remaining Euler angles in ZYZ convention.
+        # Note: Publication uses ZXZ convention.
         alphas = sclmatrix[:, 0] * 2 * np.pi / n_theta + np.pi / 2
         betas = sclmatrix[:, 1] * 2 * np.pi / n_theta - np.pi / 2
 
-        angles = [-betas, gammas, alphas]
+        # Compute Riis from Euler angles.
+        angles = np.array((-betas, gammas, alphas), dtype=self.dtype).T
         Riis = Rotation.from_euler(angles, dtype=self.dtype).matrices
 
         return Riis
