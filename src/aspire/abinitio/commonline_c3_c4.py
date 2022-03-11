@@ -62,7 +62,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
 
         n_symm = self.n_symm
-        n_theta = self.n_theta
 
         # Step 1: Detect a single pair of common-lines between each pair of images
 
@@ -85,7 +84,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
 
         # Step 4: Calculate relative rotations
-        Rijs = self._estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta)
+        Rijs = self._estimate_all_Rijs_c3_c4(clmatrix)
 
         # Step 5: Inner J-synchronization
         vijs, viis = self._local_sync_J_c3_c4(n_symm, Rijs, Riis)
@@ -362,13 +361,55 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         return Riis
 
-    def _estimate_all_Rijs_c3_c4(clmatrix, n_theta):
+    def _estimate_all_Rijs_c3_c4(self, clmatrix):
+        """
+        Estimate Rijs using the voting method.
+        """
+        n_ims = self.n_ims
+        n_theta = self.n_theta
 
-        pass
+        nchoose2 = int(n_ims * (n_ims - 1) / 2)
+        Rijs = np.zeros((nchoose2, 3, 3))
+        pairs = all_pairs(n_ims)
+        for idx, (i, j) in enumerate(pairs):
+            Rijs[idx] = self._syncmatrix_ij_vote_3n(
+                clmatrix, i, j, np.arange(n_ims), n_theta
+            )
+
+        return Rijs
 
     def local_sync_J_c3_c4(n_symm, Rijs, Riis):
         # return vijs, viis
         pass
+
+    def _syncmatrix_ij_vote_3n(self, clmatrix, i, j, k_list, n_theta):
+        """
+        Compute the (i,j) rotation block of the synchronization matrix using voting method
+
+        Given the common lines matrix `clmatrix`, a list of images specified in k_list
+        and the number of common lines n_theta, find the (i, j) rotation block Rij.
+        :param clmatrix: The common lines matrix
+        :param i: The i image
+        :param j: The j image
+        :param k_list: The list of images for the third image for voting algorithm
+        :param n_theta: The number of points in the theta direction (common lines)
+        :return: The (i,j) rotation block of the synchronization matrix
+        """
+
+        good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
+
+        rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
+
+        if rots is not None:
+            rot_mean = np.mean(rots, 0)
+
+        else:
+            # This for the case that images i and j correspond to the same
+            # viewing direction and differ only by in-plane rotation.
+            # Simply put to zero as Matlab code.
+            rot_mean = np.zeros((3, 3))
+
+        return rot_mean
 
     #######################################
     # Secondary Methods for Global J Sync #
