@@ -6,7 +6,7 @@ from numpy.linalg import eig, norm
 from tqdm import tqdm
 
 from aspire.abinitio import CLSyncVoting
-from aspire.utils import Rotation
+from aspire.utils import Rotation, all_pairs
 
 logger = logging.getLogger(__name__)
 
@@ -135,8 +135,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
 
         # All pairs (i,j) where i<j
-        indices = np.arange(n_ims)
-        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+        pairs = all_pairs(n_ims)
 
         for i in range(n_ims):
             vii = viis[i]
@@ -195,8 +194,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         V = np.zeros((3 * n_ims, 3 * n_ims), dtype=vijs.dtype)
 
         # All pairs (i,j) where i<j
-        indices = np.arange(n_ims)
-        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+        pairs = all_pairs(n_ims)
 
         # Populate upper triangle of V with vijs
         for idx, (i, j) in enumerate(pairs):
@@ -364,8 +362,8 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         return Riis
 
-    def _estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta):
-        # return Rijs
+    def _estimate_all_Rijs_c3_c4(clmatrix, n_theta):
+
         pass
 
     def local_sync_J_c3_c4(n_symm, Rijs, Riis):
@@ -437,9 +435,10 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         :return: New candidate eigenvector of length Nchoose2. The product of the signs matrix and vec.
         """
+        n_ims = self.n_ims
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
-        indices = np.arange(self.n_ims)
-        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+        pairs = all_pairs(n_ims)
+        indices = np.arange(n_ims)
         trips = [
             (i, j, k)
             for idx, i in enumerate(indices)

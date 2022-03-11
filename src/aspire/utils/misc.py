@@ -237,3 +237,17 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     vals = np.sqrt(1 + (g["x"] - x0) ** 2 + (g["y"] - y0) ** 2)
 
     return (peak / vals).astype(dtype)
+
+
+def all_pairs(n):
+    """
+    All pairs indexing (i,j) for i<j.
+
+    :param n: The number of items to be indexed.
+    :return: All n-choose-2 pairs (i,j), i<j.
+    """
+
+    indices = np.arange(n)
+    pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+
+    return pairs
