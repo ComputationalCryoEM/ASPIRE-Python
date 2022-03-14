@@ -116,13 +116,13 @@ rir = RIRClass2D(
     bispectrum_implementation="legacy",
 )
 
-classes, reflections, rotations, shifts, corr = rir.classify()
+classes, reflections, dists = rir.classify()
+avgs = rir.averages(classes, reflections, dists)
 
 # %%
 # Display Classes
 # ^^^^^^^^^^^^^^^
 
-avgs = rir.output(classes, reflections, rotations)
 avgs.images(0, 10).show()
 
 # %%
@@ -169,13 +169,13 @@ noisy_rir = RIRClass2D(
     bispectrum_implementation="legacy",
 )
 
-classes, reflections, rotations, shifts, corr = noisy_rir.classify()
+classes, reflections, dists = noisy_rir.classify()
+avgs = noisy_rir.averages(classes, reflections, dists)
 
 # %%
 # Display Classes
 # ^^^^^^^^^^^^^^^
 
-avgs = noisy_rir.output(classes, reflections, rotations)
 avgs.images(0, 10).show()
 
 
@@ -195,18 +195,6 @@ logger.info(f"Class {review_class}'s neighors: {classes[review_class]}")
 
 # Report the identified neighbors
 Image(noisy_src.images(0, np.inf)[classes[review_class]]).show()
-
-# Report their associated rots_refls
-rots_refls = ["index, Rotation, Reflection"]
-for i in range(classes.shape[1]):
-    rots_refls.append(
-        f"{i}, {rotations[review_class, i] * 180 / np.pi}, {reflections[review_class, i]}"
-    )
-rots_refls = "\n".join(rots_refls)
-
-logger.info(
-    f"Class {review_class}'s  estimated Rotations and Reflections:\n{rots_refls}"
-)
 
 # Display the averaged result
 avgs.images(review_class, 1).show()

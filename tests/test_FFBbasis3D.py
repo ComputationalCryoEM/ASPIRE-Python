@@ -4,7 +4,6 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis import FFBBasis3D
-from aspire.utils import utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -474,7 +473,7 @@ class FFBBasis3DTestCase(TestCase):
             os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_out_8_8_8.npy")
         ).T  # RCOPT
 
-        self.assertTrue(np.allclose(result, ref, atol=utest_tolerance(self.dtype)))
+        self.assertTrue(np.allclose(result, ref, atol=1e-2))
 
     def testFFBBasis3DEvaluate_t(self):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
@@ -482,7 +481,7 @@ class FFBBasis3DTestCase(TestCase):
 
         ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_8_8_8.npy"))[..., 0]
 
-        self.assertTrue(np.allclose(result, ref, atol=utest_tolerance(self.dtype)))
+        self.assertTrue(np.allclose(result, ref, atol=1e-2))
 
     def testFFBBasis3DExpand(self):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
@@ -492,4 +491,4 @@ class FFBBasis3DTestCase(TestCase):
             ..., 0
         ]
 
-        self.assertTrue(np.allclose(result, ref, atol=utest_tolerance(self.dtype)))
+        self.assertTrue(np.allclose(result, ref, atol=1e-2))

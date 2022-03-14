@@ -6,7 +6,7 @@ from scipy.special import jv
 from aspire.basis import SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.image import Image
-from aspire.utils import complex_type, ensure, real_type, roll_dim, unroll_dim
+from aspire.utils import complex_type, real_type, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
@@ -37,8 +37,8 @@ class FBBasis2D(SteerableBasis2D):
         """
 
         ndim = len(size)
-        ensure(ndim == 2, "Only two-dimensional basis functions are supported.")
-        ensure(len(set(size)) == 1, "Only square domains are supported.")
+        assert ndim == 2, "Only two-dimensional basis functions are supported."
+        assert len(set(size)) == 1, "Only square domains are supported."
         super().__init__(size, ell_max, dtype=dtype)
 
     def _build(self):

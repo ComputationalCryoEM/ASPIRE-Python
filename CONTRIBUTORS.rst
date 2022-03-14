@@ -20,9 +20,11 @@ Developers of the Python and Matlab collection of ASPIRE codes are listed below.
    +------------------+-----------------+---------------------------+-----------------------------------+
    | Josh Carmichael  | j-c-c           | carmichael@princeton.edu  | Princeton University              |
    +------------------+-----------------+---------------------------+-----------------------------------+
-   | Ayelet Heimowitz | ayeltg          | ayeleth@princeton.edu     | Princeton University              |
+   | Ayelet Heimowitz | ayeltg          | ayeleth@ariel.ac.il       | Ariel University                  |
    +------------------+-----------------+---------------------------+-----------------------------------+
    | Chris Langfield  | chris-langfield | langfield@princeton.edu   | Princeton University              |
+   +------------------+-----------------+---------------------------+-----------------------------------+
+   | Amit Moscovich   | mosco           | mosco@tauex.tau.ac.il     | Tel Aviv University               |
    +------------------+-----------------+---------------------------+-----------------------------------+
    | Gabi Pragier     | pgabi           | gabipragier@gmail.com     | Tel Aviv University               |
    +------------------+-----------------+---------------------------+-----------------------------------+
