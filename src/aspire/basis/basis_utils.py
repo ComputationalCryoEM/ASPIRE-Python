@@ -11,6 +11,7 @@ from numpy.polynomial.legendre import leggauss
 from scipy.special import jn, jv, sph_harm
 
 from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +224,49 @@ def num_besselj_zeros(ell, r):
         r0 = besselj_zeros(ell, k)
     r0 = r0[r0 < r]
     return len(r0), r0
+
+
+def get_fb_zeros(ell_max, nres, ndim, dtype=np.float32):
+    """
+    Given parameters for computing a Fourier-Bessel basis in 2D or 3D,
+    computes the number of basis functions required at each angular mode
+    and returns a spiky array containing the zeros of the Bessel functions.
+
+    :param ell_max: Maximum angular frequency for basis functions
+    :param nres: size of grid
+    :param ndim: dimension (2 or 3)
+    :param dtype: defaults to float32
+    """
+    # get upper_bound of zeros of Bessel functions
+    upper_bound = min(ell_max + 1, 2 * nres + 1)
+
+    # List of number of zeros
+    n = []
+    # List of zero values (each entry is an ndarray; all of possibly different lengths)
+    zeros = []
+
+    # generate zeros of Bessel functions for each ell
+    for ell in range(upper_bound):
+        _n, _zeros = num_besselj_zeros(ell + (ndim - 2) / 2, nres * np.pi / 2)
+        if _n == 0:
+            break
+        else:
+            n.append(_n)
+            zeros.append(_zeros)
+
+    #  get maximum number of ell
+    ell_max = len(n) - 1
+
+    #  set the maximum of k for each ell
+    # self.k_max = np.array(n, dtype=int)
+
+    max_num_zeros = max(len(z) for z in zeros)
+    for i, z in enumerate(zeros):
+        zeros[i] = np.hstack((z, np.zeros(max_num_zeros - len(z), dtype=dtype)))
+
+    r0 = m_reshape(np.hstack(zeros), (-1, ell_max + 1)).astype(dtype)
+
+    return r0
 
 
 def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):

@@ -3,10 +3,8 @@ import logging
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
-from aspire.basis.basis_utils import num_besselj_zeros
 from aspire.image import Image
 from aspire.utils import mdim_mat_fun_conj
-from aspire.utils.matlab_compat import m_reshape
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -46,43 +44,6 @@ class Basis:
             )
 
         self._build()
-
-    def _getfbzeros(self):
-        """
-        Generate zeros of Bessel functions
-        """
-        # get upper_bound of zeros of Bessel functions
-        upper_bound = min(self.ell_max + 1, 2 * self.nres + 1)
-
-        # List of number of zeros
-        n = []
-        # List of zero values (each entry is an ndarray; all of possibly different lengths)
-        zeros = []
-
-        # generate zeros of Bessel functions for each ell
-        for ell in range(upper_bound):
-            _n, _zeros = num_besselj_zeros(
-                ell + (self.ndim - 2) / 2, self.nres * np.pi / 2
-            )
-            if _n == 0:
-                break
-            else:
-                n.append(_n)
-                zeros.append(_zeros)
-
-        #  get maximum number of ell
-        self.ell_max = len(n) - 1
-
-        #  set the maximum of k for each ell
-        self.k_max = np.array(n, dtype=int)
-
-        max_num_zeros = max(len(z) for z in zeros)
-        for i, z in enumerate(zeros):
-            zeros[i] = np.hstack(
-                (z, np.zeros(max_num_zeros - len(z), dtype=self.dtype))
-            )
-
-        self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1)).astype(self.dtype)
 
     def _build(self):
         """
