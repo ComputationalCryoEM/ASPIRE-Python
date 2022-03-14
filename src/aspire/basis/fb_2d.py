@@ -4,7 +4,7 @@ import numpy as np
 from scipy.special import jv
 
 from aspire.basis import SteerableBasis2D
-from aspire.basis.basis_utils import unique_coords_nd
+from aspire.basis.basis_utils import unique_coords_nd, get_fb_zeros
 from aspire.image import Image
 from aspire.utils import complex_type, real_type, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
@@ -51,7 +51,7 @@ class FBBasis2D(SteerableBasis2D):
         )
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
-        self._getfbzeros()
+        self.r0, self.k_max, self.ell_max = get_fb_zeros(self.ell_max, self.nres, self.ndim, self.dtype)
 
         # calculate total number of basis functions
         self.count = self.k_max[0] + sum(2 * self.k_max[1:])

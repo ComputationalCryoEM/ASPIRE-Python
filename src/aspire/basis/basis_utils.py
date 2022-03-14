@@ -258,7 +258,7 @@ def get_fb_zeros(ell_max, nres, ndim, dtype=np.float32):
     ell_max = len(n) - 1
 
     #  set the maximum of k for each ell
-    # self.k_max = np.array(n, dtype=int)
+    k_max = np.array(n, dtype=int)
 
     max_num_zeros = max(len(z) for z in zeros)
     for i, z in enumerate(zeros):
@@ -266,7 +266,7 @@ def get_fb_zeros(ell_max, nres, ndim, dtype=np.float32):
 
     r0 = m_reshape(np.hstack(zeros), (-1, ell_max + 1)).astype(dtype)
 
-    return r0
+    return r0, k_max, ell_max
 
 
 def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
