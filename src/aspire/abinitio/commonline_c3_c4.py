@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 from numpy import pi
-from numpy.linalg import eig, norm
+from numpy.linalg import eig, norm, svd
 from tqdm import tqdm
 
 from aspire.abinitio import CLSyncVoting
@@ -87,7 +87,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         Rijs = self._estimate_all_Rijs_c3_c4(clmatrix)
 
         # Step 5: Inner J-synchronization
-        vijs, viis = self._local_sync_J_c3_c4(n_symm, Rijs, Riis)
+        vijs, viis = self._local_J_sync_c3_c4(Rijs, Riis)
 
         return vijs, viis
 
@@ -378,9 +378,92 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         return Rijs
 
-    def local_sync_J_c3_c4(n_symm, Rijs, Riis):
-        # return vijs, viis
-        pass
+    def local_J_sync_c3_c4(self, Rijs, Riis):
+        """
+        Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj, and Rij to
+        be of the same handedness. We perform a local handedness synchronization and set vij = 1/n ∑ Rii^s @ Rij @ Rjj^s.
+
+        :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations (each pait of images induces two estimates)
+        :param Riis: A nx3x3 array of estimates of self-relative rotations.
+        :return: vijs, viis
+        """
+
+        n_symm = self.n_symm
+        n_ims = self.n_ims
+
+        nchoose2 = int(n_ims * (n_ims - 1) / 2)
+        assert (
+            len(Riis) == n_ims
+        ), f"There must be one self-relative rotation per image. Got {len(Riis)} Riis."
+        assert (
+            len(Rijs) == nchoose2
+        ), f"There must be n-choose-2 relative rotations. Got {len(Rijs)}."
+
+        # Estimate viis from Riis. vii = 1/n_symm * (∑ Rii ** s) for s = 0, 1, ..., n_symm.
+        viis = np.zeros((n_ims, 3, 3))
+        for i, Rii in enumerate(Riis):
+            viis[i] = np.mean(
+                [np.linalg.matrix_power(Rii, s) for s in np.arange(n_symm)], axis=0
+            )
+
+        # Estimate vijs via local handedness synchronization.
+        vijs = np.zeros((nchoose2, 3, 3))
+        e1 = [1, 0, 0]
+        J = np.diag((-1, -1, 1))
+        opts = np.zeros((8, 3, 3))
+        scores_rank1 = np.zeros(8)
+        min_idxs = np.zeros((nchoose2, 3, 3))
+        pairs = all_pairs(n_ims)
+        for idx, (i, j) in enumerate(pairs):
+            Rii = Riis[i]
+            Rjj = Riis[j]
+            Rij = Rijs[idx]
+
+            Rii_J = J @ Rii @ J
+            Rjj_J = J @ Rjj @ J
+
+            # vij should be a singular matrix.
+            # We test 8 combinations of handedness and rotation by {g, g^n-1} for singularity to determine:
+            # a. whether to transpose Rii
+            # b. whether to J-conjugate Rii
+            # c. whether to J-conjugate Rjj
+            if n_symm == 3:
+                opts[0] = Rij + (Rii @ Rij @ Rjj) + (Rii.T @ Rij @ Rjj.T)
+                opts[1] = Rij + (Rii_J @ Rij @ Rjj) + (Rii_J.T @ Rij @ Rjj.T)
+                opts[2] = Rij + (Rii @ Rij @ Rjj_J) + (Rii.T @ Rij @ Rjj_J.T)
+                opts[3] = Rij + (Rii_J @ Rij @ Rjj_J) + (Rii_J.T @ Rij @ Rjj_J.T)
+
+                opts[4] = Rij + (Rii.T @ Rij @ Rjj) + (Rii @ Rij @ Rjj.T)
+                opts[5] = Rij + (Rii_J.T @ Rij @ Rjj) + (Rii_J @ Rij @ Rjj.T)
+                opts[6] = Rij + (Rii.T @ Rij @ Rjj_J) + (Rii @ Rij @ Rjj_J.T)
+                opts[7] = Rij + (Rii_J.T @ Rij @ Rjj_J) + (Rii_J @ Rij @ Rjj_J.T)
+
+                # Normalize
+                opts = opts / 3
+
+            else:
+                opts[0] = Rij + (Rii @ Rij @ Rjj)
+                opts[1] = Rij + (Rii_J @ Rij @ Rjj)
+                opts[2] = Rij + (Rii @ Rij @ Rjj_J)
+                opts[3] = Rij + (Rii_J @ Rij @ Rjj_J)
+
+                opts[4] = Rij + (Rii.T @ Rij @ Rjj)
+                opts[5] = Rij + (Rii_J.T @ Rij @ Rjj)
+                opts[6] = Rij + (Rii.T @ Rij @ Rjj_J)
+                opts[7] = Rij + (Rii_J.T @ Rij @ Rjj_J)
+
+                # Normalize
+                opts = opts / 2
+
+            for k, opt in enumerate(opts):
+                _, svals, _ = svd(opt)
+                scores_rank1[k] = norm(svals - e1, 2)
+            min_idx = np.argmin(scores_rank1)
+            min_idxs[idx] = min_idx
+
+            vijs[idx] = opts[min_idx]
+
+        return vijs, viis
 
     def _syncmatrix_ij_vote_3n(self, clmatrix, i, j, k_list, n_theta):
         """
