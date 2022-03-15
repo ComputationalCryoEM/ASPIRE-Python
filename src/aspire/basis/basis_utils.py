@@ -16,12 +16,23 @@ logger = logging.getLogger(__name__)
 
 
 def check_besselj_zeros(nu, z):
+    """
+    Verify a sequence of estimated zeros of the Bessel Function with order `nu`
+    :param nu: The real number order of the Bessel function.
+    :param z: (Array-like) A sequence of postulated zeros.
+    :return result: True or False.
+    """
+    # Compute first and second order differences of the sequence of zeros
     dz = np.diff(z)
     ddz = np.diff(dz)
 
+    # Check criteria for acceptable zeros
     result = True
+    # Real roots
     result = result and all(np.isreal(z))
+    # All roots should be > 0, check first of increasing sequence
     result = result and z[0] > 0
+    # Spacing between zeros is greater than 3
     result = result and all(dz > 3)
 
     if nu >= 0.5:
@@ -33,6 +44,17 @@ def check_besselj_zeros(nu, z):
 
 
 def besselj_newton(nu, z0, max_iter=10):
+    """
+    Uses the Newton-Raphson method to compute the zero(s) of the
+    Bessel Function of the First Kind with order `nu` with initial
+    guess(es) `z0`.
+
+    :param nu: The real number order of the Bessel Function.
+    :param z0: (Array-like) The initial guess(es) for the root-finding algorithm.
+    :param max_iter: Maximum number of iterations for Newton-Raphson
+    (default: 10)
+    :return z: (Array-like) The estimated root(s).
+    """
     z = z0
 
     # Factor worse than machine precision
@@ -203,6 +225,9 @@ def besselj_zeros(nu, k):
 
         # Guess and refine
         z0 = z[n - 1] + np.cumsum(dz)
+        import pdb
+
+        pdb.set_trace()
         z[n : n + j] = besselj_newton(nu, z0)
 
         # Check to see that the sequence of zeros makes sense
