@@ -35,8 +35,11 @@ def check_besselj_zeros(nu, z):
     # Spacing between zeros is greater than 3
     result = result and all(dz > 3)
 
+    # Second order differences should be zero or just barely increasing to
+    # within 16x machine precision.
     if nu >= 0.5:
         result = result and all(ddz < 16 * np.spacing(z[1:-1]))
+    # For nu < 0.5 the spacing will be slightly decreasing, so flip the sign.
     else:
         result = result and all(ddz > -16 * np.spacing(z[1:-1]))
 
