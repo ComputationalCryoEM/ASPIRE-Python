@@ -157,6 +157,15 @@ def real_sph_harmonic(j, m, theta, phi):
 
 
 def besselj_zeros(nu, k):
+    """
+    Finds the first `k` zeros of the Bessel Function of the first kind
+    of order `nu`, i.e. J_nu.
+    Adapted from "zerobess.m" by Jonas Lundgren <splinefit@gmail.com>
+
+    :param nu: The real number order of the Bessel Function. (must be positive and <10e7)
+    :param k: The number of zeros to return. (must be >= 3)
+    :return z: A 1D numpy array of the first `k` zeros.
+    """
     assert k >= 3, "k must be >= 3"
     assert 0 <= nu <= 1e7, "nu must be between 0 and 1e7"
 
