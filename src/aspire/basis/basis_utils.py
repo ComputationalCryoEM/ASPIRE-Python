@@ -225,9 +225,6 @@ def besselj_zeros(nu, k):
 
         # Guess and refine
         z0 = z[n - 1] + np.cumsum(dz)
-        import pdb
-
-        pdb.set_trace()
         z[n : n + j] = besselj_newton(nu, z0)
 
         # Check to see that the sequence of zeros makes sense
