@@ -255,7 +255,7 @@ def num_besselj_zeros(ell, r):
     which are less than `r`.
     :param ell: The real number order of the Bessel function.
     :param r: The upper bound for zeros returned.
-    :return n, r0: The number of zeros and the zeros themselves 
+    :return n, r0: The number of zeros and the zeros themselves
     as a numpy array.
     """
     k = 4
