@@ -250,12 +250,24 @@ def besselj_zeros(nu, k):
 
 
 def num_besselj_zeros(ell, r):
+    """
+    Compute the zeros of the order `ell` Bessel function
+    which are less than `r`.
+    :param ell: The real number order of the Bessel function.
+    :param r: The upper bound for zeros returned.
+    :return n, r0: The number of zeros and the zeros themselves 
+    as a numpy array.
+    """
     k = 4
+    # get the first 4 zeros
     r0 = besselj_zeros(ell, k)
     while all(r0 < r):
+        # increase the number of zeros sought
+        # until one of the zeros is greater than `r`
         k *= 2
         r0 = besselj_zeros(ell, k)
     r0 = r0[r0 < r]
+    # return the number of zeros and the zeros themselves
     return len(r0), r0
 
 
