@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def check_besselj_zeros(nu, z):
     """
-    Verify a sequence of estimated zeros of the Bessel Function with order `nu`
+    Verify a sequence of estimated zeros of the Bessel function with order `nu`.
     :param nu: The real number order of the Bessel function.
     :param z: (Array-like) A sequence of postulated zeros.
     :return result: True or False.
@@ -39,7 +39,7 @@ def check_besselj_zeros(nu, z):
     # within 16x machine precision.
     if nu >= 0.5:
         result = result and all(ddz < 16 * np.spacing(z[1:-1]))
-    # For nu < 0.5 the spacing will be slightly decreasing, so flip the sign.
+    # For nu < 0.5 the spacing will be slightly decreasing, so flip the sign
     else:
         result = result and all(ddz > -16 * np.spacing(z[1:-1]))
 
@@ -49,13 +49,13 @@ def check_besselj_zeros(nu, z):
 def besselj_newton(nu, z0, max_iter=10):
     """
     Uses the Newton-Raphson method to compute the zero(s) of the
-    Bessel Function of the First Kind with order `nu` with initial
+    Bessel function of the First Kind with order `nu` with initial
     guess(es) `z0`.
 
-    :param nu: The real number order of the Bessel Function.
+    :param nu: The real number order of the Bessel function.
     :param z0: (Array-like) The initial guess(es) for the root-finding algorithm.
     :param max_iter: Maximum number of iterations for Newton-Raphson
-    (default: 10)
+    (default: 10).
     :return z: (Array-like) The estimated root(s).
     """
     z = z0
@@ -183,7 +183,7 @@ def real_sph_harmonic(j, m, theta, phi):
 
 def besselj_zeros(nu, k):
     """
-    Finds the first `k` zeros of the Bessel Function of the first kind
+    Finds the first `k` zeros of the Bessel function of the First Kind
     of order `nu`, i.e. J_nu.
     Adapted from "zerobess.m" by Jonas Lundgren <splinefit@gmail.com>
 
@@ -251,8 +251,9 @@ def besselj_zeros(nu, k):
 
 def num_besselj_zeros(ell, r):
     """
-    Compute the zeros of the order `ell` Bessel function
-    which are less than `r`.
+    Compute the zeros of the order `ell` Bessel function of
+    the First Kind, which are less than `r`.
+
     :param ell: The real number order of the Bessel function.
     :param r: The upper bound for zeros returned.
     :return n, r0: The number of zeros and the zeros themselves
