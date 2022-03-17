@@ -2,17 +2,16 @@ import logging
 
 import numpy as np
 
-from aspire.basis import Basis
 from aspire.basis.basis_utils import num_besselj_zeros
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
 
-class FBBasis(Basis):
+class FBBasisMixin(object):
     """
-    FBBasis is a mixin extension of Basis for subclasses that are expected to have
-    methods specific to computing Fourier-Bessel expansion coefficients.
+    FBBasisMixin is a mixin implementing methods specific to Fourier-Bessel expansions,
+    to be inherited by Fourier-Bessel subclasses of Basis.
     """
 
     def _getfbzeros(self):
