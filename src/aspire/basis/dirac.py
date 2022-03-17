@@ -18,9 +18,12 @@ class DiracBasis(Basis):
         """
         Initialize an object for Dirac basis
         :param sz: The shape of the vectors for which to define the basis.
+        May be a 2-tuple or an integer, in which case, a square basis is assumed.
         :param mask: A boolean _mask of size sz indicating which coordinates
             to include in the basis (default np.full(sz, True)).
         """
+        if isinstance(sz, int):
+            sz = (sz, sz)
         if mask is None:
             mask = np.full(sz, True)
         self._mask = m_flatten(mask)
