@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.special import jv
 
-from aspire.basis import SteerableBasis2D, FBBasisMixin
+from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.image import Image
 from aspire.utils import complex_type, real_type, roll_dim, unroll_dim
