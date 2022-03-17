@@ -19,12 +19,14 @@ class PolarBasis2D(Basis):
         """
         Initialize an object for the 2D polar Fourier grid class
 
-        :param size: The shape of the vectors for which to define the grid.
+        :param size: The shape of the vectors for which to define the grid. 
+            May be a 2-tuple or an integer, in which case a square basis is assumed.
             Currently only square images are supported.
-        :param nrad: The number of points in the radial dimension. Default is resoltuion // 2.
+        :param nrad: The number of points in the radial dimension. Default is resolution // 2.
         :param ntheta: The number of points in the angular dimension. Default is 8 * nrad.
         """
-
+        if isinstance(size, int):
+            size = (size, size)
         ndim = len(size)
         assert ndim == 2, "Only two-dimensional grids are supported."
         assert len(set(size)) == 1, "Only square domains are supported."
