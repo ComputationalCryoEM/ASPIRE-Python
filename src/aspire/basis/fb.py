@@ -2,17 +2,17 @@ import logging
 
 import numpy as np
 
-from aspire.basis import SteerableBasis2D
+from aspire.basis import Basis
 from aspire.basis.basis_utils import num_besselj_zeros
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
 
-class FBBasis(SteerableBasis2D):
+class FBBasis(Basis):
     """
-    FBBasis is an extension of Basis that is expected to have methods
-    specific to computing Fourier-Bessel expansion coefficients.
+    FBBasis is a mixin extension of Basis for subclasses that are expected to have
+    methods specific to computing Fourier-Bessel expansion coefficients.
     """
 
     def _getfbzeros(self):

@@ -3,10 +3,8 @@ import logging
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
-from aspire.basis.basis_utils import num_besselj_zeros
 from aspire.image import Image
 from aspire.utils import mdim_mat_fun_conj
-from aspire.utils.matlab_compat import m_reshape
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)

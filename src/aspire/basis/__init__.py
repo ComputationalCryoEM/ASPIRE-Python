@@ -3,6 +3,7 @@
 
 from .basis import Basis
 from .steerable import SteerableBasis2D
+from .fb import FBBasis
 
 # isort: on
 
