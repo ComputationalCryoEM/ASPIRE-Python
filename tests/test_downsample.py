@@ -65,8 +65,8 @@ class DownsampleTestCase(TestCase):
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
 
-    def checkGridPoints(self, imgs_org, imgs_ds):
-        # Check individual grid points
+    def checkCenterPoint(self, imgs_org, imgs_ds):
+        # Check that center point is the same after ds
         L = imgs_org.res
         max_resolution = imgs_ds.res
         return np.allclose(
