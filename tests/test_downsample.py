@@ -85,7 +85,7 @@ class DownsampleTestCase(TestCase):
             atol=utest_tolerance(self.dtype),
         )
 
-    def createImages(self, L, max_resolution):
+    def createImages(self, L, L_ds):
         # generate a 3D Gaussian volume
         sigma = 0.1
         vol = gaussian_3d(L, sigma=(L * sigma,) * 3, dtype=self.dtype)
@@ -98,7 +98,7 @@ class DownsampleTestCase(TestCase):
         imgs_org = sim.images(start=0, num=self.n)
 
         # get images after downsample
-        sim.downsample(max_resolution)
+        sim.downsample(L_ds)
         imgs_ds = sim.images(start=0, num=self.n)
 
         return imgs_org, imgs_ds
