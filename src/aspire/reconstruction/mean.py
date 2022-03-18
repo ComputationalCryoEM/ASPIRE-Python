@@ -14,17 +14,17 @@ logger = logging.getLogger(__name__)
 
 class MeanEstimator(Estimator):
     def compute_kernel(self):
-        _2L = 2 * self.L
+        _2L = 2 * self.src.L
         kernel = np.zeros((_2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
-        for i in range(0, self.n, self.batch_size):
-            _range = np.arange(i, min(self.n, i + self.batch_size), dtype=int)
-            pts_rot = rotated_grids(self.L, self.src.rots[_range, :, :])
+        for i in range(0, self.src.n, self.batch_size):
+            _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
+            pts_rot = rotated_grids(self.src.L, self.src.rots[_range, :, :])
             weights = sq_filters_f[:, :, _range]
             weights *= self.src.amplitudes[_range] ** 2
 
-            if self.L % 2 == 0:
+            if self.src.L % 2 == 0:
                 weights[0, :, :] = 0
                 weights[:, 0, :] = 0
 
@@ -33,7 +33,7 @@ class MeanEstimator(Estimator):
 
             kernel += (
                 1
-                / (self.n * self.L**4)
+                / (self.src.n * self.src.L**4)
                 * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
             )
 
