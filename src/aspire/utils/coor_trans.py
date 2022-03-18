@@ -325,6 +325,9 @@ def crop_pad_2d(im, size, fill_value=0):
     elif size >= max(im_y, im_x):
         # ensure that we return in the same dtype as the input
         to_return = fill_value * np.ones((size, size), dtype=im.dtype)
+        # when padding, start_x and start_y are negative since size is larger
+        # than im_x and im_y; the below line calculates where the original image
+        # is placed in relation to the (now-larger) box size
         to_return[-start_y : im_y - start_y, -start_x : im_x - start_x] = im
         return to_return
     else:
