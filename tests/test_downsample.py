@@ -18,16 +18,20 @@ class DownsampleTestCase(TestCase):
     def tearDown(self):
         pass
 
+    def _testDownsample2DCase(self, L, L_ds):
+        # downsampling from size L to L_ds
+        imgs_org, imgs_ds = self.createImages(L, L_ds)
+        # check resolution is correct
+        self.assertEqual((self.n, L_ds, L_ds), imgs_ds.shape)
+        # check center points for all images
+        self.assertTrue(self.checkCenterPoint(imgs_org, imgs_ds))
+        # check signal energy is conserved
+        self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
+
     def testDownsample2D_EvenEven(self):
         # source resolution: 64
         # target resolution: 32
-        imgs_org, imgs_ds = self.createImages(64, 32)
-        # check resolution is correct
-        self.assertEqual((self.n, 32, 32), imgs_ds.shape)
-        # check individual gridpoints for all images
-        self.assertTrue(self.checkGridPoints(imgs_org, imgs_ds))
-        # check signal energy is conserved
-        self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
+        self._testDownsample2DCase(64, 32)
 
     @unittest.skip(
         "Signal energy test fails for this case in current DS implementation"
@@ -35,35 +39,17 @@ class DownsampleTestCase(TestCase):
     def testDownsample2D_EvenOdd(self):
         # source resolution: 64
         # target resolution: 33
-        imgs_org, imgs_ds = self.createImages(64, 33)
-        # check resolution is correct
-        self.assertEqual((self.n, 33, 33), imgs_ds.shape)
-        # check invidual gridpoints for all images
-        self.assertTrue(self.checkGridPoints(imgs_org, imgs_ds))
-        # check signal energy is conserved
-        self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
+        self._testDownsample2DCase(64, 33)
 
     def testDownsample2D_OddOdd(self):
         # source resolution: 65
         # target resolution: 33
-        imgs_org, imgs_ds = self.createImages(65, 33)
-        # check resolution is correct
-        self.assertEqual((self.n, 33, 33), imgs_ds.shape)
-        # check invidual gridpoints for all images
-        self.assertTrue(self.checkGridPoints(imgs_org, imgs_ds))
-        # check signal energy is conserved
-        self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
+        self._testDownsample2DCase(65, 33)
 
     def testDownsample2D_OddEven(self):
         # source resolution: 65
         # target resolution: 32
-        imgs_org, imgs_ds = self.createImages(65, 32)
-        # check resolution is correct
-        self.assertEqual((self.n, 32, 32), imgs_ds.shape)
-        # check invidual gridpoints for all images
-        self.assertTrue(self.checkGridPoints(imgs_org, imgs_ds))
-        # check signal energy is conserved
-        self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
+        self._testDownsample2DCase(65, 32)
 
     def checkCenterPoint(self, imgs_org, imgs_ds):
         # Check that center point is the same after ds
