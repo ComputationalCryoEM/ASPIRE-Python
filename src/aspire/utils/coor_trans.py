@@ -2,6 +2,8 @@
 General purpose math functions, mostly geometric in nature.
 """
 
+import math
+
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import svd
@@ -302,3 +304,32 @@ def common_line_from_rots(r1, r2, ell):
     ell_ji = int(np.mod(np.round(ell_ji), ell))
 
     return ell_ij, ell_ji
+
+
+def crop_pad_2d(im, size, fill_value=0):
+    """
+    :param im: A 2-dimensional numpy array
+    :param size: Integer size of cropped/padded output
+    :return: A numpy array of shape (size, size)
+    """
+
+    im_y, im_x = im.shape
+    # shift terms
+    start_x = math.floor(im_x / 2) - math.floor(size / 2)
+    start_y = math.floor(im_y / 2) - math.floor(size / 2)
+
+    # cropping
+    if size <= min(im_y, im_x):
+        return im[start_y : start_y + size, start_x : start_x + size]
+    # padding
+    elif size >= max(im_y, im_x):
+        # ensure that we return in the same dtype as the input
+        to_return = fill_value * np.ones((size, size), dtype=im.dtype)
+        # when padding, start_x and start_y are negative since size is larger
+        # than im_x and im_y; the below line calculates where the original image
+        # is placed in relation to the (now-larger) box size
+        to_return[-start_y : im_y - start_y, -start_x : im_x - start_x] = im
+        return to_return
+    else:
+        # target size is between mat_x and mat_y
+        raise ValueError("Cannot crop and pad an image at the same time.")

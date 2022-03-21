@@ -7,7 +7,7 @@ from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils import grid_2d
 from aspire.utils.matrix import anorm
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
