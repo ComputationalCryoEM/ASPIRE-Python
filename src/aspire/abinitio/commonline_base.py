@@ -6,7 +6,7 @@ import scipy.sparse as sparse
 
 from aspire.abinitio.orientation_src import OrientEstSource
 from aspire.basis import PolarBasis2D
-from aspire.utils.coor_trans import common_line_from_rots
+from aspire.utils import common_line_from_rots
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)

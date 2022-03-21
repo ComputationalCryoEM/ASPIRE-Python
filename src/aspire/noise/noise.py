@@ -4,7 +4,7 @@ import numpy as np
 
 from aspire.numeric import fft, xp
 from aspire.operators import ArrayFilter, ScalarFilter
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils import grid_2d
 
 logger = logging.getLogger(__name__)
 
