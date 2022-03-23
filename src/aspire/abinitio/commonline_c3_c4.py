@@ -55,7 +55,7 @@ class CLSymmetryC3C4(CLSyncVoting):
     # Primary Methods                         #
     ###########################################
 
-    def _estimate_relative_viewing_directions_c3_c4(self, max_shift_1d):
+    def _estimate_relative_viewing_directions_c3_c4(self):
         """
         Estimate the relative viewing directions vij = vi'vj, i<j, and vii = vi'vi, where
         vi is the third row of the i'th rotation matrix Ri.
@@ -249,10 +249,10 @@ class CLSymmetryC3C4(CLSyncVoting):
         # we search for common lines in a smaller window.
         if n_symm == 3:
             min_angle_diff = 60 * pi / 180
-            max_angle_diff = 165 * pi / 180
+            max_angle_diff = 175 * pi / 180
         else:
             min_angle_diff = 90 * pi / 180
-            max_angle_diff = 160 * pi / 180
+            max_angle_diff = 175 * pi / 180
 
         # The self-common-lines matrix holds two indices per image that represent
         # the two self common-lines in the image.
@@ -378,7 +378,36 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         return Rijs
 
-    def local_J_sync_c3_c4(self, Rijs, Riis):
+    def _syncmatrix_ij_vote_3n(self, clmatrix, i, j, k_list, n_theta):
+        """
+        Compute the (i,j) rotation block of the synchronization matrix using voting method
+
+        Given the common lines matrix `clmatrix`, a list of images specified in k_list
+        and the number of common lines n_theta, find the (i, j) rotation block Rij.
+        :param clmatrix: The common lines matrix
+        :param i: The i image
+        :param j: The j image
+        :param k_list: The list of images for the third image for voting algorithm
+        :param n_theta: The number of points in the theta direction (common lines)
+        :return: The (i,j) rotation block of the synchronization matrix
+        """
+
+        good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
+
+        rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
+
+        if rots is not None:
+            rot_mean = np.mean(rots, 0)
+
+        else:
+            # This for the case that images i and j correspond to the same
+            # viewing direction and differ only by in-plane rotation.
+            # Simply put to zero as Matlab code.
+            rot_mean = np.zeros((3, 3))
+
+        return rot_mean
+
+    def _local_J_sync_c3_c4(self, Rijs, Riis):
         """
         Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj, and Rij to
         be of the same handedness. We perform a local handedness synchronization and set vij = 1/n ∑ Rii^s @ Rij @ Rjj^s.
@@ -465,35 +494,6 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         return vijs, viis
 
-    def _syncmatrix_ij_vote_3n(self, clmatrix, i, j, k_list, n_theta):
-        """
-        Compute the (i,j) rotation block of the synchronization matrix using voting method
-
-        Given the common lines matrix `clmatrix`, a list of images specified in k_list
-        and the number of common lines n_theta, find the (i, j) rotation block Rij.
-        :param clmatrix: The common lines matrix
-        :param i: The i image
-        :param j: The j image
-        :param k_list: The list of images for the third image for voting algorithm
-        :param n_theta: The number of points in the theta direction (common lines)
-        :return: The (i,j) rotation block of the synchronization matrix
-        """
-
-        good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
-
-        rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
-
-        if rots is not None:
-            rot_mean = np.mean(rots, 0)
-
-        else:
-            # This for the case that images i and j correspond to the same
-            # viewing direction and differ only by in-plane rotation.
-            # Simply put to zero as Matlab code.
-            rot_mean = np.zeros((3, 3))
-
-        return rot_mean
-
     #######################################
     # Secondary Methods for Global J Sync #
     #######################################
@@ -519,8 +519,8 @@ class CLSymmetryC3C4(CLSyncVoting):
         assert nchoose2 == int(nchoose2), "There must be n_ims-choose-2 vijs."
         # assert n_eigs > 0, "n_eigs must be a positive integer."
 
-        epsilon = 1e-2
-        max_iters = 100
+        epsilon = 5e-3
+        max_iters = 1000
 
         # Initialize candidate eigenvectors
         vec = np.random.randn(n_vijs)
