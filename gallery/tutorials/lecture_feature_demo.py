@@ -42,8 +42,8 @@ from aspire.abinitio import CLSyncVoting
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import FunctionFilter, RadialCTFFilter, ScalarFilter
 from aspire.source import RelionSource, Simulation
-from aspire.utils import Rotation
-from aspire.utils.coor_trans import (
+from aspire.utils import (
+    Rotation,
     get_aligned_rotations,
     get_rots_mse,
     register_rotations,

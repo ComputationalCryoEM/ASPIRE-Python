@@ -10,8 +10,7 @@ from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
 from scipy.special import jn, jv, sph_harm
 
-from aspire.utils import ensure
-from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils import grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
 
@@ -158,8 +157,8 @@ def real_sph_harmonic(j, m, theta, phi):
 
 
 def besselj_zeros(nu, k):
-    ensure(k >= 3, "k must be >= 3")
-    ensure(0 <= nu <= 1e7, "nu must be between 0 and 1e7")
+    assert k >= 3, "k must be >= 3"
+    assert 0 <= nu <= 1e7, "nu must be between 0 and 1e7"
 
     z = np.zeros(k)
 
@@ -198,10 +197,9 @@ def besselj_zeros(nu, k):
         z[n : n + j] = besselj_newton(nu, z0)
 
         # Check to see that the sequence of zeros makes sense
-        ensure(
-            check_besselj_zeros(nu, z[n - 2 : n + j]),
-            "Unable to properly estimate Bessel function zeros.",
-        )
+        assert check_besselj_zeros(
+            nu, z[n - 2 : n + j]
+        ), "Unable to properly estimate Bessel function zeros."
 
         # Check how far off we are
         err = (z[n : n + j] - z0) / np.diff(z[n - 1 : n + j])
@@ -236,10 +234,11 @@ def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
     :param normalized: normalize the grid or not.
     :return: The unique polar coordinates in 2D or 3D
     """
-    ensure(
-        ndim in (2, 3), "Only two- or three-dimensional basis functions are supported."
-    )
-    ensure(N > 0, "Number of grid points should be greater than 0.")
+    assert ndim in (
+        2,
+        3,
+    ), "Only two- or three-dimensional basis functions are supported."
+    assert N > 0, "Number of grid points should be greater than 0."
 
     if ndim == 2:
         grid = grid_2d(

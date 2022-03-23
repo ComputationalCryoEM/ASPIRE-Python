@@ -30,9 +30,6 @@ class Estimator:
         self.batch_size = batch_size
         self.preconditioner = preconditioner
 
-        self.L = src.L
-        self.n = src.n
-
         if not self.dtype == self.basis.dtype:
             logger.warning(
                 f"Inconsistent types in {self.dtype} Estimator."
@@ -84,11 +81,11 @@ class Estimator:
         :return: The adjoint mapping applied to the images, averaged over the whole dataset and expressed
             as coefficients of `basis`.
         """
-        mean_b = np.zeros((self.L, self.L, self.L), dtype=self.dtype)
+        mean_b = np.zeros((self.src.L, self.src.L, self.src.L), dtype=self.dtype)
 
-        for i in range(0, self.n, self.batch_size):
+        for i in range(0, self.src.n, self.batch_size):
             im = self.src.images(i, self.batch_size)
-            batch_mean_b = self.src.im_backward(im, i) / self.n
+            batch_mean_b = self.src.im_backward(im, i) / self.src.n
             mean_b += batch_mean_b.astype(self.dtype)
 
         res = self.basis.evaluate_t(mean_b)
