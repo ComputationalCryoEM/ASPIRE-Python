@@ -2,6 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 from numpy import linalg, random
+from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
@@ -11,6 +12,9 @@ from aspire.volume import Volume
 
 
 class OrientSymmTestCase(TestCase):
+    # `order` is at this scope to be picked up by parameterized in testCommonLines.
+    order = 3
+
     def setUp(self):
         self.L = 32
         self.symm = "C4"
@@ -61,10 +65,11 @@ class OrientSymmTestCase(TestCase):
         estimate = np.sign(vis) * vis
         self.assertTrue(np.allclose(ground_truth, estimate))
 
-    def testCommonLines(self):
+    @parameterized.expand([(order,), (order + 1,)])
+    def testCommonLines(self, order):
         n_ims = 32
         res = 64
-        order = 4
+        order = order
 
         # Build symmetric volume and associated Simulation object.
         # For the Simulation object we use clean, non-shifted projection images.
