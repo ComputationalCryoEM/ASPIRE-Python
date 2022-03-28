@@ -249,10 +249,10 @@ class CLSymmetryC3C4(CLSyncVoting):
         # we search for common lines in a smaller window.
         if n_symm == 3:
             min_angle_diff = 60 * pi / 180
-            max_angle_diff = 175 * pi / 180
+            max_angle_diff = 165 * pi / 180
         else:
             min_angle_diff = 90 * pi / 180
-            max_angle_diff = 175 * pi / 180
+            max_angle_diff = 160 * pi / 180
 
         # The self-common-lines matrix holds two indices per image that represent
         # the two self common-lines in the image.
@@ -281,7 +281,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         # Transpose pf and reconstruct the full polar Fourier for use in correlation.
         # self.pf only consists of rays in the range [180, 360).
         pf = pf.transpose((2, 1, 0))
-        pf_full = np.concatenate((np.conjugate(pf), pf), axis=1)
+        pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
         for i in tqdm(range(n_ims)):
             pf_i = pf[i]
