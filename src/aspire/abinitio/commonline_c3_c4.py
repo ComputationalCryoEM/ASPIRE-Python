@@ -61,8 +61,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         vi is the third row of the i'th rotation matrix Ri.
         """
 
-        n_symm = self.n_symm
-
         # Step 1: Detect a single pair of common-lines between each pair of images
 
         if self.clmatrix is None:
@@ -71,14 +69,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
-        if n_symm == 3:
-            is_handle_equator_ims = False
-        else:
-            is_handle_equator_ims = True
-
-        sclmatrix, corrs_stats, shifts_stats = self._self_clmatrix_c3_c4(
-            is_handle_equator_ims
-        )
+        sclmatrix, corrs_stats, shifts_stats = self._self_clmatrix_c3_c4()
 
         # Step 3: Calculate self-relative-rotations
         Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
@@ -229,7 +220,7 @@ class CLSymmetryC3C4(CLSyncVoting):
     # Secondary Methods for computing outer product #
     #################################################
 
-    def _self_clmatrix_c3_c4(self, is_handle_equator_ims):
+    def _self_clmatrix_c3_c4(self):
         """
         Find the single pair of self-common-lines in each image assuming that the underlying
         symmetry is C3 or C4.

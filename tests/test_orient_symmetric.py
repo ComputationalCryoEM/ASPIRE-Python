@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import numpy as np
-from numpy import linalg, random
+from numpy import linalg, pi, random
 from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
@@ -16,12 +16,13 @@ class OrientSymmTestCase(TestCase):
     order = 3
 
     def setUp(self):
-        self.L = 32
+        self.L = 64
         self.symm = "C4"
         self.n_ims = 32
         self.dtype = np.float32
+        self.n_theta = 360
         src = Simulation(L=self.L, n=self.n_ims, symmetry_type=self.symm)
-        self.cl_class = CLSymmetryC3C4(src, n_symm=4, n_theta=360)
+        self.cl_class = CLSymmetryC3C4(src, n_symm=4, n_theta=self.n_theta)
 
     def tearDown(self):
         pass
@@ -66,20 +67,67 @@ class OrientSymmTestCase(TestCase):
         self.assertTrue(np.allclose(ground_truth, estimate))
 
     @parameterized.expand([(order,), (order + 1,)])
-    def testCommonLines(self, order):
-        n_ims = 32
-        res = 64
+    def testSelfCommonLines(self, order):
+        n_ims = self.n_ims
+        n_theta = self.n_theta
         order = order
 
         # Build symmetric volume and associated Simulation object.
         # For the Simulation object we use clean, non-shifted projection images.
-        volume, rots_symm = self.buildSimpleSymmetricVolume(res, order)
+        volume = self.buildSimpleSymmetricVolume(self.L, order)
         offsets = np.zeros((n_ims, 2))
         src = Simulation(
-            L=res, n=n_ims, offsets=offsets, dtype=self.dtype, vols=volume, C=1
+            L=self.L, n=n_ims, offsets=offsets, dtype=self.dtype, vols=volume, C=1
         )
 
-        # Initialize the common-lines class and build common-lines matrix
+        # Initialize common-lines class and compute self-common-lines matrix.
+        cl_symm = CLSymmetryC3C4(src, n_symm=order, n_theta=n_theta)
+        scl, _, _ = cl_symm._self_clmatrix_c3_c4()
+
+        # Compute ground truth self-common-lines matrix.
+        rots = src.rots
+        scl_gt = self.buildSelfCommonLinesMatrix(rots, order)
+
+        # Get angle difference between scl_gt and scl.
+        scl_diff1 = scl_gt - scl
+        scl_diff2 = scl_gt - np.flip(scl, 1)  # Order of indices might be switched.
+        scl_diff1_angle = scl_diff1 * 2 * pi / n_theta
+        scl_diff2_angle = scl_diff2 * 2 * pi / n_theta
+
+        # cosine is invariant to 2pi, and abs is invariant to +-pi due to J-conjugation.
+        # We take the mean deviation wrt to the two lines in each image.
+        scl_diff1_angle_mean = np.mean(np.arccos(abs(np.cos(scl_diff1_angle))), axis=1)
+        scl_diff2_angle_mean = np.mean(np.arccos(abs(np.cos(scl_diff2_angle))), axis=1)
+
+        scl_diff_angle_mean = np.vstack((scl_diff1_angle_mean, scl_diff2_angle_mean))
+        scl_idx = np.argmin(scl_diff_angle_mean, axis=0)
+        min_mean_angle_diff = scl_idx.choose(scl_diff_angle_mean)
+
+        # Assert scl detection rate is greater than 90% with 1 degree tolerance for order=3,
+        # and 5 degree tolerance for order=4.
+        if order == 3:
+            angle_tol_err = 1 * pi / 180
+        else:
+            angle_tol_err = 5 * pi / 180
+
+        detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / n_ims
+        self.assertTrue(detection_rate > 0.90)
+
+    @parameterized.expand([(order,), (order + 1,)])
+    def testCommonLines(self, order):
+        n_ims = self.n_ims
+        order = order
+
+        # Build symmetric volume and associated Simulation object.
+        # For the Simulation object we use clean, non-shifted projection images.
+        volume = self.buildSimpleSymmetricVolume(self.L, order)
+        rots_symm = self.buildCyclicRotations(order)
+        offsets = np.zeros((n_ims, 2))
+        src = Simulation(
+            L=self.L, n=n_ims, offsets=offsets, dtype=self.dtype, vols=volume, C=1
+        )
+
+        # Initialize the common-lines class and compute common-lines matrix.
         cl_symm = CLSymmetryC3C4(src, n_symm=order, n_theta=360)
         cl_symm.build_clmatrix()
         cl = cl_symm.clmatrix
@@ -153,9 +201,7 @@ class OrientSymmTestCase(TestCase):
 
     def buildSimpleSymmetricVolume(self, res, order):
         # Construct rotatation matrices associated with cyclic order.
-        angles = np.zeros((order, 3), dtype=self.dtype)
-        angles[:, 2] = 2 * np.pi * np.arange(order) / order
-        rots_symm = Rotation.from_euler(angles).matrices
+        rots_symm = self.buildCyclicRotations(order)
 
         # Assign centers and sigmas of Gaussian blobs
         centers = np.zeros((3, order, 3), dtype=self.dtype)
@@ -180,4 +226,38 @@ class OrientSymmTestCase(TestCase):
 
         volume = Volume(vol)
 
-        return volume, rots_symm
+        return volume
+
+    def buildSelfCommonLinesMatrix(self, rots, order):
+        # Construct rotatation matrices associated with cyclic order.
+        rots_symm = self.buildCyclicRotations(order)
+
+        # Build ground truth self-common-lines matrix.
+        scl_gt = np.zeros((self.n_ims, 2), dtype=self.dtype)
+        n_theta = self.n_theta
+        g = rots_symm[1]
+        g_n = rots_symm[order - 1]
+        for i in range(self.n_ims):
+            Ri = rots[i]
+
+            U1 = Ri.T @ g @ Ri
+            U2 = Ri.T @ g_n @ Ri
+
+            c1 = np.array([-U1[1, 2], U1[0, 2]])
+            c2 = np.array([-U2[1, 2], U2[0, 2]])
+
+            theta_g = np.arctan2(c1[1], c1[0]) % (2 * np.pi)
+            theta_gn = np.arctan2(c2[1], c2[0]) % (2 * np.pi)
+
+            scl_gt[i, 0] = np.round(theta_g * n_theta / (2 * np.pi)) % n_theta
+            scl_gt[i, 1] = np.round(theta_gn * n_theta / (2 * np.pi)) % n_theta
+
+        return scl_gt
+
+    def buildCyclicRotations(self, order):
+        # Construct rotatation matrices associated with cyclic order.
+        angles = np.zeros((order, 3), dtype=self.dtype)
+        angles[:, 2] = 2 * np.pi * np.arange(order) / order
+        rots_symm = Rotation.from_euler(angles).matrices
+
+        return rots_symm
