@@ -17,7 +17,7 @@ class DiracBasis(Basis):
     def __init__(self, size, mask=None, dtype=np.float32):
         """
         Initialize an object for Dirac basis
-        :param sz: The shape of the vectors for which to define the basis.
+        :param size: The shape of the vectors for which to define the basis.
         May be a 2-tuple or an integer, in which case, a square basis is assumed.
         :param mask: A boolean _mask of size sz indicating which coordinates
             to include in the basis (default np.full(sz, True)).
