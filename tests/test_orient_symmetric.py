@@ -141,7 +141,7 @@ class OrientSymmTestCase(TestCase):
         pairs = all_pairs(n_ims)
         within_1_degree = 0
         within_5_degrees = 0
-        for _, (i, j) in enumerate(pairs):
+        for (i, j) in pairs:
             a_ij_s = np.zeros(order)
             a_ji_s = np.zeros(order)
             cl_ij = cl[i, j] % 180

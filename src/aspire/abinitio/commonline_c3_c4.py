@@ -399,10 +399,12 @@ class CLSymmetryC3C4(CLSyncVoting):
 
     def _local_J_sync_c3_c4(self, Rijs, Riis):
         """
-        Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj, and Rij to
-        be of the same handedness. We perform a local handedness synchronization and set vij = 1/n ∑ Rii^s @ Rij @ Rjj^s.
+        Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj,
+        and Rij to be of the same handedness. We perform a local handedness synchronization and
+        set vij = 1/n ∑ Rii^s @ Rij @ Rjj^s.
 
-        :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations (each pait of images induces two estimates)
+        :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations
+            (each pair of images induces two estimates).
         :param Riis: A nx3x3 array of estimates of self-relative rotations.
         :return: vijs, viis
         """
@@ -571,7 +573,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         v = vijs
         new_vec = np.zeros_like(vec)
 
-        for _, (i, j, k) in enumerate(trips):
+        for (i, j, k) in trips:
             ij = pairs.index((i, j))
             jk = pairs.index((j, k))
             ik = pairs.index((i, k))
