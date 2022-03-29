@@ -17,12 +17,32 @@ class OrientSymmTestCase(TestCase):
 
     def setUp(self):
         self.L = 64
-        self.symm = "C4"
         self.n_ims = 32
         self.dtype = np.float32
         self.n_theta = 360
-        src = Simulation(L=self.L, n=self.n_ims, symmetry_type=self.symm)
-        self.cl_class = CLSymmetryC3C4(src, n_symm=4, n_theta=self.n_theta)
+
+        # Build symmetric volume and associated Simulation object and common-lines class.
+        # For the Simulation object we use clean, non-shifted projection images.
+        orders = [3, 4]
+        self.vols = {}
+        self.srcs = {}
+        self.cl_classes = {}
+
+        for o in orders:
+            self.vols[o] = self.buildSimpleSymmetricVolume(self.L, o)
+
+            self.srcs[o] = Simulation(
+                L=self.L,
+                n=self.n_ims,
+                offsets=np.zeros((self.n_ims, 2)),
+                dtype=self.dtype,
+                vols=self.vols[o],
+                C=1,
+            )
+
+            self.cl_classes[o] = CLSymmetryC3C4(
+                self.srcs[o], n_symm=o, n_theta=self.n_theta
+            )
 
     def tearDown(self):
         pass
@@ -40,7 +60,7 @@ class OrientSymmTestCase(TestCase):
         viis_conj[::2] = J @ viis_conj[::2] @ J
 
         # Synchronize vijs_conj and viis_conj.
-        vijs_sync, viis_sync = self.cl_class._global_J_sync(vijs_conj, viis_conj)
+        vijs_sync, viis_sync = self.cl_classes[3]._global_J_sync(vijs_conj, viis_conj)
 
         # Check that synchronized outer products equal original
         # up to J-conjugation of the entire set.
@@ -59,7 +79,7 @@ class OrientSymmTestCase(TestCase):
         vijs, viis, gt_vis = self.buildOuterProducts(n_ims)
 
         # Estimate third rows from outer products
-        vis = self.cl_class._estimate_third_rows(vijs, viis)
+        vis = self.cl_classes[3]._estimate_third_rows(vijs, viis)
 
         # Check if all-close up to difference of sign
         ground_truth = np.sign(gt_vis) * gt_vis
@@ -70,18 +90,10 @@ class OrientSymmTestCase(TestCase):
     def testSelfCommonLines(self, order):
         n_ims = self.n_ims
         n_theta = self.n_theta
-        order = order
-
-        # Build symmetric volume and associated Simulation object.
-        # For the Simulation object we use clean, non-shifted projection images.
-        volume = self.buildSimpleSymmetricVolume(self.L, order)
-        offsets = np.zeros((n_ims, 2))
-        src = Simulation(
-            L=self.L, n=n_ims, offsets=offsets, dtype=self.dtype, vols=volume, C=1
-        )
+        src = self.srcs[order]
+        cl_symm = self.cl_classes[order]
 
         # Initialize common-lines class and compute self-common-lines matrix.
-        cl_symm = CLSymmetryC3C4(src, n_symm=order, n_theta=n_theta)
         scl, _, _ = cl_symm._self_clmatrix_c3_c4()
 
         # Compute ground truth self-common-lines matrix.
@@ -116,24 +128,16 @@ class OrientSymmTestCase(TestCase):
     @parameterized.expand([(order,), (order + 1,)])
     def testCommonLines(self, order):
         n_ims = self.n_ims
-        order = order
+        src = self.srcs[order]
+        cl_symm = self.cl_classes[order]
 
-        # Build symmetric volume and associated Simulation object.
-        # For the Simulation object we use clean, non-shifted projection images.
-        volume = self.buildSimpleSymmetricVolume(self.L, order)
-        rots_symm = self.buildCyclicRotations(order)
-        offsets = np.zeros((n_ims, 2))
-        src = Simulation(
-            L=self.L, n=n_ims, offsets=offsets, dtype=self.dtype, vols=volume, C=1
-        )
-
-        # Initialize the common-lines class and compute common-lines matrix.
-        cl_symm = CLSymmetryC3C4(src, n_symm=order, n_theta=360)
+        # Build common-lines matrix.
         cl_symm.build_clmatrix()
         cl = cl_symm.clmatrix
 
         # Compare common-line indices with ground truth angles.
         rots = src.rots  # ground truth rotations
+        rots_symm = self.buildCyclicRotations(order)
         pairs = all_pairs(n_ims)
         within_1_degree = 0
         within_5_degrees = 0

@@ -62,7 +62,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
 
         # Step 1: Detect a single pair of common-lines between each pair of images
-
         if self.clmatrix is None:
             self.build_clmatrix()
 
