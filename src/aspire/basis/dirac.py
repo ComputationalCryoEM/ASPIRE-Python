@@ -14,7 +14,7 @@ class DiracBasis(Basis):
     Define a derived class for Dirac basis
     """
 
-    def __init__(self, sz, mask=None, dtype=np.float32):
+    def __init__(self, size, mask=None, dtype=np.float32):
         """
         Initialize an object for Dirac basis
         :param sz: The shape of the vectors for which to define the basis.
@@ -22,13 +22,13 @@ class DiracBasis(Basis):
         :param mask: A boolean _mask of size sz indicating which coordinates
             to include in the basis (default np.full(sz, True)).
         """
-        if isinstance(sz, int):
-            sz = (sz, sz)
+        if isinstance(size, int):
+            size = (size, size)
         if mask is None:
-            mask = np.full(sz, True)
+            mask = np.full(size, True)
         self._mask = m_flatten(mask)
 
-        super().__init__(sz, dtype=dtype)
+        super().__init__(size, dtype=dtype)
 
     def _build(self):
         """
