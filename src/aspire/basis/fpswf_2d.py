@@ -34,7 +34,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         Initialize an object for 2D prolate spheroidal wave function (PSWF) basis expansion using fast method.
 
         :param size: The size of the vectors for which to define the basis
-            and the image resultion. May be a 2-tuple or an integer, in which case
+            and the image resolution. May be a 2-tuple or an integer, in which case
             a square basis is assumed. Currently only square images are supported.
         :param gamma_trunc: Truncation parameter of PSWFs, between 0 and 1e6,
             which controls the length of the expansion and the approximation error.
