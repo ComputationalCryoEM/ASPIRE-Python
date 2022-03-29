@@ -346,7 +346,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         betas = sclmatrix[:, 1] * 2 * np.pi / n_theta - np.pi / 2
 
         # Compute Riis from Euler angles.
-        angles = np.array((-betas, gammas, alphas), dtype=self.dtype).T
+        angles = np.array((alphas, gammas, -betas), dtype=self.dtype).T
         Riis = Rotation.from_euler(angles, dtype=self.dtype).matrices
 
         return Riis
