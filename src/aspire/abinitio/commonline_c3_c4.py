@@ -123,9 +123,7 @@ class CLSymmetryC3C4(CLOrient3D):
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
 
         # All pairs (i,j) where i<j
-        indices = np.arange(n_img)
-        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
-
+        pairs = [(i, j) for i in range(n_img) for j in range(n_img) if i < j]
         for i in range(n_img):
             vii = viis[i]
             J_consensus = 0
@@ -183,8 +181,7 @@ class CLSymmetryC3C4(CLOrient3D):
         V = np.zeros((3 * n_img, 3 * n_img), dtype=vijs.dtype)
 
         # All pairs (i,j) where i<j
-        indices = np.arange(n_img)
-        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+        pairs = [(i, j) for i in range(n_img) for j in range(n_img) if i < j]
 
         # Populate upper triangle of V with vijs
         for idx, (i, j) in enumerate(pairs):
@@ -299,15 +296,15 @@ class CLSymmetryC3C4(CLOrient3D):
         :return: New candidate eigenvector of length Nchoose2. The product of the signs matrix and vec.
         """
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
-        indices = np.arange(self.n_img)
-        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+        n_img = self.n_img
+        pairs = [(i, j) for i in range(n_img) for j in range(n_img) if i < j]
         trips = [
             (i, j, k)
-            for idx, i in enumerate(indices)
-            for j in indices[idx + 1 :]
-            for k in indices[j + 1 :]
+            for i in range(n_img)
+            for j in range(n_img)
+            for k in range(n_img)
+            if i < j < k
         ]
-
         # There are four possible signs configurations for each triplet of nodes vij, vik, vjk.
         signs = np.zeros((4, 3))
         signs[0] = [1, 1, 1]
