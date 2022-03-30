@@ -40,7 +40,6 @@ class CLSymmetryC3C4(CLOrient3D):
         super().__init__(src, n_rad=n_rad, n_theta=n_theta)
 
         self.n_symm = n_symm
-        self.n_ims = self.n_img
 
     def estimate_rotations(self):
         """
@@ -64,18 +63,10 @@ class CLSymmetryC3C4(CLOrient3D):
         n_theta = self.n_theta
 
         # Step 1: Detect a single pair of common-lines between each pair of images
-
-        if self.clmatrix is None:
-            self.build_clmatrix()
-
+        self.build_clmatrix()
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
-        if n_symm == 3:
-            is_handle_equator_ims = False
-        else:
-            is_handle_equator_ims = True
-
         sclmatrix = self.self_clmatrix_c3_c4(
             pf, n_symm, max_shift, shift_step, is_handle_equator_ims
         )
@@ -108,12 +99,12 @@ class CLSymmetryC3C4(CLOrient3D):
         :return: vijs, viis all of which have a spurious J or not.
         """
 
-        n_ims = viis.shape[0]
+        n_img = viis.shape[0]
         n_vijs = vijs.shape[0]
-        nchoose2 = int(n_ims * (n_ims - 1) / 2)
+        nchoose2 = int(n_img * (n_img - 1) / 2)
         assert viis.shape[1:] == (3, 3), "viis must be 3x3 matrices."
         assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
-        assert n_vijs == nchoose2, "There must be n_ims-choose-2 vijs."
+        assert n_vijs == nchoose2, "There must be n_img-choose-2 vijs."
 
         # Determine relative handedness of vijs.
         sign_ij_J = self._J_sync_power_method(vijs)
@@ -134,13 +125,13 @@ class CLSymmetryC3C4(CLOrient3D):
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
 
         # All pairs (i,j) where i<j
-        indices = np.arange(n_ims)
+        indices = np.arange(n_img)
         pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
 
-        for i in range(n_ims):
+        for i in range(n_img):
             vii = viis[i]
             J_consensus = 0
-            for j in range(n_ims):
+            for j in range(n_img):
                 if j < i:
                     idx = pairs.index((j, i))
                     vji = vijs[idx]
@@ -183,18 +174,18 @@ class CLSymmetryC3C4(CLOrient3D):
         :return: vis, An n_imagesx3 matrix whose i-th row is the third row of the rotation matrix Ri.
         """
 
-        n_ims = viis.shape[0]
+        n_img = viis.shape[0]
         n_vijs = vijs.shape[0]
-        nchoose2 = int(n_ims * (n_ims - 1) / 2)
+        nchoose2 = int(n_img * (n_img - 1) / 2)
         assert viis.shape[1:] == (3, 3), "viis must be 3x3 matrices."
         assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
-        assert n_vijs == nchoose2, "There must be n_ims-choose-2 vijs."
+        assert n_vijs == nchoose2, "There must be n_img-choose-2 vijs."
 
         # Build 3nx3n matrix V whose (i,j)-th block of size 3x3 holds the outer product vij
-        V = np.zeros((3 * n_ims, 3 * n_ims), dtype=vijs.dtype)
+        V = np.zeros((3 * n_img, 3 * n_img), dtype=vijs.dtype)
 
         # All pairs (i,j) where i<j
-        indices = np.arange(n_ims)
+        indices = np.arange(n_img)
         pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
 
         # Populate upper triangle of V with vijs
@@ -205,7 +196,7 @@ class CLSymmetryC3C4(CLOrient3D):
         V = V + V.T
 
         # Populate diagonal of V with viis
-        for i in range(n_ims):
+        for i in range(n_img):
             V[3 * i : 3 * (i + 1), 3 * i : 3 * (i + 1)] = viis[i]
 
         # In a clean setting V is of rank 1 and its eigenvector is the concatenation
@@ -215,8 +206,8 @@ class CLSymmetryC3C4(CLOrient3D):
         lead_idx = np.argsort(val)[-1]
         lead_vec = vec[:, lead_idx]
 
-        vis = lead_vec.reshape((n_ims, 3))
-        for i in range(n_ims):
+        vis = lead_vec.reshape((n_img, 3))
+        for i in range(n_img):
             vis[i] = vis[i] / norm(vis[i])
 
         return vis
@@ -271,7 +262,7 @@ class CLSymmetryC3C4(CLOrient3D):
 
         n_vijs = vijs.shape[0]
         nchoose2 = (1 + np.sqrt(1 + 8 * n_vijs)) / 2
-        assert nchoose2 == int(nchoose2), "There must be n_ims-choose-2 vijs."
+        assert nchoose2 == int(nchoose2), "There must be n_img-choose-2 vijs."
         # assert n_eigs > 0, "n_eigs must be a positive integer."
 
         epsilon = 1e-2
@@ -315,7 +306,7 @@ class CLSymmetryC3C4(CLOrient3D):
         :return: New candidate eigenvector of length Nchoose2. The product of the signs matrix and vec.
         """
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
-        indices = np.arange(self.n_ims)
+        indices = np.arange(self.n_img)
         pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
         trips = [
             (i, j, k)
