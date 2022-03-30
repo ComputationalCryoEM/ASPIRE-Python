@@ -67,9 +67,7 @@ class CLSymmetryC3C4(CLOrient3D):
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
-        sclmatrix = self.self_clmatrix_c3_c4(
-            pf, n_symm, max_shift, shift_step, is_handle_equator_ims
-        )
+        sclmatrix = self.self_clmatrix_c3_c4(pf, n_symm, max_shift, shift_step)
 
         # Step 3: Calculate self-relative-rotations
         Riis = self._estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta)
@@ -222,9 +220,7 @@ class CLSymmetryC3C4(CLOrient3D):
     # Secondary Methods for computing outer product #
     #################################################
 
-    def _self_clmatrix_c3_c4(
-        self, pf, n_symm, max_shift, shift_step, is_handle_equator_ims
-    ):
+    def _self_clmatrix_c3_c4(self, pf, n_symm, max_shift, shift_step):
         # return sclmatrix
         pass
 
@@ -260,15 +256,12 @@ class CLSymmetryC3C4(CLOrient3D):
         consists only of +1 and -1.
         """
 
-        n_vijs = vijs.shape[0]
-        nchoose2 = (1 + np.sqrt(1 + 8 * n_vijs)) / 2
-        assert nchoose2 == int(nchoose2), "There must be n_img-choose-2 vijs."
-        # assert n_eigs > 0, "n_eigs must be a positive integer."
-
+        # Set power method tolerance and maximum iterations.
         epsilon = 1e-2
         max_iters = 100
 
         # Initialize candidate eigenvectors
+        n_vijs = vijs.shape[0]
         vec = np.random.randn(n_vijs)
         vec = vec / norm(vec)
         dd = 1
