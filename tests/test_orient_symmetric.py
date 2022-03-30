@@ -1,7 +1,8 @@
 from unittest import TestCase
 
 import numpy as np
-from numpy import linalg, pi, random
+from numpy import pi, random
+from numpy.linalg import norm
 from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
@@ -48,6 +49,53 @@ class OrientSymmTestCase(TestCase):
         pass
 
     @parameterized.expand([(order,), (order + 1,)])
+    def testRelativeRotations(self, order):
+        n_ims = self.n_ims
+
+        # Simulation source and common lines Class corresponding to
+        # volume with C3 or C4 symmetry.
+        src = self.srcs[order]
+        cl_symm = self.cl_classes[order]
+
+        # Estimate relative viewing directions.
+        cl_symm.build_clmatrix()
+        cl = cl_symm.clmatrix
+        Rijs = cl_symm._estimate_all_Rijs_c3_c4(cl)
+
+        # Each Rij belongs to the set {Ri.Tg_n^sRj, JRi.Tg_n^sRjJ},
+        # s = 1, 2, ..., order. We find the mean squared error over
+        # the minimum error between Rij and the above set.
+        rots_symm = self.buildCyclicRotations(order)
+        gs = rots_symm
+        J = np.diag([-1, -1, 1])
+        rots_gt = src.rots
+
+        nchoose2 = int(n_ims * (n_ims - 1) / 2)
+        min_idx = np.zeros(nchoose2, dtype=int)
+        errs = np.zeros(nchoose2)
+        diffs = np.zeros(order)
+        pairs = all_pairs(n_ims)
+        for idx, (i, j) in enumerate(pairs):
+            Rij = Rijs[idx]
+            Ri_gt = rots_gt[i]
+            Rj_gt = rots_gt[j]
+            for s in range(order):
+                Rij_s_gt = Ri_gt.T @ gs[s] @ Rj_gt
+                diffs[s] = np.minimum(
+                    norm(Rij - Rij_s_gt), norm(J @ Rij @ J - Rij_s_gt)
+                )
+            min_idx[idx] = np.argmin(diffs)
+            errs[idx] = diffs[min_idx[idx]]
+
+        mse = np.mean(errs**2)
+
+        # Mean-squared-error is better for C3 than for C4.
+        if order == 3:
+            self.assertTrue(mse < 0.005)
+        else:
+            self.assertTrue(mse < 0.03)
+
+    @parameterized.expand([(order,), (order + 1,)])
     def testSelfRelativeRotations(self, order):
         n_ims = self.n_ims
 
@@ -74,10 +122,10 @@ class OrientSymmTestCase(TestCase):
             Rii_gt = rot_gt.T @ g @ rot_gt
             Rii = Riis[i]
 
-            diff0 = np.linalg.norm(Rii - Rii_gt)
-            diff1 = np.linalg.norm(Rii.T - Rii_gt)
-            diff2 = np.linalg.norm((J @ Rii @ J) - Rii_gt)
-            diff3 = np.linalg.norm((J @ Rii.T @ J) - Rii_gt)
+            diff0 = norm(Rii - Rii_gt)
+            diff1 = norm(Rii.T - Rii_gt)
+            diff2 = norm((J @ Rii @ J) - Rii_gt)
+            diff3 = norm((J @ Rii.T @ J) - Rii_gt)
             diffs = [diff0, diff1, diff2, diff3]
             min_idx[i] = np.argmin(diffs)
             errs[i] = diffs[min_idx[i]]
@@ -228,7 +276,7 @@ class OrientSymmTestCase(TestCase):
         for i in range(n_ims):
             random.seed(i)
             v = random.randn(3)
-            gt_vis[i] = v / linalg.norm(v)
+            gt_vis[i] = v / norm(v)
 
         # Find outer products viis and vijs for i<j
         vijs = np.zeros((int(n_ims * (n_ims - 1) / 2), 3, 3))
