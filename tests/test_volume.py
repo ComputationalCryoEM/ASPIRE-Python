@@ -9,6 +9,7 @@ from parameterized import parameterized
 from pytest import raises
 
 from aspire.utils import Rotation, grid_3d, powerset
+from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume, gaussian_blob_vols
 
@@ -313,11 +314,25 @@ class VolumeTestCase(TestCase):
             self.assertTrue(isinstance(result, Volume))
 
     def testDownsample(self):
-        # Data files re-used from test_preprocess
         vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
-
-        resv = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
-
         result = vols.downsample((8, 8, 8))
-        self.assertTrue(np.allclose(result, resv))
-        self.assertTrue(isinstance(result, Volume))
+        res = vols.resolution
+        ds_res = result.resolution
+
+        # check signal energy
+        self.assertTrue(
+            np.allclose(
+                anorm(vols.asnumpy(), axes=(1, 2, 3)) / res,
+                anorm(result.asnumpy(), axes=(1, 2, 3)) / ds_res,
+                atol=1e-3,
+            )
+        )
+
+        # check gridpoints
+        self.assertTrue(
+            np.allclose(
+                vols[:, res // 2, res // 2, res // 2],
+                result[:, ds_res // 2, ds_res // 2, ds_res // 2],
+                atol=1e-4,
+            )
+        )

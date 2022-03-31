@@ -8,7 +8,6 @@ import numpy as np
 
 import tests.saved_test_data
 from aspire.image import Image
-from aspire.operators import ScalarFilter
 from aspire.source.relion import RelionSource
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -60,20 +59,6 @@ class StarFileMainCase(StarFileTestCase):
         self.src.downsample(16)
         first_image = self.src.images(0, 1)[0]
         self.assertEqual(first_image.shape, (16, 16))
-
-    def testImageDownsampleAndWhiten(self):
-        self.src.downsample(16)
-        self.src.whiten(noise_filter=ScalarFilter(dim=2, value=0.02450909546680349))
-        first_whitened_image = self.src.images(0, 1)[0]
-        self.assertTrue(
-            np.allclose(
-                first_whitened_image,
-                np.load(
-                    os.path.join(DATA_DIR, "starfile_image_0_whitened.npy")
-                ).T,  # RCOPT
-                atol=1e-6,
-            )
-        )
 
 
 class StarFileSingleImage(StarFileTestCase):
