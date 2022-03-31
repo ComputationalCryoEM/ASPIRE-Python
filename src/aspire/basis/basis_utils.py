@@ -187,7 +187,7 @@ def besselj_zeros(nu, k):
 
     :param nu: The real number order of the Bessel function. (must be positive and <1e7)
     :param k: The number of zeros to return. (must be >= 3)
-    :return z: A 1D numpy array of the first `k` zeros.
+    :return z: A 1D NumPy array of the first `k` zeros.
     """
     assert k >= 3, "k must be >= 3"
     assert 0 <= nu <= 1e7, "nu must be between 0 and 1e7"
