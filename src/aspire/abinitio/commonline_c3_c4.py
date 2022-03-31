@@ -207,6 +207,7 @@ class CLSymmetryC3C4(CLOrient3D):
         lead_idx = np.argsort(val)[-1]
         lead_vec = vec[:, lead_idx]
 
+        # We decompose the leading eigenvactor and normalize to obtain the third rows, vis.
         vis = lead_vec.reshape((n_img, 3))
         for i in range(n_img):
             vis[i] = vis[i] / norm(vis[i])
