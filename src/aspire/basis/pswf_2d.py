@@ -39,7 +39,8 @@ class PSWFBasis2D(Basis):
         Initialize an object for 2D PSWF basis expansion using direct method
 
         :param size: The size of the vectors for which to define the basis
-            and the image resultion. Currently only square images are supported.
+            and the image resolution. May be a 2-tuple or an integer, in which case
+            a square basis is assumed. Currently only square images are supported.
         :param gamma_trunc: Truncation parameter of PSWFs, between 0 and 1e6,
             which controls the length of the expansion and the approximation error.
             Smaller values (close to zero) guarantee smaller errors, yet longer
@@ -51,7 +52,8 @@ class PSWFBasis2D(Basis):
             parameter controls the bandlimit of the PSWFs.
         :param dtype: Internal ndarray datatype.
         """
-
+        if isinstance(size, int):
+            size = (size, size)
         self.rcut = size[0] // 2
         self.gmcut = gamma_trunc
         self.beta = beta

@@ -189,3 +189,7 @@ class DiracBasisTestCase(TestCase):
         )
         result = self.basis.evaluate_t(x)
         self.assertTrue(np.allclose(result, m_flatten(x)))
+
+    def testInitWithIntSize(self):
+        # make sure we can instantiate with just an int as a shortcut
+        self.assertEqual((8, 8), DiracBasis(8).sz)
