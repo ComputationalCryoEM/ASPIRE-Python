@@ -29,6 +29,7 @@ class FBBasis2D(SteerableBasis2D):
         Initialize an object for the 2D Fourier-Bessel basis class
 
         :param size: The size of the vectors for which to define the basis.
+            May be a 2-tuple or an integer, in which case a square basis is assumed.
             Currently only square images are supported.
         :ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
@@ -36,6 +37,8 @@ class FBBasis2D(SteerableBasis2D):
             below the Nyquist frequency (default Inf).
         """
 
+        if isinstance(size, int):
+            size = (size, size)
         ndim = len(size)
         assert ndim == 2, "Only two-dimensional basis functions are supported."
         assert len(set(size)) == 1, "Only square domains are supported."

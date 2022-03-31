@@ -502,3 +502,7 @@ class PolarBasis2DTestCase(TestCase):
         )
 
         self.assertTrue(np.isclose(lhs, rhs, atol=utest_tolerance(self.dtype)))
+
+    def testInitWithIntSize(self):
+        # make sure we can instantiate with just an int as a shortcut
+        self.assertEqual((8, 8), PolarBasis2D(8).sz)

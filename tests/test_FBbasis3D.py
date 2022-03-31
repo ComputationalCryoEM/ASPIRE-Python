@@ -697,3 +697,7 @@ class FBBasis3DTestCase(TestCase):
                 atol=utest_tolerance(self.dtype),
             )
         )
+
+    def testInitWithIntSize(self):
+        # make sure we can instantiate with just an int as a shortcut
+        self.assertEqual((8, 8, 8), FBBasis3D(8).sz)
