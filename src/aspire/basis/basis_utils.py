@@ -185,8 +185,8 @@ def besselj_zeros(nu, k):
     Finds the first `k` zeros of the Bessel function of order `nu`, i.e. J_nu.
     Adapted from "zerobess.m" by Jonas Lundgren <splinefit@gmail.com>
 
-    :param nu: The real number order of the Bessel function. (must be positive and <1e7)
-    :param k: The number of zeros to return. (must be >= 3)
+    :param nu: The real number order of the Bessel function (must be positive and <1e7).
+    :param k: The number of zeros to return (must be >= 3).
     :return z: A 1D NumPy array of the first `k` zeros.
     """
     assert k >= 3, "k must be >= 3"
