@@ -307,7 +307,7 @@ class CLSymmetryC3C4(CLOrient3D):
         v = vijs
         new_vec = np.zeros_like(vec)
 
-        for _, (i, j, k) in enumerate(trips):
+        for (i, j, k) in trips:
             ij = pairs.index((i, j))
             jk = pairs.index((j, k))
             ik = pairs.index((i, k))
