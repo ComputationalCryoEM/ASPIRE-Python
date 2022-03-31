@@ -93,34 +93,24 @@ class CLSymmetryC3C4(CLOrient3D):
         or not.
 
         :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
-        outer-product vi*vj^T between the third rows of matrices Ri and Rj. Each estimate might have a
-        spurious J independently of other estimates.
+        outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
+        might have a spurious J independently of other estimates.
 
-        :param viis: An nx3x3 array where the ith slice holds an estimate for the outer product vi*vi^T
+        :param viis: An nx3x3 array where the i'th slice holds an estimate for the outer product vi*vi^T
         between the third row of matrix Ri and itself. Each estimate might have a spurious J independently
         of other estimates.
 
         :return: vijs, viis all of which have a spurious J or not.
         """
-
-        n_img = viis.shape[0]
-        n_vijs = vijs.shape[0]
-        nchoose2 = int(n_img * (n_img - 1) / 2)
-        assert viis.shape[1:] == (3, 3), "viis must be 3x3 matrices."
-        assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
-        assert n_vijs == nchoose2, "There must be n-choose-2 vijs."
+        n_img = self.n_img
 
         # Determine relative handedness of vijs.
         sign_ij_J = self._J_sync_power_method(vijs)
-        n_signs = len(sign_ij_J)
-        assert (
-            n_signs == n_vijs
-        ), f"There must be a sign associated with each vij. There are {n_signs} signs and {n_vijs} vijs."
 
         # Synchronize vijs
         J = np.diag((-1, -1, 1))
-        for i in range(n_signs):
-            if sign_ij_J[i] == -1:
+        for i, sign in enumerate(sign_ij_J):
+            if sign == -1:
                 vijs[i] = J @ vijs[i] @ J
 
         # Synchronize viis
@@ -163,25 +153,21 @@ class CLSymmetryC3C4(CLOrient3D):
 
     def _estimate_third_rows(self, vijs, viis):
         """
-        Find the third row of each rotation matrix given third row outer products.
+        Find the third row of each rotation matrix given a collection of matrices
+        representing the outer products of the third rows from each rotation matrix.
 
         :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds the third rows
-        outer product of the corresponding pair of matrices.
+        outer product of the rotation matrices Ri and Rj.
 
-        :param viis: An nx3x3 array where the i-th 3x3 slice holds the outer product of
+        :param viis: An nx3x3 array where the i'th 3x3 slice holds the outer product of
         the third row of Ri with itself.
 
         :param n_symm: The underlying molecular symmetry.
 
-        :return: vis, An n_imagesx3 matrix whose i-th row is the third row of the rotation matrix Ri.
+        :return: vis, An nx3 matrix whose i'th row is the third row of the rotation matrix Ri.
         """
 
-        n_img = viis.shape[0]
-        n_vijs = vijs.shape[0]
-        nchoose2 = int(n_img * (n_img - 1) / 2)
-        assert viis.shape[1:] == (3, 3), "viis must be 3x3 matrices."
-        assert vijs.shape[1:] == (3, 3), "vijs must be 3x3 matrices."
-        assert n_vijs == nchoose2, "There must be n-choose-2 vijs."
+        n_img = self.n_img
 
         # Build 3nx3n matrix V whose (i,j)-th block of size 3x3 holds the outer product vij
         V = np.zeros((3 * n_img, 3 * n_img), dtype=vijs.dtype)
@@ -250,7 +236,7 @@ class CLSymmetryC3C4(CLOrient3D):
         using the power method.
 
         As the J-synchronization matrix is of size (n-choose-2)x(n-choose-2), we
-        use the power method to the compute the eigenvalues and eigenvectors,
+        use the power method to compute the eigenvalues and eigenvectors,
         while constructing the matrix on-the-fly.
 
         :param vijs: (n-choose-2)x3x3 array of estimates of relative orientation matrices.
@@ -289,7 +275,7 @@ class CLSymmetryC3C4(CLOrient3D):
 
     def _signs_times_v(self, vijs, vec):
         """
-        For each triplet of outer products vij, vjk, and vik, the associated elements of the "signs"
+        For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
         matrix are populated with +1 or -1 and multiplied by the corresponding elements of
         the current candidate eigenvector supplied by the power method. The new candidate eigenvector
         is updated for each triplet.
@@ -298,7 +284,7 @@ class CLSymmetryC3C4(CLOrient3D):
 
         :param vec: The current candidate eigenvector of length n-choose-2 from the power method.
 
-        :return: New candidate eigenvector of length n-choose-2. The product of the signs matrix and vec.
+        :return: New candidate eigenvector of length n-choose-2. The product of the J-sync matrix and vec.
         """
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
