@@ -48,6 +48,7 @@ class Steerable2DMixin:
 
         if isinstance(im2, Image):
             im2 = im2.asnumpy()
+        im2 = im2[0]
 
         # For small L there's too much clipping at high freqs to get 1e-3
         # accuracy.
@@ -56,6 +57,7 @@ class Steerable2DMixin:
         else:
             atol = 1e-3
 
+        self.assertTrue(im1.shape == im2.shape)
         self.assertTrue(np.allclose(im1, im2, atol=atol))
 
     def testIsotropic(self):
@@ -107,6 +109,7 @@ class Steerable2DMixin:
             im = im.asnumpy()
         coef2 = self.basis.expand(im)[0]
 
+        self.assertTrue(coef1.shape == coef2.shape)
         self.assertTrue(np.allclose(coef1, coef2, atol=utest_tolerance(self.dtype)))
 
     def testAdjoint(self):
@@ -125,4 +128,5 @@ class Steerable2DMixin:
         Au_dot_x = np.sum(Au * x)
         u_dot_ATx = np.sum(u * ATx)
 
+        self.assertTrue(Au_dot_x.shape == u_dot_ATx.shape)
         self.assertTrue(np.isclose(Au_dot_x, u_dot_ATx))
