@@ -248,9 +248,8 @@ class CLSymmetryC3C4(CLOrient3D):
 
         :param vijs: (n-choose-2)x3x3 array of estimates of relative orientation matrices.
 
-        :return: Array of length n-choose-2 where the i-th entry indicates if vijs[i]
-        should be J-conjugated or not to achieve global handedness consistency. This array
-        consists only of +1 and -1.
+        :return: An array of length n-choose-2 consisting of 1 or -1, where the sign of the
+        i'th entry indicates whether the i'th relative orientation matrix will be J-conjugated.
         """
 
         # Set power method tolerance and maximum iterations.
