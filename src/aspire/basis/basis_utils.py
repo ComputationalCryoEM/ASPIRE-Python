@@ -49,8 +49,7 @@ def check_besselj_zeros(nu, z):
 def besselj_newton(nu, z0, max_iter=10):
     """
     Uses the Newton-Raphson method to compute the zero(s) of the
-    Bessel function of the First Kind with order `nu` with initial
-    guess(es) `z0`.
+    Bessel function with order `nu` with initial guess(es) `z0`.
 
     :param nu: The real number order of the Bessel function.
     :param z0: (Array-like) The initial guess(es) for the root-finding algorithm.
@@ -183,11 +182,10 @@ def real_sph_harmonic(j, m, theta, phi):
 
 def besselj_zeros(nu, k):
     """
-    Finds the first `k` zeros of the Bessel function of the First Kind
-    of order `nu`, i.e. J_nu.
+    Finds the first `k` zeros of the Bessel function of order `nu`, i.e. J_nu.
     Adapted from "zerobess.m" by Jonas Lundgren <splinefit@gmail.com>
 
-    :param nu: The real number order of the Bessel Function. (must be positive and <10e7)
+    :param nu: The real number order of the Bessel function. (must be positive and <1e7)
     :param k: The number of zeros to return. (must be >= 3)
     :return z: A 1D numpy array of the first `k` zeros.
     """
@@ -251,8 +249,7 @@ def besselj_zeros(nu, k):
 
 def num_besselj_zeros(ell, r):
     """
-    Compute the zeros of the order `ell` Bessel function of
-    the First Kind, which are less than `r`.
+    Compute the zeros of the order `ell` Bessel function which are less than `r`.
 
     :param ell: The real number order of the Bessel function.
     :param r: The upper bound for zeros returned.
