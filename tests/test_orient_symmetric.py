@@ -14,7 +14,7 @@ class OrientSymmTestCase(TestCase):
         self.n_ims = 32
         src = Simulation(L=self.L, n=self.n_ims, symmetry_type=self.symm)
         self.cl_class = CLSymmetryC3C4(src, n_symm=4, n_theta=360)
-
+        self.seed = 8679305
     def tearDown(self):
         pass
 
@@ -60,8 +60,8 @@ class OrientSymmTestCase(TestCase):
     def buildOuterProducts(self, n_ims):
         # Build random third rows, ground truth vis (unit vectors)
         gt_vis = np.zeros((n_ims, 3), dtype=np.float32)
+        random.seed(self.seed)
         for i in range(n_ims):
-            random.seed(i)
             v = random.randn(3)
             gt_vis[i] = v / linalg.norm(v)
 
