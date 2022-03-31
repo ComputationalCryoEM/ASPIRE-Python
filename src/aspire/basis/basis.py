@@ -61,6 +61,9 @@ class Basis:
 
         # generate zeros of Bessel functions for each ell
         for ell in range(upper_bound):
+            # for each ell, num_besselj_zeros returns the zeros of the
+            # order ell Bessel function which are less than 2*pi*c*R = nres*pi/2,
+            # the truncation rule for the Fourier-Bessel expansion
             _n, _zeros = num_besselj_zeros(
                 ell + (self.ndim - 2) / 2, self.nres * np.pi / 2
             )
