@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def check_besselj_zeros(nu, z):
     """
-    Verify a sequence of estimated zeros of the Bessel function with order `nu`.
+    Sanity-check a sequence of estimated zeros of the Bessel function with order `nu`.
     :param nu: The real number order of the Bessel function.
     :param z: (Array-like) A sequence of postulated zeros.
     :return result: True or False.
