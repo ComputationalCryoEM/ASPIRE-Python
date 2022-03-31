@@ -15,6 +15,7 @@ class OrientSymmTestCase(TestCase):
         src = Simulation(L=self.L, n=self.n_ims, symmetry_type=self.symm)
         self.cl_class = CLSymmetryC3C4(src, n_symm=4, n_theta=360)
         self.seed = 8679305
+
     def tearDown(self):
         pass
 

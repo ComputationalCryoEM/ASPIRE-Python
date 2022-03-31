@@ -27,7 +27,9 @@ class CLSymmetryC3C4(CLOrient3D):
     Journal of Structural Biology, 169, 312-322 (2010).
     """
 
-    def __init__(self, src, n_symm=None, n_rad=None, n_theta=None):
+    def __init__(
+        self, src, n_symm=None, n_rad=None, n_theta=None, epsilon=1e-3, max_iters=1000
+    ):
         """
         Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
 
@@ -35,11 +37,15 @@ class CLSymmetryC3C4(CLOrient3D):
         :param n_symm: The symmetry order of the molecule. 3 or 4.
         :param n_rad: The number of points in the radial direction
         :param n_theta: The number of points in the theta direction
+        :param epsilon: Tolerance for the power method.
+        :param max_iter: Maximum iterations for the power method.
         """
 
         super().__init__(src, n_rad=n_rad, n_theta=n_theta)
 
         self.n_symm = n_symm
+        self.epsilon = epsilon
+        self.max_iters = max_iters
 
     def estimate_rotations(self):
         """
@@ -253,8 +259,8 @@ class CLSymmetryC3C4(CLOrient3D):
         """
 
         # Set power method tolerance and maximum iterations.
-        epsilon = 1e-2
-        max_iters = 100
+        epsilon = self.epsilon
+        max_iters = self.max_iters
 
         # Initialize candidate eigenvectors
         n_vijs = vijs.shape[0]
