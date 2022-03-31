@@ -50,7 +50,8 @@ class OrientSymmTestCase(TestCase):
         # Build outer products vijs, viis, and get ground truth third rows.
         vijs, viis, gt_vis = self.buildOuterProducts(n_ims)
 
-        # Estimate third rows from outer products
+        # Estimate third rows from outer products.
+        # Due to factorization of V, these might be negated third rows.
         vis = self.cl_class._estimate_third_rows(vijs, viis)
 
         # Check if all-close up to difference of sign
@@ -67,7 +68,8 @@ class OrientSymmTestCase(TestCase):
             gt_vis[i] = v / linalg.norm(v)
 
         # Find outer products viis and vijs for i<j
-        vijs = np.zeros((int(n_ims * (n_ims - 1) / 2), 3, 3))
+        nchoose2 = int(n_ims * (n_ims - 1) / 2)
+        vijs = np.zeros((nchoose2, 3, 3))
         viis = np.zeros((n_ims, 3, 3))
 
         # All pairs (i,j) where i<j
