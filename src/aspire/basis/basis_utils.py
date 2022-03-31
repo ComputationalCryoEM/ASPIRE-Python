@@ -16,16 +16,30 @@ logger = logging.getLogger(__name__)
 
 
 def check_besselj_zeros(nu, z):
+    """
+    Sanity-check a sequence of estimated zeros of the Bessel function with order `nu`.
+    :param nu: The real number order of the Bessel function.
+    :param z: (Array-like) A sequence of postulated zeros.
+    :return result: True or False.
+    """
+    # Compute first and second order differences of the sequence of zeros
     dz = np.diff(z)
     ddz = np.diff(dz)
 
+    # Check criteria for acceptable zeros
     result = True
+    # Real roots
     result = result and all(np.isreal(z))
+    # All roots should be > 0, check first of increasing sequence
     result = result and z[0] > 0
+    # Spacing between zeros is greater than 3
     result = result and all(dz > 3)
 
+    # Second order differences should be zero or just barely increasing to
+    # within 16x machine precision.
     if nu >= 0.5:
         result = result and all(ddz < 16 * np.spacing(z[1:-1]))
+    # For nu < 0.5 the spacing will be slightly decreasing, so flip the sign
     else:
         result = result and all(ddz > -16 * np.spacing(z[1:-1]))
 
@@ -33,6 +47,16 @@ def check_besselj_zeros(nu, z):
 
 
 def besselj_newton(nu, z0, max_iter=10):
+    """
+    Uses the Newton-Raphson method to compute the zero(s) of the
+    Bessel function with order `nu` with initial guess(es) `z0`.
+
+    :param nu: The real number order of the Bessel function.
+    :param z0: (Array-like) The initial guess(es) for the root-finding algorithm.
+    :param max_iter: Maximum number of iterations for Newton-Raphson
+    (default: 10).
+    :return z: (Array-like) The estimated root(s).
+    """
     z = z0
 
     # Factor worse than machine precision
@@ -157,6 +181,14 @@ def real_sph_harmonic(j, m, theta, phi):
 
 
 def besselj_zeros(nu, k):
+    """
+    Finds the first `k` zeros of the Bessel function of order `nu`, i.e. J_nu.
+    Adapted from "zerobess.m" by Jonas Lundgren <splinefit@gmail.com>
+
+    :param nu: The real number order of the Bessel function (must be positive and <1e7).
+    :param k: The number of zeros to return (must be >= 3).
+    :return z: A 1D NumPy array of the first `k` zeros.
+    """
     assert k >= 3, "k must be >= 3"
     assert 0 <= nu <= 1e7, "nu must be between 0 and 1e7"
 
@@ -216,12 +248,24 @@ def besselj_zeros(nu, k):
 
 
 def num_besselj_zeros(ell, r):
+    """
+    Compute the zeros of the order `ell` Bessel function which are less than `r`.
+
+    :param ell: The real number order of the Bessel function.
+    :param r: The upper bound for zeros returned.
+    :return n, r0: The number of zeros and the zeros themselves
+    as a NumPy array.
+    """
     k = 4
+    # get the first 4 zeros
     r0 = besselj_zeros(ell, k)
     while all(r0 < r):
+        # increase the number of zeros sought
+        # until one of the zeros is greater than `r`
         k *= 2
         r0 = besselj_zeros(ell, k)
     r0 = r0[r0 < r]
+    # return the number of zeros and the zeros themselves
     return len(r0), r0
 
 
