@@ -96,7 +96,7 @@ class CLSymmetryC3C4(CLOrient3D):
         outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
         might have a spurious J independently of other estimates.
 
-        :param viis: An nx3x3 array where the i'th slice holds an estimate for the outer product vi*vi^T
+        :param viis: An n_imgx3x3 array where the i'th slice holds an estimate for the outer product vi*vi^T
         between the third row of matrix Ri and itself. Each estimate might have a spurious J independently
         of other estimates.
 
@@ -159,12 +159,12 @@ class CLSymmetryC3C4(CLOrient3D):
         :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds the third rows
         outer product of the rotation matrices Ri and Rj.
 
-        :param viis: An nx3x3 array where the i'th 3x3 slice holds the outer product of
+        :param viis: An n_imgx3x3 array where the i'th 3x3 slice holds the outer product of
         the third row of Ri with itself.
 
         :param n_symm: The underlying molecular symmetry.
 
-        :return: vis, An nx3 matrix whose i'th row is the third row of the rotation matrix Ri.
+        :return: vis, An n_imgx3 matrix whose i'th row is the third row of the rotation matrix Ri.
         """
 
         n_img = self.n_img
@@ -193,7 +193,7 @@ class CLSymmetryC3C4(CLOrient3D):
         lead_idx = np.argsort(val)[-1]
         lead_vec = vec[:, lead_idx]
 
-        # We decompose the leading eigenvactor and normalize to obtain the third rows, vis.
+        # We decompose the leading eigenvector and normalize to obtain the third rows, vis.
         vis = lead_vec.reshape((n_img, 3))
         for i in range(n_img):
             vis[i] = vis[i] / norm(vis[i])
