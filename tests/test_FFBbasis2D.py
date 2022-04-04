@@ -42,11 +42,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
     def tearDown(self):
         pass
 
-    def testElement(self):
-        ell = 1
-        sgn = -1
-        k = 2
-
+    def _testElement(self, ell, k, sgn):
         indices = self.basis.indices()
         ells = indices["ells"]
         sgns = indices["sgns"]
@@ -90,6 +86,14 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
         # discretization and other approximations.
         self.assertTrue(np.allclose(im, im_ref, atol=1e-1))
         self.assertTrue(np.allclose(coef, coef_ref, atol=1e-1))
+
+    def testElements(self):
+        ells = [1, 1, 1, 1]
+        ks = [1, 2, 1, 2]
+        sgns = [-1, -1, 1, 1]
+
+        for ell, k, sgn in zip(ells, ks, sgns):
+            self._testElement(ell, k, sgn)
 
     def testRotate(self):
         # Convergence issues for double precision.
