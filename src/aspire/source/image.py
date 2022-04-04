@@ -22,8 +22,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils import Rotation, grid_2d
 
 logger = logging.getLogger(__name__)
 

@@ -141,14 +141,15 @@ class Basis:
         if isinstance(x, Image) or isinstance(x, Volume):
             x = x.asnumpy()
 
-        # ensure the first dimensions with size of self.sz
-        sz_roll = x.shape[: -self.ndim]
-
-        x = x.reshape((-1, *self.sz))
-
+        # check that last ndim values of input shape match
+        # the shape of this basis
         assert (
             x.shape[-self.ndim :] == self.sz
         ), f"Last {self.ndim} dimensions of x must match {self.sz}."
+        # extract number of images/volumes, or () if only one
+        sz_roll = x.shape[: -self.ndim]
+        # convert to standardized shape e.g. (L,L) to (1,L,L)
+        x = x.reshape((-1, *self.sz))
 
         operator = LinearOperator(
             shape=(self.count, self.count),

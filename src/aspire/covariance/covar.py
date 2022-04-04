@@ -42,9 +42,9 @@ class CovarianceEstimator(Estimator):
 
     def compute_kernel(self):
         # TODO: Most of this stuff is duplicated in MeanEstimator - move up the hierarchy?
-        n = self.n
-        L = self.L
-        _2L = 2 * self.L
+        n = self.src.n
+        L = self.src.L
+        _2L = 2 * self.src.L
 
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
@@ -168,22 +168,23 @@ class CovarianceEstimator(Estimator):
         contribution and expressed as coefficients of `basis`.
         """
         covar_b = np.zeros(
-            (self.L, self.L, self.L, self.L, self.L, self.L), dtype=self.dtype
+            (self.src.L, self.src.L, self.src.L, self.src.L, self.src.L, self.src.L),
+            dtype=self.dtype,
         )
 
-        for i in range(0, self.n, self.batch_size):
+        for i in range(0, self.src.n, self.batch_size):
             im = self.src.images(i, self.batch_size)
             batch_n = im.n_images
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 
             im_centered_b = np.zeros(
-                (batch_n, self.L, self.L, self.L), dtype=self.dtype
+                (batch_n, self.src.L, self.src.L, self.src.L), dtype=self.dtype
             )
             for j in range(batch_n):
                 im_centered_b[j] = self.src.im_backward(Image(im_centered[j]), i + j)
             im_centered_b = Volume(im_centered_b).to_vec()
 
-            covar_b += vecmat_to_volmat(im_centered_b.T @ im_centered_b) / self.n
+            covar_b += vecmat_to_volmat(im_centered_b.T @ im_centered_b) / self.src.n
 
         covar_b_coeff = self.basis.mat_evaluate_t(covar_b)
         return self._shrink(covar_b_coeff, noise_variance, shrink_method)

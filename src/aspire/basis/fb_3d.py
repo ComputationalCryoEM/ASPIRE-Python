@@ -23,12 +23,15 @@ class FBBasis3D(Basis, FBBasisMixin):
         Initialize an object for the 3D Fourier-Bessel basis class
 
         :param size: The size of the vectors for which to define the basis.
+            May be a 3-tuple or an integer, in which case a cubic basis is assumed.
             Currently only cubic images are supported.
         :ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
             below the Nyquist frequency (default Inf).
         """
+        if isinstance(size, int):
+            size = (size, size, size)
         ndim = len(size)
         assert ndim == 3, "Only three-dimensional basis functions are supported."
         assert len(set(size)) == 1, "Only cubic domains are supported."

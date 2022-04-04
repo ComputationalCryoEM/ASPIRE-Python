@@ -389,3 +389,7 @@ class FBBasis2DTestCase(TestCase):
 
         # Try a 0d vector, should not crash.
         _ = self.basis.to_real(cv1.reshape(-1))
+
+    def testInitWithIntSize(self):
+        # make sure we can instantiate with just an int as a shortcut
+        self.assertEqual((8, 8), FBBasis2D(8).sz)
