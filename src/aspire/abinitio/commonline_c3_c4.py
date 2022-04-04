@@ -28,7 +28,14 @@ class CLSymmetryC3C4(CLOrient3D):
     """
 
     def __init__(
-        self, src, symmetry=None, n_rad=None, n_theta=None, epsilon=1e-3, max_iters=1000
+        self,
+        src,
+        symmetry=None,
+        n_rad=None,
+        n_theta=None,
+        epsilon=1e-3,
+        max_iters=1000,
+        seed=None,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
@@ -39,6 +46,7 @@ class CLSymmetryC3C4(CLOrient3D):
         :param n_theta: The number of points in the theta direction
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
+        :param seed: Optional seed for RNG.
         """
 
         super().__init__(src, n_rad=n_rad, n_theta=n_theta)
@@ -56,6 +64,7 @@ class CLSymmetryC3C4(CLOrient3D):
             self.n_symm = symmetry[1]
         self.epsilon = epsilon
         self.max_iters = max_iters
+        self.seed = seed
 
     def estimate_rotations(self):
         """
@@ -261,6 +270,7 @@ class CLSymmetryC3C4(CLOrient3D):
 
         # Initialize candidate eigenvectors
         n_vijs = vijs.shape[0]
+        np.random.seed(self.seed)
         vec = np.random.randn(n_vijs)
         vec = vec / norm(vec)
         dd = 1

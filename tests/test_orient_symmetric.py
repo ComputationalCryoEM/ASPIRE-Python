@@ -12,9 +12,11 @@ class OrientSymmTestCase(TestCase):
         self.L = 32
         self.symm = "C4"
         self.n_ims = 32
+        self.seed = 8675309
         src = Simulation(L=self.L, n=self.n_ims, symmetry_type=self.symm)
-        self.cl_class = CLSymmetryC3C4(src, symmetry=self.symm, n_theta=360)
-        self.seed = 8679305
+        self.cl_class = CLSymmetryC3C4(
+            src, symmetry=self.symm, n_theta=360, seed=self.seed
+        )
 
     def tearDown(self):
         pass
@@ -36,8 +38,8 @@ class OrientSymmTestCase(TestCase):
 
         # Check that synchronized outer products equal original
         # up to J-conjugation of the entire set.
-
-        if vijs[0].all() == vijs_sync[0].all():
+        # import pdb; pdb.set_trace()
+        if (vijs[0] == vijs_sync[0]).all():
             self.assertTrue(np.allclose(vijs, vijs_sync))
             self.assertTrue(np.allclose(viis, viis_sync))
         else:
