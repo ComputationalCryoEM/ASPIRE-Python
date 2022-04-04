@@ -38,10 +38,9 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
     def tearDown(self):
         pass
 
-    def testElement(self):
-        ell = 1
-        sgn = -1
-        k = 2
+    def _testElement(self, ell, k, sgn):
+        # This is covered by the isotropic test.
+        assert ell > 0
 
         indices = self.basis.indices()
         ells = indices["ells"]
@@ -73,6 +72,14 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
         # TODO: These tolerances should be tighter.
         self.assertTrue(np.allclose(im, im_ref, atol=1e-4))
         self.assertTrue(np.allclose(coef, coef_ref, atol=1e-4))
+
+    def testElements(self):
+        ells = [1, 1, 1, 1]
+        ks = [1, 2, 1, 2]
+        sgns = [-1, -1, 1, 1]
+
+        for ell, k, sgn in zip(ells, ks, sgns):
+            self._testElement(ell, k, sgn)
 
     def testComplexCoversion(self):
         x = randn(*self.basis.sz, seed=self.seed)
