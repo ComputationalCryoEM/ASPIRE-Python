@@ -28,13 +28,13 @@ class CLSymmetryC3C4(CLOrient3D):
     """
 
     def __init__(
-        self, src, n_symm=None, n_rad=None, n_theta=None, epsilon=1e-3, max_iters=1000
+        self, src, symmetry=None, n_rad=None, n_theta=None, epsilon=1e-3, max_iters=1000
     ):
         """
         Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
 
         :param src: The source object of 2D denoised or class-averaged images with metadata
-        :param n_symm: The symmetry order of the molecule. 3 or 4.
+        :param symmetry: A string, 'C3' or 'C4', indicating the symmetry type.
         :param n_rad: The number of points in the radial direction
         :param n_theta: The number of points in the theta direction
         :param epsilon: Tolerance for the power method.
@@ -43,7 +43,17 @@ class CLSymmetryC3C4(CLOrient3D):
 
         super().__init__(src, n_rad=n_rad, n_theta=n_theta)
 
-        self.n_symm = n_symm
+        if symmetry is None:
+            raise NotImplementedError(
+                "Symmetry type not supplied. Please indicate C3 or C4 symmetry."
+            )
+        else:
+            symmetry = symmetry.upper()
+            if symmetry not in ["C3", "C4"]:
+                raise NotImplementedError(
+                    f"Only C3 and C4 symmetry supported. {symmetry} was supplied."
+                )
+            self.n_symm = symmetry[1]
         self.epsilon = epsilon
         self.max_iters = max_iters
 
