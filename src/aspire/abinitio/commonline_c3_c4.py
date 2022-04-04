@@ -99,8 +99,8 @@ class CLSymmetryC3C4(CLOrient3D):
     def _global_J_sync(self, vijs, viis):
         """
         Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
-        of which might contain a spurious J, we return vijs and viis that all have either a spurious J
-        or not.
+        of which might contain a spurious J (ie. vij = Jvi*vj^TJ instead of vij = vi*vj^T),
+        we return vijs and viis that all have either a spurious J or not.
 
         :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
         outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
