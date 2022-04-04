@@ -61,7 +61,7 @@ class CLSymmetryC3C4(CLOrient3D):
                 raise NotImplementedError(
                     f"Only C3 and C4 symmetry supported. {symmetry} was supplied."
                 )
-            self.n_symm = symmetry[1]
+            self.order = symmetry[1]
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.seed = seed
@@ -82,7 +82,7 @@ class CLSymmetryC3C4(CLOrient3D):
         """
 
         pf = self.pf
-        n_symm = self.n_symm
+        order = self.order
         max_shift = self.max_shift
         shift_step = self.shift_step
         n_theta = self.n_theta
@@ -92,16 +92,16 @@ class CLSymmetryC3C4(CLOrient3D):
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
-        sclmatrix = self.self_clmatrix_c3_c4(pf, n_symm, max_shift, shift_step)
+        sclmatrix = self.self_clmatrix_c3_c4(pf, order, max_shift, shift_step)
 
         # Step 3: Calculate self-relative-rotations
-        Riis = self._estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta)
+        Riis = self._estimate_all_Riis_c3_c4(order, sclmatrix, n_theta)
 
         # Step 4: Calculate relative rotations
-        Rijs = self._estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta)
+        Rijs = self._estimate_all_Rijs_c3_c4(order, clmatrix, n_theta)
 
         # Step 5: Inner J-synchronization
-        vijs, viis = self._local_sync_J_c3_c4(n_symm, Rijs, Riis)
+        vijs, viis = self._local_sync_J_c3_c4(order, Rijs, Riis)
 
         return vijs, viis
 
@@ -181,7 +181,7 @@ class CLSymmetryC3C4(CLOrient3D):
         :param viis: An n_imgx3x3 array where the i'th 3x3 slice holds the outer product of
         the third row of Ri with itself.
 
-        :param n_symm: The underlying molecular symmetry.
+        :param order: The underlying molecular symmetry.
 
         :return: vis, An n_imgx3 matrix whose i'th row is the third row of the rotation matrix Ri.
         """
@@ -229,19 +229,19 @@ class CLSymmetryC3C4(CLOrient3D):
     # Secondary Methods for computing outer product #
     #################################################
 
-    def _self_clmatrix_c3_c4(self, pf, n_symm, max_shift, shift_step):
+    def _self_clmatrix_c3_c4(self, pf, order, max_shift, shift_step):
         # return sclmatrix
         pass
 
-    def _estimate_all_Riis_c3_c4(n_symm, sclmatrix, n_theta):
+    def _estimate_all_Riis_c3_c4(order, sclmatrix, n_theta):
         # return Riis
         pass
 
-    def _estimate_all_Rijs_c3_c4(n_symm, clmatrix, n_theta):
+    def _estimate_all_Rijs_c3_c4(order, clmatrix, n_theta):
         # return Rijs
         pass
 
-    def local_sync_J_c3_c4(n_symm, Rijs, Riis):
+    def local_sync_J_c3_c4(order, Rijs, Riis):
         # return vijs, viis
         pass
 
