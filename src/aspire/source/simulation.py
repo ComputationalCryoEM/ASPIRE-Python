@@ -29,7 +29,7 @@ class Simulation(ImageSource):
         amplitudes=None,
         dtype=np.float32,
         C=2,
-        symmetry_type=None,
+        symmetry=None,
         angles=None,
         seed=0,
         memory=None,
@@ -59,7 +59,7 @@ class Simulation(ImageSource):
 
         if vols is None:
             self.vols = gaussian_blob_vols(
-                L=L, C=C, symmetry_type=symmetry_type, seed=self.seed, dtype=self.dtype
+                L=L, C=C, symmetry=symmetry, seed=self.seed, dtype=self.dtype
             )
         else:
             assert isinstance(vols, Volume)
