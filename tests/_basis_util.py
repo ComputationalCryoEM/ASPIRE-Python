@@ -4,7 +4,8 @@ import numpy as np
 
 from aspire.image import Image
 from aspire.utils import gaussian_2d, utest_tolerance
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils.misc import gaussian_3d
 from aspire.utils.random import randn
 from aspire.volume import Volume
 
@@ -137,7 +138,95 @@ class Steerable2DMixin(SteerableMixin):
 
 
 class Steerable3DMixin(SteerableMixin):
-    pass
+    def testIndices(self):
+        ell_max = self.basis.ell_max
+        k_max = self.basis.k_max
+
+        indices = self.basis.indices()
+
+        i = 0
+
+        for ell in range(ell_max + 1):
+            for m in range(-ell, ell + 1):
+                for k in range(k_max[ell]):
+                    self.assertTrue(indices["ells"][i] == ell)
+                    self.assertTrue(indices["ms"][i] == m)
+                    self.assertTrue(indices["ks"][i] == k)
+
+                    i += 1
+
+    def testGaussianExpand(self):
+        # Offset slightly
+        x0 = 0.50
+        y0 = 0.75
+        z0 = 0.25
+
+        # Want sigma to be as large as possible without the Gaussian
+        # spilling too much outside the central disk.
+        sigma = self.L / 8
+        vol1 = gaussian_3d(
+            self.L, mu=(x0, y0, z0), sigma=(sigma, sigma, sigma), dtype=self.dtype
+        )
+
+        vol1 = vol1[np.newaxis]
+
+        coef = self.basis.expand(vol1)
+        vol2 = self.basis.evaluate(coef)
+
+        if isinstance(vol2, Volume):
+            vol2 = vol2.asnumpy()
+
+        # For small L there's too much clipping at high freqs to get 1e-3
+        # accuracy.
+        if self.L < 16:
+            atol = 1e-1
+        elif self.L < 32:
+            atol = 1e-2
+        else:
+            atol = 1e-3
+
+        self.assertEqual(vol1.shape, vol2.shape)
+        self.assertTrue(np.allclose(vol1, vol2, atol=atol))
+
+    def testIsotropic(self):
+        sigma = self.L / 8
+        im = gaussian_3d(self.L, sigma=(sigma, sigma, sigma), dtype=self.dtype)
+
+        coef = self.basis.expand(im)
+
+        ells = self.basis.indices()["ells"]
+
+        energy_outside = np.sum(np.abs(coef[ells != 0]) ** 2)
+        energy_total = np.sum(np.abs(coef) ** 2)
+
+        energy_ratio = energy_outside / energy_total
+
+        self.assertTrue(energy_ratio < 0.01)
+
+    def testModulated(self):
+        if self.L < 32:
+            raise SkipTest
+
+        ell = 1
+
+        sigma = self.L / 8
+        vol = gaussian_3d(self.L, sigma=(sigma, sigma, sigma), dtype=self.dtype)
+
+        g3d = grid_3d(self.L)
+
+        for trig_fun in (np.sin, np.cos):
+            vol1 = vol * trig_fun(ell * g3d["phi"])
+
+            coef = self.basis.expand(vol1)
+
+            ells = self.basis.indices()["ells"]
+
+            energy_outside = np.sum(np.abs(coef[ells != ell]) ** 2)
+            energy_total = np.sum(np.abs(coef) ** 2)
+
+            energy_ratio = energy_outside / energy_total
+
+            self.assertTrue(energy_ratio < 0.10)
 
 
 class UniversalBasisMixin:
