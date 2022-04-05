@@ -4,7 +4,7 @@ import numpy as np
 
 from aspire.basis import Basis
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
-from aspire.utils import ensure, roll_dim, unroll_dim
+from aspire.utils import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
@@ -23,15 +23,18 @@ class FBBasis3D(Basis):
         Initialize an object for the 3D Fourier-Bessel basis class
 
         :param size: The size of the vectors for which to define the basis.
+            May be a 3-tuple or an integer, in which case a cubic basis is assumed.
             Currently only cubic images are supported.
         :ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
             below the Nyquist frequency (default Inf).
         """
+        if isinstance(size, int):
+            size = (size, size, size)
         ndim = len(size)
-        ensure(ndim == 3, "Only three-dimensional basis functions are supported.")
-        ensure(len(set(size)) == 1, "Only cubic domains are supported.")
+        assert ndim == 3, "Only three-dimensional basis functions are supported."
+        assert len(set(size)) == 1, "Only cubic domains are supported."
 
         super().__init__(size, ell_max, dtype=dtype)
 

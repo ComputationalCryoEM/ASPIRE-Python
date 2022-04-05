@@ -4,7 +4,7 @@ import numpy as np
 
 from aspire.numeric import fft, xp
 from aspire.operators import ArrayFilter, ScalarFilter
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils import grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,6 @@ class NoiseEstimator:
 
         self.src = src
         self.dtype = self.src.dtype
-        self.L = src.L
-        self.n = src.n
         self.bgRadius = bgRadius
         self.batchSize = batchSize
 
@@ -72,16 +70,16 @@ class WhiteNoiseEstimator(NoiseEstimator):
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
         # Run estimate using saved parameters
-        g2d = grid_2d(self.L, indexing="yx", dtype=self.dtype)
+        g2d = grid_2d(self.src.L, indexing="yx", dtype=self.dtype)
         mask = g2d["r"] >= self.bgRadius
 
         first_moment = 0
         second_moment = 0
-        for i in range(0, self.n, self.batchSize):
+        for i in range(0, self.src.n, self.batchSize):
             images = self.src.images(start=i, num=self.batchSize).asnumpy()
             images_masked = images * mask
 
-            _denominator = self.n * np.sum(mask)
+            _denominator = self.src.n * np.sum(mask)
             first_moment += np.sum(images_masked) / _denominator
             second_moment += np.sum(np.abs(images_masked**2)) / _denominator
         return second_moment - first_moment**2
@@ -100,7 +98,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         # AnisotropicNoiseEstimator.filter is an ArrayFilter.
         #   We average the variance over all frequencies,
 
-        return np.mean(self.filter.evaluate_grid(self.L))
+        return np.mean(self.filter.evaluate_grid(self.src.L))
 
     def _create_filter(self, noise_psd=None):
         """
@@ -117,21 +115,21 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
         # Run estimate using saved parameters
-        g2d = grid_2d(self.L, indexing="yx", dtype=self.dtype)
+        g2d = grid_2d(self.src.L, indexing="yx", dtype=self.dtype)
         mask = g2d["r"] >= self.bgRadius
 
         mean_est = 0
-        noise_psd_est = np.zeros((self.L, self.L)).astype(self.src.dtype)
-        for i in range(0, self.n, self.batchSize):
+        noise_psd_est = np.zeros((self.src.L, self.src.L)).astype(self.src.dtype)
+        for i in range(0, self.src.n, self.batchSize):
             images = self.src.images(i, self.batchSize).asnumpy()
             images_masked = images * mask
 
-            _denominator = self.n * np.sum(mask)
+            _denominator = self.src.n * np.sum(mask)
             mean_est += np.sum(images_masked) / _denominator
             im_masked_f = xp.asnumpy(fft.centered_fft2(xp.asarray(images_masked)))
             noise_psd_est += np.sum(np.abs(im_masked_f**2), axis=0) / _denominator
 
-        mid = self.L // 2
+        mid = self.src.L // 2
         noise_psd_est[mid, mid] -= mean_est**2
 
         return noise_psd_est

@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 from scipy.fftpack import fftn, fftshift
 
-from aspire.image import crop_pad, downsample, fuzzy_mask
+from aspire.image import crop_pad, fuzzy_mask
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -17,22 +17,14 @@ class PreprocessTestCase(TestCase):
     def tearDown(self):
         pass
 
-    def test01CropPad(self):
+    def testCropPad(self):
         results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_crop8.npy"))
         vols = np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy"))
         vols = vols[..., np.newaxis]
         vols_f = crop_pad(fftshift(fftn(vols[:, :, :, 0])), 8)
         self.assertTrue(np.allclose(results, vols_f, atol=1e-7))
 
-    def test02Downsample(self):
-        results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy"))
-        results = results[np.newaxis, ...]
-        vols = np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy"))
-        vols = vols[np.newaxis, ...]
-        vols = downsample(vols, (8, 8, 8))
-        self.assertTrue(np.allclose(results, vols, atol=1e-7))
-
-    def test03Vol2img(self):
+    def testVol2img(self):
         results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_down8_imgs32.npy"))
         vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
         rots = np.load(os.path.join(DATA_DIR, "rand_rot_matrices32.npy"))
@@ -40,7 +32,7 @@ class PreprocessTestCase(TestCase):
         imgs_clean = vols.project(0, rots).asnumpy()
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
-    def test04FuzzyMask(self):
+    def testFuzzyMask(self):
         results = np.array(
             [
                 [

@@ -22,8 +22,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, ensure
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils import Rotation, grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -44,47 +43,9 @@ class ImageSource:
     `Filter` objects, for example, are stored in this metadata table as references to unique `Filter` objects that
     correspond to images in this `ImageSource`. Several rows of metadata may end up containing a reference to a small
     handful of unique `Filter` objects, depending on the values found in other columns (identical `Filter`
-    objects, depending on unique CTF values found for _rlnDefocusU/_rlnDefocusV etc.
+    objects). For example, a smaller number of CTFFilter objects may apply to subsets of particles depending on
+    the unique "_rlnDefocusU"/"_rlnDefocusV" Relion parameters.
     """
-
-    # The metadata_fields dictionary below specifies default data types of certain key fields used in the codebase.
-    # The STAR file used to initialize subclasses of ImageSource may well contain other columns not found below; these
-    # additional columns are available when read, and they default to the pandas data type 'object'.
-
-    metadata_fields = {
-        "_rlnVoltage": float,
-        "_rlnDefocusU": float,
-        "_rlnDefocusV": float,
-        "_rlnDefocusAngle": float,
-        "_rlnSphericalAberration": float,
-        "_rlnDetectorPixelSize": float,
-        "_rlnCtfFigureOfMerit": float,
-        "_rlnMagnification": float,
-        "_rlnAmplitudeContrast": float,
-        "_rlnImageName": str,
-        "_rlnOriginalName": str,
-        "_rlnCtfImage": str,
-        "_rlnCoordinateX": float,
-        "_rlnCoordinateY": float,
-        "_rlnCoordinateZ": float,
-        "_rlnNormCorrection": float,
-        "_rlnMicrographName": str,
-        "_rlnGroupName": str,
-        "_rlnGroupNumber": str,
-        "_rlnOriginX": float,
-        "_rlnOriginY": float,
-        "_rlnAngleRot": float,
-        "_rlnAngleTilt": float,
-        "_rlnAnglePsi": float,
-        "_rlnClassNumber": int,
-        "_rlnLogLikeliContribution": float,
-        "_rlnRandomSubset": int,
-        "_rlnParticleName": str,
-        "_rlnOriginalParticleName": str,
-        "_rlnNrOfSignificantSamples": float,
-        "_rlnNrOfFrames": int,
-        "_rlnMaxValueProbDistribution": float,
-    }
 
     def __init__(self, L, n, dtype="double", metadata=None, memory=None):
         """
@@ -150,34 +111,6 @@ class ImageSource:
     @filter_indices.setter
     def filter_indices(self, indices):
         # create metadata of filters for all images
-        if indices is None:
-            filter_values = np.nan
-        else:
-            attribute_list = (
-                "voltage",
-                "defocus_u",
-                "defocus_v",
-                "defocus_ang",
-                "Cs",
-                "alpha",
-            )
-            filter_values = np.zeros((len(indices), len(attribute_list)))
-            for i, filt in enumerate(self.unique_filters):
-                filter_values[indices == i] = [
-                    getattr(filt, attribute, np.nan) for attribute in attribute_list
-                ]
-
-        self.set_metadata(
-            [
-                "_rlnVoltage",
-                "_rlnDefocusU",
-                "_rlnDefocusV",
-                "_rlnDefocusAngle",
-                "_rlnSphericalAberration",
-                "_rlnAmplitudeContrast",
-            ],
-            filter_values,
-        )
         return self.set_metadata(["__filter_indices"], indices)
 
     @property
@@ -408,10 +341,9 @@ class ImageSource:
         return im
 
     def downsample(self, L):
-        ensure(
-            L <= self.L,
-            "Max desired resolution should be less than the current resolution",
-        )
+        assert (
+            L <= self.L
+        ), "Max desired resolution should be less than the current resolution"
         logger.info(f"Setting max. resolution of source = {L}")
 
         self.generation_pipeline.add_xform(Downsample(resolution=L))

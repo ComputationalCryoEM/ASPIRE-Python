@@ -4,8 +4,10 @@ import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.basis.basis_utils import num_besselj_zeros
-from aspire.utils import ensure, mdim_mat_fun_conj
+from aspire.image import Image
+from aspire.utils import mdim_mat_fun_conj
 from aspire.utils.matlab_compat import m_reshape
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,9 @@ class Basis:
 
         # generate zeros of Bessel functions for each ell
         for ell in range(upper_bound):
+            # for each ell, num_besselj_zeros returns the zeros of the
+            # order ell Bessel function which are less than 2*pi*c*R = nres*pi/2,
+            # the truncation rule for the Fourier-Bessel expansion
             _n, _zeros = num_besselj_zeros(
                 ell + (self.ndim - 2) / 2, self.nres * np.pi / 2
             )
@@ -174,15 +179,19 @@ class Basis:
             those first dimensions of `x`.
 
         """
-        # ensure the first dimensions with size of self.sz
+
+        if isinstance(x, Image) or isinstance(x, Volume):
+            x = x.asnumpy()
+
+        # check that last ndim values of input shape match
+        # the shape of this basis
+        assert (
+            x.shape[-self.ndim :] == self.sz
+        ), f"Last {self.ndim} dimensions of x must match {self.sz}."
+        # extract number of images/volumes, or () if only one
         sz_roll = x.shape[: -self.ndim]
-
+        # convert to standardized shape e.g. (L,L) to (1,L,L)
         x = x.reshape((-1, *self.sz))
-
-        ensure(
-            x.shape[-self.ndim :] == self.sz,
-            f"Last {self.ndim} dimensions of x must match {self.sz}.",
-        )
 
         operator = LinearOperator(
             shape=(self.count, self.count),
@@ -206,5 +215,5 @@ class Basis:
                 raise RuntimeError("Unable to converge!")
 
         # return v coefficients with the last dimension of self.count
-        v = v.reshape((-1, *sz_roll))
+        v = v.reshape((*sz_roll, -1))
         return v

@@ -8,8 +8,14 @@ from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
-from aspire.utils import acorr, ainner, anorm, ensure, make_symmat, vecmat_to_volmat
-from aspire.utils.coor_trans import uniform_random_angles
+from aspire.utils import (
+    acorr,
+    ainner,
+    anorm,
+    make_symmat,
+    uniform_random_angles,
+    vecmat_to_volmat,
+)
 from aspire.utils.random import rand, randi, randn
 from aspire.volume import Volume, gaussian_blob_vols
 
@@ -93,6 +99,7 @@ class Simulation(ImageSource):
         if unique_filters:
             if filter_indices is None:
                 filter_indices = randi(len(unique_filters), n, seed=seed) - 1
+            self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices
         else:
             self.filter_indices = np.zeros(n)
@@ -104,6 +111,41 @@ class Simulation(ImageSource):
         if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
+
+    def _populate_ctf_metadata(self, filter_indices):
+        # Since we are not reading from a starfile, we must construct
+        # metadata based on the CTF filters by hand and set the values
+        # for these columns
+        #
+        # class attributes of CTFFilter:
+        CTFFilter_attributes = (
+            "voltage",
+            "defocus_u",
+            "defocus_v",
+            "defocus_ang",
+            "Cs",
+            "alpha",
+        )
+        # get the CTF parameters, if they exist, for each filter
+        # and for each image (indexed by filter_indices)
+        filter_values = np.zeros((len(filter_indices), len(CTFFilter_attributes)))
+        for i, filt in enumerate(self.unique_filters):
+            filter_values[filter_indices == i] = [
+                getattr(filt, att, np.nan) for att in CTFFilter_attributes
+            ]
+        # set the corresponding Relion metadata values that we would expect
+        # from a STAR file
+        self.set_metadata(
+            [
+                "_rlnVoltage",
+                "_rlnDefocusU",
+                "_rlnDefocusV",
+                "_rlnDefocusAngle",
+                "_rlnSphericalAberration",
+                "_rlnAmplitudeContrast",
+            ],
+            filter_values,
+        )
 
     def projections(self, start=0, num=np.inf, indices=None):
         """
@@ -289,9 +331,9 @@ class Simulation(ImageSource):
         :param vol_idx: Indexes of the volumes determined (0-indexed)
         :return: Accuracy [0-1] in terms of proportion of correctly assigned labels
         """
-        ensure(
-            len(vol_idx) == self.n, f"Need {self.n} vol indexes to evaluate clustering"
-        )
+        assert (
+            len(vol_idx) == self.n
+        ), f"Need {self.n} vol indexes to evaluate clustering"
         # Remember that `states` is 1-indexed while vol_idx is 0-indexed
         correctly_classified = np.sum(self.states - 1 == vol_idx)
 

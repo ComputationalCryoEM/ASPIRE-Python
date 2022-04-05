@@ -5,7 +5,7 @@ import numpy as np
 from aspire.noise import WhiteNoiseEstimator
 from aspire.numeric import fft
 from aspire.source import ImageSource
-from aspire.utils.coor_trans import grid_2d
+from aspire.utils import grid_2d
 
 logger = logging.getLogger(__name__)
 

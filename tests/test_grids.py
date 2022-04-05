@@ -4,8 +4,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.utils import utest_tolerance
-from aspire.utils.coor_trans import grid_2d, grid_3d
+from aspire.utils import grid_2d, grid_3d, utest_tolerance
 
 logger = logging.getLogger(__name__)
 

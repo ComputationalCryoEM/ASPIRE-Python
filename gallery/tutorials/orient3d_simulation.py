@@ -15,11 +15,7 @@ import numpy as np
 from aspire.abinitio import CLSyncVoting
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
-from aspire.utils.coor_trans import (
-    get_aligned_rotations,
-    get_rots_mse,
-    register_rotations,
-)
+from aspire.utils import get_aligned_rotations, get_rots_mse, register_rotations
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
