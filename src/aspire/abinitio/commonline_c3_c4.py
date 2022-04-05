@@ -4,6 +4,7 @@ import numpy as np
 from numpy.linalg import eig, norm
 
 from aspire.abinitio import CLOrient3D
+from aspire.utils import all_pairs
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +139,7 @@ class CLSymmetryC3C4(CLOrient3D):
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
 
         # All pairs (i,j) where i<j
-        pairs = [(i, j) for i in range(n_img) for j in range(n_img) if i < j]
+        pairs = all_pairs(n_img)
         for i in range(n_img):
             vii = viis[i]
             J_consensus = 0
@@ -192,7 +193,7 @@ class CLSymmetryC3C4(CLOrient3D):
         V = np.zeros((3 * n_img, 3 * n_img), dtype=vijs.dtype)
 
         # All pairs (i,j) where i<j
-        pairs = [(i, j) for i in range(n_img) for j in range(n_img) if i < j]
+        pairs = all_pairs(n_img)
 
         # Populate upper triangle of V with vijs
         for idx, (i, j) in enumerate(pairs):
@@ -314,7 +315,7 @@ class CLSymmetryC3C4(CLOrient3D):
         """
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
-        pairs = [(i, j) for i in range(n_img) for j in range(n_img) if i < j]
+        pairs = all_pairs(n_img)
         triplets = [
             (i, j, k)
             for i in range(n_img)
