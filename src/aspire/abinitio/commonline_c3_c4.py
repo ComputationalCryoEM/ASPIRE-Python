@@ -295,6 +295,12 @@ class CLSymmetryC3C4(CLOrient3D):
 
     def _signs_times_v(self, vijs, vec):
         """
+        We multiply the J-synchronization matrix by a candidate eigenvector. The J-synchronization matrix is of
+        size (n-choose-2)x(n-choose-2), where each entry corresponds to the relative handedness of vij and vjk.
+        The entry (ij, jk), where ij and jk are retrieved from the all_pairs indexing, is 1 if vij and vjk are
+        of the same handedness and -1 if not. All entries (ij, kl) hold a zero.
+
+        Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
         For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
         matrix are populated with +1 or -1 and multiplied by the corresponding elements of
         the current candidate eigenvector supplied by the power method. The new candidate eigenvector
@@ -316,7 +322,11 @@ class CLSymmetryC3C4(CLOrient3D):
             for k in range(n_img)
             if i < j < k
         ]
-        # There are four possible signs configurations for each triplet of nodes vij, vik, vjk.
+        # There are four possible signs configurations the relative handedness for each
+        # triplet of nodes vij, vik, vjk. As an example signs[1] = [-1, 1, -1] indicates
+        # that vij, vjk are opposite handed (-1), vjk, vik are of same handedness (1), and
+        # vik, vij are opposite handed (-1). More simply put, vij is opposite handed to both
+        # vjk and vik.
         signs = np.zeros((4, 3))
         signs[0] = [1, 1, 1]
         signs[1] = [-1, 1, -1]
