@@ -108,7 +108,7 @@ class CLSymmetryC3C4(CLOrient3D):
     def _global_J_sync(self, vijs, viis):
         """
         Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
-        of which might contain a spurious J (ie. vij = Jvi*vj^TJ instead of vij = vi*vj^T),
+        of which might contain a spurious J (ie. vij = J*vi*vj^T*J instead of vij = vi*vj^T),
         we return vijs and viis that all have either a spurious J or not.
 
         :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
@@ -309,7 +309,7 @@ class CLSymmetryC3C4(CLOrient3D):
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
         pairs = [(i, j) for i in range(n_img) for j in range(n_img) if i < j]
-        trips = [
+        triplets = [
             (i, j, k)
             for i in range(n_img)
             for j in range(n_img)
@@ -327,7 +327,7 @@ class CLSymmetryC3C4(CLOrient3D):
         v = vijs
         new_vec = np.zeros_like(vec)
 
-        for (i, j, k) in trips:
+        for (i, j, k) in triplets:
             ij = pairs.index((i, j))
             jk = pairs.index((j, k))
             ik = pairs.index((i, k))
