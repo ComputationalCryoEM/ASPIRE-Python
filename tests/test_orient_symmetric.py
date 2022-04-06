@@ -13,7 +13,7 @@ class OrientSymmTestCase(TestCase):
         self.L = 32
         self.symm = "C4"
         self.n_img = 32
-        self.seed = 8675309
+        self.seed = 867530
         src = Simulation(L=self.L, n=self.n_img, symmetry=self.symm)
         self.cl_class = CLSymmetryC3C4(
             src, symmetry=self.symm, n_theta=360, seed=self.seed
@@ -56,8 +56,8 @@ class OrientSymmTestCase(TestCase):
         vis = self.cl_class._estimate_third_rows(vijs, viis)
 
         # Check if all-close up to difference of sign
-        ground_truth = np.sign(gt_vis) * gt_vis
-        estimate = np.sign(vis) * vis
+        ground_truth = np.sign(gt_vis[0, 0]) * gt_vis
+        estimate = np.sign(vis[0, 0]) * vis
         self.assertTrue(np.allclose(ground_truth, estimate))
 
     def buildOuterProducts(self, n_img):
