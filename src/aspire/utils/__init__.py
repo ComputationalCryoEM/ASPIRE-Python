@@ -16,6 +16,7 @@ from .misc import (  # isort:skip
     gaussian_2d,
     get_full_version,
     inverse_r,
+    J_conjugate,
     powerset,
     sha256sum,
 )

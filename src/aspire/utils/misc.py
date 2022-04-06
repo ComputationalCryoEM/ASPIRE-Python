@@ -236,3 +236,15 @@ def all_pairs(n):
     pairs = [(i, j) for i in range(n) for j in range(n) if i < j]
 
     return pairs
+
+
+def J_conjugate(A):
+    """
+    Conjugate the 3x3 matrix A by the diagonal matrix J=diag((-1, -1, 1)).
+
+    :param A: A 3x3 matrix.
+    :return: J*A*J
+    """
+    J = np.diag((-1, -1, 1))
+
+    return J @ A @ J

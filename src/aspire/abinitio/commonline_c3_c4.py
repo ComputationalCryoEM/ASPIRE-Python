@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import eig, norm
 
 from aspire.abinitio import CLOrient3D
-from aspire.utils import all_pairs
+from aspire.utils import J_conjugate, all_pairs
 
 logger = logging.getLogger(__name__)
 
@@ -128,10 +128,9 @@ class CLSymmetryC3C4(CLOrient3D):
         sign_ij_J = self._J_sync_power_method(vijs)
 
         # Synchronize vijs
-        J = np.diag((-1, -1, 1))
         for i, sign in enumerate(sign_ij_J):
             if sign == -1:
-                vijs[i] = J @ vijs[i] @ J
+                vijs[i] = J_conjugate(vijs[i])
 
         # Synchronize viis
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
@@ -142,6 +141,7 @@ class CLSymmetryC3C4(CLOrient3D):
         pairs = all_pairs(n_img)
         for i in range(n_img):
             vii = viis[i]
+            vii_J = J_conjugate(vii)
             J_consensus = 0
             for j in range(n_img):
                 if j < i:
@@ -149,14 +149,14 @@ class CLSymmetryC3C4(CLOrient3D):
                     vji = vijs[idx]
 
                     err1 = norm(vji @ vii - vji)
-                    err2 = norm(vji @ J @ vii @ J - vji)
+                    err2 = norm(vji @ vii_J - vji)
 
                 elif j > i:
                     idx = pairs.index((i, j))
                     vij = vijs[idx]
 
                     err1 = norm(vii @ vij - vij)
-                    err2 = norm(J @ vii @ J @ vij - vij)
+                    err2 = norm(vii_J @ vij - vij)
 
                 else:
                     continue
@@ -168,7 +168,7 @@ class CLSymmetryC3C4(CLOrient3D):
                     J_consensus += 1
 
             if J_consensus > 0:
-                viis[i] = J @ viis[i] @ J
+                viis[i] = vii_J
         return vijs, viis
 
     def _estimate_third_rows(self, vijs, viis):
@@ -334,7 +334,6 @@ class CLSymmetryC3C4(CLOrient3D):
         signs[2] = [-1, -1, 1]
         signs[3] = [1, -1, -1]
 
-        J = np.diag((-1, -1, 1))
         v = vijs
         new_vec = np.zeros_like(vec)
 
@@ -342,14 +341,18 @@ class CLSymmetryC3C4(CLOrient3D):
             ij = pairs.index((i, j))
             jk = pairs.index((j, k))
             ik = pairs.index((i, k))
+            vij, vjk, vik = v[ij], v[jk], v[ik]
+            vij_J = J_conjugate(vij)
+            vjk_J = J_conjugate(vjk)
+            vik_J = J_conjugate(vik)
 
             # Conditions for relative handedness. The minimum of these conditions determines
             # the relative handedness of the triplet of vijs.
             c = np.zeros(4)
-            c[0] = norm(v[ij] @ v[jk] - v[ik])
-            c[1] = norm(J @ v[ij] @ J @ v[jk] - v[ik])
-            c[2] = norm(v[ij] @ J @ v[jk] @ J - v[ik])
-            c[3] = norm(v[ij] @ v[jk] - J @ v[ik] @ J)
+            c[0] = norm(vij @ vjk - vik)
+            c[1] = norm(vij_J @ vjk - vik)
+            c[2] = norm(vij @ vjk_J - vik)
+            c[3] = norm(vij @ vjk - vik_J)
 
             min_c = np.argmin(c)
 
