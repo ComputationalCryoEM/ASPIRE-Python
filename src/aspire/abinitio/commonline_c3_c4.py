@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import eigh, norm
 
 from aspire.abinitio import CLOrient3D
-from aspire.utils import J_conjugate, all_pairs
+from aspire.utils import J_conjugate, all_pairs, all_triplets
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -316,13 +316,8 @@ class CLSymmetryC3C4(CLOrient3D):
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
         pairs = all_pairs(n_img)
-        triplets = [
-            (i, j, k)
-            for i in range(n_img)
-            for j in range(n_img)
-            for k in range(n_img)
-            if i < j < k
-        ]
+        triplets = all_triplets(n_img)
+
         # There are four possible signs configurations the relative handedness for each
         # triplet of nodes vij, vik, vjk. As an example signs[1] = [-1, 1, -1] indicates
         # that vij, vjk are opposite handed (-1), vjk, vik are of same handedness (1), and

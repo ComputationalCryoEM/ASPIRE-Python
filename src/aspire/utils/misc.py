@@ -238,6 +238,20 @@ def all_pairs(n):
     return pairs
 
 
+def all_triplets(n):
+    """
+    All 3-tuples (i,j,k) where i<j<k.
+
+    :param n: The number of items to be indexed.
+    :returns: All 3-tuples (i,j,k), i<j<k.
+    """
+    triplets = [
+        (i, j, k) for i in range(n) for j in range(n) for k in range(n) if i < j < k
+    ]
+
+    return triplets
+
+
 def J_conjugate(A):
     """
     Conjugate the 3x3 matrix A by the diagonal matrix J=diag((-1, -1, 1)).
