@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from numpy.linalg import eig, norm
+from numpy.linalg import eigh, norm
 
 from aspire.abinitio import CLOrient3D
 from aspire.utils import J_conjugate, all_pairs
@@ -209,7 +209,7 @@ class CLSymmetryC3C4(CLOrient3D):
         # In a clean setting V is of rank 1 and its eigenvector is the concatenation
         # of the third rows of all rotation matrices.
         # In the noisy setting we use the eigenvector corresponding to the leading eigenvalue
-        val, vec = eig(V)
+        val, vec = eigh(V)
         lead_idx = np.argsort(val)[-1]
         lead_vec = vec[:, lead_idx]
 
