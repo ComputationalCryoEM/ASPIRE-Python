@@ -1,11 +1,12 @@
 from unittest import TestCase
 
 import numpy as np
-from numpy import linalg, random
+from numpy import linalg
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
 from aspire.utils import J_conjugate, all_pairs
+from aspire.utils.random import randn
 
 
 class OrientSymmTestCase(TestCase):
@@ -13,7 +14,7 @@ class OrientSymmTestCase(TestCase):
         self.L = 32
         self.symm = "C4"
         self.n_img = 32
-        self.seed = 867530
+        self.seed = 8675309
         src = Simulation(L=self.L, n=self.n_img, symmetry=self.symm)
         self.cl_class = CLSymmetryC3C4(
             src, symmetry=self.symm, n_theta=360, seed=self.seed
@@ -63,9 +64,8 @@ class OrientSymmTestCase(TestCase):
     def buildOuterProducts(self, n_img):
         # Build random third rows, ground truth vis (unit vectors)
         gt_vis = np.zeros((n_img, 3), dtype=np.float32)
-        random.seed(self.seed)
         for i in range(n_img):
-            v = random.randn(3)
+            v = randn(3, seed=self.seed)
             gt_vis[i] = v / linalg.norm(v)
 
         # Find outer products viis and vijs for i<j

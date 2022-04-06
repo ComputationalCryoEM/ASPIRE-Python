@@ -5,6 +5,7 @@ from numpy.linalg import eigh, norm
 
 from aspire.abinitio import CLOrient3D
 from aspire.utils import J_conjugate, all_pairs
+from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
@@ -271,8 +272,7 @@ class CLSymmetryC3C4(CLOrient3D):
 
         # Initialize candidate eigenvectors
         n_vijs = vijs.shape[0]
-        np.random.seed(self.seed)
-        vec = np.random.randn(n_vijs)
+        vec = randn(n_vijs, seed=self.seed)
         vec = vec / norm(vec)
         residual = 1
         itr = 0
