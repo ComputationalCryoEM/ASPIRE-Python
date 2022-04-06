@@ -210,7 +210,7 @@ class CLSymmetryC3C4(CLOrient3D):
         # of the third rows of all rotation matrices.
         # In the noisy setting we use the eigenvector corresponding to the leading eigenvalue
         val, vec = eigh(V)
-        lead_idx = np.argsort(val)[-1]
+        lead_idx = np.argmax(val)
         lead_vec = vec[:, lead_idx]
 
         # We decompose the leading eigenvector and normalize to obtain the third rows, vis.
@@ -274,15 +274,15 @@ class CLSymmetryC3C4(CLOrient3D):
         np.random.seed(self.seed)
         vec = np.random.randn(n_vijs)
         vec = vec / norm(vec)
-        dd = 1
+        residual = 1
         itr = 0
 
         # Power method iterations
-        while itr < max_iters and dd > epsilon:
+        while itr < max_iters and residual > epsilon:
             itr += 1
             vec_new = self._signs_times_v(vijs, vec)
             vec_new = vec_new / norm(vec_new)
-            dd = norm(vec_new - vec)
+            residual = norm(vec_new - vec)
             vec = vec_new
 
         logger.info(
@@ -299,7 +299,7 @@ class CLSymmetryC3C4(CLOrient3D):
         We multiply the J-synchronization matrix by a candidate eigenvector. The J-synchronization matrix is of
         size (n-choose-2)x(n-choose-2), where each entry corresponds to the relative handedness of vij and vjk.
         The entry (ij, jk), where ij and jk are retrieved from the all_pairs indexing, is 1 if vij and vjk are
-        of the same handedness and -1 if not. All entries (ij, kl) hold a zero.
+        of the same handedness and -1 if not. All other entries (ij, kl) hold a zero.
 
         Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
         For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
