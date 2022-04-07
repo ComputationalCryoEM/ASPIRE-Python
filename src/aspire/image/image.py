@@ -3,13 +3,12 @@ import logging
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import lstsq
 
 import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
-from aspire.utils import grid_2d, crop_pad_2d
+from aspire.utils import crop_pad_2d, grid_2d
 from aspire.utils.matrix import anorm
 
 logger = logging.getLogger(__name__)
@@ -209,16 +208,18 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
-        # compute FT and center 0-frequency                                                            
+        # compute FT and center 0-frequency
         fx = np.array(
             [fft.fftshift(fft.fft2(self.data[i])) for i in range(self.n_images)]
         )
-        # crop 2D Fourier transform for each image                                                     
+        # crop 2D Fourier transform for each image
         crop_fx = np.array([crop_pad_2d(fx[i], ds_res) for i in range(self.n_images)])
-        # take back to real space, discard complex part, and scale                                     
-        out = np.real(np.array(
-            [fft.ifft2(fft.ifftshift(crop_fx[i])) for i in range(self.n_images)]
-        )) * (ds_res ** 2 / self.res ** 2)
+        # take back to real space, discard complex part, and scale
+        out = np.real(
+            np.array(
+                [fft.ifft2(fft.ifftshift(crop_fx[i])) for i in range(self.n_images)]
+            )
+        ) * (ds_res**2 / self.res**2)
 
         return Image(out)
 
