@@ -3,10 +3,10 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis.basis_utils import (
+    all_besselj_zeros,
     besselj_zeros,
     lgwt,
     norm_assoc_legendre,
-    num_besselj_zeros,
     real_sph_harmonic,
     sph_bessel,
     unique_coords_nd,
@@ -41,7 +41,7 @@ class BesselTestCase(TestCase):
         )
 
     def testNumBesselJZeros(self):
-        n, zeros = num_besselj_zeros(10, 20)
+        n, zeros = all_besselj_zeros(10, 20)
         self.assertEqual(2, n)
         self.assertTrue(np.allclose(zeros, [14.47550069, 18.43346367]))
 
