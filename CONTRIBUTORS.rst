@@ -56,4 +56,4 @@ Developers of the Python and Matlab collection of ASPIRE codes are listed below.
    +-------------+----------+-------+----------------------+
 
 
-If we've missed you or would like to update your details, please contact us and we'll be happy to do so.
+If we've missed you or if you would like to update your details, please contact us and we'll be happy to update this page.

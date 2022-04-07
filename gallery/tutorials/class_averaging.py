@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 L = 100
 round_disc = gaussian_2d(L, sigma_x=L / 4, sigma_y=L / 4)
-plt.imshow(round_disc)
+plt.imshow(round_disc, cmap="gray")
 plt.show()
 
 # %%
@@ -38,7 +38,7 @@ plt.show()
 # ^^^^^^^^^^^^^^^^^^^^^^
 
 oval_disc = gaussian_2d(L, sigma_x=L / 20, sigma_y=L / 5)
-plt.imshow(oval_disc)
+plt.imshow(oval_disc, cmap="gray")
 plt.show()
 
 # %%
@@ -53,7 +53,7 @@ oval_disc2 = gaussian_2d(L, L / 5, L / 6, sigma_x=L / 15, sigma_y=L / 20)
 # Strategically add it to `oval_disc`.
 yoval_discL = oval_disc.copy()
 yoval_discL += oval_disc2
-plt.imshow(yoval_discL)
+plt.imshow(yoval_discL, cmap="gray")
 plt.show()
 
 # %%
@@ -63,7 +63,7 @@ plt.show()
 # Also include the reflection of  the asymmetric image.
 
 yoval_discR = np.flipud(yoval_discL)
-plt.imshow(yoval_discR)
+plt.imshow(yoval_discR, cmap="gray")
 plt.show()
 
 # %%
