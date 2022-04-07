@@ -218,8 +218,6 @@ class CLSymmetryC3C4(CLOrient3D):
         # We decompose the leading eigenvector and normalize to obtain the third rows, vis.
         vis = lead_vec.reshape((n_img, 3))
         vis /= anorm(vis, axes=(-1,))[:, np.newaxis]
-        #        for i in range(n_img):
-        #            vis[i] = vis[i] / norm(vis[i])
 
         return vis
 
@@ -320,20 +318,20 @@ class CLSymmetryC3C4(CLOrient3D):
         pairs = all_pairs(n_img)
         triplets = all_triplets(n_img)
 
-        # There are four possible signs configurations the relative handedness for each
-        # triplet of nodes vij, vik, vjk. As an example signs[1] = [-1, 1, -1] indicates
-        # that vij, vjk are opposite handed (-1), vjk, vik are of same handedness (1), and
-        # vik, vij are opposite handed (-1). More simply put, vij is opposite handed to both
-        # vjk and vik.
+        # For each triplet of nodes (vij, vjk, vik) there are four possible configurations
+        # for the corresponding entries of the J-synchronization matrix, dependent upon
+        # whether any of the three nodes must be J-conjugated to achieve synchronization.
         signs = np.zeros((4, 3))
-        signs[0] = [1, 1, 1]
-        signs[1] = [-1, 1, -1]
-        signs[2] = [-1, -1, 1]
-        signs[3] = [1, -1, -1]
+        signs[0] = [1, 1, 1]  # All nodes are synchronized.
+        signs[1] = [-1, 1, -1]  # vij must be J-conjugated.
+        signs[2] = [-1, -1, 1]  # vjk must be J-conjugated.
+        signs[3] = [1, -1, -1]  # vik must be J-conjugated.
 
         v = vijs
         new_vec = np.zeros_like(vec)
 
+        # For each triplet (vij, vjk, vik) we test the conditions for relative handedness, c,
+        # and populate the entries of the J-synchronization matrix with corresponding signs.
         for (i, j, k) in triplets:
             ij = pairs.index((i, j))
             jk = pairs.index((j, k))
