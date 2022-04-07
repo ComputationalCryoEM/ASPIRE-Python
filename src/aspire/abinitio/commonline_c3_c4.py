@@ -190,22 +190,23 @@ class CLSymmetryC3C4(CLOrient3D):
 
         n_img = self.n_img
 
-        # Build 3nx3n matrix V whose (i,j)-th block of size 3x3 holds the outer product vij
-        V = np.zeros((3 * n_img, 3 * n_img), dtype=vijs.dtype)
+        # Build matrix V whose (i,j)-th block of size 3x3 holds the outer product vij
+        V = np.zeros((n_img, n_img, 3, 3), dtype=vijs.dtype)
 
         # All pairs (i,j) where i<j
         pairs = all_pairs(n_img)
 
-        # Populate upper triangle of V with vijs
+        # Populate upper triangle of V with vijs and lower triangle with vjis, where vji = vij^T.
         for idx, (i, j) in enumerate(pairs):
-            V[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)] = vijs[idx]
-
-        # Populate lower triangle of V with vjis, where vji = vij^T
-        V = V + V.T
+            V[i, j] = vijs[idx]
+            V[j, i] = vijs[idx].T
 
         # Populate diagonal of V with viis
-        for i in range(n_img):
-            V[3 * i : 3 * (i + 1), 3 * i : 3 * (i + 1)] = viis[i]
+        for i, vii in enumerate(viis):
+            V[i, i] = vii
+
+        # Permute axes and reshape to (3 * n_img, 3 * n_img).
+        V = np.swapaxes(V, 1, 2).reshape(3 * n_img, 3 * n_img)
 
         # In a clean setting V is of rank 1 and its eigenvector is the concatenation
         # of the third rows of all rotation matrices.
