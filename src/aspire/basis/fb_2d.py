@@ -54,7 +54,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         )
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
-        self._getfbzeros()
+        self._calc_k_max()
 
         # calculate total number of basis functions
         self.count = self.k_max[0] + sum(2 * self.k_max[1:])

@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire.basis.basis_utils import num_besselj_zeros
+from aspire.basis.basis_utils import all_besselj_zeros
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ class FBBasisMixin(object):
     to be inherited by Fourier-Bessel subclasses of Basis.
     """
 
-    def _getfbzeros(self):
+    def _calc_k_max(self):
         """
         Generate zeros of Bessel functions
         """
@@ -27,12 +27,17 @@ class FBBasisMixin(object):
         zeros = []
 
         # generate zeros of Bessel functions for each ell
+        # if we are in a Fourier-Bessel 3D basis, add 1/2 to the order
+        # ell of each bessel function.
+        ell_add = 0
+        if self.ndim == 3:
+            ell_add = 1/2
         for ell in range(upper_bound):
             # for each ell, num_besselj_zeros returns the zeros of the
             # order ell Bessel function which are less than 2*pi*c*R = nres*pi/2,
             # the truncation rule for the Fourier-Bessel expansion
-            _n, _zeros = num_besselj_zeros(
-                ell + (self.ndim - 2) / 2, self.nres * np.pi / 2
+            _n, _zeros = all_besselj_zeros(
+                ell + ell_add, self.nres * np.pi / 2
             )
             if _n == 0:
                 break
