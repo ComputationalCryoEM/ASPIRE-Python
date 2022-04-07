@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import eigh, norm
 
 from aspire.abinitio import CLOrient3D
-from aspire.utils import J_conjugate, all_pairs, all_triplets
+from aspire.utils import J_conjugate, all_pairs, all_triplets, anorm
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -217,8 +217,9 @@ class CLSymmetryC3C4(CLOrient3D):
 
         # We decompose the leading eigenvector and normalize to obtain the third rows, vis.
         vis = lead_vec.reshape((n_img, 3))
-        for i in range(n_img):
-            vis[i] = vis[i] / norm(vis[i])
+        vis /= anorm(vis, axes=(-1,))[:, np.newaxis]
+        #        for i in range(n_img):
+        #            vis[i] = vis[i] / norm(vis[i])
 
         return vis
 
