@@ -8,7 +8,7 @@ from parameterized import parameterized
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
 from aspire.utils import Rotation
-from aspire.utils.misc import all_pairs, gaussian_3d
+from aspire.utils.misc import J_conjugate, all_pairs, gaussian_3d
 from aspire.volume import Volume
 
 
@@ -18,7 +18,7 @@ class OrientSymmTestCase(TestCase):
 
     def setUp(self):
         self.L = 64
-        self.n_ims = 32
+        self.n_img = 32
         self.dtype = np.float32
         self.n_theta = 360
 
@@ -34,15 +34,15 @@ class OrientSymmTestCase(TestCase):
 
             self.srcs[o] = Simulation(
                 L=self.L,
-                n=self.n_ims,
-                offsets=np.zeros((self.n_ims, 2)),
+                n=self.n_img,
+                offsets=np.zeros((self.n_img, 2)),
                 dtype=self.dtype,
                 vols=self.vols[o],
                 C=1,
             )
 
             self.cl_classes[o] = CLSymmetryC3C4(
-                self.srcs[o], n_symm=o, n_theta=self.n_theta
+                self.srcs[o], symmetry=f"C{o}", n_theta=self.n_theta
             )
 
     def tearDown(self):
@@ -50,7 +50,7 @@ class OrientSymmTestCase(TestCase):
 
     @parameterized.expand([(order,), (order + 1,)])
     def testRelativeRotations(self, order):
-        n_ims = self.n_ims
+        n_img = self.n_img
 
         # Simulation source and common lines Class corresponding to
         # volume with C3 or C4 symmetry.
@@ -70,11 +70,11 @@ class OrientSymmTestCase(TestCase):
         J = np.diag([-1, -1, 1])
         rots_gt = src.rots
 
-        nchoose2 = int(n_ims * (n_ims - 1) / 2)
+        nchoose2 = int(n_img * (n_img - 1) / 2)
         min_idx = np.zeros(nchoose2, dtype=int)
         errs = np.zeros(nchoose2)
         diffs = np.zeros(order)
-        pairs = all_pairs(n_ims)
+        pairs = all_pairs(n_img)
         for idx, (i, j) in enumerate(pairs):
             Rij = Rijs[idx]
             Ri_gt = rots_gt[i]
@@ -97,7 +97,7 @@ class OrientSymmTestCase(TestCase):
 
     @parameterized.expand([(order,), (order + 1,)])
     def testSelfRelativeRotations(self, order):
-        n_ims = self.n_ims
+        n_img = self.n_img
 
         # Simulation source and common lines Class corresponding to
         # volume with C3 or C4 symmetry.
@@ -116,8 +116,8 @@ class OrientSymmTestCase(TestCase):
         J = np.diag([-1, -1, 1])
         rots_gt = src.rots
 
-        min_idx = np.zeros(n_ims, dtype=int)
-        errs = np.zeros(n_ims)
+        min_idx = np.zeros(n_img, dtype=int)
+        errs = np.zeros(n_img)
         for i, rot_gt in enumerate(rots_gt):
             Rii_gt = rot_gt.T @ g @ rot_gt
             Rii = Riis[i]
@@ -139,47 +139,46 @@ class OrientSymmTestCase(TestCase):
             self.assertTrue(mse < 0.025)
 
     def testGlobalJSync(self):
-        n_ims = self.n_ims
+        n_img = self.n_img
 
         # Build a set of outer products of random third rows.
-        vijs, viis, _ = self.buildOuterProducts(n_ims)
+        vijs, viis, _ = self.buildOuterProducts(n_img)
 
         # J-conjugate some of these outer products (every other element).
-        J = np.diag((-1, -1, 1))
         vijs_conj, viis_conj = vijs.copy(), viis.copy()
-        vijs_conj[::2] = J @ vijs_conj[::2] @ J
-        viis_conj[::2] = J @ viis_conj[::2] @ J
+        vijs_conj[::2] = J_conjugate(vijs_conj[::2])
+        viis_conj[::2] = J_conjugate(viis_conj[::2])
 
         # Synchronize vijs_conj and viis_conj.
         vijs_sync, viis_sync = self.cl_classes[3]._global_J_sync(vijs_conj, viis_conj)
 
         # Check that synchronized outer products equal original
         # up to J-conjugation of the entire set.
-
-        if vijs[0].all() == vijs_sync[0].all():
+        if (vijs[0] == vijs_sync[0]).all():
             self.assertTrue(np.allclose(vijs, vijs_sync))
             self.assertTrue(np.allclose(viis, viis_sync))
         else:
-            self.assertTrue(np.allclose(vijs, J @ vijs_sync @ J))
-            self.assertTrue(np.allclose(viis, J @ viis_sync @ J))
+            self.assertTrue(np.allclose(vijs, J_conjugate(vijs_sync)))
+            self.assertTrue(np.allclose(viis, J_conjugate(viis_sync)))
 
     def testEstimateThirdRows(self):
-        n_ims = self.n_ims
+        n_img = self.n_img
 
         # Build outer products vijs, viis, and get ground truth third rows.
-        vijs, viis, gt_vis = self.buildOuterProducts(n_ims)
+        vijs, viis, gt_vis = self.buildOuterProducts(n_img)
 
-        # Estimate third rows from outer products
+        # Estimate third rows from outer products.
+        # Due to factorization of V, these might be negated third rows.
         vis = self.cl_classes[3]._estimate_third_rows(vijs, viis)
 
         # Check if all-close up to difference of sign
-        ground_truth = np.sign(gt_vis) * gt_vis
-        estimate = np.sign(vis) * vis
+        ground_truth = np.sign(gt_vis[0, 0]) * gt_vis
+        estimate = np.sign(vis[0, 0]) * vis
         self.assertTrue(np.allclose(ground_truth, estimate))
 
     @parameterized.expand([(order,), (order + 1,)])
     def testSelfCommonLines(self, order):
-        n_ims = self.n_ims
+        n_img = self.n_img
         n_theta = self.n_theta
         src = self.srcs[order]
         cl_symm = self.cl_classes[order]
@@ -213,12 +212,12 @@ class OrientSymmTestCase(TestCase):
         else:
             angle_tol_err = 5 * pi / 180
 
-        detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / n_ims
+        detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / n_img
         self.assertTrue(detection_rate > 0.90)
 
     @parameterized.expand([(order,), (order + 1,)])
     def testCommonLines(self, order):
-        n_ims = self.n_ims
+        n_img = self.n_img
         src = self.srcs[order]
         cl_symm = self.cl_classes[order]
 
@@ -229,7 +228,7 @@ class OrientSymmTestCase(TestCase):
         # Compare common-line indices with ground truth angles.
         rots = src.rots  # ground truth rotations
         rots_symm = self.buildCyclicRotations(order)
-        pairs = all_pairs(n_ims)
+        pairs = all_pairs(n_img)
         within_1_degree = 0
         within_5_degrees = 0
         for (i, j) in pairs:
@@ -270,26 +269,26 @@ class OrientSymmTestCase(TestCase):
         self.assertTrue(within_5 > 0.99)
         self.assertTrue(within_1 > 0.95)
 
-    def buildOuterProducts(self, n_ims):
+    def buildOuterProducts(self, n_img):
         # Build random third rows, ground truth vis (unit vectors)
-        gt_vis = np.zeros((n_ims, 3), dtype=np.float32)
-        for i in range(n_ims):
+        gt_vis = np.zeros((n_img, 3), dtype=np.float32)
+        for i in range(n_img):
             random.seed(i)
             v = random.randn(3)
             gt_vis[i] = v / norm(v)
 
         # Find outer products viis and vijs for i<j
-        vijs = np.zeros((int(n_ims * (n_ims - 1) / 2), 3, 3))
-        viis = np.zeros((n_ims, 3, 3))
+        nchoose2 = int(n_img * (n_img - 1) / 2)
+        vijs = np.zeros((nchoose2, 3, 3))
+        viis = np.zeros((n_img, 3, 3))
 
         # All pairs (i,j) where i<j
-        indices = np.arange(n_ims)
-        pairs = [(i, j) for idx, i in enumerate(indices) for j in indices[idx + 1 :]]
+        pairs = all_pairs(n_img)
 
         for k, (i, j) in enumerate(pairs):
             vijs[k] = np.outer(gt_vis[i], gt_vis[j])
 
-        for i in range(n_ims):
+        for i in range(n_img):
             viis[i] = np.outer(gt_vis[i], gt_vis[i])
 
         return vijs, viis, gt_vis
@@ -328,11 +327,11 @@ class OrientSymmTestCase(TestCase):
         rots_symm = self.buildCyclicRotations(order)
 
         # Build ground truth self-common-lines matrix.
-        scl_gt = np.zeros((self.n_ims, 2), dtype=self.dtype)
+        scl_gt = np.zeros((self.n_img, 2), dtype=self.dtype)
         n_theta = self.n_theta
         g = rots_symm[1]
         g_n = rots_symm[order - 1]
-        for i in range(self.n_ims):
+        for i in range(self.n_img):
             Ri = rots[i]
 
             U1 = Ri.T @ g @ Ri
