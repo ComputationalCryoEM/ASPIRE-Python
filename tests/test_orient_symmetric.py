@@ -138,6 +138,61 @@ class OrientSymmTestCase(TestCase):
         else:
             self.assertTrue(mse < 0.025)
 
+    @parameterized.expand([(order,), (order + 1,)])
+    def testRelativeViewingDirections(self, order):
+        n_img = self.n_img
+
+        # Simulation source and common lines Class corresponding to
+        # volume with C3 or C4 symmetry.
+        src = self.srcs[order]
+        cl_symm = self.cl_classes[order]
+
+        # Calculate ground truth relative viewing directions, viis and vijs.
+        rots_gt = src.rots
+
+        viis_gt = np.zeros((n_img, 3, 3))
+        for i in range(n_img):
+            vi = rots_gt[i, 2]
+            viis_gt[i] = np.outer(vi, vi)
+
+        pairs = all_pairs(n_img)
+        n_pairs = len(pairs)
+        vijs_gt = np.zeros((n_pairs, 3, 3))
+        for idx, (i, j) in enumerate(pairs):
+            vi = rots_gt[i, 2]
+            vj = rots_gt[j, 2]
+            vijs_gt[idx] = np.outer(vi, vj)
+
+        # Estimate relative viewing directions.
+        vijs, viis = cl_symm._estimate_relative_viewing_directions_c3_c4()
+
+        # Calculate the mean squared error for vijs.
+        errs_vijs = np.zeros(n_pairs)
+        diffs_vijs = np.zeros(2)
+        for idx, (vij_gt, vij) in enumerate(zip(vijs_gt, vijs)):
+            diffs_vijs[0] = norm(vij - vij_gt)
+            diffs_vijs[1] = norm(J_conjugate(vij) - vij_gt)
+            errs_vijs[idx] = diffs_vijs[np.argmin(diffs_vijs)]
+        mse_vijs = np.mean(errs_vijs**2)
+
+        # Calculate the mean squared error for viis.
+        errs_viis = np.zeros(n_img)
+        diffs_viis = np.zeros(2)
+        for idx, (vii_gt, vii) in enumerate(zip(viis_gt, viis)):
+            diffs_viis[0] = norm(vii - vii_gt)
+            diffs_viis[1] = norm(J_conjugate(vii) - vii_gt)
+            errs_viis[idx] = diffs_viis[np.argmin(diffs_viis)]
+        mse_viis = np.mean(errs_viis**2)
+
+        # Check that MSE is small.
+        # MSE is better for C3 than C4.
+        if order == 3:
+            self.assertTrue(mse_vijs < 0.0016)
+            self.assertTrue(mse_viis < 0.0011)
+        else:
+            self.assertTrue(mse_vijs < 0.021)
+            self.assertTrue(mse_viis < 0.012)
+
     def testGlobalJSync(self):
         n_img = self.n_img
 
