@@ -187,7 +187,7 @@ class OrientSymmTestCase(TestCase):
         # Check that MSE is small.
         # MSE is better for C3 than C4.
         if order == 3:
-            self.assertTrue(mse_vijs < 0.0007)
+            self.assertTrue(mse_vijs < 0.0008)
             self.assertTrue(mse_viis < 0.0002)
         else:
             self.assertTrue(mse_vijs < 0.0095)

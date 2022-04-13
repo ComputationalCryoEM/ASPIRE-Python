@@ -234,8 +234,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
         Find the single pair of self-common-lines in each image assuming that the underlying
         symmetry is C3 or C4.
-
-
         """
         pf = self.pf.copy()
         n_img = self.n_img
