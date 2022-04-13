@@ -134,9 +134,9 @@ class OrientSymmTestCase(TestCase):
 
         # Mean-squared-error is better for C3 than for C4.
         if order == 3:
-            self.assertTrue(mse < 0.0035)
+            self.assertTrue(mse < 0.0006)
         else:
-            self.assertTrue(mse < 0.025)
+            self.assertTrue(mse < 0.0025)
 
     @parameterized.expand([(order,), (order + 1,)])
     def testRelativeViewingDirections(self, order):
@@ -187,11 +187,11 @@ class OrientSymmTestCase(TestCase):
         # Check that MSE is small.
         # MSE is better for C3 than C4.
         if order == 3:
-            self.assertTrue(mse_vijs < 0.0016)
-            self.assertTrue(mse_viis < 0.0011)
+            self.assertTrue(mse_vijs < 0.0007)
+            self.assertTrue(mse_viis < 0.0002)
         else:
-            self.assertTrue(mse_vijs < 0.021)
-            self.assertTrue(mse_viis < 0.012)
+            self.assertTrue(mse_vijs < 0.0095)
+            self.assertTrue(mse_viis < 0.0011)
 
     def testGlobalJSync(self):
         n_img = self.n_img

@@ -248,12 +248,14 @@ class CLSymmetryC3C4(CLSyncVoting):
         # The angle between self-common-lines is in the range [60, 180] for C3 symmetry
         # and [90, 180] for C4 symmetry. Since antipodal lines are perfectly correlated
         # we search for common lines in a smaller window.
+        # Note: matlab code used [60, 165] for order=3 and [90, 160] for order=4.
+        # We've increased this window to improve the MSE of our estimates.
         if order == 3:
             min_angle_diff = 60 * pi / 180
-            max_angle_diff = 165 * pi / 180
+            max_angle_diff = 175 * pi / 180
         else:
             min_angle_diff = 90 * pi / 180
-            max_angle_diff = 160 * pi / 180
+            max_angle_diff = 175 * pi / 180
 
         # The self-common-lines matrix holds two indices per image that represent
         # the two self common-lines in the image.
