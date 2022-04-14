@@ -261,11 +261,11 @@ class OrientSymmTestCase(TestCase):
         min_mean_angle_diff = scl_idx.choose(scl_diff_angle_mean)
 
         # Assert scl detection rate is greater than 90% with 1 degree tolerance for order=3,
-        # and 5 degree tolerance for order=4.
+        # and 3 degree tolerance for order=4.
         if order == 3:
             angle_tol_err = 1 * pi / 180
         else:
-            angle_tol_err = 5 * pi / 180
+            angle_tol_err = 3 * pi / 180
 
         detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / n_img
         self.assertTrue(detection_rate > 0.90)
