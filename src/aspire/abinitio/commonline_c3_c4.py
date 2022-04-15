@@ -230,7 +230,7 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         :return: An n_imgx3x3 array holding the n_img estimated rotation matrices.
         """
-        
+
         # return rots
         pass
 
