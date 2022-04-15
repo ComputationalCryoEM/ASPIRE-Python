@@ -220,9 +220,17 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         return vis
 
-    def _estimate_inplane_rotations(
-        self, pf, vis, inplane_rot_res, max_shift, shift_step
-    ):
+    def _estimate_inplane_rotations(self, vis):
+        """
+        Estimate the rotation matrices for each image by constructing arbitrary rotation matrices
+        populated with the given third rows, vis, and then rotating by an appropriate in-plane rotation.
+
+        :param vis: An n_imgx3 array where the i'th row holds the estimate for the third row of
+        the i'th rotation matrix.
+
+        :return: An n_imgx3x3 array holding the n_img estimated rotation matrices.
+        """
+        
         # return rots
         pass
 
