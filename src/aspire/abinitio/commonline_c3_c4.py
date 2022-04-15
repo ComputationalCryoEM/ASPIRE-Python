@@ -230,8 +230,15 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         :return: An n_imgx3x3 array holding the n_img estimated rotation matrices.
         """
+        # n_img = self.n_img
+        # n_theta = self.n_theta
+        # max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
+        # shift_step = self.shift_step
+        # order = self.order
 
-        # return rots
+        # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
+        # the corresponding third rows vis.
+
         pass
 
     #################################################
@@ -619,3 +626,30 @@ class CLSymmetryC3C4(CLSyncVoting):
             new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]
 
         return new_vec
+
+    ###########################################
+    # Secondary Methods fo In-Plane Rotations #
+    ###########################################
+
+    def _complete_third_row_to_rot(r3):
+        """
+        Construct a rotation matrix whose thrid row is equal to the given row vector.
+
+        :param r3: A 1x3 vector of norm 1.
+        :return: A 3x3 rotation matrix whose third row is r3.
+        """
+
+        # If the third row coincides with the z-axis we return the identity matrix.
+        if norm(r3 - [0, 0, 1]) < 1e-5:
+            return np.eye(3)
+
+        # tmp is non-zero since r3 does not coincide with the z-axis.
+        tmp = np.sqrt(r3[0] ** 2 + r3[1] ** 2)
+
+        # Construct an orthogonal row vector of norm 1.
+        r1 = np.array([r3[1] / tmp, -r3[0] / tmp, 0])
+
+        # Construct r2 so that r3 = r1xr2
+        r2 = np.array([r3[0] * r3[2] / tmp, r3[1] * r3[2] / tmp, -tmp])
+
+        return np.vstack((r1, r2, r3))
