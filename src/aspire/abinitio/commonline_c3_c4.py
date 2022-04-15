@@ -630,8 +630,8 @@ class CLSymmetryC3C4(CLSyncVoting):
     ###########################################
     # Secondary Methods fo In-Plane Rotations #
     ###########################################
-
-    def _complete_third_row_to_rot(r3):
+    @staticmethod
+    def complete_third_row_to_rot(r3):
         """
         Construct a rotation matrix whose thrid row is equal to the given row vector.
 

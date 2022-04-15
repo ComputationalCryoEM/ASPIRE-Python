@@ -2,13 +2,14 @@ from unittest import TestCase
 
 import numpy as np
 from numpy import pi, random
-from numpy.linalg import norm
+from numpy.linalg import det, norm
 from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.utils.misc import J_conjugate, all_pairs, gaussian_3d
+from aspire.utils.random import randn
 from aspire.volume import Volume
 
 
@@ -323,6 +324,25 @@ class OrientSymmTestCase(TestCase):
         within_1 = within_1_degree / n_estimates
         self.assertTrue(within_5 > 0.99)
         self.assertTrue(within_1 > 0.95)
+
+    def testCompleteThirdRow(self):
+        cl_class = self.cl_classes[3]
+
+        # Complete third row that coincides with z-axis
+        z = np.array([0, 0, 1])
+        Rz = cl_class.complete_third_row_to_rot(z)
+
+        # Complete random third row.
+        r3 = randn(3, seed=123)
+        r3 /= norm(r3)
+        R = cl_class.complete_third_row_to_rot(r3)
+
+        # Assert that Rz is the identity matrix.
+        self.assertTrue(np.allclose(Rz, np.eye(3)))
+
+        # Assert that R is orthogonal with determinant 1.
+        self.assertTrue(np.allclose(R @ R.T, np.eye(3)))
+        self.assertTrue(np.allclose(det(R), 1))
 
     def buildOuterProducts(self, n_img):
         # Build random third rows, ground truth vis (unit vectors)
