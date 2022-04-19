@@ -39,6 +39,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         n_theta=None,
         epsilon=1e-3,
         max_iters=1000,
+        degree_res=1,
         seed=None,
     ):
         """
@@ -50,6 +51,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         :param n_theta: The number of points in the theta direction
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
+        :param degree_res: Degree resolution for estimating in-plane rotations.
         :param seed: Optional seed for RNG.
         """
 
@@ -68,6 +70,7 @@ class CLSymmetryC3C4(CLSyncVoting):
             self.order = int(symmetry[1])
         self.epsilon = epsilon
         self.max_iters = max_iters
+        self.degree_res = degree_res
         self.seed = seed
 
     def estimate_rotations(self):
@@ -228,18 +231,137 @@ class CLSymmetryC3C4(CLSyncVoting):
         :param vis: An n_imgx3 array where the i'th row holds the estimate for the third row of
         the i'th rotation matrix.
 
-        :return: An n_imgx3x3 array holding the n_img estimated rotation matrices.
+        :return: Rotation matrices Ris and in-plane rotation matrices R_thetas, both size n_imgx3x3.
         """
-        # n_img = self.n_img
-        # n_theta = self.n_theta
-        # max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
-        # shift_step = self.shift_step
-        # order = self.order
+        pf = self.pf
+        n_img = self.n_img
+        n_theta = self.n_theta
+        max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
+        shift_step = self.shift_step
+        order = self.order
+        degree_res = self.degree_res
 
         # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
         # the corresponding third rows vis.
+        Ri_tildes = np.array([self.complete_third_row_to_rot(vi) for vi in vis])
 
-        pass
+        # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
+        max_angle = (360 // order) * order
+        theta_ijs = np.arange(0, max_angle, degree_res) * pi / 180
+        n_theta_ijs = len(theta_ijs)
+
+        euler_angles = np.zeros((n_theta_ijs, 3), dtype=self.dtype)
+        euler_angles[:, 2] = theta_ijs
+        R_theta_ijs = Rotation.from_euler(euler_angles, dtype=self.dtype).matrices
+
+        # Step 3: Compute the correlation over all shifts.
+        # Generate shifts.
+        r_max = pf.shape[0]
+        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
+            r_max, max_shift_1d, shift_step
+        )
+        n_shifts = len(shifts)
+        all_shift_phases = shift_phases.T
+
+        pairs = all_pairs(n_img)
+        n_pairs = len(pairs)
+        max_corrs = np.zeros(n_pairs)
+        max_corrs_idx = np.zeros(n_pairs)
+
+        # Q is the n_img x n_img  Hermitian matrix defined by Q = q*q^H,
+        # where q = (exp(i*order*theta_0), ..., exp(i*order*theta_{n_img-1}))^H,
+        # and theta_i in [0, 2pi/order) is the in-plane rotation angle for the i'th image.
+        Q = np.zeros((n_img, n_img), dtype=complex)
+
+        # Transpose pf and reconstruct the full polar Fourier for use in correlation.
+        # self.pf only consists of rays in the range [180, 360).
+        pf = pf.transpose((2, 1, 0))
+        pf = np.concatenate((pf, np.conj(pf)), axis=1)
+
+        with tqdm(total=n_pairs) as pbar:
+            for idx, (i, j) in enumerate(pairs):
+                pf_i = pf[i]
+                pf_j = pf[j]
+
+                # Generate shifted versions of images.
+                pf_i_shifted = np.array(
+                    [pf_i * shift_phase for shift_phase in all_shift_phases]
+                )
+
+                # Normalize each ray.
+                for ray in pf_i_shifted:
+                    ray /= norm(ray)
+                for ray in pf_j:
+                    ray /= norm(ray)
+
+                Ri_tilde = Ri_tildes[i]
+                Rj_tilde = Ri_tildes[j]
+
+                Us = np.array(
+                    [Ri_tilde.T @ R_theta_ij @ Rj_tilde for R_theta_ij in R_theta_ijs]
+                )
+                c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
+                c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
+
+                c1s = self.clAngles2Ind(c1s, n_theta)
+                c2s = self.clAngles2Ind(c2s, n_theta)
+
+                corrs = np.array(
+                    [
+                        np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
+                        for pf_i_shift in pf_i_shifted
+                        for c1, c2 in zip(c1s, c2s)
+                    ]
+                )
+
+                # Reshape to group by shift and symmetric order.
+                corrs = corrs.reshape((n_shifts, order, n_theta_ijs // order))
+
+                # For each pair of lines we take the maximum correlation over all shifts.
+                corrs = np.max(np.real(corrs), axis=0)
+
+                # We take the mean score over the 'order' groups and find the group that atttains the maximum.
+                # This produces the index corresponding to theta_ij in the range [0, 2pi/order).
+                corrs = np.mean(np.real(corrs), axis=0)
+                max_idx_corr = np.argmax(corrs)
+                max_corr = corrs[max_idx_corr]
+
+                max_corrs[idx] = max_corr  # This is only for stats.
+                max_corrs_idx[idx] = max_idx_corr  # This is only for stats.
+
+                theta_ij = degree_res * max_idx_corr * pi / 180
+
+                Q[i, j] = np.cos(order * theta_ij) - 1j * np.sin(order * theta_ij)
+
+                if np.mod(idx, 10) == 0:
+                    pbar.update(10)
+
+            # Populate the lower triangle and diagonal of Q.
+            # Diagonals are 1 since e^{i*0}=1.
+            Q += np.conj(Q).T + np.eye(n_img)
+
+            # Q is a rank-1 Hermitian matrix.
+            eig_vals, eig_vecs = eigh(Q)
+            evect1 = eig_vecs[:, -1]
+            logger.info(f"Top 5 eigenvalues of Q are {str(eig_vals[-5:])}.")
+
+            # Extract in-plane rotations, R_thetas, from eigenvector and construct the rotations, Ris.
+            Ris = np.zeros((n_img, 3, 3))
+            R_thetas = np.zeros((n_img, 3, 3))
+            for i in range(n_img):
+                zi = evect1[i]
+                # Rescale so it lies on the unit circle.
+                zi /= np.abs(zi)
+                c = np.real(zi ** (1 / order))
+                s = np.imag(zi ** (1 / order))
+
+                # Form the in-plane rotation, R_theta_i
+                R_thetas[i] = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+
+                # Form the rotation matrices Ris.
+                Ris[i] = R_thetas[i] @ Ri_tildes[i]
+
+            return Ris, R_thetas
 
     #################################################
     # Secondary Methods for computing outer product #
@@ -653,3 +775,13 @@ class CLSymmetryC3C4(CLSyncVoting):
         r2 = np.array([r3[0] * r3[2] / tmp, r3[1] * r3[2] / tmp, -tmp])
 
         return np.vstack((r1, r2, r3))
+
+    @staticmethod
+    def clAngles2Ind(clAngles, n_theta):
+        thetas = np.arctan2(clAngles[:, 1], clAngles[:, 0])
+
+        # Shift from [-pi,pi] to [0,2*pi).
+        thetas = np.mod(thetas, 2 * np.pi)
+
+        # linear scale from [0,2*pi) to [0,n_theta).
+        return np.mod(np.round(thetas / (2 * np.pi) * n_theta), n_theta).astype(int)
