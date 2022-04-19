@@ -1,3 +1,4 @@
+{
     "creators": [
 	{
 	    "affiliation": "Gestalt Group LLC",
@@ -22,7 +23,7 @@
 	    "name": "Robby Brook"
 	},
 	{
-	    "affiliation": "Princeton University"
+	    "affiliation": "Princeton University",
 	    "name": "Josh Carmichael"
 	},
 	{
@@ -49,3 +50,4 @@
 	    "name": "Amit Singer"
 	}
     ]
+}
