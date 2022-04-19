@@ -11,6 +11,7 @@ include pytest.ini
 include tox.ini
 include logging.conf
 include config.ini
+include .zenodo.json
 recursive-include docs *.bat
 recursive-include docs *.bib
 recursive-include docs *.py
