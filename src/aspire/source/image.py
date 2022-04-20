@@ -725,7 +725,7 @@ class ArrayImageSource(ImageSource):
 
         # Create filter indices, these are required to pass unharmed through filter eval code
         #   that is potentially called by other methods later.
-        self.filter_indices = np.zeros(self.n)
+        self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
 
         # Optionally populate angles/rotations.
