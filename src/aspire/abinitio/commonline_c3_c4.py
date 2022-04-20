@@ -307,7 +307,7 @@ class CLSymmetryC3C4(CLSyncVoting):
                 ray /= norm(ray)
 
             # Compute correlation.
-            corrs = np.dot(pf_i_shifted, pf_full_i.T)
+            corrs = pf_i_shifted @ pf_full_i.T
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
 
             # Mask with allowed combinations.
