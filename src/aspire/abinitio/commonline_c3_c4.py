@@ -336,7 +336,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         if order == 3:
             # cos_diff should be <= 0.5, but due to discretization that might be violated.
             if np.max(cos_diff) > 0.5:
-                bad_diffs = np.count_nonzero([cos_diff > 0.5])
+                bad_diffs = np.count_nonzero(cos_diff > 0.5)
                 logger.warning(
                     "cos(angular_diff) should be < 0.5."
                     f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}"
@@ -348,7 +348,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         else:
             # cos_diff should be <= 0, but due to discretization that might be violated.
             if np.max(cos_diff) > 0:
-                bad_diffs = np.count_nonzero([cos_diff > 0])
+                bad_diffs = np.count_nonzero(cos_diff > 0)
                 logger.warning(
                     "cos(angular_diff) should be < 0."
                     f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}"
