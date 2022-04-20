@@ -82,14 +82,12 @@ class CLSymmetryC3C4(CLSyncVoting):
 
     def _estimate_relative_viewing_directions_c3_c4(self):
         """
-        Estimate the relative viewing directions vij = vi'vj, i<j, and vii = vi'vi, where
+        Estimate the relative viewing directions vij = vi*vj^T, i<j, and vii = vi*vi^T, where
         vi is the third row of the i'th rotation matrix Ri.
         """
 
         # Step 1: Detect a single pair of common-lines between each pair of images
-        if self.clmatrix is None:
-            self.build_clmatrix()
-
+        self.build_clmatrix()
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
@@ -241,7 +239,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
         shift_step = self.shift_step
         order = self.order
-        assert order in [3, 4], f"order must be 3 or 4. Got order: {order}."
 
         # The angle between self-common-lines is in the range [60, 180] for C3 symmetry
         # and [90, 180] for C4 symmetry. Since antipodal lines are perfectly correlated
