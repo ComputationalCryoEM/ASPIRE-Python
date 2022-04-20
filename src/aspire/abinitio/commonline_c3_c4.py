@@ -37,6 +37,8 @@ class CLSymmetryC3C4(CLSyncVoting):
         symmetry=None,
         n_rad=None,
         n_theta=None,
+        max_shift=0.15,
+        shift_step=1,
         epsilon=1e-3,
         max_iters=1000,
         seed=None,
@@ -48,12 +50,20 @@ class CLSymmetryC3C4(CLSyncVoting):
         :param symmetry: A string, 'C3' or 'C4', indicating the symmetry type.
         :param n_rad: The number of points in the radial direction
         :param n_theta: The number of points in the theta direction
+        :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
+        :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param seed: Optional seed for RNG.
         """
 
-        super().__init__(src, n_rad=n_rad, n_theta=n_theta)
+        super().__init__(
+            src,
+            n_rad=n_rad,
+            n_theta=n_theta,
+            max_shift=max_shift,
+            shift_step=shift_step,
+        )
 
         if symmetry is None:
             raise NotImplementedError(
