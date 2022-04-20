@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from numpy import pi
 from numpy.linalg import eigh, norm, svd
 from tqdm import tqdm
 
@@ -256,11 +255,11 @@ class CLSymmetryC3C4(CLSyncVoting):
         # Note: matlab code used [60, 165] for order=3 and [90, 160] for order=4.
         # We've increased this window to improve the MSE of our estimates.
         if order == 3:
-            min_angle_diff = 60 * pi / 180
-            max_angle_diff = 175 * pi / 180
+            min_angle_diff = 60 * np.pi / 180
+            max_angle_diff = 175 * np.pi / 180
         else:
-            min_angle_diff = 90 * pi / 180
-            max_angle_diff = 175 * pi / 180
+            min_angle_diff = 90 * np.pi / 180
+            max_angle_diff = 175 * np.pi / 180
 
         # The self-common-lines matrix holds two indices per image that represent
         # the two self common-lines in the image.
@@ -272,7 +271,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         # range [min_angle_diff, max_angle_diff].
         X, Y = np.meshgrid(range(n_theta), range(n_theta // 2))
         diff = Y - X
-        unsigned_angle_diff = np.arccos(np.cos(diff * 2 * pi / n_theta))
+        unsigned_angle_diff = np.arccos(np.cos(diff * 2 * np.pi / n_theta))
         good_diffs = np.logical_and(
             min_angle_diff < unsigned_angle_diff, unsigned_angle_diff < max_angle_diff
         )
