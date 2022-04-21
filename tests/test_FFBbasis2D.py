@@ -1,8 +1,11 @@
 import logging
 import os.path
 from unittest import TestCase
+from unittest.case import SkipTest
 
 import numpy as np
+from parameterized import parameterized_class
+from scipy.special import jv
 
 from aspire.basis import FFBBasis2D
 from aspire.image import Image
@@ -11,256 +14,92 @@ from aspire.utils import utest_tolerance
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
+from ._basis_util import Steerable2DMixin
+
 logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class FFBBasis2DTestCase(TestCase):
+# NOTE: Class with default values is already present, so don't list it below.
+@parameterized_class(
+    ("L", "dtype"),
+    [
+        (8, np.float64),
+        (16, np.float32),
+        (16, np.float64),
+        (32, np.float32),
+        (32, np.float64),
+    ],
+)
+class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
+    L = 8
+    dtype = np.float32
+
     def setUp(self):
-        self.dtype = np.float32  # Required for convergence of this test
-        self.L = 8
         self.basis = FFBBasis2D((self.L, self.L), dtype=self.dtype)
+        self.seed = 9161341
 
     def tearDown(self):
         pass
 
-    def testFFBBasis2DIndices(self):
+    def _testElement(self, ell, k, sgn):
         indices = self.basis.indices()
+        ells = indices["ells"]
+        sgns = indices["sgns"]
+        ks = indices["ks"]
 
-        self.assertTrue(
-            np.allclose(
-                indices["ells"],
-                [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    3.0,
-                    3.0,
-                    3.0,
-                    3.0,
-                    4.0,
-                    4.0,
-                    4.0,
-                    4.0,
-                    5.0,
-                    5.0,
-                    5.0,
-                    5.0,
-                    6.0,
-                    6.0,
-                    7.0,
-                    7.0,
-                    8.0,
-                    8.0,
-                ],
-            )
+        g2d = grid_2d(self.L, dtype=self.dtype)
+        mask = g2d["r"] < 1
+
+        r0 = self.basis.r0[k, ell]
+
+        # TODO: Figure out where these factors of 1 / 2 are coming from.
+        # Intuitively, the grid should go from -L / 2 to L / 2, not -L / 2 to
+        # L / 4. Furthermore, there's an extra factor of 1 / 2 in the
+        # definition of `im` below that may be related.
+        r = g2d["r"] * self.L / 4
+
+        im = np.zeros((self.L, self.L), dtype=self.dtype)
+        im[mask] = (
+            (-1) ** k
+            * np.sqrt(np.pi)
+            * r0
+            * jv(ell, 2 * np.pi * r[mask])
+            / ((2 * np.pi * r[mask]) ** 2 - r0**2)
         )
 
-        self.assertTrue(
-            np.allclose(
-                indices["ks"],
-                [
-                    0.0,
-                    1.0,
-                    2.0,
-                    3.0,
-                    0.0,
-                    1.0,
-                    2.0,
-                    0.0,
-                    1.0,
-                    2.0,
-                    0.0,
-                    1.0,
-                    2.0,
-                    0.0,
-                    1.0,
-                    2.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
-            )
-        )
+        if sgn == 1:
+            im *= np.sqrt(2) * np.cos(ell * g2d["phi"])
+        else:
+            im *= np.sqrt(2) * np.sin(ell * g2d["phi"])
 
-        self.assertTrue(
-            np.allclose(
-                indices["sgns"],
-                [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    -1.0,
-                    1.0,
-                    -1.0,
-                    1.0,
-                    -1.0,
-                ],
-            )
-        )
+        coef_ref = np.zeros(self.basis.count, dtype=self.dtype)
+        coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
-    def testFFBBasis2DNorms(self):
-        radial_norms, angular_norms = self.basis.norms()
-        self.assertTrue(
-            np.allclose(
-                radial_norms * angular_norms,
-                [
-                    3.68065992303471,
-                    2.41241466684800,
-                    1.92454669738088,
-                    1.64809729313301,
-                    2.01913617828263,
-                    1.50455726188833,
-                    1.25183461029289,
-                    1.70284654929000,
-                    1.36051054373844,
-                    1.16529703804363,
-                    1.49532071137207,
-                    1.25039038364830,
-                    1.34537533748304,
-                    1.16245357319190,
-                    1.23042467443861,
-                    1.09002083501080,
-                    1.13867113286781,
-                    1.06324777330476,
-                    0.999841586390824,
-                ],
-            )
-        )
+        im_ref = self.basis.evaluate(coef_ref).asnumpy()[0]
 
-    def testFFBBasis2DEvaluate(self):
-        v = np.array(
-            [
-                1.07338590e-01,
-                1.23690941e-01,
-                6.44482039e-03,
-                -5.40484306e-02,
-                -4.85304586e-02,
-                1.09852144e-02,
-                3.87838396e-02,
-                3.43796455e-02,
-                -6.43284705e-03,
-                -2.86677145e-02,
-                -1.42313328e-02,
-                -2.25684091e-03,
-                -3.31840727e-02,
-                -2.59706174e-03,
-                -5.91919887e-04,
-                -9.97433028e-03,
-                9.19123928e-04,
-                1.19891589e-03,
-                7.49154982e-03,
-                6.18865229e-03,
-                -8.13265715e-04,
-                -1.30715655e-02,
-                -1.44160603e-02,
-                2.90379956e-03,
-                2.37066082e-02,
-                4.88805735e-03,
-                1.47870707e-03,
-                7.63376018e-03,
-                -5.60619559e-03,
-                1.05165081e-02,
-                3.30510143e-03,
-                -3.48652120e-03,
-                -4.23228797e-04,
-                1.40484061e-02,
-            ],
-            dtype=self.dtype,
-        )
-        result = self.basis.evaluate(v)
+        coef = self.basis.expand(im)
 
-        self.assertTrue(
-            np.allclose(
-                result.asnumpy(),  # Result of evaluate is an Image after RCOPT
-                np.load(
-                    os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_out_8_8.npy")
-                ).T,  # RCOPT
-                atol=utest_tolerance(self.dtype),
-            )
-        )
+        # NOTE: These tolerances are expected to be rather loose since the
+        # above expression for `im` is derived from the analytical formulation
+        # (eq. 6 in Zhao and Singer, 2013) and does not take into account
+        # discretization and other approximations.
+        self.assertTrue(np.allclose(im, im_ref, atol=1e-1))
+        self.assertTrue(np.allclose(coef, coef_ref, atol=1e-1))
 
-    def testFFBBasis2DEvaluate_t(self):
-        x = np.load(os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")).T  # RCOPT
-        result = self.basis.evaluate_t(x.astype(self.dtype))
+    def testElements(self):
+        ells = [1, 1, 1, 1]
+        ks = [1, 2, 1, 2]
+        sgns = [-1, -1, 1, 1]
 
-        self.assertTrue(
-            np.allclose(
-                result,
-                np.load(os.path.join(DATA_DIR, "ffbbasis2d_vcoeff_out_8_8.npy"))[
-                    ..., 0
-                ],
-            )
-        )
-
-    def testFFBBasis2DExpand(self):
-        x = np.load(os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")).T  # RCOPT
-        result = self.basis.expand(x.astype(self.dtype))
-        self.assertTrue(
-            np.allclose(
-                result,
-                np.load(os.path.join(DATA_DIR, "ffbbasis2d_vcoeff_out_exp_8_8.npy"))[
-                    ..., 0
-                ],
-                atol=utest_tolerance(self.dtype),
-            )
-        )
+        for ell, k, sgn in zip(ells, ks, sgns):
+            self._testElement(ell, k, sgn)
 
     def testRotate(self):
+        # Convergence issues for double precision.
+        if np.dtype(self.dtype) is np.dtype(np.float64):
+            raise SkipTest
+
         # Now low res (8x8) had problems;
         #  better with odd (7x7), but still not good.
         # We'll use a higher res test image.

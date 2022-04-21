@@ -121,7 +121,7 @@ L = v2.resolution
 # Alternatively, for quick sanity checking purposes we can view as a contour plot.
 #   We'll use three orthographic projections, one per axis.
 for axis in range(3):
-    plt.contourf(np.arange(L), np.arange(L), np.sum(v2[0], axis=axis))
+    plt.contourf(np.arange(L), np.arange(L), np.sum(v2[0], axis=axis), cmap="gray")
     plt.show()
 
 # %%
