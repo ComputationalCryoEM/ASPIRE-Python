@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire.basis import Basis
+from aspire.basis import Basis, FBBasisMixin
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
 from aspire.utils import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
@@ -10,7 +10,7 @@ from aspire.utils.matlab_compat import m_flatten, m_reshape
 logger = logging.getLogger(__name__)
 
 
-class FBBasis3D(Basis):
+class FBBasis3D(Basis, FBBasisMixin):
     """
     Define a derived class for direct spherical Harmonics Bessel basis expanding 3D volumes
 
@@ -49,7 +49,7 @@ class FBBasis3D(Basis):
         )
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
-        self._getfbzeros()
+        self._calc_k_max()
 
         # calculate total number of basis functions
         self.count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
