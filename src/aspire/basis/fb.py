@@ -26,17 +26,15 @@ class FBBasisMixin(object):
         # List of zero values (each entry is an ndarray; all of possibly different lengths)
         zeros = []
 
-        # generate zeros of Bessel functions for each ell
-        # if we are in a Fourier-Bessel 3D basis, add 1/2 to the order
-        # ell of each bessel function.
-        ell_add = 0
-        if self.ndim == 3:
-            ell_add = 1 / 2
         for ell in range(upper_bound):
             # for each ell, num_besselj_zeros returns the zeros of the
             # order ell Bessel function which are less than 2*pi*c*R = nres*pi/2,
             # the truncation rule for the Fourier-Bessel expansion
-            _n, _zeros = all_besselj_zeros(ell + ell_add, self.nres * np.pi / 2)
+            if self.ndim == 2:
+                bessel_order = ell
+            elif self.ndim == 3:
+                bessel_order = ell + 1 / 2
+            _n, _zeros = all_besselj_zeros(bessel_order, self.nres * np.pi / 2)
             if _n == 0:
                 break
             else:
