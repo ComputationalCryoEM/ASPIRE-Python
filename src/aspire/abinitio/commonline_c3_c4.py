@@ -400,7 +400,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         :param n_theta: The number of points in the theta direction (common lines)
         :return: The (i,j) rotation block of the synchronization matrix
         """
-
         good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
 
         rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
@@ -409,9 +408,9 @@ class CLSymmetryC3C4(CLSyncVoting):
             rot_mean = np.mean(rots, 0)
 
         else:
-            # This for the case that images i and j correspond to the same
+            # This is for the case that images i and j correspond to the same
             # viewing direction and differ only by in-plane rotation.
-            # Simply put to zero as Matlab code.
+            # We set to zero as in the Matlab code.
             rot_mean = np.zeros((3, 3))
 
         return rot_mean
@@ -420,14 +419,13 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
         Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj,
         and Rij to be of the same handedness. We perform a local handedness synchronization and
-        set vij = 1/n ∑ Rii^s @ Rij @ Rjj^s.
+        set vij = 1/n*sum(Rii^s @ Rij @ Rjj^s).
 
         :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations
             (each pair of images induces two estimates).
         :param Riis: A nx3x3 array of estimates of self-relative rotations.
         :return: vijs, viis
         """
-
         order = self.order
         n_img = self.n_img
 
@@ -439,7 +437,7 @@ class CLSymmetryC3C4(CLSyncVoting):
             len(Rijs) == nchoose2
         ), f"There must be n-choose-2 relative rotations. Got {len(Rijs)}."
 
-        # Estimate viis from Riis. vii = 1/order * (∑ Rii ** s) for s = 0, 1, ..., order.
+        # Estimate viis from Riis. vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
         viis = np.zeros((n_img, 3, 3))
         for i, Rii in enumerate(Riis):
             viis[i] = np.mean(
