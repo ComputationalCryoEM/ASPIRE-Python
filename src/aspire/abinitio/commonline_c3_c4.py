@@ -326,21 +326,29 @@ class CLSymmetryC3C4(CLOrient3D):
         pairs = all_pairs(n_img)
         triplets = all_triplets(n_img)
 
-        # Under the 4 possible configurations of the relative handedness of each triplet (vij, vjk, vik),
-        # we determine which nodes to conjugate to achieve handedness synchronization.
+        # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
+        # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
         conjugate = np.empty((4, 3), bool)
         conjugate[0] = [False, False, False]
         conjugate[1] = [True, False, False]
         conjugate[2] = [False, True, False]
         conjugate[3] = [False, False, True]
 
+        # 'edges' corresponds to whether conjugation agrees between the pairs (vij, vjk), (vjk, vik),
+        # and (vik, vij). True if the pairs are in agreement, False otherwise.
         edges = np.empty((4, 3), bool)
         edges[:, 0] = conjugate[:, 0] == conjugate[:, 1]
         edges[:, 1] = conjugate[:, 1] == conjugate[:, 2]
         edges[:, 2] = conjugate[:, 2] == conjugate[:, 0]
 
+        # The corresponding entries in the J-synchronization matrix are +1 if the pair of nodes agree, -1 if not.
         edge_signs = np.where(edges, 1, -1)
 
+        # For each triplet of nodes we apply the 4 configurations of conjugation and determine the
+        # relative handedness based on the condition that vij @ vjk - vik = 0 for synchronized nodes.
+        # We then construct the corresponding entries of the J-synchronization matrix with 'edge_signs'
+        # corresponding to the conjugation configuration producing the smallest residual for the above
+        # condition. Finally, we the multiply the 'edge_signs' by teh cooresponding entries of 'vec'.
         v = vijs
         new_vec = np.zeros_like(vec)
         for (i, j, k) in triplets:
