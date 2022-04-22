@@ -247,7 +247,7 @@ def besselj_zeros(nu, k):
     return z
 
 
-def num_besselj_zeros(ell, r):
+def all_besselj_zeros(ell, r):
     """
     Compute the zeros of the order `ell` Bessel function which are less than `r`.
 

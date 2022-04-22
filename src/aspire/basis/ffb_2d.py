@@ -44,7 +44,7 @@ class FFBBasis2D(FBBasis2D):
         self.n_theta = int((n_theta + np.mod(n_theta, 2)) / 2)
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
-        self._getfbzeros()
+        self._calc_k_max()
 
         # calculate total number of basis functions
         self.count = self.k_max[0] + sum(2 * self.k_max[1:])

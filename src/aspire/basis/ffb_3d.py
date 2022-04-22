@@ -33,7 +33,7 @@ class FFBBasis3D(FBBasis3D):
         self.kcut = 0.5
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
-        self._getfbzeros()
+        self._calc_k_max()
 
         # calculate total number of basis functions
         self.count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))

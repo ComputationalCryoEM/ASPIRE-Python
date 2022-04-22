@@ -552,10 +552,17 @@ class CLSymmetryC3C4(CLSyncVoting):
 
     def _signs_times_v(self, vijs, vec):
         """
-        We multiply the J-synchronization matrix by a candidate eigenvector. The J-synchronization matrix is of
-        size (n-choose-2)x(n-choose-2), where each entry corresponds to the relative handedness of vij and vjk.
-        The entry (ij, jk), where ij and jk are retrieved from the all_pairs indexing, is 1 if vij and vjk are
-        of the same handedness and -1 if not. All other entries (ij, kl) hold a zero.
+        Multiplication of the J-synchronization matrix by a candidate eigenvector.
+
+        The J-synchronization matrix is a matrix representation of the handedness graph, Gamma, whose set of
+        nodes consists of the estimates vijs and whose set of edges consists of the undirected edges between
+        all triplets of estimates vij, vjk, and vik, where i<j<k. The weight of an edge is set to +1 if its
+        incident nodes agree in handednes and -1 if not.
+
+        The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each entry corresponds to
+        the relative handedness of vij and vjk. The entry (ij, jk), where ij and jk are retrieved from the
+        all_pairs indexing, is 1 if vij and vjk are of the same handedness and -1 if not. All other entries
+        (ij, kl) hold a zero.
 
         Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
         For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
@@ -575,20 +582,31 @@ class CLSymmetryC3C4(CLSyncVoting):
         pairs = all_pairs(n_img)
         triplets = all_triplets(n_img)
 
-        # For each triplet of nodes (vij, vjk, vik) there are four possible configurations
-        # for the corresponding entries of the J-synchronization matrix, dependent upon
-        # whether any of the three nodes must be J-conjugated to achieve synchronization.
-        signs = np.zeros((4, 3))
-        signs[0] = [1, 1, 1]  # All nodes are synchronized.
-        signs[1] = [-1, 1, -1]  # vij must be J-conjugated.
-        signs[2] = [-1, -1, 1]  # vjk must be J-conjugated.
-        signs[3] = [1, -1, -1]  # vik must be J-conjugated.
+        # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
+        # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
+        conjugate = np.empty((4, 3), bool)
+        conjugate[0] = [False, False, False]
+        conjugate[1] = [True, False, False]
+        conjugate[2] = [False, True, False]
+        conjugate[3] = [False, False, True]
 
+        # 'edges' corresponds to whether conjugation agrees between the pairs (vij, vjk), (vjk, vik),
+        # and (vik, vij). True if the pairs are in agreement, False otherwise.
+        edges = np.empty((4, 3), bool)
+        edges[:, 0] = conjugate[:, 0] == conjugate[:, 1]
+        edges[:, 1] = conjugate[:, 1] == conjugate[:, 2]
+        edges[:, 2] = conjugate[:, 2] == conjugate[:, 0]
+
+        # The corresponding entries in the J-synchronization matrix are +1 if the pair of nodes agree, -1 if not.
+        edge_signs = np.where(edges, 1, -1)
+
+        # For each triplet of nodes we apply the 4 configurations of conjugation and determine the
+        # relative handedness based on the condition that vij @ vjk - vik = 0 for synchronized nodes.
+        # We then construct the corresponding entries of the J-synchronization matrix with 'edge_signs'
+        # corresponding to the conjugation configuration producing the smallest residual for the above
+        # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
         v = vijs
         new_vec = np.zeros_like(vec)
-
-        # For each triplet (vij, vjk, vik) we test the conditions for relative handedness, c,
-        # and populate the entries of the J-synchronization matrix with corresponding signs.
         for (i, j, k) in triplets:
             ij = pairs.index((i, j))
             jk = pairs.index((j, k))
@@ -598,18 +616,17 @@ class CLSymmetryC3C4(CLSyncVoting):
             vjk_J = J_conjugate(vjk)
             vik_J = J_conjugate(vik)
 
-            # Conditions for relative handedness. The minimum of these conditions determines
-            # the relative handedness of the triplet of vijs.
-            c = np.zeros(4)
-            c[0] = norm(vij @ vjk - vik)
-            c[1] = norm(vij_J @ vjk - vik)
-            c[2] = norm(vij @ vjk_J - vik)
-            c[3] = norm(vij @ vjk - vik_J)
+            conjugated_pairs = np.where(
+                conjugate[..., np.newaxis, np.newaxis],
+                [vij_J, vjk_J, vik_J],
+                [vij, vjk, vik],
+            )
+            residual = np.stack([norm(x @ y - z) for x, y, z in conjugated_pairs])
 
-            min_c = np.argmin(c)
+            min_residual = np.argmin(residual)
 
-            # Assign signs +-1 to edges between nodes vij, vik, vjk.
-            s_ij_jk, s_ik_jk, s_ij_ik = signs[min_c]
+            # Assign edge weights
+            s_ij_jk, s_ik_jk, s_ij_ik = edge_signs[min_residual]
 
             # Update multiplication of signs times vec
             new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
