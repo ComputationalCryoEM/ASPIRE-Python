@@ -353,7 +353,7 @@ class CLSymmetryC3C4(CLOrient3D):
             vik_J = J_conjugate(vik)
 
             conjugated_pairs = np.where(
-                np.swapaxes(conjugate[:, np.newaxis, np.newaxis], 1, 3),
+                conjugate[..., np.newaxis, np.newaxis],
                 [vij_J, vjk_J, vik_J],
                 [vij, vjk, vik],
             )
