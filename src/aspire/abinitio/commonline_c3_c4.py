@@ -339,7 +339,8 @@ class CLSymmetryC3C4(CLSyncVoting):
                 bad_diffs = np.count_nonzero(cos_diff > 0.5)
                 logger.warning(
                     "cos(angular_diff) should be < 0.5."
-                    f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}"
+                    f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}."
+                    "Setting all bad estimates to 0.5."
                 )
 
                 cos_diff[cos_diff > 0.5] = 0.5
@@ -352,9 +353,10 @@ class CLSymmetryC3C4(CLSyncVoting):
                 logger.warning(
                     "cos(angular_diff) should be < 0."
                     f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}"
+                    "Setting all bad estimates to 0."
                 )
 
-                cos_diff[cos_diff > 0.5] = 0.5
+                cos_diff[cos_diff > 0] = 0
             gammas = np.arccos((1 + cos_diff) / (1 - cos_diff))
 
         # Calculate remaining Euler angles in ZYZ convention.
