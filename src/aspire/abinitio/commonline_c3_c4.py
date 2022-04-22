@@ -348,7 +348,7 @@ class CLSymmetryC3C4(CLOrient3D):
         # relative handedness based on the condition that vij @ vjk - vik = 0 for synchronized nodes.
         # We then construct the corresponding entries of the J-synchronization matrix with 'edge_signs'
         # corresponding to the conjugation configuration producing the smallest residual for the above
-        # condition. Finally, we the multiply the 'edge_signs' by teh cooresponding entries of 'vec'.
+        # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
         v = vijs
         new_vec = np.zeros_like(vec)
         for (i, j, k) in triplets:
