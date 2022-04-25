@@ -5,7 +5,13 @@ import numpy as np
 from pytest import raises
 
 from aspire import __version__
-from aspire.utils import all_pairs, get_full_version, powerset, utest_tolerance
+from aspire.utils import (
+    all_pairs,
+    all_triplets,
+    get_full_version,
+    powerset,
+    utest_tolerance,
+)
 from aspire.utils.misc import gaussian_1d, gaussian_2d, gaussian_3d
 
 
@@ -99,5 +105,13 @@ class UtilsTestCase(TestCase):
     def testAllPairs(self):
         n = 25
         pairs = all_pairs(n)
-        nchoose2 = int(n * (n - 1) / 2)
+        nchoose2 = n * (n - 1) // 2
         self.assertTrue(len(pairs) == nchoose2)
+        self.assertTrue(len(pairs[0]) == 2)
+
+    def testAllTriplets(self):
+        n = 25
+        triplets = all_triplets(n)
+        nchoose3 = n * (n - 1) * (n - 2) // 6
+        self.assertTrue(len(triplets) == nchoose3)
+        self.assertTrue(len(triplets[0]) == 3)
