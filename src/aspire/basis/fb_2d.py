@@ -189,7 +189,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return rad_norm, ang_norm
 
-    def evaluate(self, v):
+    def _evaluate(self, v):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
@@ -242,7 +242,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return x
 
-    def evaluate_t(self, v):
+    def _evaluate_t(self, v):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 

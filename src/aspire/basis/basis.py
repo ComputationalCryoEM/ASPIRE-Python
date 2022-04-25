@@ -79,6 +79,14 @@ class Basis:
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
+        if isinstance(v, Image) or isinstance(v, Volume):
+            v = v.asnumpy()
+        if self.ndim == 2:
+            return Image(self._evaluate(v))
+        elif self.ndim == 3:
+            return Volume(self._evaluate(v))
+        
+    def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
 
     def evaluate_t(self, v):
@@ -92,6 +100,11 @@ class Basis:
             This is an array of vectors whose first dimension equals `self.count`
             and whose remaining dimensions correspond to higher dimensions of `v`.
         """
+        if isinstance(v, Image) or isinstance(v, Volume):
+            v = v.asnumpy()
+        return self._evaluate_t(v)
+    
+    def _evaluate_t(self, v):
         raise NotImplementedError("Subclasses should implement this")
 
     def mat_evaluate(self, V):

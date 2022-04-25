@@ -70,7 +70,7 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
         coef = self.basis.expand(im)
 
         # TODO: These tolerances should be tighter.
-        self.assertTrue(np.allclose(im, im_ref, atol=1e-4))
+        self.assertTrue(np.allclose(im, im_ref.asnumpy(), atol=1e-4))
         self.assertTrue(np.allclose(coef, coef_ref, atol=1e-4))
 
     def testElements(self):

@@ -140,7 +140,7 @@ class FBBasis3D(Basis, FBBasisMixin):
             * np.sqrt((self.nres / 2) ** 3)
         )
 
-    def evaluate(self, v):
+    def _evaluate(self, v):
         """
         Evaluate coefficients in standard 3D coordinate basis from those in FB basis
         :param v: A coefficient vector (or an array of coefficient vectors) to
@@ -186,7 +186,7 @@ class FBBasis3D(Basis, FBBasisMixin):
 
         return x.T
 
-    def evaluate_t(self, v):
+    def _evaluate_t(self, v):
         """
         Evaluate coefficient in FB basis from those in standard 3D coordinate basis
 
