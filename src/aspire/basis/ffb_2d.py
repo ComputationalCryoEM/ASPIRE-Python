@@ -102,7 +102,7 @@ class FFBBasis2D(FBBasis2D):
         """
         return self._precomp["radial"]
 
-    def evaluate(self, v):
+    def _evaluate(self, v):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
@@ -187,7 +187,7 @@ class FFBBasis2D(FBBasis2D):
         # Return X as Image instance with the last two dimensions as *self.sz
         x = x.reshape((*sz_roll, *self.sz))
 
-        return Image(x)
+        return x
 
     def evaluate_t(self, x):
         """
