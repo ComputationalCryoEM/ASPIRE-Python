@@ -38,7 +38,7 @@ class DiracBasis(Basis):
         self.count = np.sum(self._mask)
         self._sz_prod = self.nres**self.ndim
 
-    def evaluate(self, v):
+    def _evaluate(self, v):
         """
         Evaluate coefficients in standard coordinate basis from those in Dirac basis
 
@@ -56,7 +56,7 @@ class DiracBasis(Basis):
 
         return x
 
-    def evaluate_t(self, x):
+    def _evaluate_t(self, x):
         """
         Evaluate coefficient in Dirac basis from those in standard coordinate basis
 

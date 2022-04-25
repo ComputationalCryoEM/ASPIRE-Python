@@ -100,7 +100,7 @@ class DiracBasisTestCase(TestCase):
         )
         coeffs = m_flatten(v)
         result = self.basis.evaluate(coeffs)
-        self.assertTrue(np.allclose(result, v))
+        self.assertTrue(np.allclose(result.asnumpy(), v))
 
     def testDiracEvaluate_t(self):
         x = np.array(
