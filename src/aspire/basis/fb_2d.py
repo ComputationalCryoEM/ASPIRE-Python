@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.special import jv
 
-from aspire.basis import SteerableBasis2D
+from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.image import Image
 from aspire.utils import complex_type, real_type, roll_dim, unroll_dim
@@ -12,7 +12,7 @@ from aspire.utils.matlab_compat import m_flatten, m_reshape
 logger = logging.getLogger(__name__)
 
 
-class FBBasis2D(SteerableBasis2D):
+class FBBasis2D(SteerableBasis2D, FBBasisMixin):
     """
     Define a derived class using the Fourier-Bessel basis for mapping 2D images
 
@@ -29,6 +29,7 @@ class FBBasis2D(SteerableBasis2D):
         Initialize an object for the 2D Fourier-Bessel basis class
 
         :param size: The size of the vectors for which to define the basis.
+            May be a 2-tuple or an integer, in which case a square basis is assumed.
             Currently only square images are supported.
         :ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
@@ -36,6 +37,8 @@ class FBBasis2D(SteerableBasis2D):
             below the Nyquist frequency (default Inf).
         """
 
+        if isinstance(size, int):
+            size = (size, size)
         ndim = len(size)
         assert ndim == 2, "Only two-dimensional basis functions are supported."
         assert len(set(size)) == 1, "Only square domains are supported."
@@ -51,7 +54,7 @@ class FBBasis2D(SteerableBasis2D):
         )
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
-        self._getfbzeros()
+        self._calc_k_max()
 
         # calculate total number of basis functions
         self.count = self.k_max[0] + sum(2 * self.k_max[1:])

@@ -2,330 +2,87 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+from parameterized import parameterized_class
 from pytest import raises
+from scipy.special import jv
 
 from aspire.basis import FBBasis2D
-from aspire.image import Image
-from aspire.utils import complex_type, real_type, utest_tolerance
+from aspire.utils import complex_type, real_type
+from aspire.utils.coor_trans import grid_2d
+from aspire.utils.random import randn
+
+from ._basis_util import Steerable2DMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class FBBasis2DTestCase(TestCase):
+# NOTE: Class with default values is already present, so don't list it below.
+@parameterized_class(
+    ("L", "dtype"),
+    [
+        (8, np.float64),
+        (16, np.float32),
+        (16, np.float64),
+        (32, np.float32),
+        (32, np.float64),
+    ],
+)
+class FBBasis2DTestCase(TestCase, Steerable2DMixin):
+    L = 8
+    dtype = np.float32
+
     def setUp(self):
-        self.dtype = np.float32
-        self.basis = FBBasis2D((8, 8), dtype=self.dtype)
+        self.basis = FBBasis2D((self.L, self.L), dtype=self.dtype)
+        self.seed = 9161341
 
     def tearDown(self):
         pass
 
-    def testFBBasis2DIndices(self):
+    def _testElement(self, ell, k, sgn):
+        # This is covered by the isotropic test.
+        assert ell > 0
+
         indices = self.basis.indices()
+        ells = indices["ells"]
+        sgns = indices["sgns"]
+        ks = indices["ks"]
 
-        self.assertTrue(
-            np.allclose(
-                indices["ells"],
-                [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    2.0,
-                    3.0,
-                    3.0,
-                    3.0,
-                    3.0,
-                    4.0,
-                    4.0,
-                    4.0,
-                    4.0,
-                    5.0,
-                    5.0,
-                    5.0,
-                    5.0,
-                    6.0,
-                    6.0,
-                    7.0,
-                    7.0,
-                    8.0,
-                    8.0,
-                ],
-            )
-        )
+        g2d = grid_2d(self.L, dtype=self.dtype)
+        mask = g2d["r"] < 1
 
-        self.assertTrue(
-            np.allclose(
-                indices["ks"],
-                [
-                    0.0,
-                    1.0,
-                    2.0,
-                    3.0,
-                    0.0,
-                    1.0,
-                    2.0,
-                    0.0,
-                    1.0,
-                    2.0,
-                    0.0,
-                    1.0,
-                    2.0,
-                    0.0,
-                    1.0,
-                    2.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    1.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
-            )
-        )
+        r0 = self.basis.r0[k, ell]
 
-        self.assertTrue(
-            np.allclose(
-                indices["sgns"],
-                [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    1.0,
-                    -1.0,
-                    -1.0,
-                    1.0,
-                    -1.0,
-                    1.0,
-                    -1.0,
-                    1.0,
-                    -1.0,
-                ],
-            )
-        )
+        im = np.zeros((self.L, self.L), dtype=self.dtype)
+        im[mask] = jv(ell, g2d["r"][mask] * r0)
+        im *= np.sqrt(2**2 / self.L**2)
+        im *= 1 / (np.sqrt(np.pi) * np.abs(jv(ell + 1, r0)))
 
-    def testFBBasis2DNorms(self):
-        radial_norms, angular_norms = self.basis.norms()
-        self.assertTrue(
-            np.allclose(
-                radial_norms * angular_norms,
-                [
-                    3.68065992303471,
-                    2.41241466684800,
-                    1.92454669738088,
-                    1.64809729313301,
-                    2.01913617828263,
-                    1.50455726188833,
-                    1.25183461029289,
-                    1.70284654929000,
-                    1.36051054373844,
-                    1.16529703804363,
-                    1.49532071137207,
-                    1.25039038364830,
-                    1.34537533748304,
-                    1.16245357319190,
-                    1.23042467443861,
-                    1.09002083501080,
-                    1.13867113286781,
-                    1.06324777330476,
-                    0.999841586390824,
-                ],
-            )
-        )
+        if sgn == 1:
+            im *= np.sqrt(2) * np.cos(ell * g2d["phi"])
+        else:
+            im *= np.sqrt(2) * np.sin(ell * g2d["phi"])
 
-    def testFBBasis2DEvaluate(self):
-        coeffs = np.array(
-            [
-                1.07338590e-01,
-                1.23690941e-01,
-                6.44482039e-03,
-                -5.40484306e-02,
-                -4.85304586e-02,
-                1.09852144e-02,
-                3.87838396e-02,
-                3.43796455e-02,
-                -6.43284705e-03,
-                -2.86677145e-02,
-                -1.42313328e-02,
-                -2.25684091e-03,
-                -3.31840727e-02,
-                -2.59706174e-03,
-                -5.91919887e-04,
-                -9.97433028e-03,
-                9.19123928e-04,
-                1.19891589e-03,
-                7.49154982e-03,
-                6.18865229e-03,
-                -8.13265715e-04,
-                -1.30715655e-02,
-                -1.44160603e-02,
-                2.90379956e-03,
-                2.37066082e-02,
-                4.88805735e-03,
-                1.47870707e-03,
-                7.63376018e-03,
-                -5.60619559e-03,
-                1.05165081e-02,
-                3.30510143e-03,
-                -3.48652120e-03,
-                -4.23228797e-04,
-                1.40484061e-02,
-            ],
-            dtype=self.dtype,
-        )
-        result = self.basis.evaluate(coeffs)
+        coef_ref = np.zeros(self.basis.count, dtype=self.dtype)
+        coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
-        self.assertTrue(
-            np.allclose(
-                result,
-                np.load(
-                    os.path.join(DATA_DIR, "fbbasis_evaluation_8_8.npy")
-                ).T,  # RCOPT
-                atol=utest_tolerance(self.dtype),
-            )
-        )
+        im_ref = self.basis.evaluate(coef_ref)
 
-    def testFBBasis2DEvaluate_t(self):
-        v = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy")).T  # RCOPT
-        # While FB can accept arrays, prefable to pass FB2D and FFB2D Image instances.
-        img = Image(v.astype(self.dtype))
-        result = self.basis.evaluate_t(img)
-        self.assertTrue(
-            np.allclose(
-                result,
-                [
-                    0.10761825,
-                    0.12291151,
-                    0.00836345,
-                    -0.0619454,
-                    -0.0483326,
-                    0.01053718,
-                    0.03977641,
-                    0.03420101,
-                    -0.0060131,
-                    -0.02970658,
-                    -0.0151334,
-                    -0.00017575,
-                    -0.03987446,
-                    -0.00257069,
-                    -0.0006621,
-                    -0.00975174,
-                    0.00108047,
-                    0.00072022,
-                    0.00753342,
-                    0.00604493,
-                    0.00024362,
-                    -0.01711248,
-                    -0.01387371,
-                    0.00112805,
-                    0.02407385,
-                    0.00376325,
-                    0.00081128,
-                    0.00951368,
-                    -0.00557536,
-                    0.01087579,
-                    0.00255393,
-                    -0.00525156,
-                    -0.00839695,
-                    0.00802198,
-                ],
-                atol=utest_tolerance(self.dtype),
-            )
-        )
+        coef = self.basis.expand(im)
 
-    def testFBBasis2DExpand(self):
-        v = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy")).T  # RCOPT
-        result = self.basis.expand(v.astype(self.dtype))
-        self.assertTrue(
-            np.allclose(
-                result,
-                [
-                    0.10733859,
-                    0.12369094,
-                    0.00644482,
-                    -0.05404843,
-                    -0.04853046,
-                    0.01098521,
-                    0.03878384,
-                    0.03437965,
-                    -0.00643285,
-                    -0.02866771,
-                    -0.01423133,
-                    -0.00225684,
-                    -0.03318407,
-                    -0.00259706,
-                    -0.00059192,
-                    -0.00997433,
-                    0.00091912,
-                    0.00119892,
-                    0.00749155,
-                    0.00618865,
-                    -0.00081327,
-                    -0.01307157,
-                    -0.01441606,
-                    0.00290380,
-                    0.02370661,
-                    0.00488806,
-                    0.00147871,
-                    0.00763376,
-                    -0.00560620,
-                    0.01051651,
-                    0.00330510,
-                    -0.00348652,
-                    -0.00042323,
-                    0.01404841,
-                ],
-                atol=utest_tolerance(self.dtype),
-            )
-        )
+        # TODO: These tolerances should be tighter.
+        self.assertTrue(np.allclose(im, im_ref, atol=1e-4))
+        self.assertTrue(np.allclose(coef, coef_ref, atol=1e-4))
+
+    def testElements(self):
+        ells = [1, 1, 1, 1]
+        ks = [1, 2, 1, 2]
+        sgns = [-1, -1, 1, 1]
+
+        for ell, k, sgn in zip(ells, ks, sgns):
+            self._testElement(ell, k, sgn)
 
     def testComplexCoversion(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+        x = randn(*self.basis.sz, seed=self.seed)
 
         # Express in an FB basis
         v1 = self.basis.expand(x.astype(self.dtype))
@@ -339,8 +96,7 @@ class FBBasis2DTestCase(TestCase):
         self.assertTrue(np.allclose(v1, v2))
 
     def testComplexCoversionErrorsToComplex(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+        x = randn(*self.basis.sz, seed=self.seed)
 
         # Express in an FB basis
         v1 = self.basis.expand(x.astype(self.dtype))
@@ -365,8 +121,7 @@ class FBBasis2DTestCase(TestCase):
         _ = self.basis.to_complex(v1.reshape(-1))
 
     def testComplexCoversionErrorsToReal(self):
-        # Load a reasonable input
-        x = np.load(os.path.join(DATA_DIR, "fbbasis_coefficients_8_8.npy"))
+        x = randn(*self.basis.sz, seed=self.seed)
 
         # Express in an FB basis
         cv1 = self.basis.to_complex(self.basis.expand(x.astype(self.dtype)))
@@ -389,3 +144,7 @@ class FBBasis2DTestCase(TestCase):
 
         # Try a 0d vector, should not crash.
         _ = self.basis.to_real(cv1.reshape(-1))
+
+    def testInitWithIntSize(self):
+        # make sure we can instantiate with just an int as a shortcut
+        self.assertEqual((8, 8), FBBasis2D(8).sz)

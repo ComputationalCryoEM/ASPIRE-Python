@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire.basis import Basis
+from aspire.basis import Basis, FBBasisMixin
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
 from aspire.utils import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
@@ -10,7 +10,7 @@ from aspire.utils.matlab_compat import m_flatten, m_reshape
 logger = logging.getLogger(__name__)
 
 
-class FBBasis3D(Basis):
+class FBBasis3D(Basis, FBBasisMixin):
     """
     Define a derived class for direct spherical Harmonics Bessel basis expanding 3D volumes
 
@@ -23,12 +23,15 @@ class FBBasis3D(Basis):
         Initialize an object for the 3D Fourier-Bessel basis class
 
         :param size: The size of the vectors for which to define the basis.
+            May be a 3-tuple or an integer, in which case a cubic basis is assumed.
             Currently only cubic images are supported.
         :ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
             below the Nyquist frequency (default Inf).
         """
+        if isinstance(size, int):
+            size = (size, size, size)
         ndim = len(size)
         assert ndim == 3, "Only three-dimensional basis functions are supported."
         assert len(set(size)) == 1, "Only cubic domains are supported."
@@ -46,7 +49,7 @@ class FBBasis3D(Basis):
         )
 
         # get upper bound of zeros, ells, and ks  of Bessel functions
-        self._getfbzeros()
+        self._calc_k_max()
 
         # calculate total number of basis functions
         self.count = sum(self.k_max * (2 * np.arange(0, self.ell_max + 1) + 1))
