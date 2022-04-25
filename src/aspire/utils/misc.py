@@ -224,3 +224,41 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     vals = np.sqrt(1 + (g["x"] - x0) ** 2 + (g["y"] - y0) ** 2)
 
     return (peak / vals).astype(dtype)
+
+
+def all_pairs(n):
+    """
+    All pairs indexing (i,j) for i<j.
+
+    :param n: The number of items to be indexed.
+    :return: All n-choose-2 pairs (i,j), i<j.
+    """
+    pairs = [(i, j) for i in range(n) for j in range(n) if i < j]
+
+    return pairs
+
+
+def all_triplets(n):
+    """
+    All 3-tuples (i,j,k) where i<j<k.
+
+    :param n: The number of items to be indexed.
+    :returns: All 3-tuples (i,j,k), i<j<k.
+    """
+    triplets = [
+        (i, j, k) for i in range(n) for j in range(n) for k in range(n) if i < j < k
+    ]
+
+    return triplets
+
+
+def J_conjugate(A):
+    """
+    Conjugate the 3x3 matrix A by the diagonal matrix J=diag((-1, -1, 1)).
+
+    :param A: A 3x3 matrix.
+    :return: J*A*J
+    """
+    J = np.diag((-1, -1, 1))
+
+    return J @ A @ J
