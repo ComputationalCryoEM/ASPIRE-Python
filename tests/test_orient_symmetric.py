@@ -191,7 +191,7 @@ class OrientSymmTestCase(TestCase):
             self.assertTrue(mse_vijs < 0.0008)
             self.assertTrue(mse_viis < 0.0002)
         else:
-            self.assertTrue(mse_vijs < 0.0095)
+            self.assertTrue(mse_vijs < 0.01)
             self.assertTrue(mse_viis < 0.0011)
 
     def testGlobalJSync(self):

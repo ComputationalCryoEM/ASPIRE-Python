@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from numpy import pi
 from numpy.linalg import eigh, norm, svd
 from tqdm import tqdm
 
@@ -37,6 +36,8 @@ class CLSymmetryC3C4(CLSyncVoting):
         symmetry=None,
         n_rad=None,
         n_theta=None,
+        max_shift=0.15,
+        shift_step=1,
         epsilon=1e-3,
         max_iters=1000,
         degree_res=1,
@@ -49,13 +50,21 @@ class CLSymmetryC3C4(CLSyncVoting):
         :param symmetry: A string, 'C3' or 'C4', indicating the symmetry type.
         :param n_rad: The number of points in the radial direction
         :param n_theta: The number of points in the theta direction
+        :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
+        :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
         :param seed: Optional seed for RNG.
         """
 
-        super().__init__(src, n_rad=n_rad, n_theta=n_theta)
+        super().__init__(
+            src,
+            n_rad=n_rad,
+            n_theta=n_theta,
+            max_shift=max_shift,
+            shift_step=shift_step,
+        )
 
         if symmetry is None:
             raise NotImplementedError(
@@ -85,14 +94,12 @@ class CLSymmetryC3C4(CLSyncVoting):
 
     def _estimate_relative_viewing_directions_c3_c4(self):
         """
-        Estimate the relative viewing directions vij = vi'vj, i<j, and vii = vi'vi, where
+        Estimate the relative viewing directions vij = vi*vj^T, i<j, and vii = vi*vi^T, where
         vi is the third row of the i'th rotation matrix Ri.
         """
 
         # Step 1: Detect a single pair of common-lines between each pair of images
-        if self.clmatrix is None:
-            self.build_clmatrix()
-
+        self.build_clmatrix()
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
@@ -378,7 +385,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
         shift_step = self.shift_step
         order = self.order
-        assert order in [3, 4], f"order must be 3 or 4. Got order: {order}."
 
         # The angle between self-common-lines is in the range [60, 180] for C3 symmetry
         # and [90, 180] for C4 symmetry. Since antipodal lines are perfectly correlated
@@ -386,11 +392,11 @@ class CLSymmetryC3C4(CLSyncVoting):
         # Note: matlab code used [60, 165] for order=3 and [90, 160] for order=4.
         # We've increased this window to improve the MSE of our estimates.
         if order == 3:
-            min_angle_diff = 60 * pi / 180
-            max_angle_diff = 175 * pi / 180
+            min_angle_diff = 60 * np.pi / 180
+            max_angle_diff = 175 * np.pi / 180
         else:
-            min_angle_diff = 90 * pi / 180
-            max_angle_diff = 175 * pi / 180
+            min_angle_diff = 90 * np.pi / 180
+            max_angle_diff = 175 * np.pi / 180
 
         # The self-common-lines matrix holds two indices per image that represent
         # the two self common-lines in the image.
@@ -402,7 +408,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         # range [min_angle_diff, max_angle_diff].
         X, Y = np.meshgrid(range(n_theta), range(n_theta // 2))
         diff = Y - X
-        unsigned_angle_diff = np.arccos(np.cos(diff * 2 * pi / n_theta))
+        unsigned_angle_diff = np.arccos(np.cos(diff * 2 * np.pi / n_theta))
         good_diffs = np.logical_and(
             min_angle_diff < unsigned_angle_diff, unsigned_angle_diff < max_angle_diff
         )
@@ -438,7 +444,7 @@ class CLSymmetryC3C4(CLSyncVoting):
                 ray /= norm(ray)
 
             # Compute correlation.
-            corrs = np.dot(pf_i_shifted, pf_full_i.T)
+            corrs = pf_i_shifted @ pf_full_i.T
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
 
             # Mask with allowed combinations.
@@ -467,10 +473,11 @@ class CLSymmetryC3C4(CLSyncVoting):
         if order == 3:
             # cos_diff should be <= 0.5, but due to discretization that might be violated.
             if np.max(cos_diff) > 0.5:
-                bad_diffs = np.count_nonzero([cos_diff > 0.5])
+                bad_diffs = np.count_nonzero(cos_diff > 0.5)
                 logger.warning(
                     "cos(angular_diff) should be < 0.5."
-                    f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}"
+                    f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}."
+                    "Setting all bad estimates to 0.5."
                 )
 
                 cos_diff[cos_diff > 0.5] = 0.5
@@ -479,13 +486,14 @@ class CLSymmetryC3C4(CLSyncVoting):
         else:
             # cos_diff should be <= 0, but due to discretization that might be violated.
             if np.max(cos_diff) > 0:
-                bad_diffs = np.count_nonzero([cos_diff > 0])
+                bad_diffs = np.count_nonzero(cos_diff > 0)
                 logger.warning(
                     "cos(angular_diff) should be < 0."
                     f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}"
+                    "Setting all bad estimates to 0."
                 )
 
-                cos_diff[cos_diff > 0.5] = 0.5
+                cos_diff[cos_diff > 0] = 0
             gammas = np.arccos((1 + cos_diff) / (1 - cos_diff))
 
         # Calculate remaining Euler angles in ZYZ convention.
@@ -529,7 +537,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         :param n_theta: The number of points in the theta direction (common lines)
         :return: The (i,j) rotation block of the synchronization matrix
         """
-
         good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
 
         rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
@@ -538,9 +545,9 @@ class CLSymmetryC3C4(CLSyncVoting):
             rot_mean = np.mean(rots, 0)
 
         else:
-            # This for the case that images i and j correspond to the same
+            # This is for the case that images i and j correspond to the same
             # viewing direction and differ only by in-plane rotation.
-            # Simply put to zero as Matlab code.
+            # We set to zero as in the Matlab code.
             rot_mean = np.zeros((3, 3))
 
         return rot_mean
@@ -549,14 +556,13 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
         Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj,
         and Rij to be of the same handedness. We perform a local handedness synchronization and
-        set vij = 1/n ∑ Rii^s @ Rij @ Rjj^s.
+        set vij = 1/n*sum(Rii^s @ Rij @ Rjj^s).
 
         :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations
             (each pair of images induces two estimates).
         :param Riis: A nx3x3 array of estimates of self-relative rotations.
         :return: vijs, viis
         """
-
         order = self.order
         n_img = self.n_img
 
@@ -568,7 +574,7 @@ class CLSymmetryC3C4(CLSyncVoting):
             len(Rijs) == nchoose2
         ), f"There must be n-choose-2 relative rotations. Got {len(Rijs)}."
 
-        # Estimate viis from Riis. vii = 1/order * (∑ Rii ** s) for s = 0, 1, ..., order.
+        # Estimate viis from Riis. vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
         viis = np.zeros((n_img, 3, 3))
         for i, Rii in enumerate(Riis):
             viis[i] = np.mean(
@@ -683,10 +689,17 @@ class CLSymmetryC3C4(CLSyncVoting):
 
     def _signs_times_v(self, vijs, vec):
         """
-        We multiply the J-synchronization matrix by a candidate eigenvector. The J-synchronization matrix is of
-        size (n-choose-2)x(n-choose-2), where each entry corresponds to the relative handedness of vij and vjk.
-        The entry (ij, jk), where ij and jk are retrieved from the all_pairs indexing, is 1 if vij and vjk are
-        of the same handedness and -1 if not. All other entries (ij, kl) hold a zero.
+        Multiplication of the J-synchronization matrix by a candidate eigenvector.
+
+        The J-synchronization matrix is a matrix representation of the handedness graph, Gamma, whose set of
+        nodes consists of the estimates vijs and whose set of edges consists of the undirected edges between
+        all triplets of estimates vij, vjk, and vik, where i<j<k. The weight of an edge is set to +1 if its
+        incident nodes agree in handednes and -1 if not.
+
+        The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each entry corresponds to
+        the relative handedness of vij and vjk. The entry (ij, jk), where ij and jk are retrieved from the
+        all_pairs indexing, is 1 if vij and vjk are of the same handedness and -1 if not. All other entries
+        (ij, kl) hold a zero.
 
         Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
         For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
@@ -706,20 +719,31 @@ class CLSymmetryC3C4(CLSyncVoting):
         pairs = all_pairs(n_img)
         triplets = all_triplets(n_img)
 
-        # For each triplet of nodes (vij, vjk, vik) there are four possible configurations
-        # for the corresponding entries of the J-synchronization matrix, dependent upon
-        # whether any of the three nodes must be J-conjugated to achieve synchronization.
-        signs = np.zeros((4, 3))
-        signs[0] = [1, 1, 1]  # All nodes are synchronized.
-        signs[1] = [-1, 1, -1]  # vij must be J-conjugated.
-        signs[2] = [-1, -1, 1]  # vjk must be J-conjugated.
-        signs[3] = [1, -1, -1]  # vik must be J-conjugated.
+        # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
+        # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
+        conjugate = np.empty((4, 3), bool)
+        conjugate[0] = [False, False, False]
+        conjugate[1] = [True, False, False]
+        conjugate[2] = [False, True, False]
+        conjugate[3] = [False, False, True]
 
+        # 'edges' corresponds to whether conjugation agrees between the pairs (vij, vjk), (vjk, vik),
+        # and (vik, vij). True if the pairs are in agreement, False otherwise.
+        edges = np.empty((4, 3), bool)
+        edges[:, 0] = conjugate[:, 0] == conjugate[:, 1]
+        edges[:, 1] = conjugate[:, 1] == conjugate[:, 2]
+        edges[:, 2] = conjugate[:, 2] == conjugate[:, 0]
+
+        # The corresponding entries in the J-synchronization matrix are +1 if the pair of nodes agree, -1 if not.
+        edge_signs = np.where(edges, 1, -1)
+
+        # For each triplet of nodes we apply the 4 configurations of conjugation and determine the
+        # relative handedness based on the condition that vij @ vjk - vik = 0 for synchronized nodes.
+        # We then construct the corresponding entries of the J-synchronization matrix with 'edge_signs'
+        # corresponding to the conjugation configuration producing the smallest residual for the above
+        # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
         v = vijs
         new_vec = np.zeros_like(vec)
-
-        # For each triplet (vij, vjk, vik) we test the conditions for relative handedness, c,
-        # and populate the entries of the J-synchronization matrix with corresponding signs.
         for (i, j, k) in triplets:
             ij = pairs.index((i, j))
             jk = pairs.index((j, k))
@@ -729,18 +753,17 @@ class CLSymmetryC3C4(CLSyncVoting):
             vjk_J = J_conjugate(vjk)
             vik_J = J_conjugate(vik)
 
-            # Conditions for relative handedness. The minimum of these conditions determines
-            # the relative handedness of the triplet of vijs.
-            c = np.zeros(4)
-            c[0] = norm(vij @ vjk - vik)
-            c[1] = norm(vij_J @ vjk - vik)
-            c[2] = norm(vij @ vjk_J - vik)
-            c[3] = norm(vij @ vjk - vik_J)
+            conjugated_pairs = np.where(
+                conjugate[..., np.newaxis, np.newaxis],
+                [vij_J, vjk_J, vik_J],
+                [vij, vjk, vik],
+            )
+            residual = np.stack([norm(x @ y - z) for x, y, z in conjugated_pairs])
 
-            min_c = np.argmin(c)
+            min_residual = np.argmin(residual)
 
-            # Assign signs +-1 to edges between nodes vij, vik, vjk.
-            s_ij_jk, s_ik_jk, s_ij_ik = signs[min_c]
+            # Assign edge weights
+            s_ij_jk, s_ik_jk, s_ij_ik = edge_signs[min_residual]
 
             # Update multiplication of signs times vec
             new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
