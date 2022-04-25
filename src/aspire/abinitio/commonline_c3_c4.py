@@ -254,7 +254,7 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
         max_angle = (360 // order) * order
-        theta_ijs = np.arange(0, max_angle, degree_res) * pi / 180
+        theta_ijs = np.arange(0, max_angle, degree_res) * np.pi / 180
         n_theta_ijs = len(theta_ijs)
 
         euler_angles = np.zeros((n_theta_ijs, 3), dtype=self.dtype)
@@ -336,7 +336,7 @@ class CLSymmetryC3C4(CLSyncVoting):
                 max_corrs[idx] = max_corr  # This is only for stats.
                 max_corrs_idx[idx] = max_idx_corr  # This is only for stats.
 
-                theta_ij = degree_res * max_idx_corr * pi / 180
+                theta_ij = degree_res * max_idx_corr * np.pi / 180
 
                 Q[i, j] = np.cos(order * theta_ij) - 1j * np.sin(order * theta_ij)
 
