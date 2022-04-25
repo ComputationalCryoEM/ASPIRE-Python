@@ -23,7 +23,7 @@ class DownsampleTestCase(TestCase):
         # check resolution is correct
         self.assertEqual((self.n, L_ds, L_ds), imgs_ds.shape)
         # check center points for all images
-        # self.assertTrue(self.checkCenterPoint(imgs_org, imgs_ds))
+        self.assertTrue(self.checkCenterPoint(imgs_org, imgs_ds))
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
 
