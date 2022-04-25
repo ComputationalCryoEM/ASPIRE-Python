@@ -209,17 +209,13 @@ class Image:
         :return: The downsampled Image object.
         """
         # compute FT and center 0-frequency
-        self.show()
         fx = np.array([fft.centered_fft2(self.data[i]) for i in range(self.n_images)])
-        Image(np.real(fx)).show()
         # crop 2D Fourier transform for each image
         crop_fx = np.array([crop_pad_2d(fx[i], ds_res) for i in range(self.n_images)])
-        Image(np.real(crop_fx)).show()
         # take back to real space, discard complex part, and scale
         out = np.real(
             np.array([fft.centered_ifft2(crop_fx[i]) for i in range(self.n_images)])
         ) * (ds_res**2 / self.res**2)
-        Image(out).show()
 
         return Image(out)
 
