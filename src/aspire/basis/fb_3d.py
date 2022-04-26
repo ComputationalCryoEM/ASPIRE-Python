@@ -197,7 +197,8 @@ class FBBasis3D(Basis, FBBasisMixin):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
-
+        v = v.asnumpy()
+        
         v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(
