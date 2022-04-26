@@ -3,6 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis import DiracBasis
+from aspire.image import Image
 from aspire.utils.matlab_compat import m_flatten
 
 
@@ -100,6 +101,10 @@ class DiracBasisTestCase(TestCase):
         )
         coeffs = m_flatten(v)
         result = self.basis.evaluate(coeffs)
+
+        # evaluate should return an Image
+        self.assertTrue(isinstance(result, Image))
+
         self.assertTrue(np.allclose(result.asnumpy(), v))
 
     def testDiracEvaluate_t(self):
@@ -188,6 +193,10 @@ class DiracBasisTestCase(TestCase):
             ]
         )
         result = self.basis.evaluate_t(x)
+
+        # evaluate_t should return a NumPy array
+        self.assertTrue(isinstance(result, np.ndarray))
+
         self.assertTrue(np.allclose(result, m_flatten(x)))
 
     def testInitWithIntSize(self):
