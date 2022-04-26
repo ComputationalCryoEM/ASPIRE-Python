@@ -72,7 +72,7 @@ class Estimator:
         est_coeff = self.conj_grad(b_coeff, tol=tol)
         est = self.basis.evaluate(est_coeff).T
 
-        return Volume(est)
+        return est
 
     def src_backward(self):
         """
@@ -142,7 +142,7 @@ class Estimator:
         if kernel is None:
             kernel = self.kernel
         vol = self.basis.evaluate(vol_coeff)
-        vol = kernel.convolve_volume(vol)
+        vol = kernel.convolve_volume(np.squeeze(vol.asnumpy()))
         vol = self.basis.evaluate_t(vol)
 
         return vol
