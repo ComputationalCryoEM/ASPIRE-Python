@@ -45,7 +45,7 @@ class PSWFBasis2DTestCase(TestCase):
 
         # evaluate should return an Image
         self.assertTrue(isinstance(result, Image))
-        
+
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         self.assertTrue(np.allclose(result.asnumpy(), images))
 
