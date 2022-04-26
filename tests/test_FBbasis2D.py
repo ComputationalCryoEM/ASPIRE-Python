@@ -7,6 +7,7 @@ from pytest import raises
 from scipy.special import jv
 
 from aspire.basis import FBBasis2D
+from aspire.image import Image
 from aspire.utils import complex_type, real_type
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
@@ -66,6 +67,9 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
         coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
         im_ref = self.basis.evaluate(coef_ref)
+
+        # evaluate() should return an Image
+        self.assertTrue(isinstance(im_ref, Image))
 
         coef = self.basis.expand(im)
 
