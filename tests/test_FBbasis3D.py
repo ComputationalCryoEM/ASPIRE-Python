@@ -5,6 +5,7 @@ import numpy as np
 
 from aspire.basis import FBBasis3D
 from aspire.utils import utest_tolerance
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -470,6 +471,8 @@ class FBBasis3DTestCase(TestCase):
         )
         result = self.basis.evaluate(coeffs)
 
+        self.assertTrue(isinstance(result, Volume))
+
         self.assertTrue(
             np.allclose(
                 result.asnumpy(),
@@ -481,6 +484,9 @@ class FBBasis3DTestCase(TestCase):
     def testFBBasis3DEvaluate_t(self):
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         result = self.basis.evaluate_t(v.astype(self.dtype))
+
+        self.assertTrue(isinstance(result, np.ndarray))
+
         self.assertTrue(
             np.allclose(
                 result,
@@ -591,6 +597,9 @@ class FBBasis3DTestCase(TestCase):
     def testFBBasis3DExpand(self):
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         result = self.basis.expand(v.astype(self.dtype))
+
+        self.assertTrue(isinstance(result, np.ndarray))
+
         self.assertTrue(
             np.allclose(
                 result,
