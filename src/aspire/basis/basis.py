@@ -91,7 +91,7 @@ class Basis:
         """
         Evaluate coefficient in dual basis
 
-        :param v: The coefficient array to be evaluated, as an Image or Volume object. 
+        :param v: The coefficient array to be evaluated, as an Image or Volume object.
             The first dimensions must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual
             basis of `basis`.
@@ -121,7 +121,7 @@ class Basis:
         """
         Evaluate coefficient matrix in dual basis
 
-        :param X: The coefficient array as a Image or Volume object of 
+        :param X: The coefficient array as a Image or Volume object of
             size `self.sz`-by-`self.sz` to be evaluated.
         :return: The evaluation of `X` in the dual basis. This is
             `self.count`-by-`self.count`. matrix.
