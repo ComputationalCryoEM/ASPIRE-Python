@@ -260,9 +260,6 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        if isinstance(v, Image):
-            v = v.asnumpy()
-
         v = v.T  # RCOPT
 
         x, sz_roll = unroll_dim(v, self.ndim + 1)

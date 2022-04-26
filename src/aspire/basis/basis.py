@@ -98,8 +98,17 @@ class Basis:
             This is an array of vectors whose first dimension equals `self.count`
             and whose remaining dimensions correspond to higher dimensions of `v`.
         """
-        if isinstance(v, Image) or isinstance(v, Volume):
-            v = v.asnumpy()
+        if not isinstance(v, Image) and not isinstance(v, Volume):
+            if self.ndim == 2:
+                _class = Image
+            elif self.ndim == 3:
+                _class = Volume
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate_t"
+                " passed numpy array instead of {_class}."
+            )
+            v = _class(v)
+
         return self._evaluate_t(v)
 
     def _evaluate_t(self, v):

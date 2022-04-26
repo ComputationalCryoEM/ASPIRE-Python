@@ -189,7 +189,7 @@ class FFBBasis2D(FBBasis2D):
 
         return x
 
-    def evaluate_t(self, x):
+    def _evaluate_t(self, x):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
@@ -205,13 +205,6 @@ class FFBBasis2D(FBBasis2D):
                 f"{self.__class__.__name__}::evaluate_t"
                 f" Inconsistent dtypes v: {x.dtype} self: {self.dtype}"
             )
-
-        if not isinstance(x, Image):
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
-                " passed numpy array instead of Image."
-            )
-            x = Image(x)
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
