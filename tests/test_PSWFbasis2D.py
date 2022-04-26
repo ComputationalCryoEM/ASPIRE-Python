@@ -23,10 +23,9 @@ class PSWFBasis2DTestCase(TestCase):
         images = Image(img_ary)
 
         result = self.basis.evaluate_t(images)
-        result_ary = self.basis.evaluate_t(img_ary)
 
-        # Confirm output from passing ndarray or Image is the same
-        self.assertTrue(np.allclose(result, result_ary))
+        # evaluate_t should return a NumPy array
+        self.assertTrue(isinstance(result, np.ndarray))
 
         coeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
@@ -43,6 +42,10 @@ class PSWFBasis2DTestCase(TestCase):
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
         result = self.basis.evaluate(coeffs)
+
+        # evaluate should return an Image
+        self.assertTrue(isinstance(result, Image))
+        
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         self.assertTrue(np.allclose(result.asnumpy(), images))
 
