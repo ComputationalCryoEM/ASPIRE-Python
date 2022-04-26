@@ -79,8 +79,6 @@ class Basis:
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
-        if isinstance(v, Image) or isinstance(v, Volume):
-            v = v.asnumpy()
         if self.ndim == 2:
             return Image(self._evaluate(v))
         elif self.ndim == 3:
