@@ -86,10 +86,9 @@ class Estimator:
             im = self.src.images(i, self.batch_size)
             batch_mean_b = self.src.im_backward(im, i) / self.src.n
             mean_b += batch_mean_b.astype(self.dtype)
-
         res = self.basis.evaluate_t(mean_b)
         logger.info(f"Determined adjoint mappings. Shape = {res.shape}")
-        return res
+        return np.squeeze(res)
 
     def conj_grad(self, b_coeff, tol=None):
         n = b_coeff.shape[0]
