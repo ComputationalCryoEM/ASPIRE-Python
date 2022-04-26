@@ -319,7 +319,7 @@ class ImageSource:
         self._cached_im = self.images(start=0, num=np.inf)
         self.generation_pipeline.reset()
 
-    def images(self, start, num, *args, **kwargs):
+    def images(self, start, num, indices=None, *args, **kwargs):
         """
         Return images from this ImageSource as an Image object.
         :param start: The inclusive start index from which to return images.
@@ -328,7 +328,11 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        indices = np.arange(start, min(start + num, self.n), dtype=int)
+        if isinstance(indices, list):
+            indices = np.array(indices)
+            
+        if indices is None:
+            indices = np.arange(start, min(start + num, self.n), dtype=int)
 
         if self._cached_im is not None:
             logger.info("Loading images from cache")
