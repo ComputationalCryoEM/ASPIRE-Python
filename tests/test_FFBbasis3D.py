@@ -4,6 +4,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis import FFBBasis3D
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
