@@ -6,7 +6,6 @@ from scipy.special import jv
 
 from aspire.basis import FBBasis2D
 from aspire.basis.basis_utils import lgwt
-from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
 from aspire.utils import complex_type

@@ -290,7 +290,7 @@ class FFBBasis3D(FBBasis3D):
             dimensions of `x`.
         """
         x = x.asnumpy()
-        
+
         # roll dimensions
         sz_roll = x.shape[:-3]
         x = x.reshape((-1, *self.sz))

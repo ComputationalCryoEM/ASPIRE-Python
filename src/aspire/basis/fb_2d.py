@@ -5,7 +5,6 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
-from aspire.image import Image
 from aspire.utils import complex_type, real_type, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
@@ -259,6 +258,8 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
                 f"{self.__class__.__name__}::evaluate_t"
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
+
+        v = v.asnumpy()
 
         v = v.T  # RCOPT
 

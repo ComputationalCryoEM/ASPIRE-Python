@@ -67,6 +67,7 @@ class DiracBasis(Basis):
              `self.count` and whose remaining dimensions correspond to
              higher dimensions of `v`.
         """
+        x = np.squeeze(x.asnumpy())
         x, sz_roll = unroll_dim(x, self.ndim + 1)
         x = m_reshape(x, new_shape=(self._sz_prod,) + x.shape[self.ndim :])
         v = np.zeros(shape=(self.count,) + x.shape[1:], dtype=self.dtype)
