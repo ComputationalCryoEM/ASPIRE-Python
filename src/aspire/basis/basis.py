@@ -117,7 +117,7 @@ class Basis:
             -`self.sz` corresponding to the evaluation of `V` in
             this basis.
         """
-        return mdim_mat_fun_conj(V, 1, len(self.sz), self.evaluate)
+        return mdim_mat_fun_conj(V, 1, len(self.sz), self._evaluate)
 
     def mat_evaluate_t(self, X):
         """
@@ -133,7 +133,7 @@ class Basis:
             function calculates V = B' * X * B, where the rows of `B`, rows
             of 'X', and columns of `X` are read as vectorized arrays.
         """
-        return mdim_mat_fun_conj(X, len(self.sz), 1, self.evaluate_t)
+        return mdim_mat_fun_conj(X, len(self.sz), 1, self._evaluate_t)
 
     def expand(self, x):
         """
