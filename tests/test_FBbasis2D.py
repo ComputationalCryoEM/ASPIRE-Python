@@ -68,9 +68,6 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
 
         im_ref = self.basis.evaluate(coef_ref)
 
-        # evaluate() should return an Image
-        self.assertTrue(isinstance(im_ref, Image))
-
         coef = self.basis.expand(im)
 
         # TODO: These tolerances should be tighter.
@@ -148,6 +145,21 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
 
         # Try a 0d vector, should not crash.
         _ = self.basis.to_real(cv1.reshape(-1))
+
+    def testEvaluate(self):
+        # evaluate should return an Image
+        result = self.basis.evaluate(np.zeros((self.basis.count)))
+        self.assertTrue(isinstance(result, Image))
+
+    def testEvaluate_t(self):
+        # evaluate_t should return a NumPy array
+        result = self.basis.evaluate_t(np.zeros((self.L, self.L)))
+        self.assertTrue(isinstance(result, np.ndarray))
+
+    def testExpand(self):
+        # expand should return a NumPy array
+        result = self.basis.expand(np.zeros((self.L, self.L)))
+        self.assertTrue(isinstance(result, np.ndarray))
 
     def testInitWithIntSize(self):
         # make sure we can instantiate with just an int as a shortcut
