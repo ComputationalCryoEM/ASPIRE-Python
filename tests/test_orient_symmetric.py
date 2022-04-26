@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 from numpy import pi, random
-from numpy.linalg import det, norm
+from numpy.linalg import det, eigh, norm
 from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
@@ -430,3 +430,55 @@ class OrientSymmTestCase(TestCase):
         rots_symm = Rotation.from_euler(angles).matrices
 
         return rots_symm
+
+    def g_sync(self, rots, order, rots_gt):
+        """
+        Every estimated rotation might be a version of the ground truth rotation
+        rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes all
+        estimates so that only a single global rotation need be applies to all rotations.
+        """
+        n_img = self.n_img
+        rots_symm = self.buildCyclicRotations(order)
+
+        A_g = np.zeros((n_img, n_img), dtype=complex)
+
+        pairs = all_pairs(n_img)
+
+        for (i, j) in pairs:
+            Ri = rots[i]
+            Rj = rots[j]
+            Rij = Ri.T @ Rj
+
+            Ri_gt = rots_gt[i]
+            Rj_gt = rots_gt[j]
+
+            diffs = np.zeros(order)
+            for s, g_s in enumerate(rots_symm):
+                Rij_gt = Ri_gt.T @ g_s @ Rj_gt
+                diffs[s] = min([norm(Rij - Rij_gt), norm(Rij - J_conjugate(Rij_gt))])
+
+            idx = np.argmin(diffs)
+
+            A_g[i, j] = np.exp(-1j * 2 * np.pi / order * idx)
+
+        # A_g(k,l) is exp(-j(-theta_k+theta_l))
+        # Diagonal elements correspond to exp(-i*0) so put 1.
+        # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
+        A_g += np.conj(A_g).T + np.eye(n_img)
+
+        eig_vals, eig_vecs = eigh(A_g)
+        evect1 = eig_vecs[:, -1]
+
+        angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
+        sign_g_Ri = np.zeros(n_img)
+
+        for ii in range(n_img):
+            zi = evect1[ii]
+            zi = zi / np.abs(zi)  # rescale so it lies on unit circle
+            # Since a ccw and a cw closest are just as good,
+            # we take the absolute value of the angle
+            angleDists = np.abs(np.angle(zi / angles))
+            ind = np.argmin(angleDists)
+            sign_g_Ri[ii] = ind
+
+        return sign_g_Ri.astype(int)
