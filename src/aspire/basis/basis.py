@@ -105,7 +105,7 @@ class Basis:
                 _class = Volume
             logger.warning(
                 f"{self.__class__.__name__}::evaluate_t"
-                " passed numpy array instead of {_class}."
+                f" passed numpy array instead of {_class}."
             )
             v = _class(v)
 
