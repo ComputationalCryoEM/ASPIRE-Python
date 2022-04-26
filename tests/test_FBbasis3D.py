@@ -471,6 +471,7 @@ class FBBasis3DTestCase(TestCase):
         )
         result = self.basis.evaluate(coeffs)
 
+        # evaluate should return a Volume
         self.assertTrue(isinstance(result, Volume))
 
         self.assertTrue(
@@ -485,6 +486,7 @@ class FBBasis3DTestCase(TestCase):
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         result = self.basis.evaluate_t(v.astype(self.dtype))
 
+        # evaluate_t should return a NumPy array
         self.assertTrue(isinstance(result, np.ndarray))
 
         self.assertTrue(
@@ -598,6 +600,7 @@ class FBBasis3DTestCase(TestCase):
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         result = self.basis.expand(v.astype(self.dtype))
 
+        # expand should return a NumPy array
         self.assertTrue(isinstance(result, np.ndarray))
 
         self.assertTrue(
