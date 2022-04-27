@@ -258,8 +258,8 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
                 f"{self.__class__.__name__}::evaluate_t"
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
-
-        v = v.asnumpy()
+        if not isinstance(v, Image):
+            v = v.asnumpy()
 
         v = v.T  # RCOPT
 
