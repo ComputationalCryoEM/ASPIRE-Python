@@ -447,7 +447,6 @@ class CLSymmetryC3C4(CLSyncVoting):
         # Estimate vijs via local handedness synchronization.
         vijs = np.zeros((nchoose2, 3, 3))
         e1 = [1, 0, 0]
-        J = np.diag((-1, -1, 1))
         opts = np.zeros((8, 3, 3))
         scores_rank1 = np.zeros(8)
         min_idxs = np.zeros((nchoose2, 3, 3))
@@ -457,8 +456,8 @@ class CLSymmetryC3C4(CLSyncVoting):
             Rjj = Riis[j]
             Rij = Rijs[idx]
 
-            Rii_J = J @ Rii @ J
-            Rjj_J = J @ Rjj @ J
+            Rii_J = J_conjugate(Rii)
+            Rjj_J = J_conjugate(Rjj)
 
             # vij should be a singular matrix.
             # We test 8 combinations of handedness and rotation by {g, g^n-1} for singularity to determine:
