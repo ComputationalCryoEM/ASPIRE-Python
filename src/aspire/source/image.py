@@ -197,6 +197,7 @@ class ImageSource:
         """
         # Convert a single metadata field into a list of single metadata field, since that's what the 'columns'
         # argument of a DataFrame constructor expects.
+
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
 
@@ -328,11 +329,11 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        if isinstance(indices, list):
-            indices = np.array(indices)
-
         if indices is None:
             indices = np.arange(start, min(start + num, self.n), dtype=int)
+
+        if isinstance(indices, list):
+            indices = np.array(indices)
 
         if self._cached_im is not None:
             logger.info("Loading images from cache")
