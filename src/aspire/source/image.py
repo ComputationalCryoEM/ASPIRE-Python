@@ -197,7 +197,6 @@ class ImageSource:
         """
         # Convert a single metadata field into a list of single metadata field, since that's what the 'columns'
         # argument of a DataFrame constructor expects.
-
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
 
