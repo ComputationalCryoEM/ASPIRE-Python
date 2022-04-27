@@ -328,7 +328,6 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        logger.info("HEREEEEEEE")
         if isinstance(indices, list):
             indices = np.array(indices)
 
