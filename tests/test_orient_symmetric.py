@@ -2,13 +2,12 @@ from unittest import TestCase
 
 import numpy as np
 from numpy import pi, random
-from numpy.linalg import det, eigh, norm
+from numpy.linalg import det, norm
 from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
-from aspire.utils import Rotation
-from aspire.utils.misc import J_conjugate, all_pairs, gaussian_3d
+from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations, gaussian_3d
 from aspire.utils.random import randn
 from aspire.volume import Volume
 
@@ -66,7 +65,7 @@ class OrientSymmTestCase(TestCase):
         # Each Rij belongs to the set {Ri.Tg_n^sRj, JRi.Tg_n^sRjJ},
         # s = 1, 2, ..., order. We find the mean squared error over
         # the minimum error between Rij and the above set.
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype)
         gs = rots_symm
         J = np.diag([-1, -1, 1])
         rots_gt = src.rots
@@ -112,7 +111,7 @@ class OrientSymmTestCase(TestCase):
         # Each estimated Rii belongs to the set
         # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}
         # We find the minimum mean-squared-error over the 4 possibilities.
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype)
         g = rots_symm[1]
         J = np.diag([-1, -1, 1])
         rots_gt = src.rots
@@ -283,7 +282,7 @@ class OrientSymmTestCase(TestCase):
 
         # Compare common-line indices with ground truth angles.
         rots = src.rots  # ground truth rotations
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype)
         pairs = all_pairs(n_img)
         within_1_degree = 0
         within_5_degrees = 0
@@ -370,7 +369,7 @@ class OrientSymmTestCase(TestCase):
 
     def buildSimpleSymmetricVolume(self, res, order):
         # Construct rotatation matrices associated with cyclic order.
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype)
 
         # Assign centers and sigmas of Gaussian blobs
         centers = np.zeros((3, order, 3), dtype=self.dtype)
@@ -399,7 +398,7 @@ class OrientSymmTestCase(TestCase):
 
     def buildSelfCommonLinesMatrix(self, rots, order):
         # Construct rotatation matrices associated with cyclic order.
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype)
 
         # Build ground truth self-common-lines matrix.
         scl_gt = np.zeros((self.n_img, 2), dtype=self.dtype)
@@ -422,63 +421,3 @@ class OrientSymmTestCase(TestCase):
             scl_gt[i, 1] = np.round(theta_gn * n_theta / (2 * np.pi)) % n_theta
 
         return scl_gt
-
-    def buildCyclicRotations(self, order):
-        # Construct rotatation matrices associated with cyclic order.
-        angles = np.zeros((order, 3), dtype=self.dtype)
-        angles[:, 2] = 2 * np.pi * np.arange(order) / order
-        rots_symm = Rotation.from_euler(angles).matrices
-
-        return rots_symm
-
-    def g_sync(self, rots, order, rots_gt):
-        """
-        Every estimated rotation might be a version of the ground truth rotation
-        rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes all
-        estimates so that only a single global rotation need be applies to all rotations.
-        """
-        n_img = self.n_img
-        rots_symm = self.buildCyclicRotations(order)
-
-        A_g = np.zeros((n_img, n_img), dtype=complex)
-
-        pairs = all_pairs(n_img)
-
-        for (i, j) in pairs:
-            Ri = rots[i]
-            Rj = rots[j]
-            Rij = Ri.T @ Rj
-
-            Ri_gt = rots_gt[i]
-            Rj_gt = rots_gt[j]
-
-            diffs = np.zeros(order)
-            for s, g_s in enumerate(rots_symm):
-                Rij_gt = Ri_gt.T @ g_s @ Rj_gt
-                diffs[s] = min([norm(Rij - Rij_gt), norm(Rij - J_conjugate(Rij_gt))])
-
-            idx = np.argmin(diffs)
-
-            A_g[i, j] = np.exp(-1j * 2 * np.pi / order * idx)
-
-        # A_g(k,l) is exp(-j(-theta_k+theta_l))
-        # Diagonal elements correspond to exp(-i*0) so put 1.
-        # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
-        A_g += np.conj(A_g).T + np.eye(n_img)
-
-        eig_vals, eig_vecs = eigh(A_g)
-        evect1 = eig_vecs[:, -1]
-
-        angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
-        sign_g_Ri = np.zeros(n_img)
-
-        for ii in range(n_img):
-            zi = evect1[ii]
-            zi = zi / np.abs(zi)  # rescale so it lies on unit circle
-            # Since a ccw and a cw closest are just as good,
-            # we take the absolute value of the angle
-            angleDists = np.abs(np.angle(zi / angles))
-            ind = np.argmin(angleDists)
-            sign_g_Ri[ii] = ind
-
-        return sign_g_Ri.astype(int)

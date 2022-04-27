@@ -5,7 +5,14 @@ from numpy.linalg import eigh, norm, svd
 from tqdm import tqdm
 
 from aspire.abinitio import CLSyncVoting
-from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, anorm
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    all_triplets,
+    anorm,
+    cyclic_rotations,
+)
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -808,3 +815,60 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         # linear scale from [0,2*pi) to [0,n_theta).
         return np.mod(np.round(thetas / (2 * np.pi) * n_theta), n_theta).astype(int)
+
+    @staticmethod
+    def g_sync(rots, order, rots_gt, dtype=np.float32):
+        """
+        Every estimated rotation might be a version of the ground truth rotation
+        rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes all
+        estimates so that only a single global rotation need be applies to all rotations.
+        """
+        assert len(rots) == len(
+            rots_gt
+        ), "Number of estimates not equal to number of references."
+        n_img = len(rots)
+
+        rots_symm = cyclic_rotations(order, dtype)
+
+        A_g = np.zeros((n_img, n_img), dtype=complex)
+
+        pairs = all_pairs(n_img)
+
+        for (i, j) in pairs:
+            Ri = rots[i]
+            Rj = rots[j]
+            Rij = Ri.T @ Rj
+
+            Ri_gt = rots_gt[i]
+            Rj_gt = rots_gt[j]
+
+            diffs = np.zeros(order)
+            for s, g_s in enumerate(rots_symm):
+                Rij_gt = Ri_gt.T @ g_s @ Rj_gt
+                diffs[s] = min([norm(Rij - Rij_gt), norm(Rij - J_conjugate(Rij_gt))])
+
+            idx = np.argmin(diffs)
+
+            A_g[i, j] = np.exp(-1j * 2 * np.pi / order * idx)
+
+        # A_g(k,l) is exp(-j(-theta_k+theta_l))
+        # Diagonal elements correspond to exp(-i*0) so put 1.
+        # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
+        A_g += np.conj(A_g).T + np.eye(n_img)
+
+        eig_vals, eig_vecs = eigh(A_g)
+        evect1 = eig_vecs[:, -1]
+
+        angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
+        sign_g_Ri = np.zeros(n_img)
+
+        for ii in range(n_img):
+            zi = evect1[ii]
+            zi = zi / np.abs(zi)  # rescale so it lies on unit circle
+            # Since a ccw and a cw closest are just as good,
+            # we take the absolute value of the angle
+            angleDists = np.abs(np.angle(zi / angles))
+            ind = np.argmin(angleDists)
+            sign_g_Ri[ii] = ind
+
+        return sign_g_Ri.astype(int)

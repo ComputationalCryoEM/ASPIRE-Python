@@ -10,6 +10,7 @@ from itertools import chain, combinations
 import numpy as np
 
 from aspire.utils import grid_1d, grid_2d, grid_3d
+from aspire.utils.rotation import Rotation
 
 logger = logging.getLogger(__name__)
 
@@ -262,3 +263,17 @@ def J_conjugate(A):
     J = np.diag((-1, -1, 1))
 
     return J @ A @ J
+
+
+def cyclic_rotations(order, dtype):
+    """
+    Build all rotation matrices that rotate by multiples of 2pi/order about the z-axis.
+
+    :param order: The order of cyclic symmetry
+    :return: (order)x3x3 array of rotation matrices.
+    """
+    angles = np.zeros((order, 3), dtype=dtype)
+    angles[:, 2] = 2 * np.pi * np.arange(order) / order
+    rots_symm = Rotation.from_euler(angles).matrices
+
+    return rots_symm
