@@ -10,16 +10,12 @@ import numpy as np
 from pandas import DataFrame
 
 from aspire.image import Image
-from aspire.source import (
-    ArrayImageSource,
-    BoxesCoordinateSource,
-    CentersCoordinateSource,
-    RelionSource,
-)
+from aspire.source import ArrayImageSource, RelionSource
 from aspire.storage import StarFile
 from aspire.utils.random import random
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
+
 
 class LoadImagesTestCase(TestCase):
     def setUp(self):

@@ -283,15 +283,15 @@ class CoordinateSourceTestCase(TestCase):
         # test loading every other image and compare
         odd = np.array([i for i in range(1, 400, 2)])
         even = np.array([i for i in range(0, 399, 2)])
-        odd_images = src_from_box._images(indices=odd)
-        even_images = src_from_box._images(indices=even)
+        odd_images = src_from_box.images(indices=odd)
+        even_images = src_from_box.images(indices=even)
         for i in range(0, 200):
             self.assertTrue(np.array_equal(images_in_order[2 * i], even_images[i]))
             self.assertTrue(np.array_equal(images_in_order[2 * i + 1], odd_images[i]))
 
         # random sample of [0,400) of length 100
         random_sample = np.array(random.sample([i for i in range(400)], 100))
-        random_images = src_from_box._images(indices=random_sample)
+        random_images = src_from_box.images(indices=random_sample)
         for i, idx in enumerate(random_sample):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
 
