@@ -1,10 +1,10 @@
+import glob
 import importlib.resources
 import os
 import tempfile
 from collections import OrderedDict
 from unittest import TestCase
 
-import glob
 import mrcfile
 import numpy as np
 from pandas import DataFrame
@@ -20,7 +20,6 @@ from aspire.storage import StarFile
 from aspire.utils.random import random
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
-
 
 class LoadImagesTestCase(TestCase):
     def setUp(self):
@@ -84,10 +83,20 @@ class LoadImagesTestCase(TestCase):
     def getParticlesFromIndices(self, indices):
         # The purpose of this function is to load the *true* particles from
         # the indices provided. We do this by bypassing the logic in the code we
-        # want to test, instead loading directly from the mrcs files created in setUp
-
+        # want to test, instead loading the "slow" way directly from the mrcs files
+        # created in setUp
         # we can do this efficiently because the particles per mrcs are fixed
-        indices = np.array(indices)
         mdata = np.zeros((len(indices), self.L, self.L))
+        for i, idx in enumerate(indices):
+            # which stack is this particle in
+            mrcs = idx // self.particles_per_stack
+            # in that stack, at what index is the particle stored
+            mrc_index = idx % self.particles_per_stack
+            # load the right mrcs
+            data = mrcfile.open(
+                os.path.join(self.data_folder, f"particle_stack_{mrcs:02d}.mrcs")
+            ).data
+            # get the right particle
+            mdata[i, :, :] = data[mrc_index, :, :]
 
         return Image(mdata)
