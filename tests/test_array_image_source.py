@@ -198,3 +198,13 @@ class ImageTestCase(TestCase):
         wrong_dim = np.random.randn(self.n, 3, 3)
         with raises(ValueError, match=msg):
             _ = ArrayImageSource(self.im, angles=wrong_dim)
+
+    def testArrayImageSourceRetrieveArbitraryIndices(self):
+        """
+        Test that we can access nonsequential/arbitrary indices from the data.
+        """
+        src = ArrayImageSource(self.im, angles=self.sim.angles)
+        indices = [90, 89, 88, 87, 85, 0, 1, 2, 3, 4, 5, 760, 1023]
+        from_src = src.images(indices=indices).asnumpy()
+        from_im = self.im[np.array(indices), :, :]
+        self.assertTrue(np.array_equal(from_src, from_im))
