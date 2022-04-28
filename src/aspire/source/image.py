@@ -324,6 +324,7 @@ class ImageSource:
         Return images from this ImageSource as an Image object.
         :param start: The inclusive start index from which to return images.
         :param num: The exclusive end index up to which to return images.
+        :param indices: A list or NumPy array of image indices. Will override `start` and `num` if provided.
         :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
