@@ -24,13 +24,13 @@
 	},
 	{
 	    "affiliation": "Princeton University",
-	    "name": "Robbie Brook"
-	},
-	{
-	    "affiliation": "Princeton University",
 	    "name": "Josh Carmichael",
 	    "orcid": "0000-0001-9889-349X"
 	},
+        {
+            "affiliation": "Princeton University",
+            "name": "Robbie Brook"
+        },
 	{
 	    "affiliation": "Princeton University",
 	    "name": "Yunpeng Shi"
