@@ -820,8 +820,16 @@ class CLSymmetryC3C4(CLSyncVoting):
     def g_sync(rots, order, rots_gt, dtype=np.float32):
         """
         Every estimated rotation might be a version of the ground truth rotation
-        rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes all
-        estimates so that only a single global rotation need be applies to all rotations.
+        rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes the
+        ground truth rotations so that only a single global rotation need be applied
+        to all estimates for error analysis.
+
+        :param rots: Estimated rotation matrices
+        :param order: The cyclic order asssociated with the symmetry of the underlying molecule.
+        :param rots_gt: Ground truth rotation matrices.
+        :param dtype: The dtype of the rotation
+
+        :return: g-synchronized ground truth rotations.
         """
         assert len(rots) == len(
             rots_gt
@@ -871,4 +879,8 @@ class CLSymmetryC3C4(CLSyncVoting):
             ind = np.argmin(angleDists)
             sign_g_Ri[ii] = ind
 
-        return sign_g_Ri.astype(int)
+        rots_gt_sync = np.zeros((n_img, 3, 3), dtype=dtype)
+        for i, rot_gt in enumerate(rots_gt):
+            rots_gt_sync[i] = rots_symm[sign_g_Ri[i]] @ rot_gt
+
+        return rots_gt_sync
