@@ -881,6 +881,7 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         rots_gt_sync = np.zeros((n_img, 3, 3), dtype=dtype)
         for i, rot_gt in enumerate(rots_gt):
-            rots_gt_sync[i] = rots_symm[sign_g_Ri[i]] @ rot_gt
+            s = int(sign_g_Ri[i])
+            rots_gt_sync[i] = rots_symm[s] @ rot_gt
 
         return rots_gt_sync
