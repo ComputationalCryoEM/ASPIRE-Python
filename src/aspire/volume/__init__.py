@@ -7,7 +7,7 @@ from numpy.linalg import qr
 import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.utils import Rotation, grid_2d, grid_3d, mat_to_vec, vec_to_mat
+from aspire.utils import Rotation, bump_3d, grid_2d, grid_3d, mat_to_vec, vec_to_mat
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import Random, randn
 from aspire.utils.types import complex_type
@@ -355,7 +355,9 @@ class Volume:
         return Volume(loaded_data.astype(dtype))
 
 
-def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.float64):
+def gaussian_blob_vols(
+    L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.float64, mask=False
+):
     """
     Builds gaussian blob volumes with chosen symmetry type.
 
@@ -403,7 +405,7 @@ def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.f
 
     vols_generator = map_sym_to_generator[sym_type]
 
-    return vols_generator(L=L, C=C, K=K, order=order, seed=seed, dtype=dtype)
+    return vols_generator(L=L, C=C, K=K, order=order, seed=seed, dtype=dtype, mask=mask)
 
 
 class CartesianVolume(Volume):
@@ -434,7 +436,7 @@ class FBBasisVolume(BasisVolume):
 
 
 def _gaussian_blob_Cn_vols(
-    L=8, C=2, K=16, alpha=1, order=1, seed=None, dtype=np.float64
+    L=8, C=2, K=16, alpha=1, order=1, seed=None, dtype=np.float64, mask=False
 ):
     """
     Generate Cn rotationally symmetric volumes composed of Gaussian blobs.
@@ -477,11 +479,11 @@ def _gaussian_blob_Cn_vols(
         for c in range(C):
             Q, D, mu = _gen_gaussians(K, alpha)
             Q_rot, D_sym, mu_rot = _symmetrize_gaussians(Q, D, mu, order)
-            vols[c] = _eval_gaussians(L, Q_rot, D_sym, mu_rot, dtype=dtype)
+            vols[c] = _eval_gaussians(L, Q_rot, D_sym, mu_rot, dtype=dtype, mask=mask)
     return Volume(vols)
 
 
-def _eval_gaussians(L, Q, D, mu, dtype=np.float64):
+def _eval_gaussians(L, Q, D, mu, dtype=np.float64, mask=False):
     """
     Evaluate Gaussian blobs over a 3D grid with centers, mu, orientations, Q, and variances, D.
 
@@ -509,6 +511,10 @@ def _eval_gaussians(L, Q, D, mu, dtype=np.float64):
         vol += np.exp(-0.5 * np.sum(np.abs(coords_k) ** 2, axis=0))
 
     vol = np.reshape(vol, g["x"].shape)
+
+    if mask is True:
+        bump_mask = bump_3d(L, dtype=dtype)
+        vol = np.multiply(bump_mask, vol)
 
     return vol
 
