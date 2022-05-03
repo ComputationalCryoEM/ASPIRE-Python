@@ -7,6 +7,11 @@ from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
+from aspire.utils.coor_trans import (
+    get_aligned_rotations,
+    get_rots_mse,
+    register_rotations,
+)
 from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations, gaussian_3d
 from aspire.utils.random import randn
 from aspire.volume import Volume
@@ -47,6 +52,27 @@ class OrientSymmTestCase(TestCase):
 
     def tearDown(self):
         pass
+
+    @parameterized.expand([(order,), (order + 1,)])
+    def testEstimateRotations(self, order):
+        src = self.srcs[order]
+        cl_symm = self.cl_classes[order]
+
+        # Estimate rotations.
+        cl_symm.estimate_rotations()
+        rots_est = cl_symm.rotations
+
+        # g-synchronize ground truth rotations.
+        rots_gt = src.rots
+        rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt, dtype=self.dtype)
+
+        # Register estimates to ground truth rotations and compute MSE.
+        Q_mat, flag = register_rotations(rots_est, rots_gt_sync)
+        regrot = get_aligned_rotations(rots_est, Q_mat, flag)
+        mse_reg = get_rots_mse(regrot, rots_gt_sync)
+
+        # Assert mse is small.
+        self.assertTrue(mse_reg < 0.005)
 
     @parameterized.expand([(order,), (order + 1,)])
     def testRelativeRotations(self, order):
