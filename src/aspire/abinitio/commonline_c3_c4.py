@@ -93,7 +93,19 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
         Estimate rotation matrices for symmetric molecules.
         """
-        pass
+        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
+        vijs, viis = self._estimate_relative_viewing_directions_c3_c4()
+
+        logger.info("Performing global handedness synchronization.")
+        vijs, viis = self._global_J_sync(vijs, viis)
+
+        logger.info("Estimating third rows of rotation matrices.")
+        vis = self._estimate_third_rows(vijs, viis)
+
+        logger.info("Estimating in-plane rotations and rotations matrices.")
+        Ris, _ = self._estimate_inplane_rotations(vis)
+
+        self.rotations = Ris
 
     ###########################################
     # Primary Methods                         #
