@@ -513,7 +513,7 @@ def _eval_gaussians(L, Q, D, mu, dtype=np.float64, mask=False):
     vol = np.reshape(vol, g["x"].shape)
 
     if mask is True:
-        bump_mask = bump_3d(L, dtype=dtype)
+        bump_mask = bump_3d(L, spread=10, dtype=dtype)
         vol = np.multiply(bump_mask, vol)
 
     return vol

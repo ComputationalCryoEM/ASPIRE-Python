@@ -40,6 +40,7 @@ class Simulation(ImageSource):
         seed=0,
         memory=None,
         noise_filter=None,
+        mask=False,
     ):
         """
         A Cryo-EM simulation
@@ -65,7 +66,12 @@ class Simulation(ImageSource):
 
         if vols is None:
             self.vols = gaussian_blob_vols(
-                L=L, C=C, symmetry_type=symmetry_type, seed=self.seed, dtype=self.dtype
+                L=L,
+                C=C,
+                symmetry_type=symmetry_type,
+                seed=self.seed,
+                dtype=self.dtype,
+                mask=mask,
             )
         else:
             assert isinstance(vols, Volume)
