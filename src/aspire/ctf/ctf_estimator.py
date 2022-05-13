@@ -671,7 +671,7 @@ class CtfEstimator:
     # Note, This doesn't actually use anything from the class.
     # It is used in a solver loop of some sort, so it may not be correct
     # to just use what is avail in the obj.
-    def write_star(self, df1, df2, ang, cs, voltage, pixel_size, amp, name, output_dir):
+    def write_star(self, name, params_dict, output_dir):
         """
         Writes CTF parameters to starfile.
         """
@@ -680,13 +680,13 @@ class CtfEstimator:
             os.mkdir(output_dir)
         data_block = {}
         data_block["_rlnMicrographName"] = name
-        data_block["_rlnDefocusU"] = df1
-        data_block["_rlnDefocusV"] = df2
-        data_block["_rlnDefocusAngle"] = ang
-        data_block["_rlnSphericalAbberation"] = cs
-        data_block["_rlnAmplitudeContrast"] = amp
-        data_block["_rlnVoltage"] = voltage
-        data_block["_rlnDetectorPixelSize"] = pixel_size
+        data_block["_rlnDefocusU"] = params_dict["defocus_u"]
+        data_block["_rlnDefocusV"] = params_dict["defocus_v"]
+        data_block["_rlnDefocusAngle"] = params_dict["defocus_ang"]
+        data_block["_rlnSphericalAbberation"] = params_dict["cs"]
+        data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
+        data_block["_rlnVoltage"] = params_dict["voltage"]
+        data_block["_rlnDetectorPixelSize"] = params_dict["pixel_size"]
         df = DataFrame([data_block])
         blocks = OrderedDict()
         blocks["root"] = df
@@ -736,7 +736,7 @@ def estimate_ctf(
     #   closer to original code.
     ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
 
-    results = []
+    results = {}
     for name in file_names:
         with mrcfile.open(
             os.path.join(data_folder, name), mode="r", permissive=True
@@ -816,19 +816,18 @@ def estimate_ctf(
             cc_array[a, 3] = p
         ml = np.argmax(cc_array[:, 3], -1)
 
-        result = (
-            cc_array[ml, 0],
-            cc_array[ml, 1],
-            cc_array[ml, 2],  # Radians
-            cs,
-            voltage,
-            pixel_size,
-            amp,
-            name,
-        )
+        result = {
+            "defocus_u": cc_array[ml, 0],
+            "defocus_v": cc_array[ml, 1],
+            "defocus_ang": cc_array[ml, 2],  # Radians
+            "cs": cs,
+            "voltage": voltage,
+            "pixel_size": pixel_size,
+            "amplitude_contrast": amp,
+        }
 
-        ctf_object.write_star(*result, output_dir)
-        results.append(result)
+        ctf_object.write_star(name, result, output_dir)
+        results[name] = result
 
         ctf_object.set_df1(cc_array[ml, 0])
         ctf_object.set_df2(cc_array[ml, 1])
