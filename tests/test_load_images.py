@@ -58,7 +58,7 @@ class LoadImagesTestCase(TestCase):
         # ensure that we can load images in order using
         # the start and num arguments
         src = RelionSource(self.starfile_path, data_folder=self.data_folder)
-        imgs = src.images(0, 500)
+        imgs = src.images(range(0, 500))
         from_mrc = self.getParticlesFromIndices([i for i in range(0, 500)])
         self.assertTrue(np.array_equal(imgs.asnumpy(), from_mrc.asnumpy()))
 
@@ -67,7 +67,7 @@ class LoadImagesTestCase(TestCase):
         # nonsequentially, and end up with the ordering we asked for
         src = RelionSource(self.starfile_path, data_folder=self.data_folder)
         indices = [501, 502, 503, 504, 505, 0, 1, 2, 3, 4, 729, 728, 730, 720]
-        from_src = src.images(indices=indices)
+        from_src = src.images(indices)
         from_mrc = self.getParticlesFromIndices(indices)
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
 
@@ -75,9 +75,9 @@ class LoadImagesTestCase(TestCase):
         src = RelionSource(self.starfile_path, data_folder=self.data_folder)
         even_indices = [i for i in range(0, self.n, 2)]
         odd_indices = [i for i in range(1, self.n, 2)]
-        even_from_src = src.images(indices=even_indices)
+        even_from_src = src.images(even_indices)
         even_from_mrc = self.getParticlesFromIndices(even_indices)
-        odd_from_src = src.images(indices=odd_indices)
+        odd_from_src = src.images(odd_indices)
         odd_from_mrc = self.getParticlesFromIndices(odd_indices)
         self.assertTrue(
             np.array_equal(even_from_src.asnumpy(), even_from_mrc.asnumpy())

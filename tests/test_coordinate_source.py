@@ -257,8 +257,8 @@ class CoordinateSourceTestCase(TestCase):
         # it is possible to override the particle size in the box file
         src_new_size = BoxesCoordinateSource(self.files_box, particle_size=100)
         src_from_centers = CentersCoordinateSource(self.files_coord, particle_size=100)
-        imgs_new_size = src_new_size.images(0, 10)
-        imgs_from_centers = src_from_centers.images(0, 10)
+        imgs_new_size = src_new_size.images(range(0, 10))
+        imgs_from_centers = src_from_centers.images(range(0, 10))
         for i in range(10):
             self.assertTrue(np.array_equal(imgs_new_size[i], imgs_from_centers[i]))
 
@@ -268,9 +268,9 @@ class CoordinateSourceTestCase(TestCase):
         src_from_box = BoxesCoordinateSource(self.files_box)
         src_from_coord = CentersCoordinateSource(self.files_coord, particle_size=256)
         src_from_star = CentersCoordinateSource(self.files_star, particle_size=256)
-        imgs_box = src_from_box.images(0, 10)
-        imgs_coord = src_from_coord.images(0, 10)
-        imgs_star = src_from_star.images(0, 10)
+        imgs_box = src_from_box.images(range(0, 10))
+        imgs_coord = src_from_coord.images(range(0, 10))
+        imgs_star = src_from_star.images(range(0, 10))
         for i in range(10):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
@@ -354,7 +354,7 @@ class CoordinateSourceTestCase(TestCase):
     def testSave(self):
         # we can save the source into an .mrcs stack with *no* metadata
         src = BoxesCoordinateSource(self.files_box, max_rows=10)
-        imgs = src.images(0, 10)
+        imgs = src.images(range(0, 10))
         star_path = os.path.join(self.data_folder, "stack.star")
         src.save(star_path)
         # load saved particle stack

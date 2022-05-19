@@ -96,7 +96,7 @@ np.random.shuffle(example_array)
 src = ArrayImageSource(example_array)
 
 # Let's peek at the images to make sure they're shuffled up nicely
-src.images(0, 10).show()
+src.images(range(0, 10)).show()
 
 # %%
 # Class Average
@@ -123,7 +123,7 @@ avgs = rir.averages(classes, reflections, dists)
 # Display Classes
 # ^^^^^^^^^^^^^^^
 
-avgs.images(0, 10).show()
+avgs.images(range(0, 10)).show()
 
 # %%
 # Class Averaging with Noise
@@ -151,7 +151,7 @@ noisy_im = noise.forward(src.images(0, src.n))
 noisy_src = ArrayImageSource(noisy_im)
 
 # Let's peek at the noisey images
-noisy_src.images(0, 10).show()
+noisy_src.images(range(0, 10)).show()
 
 # %%
 # RIR with Noise
@@ -176,7 +176,7 @@ avgs = noisy_rir.averages(classes, reflections, dists)
 # Display Classes
 # ^^^^^^^^^^^^^^^
 
-avgs.images(0, 10).show()
+avgs.images(range(0, 10)).show()
 
 
 # %%

@@ -35,7 +35,7 @@ class StarFileMainCase(StarFileTestCase):
 
     def testImageStackShape(self):
         # Load 10 images starting at index 0
-        images = self.src.images(0, 10)
+        images = self.src.images(range(0, 10))
         self.assertEqual(images.shape, (10, 200, 200))
 
     def testImage0(self):
