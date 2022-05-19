@@ -319,19 +319,14 @@ class ImageSource:
         self._cached_im = self.images(start=0, num=np.inf)
         self.generation_pipeline.reset()
 
-    def images(self, start=0, num=np.inf, indices=None, *args, **kwargs):
+    def images(self,indices=None, *args, **kwargs):
         """
         Return images from this ImageSource as an Image object.
-        :param start: The inclusive start index from which to return images.
-        :param num: The exclusive end index up to which to return images.
-        :param indices: A list or NumPy array of image indices. Will override `start` and `num` if provided.
+        :param indices: A range, list, or NumPy array of image indices.
         :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n), dtype=int)
-
         if isinstance(indices, list):
             indices = np.array(indices)
 
