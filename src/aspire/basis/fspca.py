@@ -117,7 +117,7 @@ class FSPCABasis(SteerableBasis2D):
         This may take some time for large image stacks.
         """
 
-        coef = self.basis.evaluate_t(self.src.images(0, self.src.n))
+        coef = self.basis.evaluate_t(self.src.images())
 
         if self.noise_var is None:
             from aspire.noise import WhiteNoiseEstimator
