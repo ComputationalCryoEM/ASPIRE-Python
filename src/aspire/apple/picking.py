@@ -191,9 +191,9 @@ class Picker:
         size = tuple((np.array(im.shape) / self.mrc_shrink_factor).astype(int))
 
         # Note, float64 required for signal.correlate call accuracy.
-        im = np.asarray(Image.fromarray(im).resize(size, Image.BICUBIC)).astype(
-            np.float64, copy=False
-        )
+        im = np.asarray(
+            Image.fromarray(im).resize(size, Image.Resampling.BICUBIC)
+        ).astype(np.float64, copy=False)
 
         im = signal.correlate(
             im,
