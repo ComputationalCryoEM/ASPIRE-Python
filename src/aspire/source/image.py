@@ -265,7 +265,7 @@ class ImageSource:
 
         return result.to_numpy().squeeze()
 
-    def _images(self, start=0, num=np.inf, indices=None):
+    def _images(self, indices):
         """
         Return images WITHOUT applying any filters/translations/rotations/amplitude corrections/noise
         Subclasses may want to implement their own caching mechanisms.
@@ -340,7 +340,7 @@ class ImageSource:
             logger.info("Loading images from cache")
             im = Image(self._cached_im[indices, :, :])
         else:
-            im = self._images(indices=indices, *args, **kwargs)
+            im = self._images(indices, *args, **kwargs)
 
         im = self.generation_pipeline.forward(im, indices=indices)
         logger.info(f"Loaded {len(indices)} images")
