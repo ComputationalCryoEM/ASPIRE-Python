@@ -337,9 +337,9 @@ class ImageSource:
                 f"Argument to {self.__class__.__name__}.images() must be a list, NumPy array, or range."
             )
         # check for out of range indices
-        if indices.max > self.n:
+        if np.max(indices) > self.n:
             raise ValueError(
-                f"Index out of bounds: {indices.max}. {self.__class__.__name__} has {self.n} images."
+                f"Index out of bounds: {np.max(indices)}. {self.__class__.__name__} object has {self.n} images."
             )
 
         if self._cached_im is not None:
