@@ -85,7 +85,9 @@ class Micrograph:
 
         if self.shrink_factor is not None:
             size = tuple((np.array(im.shape) / self.shrink_factor).astype(int))
-            im = np.array(PILImage.fromarray(im).resize(size, PILImage.BICUBIC))
+            im = np.array(
+                PILImage.fromarray(im).resize(size, PILImage.Resampling.BICUBIC)
+            )
 
         if self.gauss_filter_size is not None:
             im = signal.correlate(
