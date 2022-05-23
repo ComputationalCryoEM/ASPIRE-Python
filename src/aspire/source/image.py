@@ -327,13 +327,19 @@ class ImageSource:
         :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
         :return: an `Image` object.
         """
+        # if not given indices, get all images in order
         if indices is None:
-            indices = np.array(range(0, self.n))
+            indices = np.arange(0, self.n, dtype=int)
         if isinstance(indices, list) or isinstance(indices, range):
             indices = np.array(indices)
         if not isinstance(indices, np.ndarray):
             raise ValueError(
                 f"Argument to {self.__class__.__name__}.images() must be a list, NumPy array, or range."
+            )
+        # check for out of range indices
+        if indices.max > self.n:
+            raise ValueError(
+                f"Index out of bounds: {indices.max}. {self.__class__.__name__} has {self.n} images."
             )
 
         if self._cached_im is not None:

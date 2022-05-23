@@ -174,6 +174,14 @@ class Simulation(ImageSource):
         return Image(im)
 
     def clean_images(self, indices=None):
+        if indices is None:
+            indices = np.arange(0, self.n, dtype=int)
+        if isinstance(indices, list) or isinstance(indices, range):
+            indices = np.array(indices)
+        if not isinstance(indices, np.ndarray):
+            raise ValueError(
+                f"Argument to {self.__class__.__name__}.images() must be a list, NumPy array, or range."
+            )
         return self._images(indices, enable_noise=False)
 
     def _images(self, indices=None, enable_noise=True):
