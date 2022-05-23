@@ -58,7 +58,7 @@ class LoadImagesTestCase(TestCase):
         # ensure that we can load images in order using
         # the start and num arguments
         src = RelionSource(self.starfile_path, data_folder=self.data_folder)
-        imgs = src.images(range(0, 500))
+        imgs = src.images(range(500))
         from_mrc = self.getParticlesFromIndices([i for i in range(0, 500)])
         self.assertTrue(np.array_equal(imgs.asnumpy(), from_mrc.asnumpy()))
 

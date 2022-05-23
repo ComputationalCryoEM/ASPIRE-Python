@@ -123,7 +123,7 @@ class BFRAverager2DTestCase(Averager2DTestCase):
         self.src = self._getSrc()
 
         # Get the image coef
-        self.coefs = self.basis.evaluate_t(self.src.images(0, self.n_img))
+        self.coefs = self.basis.evaluate_t(self.src.images(range(0, self.n_img)))
 
     def _getSrc(self):
         if not hasattr(self, "shifts"):

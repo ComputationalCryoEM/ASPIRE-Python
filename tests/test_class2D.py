@@ -43,7 +43,7 @@ class FSPCATestCase(TestCase):
         self.src.cache()  # Precompute image stack
 
         # Calculate some projection images
-        self.imgs = self.src.images(0, self.src.n)
+        self.imgs = self.src.images()
 
         # Configure an FSPCA basis
         self.fspca_basis = FSPCABasis(self.src, noise_var=0)

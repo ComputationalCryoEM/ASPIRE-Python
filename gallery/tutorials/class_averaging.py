@@ -96,7 +96,7 @@ np.random.shuffle(example_array)
 src = ArrayImageSource(example_array)
 
 # Let's peek at the images to make sure they're shuffled up nicely
-src.images(range(0, 10)).show()
+src.images(range(10)).show()
 
 # %%
 # Class Average
@@ -123,7 +123,7 @@ avgs = rir.averages(classes, reflections, dists)
 # Display Classes
 # ^^^^^^^^^^^^^^^
 
-avgs.images(range(0, 10)).show()
+avgs.images(range(10)).show()
 
 # %%
 # Class Averaging with Noise
@@ -135,7 +135,7 @@ avgs.images(range(0, 10)).show()
 
 # Using the sample variance, we'll compute a target noise variance
 # Noise
-var = np.var(src.images(0, src.n).asnumpy())
+var = np.var(src.images().asnumpy())
 noise_var = var * 2**4
 
 # We create a uniform noise to apply to the 2D images
@@ -145,13 +145,13 @@ noise_filter = ScalarFilter(dim=2, value=noise_var)
 noise = NoiseAdder(seed=123, noise_filter=noise_filter)
 
 # Add noise to the images by performing ``forward``
-noisy_im = noise.forward(src.images(0, src.n))
+noisy_im = noise.forward(src.images())
 
 # Recast as an ASPIRE source
 noisy_src = ArrayImageSource(noisy_im)
 
 # Let's peek at the noisey images
-noisy_src.images(range(0, 10)).show()
+noisy_src.images(range(10)).show()
 
 # %%
 # RIR with Noise
@@ -176,7 +176,7 @@ avgs = noisy_rir.averages(classes, reflections, dists)
 # Display Classes
 # ^^^^^^^^^^^^^^^
 
-avgs.images(range(0, 10)).show()
+avgs.images(range(10)).show()
 
 
 # %%
@@ -188,13 +188,13 @@ avgs.images(range(0, 10)).show()
 review_class = 5
 
 # Display the original image.
-noisy_src.images(review_class, 1).show()
+noisy_src.images([review_class]).show()
 
 # Report the identified neighbor indices
 logger.info(f"Class {review_class}'s neighors: {classes[review_class]}")
 
 # Report the identified neighbors
-Image(noisy_src.images(0, np.inf)[classes[review_class]]).show()
+Image(noisy_src.images()[classes[review_class]]).show()
 
 # Display the averaged result
-avgs.images(review_class, 1).show()
+avgs.images([review_class]).show()

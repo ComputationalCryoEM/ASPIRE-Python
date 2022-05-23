@@ -281,45 +281,45 @@ class CoordinateSourceTestCase(TestCase):
         src_from_box = BoxesCoordinateSource(self.files_box)
         images_in_order = src_from_box.images(0, 400)
         # test loading every other image and compare
-        odd = np.array([i for i in range(1, 400, 2)])
-        even = np.array([i for i in range(0, 399, 2)])
-        odd_images = src_from_box.images(indices=odd)
-        even_images = src_from_box.images(indices=even)
+        odd_indices = np.array([i for i in range(1, 400, 2)])
+        even_indices = np.array([i for i in range(0, 399, 2)])
+        odd_images = src_from_box.images(odd_indices)
+        even_images = src_from_box.images(even_indices)
         for i in range(0, 200):
             self.assertTrue(np.array_equal(images_in_order[2 * i], even_images[i]))
             self.assertTrue(np.array_equal(images_in_order[2 * i + 1], odd_images[i]))
 
         # random sample of [0,400) of length 100
         random_sample = np.array(random.sample([i for i in range(400)], 100))
-        random_images = src_from_box.images(indices=random_sample)
+        random_images = src_from_box.images(random_sample)
         for i, idx in enumerate(random_sample):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
 
     def testMaxRows(self):
         src_from_box = BoxesCoordinateSource(self.files_box)
-        imgs = src_from_box.images(0, 400)
+        imgs = src_from_box.images(range(0, 400))
         # make sure max_rows loads the correct particles
         src_100 = BoxesCoordinateSource(self.files_box, max_rows=100)
-        imgs_100 = src_100.images(0, src_100.n)
+        imgs_100 = src_100.images()
         for i in range(100):
             self.assertTrue(np.array_equal(imgs[i], imgs_100[i]))
         # make sure max_rows > self.n loads max_rows images
         src_500 = BoxesCoordinateSource(self.files_box, max_rows=500)
         self.assertEqual(src_500.n, 400)
-        imgs_500 = src_500.images(0, 400)
+        imgs_500 = src_500.images(range(0, 400))
         for i in range(400):
             self.assertTrue(np.array_equal(imgs[i], imgs_500[i]))
         # make sure max_rows loads correct particles
         # when some have been excluded
         imgs_newsize = BoxesCoordinateSource(self.files_box, particle_size=336).images(
-            0, 50
+            range(0, 50)
         )
         src_maxrows = BoxesCoordinateSource(
             self.files_box, particle_size=336, max_rows=50
         )
         # max_rows still loads 50 images even if some particles were excluded
         self.assertEqual(src_maxrows.n, 50)
-        imgs_maxrows = src_maxrows.images(0, 50)
+        imgs_maxrows = src_maxrows.images(range(0, 50))
         for i in range(50):
             self.assertTrue(np.array_equal(imgs_newsize[i], imgs_maxrows[i]))
 
@@ -334,8 +334,8 @@ class CoordinateSourceTestCase(TestCase):
         self.assertEqual(src_centers_larger_particles.n, 300)
         self.assertEqual(src_box_larger_particles.n, 300)
         # make sure we have the same particles
-        imgs_centers = src_centers_larger_particles.images(0, 300)
-        imgs_resized = src_box_larger_particles.images(0, 300)
+        imgs_centers = src_centers_larger_particles.images(range(0, 300))
+        imgs_resized = src_box_larger_particles.images(range(0, 300))
         for i in range(50):
             self.assertTrue(np.array_equal(imgs_centers[i], imgs_resized[i]))
 
@@ -346,8 +346,8 @@ class CoordinateSourceTestCase(TestCase):
             src_resized = BoxesCoordinateSource(self.files_box, particle_size=_size)
             # some particles might be chopped off for sizes greater than
             # 256, so we just load the first 300 images for comparison
-            imgs_centers = src_centers.images(0, 300)
-            imgs_resized = src_resized.images(0, 300)
+            imgs_centers = src_centers.images(range(0, 300))
+            imgs_resized = src_resized.images(range(0, 300))
             for i in range(300):
                 self.assertTrue(np.array_equal(imgs_centers[i], imgs_resized[i]))
 
@@ -380,7 +380,7 @@ class CoordinateSourceTestCase(TestCase):
         src.invert_contrast()
         # call .images() to ensure the filters are applied
         # and not just added to pipeline
-        src.images(0, 5)
+        src.images(range(5))
 
     def testCommand(self):
         # ensure that the command line tool works as expected

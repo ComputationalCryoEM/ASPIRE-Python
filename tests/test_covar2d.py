@@ -65,7 +65,7 @@ class Cov2DTestCase(TestCase):
 
         self.imgs_clean = sim.projections()
         self.imgs_ctf_clean = sim.clean_images()
-        self.imgs_ctf_noise = sim.images(start=0, num=n)
+        self.imgs_ctf_noise = sim.images(range(n))
 
         self.cov2d = RotCov2D(self.basis)
         self.coeff_clean = self.basis.evaluate_t(self.imgs_clean)

@@ -110,11 +110,11 @@ src = Simulation(
 # Consume images from the source by providing
 # a starting index and number of images.
 # Here we generate the first 3 and peek at them.
-src.images(0, 3).show()
+src.images(range(3)).show()
 src.projections(0, 3).show()
 
 # Here we return the first n_img images as a numpy array.
-dirty_ary = src.images(0, n_img).asnumpy()
+dirty_ary = src.images().asnumpy()
 
 # And we have access to the clean images
 clean_ary = src.projections(0, n_img).asnumpy()

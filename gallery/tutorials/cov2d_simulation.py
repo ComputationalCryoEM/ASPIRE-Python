@@ -125,7 +125,7 @@ sn_ratio = power_clean / noise_var
 logger.info(f"Signal to noise ratio is {sn_ratio}.")
 
 # get noisy images after applying CTF and noise filters
-imgs_noise = sim.images(start=0, num=num_imgs)
+imgs_noise = sim.images()
 
 # %%
 # Expand Images in the Fourier-Bessel Basis
