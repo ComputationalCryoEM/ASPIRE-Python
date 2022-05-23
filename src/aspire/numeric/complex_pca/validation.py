@@ -21,6 +21,7 @@ from sklearn.utils.validation import _assert_all_finite
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
 
+
 def _num_samples(x):
     """Return number of samples in array-like x."""
     message = "Expected sequence or array-like, got %s" % type(x)
