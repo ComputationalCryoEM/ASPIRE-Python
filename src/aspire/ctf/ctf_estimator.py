@@ -683,7 +683,7 @@ class CtfEstimator:
         data_block["_rlnDefocusU"] = params_dict["defocus_u"]
         data_block["_rlnDefocusV"] = params_dict["defocus_v"]
         data_block["_rlnDefocusAngle"] = params_dict["defocus_ang"]
-        data_block["_rlnSphericalAbberation"] = params_dict["cs"]
+        data_block["_rlnSphericalAberration"] = params_dict["cs"]
         data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
         data_block["_rlnVoltage"] = params_dict["voltage"]
         data_block["_rlnDetectorPixelSize"] = params_dict["pixel_size"]
@@ -704,8 +704,10 @@ def estimate_ctf(
     psd_size=512,
     g_min=30,
     g_max=5,
-    output_dir='results',
+    output_dir="results",
     dtype=np.float32,
+    save_ctf_image=False,
+    save_noise_image=False,
 ):
     """
     Given paramaters estimates CTF from experimental data
@@ -834,13 +836,6 @@ def estimate_ctf(
         ctf_object.set_angle(cc_array[ml, 2])  # Radians
         ctf_object.generate_ctf()
 
-        with mrcfile.new(
-            output_dir + "/" + os.path.splitext(name)[0] + "_noise.mrc", overwrite=True
-        ) as mrc:
-            mrc.set_data(background_2d[0].astype(np.float32))
-            mrc.voxel_size = pixel_size
-            mrc.close()
-
         df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(theta.shape, theta.dtype) + (
             cc_array[ml, 0] - cc_array[ml, 1]
         ) * np.cos(2 * theta - 2 * cc_array[ml, 2] * np.ones(theta.shape, theta.dtype))
@@ -854,11 +849,19 @@ def estimate_ctf(
             :, :, ctf_im.shape[0] // 2 + 1
         ]
 
-        with mrcfile.new(
-            output_dir + "/" + os.path.splitext(name)[0] + ".ctf", overwrite=True
-        ) as mrc:
-            mrc.set_data(np.float32(ctf_signal))
-            mrc.voxel_size = pixel_size
-            mrc.close()
+        if save_noise_image:
+            with mrcfile.new(
+                output_dir + "/" + os.path.splitext(name)[0] + "_noise.mrc",
+                overwrite=True,
+            ) as mrc:
+                mrc.set_data(background_2d[0].astype(np.float32))
+                mrc.voxel_size = pixel_size
+
+        if save_ctf_image:
+            with mrcfile.new(
+                output_dir + "/" + os.path.splitext(name)[0] + ".ctf", overwrite=True
+            ) as mrc:
+                mrc.set_data(np.float32(ctf_signal))
+                mrc.voxel_size = pixel_size
 
     return results
