@@ -696,15 +696,15 @@ class CtfEstimator:
 
 def estimate_ctf(
     data_folder,
-    pixel_size,
-    cs,
-    amplitude_contrast,
-    voltage,
-    num_tapers,
-    psd_size,
-    g_min,
-    g_max,
-    output_dir,
+    pixel_size=1.0,
+    cs=2.0,
+    amplitude_contrast=0.07,
+    voltage=300,
+    num_tapers=2,
+    psd_size=512,
+    g_min=30,
+    g_max=5,
+    output_dir='results',
     dtype=np.float32,
 ):
     """
