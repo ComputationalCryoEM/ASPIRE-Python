@@ -671,7 +671,7 @@ class CtfEstimator:
     # Note, This doesn't actually use anything from the class.
     # It is used in a solver loop of some sort, so it may not be correct
     # to just use what is avail in the obj.
-    def write_star(self, name, params_dict, output_dir):
+    def write_star_single(self, name, params_dict, output_dir):
         """
         Writes CTF parameters to starfile.
         """
@@ -706,8 +706,8 @@ def estimate_ctf(
     g_max=5,
     output_dir="results",
     dtype=np.float32,
-    save_ctf_image=False,
-    save_noise_image=False,
+    save_ctf_images=False,
+    save_noise_images=False,
 ):
     """
     Given paramaters estimates CTF from experimental data
@@ -828,7 +828,7 @@ def estimate_ctf(
             "amplitude_contrast": amp,
         }
 
-        ctf_object.write_star(name, result, output_dir)
+        ctf_object.write_star_single(name, result, output_dir)
         results[name] = result
 
         ctf_object.set_df1(cc_array[ml, 0])
@@ -849,7 +849,7 @@ def estimate_ctf(
             :, :, ctf_im.shape[0] // 2 + 1
         ]
 
-        if save_noise_image:
+        if save_noise_images:
             with mrcfile.new(
                 output_dir + "/" + os.path.splitext(name)[0] + "_noise.mrc",
                 overwrite=True,
@@ -857,7 +857,7 @@ def estimate_ctf(
                 mrc.set_data(background_2d[0].astype(np.float32))
                 mrc.voxel_size = pixel_size
 
-        if save_ctf_image:
+        if save_ctf_images:
             with mrcfile.new(
                 output_dir + "/" + os.path.splitext(name)[0] + ".ctf", overwrite=True
             ) as mrc:
