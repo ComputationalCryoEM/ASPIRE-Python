@@ -8,7 +8,7 @@ import mrcfile
 import numpy as np
 
 from aspire.image import Image
-from aspire.operators import IdentityFilter
+from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile
 
@@ -44,7 +44,7 @@ class CoordinateSource(ImageSource, ABC):
     This also allows the CoordinateSource to be saved to an `.mrcs` stack.
     """
 
-    def __init__(self, files, particle_size, max_rows, ctf_files):
+    def __init__(self, files, particle_size, max_rows, ctf_files, B):
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
         # and is used in self._populate_particles
@@ -124,17 +124,15 @@ class CoordinateSource(ImageSource, ABC):
 
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
+        # CTF envelope decay factor
+        self.B = B
         # if CTF star files were provided, populate the metadata with CTF parameters
-        if ctf_files is not None:
+        # otherwise, set default filters/indices
+        if ctf_files is None:
+            self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
+            self.unique_filters = [IdentityFilter()]
+        else:
             self._populate_unique_filters(ctf_files)
-
-        # Create filter indices for the source. These are required in order to
-        # pass through the filter eval code.
-        # Bypassing the filter_indices setter in ImageSource allows us
-        # create this source with absolutely *no* metadata.
-        # Otherwise, six default Relion columns are created w/defualt values
-        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
-        self.unique_filters = [IdentityFilter()]
 
     def _populate_particles(self, num_micrographs, coord_paths):
         """
@@ -256,7 +254,7 @@ class CoordinateSource(ImageSource, ABC):
 
     def _populate_unique_filters(self, ctf_files):
         """
-        Given a list of CTF STAR files, this function adds
+        Given a list of CTF STAR files--one for each micrograph--, this function adds
         corresponding CTFFilter objects to the `CoordinateSource`'s unique
         filter list, and also populates the metadata.
         """
@@ -265,8 +263,59 @@ class CoordinateSource(ImageSource, ABC):
                 "Number of CTF STAR files must match number of micrographs."
             )
 
+        filters = []
+        filter_indices = np.zeros(self.n, dtype=int)
         for i, ctf_file in enumerate(ctf_files):
-            params_dict = self._read_ctf_star(ctf_file)
+            params = self._read_ctf_star(ctf_file)
+            # add CTF filter to unique filters
+            filters.append(
+                CTFFilter(
+                    pixel_size=params["pixel_size"],
+                    voltage=params["voltage"],
+                    defocus_u=params["defocus_u"],
+                    defocus_v=params["defocus_v"],
+                    defocus_ang=params["defocus_angle"],
+                    Cs=params["cs"],
+                    alpha=params["amplitude_contrast"],
+                    B=self.B,
+                )
+            )
+            # find particle indices corresponding to this micrograph
+            indices = [
+                idx for idx, particle in enumerate(self.particles) if particle[0] == i
+            ]
+            # assign filter indices
+            filter_indices[indices] = i
+            # populate CTF metadata
+            metadata_cols = [
+                "_rlnVoltage",
+                "_rlnDefocusU",
+                "_rlnDefocusV",
+                "_rlnDefocusAngle",
+                "_rlnSphericalAberration",
+                "_rlnAmplitudeContrast",
+            ]
+            values = np.zeros((len(indices), len(metadata_cols)))
+            values[:] = np.array(
+                [
+                    params["voltage"],
+                    params["defocus_u"],
+                    params["defocus_v"],
+                    params["defocus_angle"],
+                    params["cs"],
+                    params["amplitude_contrast"],
+                ]
+            )
+            self.set_metadata(
+                metadata_cols,
+                values,
+                indices,
+            )
+            # other ASPIRE metadata parameters
+            self.set_metadata("__mrc_filepath", self.mrc_paths[i], indices)
+            self.set_metadata("__mrc_index", i, indices)
+
+        self.filter_indices = filter_indices
 
     def _read_ctf_star(self, ctf_file):
         """
@@ -275,13 +324,13 @@ class CoordinateSource(ImageSource, ABC):
         """
         df = StarFile(ctf_file).get_block_by_index(0)
         return {
-            "defocus_u": df["_rlnDefocusU"][0],
-            "defocus_v": df["_rlnDefocusV"][0],
-            "defocus_angle": df["_rlnDefocusAngle"][0],
-            "cs": df["_rlnSphericalAberration"][0],
-            "amplitude_contrast": df["_rlnAmplitudeContrast"][0],
-            "voltage": df["_rlnVoltage"][0],
-            "pixel_size": df["_rlnDetectorPixelSize"][0],
+            "defocus_u": float(df["_rlnDefocusU"][0]),
+            "defocus_v": float(df["_rlnDefocusV"][0]),
+            "defocus_angle": float(df["_rlnDefocusAngle"][0]),
+            "cs": float(df["_rlnSphericalAberration"][0]),
+            "amplitude_contrast": float(df["_rlnAmplitudeContrast"][0]),
+            "voltage": float(df["_rlnVoltage"][0]),
+            "pixel_size": float(df["_rlnDetectorPixelSize"][0]),
         }
 
     @staticmethod
@@ -380,6 +429,7 @@ class BoxesCoordinateSource(CoordinateSource):
         particle_size=None,
         max_rows=None,
         ctf_files=None,
+        B=0,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
@@ -387,7 +437,7 @@ class BoxesCoordinateSource(CoordinateSource):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         """
         # instantiate super
-        CoordinateSource.__init__(self, files, particle_size, max_rows, ctf_files)
+        CoordinateSource.__init__(self, files, particle_size, max_rows, ctf_files, B)
 
     def _extract_box_size(self, box_file):
         with open(box_file, "r") as box:
@@ -490,7 +540,7 @@ class CentersCoordinateSource(CoordinateSource):
     Represents a data source consisting of micrographs and coordinate files specifying particle centers only. Files can be text (.coord) or STAR files.
     """
 
-    def __init__(self, files, particle_size, max_rows=None, ctf_files=None):
+    def __init__(self, files, particle_size, max_rows=None, ctf_files=None, B=0):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
         :particle_size: Desired size of cropped particles (mandatory)
@@ -498,7 +548,7 @@ class CentersCoordinateSource(CoordinateSource):
         attempt to load all particles)
         """
         # instantiate super
-        CoordinateSource.__init__(self, files, particle_size, max_rows, ctf_files)
+        CoordinateSource.__init__(self, files, particle_size, max_rows, ctf_files, B)
 
     def _validate_centers_file(self, coord_file):
         """
@@ -561,6 +611,3 @@ class CentersCoordinateSource(CoordinateSource):
         with open(coord_file, "r") as infile:
             lines = [[float(c) for c in line.split()] for line in infile.readlines()]
         return [self._box_coord_from_center(line, self.particle_size) for line in lines]
-
-
-B
