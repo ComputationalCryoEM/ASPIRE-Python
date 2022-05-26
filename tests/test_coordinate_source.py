@@ -85,6 +85,9 @@ class CoordinateSourceTestCase(TestCase):
             self.createTestCoordFiles(_centers, i)
             self.createTestStarFiles(_centers, i)
 
+            # create sample CTF STAR files
+            self.createTestCtfFiles(i)
+
         # Create extra coordinate files with float
         # coordinates to make sure we can process these
         # as well
@@ -123,6 +126,8 @@ class CoordinateSourceTestCase(TestCase):
         self.float_box = os.path.join(self.data_folder, "float.box")
         self.float_coord = os.path.join(self.data_folder, "float.coord")
         self.float_star = os.path.join(self.data_folder, "float.star")
+
+        self.ctf_files = sorted(glob(os.path.join(self.data_folder, "ctf*.star")))
 
     def tearDown(self):
         self.tmpdir.cleanup()
@@ -214,6 +219,25 @@ class CoordinateSourceTestCase(TestCase):
                     {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
                 )
             }
+        )
+        starfile = StarFile(blocks=blocks)
+        starfile.write(star_fp)
+
+    def createTestCtfFiles(self, index):
+        # for testing adding CTF information to a CoordinateSource
+        star_fp = os.path.join(self.data_folder, f"ctf{index+1}.star")
+        params_dict = {
+            "_rlnMicrographName": f"sample{index+1}.mrc",
+            "_rlnDefocusU": 1000 + index,
+            "_rlnDefocusV": 900 + index,
+            "_rlnDefocusAngle": index,
+            "_rlnSphericalAberration": index,
+            "_rlnAmplitudeContrast": index,
+            "_rlnVoltage": 300 + index,
+            "_rlnDetectorPixelSize": index,
+        }
+        blocks = OrderedDict(
+            {"root": DataFrame([params_dict], columns=params_dict.keys())}
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
@@ -381,6 +405,63 @@ class CoordinateSourceTestCase(TestCase):
         # call .images() to ensure the filters are applied
         # and not just added to pipeline
         src.images(0, 5)
+
+    def testWrongNumberCtfFiles(self):
+        # trying to give 3 CTF files to a source with 2 micrographs should error
+        with self.assertRaises(ValueError):
+            BoxesCoordinateSource(
+                self.files_box, ctf_files=["badfile", "badfile", "badfile"]
+            )
+
+    def testCtfFilters(self):
+        src = BoxesCoordinateSource(self.files_box, ctf_files=self.ctf_files)
+        # there are two micrographs and two CTF files, so there should be two
+        # unique CTF filters
+        self.assertEqual(len(src.unique_filters), 2)
+        # test the properties of the CTF filters
+        # based on the arbitrary values we added to the CTF files
+        # note these values are not realistic
+        filter0 = src.unique_filters[0]
+        self.assertEqual(
+            (1000.0, 900.0, 0.0, 0.0, 0.0, 300.0, 0.0),
+            (
+                filter0.defocus_u,
+                filter0.defocus_v,
+                filter0.defocus_ang,
+                filter0.Cs,
+                filter0.alpha,
+                filter0.voltage,
+                filter0.pixel_size,
+            ),
+        )
+        filter1 = src.unique_filters[1]
+        self.assertEqual(
+            (1001.0, 901.0, 1.0, 1.0, 1.0, 301.0, 1.0),
+            (
+                filter1.defocus_u,
+                filter1.defocus_v,
+                filter1.defocus_ang,
+                filter1.Cs,
+                filter1.alpha,
+                filter1.voltage,
+                filter1.pixel_size,
+            ),
+        )
+        # the first 200 particles should correspond to the first filter
+        # since they came from the first micrograph
+        self.assertTrue(
+            np.array_equal(np.where(src.filter_indices == 0)[0], np.arange(0, 200))
+        )
+        # the last 200 particles should correspond to the second filter
+        self.assertTrue(
+            np.array_equal(np.where(src.filter_indices == 1)[0], np.arange(200, 400))
+        )
+
+    def testCtfMetadata(self):
+        # ensure metadata is populated correctly when adding CTF info
+        src = BoxesCoordinateSource(self.files_box, ctf_files=self.ctf_files)
+        # __mrc_filepath
+        self.assertEqual(self.all_mrc_paths, src.get_metadata("__mrc_filepath"))
 
     def testCommand(self):
         # ensure that the command line tool works as expected

@@ -316,6 +316,7 @@ class CoordinateSource(ImageSource, ABC):
             self.set_metadata("__mrc_index", i, indices)
 
         self.filter_indices = filter_indices
+        self.unique_filters = filters
 
     def _read_ctf_star(self, ctf_file):
         """
