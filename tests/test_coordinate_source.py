@@ -461,7 +461,12 @@ class CoordinateSourceTestCase(TestCase):
         # ensure metadata is populated correctly when adding CTF info
         src = BoxesCoordinateSource(self.files_box, ctf_files=self.ctf_files)
         # __mrc_filepath
-        self.assertEqual(self.all_mrc_paths, src.get_metadata("__mrc_filepath"))
+        mrc_fp_metadata = np.array(
+            [self.all_mrc_paths[0]] * 200 + [self.all_mrc_paths[1]] * 200
+        ).astype(object)
+        self.assertTrue(
+            np.array_equal(mrc_fp_metadata, src.get_metadata("__mrc_filepath"))
+        )
 
     def testCommand(self):
         # ensure that the command line tool works as expected

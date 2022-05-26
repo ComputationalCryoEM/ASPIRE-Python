@@ -265,6 +265,8 @@ class CoordinateSource(ImageSource, ABC):
 
         filters = []
         filter_indices = np.zeros(self.n, dtype=int)
+        mrc_filepaths = np.zeros(self.n, dtype=object)
+        mrc_indices = np.zeros(self.n, dtype=int)
         for i, ctf_file in enumerate(ctf_files):
             params = self._read_ctf_star(ctf_file)
             # add CTF filter to unique filters
@@ -312,11 +314,13 @@ class CoordinateSource(ImageSource, ABC):
                 indices,
             )
             # other ASPIRE metadata parameters
-            self.set_metadata("__mrc_filepath", self.mrc_paths[i], indices)
-            self.set_metadata("__mrc_index", i, indices)
+            mrc_filepaths[indices] = self.mrc_paths[i]
+            mrc_indices[indices] = i
 
         self.filter_indices = filter_indices
         self.unique_filters = filters
+        self.set_metadata("__mrc_filepath", mrc_filepaths)
+        self.set_metadata("__mrc_index", mrc_indices)
 
     def _read_ctf_star(self, ctf_file):
         """
