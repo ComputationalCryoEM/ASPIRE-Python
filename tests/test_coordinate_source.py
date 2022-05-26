@@ -479,7 +479,19 @@ class CoordinateSourceTestCase(TestCase):
                 filter_indices_metadata, src.get_metadata("__filter_indices")
             )
         )
-        # CTF parameters
+        # CTF metadata
+        ctf_cols = [
+            "_rlnVoltage",
+            "_rlnDefocusU",
+            "_rlnDefocusV",
+            "_rlnDefocusAngle",
+            "_rlnSphericalAberration",
+            "_rlnAmplitudeContrast",
+        ]
+        ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=np.float64)
+        ctf_metadata[:200] = np.array([300.0, 1000.0, 900.0, 0.0, 0.0, 0.0])
+        ctf_metadata[200:400] = np.array([301.0, 1001.0, 901.0, 1.0, 1.0, 1.0])
+        self.assertTrue(np.array_equal(ctf_metadata, src.get_metadata(ctf_cols)))
 
     def testCommand(self):
         # ensure that the command line tool works as expected

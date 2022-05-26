@@ -263,10 +263,23 @@ class CoordinateSource(ImageSource, ABC):
                 "Number of CTF STAR files must match number of micrographs."
             )
 
+        # attributes to be populated by the different CTF's
+        # unique CTFFilter objects
         filters = []
+        # list indicating which CTFFilter corresponds to which particle
         filter_indices = np.zeros(self.n, dtype=int)
         mrc_filepaths = np.zeros(self.n, dtype=object)
         mrc_indices = np.zeros(self.n, dtype=int)
+        # array of CTF metadata to be inserted
+        ctf_cols = [
+            "_rlnVoltage",
+            "_rlnDefocusU",
+            "_rlnDefocusV",
+            "_rlnDefocusAngle",
+            "_rlnSphericalAberration",
+            "_rlnAmplitudeContrast",
+        ]
+        ctf_values = np.zeros((self.n, len(ctf_cols)))
         for i, ctf_file in enumerate(ctf_files):
             params = self._read_ctf_star(ctf_file)
             # add CTF filter to unique filters
@@ -289,16 +302,7 @@ class CoordinateSource(ImageSource, ABC):
             # assign filter indices
             filter_indices[indices] = i
             # populate CTF metadata
-            metadata_cols = [
-                "_rlnVoltage",
-                "_rlnDefocusU",
-                "_rlnDefocusV",
-                "_rlnDefocusAngle",
-                "_rlnSphericalAberration",
-                "_rlnAmplitudeContrast",
-            ]
-            values = np.zeros((len(indices), len(metadata_cols)))
-            values[:] = np.array(
+            ctf_values[indices] = np.array(
                 [
                     params["voltage"],
                     params["defocus_u"],
@@ -308,11 +312,6 @@ class CoordinateSource(ImageSource, ABC):
                     params["amplitude_contrast"],
                 ]
             )
-            self.set_metadata(
-                metadata_cols,
-                values,
-                indices,
-            )
             # other ASPIRE metadata parameters
             mrc_filepaths[indices] = self.mrc_paths[i]
             mrc_indices[indices] = i
@@ -321,6 +320,7 @@ class CoordinateSource(ImageSource, ABC):
         self.unique_filters = filters
         self.set_metadata("__mrc_filepath", mrc_filepaths)
         self.set_metadata("__mrc_index", mrc_indices)
+        self.set_metadata(ctf_cols, ctf_values)
 
     def _read_ctf_star(self, ctf_file):
         """
