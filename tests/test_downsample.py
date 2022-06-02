@@ -1,4 +1,3 @@
-import unittest
 from unittest import TestCase
 
 import numpy as np
@@ -33,9 +32,6 @@ class DownsampleTestCase(TestCase):
         # target resolution: 32
         self._testDownsample2DCase(64, 32)
 
-    @unittest.skip(
-        "Signal energy test fails for this case in current DS implementation"
-    )
     def testDownsample2D_EvenOdd(self):
         # source resolution: 64
         # target resolution: 33
