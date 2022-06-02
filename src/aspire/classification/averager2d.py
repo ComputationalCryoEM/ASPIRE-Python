@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from itertools import product
+from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,8 +13,11 @@ from aspire.image import Image
 from aspire.numeric import fft
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import grid_2d
+from aspire.utils.multiprocessing import apply_async
 
 logger = logging.getLogger(__name__)
+
+poolN = 16
 
 
 class Averager2D(ABC):
@@ -523,13 +527,28 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         correlations = np.zeros(classes.shape, dtype=self.dtype)
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
-        for k in trange(n_classes):
+        def _innerloop(k):
+            logger.info(
+                f"Processing alignment for class: {k}",
+            )
             # # Get the array of images for this class, using the `alignment_src`.
             images = self._cls_images(classes[k], src=self.alignment_src)
 
             rotations[k], shifts[k], correlations[k] = self._reddychatterji(
                 images, classes[k], reflections[k]
             )
+
+        if poolN < 1:
+            for k in trange(n_classes):
+                _innerloop(k)
+        else:
+            logger.info(f"Starting Pool({poolN})")
+            with Pool(poolN) as p:
+                # queue up the work as async payloads
+                for k in range(n_classes):
+                    apply_async(p, _innerloop, k)
+                # join
+            logger.info(f"Terminated Pool({poolN})")
 
         return rotations, shifts, correlations
 
@@ -979,7 +998,10 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         disc = g["r"] <= self.radius
         X, Y = g["x"][disc], g["y"][disc]
 
-        for k in trange(n_classes):
+        def _innerloop(k):
+            logger.info(
+                f"Processing alignment for class: {k}",
+            )
             unshifted_images = self._cls_images(classes[k])
 
             for xs, ys in zip(X, Y):
@@ -1003,6 +1025,18 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 rotations[k] = np.where(improved, _rotations, rotations[k])
                 shifts[k] = np.where(improved[..., np.newaxis], s, shifts[k])
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
+
+        if poolN < 1:
+            for k in trange(n_classes):
+                _innerloop(k)
+        else:
+            logger.info(f"Starting Pool({poolN})")
+            with Pool(poolN) as p:
+                # queue up the work as async payloads
+                for k in range(n_classes):
+                    apply_async(p, _innerloop, k)
+                # join
+            logger.info(f"Terminated Pool({poolN})")
 
         return rotations, shifts, correlations
 
