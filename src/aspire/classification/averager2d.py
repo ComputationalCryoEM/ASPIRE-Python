@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from itertools import product
-from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,11 +13,9 @@ from aspire.image import Image
 from aspire.numeric import fft
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.multiprocessing import apply_async
+from aspire.utils.multiprocessing import get_num_multi_procs
 
 logger = logging.getLogger(__name__)
-
-poolN = 16
 
 
 class Averager2D(ABC):
@@ -25,7 +23,7 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, src, dtype=None):
+    def __init__(self, composite_basis, src, num_procs="auto", dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
@@ -43,6 +41,8 @@ class Averager2D(ABC):
                 raise RuntimeError("You must supply a basis/src/dtype.")
         else:
             self.dtype = np.dtype(dtype)
+
+        self.num_procs = get_num_multi_procs(num_procs)
 
         if self.src and self.dtype != self.src.dtype:
             logger.warning(
@@ -527,6 +527,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         correlations = np.zeros(classes.shape, dtype=self.dtype)
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
+        # def _innerloop(k, rotations, shifts, correlations):
         def _innerloop(k):
             logger.info(
                 f"Processing alignment for class: {k}",
@@ -538,17 +539,15 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 images, classes[k], reflections[k]
             )
 
-        if poolN < 1:
+        if self.num_procs < 1:
             for k in trange(n_classes):
                 _innerloop(k)
         else:
-            logger.info(f"Starting Pool({poolN})")
-            with Pool(poolN) as p:
-                # queue up the work as async payloads
-                for k in range(n_classes):
-                    apply_async(p, _innerloop, k)
-                # join
-            logger.info(f"Terminated Pool({poolN})")
+            logger.info(f"Starting Pool({self.num_procs})")
+            exe = ThreadPoolExecutor(max_workers=self.num_procs)
+            exe.map(_innerloop, range(n_classes))
+            exe.shutdown()
+            logger.info(f"Terminated Pool({self.num_procs})")
 
         return rotations, shifts, correlations
 
@@ -1026,17 +1025,15 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 shifts[k] = np.where(improved[..., np.newaxis], s, shifts[k])
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
 
-        if poolN < 1:
+        if self.num_procs < 1:
             for k in trange(n_classes):
                 _innerloop(k)
         else:
-            logger.info(f"Starting Pool({poolN})")
-            with Pool(poolN) as p:
-                # queue up the work as async payloads
-                for k in range(n_classes):
-                    apply_async(p, _innerloop, k)
-                # join
-            logger.info(f"Terminated Pool({poolN})")
+            logger.info(f"Starting Pool({self.num_procs})")
+            exe = ThreadPoolExecutor(max_workers=self.num_procs)
+            exe.map(_innerloop, range(n_classes))
+            exe.shutdown()
+            logger.info(f"Terminated Pool({self.num_procs})")
 
         return rotations, shifts, correlations
 
