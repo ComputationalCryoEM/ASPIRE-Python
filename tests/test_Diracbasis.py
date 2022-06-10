@@ -4,7 +4,7 @@ import numpy as np
 
 from aspire.basis import DiracBasis
 from aspire.image import Image
-from aspire.utils.matlab_compat import m_flatten
+from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 
 class DiracBasisTestCase(TestCase):
@@ -192,12 +192,22 @@ class DiracBasisTestCase(TestCase):
                 ],
             ]
         )
+        # First test single image
         result = self.basis.evaluate_t(x)
-
         # evaluate_t should return a NumPy array
         self.assertTrue(isinstance(result, np.ndarray))
-
+        # the result should be a flattened array of the values of x
+        # in particular, for one image, its shape should be (size*size,)
+        # not (size*size, 1)
         self.assertTrue(np.allclose(result, m_flatten(x)))
+
+        # Now test a stack of images
+        stack = np.array([x] * 10)
+        result_stack = self.basis.evaluate_t(stack)
+        # the result should be of the shape (size*size, 10)
+        flat_x = m_flatten(x)
+        compare_array = m_reshape(np.array([flat_x] * 10), (self.basis.nres**2, 10))
+        self.assertTrue(np.allclose(result_stack, compare_array))
 
     def testInitWithIntSize(self):
         # make sure we can instantiate with just an int as a shortcut

@@ -67,14 +67,17 @@ class DiracBasis(Basis):
              `self.count` and whose remaining dimensions correspond to
              higher dimensions of `v`.
         """
-        x = np.squeeze(x.asnumpy())
+        import pdb
+
+        pdb.set_trace()
+        x = m_reshape(x.asnumpy(), new_shape=self.ndim * (self.nres,) + (x.shape[0],))
         x, sz_roll = unroll_dim(x, self.ndim + 1)
         x = m_reshape(x, new_shape=(self._sz_prod,) + x.shape[self.ndim :])
         v = np.zeros(shape=(self.count,) + x.shape[1:], dtype=self.dtype)
         v = x[self._mask, ...]
         v = roll_dim(v, sz_roll)
 
-        return v
+        return np.squeeze(v)
 
     def expand(self, x):
         return self.evaluate_t(x)
