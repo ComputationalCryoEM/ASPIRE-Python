@@ -80,6 +80,12 @@ class Basis:
             This is an Image or a Volume object containing one image/volume for each
             coefficient vector, and of size `self.size`.
         """
+        if v.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
+
         if self.ndim == 2:
             return Image(self._evaluate(v))
         elif self.ndim == 3:
@@ -98,6 +104,12 @@ class Basis:
             This is an array of vectors whose first dimension equals the number of
             images/volumes in `v`. and whose second dimension is `self.count`.
         """
+        if v.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate_t"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
+
         if not isinstance(v, Image) and not isinstance(v, Volume):
             if self.ndim == 2:
                 _class = Image

@@ -199,13 +199,6 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             This is an array whose last dimensions equal `self.sz` and the remaining
             dimensions correspond to first dimensions of `v`.
         """
-
-        if v.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
-            )
-
         # Transpose here once, instead of several times below  #RCOPT
         v = v.reshape(-1, self.count).T
 
@@ -253,17 +246,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
              `self.count` and whose first dimensions correspond to
              first dimensions of `v`.
         """
-
-        if v.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
-            )
-
-        if isinstance(v, Image):
-            v = v.asnumpy()
-
-        v = v.T  # RCOPT
+        v = v.asnumpy().T  # RCOPT
 
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(
