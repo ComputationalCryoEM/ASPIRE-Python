@@ -139,9 +139,6 @@ class Estimator:
         :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by
             kernel, and backprojecting into the basis.
         """
-        import pdb
-
-        pdb.set_trace()
         if kernel is None:
             kernel = self.kernel
         vol = self.basis.evaluate(vol_coeff)
