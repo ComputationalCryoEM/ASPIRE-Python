@@ -68,6 +68,8 @@ class Estimator:
         """Return an estimate as a Volume instance."""
         if b_coeff is None:
             b_coeff = self.src_backward()
+        # conj_grad expects a 1d array if n = 1
+        b_coeff = np.squeeze(b_coeff, axis=0)
         est_coeff = self.conj_grad(b_coeff, tol=tol)
         est = self.basis.evaluate(est_coeff).T
 
@@ -88,9 +90,11 @@ class Estimator:
             mean_b += batch_mean_b.astype(self.dtype)
         res = self.basis.evaluate_t(mean_b)
         logger.info(f"Determined adjoint mappings. Shape = {res.shape}")
-        return np.squeeze(res)
+        return res
 
     def conj_grad(self, b_coeff, tol=None):
+        import pdb
+        pdb.set_trace()
         n = b_coeff.shape[0]
         kernel = self.kernel
 
