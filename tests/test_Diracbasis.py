@@ -5,6 +5,7 @@ import numpy as np
 from aspire.basis import DiracBasis
 from aspire.image import Image
 from aspire.utils.matlab_compat import m_flatten, m_reshape
+
 from ._basis_util import BasisFunctionTestsMixin
 
 

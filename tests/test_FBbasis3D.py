@@ -6,6 +6,7 @@ import numpy as np
 from aspire.basis import FBBasis3D
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
+
 from ._basis_util import BasisFunctionTestsMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")

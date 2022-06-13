@@ -3,10 +3,10 @@ from unittest.case import SkipTest
 import numpy as np
 
 from aspire.image import Image
-from aspire.volume import Volume
 from aspire.utils import gaussian_2d, utest_tolerance
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
+from aspire.volume import Volume
 
 
 class Steerable2DMixin:
@@ -134,13 +134,12 @@ class Steerable2DMixin:
 
 
 class BasisFunctionTestsMixin:
-
     def getClass(self):
         if self.basis.ndim == 2:
             return Image
         elif self.basis.ndim == 3:
             return Volume
-    
+
     def testEvaluate(self):
         # evaluate should take a NumPy array and return an Image/Volume
         _class = self.getClass()
@@ -150,11 +149,11 @@ class BasisFunctionTestsMixin:
     def testEvaluate_t(self):
         # evaluate_t should take an Image/Volume and return a NumPy array
         _class = self.getClass()
-        result = self.basis.evaluate_t(_class(np.zeros((self.L,)*self.basis.ndim)))
+        result = self.basis.evaluate_t(_class(np.zeros((self.L,) * self.basis.ndim)))
         self.assertTrue(isinstance(result, np.ndarray))
 
     def testExpand(self):
         _class = self.getClass()
         # expand should take an Image/Volume and return a NumPy array
-        result = self.basis.expand(_class(np.zeros((self.L,)*self.basis.ndim)))
+        result = self.basis.expand(_class(np.zeros((self.L,) * self.basis.ndim)))
         self.assertTrue(isinstance(result, np.ndarray))

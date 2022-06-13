@@ -14,7 +14,7 @@ from aspire.utils import utest_tolerance
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
-from ._basis_util import Steerable2DMixin, BasisFunctionTestsMixin
+from ._basis_util import BasisFunctionTestsMixin, Steerable2DMixin
 
 logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")

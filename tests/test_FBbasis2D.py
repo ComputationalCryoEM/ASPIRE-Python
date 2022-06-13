@@ -7,12 +7,11 @@ from pytest import raises
 from scipy.special import jv
 
 from aspire.basis import FBBasis2D
-from aspire.image import Image
 from aspire.utils import complex_type, real_type
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
 
-from ._basis_util import Steerable2DMixin, BasisFunctionTestsMixin
+from ._basis_util import BasisFunctionTestsMixin, Steerable2DMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
