@@ -140,6 +140,7 @@ class Estimator:
             kernel, and backprojecting into the basis.
         """
         import pdb
+
         pdb.set_trace()
         if kernel is None:
             kernel = self.kernel
