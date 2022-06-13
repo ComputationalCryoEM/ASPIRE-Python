@@ -74,10 +74,11 @@ class Basis:
         Evaluate coefficient vector in basis
 
         :param v: A coefficient vector (or an array of coefficient vectors)
-            to be evaluated. The first dimension must equal `self.count`.
+            to be evaluated. The first dimension must correspond to the number of 
+            coefficient vectors, while the second must correspond to `self.count`
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
-            This is an Image or a Volume whose first dimensions equal `self.z` and the
-            remaining dimensions correspond to dimensions two and higher of `v`.
+            This is an Image or a Volume object containing one image/volume for each
+            coefficient vector, and of size `self.size`.
         """
         if self.ndim == 2:
             return Image(self._evaluate(v))
@@ -91,12 +92,11 @@ class Basis:
         """
         Evaluate coefficient in dual basis
 
-        :param v: The coefficient array to be evaluated, as an Image or Volume object.
-            The first dimensions must equal `self.sz`.
-        :return: The evaluation of the coefficient array `v` in the dual
+        :param v: An Image or Volume object whose size matches `self.size`.
+        :return: The evaluation of the Image or Volume object `v` in the dual
             basis of `basis`.
-            This is an array of vectors whose first dimension equals `self.count`
-            and whose remaining dimensions correspond to higher dimensions of `v`.
+            This is an array of vectors whose first dimension equals the number of 
+            images/volumes in `v`. and whose second dimension is `self.count`.
         """
         if not isinstance(v, Image) and not isinstance(v, Volume):
             if self.ndim == 2:
