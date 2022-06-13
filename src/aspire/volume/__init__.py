@@ -95,6 +95,9 @@ class Volume:
     def __setitem__(self, key, value):
         self._data[key] = value
 
+    def __repr__(self):
+        return f"{self.n_vols} volumes of size {self.resolution}x{self.resolution}x{self.resolution}"
+
     def __len__(self):
         return self.n_vols
 
