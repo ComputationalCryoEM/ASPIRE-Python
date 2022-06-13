@@ -6,6 +6,7 @@ from aspire.basis import Basis, FBBasisMixin
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
 from aspire.utils import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +198,11 @@ class FBBasis3D(Basis, FBBasisMixin):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
-        v = v.asnumpy().T
+        # v may be a Volume object or a 7D array passed from Basis.mat_evaluate_t
+        # making this check important
+        if isinstance(v, Volume):
+            v = v.asnumpy()
+        v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(
             x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
