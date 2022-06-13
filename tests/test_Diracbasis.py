@@ -193,7 +193,7 @@ class DiracBasisTestCase(TestCase):
             ]
         )
         # First test single image
-        result = self.basis.evaluate_t(x)
+        result = self.basis.evaluate_t(Image(x))
         # evaluate_t should return a NumPy array
         self.assertTrue(isinstance(result, np.ndarray))
         # the result should be a flattened array of the values of x
@@ -203,7 +203,7 @@ class DiracBasisTestCase(TestCase):
 
         # Now test a stack of images
         stack = np.array([x] * 10)
-        result_stack = self.basis.evaluate_t(stack)
+        result_stack = self.basis.evaluate_t(Image(stack))
         # the result should be of the shape (size*size, 10)
         flat_x = m_flatten(x)
         compare_array = m_reshape(np.array([flat_x] * 10), (self.basis.nres**2, 10))
