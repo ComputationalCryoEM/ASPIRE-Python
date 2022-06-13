@@ -11,8 +11,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class FPSWFBasis2DTestCase(TestCase):
     def setUp(self):
-        self.L = 8
-        self.basis = FPSWFBasis2D((self.L, self.L), 1.0, 1.0)
+        self.basis = FPSWFBasis2D((8, 8), 1.0, 1.0)
 
     def tearDown(self):
         pass
