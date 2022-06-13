@@ -5,16 +5,18 @@ import numpy as np
 from aspire.basis import DiracBasis
 from aspire.image import Image
 from aspire.utils.matlab_compat import m_flatten, m_reshape
+from ._basis_util import BasisFunctionTestsMixin
 
 
-class DiracBasisTestCase(TestCase):
+class DiracBasisTestCase(TestCase, BasisFunctionTestsMixin):
     def setUp(self):
-        self.basis = DiracBasis((8, 8))
+        self.L = 8
+        self.basis = DiracBasis((self.L, self.L))
 
     def tearDown(self):
         pass
 
-    def testDiracEvaluate(self):
+    def testAccuracyEvaluate(self):
         v = np.array(
             [
                 [
@@ -101,13 +103,9 @@ class DiracBasisTestCase(TestCase):
         )
         coeffs = m_flatten(v)
         result = self.basis.evaluate(coeffs)
-
-        # evaluate should return an Image
-        self.assertTrue(isinstance(result, Image))
-
         self.assertTrue(np.allclose(result.asnumpy(), v))
 
-    def testDiracEvaluate_t(self):
+    def testAccuracyEvaluate_t(self):
         x = np.array(
             [
                 [
@@ -194,8 +192,6 @@ class DiracBasisTestCase(TestCase):
         )
         # First test single image
         result = self.basis.evaluate_t(Image(x))
-        # evaluate_t should return a NumPy array
-        self.assertTrue(isinstance(result, np.ndarray))
         # the result should be a flattened array of the values of x
         # in particular, for one image, its shape should be (size*size,)
         # not (size*size, 1)

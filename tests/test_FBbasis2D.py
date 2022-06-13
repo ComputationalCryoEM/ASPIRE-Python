@@ -12,7 +12,7 @@ from aspire.utils import complex_type, real_type
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
 
-from ._basis_util import Steerable2DMixin
+from ._basis_util import Steerable2DMixin, BasisFunctionTestsMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -28,7 +28,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
         (32, np.float64),
     ],
 )
-class FBBasis2DTestCase(TestCase, Steerable2DMixin):
+class FBBasis2DTestCase(TestCase, Steerable2DMixin, BasisFunctionTestsMixin):
     L = 8
     dtype = np.float32
 
@@ -145,21 +145,6 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
 
         # Try a 0d vector, should not crash.
         _ = self.basis.to_real(cv1.reshape(-1))
-
-    def testEvaluate(self):
-        # evaluate should return an Image
-        result = self.basis.evaluate(np.zeros((self.basis.count)))
-        self.assertTrue(isinstance(result, Image))
-
-    def testEvaluate_t(self):
-        # evaluate_t should return a NumPy array
-        result = self.basis.evaluate_t(np.zeros((self.L, self.L)))
-        self.assertTrue(isinstance(result, np.ndarray))
-
-    def testExpand(self):
-        # expand should return a NumPy array
-        result = self.basis.expand(np.zeros((self.L, self.L)))
-        self.assertTrue(isinstance(result, np.ndarray))
 
     def testInitWithIntSize(self):
         # make sure we can instantiate with just an int as a shortcut

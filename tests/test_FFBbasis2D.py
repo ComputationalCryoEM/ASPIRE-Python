@@ -14,7 +14,7 @@ from aspire.utils import utest_tolerance
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
-from ._basis_util import Steerable2DMixin
+from ._basis_util import Steerable2DMixin, BasisFunctionTestsMixin
 
 logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -31,7 +31,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
         (32, np.float64),
     ],
 )
-class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
+class FFBBasis2DTestCase(TestCase, Steerable2DMixin, BasisFunctionTestsMixin):
     L = 8
     dtype = np.float32
 
@@ -187,18 +187,3 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
         rmse = np.sqrt(np.mean(np.square(diff), axis=(1, 2)))
         logger.info(f"RMSE shifted image diffs {rmse}")
         self.assertTrue(np.allclose(rmse, 0, atol=1e-5))
-
-    def testEvaluate(self):
-        # evaluate should return an Image
-        result = self.basis.evaluate(np.zeros((self.basis.count)))
-        self.assertTrue(isinstance(result, Image))
-
-    def testEvaluate_t(self):
-        # evaluate_t should return a NumPy array
-        result = self.basis.evaluate_t(np.zeros((self.L, self.L)))
-        self.assertTrue(isinstance(result, np.ndarray))
-
-    def testExpand(self):
-        # expand should return a NumPy array
-        result = self.basis.expand(np.zeros((self.L, self.L)))
-        self.assertTrue(isinstance(result, np.ndarray))
