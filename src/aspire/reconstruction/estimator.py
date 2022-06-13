@@ -93,8 +93,6 @@ class Estimator:
         return res
 
     def conj_grad(self, b_coeff, tol=None):
-        import pdb
-        pdb.set_trace()
         n = b_coeff.shape[0]
         kernel = self.kernel
 
