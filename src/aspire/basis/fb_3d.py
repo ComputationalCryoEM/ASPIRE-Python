@@ -198,9 +198,7 @@ class FBBasis3D(Basis, FBBasisMixin):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
-        # this check is required because _evaluate_t is called directly by mat_evaluate_t
-        if isinstance(v, Volume):
-            v = v.asnumpy()
+        v = v.asnumpy()
 
         v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
