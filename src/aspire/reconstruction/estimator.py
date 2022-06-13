@@ -139,10 +139,14 @@ class Estimator:
         :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by
             kernel, and backprojecting into the basis.
         """
+        import pdb
+        pdb.set_trace()
         if kernel is None:
             kernel = self.kernel
         vol = self.basis.evaluate(vol_coeff)
-        vol = kernel.convolve_volume(np.squeeze(vol.asnumpy()))
+        # convolve_volume expects a 3-dimensional array
+        # so we remove the first dimension of the volume, which is 1
+        vol = kernel.convolve_volume(np.squeeze(vol.asnumpy(), axis=0))
         vol = self.basis.evaluate_t(vol)
 
         return vol
