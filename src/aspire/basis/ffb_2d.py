@@ -111,13 +111,6 @@ class FFBBasis2D(FBBasis2D):
             coordinate basis. This is Image instance with resolution of `self.sz`
             and the first dimension correspond to remaining dimension of `v`.
         """
-
-        if v.dtype != self.dtype:
-            logger.debug(
-                f"{self.__class__.__name__}::evaluate"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
-            )
-
         sz_roll = v.shape[:-1]
         v = v.reshape(-1, self.count)
 
@@ -198,13 +191,6 @@ class FFBBasis2D(FBBasis2D):
             This is an array of vectors whose last dimension equals `self.count`
             and whose first dimension correspond to `x.n_images`.
         """
-
-        if x.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
-                f" Inconsistent dtypes v: {x.dtype} self: {self.dtype}"
-            )
-
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
         n_r = np.size(self._precomp["freqs"], 1)
