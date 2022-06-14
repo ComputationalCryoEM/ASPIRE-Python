@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
 from aspire.classification import BFSReddyChatterjiAverager2D, Class2D
+from aspire.classification import ReddyChatterjiAverager2D, Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
 from aspire.utils.random import rand
@@ -172,7 +173,8 @@ class RIRClass2D(Class2D):
         # When not provided by a user, the averager is instantiated after
         #  we are certain our pca_basis has been constructed.
         if self.averager is None:
-            self.averager = BFSReddyChatterjiAverager2D(
+            #self.averager = BFSReddyChatterjiAverager2D(
+            self.averager = ReddyChatterjiAverager2D(
                 self.fb_basis, self.src, dtype=self.dtype
             )
 
