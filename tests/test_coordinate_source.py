@@ -482,16 +482,16 @@ class CoordinateSourceTestCase(TestCase):
         )
         # CTF metadata
         ctf_cols = [
-            "_rlnVoltage",
             "_rlnDefocusU",
             "_rlnDefocusV",
             "_rlnDefocusAngle",
             "_rlnSphericalAberration",
             "_rlnAmplitudeContrast",
+            "_rlnVoltage",
         ]
         ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=np.float64)
-        ctf_metadata[:200] = np.array([300.0, 1000.0, 900.0, 0.0, 0.0, 0.0])
-        ctf_metadata[200:400] = np.array([301.0, 1001.0, 901.0, 1.0, 1.0, 1.0])
+        ctf_metadata[:200] = np.array([1000.0, 900.0, 800.0, 700.0, 600.0, 500.0])
+        ctf_metadata[200:400] = np.array([1001.0, 901.0, 801.0, 701.0, 601.0, 501.0])
         self.assertTrue(np.array_equal(ctf_metadata, src.get_metadata(ctf_cols)))
 
     def testCommand(self):
