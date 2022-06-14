@@ -21,6 +21,7 @@ Please cite using the following DOI. This DOI represents all versions, and will 
 
 ```
 ComputationalCryoEM/ASPIRE-Python: v0.9.2 https://doi.org/10.5281/zenodo.5657281
+
 ```
 
 ## Installation Instructions
