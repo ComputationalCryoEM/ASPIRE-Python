@@ -226,15 +226,16 @@ class CoordinateSourceTestCase(TestCase):
     def createTestCtfFiles(self, index):
         # for testing adding CTF information to a CoordinateSource
         star_fp = os.path.join(self.data_folder, f"ctf{index+1}.star")
+        # note that values are arbitrary and not representative of actual CTF data
         params_dict = {
             "_rlnMicrographName": f"sample{index+1}.mrc",
             "_rlnDefocusU": 1000 + index,
             "_rlnDefocusV": 900 + index,
-            "_rlnDefocusAngle": index,
-            "_rlnSphericalAberration": index,
-            "_rlnAmplitudeContrast": index,
-            "_rlnVoltage": 300 + index,
-            "_rlnDetectorPixelSize": index,
+            "_rlnDefocusAngle": 800 + index,
+            "_rlnSphericalAberration": 700 + index,
+            "_rlnAmplitudeContrast": 600 + index,
+            "_rlnVoltage": 500 + index,
+            "_rlnDetectorPixelSize": 400 + index,
         }
         blocks = OrderedDict(
             {"root": DataFrame([params_dict], columns=params_dict.keys())}
@@ -423,7 +424,7 @@ class CoordinateSourceTestCase(TestCase):
         # note these values are not realistic
         filter0 = src.unique_filters[0]
         self.assertEqual(
-            (1000.0, 900.0, 0.0, 0.0, 0.0, 300.0, 0.0),
+            (1000.0, 900.0, 800.0, 700.0, 600.0, 500.0, 400.0),
             (
                 filter0.defocus_u,
                 filter0.defocus_v,
@@ -436,7 +437,7 @@ class CoordinateSourceTestCase(TestCase):
         )
         filter1 = src.unique_filters[1]
         self.assertEqual(
-            (1001.0, 901.0, 1.0, 1.0, 1.0, 301.0, 1.0),
+            (1001.0, 901.0, 801.0, 701.0, 601.0, 501.0, 401.0),
             (
                 filter1.defocus_u,
                 filter1.defocus_v,
