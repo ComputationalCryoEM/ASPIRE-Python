@@ -269,8 +269,16 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # We create a mask associated with angle differences that fall in the
         # range [min_angle_diff, max_angle_diff].
+
+        # X and Y are grids of theta values associate with the polar Fourier transforms
+        # `pf_full` and `pf`, respectively.
         X, Y = np.meshgrid(range(n_theta), range(n_theta // 2))
+
+        # `diff` is all possible angle differences between potential pairs of self-common-lines.
         diff = Y - X
+
+        # The `unsigned_angle_diff` is the smallest positive angle between potential pairs of
+        # of self-common-lines associated with angle difference `diff`.
         unsigned_angle_diff = np.arccos(np.cos(diff * 2 * np.pi / n_theta))
         good_diffs = (min_angle_diff < unsigned_angle_diff) & (
             unsigned_angle_diff < max_angle_diff
