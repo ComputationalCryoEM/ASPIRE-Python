@@ -11,5 +11,3 @@ class RlnOpticsGroup:
         self.cs = float(df_row._rlnSphericalAberration)
         self.amplitude_contrast = float(df_row._rlnAmplitudeContrast)
         self.mrc_pixel_size = float(df_row._rlnMicrographPixelSize)
-
-    
