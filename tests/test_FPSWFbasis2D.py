@@ -40,6 +40,5 @@ class FPSWFBasis2DTestCase(TestCase, UniversalBasisMixin):
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
         result = self.basis.evaluate(coeffs)
-
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         self.assertTrue(np.allclose(result.asnumpy(), images))
