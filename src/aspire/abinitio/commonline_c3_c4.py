@@ -272,8 +272,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         X, Y = np.meshgrid(range(n_theta), range(n_theta // 2))
         diff = Y - X
         unsigned_angle_diff = np.arccos(np.cos(diff * 2 * np.pi / n_theta))
-        good_diffs = np.logical_and(
-            min_angle_diff < unsigned_angle_diff, unsigned_angle_diff < max_angle_diff
+        good_diffs = (min_angle_diff < unsigned_angle_diff) & (
+            unsigned_angle_diff < max_angle_diff
         )
 
         # Compute the correlation over all shifts.
