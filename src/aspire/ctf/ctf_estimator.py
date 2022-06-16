@@ -671,7 +671,7 @@ class CtfEstimator:
     # Note, This doesn't actually use anything from the class.
     # It is used in a solver loop of some sort, so it may not be correct
     # to just use what is avail in the obj.
-    def write_star_single(self, name, params_dict, output_dir):
+    def write_star(self, name, params_dict, output_dir):
         """
         Writes CTF parameters to starfile for a single micrograph.
         """
@@ -690,13 +690,6 @@ class CtfEstimator:
         star = StarFile(blocks=blocks)
         star.write(os.path.join(output_dir, os.path.splitext(name)[0]) + ".star")
 
-    def write_star_all(self, results, output_dir):
-        """
-        Writes CTF parameters calculated for all micrographs to one starfile.
-        """
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
-
 
 def estimate_ctf(
     data_folder,
@@ -710,7 +703,6 @@ def estimate_ctf(
     g_max=5,
     output_dir="results",
     dtype=np.float32,
-    save_one_star=False,
     save_ctf_images=False,
     save_noise_images=False,
 ):
@@ -834,11 +826,10 @@ def estimate_ctf(
         }
         results[name] = result
 
-        if not save_one_star:
-            # we write each micrograph's ctf parameters to an individual starfile
-            if not os.path.isdir(output_dir):
-                os.mkdir(output_dir)
-            ctf_object.write_star_single(name, result, output_dir)
+        # we write each micrograph's ctf parameters to an individual starfile
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+        ctf_object.write_star_single(name, result, output_dir)
 
         if save_noise_images:
             with mrcfile.new(
@@ -873,9 +864,5 @@ def estimate_ctf(
             ) as mrc:
                 mrc.set_data(np.float32(ctf_signal))
                 mrc.voxel_size = pixel_size
-
-    if save_one_star:
-        # we write all ctf parameters to one starfile
-        ctf_object.write_star_all(results, output_dir)
 
     return results
