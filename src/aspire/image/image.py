@@ -3,13 +3,12 @@ import logging
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import lstsq
 
 import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
-from aspire.utils import grid_2d
+from aspire.utils import crop_pad_2d, grid_2d
 from aspire.utils.matrix import anorm
 
 logger = logging.getLogger(__name__)
@@ -209,30 +208,14 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
-        grid = grid_2d(self.res, indexing="yx")
-        grid_ds = grid_2d(ds_res, indexing="yx")
+        # compute FT with centered 0-frequency
+        fx = fft.centered_fft2(self.data)
+        # crop 2D Fourier transform for each image
+        crop_fx = np.array([crop_pad_2d(fx[i], ds_res) for i in range(self.n_images)])
+        # take back to real space, discard complex part, and scale
+        out = np.real(fft.centered_ifft2(crop_fx)) * (ds_res**2 / self.res**2)
 
-        im_ds = np.zeros((self.n_images, ds_res, ds_res), dtype=self.dtype)
-
-        # x, y values corresponding to 'grid'. This is what scipy interpolator needs to function.
-        res_by_2 = self.res / 2
-        x = y = np.ceil(np.arange(-res_by_2, res_by_2)) / res_by_2
-
-        mask = (np.abs(grid["x"]) < ds_res / self.res) & (
-            np.abs(grid["y"]) < ds_res / self.res
-        )
-        im_shifted = fft.centered_ifft2(
-            fft.centered_fft2(xp.asarray(self.data)) * xp.asarray(mask)
-        )
-        im = np.real(xp.asnumpy(im_shifted))
-
-        for s in range(im_ds.shape[0]):
-            interpolator = RegularGridInterpolator(
-                (x, y), im[s], bounds_error=False, fill_value=0
-            )
-            im_ds[s] = interpolator(np.dstack([grid_ds["y"], grid_ds["x"]]))
-
-        return Image(im_ds)
+        return Image(out)
 
     def filter(self, filter):
         """
