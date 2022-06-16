@@ -1,0 +1,62 @@
+{
+    "creators": [
+	{
+	    "affiliation": "Princeton University",
+	    "name": "Garrett Wright"
+	},
+	{
+	    "affiliation": "KTH Royal Institute of Technology",
+	    "name": "Joakim And\u00e9n",
+	    "orcid": "0000-0002-3377-813X"
+	},
+	{
+	    "affiliation": "Princeton University",
+	    "name": "Vineet Bansal"
+	},
+	{
+	    "affiliation": "OpenEye Scientific Software Inc",
+	    "name": "Junchao Xia"
+	},
+	{
+	    "affiliation": "Princeton University",
+	    "name": "Chris Langfield",
+	    "orcid": "0000-0003-4151-203X"
+	},
+	{
+	    "affiliation": "Princeton University",
+	    "name": "Josh Carmichael",
+	    "orcid": "0000-0001-9889-349X"
+	},
+        {
+            "name": "Robbie Brook"
+        },
+	{
+	    "affiliation": "Princeton University",
+	    "name": "Yunpeng Shi"
+	},
+	{
+	    "affiliation": "Ariel University",
+	    "name": "Ayelet Heimowitz"
+	},
+	{
+	    "affiliation": "Tel Aviv University",
+	    "name": "Gabi Pragier"
+	},
+	{
+	    "affiliation": "Tel Aviv University",
+	    "name": "Itay Sason"
+	},
+	{
+	    "affiliation": "Tel Aviv University",
+	    "name": "Amit Moscovich"
+	},
+	{
+	    "affiliation": "Tel Aviv University",
+	    "name": "Yoel Shkolnisky"
+	},
+	{
+	    "affiliation": "Princeton University",
+	    "name": "Amit Singer"
+	}
+    ]
+}

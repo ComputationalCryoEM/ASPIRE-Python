@@ -52,7 +52,9 @@ class ComplexPCACase(TestCase):
         Smoke test a more realistic size.
         """
 
-        pca = ComplexPCA(n_components=self.components_large, copy=False)
+        pca = ComplexPCA(
+            n_components=self.components_large, copy=False, svd_solver="full"
+        )
 
         # Input data matrix X should be (n_samples, m_features)
         X = self.X_large
