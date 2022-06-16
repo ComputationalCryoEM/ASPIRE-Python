@@ -242,7 +242,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         Find the single pair of self-common-lines in each image assuming that the underlying
         symmetry is C3 or C4.
         """
-        pf = self.pf.copy()
+        pf = self.pf
         n_img = self.n_img
         n_theta = self.n_theta
         max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
