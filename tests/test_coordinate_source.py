@@ -128,6 +128,7 @@ class CoordinateSourceTestCase(TestCase):
         self.float_star = os.path.join(self.data_folder, "float.star")
 
         self.ctf_files = sorted(glob(os.path.join(self.data_folder, "ctf*.star")))
+        self.relion_ctf_file = self.createTestRelionCtfFile()
 
     def tearDown(self):
         self.tmpdir.cleanup()
@@ -242,6 +243,46 @@ class CoordinateSourceTestCase(TestCase):
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
+
+    def createTestRelionCtfFile(self):
+        # for testing import of a Relion micrographs_ctf.star file to a CoordinateSource
+        star_fp = os.path.join(self.data_folder, "micrographs_ctf.star")
+        blocks = OrderedDict()
+
+        optics_columns = [
+            "_rlnOpticsGroupName",
+            "_rlnOpticsGroup",
+            "_rlnVoltage",
+            "_rlnSphericalAberration",
+            "_rlnAmplitudeContrast",
+            "_rlnMicrographPixelSize",
+        ]
+        # using same unique values as in createTestCtfFiles
+        optics_block = [
+            ["opticsGroup1", 1, 500.0, 700.0, 600.0, 400.0],
+            ["opticsGroup2", 2, 501.0, 701.0, 601.0, 401.0],
+        ]
+        blocks["optics"] = DataFrame(optics_block, columns=optics_columns)
+
+        micrographs_columns = [
+            "_rlnMicrographName",
+            "_rlnOpticsGroup",
+            "_rlnDefocusU",
+            "_rlnDefocusV",
+            "_rlnDefocusAngle",
+        ]
+        # using same unique values as in createTestCtfFiles
+        micrographs_block = [
+            [self.all_mrc_paths[0], 1, 1000.0, 900.0, 800.0],
+            [self.all_mrc_paths[0], 2, 1001.0, 901.0, 801.0],
+        ]
+        blocks["micrographs"] = DataFrame(
+            micrographs_block, columns=micrographs_columns
+        )
+
+        star = StarFile(blocks=blocks)
+        star.write(star_fp)
+        return star_fp
 
     def testLoadFromBox(self):
         # ensure successful loading from box files
@@ -413,9 +454,19 @@ class CoordinateSourceTestCase(TestCase):
             src = BoxesCoordinateSource(self.files_box)
             src.import_ctf(["badfile", "badfile", "badfile"])
 
-    def testCtfFilters(self):
+    def testImportCtfFromList(self):
         src = BoxesCoordinateSource(self.files_box)
         src.import_ctf(self.ctf_files)
+        self._testCtfFilters(src)
+        self._testCtfMetadata(src)
+
+    def testImportCtfFromRelion(self):
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_ctf(self.relion_ctf_file)
+        self._testCtfFilters(src)
+        self._testCtfMetadata(src)
+
+    def _testCtfFilters(self, src):
         # there are two micrographs and two CTF files, so there should be two
         # unique CTF filters
         self.assertEqual(len(src.unique_filters), 2)
@@ -458,10 +509,8 @@ class CoordinateSourceTestCase(TestCase):
             np.array_equal(np.where(src.filter_indices == 1)[0], np.arange(200, 400))
         )
 
-    def testCtfMetadata(self):
+    def _testCtfMetadata(self, src):
         # ensure metadata is populated correctly when adding CTF info
-        src = BoxesCoordinateSource(self.files_box)
-        src.import_ctf(self.ctf_files)
         # __mrc_filepath
         mrc_fp_metadata = np.array(
             [self.all_mrc_paths[0]] * 200 + [self.all_mrc_paths[1]] * 200

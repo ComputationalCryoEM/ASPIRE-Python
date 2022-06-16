@@ -45,7 +45,7 @@ class CoordinateSource(ImageSource, ABC):
     This also allows the CoordinateSource to be saved to an `.mrcs` stack.
     """
 
-    def __init__(self, files, particle_size, max_rows, ctf_files, B):
+    def __init__(self, files, particle_size, max_rows, B):
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
         # and is used in self._populate_particles
@@ -314,9 +314,9 @@ class CoordinateSource(ImageSource, ABC):
         for i, row in micrographs.iterrows():
             # extract parameters not in the optics groups
             defocus_u, defocus_v, defocus_angle = (
-                row._rlnDefocusU,
-                row._rlnDefocusV,
-                row._rlnDefocusAngle,
+                float(row._rlnDefocusU),
+                float(row._rlnDefocusV),
+                float(row._rlnDefocusAngle),
             )
             # get corresponding optics group using optics group index
             optics_group = optics_groups[int(row._rlnOpticsGroup)]
