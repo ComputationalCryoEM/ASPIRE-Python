@@ -473,9 +473,6 @@ class FFBBasis3DTestCase(TestCase, UniversalBasisMixin):
         )
         result = self.basis.evaluate(coeffs)
 
-        # evaluate should return a Volume
-        self.assertTrue(isinstance(result, Volume))
-
         ref = np.load(
             os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_out_8_8_8.npy")
         ).T  # RCOPT
@@ -486,18 +483,12 @@ class FFBBasis3DTestCase(TestCase, UniversalBasisMixin):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
         result = self.basis.evaluate_t(x)
 
-        # evaluate_t should return a NumPy array
-        self.assertTrue(isinstance(result, np.ndarray))
-
         ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_8_8_8.npy"))[..., 0]
         self.assertTrue(np.allclose(result, ref, atol=1e-2))
 
     def testFFBBasis3DExpand(self):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
         result = self.basis.expand(x)
-
-        # expand should return a NumPy array
-        self.assertTrue(isinstance(result, np.ndarray))
 
         ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_exp_8_8_8.npy"))[
             ..., 0

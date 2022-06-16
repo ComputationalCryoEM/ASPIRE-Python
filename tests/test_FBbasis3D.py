@@ -474,9 +474,6 @@ class FBBasis3DTestCase(TestCase, UniversalBasisMixin):
         )
         result = self.basis.evaluate(coeffs)
 
-        # evaluate should return a Volume
-        self.assertTrue(isinstance(result, Volume))
-
         self.assertTrue(
             np.allclose(
                 result.asnumpy(),
@@ -489,9 +486,6 @@ class FBBasis3DTestCase(TestCase, UniversalBasisMixin):
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         v = Volume(v.astype(self.dtype))
         result = self.basis.evaluate_t(v)
-
-        # evaluate_t should return a NumPy array
-        self.assertTrue(isinstance(result, np.ndarray))
 
         self.assertTrue(
             np.allclose(
@@ -604,9 +598,6 @@ class FBBasis3DTestCase(TestCase, UniversalBasisMixin):
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         v = Volume(v.astype(self.dtype))
         result = self.basis.expand(v)
-
-        # expand should return a NumPy array
-        self.assertTrue(isinstance(result, np.ndarray))
 
         self.assertTrue(
             np.allclose(
