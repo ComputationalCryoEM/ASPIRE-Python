@@ -109,7 +109,6 @@ class PolarBasis2D(Basis):
         Fourier grid. This is an array of vectors whose first dimension
         corresponds to x.n_images, and last dimension equals `self.count`.
         """
-        assert isinstance(x, Image)
         nimgs = x.n_images
 
         half_size = self.ntheta // 2
