@@ -410,12 +410,12 @@ class CoordinateSourceTestCase(TestCase):
     def testWrongNumberCtfFiles(self):
         # trying to give 3 CTF files to a source with 2 micrographs should error
         with self.assertRaises(ValueError):
-            BoxesCoordinateSource(
-                self.files_box, ctf_files=["badfile", "badfile", "badfile"]
-            )
+            src = BoxesCoordinateSource(self.files_box)
+            src.import_ctf(["badfile", "badfile", "badfile"])
 
     def testCtfFilters(self):
-        src = BoxesCoordinateSource(self.files_box, ctf_files=self.ctf_files)
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_ctf(self.ctf_files)
         # there are two micrographs and two CTF files, so there should be two
         # unique CTF filters
         self.assertEqual(len(src.unique_filters), 2)
@@ -460,7 +460,8 @@ class CoordinateSourceTestCase(TestCase):
 
     def testCtfMetadata(self):
         # ensure metadata is populated correctly when adding CTF info
-        src = BoxesCoordinateSource(self.files_box, ctf_files=self.ctf_files)
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_ctf(self.ctf_files)
         # __mrc_filepath
         mrc_fp_metadata = np.array(
             [self.all_mrc_paths[0]] * 200 + [self.all_mrc_paths[1]] * 200
