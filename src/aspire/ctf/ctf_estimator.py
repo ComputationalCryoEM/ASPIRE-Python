@@ -829,7 +829,7 @@ def estimate_ctf(
         # we write each micrograph's ctf parameters to an individual starfile
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
-        ctf_object.write_star_single(name, result, output_dir)
+        ctf_object.write_star(name, result, output_dir)
 
         if save_noise_images:
             with mrcfile.new(
