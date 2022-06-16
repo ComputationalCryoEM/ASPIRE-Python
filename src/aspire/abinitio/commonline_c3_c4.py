@@ -295,7 +295,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Transpose pf and reconstruct the full polar Fourier for use in correlation.
         # self.pf only consists of rays in the range [180, 360).
-        pf = pf.transpose((2, 1, 0))
+        pf = pf.T
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
         for i in tqdm(range(n_img)):
