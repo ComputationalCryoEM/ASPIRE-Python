@@ -6,12 +6,15 @@ import numpy as np
 from aspire.basis import PSWFBasis2D
 from aspire.image import Image
 
+from ._basis_util import BasisFunctionTestsMixin
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class PSWFBasis2DTestCase(TestCase):
+class PSWFBasis2DTestCase(TestCase, BasisFunctionTestsMixin):
     def setUp(self):
-        self.basis = PSWFBasis2D((8, 8), 1.0, 1.0)
+        self.L = 8
+        self.basis = PSWFBasis2D((self.L, self.L), 1.0, 1.0)
 
     def tearDown(self):
         pass
@@ -51,4 +54,4 @@ class PSWFBasis2DTestCase(TestCase):
 
     def testInitWithIntSize(self):
         # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((8, 8), PSWFBasis2D(8).sz)
+        self.assertEqual((self.L, self.L), PSWFBasis2D(self.L).sz)
