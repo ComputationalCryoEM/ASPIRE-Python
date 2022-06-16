@@ -133,7 +133,7 @@ class Steerable2DMixin:
         self.assertTrue(np.isclose(Au_dot_x, u_dot_ATx))
 
 
-class BasisFunctionTestsMixin:
+class UniversalBasisMixin:
     def getClass(self):
         if self.basis.ndim == 2:
             return Image
@@ -157,3 +157,7 @@ class BasisFunctionTestsMixin:
         # expand should take an Image/Volume and return a NumPy array
         result = self.basis.expand(_class(np.zeros((self.L,) * self.basis.ndim)))
         self.assertTrue(isinstance(result, np.ndarray))
+
+    def testInitWithIntSize(self):
+        # make sure we can instantiate with just an int as a shortcut
+        self.assertEqual((self.L,) * self.basis.ndim, self.basis.__class__(self.L).sz)

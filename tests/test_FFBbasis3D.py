@@ -6,12 +6,12 @@ import numpy as np
 from aspire.basis import FFBBasis3D
 from aspire.volume import Volume
 
-from ._basis_util import BasisFunctionTestsMixin
+from ._basis_util import UniversalBasisMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class FFBBasis3DTestCase(TestCase, BasisFunctionTestsMixin):
+class FFBBasis3DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
         self.L = 8
         self.dtype = np.float32

@@ -6,12 +6,12 @@ import numpy as np
 from aspire.basis import PSWFBasis2D
 from aspire.image import Image
 
-from ._basis_util import BasisFunctionTestsMixin
+from ._basis_util import UniversalBasisMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class PSWFBasis2DTestCase(TestCase, BasisFunctionTestsMixin):
+class PSWFBasis2DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
         self.L = 8
         self.basis = PSWFBasis2D((self.L, self.L), 1.0, 1.0)
@@ -51,7 +51,3 @@ class PSWFBasis2DTestCase(TestCase, BasisFunctionTestsMixin):
 
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         self.assertTrue(np.allclose(result.asnumpy(), images))
-
-    def testInitWithIntSize(self):
-        # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((self.L, self.L), PSWFBasis2D(self.L).sz)

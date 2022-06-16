@@ -7,12 +7,12 @@ from aspire.basis import FBBasis3D
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
-from ._basis_util import BasisFunctionTestsMixin
+from ._basis_util import UniversalBasisMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class FBBasis3DTestCase(TestCase, BasisFunctionTestsMixin):
+class FBBasis3DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
         self.L = 8
         self.dtype = np.float32
@@ -714,7 +714,3 @@ class FBBasis3DTestCase(TestCase, BasisFunctionTestsMixin):
                 atol=utest_tolerance(self.dtype),
             )
         )
-
-    def testInitWithIntSize(self):
-        # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((8, 8, 8), FBBasis3D(8).sz)
