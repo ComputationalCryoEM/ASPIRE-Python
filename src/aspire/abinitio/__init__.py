@@ -1,4 +1,5 @@
 from .commonline_base import CLOrient3D
+from .sync_voting import SyncVotingMixin
 
 # isort: off
 from .commonline_sync import CLSyncVoting
