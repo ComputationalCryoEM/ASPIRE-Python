@@ -306,7 +306,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             pf_i_shifted = np.array(
                 [pf_i * shift_phase for shift_phase in all_shift_phases]
             )
-            pf_i_shifted = np.reshape(pf_i_shifted, (-1, r_max))
+            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
 
             # Normalize each ray.
             for ray in pf_full_i:
