@@ -317,7 +317,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
 
             # Mask with allowed combinations.
-            corrs = np.array([corr * good_diffs for corr in corrs])
+            corrs *= good_diffs[np.newaxis, ...]
 
             # Find maximum correlation.
             shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
