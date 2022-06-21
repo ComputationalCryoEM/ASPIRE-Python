@@ -198,3 +198,54 @@ Image(noisy_src.images(0, np.inf)[classes[review_class]]).show()
 
 # Display the averaged result
 avgs.images(review_class, 1).show()
+
+# %%
+# Alignment Details
+# -----------------
+#
+# Alignment details are exposed when avaialable from an underlying ``averager``.
+# In this case, we'll get the estimated alignments for the ``review_class``.
+# These alignment arrays are indexed the same as ``classes``,
+# having shape (n_classes, n_nbor).
+
+est_rotations = rir.averager.rotations[review_class]
+est_shifts = rir.averager.shifts[review_class]
+est_correlations = rir.averager.correlations[review_class]
+
+logger.info(f"Estimated Rotations: {est_rotations}")
+logger.info(f"Estimated Shifts: {est_shifts}")
+logger.info(f"Estimated Correlations: {est_correlations}")
+
+# Compare the original unaligned images with the estimated alignment.
+# Get the indices from the classification results.
+nbr = 3
+original_img_0_idx = classes[review_class][0]
+original_img_nbr_idx = classes[review_class][nbr]
+
+# Lookup the images.
+original_img_0 = src.images(original_img_0_idx, 1).asnumpy()[0]
+original_img_nbr = src.images(original_img_nbr_idx, 1).asnumpy()[0]
+
+
+# Rotate using estimated rotations.
+rotated_img_nbr = np.asarray(
+    PILImage.fromarray(original_img_nbr).rotate(est_rotations[nbr])
+)
+plt.subplot(1, 2, 1)
+plt.title("Original Images")
+plt.imshow(original_img_0)
+plt.xlabel("Img 0")
+plt.subplot(1, 2, 2)
+plt.imshow(original_img_nbr)
+plt.xlabel(f"Img {nbr}")
+plt.show()
+
+
+plt.subplot(1, 2, 1)
+plt.title("Est Rotation Applied")
+plt.imshow(original_img_0)
+plt.xlabel("Img 0")
+plt.subplot(1, 2, 2)
+plt.imshow(rotated_img_nbr)
+plt.xlabel(f"Img {nbr} rotated {est_rotations[nbr]:.4}*")
+plt.show()
