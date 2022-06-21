@@ -308,11 +308,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             )
             pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
 
-            # Normalize each ray.
-            for ray in pf_full_i:
-                ray /= norm(ray)
-            for ray in pf_i_shifted:
-                ray /= norm(ray)
+            # # Normalize each ray.
+            pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
+            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
 
             # Compute correlation.
             corrs = pf_i_shifted @ pf_full_i.T
