@@ -265,6 +265,16 @@ class CoordinateSource(ImageSource, ABC):
             "_rlnAmplitudeContrast",
         ]
 
+        # attributes to be populated by the different CTF's
+        # unique CTFFilter objects
+        filters = []
+        # list indicating which CTFFilter corresponds to which particle
+        filter_indices = np.zeros(self.n, dtype=int)
+        mrc_filepaths = np.zeros(self.n, dtype=object)
+        mrc_indices = np.zeros(self.n, dtype=int)
+        # array of CTF metadata to be inserted
+        ctf_values = np.zeros((self.n, len(ctf_cols)))
+
         if isinstance(ctf, str):
             fun = self._populate_ctf_from_relion
         elif isinstance(ctf, list):
@@ -275,7 +285,13 @@ class CoordinateSource(ImageSource, ABC):
             )
 
         filters, filter_indices, mrc_filepaths, mrc_indices, ctf_values = fun(
-            ctf, ctf_cols
+            ctf,
+            ctf_cols,
+            filters,
+            filter_indices,
+            mrc_filepaths,
+            mrc_indices,
+            ctf_values,
         )
 
         self.filter_indices = filter_indices
@@ -284,7 +300,16 @@ class CoordinateSource(ImageSource, ABC):
         self.set_metadata("__mrc_index", mrc_indices)
         self.set_metadata(ctf_cols, ctf_values)
 
-    def _populate_ctf_from_relion(self, ctf_starfile, ctf_cols):
+    def _populate_ctf_from_relion(
+        self,
+        ctf_starfile,
+        ctf_cols,
+        filters,
+        filter_indices,
+        mrc_filepaths,
+        mrc_indices,
+        ctf_values,
+    ):
         star = StarFile(ctf_starfile)
         optics = star["optics"]
         micrographs = star["micrographs"]
@@ -300,16 +325,6 @@ class CoordinateSource(ImageSource, ABC):
                 f"{ctf_starfile} has CTF information for {len(micrographs)}",
                 f" micrographs but this source has {len(self.mrc_paths)} micrographs.",
             )
-
-        # attributes to be populated by the different CTF's
-        # unique CTFFilter objects
-        filters = []
-        # list indicating which CTFFilter corresponds to which particle
-        filter_indices = np.zeros(self.n, dtype=int)
-        mrc_filepaths = np.zeros(self.n, dtype=object)
-        mrc_indices = np.zeros(self.n, dtype=int)
-        # array of CTF metadata to be inserted
-        ctf_values = np.zeros((self.n, len(ctf_cols)))
 
         for i, row in micrographs.iterrows():
             # extract parameters not in the optics groups
@@ -363,21 +378,21 @@ class CoordinateSource(ImageSource, ABC):
 
         return filters, filter_indices, mrc_filepaths, mrc_indices, ctf_values
 
-    def _populate_ctf_from_list(self, ctf_files, ctf_cols):
+    def _populate_ctf_from_list(
+        self,
+        ctf_files,
+        ctf_cols,
+        filters,
+        filter_indices,
+        mrc_filepaths,
+        mrc_indices,
+        ctf_values,
+    ):
         if not len(ctf_files) == len(self.mrc_paths):
             raise ValueError(
                 "Number of CTF STAR files must match number of micrographs."
             )
 
-        # attributes to be populated by the different CTF's
-        # unique CTFFilter objects
-        filters = []
-        # list indicating which CTFFilter corresponds to which particle
-        filter_indices = np.zeros(self.n, dtype=int)
-        mrc_filepaths = np.zeros(self.n, dtype=object)
-        mrc_indices = np.zeros(self.n, dtype=int)
-        # array of CTF metadata to be inserted
-        ctf_values = np.zeros((self.n, len(ctf_cols)))
         for i, ctf_file in enumerate(ctf_files):
             params = self._read_ctf_star(ctf_file)
             # add CTF filter to unique filters
