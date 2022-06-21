@@ -322,7 +322,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             # Find maximum correlation.
             shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
             sclmatrix[i] = [scl1, scl2]
-            corrs_stats[i] = np.real(corrs[(shift, scl1, scl2)])
+            corrs_stats[i] = np.real(corrs[shift, scl1, scl2])
             shifts_stats[i] = shift
 
         return sclmatrix, corrs_stats, shifts_stats
