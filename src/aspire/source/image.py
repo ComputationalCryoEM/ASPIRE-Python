@@ -202,7 +202,6 @@ class ImageSource:
 
         if indices is None:
             indices = self._metadata.index.values
-
         df = pd.DataFrame(values, columns=metadata_fields, index=indices)
         for metadata_field in metadata_fields:
             series = df[metadata_field]
@@ -211,7 +210,7 @@ class ImageSource:
                     series, how="left", left_index=True, right_index=True
                 )
             else:
-                self._metadata[metadata_field] = series
+                self._metadata.update(series.astype(object))
 
     def has_metadata(self, metadata_fields):
         """
