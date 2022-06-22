@@ -338,7 +338,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # Calculate the cosine of angle between self-common-lines.
         cos_diff = np.cos((sclmatrix[:, 1] - sclmatrix[:, 0]) * 2 * np.pi / n_theta)
 
-        # Calculate Euler angle gamma.
+        # Calculate Euler angles `euler_y2` (gamma_ii in publication) corresponding to Y in ZYZ convention.
         if order == 3:
             # cos_diff should be <= 0.5, but due to discretization that might be violated.
             if np.max(cos_diff) > 0.5:
@@ -350,7 +350,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 )
 
                 cos_diff[cos_diff > 0.5] = 0.5
-            gammas = np.arccos(cos_diff / (1 - cos_diff))
+            euler_y2 = np.arccos(cos_diff / (1 - cos_diff))
 
         else:
             # cos_diff should be <= 0, but due to discretization that might be violated.
@@ -363,15 +363,19 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 )
 
                 cos_diff[cos_diff > 0] = 0
-            gammas = np.arccos((1 + cos_diff) / (1 - cos_diff))
+            euler_y2 = np.arccos((1 + cos_diff) / (1 - cos_diff))
 
         # Calculate remaining Euler angles in ZYZ convention.
-        # Note: Publication uses ZXZ convention.
-        alphas = sclmatrix[:, 0] * 2 * np.pi / n_theta + np.pi / 2
-        betas = sclmatrix[:, 1] * 2 * np.pi / n_theta - np.pi / 2
+        # Note: Publication uses ZXZ convention. Using the notation of the
+        # publication the Euler parameterization in ZXZ convention is given by
+        # (alpha_ii^(1), gamma_ii, -alpha_ii^(n-1) - pi).
+        # Converting to ZYZ convention gives us the parameteriztion
+        # (alpha_ii^(1) - pi/2, gamma_ii, -alpha_ii^(n-1) - pi/2).
+        euler_z1 = sclmatrix[:, 0] * 2 * np.pi / n_theta - np.pi / 2
+        euler_z3 = -sclmatrix[:, 1] * 2 * np.pi / n_theta - np.pi / 2
 
         # Compute Riis from Euler angles.
-        angles = np.array((alphas, gammas, -betas), dtype=self.dtype).T
+        angles = np.array((euler_z1, euler_y2, euler_z3), dtype=self.dtype).T
         Riis = Rotation.from_euler(angles, dtype=self.dtype).matrices
 
         return Riis
