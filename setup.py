@@ -29,7 +29,7 @@ setup(
         "joblib",
         "matplotlib>=3.2.0",
         "mrcfile",
-        "numpy==1.21.5",
+        "numpy==1.22.0",
         "pandas==1.3.5",
         "pyfftw",
         "PyWavelets",
