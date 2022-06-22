@@ -202,6 +202,7 @@ class ImageSource:
 
         if indices is None:
             indices = self._metadata.index.values
+            
         df = pd.DataFrame(values, columns=metadata_fields, index=indices)
         for metadata_field in metadata_fields:
             series = df[metadata_field]
