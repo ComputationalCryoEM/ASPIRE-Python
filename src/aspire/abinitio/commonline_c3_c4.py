@@ -444,8 +444,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             )
 
         # Estimate vijs via local handedness synchronization.
-        vijs = np.zeros((len(pairs), 3, 3))
-        e1 = [1, 0, 0]
         opts = np.zeros((8, 3, 3))
         scores_rank1 = np.zeros(8)
 
@@ -457,8 +455,17 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             Rii_J = J_conjugate(Rii)
             Rjj_J = J_conjugate(Rjj)
 
-            # vij should be a singular matrix.
-            # We test 8 combinations of handedness and rotation by {g, g^n-1} for singularity to determine:
+            # At this stage, the estimates Rii and Rjj are in the sets {Ri.T @ g^si @ Ri, JRi.T @ g^si @ RiJ}
+            # and {Rj.T @ g^sj @ Rj, JRj.T @ g^sj @ RjJ}, respectively, where g^si (and g^sj) is a rotation
+            # about the axis of symmetry by (2pi * si)/order, with si = 1 or order-1. Additionally, the estimate
+            # Rij might have a spurious J.
+
+            # To estimate vij, it is essential that si = sj and all three estimates Rii, Rjj, and Rij have
+            # a spurious J, or none do at all. Note: since g.T = g^(order-1), if Rii = Ri.T @ g^1 @ Ri, then
+            # Rii.T = Ri.T @ g^(order-1) @ Ri.
+
+            # The estimate vij should be of rank 1 with singular values [1, 0, 0].
+            # We test 8 combinations of handedness and rotation by {g, g^(order-1)} for this condition to determine:
             # a. whether to transpose Rii
             # b. whether to J-conjugate Rii
             # c. whether to J-conjugate Rjj
@@ -491,9 +498,12 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 opts = opts / 2
 
             svals = svd(opts, compute_uv=False)
+            e1 = [1, 0, 0]
             scores_rank1 = anorm(svals - e1, axes=[1])
             min_idx = np.argmin(scores_rank1)
 
+            # Populate vijs with
+            vijs = np.zeros((len(pairs), 3, 3))
             vijs[idx] = opts[min_idx]
 
         return vijs, viis
