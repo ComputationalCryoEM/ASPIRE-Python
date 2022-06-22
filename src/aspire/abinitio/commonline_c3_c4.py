@@ -383,10 +383,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         """
         n_img = self.n_img
         n_theta = self.n_theta
-
-        nchoose2 = int(n_img * (n_img - 1) / 2)
-        Rijs = np.zeros((nchoose2, 3, 3))
         pairs = all_pairs(n_img)
+        Rijs = np.zeros((len(pairs), 3, 3))
         for idx, (i, j) in enumerate(pairs):
             Rijs[idx] = self._syncmatrix_ij_vote_3n(
                 clmatrix, i, j, np.arange(n_img), n_theta
