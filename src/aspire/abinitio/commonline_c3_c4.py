@@ -444,6 +444,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             )
 
         # Estimate vijs via local handedness synchronization.
+        vijs = np.zeros((len(pairs), 3, 3))
         opts = np.zeros((8, 3, 3))
         scores_rank1 = np.zeros(8)
 
@@ -503,7 +504,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             min_idx = np.argmin(scores_rank1)
 
             # Populate vijs with
-            vijs = np.zeros((len(pairs), 3, 3))
             vijs[idx] = opts[min_idx]
 
         return vijs, viis
