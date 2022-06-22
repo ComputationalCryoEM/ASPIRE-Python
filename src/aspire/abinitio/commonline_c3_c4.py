@@ -448,7 +448,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         e1 = [1, 0, 0]
         opts = np.zeros((8, 3, 3))
         scores_rank1 = np.zeros(8)
-        min_idxs = np.zeros((len(pairs), 3, 3))
 
         for idx, (i, j) in enumerate(pairs):
             Rii = Riis[i]
@@ -495,7 +494,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 _, svals, _ = svd(opt)
                 scores_rank1[k] = norm(svals - e1, 2)
             min_idx = np.argmin(scores_rank1)
-            min_idxs[idx] = min_idx
 
             vijs[idx] = opts[min_idx]
 
