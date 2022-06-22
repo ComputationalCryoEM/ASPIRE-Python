@@ -490,9 +490,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 # Normalize
                 opts = opts / 2
 
-            for k, opt in enumerate(opts):
-                _, svals, _ = svd(opt)
-                scores_rank1[k] = norm(svals - e1, 2)
+            svals = svd(opts, compute_uv=False)
+            scores_rank1 = anorm(svals - e1, axes=[1])
             min_idx = np.argmin(scores_rank1)
 
             vijs[idx] = opts[min_idx]
