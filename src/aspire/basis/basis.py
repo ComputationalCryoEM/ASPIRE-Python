@@ -78,7 +78,7 @@ class Basis:
             coefficient vectors, while the second must correspond to `self.count`
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
             This is an Image or a Volume object containing one image/volume for each
-            coefficient vector, and of size `self.size`.
+            coefficient vector, and of size `self.sz`.
         """
         if v.dtype != self.dtype:
             logger.warning(
@@ -98,7 +98,7 @@ class Basis:
         """
         Evaluate coefficient in dual basis
 
-        :param v: An Image or Volume object whose size matches `self.size`.
+        :param v: An Image or Volume object whose size matches `self.sz`.
         :return: The evaluation of the Image or Volume object `v` in the dual
             basis of `basis`.
             This is an array of vectors whose first dimension equals the number of
