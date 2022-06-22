@@ -433,14 +433,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         """
         order = self.order
         n_img = self.n_img
-
-        nchoose2 = int(n_img * (n_img - 1) / 2)
-        assert (
-            len(Riis) == n_img
-        ), f"There must be one self-relative rotation per image. Got {len(Riis)} Riis."
-        assert (
-            len(Rijs) == nchoose2
-        ), f"There must be n-choose-2 relative rotations. Got {len(Rijs)}."
+        pairs = all_pairs(n_img)
 
         # Estimate viis from Riis. vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
         viis = np.zeros((n_img, 3, 3))
@@ -450,12 +443,12 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             )
 
         # Estimate vijs via local handedness synchronization.
-        vijs = np.zeros((nchoose2, 3, 3))
+        vijs = np.zeros((len(pairs), 3, 3))
         e1 = [1, 0, 0]
         opts = np.zeros((8, 3, 3))
         scores_rank1 = np.zeros(8)
-        min_idxs = np.zeros((nchoose2, 3, 3))
-        pairs = all_pairs(n_img)
+        min_idxs = np.zeros((len(pairs), 3, 3))
+
         for idx, (i, j) in enumerate(pairs):
             Rii = Riis[i]
             Rjj = Riis[j]
