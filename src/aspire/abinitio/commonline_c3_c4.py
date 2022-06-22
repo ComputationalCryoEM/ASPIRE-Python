@@ -424,7 +424,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         """
         Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj,
         and Rij to be of the same handedness. We perform a local handedness synchronization and
-        set vij = 1/n*sum(Rii^s @ Rij @ Rjj^s).
+        set vij = 1/order * sum(Rii^s @ Rij @ Rjj^s) for s = 0, 1, ..., order. To estimate
+        vii = vi @ vi.T we set vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
 
         :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations
             (each pair of images induces two estimates).
