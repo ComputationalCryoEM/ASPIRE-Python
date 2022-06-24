@@ -19,7 +19,22 @@ jobs:
         pip install tox tox-gh-actions
     - name: Run Tox Check
       run: tox -e check
-
+      
+  check2:
+    runs-on: decaf
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox tox-gh-actions
+    - name: Run Tox Check
+      run: tox -e check
+      
   build:
     needs: check
     runs-on: ubuntu-latest
