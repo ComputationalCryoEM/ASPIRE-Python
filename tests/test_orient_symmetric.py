@@ -166,7 +166,7 @@ class OrientSymmTestCase(TestCase):
         for idx, (vij_gt, vij) in enumerate(zip(vijs_gt, vijs)):
             diffs_vijs[0] = norm(vij - vij_gt)
             diffs_vijs[1] = norm(J_conjugate(vij) - vij_gt)
-            errs_vijs[idx] = np.min(diffs_vijs)  # diffs_vijs[np.argmin(diffs_vijs)]
+            errs_vijs[idx] = np.min(diffs_vijs)
         mse_vijs = np.mean(errs_vijs**2)
 
         # Calculate the mean squared error for viis.
@@ -175,7 +175,7 @@ class OrientSymmTestCase(TestCase):
         for idx, (vii_gt, vii) in enumerate(zip(viis_gt, viis)):
             diffs_viis[0] = norm(vii - vii_gt)
             diffs_viis[1] = norm(J_conjugate(vii) - vii_gt)
-            errs_viis[idx] = np.min(diffs_viis)  # diffs_viis[np.argmin(diffs_viis)]
+            errs_viis[idx] = np.min(diffs_viis)
         mse_viis = np.mean(errs_viis**2)
 
         # Check that MSE is small.
@@ -381,7 +381,7 @@ class OrientSymmTestCase(TestCase):
         scl_gt = np.zeros((self.n_img, 2), dtype=self.dtype)
         n_theta = self.n_theta
         g = rots_symm[1]
-        g_n = rots_symm[order - 1]
+        g_n = rots_symm[-1]
         for i in range(self.n_img):
             Ri = rots[i]
 
