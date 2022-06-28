@@ -68,7 +68,6 @@ class OrientSymmTestCase(TestCase):
         rots_gt = src.rots
 
         nchoose2 = int(n_img * (n_img - 1) / 2)
-        min_idx = np.zeros(nchoose2, dtype=int)
         errs = np.zeros(nchoose2)
         diffs = np.zeros(order)
         pairs = all_pairs(n_img)
@@ -81,8 +80,7 @@ class OrientSymmTestCase(TestCase):
                 diffs[s] = np.minimum(
                     norm(Rij - Rij_s_gt), norm(J @ Rij @ J - Rij_s_gt)
                 )
-            min_idx[idx] = np.argmin(diffs)
-            errs[idx] = diffs[min_idx[idx]]
+            errs[idx] = np.min(diffs)
 
         mse = np.mean(errs**2)
 
