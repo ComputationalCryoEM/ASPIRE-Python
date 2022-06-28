@@ -64,7 +64,6 @@ class OrientSymmTestCase(TestCase):
         # the minimum error between Rij and the above set.
         rots_symm = self.buildCyclicRotations(order)
         gs = rots_symm
-        J = np.diag([-1, -1, 1])
         rots_gt = src.rots
 
         nchoose2 = int(n_img * (n_img - 1) / 2)
@@ -107,7 +106,6 @@ class OrientSymmTestCase(TestCase):
         # We find the minimum mean-squared-error over the 4 possibilities.
         rots_symm = self.buildCyclicRotations(order)
         g = rots_symm[1]
-        J = np.diag([-1, -1, 1])
         rots_gt = src.rots
 
         min_idx = np.zeros(n_img, dtype=int)
@@ -118,8 +116,8 @@ class OrientSymmTestCase(TestCase):
 
             diff0 = norm(Rii - Rii_gt)
             diff1 = norm(Rii.T - Rii_gt)
-            diff2 = norm((J @ Rii @ J) - Rii_gt)
-            diff3 = norm((J @ Rii.T @ J) - Rii_gt)
+            diff2 = norm(J_conjugate(Rii) - Rii_gt)
+            diff3 = norm(J_conjugate(Rii.T) - Rii_gt)
             diffs = [diff0, diff1, diff2, diff3]
             min_idx[i] = np.argmin(diffs)
             errs[i] = diffs[min_idx[i]]
