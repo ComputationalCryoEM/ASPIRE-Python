@@ -453,9 +453,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             Rjj = Riis[j]
             Rij = Rijs[idx]
 
-            Rii_J = J_conjugate(Rii)
-            Rjj_J = J_conjugate(Rjj)
-
             # At this stage, the estimates Rii and Rjj are in the sets {Ri.T @ g^si @ Ri, JRi.T @ g^si @ RiJ}
             # and {Rj.T @ g^sj @ Rj, JRj.T @ g^sj @ RjJ}, respectively, where g^si (and g^sj) is a rotation
             # about the axis of symmetry by (2pi * si)/order, with si = 1 or order-1. Additionally, the estimate
