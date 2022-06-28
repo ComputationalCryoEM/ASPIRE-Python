@@ -445,10 +445,10 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Estimate vijs via local handedness synchronization.
         vijs = np.zeros((len(pairs), 3, 3))
-        opts = np.zeros((8, 3, 3))
-        scores_rank1 = np.zeros(8)
 
         for idx, (i, j) in enumerate(pairs):
+            opts = np.zeros((2, 2, 2, 3, 3))
+            scores_rank1 = np.zeros(8)
             Rii = Riis[i]
             Rjj = Riis[j]
             Rij = Rijs[idx]
@@ -471,36 +471,30 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             # b. whether to J-conjugate Rii
             # c. whether to J-conjugate Rjj
             if order == 3:
-                opts[0] = Rij + (Rii @ Rij @ Rjj) + (Rii.T @ Rij @ Rjj.T)
-                opts[1] = Rij + (Rii_J @ Rij @ Rjj) + (Rii_J.T @ Rij @ Rjj.T)
-                opts[2] = Rij + (Rii @ Rij @ Rjj_J) + (Rii.T @ Rij @ Rjj_J.T)
-                opts[3] = Rij + (Rii_J @ Rij @ Rjj_J) + (Rii_J.T @ Rij @ Rjj_J.T)
-
-                opts[4] = Rij + (Rii.T @ Rij @ Rjj) + (Rii @ Rij @ Rjj.T)
-                opts[5] = Rij + (Rii_J.T @ Rij @ Rjj) + (Rii_J @ Rij @ Rjj.T)
-                opts[6] = Rij + (Rii.T @ Rij @ Rjj_J) + (Rii @ Rij @ Rjj_J.T)
-                opts[7] = Rij + (Rii_J.T @ Rij @ Rjj_J) + (Rii_J @ Rij @ Rjj_J.T)
-
-                # Normalize
-                opts = opts / 3
+                for ii_trans in [0, 1]:
+                    for ii_conj in [0, 1]:
+                        for jj_conj in [0, 1]:
+                            _Rii = Rii.T if ii_trans else Rii
+                            _Rii = J_conjugate(_Rii) if ii_conj else _Rii
+                            _Rjj = J_conjugate(Rjj) if jj_conj else Rjj
+                            opts[ii_trans, ii_conj, jj_conj] = (
+                                Rij + _Rii @ Rij @ _Rjj + _Rii.T @ Rij @ _Rjj.T
+                            ) / 3
 
             else:
-                opts[0] = Rij + (Rii @ Rij @ Rjj)
-                opts[1] = Rij + (Rii_J @ Rij @ Rjj)
-                opts[2] = Rij + (Rii @ Rij @ Rjj_J)
-                opts[3] = Rij + (Rii_J @ Rij @ Rjj_J)
+                for ii_trans in [0, 1]:
+                    for ii_conj in [0, 1]:
+                        for jj_conj in [0, 1]:
+                            _Rii = Rii.T if ii_trans else Rii
+                            _Rii = J_conjugate(_Rii) if ii_conj else _Rii
+                            _Rjj = J_conjugate(Rjj) if jj_conj else Rjj
+                            opts[ii_trans, ii_conj, jj_conj] = (
+                                Rij + _Rii @ Rij @ _Rjj
+                            ) / 2
 
-                opts[4] = Rij + (Rii.T @ Rij @ Rjj)
-                opts[5] = Rij + (Rii_J.T @ Rij @ Rjj)
-                opts[6] = Rij + (Rii.T @ Rij @ Rjj_J)
-                opts[7] = Rij + (Rii_J.T @ Rij @ Rjj_J)
-
-                # Normalize
-                opts = opts / 2
-
+            opts = opts.reshape((8, 3, 3))
             svals = svd(opts, compute_uv=False)
-            e1 = [1, 0, 0]
-            scores_rank1 = anorm(svals - e1, axes=[1])
+            scores_rank1 = anorm(svals - [1, 0, 0], axes=[1])
             min_idx = np.argmin(scores_rank1)
 
             # Populate vijs with
