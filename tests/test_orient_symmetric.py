@@ -26,20 +26,20 @@ class OrientSymmTestCase(TestCase):
         self.srcs = {}
         self.cl_classes = {}
 
-        for o in orders:
-            self.vols[o] = self.buildSimpleSymmetricVolume(self.L, o)
+        for order in orders:
+            self.vols[order] = self.buildSimpleSymmetricVolume(self.L, order)
 
-            self.srcs[o] = Simulation(
+            self.srcs[order] = Simulation(
                 L=self.L,
                 n=self.n_img,
                 offsets=np.zeros((self.n_img, 2)),
                 dtype=self.dtype,
-                vols=self.vols[o],
+                vols=self.vols[order],
                 C=1,
             )
 
-            self.cl_classes[o] = CLSymmetryC3C4(
-                self.srcs[o], symmetry=f"C{o}", n_theta=self.n_theta
+            self.cl_classes[order] = CLSymmetryC3C4(
+                self.srcs[order], symmetry=f"C{order}", n_theta=self.n_theta
             )
 
     def tearDown(self):
