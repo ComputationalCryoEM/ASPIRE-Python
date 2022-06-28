@@ -24,7 +24,7 @@ class OrientSymmTestCase(TestCase):
         orders = [3, 4]
         self.vols = {}
         self.srcs = {}
-        self.cl_classes = {}
+        self.cl_orient_ests = {}
 
         for order in orders:
             self.vols[order] = self.buildSimpleSymmetricVolume(self.L, order)
@@ -38,7 +38,7 @@ class OrientSymmTestCase(TestCase):
                 C=1,
             )
 
-            self.cl_classes[order] = CLSymmetryC3C4(
+            self.cl_orient_ests[order] = CLSymmetryC3C4(
                 self.srcs[order], symmetry=f"C{order}", n_theta=self.n_theta
             )
 
@@ -52,7 +52,7 @@ class OrientSymmTestCase(TestCase):
         # Simulation source and common lines Class corresponding to
         # volume with C3 or C4 symmetry.
         src = self.srcs[order]
-        cl_symm = self.cl_classes[order]
+        cl_symm = self.cl_orient_ests[order]
 
         # Estimate relative viewing directions.
         cl_symm.build_clmatrix()
@@ -99,7 +99,7 @@ class OrientSymmTestCase(TestCase):
         # Simulation source and common lines Class corresponding to
         # volume with C3 or C4 symmetry.
         src = self.srcs[order]
-        cl_symm = self.cl_classes[order]
+        cl_symm = self.cl_orient_ests[order]
 
         # Estimate self-relative viewing directions, Riis.
         scl, _, _ = cl_symm._self_clmatrix_c3_c4()
@@ -142,7 +142,7 @@ class OrientSymmTestCase(TestCase):
         # Simulation source and common lines Class corresponding to
         # volume with C3 or C4 symmetry.
         src = self.srcs[order]
-        cl_symm = self.cl_classes[order]
+        cl_symm = self.cl_orient_ests[order]
 
         # Calculate ground truth relative viewing directions, viis and vijs.
         rots_gt = src.rots
@@ -202,7 +202,9 @@ class OrientSymmTestCase(TestCase):
         viis_conj[::2] = J_conjugate(viis_conj[::2])
 
         # Synchronize vijs_conj and viis_conj.
-        vijs_sync, viis_sync = self.cl_classes[3]._global_J_sync(vijs_conj, viis_conj)
+        vijs_sync, viis_sync = self.cl_orient_ests[3]._global_J_sync(
+            vijs_conj, viis_conj
+        )
 
         # Check that synchronized outer products equal original
         # up to J-conjugation of the entire set.
@@ -221,7 +223,7 @@ class OrientSymmTestCase(TestCase):
 
         # Estimate third rows from outer products.
         # Due to factorization of V, these might be negated third rows.
-        vis = self.cl_classes[3]._estimate_third_rows(vijs, viis)
+        vis = self.cl_orient_ests[3]._estimate_third_rows(vijs, viis)
 
         # Check if all-close up to difference of sign
         ground_truth = np.sign(gt_vis[0, 0]) * gt_vis
@@ -233,7 +235,7 @@ class OrientSymmTestCase(TestCase):
         n_img = self.n_img
         n_theta = self.n_theta
         src = self.srcs[order]
-        cl_symm = self.cl_classes[order]
+        cl_symm = self.cl_orient_ests[order]
 
         # Initialize common-lines class and compute self-common-lines matrix.
         scl, _, _ = cl_symm._self_clmatrix_c3_c4()
@@ -271,7 +273,7 @@ class OrientSymmTestCase(TestCase):
     def testCommonLines(self, order):
         n_img = self.n_img
         src = self.srcs[order]
-        cl_symm = self.cl_classes[order]
+        cl_symm = self.cl_orient_ests[order]
 
         # Build common-lines matrix.
         cl_symm.build_clmatrix()
