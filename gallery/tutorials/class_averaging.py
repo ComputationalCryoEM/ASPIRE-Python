@@ -208,9 +208,9 @@ avgs.images(review_class, 1).show()
 # These alignment arrays are indexed the same as ``classes``,
 # having shape (n_classes, n_nbor).
 
-est_rotations = rir.averager.rotations[review_class]
-est_shifts = rir.averager.shifts[review_class]
-est_correlations = rir.averager.correlations[review_class]
+est_rotations = noisy_rir.averager.rotations[review_class]
+est_shifts = noisy_rir.averager.shifts[review_class]
+est_correlations = noisy_rir.averager.correlations[review_class]
 
 logger.info(f"Estimated Rotations: {est_rotations}")
 logger.info(f"Estimated Shifts: {est_shifts}")
@@ -223,29 +223,27 @@ original_img_0_idx = classes[review_class][0]
 original_img_nbr_idx = classes[review_class][nbr]
 
 # Lookup the images.
-original_img_0 = src.images(original_img_0_idx, 1).asnumpy()[0]
-original_img_nbr = src.images(original_img_nbr_idx, 1).asnumpy()[0]
-
+original_img_0 = noisy_src.images(original_img_0_idx, 1).asnumpy()[0]
+original_img_nbr = noisy_src.images(original_img_nbr_idx, 1).asnumpy()[0]
 
 # Rotate using estimated rotations.
-rotated_img_nbr = np.asarray(
-    PILImage.fromarray(original_img_nbr).rotate(est_rotations[nbr])
-)
-plt.subplot(1, 2, 1)
+angle = -est_rotations[nbr] * 180 / np.pi
+rotated_img_nbr = np.asarray(PILImage.fromarray(original_img_nbr).rotate(angle))
+
+plt.subplot(2, 2, 1)
 plt.title("Original Images")
 plt.imshow(original_img_0)
 plt.xlabel("Img 0")
-plt.subplot(1, 2, 2)
+plt.subplot(2, 2, 2)
 plt.imshow(original_img_nbr)
 plt.xlabel(f"Img {nbr}")
-plt.show()
 
-
-plt.subplot(1, 2, 1)
+plt.subplot(2, 2, 3)
 plt.title("Est Rotation Applied")
 plt.imshow(original_img_0)
 plt.xlabel("Img 0")
-plt.subplot(1, 2, 2)
+plt.subplot(2, 2, 4)
 plt.imshow(rotated_img_nbr)
-plt.xlabel(f"Img {nbr} rotated {est_rotations[nbr]:.4}*")
+plt.xlabel(f"Img {nbr} rotated {angle:.4}*")
+plt.tight_layout()
 plt.show()
