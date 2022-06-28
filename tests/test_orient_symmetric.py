@@ -232,7 +232,7 @@ class OrientSymmTestCase(TestCase):
         src = self.srcs[order]
         cl_symm = self.cl_orient_ests[order]
 
-        # Initialize common-lines class and compute self-common-lines matrix.
+        # Initialize common-lines orientation estimation object and compute self-common-lines matrix.
         scl, _, _ = cl_symm._self_clmatrix_c3_c4()
 
         # Compute ground truth self-common-lines matrix.
@@ -254,15 +254,10 @@ class OrientSymmTestCase(TestCase):
         scl_idx = np.argmin(scl_diff_angle_mean, axis=0)
         min_mean_angle_diff = scl_idx.choose(scl_diff_angle_mean)
 
-        # Assert scl detection rate is greater than 90% with 1 degree tolerance for order=3,
-        # and 3 degree tolerance for order=4.
-        if order == 3:
-            angle_tol_err = 1 * pi / 180
-        else:
-            angle_tol_err = 3 * pi / 180
-
+        # Assert scl detection rate is 100% for 5 degree angle tolerance
+        angle_tol_err = 5 * pi / 180
         detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / n_img
-        self.assertTrue(detection_rate > 0.90)
+        self.assertTrue(detection_rate == 1.0)
 
     @parameterized.expand([(3,), (4,)])
     def testCommonLines(self, order):
