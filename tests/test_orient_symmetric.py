@@ -13,9 +13,6 @@ from aspire.volume import Volume
 
 
 class OrientSymmTestCase(TestCase):
-    # `order` is at this scope to be picked up by parameterized in testCommonLines.
-    order = 3
-
     def setUp(self):
         self.L = 64
         self.n_img = 32
@@ -48,7 +45,7 @@ class OrientSymmTestCase(TestCase):
     def tearDown(self):
         pass
 
-    @parameterized.expand([(order,), (order + 1,)])
+    @parameterized.expand([(3,), (4,)])
     def testRelativeRotations(self, order):
         n_img = self.n_img
 
@@ -95,7 +92,7 @@ class OrientSymmTestCase(TestCase):
         else:
             self.assertTrue(mse < 0.03)
 
-    @parameterized.expand([(order,), (order + 1,)])
+    @parameterized.expand([(3,), (4,)])
     def testSelfRelativeRotations(self, order):
         n_img = self.n_img
 
@@ -138,7 +135,7 @@ class OrientSymmTestCase(TestCase):
         else:
             self.assertTrue(mse < 0.0025)
 
-    @parameterized.expand([(order,), (order + 1,)])
+    @parameterized.expand([(3,), (4,)])
     def testRelativeViewingDirections(self, order):
         n_img = self.n_img
 
@@ -231,7 +228,7 @@ class OrientSymmTestCase(TestCase):
         estimate = np.sign(vis[0, 0]) * vis
         self.assertTrue(np.allclose(ground_truth, estimate))
 
-    @parameterized.expand([(order,), (order + 1,)])
+    @parameterized.expand([(3,), (4,)])
     def testSelfCommonLines(self, order):
         n_img = self.n_img
         n_theta = self.n_theta
@@ -270,7 +267,7 @@ class OrientSymmTestCase(TestCase):
         detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / n_img
         self.assertTrue(detection_rate > 0.90)
 
-    @parameterized.expand([(order,), (order + 1,)])
+    @parameterized.expand([(3,), (4,)])
     def testCommonLines(self, order):
         n_img = self.n_img
         src = self.srcs[order]
