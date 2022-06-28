@@ -73,13 +73,12 @@ class OrientSymmTestCase(TestCase):
         pairs = all_pairs(n_img)
         for idx, (i, j) in enumerate(pairs):
             Rij = Rijs[idx]
+            Rij_J = J_conjugate(Rij)
             Ri_gt = rots_gt[i]
             Rj_gt = rots_gt[j]
             for s in range(order):
                 Rij_s_gt = Ri_gt.T @ gs[s] @ Rj_gt
-                diffs[s] = np.minimum(
-                    norm(Rij - Rij_s_gt), norm(J @ Rij @ J - Rij_s_gt)
-                )
+                diffs[s] = np.minimum(norm(Rij - Rij_s_gt), norm(Rij_J - Rij_s_gt))
             errs[idx] = np.min(diffs)
 
         mse = np.mean(errs**2)
