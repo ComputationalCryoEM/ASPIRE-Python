@@ -49,8 +49,8 @@ class OrientSymmTestCase(TestCase):
     def testRelativeRotations(self, order):
         n_img = self.n_img
 
-        # Simulation source and common lines Class corresponding to
-        # volume with C3 or C4 symmetry.
+        # Simulation source and common lines estimation instance
+        # corresponding to volume with C3 or C4 symmetry.
         src = self.srcs[order]
         cl_symm = self.cl_orient_ests[order]
 
@@ -79,7 +79,6 @@ class OrientSymmTestCase(TestCase):
                 Rij_s_gt = Ri_gt.T @ gs[s] @ Rj_gt
                 diffs[s] = np.minimum(norm(Rij - Rij_s_gt), norm(Rij_J - Rij_s_gt))
             errs[idx] = np.min(diffs)
-
         mse = np.mean(errs**2)
 
         # Mean-squared-error is better for C3 than for C4.

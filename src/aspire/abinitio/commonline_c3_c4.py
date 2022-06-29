@@ -5,7 +5,14 @@ from numpy.linalg import eigh, norm, svd
 from tqdm import tqdm
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, anorm
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    all_triplets,
+    anorm,
+    pairs_to_linear,
+)
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -143,23 +150,20 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
         # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
-
-        # All pairs (i,j) where i<j
-        pairs = all_pairs(n_img)
         for i in range(n_img):
             vii = viis[i]
             vii_J = J_conjugate(vii)
             J_consensus = 0
             for j in range(n_img):
                 if j < i:
-                    idx = pairs.index((j, i))
+                    idx = pairs_to_linear(n_img, j, i)
                     vji = vijs[idx]
 
                     err1 = norm(vji @ vii - vji)
                     err2 = norm(vji @ vii_J - vji)
 
                 elif j > i:
-                    idx = pairs.index((i, j))
+                    idx = pairs_to_linear(n_img, i, j)
                     vij = vijs[idx]
 
                     err1 = norm(vii @ vij - vij)
@@ -575,7 +579,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
-        pairs = all_pairs(n_img)
         triplets = all_triplets(n_img)
 
         # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
@@ -604,9 +607,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         v = vijs
         new_vec = np.zeros_like(vec)
         for (i, j, k) in triplets:
-            ij = pairs.index((i, j))
-            jk = pairs.index((j, k))
-            ik = pairs.index((i, k))
+            ij = pairs_to_linear(n_img, i, j)
+            jk = pairs_to_linear(n_img, j, k)
+            ik = pairs_to_linear(n_img, i, k)
             vij, vjk, vik = v[ij], v[jk], v[ik]
             vij_J = J_conjugate(vij)
             vjk_J = J_conjugate(vjk)
