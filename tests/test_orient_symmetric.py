@@ -285,7 +285,7 @@ class OrientSymmTestCase(TestCase):
             # true common-line angles a_ij_s, a_ji_s for some value s,
             # where s is the number of common-lines induced by the symmetric order.
             for s in range(order):
-                rel_rot = (rots[i]).T @ rots_symm[s] @ rots[j]
+                rel_rot = rots[i].T @ rots_symm[s] @ rots[j]
                 a_ij_s[s] = np.rad2deg(np.arctan(-rel_rot[0, 2] / rel_rot[1, 2])) % 180
                 a_ji_s[s] = np.rad2deg(np.arctan(-rel_rot[2, 0] / rel_rot[2, 1])) % 180
             best_s = np.argmin(abs(cl_ij - a_ij_s) + abs(cl_ji - a_ji_s))
