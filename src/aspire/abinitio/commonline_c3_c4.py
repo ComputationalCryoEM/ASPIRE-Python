@@ -797,7 +797,7 @@ class CLSymmetryC3C4(CLSyncVoting):
     @staticmethod
     def complete_third_row_to_rot(r3):
         """
-        Construct a rotation matrix whose thrid row is equal to the given row vector.
+        Construct a rotation matrix whose third row is equal to the given row vector.
 
         :param r3: A 1x3 vector of norm 1.
         :return: A 3x3 rotation matrix whose third row is r3.
