@@ -19,6 +19,7 @@ from .misc import (  # isort:skip
     get_full_version,
     inverse_r,
     J_conjugate,
+    pairs_to_linear,
     powerset,
     sha256sum,
 )

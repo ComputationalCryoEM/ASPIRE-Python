@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import eigh, norm, svd
 from tqdm import tqdm
 
-from aspire.abinitio import CLSyncVoting
+from aspire.abinitio import CLOrient3D, SyncVotingMixin
 from aspire.utils import (
     J_conjugate,
     Rotation,
@@ -12,13 +12,14 @@ from aspire.utils import (
     all_triplets,
     anorm,
     cyclic_rotations,
+    pairs_to_linear,
 )
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC3C4(CLSyncVoting):
+class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
     C3 and C4 cyclic symmetry.
@@ -165,23 +166,20 @@ class CLSymmetryC3C4(CLSyncVoting):
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
         # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
-
-        # All pairs (i,j) where i<j
-        pairs = all_pairs(n_img)
         for i in range(n_img):
             vii = viis[i]
             vii_J = J_conjugate(vii)
             J_consensus = 0
             for j in range(n_img):
                 if j < i:
-                    idx = pairs.index((j, i))
+                    idx = pairs_to_linear(n_img, j, i)
                     vji = vijs[idx]
 
                     err1 = norm(vji @ vii - vji)
                     err2 = norm(vji @ vii_J - vji)
 
                 elif j > i:
-                    idx = pairs.index((i, j))
+                    idx = pairs_to_linear(n_img, i, j)
                     vij = vijs[idx]
 
                     err1 = norm(vii @ vij - vij)
@@ -398,7 +396,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         Find the single pair of self-common-lines in each image assuming that the underlying
         symmetry is C3 or C4.
         """
-        pf = self.pf.copy()
+        pf = self.pf
         n_img = self.n_img
         n_theta = self.n_theta
         max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
@@ -425,11 +423,19 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         # We create a mask associated with angle differences that fall in the
         # range [min_angle_diff, max_angle_diff].
+
+        # X and Y are grids of theta values associate with the polar Fourier transforms
+        # `pf_full` and `pf`, respectively.
         X, Y = np.meshgrid(range(n_theta), range(n_theta // 2))
+
+        # `diff` is all possible angle differences between potential pairs of self-common-lines.
         diff = Y - X
+
+        # The `unsigned_angle_diff` is the smallest positive angle between potential pairs of
+        # of self-common-lines associated with angle difference `diff`.
         unsigned_angle_diff = np.arccos(np.cos(diff * 2 * np.pi / n_theta))
-        good_diffs = np.logical_and(
-            min_angle_diff < unsigned_angle_diff, unsigned_angle_diff < max_angle_diff
+        good_diffs = (min_angle_diff < unsigned_angle_diff) & (
+            unsigned_angle_diff < max_angle_diff
         )
 
         # Compute the correlation over all shifts.
@@ -443,7 +449,7 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         # Transpose pf and reconstruct the full polar Fourier for use in correlation.
         # self.pf only consists of rays in the range [180, 360).
-        pf = pf.transpose((2, 1, 0))
+        pf = pf.T
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
         for i in tqdm(range(n_img)):
@@ -454,25 +460,23 @@ class CLSymmetryC3C4(CLSyncVoting):
             pf_i_shifted = np.array(
                 [pf_i * shift_phase for shift_phase in all_shift_phases]
             )
-            pf_i_shifted = np.reshape(pf_i_shifted, (-1, r_max))
+            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
 
-            # Normalize each ray.
-            for ray in pf_full_i:
-                ray /= norm(ray)
-            for ray in pf_i_shifted:
-                ray /= norm(ray)
+            # # Normalize each ray.
+            pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
+            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
 
             # Compute correlation.
             corrs = pf_i_shifted @ pf_full_i.T
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
 
             # Mask with allowed combinations.
-            corrs = np.array([corr * good_diffs for corr in corrs])
+            corrs *= good_diffs[np.newaxis, ...]
 
             # Find maximum correlation.
             shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
             sclmatrix[i] = [scl1, scl2]
-            corrs_stats[i] = np.real(corrs[(shift, scl1, scl2)])
+            corrs_stats[i] = np.real(corrs[shift, scl1, scl2])
             shifts_stats[i] = shift
 
         return sclmatrix, corrs_stats, shifts_stats
@@ -488,7 +492,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         # Calculate the cosine of angle between self-common-lines.
         cos_diff = np.cos((sclmatrix[:, 1] - sclmatrix[:, 0]) * 2 * np.pi / n_theta)
 
-        # Calculate Euler angle gamma.
+        # Calculate Euler angles `euler_y2` (gamma_ii in publication) corresponding to Y in ZYZ convention.
         if order == 3:
             # cos_diff should be <= 0.5, but due to discretization that might be violated.
             if np.max(cos_diff) > 0.5:
@@ -498,10 +502,8 @@ class CLSymmetryC3C4(CLSyncVoting):
                     f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}."
                     "Setting all bad estimates to 0.5."
                 )
-
                 cos_diff[cos_diff > 0.5] = 0.5
-            gammas = np.arccos(cos_diff / (1 - cos_diff))
-
+            euler_y2 = np.arccos(cos_diff / (1 - cos_diff))
         else:
             # cos_diff should be <= 0, but due to discretization that might be violated.
             if np.max(cos_diff) > 0:
@@ -511,17 +513,20 @@ class CLSymmetryC3C4(CLSyncVoting):
                     f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}"
                     "Setting all bad estimates to 0."
                 )
-
                 cos_diff[cos_diff > 0] = 0
-            gammas = np.arccos((1 + cos_diff) / (1 - cos_diff))
+            euler_y2 = np.arccos((1 + cos_diff) / (1 - cos_diff))
 
         # Calculate remaining Euler angles in ZYZ convention.
-        # Note: Publication uses ZXZ convention.
-        alphas = sclmatrix[:, 0] * 2 * np.pi / n_theta + np.pi / 2
-        betas = sclmatrix[:, 1] * 2 * np.pi / n_theta - np.pi / 2
+        # Note: Publication uses ZXZ convention. Using the notation of the
+        # publication the Euler parameterization in ZXZ convention is given by
+        # (alpha_ii^(1), gamma_ii, -alpha_ii^(n-1) - pi).
+        # Converting to ZYZ convention gives us the parameteriztion
+        # (alpha_ii^(1) - pi/2, gamma_ii, -alpha_ii^(n-1) - pi/2).
+        euler_z1 = sclmatrix[:, 0] * 2 * np.pi / n_theta - np.pi / 2
+        euler_z3 = -sclmatrix[:, 1] * 2 * np.pi / n_theta - np.pi / 2
 
         # Compute Riis from Euler angles.
-        angles = np.array((alphas, gammas, -betas), dtype=self.dtype).T
+        angles = np.array((euler_z1, euler_y2, euler_z3), dtype=self.dtype).T
         Riis = Rotation.from_euler(angles, dtype=self.dtype).matrices
 
         return Riis
@@ -532,10 +537,8 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
         n_img = self.n_img
         n_theta = self.n_theta
-
-        nchoose2 = int(n_img * (n_img - 1) / 2)
-        Rijs = np.zeros((nchoose2, 3, 3))
         pairs = all_pairs(n_img)
+        Rijs = np.zeros((len(pairs), 3, 3))
         for idx, (i, j) in enumerate(pairs):
             Rijs[idx] = self._syncmatrix_ij_vote_3n(
                 clmatrix, i, j, np.arange(n_img), n_theta
@@ -575,7 +578,8 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
         Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj,
         and Rij to be of the same handedness. We perform a local handedness synchronization and
-        set vij = 1/n*sum(Rii^s @ Rij @ Rjj^s).
+        set vij = 1/order * sum(Rii^s @ Rij @ Rjj^s) for s = 0, 1, ..., order. To estimate
+        vii = vi @ vi.T we set vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
 
         :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations
             (each pair of images induces two estimates).
@@ -584,14 +588,7 @@ class CLSymmetryC3C4(CLSyncVoting):
         """
         order = self.order
         n_img = self.n_img
-
-        nchoose2 = int(n_img * (n_img - 1) / 2)
-        assert (
-            len(Riis) == n_img
-        ), f"There must be one self-relative rotation per image. Got {len(Riis)} Riis."
-        assert (
-            len(Rijs) == nchoose2
-        ), f"There must be n-choose-2 relative rotations. Got {len(Rijs)}."
+        pairs = all_pairs(n_img)
 
         # Estimate viis from Riis. vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
         viis = np.zeros((n_img, 3, 3))
@@ -601,60 +598,57 @@ class CLSymmetryC3C4(CLSyncVoting):
             )
 
         # Estimate vijs via local handedness synchronization.
-        vijs = np.zeros((nchoose2, 3, 3))
-        e1 = [1, 0, 0]
-        J = np.diag((-1, -1, 1))
-        opts = np.zeros((8, 3, 3))
-        scores_rank1 = np.zeros(8)
-        min_idxs = np.zeros((nchoose2, 3, 3))
-        pairs = all_pairs(n_img)
+        vijs = np.zeros((len(pairs), 3, 3))
+
         for idx, (i, j) in enumerate(pairs):
+            opts = np.zeros((2, 2, 2, 3, 3))
+            scores_rank1 = np.zeros(8)
             Rii = Riis[i]
             Rjj = Riis[j]
             Rij = Rijs[idx]
 
-            Rii_J = J @ Rii @ J
-            Rjj_J = J @ Rjj @ J
+            # At this stage, the estimates Rii and Rjj are in the sets {Ri.T @ g^si @ Ri, JRi.T @ g^si @ RiJ}
+            # and {Rj.T @ g^sj @ Rj, JRj.T @ g^sj @ RjJ}, respectively, where g^si (and g^sj) is a rotation
+            # about the axis of symmetry by (2pi * si)/order, with si = 1 or order-1. Additionally, the estimate
+            # Rij might have a spurious J.
 
-            # vij should be a singular matrix.
-            # We test 8 combinations of handedness and rotation by {g, g^n-1} for singularity to determine:
+            # To estimate vij, it is essential that si = sj and all three estimates Rii, Rjj, and Rij have
+            # a spurious J, or none do at all. Note: since g.T = g^(order-1), if Rii = Ri.T @ g^1 @ Ri, then
+            # Rii.T = Ri.T @ g^(order-1) @ Ri.
+
+            # The estimate vij should be of rank 1 with singular values [1, 0, 0].
+            # We test 8 combinations of handedness and rotation by {g, g^(order-1)} for this condition to determine:
             # a. whether to transpose Rii
             # b. whether to J-conjugate Rii
             # c. whether to J-conjugate Rjj
             if order == 3:
-                opts[0] = Rij + (Rii @ Rij @ Rjj) + (Rii.T @ Rij @ Rjj.T)
-                opts[1] = Rij + (Rii_J @ Rij @ Rjj) + (Rii_J.T @ Rij @ Rjj.T)
-                opts[2] = Rij + (Rii @ Rij @ Rjj_J) + (Rii.T @ Rij @ Rjj_J.T)
-                opts[3] = Rij + (Rii_J @ Rij @ Rjj_J) + (Rii_J.T @ Rij @ Rjj_J.T)
-
-                opts[4] = Rij + (Rii.T @ Rij @ Rjj) + (Rii @ Rij @ Rjj.T)
-                opts[5] = Rij + (Rii_J.T @ Rij @ Rjj) + (Rii_J @ Rij @ Rjj.T)
-                opts[6] = Rij + (Rii.T @ Rij @ Rjj_J) + (Rii @ Rij @ Rjj_J.T)
-                opts[7] = Rij + (Rii_J.T @ Rij @ Rjj_J) + (Rii_J @ Rij @ Rjj_J.T)
-
-                # Normalize
-                opts = opts / 3
+                for ii_trans in [0, 1]:
+                    for ii_conj in [0, 1]:
+                        for jj_conj in [0, 1]:
+                            _Rii = Rii.T if ii_trans else Rii
+                            _Rii = J_conjugate(_Rii) if ii_conj else _Rii
+                            _Rjj = J_conjugate(Rjj) if jj_conj else Rjj
+                            opts[ii_trans, ii_conj, jj_conj] = (
+                                Rij + _Rii @ Rij @ _Rjj + _Rii.T @ Rij @ _Rjj.T
+                            ) / 3
 
             else:
-                opts[0] = Rij + (Rii @ Rij @ Rjj)
-                opts[1] = Rij + (Rii_J @ Rij @ Rjj)
-                opts[2] = Rij + (Rii @ Rij @ Rjj_J)
-                opts[3] = Rij + (Rii_J @ Rij @ Rjj_J)
+                for ii_trans in [0, 1]:
+                    for ii_conj in [0, 1]:
+                        for jj_conj in [0, 1]:
+                            _Rii = Rii.T if ii_trans else Rii
+                            _Rii = J_conjugate(_Rii) if ii_conj else _Rii
+                            _Rjj = J_conjugate(Rjj) if jj_conj else Rjj
+                            opts[ii_trans, ii_conj, jj_conj] = (
+                                Rij + _Rii @ Rij @ _Rjj
+                            ) / 2
 
-                opts[4] = Rij + (Rii.T @ Rij @ Rjj)
-                opts[5] = Rij + (Rii_J.T @ Rij @ Rjj)
-                opts[6] = Rij + (Rii.T @ Rij @ Rjj_J)
-                opts[7] = Rij + (Rii_J.T @ Rij @ Rjj_J)
-
-                # Normalize
-                opts = opts / 2
-
-            for k, opt in enumerate(opts):
-                _, svals, _ = svd(opt)
-                scores_rank1[k] = norm(svals - e1, 2)
+            opts = opts.reshape((8, 3, 3))
+            svals = svd(opts, compute_uv=False)
+            scores_rank1 = anorm(svals - [1, 0, 0], axes=[1])
             min_idx = np.argmin(scores_rank1)
-            min_idxs[idx] = min_idx
 
+            # Populate vijs with
             vijs[idx] = opts[min_idx]
 
         return vijs, viis
@@ -735,7 +729,6 @@ class CLSymmetryC3C4(CLSyncVoting):
 
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
-        pairs = all_pairs(n_img)
         triplets = all_triplets(n_img)
 
         # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
@@ -764,9 +757,9 @@ class CLSymmetryC3C4(CLSyncVoting):
         v = vijs
         new_vec = np.zeros_like(vec)
         for (i, j, k) in triplets:
-            ij = pairs.index((i, j))
-            jk = pairs.index((j, k))
-            ik = pairs.index((i, k))
+            ij = pairs_to_linear(n_img, i, j)
+            jk = pairs_to_linear(n_img, j, k)
+            ik = pairs_to_linear(n_img, i, k)
             vij, vjk, vik = v[ij], v[jk], v[ik]
             vij_J = J_conjugate(vij)
             vjk_J = J_conjugate(vjk)

@@ -16,14 +16,10 @@ import warnings
 import numpy as np
 import scipy.sparse as sp
 from numpy.core.numeric import ComplexWarning
-from sklearn.exceptions import DataConversionWarning, NonBLASDotWarning
+from sklearn.exceptions import DataConversionWarning
 from sklearn.utils.validation import _assert_all_finite
 
 FLOAT_DTYPES = (np.float64, np.float32, np.float16)
-
-# Silenced by default to reduce verbosity. Turn on at runtime for
-# performance profiling.
-warnings.simplefilter("ignore", NonBLASDotWarning)
 
 
 def _num_samples(x):
