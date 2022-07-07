@@ -15,7 +15,13 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.operators import IdentityFilter, MultiplicativeFilter, PowerFilter
+
+from aspire.operators import (
+    CTFFilter,
+    IdentityFilter,
+    MultiplicativeFilter,
+    PowerFilter,
+)
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import Rotation, grid_2d
 
@@ -84,6 +90,10 @@ class ImageSource:
         self._metadata_out = None
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
+
+    @property
+    def n_ctf_filters(self):
+        return len([f for f in self.unique_filters if isinstance(f, CTFFilter)])
 
     def __len__(self):
         """
@@ -370,9 +380,18 @@ class ImageSource:
         """
         Perform phase flip to images in the source object using CTF information
         """
+        
         logger.info("Perform phase flip on source object")
-        logger.info("Adding Phase Flip Xform to end of generation pipeline")
+
+        if self.n_ctf_filters < 1:
+            raise RuntimeError(
+                "Cannot perform `phase_flip` without CTFFilters."
+                "  Confirm you have populated CTFFilters."
+            )
+
         unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
+
+        logger.info("Adding Phase Flip Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(
             IndexedXform(unique_xforms, self.filter_indices)
         )
