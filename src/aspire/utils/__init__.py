@@ -1,6 +1,7 @@
 from .coor_trans import (  # isort:skip
     common_line_from_rots,
     crop_pad_2d,
+    crop_pad_3d,
     get_aligned_rotations,
     get_rots_mse,
     grid_1d,

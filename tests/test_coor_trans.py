@@ -6,6 +6,7 @@ import numpy as np
 from aspire.utils import (
     Rotation,
     crop_pad_2d,
+    crop_pad_3d,
     get_aligned_rotations,
     grid_2d,
     grid_3d,
@@ -114,6 +115,11 @@ class UtilsTestCase(TestCase):
         a = np.diag(np.arange(9))
         test_a = np.diag(np.arange(8))
         self.assertTrue(np.array_equal(test_a, crop_pad_2d(a, 8)))
+
+    def testSquareCrop3D(self):
+        a = np.zeros((10,10,10))
+        a[np.diag_indices(10, ndim=3)] = np.arange(0,10)
+        test_a = 
 
     def testSquarePad2D(self):
         # Test even/odd cases based on the convention that the center of a sequence of length n
