@@ -2,6 +2,7 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+import pytest
 
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter
@@ -43,6 +44,23 @@ class PreprocessPLTestCase(TestCase):
                 anorm(imgs_pf.asnumpy(), axes=(1, 2)),
             )
         )
+
+    def testEmptyPhaseFlip(self):
+        """
+        Attempting phase_flip without CTFFilters should raise.
+        """
+
+        # Create a Simulation without any CTFFilters
+        sim = Simulation(
+            L=self.L,
+            n=self.n,
+            noise_filter=self.noise_filter,
+            dtype=self.dtype,
+        )
+
+        # Test we raise
+        with pytest.raises(RuntimeError, match=r",*Confirm.*CTFFilters.*"):
+            sim.phase_flip()
 
     def testNormBackground(self):
         bg_radius = 1.0
