@@ -30,21 +30,7 @@ For example, to run the command on sample data included in ASPIRE (a single ``sa
 
 Use the ``--help`` argument with the command to see the several options associated with this command.
 
-2. Simulation
-#############
-
-The ``simulation`` command simulates a virtual particle made up of multiple gaussian blobs, generates of set of (noisy) images,
-runs the ASPIRE pipeline to determine the estimated mean volume and estimated covariance on the mean volume,
-and runs evaluations on these estimated quantities (against the `true` values which we know from the simulation).
-
-.. code-block:: console
-
-    aspire simulation
-
-Use the ``--help`` argument to look for configurable options. You can select the no. of distinct gaussian blobs, the no. of images,
-the resolution of the (square) images generated etc.
-
-3. Reconstructing a mean volume with covariance
+2. Reconstructing a mean volume with covariance
 ###############################################
 
 The ``cov3d`` command takes in a ``*.star`` file, processes the images (``*.mrcs`` files) found in the starfile, and runs the ASPIRE pipeline
@@ -67,20 +53,7 @@ For example, to run the command on a sample data included in ASPIRE:
 
 Use the ``--help`` argument to look for configurable options.
 
-4. Crop a set of projections
-############################
-
-The ``crop`` command crops a stack of projections of an mrc file to squares of a given size (in pixels). For example,
-
-.. code-block:: console
-
-      aspire --debug -v 3 crop demo.mrc 42
-
-.. note::
-
-    This command will crop images found in `demo.mrc` to images of size 42x42, in debug mode and with maximum verbosity.
-
-5. Estimate Contrast Transfer Function
+3. Estimate Contrast Transfer Function
 ######################################
 
 The ``estimate-ctf`` command estimates the CTF from experimental data and returns the CTF as a mrc file.  For example,
