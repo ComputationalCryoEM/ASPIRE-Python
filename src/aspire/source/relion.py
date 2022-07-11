@@ -131,16 +131,14 @@ class RelionSource(ImageSource):
         )
 
         # CTF estimation parameters coming from Relion
-        CTF_params = set(
-            [
-                "_rlnVoltage",
-                "_rlnDefocusU",
-                "_rlnDefocusV",
-                "_rlnDefocusAngle",
-                "_rlnSphericalAberration",
-                "_rlnAmplitudeContrast",
-            ]
-        )
+        CTF_params = {
+            "_rlnVoltage",
+            "_rlnDefocusU",
+            "_rlnDefocusV",
+            "_rlnDefocusAngle",
+            "_rlnSphericalAberration",
+            "_rlnAmplitudeContrast",
+        }
         # If these all exist in the STAR file, we may create CTF filters for the source
         if CTF_params.issubset(metadata.columns):
             # partition particles according to unique CTF parameters
@@ -171,7 +169,7 @@ class RelionSource(ImageSource):
         elif any(param in metadata.columns for param in CTF_params):
             logger.warning(
                 f"Found partially populated CTF Params."
-                f"  To automatically polulate CTFFilters provide {CTF_params}"
+                f"  To automatically populate CTFFilters provide {CTF_params}"
             )
 
         # If no CTF info in STAR, we initialize the filter values of metadata with default values
