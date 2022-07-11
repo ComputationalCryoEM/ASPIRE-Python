@@ -53,6 +53,22 @@ For example, to run the command on a sample data included in ASPIRE:
 
 Use the ``--help`` argument to look for configurable options.
 
+3. Image Denoising
+##################
+
+The ``denoise`` command takes in a ``*.star`` file, downsamples the images (``*.mrcs`` files) found in the starfile
+to a desired resolution, then estimates the noise of the images and whitens that noise using the covariance
+Weiner filtering method. The denoised images (``*.mrcs``) and a corresponding starfile are saved in an output folder.
+
+For example, to run the command on sample data included in ASPIRE:
+
+.. code-block:: console
+
+   mkdir denoise_output
+   aspire denoise --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out denoise_output/denoised_images.star
+
+Use the ``--help`` argument to look for configurable options.
+
 3. Estimate Contrast Transfer Function
 ######################################
 
