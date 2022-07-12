@@ -97,6 +97,21 @@ Example usage:
 
     aspire extract-particles --mrc_paths=my/data/sample.mrc --coord_paths=my/data/coords/sample.coord --starfile_out=my_dataset_stack.star --particle_size=256 --centers
 
+6. Orientation Estimation
+#########################
+
+The ``orient3d`` command takes in a ``*.star`` file contaning images and performs an orientation estimation using the
+common lines algorithm employing synchronization and voting described at :cite:`DBLP:journals/siamis/ShkolniskyS12`.
+The estimated rotations are saved in a starfile along with the original images.
+
+For example, to run the command on sample data included in ASPIRE:
+
+.. code-block:: console
+
+   aspire orient3d --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out orient3d_output.star
+
+Use the ``--help`` argument to look for configurable options.
+
 Arguments, options and flags
 ############################
 
