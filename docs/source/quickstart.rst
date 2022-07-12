@@ -112,6 +112,21 @@ For example, to run the command on sample data included in ASPIRE:
 
 Use the ``--help`` argument to look for configurable options.
 
+7. Image Preprocessing
+######################
+
+The ``preprocess`` command takes in a ``*.star`` file containing raw images and applies a selection of preprocessing
+methods such as phase flipping, downsampling, normalization to background noise, noise whitening, and contrast invesrion.
+Resulting images are saved as a starfile.
+
+For example, to run the command on sample data included in ASPIRE:
+
+.. code-block:: console
+
+   aspire preprocess --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out preprocess_output.star --downsample 8
+
+Use the ``--help`` argument to look for configurable options.
+
 Arguments, options and flags
 ############################
 
