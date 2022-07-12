@@ -69,7 +69,7 @@ For example, to run the command on sample data included in ASPIRE:
 
 Use the ``--help`` argument to look for configurable options.
 
-3. Estimate Contrast Transfer Function
+4. Estimate Contrast Transfer Function
 ######################################
 
 The ``estimate-ctf`` command estimates the CTF from experimental data and returns the CTF as a mrc file.  For example,
@@ -84,6 +84,18 @@ The ``estimate-ctf`` command estimates the CTF from experimental data and return
     and will process all files with the extension ``.mrc`` and ``.mrcs`` contained there.
     This command will output mrc files to a ``--output_dir``, set to ``./results`` by default.
 
+5. Particle Extraction
+######################
+
+Given a dataset of full micrographs (``*.mrc`` file) and corresponding coordinate files containing the locations
+of picked particles in the ``*.mrc``, the ``extract-particles`` command extracts the particles into one or more ``.mrcs``
+stacks and generates a ``.star`` file.
+
+Example usage:
+
+.. code-block::
+
+    aspire extract-particles --mrc_paths=my/data/sample.mrc --coord_paths=my/data/coords/sample.coord --starfile_out=my_dataset_stack.star --particle_size=256 --centers
 
 Arguments, options and flags
 ############################
