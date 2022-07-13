@@ -131,16 +131,16 @@ class RelionSource(ImageSource):
         )
 
         # CTF estimation parameters coming from Relion
-        CTF_params = {
+        CTF_params = [
             "_rlnVoltage",
             "_rlnDefocusU",
             "_rlnDefocusV",
             "_rlnDefocusAngle",
             "_rlnSphericalAberration",
             "_rlnAmplitudeContrast",
-        }
+        ]
         # If these all exist in the STAR file, we may create CTF filters for the source
-        if CTF_params.issubset(metadata.columns):
+        if set(CTF_params).issubset(metadata.columns):
             # partition particles according to unique CTF parameters
             filter_params, filter_indices = np.unique(
                 metadata[CTF_params].values, return_inverse=True, axis=0
