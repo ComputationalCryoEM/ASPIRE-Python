@@ -313,3 +313,9 @@ class SimTestCase(TestCase):
         dual_filter = ctf_filter.dual()
         dual_result = dual_filter.evaluate(self.omega)
         self.assertTrue(np.allclose(result, dual_result))
+
+    def testFilterSigns(self):
+        ctf_filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
+        signs = np.sign(ctf_filter.evaluate(self.omega))
+        sign_filter = ctf_filter.sign
+        self.assertTrue(np.allclose(sign_filter.evaluate(self.omega), signs))
