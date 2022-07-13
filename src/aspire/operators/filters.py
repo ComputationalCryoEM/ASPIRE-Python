@@ -141,6 +141,9 @@ class Filter:
 
     @property
     def sign(self):
+        """
+        A Filter object to evaluate the signs of the underlying filter.
+        """
         return LambdaFilter(self, np.sign)
 
 
