@@ -2,6 +2,8 @@ import abc
 
 import numpy as np
 
+from aspire.volume import gaussian_blob_vols
+
 
 class SyntheticVolumeBase(abc.ABC):
     def __init__(self, L, C, symmetry_type, seed=None, dtype=np.float64):
@@ -11,8 +13,6 @@ class SyntheticVolumeBase(abc.ABC):
         self.seed = seed
         self.dtype = dtype
 
-        pass
-
     @abc.abstractmethod
     def generate(self):
         """
@@ -20,6 +20,11 @@ class SyntheticVolumeBase(abc.ABC):
 
         Each concrete subclass should impliment this.
         """
+
+    def __repr__(self):
+        # return (f'L={self.L} C={self.C} symmetry_type={self.symmetry_type}'
+        #         f' seed={self.seed} dtype={self.dtype}')
+        return f"{self.__dict__}"
 
 
 class LegacyGaussianBlob(SyntheticVolumeBase):
@@ -36,7 +41,13 @@ class LegacyGaussianBlob(SyntheticVolumeBase):
 
     def generate(self):
         # transfer the legacy gaussian blobs stuff here.
-        pass
+        return gaussian_blob_vols(
+            L=self.L,
+            C=self.C,
+            symmetry_type=self.symmetry_type,
+            seed=self.seed,
+            dtype=self.dtype,
+        )
 
 
 class BumpBlobs(SyntheticVolumeBase):
@@ -49,18 +60,15 @@ class BumpBlobs(SyntheticVolumeBase):
         self.K = K
 
 
-class CnSymmetricGaussianBlob(SyntheticVolumeBase):
+class CnSymmetricGaussianBlob(LegacyGaussianBlob):
     """
     Cn Symmetric ...
     """
 
+    # Note this class can actually inherit everything from LegacyGaussianBlob for now.
     def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
-        super().__init__(L, C, symmetry_type, seed=seed, dtype=dtype)
-        self.K = K
-
-    def generate(self):
-        # transfer the sym gaussian blobs stuff here.
-        pass
+        super().__init__(L, C, symmetry_type, K=K, seed=seed, dtype=dtype)
+        assert self.symmetry_type is not None, "bleep Bloop eRoR"
 
 
 class DnSymmetricGaussianBlob(SyntheticVolumeBase):

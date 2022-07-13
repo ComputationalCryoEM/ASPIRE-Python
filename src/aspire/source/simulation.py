@@ -17,7 +17,8 @@ from aspire.utils import (
     vecmat_to_volmat,
 )
 from aspire.utils.random import rand, randi, randn
-from aspire.volume import Volume, gaussian_blob_vols
+from aspire.volume import Volume
+from aspire.volume.volume_synthesis import LegacyGaussianBlob
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class Simulation(ImageSource):
         amplitudes=None,
         dtype=np.float32,
         C=2,
-        symmetry_type=None,
+        SynthVolGen=None,
         angles=None,
         seed=0,
         memory=None,
@@ -64,9 +65,11 @@ class Simulation(ImageSource):
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
-            self.vols = gaussian_blob_vols(
-                L=L, C=C, symmetry_type=symmetry_type, seed=self.seed, dtype=self.dtype
-            )
+            if SynthVolGen is None:
+                SynthVolGen = LegacyGaussianBlob(
+                    L=L, C=C, symmetry_type=None, seed=self.seed, dtype=self.dtype
+                )
+            self.vols = SynthVolGen.generate()
         else:
             assert isinstance(vols, Volume)
             self.vols = vols
