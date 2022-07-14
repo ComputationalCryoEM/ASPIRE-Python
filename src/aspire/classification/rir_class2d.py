@@ -176,8 +176,8 @@ class RIRClass2D(Class2D):
         # When not provided by a user, the averager is instantiated after
         #  we are certain our pca_basis has been constructed.
         if self.averager is None:
-            # self.averager = BFSReddyChatterjiAverager2D(
-            self.averager = ReddyChatterjiAverager2D(
+            # self.averager = ReddyChatterjiAverager2D(
+            self.averager = BFSReddyChatterjiAverager2D(
                 self.fb_basis, self.src, dtype=self.dtype
             )
 

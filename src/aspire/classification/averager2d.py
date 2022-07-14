@@ -270,7 +270,7 @@ class Averager2D(ABC):
         else:
             self.dtype = np.dtype(dtype)
 
-        self.num_procs = 0  # get_num_multi_procs(num_procs)
+        self.num_procs = get_num_multi_procs(num_procs)
 
         if self.src and self.dtype != self.src.dtype:
             logger.warning(
@@ -1030,6 +1030,11 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 f"Processing alignment for class: {k}",
             )
             unshifted_images = self._cls_images(classes[k])
+            # Instantiate matrices for inner loop, and best results.
+            __rotations = np.zeros(classes.shape[1:], dtype=self.dtype)
+            __correlations = np.ones(classes.shape[1:], dtype=self.dtype) * -np.inf
+            __shifts = np.zeros((*classes.shape[1:], 2), dtype=int)
+
 
             for xs, ys in zip(X, Y):
                 s = np.array([xs, ys])
@@ -1056,17 +1061,21 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 # Where corr has improved
                 #  update our rolling best results with this loop.
                 improved = _correlations > correlations[k]
-                correlations[k] = np.where(improved, _correlations, correlations[k])
-                rotations[k] = np.where(improved, _rotations, rotations[k])
-                shifts[k] = np.where(improved[..., np.newaxis], s, shifts[k])
+                __correlations = np.where(improved, _correlations, correlations[k])
+                __rotations = np.where(improved, _rotations, rotations[k])
+                __shifts = np.where(improved[..., np.newaxis], s, shifts[k])
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
-            return rotations, shifts, correlations
+            return __rotations, __shifts, __correlations
 
         if self.num_procs < 1:
             for k in trange(n_classes):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
-            raise NotImplementedError('TODO')
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
+
+            for k, res in  enumerate(results):
+                rotations[k], shifts[k], correlations[k] = res
 
         return rotations, shifts, correlations
 
