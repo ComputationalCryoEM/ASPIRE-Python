@@ -1,10 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
 from itertools import product, repeat
-from multiprocessing import get_context, Pool
 
 import matplotlib.pyplot as plt
 import numpy as np
+from ray.util.multiprocessing import Pool
 from skimage.filters import difference_of_gaussians, window
 from skimage.transform import rotate, warp_polar
 from tqdm import tqdm, trange
@@ -18,6 +18,7 @@ from aspire.utils.multiprocessing import get_num_multi_procs
 logger = logging.getLogger(__name__)
 
 __cache = dict()
+
 
 def _phase_cross_correlation(img0, img1):
     """
@@ -54,7 +55,9 @@ def _phase_cross_correlation(img0, img1):
     return np.abs(cross_correlation), shifts
 
 
-def _reddychatterji(images, class_k, reflection_k, mask, do_cross_corr_translations, dtype):
+def _reddychatterji(
+    images, class_k, reflection_k, mask, do_cross_corr_translations, dtype
+):
     """
     Compute the Reddy Chatterji method registering images[1:] to image[0].
 
@@ -75,8 +78,8 @@ def _reddychatterji(images, class_k, reflection_k, mask, do_cross_corr_translati
     correlations_k = np.full(M, -np.inf, dtype=dtype)
     shifts_k = np.zeros((M, 2), dtype=int)
 
-    # De-Mean, note images is mutated and should be a `copy`.
-    images -= images.mean(axis=(-1, -2))[:, np.newaxis, np.newaxis]
+    # De-Mean
+    images = images - images.mean(axis=(-1, -2))[:, np.newaxis, np.newaxis]
 
     # Precompute fixed_img data used repeatedly in the loop below.
     fixed_img = images[0]
@@ -242,6 +245,7 @@ def _reddychatterji(images, class_k, reflection_k, mask, do_cross_corr_translati
 
     return rotations_k, shifts_k, correlations_k
 
+
 class Averager2D(ABC):
     """
     Base class for 2D Image Averaging methods.
@@ -266,7 +270,7 @@ class Averager2D(ABC):
         else:
             self.dtype = np.dtype(dtype)
 
-        self.num_procs = get_num_multi_procs(num_procs)
+        self.num_procs = 0  # get_num_multi_procs(num_procs)
 
         if self.src and self.dtype != self.src.dtype:
             logger.warning(
@@ -699,7 +703,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         super().__init__(composite_basis, src, composite_basis, dtype=dtype)
 
-
     def align(self, classes, reflections, basis_coefficients):
         """
         Performs the actual rotational alignment estimation,
@@ -725,24 +728,39 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 # # Get the array of images for this class, using the `alignment_src`.
                 images = self._cls_images(classes[k], src=self.alignment_src)
 
-                rotations[k], shifts[k], correlations[k] = _reddychatterji(images, classes[k], reflections[k], self.mask, self.do_cross_corr_translations, self.dtype)
+                rotations[k], shifts[k], correlations[k] = _reddychatterji(
+                    images,
+                    classes[k],
+                    reflections[k],
+                    self.mask,
+                    self.do_cross_corr_translations,
+                    self.dtype,
+                )
 
         else:
-            xxx_all_images = [self._cls_images(classes[k], src=self.alignment_src) for k in range(n_classes)]
+            # Todo, replace this with a generator or function or something to pack in the zip below.
+            xxx_all_images = [
+                self._cls_images(classes[k], src=self.alignment_src)
+                for k in range(n_classes)
+            ]
+
             logger.info(f"Starting Pool({self.num_procs})")
-            with get_context("spawn").Pool(self.num_procs) as p:
-                
-                #res = p.starmap(self._innerloop, zip(range(n_classes), repeat(classes), repeat(reflections)))
+            with Pool(self.num_procs) as p:
+
                 res = p.starmap(
                     _reddychatterji,
-                    zip(xxx_all_images, classes, reflections, repeat(self.mask), repeat(self.do_cross_corr_translations), repeat(self.dtype)
-                    )
+                    zip(
+                        xxx_all_images,
+                        classes,
+                        reflections,
+                        repeat(self.mask),
+                        repeat(self.do_cross_corr_translations),
+                        repeat(self.dtype),
+                    ),
                 )
-                p.close()
-                p.join()
 
             logger.info(f"Terminated Pool({self.num_procs})")
-            
+
             # Unpack multiprocessing join
             for k, v in enumerate(res):
                 rotations[k], shifts[k], correlations[k] = v
@@ -1026,7 +1044,14 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 # _rotations, _, _correlations = self._reddychatterji(
                 #     images, classes[k], reflections[k]
                 # )
-                _rotations, _, _correlations  = _reddychatterji(images, classes[k], reflections[k], self.mask, self.do_cross_corr_translations, self.dtype)
+                _rotations, _, _correlations = _reddychatterji(
+                    images,
+                    classes[k],
+                    reflections[k],
+                    self.mask,
+                    self.do_cross_corr_translations,
+                    self.dtype,
+                )
 
                 # Where corr has improved
                 #  update our rolling best results with this loop.
@@ -1037,19 +1062,11 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
             return rotations, shifts, correlations
 
-
         if self.num_procs < 1:
             for k in trange(n_classes):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
-            with get_context("fork").Pool(self.num_procs) as p:
-                res = p.map(_innerloop, range(n_classes))
-            logger.info(f"Terminated Pool({self.num_procs})")
-            
-            # Unpack multiprocessing join
-            for k, v in enumerate(res):
-                rotations[k], shifts[k], correlations[k] = v
+            raise NotImplementedError('TODO')
 
         return rotations, shifts, correlations
 
