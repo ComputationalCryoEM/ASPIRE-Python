@@ -1035,7 +1035,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             __correlations = np.ones(classes.shape[1:], dtype=self.dtype) * -np.inf
             __shifts = np.zeros((*classes.shape[1:], 2), dtype=int)
 
-
             for xs, ys in zip(X, Y):
                 s = np.array([xs, ys])
                 # Get the array of images for this class
@@ -1074,7 +1073,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
 
-            for k, res in  enumerate(results):
+            for k, res in enumerate(results):
                 rotations[k], shifts[k], correlations[k] = res
 
         return rotations, shifts, correlations

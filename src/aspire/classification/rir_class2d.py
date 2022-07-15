@@ -6,11 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
-from aspire.classification import (
-    BFSReddyChatterjiAverager2D,
-    Class2D,
-    ReddyChatterjiAverager2D,
-)
+from aspire.classification import BFSReddyChatterjiAverager2D, Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
 from aspire.utils.random import rand
