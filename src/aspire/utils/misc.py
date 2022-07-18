@@ -141,7 +141,7 @@ def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64
     """
 
     # Construct centered mesh
-    g = grid_2d(size, shifted=False, normalized=False, indexing="xy", dtype=dtype)
+    g = grid_2d(size, shifted=False, normalized=False, indexing="yx", dtype=dtype)
 
     p = (g["x"] - x0) ** 2 / (2 * sigma_x**2) + (g["y"] - y0) ** 2 / (
         2 * sigma_y**2
@@ -164,7 +164,7 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), peak=1, dtype=np.float64):
     """
 
     # Construct centered mesh
-    g = grid_3d(size, shifted=False, normalized=False, indexing="xyz", dtype=dtype)
+    g = grid_3d(size, shifted=False, normalized=False, indexing="zyx", dtype=dtype)
 
     p = (
         (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2)
