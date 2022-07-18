@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 L = 100
-round_disc = gaussian_2d(L, sigma_x=L / 4, sigma_y=L / 4)
+round_disc = gaussian_2d(L, sigma=(L / 4, L / 4))
 plt.imshow(round_disc, cmap="gray")
 plt.show()
 
@@ -37,7 +37,7 @@ plt.show()
 # Oval 2D Gaussian Image
 # ^^^^^^^^^^^^^^^^^^^^^^
 
-oval_disc = gaussian_2d(L, sigma_x=L / 20, sigma_y=L / 5)
+oval_disc = gaussian_2d(L, sigma=(L / 20, L / 5))
 plt.imshow(oval_disc, cmap="gray")
 plt.show()
 
@@ -48,7 +48,7 @@ plt.show()
 # Create richer test set by including an asymmetric image.
 
 # Create a second oval.
-oval_disc2 = gaussian_2d(L, L / 5, L / 6, sigma_x=L / 15, sigma_y=L / 20)
+oval_disc2 = gaussian_2d(L, mu=(L / 5, L / 6), sigma=(L / 15, L / 20))
 
 # Strategically add it to `oval_disc`.
 yoval_discL = oval_disc.copy()
