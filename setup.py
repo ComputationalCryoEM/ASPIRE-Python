@@ -35,6 +35,7 @@ setup(
         "pyfftw",
         "PyWavelets",
         "pillow",
+        "ray",
         "scipy==1.7.3",
         "scikit-learn",
         "scikit-image",
