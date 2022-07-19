@@ -251,7 +251,7 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, src, num_procs="auto", dtype=None):
+    def __init__(self, composite_basis, src, num_procs=1, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
@@ -726,7 +726,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         correlations = np.zeros(classes.shape, dtype=self.dtype)
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
-        if self.num_procs < 1:
+        if self.num_procs <= 1:
             for k in trange(n_classes):
                 logger.info(
                     f"Processing alignment for class: {k}",
@@ -1072,7 +1072,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
             return __rotations, __shifts, __correlations
 
-        if self.num_procs < 1:
+        if self.num_procs <= 1:
             for k in trange(n_classes):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
