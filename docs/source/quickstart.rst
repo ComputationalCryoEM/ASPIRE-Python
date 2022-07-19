@@ -30,7 +30,81 @@ For example, to run the command on sample data included in ASPIRE (a single ``sa
 
 Use the ``--help`` argument with the command to see the several options associated with this command.
 
-2. Reconstructing a mean volume with covariance
+2. Particle Extraction
+######################
+
+Given a dataset of full micrographs (``*.mrc`` file) and corresponding coordinate files containing the locations
+of picked particles in the ``*.mrc``, the ``extract-particles`` command extracts the particles into one or more ``.mrcs``
+stacks and generates a ``.star`` file.
+
+Example usage:
+
+.. code-block::
+
+    aspire extract-particles --mrc_paths=my/data/sample.mrc --coord_paths=my/data/coords/sample.coord --starfile_out=my_dataset_stack.star --particle_size=256 --centers
+
+3. Estimate Contrast Transfer Function
+######################################
+
+The ``estimate-ctf`` command estimates the CTF from experimental data and returns the CTF as a mrc file.  For example,
+
+.. code-block:: console
+
+      python -m aspire estimate-ctf --data_folder path_to_input_data_folder
+
+.. note::
+
+    This command expects data files are in the directory prescribed by ``--data_folder``,
+    and will process all files with the extension ``.mrc`` and ``.mrcs`` contained there.
+    This command will output mrc files to a ``--output_dir``, set to ``./results`` by default.
+
+4. Image Preprocessing
+######################
+
+The ``preprocess`` command takes in a ``*.star`` file containing raw images and applies a selection of preprocessing
+methods such as phase flipping, downsampling, normalization to background noise, noise whitening, and contrast invesrion.
+Resulting images are saved as a starfile.
+
+For example, to run the command on sample data included in ASPIRE:
+
+.. code-block:: console
+
+   aspire preprocess --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out preprocess_output.star --downsample 8
+
+Use the ``--help`` argument to look for configurable options.
+
+5. Image Denoising
+##################
+
+The ``denoise`` command takes in a ``*.star`` file, downsamples the images (``*.mrcs`` files) found in the starfile
+to a desired resolution, then estimates the noise of the images and whitens that noise using the covariance
+Weiner filtering method. The denoised images (``*.mrcs``) and a corresponding starfile are saved in an output folder.
+
+For example, to run the command on sample data included in ASPIRE:
+
+.. code-block:: console
+
+   mkdir denoise_output
+   aspire denoise --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out denoise_output/denoised_images.star
+
+Use the ``--help`` argument to look for configurable options.
+
+6. Orientation Estimation
+#########################
+
+The ``orient3d`` command takes in a ``*.star`` file contaning images and performs an orientation estimation using the
+common lines algorithm employing synchronization and voting described at :cite:`DBLP:journals/siamis/ShkolniskyS12`.
+The estimated rotations are saved in a starfile along with the original images.
+
+For example, to run the command on sample data included in ASPIRE:
+
+.. code-block:: console
+
+   aspire orient3d --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out orient3d_output.star
+
+Use the ``--help`` argument to look for configurable options.
+
+7. Reconstructing a mean volume with covariance
 ###############################################
 
 The ``cov3d`` command takes in a ``*.star`` file, processes the images (``*.mrcs`` files) found in the starfile, and runs the ASPIRE pipeline
@@ -50,80 +124,6 @@ For example, to run the command on a sample data included in ASPIRE:
     too long to execute). ``--cg_tol 0.2`` sets very liberal (and unrealistic) limits on optimization convergence
     tolerance, which is needed for such a small dataset. For real datasets, you typically *do not* want to override this
     parameter.
-
-Use the ``--help`` argument to look for configurable options.
-
-3. Image Denoising
-##################
-
-The ``denoise`` command takes in a ``*.star`` file, downsamples the images (``*.mrcs`` files) found in the starfile
-to a desired resolution, then estimates the noise of the images and whitens that noise using the covariance
-Weiner filtering method. The denoised images (``*.mrcs``) and a corresponding starfile are saved in an output folder.
-
-For example, to run the command on sample data included in ASPIRE:
-
-.. code-block:: console
-
-   mkdir denoise_output
-   aspire denoise --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out denoise_output/denoised_images.star
-
-Use the ``--help`` argument to look for configurable options.
-
-4. Estimate Contrast Transfer Function
-######################################
-
-The ``estimate-ctf`` command estimates the CTF from experimental data and returns the CTF as a mrc file.  For example,
-
-.. code-block:: console
-
-      python -m aspire estimate-ctf --data_folder path_to_input_data_folder
-
-.. note::
-
-    This command expects data files are in the directory prescribed by ``--data_folder``,
-    and will process all files with the extension ``.mrc`` and ``.mrcs`` contained there.
-    This command will output mrc files to a ``--output_dir``, set to ``./results`` by default.
-
-5. Particle Extraction
-######################
-
-Given a dataset of full micrographs (``*.mrc`` file) and corresponding coordinate files containing the locations
-of picked particles in the ``*.mrc``, the ``extract-particles`` command extracts the particles into one or more ``.mrcs``
-stacks and generates a ``.star`` file.
-
-Example usage:
-
-.. code-block::
-
-    aspire extract-particles --mrc_paths=my/data/sample.mrc --coord_paths=my/data/coords/sample.coord --starfile_out=my_dataset_stack.star --particle_size=256 --centers
-
-6. Orientation Estimation
-#########################
-
-The ``orient3d`` command takes in a ``*.star`` file contaning images and performs an orientation estimation using the
-common lines algorithm employing synchronization and voting described at :cite:`DBLP:journals/siamis/ShkolniskyS12`.
-The estimated rotations are saved in a starfile along with the original images.
-
-For example, to run the command on sample data included in ASPIRE:
-
-.. code-block:: console
-
-   aspire orient3d --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out orient3d_output.star
-
-Use the ``--help`` argument to look for configurable options.
-
-7. Image Preprocessing
-######################
-
-The ``preprocess`` command takes in a ``*.star`` file containing raw images and applies a selection of preprocessing
-methods such as phase flipping, downsampling, normalization to background noise, noise whitening, and contrast invesrion.
-Resulting images are saved as a starfile.
-
-For example, to run the command on sample data included in ASPIRE:
-
-.. code-block:: console
-
-   aspire preprocess --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out preprocess_output.star --downsample 8
 
 Use the ``--help`` argument to look for configurable options.
 
