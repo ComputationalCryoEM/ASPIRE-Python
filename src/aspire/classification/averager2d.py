@@ -255,6 +255,8 @@ class Averager2D(ABC):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
+        :param num_procs: Number of processes to use. Defaults "auto".
+        Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -270,7 +272,11 @@ class Averager2D(ABC):
         else:
             self.dtype = np.dtype(dtype)
 
-        self.num_procs = get_num_multi_procs(num_procs)
+        if num_procs == "auto":
+            num_procs = get_num_multi_procs()
+        elif not (isinstance(num_procs, int) and num_procs > 0):
+            raise ValueError(f"num_procs should be an integer, passed {num_procs}.")
+        self.num_procs = num_procs
 
         if self.src and self.dtype != self.src.dtype:
             logger.warning(

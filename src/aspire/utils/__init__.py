@@ -48,6 +48,7 @@ from .multiprocessing import (
     get_num_multi_procs,
     mem_based_cpu_suggestion,
     physical_core_cpu_suggestion,
+    virtual_core_cpu_suggestion,
 )
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance
