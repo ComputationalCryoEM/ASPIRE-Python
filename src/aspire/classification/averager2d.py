@@ -1065,10 +1065,10 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
                 # Where corr has improved
                 #  update our rolling best results with this loop.
-                improved = _correlations > correlations[k]
-                __correlations = np.where(improved, _correlations, correlations[k])
-                __rotations = np.where(improved, _rotations, rotations[k])
-                __shifts = np.where(improved[..., np.newaxis], s, shifts[k])
+                improved = _correlations > __correlations
+                __correlations = np.where(improved, _correlations, __correlations)
+                __rotations = np.where(improved, _rotations, __rotations)
+                __shifts = np.where(improved[..., np.newaxis], s, __shifts)
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
             return __rotations, __shifts, __correlations
 
