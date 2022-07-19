@@ -13,7 +13,7 @@ def mem_based_cpu_suggestion():
 
     free_mem = psutil.virtual_memory()[4]
 
-    n = free_mem // (rss_mem_usage * 1.1)
+    n = int(free_mem // (rss_mem_usage * 1.1))
 
     logger.info(
         f"Current process usage {rss_mem_usage}"
