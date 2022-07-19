@@ -44,6 +44,10 @@ from .matrix import (
     vol_to_vec,
     volmat_to_vecmat,
 )
-from .multiprocessing import apply_async, get_num_multi_procs
+from .multiprocessing import (
+    get_num_multi_procs,
+    mem_based_cpu_suggestion,
+    physical_core_cpu_suggestion,
+)
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance
