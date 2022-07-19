@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from itertools import product, repeat
+from itertools import product
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -251,7 +251,7 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, src, num_procs=1, dtype=None):
+    def __init__(self, composite_basis, src, num_procs="auto", dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
@@ -726,50 +726,50 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         correlations = np.zeros(classes.shape, dtype=self.dtype)
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
-        if self.num_procs <= 1:
-            for k in trange(n_classes):
-                logger.info(
-                    f"Processing alignment for class: {k}",
-                )
-                # # Get the array of images for this class, using the `alignment_src`.
-                images = self._cls_images(classes[k], src=self.alignment_src)
+        # if self.num_procs <= 1:
+        for k in trange(n_classes):
+            logger.info(
+                f"Processing alignment for class: {k}",
+            )
+            # # Get the array of images for this class, using the `alignment_src`.
+            images = self._cls_images(classes[k], src=self.alignment_src)
 
-                rotations[k], shifts[k], correlations[k] = _reddychatterji(
-                    images,
-                    classes[k],
-                    reflections[k],
-                    self.mask,
-                    self.do_cross_corr_translations,
-                    self.dtype,
-                )
+            rotations[k], shifts[k], correlations[k] = _reddychatterji(
+                images,
+                classes[k],
+                reflections[k],
+                self.mask,
+                self.do_cross_corr_translations,
+                self.dtype,
+            )
 
-        else:
-            # Todo, replace this with a generator or function or something to pack in the zip below.
-            xxx_all_images = [
-                self._cls_images(classes[k], src=self.alignment_src)
-                for k in range(n_classes)
-            ]
+        # else:
+        #     # Todo, replace this with a generator or function or something to pack in the zip below.
+        #     xxx_all_images = [
+        #         self._cls_images(classes[k], src=self.alignment_src)
+        #         for k in range(n_classes)
+        #     ]
 
-            logger.info(f"Starting Pool({self.num_procs})")
-            with Pool(self.num_procs) as p:
+        #     logger.info(f"Starting Pool({self.num_procs})")
+        #     with Pool(self.num_procs) as p:
 
-                res = p.starmap(
-                    _reddychatterji,
-                    zip(
-                        xxx_all_images,
-                        classes,
-                        reflections,
-                        repeat(self.mask),
-                        repeat(self.do_cross_corr_translations),
-                        repeat(self.dtype),
-                    ),
-                )
+        #         res = p.starmap(
+        #             _reddychatterji,
+        #             zip(
+        #                 xxx_all_images,
+        #                 classes,
+        #                 reflections,
+        #                 repeat(self.mask),
+        #                 repeat(self.do_cross_corr_translations),
+        #                 repeat(self.dtype),
+        #             ),
+        #         )
 
-            logger.info(f"Terminated Pool({self.num_procs})")
+        #     logger.info(f"Terminated Pool({self.num_procs})")
 
-            # Unpack multiprocessing join
-            for k, v in enumerate(res):
-                rotations[k], shifts[k], correlations[k] = v
+        #     # Unpack multiprocessing join
+        #     for k, v in enumerate(res):
+        #         rotations[k], shifts[k], correlations[k] = v
 
         return rotations, shifts, correlations
 
