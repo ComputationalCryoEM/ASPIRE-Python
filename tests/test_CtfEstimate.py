@@ -51,6 +51,8 @@ class CtfEstimatorTestCase(TestCase):
                     g_max=5.0,
                     output_dir=tmp_output_dir,
                     dtype=np.float64,
+                    save_ctf_images=True,
+                    save_noise_images=True,
                 )
 
                 logger.debug(f"results: {results}")
