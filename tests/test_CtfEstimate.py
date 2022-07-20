@@ -55,7 +55,7 @@ class CtfEstimatorTestCase(TestCase):
 
                 logger.debug(f"results: {results}")
 
-                for _, result in results.items():
+                for result in results.values():
                     # the following parameters have higher tolerances
 
                     # defocusU
