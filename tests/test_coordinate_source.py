@@ -225,7 +225,9 @@ class CoordinateSourceTestCase(TestCase):
         starfile.write(star_fp)
 
     def createTestCtfFiles(self, index):
-        # for testing adding CTF information to a CoordinateSource
+        """
+        Creates example ASPIRE-generated CTF files.
+        """
         star_fp = os.path.join(self.data_folder, f"ctf{index+1}.star")
         # note that values are arbitrary and not representative of actual CTF data
         params_dict = {
@@ -245,7 +247,9 @@ class CoordinateSourceTestCase(TestCase):
         starfile.write(star_fp)
 
     def createTestRelionCtfFile(self):
-        # for testing import of a Relion micrographs_ctf.star file to a CoordinateSource
+        """
+        Creates example RELION-generated CTF file for a set of micrographs.
+        """
         star_fp = os.path.join(self.data_folder, "micrographs_ctf.star")
         blocks = OrderedDict()
 

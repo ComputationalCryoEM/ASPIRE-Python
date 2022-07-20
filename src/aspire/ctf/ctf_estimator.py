@@ -833,7 +833,7 @@ def estimate_ctf(
 
         if save_noise_images:
             with mrcfile.new(
-                output_dir + "/" + os.path.splitext(name)[0] + "_noise.mrc",
+                os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
                 overwrite=True,
             ) as mrc:
                 mrc.set_data(background_2d[0].astype(np.float32))
@@ -860,7 +860,8 @@ def estimate_ctf(
             ]
 
             with mrcfile.new(
-                output_dir + "/" + os.path.splitext(name)[0] + ".ctf", overwrite=True
+                os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf"),
+                overwrite=True,
             ) as mrc:
                 mrc.set_data(np.float32(ctf_signal))
                 mrc.voxel_size = pixel_size
