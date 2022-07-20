@@ -153,7 +153,7 @@ class CtfEstimator:
 
         block_list = [
             micrograph[
-                i * step_size : (i + 2) * step_size, j * step_size : (j + 2) * step_size
+                j * step_size : (j + 2) * step_size, i * step_size : (i + 2) * step_size
             ]
             for j in range(range_y)
             for i in range(range_x)

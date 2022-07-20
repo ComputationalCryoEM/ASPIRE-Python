@@ -5,6 +5,7 @@ from shutil import copyfile
 from unittest import TestCase
 
 import numpy as np
+import mrcfile
 
 from aspire.ctf import estimate_ctf
 
@@ -28,6 +29,17 @@ class CtfEstimatorTestCase(TestCase):
                 self.test_input_fn,
             ]
         ]
+        self.ctf_args = {
+            "pixel_size": 1,
+            "cs": 2.0,
+            "amplitude_contrast": 0.07,
+            "voltage": 300.0,
+            "num_tapers": 2,
+            "psd_size": 512,
+            "g_min": 30.0,
+            "g_max": 5.0,
+            "dtype": np.float64,
+        }
 
     def tearDown(self):
         pass
@@ -44,16 +56,8 @@ class CtfEstimatorTestCase(TestCase):
                 # Returns results in output_dir
                 results = estimate_ctf(
                     data_folder=tmp_input_dir,
-                    pixel_size=1,
-                    cs=2.0,
-                    amplitude_contrast=0.07,
-                    voltage=300.0,
-                    num_tapers=2,
-                    psd_size=512,
-                    g_min=30.0,
-                    g_max=5.0,
                     output_dir=tmp_output_dir,
-                    dtype=np.float64,
+                    **self.ctf_args
                 )
 
                 logger.debug(f"results: {results}")
@@ -73,3 +77,32 @@ class CtfEstimatorTestCase(TestCase):
                         np.allclose(result[3:-1], self.test_output[i][3:-1])
                     )
                     self.assertTrue(result[-1] == self.test_output[i][-1])
+
+    def testRectangularMicrograph(self):
+        with tempfile.TemporaryDirectory() as tmp_input_dir:
+            # Copy input file
+            copyfile(
+                os.path.join(DATA_DIR, self.test_input_fn),
+                os.path.join(tmp_input_dir, "vert_" + self.test_input_fn),
+            )
+
+            with mrcfile.open(
+                os.path.join(tmp_input_dir, "vert_" + self.test_input_fn), "r+"
+            ) as mrc_in:
+                data = mrc_in.data[:,:2048]
+                mrc_in.set_data(data)
+
+            with mrcfile.open(
+                os.path.join(tmp_input_dir, "horz_" + self.test_input_fn), "w+"
+            ) as mrc_in:
+                mrc_in.set_data(data.T)
+
+            with tempfile.TemporaryDirectory() as tmp_output_dir:
+                # Returns results in output_dir
+                results = estimate_ctf(
+                    data_folder=tmp_input_dir,
+                    output_dir=tmp_output_dir,
+                    **self.ctf_args
+                )
+            import pdb
+            pdb.set_trace()
