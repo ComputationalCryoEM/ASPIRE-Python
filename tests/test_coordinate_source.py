@@ -134,7 +134,12 @@ class CoordinateSourceTestCase(TestCase):
         self.tmpdir.cleanup()
 
     def createTestBoxFiles(self, centers, index):
-        # create a box file (lower left corner and X/Y sizes)
+        """
+        Create a .box file storing particle coordinates as
+        lower left corner and X/Y sizes.
+        :param centers: A list of tuples containing the centers of the particles.
+        :param index: The number appended to the end of the temporary file's name.
+        """
         box_fp = os.path.join(self.data_folder, f"sample{index+1}.box")
         # box file with nonsquare particles
         box_fp_nonsquare = os.path.join(
@@ -159,7 +164,11 @@ class CoordinateSourceTestCase(TestCase):
                 )
 
     def createTestCoordFiles(self, centers, index):
-        # create a coord file (only particle centers listed)
+        """
+        Create a .coord file storing particle coordinates as X/Y centers.
+        :param centers: A list of tuples containing the centers of the particles.
+        :param index: The number appended to the end of the temporary file's name.
+        """
         coord_fp = os.path.join(self.data_folder, f"sample{index+1}.coord")
         # populate coord file with particle centers
         with open(coord_fp, "w") as coord:
@@ -168,7 +177,12 @@ class CoordinateSourceTestCase(TestCase):
                 coord.write(f"{center[0]}\t{center[1]}\n")
 
     def createTestStarFiles(self, centers, index):
-        # create a star file (only particle centers listed)
+        """
+        Create a .star file storing particle coordinates as X/Y centers under
+        'rlnCoordinateX' and 'rlnCoordinateY' columns.
+        :param centers: A list of tuples containing the centers of the particles.
+        :param index: The number appended to the end of the temporary file's name.
+        """
         star_fp = os.path.join(self.data_folder, f"sample{index+1}.star")
         # populate star file with particle centers
         x_coords = [center[0] for center in centers]
@@ -184,8 +198,13 @@ class CoordinateSourceTestCase(TestCase):
         starfile.write(star_fp)
 
     def createFloatBoxFile(self, centers):
-        # for testing float coordinates
-        # create a box file (lower left corner and X/Y sizes)
+        """
+        Create a .box file storing particle coordinates as
+        lower left corner and X/Y sizes. This file will save coordinates as
+        floats to test CoordinateSource's parsing.
+        :param centers: A list of tuples containing the centers of the particles.
+        :param index: The number appended to the end of the temporary file's name.
+        """
         box_fp = os.path.join(self.data_folder, "float.box")
         # populate box file with coordinates in box format
         with open(box_fp, "w") as box:
@@ -198,8 +217,12 @@ class CoordinateSourceTestCase(TestCase):
                 )
 
     def createFloatCoordFile(self, centers):
-        # for testing float coordinates
-        # create a coord file (only particle centers listed)
+        """
+        Create a .coord file storing particle coordinates as X/Y centers.
+        This file will save coordinates as floats to test CoordinateSource's parsing.
+        :param centers: A list of tuples containing the centers of the particles.
+        :param index: The number appended to the end of the temporary file's name.
+        """
         coord_fp = os.path.join(self.data_folder, "float.coord")
         # populate coord file with particle centers
         with open(coord_fp, "w") as coord:
@@ -208,8 +231,13 @@ class CoordinateSourceTestCase(TestCase):
                 coord.write(f"{center[0]}.000\t{center[1]}.000\n")
 
     def createFloatStarFile(self, centers):
-        # for testing float coordinates
-        # create a star file (only particle centers listed)
+        """
+        Create a .star file storing particle coordinates as X/Y centers under
+        'rlnCoordinateX' and 'rlnCoordinateY' columns. This file will save coordinates as
+        floats to test CoordinateSource's parsing.
+        :param centers: A list of tuples containing the centers of the particles.
+        :param index: The number appended to the end of the temporary file's name.
+        """
         star_fp = os.path.join(self.data_folder, "float.star")
         # populate star file with particle centers
         x_coords = [str(center[0]) + ".000" for center in centers]
