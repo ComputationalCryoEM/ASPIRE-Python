@@ -69,8 +69,6 @@ For example, to run the command on sample data included in ASPIRE:
 
    aspire preprocess --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out preprocess_output.star --downsample 8
 
-Use the ``--help`` argument to look for configurable options.
-
 5. Image Denoising
 ##################
 
