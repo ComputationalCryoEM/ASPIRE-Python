@@ -139,6 +139,13 @@ class Filter:
     def dual(self):
         return DualFilter(self)
 
+    @property
+    def sign(self):
+        """
+        A Filter object to evaluate the signs of the underlying filter.
+        """
+        return LambdaFilter(self, np.sign)
+
 
 class DualFilter(Filter):
     """
