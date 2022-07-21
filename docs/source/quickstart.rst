@@ -9,7 +9,7 @@ CRYO projections (MRC files).
     aspire <command>
 
 Running the ``aspire`` module as a script allows one to run different stages of the Cryo-EM data pipeline.
-Substitute ``<command>`` with one of the available ``aspire`` commands. Use the ``-h`` flag to display all available commands.
+Substitute ``<command>`` with one of the available ``aspire`` commands. Use ``aspire --help`` to display all available commands and ``aspire <command> --help`` to display configurable options for a particular ``<command>``.
 
 Currently, the following operations can be run with ASPIRE:
 
@@ -28,8 +28,6 @@ For example, to run the command on sample data included in ASPIRE (a single ``sa
     mkdir apple_output
     aspire apple --mrc_path /path/to/aspire/data/sample.mrc --output_dir particles
 
-Use the ``--help`` argument with the command to see the several options associated with this command.
-
 2. Particle Extraction
 ######################
 
@@ -46,23 +44,23 @@ Example usage:
 3. Estimate Contrast Transfer Function
 ######################################
 
-The ``estimate-ctf`` command estimates the CTF from experimental data and returns the CTF as a mrc file.  For example,
+The ``estimate-ctf`` command estimates the CTF from experimental data and saves the CTF as an ``.mrc`` file.  For example,
 
 .. code-block:: console
 
-      python -m aspire estimate-ctf --data_folder path_to_input_data_folder
+      aspire estimate-ctf --data_folder path_to_input_data_folder
 
 .. note::
 
     This command expects data files are in the directory prescribed by ``--data_folder``,
     and will process all files with the extension ``.mrc`` and ``.mrcs`` contained there.
-    This command will output mrc files to a ``--output_dir``, set to ``./results`` by default.
+    This command will output ``.mrc`` files to a ``--output_dir`` (``./results`` by default).
 
 4. Image Preprocessing
 ######################
 
-The ``preprocess`` command takes in a ``*.star`` file containing raw images and applies a selection of preprocessing
-methods such as phase flipping, downsampling, normalization to background noise, noise whitening, and contrast invesrion.
+The ``preprocess`` command takes in a ``*.star`` file representing particle stacks and applies a selection of preprocessing
+methods such as phase flipping, downsampling, normalization to background noise, noise whitening, and contrast inversion.
 Resulting images are saved as a starfile.
 
 For example, to run the command on sample data included in ASPIRE:
@@ -87,8 +85,6 @@ For example, to run the command on sample data included in ASPIRE:
    mkdir denoise_output
    aspire denoise --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out denoise_output/denoised_images.star
 
-Use the ``--help`` argument to look for configurable options.
-
 6. Orientation Estimation
 #########################
 
@@ -101,8 +97,6 @@ For example, to run the command on sample data included in ASPIRE:
 .. code-block:: console
 
    aspire orient3d --starfile_in path/to/aspire/data/sample_relion_data.star --starfile_out orient3d_output.star
-
-Use the ``--help`` argument to look for configurable options.
 
 7. Reconstructing a mean volume with covariance
 ###############################################
@@ -124,8 +118,6 @@ For example, to run the command on a sample data included in ASPIRE:
     too long to execute). ``--cg_tol 0.2`` sets very liberal (and unrealistic) limits on optimization convergence
     tolerance, which is needed for such a small dataset. For real datasets, you typically *do not* want to override this
     parameter.
-
-Use the ``--help`` argument to look for configurable options.
 
 Arguments, options and flags
 ############################
