@@ -251,11 +251,11 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, src, num_procs="auto", dtype=None):
+    def __init__(self, composite_basis, src, num_procs=1, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
-        :param num_procs: Number of processes to use. Defaults "auto".
+        :param num_procs: Number of processes to use.
         Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
@@ -274,8 +274,13 @@ class Averager2D(ABC):
 
         if num_procs == "auto":
             num_procs = get_num_multi_procs()
+            # Only enable multiprocessing when several cores available
+            if num_procs < 3:
+                num_procs = 1
         elif not (isinstance(num_procs, int) and num_procs > 0):
-            raise ValueError(f"num_procs should be an integer, passed {num_procs}.")
+            raise ValueError(
+                f"num_procs should be a positive integer, passed {num_procs}."
+            )
         self.num_procs = num_procs
 
         if self.src and self.dtype != self.src.dtype:
@@ -339,17 +344,22 @@ class AligningAverager2D(Averager2D):
     Subclass supporting averagers which perfom an aligning stage.
     """
 
-    def __init__(self, composite_basis, src, alignment_basis=None, dtype=None):
+    def __init__(
+        self, composite_basis, src, alignment_basis=None, num_procs=1, dtype=None
+    ):
         """
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D).
         :param src: Source of original images.
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
+        :param num_procs: Number of processes to use.
+        Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         super().__init__(
             composite_basis=composite_basis,
             src=src,
+            num_procs=num_procs,
             dtype=dtype,
         )
         # If alignment_basis is None, use composite_basis
@@ -464,7 +474,7 @@ class BFRAverager2D(AligningAverager2D):
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         """
-        super().__init__(composite_basis, src, alignment_basis, dtype)
+        super().__init__(composite_basis, src, alignment_basis, dtype=dtype)
 
         self.n_angles = n_angles
 
@@ -684,6 +694,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         src,
         alignment_src=None,
         diagnostics=False,
+        num_procs="auto",
         dtype=None,
     ):
         """
@@ -691,6 +702,8 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         :param src: Source of original images.
         :param alignment_src: Optional, source to be used during class average alignment.
         Must be the same resolution as `src`.
+        :param num_procs: Number of processes to use. Defaults "auto".
+        Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -707,7 +720,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         self.mask = grid_2d(src.L, normalized=False)["r"] < src.L // 2
 
-        super().__init__(composite_basis, src, composite_basis, dtype=dtype)
+        super().__init__(
+            composite_basis, src, composite_basis, num_procs=num_procs, dtype=dtype
+        )
 
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -977,6 +992,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         alignment_src=None,
         radius=None,
         diagnostics=False,
+        num_procs="auto",
         dtype=None,
     ):
         """
@@ -992,6 +1008,8 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         :param dtype: Numpy dtype to be used during alignment.
 
         :param diagnostics: Plot interactive diagnostic graphics (for debugging).
+        :param num_procs: Number of processes to use. Defaults "auto".
+        Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -1000,6 +1018,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             src,
             alignment_src,
             diagnostics,
+            num_procs=num_procs,
             dtype=dtype,
         )
 

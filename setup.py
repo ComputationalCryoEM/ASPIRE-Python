@@ -30,6 +30,7 @@ setup(
         "matplotlib>=3.2.0",
         "mrcfile",
         "numpy==1.21.5",
+        "packaging",
         "pandas==1.3.5",
         "psutil",
         "pyfftw",
