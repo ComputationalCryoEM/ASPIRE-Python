@@ -36,7 +36,6 @@ class Simulation(ImageSource):
         amplitudes=None,
         dtype=np.float32,
         C=2,
-        SynthVolGen=None,
         angles=None,
         seed=0,
         memory=None,
@@ -65,11 +64,10 @@ class Simulation(ImageSource):
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         if vols is None:
-            if SynthVolGen is None:
-                SynthVolGen = LegacyGaussianBlob(
-                    L=L, C=C, symmetry_type=None, seed=self.seed, dtype=self.dtype
-                )
-            self.vols = SynthVolGen.generate()
+            _vols = LegacyGaussianBlob(
+                L=L, C=C, symmetry_type=None, seed=self.seed, dtype=self.dtype
+            )
+            self.vols = _vols.generate()
         else:
             assert isinstance(vols, Volume)
             self.vols = vols
