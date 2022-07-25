@@ -339,16 +339,14 @@ class OrientSymmTestCase(TestCase):
         self.assertTrue(within_1 > 0.95)
 
     def testCompleteThirdRow(self):
-        cl_orient_ests = self.cl_orient_ests[3]
-
         # Complete third row that coincides with z-axis
         z = np.array([0, 0, 1])
-        Rz = cl_orient_ests.complete_third_row_to_rot(z)
+        Rz = CLSymmetryC3C4.complete_third_row_to_rot(z)
 
         # Complete random third row.
         r3 = randn(3, seed=123)
         r3 /= norm(r3)
-        R = cl_orient_ests.complete_third_row_to_rot(r3)
+        R = CLSymmetryC3C4.complete_third_row_to_rot(r3)
 
         # Assert that Rz is the identity matrix.
         self.assertTrue(np.allclose(Rz, np.eye(3)))
