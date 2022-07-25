@@ -35,7 +35,6 @@ class Simulation(ImageSource):
         offsets=None,
         amplitudes=None,
         dtype=np.float32,
-        C=2,
         angles=None,
         seed=0,
         memory=None,
@@ -45,7 +44,6 @@ class Simulation(ImageSource):
         A Cryo-EM simulation
         Other than the base class attributes, it has:
 
-        :param C: The number of distinct volumes
         :param angles: A n-by-3 array of rotation angles
         """
         super().__init__(L=L, n=n, dtype=dtype, memory=memory)
@@ -65,7 +63,7 @@ class Simulation(ImageSource):
 
         if vols is None:
             _vols = LegacyGaussianBlob(
-                L=L, C=C, symmetry_type=None, seed=self.seed, dtype=self.dtype
+                L=L, C=2, symmetry_type=None, seed=self.seed, dtype=self.dtype
             )
             self.vols = _vols.generate()
         else:
