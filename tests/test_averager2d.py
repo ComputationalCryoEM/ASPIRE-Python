@@ -133,7 +133,6 @@ class BFRAverager2DTestCase(Averager2DTestCase):
             vols=self.vols,
             L=self.resolution,
             n=self.n_img,
-            C=1,
             angles=self.rots.angles,
             offsets=self.shifts,
             amplitudes=np.ones(self.n_img),
