@@ -344,7 +344,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 # For each pair of lines we take the maximum correlation over all shifts.
                 corrs = np.max(np.real(corrs), axis=0)
 
-                # We take the mean score over the 'order' groups and find the group that atttains the maximum.
+                # We take the mean score over the 'order' groups and find the group that attains the maximum.
                 # This produces the index corresponding to theta_ij in the range [0, 2pi/order).
                 corrs = np.mean(np.real(corrs), axis=0)
                 max_idx_corr = np.argmax(corrs)
