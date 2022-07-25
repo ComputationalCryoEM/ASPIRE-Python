@@ -277,7 +277,7 @@ def J_conjugate(A):
     return J @ A @ J
 
 
-def cyclic_rotations(order, dtype):
+def cyclic_rotations(order, dtype=np.float64):
     """
     Build all rotation matrices that rotate by multiples of 2pi/order about the z-axis.
 
