@@ -5,6 +5,7 @@ from skimage.filters import difference_of_gaussians, window
 from skimage.transform import rotate, warp_polar
 
 from aspire.numeric import fft
+from aspire.utils.coor_trans import grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ def _phase_cross_correlation(img0, img1):
 
 
 def reddy_chatterji_register(
-    images_k, reflection_k, mask, do_cross_corr_translations, dtype
+    images_k, reflection_k, mask=None, do_cross_corr_translations=True, dtype=None
 ):
     """
     Compute the Reddy Chatterji method registering images_k[1:] to image[0].
@@ -59,8 +60,17 @@ def reddy_chatterji_register(
 
     :param images_k: Image data (m_img, L, L)
     :param reflection_k: Image reflections (m_img,)
+    :param mask: Support of image. Defaults to disk with radius images_k.shape[-1]//2.
+    :param do_cross_corr_translations: Solve trnaslations by using cross correlation (log polar) method.
+    :param dtype: Specify dtype.  Defaults to infer from images_k.dtype
     :returns: (rotations_k, shifts_k, correlations_k) corresponding to `images_k`
     """
+
+    if mask is None:
+        L = images_k.shape[-1]
+        mask = grid_2d(L, normalized=False)["r"] < L // 2
+    if dtype is None:
+        dtype = images_k.dtype
 
     # Result arrays
     M = len(images_k)

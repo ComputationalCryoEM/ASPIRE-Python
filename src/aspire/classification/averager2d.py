@@ -14,8 +14,6 @@ from aspire.utils.multiprocessing import get_num_multi_procs
 
 logger = logging.getLogger(__name__)
 
-__cache = dict()
-
 
 class Averager2D(ABC):
     """
@@ -477,7 +475,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         :param dtype: Numpy dtype to be used during alignment.
         """
 
-        self.do_cross_corr_translations = True
         self.alignment_src = alignment_src or src
 
         # TODO, for accomodating different resolutions we minimally need to adapt shifting.
@@ -521,9 +518,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             rotations[k], shifts[k], correlations[k] = reddy_chatterji_register(
                 images,
                 reflections[k],
-                self.mask,
-                self.do_cross_corr_translations,
-                self.dtype,
+                mask=self.mask,
+                do_cross_corr_translations=True,
+                dtype=self.dtype,
             )
 
         # else:
@@ -654,8 +651,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             dtype=dtype,
         )
 
-        # For brute force we disable the cross_corr translation code
-        self.do_cross_corr_translations = False
         # Assign search radius
         self.radius = radius or src.L // 8
 
@@ -705,9 +700,9 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 _rotations, _, _correlations = reddy_chatterji_register(
                     images,
                     reflections[k],
-                    self.mask,
-                    self.do_cross_corr_translations,
-                    self.dtype,
+                    mask=self.mask,
+                    do_cross_corr_translations=False,  # For brute force we skip cross corr translation
+                    dtype=self.dtype,
                 )
 
                 # Where corr has improved
