@@ -9,4 +9,5 @@ from .averager2d import (
     ReddyChatterjiAverager2D,
 )
 from .class2d import Class2D
+from .reddy_chatterji import reddy_chatterji_register
 from .rir_class2d import RIRClass2D
