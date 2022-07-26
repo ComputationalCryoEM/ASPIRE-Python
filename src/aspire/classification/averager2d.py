@@ -120,16 +120,8 @@ def _reddychatterji(
         # Window Images (Fix spectral boundary)
         wregis_img = regis_img_dog * window("hann", regis_img.shape)
 
-        # self._input_images_diagnostic(
-        #     class_k[0], wfixed_img, class_k[m], wregis_img
-        # )
-
         # Transform image to Fourier space
         regis_img_fs = np.abs(fft.fftshift(fft.fft2(wregis_img))) ** 2
-
-        # self._windowed_psd_diagnostic(
-        #     class_k[0], fixed_img_fs, class_k[m], regis_img_fs
-        # )
 
         # Compute Log Polar Transform
         warped_regis_img_fs = warp_polar(
@@ -138,10 +130,6 @@ def _reddychatterji(
             output_shape=fixed_img_fs.shape,
             scaling="log",
         )
-
-        # self._log_polar_diagnostic(
-        #     class_k[0], warped_fixed_img_fs, class_k[m], warped_regis_img_fs
-        # )
 
         # Only use half of FFT, because it's symmetrical
         warped_regis_img_fs = warped_regis_img_fs[: fixed_img_fs.shape[0] // 2, :]
@@ -161,10 +149,6 @@ def _reddychatterji(
         #   disregard the second axis of the `cross_correlation` returned by
         #   `_phase_cross_correlation`.
         cross_correlation_score = cross_correlation[:, 0].ravel()
-
-        # self._rotation_cross_corr_diagnostic(
-        #     cross_correlation, cross_correlation_score
-        # )
 
         # Recover the angle from index representing maximal cross_correlation
         recovered_angle_degrees = (360 / regis_img_fs.shape[0]) * np.argmax(
@@ -189,15 +173,6 @@ def _reddychatterji(
             regis_img_estimated = regis_img_rotated_p180
             r += 180
 
-        # self._rotated_diagnostic(
-        #     class_k[0],
-        #     fixed_img,
-        #     class_k[m],
-        #     regis_img_estimated,
-        #     reflection_k[m],
-        #     r,
-        # )
-
         # Assign estimated rotations results
         rotations_k[m] = -r * np.pi / 180  # Reverse rot and convert to radians
 
@@ -208,8 +183,6 @@ def _reddychatterji(
                 twfixed_img, twregis_img
             )
 
-            # self._translation_cross_corr_diagnostic(cross_correlation)
-
             # Compute the shifts as integer number of pixels,
             shift_x, shift_y = int(shift[1]), int(shift[0])
             # then apply the shifts
@@ -218,14 +191,6 @@ def _reddychatterji(
             # Assign estimated shift to results
             shifts_k[m] = shift[::-1].astype(int)
 
-            # self._averaged_diagnostic(
-            #     class_k[0],
-            #     fixed_img,
-            #     class_k[m],
-            #     regis_img_estimated,
-            #     reflection_k[m],
-            #     r,
-            # )
         else:
             shift = None  # For logger line
 
@@ -693,7 +658,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         composite_basis,
         src,
         alignment_src=None,
-        diagnostics=False,
         num_procs="auto",
         dtype=None,
     ):
@@ -707,7 +671,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         :param dtype: Numpy dtype to be used during alignment.
         """
 
-        self.diagnostics = diagnostics
         self.do_cross_corr_translations = True
         self.alignment_src = alignment_src or src
 
@@ -836,138 +799,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         # Now we convert the averaged images from Basis to Cartesian.
         return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
 
-    def _input_images_diagnostic(self, ia, a, ib, b):
-        if not self.diagnostics:
-            return
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        ax[0].set_title(f"Image {ia}")
-        ax[0].imshow(a)
-        ax[1].set_title(f"Image {ib}")
-        ax[1].imshow(b)
-        plt.show()
-
-    def _windowed_psd_diagnostic(self, ia, a, ib, b):
-        if not self.diagnostics:
-            return
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        ax[0].set_title(f"Image {ia} PSD")
-        ax[0].imshow(np.log(a))
-        ax[1].set_title(f"Image {ib} PSD")
-        ax[1].imshow(np.log(b))
-        plt.show()
-
-    def _log_polar_diagnostic(self, ia, a, ib, b):
-        if not self.diagnostics:
-            return
-        labels = np.arange(0, 360, 60)
-        y = labels / (360 / a.shape[0])
-
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        ax[0].set_title(f"Image {ia}")
-        ax[0].imshow(a)
-        ax[0].set_yticks(y, minor=False)
-        ax[0].set_yticklabels(labels)
-        ax[0].set_ylabel("Theta (Degrees)")
-
-        ax[1].set_title(f"Image {ib}")
-        ax[1].imshow(b)
-        ax[1].set_yticks(y, minor=False)
-        ax[1].set_yticklabels(labels)
-        plt.show()
-
-    def _rotation_cross_corr_diagnostic(
-        self, cross_correlation, cross_correlation_score
-    ):
-        if not self.diagnostics:
-            return
-        labels = [0, 30, 60, 90, -60, -30]
-        x = y = np.arange(0, 180, 30) / (180 / cross_correlation.shape[0])
-        plt.title("Rotation Cross Correlation Map")
-        plt.imshow(cross_correlation)
-        plt.xlabel("Scale")
-        plt.yticks(y, labels, rotation="vertical")
-        plt.ylabel("Theta (Degrees)")
-        plt.show()
-
-        plt.plot(cross_correlation_score)
-        plt.title("Angle vs Cross Correlation Score")
-        plt.xticks(x, labels)
-        plt.xlabel("Theta (Degrees)")
-        plt.ylabel("Cross Correlation Score")
-        plt.grid()
-        plt.show()
-
-    def _rotated_diagnostic(self, ia, a, ib, b, sb, rb):
-        """
-        Plot the image after estimated rotation and reflection.
-
-        :param ia: index image `a`
-        :param a: image `a`
-        :param ib: index image `b`
-        :param b: image `b` after reflection `sb` and rotion `rb`
-        :param sb: Reflection, Boolean
-        :param rb: Estimated rotation, degrees
-        """
-
-        if not self.diagnostics:
-            return
-
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        ax[0].set_title(f"Image {ia}")
-        ax[0].imshow(a)
-        ax[0].grid()
-        ax[1].set_title(f"Image {ib} Refl: {str(sb)[0]} Rotated {rb:.1f}")
-        ax[1].imshow(b)
-        ax[1].grid()
-        plt.show()
-
-    def _translation_cross_corr_diagnostic(self, cross_correlation):
-        if not self.diagnostics:
-            return
-        plt.title("Translation Cross Correlation Map")
-        plt.imshow(cross_correlation)
-        plt.xlabel("x shift (pixels)")
-        plt.ylabel("y shift (pixels)")
-        L = self.alignment_src.L
-        labels = [0, 10, 20, 30, 0, -10, -20, -30]
-        tick_location = [0, 10, 20, 30, L, L - 10, L - 20, L - 30]
-        plt.xticks(tick_location, labels)
-        plt.yticks(tick_location, labels)
-        plt.show()
-
-    def _averaged_diagnostic(self, ia, a, ib, b, sb, rb):
-        """
-        Plot the stacked average image after
-        estimated rotation and reflections.
-
-        Compare in a three way plot.
-
-        :param ia: index image `a`
-        :param a: image `a`
-        :param ib: index image `b`
-        :param b: image `b` after reflection `sb` and rotion `rb`
-        :param sb: Reflection, Boolean
-        :param rb: Estimated rotation, degrees
-        """
-        if not self.diagnostics:
-            return
-        fig, axes = plt.subplots(1, 3)
-        ax = axes.ravel()
-        ax[0].set_title(f"{ia}")
-        ax[0].imshow(a)
-        ax[0].grid()
-        ax[1].set_title(f"{ib} Refl: {str(sb)[0]} Rot: {rb:.1f}")
-        ax[1].imshow(b)
-        ax[1].grid()
-        ax[2].set_title("Stacked Avg")
-        plt.imshow((a + b) / 2.0)
-        ax[2].grid()
-        plt.show()
-
 
 class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
     """
@@ -991,7 +822,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         src,
         alignment_src=None,
         radius=None,
-        diagnostics=False,
         num_procs="auto",
         dtype=None,
     ):
@@ -1007,7 +837,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         Defaults to src.L//8.
         :param dtype: Numpy dtype to be used during alignment.
 
-        :param diagnostics: Plot interactive diagnostic graphics (for debugging).
         :param num_procs: Number of processes to use. Defaults "auto".
         Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
@@ -1017,7 +846,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             composite_basis,
             src,
             alignment_src,
-            diagnostics,
             num_procs=num_procs,
             dtype=dtype,
         )
