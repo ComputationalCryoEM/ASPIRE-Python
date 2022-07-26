@@ -107,7 +107,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
-        sclmatrix, corrs_stats, shifts_stats = self._self_clmatrix_c3_c4()
+        sclmatrix = self._self_clmatrix_c3_c4()
 
         # Step 3: Calculate self-relative-rotations
         Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
@@ -268,8 +268,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # The self-common-lines matrix holds two indices per image that represent
         # the two self common-lines in the image.
         sclmatrix = np.zeros((n_img, 2))
-        corrs_stats = np.zeros(n_img)
-        shifts_stats = np.zeros(n_img)
 
         # We create a mask associated with angle differences that fall in the
         # range [min_angle_diff, max_angle_diff].
@@ -326,10 +324,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             # Find maximum correlation.
             shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
             sclmatrix[i] = [scl1, scl2]
-            corrs_stats[i] = np.real(corrs[shift, scl1, scl2])
-            shifts_stats[i] = shift
 
-        return sclmatrix, corrs_stats, shifts_stats
+        return sclmatrix
 
     def _estimate_all_Riis_c3_c4(self, sclmatrix):
         """

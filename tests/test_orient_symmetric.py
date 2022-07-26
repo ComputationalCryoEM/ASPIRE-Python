@@ -97,7 +97,7 @@ class OrientSymmTestCase(TestCase):
         cl_symm = self.cl_orient_ests[order]
 
         # Estimate self-relative viewing directions, Riis.
-        scl, _, _ = cl_symm._self_clmatrix_c3_c4()
+        scl = cl_symm._self_clmatrix_c3_c4()
         Riis = cl_symm._estimate_all_Riis_c3_c4(scl)
 
         # Each estimated Rii belongs to the set
@@ -232,7 +232,7 @@ class OrientSymmTestCase(TestCase):
         cl_symm = self.cl_orient_ests[order]
 
         # Initialize common-lines orientation estimation object and compute self-common-lines matrix.
-        scl, _, _ = cl_symm._self_clmatrix_c3_c4()
+        scl = cl_symm._self_clmatrix_c3_c4()
 
         # Compute ground truth self-common-lines matrix.
         rots = src.rots
