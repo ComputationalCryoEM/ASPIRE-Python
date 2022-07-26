@@ -683,9 +683,9 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             )
             unshifted_images = self._cls_images(classes[k])
             # Instantiate matrices for inner loop, and best results.
-            __rotations = np.zeros(classes.shape[1:], dtype=self.dtype)
-            __correlations = np.ones(classes.shape[1:], dtype=self.dtype) * -np.inf
-            __shifts = np.zeros((*classes.shape[1:], 2), dtype=int)
+            _rotations = np.zeros(classes.shape[1:], dtype=self.dtype)
+            _correlations = np.ones(classes.shape[1:], dtype=self.dtype) * -np.inf
+            _shifts = np.zeros((*classes.shape[1:], 2), dtype=int)
 
             for xs, ys in zip(X, Y):
                 s = np.array([xs, ys])
@@ -697,22 +697,24 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 # Don't shift the base image
                 images[1:] = Image(unshifted_images[1:]).shift(s).asnumpy()
 
-                _rotations, _, _correlations = reddy_chatterji_register(
+                # returned shifts ignored since we are forcing shift of `s` above
+                __rotations, _, __correlations = reddy_chatterji_register(
                     images,
                     reflections[k],
                     mask=self.mask,
-                    do_cross_corr_translations=False,  # For brute force we skip cross corr translation
+                    do_cross_corr_translations=False,  # When forcing s, we skip cross corr translations
                     dtype=self.dtype,
                 )
 
                 # Where corr has improved
                 #  update our rolling best results with this loop.
-                improved = _correlations > __correlations
-                __correlations = np.where(improved, _correlations, __correlations)
-                __rotations = np.where(improved, _rotations, __rotations)
-                __shifts = np.where(improved[..., np.newaxis], s, __shifts)
+                improved = __correlations > _correlations
+                _correlations = np.where(improved, __correlations, _correlations)
+                _rotations = np.where(improved, __rotations, _rotations)
+                _shifts = np.where(improved[..., np.newaxis], s, _shifts)
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
-            return __rotations, __shifts, __correlations
+
+            return _rotations, _shifts, _correlations
 
         if self.num_procs <= 1:
             for k in trange(n_classes):
