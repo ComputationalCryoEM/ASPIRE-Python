@@ -55,12 +55,12 @@ class Averager2D(ABC):
         if self.src and self.dtype != self.src.dtype:
             logger.warning(
                 f"{self.__class__.__name__} dtype {dtype}"
-                "does not match dtype of source {self.src.dtype}."
+                f"does not match dtype of source {self.src.dtype}."
             )
         if self.composite_basis and self.dtype != self.composite_basis.dtype:
             logger.warning(
                 f"{self.__class__.__name__} dtype {dtype}"
-                "does not match dtype of basis {self.composite_basis.dtype}."
+                f"does not match dtype of basis {self.composite_basis.dtype}."
             )
 
     @abstractmethod
@@ -507,48 +507,32 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         correlations = np.zeros(classes.shape, dtype=self.dtype)
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
-        # if self.num_procs <= 1:
-        for k in trange(n_classes):
+        def _innerloop(k):
             logger.info(
                 f"Processing alignment for class: {k}",
             )
-            # # Get the array of images for this class, using the `alignment_src`.
-            images = self._cls_images(classes[k], src=self.alignment_src)
-
-            rotations[k], shifts[k], correlations[k] = reddy_chatterji_register(
-                images,
+            # Get the array of images for this class, using the `alignment_src`.
+            images_k = self._cls_images(classes[k], src=self.alignment_src)
+            return reddy_chatterji_register(
+                images_k,
                 reflections[k],
                 mask=self.mask,
                 do_cross_corr_translations=True,
                 dtype=self.dtype,
             )
 
-        # else:
-        #     # Todo, replace this with a generator or function or something to pack in the zip below.
-        #     xxx_all_images = [
-        #         self._cls_images(classes[k], src=self.alignment_src)
-        #         for k in range(n_classes)
-        #     ]
+        if self.num_procs <= 1:
+            for k in trange(n_classes):
+                rotations[k], shifts[k], correlations[k] = _innerloop(k)
 
-        #     logger.info(f"Starting Pool({self.num_procs})")
-        #     with Pool(self.num_procs) as p:
+        else:
+            logger.info(f"Starting Pool({self.num_procs})")
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
 
-        #         res = p.starmap(
-        #             _reddy_chatterji,
-        #             zip(
-        #                 xxx_all_images,
-        #                 reflections,
-        #                 repeat(self.mask),
-        #                 repeat(self.do_cross_corr_translations),
-        #                 repeat(self.dtype),
-        #             ),
-        #         )
-
-        #     logger.info(f"Terminated Pool({self.num_procs})")
-
-        #     # Unpack multiprocessing join
-        #     for k, v in enumerate(res):
-        #         rotations[k], shifts[k], correlations[k] = v
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for k, result in enumerate(results):
+                rotations[k], shifts[k], correlations[k] = result
 
         return rotations, shifts, correlations
 
@@ -720,11 +704,13 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             for k in trange(n_classes):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
+            logger.info(f"Starting Pool({self.num_procs})")
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
 
-            for k, res in enumerate(results):
-                rotations[k], shifts[k], correlations[k] = res
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for k, result in enumerate(results):
+                rotations[k], shifts[k], correlations[k] = result
 
         return rotations, shifts, correlations
 
