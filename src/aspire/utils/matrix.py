@@ -364,7 +364,7 @@ def ainner(x, y, axes=None):
     if axes is not None:
         axes = tuple(axes)  # Unrolls any generators, like `range`.
 
-    return np.sum(x * y, axis=axes)
+    return np.sum(x * np.conj(y), axis=axes)
 
 
 def eigs(A, k):
