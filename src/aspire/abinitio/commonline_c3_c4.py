@@ -266,10 +266,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             min_angle_diff = 90 * np.pi / 180
             max_angle_diff = 175 * np.pi / 180
 
-        # The self-common-lines matrix holds two indices per image that represent
-        # the two self common-lines in the image.
-        sclmatrix = np.zeros((n_img, 2))
-
         # We create a mask associated with angle differences that fall in the
         # range [min_angle_diff, max_angle_diff].
 
@@ -299,6 +295,10 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # ie. self.pf has shape (n_rad-1, n_theta//2, n_img).
         pf = pf.T
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
+
+        # The self-common-lines matrix holds two indices per image that represent
+        # the two self common-lines in the image.
+        sclmatrix = np.zeros((n_img, 2))
 
         for i in tqdm(range(n_img)):
             pf_i = pf[i]
