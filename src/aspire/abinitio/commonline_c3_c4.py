@@ -253,10 +253,11 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         shift_step = self.shift_step
         order = self.order
 
-        # The angle between self-common-lines is in the range [60, 180] for C3 symmetry
-        # and [90, 180] for C4 symmetry. Since antipodal lines are perfectly correlated
-        # we search for common lines in a smaller window.
-        # Note: matlab code used [60, 165] for order=3 and [90, 160] for order=4.
+        # The angle between two self-common-lines is constrained by the underlying symmetry
+        # of the molecule (See Lemma A.2 in the listed publication for further details).
+        # This angle is in the range [60, 180] for C3 symmetry and [90, 180] for C4 symmetry.
+        # Since antipodal lines are perfectly correlated we search for common lines in a smaller window.
+        # Note: matlab code used [60, 165] for C3 and [90, 160] for C4.
         # We've increased this window to improve the MSE of our estimates.
         if order == 3:
             min_angle_diff = 60 * np.pi / 180
