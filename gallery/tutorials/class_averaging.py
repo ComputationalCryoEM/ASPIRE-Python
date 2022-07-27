@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 L = 100
-round_disc = gaussian_2d(L, sigma=(L / 4, L / 4))
+round_disc = gaussian_2d(L, sigma=L / 4)
 plt.imshow(round_disc, cmap="gray")
 plt.show()
 
