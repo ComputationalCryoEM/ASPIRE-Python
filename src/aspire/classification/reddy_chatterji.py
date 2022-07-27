@@ -48,39 +48,39 @@ def _phase_cross_correlation(img0, img1):
 
 
 def reddy_chatterji_register(
-    images_k, reflection_k, mask=None, do_cross_corr_translations=True, dtype=None
+    images, reflection, mask=None, do_cross_corr_translations=True, dtype=None
 ):
     """
-    Compute the Reddy Chatterji method registering images_k[1:] to images_k[0].
+    Compute the Reddy Chatterji method registering images[1:] to images[0].
 
     This differs from papers and published scikit implimentations by
-    computing the fixed base image_k[0] pipeline once then reusing.
+    computing the fixed base image[0] pipeline once then reusing.
 
-    :param images_k: Image data (m_img, L, L)
-    :param reflection_k: Image reflections (m_img,)
-    :param mask: Support of image. Defaults to disk with radius images_k.shape[-1]//2.
+    :param images: Image data (m_img, L, L)
+    :param reflection: Image reflections (m_img,)
+    :param mask: Support of image. Defaults to disk with radius images.shape[-1]//2.
     :param do_cross_corr_translations: Solve trnaslations by using cross correlation (log polar) method.
-    :param dtype: Specify dtype.  Defaults to infer from images_k.dtype
-    :returns: (rotations_k, shifts_k, correlations_k) corresponding to `images_k`
+    :param dtype: Specify dtype.  Defaults to infer from images.dtype
+    :returns: (rotations, shifts, correlations) corresponding to `images`
     """
 
     if mask is None:
-        L = images_k.shape[-1]
+        L = images.shape[-1]
         mask = grid_2d(L, normalized=False)["r"] < L // 2
     if dtype is None:
-        dtype = images_k.dtype
+        dtype = images.dtype
 
     # Result arrays
-    M = len(images_k)
-    rotations_k = np.zeros(M, dtype=dtype)
-    correlations_k = np.full(M, -np.inf, dtype=dtype)
-    shifts_k = np.zeros((M, 2), dtype=int)
+    M = len(images)
+    rotations = np.zeros(M, dtype=dtype)
+    correlations = np.full(M, -np.inf, dtype=dtype)
+    shifts = np.zeros((M, 2), dtype=int)
 
     # De-Mean
-    images_k = images_k - images_k.mean(axis=(-1, -2))[:, np.newaxis, np.newaxis]
+    images = images - images.mean(axis=(-1, -2))[:, np.newaxis, np.newaxis]
 
     # Precompute fixed_img data used repeatedly in the loop below.
-    fixed_img = images_k[0]
+    fixed_img = images[0]
     # Difference of Gaussians (Band Filter)
     fixed_img_dog = difference_of_gaussians(fixed_img, 1, 4)
     # Window Images (Fix spectral boundary)
@@ -103,13 +103,13 @@ def reddy_chatterji_register(
     # We start back at the raw fixed_img.
     twfixed_img = fixed_img * window("hann", fixed_img.shape)
 
-    # Register image `m` against images_k[0]
-    for m in range(1, len(images_k)):
+    # Register image `m` against images[0]
+    for m in range(1, len(images)):
         # Get the image to register
-        regis_img = images_k[m]
+        regis_img = images[m]
 
         # Reflect images when necessary
-        if reflection_k[m]:
+        if reflection[m]:
             regis_img = np.flipud(regis_img)
 
         # Difference of Gaussians (Band Filter)
@@ -172,7 +172,7 @@ def reddy_chatterji_register(
             r += 180
 
         # Assign estimated rotations results
-        rotations_k[m] = -r * np.pi / 180  # Reverse rot and convert to radians
+        rotations[m] = -r * np.pi / 180  # Reverse rot and convert to radians
 
         if do_cross_corr_translations:
             # Prepare for searching over translations using cross-correlation with the rotated image.
@@ -187,17 +187,17 @@ def reddy_chatterji_register(
             regis_img_estimated = np.roll(regis_img_estimated, shift_y, axis=0)
             regis_img_estimated = np.roll(regis_img_estimated, shift_x, axis=1)
             # Assign estimated shift to results
-            shifts_k[m] = shift[::-1].astype(int)
+            shifts[m] = shift[::-1].astype(int)
 
         else:
             shift = None  # For logger line
 
         # Estimated `corr` metric
         corr = np.dot(fixed_img[mask], regis_img_estimated[mask])
-        correlations_k[m] = corr
+        correlations[m] = corr
 
     # Cleanup some cached stuff for this class
     __cache.pop(id(warped_fixed_img_fs), None)
     __cache.pop(id(twfixed_img), None)
 
-    return rotations_k, shifts_k, correlations_k
+    return rotations, shifts, correlations
