@@ -278,8 +278,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         theta_full, theta_half = np.meshgrid(range(n_theta), range(n_theta // 2))
 
         # `diff` is the unsigned angle differences between all pairs of polar Fourier rays.
-        diff = abs(theta_half - theta_full)  # Positive difference between angles
-        diff[diff > 180] = 360 - diff[diff > 180] # Take the smaller of the two angles formed
+        diff = abs(theta_half - theta_full)
+        diff[diff > 180] = 360 - diff[diff > 180]
         diff = np.deg2rad(diff)
 
         # Build mask.
