@@ -265,6 +265,7 @@ class OrientSymmTestCase(TestCase):
         n_img = self.n_img
         src = self.srcs[order]
         cl_symm = self.cl_orient_ests[order]
+        n_theta = self.n_theta
 
         # Build common-lines matrix.
         cl_symm.build_clmatrix()
@@ -279,8 +280,8 @@ class OrientSymmTestCase(TestCase):
         for (i, j) in pairs:
             a_ij_s = np.zeros(order)
             a_ji_s = np.zeros(order)
-            cl_ij = cl[i, j] % 180
-            cl_ji = cl[j, i] % 180
+            cl_ij = cl[i, j] % (n_theta // 2)
+            cl_ji = cl[j, i] % (n_theta // 2)
 
             # The common-line estimates cl_ij, cl_ji should match the
             # true common-line angles a_ij_s, a_ji_s for some value s,
