@@ -196,6 +196,8 @@ class OrientSymmTestCase(TestCase):
         viis_conj[::2] = J_conjugate(viis_conj[::2])
 
         # Synchronize vijs_conj and viis_conj.
+        # Note: `_global_J_sync()` does not depend on cyclic order, so we can use
+        # either cl_orient_ests[3] or cl_orient_ests[4] to access the method.
         vijs_sync, viis_sync = self.cl_orient_ests[3]._global_J_sync(
             vijs_conj, viis_conj
         )
