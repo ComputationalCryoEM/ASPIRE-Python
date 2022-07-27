@@ -277,15 +277,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # `pf_full` and `pf`, respectively.
         theta_full, theta_half = np.meshgrid(range(n_theta), range(n_theta // 2))
 
-        # `diff` is all possible angle differences between potential pairs of self-common-lines.
-        diff = theta_half - theta_full
+        # `diff` is the unsigned angle differences between all pairs of polar Fourier rays.
+        diff = abs(theta_half - theta_full)  # Positive difference between angles
+        diff[diff > 180] = 360 - diff[diff > 180] # Take the smaller of the two angles formed
+        diff = np.deg2rad(diff)
 
-        # The `unsigned_angle_diff` is the smallest positive angle between potential pairs of
-        # of self-common-lines associated with angle difference `diff`.
-        unsigned_angle_diff = np.arccos(np.cos(diff * 2 * np.pi / n_theta))
-        good_diffs = (min_angle_diff < unsigned_angle_diff) & (
-            unsigned_angle_diff < max_angle_diff
-        )
+        # Build mask.
+        good_diffs = (min_angle_diff < diff) & (diff < max_angle_diff)
 
         # Compute the correlation over all shifts.
         # Generate Shifts.
