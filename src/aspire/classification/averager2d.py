@@ -163,7 +163,9 @@ class AligningAverager2D(Averager2D):
         This subclass assumes we get alignment details from `align` method. Otherwise. see Averager2D.average
         """
 
-        rotations, shifts, _ = self.align(classes, reflections, coefs)
+        self.rotations, self.shifts, self.correlations = self.align(
+            classes, reflections, coefs
+        )
 
         n_classes, n_nbor = classes.shape
 
@@ -177,22 +179,22 @@ class AligningAverager2D(Averager2D):
                 neighbors_imgs = Image(self._cls_images(classes[i]))
 
                 # Do shifts
-                if shifts is not None:
-                    neighbors_imgs.shift(shifts[i])
+                if self.shifts is not None:
+                    neighbors_imgs.shift(self.shifts[i])
 
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
                 # Get the neighbors
                 neighbors_ids = classes[i]
                 neighbors_coefs = coefs[neighbors_ids]
-                if shifts is not None:
+                if self.shifts is not None:
                     neighbors_coefs = self.composite_basis.shift(
-                        neighbors_coefs, shifts[i]
+                        neighbors_coefs, self.shifts[i]
                     )
 
             # Rotate in composite_basis
             neighbors_coefs = self.composite_basis.rotate(
-                neighbors_coefs, rotations[i], reflections[i]
+                neighbors_coefs, self.rotations[i], reflections[i]
             )
 
             # Averaging in composite_basis
@@ -730,7 +732,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         Otherwise is similar to `AligningAverager2D.average`.
         """
 
-        rotations, shifts, _ = self.align(classes, reflections, coefs)
+        self.rotations, self.shifts, self.correlations = self.align(
+            classes, reflections, coefs
+        )
 
         n_classes, n_nbor = classes.shape
 
@@ -750,12 +754,14 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
             # Rotate in composite_basis
             neighbors_coefs = self.composite_basis.rotate(
-                neighbors_coefs, rotations[i], reflections[i]
+                neighbors_coefs, self.rotations[i], reflections[i]
             )
 
             # Note shifts are after rotation for this approach!
-            if shifts is not None:
-                neighbors_coefs = self.composite_basis.shift(neighbors_coefs, shifts[i])
+            if self.shifts is not None:
+                neighbors_coefs = self.composite_basis.shift(
+                    neighbors_coefs, self.shifts[i]
+                )
 
             # Averaging in composite_basis
             b_avgs[i] = np.mean(neighbors_coefs, axis=0)
