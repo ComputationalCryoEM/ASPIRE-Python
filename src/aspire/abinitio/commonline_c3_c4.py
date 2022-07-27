@@ -295,7 +295,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         all_shift_phases = shift_phases.T
 
         # Transpose pf and reconstruct the full polar Fourier for use in correlation.
-        # self.pf only consists of rays in the range [180, 360).
+        # self.pf only consists of rays in the range [180, 360) and is in column major order,
+        # ie. self.pf has shape (n_rad-1, n_theta//2, n_img).
         pf = pf.T
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
