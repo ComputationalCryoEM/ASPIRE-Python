@@ -51,12 +51,10 @@ def reddy_chatterji_register(
     images_k, reflection_k, mask=None, do_cross_corr_translations=True, dtype=None
 ):
     """
-    Compute the Reddy Chatterji method registering images_k[1:] to image[0].
+    Compute the Reddy Chatterji method registering images_k[1:] to images_k[0].
 
     This differs from papers and published scikit implimentations by
-    computing the fixed base image[0] pipeline once then reusing.
-
-    This is a util function to help loop over `classes`.
+    computing the fixed base image_k[0] pipeline once then reusing.
 
     :param images_k: Image data (m_img, L, L)
     :param reflection_k: Image reflections (m_img,)
