@@ -7,12 +7,20 @@ logger = logging.getLogger(__name__)
 
 
 def mem_based_cpu_suggestion():
+    """
+    Return an estimate of the number of clone processes
+    that would fit in the currently available memory.
+    """
+
+    # Get the resident size of current process
     pid = os.getpid()
     process = psutil.Process(pid)
     rss_mem_usage = process.memory_info().rss
 
+    # Get the free memory
     free_mem = psutil.virtual_memory()[4]
 
+    # Calculate how many processes would fit using a 10% safety margin.
     n = int(free_mem // (rss_mem_usage * 1.1))
 
     logger.info(
