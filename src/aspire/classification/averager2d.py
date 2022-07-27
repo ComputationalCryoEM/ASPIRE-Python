@@ -188,9 +188,8 @@ class AligningAverager2D(Averager2D):
 
         b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
 
-        for i in tqdm(range(n_classes)):
-
-            # Get coefs in Composite_Basis if not provided as an argumen.
+        def _innerloop(i):
+            # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
                 # Retrieve relavent images directly from source.
                 neighbors_imgs = Image(self._cls_images(classes[i]))
@@ -215,7 +214,19 @@ class AligningAverager2D(Averager2D):
             )
 
             # Averaging in composite_basis
-            b_avgs[i] = np.mean(neighbors_coefs, axis=0)
+            return np.mean(neighbors_coefs, axis=0)
+
+        if self.num_procs <= 1:
+            for i in tqdm(range(n_classes)):
+                b_avgs[i] = _innerloop(i)
+        else:
+            logger.info(f"Starting Pool({self.num_procs})")
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
+
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for i, result in enumerate(results):
+                b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
         return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
@@ -508,9 +519,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
         def _innerloop(k):
-            logger.info(
-                f"Processing alignment for class: {k}",
-            )
+            logger.debug(f"Processing alignment for class: {k}")
             # Get the array of images for this class, using the `alignment_src`.
             images_k = self._cls_images(classes[k], src=self.alignment_src)
             return reddy_chatterji_register(
@@ -555,7 +564,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
 
-        for i in tqdm(range(n_classes)):
+        def _innerloop(i):
 
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
@@ -579,7 +588,18 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 )
 
             # Averaging in composite_basis
-            b_avgs[i] = np.mean(neighbors_coefs, axis=0)
+            return np.mean(neighbors_coefs, axis=0)
+
+        for i in tqdm(range(n_classes)):
+            b_avgs[i] = _innerloop(i)
+        else:
+            logger.info(f"Starting Pool({self.num_procs})")
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
+
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for i, result in enumerate(results):
+                b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
         return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
@@ -662,7 +682,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         X, Y = g["x"][disc], g["y"][disc]
 
         def _innerloop(k):
-            logger.info(
+            logger.debug(
                 f"Processing alignment for class: {k}",
             )
             unshifted_images = self._cls_images(classes[k])
