@@ -152,6 +152,7 @@ class AligningAverager2DBase(Averager2DBase):
     """
 
     averager = AligningAverager2D
+    num_procs = 1  # paralleized subclasses may override
 
     def setUp(self):
 
@@ -168,7 +169,7 @@ class AligningAverager2DBase(Averager2DBase):
 
     def _call_averager(self):
         # Construct the Averager
-        avgr = self.averager(self.basis, self._getSrc())
+        avgr = self.averager(self.basis, self._getSrc(), num_procs=self.num_procs)
         # Call the `align` method
         _ = avgr.align(self.classes, self.reflections, self.coefs)
         _ = avgr.average(self.classes, self.reflections, self.coefs)
@@ -314,6 +315,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
+    num_procs = 1 if xfail_ray_dev() else "auto"
 
     def testAverager(self):
         """
@@ -326,7 +328,7 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         avgr = self.averager(
             composite_basis=self.basis,
             src=self._getSrc(),
-            num_procs=1 if xfail_ray_dev() else "auto",
+            num_procs=self.num_procs,
             dtype=self.dtype,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)

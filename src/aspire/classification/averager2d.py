@@ -247,6 +247,7 @@ class BFRAverager2D(AligningAverager2D):
         src,
         alignment_basis=None,
         n_angles=360,
+        num_procs=1,
         dtype=None,
     ):
         """
@@ -254,7 +255,9 @@ class BFRAverager2D(AligningAverager2D):
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         """
-        super().__init__(composite_basis, src, alignment_basis, dtype=dtype)
+        super().__init__(
+            composite_basis, src, alignment_basis, num_procs=num_procs, dtype=dtype
+        )
 
         self.n_angles = n_angles
 
@@ -336,6 +339,7 @@ class BFSRAverager2D(BFRAverager2D):
         n_angles=360,
         n_x_shifts=1,
         n_y_shifts=1,
+        num_procs=1,
         dtype=None,
     ):
         """
@@ -357,6 +361,7 @@ class BFSRAverager2D(BFRAverager2D):
             src,
             alignment_basis,
             n_angles,
+            num_procs=num_procs,
             dtype=dtype,
         )
 
