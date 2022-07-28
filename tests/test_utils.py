@@ -95,3 +95,20 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(G_x, g_1d_x))
         self.assertTrue(np.allclose(G_y, g_1d_y))
         self.assertTrue(np.allclose(G_z, g_1d_z))
+
+    def testGaussianScalarParam(self):
+        L = 100
+        sigma = 5
+        mu_2d = (2, 3)
+        sigma_2d = (sigma, sigma)
+        mu_3d = (2, 3, 5)
+        sigma_3d = (sigma, sigma, sigma)
+
+        g_2d = gaussian_2d(L, mu_2d, sigma_2d)
+        g_2d_scalar = gaussian_2d(L, mu_2d, sigma)
+
+        g_3d = gaussian_3d(L, mu_3d, sigma_3d)
+        g_3d_scalar = gaussian_3d(L, mu_3d, sigma)
+
+        self.assertTrue(np.allclose(g_2d, g_2d_scalar))
+        self.assertTrue(np.allclose(g_3d, g_3d_scalar))
