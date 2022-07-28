@@ -104,13 +104,16 @@ def sha256sum(filename):
 
 def gaussian_1d(size, mu=0, sigma=1, dtype=np.float64):
     """
-    Returns a 1d Gaussian in a 1D numpy array.
+    Returns the 1D Gaussian
 
-    Default is a centered disc of spread=peak=1.
+    .. math::
+        g(x)=\\exp\\left(\\frac{ -(x - \\mu)^2}{2\\sigma^2}\\right)
 
-    :param size: The height and width of returned array (pixels)
+    in a 1D numpy array.
+
+    :param size: The length of the returned array (pixels)
     :param mu: mean or center (pixels)
-    :param sigma: spread
+    :param sigma: standard deviation of the Gaussian
     :param dtype: dtype of returned array
     :return: Numpy array (1D)
     """
@@ -125,13 +128,19 @@ def gaussian_1d(size, mu=0, sigma=1, dtype=np.float64):
 
 def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), dtype=np.float64):
     """
-    Returns a 2d Gaussian in a square 2d numpy array.
+    Returns the 2D Gaussian
 
-    Default is a centered disc of spread=1.
+    .. math::
+        g(x,y)=\\exp\\left(\\frac{-(x - \\mu_x)^2}{2\\sigma_x^2} +
+                \\frac{-(y - \\mu_y)^2}{2\\sigma_y^2}\\right)
 
-    :param size: The height and width of returned array (pixels)
-    :param mu: A 2-tuple indicating the center of the Gaussian
-    :param sigma: A 2-tuple (or scalar) of spreads corresponding to mu
+    in a square 2D numpy array.
+
+    :param size: The length of each dimension of the returned array (pixels)
+    :param mu: A 2-tuple, :math:`(\\mu_x, \\mu_y)`, indicating the center of the Gaussian
+    :param sigma: A 2-tuple, :math:`(\\sigma_x, \\sigma_y)`, of the standard
+            deviation in the x and y directions. A single value, :math:`\\sigma`, can be
+            used when :math:`\\sigma_x = \\sigma_y`.
     :param dtype: dtype of returned array
     :return: Numpy array (2D)
     """
@@ -153,13 +162,20 @@ def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), dtype=np.float64):
 
 def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), dtype=np.float64):
     """
-    Returns a 3d Gaussian in a size-by-size-by-size 3d numpy array.
+    Returns the 3D Gaussian
 
-    Default is a centered volume of spread=1.
+    .. math::
+        g(x,y,z)=\\exp\\left(\\frac{-(x - \\mu_x)^2}{2\\sigma_x^2} +
+                \\frac{-(y - \\mu_y)^2}{2\\sigma_y^2} +
+                \\frac{-(z - \\mu_z)^2}{2\\sigma_z^2}\\right)
 
-    :param size: The height and width of returned array (pixels)
-    :param mu: A 3-tuple indicating the center of the Gaussian
-    :param sigma: A 3-tuple (or scalar) of spreads corresponding to mu
+    in a 3D numpy array.
+
+    :param size: The length of each dimension of the returned array (pixels)
+    :param mu: A 3-tuple, :math:`(\\mu_x, \\mu_y, \\mu_z)`, indicating the center of the Gaussian
+    :param sigma: A 3-tuple, :math:`(\\sigma_x, \\sigma_y, \\sigma_z)`, of the standard deviation
+            in the x, y, and z directions. A single value, :math:`\\sigma`, can be
+            used when :math:`\\sigma_x = \\sigma_y = \\sigma_z`
     :param dtype: dtype of returned array
     :return: Numpy array (3D)
     """
