@@ -50,8 +50,8 @@ class Simulation(ImageSource):
 
         self.seed = seed
 
-        # If a Volume is not provided we default to the legacy Gaussian blob volume
-        # with resolution L=8 if no resolution is provided.
+        # If a Volume is not provided we default to the legacy Gaussian blob volume.
+        # If a Simulation resolution is not provided, we default to L=8.
         if vols is None:
             if L is None:
                 _L = 8
