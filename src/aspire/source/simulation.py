@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class Simulation(ImageSource):
     def __init__(
         self,
-        L=8,
+        L=None,
         n=1024,
         vols=None,
         states=None,
@@ -50,9 +50,15 @@ class Simulation(ImageSource):
 
         self.seed = seed
 
+        # If a Volume is not provided we default to the legacy Gaussian blob volume
+        # with resolution L=8 if no resolution is provided.
         if vols is None:
+            if L is None:
+                _L = 8
+            else:
+                _L = L
             _vols = LegacyGaussianBlob(
-                L=L, C=2, symmetry_type=None, seed=self.seed, dtype=self.dtype
+                L=_L, C=2, symmetry_type=None, seed=self.seed, dtype=self.dtype
             )
             self.vols = _vols.generate()
         else:
@@ -66,12 +72,21 @@ class Simulation(ImageSource):
                 " In the future this will raise an error."
             )
 
+        if L is None:
+            self.L = self.vols.resolution
+        else:
+            msg = (
+                f"Simulation must have the same resolution as the provided Volume."
+                f" vols.resolution = {self.vols.resolution}, self.L = {self.L}."
+            )
+            assert self.vols.resolution == L, msg
+
         # We need to keep track of the original resolution we were initialized with,
         # to be able to generate projections of volumes later, when we are asked to supply images.
-        self._original_L = L
+        self._original_L = self.L
 
         if offsets is None:
-            offsets = L / 16 * randn(2, n, seed=seed).astype(dtype).T
+            offsets = self.L / 16 * randn(2, n, seed=seed).astype(dtype).T
 
         if amplitudes is None:
             min_, max_ = 2.0 / 3, 3.0 / 2
