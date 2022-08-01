@@ -1,4 +1,5 @@
 import logging
+from inspect import signature
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,6 +30,7 @@ class RIRClass2D(Class2D):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
+        selection_implementation="random",
         averager=None,
         dtype=None,
         seed=None,
@@ -59,6 +61,7 @@ class RIRClass2D(Class2D):
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
+        :param selection_implementation: See `select_classes`.
         :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
@@ -148,6 +151,33 @@ class RIRClass2D(Class2D):
             )
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
 
+        # Check we have a sane class selection_implementation
+        if callable(selection_implementation):
+            # If user brought their own function,
+            # check we can call with our 3-tuple
+            sig = signature(selection_implementation)
+            nparams = len(sig.parameters)
+            if nparams != 3:
+                raise RuntimeError(
+                    "User supplied `selection_implementation` function does not have correct call signature"
+                )
+
+            # Assign the user's function to be evaluated later
+            self._selection = selection_implementation
+
+        else:
+            selection_implementations = {
+                "head": self._select_classes_head,
+                "random": self._select_classes_random,
+            }
+            if selection_implementation not in selection_implementations:
+                raise ValueError(
+                    f"Provided `class_selection`={selection_implementation} not in {selection_implementation.keys()}"
+                )
+
+            # Assign the function corresponding to the requested implementation
+            self._selection = selection_implementations[selection_implementation]
+
     def classify(self, diagnostics=False):
         """
         This is the high level method to perform the 2D images classification.
@@ -203,10 +233,9 @@ class RIRClass2D(Class2D):
     def averages(self, classes, reflections, distances):
         # # Stage 3: Class Selection
         # This is an area open to active research.
-        # Currently we take a naive approach by selecting the
-        # first n_classes assuming they are quasi random.
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        classes, reflections = self.select_classes(classes, reflections)
+        selection = self.select_classes(classes, reflections, distances)
+        classes, reflections = classes[selection], reflections[selection]
 
         # # Stage 4: Averager
         logger.info(
@@ -215,17 +244,48 @@ class RIRClass2D(Class2D):
 
         return self.averager.average(classes, reflections)
 
-    def select_classes(self, classes, reflections):
+    def _select_classes_head(self, classes, reflections, distances):
         """
-        Select the `n_classes` to average from the (n_images) population of classes.
+        Select first  `n_classes` to average from the (n_images) population of classes.
+
+        This may be useful for debugging or when the `Source` is known
+        to be sufficiently randomized.
         """
-        # Generate indices for random sample (can do something smarter, or build this out later).
-        # For testing/poc just take the first n_classes so it matches earlier plots for manual comparison
-        # If image stack is assumed to be reasonably random, this is a reasonable thing to do.
-        # Another reasonable thing would be to take a random selection over the whole dataset,
-        # in case the head of a dataset is too similar or has artifacts.
-        selection = np.arange(self.n_classes)
-        return classes[selection], reflections[selection]
+        return np.arange(self.n_classes)
+
+    def _select_classes_random(self, classes, reflections, distances):
+        """
+        Select random `n_classes` to average from the (n_images) population of classes.
+        """
+        # Instantiate a random Generator
+        rng = np.random.default_rng(self.seed)
+        # Generate and return indices for random sample
+        return rng.choice(self.src.n, size=self.n_classes, replace=False)
+
+    def select_classes(self, classes, reflections, distances):
+        """
+        Selecting the "best" classes is an area of active research.
+
+        Here we provide two naive approaches and an entry point for extension.
+
+        'selection_implementation=random' will select random indices from across the entire dataset.  RNG is controlled by `seed`.
+
+        `selection_implementation=head' will select the first `n_classes` in
+        order.  This may be useful for debugging and development.
+
+        Users may assign `selection_implementation` with their own function
+        so long as the function signature is correct.  Their function
+        will be evaluated at runtime immediately before `averages`
+        are computed.
+        """
+        selection = self._selection(classes, reflections, distances)
+        if len(selection) != self.n_classes:
+            raise ValueError(f"Class selection must be len {self.n_classes}, got {len(selection)}")
+        if np.max(selection) > self.src.n or np.min(selection) < 0:
+            raise ValueError(f"Class selection out of bounds [0,{self.src.n}]"
+                             f"with [{np.min(selection)}, {np.max(selection)}]")
+
+        return selection
 
     def pca(self, M):
         """
