@@ -268,19 +268,25 @@ class RIRClass2D(Class2D):
 
         Here we provide two naive approaches and an entry point for extension.
 
-        'selection_implementation=random' will select random indices from across the entire dataset.  RNG is controlled by `seed`.
+        'selection_implementation=random' will select random indices from across the entire dataset.
+        RNG is controlled by `seed`.
 
-        `selection_implementation=head' will select the first `n_classes` in
-        order.  This may be useful for debugging and development.
+        `selection_implementation=head' will select the first `n_classes` in order.
+        This may be useful for debugging and development.
 
         Users may assign `selection_implementation` with their own function
         so long as the function signature is correct.  Their function
         will be evaluated at runtime immediately before `averages`
         are computed.
         """
+        
         selection = self._selection(classes, reflections, distances)
+
+        # Check length
         if len(selection) != self.n_classes:
             raise ValueError(f"Class selection must be len {self.n_classes}, got {len(selection)}")
+
+        # Check [0, n_classes]
         if np.max(selection) > self.src.n or np.min(selection) < 0:
             raise ValueError(f"Class selection out of bounds [0,{self.src.n}]"
                              f"with [{np.min(selection)}, {np.max(selection)}]")
