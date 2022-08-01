@@ -51,6 +51,7 @@ class VolumeTestCase(TestCase):
         v2 = self.vols_1.astype(new_dtype)
         self.assertTrue(isinstance(v2, Volume))
         self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
+        self.assertTrue(v2.dtype == new_dtype)
 
     def testGetter(self):
         k = np.random.randint(self.n)
