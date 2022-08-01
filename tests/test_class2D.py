@@ -182,6 +182,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
+            selection_implementation="head",
         )
 
         classification_results = rir.classify()
@@ -312,6 +313,81 @@ class RIRClass2DTestCase(TestCase):
             match="RIRClass2D has currently only been developed for pca_basis as a FSPCABasis.",
         ):
             _ = RIRClass2D(self.clean_src, self.basis)
+
+    def testSelectionImplementations(self):
+        """
+        Test optional implementations handle bad inputs with a descriptive error.
+        """
+        n_classes = 10
+
+        # Wrong signature (nargs)
+        with pytest.raises(
+            RuntimeError, match=r".*does not have correct call signature.*"
+        ):
+
+            def wrong_sig(a, b):
+                return np.arange(self.clean_src.n)
+
+            _ = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                selection_implementation=wrong_sig,
+            )
+
+        # lower bound
+        with pytest.raises(ValueError, match=r".*out of bounds.*"):
+
+            def bad_lbound(a, b, c):
+                return np.arange(n_classes) - 1
+
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=n_classes,
+                selection_implementation=bad_lbound,
+            )
+            classification_results = rir.classify()
+            _ = rir.averages(*classification_results)
+
+        # upper bound
+        with pytest.raises(ValueError, match=r".*out of bounds.*"):
+
+            def bad_ubound(a, b, c):
+                return np.arange(n_classes) + self.clean_src.n
+
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=n_classes,
+                selection_implementation=bad_ubound,
+            )
+            classification_results = rir.classify()
+            _ = rir.averages(*classification_results)
+
+        # empty
+        with pytest.raises(ValueError, match=r".*must be len.*"):
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                selection_implementation=lambda a, b, c: [],
+            )
+            classification_results = rir.classify()
+            _ = rir.averages(*classification_results)
+
+        # too long
+        with pytest.raises(ValueError, match=r".*must be len.*"):
+
+            def too_long(a, b, c):
+                return np.arange(n_classes + 1)
+
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=n_classes,
+                selection_implementation=too_long,
+            )
+            classification_results = rir.classify()
+            _ = rir.averages(*classification_results)
 
 
 class LegacyImplementationTestCase(TestCase):
