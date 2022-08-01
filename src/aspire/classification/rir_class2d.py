@@ -291,7 +291,7 @@ class RIRClass2D(Class2D):
         # Check [0, n_classes]
         if np.max(selection) >= self.src.n or np.min(selection) < 0:
             raise ValueError(
-                f"Class selection out of bounds [0,{self.src.n}]"
+                f"Class selection out of bounds [0, {self.src.n - 1}]"
                 f"with [{np.min(selection)}, {np.max(selection)}]"
             )
 
