@@ -174,6 +174,27 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), peak=1, dtype=np.float64):
     return (peak * np.exp(-p)).astype(dtype, copy=False)
 
 
+def bump_3d(size, spread=1, dtype=np.float64):
+    """
+    Returns a centered 3D bump function in a (size)x(size)x(size) numpy array.
+    :param size: The length of the dimensions of the array (pixels.
+    :param spread: A factor controling the spread of the bump function.
+    :param dtype: dtype of returned array
+    :return: Numpy array (3D)
+    """
+    a = spread
+    g = grid_3d(size, dtype=dtype)
+    selection = g["r"] < 1
+
+    p = g["x"] ** 2 + g["y"] ** 2 + g["z"] ** 2
+
+    bump = np.zeros((size,) * 3, dtype=dtype)
+    bump[selection] = np.exp(-1 / (a - a * p[selection]))
+    bump /= np.exp(-1 / a)
+
+    return bump
+
+
 def circ(size, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):
     """
     Returns a 2d `circ` function in a square 2d numpy array.
