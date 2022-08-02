@@ -15,7 +15,6 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-
 from aspire.operators import (
     CTFFilter,
     IdentityFilter,
@@ -380,7 +379,7 @@ class ImageSource:
         """
         Perform phase flip to images in the source object using CTF information
         """
-        
+
         logger.info("Perform phase flip on source object")
 
         if self.n_ctf_filters < 1:
