@@ -2,7 +2,8 @@ import abc
 
 import numpy as np
 
-from aspire.volume import gaussian_blob_vols
+from aspire.utils import bump_3d
+from aspire.volume import Volume, gaussian_blob_vols
 
 
 class SyntheticVolumeBase(abc.ABC):
@@ -27,7 +28,7 @@ class SyntheticVolumeBase(abc.ABC):
         return f"{self.__dict__}"
 
 
-class LegacyGaussianBlob(SyntheticVolumeBase):
+class LegacyVolume(SyntheticVolumeBase):
     """
     Legacy Aspire Gaussian Blobs.
 
@@ -50,28 +51,43 @@ class LegacyGaussianBlob(SyntheticVolumeBase):
         )
 
 
-class BumpBlobs(SyntheticVolumeBase):
+class BumpVolume(SyntheticVolumeBase):
     """
-    Similar to LegacyGaussianBlob, but used 3d Bump function.
+    Similar to LegacyVolume, but used 3d Bump function.
     """
 
     def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
         super().__init__(L, C, symmetry_type, seed=seed, dtype=dtype)
         self.K = K
 
+    def generate(self):
+        # transfer the legacy gaussian blobs stuff here.
+        vol = gaussian_blob_vols(
+            L=self.L,
+            C=self.C,
+            symmetry_type=self.symmetry_type,
+            seed=self.seed,
+            dtype=self.dtype,
+        )
 
-class CnSymmetricGaussianBlob(LegacyGaussianBlob):
+        bump_mask = bump_3d(self.L, spread=100, dtype=self.dtype)
+        vol = np.multiply(bump_mask, vol)
+
+        return Volume(vol)
+
+
+class CnSymmetricVolume(LegacyVolume):
     """
     Cn Symmetric ...
     """
 
-    # Note this class can actually inherit everything from LegacyGaussianBlob for now.
+    # Note this class can actually inherit everything from LegacyVolume.
     def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
         super().__init__(L, C, symmetry_type, K=K, seed=seed, dtype=dtype)
-        assert self.symmetry_type is not None, "bleep Bloop eRoR"
+        assert self.symmetry_type is not None, "Symmetry was not provided."
 
 
-class DnSymmetricGaussianBlob(SyntheticVolumeBase):
+class DnSymmetricVolume(SyntheticVolumeBase):
     """
     Dn Symmetric ...
     """
@@ -81,7 +97,7 @@ class DnSymmetricGaussianBlob(SyntheticVolumeBase):
         self.K = K
 
 
-class TSymmetricGaussianBlob(SyntheticVolumeBase):
+class TSymmetricVolume(SyntheticVolumeBase):
     """
     T Symmetric ...
     """
@@ -91,7 +107,7 @@ class TSymmetricGaussianBlob(SyntheticVolumeBase):
         self.K = K
 
 
-class OSymmetricGaussianBlob(SyntheticVolumeBase):
+class OSymmetricGaussianVolume(SyntheticVolumeBase):
     """
     O Symmetric ...
     """
@@ -101,31 +117,7 @@ class OSymmetricGaussianBlob(SyntheticVolumeBase):
         self.K = K
 
 
-class PointBasedBlobs(SyntheticVolumeBase):
-    """
-    Designed to take in iterable of ((x,y,z), sigma), or generate a random one.
-    """
-
-    def __init__(self, L, C, symmetry_type, points=None, seed=None, dtype=np.float64):
-        """
-        ...
-        `points` can an integer to induce generation of that number random points,
-        or points can be a iterable of form described above.
-
-        """
-        super().__init__(L, C, symmetry_type, seed=seed, dtype=dtype)
-
-        if points is None:
-            points = 16
-
-        if isinstance(points, int):
-            points = self._gen_points(points)
-
-        self.points = points
-        self.K = len(self.points)
-
-
-class PDBBlobs(PointBasedBlobs):
+class PDBVolume(SyntheticVolumeBase):
     """
     Take in a pdb-ish file and translate into points to be used
     in PointBasedBlobs.

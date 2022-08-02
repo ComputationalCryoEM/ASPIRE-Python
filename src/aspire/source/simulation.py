@@ -18,7 +18,7 @@ from aspire.utils import (
 )
 from aspire.utils.random import rand, randi, randn
 from aspire.volume import Volume
-from aspire.volume.volume_synthesis import LegacyGaussianBlob
+from aspire.volume.volume_synthesis import LegacyVolume
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class Simulation(ImageSource):
                 _L = 8
             else:
                 _L = L
-            _vols = LegacyGaussianBlob(
+            _vols = LegacyVolume(
                 L=_L, C=2, symmetry_type=None, seed=self.seed, dtype=self.dtype
             )
             self.vols = _vols.generate()
