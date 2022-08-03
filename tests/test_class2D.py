@@ -102,6 +102,7 @@ class RIRClass2DTestCase(TestCase):
     def setUp(self):
         self.resolution = 16
         self.dtype = np.float64
+        self.n_img = 150
 
         # Create some projections
         v = Volume(
@@ -114,7 +115,7 @@ class RIRClass2DTestCase(TestCase):
         # Clean
         self.clean_src = Simulation(
             L=self.resolution,
-            n=321,
+            n=self.n_img,
             vols=v,
             dtype=self.dtype,
         )
@@ -124,7 +125,7 @@ class RIRClass2DTestCase(TestCase):
         noise_filter = ScalarFilter(dim=2, value=noise_var)
         self.noisy_src = Simulation(
             L=self.resolution,
-            n=123,
+            n=self.n_img,
             vols=v,
             dtype=self.dtype,
             noise_filter=noise_filter,
@@ -183,6 +184,7 @@ class RIRClass2DTestCase(TestCase):
         rir = RIRClass2D(
             self.clean_src,
             clean_fspca_basis,
+            n_classes=5,
             bispectrum_components=42,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
@@ -209,7 +211,7 @@ class RIRClass2DTestCase(TestCase):
             num_procs=1 if xfail_ray_dev() else None,
         )
 
-        classification_results = rir.classify()
+        _ = rir.classify()
 
     def testRIRsk(self):
         """
