@@ -210,7 +210,6 @@ class RIRClass2DTestCase(TestCase):
         )
 
         classification_results = rir.classify()
-        _ = rir.averages(*classification_results)
 
     def testRIRsk(self):
         """
