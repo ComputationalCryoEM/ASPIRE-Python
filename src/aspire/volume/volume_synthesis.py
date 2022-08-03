@@ -30,18 +30,29 @@ class SyntheticVolumeBase(abc.ABC):
 
 class LegacyVolume(SyntheticVolumeBase):
     """
-    Legacy Aspire Gaussian Blobs.
+    Legacy ASPIRE Volume constructed of 3D Gaussian blobs.
 
     Suffers from too large point variances.
     Included for migration of legacy unit tests.
     """
 
-    def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
+    def __init__(self, L, C=2, symmetry_type=None, K=16, seed=None, dtype=np.float64):
+        """
+        :param L: Resolution of the Volume(s) in pixels.
+        :param C: Number of Volumes to generate.
+        :param symmetry_type: Must be None for LegacyVolume.
+        :param K: Number of Gaussian blobs used to construct the Volume(s).
+        :param seed: Random seed for generating random Gaussian blobs.
+        :param dtype: dtype for Volume(s).
+        """
         super().__init__(L, C, symmetry_type, seed=seed, dtype=dtype)
         self.K = K
+        assert self.symmetry_type is None, "symmetry_type must be None for LagacyVolume"
 
     def generate(self):
-        # transfer the legacy gaussian blobs stuff here.
+        """
+        Called to generate and return an ASPIRE LegacyVolume as a Volume instance.
+        """
         return gaussian_blob_vols(
             L=self.L,
             C=self.C,
@@ -51,17 +62,28 @@ class LegacyVolume(SyntheticVolumeBase):
         )
 
 
-class BumpVolume(SyntheticVolumeBase):
+class CompactVolume(SyntheticVolumeBase):
     """
-    Similar to LegacyVolume, but used 3d Bump function.
+    A LegacyVolume or CnSymmetricVolume that has compact support within the unit sphere.
     """
 
     def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
         super().__init__(L, C, symmetry_type, seed=seed, dtype=dtype)
+        """
+        :param L: Resolution of the Volume(s) in pixels.
+        :param C: Number of Volumes to generate.
+        :param symmetry_type: Volume symmetry. None or a string "Cn", n an integer.
+        :param K: Number of Gaussian blobs used to construct the Volume(s).
+        :param seed: Random seed for generating random Gaussian blobs.
+        :param dtype: dtype for Volume(s)
+        """
         self.K = K
 
     def generate(self):
-        # transfer the legacy gaussian blobs stuff here.
+        """
+        Generates a LegacyVolume or CnSymmetricVolume that is multiplied by a bump function
+        to give compact support within the unit sphere.
+        """
         vol = gaussian_blob_vols(
             L=self.L,
             C=self.C,
@@ -78,11 +100,19 @@ class BumpVolume(SyntheticVolumeBase):
 
 class CnSymmetricVolume(LegacyVolume):
     """
-    Cn Symmetric ...
+    A cyclically symmetric Volume constructed with random 3D Gaussian blobs.
     """
 
     # Note this class can actually inherit everything from LegacyVolume.
     def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
+        """
+        :param L: Resolution of the Volume(s) in pixels.
+        :param C: Number of Volumes to generate.
+        :param symmetry_type: Volume symmetry. A string "Cn", n an integer.
+        :param K: Number of Gaussian blobs used to construct the Volume(s).
+        :param seed: Random seed for generating random Gaussian blobs.
+        :param dtype: dtype for Volume(s)
+        """
         super().__init__(L, C, symmetry_type, K=K, seed=seed, dtype=dtype)
         assert self.symmetry_type is not None, "Symmetry was not provided."
 

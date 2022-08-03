@@ -10,5 +10,5 @@ from .volume_synthesis import (  # isort:skip
     SyntheticVolumeBase,
     LegacyVolume,
     CnSymmetricVolume,
-    BumpVolume,
+    CompactVolume,
 )
