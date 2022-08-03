@@ -92,6 +92,9 @@ class ImageSource:
 
     @property
     def n_ctf_filters(self):
+        """
+        Return the number of CTFFilters found in this Source.
+        """
         return len([f for f in self.unique_filters if isinstance(f, CTFFilter)])
 
     def __len__(self):
@@ -377,7 +380,7 @@ class ImageSource:
 
     def phase_flip(self):
         """
-        Perform phase flip to images in the source object using CTF information.
+        Perform phase flip on images in the source object using CTF information.
 
         If no CTFFilters exist this will emit a warning and otherwise no-op.
         """
