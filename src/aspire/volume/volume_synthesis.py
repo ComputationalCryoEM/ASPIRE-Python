@@ -117,52 +117,18 @@ class CnSymmetricVolume(LegacyVolume):
         assert self.symmetry_type is not None, "Symmetry was not provided."
 
 
-class DnSymmetricVolume(SyntheticVolumeBase):
-    """
-    Dn Symmetric ...
-    """
-
-    def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
-        super().__init__(L, C, symmetry_type, seed=seed, dtype=dtype)
-        self.K = K
-
-
-class TSymmetricVolume(SyntheticVolumeBase):
-    """
-    T Symmetric ...
-    """
-
-    def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
-        super().__init__(L, C, symmetry_type, seed=seed, dtype=dtype)
-        self.K = K
-
-
-class OSymmetricGaussianVolume(SyntheticVolumeBase):
-    """
-    O Symmetric ...
-    """
-
-    def __init__(self, L, C, symmetry_type, K=16, seed=None, dtype=np.float64):
-        super().__init__(L, C, symmetry_type, seed=seed, dtype=dtype)
-        self.K = K
-
-
 class PDBVolume(SyntheticVolumeBase):
     """
-    Take in a pdb-ish file and translate into points to be used
-    in PointBasedBlobs.
+    Take in a PDB file and generate a volume.
     """
 
     def __init__(self, L, C, symmetry_type, filename, seed=None, dtype=np.float64):
-        points = self._load_pdb(filename)
-        super().__init__(L, C, symmetry_type, points=points, seed=seed, dtype=dtype)
+        # points = self._load_pdb(filename)
+        # super().__init__(L, C, symmetry_type, points=points, seed=seed, dtype=dtype)
+        raise NotImplementedError("PDBvolume not implemented yet.")
 
     def _load_pdb(self, filename):
         """
         Return points loaded from file.
         """
-        pass
-
-
-# # example fail
-# A = BumpBlobs()
+        raise NotImplementedError("_load_pdb not implemented yet.")
