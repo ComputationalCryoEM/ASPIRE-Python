@@ -56,7 +56,7 @@ class FSPCATestCase(TestCase):
 
         # Check recon is close to imgs
         rmse = np.sqrt(np.mean(np.square(self.imgs.asnumpy() - recon.asnumpy())))
-        logger.info(f"FSPCA Expand Eval Image Round Trupe RMSE: {rmse}")
+        logger.info(f"FSPCA Expand Eval Image Round True RMSE: {rmse}")
         self.assertTrue(rmse < utest_tolerance(self.dtype))
 
     def testComplexConversionErrors(self):
@@ -154,6 +154,7 @@ class RIRClass2DTestCase(TestCase):
                 self.clean_src,
                 self.clean_fspca_basis,  # 400 components
                 fspca_components=100,
+                bispectrum_components=100,
                 large_pca_implementation="legacy",
                 nn_implementation="legacy",
                 bispectrum_implementation="legacy",
@@ -164,6 +165,7 @@ class RIRClass2DTestCase(TestCase):
             self.clean_src,
             self.clean_fspca_basis,  # 400 components
             fspca_components=self.clean_fspca_basis.components,
+            bispectrum_components=100,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
@@ -181,6 +183,7 @@ class RIRClass2DTestCase(TestCase):
         rir = RIRClass2D(
             self.clean_src,
             clean_fspca_basis,
+            bispectrum_components=42,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
@@ -198,6 +201,8 @@ class RIRClass2DTestCase(TestCase):
         # Use the basis class setup, only requires a Source.
         rir = RIRClass2D(
             self.clean_src,
+            fspca_components=self.clean_fspca_basis.components,
+            bispectrum_components=self.clean_fspca_basis.components - 1,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="devel",
@@ -262,9 +267,7 @@ class RIRClass2DTestCase(TestCase):
         Also tests dtype mismatch behavior.
         """
 
-        with pytest.raises(
-            RuntimeError, match=r".*Images too small for Bispectrum Components.*"
-        ):
+        with pytest.raises(RuntimeError, match=r".*Reduce bispectrum_components.*"):
             _ = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
@@ -280,7 +283,10 @@ class RIRClass2DTestCase(TestCase):
         # Nearest Neighbhor component
         with pytest.raises(ValueError, match=r"Provided nn_implementation.*"):
             _ = RIRClass2D(
-                self.clean_src, self.clean_fspca_basis, nn_implementation="badinput"
+                self.clean_src,
+                self.clean_fspca_basis,
+                bispectrum_components=int(0.75 * self.clean_fspca_basis.basis.count),
+                nn_implementation="badinput",
             )
 
         # Large PCA component
