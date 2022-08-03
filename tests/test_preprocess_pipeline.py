@@ -1,3 +1,4 @@
+import logging
 import os.path
 from unittest import TestCase
 
@@ -33,6 +34,12 @@ class PreprocessPLTestCase(TestCase):
         )
         self.imgs_org = self.sim.images(start=0, num=self.n)
 
+    # This is a workaround to use a `pytest` fixture with `unittest` style cases.
+    # We use it below to capture and inspect the log
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
+
     def testPhaseFlip(self):
         self.sim.phase_flip()
         imgs_pf = self.sim.images(start=0, num=self.n)
@@ -58,9 +65,10 @@ class PreprocessPLTestCase(TestCase):
             dtype=self.dtype,
         )
 
-        # Test we raise
-        with pytest.raises(RuntimeError, match=r",*Confirm.*CTFFilters.*"):
+        # Test we warn
+        with self._caplog.at_level(logging.WARN):
             sim.phase_flip()
+            assert "No CTFFilters found" in self._caplog.text
 
     def testNormBackground(self):
         bg_radius = 1.0

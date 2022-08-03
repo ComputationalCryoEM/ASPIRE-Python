@@ -377,23 +377,28 @@ class ImageSource:
 
     def phase_flip(self):
         """
-        Perform phase flip to images in the source object using CTF information
+        Perform phase flip to images in the source object using CTF information.
+
+        If no CTFFilters exist this will emit a warning and otherwise no-op.
         """
 
         logger.info("Perform phase flip on source object")
 
-        if self.n_ctf_filters < 1:
-            raise RuntimeError(
-                "Cannot perform `phase_flip` without CTFFilters."
-                "  Confirm you have populated CTFFilters."
+        if self.n_ctf_filters >= 1:
+            unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
+
+            logger.info("Adding Phase Flip Xform to end of generation pipeline")
+            self.generation_pipeline.add_xform(
+                IndexedXform(unique_xforms, self.filter_indices)
             )
 
-        unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
-
-        logger.info("Adding Phase Flip Xform to end of generation pipeline")
-        self.generation_pipeline.add_xform(
-            IndexedXform(unique_xforms, self.filter_indices)
-        )
+        else:
+            # No CTF filters found
+            logger.warning(
+                "No CTFFilters found."
+                "  `phase_flip` is a no-op without CTFFilters."
+                "  Confirm you have correctly populated CTFFilters."
+            )
 
     def invert_contrast(self, batch_size=512):
         """
