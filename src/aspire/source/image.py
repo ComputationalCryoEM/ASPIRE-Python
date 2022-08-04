@@ -15,7 +15,12 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.operators import IdentityFilter, MultiplicativeFilter, PowerFilter
+from aspire.operators import (
+    CTFFilter,
+    IdentityFilter,
+    MultiplicativeFilter,
+    PowerFilter,
+)
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import Rotation, grid_2d
 
@@ -84,6 +89,13 @@ class ImageSource:
         self._metadata_out = None
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
+
+    @property
+    def n_ctf_filters(self):
+        """
+        Return the number of CTFFilters found in this Source.
+        """
+        return len([f for f in self.unique_filters if isinstance(f, CTFFilter)])
 
     def __len__(self):
         """
@@ -368,14 +380,28 @@ class ImageSource:
 
     def phase_flip(self):
         """
-        Perform phase flip to images in the source object using CTF information
+        Perform phase flip on images in the source object using CTF information.
+
+        If no CTFFilters exist this will emit a warning and otherwise no-op.
         """
+
         logger.info("Perform phase flip on source object")
-        logger.info("Adding Phase Flip Xform to end of generation pipeline")
-        unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
-        self.generation_pipeline.add_xform(
-            IndexedXform(unique_xforms, self.filter_indices)
-        )
+
+        if len(self.unique_filters) >= 1:
+            unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
+
+            logger.info("Adding Phase Flip Xform to end of generation pipeline")
+            self.generation_pipeline.add_xform(
+                IndexedXform(unique_xforms, self.filter_indices)
+            )
+
+        else:
+            # No CTF filters found
+            logger.warning(
+                "No Filters found."
+                "  `phase_flip` is a no-op without Filters."
+                "  Confirm you have correctly populated CTFFilters."
+            )
 
     def invert_contrast(self, batch_size=512):
         """
