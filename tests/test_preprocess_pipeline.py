@@ -68,7 +68,7 @@ class PreprocessPLTestCase(TestCase):
         # Test we warn
         with self._caplog.at_level(logging.WARN):
             sim.phase_flip()
-            assert "No CTFFilters found" in self._caplog.text
+            assert "No Filters found" in self._caplog.text
 
     def testNormBackground(self):
         bg_radius = 1.0
