@@ -29,7 +29,7 @@ class RIRClass2D(Class2D):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        num_procs="auto",
+        num_procs=None,
         averager=None,
         dtype=None,
         seed=None,
@@ -61,7 +61,8 @@ class RIRClass2D(Class2D):
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
         :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
-        :param num_procs: Number of processes to use. Defaults "auto".
+        :param num_procs: Number of processes to use.
+        `None` will attempt computing a suggestion based on machine resources.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.

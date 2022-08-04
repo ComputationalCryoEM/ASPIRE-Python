@@ -18,7 +18,7 @@ from aspire.classification import (
     ReddyChatterjiAverager2D,
 )
 from aspire.source import Simulation
-from aspire.utils import Rotation, get_num_multi_procs
+from aspire.utils import Rotation, num_procs_suggestion
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def xfail_ray_dev():
             importlib.util.find_spec("ray"),  # 'ray' installed
             parse_version(get_distribution("numpy").version)
             >= parse_version("1.22.0"),  # with unsupported numpy combo
-            get_num_multi_procs() > 1,  # and code would attempt to use multiprocessing
+            num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
         ]
     )
 
@@ -315,7 +315,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
-    num_procs = 1 if xfail_ray_dev() else "auto"
+    num_procs = 1 if xfail_ray_dev() else None
 
     def testAverager(self):
         """

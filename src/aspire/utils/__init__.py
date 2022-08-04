@@ -45,8 +45,8 @@ from .matrix import (
     volmat_to_vecmat,
 )
 from .multiprocessing import (
-    get_num_multi_procs,
     mem_based_cpu_suggestion,
+    num_procs_suggestion,
     physical_core_cpu_suggestion,
     virtual_core_cpu_suggestion,
 )

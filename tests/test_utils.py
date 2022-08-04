@@ -7,8 +7,8 @@ from pytest import raises
 from aspire import __version__
 from aspire.utils import (
     get_full_version,
-    get_num_multi_procs,
     mem_based_cpu_suggestion,
+    num_procs_suggestion,
     physical_core_cpu_suggestion,
     powerset,
     utest_tolerance,
@@ -137,4 +137,4 @@ class MultiProcessingUtilsTestCase(TestCase):
         self.assertTrue(isinstance(virtual_core_cpu_suggestion(), int))
 
     def testGetNumMultiProcs(self):
-        self.assertTrue(isinstance(get_num_multi_procs(), int))
+        self.assertTrue(isinstance(num_procs_suggestion(), int))

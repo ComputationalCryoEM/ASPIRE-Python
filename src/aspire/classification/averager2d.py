@@ -10,7 +10,7 @@ from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.multiprocessing import get_num_multi_procs
+from aspire.utils.multiprocessing import num_procs_suggestion
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ class Averager2D(ABC):
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
         :param num_procs: Number of processes to use.
+        `None` will attempt computing a suggestion based on machine resources.
         Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
@@ -41,8 +42,8 @@ class Averager2D(ABC):
         else:
             self.dtype = np.dtype(dtype)
 
-        if num_procs == "auto":
-            num_procs = get_num_multi_procs()
+        if num_procs is None:
+            num_procs = num_procs_suggestion()
             # Only enable multiprocessing when several cores available
             if num_procs < 3:
                 num_procs = 1
@@ -478,7 +479,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         composite_basis,
         src,
         alignment_src=None,
-        num_procs="auto",
+        num_procs=None,
         dtype=None,
     ):
         """
@@ -486,7 +487,8 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         :param src: Source of original images.
         :param alignment_src: Optional, source to be used during class average alignment.
         Must be the same resolution as `src`.
-        :param num_procs: Number of processes to use. Defaults "auto".
+        :param num_procs: Number of processes to use.
+        `None` will attempt computing a suggestion based on machine resources.
         Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
@@ -524,7 +526,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
         def _innerloop(k):
-            logger.debug(f"Processing alignment for class: {k}")
             # Get the array of images for this class, using the `alignment_src`.
             images_k = self._cls_images(classes[k], src=self.alignment_src)
             return reddy_chatterji_register(
@@ -632,7 +633,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         src,
         alignment_src=None,
         radius=None,
-        num_procs="auto",
+        num_procs=None,
         dtype=None,
     ):
         """
@@ -647,7 +648,8 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         Defaults to src.L//8.
         :param dtype: Numpy dtype to be used during alignment.
 
-        :param num_procs: Number of processes to use. Defaults "auto".
+        :param num_procs: Number of processes to use.
+        `None` will attempt computing a suggestion based on machine resources.
         Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
@@ -687,9 +689,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         X, Y = g["x"][disc], g["y"][disc]
 
         def _innerloop(k):
-            logger.debug(
-                f"Processing alignment for class: {k}",
-            )
             unshifted_images = self._cls_images(classes[k])
             # Instantiate matrices for inner loop, and best results.
             _rotations = np.zeros(classes.shape[1:], dtype=self.dtype)

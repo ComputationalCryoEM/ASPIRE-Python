@@ -184,7 +184,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
-            num_procs=1 if xfail_ray_dev() else "auto",
+            num_procs=1 if xfail_ray_dev() else None,
         )
 
         classification_results = rir.classify()
@@ -201,7 +201,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="devel",
-            num_procs=1 if xfail_ray_dev() else "auto",
+            num_procs=1 if xfail_ray_dev() else None,
         )
 
         classification_results = rir.classify()
