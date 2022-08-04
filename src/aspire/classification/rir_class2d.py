@@ -315,8 +315,6 @@ class RIRClass2D(Class2D):
 
         return classes, refl, distances
 
-        return indices
-
     def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
         """
         Perform nearest neighbor classification.
