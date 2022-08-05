@@ -7,7 +7,12 @@ import pytest
 from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
-from aspire.classification import BFRAverager2D, RIRClass2D
+from aspire.classification import (
+    BFRAverager2D,
+    ClassSelector,
+    RIRClass2D,
+    TopClassSelector,
+)
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
@@ -182,7 +187,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
-            selection_implementation="head",
+            selector=TopClassSelector(),
         )
 
         classification_results = rir.classify()
@@ -318,48 +323,34 @@ class RIRClass2DTestCase(TestCase):
         """
         Test optional implementations handle bad inputs with a descriptive error.
         """
+
         n_classes = 10
 
-        # Wrong signature (nargs)
-        with pytest.raises(
-            RuntimeError, match=r".*does not have correct call signature.*"
-        ):
+        class CustomClassSelector(ClassSelector):
+            def __init__(self, x):
+                self.x = x
 
-            def wrong_sig(a, b):
-                return np.arange(self.clean_src.n)
-
-            _ = RIRClass2D(
-                self.clean_src,
-                self.clean_fspca_basis,
-                selection_implementation=wrong_sig,
-            )
+            def _select(self, n, classes, reflections, distances):
+                return self.x
 
         # lower bound
         with pytest.raises(ValueError, match=r".*out of bounds.*"):
-
-            def bad_lbound(a, b, c):
-                return np.arange(n_classes) - 1
-
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
                 n_classes=n_classes,
-                selection_implementation=bad_lbound,
+                selector=CustomClassSelector(np.arange(n_classes) - 1),
             )
             classification_results = rir.classify()
             _ = rir.averages(*classification_results)
 
         # upper bound
         with pytest.raises(ValueError, match=r".*out of bounds.*"):
-
-            def bad_ubound(a, b, c):
-                return np.arange(n_classes) + self.clean_src.n
-
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
                 n_classes=n_classes,
-                selection_implementation=bad_ubound,
+                selector=CustomClassSelector(np.arange(n_classes) + self.clean_src.n),
             )
             classification_results = rir.classify()
             _ = rir.averages(*classification_results)
@@ -369,22 +360,19 @@ class RIRClass2DTestCase(TestCase):
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
-                selection_implementation=lambda a, b, c: [],
+                n_classes=n_classes,
+                selector=CustomClassSelector([]),
             )
             classification_results = rir.classify()
             _ = rir.averages(*classification_results)
 
         # too long
         with pytest.raises(ValueError, match=r".*must be len.*"):
-
-            def too_long(a, b, c):
-                return np.arange(n_classes + 1)
-
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
                 n_classes=n_classes,
-                selection_implementation=too_long,
+                selector=CustomClassSelector(np.arange(n_classes + 1)),
             )
             classification_results = rir.classify()
             _ = rir.averages(*classification_results)
