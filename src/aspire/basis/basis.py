@@ -141,8 +141,8 @@ class Basis:
         """
         Evaluate coefficient matrix in dual basis
 
-        :param X: The coefficient array as an Image or Volume object of
-            size `self.sz`-by-`self.sz` to be evaluated.
+        :param X: The coefficient array of size `self.sz`-by-`self.sz`
+            to be evaluated.
         :return: The evaluation of `X` in the dual basis. This is
             `self.count`-by-`self.count`. matrix.
             If `V` is a matrix of size `self.count`-by-`self.count`,
