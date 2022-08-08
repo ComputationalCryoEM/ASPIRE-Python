@@ -103,6 +103,7 @@ class FSPCATestCase(TestCase):
 
 class RIRClass2DTestCase(TestCase):
     def setUp(self):
+        self.n_classes = 5
         self.resolution = 16
         self.dtype = np.float64
 
@@ -221,7 +222,7 @@ class RIRClass2DTestCase(TestCase):
             self.noisy_fspca_basis,
             bispectrum_components=100,
             sample_n=42,
-            n_classes=5,
+            n_classes=self.n_classes,
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
@@ -324,8 +325,6 @@ class RIRClass2DTestCase(TestCase):
         Test optional implementations handle bad inputs with a descriptive error.
         """
 
-        n_classes = 10
-
         class CustomClassSelector(ClassSelector):
             def __init__(self, x):
                 self.x = x
@@ -338,44 +337,57 @@ class RIRClass2DTestCase(TestCase):
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
-                n_classes=n_classes,
-                selector=CustomClassSelector(np.arange(n_classes) - 1),
+                n_classes=self.n_classes,
+                selector=CustomClassSelector(np.arange(self.n_classes) - 1),
             )
-            classification_results = rir.classify()
-            _ = rir.averages(*classification_results)
+            _ = rir.averages(*rir.classify())
 
         # upper bound
         with pytest.raises(ValueError, match=r".*out of bounds.*"):
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
-                n_classes=n_classes,
-                selector=CustomClassSelector(np.arange(n_classes) + self.clean_src.n),
+                n_classes=self.n_classes,
+                selector=CustomClassSelector(
+                    np.arange(self.n_classes) + self.clean_src.n
+                ),
             )
-            classification_results = rir.classify()
-            _ = rir.averages(*classification_results)
+            _ = rir.averages(*rir.classify())
 
         # empty
         with pytest.raises(ValueError, match=r".*must be len.*"):
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
-                n_classes=n_classes,
+                n_classes=self.n_classes,
                 selector=CustomClassSelector([]),
             )
-            classification_results = rir.classify()
-            _ = rir.averages(*classification_results)
+            _ = rir.averages(*rir.classify())
 
         # too long
         with pytest.raises(ValueError, match=r".*must be len.*"):
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
-                n_classes=n_classes,
-                selector=CustomClassSelector(np.arange(n_classes + 1)),
+                n_classes=self.n_classes,
+                selector=CustomClassSelector(np.arange(self.n_classes + 1)),
             )
-            classification_results = rir.classify()
-            _ = rir.averages(*classification_results)
+            _ = rir.averages(*rir.classify())
+
+    def testIncorrectSelectorClass(self):
+        """
+        Test passing incorect ClassSelector raises with a descriptive error.
+        """
+
+        # lower bound
+        with pytest.raises(RuntimeError, match=r".*must be subclass of.*"):
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=self.n_classes,
+                selector=range(self.n_classes),
+            )
+            _ = rir.averages(*rir.classify())
 
 
 class LegacyImplementationTestCase(TestCase):
