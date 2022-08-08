@@ -3,9 +3,11 @@ from abc import ABC, abstractmethod
 from itertools import product
 
 import numpy as np
+import ray
 from ray.util.multiprocessing import Pool
 from tqdm import tqdm, trange
 
+from aspire import config
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image
 from aspire.source import ArrayImageSource
@@ -222,8 +224,10 @@ class AligningAverager2D(Averager2D):
                 b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
+            ray.init(_temp_dir=config.ray.temp_dir)
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
 
             logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
             for i, result in enumerate(results):
@@ -542,8 +546,10 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         else:
             logger.info(f"Starting Pool({self.num_procs})")
+            ray.init(_temp_dir=config.ray.temp_dir)
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
 
             logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
             for k, result in enumerate(results):
@@ -600,8 +606,10 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
+            ray.init(_temp_dir=config.ray.temp_dir)
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
 
             logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
             for i, result in enumerate(results):
@@ -729,8 +737,10 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
+            ray.init(_temp_dir=config.ray.temp_dir)
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
 
             logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
             for k, result in enumerate(results):
