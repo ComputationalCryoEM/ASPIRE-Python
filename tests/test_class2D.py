@@ -379,7 +379,6 @@ class RIRClass2DTestCase(TestCase):
         Test passing incorect ClassSelector raises with a descriptive error.
         """
 
-        # lower bound
         with pytest.raises(RuntimeError, match=r".*must be subclass of.*"):
             rir = RIRClass2D(
                 self.clean_src,
