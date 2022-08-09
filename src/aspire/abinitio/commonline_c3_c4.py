@@ -271,7 +271,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # `theta_full` and `theta_half` are grids of theta values associate with the polar Fourier transforms
         # `pf_full` and `pf`, respectively.
-        theta_full, theta_half = np.meshgrid(range(n_theta), range(n_theta // 2))
+        theta_vals = np.linspace(0, 360, n_theta)
+        theta_vals_half = theta_vals[: len(theta_vals) // 2]
+        theta_full, theta_half = np.meshgrid(theta_vals, theta_vals_half)
 
         # `diff` is the unsigned angle differences between all pairs of polar Fourier rays.
         diff = abs(theta_half - theta_full)
