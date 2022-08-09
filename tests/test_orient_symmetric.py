@@ -401,3 +401,14 @@ class OrientSymmTestCase(TestCase):
         rots_symm = Rotation.from_euler(angles).matrices
 
         return rots_symm
+
+    def angle_dist(self, r1, r2):
+        r = r1 @ r2.T
+        tr_r = np.trace(r)
+        if np.allclose(tr_r, 3):
+            dist = 0
+        else:
+            theta = (tr_r - 1) / 2
+            theta = max(min(theta, 1), -1)  # Clamp theta in [-1,1]
+            dist = np.arccos(theta)
+        return dist
