@@ -97,6 +97,18 @@ class FSPCATestCase(TestCase):
             rmse = np.sqrt(np.mean(np.square(np.flip(img) - rot_imgs[i])))
             self.assertTrue(rmse < 10 * utest_tolerance(self.dtype))
 
+    def testBasisTooSmall(self):
+        """
+        When number of components is more than basis functions raise with descriptive error.
+        """
+        fb_basis = FFBBasis2D((self.resolution, self.resolution), dtype=self.dtype)
+
+        with pytest.raises(ValueError, match=r".*Reduce components.*"):
+            # Configure an FSPCA basis
+            _ = FSPCABasis(
+                self.src, basis=fb_basis, components=fb_basis.count * 2, noise_var=0
+            )
+
 
 class RIRClass2DTestCase(TestCase):
     def setUp(self):
@@ -142,6 +154,21 @@ class RIRClass2DTestCase(TestCase):
 
         # Ceate another fspca_basis, use autogeneration FFB2D Basis
         self.noisy_fspca_basis = FSPCABasis(self.noisy_src)
+
+    def testSourceTooSmall(self):
+        """
+        When number of images in source is less than requested bispectrum components,
+        raise with descriptive error.
+        """
+
+        with pytest.raises(
+            RuntimeError, match=r".*Increase number of images or reduce components.*"
+        ):
+            _ = RIRClass2D(
+                self.clean_src,
+                fspca_components=self.clean_src.n * 4,
+                bispectrum_components=self.clean_src.n * 2,
+            )
 
     def testIncorrectComponents(self):
         """
