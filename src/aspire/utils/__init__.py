@@ -12,7 +12,9 @@ from .coor_trans import (  # isort:skip
 from .misc import (  # isort:skip
     abs2,
     circ,
+    gaussian_1d,
     gaussian_2d,
+    gaussian_3d,
     get_full_version,
     inverse_r,
     powerset,

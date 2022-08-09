@@ -31,17 +31,19 @@ class FSPCABasis(SteerableBasis2D):
 
     """
 
-    def __init__(self, src, basis=None, noise_var=None, components=400):
+    def __init__(self, src, basis=None, noise_var=None, components=400, batch_size=512):
         """
 
         :param src: Source instance
         :param basis: Optional Fourier Bessel Basis (usually FFBBasis2D)
         :param noise_var: None estimates noise (default).
+        :param batch_size: Batch size for computing basis coefficients.
         0 forces "clean" treatment (no weighting).
         Other values assigned to noise_var.
         """
 
         self.src = src
+        self.batch_size = batch_size
 
         # Automatically generate basis if needed.
         if basis is None:
@@ -117,7 +119,13 @@ class FSPCABasis(SteerableBasis2D):
         This may take some time for large image stacks.
         """
 
-        coef = self.basis.evaluate_t(self.src.images(0, self.src.n))
+        coef = np.empty((self.src.n, self.basis.count), dtype=self.dtype)
+        num_batches = (self.src.n + self.batch_size - 1) // self.batch_size
+        for i in range(num_batches):
+            start = i * self.batch_size
+            finish = min((i + 1) * self.batch_size, self.src.n)
+            n = finish - start
+            coef[start:finish] = self.basis.evaluate_t(self.src.images(start, n))
 
         if self.noise_var is None:
             from aspire.noise import WhiteNoiseEstimator

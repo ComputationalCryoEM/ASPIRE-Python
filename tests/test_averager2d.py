@@ -7,6 +7,7 @@ import pytest
 
 from aspire.basis import FFBBasis2D
 from aspire.classification import (
+    AligningAverager2D,
     Averager2D,
     BFRAverager2D,
     BFSRAverager2D,
@@ -25,7 +26,13 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 # Ignore Gimbal lock warning for our in plane rotations.
 @pytest.mark.filterwarnings("ignore:Gimbal lock detected")
-class Averager2DTestCase(TestCase):
+class Averager2DBase:
+    """
+    Configure and setup a unit test case bypassing pytest execution.
+
+    Base class will become inherited into concrete TestCase.
+    """
+
     # Subclasses should override `averager` with a different class.
     averager = Averager2D
 
@@ -106,13 +113,28 @@ class Averager2DTestCase(TestCase):
 
 
 @pytest.mark.filterwarnings("ignore:Gimbal lock detected")
-class BFRAverager2DTestCase(Averager2DTestCase):
+class Averager2DTestCase(Averager2DBase, TestCase):
+    """
+    Concrete TestCase
+    """
 
-    averager = BFRAverager2D
+
+class AligningAverager2DBase(Averager2DBase):
+    """
+    Configure and setup a unit test case bypassing pytest execution.
+
+    Base class will become inherited into concrete TestCase.
+
+    Aligning Averagers are expected to expose
+
+    `.rotations`
+    `.shifts`
+    `.correlations`
+    """
+
+    averager = AligningAverager2D
 
     def setUp(self):
-
-        self.n_search_angles = 360
 
         super().setUp()
 
@@ -124,6 +146,26 @@ class BFRAverager2DTestCase(Averager2DTestCase):
 
         # Get the image coef
         self.coefs = self.basis.evaluate_t(self.src.images(0, self.n_img))
+
+    def _call_averager(self):
+        # Construct the Averager
+        avgr = self.averager(self.basis, self._getSrc())
+        # Call the `align` method
+        _ = avgr.align(self.classes, self.reflections, self.coefs)
+        _ = avgr.average(self.classes, self.reflections, self.coefs)
+        return avgr
+
+    def test_rotations_estimate(self):
+        avgr = self._call_averager()
+        self.assertTrue(hasattr(avgr, "rotations"))
+
+    def test_shifts_estimate(self):
+        avgr = self._call_averager()
+        self.assertTrue(hasattr(avgr, "shifts"))
+
+    def test_correlations_estimate(self):
+        avgr = self._call_averager()
+        self.assertTrue(hasattr(avgr, "correlations"))
 
     def _getSrc(self):
         if not hasattr(self, "shifts"):
@@ -140,6 +182,24 @@ class BFRAverager2DTestCase(Averager2DTestCase):
             seed=12345,
             dtype=self.dtype,
         )
+
+
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
+
+    averager = BFRAverager2D
+    n_search_angles = 360
+
+    def testNoRot(self):
+        """
+        Test we raise an error when our basis does not provide `rotate` method.
+        """
+        # DiracBasis does not provide `rotate`,
+        basis = DiracBasis((self.resolution, self.resolution), dtype=self.dtype)
+
+        # and that should raise an error during instantiation.
+        with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
+            _ = self.averager(basis, self._getSrc())
 
     def testAverager(self):
         """

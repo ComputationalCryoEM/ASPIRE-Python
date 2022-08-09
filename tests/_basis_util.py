@@ -40,9 +40,7 @@ class Steerable2DMixin:
         # Want sigma to be as large as possible without the Gaussian
         # spilling too much outside the central disk.
         sigma = self.L / 8
-        im1 = gaussian_2d(
-            self.L, x0=x0, y0=y0, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype
-        )
+        im1 = gaussian_2d(self.L, mu=(x0, y0), sigma=sigma, dtype=self.dtype)
 
         coef = self.basis.expand(im1)
         im2 = self.basis.evaluate(coef)
@@ -63,7 +61,7 @@ class Steerable2DMixin:
 
     def testIsotropic(self):
         sigma = self.L / 8
-        im = gaussian_2d(self.L, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype)
+        im = gaussian_2d(self.L, sigma=sigma, dtype=self.dtype)
 
         coef = self.basis.expand(im)
 
@@ -83,7 +81,7 @@ class Steerable2DMixin:
         ell = 1
 
         sigma = self.L / 8
-        im = gaussian_2d(self.L, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype)
+        im = gaussian_2d(self.L, sigma=sigma, dtype=self.dtype)
 
         g2d = grid_2d(self.L)
 
