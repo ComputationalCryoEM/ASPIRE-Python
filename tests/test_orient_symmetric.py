@@ -66,10 +66,9 @@ class OrientSymmTestCase(TestCase):
         gs = rots_symm
         rots_gt = src.rots
 
-        nchoose2 = int(n_img * (n_img - 1) / 2)
-        errs = np.zeros(nchoose2)
-        diffs = np.zeros(order)
         pairs = all_pairs(n_img)
+        errs = np.zeros(len(pairs))
+        diffs = np.zeros(order)
         for idx, (i, j) in enumerate(pairs):
             Rij = Rijs[idx]
             Rij_J = J_conjugate(Rij)
