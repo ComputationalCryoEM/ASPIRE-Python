@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as PILImage
 
-from aspire.classification import RIRClass2D
+from aspire.classification import RIRClass2D, TopClassSelector
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ScalarFilter
@@ -156,14 +156,19 @@ noisy_src.images(0, 10).show()
 # %%
 # RIR with Noise
 # ^^^^^^^^^^^^^^
+# This also demonstrates changing the Nearest Neighbor search to using
+# scikit-learn, and using ``TopClassSelector``.``TopClassSelector``
+# will deterministically select the first ``n_classes``.  This is useful
+# for development and debugging.  By default ``RIRClass2D`` uses a
+# ``RandomClassSelector``.
 
-# This also demonstrates changing the Nearest Neighbor search to using scikit-learn.
 noisy_rir = RIRClass2D(
     noisy_src,
     fspca_components=400,
     bispectrum_components=300,
     n_nbor=10,
     n_classes=10,
+    selector=TopClassSelector(),
     large_pca_implementation="legacy",
     nn_implementation="sklearn",
     bispectrum_implementation="legacy",
@@ -228,6 +233,8 @@ original_img_nbr = noisy_src.images(original_img_nbr_idx, 1).asnumpy()[0]
 
 # Rotate using estimated rotations.
 angle = -est_rotations[nbr] * 180 / np.pi
+if reflections[review_class][nbr]:
+    original_img_nbr = np.flipud(original_img_nbr)
 rotated_img_nbr = np.asarray(PILImage.fromarray(original_img_nbr).rotate(angle))
 
 plt.subplot(2, 2, 1)
