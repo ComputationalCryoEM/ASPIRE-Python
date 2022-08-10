@@ -354,13 +354,13 @@ class RIRClass2DTestCase(TestCase):
             )
             _ = rir.averages(*rir.classify())
 
-        # empty
+        # too short
         with pytest.raises(ValueError, match=r".*must be len.*"):
             rir = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
                 n_classes=self.n_classes,
-                selector=CustomClassSelector([]),
+                selector=CustomClassSelector(np.arange(self.n_classes - 1)),
             )
             _ = rir.averages(*rir.classify())
 
