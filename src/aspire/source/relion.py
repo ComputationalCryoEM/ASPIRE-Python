@@ -139,7 +139,7 @@ class RelionSource(ImageSource):
             "_rlnSphericalAberration",
             "_rlnAmplitudeContrast",
         ]
-        # If these exist in the STAR file, we may create CTF filters for the source
+        # If these all exist in the STAR file, we may create CTF filters for the source
         if set(CTF_params).issubset(metadata.columns):
             # partition particles according to unique CTF parameters
             filter_params, filter_indices = np.unique(
@@ -164,10 +164,20 @@ class RelionSource(ImageSource):
             # filter_indices stores, for each particle index, the index in
             # self.unique_filters of the filter that should be applied
             self.filter_indices = filter_indices
+
+        # We have provided some, but not all the required params
+        elif any(param in metadata.columns for param in CTF_params):
+            logger.warning(
+                f"Found partially populated CTF Params."
+                f"  To automatically populate CTFFilters provide {CTF_params}"
+            )
+
         # If no CTF info in STAR, we initialize the filter values of metadata with default values
         else:
             self.unique_filters = [IdentityFilter()]
             self.filter_indices = np.zeros(self.n, dtype=int)
+
+        logger.info(f"Populated {self.n_ctf_filters} CTFFilters from '{filepath}'")
 
     def populate_metadata(self, filepath, data_folder=None, max_rows=None):
         """

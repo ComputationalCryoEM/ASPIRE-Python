@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 @click.option("--flip_phase", default=True, help="Perform phase flip or not")
 @click.option(
     "--downsample",
-    default=0,
+    default=None,
     type=int,
     help="Downsample the images to this resolution prior to saving to starfile/.mrcs stack",
 )
@@ -92,7 +92,7 @@ def preprocess(
         logger.info("Perform phase flip to input images")
         source.phase_flip()
 
-    if 0 < downsample < source.L:
+    if downsample and downsample < source.L:
         logger.info(f"Downsample resolution to {downsample} X {downsample}")
         source.downsample(downsample)
 

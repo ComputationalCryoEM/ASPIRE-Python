@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 L = 100
-round_disc = gaussian_2d(L, sigma_x=L / 4, sigma_y=L / 4)
+round_disc = gaussian_2d(L, sigma=L / 4)
 plt.imshow(round_disc, cmap="gray")
 plt.show()
 
@@ -37,7 +37,7 @@ plt.show()
 # Oval 2D Gaussian Image
 # ^^^^^^^^^^^^^^^^^^^^^^
 
-oval_disc = gaussian_2d(L, sigma_x=L / 20, sigma_y=L / 5)
+oval_disc = gaussian_2d(L, sigma=(L / 20, L / 5))
 plt.imshow(oval_disc, cmap="gray")
 plt.show()
 
@@ -48,7 +48,7 @@ plt.show()
 # Create richer test set by including an asymmetric image.
 
 # Create a second oval.
-oval_disc2 = gaussian_2d(L, L / 5, L / 6, sigma_x=L / 15, sigma_y=L / 20)
+oval_disc2 = gaussian_2d(L, mu=(L / 5, L / 6), sigma=(L / 15, L / 20))
 
 # Strategically add it to `oval_disc`.
 yoval_discL = oval_disc.copy()
@@ -198,3 +198,52 @@ Image(noisy_src.images(0, np.inf)[classes[review_class]]).show()
 
 # Display the averaged result
 avgs.images(review_class, 1).show()
+
+# %%
+# Alignment Details
+# -----------------
+#
+# Alignment details are exposed when avaialable from an underlying ``averager``.
+# In this case, we'll get the estimated alignments for the ``review_class``.
+# These alignment arrays are indexed the same as ``classes``,
+# having shape (n_classes, n_nbor).
+
+est_rotations = noisy_rir.averager.rotations[review_class]
+est_shifts = noisy_rir.averager.shifts[review_class]
+est_correlations = noisy_rir.averager.correlations[review_class]
+
+logger.info(f"Estimated Rotations: {est_rotations}")
+logger.info(f"Estimated Shifts: {est_shifts}")
+logger.info(f"Estimated Correlations: {est_correlations}")
+
+# Compare the original unaligned images with the estimated alignment.
+# Get the indices from the classification results.
+nbr = 3
+original_img_0_idx = classes[review_class][0]
+original_img_nbr_idx = classes[review_class][nbr]
+
+# Lookup the images.
+original_img_0 = noisy_src.images(original_img_0_idx, 1).asnumpy()[0]
+original_img_nbr = noisy_src.images(original_img_nbr_idx, 1).asnumpy()[0]
+
+# Rotate using estimated rotations.
+angle = -est_rotations[nbr] * 180 / np.pi
+rotated_img_nbr = np.asarray(PILImage.fromarray(original_img_nbr).rotate(angle))
+
+plt.subplot(2, 2, 1)
+plt.title("Original Images")
+plt.imshow(original_img_0)
+plt.xlabel("Img 0")
+plt.subplot(2, 2, 2)
+plt.imshow(original_img_nbr)
+plt.xlabel(f"Img {nbr}")
+
+plt.subplot(2, 2, 3)
+plt.title("Est Rotation Applied")
+plt.imshow(original_img_0)
+plt.xlabel("Img 0")
+plt.subplot(2, 2, 4)
+plt.imshow(rotated_img_nbr)
+plt.xlabel(f"Img {nbr} rotated {angle:.4}*")
+plt.tight_layout()
+plt.show()
