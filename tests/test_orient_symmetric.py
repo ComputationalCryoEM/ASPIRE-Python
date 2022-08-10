@@ -66,25 +66,25 @@ class OrientSymmTestCase(TestCase):
         gs = rots_symm
         rots_gt = src.rots
 
+        # Find the angular distance between each Rij and the ground truth.
         pairs = all_pairs(n_img)
-        errs = np.zeros(len(pairs))
-        diffs = np.zeros(order)
+        angular_distance = np.zeros(len(pairs))
         for idx, (i, j) in enumerate(pairs):
             Rij = Rijs[idx]
             Rij_J = J_conjugate(Rij)
             Ri_gt = rots_gt[i]
             Rj_gt = rots_gt[j]
+            dist = np.zeros(order)
             for s in range(order):
                 Rij_s_gt = Ri_gt.T @ gs[s] @ Rj_gt
-                diffs[s] = np.minimum(norm(Rij - Rij_s_gt), norm(Rij_J - Rij_s_gt))
-            errs[idx] = np.min(diffs)
-        mse = np.mean(errs**2)
+                dist[s] = np.minimum(
+                    self.angle_dist(Rij, Rij_s_gt), self.angle_dist(Rij_J, Rij_s_gt)
+                )
+            angular_distance[idx] = np.min(dist)
+        mean_angular_distance = np.mean(angular_distance)
 
-        # Mean-squared-error is better for C3 than for C4.
-        if order == 3:
-            self.assertTrue(mse < 0.005)
-        else:
-            self.assertTrue(mse < 0.03)
+        # Assert that the mean_angular_distance is less than 5 degrees.
+        self.assertTrue(mean_angular_distance < 5)
 
     @parameterized.expand([(3,), (4,)])
     def testSelfRelativeRotations(self, order):
