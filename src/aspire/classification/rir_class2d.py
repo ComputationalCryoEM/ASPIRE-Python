@@ -19,7 +19,7 @@ class RIRClass2D(Class2D):
         self,
         src,
         pca_basis=None,
-        fspca_components=400,
+        fspca_components=None,
         alpha=1 / 3,
         sample_n=4000,
         bispectrum_components=300,
@@ -50,7 +50,8 @@ class RIRClass2D(Class2D):
         :param src: Source instance.  Note it is possible to use one `source` for classification (ie CWF),
         and a different `source` for stacking in the `averager`.
         :param pca_basis: Optional FSPCA Basis instance
-        :param fspca_components: Components (top eigvals) to keep from full FSCPA, default truncates to  400.
+        :param fspca_components: Optinally set number of components (top eigvals) to keep from full FSCPA.
+        Default value of None will infer from `pca_basis` when provided, otherwise defaults to 400.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
         :param sample_n: Threshold for random sampling of bispectrum coefs. Default 4000,
         high values such as 50000 reduce random sampling.
@@ -124,19 +125,15 @@ class RIRClass2D(Class2D):
             )
         self.pca_basis = pca_basis
 
-        # When a user provides a basis, the fspca_components arg is either
-        # redundant (same) or conflicting (different).
-        # So when a user provides fspca_components, we need to check it matches the basis' components.
-        _provided_fspca_components = (
-            fspca_components is not self.__init__.__defaults__[1]
-        )
-        if pca_basis and _provided_fspca_components:
-            # Check the provided components match.
+        # When a user provides a `pca_basis` and `fspca_components`
+        #  the arg is either redundant (same) or conflicting with `pca_basis`.
+        if pca_basis and fspca_components is not None:
+            # Check the provided components match. On match we can use this value.
             if pca_basis.components != fspca_components:
                 raise RuntimeError(
                     f"`pca_basis` components {pca_basis.components} != {fspca_components} `fspca_components` provided by user."
                 )
-        elif pca_basis:  # fspca_components not specfied (default to taking from basis)
+        elif pca_basis:  # infer `fspca_components` from pca_basis components
             fspca_components = pca_basis.components
 
             # For small problems, such as unit tests, we also need to guard against
@@ -144,6 +141,9 @@ class RIRClass2D(Class2D):
             # In the case RIRClass2d instantiates the pca_basis,
             #   this will be checked then, in FSPCABasis.
             pca_basis._check_components()
+        elif fspca_components is None:
+            # Default of 400 components was taken from legacy reearch and code.
+            fspca_components = 400
 
         self.fspca_components = fspca_components
         self.bispectrum_components = bispectrum_components
@@ -178,7 +178,6 @@ class RIRClass2D(Class2D):
         # # Stage 1: Compute coef and reduce dimensionality.
         # Memioze/batch this later when result is working
         # Initial round of component truncation is before bispectrum.
-        #  default of 400 components was taken from legacy code.
         # Instantiate a new compressed (truncated) basis.
         if self.pca_basis is None:
             self.pca_basis = FSPCABasis(self.src, components=self.fspca_components)
