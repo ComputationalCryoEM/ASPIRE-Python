@@ -218,7 +218,7 @@ class RIRClass2D(Class2D):
         # # Stage 3: Class Selection
         # This is an area open to active research.
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        selection = self.selector.select(
+        self.selection = selection = self.selector.select(
             self.n_classes, classes, reflections, distances
         )
         classes, reflections = classes[selection], reflections[selection]
