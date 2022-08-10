@@ -182,7 +182,6 @@ class RIRClass2DTestCase(TestCase):
                 self.clean_src,
                 self.clean_fspca_basis,  # 400 components
                 fspca_components=100,
-                bispectrum_components=100,
                 large_pca_implementation="legacy",
                 nn_implementation="legacy",
                 bispectrum_implementation="legacy",

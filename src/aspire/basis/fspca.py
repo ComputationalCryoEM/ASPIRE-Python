@@ -38,11 +38,12 @@ class FSPCABasis(SteerableBasis2D):
 
         :param src: Source instance
         :param basis: Optional Fourier Bessel Basis (usually FFBBasis2D)
-        :param components: Number of components (compression).
-        Defaults None implies basis.count, therefor no compression.
-        :param noise_var: None estimates noise (default).
-        0 forces "clean" treatment (no weighting).
-        Other values assigned to noise_var.
+        :param components: Optionally assign number of principle components
+        to use for the FSPCA basis.
+        Default value of `None` will use `self.basis.count`.
+        :param noise_var: Optionally assign noise variance.
+        Default value of `None` will estimate noise with WhiteNoiseEstimator.
+        Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
         :param batch_size: Batch size for computing basis coefficients.
         """
 

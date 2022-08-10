@@ -125,8 +125,8 @@ class RIRClass2D(Class2D):
         self.pca_basis = pca_basis
 
         # When a user provides a basis, the fspca_components arg is either
-        # redudant (same) or conflicting (different).
-        # So when a user provides fspca_components, we need to check it matches the basis' compoenents.
+        # redundant (same) or conflicting (different).
+        # So when a user provides fspca_components, we need to check it matches the basis' components.
         _provided_fspca_components = (
             fspca_components is not self.__init__.__defaults__[1]
         )
