@@ -100,33 +100,27 @@ class OrientSymmTestCase(TestCase):
         Riis = cl_symm._estimate_all_Riis_c3_c4(scl)
 
         # Each estimated Rii belongs to the set
-        # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}
-        # We find the minimum mean-squared-error over the 4 possibilities.
+        # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}.
+        # We find the minimum angular distance between the estimate Rii
+        # and the 4 possible ground truths.
         rots_symm = self.buildCyclicRotations(order)
         g = rots_symm[1]
         rots_gt = src.rots
 
-        min_idx = np.zeros(n_img, dtype=int)
-        errs = np.zeros(n_img)
+        # Find angular distance between estimate and ground truth.
+        dist = np.zeros(4)
+        angular_distance = np.zeros(n_img)
         for i, rot_gt in enumerate(rots_gt):
             Rii_gt = rot_gt.T @ g @ rot_gt
             Rii = Riis[i]
+            cases = np.array([Rii, Rii.T, J_conjugate(Rii), J_conjugate(Rii.T)])
+            for i, estimate in enumerate(cases):
+                dist[i] = self.angle_dist(estimate, Rii_gt)
+            angular_distance[i] = dist[np.argmin(dist)]
+        mean_angular_distance = np.mean(angular_distance)
 
-            diff0 = norm(Rii - Rii_gt)
-            diff1 = norm(Rii.T - Rii_gt)
-            diff2 = norm(J_conjugate(Rii) - Rii_gt)
-            diff3 = norm(J_conjugate(Rii.T) - Rii_gt)
-            diffs = [diff0, diff1, diff2, diff3]
-            min_idx[i] = np.argmin(diffs)
-            errs[i] = diffs[min_idx[i]]
-
-        mse = np.mean(errs**2)
-
-        # Mean-squared-error is better for C3 than for C4.
-        if order == 3:
-            self.assertTrue(mse < 0.0006)
-        else:
-            self.assertTrue(mse < 0.0025)
+        # Check that mean_angular_distance is less than 2 degrees.
+        self.assertTrue(mean_angular_distance < 2)
 
     @parameterized.expand([(3,), (4,)])
     def testRelativeViewingDirections(self, order):
