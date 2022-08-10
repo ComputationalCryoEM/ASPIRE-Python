@@ -279,8 +279,9 @@ class OrientSymmTestCase(TestCase):
         for (i, j) in pairs:
             a_ij_s = np.zeros(order)
             a_ji_s = np.zeros(order)
-            cl_ij = cl[i, j] % (n_theta // 2)
-            cl_ji = cl[j, i] % (n_theta // 2)
+            # Convert common-line indices to angles. Use angle of common line in [0, 180).
+            cl_ij = (cl[i, j] * 360 / n_theta) % 180
+            cl_ji = (cl[j, i] * 360 / n_theta) % 180
 
             # The common-line estimates cl_ij, cl_ji should match the
             # true common-line angles a_ij_s, a_ji_s for some value s,
