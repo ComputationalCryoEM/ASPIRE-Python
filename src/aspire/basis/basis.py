@@ -74,24 +74,55 @@ class Basis:
         Evaluate coefficient vector in basis
 
         :param v: A coefficient vector (or an array of coefficient vectors)
-            to be evaluated. The first dimension must equal `self.count`.
+            to be evaluated. The first dimension must correspond to the number of
+            coefficient vectors, while the second must correspond to `self.count`
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
-            This is an array whose first dimensions equal `self.z` and the
-            remaining dimensions correspond to dimensions two and higher of `v`.
+            This is an Image or a Volume object containing one image/volume for each
+            coefficient vector, and of size `self.sz`.
         """
+        if v.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
+
+        if self.ndim == 2:
+            return Image(self._evaluate(v))
+        elif self.ndim == 3:
+            return Volume(self._evaluate(v))
+
+    def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
 
     def evaluate_t(self, v):
         """
         Evaluate coefficient in dual basis
 
-        :param v: The coefficient array to be evaluated. The first dimensions
-            must equal `self.sz`.
-        :return: The evaluation of the coefficient array `v` in the dual
+        :param v: An Image or Volume object whose size matches `self.sz`.
+        :return: The evaluation of the Image or Volume object `v` in the dual
             basis of `basis`.
-            This is an array of vectors whose first dimension equals `self.count`
-            and whose remaining dimensions correspond to higher dimensions of `v`.
+            This is an array of vectors whose first dimension equals the number of
+            images/volumes in `v`. and whose second dimension is `self.count`.
         """
+        if v.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate_t"
+                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+            )
+
+        if not isinstance(v, Image) and not isinstance(v, Volume):
+            if self.ndim == 2:
+                _class = Image
+            elif self.ndim == 3:
+                _class = Volume
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate_t"
+                f" passed numpy array instead of {_class}."
+            )
+            v = _class(v)
+        return self._evaluate_t(v)
+
+    def _evaluate_t(self, v):
         raise NotImplementedError("Subclasses should implement this")
 
     def mat_evaluate(self, V):
@@ -104,7 +135,7 @@ class Basis:
             -`self.sz` corresponding to the evaluation of `V` in
             this basis.
         """
-        return mdim_mat_fun_conj(V, 1, len(self.sz), self.evaluate)
+        return mdim_mat_fun_conj(V, 1, len(self.sz), self._evaluate)
 
     def mat_evaluate_t(self, X):
         """
@@ -120,7 +151,7 @@ class Basis:
             function calculates V = B' * X * B, where the rows of `B`, rows
             of 'X', and columns of `X` are read as vectorized arrays.
         """
-        return mdim_mat_fun_conj(X, len(self.sz), 1, self.evaluate_t)
+        return mdim_mat_fun_conj(X, len(self.sz), 1, self._evaluate_t)
 
     def expand(self, x):
         """

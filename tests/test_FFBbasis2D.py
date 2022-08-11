@@ -14,7 +14,7 @@ from aspire.utils import utest_tolerance
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
-from ._basis_util import Steerable2DMixin
+from ._basis_util import Steerable2DMixin, UniversalBasisMixin
 
 logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -31,7 +31,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
         (32, np.float64),
     ],
 )
-class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
+class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
     L = 8
     dtype = np.float32
 

@@ -8,7 +8,7 @@ import pytest
 from packaging.version import parse as parse_version
 from pkg_resources import get_distribution
 
-from aspire.basis import DiracBasis, FFBBasis2D
+from aspire.basis import FFBBasis2D, PolarBasis2D
 from aspire.classification import (
     AligningAverager2D,
     Averager2D,
@@ -215,7 +215,7 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
         Test we raise an error when our basis does not provide `rotate` method.
         """
         # DiracBasis does not provide `rotate`,
-        basis = DiracBasis((self.resolution, self.resolution), dtype=self.dtype)
+        basis = PolarBasis2D((self.resolution, self.resolution), dtype=self.dtype)
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
@@ -259,22 +259,6 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 
         # Execute the remaining setup from BFRAverager2DTestCase
         super().setUp()
-
-    def testNoShift(self):
-        """
-        Test we raise an error when our basis does not provide `shift` method.
-        """
-
-        # DiracBasis does not provide `rotate` or `shift`.
-        basis = DiracBasis((self.resolution, self.resolution), dtype=self.dtype)
-
-        # The missing `rotate` case was already covered by (inherited) NoRot.
-        # Add a dummy rotate method; we will still be missing `shift`,
-        basis.rotate = lambda x: x
-
-        # and that should raise an error during instantiation.
-        with pytest.raises(RuntimeError, match=r".* must provide a `shift` method."):
-            _ = self.averager(basis, self._getSrc())
 
     def testAverager(self):
         """
