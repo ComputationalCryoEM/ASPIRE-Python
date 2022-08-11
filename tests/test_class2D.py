@@ -14,6 +14,8 @@ from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
+from .test_averager2d import xfail_ray_dev
+
 logger = logging.getLogger(__name__)
 
 
@@ -182,6 +184,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
+            num_procs=1 if xfail_ray_dev() else None,
         )
 
         classification_results = rir.classify()
@@ -198,6 +201,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="devel",
+            num_procs=1 if xfail_ray_dev() else None,
         )
 
         classification_results = rir.classify()

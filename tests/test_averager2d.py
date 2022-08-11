@@ -1,9 +1,12 @@
+import importlib
 import logging
 import os
 from unittest import TestCase
 
 import numpy as np
 import pytest
+from packaging.version import parse as parse_version
+from pkg_resources import get_distribution
 
 from aspire.basis import DiracBasis, FFBBasis2D
 from aspire.classification import (
@@ -15,13 +18,29 @@ from aspire.classification import (
     ReddyChatterjiAverager2D,
 )
 from aspire.source import Simulation
-from aspire.utils import Rotation
+from aspire.utils import Rotation, num_procs_suggestion
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
+
+
+def xfail_ray_dev():
+    """
+    Currently ray multiprocessing of the averager is xfail for numpy>=1.22.
+    This unsupported configuration is forced in the '-dev' test environments.
+    Return whether we expect test to fail using ray multiprocessing.
+    """
+    return all(
+        [
+            importlib.util.find_spec("ray"),  # 'ray' installed
+            parse_version(get_distribution("numpy").version)
+            >= parse_version("1.22.0"),  # with unsupported numpy combo
+            num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
+        ]
+    )
 
 
 # Ignore Gimbal lock warning for our in plane rotations.
@@ -133,6 +152,7 @@ class AligningAverager2DBase(Averager2DBase):
     """
 
     averager = AligningAverager2D
+    num_procs = 1  # paralleized subclasses may override
 
     def setUp(self):
 
@@ -149,7 +169,7 @@ class AligningAverager2DBase(Averager2DBase):
 
     def _call_averager(self):
         # Construct the Averager
-        avgr = self.averager(self.basis, self._getSrc())
+        avgr = self.averager(self.basis, self._getSrc(), num_procs=self.num_procs)
         # Call the `align` method
         _ = avgr.align(self.classes, self.reflections, self.coefs)
         _ = avgr.average(self.classes, self.reflections, self.coefs)
@@ -295,6 +315,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
+    num_procs = 1 if xfail_ray_dev() else None
 
     def testAverager(self):
         """
@@ -307,6 +328,7 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         avgr = self.averager(
             composite_basis=self.basis,
             src=self._getSrc(),
+            num_procs=self.num_procs,
             dtype=self.dtype,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
