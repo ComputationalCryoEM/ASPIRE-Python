@@ -38,7 +38,7 @@ class FSPCABasis(SteerableBasis2D):
 
         :param src: Source instance
         :param basis: Optional Fourier Bessel Basis (usually FFBBasis2D)
-        :param components: Optionally assign number of principle components
+        :param components: Optionally assign number of principal components
         to use for the FSPCA basis.
         Default value of `None` will use `self.basis.count`.
         :param noise_var: Optionally assign noise variance.
