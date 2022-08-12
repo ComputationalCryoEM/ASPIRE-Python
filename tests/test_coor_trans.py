@@ -120,7 +120,7 @@ class UtilsTestCase(TestCase):
         # even to even
         a = np.zeros((8, 8, 8))
         # pad it with the parts that will be cropped off from a 10x10x10
-        np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        a = np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
         # after cropping
         test_a = np.zeros((8, 8, 8))
         self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
@@ -128,21 +128,21 @@ class UtilsTestCase(TestCase):
         # even to odd
         a = np.zeros((7, 7, 7))
         # pad it with the parts that will be cropped off from a 10x10x10
-        np.pad(a, ((1, 2), (1, 2), (1, 2)), "constant", constant_values=1)
+        a = np.pad(a, ((2, 1), (2, 1), (2, 1)), "constant", constant_values=1)
         test_a = np.zeros((7, 7, 7))
         self.assertTrue(np.array_equal(crop_pad_3d(a, 7), test_a))
 
         # odd to odd
         a = np.zeros((7, 7, 7))
         # pad it with the parts that will be cropped off from a 9x9x9
-        np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        a = np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
         test_a = np.zeros((7, 7, 7))
         self.assertTrue(np.array_equal(crop_pad_3d(a, 7), test_a))
 
         # odd to even
         a = np.zeros((8, 8, 8))
         # pad it with the parts that will be cropped off from 11x11x11
-        np.pad(a, ((2, 1), (2, 1), (2, 1)), "constant", constant_values=1)
+        a = np.pad(a, ((1, 2), (1, 2), (1, 2)), "constant", constant_values=1)
         test_a = np.zeros((8, 8, 8))
         self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
 
@@ -185,11 +185,9 @@ class UtilsTestCase(TestCase):
     def testSquarePad3D(self):
         # even to even
         a = np.zeros((8, 8, 8))
-        # pad it with the parts that will be cropped off from a 10x10x10
-        np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
-        # after cropping
-        test_a = np.zeros((8, 8, 8))
-        self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
+        # after padding
+        test_a = np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 10), test_a))
 
         # even to odd
         a = np.zeros((7, 7, 7))
