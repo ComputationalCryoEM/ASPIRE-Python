@@ -117,9 +117,34 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(test_a, crop_pad_2d(a, 8)))
 
     def testSquareCrop3D(self):
-        a = np.zeros((10,10,10))
-        a[np.diag_indices(10, ndim=3)] = np.arange(0,10)
-        test_a = 
+        # even to even
+        a = np.zeros((8, 8, 8))
+        # pad it with the parts that will be cropped off from a 10x10x10
+        np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        # after cropping
+        test_a = np.zeros((8, 8, 8))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
+
+        # even to odd
+        a = np.zeros((7, 7, 7))
+        # pad it with the parts that will be cropped off from a 10x10x10
+        np.pad(a, ((1, 2), (1, 2), (1, 2)), "constant", constant_values=1)
+        test_a = np.zeros((7, 7, 7))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 7), test_a))
+
+        # odd to odd
+        a = np.zeros((7, 7, 7))
+        # pad it with the parts that will be cropped off from a 9x9x9
+        np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        test_a = np.zeros((7, 7, 7))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 7), test_a))
+
+        # odd to even
+        a = np.zeros((8, 8, 8))
+        # pad it with the parts that will be cropped off from 11x11x11
+        np.pad(a, ((2, 1), (2, 1), (2, 1)), "constant", constant_values=1)
+        test_a = np.zeros((8, 8, 8))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
 
     def testSquarePad2D(self):
         # Test even/odd cases based on the convention that the center of a sequence of length n
@@ -156,6 +181,36 @@ class UtilsTestCase(TestCase):
         a = np.diag(np.arange(1, 10))
         test_a = np.diag([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.assertTrue(np.array_equal(test_a, crop_pad_2d(a, 10)))
+
+    def testSquarePad3D(self):
+        # even to even
+        a = np.zeros((8, 8, 8))
+        # pad it with the parts that will be cropped off from a 10x10x10
+        np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        # after cropping
+        test_a = np.zeros((8, 8, 8))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
+
+        # even to odd
+        a = np.zeros((7, 7, 7))
+        # pad it with the parts that will be cropped off from a 10x10x10
+        np.pad(a, ((1, 2), (1, 2), (1, 2)), "constant", constant_values=1)
+        test_a = np.zeros((7, 7, 7))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 7), test_a))
+
+        # odd to odd
+        a = np.zeros((7, 7, 7))
+        # pad it with the parts that will be cropped off from a 9x9x9
+        np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        test_a = np.zeros((7, 7, 7))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 7), test_a))
+
+        # odd to even
+        a = np.zeros((8, 8, 8))
+        # pad it with the parts that will be cropped off from 11x11x11
+        np.pad(a, ((2, 1), (2, 1), (2, 1)), "constant", constant_values=1)
+        test_a = np.zeros((8, 8, 8))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
 
     def testRectCrop2D(self):
         # Additional sanity checks for rectangular cropping case

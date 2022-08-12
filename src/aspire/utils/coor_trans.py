@@ -334,6 +334,7 @@ def crop_pad_2d(im, size, fill_value=0):
         # target size is between mat_x and mat_y
         raise ValueError("Cannot crop and pad an image at the same time.")
 
+
 def crop_pad_3d(im, size, fill_value=0):
     im_y, im_x, im_z = im.shape
     # shift terms
@@ -343,5 +344,6 @@ def crop_pad_3d(im, size, fill_value=0):
 
     # cropping
     if size <= min(im_y, im_x, im_z):
-        return im[start_y:start_y + size, start_x:start_x + size, start_z: start_z + size]
-    
+        return im[
+            start_y : start_y + size, start_x : start_x + size, start_z : start_z + size
+        ]
