@@ -347,3 +347,15 @@ def crop_pad_3d(im, size, fill_value=0):
         return im[
             start_y : start_y + size, start_x : start_x + size, start_z : start_z + size
         ]
+    # padding
+    elif size >= max(im_y, im_x, im_x):
+        to_return = fill_value * np.ones((size, size, size), dtype=im.dtype)
+        to_return[
+            -start_y : im_y - start_y,
+            -start_x : im_x - start_x,
+            -start_z : im_z - start_z,
+        ] = im
+        return to_return
+    else:
+        # target size is between min and max of (im_y, im_x, im_z)
+        raise ValueError("Cannot crop and pad a volume at the same time.")
