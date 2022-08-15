@@ -27,6 +27,24 @@ from aspire.utils import Rotation, grid_2d
 logger = logging.getLogger(__name__)
 
 
+class ImageAccessor:
+    """
+    Helper class for accessing images from an ImageSource as slices via the `src.images[:,:,:]` API.
+    """
+
+    def __init__(self, fun):
+        """
+        :param fun: The private _images() method specific to the ImageSource associated with this ImageAccessor.
+        """
+        self.fun = fun
+
+    def __getitem__(self, s):
+        """
+        Converts `s`, a Python slice object, into literal NumPy range to be passed to the ImageSource's _images() method.
+        """
+        return self.fun(np.arange(s.start, s.stop, s.step))
+
+
 class ImageSource:
     """
     When creating an `ImageSource` object, a 'metadata' table holds metadata information about all images in the
@@ -87,6 +105,9 @@ class ImageSource:
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
+
+        # instantiate the accessor for the `images` property
+        self._img_accessor = ImageAccessor(self._images)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
