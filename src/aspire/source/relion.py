@@ -227,11 +227,8 @@ class RelionSource(ImageSource):
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
 
-    def _images(self, start=0, num=np.inf, indices=None):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
-        else:
-            start = indices.min()
+    def _images(self, indices):
+
         logger.info(f"Loading {len(indices)} images from STAR file")
 
         def load_single_mrcs(filepath, df):
@@ -266,7 +263,8 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                im[data_indices - start] = data
+                for d, idx in enumerate(data_indices):
+                    im[np.where(indices == idx)] = data[d, :, :]
 
         logger.info(f"Loading {len(indices)} images complete")
 
