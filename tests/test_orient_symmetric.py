@@ -150,32 +150,49 @@ class OrientSymmTestCase(TestCase):
         # Estimate relative viewing directions.
         vijs, viis = cl_symm._estimate_relative_viewing_directions_c3_c4()
 
-        # Calculate the mean squared error for vijs.
-        errs_vijs = np.zeros(n_pairs)
-        diffs_vijs = np.zeros(2)
-        for idx, (vij_gt, vij) in enumerate(zip(vijs_gt, vijs)):
-            diffs_vijs[0] = norm(vij - vij_gt)
-            diffs_vijs[1] = norm(J_conjugate(vij) - vij_gt)
-            errs_vijs[idx] = np.min(diffs_vijs)
-        mse_vijs = np.mean(errs_vijs**2)
+        # Since ground truth vijs and viis are rank 1 matrices they span a 1D subspace.
+        # We use SVD to find this subspace for our estimates and the ground truth relative viewing directions.
+        # We then calculate the angular distance between these subspaces (and take the mean).
+        # SVD's:
+        uij_gt, _, _ = np.linalg.svd(vijs_gt)
+        uii_gt, _, _ = np.linalg.svd(viis_gt)
+        uij_est, _, _ = np.linalg.svd(vijs)
+        uii_est, _, _ = np.linalg.svd(viis)
+        uij_J_est, _, _ = np.linalg.svd(J_conjugate(vijs))
+        uii_J_est, _, _ = np.linalg.svd(J_conjugate(viis))
 
-        # Calculate the mean squared error for viis.
-        errs_viis = np.zeros(n_img)
-        diffs_viis = np.zeros(2)
-        for idx, (vii_gt, vii) in enumerate(zip(viis_gt, viis)):
-            diffs_viis[0] = norm(vii - vii_gt)
-            diffs_viis[1] = norm(J_conjugate(vii) - vii_gt)
-            errs_viis[idx] = np.min(diffs_viis)
-        mse_viis = np.mean(errs_viis**2)
+        # Ground truth 1D supbspaces.
+        uij_gt = uij_gt[:, :, 0]
+        uii_gt = uii_gt[:, :, 0]
 
-        # Check that MSE is small.
-        # MSE is better for C3 than C4.
-        if order == 3:
-            self.assertTrue(mse_vijs < 0.0008)
-            self.assertTrue(mse_viis < 0.0002)
-        else:
-            self.assertTrue(mse_vijs < 0.01)
-            self.assertTrue(mse_viis < 0.0011)
+        # 1D subspace of estimates.
+        uij_est = uij_est[:, :, 0]
+        uii_est = uii_est[:, :, 0]
+        uij_J_est = uij_J_est[:, :, 0]
+        uii_J_est = uii_J_est[:, :, 0]
+
+        # Calculate angular distance between subspaces.
+        theta_vij = np.arccos(np.sum(uij_gt * uij_est, axis=1))
+        theta_vij_J = np.arccos(np.sum(uij_gt * uij_J_est, axis=1))
+        theta_vii = np.arccos(np.sum(uii_gt * uii_est, axis=1))
+        theta_vii_J = np.arccos(np.sum(uii_gt * uii_J_est, axis=1))
+
+        # Minimum angle between subspaces.
+        min_theta_vij = np.min(
+            (theta_vij, theta_vij_J, np.pi - theta_vij, np.pi - theta_vij_J), axis=0
+        )
+        min_theta_vii = np.min(
+            (theta_vii, theta_vii_J, np.pi - theta_vii, np.pi - theta_vii_J), axis=0
+        )
+
+        # Calculate the mean minimum angular distance.
+        angular_dist_vijs = np.mean(min_theta_vij)
+        angular_dist_viis = np.mean(min_theta_vii)
+
+        # Check that the mean angular difference is within 2 degrees.
+        angle_tol = 2 * np.pi / 180
+        self.assertTrue(angular_dist_vijs < angle_tol)
+        self.assertTrue(angular_dist_viis < angle_tol)
 
     def testGlobalJSync(self):
         n_img = self.n_img
