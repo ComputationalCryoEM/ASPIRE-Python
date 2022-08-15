@@ -347,26 +347,9 @@ class ImageSource:
         self._cached_im = self.images(start=0, num=np.inf)
         self.generation_pipeline.reset()
 
-    def images(self, start, num, *args, **kwargs):
-        """
-        Return images from this ImageSource as an Image object.
-        :param start: The inclusive start index from which to return images.
-        :param num: The exclusive end index up to which to return images.
-        :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
-        :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
-        :return: an `Image` object.
-        """
-        indices = np.arange(start, min(start + num, self.n), dtype=int)
-
-        if self._cached_im is not None:
-            logger.info("Loading images from cache")
-            im = Image(self._cached_im[indices, :, :])
-        else:
-            im = self._images(indices=indices, *args, **kwargs)
-
-        im = self.generation_pipeline.forward(im, indices=indices)
-        logger.info(f"Loaded {len(indices)} images")
-        return im
+    @property
+    def images(self):
+        return self._img_accessor
 
     def downsample(self, L):
         assert (
