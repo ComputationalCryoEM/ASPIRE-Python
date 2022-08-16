@@ -7,7 +7,7 @@ from scipy.linalg import eigh, qr
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
-from aspire.source import ImageSource
+from aspire.source import ImageSource, ImageAccessor
 from aspire.utils import (
     acorr,
     ainner,
@@ -113,6 +113,9 @@ class Simulation(ImageSource):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
+        self._projections_accessor = ImageAccessor(self._projections, self.n)
+        self._clean_images_accessor = ImageAccessor(self._clean_images, self.n)
+        
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
         # metadata based on the CTF filters by hand and set the values
@@ -148,12 +151,13 @@ class Simulation(ImageSource):
             filter_values,
         )
 
-    def projections(self, indices):
+    @property
+    def projections(self):
+        return self._projections_accessor
+        
+    def _projections(self, indices):
         """
-        Return projections of generated volumes, without applying filters/shifts/amplitudes/noise
-        :param start: start index (0-indexed) of the start image to return
-        :param num: Number of images to return. If None, *all* images are returned.
-        :param indices: A numpy array of image indices. If specified, start and num are ignored.
+        :param indices: A numpy array of image indices
         :return: An Image instance.
         """
 
@@ -172,11 +176,15 @@ class Simulation(ImageSource):
 
         return Image(im)
 
-    def clean_images(self, start=0, num=np.inf, indices=None):
+    @property
+    def clean_images():
+        return self._clean_images_accessor
+    
+    def _clean_images(self, indices):
         return self._images(start=start, num=num, indices=indices, enable_noise=False)
 
-    def _images(self, indices):
-        im = self.projections(indices)
+    def _images(self, indices, enable_noise=True):
+        im = self.projections[indices]
 
         # apply original CTF distortion to image
         im = self._apply_sim_filters(im, indices)
@@ -185,7 +193,7 @@ class Simulation(ImageSource):
 
         im *= self.amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
 
-        if self.noise_adder is not None:
+        if enable_noise and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
         return im

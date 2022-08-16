@@ -32,11 +32,14 @@ class ImageAccessor:
     Helper class for accessing images from an ImageSource as slices via the `src.images[:,:,:]` API.
     """
 
-    def __init__(self, src):
+    def __init__(self, fun, num_imgs):
         """
         :param fun: The private _images() method specific to the ImageSource associated with this ImageAccessor.
+        :param num_imgs: The max number of images that this ImageAccessor can load.  
         """
-        self.src = src
+        self.fun = fun
+        self.num_imgs = num_imgs
+        
 
     def __getitem__(self, indices):
         """
@@ -52,7 +55,7 @@ class ImageAccessor:
             if not start:
                 start = 0
             if not stop:
-                stop = src.n
+                stop = num_imgs
             if not step:
                 step = 1
             indices = np.arange(start, stop, step)
@@ -60,7 +63,7 @@ class ImageAccessor:
             raise KeyError("Key for .images must be a slice, 1-D NumPy array, or list.")
         if not indices.ndim == 1:
             raise KeyError("Only one-dimensional indexing is allowed for images.")
-        return self.src._images(indices)
+        return self.fun(indices)
 
 
 class ImageSource:
@@ -125,7 +128,7 @@ class ImageSource:
         self._metadata_out = None
 
         # instantiate the accessor for the `images` property
-        self._img_accessor = ImageAccessor(self)
+        self._img_accessor = ImageAccessor(self._images, self.n)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
