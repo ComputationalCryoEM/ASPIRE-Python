@@ -311,9 +311,9 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs[i], imgs_500[i]))
         # make sure max_rows loads correct particles
         # when some have been excluded
-        imgs_newsize = BoxesCoordinateSource(self.files_box, particle_size=336).images(
-            0, 50
-        )
+        imgs_newsize = BoxesCoordinateSource(self.files_box, particle_size=336).images[
+            :50
+        ]
         src_maxrows = BoxesCoordinateSource(
             self.files_box, particle_size=336, max_rows=50
         )

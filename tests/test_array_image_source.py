@@ -37,7 +37,7 @@ class ImageTestCase(TestCase):
         )
 
         # Expose images as numpy array.
-        self.ims_np = sim.images(0, sim.n).asnumpy()
+        self.ims_np = sim.images[:].asnumpy()
         self.im = Image(self.ims_np)
 
         # Vol estimation requires a 3D basis

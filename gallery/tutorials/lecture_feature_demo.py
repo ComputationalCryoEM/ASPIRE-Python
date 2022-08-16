@@ -238,7 +238,7 @@ sim_seed.images[:10].show()
 # Similar to before, if you require a different sample, this would be controlled via a ``seed``.
 
 # Using the sample variance, we'll compute a target noise variance
-var = np.var(sim2.images(0, sim2.n).asnumpy())
+var = np.var(sim2.images[:].asnumpy())
 logger.info(f"sim2 clean sample var {var}")
 noise_variance = 100.0 * var
 logger.info(f"noise var {noise_variance}")
