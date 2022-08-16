@@ -313,18 +313,17 @@ class ImageSource:
 
         return result.to_numpy().squeeze()
 
-    def _images(self, start=0, num=np.inf, indices=None):
+    def _images_super(self, indices):
         """
-        Return images WITHOUT applying any filters/translations/rotations/amplitude corrections/noise
-        Subclasses may want to implement their own caching mechanisms.
-        :param start: start index of image
-        :param num: number of images to return
-        :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :return: A 3D volume of images of size L x L x n
+        Performs operations universal to all Sources when accessing images:
+        checking for cached data, and applying pipeline transformations.
         """
-        raise NotImplementedError(
-            "Subclasses should implement this and return an Image object"
-        )
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            im = Image(self._cached_im[indices, :, :])
+        else:
+            im = self._images(indices)
+        return self.transformation_pipeline.forward(im, indices)
 
     def _apply_filters(
         self,
@@ -780,7 +779,7 @@ class ArrayImageSource(ImageSource):
             self.angles = angles
 
     def _images(self, indices):
-        return Image(self._cached_im[indices])
+        return Image(self._cached_im[indices, :, :])
 
     def _rots(self):
         """
