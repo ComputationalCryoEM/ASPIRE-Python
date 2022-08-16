@@ -127,7 +127,7 @@ class ImageSource:
         self._metadata_out = None
 
         # instantiate the accessor for the `images` property
-        self._img_accessor = ImageAccessor(self._images, self.n)
+        self._img_accessor = ImageAccessor(self._images_super, self.n)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
@@ -323,7 +323,7 @@ class ImageSource:
             im = Image(self._cached_im[indices, :, :])
         else:
             im = self._images(indices)
-        return self.transformation_pipeline.forward(im, indices)
+        return self.generation_pipeline.forward(im, indices)
 
     def _apply_filters(
         self,
@@ -696,7 +696,7 @@ class ImageSource:
                     logger.info(
                         f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                     )
-                    datum = self.images[i_start, i_start + num].data.astype("float32")
+                    datum = self.images[i_start: i_start + num].data.astype("float32")
 
                     # Assign to mrcfile
                     mrc.data[i_start:i_end] = datum
