@@ -263,8 +263,8 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                for d, idx in enumerate(data_indices):
-                    im[np.where(indices == idx)] = data[d, :, :]
+                for idx, d in enumerate(data_indices):
+                    im[np.where(indices == d)] = data[idx, :, :]
 
         logger.info(f"Loading {len(indices)} images complete")
 

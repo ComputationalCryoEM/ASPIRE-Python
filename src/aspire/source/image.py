@@ -32,17 +32,31 @@ class ImageAccessor:
     Helper class for accessing images from an ImageSource as slices via the `src.images[:,:,:]` API.
     """
 
-    def __init__(self, fun):
+    def __init__(self, src):
         """
         :param fun: The private _images() method specific to the ImageSource associated with this ImageAccessor.
         """
-        self.fun = fun
+        self.src = src
 
-    def __getitem__(self, s):
+    def __getitem__(self, key):
         """
-        Converts `s`, a Python slice object, into literal NumPy range to be passed to the ImageSource's _images() method.
+        ImageAccessor can be indexed via Python slice object, 1-D NumPy array, or list, corresponding to the indices
+        of the requested images. By default, slices default to a start of 0, an end of src.n, and a step of 1.
         """
-        return self.fun(np.arange(s.start, s.stop, s.step))
+        if isinstance(key, list):
+            indices = np.array(key)
+        if isinstance(key, slice):
+            start, stop, step = key.start, key.stop, key.step
+            if not start:
+                start = 0
+            if not stop:
+                stop = src.n
+            if not step:
+                step = 1
+            indices = np.arange(start, stop, step)
+        if not isinstance(indices, np.ndarray):
+            raise KeyError("Key for .images must be a slice, 1-D NumPy array, or list.")
+        return self.src._images(indices)
 
 
 class ImageSource:
@@ -107,7 +121,7 @@ class ImageSource:
         self._metadata_out = None
 
         # instantiate the accessor for the `images` property
-        self._img_accessor = ImageAccessor(self._images)
+        self._img_accessor = ImageAccessor(self)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
