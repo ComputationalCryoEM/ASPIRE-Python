@@ -51,38 +51,46 @@ class LoadImagesTestCase(TestCase):
         starfile_data[""] = DataFrame(starfile_loop, columns=starfile_keys)
         StarFile(blocks=starfile_data).write(self.starfile_path)
 
+        # create source
+        self.src = RelionSource(self.starfile_path, data_folder=self.data_folder)
+
     def tearDown(self):
         self.tmpdir.cleanup()
 
     def testRelionSourceInOrder(self):
         # ensure that we can load images in order using
         # the start and num arguments
-        src = RelionSource(self.starfile_path, data_folder=self.data_folder)
-        imgs = src.images[:500]
+        imgs = self.src.images[:500]
         from_mrc = self.getParticlesFromIndices([i for i in range(0, 500)])
         self.assertTrue(np.array_equal(imgs.asnumpy(), from_mrc.asnumpy()))
 
     def testRelionSourceNonsequential(self):
         # ensure that we can load particles from different mrc files,
         # nonsequentially, and end up with the ordering we asked for
-        src = RelionSource(self.starfile_path, data_folder=self.data_folder)
         indices = [501, 502, 503, 504, 505, 0, 1, 2, 3, 4, 729, 728, 730, 720]
-        from_src = src.images[indices]
+        from_src = self.src.images[indices]
         from_mrc = self.getParticlesFromIndices(indices)
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
 
     def testRelionSourceEveryOther(self):
-        src = RelionSource(self.starfile_path, data_folder=self.data_folder)
         even_indices = [i for i in range(0, self.n, 2)]
         odd_indices = [i for i in range(1, self.n, 2)]
-        even_from_src = src.images[even_indices]
+        even_from_src = self.src.images[even_indices]
         even_from_mrc = self.getParticlesFromIndices(even_indices)
-        odd_from_src = src.images[odd_indices]
+        odd_from_src = self.src.images[odd_indices]
         odd_from_mrc = self.getParticlesFromIndices(odd_indices)
         self.assertTrue(
             np.array_equal(even_from_src.asnumpy(), even_from_mrc.asnumpy())
         )
         self.assertTrue(np.array_equal(odd_from_src.asnumpy(), odd_from_mrc.asnumpy()))
+
+    def testBadKey(self):
+        with self.assertRaisesRegex(KeyError, "Key for .images must be a slice, 1-D NumPy array, or list."):
+            _ = self.src.images["no strings"]
+
+    def testNDArray(self):
+        with self.assertRaisesRegex(KeyError, "Only one-dimensional indexing is allowed for images."):
+            _ = self.src.images[np.zeros((3,3))]
 
     def getParticlesFromIndices(self, indices):
         # The purpose of this function is to load the *true* particles from

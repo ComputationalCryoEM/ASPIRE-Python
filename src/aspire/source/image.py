@@ -38,15 +38,15 @@ class ImageAccessor:
         """
         self.src = src
 
-    def __getitem__(self, key):
+    def __getitem__(self, indices):
         """
         ImageAccessor can be indexed via Python slice object, 1-D NumPy array, or list, corresponding to the indices
         of the requested images. By default, slices default to a start of 0, an end of src.n, and a step of 1.
         """
-        if isinstance(key, list):
-            indices = np.array(key)
-        if isinstance(key, slice):
-            start, stop, step = key.start, key.stop, key.step
+        if isinstance(indices, list):
+            indices = np.array(indices)
+        if isinstance(indices, slice):
+            start, stop, step = indices.start, indices.stop, indices.step
             if not start:
                 start = 0
             if not stop:
@@ -56,6 +56,8 @@ class ImageAccessor:
             indices = np.arange(start, stop, step)
         if not isinstance(indices, np.ndarray):
             raise KeyError("Key for .images must be a slice, 1-D NumPy array, or list.")
+        if not indices.ndim == 1:
+            raise KeyError("Only one-dimensional indexing is allowed for images.")
         return self.src._images(indices)
 
 
