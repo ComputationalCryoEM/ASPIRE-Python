@@ -45,7 +45,7 @@ class ImageAccessor:
         ImageAccessor can be indexed via Python slice object, 1-D NumPy array, or list, corresponding to the indices
         of the requested images. By default, slices default to a start of 0, an end of src.n, and a step of 1.
         """
-        if isinstance(indices, int):
+        if isinstance(indices, (int, np.integer)):
             indices = np.array([indices])
         if isinstance(indices, list):
             indices = np.array(indices)
@@ -369,7 +369,7 @@ class ImageSource:
 
     @property
     def images(self):
-        return self._img_accessor
+        return self._img_accessor 
 
     def downsample(self, L):
         assert (

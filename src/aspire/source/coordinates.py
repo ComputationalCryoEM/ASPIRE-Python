@@ -262,7 +262,7 @@ class CoordinateSource(ImageSource, ABC):
         start_x, start_y, size_x, size_y = coord
         return data[start_y : start_y + size_y, start_x : start_x + size_x]
 
-    def _images(self, start=0, num=np.inf, indices=None):
+    def _images(self, indices):
         """
         Given a range or selection of indices, returns an Image stack
         of the particles specified. Note that the indices refer to the order
@@ -271,13 +271,8 @@ class CoordinateSource(ImageSource, ABC):
         particles were excluded due to their box not fitting into the mrc
         dimensions. Thus, the exact particles returned are a function of the
         `particle_size`.
-        :param start: Starting index (default: 0)
-        :param num: number of images to return starting from `start` (default: numpy.inf)
-        :param indices: A numpy array of integer indices. If specified, supersedes
-        `start` and `num`.
+        :param indices: A numpy array of integer indices.
         """
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
 
         logger.info(f"Loading {len(indices)} images from micrographs")
 
