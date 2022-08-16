@@ -54,8 +54,8 @@ class ImageAccessor:
             start, stop, step = indices.start, indices.stop, indices.step
             if not start:
                 start = 0
-            if not stop:
-                stop = num_imgs
+            if not stop or stop > self.num_imgs:
+                stop = self.num_imgs
             if not step:
                 step = 1
             indices = np.arange(start, stop, step)
@@ -780,6 +780,10 @@ class ArrayImageSource(ImageSource):
             #   which is exposed by properties `angles` and `rots`.
             self.angles = angles
 
+
+    def _images(self, indices):
+        return Image(self._cached_im[indices])
+    
     def _rots(self):
         """
         Private method, checks if `_rotations` has been set,
