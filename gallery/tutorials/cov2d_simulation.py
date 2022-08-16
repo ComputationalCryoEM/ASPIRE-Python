@@ -118,8 +118,8 @@ h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in ctf_filters]
 
 # Get clean images from projections of 3D map.
 logger.info("Apply CTF filters to clean images.")
-imgs_clean = sim.projections()
-imgs_ctf_clean = sim.clean_images()
+imgs_clean = sim.projections[:]
+imgs_ctf_clean = sim.clean_images[:]
 power_clean = imgs_ctf_clean.norm() ** 2 / imgs_ctf_clean.size
 sn_ratio = power_clean / noise_var
 logger.info(f"Signal to noise ratio is {sn_ratio}.")

@@ -63,8 +63,8 @@ class Cov2DTestCase(TestCase):
         self.h_idx = sim.filter_indices
         self.h_ctf_fb = [filt.fb_mat(self.basis) for filt in unique_filters]
 
-        self.imgs_clean = sim.projections()
-        self.imgs_ctf_clean = sim.clean_images()
+        self.imgs_clean = sim.projections[:]
+        self.imgs_ctf_clean = sim.clean_images[:]
         self.imgs_ctf_noise = sim.images[:n]
 
         self.cov2d = RotCov2D(self.basis)

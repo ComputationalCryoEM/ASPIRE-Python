@@ -30,7 +30,7 @@ class BatchedRotCov2DTestCase(TestCase):
             dtype=dtype,
             noise_filter=noise_filter,
         )
-        imgs_clean = sim.projections()
+        imgs_clean = sim.projections[:]
 
         # Specify the fast FB basis method for expending the 2D images
         ffbbasis = FFBBasis2D((img_size, img_size), dtype=dtype)
