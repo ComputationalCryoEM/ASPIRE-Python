@@ -177,7 +177,7 @@ class Simulation(ImageSource):
         return Image(im)
 
     @property
-    def clean_images():
+    def clean_images(self):
         return self._clean_images_accessor
 
     def _clean_images(self, indices):
