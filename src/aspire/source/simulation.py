@@ -148,7 +148,7 @@ class Simulation(ImageSource):
             filter_values,
         )
 
-    def projections(self, start=0, num=np.inf, indices=None):
+    def projections(self, indices):
         """
         Return projections of generated volumes, without applying filters/shifts/amplitudes/noise
         :param start: start index (0-indexed) of the start image to return
@@ -156,8 +156,6 @@ class Simulation(ImageSource):
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
         :return: An Image instance.
         """
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
 
         im = np.zeros(
             (len(indices), self._original_L, self._original_L), dtype=self.dtype
@@ -177,11 +175,8 @@ class Simulation(ImageSource):
     def clean_images(self, start=0, num=np.inf, indices=None):
         return self._images(start=start, num=num, indices=indices, enable_noise=False)
 
-    def _images(self, start=0, num=np.inf, indices=None, enable_noise=True):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n), dtype=int)
-
-        im = self.projections(start=start, num=num, indices=indices)
+    def _images(self, indices):
+        im = self.projections(indices)
 
         # apply original CTF distortion to image
         im = self._apply_sim_filters(im, indices)
@@ -190,7 +185,7 @@ class Simulation(ImageSource):
 
         im *= self.amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
 
-        if enable_noise and self.noise_adder is not None:
+        if self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
         return im
