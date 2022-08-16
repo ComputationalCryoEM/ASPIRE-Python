@@ -7,7 +7,7 @@ from scipy.linalg import eigh, qr
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
-from aspire.source import ImageSource, ImageAccessor
+from aspire.source import ImageAccessor, ImageSource
 from aspire.utils import (
     acorr,
     ainner,
@@ -181,7 +181,7 @@ class Simulation(ImageSource):
         return self._clean_images_accessor
 
     def _clean_images(self, indices):
-        return self._images(start=start, num=num, indices=indices, enable_noise=False)
+        return self._images(indices, enable_noise=False)
 
     def _images(self, indices, enable_noise=True):
         im = self.projections[indices]

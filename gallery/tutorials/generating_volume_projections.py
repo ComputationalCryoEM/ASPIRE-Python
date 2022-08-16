@@ -114,7 +114,7 @@ src.images[:3].show()
 src.projections(0, 3).show()
 
 # Here we return the first n_img images as a numpy array.
-dirty_ary = src.images[:nimg].asnumpy()
+dirty_ary = src.images[:n_img].asnumpy()
 
 # And we have access to the clean images
 clean_ary = src.projections(0, n_img).asnumpy()

@@ -369,7 +369,7 @@ class ImageSource:
 
     @property
     def images(self):
-        return self._img_accessor 
+        return self._img_accessor
 
     def downsample(self, L):
         assert (
