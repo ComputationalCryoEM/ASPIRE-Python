@@ -696,7 +696,7 @@ class ImageSource:
                     logger.info(
                         f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                     )
-                    datum = self.images[i_start: i_start + num].data.astype("float32")
+                    datum = self.images[i_start : i_start + num].data.astype("float32")
 
                     # Assign to mrcfile
                     mrc.data[i_start:i_end] = datum
@@ -726,7 +726,7 @@ class ImageSource:
                 logger.info(
                     f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                 )
-                im = self.images[i_start, i_start + num]
+                im = self.images[i_start : i_start + num]
                 im.save(mrcs_filepath, overwrite=overwrite)
 
 

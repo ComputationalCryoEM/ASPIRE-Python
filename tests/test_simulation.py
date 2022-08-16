@@ -24,7 +24,7 @@ class SingleSimTestCase(TestCase):
 
     def testImage(self):
         """Test we can get an Image from a length 1 Sim."""
-        _ = self.sim.images[1]
+        _ = self.sim.images[0]
 
 
 class SimTestCase(TestCase):
@@ -63,7 +63,7 @@ class SimTestCase(TestCase):
         )
 
     def testSimulationImages(self):
-        images = self.sim.clean.images[:512].asnumpy()
+        images = self.sim.clean_images[:512].asnumpy()
         self.assertTrue(
             np.allclose(
                 images,
@@ -87,7 +87,7 @@ class SimTestCase(TestCase):
     def testSimulationImagesDownsample(self):
         # The simulation already generates images of size 8 x 8; Downsampling to resolution 8 should thus have no effect
         self.sim.downsample(8)
-        images = self.sim.clean.images[:512].asnumpy()
+        images = self.sim.clean_images[:512].asnumpy()
         self.assertTrue(
             np.allclose(
                 images,
