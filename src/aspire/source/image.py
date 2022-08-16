@@ -35,11 +35,10 @@ class ImageAccessor:
     def __init__(self, fun, num_imgs):
         """
         :param fun: The private _images() method specific to the ImageSource associated with this ImageAccessor.
-        :param num_imgs: The max number of images that this ImageAccessor can load.  
+        :param num_imgs: The max number of images that this ImageAccessor can load.
         """
         self.fun = fun
         self.num_imgs = num_imgs
-        
 
     def __getitem__(self, indices):
         """
@@ -780,10 +779,9 @@ class ArrayImageSource(ImageSource):
             #   which is exposed by properties `angles` and `rots`.
             self.angles = angles
 
-
     def _images(self, indices):
         return Image(self._cached_im[indices])
-    
+
     def _rots(self):
         """
         Private method, checks if `_rotations` has been set,

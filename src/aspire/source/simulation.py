@@ -115,7 +115,7 @@ class Simulation(ImageSource):
 
         self._projections_accessor = ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = ImageAccessor(self._clean_images, self.n)
-        
+
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
         # metadata based on the CTF filters by hand and set the values
@@ -154,7 +154,7 @@ class Simulation(ImageSource):
     @property
     def projections(self):
         return self._projections_accessor
-        
+
     def _projections(self, indices):
         """
         :param indices: A numpy array of image indices
@@ -179,7 +179,7 @@ class Simulation(ImageSource):
     @property
     def clean_images():
         return self._clean_images_accessor
-    
+
     def _clean_images(self, indices):
         return self._images(start=start, num=num, indices=indices, enable_noise=False)
 
