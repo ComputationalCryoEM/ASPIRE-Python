@@ -165,7 +165,7 @@ class AligningAverager2DBase(Averager2DBase):
         self.src = self._getSrc()
 
         # Get the image coef
-        self.coefs = self.basis.evaluate_t(self.src.images(0, self.n_img))
+        self.coefs = self.basis.evaluate_t(self.src.images[: self.n_img])
 
     def _call_averager(self):
         # Construct the Averager

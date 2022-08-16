@@ -85,12 +85,16 @@ class LoadImagesTestCase(TestCase):
         self.assertTrue(np.array_equal(odd_from_src.asnumpy(), odd_from_mrc.asnumpy()))
 
     def testBadKey(self):
-        with self.assertRaisesRegex(KeyError, "Key for .images must be a slice, 1-D NumPy array, or list."):
+        with self.assertRaisesRegex(
+            KeyError, "Key for .images must be a slice, 1-D NumPy array, or list."
+        ):
             _ = self.src.images["no strings"]
 
     def testNDArray(self):
-        with self.assertRaisesRegex(KeyError, "Only one-dimensional indexing is allowed for images."):
-            _ = self.src.images[np.zeros((3,3))]
+        with self.assertRaisesRegex(
+            KeyError, "Only one-dimensional indexing is allowed for images."
+        ):
+            _ = self.src.images[np.zeros((3, 3))]
 
     def getParticlesFromIndices(self, indices):
         # The purpose of this function is to load the *true* particles from

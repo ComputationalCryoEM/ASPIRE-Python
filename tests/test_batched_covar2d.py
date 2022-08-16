@@ -30,7 +30,7 @@ class BatchedRotCov2DTestCase(TestCase):
             L, n, unique_filters=filters, dtype=self.dtype, noise_filter=noise_filter
         )
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)
-        self.coeff = self.basis.evaluate_t(self.src.images(0, self.src.n))
+        self.coeff = self.basis.evaluate_t(self.src.images[:])
 
         self.ctf_idx = self.src.filter_indices
         self.ctf_fb = [f.fb_mat(self.basis) for f in self.src.unique_filters]

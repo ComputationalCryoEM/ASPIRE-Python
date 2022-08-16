@@ -24,7 +24,7 @@ class SingleSimTestCase(TestCase):
 
     def testImage(self):
         """Test we can get an Image from a length 1 Sim."""
-        _ = self.sim.images(0, 1)
+        _ = self.sim.images[1]
 
 
 class SimTestCase(TestCase):
@@ -63,7 +63,7 @@ class SimTestCase(TestCase):
         )
 
     def testSimulationImages(self):
-        images = self.sim.clean_images(0, 512).asnumpy()
+        images = self.sim.clean.images[:512].asnumpy()
         self.assertTrue(
             np.allclose(
                 images,
@@ -74,7 +74,7 @@ class SimTestCase(TestCase):
         )
 
     def testSimulationImagesNoisy(self):
-        images = self.sim.images(0, 512).asnumpy()
+        images = self.sim.images[:512].asnumpy()
         self.assertTrue(
             np.allclose(
                 images,
@@ -87,7 +87,7 @@ class SimTestCase(TestCase):
     def testSimulationImagesDownsample(self):
         # The simulation already generates images of size 8 x 8; Downsampling to resolution 8 should thus have no effect
         self.sim.downsample(8)
-        images = self.sim.clean_images(0, 512).asnumpy()
+        images = self.sim.clean.images[:512].asnumpy()
         self.assertTrue(
             np.allclose(
                 images,
@@ -100,12 +100,12 @@ class SimTestCase(TestCase):
     def testSimulationImagesShape(self):
         # The 'images' method should be tolerant of bounds - here we ask for 1000 images starting at index 1000,
         # so we'll get back 25 images in return instead
-        images = self.sim.images(1000, 1000)
+        images = self.sim.images[1000:2000]
         self.assertTrue(images.shape, (8, 8, 25))
 
     def testSimulationImagesDownsampleShape(self):
         self.sim.downsample(6)
-        first_image = self.sim.images(0, 1)[0]
+        first_image = self.sim.images[1][0]
         self.assertEqual(first_image.shape, (6, 6))
 
     def testSimulationEigen(self):
@@ -476,16 +476,16 @@ class SimTestCase(TestCase):
             self.sim.save(
                 star_filepath, batch_size=512, save_mode="single", overwrite=False
             )
-            imgs_org = self.sim.images(start=0, num=1024)
+            imgs_org = self.sim.images[:1024]
             # Input saved images into Relion object
             relion_src = RelionSource(star_filepath, tmpdir, max_rows=1024)
-            imgs_sav = relion_src.images(start=0, num=1024)
+            imgs_sav = relion_src.images[:1024]
             # Compare original images with saved images
             self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
             # Save images into multiple MRCS files based on batch size
             self.sim.save(star_filepath, batch_size=512, overwrite=False)
             # Input saved images into Relion object
             relion_src = RelionSource(star_filepath, tmpdir, max_rows=1024)
-            imgs_sav = relion_src.images(start=0, num=1024)
+            imgs_sav = relion_src.images[:1024]
             # Compare original images with saved images
             self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))

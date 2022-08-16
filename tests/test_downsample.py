@@ -77,10 +77,10 @@ class DownsampleTestCase(TestCase):
         )
 
         # get images before downsample
-        imgs_org = sim.images(start=0, num=self.n)
+        imgs_org = sim.images[: self.n]
 
         # get images after downsample
         sim.downsample(L_ds)
-        imgs_ds = sim.images(start=0, num=self.n)
+        imgs_ds = sim.images[: self.n]
 
         return imgs_org, imgs_ds

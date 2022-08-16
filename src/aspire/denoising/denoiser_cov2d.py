@@ -76,7 +76,7 @@ def src_wiener_coords(
     covar_noise = noise_var * np.eye(k)
 
     for i in range(0, sim.n, batch_size):
-        ims = sim.images(i, batch_size)
+        ims = sim.images[i : i + batch_size]
         batch_n = ims.shape[0]
         ims -= sim.vol_forward(mean_vol, i, batch_n)
 

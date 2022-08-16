@@ -360,7 +360,7 @@ class ImageSource:
 
     def cache(self):
         logger.info("Caching source images")
-        self._cached_im = self.images(start=0, num=np.inf)
+        self._cached_im = self.images[:]
         self.generation_pipeline.reset()
 
     @property
@@ -451,7 +451,7 @@ class ImageSource:
         noise_mean = 0.0
 
         for i in range(0, self.n, batch_size):
-            images = self.images(i, batch_size).asnumpy()
+            images = self.images[i : i + batch_size].asnumpy()
             signal = images * signal_mask
             noise = images * noise_mask
             signal_mean += np.sum(signal)
@@ -693,7 +693,7 @@ class ImageSource:
                     logger.info(
                         f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                     )
-                    datum = self.images(start=i_start, num=num).data.astype("float32")
+                    datum = self.images[i_start, i_start + num].data.astype("float32")
 
                     # Assign to mrcfile
                     mrc.data[i_start:i_end] = datum
@@ -723,7 +723,7 @@ class ImageSource:
                 logger.info(
                     f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                 )
-                im = self.images(start=i_start, num=num)
+                im = self.images[i_start, i_start + num]
                 im.save(mrcs_filepath, overwrite=overwrite)
 
 

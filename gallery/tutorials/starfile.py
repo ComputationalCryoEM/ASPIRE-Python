@@ -40,7 +40,7 @@ noise_estimator = AnisotropicNoiseEstimator(source)
 source.whiten(noise_estimator.filter)
 
 # Display subset of the images
-images = source.images(0, 10)
+images = source.images[:10]
 images.show()
 
 # %%
