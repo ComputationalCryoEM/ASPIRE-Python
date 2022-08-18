@@ -304,7 +304,7 @@ class Rotation:
         return Rotation.from_euler(angles, dtype=dtype)
 
     @staticmethod
-    def angle_dist(r1, r2):
+    def angle_dist(r1, r2, dtype=np.float32):
         """
         Find the angular distance between two rotation matrices. We first compute
         the rotation between the two rotation matrices, r = r1 @ r2.T. Then using
@@ -316,11 +316,11 @@ class Rotation:
         :return: The angular distance between r1 and r2 in radians.
         """
         r = r1 @ r2.T
-        tr_r = np.trace(r)
+        tr_r = np.trace(r, dtype=dtype)
         if np.allclose(tr_r, 3):
             dist = 0
         else:
             theta = (tr_r - 1) / 2
             theta = max(min(theta, 1), -1)  # Clamp theta in [-1,1]
-            dist = np.arccos(theta)
+            dist = np.arccos(theta, dtype=dtype)
         return dist

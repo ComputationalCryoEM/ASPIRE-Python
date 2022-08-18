@@ -265,7 +265,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         else:
             min_angle_diff = 90 * np.pi / 180
 
-        res = 2 * (360 // L)
+        res = 1 * (360 // L)
         max_angle_diff = np.pi - res * np.pi / 180
 
         # We create a mask associated with angle differences that fall in the
