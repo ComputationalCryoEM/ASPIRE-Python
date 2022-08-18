@@ -19,6 +19,8 @@ from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
+from .test_averager2d import xfail_ray_dev
+
 logger = logging.getLogger(__name__)
 
 
@@ -59,7 +61,7 @@ class FSPCATestCase(TestCase):
 
         # Check recon is close to imgs
         rmse = np.sqrt(np.mean(np.square(self.imgs.asnumpy() - recon.asnumpy())))
-        logger.info(f"FSPCA Expand Eval Image Round Trupe RMSE: {rmse}")
+        logger.info(f"FSPCA Expand Eval Image Round True RMSE: {rmse}")
         self.assertTrue(rmse < utest_tolerance(self.dtype))
 
     def testComplexConversionErrors(self):
@@ -100,12 +102,25 @@ class FSPCATestCase(TestCase):
             rmse = np.sqrt(np.mean(np.square(np.flip(img) - rot_imgs[i])))
             self.assertTrue(rmse < 10 * utest_tolerance(self.dtype))
 
+    def testBasisTooSmall(self):
+        """
+        When number of components is more than basis functions raise with descriptive error.
+        """
+        fb_basis = FFBBasis2D((self.resolution, self.resolution), dtype=self.dtype)
+
+        with pytest.raises(ValueError, match=r".*Reduce components.*"):
+            # Configure an FSPCA basis
+            _ = FSPCABasis(
+                self.src, basis=fb_basis, components=fb_basis.count * 2, noise_var=0
+            )
+
 
 class RIRClass2DTestCase(TestCase):
     def setUp(self):
         self.n_classes = 5
         self.resolution = 16
         self.dtype = np.float64
+        self.n_img = 150
 
         # Create some projections
         v = Volume(
@@ -118,7 +133,7 @@ class RIRClass2DTestCase(TestCase):
         # Clean
         self.clean_src = Simulation(
             L=self.resolution,
-            n=321,
+            n=self.n_img,
             vols=v,
             dtype=self.dtype,
         )
@@ -128,7 +143,7 @@ class RIRClass2DTestCase(TestCase):
         noise_filter = ScalarFilter(dim=2, value=noise_var)
         self.noisy_src = Simulation(
             L=self.resolution,
-            n=123,
+            n=self.n_img,
             vols=v,
             dtype=self.dtype,
             noise_filter=noise_filter,
@@ -145,6 +160,21 @@ class RIRClass2DTestCase(TestCase):
 
         # Ceate another fspca_basis, use autogeneration FFB2D Basis
         self.noisy_fspca_basis = FSPCABasis(self.noisy_src)
+
+    def testSourceTooSmall(self):
+        """
+        When number of images in source is less than requested bispectrum components,
+        raise with descriptive error.
+        """
+
+        with pytest.raises(
+            RuntimeError, match=r".*Increase number of images or reduce components.*"
+        ):
+            _ = RIRClass2D(
+                self.clean_src,
+                fspca_components=self.clean_src.n * 4,
+                bispectrum_components=self.clean_src.n * 2,
+            )
 
     def testIncorrectComponents(self):
         """
@@ -168,6 +198,7 @@ class RIRClass2DTestCase(TestCase):
             self.clean_src,
             self.clean_fspca_basis,  # 400 components
             fspca_components=self.clean_fspca_basis.components,
+            bispectrum_components=100,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
@@ -185,10 +216,13 @@ class RIRClass2DTestCase(TestCase):
         rir = RIRClass2D(
             self.clean_src,
             clean_fspca_basis,
+            n_classes=5,
+            bispectrum_components=42,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
             selector=TopClassSelector(),
+            num_procs=1 if xfail_ray_dev() else None,
         )
 
         classification_results = rir.classify()
@@ -202,13 +236,15 @@ class RIRClass2DTestCase(TestCase):
         # Use the basis class setup, only requires a Source.
         rir = RIRClass2D(
             self.clean_src,
+            fspca_components=self.clean_fspca_basis.components,
+            bispectrum_components=self.clean_fspca_basis.components - 1,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="devel",
+            num_procs=1 if xfail_ray_dev() else None,
         )
 
-        classification_results = rir.classify()
-        _ = rir.averages(*classification_results)
+        _ = rir.classify()
 
     def testRIRsk(self):
         """
@@ -265,9 +301,7 @@ class RIRClass2DTestCase(TestCase):
         Also tests dtype mismatch behavior.
         """
 
-        with pytest.raises(
-            RuntimeError, match=r".*Images too small for Bispectrum Components.*"
-        ):
+        with pytest.raises(RuntimeError, match=r".*Reduce bispectrum_components.*"):
             _ = RIRClass2D(
                 self.clean_src,
                 self.clean_fspca_basis,
@@ -283,7 +317,10 @@ class RIRClass2DTestCase(TestCase):
         # Nearest Neighbhor component
         with pytest.raises(ValueError, match=r"Provided nn_implementation.*"):
             _ = RIRClass2D(
-                self.clean_src, self.clean_fspca_basis, nn_implementation="badinput"
+                self.clean_src,
+                self.clean_fspca_basis,
+                bispectrum_components=int(0.75 * self.clean_fspca_basis.basis.count),
+                nn_implementation="badinput",
             )
 
         # Large PCA component

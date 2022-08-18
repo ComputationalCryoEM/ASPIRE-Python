@@ -5,7 +5,15 @@ import numpy as np
 from pytest import raises
 
 from aspire import __version__
-from aspire.utils import get_full_version, powerset, utest_tolerance
+from aspire.utils import (
+    get_full_version,
+    mem_based_cpu_suggestion,
+    num_procs_suggestion,
+    physical_core_cpu_suggestion,
+    powerset,
+    utest_tolerance,
+    virtual_core_cpu_suggestion,
+)
 from aspire.utils.misc import gaussian_1d, gaussian_2d, gaussian_3d
 
 
@@ -112,3 +120,21 @@ class UtilsTestCase(TestCase):
 
         self.assertTrue(np.allclose(g_2d, g_2d_scalar))
         self.assertTrue(np.allclose(g_3d, g_3d_scalar))
+
+
+class MultiProcessingUtilsTestCase(TestCase):
+    """
+    Smoke tests.
+    """
+
+    def testMemSuggestion(self):
+        self.assertTrue(isinstance(mem_based_cpu_suggestion(), int))
+
+    def testPhySuggestion(self):
+        self.assertTrue(isinstance(physical_core_cpu_suggestion(), int))
+
+    def testVrtSuggestion(self):
+        self.assertTrue(isinstance(virtual_core_cpu_suggestion(), int))
+
+    def testGetNumMultiProcs(self):
+        self.assertTrue(isinstance(num_procs_suggestion(), int))

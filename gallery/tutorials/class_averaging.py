@@ -114,6 +114,7 @@ rir = RIRClass2D(
     large_pca_implementation="legacy",
     nn_implementation="legacy",
     bispectrum_implementation="legacy",
+    num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
 classes, reflections, dists = rir.classify()
@@ -172,6 +173,7 @@ noisy_rir = RIRClass2D(
     large_pca_implementation="legacy",
     nn_implementation="sklearn",
     bispectrum_implementation="legacy",
+    num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
 classes, reflections, dists = noisy_rir.classify()
