@@ -1,8 +1,7 @@
 import logging
 import os.path
+from abc import ABC, abstractmethod
 from collections import OrderedDict
-
-from abc import ABC
 
 import mrcfile
 import numpy as np
@@ -45,8 +44,8 @@ class ImageAccessor:
 
     def __getitem__(self, indices):
         """
-        ImageAccessor can be indexed via Python slice object, 1-D NumPy array, list, or a single integer, 
-        corresponding to the indices of the requested images. By default, slices default to a start of 0, 
+        ImageAccessor can be indexed via Python slice object, 1-D NumPy array, list, or a single integer,
+        corresponding to the indices of the requested images. By default, slices default to a start of 0,
         an end of self.num_imgs, and a step of 1.
         :return: An Image object containing the requested images.
         """
@@ -70,7 +69,7 @@ class ImageAccessor:
         return self.fun(indices)
 
 
-class ImageSource:
+class ImageSource(ABC):
     """
     When creating an `ImageSource` object, a 'metadata' table holds metadata information about all images in the
     `ImageSource`. The number of rows in this metadata table will equal the total number of images supported by this
@@ -381,9 +380,9 @@ class ImageSource:
         return self._img_accessor
 
     @abstractmethod
-    def _images(self):
+    def _images(self, indices):
         """
-        
+        Subclasses must implement a private _images() method accepting a 1-D NumPy array of indices.
         """
 
     def downsample(self, L):
