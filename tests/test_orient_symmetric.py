@@ -78,7 +78,8 @@ class OrientSymmTestCase(TestCase):
             for s in range(order):
                 Rij_s_gt = Ri_gt.T @ gs[s] @ Rj_gt
                 dist[s] = np.minimum(
-                    self.angle_dist(Rij, Rij_s_gt), self.angle_dist(Rij_J, Rij_s_gt)
+                    Rotation.angle_dist(Rij, Rij_s_gt),
+                    Rotation.angle_dist(Rij_J, Rij_s_gt),
                 )
             angular_distance[idx] = np.min(dist)
         mean_angular_distance = np.mean(angular_distance)
@@ -115,7 +116,7 @@ class OrientSymmTestCase(TestCase):
             Rii = Riis[i]
             cases = np.array([Rii, Rii.T, J_conjugate(Rii), J_conjugate(Rii.T)])
             for i, estimate in enumerate(cases):
-                dist[i] = self.angle_dist(estimate, Rii_gt)
+                dist[i] = Rotation.angle_dist(estimate, Rii_gt)
             angular_distance[i] = dist[np.argmin(dist)]
         mean_angular_distance = np.mean(angular_distance)
 
@@ -418,14 +419,3 @@ class OrientSymmTestCase(TestCase):
         rots_symm = Rotation.from_euler(angles).matrices
 
         return rots_symm
-
-    def angle_dist(self, r1, r2):
-        r = r1 @ r2.T
-        tr_r = np.trace(r)
-        if np.allclose(tr_r, 3):
-            dist = 0
-        else:
-            theta = (tr_r - 1) / 2
-            theta = max(min(theta, 1), -1)  # Clamp theta in [-1,1]
-            dist = np.arccos(theta)
-        return dist
