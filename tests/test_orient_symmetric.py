@@ -119,8 +119,8 @@ class OrientSymmTestCase(TestCase):
             angular_distance[i] = dist[np.argmin(dist)]
         mean_angular_distance = np.mean(angular_distance)
 
-        # Check that mean_angular_distance is less than 2 degrees.
-        self.assertTrue(mean_angular_distance < 2)
+        # Check that mean_angular_distance is less than 5 degrees.
+        self.assertTrue(mean_angular_distance < 5)
 
     @parameterized.expand([(3,), (4,)])
     def testRelativeViewingDirections(self, order):
@@ -156,8 +156,8 @@ class OrientSymmTestCase(TestCase):
         # SVD's:
         uij_gt, _, _ = np.linalg.svd(vijs_gt)
         uii_gt, _, _ = np.linalg.svd(viis_gt)
-        uij_est, _, _ = np.linalg.svd(vijs)
-        uii_est, _, _ = np.linalg.svd(viis)
+        uij_est, sij, _ = np.linalg.svd(vijs)
+        uii_est, sii, _ = np.linalg.svd(viis)
         uij_J_est, _, _ = np.linalg.svd(J_conjugate(vijs))
         uii_J_est, _, _ = np.linalg.svd(J_conjugate(viis))
 
@@ -188,6 +188,12 @@ class OrientSymmTestCase(TestCase):
         # Calculate the mean minimum angular distance.
         angular_dist_vijs = np.mean(min_theta_vij)
         angular_dist_viis = np.mean(min_theta_vii)
+
+        # Check that estimates are indeed approximately rank 1.
+        # ie. check that the two smaller singular values are close to zero.
+        tol = 5e-2
+        self.assertTrue(np.max(sij[:, 1:]) < tol)
+        self.assertTrue(np.max(sii[:, 1:]) < tol)
 
         # Check that the mean angular difference is within 2 degrees.
         angle_tol = 2 * np.pi / 180
