@@ -5,7 +5,7 @@ from collections import OrderedDict
 import numpy as np
 
 from aspire.basis import FFBBasis2D, SteerableBasis2D
-from aspire.covariance import RotCov2D
+from aspire.covariance import BatchedRotCov2D
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, fix_signs, real_type
 
@@ -45,6 +45,7 @@ class FSPCABasis(SteerableBasis2D):
         Default value of `None` will estimate noise with WhiteNoiseEstimator.
         Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
         :param batch_size: Batch size for computing basis coefficients.
+        `batch_size` is also passed to BatchedRotCov2D.
         """
 
         self.src = src
@@ -150,7 +151,7 @@ class FSPCABasis(SteerableBasis2D):
             self.noise_var = WhiteNoiseEstimator(self.src).estimate()
         logger.info(f"Setting noise_var={self.noise_var}")
 
-        cov2d = RotCov2D(self.basis)
+        cov2d = BatchedRotCov2D(self.basis, batch_size=self.batch_size)
         covar_opt = {
             "shrinker": "frobenius_norm",
             "verbose": 0,
