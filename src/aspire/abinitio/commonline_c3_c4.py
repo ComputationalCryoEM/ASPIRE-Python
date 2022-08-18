@@ -259,14 +259,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # This angle is in the range [60, 180] for C3 symmetry and [90, 180] for C4 symmetry.
         # Since antipodal lines are perfectly correlated we search for common lines in a smaller window.
         # Note: matlab code used [60, 165] for C3 and [90, 160] for C4.
-        # We make the upper bound of this window dependent on the smaller of L or n_theta and set it
-        # to be 180 - max(360/L, 360/n_theta).
+        # We make the upper bound of this window dependent on the image resolution `src.L`.
         if order == 3:
             min_angle_diff = 60 * np.pi / 180
         else:
             min_angle_diff = 90 * np.pi / 180
 
-        res = np.ceil(max(360 / L, 360 / n_theta))
+        res = 2 * (360 // L)
         max_angle_diff = np.pi - res * np.pi / 180
 
         # We create a mask associated with angle differences that fall in the
