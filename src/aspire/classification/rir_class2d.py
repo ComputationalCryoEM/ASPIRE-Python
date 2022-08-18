@@ -6,7 +6,12 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
-from aspire.classification import BFSReddyChatterjiAverager2D, Class2D
+from aspire.classification import (
+    BFSReddyChatterjiAverager2D,
+    Class2D,
+    ClassSelector,
+    RandomClassSelector,
+)
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
 from aspire.utils.random import rand
@@ -29,6 +34,7 @@ class RIRClass2D(Class2D):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
+        selector=None,
         num_procs=None,
         averager=None,
         dtype=None,
@@ -61,6 +67,7 @@ class RIRClass2D(Class2D):
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
+        :param selector: A ClassSelector subclass. Defaults to RandomClassSelector.
         :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param num_procs: Number of processes to use.
         `None` will attempt computing a suggestion based on machine resources.
@@ -117,6 +124,13 @@ class RIRClass2D(Class2D):
                 " Check class configuration and retry."
             )
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
+
+        # Setup class selection
+        if selector is None:
+            selector = RandomClassSelector(seed=self.seed)
+        elif not isinstance(selector, ClassSelector):
+            raise RuntimeError("`selector` must be subclass of `ClassSelector`")
+        self.selector = selector
 
         # For now, only run with FSPCA basis
         if pca_basis and not isinstance(pca_basis, FSPCABasis):
@@ -219,10 +233,11 @@ class RIRClass2D(Class2D):
     def averages(self, classes, reflections, distances):
         # # Stage 3: Class Selection
         # This is an area open to active research.
-        # Currently we take a naive approach by selecting the
-        # first n_classes assuming they are quasi random.
         logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        classes, reflections = self.select_classes(classes, reflections)
+        self.selection = selection = self.selector.select(
+            self.n_classes, classes, reflections, distances
+        )
+        classes, reflections = classes[selection], reflections[selection]
 
         # # Stage 4: Averager
         logger.info(
@@ -230,18 +245,6 @@ class RIRClass2D(Class2D):
         )
 
         return self.averager.average(classes, reflections)
-
-    def select_classes(self, classes, reflections):
-        """
-        Select the `n_classes` to average from the (n_images) population of classes.
-        """
-        # Generate indices for random sample (can do something smarter, or build this out later).
-        # For testing/poc just take the first n_classes so it matches earlier plots for manual comparison
-        # If image stack is assumed to be reasonably random, this is a reasonable thing to do.
-        # Another reasonable thing would be to take a random selection over the whole dataset,
-        # in case the head of a dataset is too similar or has artifacts.
-        selection = np.arange(self.n_classes)
-        return classes[selection], reflections[selection]
 
     def pca(self, M):
         """

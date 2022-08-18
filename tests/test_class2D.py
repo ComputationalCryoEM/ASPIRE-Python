@@ -7,7 +7,12 @@ import pytest
 from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
-from aspire.classification import BFRAverager2D, RIRClass2D
+from aspire.classification import (
+    BFRAverager2D,
+    ClassSelector,
+    RIRClass2D,
+    TopClassSelector,
+)
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.operators import ScalarFilter
 from aspire.source import Simulation
@@ -112,6 +117,7 @@ class FSPCATestCase(TestCase):
 
 class RIRClass2DTestCase(TestCase):
     def setUp(self):
+        self.n_classes = 5
         self.resolution = 16
         self.dtype = np.float64
         self.n_img = 150
@@ -215,6 +221,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
+            selector=TopClassSelector(),
             num_procs=1 if xfail_ray_dev() else None,
         )
 
@@ -251,7 +258,7 @@ class RIRClass2DTestCase(TestCase):
             self.noisy_fspca_basis,
             bispectrum_components=100,
             sample_n=42,
-            n_classes=5,
+            n_classes=self.n_classes,
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
@@ -349,6 +356,78 @@ class RIRClass2DTestCase(TestCase):
             match="RIRClass2D has currently only been developed for pca_basis as a FSPCABasis.",
         ):
             _ = RIRClass2D(self.clean_src, self.basis)
+
+    def testSelectionImplementations(self):
+        """
+        Test optional implementations handle bad inputs with a descriptive error.
+        """
+
+        class CustomClassSelector(ClassSelector):
+            def __init__(self, x):
+                self.x = x
+
+            def _select(self, n, classes, reflections, distances):
+                return self.x
+
+        # lower bound
+        with pytest.raises(ValueError, match=r".*out of bounds.*"):
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=self.n_classes,
+                bispectrum_components=self.clean_fspca_basis.components - 1,
+                selector=CustomClassSelector(np.arange(self.n_classes) - 1),
+            )
+            _ = rir.averages(*rir.classify())
+
+        # upper bound
+        with pytest.raises(ValueError, match=r".*out of bounds.*"):
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=self.n_classes,
+                bispectrum_components=self.clean_fspca_basis.components - 1,
+                selector=CustomClassSelector(
+                    np.arange(self.n_classes) + self.clean_src.n
+                ),
+            )
+            _ = rir.averages(*rir.classify())
+
+        # too short
+        with pytest.raises(ValueError, match=r".*must be len.*"):
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=self.n_classes,
+                bispectrum_components=self.clean_fspca_basis.components - 1,
+                selector=CustomClassSelector(np.arange(self.n_classes - 1)),
+            )
+            _ = rir.averages(*rir.classify())
+
+        # too long
+        with pytest.raises(ValueError, match=r".*must be len.*"):
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=self.n_classes,
+                bispectrum_components=self.clean_fspca_basis.components - 1,
+                selector=CustomClassSelector(np.arange(self.n_classes + 1)),
+            )
+            _ = rir.averages(*rir.classify())
+
+    def testIncorrectSelectorClass(self):
+        """
+        Test passing incorect ClassSelector raises with a descriptive error.
+        """
+
+        with pytest.raises(RuntimeError, match=r".*must be subclass of.*"):
+            rir = RIRClass2D(
+                self.clean_src,
+                self.clean_fspca_basis,
+                n_classes=self.n_classes,
+                selector=range(self.n_classes),
+            )
+            _ = rir.averages(*rir.classify())
 
 
 class LegacyImplementationTestCase(TestCase):
