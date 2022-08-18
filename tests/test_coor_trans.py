@@ -330,7 +330,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(b[:, 0], np.array([-1, -1, -1, -1])))
 
     def testCrop3DFillValue(self):
-        # make sure the fill value is expected. Since we are padding from even to odd
+        # make sure the fill value is expected. Since we are padding from odd to even
         # the padded side is added to the 0-end of dimension 3
         a = np.ones((4, 4, 3))
         b = crop_pad_3d(a, 4, fill_value=-1)
