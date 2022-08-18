@@ -2,6 +2,8 @@ import logging
 import os.path
 from collections import OrderedDict
 
+from abc import ABC
+
 import mrcfile
 import numpy as np
 import pandas as pd
@@ -34,16 +36,19 @@ class ImageAccessor:
 
     def __init__(self, fun, num_imgs):
         """
-        :param fun: The private _images() method specific to the ImageSource associated with this ImageAccessor.
-        :param num_imgs: The max number of images that this ImageAccessor can load.
+        :param fun: The private image-accessing method specific to the ImageSource associated with this ImageAccessor.
+                    Generally _images() but can be substituted with a custom method.
+        :param num_imgs: The max number of images that this ImageAccessor can load (generally ImageSource.n).
         """
         self.fun = fun
         self.num_imgs = num_imgs
 
     def __getitem__(self, indices):
         """
-        ImageAccessor can be indexed via Python slice object, 1-D NumPy array, or list, corresponding to the indices
-        of the requested images. By default, slices default to a start of 0, an end of src.n, and a step of 1.
+        ImageAccessor can be indexed via Python slice object, 1-D NumPy array, list, or a single integer, 
+        corresponding to the indices of the requested images. By default, slices default to a start of 0, 
+        an end of self.num_imgs, and a step of 1.
+        :return: An Image object containing the requested images.
         """
         if isinstance(indices, (int, np.integer)):
             indices = np.array([indices])
@@ -317,6 +322,7 @@ class ImageSource:
         """
         Performs operations universal to all Sources when accessing images:
         checking for cached data, and applying pipeline transformations.
+        Called by `self._image_accessor`
         """
         if self._cached_im is not None:
             logger.info("Loading images from cache")
@@ -368,7 +374,17 @@ class ImageSource:
 
     @property
     def images(self):
+        """
+        Subscriptable property which returns the images contained in this source
+        corresponding to the indices given.
+        """
         return self._img_accessor
+
+    @abstractmethod
+    def _images(self):
+        """
+        
+        """
 
     def downsample(self, L):
         assert (
