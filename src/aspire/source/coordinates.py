@@ -276,15 +276,15 @@ class CoordinateSource(ImageSource, ABC):
         ctf_values = np.zeros((self.n, len(ctf_cols)))
 
         if isinstance(ctf, str):
-            fun = self._populate_ctf_from_relion
+            populate_ctf = self._populate_ctf_from_relion
         elif isinstance(ctf, list):
-            fun = self._populate_ctf_from_list
+            populate_ctf = self._populate_ctf_from_list
         else:
             raise ValueError(
                 "Argument to import_ctf() must be a path or a list of paths"
             )
 
-        filters, filter_indices, mrc_filepaths, mrc_indices, ctf_values = fun(
+        filters, filter_indices, mrc_filepaths, mrc_indices, ctf_values = populate_ctf(
             ctf,
             ctf_cols,
             filters,
