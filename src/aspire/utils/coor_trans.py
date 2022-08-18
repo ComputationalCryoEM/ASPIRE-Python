@@ -348,7 +348,7 @@ def crop_pad_3d(im, size, fill_value=0):
             start_y : start_y + size, start_x : start_x + size, start_z : start_z + size
         ]
     # padding
-    elif size >= max(im_y, im_x, im_x):
+    elif size >= max(im_y, im_x, im_z):
         to_return = fill_value * np.ones((size, size, size), dtype=im.dtype)
         to_return[
             -start_y : im_y - start_y,
