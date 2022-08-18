@@ -375,6 +375,7 @@ class RIRClass2DTestCase(TestCase):
                 self.clean_src,
                 self.clean_fspca_basis,
                 n_classes=self.n_classes,
+                bispectrum_components=self.clean_fspca_basis.components - 1,
                 selector=CustomClassSelector(np.arange(self.n_classes) - 1),
             )
             _ = rir.averages(*rir.classify())
@@ -385,6 +386,7 @@ class RIRClass2DTestCase(TestCase):
                 self.clean_src,
                 self.clean_fspca_basis,
                 n_classes=self.n_classes,
+                bispectrum_components=self.clean_fspca_basis.components - 1,
                 selector=CustomClassSelector(
                     np.arange(self.n_classes) + self.clean_src.n
                 ),
@@ -397,6 +399,7 @@ class RIRClass2DTestCase(TestCase):
                 self.clean_src,
                 self.clean_fspca_basis,
                 n_classes=self.n_classes,
+                bispectrum_components=self.clean_fspca_basis.components - 1,
                 selector=CustomClassSelector(np.arange(self.n_classes - 1)),
             )
             _ = rir.averages(*rir.classify())
@@ -407,6 +410,7 @@ class RIRClass2DTestCase(TestCase):
                 self.clean_src,
                 self.clean_fspca_basis,
                 n_classes=self.n_classes,
+                bispectrum_components=self.clean_fspca_basis.components - 1,
                 selector=CustomClassSelector(np.arange(self.n_classes + 1)),
             )
             _ = rir.averages(*rir.classify())
