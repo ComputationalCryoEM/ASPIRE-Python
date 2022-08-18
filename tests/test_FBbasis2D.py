@@ -11,7 +11,7 @@ from aspire.utils import complex_type, real_type
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
 
-from ._basis_util import Steerable2DMixin
+from ._basis_util import Steerable2DMixin, UniversalBasisMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -27,7 +27,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
         (32, np.float64),
     ],
 )
-class FBBasis2DTestCase(TestCase, Steerable2DMixin):
+class FBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
     L = 8
     dtype = np.float32
 
@@ -70,7 +70,7 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
         coef = self.basis.expand(im)
 
         # TODO: These tolerances should be tighter.
-        self.assertTrue(np.allclose(im, im_ref, atol=1e-4))
+        self.assertTrue(np.allclose(im, im_ref.asnumpy(), atol=1e-4))
         self.assertTrue(np.allclose(coef, coef_ref, atol=1e-4))
 
     def testElements(self):
@@ -144,7 +144,3 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin):
 
         # Try a 0d vector, should not crash.
         _ = self.basis.to_real(cv1.reshape(-1))
-
-    def testInitWithIntSize(self):
-        # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((8, 8), FBBasis2D(8).sz)

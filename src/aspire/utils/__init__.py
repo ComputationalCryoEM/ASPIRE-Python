@@ -44,5 +44,11 @@ from .matrix import (
     vol_to_vec,
     volmat_to_vecmat,
 )
+from .multiprocessing import (
+    mem_based_cpu_suggestion,
+    num_procs_suggestion,
+    physical_core_cpu_suggestion,
+    virtual_core_cpu_suggestion,
+)
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance

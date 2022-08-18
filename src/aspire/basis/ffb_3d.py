@@ -153,7 +153,7 @@ class FFBBasis3D(FBBasis3D):
             "fourier_pts": fourier_pts,
         }
 
-    def evaluate(self, v):
+    def _evaluate(self, v):
         """
         Evaluate coefficients in standard 3D coordinate basis from those in 3D FB basis
 
@@ -278,7 +278,7 @@ class FFBBasis3D(FBBasis3D):
         x = x.reshape((*sz_roll, *self.sz))
         return x
 
-    def evaluate_t(self, x):
+    def _evaluate_t(self, x):
         """
         Evaluate coefficient in FB basis from those in standard 3D coordinate basis
 
@@ -289,6 +289,8 @@ class FFBBasis3D(FBBasis3D):
             `self.count` and whose remaining dimensions correspond to higher
             dimensions of `x`.
         """
+        x = x.asnumpy()
+
         # roll dimensions
         sz_roll = x.shape[:-3]
         x = x.reshape((-1, *self.sz))

@@ -8,7 +8,6 @@ from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
 from aspire.reconstruction.kernel import FourierKernel
-from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +68,12 @@ class Estimator:
         """Return an estimate as a Volume instance."""
         if b_coeff is None:
             b_coeff = self.src_backward()
+        # conj_grad expects a 1d array if n = 1
+        b_coeff = np.squeeze(b_coeff, axis=0)
         est_coeff = self.conj_grad(b_coeff, tol=tol)
         est = self.basis.evaluate(est_coeff).T
 
-        return Volume(est)
+        return est
 
     def src_backward(self):
         """
@@ -142,7 +143,9 @@ class Estimator:
         if kernel is None:
             kernel = self.kernel
         vol = self.basis.evaluate(vol_coeff)
-        vol = kernel.convolve_volume(vol)
+        # convolve_volume expects a 3-dimensional array
+        # so we remove the first dimension of the volume, which is 1
+        vol = kernel.convolve_volume(np.squeeze(vol.asnumpy(), axis=0))
         vol = self.basis.evaluate_t(vol)
 
         return vol
