@@ -296,8 +296,15 @@ class UtilsTestCase(TestCase):
     def testCropPad2DError(self):
         with self.assertRaises(ValueError) as e:
             _ = crop_pad_2d(np.zeros((6, 10)), 8)
-            self.assertTrue(
+            self.assertEqual(
                 "Cannot crop and pad an image at the same time.", str(e.exception)
+            )
+
+    def testCropPad3DError(self):
+        with self.assertRaises(ValueError) as e:
+            _ = crop_pad_3d(np.zeros((6, 8, 10)), 8)
+            self.assertEqual(
+                "Cannot crop and pad a volume at the same time.", str(e.exception)
             )
 
     def testCrop2DDtype(self):
@@ -308,6 +315,12 @@ class UtilsTestCase(TestCase):
             crop_pad_2d(np.eye(10).astype("complex"), 5).dtype, np.dtype("complex128")
         )
 
+    def testCrop3DDtype(self):
+        self.assertEqual(
+            crop_pad_3d(np.ones((8, 8, 8)).astype("complex"), 5).dtype,
+            np.dtype("complex128"),
+        )
+
     def testCrop2DFillValue(self):
         # make sure the fill value is as expected
         # we are padding from an odd to an even dimension
@@ -315,3 +328,10 @@ class UtilsTestCase(TestCase):
         a = np.ones((4, 3))
         b = crop_pad_2d(a, 4, fill_value=-1)
         self.assertTrue(np.array_equal(b[:, 0], np.array([-1, -1, -1, -1])))
+
+    def testCrop3DFillValue(self):
+        # make sure the fill value is expected. Since we are padding from even to odd
+        # the padded side is added to the 0-end of dimension 3
+        a = np.ones((4, 4, 3))
+        b = crop_pad_3d(a, 4, fill_value=-1)
+        self.assertTrue(np.array_equal(b[:, :, 0], -1 * np.ones((4, 4))))
