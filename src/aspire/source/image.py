@@ -15,12 +15,7 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.operators import (
-    IdentityFilter,
-    LambdaFilter,
-    MultiplicativeFilter,
-    PowerFilter,
-)
+from aspire.operators import IdentityFilter, MultiplicativeFilter, PowerFilter
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import Rotation, grid_2d
 
@@ -211,7 +206,7 @@ class ImageSource:
                     series, how="left", left_index=True, right_index=True
                 )
             else:
-                self._metadata[metadata_field] = series
+                self._metadata.update(series.astype(object))
 
     def has_metadata(self, metadata_fields):
         """
@@ -377,9 +372,7 @@ class ImageSource:
         """
         logger.info("Perform phase flip on source object")
         logger.info("Adding Phase Flip Xform to end of generation pipeline")
-        unique_xforms = [
-            FilterXform(LambdaFilter(f, np.sign)) for f in self.unique_filters
-        ]
+        unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
         self.generation_pipeline.add_xform(
             IndexedXform(unique_xforms, self.filter_indices)
         )

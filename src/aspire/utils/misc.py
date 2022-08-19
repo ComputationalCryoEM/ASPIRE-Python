@@ -238,6 +238,18 @@ def all_pairs(n):
     return pairs
 
 
+def pairs_to_linear(n, i, j):
+    """
+    Converts from all_pairs indexing (i, j), where i<j, to linear indexing.
+    ie. (0, 1) --> 0 and (n-2, n-1) --> n * (n - 1)/2 - 1
+    """
+    assert i < j < n, "i must be less than j, and both must be less than n."
+
+    linear_index = n * (n - 1) // 2 - (n - i) * (n - i - 1) // 2 + j - i - 1
+
+    return linear_index
+
+
 def all_triplets(n):
     """
     All 3-tuples (i,j,k) where i<j<k.

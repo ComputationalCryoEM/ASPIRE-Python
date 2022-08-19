@@ -1,16 +1,24 @@
 import logging
 
 import numpy as np
-from numpy.linalg import eigh, norm
+from numpy.linalg import eigh, norm, svd
+from tqdm import tqdm
 
-from aspire.abinitio import CLOrient3D
-from aspire.utils import J_conjugate, all_pairs, all_triplets, anorm
+from aspire.abinitio import CLOrient3D, SyncVotingMixin
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    all_triplets,
+    anorm,
+    pairs_to_linear,
+)
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC3C4(CLOrient3D):
+class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
     C3 and C4 cyclic symmetry.
@@ -35,6 +43,8 @@ class CLSymmetryC3C4(CLOrient3D):
         symmetry=None,
         n_rad=None,
         n_theta=None,
+        max_shift=0.15,
+        shift_step=1,
         epsilon=1e-3,
         max_iters=1000,
         seed=None,
@@ -46,12 +56,20 @@ class CLSymmetryC3C4(CLOrient3D):
         :param symmetry: A string, 'C3' or 'C4', indicating the symmetry type.
         :param n_rad: The number of points in the radial direction
         :param n_theta: The number of points in the theta direction
+        :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
+        :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param seed: Optional seed for RNG.
         """
 
-        super().__init__(src, n_rad=n_rad, n_theta=n_theta)
+        super().__init__(
+            src,
+            n_rad=n_rad,
+            n_theta=n_theta,
+            max_shift=max_shift,
+            shift_step=shift_step,
+        )
 
         if symmetry is None:
             raise NotImplementedError(
@@ -63,7 +81,7 @@ class CLSymmetryC3C4(CLOrient3D):
                 raise NotImplementedError(
                     f"Only C3 and C4 symmetry supported. {symmetry} was supplied."
                 )
-            self.order = symmetry[1]
+            self.order = int(symmetry[1])
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.seed = seed
@@ -78,32 +96,27 @@ class CLSymmetryC3C4(CLOrient3D):
     # Primary Methods                         #
     ###########################################
 
-    def _compute_third_row_outer_prod_c34(self, max_shift_1d):
+    def _estimate_relative_viewing_directions_c3_c4(self):
         """
-        Compute the outer products of the third rows of the rotation matrices Rij and Rii.
+        Estimate the relative viewing directions vij = vi*vj^T, i<j, and vii = vi*vi^T, where
+        vi is the third row of the i'th rotation matrix Ri.
         """
-
-        pf = self.pf
-        order = self.order
-        max_shift = self.max_shift
-        shift_step = self.shift_step
-        n_theta = self.n_theta
 
         # Step 1: Detect a single pair of common-lines between each pair of images
         self.build_clmatrix()
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
-        sclmatrix = self.self_clmatrix_c3_c4(pf, order, max_shift, shift_step)
+        sclmatrix = self._self_clmatrix_c3_c4()
 
         # Step 3: Calculate self-relative-rotations
-        Riis = self._estimate_all_Riis_c3_c4(order, sclmatrix, n_theta)
+        Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
 
         # Step 4: Calculate relative rotations
-        Rijs = self._estimate_all_Rijs_c3_c4(order, clmatrix, n_theta)
+        Rijs = self._estimate_all_Rijs_c3_c4(clmatrix)
 
         # Step 5: Inner J-synchronization
-        vijs, viis = self._local_sync_J_c3_c4(order, Rijs, Riis)
+        vijs, viis = self._local_J_sync_c3_c4(Rijs, Riis)
 
         return vijs, viis
 
@@ -137,23 +150,20 @@ class CLSymmetryC3C4(CLOrient3D):
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
         # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
-
-        # All pairs (i,j) where i<j
-        pairs = all_pairs(n_img)
         for i in range(n_img):
             vii = viis[i]
             vii_J = J_conjugate(vii)
             J_consensus = 0
             for j in range(n_img):
                 if j < i:
-                    idx = pairs.index((j, i))
+                    idx = pairs_to_linear(n_img, j, i)
                     vji = vijs[idx]
 
                     err1 = norm(vji @ vii - vji)
                     err2 = norm(vji @ vii_J - vji)
 
                 elif j > i:
-                    idx = pairs.index((i, j))
+                    idx = pairs_to_linear(n_img, i, j)
                     vij = vijs[idx]
 
                     err1 = norm(vii @ vij - vij)
@@ -231,21 +241,267 @@ class CLSymmetryC3C4(CLOrient3D):
     # Secondary Methods for computing outer product #
     #################################################
 
-    def _self_clmatrix_c3_c4(self, pf, order, max_shift, shift_step):
-        # return sclmatrix
-        pass
+    def _self_clmatrix_c3_c4(self):
+        """
+        Find the single pair of self-common-lines in each image assuming that the underlying
+        symmetry is C3 or C4.
+        """
+        pf = self.pf
+        n_img = self.n_img
+        L = self.src.L
+        n_theta = self.n_theta
+        max_shift_1d = self.max_shift
+        shift_step = self.shift_step
+        order = self.order
 
-    def _estimate_all_Riis_c3_c4(order, sclmatrix, n_theta):
-        # return Riis
-        pass
+        # The angle between two self-common-lines is constrained by the underlying symmetry
+        # of the molecule (See Lemma A.2 in the listed publication for further details).
+        # This angle is in the range [60, 180] for C3 symmetry and [90, 180] for C4 symmetry.
+        # Since antipodal lines are perfectly correlated we search for common lines in a smaller window.
+        # Note: matlab code used [60, 165] for C3 and [90, 160] for C4.
+        # We set the upper bound of this window to be within a factor of 1/L of 180.
+        if order == 3:
+            min_angle_diff = 60 * np.pi / 180
+        else:
+            min_angle_diff = 90 * np.pi / 180
 
-    def _estimate_all_Rijs_c3_c4(order, clmatrix, n_theta):
-        # return Rijs
-        pass
+        res = 2 * (360 // L)
+        max_angle_diff = np.pi - res * np.pi / 180
 
-    def local_sync_J_c3_c4(order, Rijs, Riis):
-        # return vijs, viis
-        pass
+        # We create a mask associated with angle differences that fall in the
+        # range [min_angle_diff, max_angle_diff].
+
+        # `theta_full` and `theta_half` are grids of theta values associate with the polar Fourier transforms
+        # `pf_full` and `pf`, respectively.
+        theta_vals = np.linspace(0, 360, n_theta)
+        theta_vals_half = theta_vals[: len(theta_vals) // 2]
+        theta_full, theta_half = np.meshgrid(theta_vals, theta_vals_half)
+
+        # `diff` is the unsigned angle differences between all pairs of polar Fourier rays.
+        diff = abs(theta_half - theta_full)
+        diff[diff > 180] = 360 - diff[diff > 180]
+        diff = np.deg2rad(diff)
+
+        # Build mask.
+        good_diffs = (min_angle_diff < diff) & (diff < max_angle_diff)
+
+        # Compute the correlation over all shifts.
+        # Generate Shifts.
+        r_max = pf.shape[0]
+        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
+            r_max, max_shift_1d, shift_step
+        )
+        n_shifts = len(shifts)
+        all_shift_phases = shift_phases.T
+
+        # Transpose pf and reconstruct the full polar Fourier for use in correlation.
+        # self.pf only consists of rays in the range [180, 360) and is in column major order,
+        # ie. self.pf has shape (n_rad-1, n_theta//2, n_img).
+        pf = pf.T
+        pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
+
+        # The self-common-lines matrix holds two indices per image that represent
+        # the two self common-lines in the image.
+        sclmatrix = np.zeros((n_img, 2))
+
+        for i in tqdm(range(n_img)):
+            pf_i = pf[i]
+            pf_full_i = pf_full[i]
+
+            # Generate shifted versions of images.
+            pf_i_shifted = np.array(
+                [pf_i * shift_phase for shift_phase in all_shift_phases]
+            )
+            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
+
+            # # Normalize each ray.
+            pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
+            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
+
+            # Compute correlation.
+            corrs = pf_i_shifted @ pf_full_i.T
+            corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
+
+            # Mask with allowed combinations.
+            corrs *= good_diffs[np.newaxis, ...]
+
+            # Find maximum correlation.
+            shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
+            sclmatrix[i] = [scl1, scl2]
+
+        return sclmatrix
+
+    def _estimate_all_Riis_c3_c4(self, sclmatrix):
+        """
+        Compute estimates for the self relative rotations Rii for every rotation matrix Ri.
+        """
+
+        order = self.order
+        n_theta = self.n_theta
+
+        # Calculate the cosine of angle between self-common-lines.
+        cos_diff = np.cos((sclmatrix[:, 1] - sclmatrix[:, 0]) * 2 * np.pi / n_theta)
+
+        # Calculate Euler angles `euler_y2` (gamma_ii in publication) corresponding to Y in ZYZ convention.
+        if order == 3:
+            # cos_diff should be <= 0.5, but due to discretization that might be violated.
+            if np.max(cos_diff) > 0.5:
+                bad_diffs = np.count_nonzero(cos_diff > 0.5)
+                logger.warning(
+                    "cos(angular_diff) should be < 0.5."
+                    f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}."
+                    "Setting all bad estimates to 0.5."
+                )
+                cos_diff[cos_diff > 0.5] = 0.5
+            euler_y2 = np.arccos(cos_diff / (1 - cos_diff))
+        else:
+            # cos_diff should be <= 0, but due to discretization that might be violated.
+            if np.max(cos_diff) > 0:
+                bad_diffs = np.count_nonzero(cos_diff > 0)
+                logger.warning(
+                    "cos(angular_diff) should be < 0."
+                    f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}"
+                    "Setting all bad estimates to 0."
+                )
+                cos_diff[cos_diff > 0] = 0
+            euler_y2 = np.arccos((1 + cos_diff) / (1 - cos_diff))
+
+        # Calculate remaining Euler angles in ZYZ convention.
+        # Note: Publication uses ZXZ convention. Using the notation of the
+        # publication the Euler parameterization in ZXZ convention is given by
+        # (alpha_ii^(1), gamma_ii, -alpha_ii^(n-1) - pi).
+        # Converting to ZYZ convention gives us the parameteriztion
+        # (alpha_ii^(1) - pi/2, gamma_ii, -alpha_ii^(n-1) - pi/2).
+        euler_z1 = sclmatrix[:, 0] * 2 * np.pi / n_theta - np.pi / 2
+        euler_z3 = -sclmatrix[:, 1] * 2 * np.pi / n_theta - np.pi / 2
+
+        # Compute Riis from Euler angles.
+        angles = np.array((euler_z1, euler_y2, euler_z3), dtype=self.dtype).T
+        Riis = Rotation.from_euler(angles, dtype=self.dtype).matrices
+
+        return Riis
+
+    def _estimate_all_Rijs_c3_c4(self, clmatrix):
+        """
+        Estimate Rijs using the voting method.
+        """
+        n_img = self.n_img
+        n_theta = self.n_theta
+        pairs = all_pairs(n_img)
+        Rijs = np.zeros((len(pairs), 3, 3))
+        for idx, (i, j) in enumerate(pairs):
+            Rijs[idx] = self._syncmatrix_ij_vote_3n(
+                clmatrix, i, j, np.arange(n_img), n_theta
+            )
+
+        return Rijs
+
+    def _syncmatrix_ij_vote_3n(self, clmatrix, i, j, k_list, n_theta):
+        """
+        Compute the (i,j) rotation block of the synchronization matrix using voting method
+
+        Given the common lines matrix `clmatrix`, a list of images specified in k_list
+        and the number of common lines n_theta, find the (i, j) rotation block Rij.
+        :param clmatrix: The common lines matrix
+        :param i: The i image
+        :param j: The j image
+        :param k_list: The list of images for the third image for voting algorithm
+        :param n_theta: The number of points in the theta direction (common lines)
+        :return: The (i,j) rotation block of the synchronization matrix
+        """
+        good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
+
+        rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
+
+        if rots is not None:
+            rot_mean = np.mean(rots, 0)
+
+        else:
+            # This is for the case that images i and j correspond to the same
+            # viewing direction and differ only by in-plane rotation.
+            # We set to zero as in the Matlab code.
+            rot_mean = np.zeros((3, 3))
+
+        return rot_mean
+
+    def _local_J_sync_c3_c4(self, Rijs, Riis):
+        """
+        Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj,
+        and Rij to be of the same handedness. We perform a local handedness synchronization and
+        set vij = 1/order * sum(Rii^s @ Rij @ Rjj^s) for s = 0, 1, ..., order. To estimate
+        vii = vi @ vi.T we set vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
+
+        :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations
+            (each pair of images induces two estimates).
+        :param Riis: A nx3x3 array of estimates of self-relative rotations.
+        :return: vijs, viis
+        """
+        order = self.order
+        n_img = self.n_img
+        pairs = all_pairs(n_img)
+
+        # Estimate viis from Riis. vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
+        viis = np.zeros((n_img, 3, 3))
+        for i, Rii in enumerate(Riis):
+            viis[i] = np.mean(
+                [np.linalg.matrix_power(Rii, s) for s in np.arange(order)], axis=0
+            )
+
+        # Estimate vijs via local handedness synchronization.
+        vijs = np.zeros((len(pairs), 3, 3))
+
+        for idx, (i, j) in enumerate(pairs):
+            opts = np.zeros((2, 2, 2, 3, 3))
+            scores_rank1 = np.zeros(8)
+            Rii = Riis[i]
+            Rjj = Riis[j]
+            Rij = Rijs[idx]
+
+            # At this stage, the estimates Rii and Rjj are in the sets {Ri.T @ g^si @ Ri, JRi.T @ g^si @ RiJ}
+            # and {Rj.T @ g^sj @ Rj, JRj.T @ g^sj @ RjJ}, respectively, where g^si (and g^sj) is a rotation
+            # about the axis of symmetry by (2pi * si)/order, with si = 1 or order-1. Additionally, the estimate
+            # Rij might have a spurious J.
+
+            # To estimate vij, it is essential that si = sj and all three estimates Rii, Rjj, and Rij have
+            # a spurious J, or none do at all. Note: since g.T = g^(order-1), if Rii = Ri.T @ g^1 @ Ri, then
+            # Rii.T = Ri.T @ g^(order-1) @ Ri.
+
+            # The estimate vij should be of rank 1 with singular values [1, 0, 0].
+            # We test 8 combinations of handedness and rotation by {g, g^(order-1)} for this condition to determine:
+            # a. whether to transpose Rii
+            # b. whether to J-conjugate Rii
+            # c. whether to J-conjugate Rjj
+            if order == 3:
+                for ii_trans in [0, 1]:
+                    for ii_conj in [0, 1]:
+                        for jj_conj in [0, 1]:
+                            _Rii = Rii.T if ii_trans else Rii
+                            _Rii = J_conjugate(_Rii) if ii_conj else _Rii
+                            _Rjj = J_conjugate(Rjj) if jj_conj else Rjj
+                            opts[ii_trans, ii_conj, jj_conj] = (
+                                Rij + _Rii @ Rij @ _Rjj + _Rii.T @ Rij @ _Rjj.T
+                            ) / 3
+
+            else:
+                for ii_trans in [0, 1]:
+                    for ii_conj in [0, 1]:
+                        for jj_conj in [0, 1]:
+                            _Rii = Rii.T if ii_trans else Rii
+                            _Rii = J_conjugate(_Rii) if ii_conj else _Rii
+                            _Rjj = J_conjugate(Rjj) if jj_conj else Rjj
+                            opts[ii_trans, ii_conj, jj_conj] = (
+                                Rij + _Rii @ Rij @ _Rjj
+                            ) / 2
+
+            opts = opts.reshape((8, 3, 3))
+            svals = svd(opts, compute_uv=False)
+            scores_rank1 = anorm(svals - [1, 0, 0], axes=[1])
+            min_idx = np.argmin(scores_rank1)
+
+            # Populate vijs with
+            vijs[idx] = opts[min_idx]
+
+        return vijs, viis
 
     #######################################
     # Secondary Methods for Global J Sync #
@@ -323,7 +579,6 @@ class CLSymmetryC3C4(CLOrient3D):
 
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
-        pairs = all_pairs(n_img)
         triplets = all_triplets(n_img)
 
         # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
@@ -352,9 +607,9 @@ class CLSymmetryC3C4(CLOrient3D):
         v = vijs
         new_vec = np.zeros_like(vec)
         for (i, j, k) in triplets:
-            ij = pairs.index((i, j))
-            jk = pairs.index((j, k))
-            ik = pairs.index((i, k))
+            ij = pairs_to_linear(n_img, i, j)
+            jk = pairs_to_linear(n_img, j, k)
+            ik = pairs_to_linear(n_img, i, k)
             vij, vjk, vik = v[ij], v[jk], v[ik]
             vij_J = J_conjugate(vij)
             vjk_J = J_conjugate(vjk)
