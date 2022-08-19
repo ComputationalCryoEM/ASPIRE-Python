@@ -105,7 +105,7 @@ class SimTestCase(TestCase):
 
     def testSimulationImagesDownsampleShape(self):
         self.sim.downsample(6)
-        first_image = self.sim.images[1][0]
+        first_image = self.sim.images[0][0]
         self.assertEqual(first_image.shape, (6, 6))
 
     def testSimulationEigen(self):

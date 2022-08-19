@@ -57,7 +57,7 @@ class StarFileMainCase(StarFileTestCase):
 
     def testImageDownsample(self):
         self.src.downsample(16)
-        first_image = self.src.images[1][0]
+        first_image = self.src.images[0][0]
         self.assertEqual(first_image.shape, (16, 16))
 
 
