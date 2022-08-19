@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class ImageAccessor:
     """
-    Helper class for accessing images from an ImageSource as slices via the `src.images[:,:,:]` API.
+    Helper class for accessing images from an ImageSource as slices via the `src.images[start:stop:step]` API.
     """
 
     def __init__(self, fun, num_imgs):
