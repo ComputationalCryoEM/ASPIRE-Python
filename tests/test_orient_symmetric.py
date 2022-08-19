@@ -36,6 +36,7 @@ class OrientSymmTestCase(TestCase):
                 dtype=self.dtype,
                 vols=self.vols[order],
                 C=1,
+                seed=123,
             )
 
             self.cl_orient_ests[order] = CLSymmetryC3C4(
@@ -245,9 +246,9 @@ class OrientSymmTestCase(TestCase):
 
     @parameterized.expand([(3,), (4,)])
     def testSelfCommonLines(self, order):
-        n_img = self.n_img
         n_theta = self.n_theta
         src = self.srcs[order]
+        L = src.L
         cl_symm = self.cl_orient_ests[order]
 
         # Initialize common-lines orientation estimation object and compute self-common-lines matrix.
@@ -256,6 +257,15 @@ class OrientSymmTestCase(TestCase):
         # Compute ground truth self-common-lines matrix.
         rots = src.rots
         scl_gt = self.buildSelfCommonLinesMatrix(rots, order)
+
+        # Since we search for self common lines whose angle differences fall
+        # outside of 180 degrees by a tolerance of 2 * (360 // L), we must exclude
+        # indices whose ground truth self common lines fall within that tolerance.
+        gt_diffs = abs(scl_gt[:, 0] - scl_gt[:, 1])
+        res = 2 * (360 // L)
+        good_indices = (gt_diffs < (180 - res)) | (gt_diffs > (180 + res))
+        scl = scl[good_indices]
+        scl_gt = scl_gt[good_indices]
 
         # Get angle difference between scl_gt and scl.
         scl_diff1 = scl_gt - scl
@@ -274,8 +284,10 @@ class OrientSymmTestCase(TestCase):
 
         # Assert scl detection rate is 100% for 5 degree angle tolerance
         angle_tol_err = 5 * pi / 180
-        detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / n_img
-        self.assertTrue(detection_rate == 1.0)
+        detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / len(
+            scl
+        )
+        self.assertTrue(np.allclose(detection_rate, 1.0))
 
     @parameterized.expand([(3,), (4,)])
     def testCommonLines(self, order):
@@ -325,13 +337,13 @@ class OrientSymmTestCase(TestCase):
             elif diff_ji < 5:
                 within_5_degrees += 1
 
-        # Assert that at least 99% of estimates are within 5 degrees and
-        # at least 95% of estimates are within 1 degree.
+        # Assert that at least 98% of estimates are within 5 degrees and
+        # at least 90% of estimates are within 1 degree.
         n_estimates = 2 * len(pairs)
         within_5 = within_5_degrees / n_estimates
         within_1 = within_1_degree / n_estimates
-        self.assertTrue(within_5 > 0.99)
-        self.assertTrue(within_1 > 0.95)
+        self.assertTrue(within_5 > 0.98)
+        self.assertTrue(within_1 > 0.90)
 
     def buildOuterProducts(self, n_img):
         # Build random third rows, ground truth vis (unit vectors)
