@@ -49,6 +49,8 @@ class ImageAccessor:
         an end of self.num_imgs, and a step of 1.
         :return: An Image object containing the requested images.
         """
+        if isinstance(indices, (range, filter)):
+            indices = np.fromiter(indices, int)
         if isinstance(indices, (int, np.integer)):
             indices = np.array([indices])
         if isinstance(indices, list):
