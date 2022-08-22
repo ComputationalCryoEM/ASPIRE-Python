@@ -153,14 +153,16 @@ class Simulation(ImageSource):
 
     @property
     def projections(self):
+        """
+        Return projections of generated volumes, without applying filters/shifts/amplitudes/noise.
+        Subscriptable property.
+        """
         return self._projections_accessor
 
     def _projections(self, indices):
         """
-        :param indices: A numpy array of image indices
-        :return: An Image instance.
+        Accesses and returns projections as an `Image` instance. Called by self._projections_accessor
         """
-
         im = np.zeros(
             (len(indices), self._original_L, self._original_L), dtype=self.dtype
         )
