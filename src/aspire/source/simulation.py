@@ -75,8 +75,9 @@ class Simulation(ImageSource):
             logger.warning(
                 f"{self.__class__.__name__}"
                 f" vols.dtype {self.vols.dtype} != self.dtype {self.dtype}."
-                " In the future this will raise an error."
+                " In the future this will raise an error. Casting..."
             )
+            self.vols = self.vols.astype(self.dtype)
 
         self.C = self.vols.n_vols
 

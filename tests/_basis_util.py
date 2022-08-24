@@ -6,6 +6,7 @@ from aspire.image import Image
 from aspire.utils import gaussian_2d, utest_tolerance
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
+from aspire.volume import Volume
 
 
 class Steerable2DMixin:
@@ -39,9 +40,7 @@ class Steerable2DMixin:
         # Want sigma to be as large as possible without the Gaussian
         # spilling too much outside the central disk.
         sigma = self.L / 8
-        im1 = gaussian_2d(
-            self.L, x0=x0, y0=y0, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype
-        )
+        im1 = gaussian_2d(self.L, mu=(x0, y0), sigma=sigma, dtype=self.dtype)
 
         coef = self.basis.expand(im1)
         im2 = self.basis.evaluate(coef)
@@ -62,7 +61,7 @@ class Steerable2DMixin:
 
     def testIsotropic(self):
         sigma = self.L / 8
-        im = gaussian_2d(self.L, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype)
+        im = gaussian_2d(self.L, sigma=sigma, dtype=self.dtype)
 
         coef = self.basis.expand(im)
 
@@ -82,7 +81,7 @@ class Steerable2DMixin:
         ell = 1
 
         sigma = self.L / 8
-        im = gaussian_2d(self.L, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype)
+        im = gaussian_2d(self.L, sigma=sigma, dtype=self.dtype)
 
         g2d = grid_2d(self.L)
 
@@ -130,3 +129,33 @@ class Steerable2DMixin:
 
         self.assertTrue(Au_dot_x.shape == u_dot_ATx.shape)
         self.assertTrue(np.isclose(Au_dot_x, u_dot_ATx))
+
+
+class UniversalBasisMixin:
+    def getClass(self):
+        if self.basis.ndim == 2:
+            return Image
+        elif self.basis.ndim == 3:
+            return Volume
+
+    def testEvaluate(self):
+        # evaluate should take a NumPy array and return an Image/Volume
+        _class = self.getClass()
+        result = self.basis.evaluate(np.zeros((self.basis.count)))
+        self.assertTrue(isinstance(result, _class))
+
+    def testEvaluate_t(self):
+        # evaluate_t should take an Image/Volume and return a NumPy array
+        _class = self.getClass()
+        result = self.basis.evaluate_t(_class(np.zeros((self.L,) * self.basis.ndim)))
+        self.assertTrue(isinstance(result, np.ndarray))
+
+    def testExpand(self):
+        _class = self.getClass()
+        # expand should take an Image/Volume and return a NumPy array
+        result = self.basis.expand(_class(np.zeros((self.L,) * self.basis.ndim)))
+        self.assertTrue(isinstance(result, np.ndarray))
+
+    def testInitWithIntSize(self):
+        # make sure we can instantiate with just an int as a shortcut
+        self.assertEqual((self.L,) * self.basis.ndim, self.basis.__class__(self.L).sz)

@@ -6,12 +6,15 @@ import numpy as np
 from aspire.basis import FPSWFBasis2D
 from aspire.image import Image
 
+from ._basis_util import UniversalBasisMixin
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class FPSWFBasis2DTestCase(TestCase):
+class FPSWFBasis2DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
-        self.basis = FPSWFBasis2D((8, 8), 1.0, 1.0)
+        self.L = 8
+        self.basis = FPSWFBasis2D((self.L, self.L), 1.0, 1.0)
 
     def tearDown(self):
         pass
@@ -21,13 +24,7 @@ class FPSWFBasis2DTestCase(TestCase):
             os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")
         ).T  # RCOPT
         images = Image(img_ary)
-
         result = self.basis.evaluate_t(images)
-        result_ary = self.basis.evaluate_t(img_ary)
-
-        # Confirm output from passing ndarray or Image is the same
-        self.assertTrue(np.allclose(result, result_ary))
-
         coeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
@@ -45,7 +42,3 @@ class FPSWFBasis2DTestCase(TestCase):
         result = self.basis.evaluate(coeffs)
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         self.assertTrue(np.allclose(result.asnumpy(), images))
-
-    def testInitWithIntSize(self):
-        # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((8, 8), FPSWFBasis2D(8).sz)

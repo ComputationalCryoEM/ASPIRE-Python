@@ -31,15 +31,20 @@ class FSPCABasis(SteerableBasis2D):
 
     """
 
-    def __init__(self, src, basis=None, noise_var=None, components=400, batch_size=512):
+    def __init__(
+        self, src, basis=None, noise_var=None, components=None, batch_size=512
+    ):
         """
 
         :param src: Source instance
         :param basis: Optional Fourier Bessel Basis (usually FFBBasis2D)
-        :param noise_var: None estimates noise (default).
+        :param components: Optionally assign number of principal components
+        to use for the FSPCA basis.
+        Default value of `None` will use `self.basis.count`.
+        :param noise_var: Optionally assign noise variance.
+        Default value of `None` will estimate noise with WhiteNoiseEstimator.
+        Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
         :param batch_size: Batch size for computing basis coefficients.
-        0 forces "clean" treatment (no weighting).
-        Other values assigned to noise_var.
         """
 
         self.src = src
@@ -51,7 +56,8 @@ class FSPCABasis(SteerableBasis2D):
         self.basis = basis
 
         # Components are used for `compress` during `build`.
-        self.components = components
+        self.components = components or self.basis.count
+        self._check_components()
 
         # check/warn dtypes
         self.dtype = self.src.dtype
@@ -77,6 +83,16 @@ class FSPCABasis(SteerableBasis2D):
         self.noise_var = noise_var  # noise_var is handled during `build` call.
 
         self.build()
+
+    def _check_components(self):
+        """
+        Check that our (compressed) count is not larger than our basis count.
+        """
+        if self.components > self.basis.count:
+            raise ValueError(
+                f"Provided components {self.components} > {self.basis.count} basis coefficients."
+                "  Reduce components."
+            )
 
     def _get_complex_indices_map(self):
         """

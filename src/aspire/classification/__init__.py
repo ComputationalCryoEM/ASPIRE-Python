@@ -9,4 +9,5 @@ from .averager2d import (
     ReddyChatterjiAverager2D,
 )
 from .class2d import Class2D
+from .class_selection import ClassSelector, RandomClassSelector, TopClassSelector
 from .rir_class2d import RIRClass2D
