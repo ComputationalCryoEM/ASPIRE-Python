@@ -9,9 +9,9 @@ schedules:
 
 jobs:
 - job:
-  displayName: ubuntu-latest
+  displayName: ubuntu-22.04
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-22.04'
   strategy:
     matrix:
       Python37:
@@ -31,9 +31,9 @@ jobs:
     displayName: pytest
 
 - job:
-  displayName: ubuntu-18.04
+  displayName: ubuntu-20.04
   pool:
-    vmImage: 'ubuntu-18.04'
+    vmImage: 'ubuntu-20.04'
   strategy:
     matrix:
       Python37:
