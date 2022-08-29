@@ -382,17 +382,14 @@ class OrientSymmTestCase(TestCase):
             centers[0, o, :] = rots_symm[o] @ centers[0, 0, :]
             centers[1, o, :] = rots_symm[o] @ centers[1, 0, :]
             centers[2, o, :] = rots_symm[o] @ centers[2, 0, :]
-        sigmas = np.zeros((3, 3), dtype=self.dtype)
-        sigmas[0] = [res / 15, res / 15, res / 15]
-        sigmas[1] = [res / 20, res / 20, res / 20]
-        sigmas[2] = [res / 30, res / 30, res / 30]
+        sigmas = [res / 15, res / 20, res / 30]
 
         # Build volume
         vol = np.zeros((res, res, res), dtype=self.dtype)
         n_blobs = centers.shape[0]
         for o in range(order):
             for i in range(n_blobs):
-                vol += gaussian_3d(res, centers[i, o, :], sigmas[i])
+                vol += gaussian_3d(res, centers[i, o, :], sigmas[i], indexing="xyz")
 
         volume = Volume(vol)
 
