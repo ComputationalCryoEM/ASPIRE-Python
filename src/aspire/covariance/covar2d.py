@@ -350,8 +350,10 @@ class RotCov2D:
             p = np.size(A_ell[0], 0)
             b_ell = m_reshape(b[ell], (p**2,))
             S = inv(M[ell])
-            cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
-            covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            cg_opt["preconditioner"] = lambda x, S=S: precond_fun(S, x)
+            covar_coeff_ell, _, _ = conj_grad(
+                lambda x, A_ell=A_ell: apply(A_ell, x), b_ell, cg_opt
+            )
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
         if not covar_coeff.check_psd():
@@ -658,8 +660,10 @@ class BatchedRotCov2D(RotCov2D):
             p = np.size(A_ell[0], 0)
             b_ell = m_reshape(b_covar[ell], (p**2,))
             S = inv(M[ell])
-            cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
-            covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            cg_opt["preconditioner"] = lambda x, S=S: precond_fun(S, x)
+            covar_coeff_ell, _, _ = conj_grad(
+                lambda x, A_ell=A_ell: apply(A_ell, x), b_ell, cg_opt
+            )
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
         return covar_coeff

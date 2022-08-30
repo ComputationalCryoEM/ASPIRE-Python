@@ -7,7 +7,6 @@ from .fb import FBBasisMixin
 
 # isort: on
 
-from .dirac import DiracBasis
 from .fb_2d import FBBasis2D
 from .fb_3d import FBBasis3D
 from .ffb_2d import FFBBasis2D

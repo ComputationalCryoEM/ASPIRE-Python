@@ -3,9 +3,7 @@ import logging
 import numpy as np
 
 from aspire.basis import Basis
-from aspire.image import Image
 from aspire.nufft import anufft, nufft
-from aspire.utils import real_type
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +73,7 @@ class PolarBasis2D(Basis):
         freqs *= omega0
         return freqs
 
-    def evaluate(self, v):
+    def _evaluate(self, v):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in polar Fourier basis
 
@@ -85,14 +83,6 @@ class PolarBasis2D(Basis):
         :return x: Image instance in standard 2D coordinate basis with
             resolution of `self.sz`.
         """
-        if self.dtype != real_type(v.dtype):
-            msg = (
-                f"Input data type, {v.dtype}, is not consistent with"
-                f" type defined in the class {self.dtype}."
-            )
-            logger.error(msg)
-            raise TypeError(msg)
-
         v = v.reshape(-1, self.ntheta, self.nrad)
 
         nimgs = v.shape[0]
@@ -105,9 +95,9 @@ class PolarBasis2D(Basis):
 
         x = anufft(v, self.freqs, self.sz, real=True)
 
-        return Image(x)
+        return x
 
-    def evaluate_t(self, x):
+    def _evaluate_t(self, x):
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
@@ -117,17 +107,6 @@ class PolarBasis2D(Basis):
         Fourier grid. This is an array of vectors whose first dimension
         corresponds to x.n_images, and last dimension equals `self.count`.
         """
-
-        assert isinstance(x, Image)
-
-        if self.dtype != x.dtype:
-            msg = (
-                f"Input data type, {x.dtype}, is not consistent with"
-                f" type defined in the class {self.dtype}."
-            )
-            logger.error(msg)
-            raise TypeError(msg)
-
         nimgs = x.n_images
 
         half_size = self.ntheta // 2

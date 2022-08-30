@@ -146,6 +146,8 @@ class PSWFBasis2D(Basis):
         )
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
         self.samples_conj_transpose = self.samples.conj().transpose()
+        # the column dimension of samples_conj_transpose is the number of basis coefficients
+        self.count = self.samples_conj_transpose.shape[1]
 
     def evaluate_t(self, images):
         """

@@ -107,3 +107,18 @@ class UtilsTestCase(TestCase):
 
     def testDtype(self):
         self.assertTrue(self.dtype == self.rot_obj.dtype)
+
+    def testAngleDist(self):
+        angles = np.array([i * np.pi / 360 for i in range(360)], dtype=self.dtype)
+        rots = Rotation.about_axis("x", angles, dtype=self.dtype)
+
+        # Calculate the angular distance between the identity, rots[0],
+        # and rotations by multiples of pi/360 about the x-axis.
+        # These should be equal to `angles`.
+        angular_dist = np.zeros(360, dtype=self.dtype)
+        for i, rot in enumerate(rots):
+            angular_dist[i] = Rotation.angle_dist(rots[0], rot, self.dtype)
+
+        self.assertTrue(
+            np.allclose(angles, angular_dist, atol=utest_tolerance(self.dtype))
+        )

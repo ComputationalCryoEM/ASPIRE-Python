@@ -63,7 +63,7 @@ class AdaptiveSupportTest(TestCase):
 
         # Generate stack of 2D Gaussian images.
         imgs = np.tile(
-            gaussian_2d(self.size, sigma_x=self.sigma, sigma_y=self.sigma),
+            gaussian_2d(self.size, sigma=self.sigma),
             (self.n_disc, 1, 1),
         )
 
