@@ -7,6 +7,7 @@ from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
+from aspire.utils import Rotation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
@@ -131,7 +132,7 @@ class OrientSymmTestCase(TestCase):
         # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}.
         # We find the minimum angular distance between the estimate Rii
         # and the 4 possible ground truths.
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype)
         g = rots_symm[1]
         rots_gt = src.rots
 
