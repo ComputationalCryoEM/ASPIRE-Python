@@ -2,6 +2,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import numpy as np
+from parameterized import parameterized
 from pytest import raises
 
 from aspire import __version__
@@ -82,17 +83,18 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(g_x, g_1d_x))
         self.assertTrue(np.allclose(g_y, g_1d_y))
 
-    def testGaussian3d(self):
+    @parameterized.expand([("zyx",), ("xyz")])
+    def testGaussian3d(self, indexing):
         L = 100
         mu = (0, 5, 10)
         sigma = (5, 7, 9)
 
-        G = gaussian_3d(L, mu, sigma)
+        G = gaussian_3d(L, mu, sigma, indexing=indexing)
 
         # The normalized sum across two axes should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        G_x = np.sum(G, axis=(0, 1)) / np.sum(G)
+        G_x = np.sum(G, axis=(1, 2)) / np.sum(G)
         G_y = np.sum(G, axis=(0, 2)) / np.sum(G)
-        G_z = np.sum(G, axis=(1, 2)) / np.sum(G)
+        G_z = np.sum(G, axis=(0, 1)) / np.sum(G)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
