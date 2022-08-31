@@ -298,61 +298,69 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         pf = pf.transpose((2, 1, 0))
         pf = np.concatenate((pf, np.conj(pf)), axis=1)
 
+        # Normalize rays.
+        pf /= norm(pf, axis=-1)[..., np.newaxis]
+
         with tqdm(total=n_pairs) as pbar:
-            for idx, (i, j) in enumerate(pairs):
+            idx = 0
+            for i in range(n_img):
                 pf_i = pf[i]
-                pf_j = pf[j]
 
                 # Generate shifted versions of images.
                 pf_i_shifted = np.array(
                     [pf_i * shift_phase for shift_phase in all_shift_phases]
                 )
 
-                # Normalize each ray.
-                pf_i_shifted /= norm(pf_i_shifted, axis=-1)[..., np.newaxis]
-                pf_j /= norm(pf_j, axis=-1)[..., np.newaxis]
-
                 Ri_tilde = Ri_tildes[i]
-                Rj_tilde = Ri_tildes[j]
 
-                Us = np.array(
-                    [Ri_tilde.T @ R_theta_ij @ Rj_tilde for R_theta_ij in R_theta_ijs]
-                )
-                c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
-                c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
+                for j in range(i + 1, n_img):
+                    pf_j = pf[j]
 
-                c1s = self.clAngles2Ind(c1s, n_theta)
-                c2s = self.clAngles2Ind(c2s, n_theta)
+                    Rj_tilde = Ri_tildes[j]
 
-                corrs = np.array(
-                    [
-                        np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
-                        for pf_i_shift in pf_i_shifted
-                        for c1, c2 in zip(c1s, c2s)
-                    ]
-                )
+                    Us = np.array(
+                        [
+                            Ri_tilde.T @ R_theta_ij @ Rj_tilde
+                            for R_theta_ij in R_theta_ijs
+                        ]
+                    )
+                    c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
+                    c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
 
-                # Reshape to group by shift and symmetric order.
-                corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
+                    c1s = self.clAngles2Ind(c1s, n_theta)
+                    c2s = self.clAngles2Ind(c2s, n_theta)
 
-                # For each pair of lines we take the maximum correlation over all shifts.
-                corrs = np.max(np.real(corrs), axis=0)
+                    corrs = np.array(
+                        [
+                            np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
+                            for pf_i_shift in pf_i_shifted
+                            for c1, c2 in zip(c1s, c2s)
+                        ]
+                    )
 
-                # We take the mean score over the 'order' groups and find the group that attains the maximum.
-                # This produces the index corresponding to theta_ij in the range [0, 2pi/order).
-                corrs = np.mean(np.real(corrs), axis=0)
-                max_idx_corr = np.argmax(corrs)
-                max_corr = corrs[max_idx_corr]
+                    # Reshape to group by shift and symmetric order.
+                    corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
 
-                max_corrs[idx] = max_corr  # This is only for stats.
-                max_corrs_idx[idx] = max_idx_corr  # This is only for stats.
+                    # For each pair of lines we take the maximum correlation over all shifts.
+                    corrs = np.max(np.real(corrs), axis=0)
 
-                theta_ij = degree_res * max_idx_corr * np.pi / 180
+                    # We take the mean score over the 'order' groups and find the group that attains the maximum.
+                    # This produces the index corresponding to theta_ij in the range [0, 2pi/order).
+                    corrs = np.mean(np.real(corrs), axis=0)
+                    max_idx_corr = np.argmax(corrs)
+                    max_corr = corrs[max_idx_corr]
 
-                Q[i, j] = np.cos(order * theta_ij) - 1j * np.sin(order * theta_ij)
+                    max_corrs[idx] = max_corr  # This is only for stats.
+                    max_corrs_idx[idx] = max_idx_corr  # This is only for stats.
 
-                if np.mod(idx, 10) == 0:
-                    pbar.update(10)
+                    theta_ij = degree_res * max_idx_corr * np.pi / 180
+
+                    Q[i, j] = np.cos(order * theta_ij) - 1j * np.sin(order * theta_ij)
+
+                    if np.mod(idx, 10) == 0:
+                        pbar.update(10)
+
+                    idx += 1
 
             # Populate the lower triangle and diagonal of Q.
             # Diagonals are 1 since e^{i*0}=1.
