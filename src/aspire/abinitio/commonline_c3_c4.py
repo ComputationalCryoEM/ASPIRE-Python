@@ -313,10 +313,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 )
 
                 # Normalize each ray.
-                for ray in pf_i_shifted:
-                    ray /= norm(ray)
-                for ray in pf_j:
-                    ray /= norm(ray)
+                pf_i_shifted /= norm(pf_i_shifted, axis=-1)[..., np.newaxis]
+                pf_j /= norm(pf_j, axis=-1)[..., np.newaxis]
 
                 Ri_tilde = Ri_tildes[i]
                 Rj_tilde = Ri_tildes[j]
