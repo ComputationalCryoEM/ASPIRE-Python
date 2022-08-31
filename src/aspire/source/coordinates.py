@@ -268,10 +268,6 @@ class CoordinateSource(ImageSource, ABC):
         # attributes to be populated by the different CTF's
         self._unique_filters = []
         self._filter_indices = np.zeros(self.n, dtype=int)
-        self._mrc_filepaths = np.zeros(self.n, dtype=object)
-        self._mrc_indices = np.zeros(self.n, dtype=int)
-        # array of CTF metadata to be inserted
-        self._ctf_values = np.zeros((self.n, len(self._ctf_cols)))
 
         # select method based on input type
         if isinstance(ctf, str):
@@ -288,9 +284,6 @@ class CoordinateSource(ImageSource, ABC):
         # populate filters and metadata
         self.unique_filters = self._unique_filters
         self.filter_indices = self._filter_indices
-        self.set_metadata("__mrc_filepath", self._mrc_filepaths)
-        self.set_metadata("__mrc_index", self._mrc_indices)
-        self.set_metadata(self._ctf_cols, self._ctf_values)
 
     def _populate_ctf_from_relion(self, ctf_starfile):
         """
@@ -385,19 +378,26 @@ class CoordinateSource(ImageSource, ABC):
         # assign filter indices
         self._filter_indices[indices] = mrc_idx
         # populate CTF metadata
-        self._ctf_values[indices] = np.array(
-            [
-                params["voltage"],
-                params["defocus_u"],
-                params["defocus_v"],
-                params["defocus_angle"],
-                params["cs"],
-                params["amplitude_contrast"],
-            ]
+        self.set_metadata(
+            self._ctf_cols,
+            np.array(
+                [
+                    [
+                        params["voltage"],
+                        params["defocus_u"],
+                        params["defocus_v"],
+                        params["defocus_angle"],
+                        params["cs"],
+                        params["amplitude_contrast"],
+                    ]
+                ]
+                * len(indices)
+            ),
+            indices,
         )
         # other ASPIRE metadata parameters
-        self._mrc_filepaths[indices] = self.mrc_paths[mrc_idx]
-        self._mrc_indices[indices] = mrc_idx
+        self.set_metadata("__mrc_filepath", self.mrc_paths[mrc_idx], indices)
+        self.set_metadata("__mrc_index", mrc_idx, indices)
 
     def _read_ctf_star(self, ctf_file):
         """
