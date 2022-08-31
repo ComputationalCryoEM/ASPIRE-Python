@@ -256,7 +256,7 @@ class CoordinateSource(ImageSource, ABC):
         corresponding CTFFilter objects to the `CoordinateSource`'s unique
         filter list, and also populates the metadata.
         """
-        ctf_cols = [
+        self._ctf_cols = [
             "_rlnVoltage",
             "_rlnDefocusU",
             "_rlnDefocusV",
@@ -273,8 +273,9 @@ class CoordinateSource(ImageSource, ABC):
         self._mrc_filepaths = np.zeros(self.n, dtype=object)
         self._mrc_indices = np.zeros(self.n, dtype=int)
         # array of CTF metadata to be inserted
-        self._ctf_values = np.zeros((self.n, len(ctf_cols)))
+        self._ctf_values = np.zeros((self.n, len(self._ctf_cols)))
 
+        # select method based on input type
         if isinstance(ctf, str):
             populate_ctf = self._populate_ctf_from_relion
         elif isinstance(ctf, list):
@@ -283,16 +284,24 @@ class CoordinateSource(ImageSource, ABC):
             raise ValueError(
                 "Argument to import_ctf() must be a path or a list of paths"
             )
+        # populate_ctf will update the arrays above
+        populate_ctf(ctf)
 
-        populate_ctf(ctf, ctf_cols)
-
+        # populate filters and metadata
         self.filter_indices = self._filter_indices
         self.unique_filters = self._filters
         self.set_metadata("__mrc_filepath", self._mrc_filepaths)
         self.set_metadata("__mrc_index", self._mrc_indices)
-        self.set_metadata(ctf_cols, self._ctf_values)
+        self.set_metadata(self._ctf_cols, self._ctf_values)
 
-    def _populate_ctf_from_relion(self, ctf_starfile, ctf_cols):
+    def _populate_ctf_from_relion(self, ctf_starfile):
+        """
+        Populates CTF filters and metadata based on a .star file with CTF parameters
+        in RELION format.
+        :param ctf_starfile: A RELION .star file containing CTF parameters for micrographs.
+        (Note: number of micrographs must match number of micrographs in CoordinateSource)
+        """
+        # RELION star files store CTF data in two separate blocks
         star = StarFile(ctf_starfile)
         optics = star["optics"]
         micrographs = star["micrographs"]
@@ -317,8 +326,9 @@ class CoordinateSource(ImageSource, ABC):
                 float(row._rlnDefocusV),
                 float(row._rlnDefocusAngle),
             )
-            # get corresponding optics group using optics group index
+            # get parameters from corresponding optics group
             optics_group = optics_groups[int(row._rlnOpticsGroup)]
+            # set the rest of the CTF parameters
             (
                 params["voltage"],
                 params["cs"],
@@ -330,18 +340,11 @@ class CoordinateSource(ImageSource, ABC):
                 optics_group.amplitude_contrast,
                 optics_group.pixel_size,
             )
-            # find particle indices corresponding to this micrograph
-            indices = [
-                idx
-                for idx, particle in enumerate(self.particles)
-                if particle[0] == mrc_idx
-            ]
-            self._populate_ctf_micrograph(mrc_idx, indices, params)
+            self._process_each_ctf(params, mrc_idx)
 
     def _populate_ctf_from_list(
         self,
         ctf_files,
-        ctf_cols,
     ):
         if not len(ctf_files) == len(self.mrc_paths):
             raise ValueError(
@@ -350,15 +353,18 @@ class CoordinateSource(ImageSource, ABC):
 
         for mrc_idx, ctf_file in enumerate(ctf_files):
             params = self._read_ctf_star(ctf_file)
-            # find particle indices corresponding to this micrograph
-            indices = [
-                idx
-                for idx, particle in enumerate(self.particles)
-                if particle[0] == mrc_idx
-            ]
-            self._populate_ctf_micrograph(mrc_idx, indices, params)
+            self._process_each_ctf(params, mrc_idx)
 
-    def _populate_ctf_micrograph(self, mrc_idx, indices, params):
+    def _process_each_ctf(self, params, mrc_idx):
+        """
+        Given a unique set of CTF parameters, create a CTFFilter and populate source metadata.
+        :param params: Dictionary of CTF parameters.
+        :param mrc_idx: Index of the micrograph corresponding to these CTF parameters.
+        """
+        # find particle indices corresponding to this micrograph
+        indices = [
+            idx for idx, particle in enumerate(self.particles) if particle[0] == mrc_idx
+        ]
         # add CTF filter to unique filters
         self._filters.append(
             CTFFilter(
