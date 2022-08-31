@@ -266,9 +266,7 @@ class CoordinateSource(ImageSource, ABC):
         ]
 
         # attributes to be populated by the different CTF's
-        # unique CTFFilter objects
-        self._filters = []
-        # list indicating which CTFFilter corresponds to which particle
+        self._unique_filters = []
         self._filter_indices = np.zeros(self.n, dtype=int)
         self._mrc_filepaths = np.zeros(self.n, dtype=object)
         self._mrc_indices = np.zeros(self.n, dtype=int)
@@ -288,8 +286,8 @@ class CoordinateSource(ImageSource, ABC):
         populate_ctf(ctf)
 
         # populate filters and metadata
+        self.unique_filters = self._unique_filters
         self.filter_indices = self._filter_indices
-        self.unique_filters = self._filters
         self.set_metadata("__mrc_filepath", self._mrc_filepaths)
         self.set_metadata("__mrc_index", self._mrc_indices)
         self.set_metadata(self._ctf_cols, self._ctf_values)
@@ -346,6 +344,11 @@ class CoordinateSource(ImageSource, ABC):
         self,
         ctf_files,
     ):
+        """
+        Populates CTF filters and metadata based on a list of .star files containing CTF parameters..
+        :param ctf_files: A list of .star files containing CTF parameters for micrographs.
+        (Note: number of files must match number of micrographs in CoordinateSource)
+        """
         if not len(ctf_files) == len(self.mrc_paths):
             raise ValueError(
                 "Number of CTF STAR files must match number of micrographs."
@@ -366,7 +369,7 @@ class CoordinateSource(ImageSource, ABC):
             idx for idx, particle in enumerate(self.particles) if particle[0] == mrc_idx
         ]
         # add CTF filter to unique filters
-        self._filters.append(
+        self._unique_filters.append(
             CTFFilter(
                 pixel_size=params["pixel_size"],
                 voltage=params["voltage"],
