@@ -92,7 +92,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
     def estimate_rotations(self):
         """
-        Estimate rotation matrices for symmetric molecules.
+        Estimate rotation matrices for molecules with C3 or C4 symmetry.
+
+        :return: Array of rotation matrices, size n_imgx3x3.
         """
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
         vijs, viis = self._estimate_relative_viewing_directions_c3_c4()
