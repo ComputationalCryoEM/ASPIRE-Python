@@ -260,7 +260,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         pf = self.pf
         n_img = self.n_img
         n_theta = self.n_theta
-        max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
+        max_shift_1d = self.max_shift
         shift_step = self.shift_step
         order = self.order
         degree_res = self.degree_res
@@ -272,11 +272,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
         max_angle = (360 // order) * order
         theta_ijs = np.arange(0, max_angle, degree_res) * np.pi / 180
-        n_theta_ijs = len(theta_ijs)
-
-        euler_angles = np.zeros((n_theta_ijs, 3), dtype=self.dtype)
-        euler_angles[:, 2] = theta_ijs
-        R_theta_ijs = Rotation.from_euler(euler_angles, dtype=self.dtype).matrices
+        R_theta_ijs = Rotation.about_axis("z", theta_ijs, dtype=self.dtype).matrices
 
         # Step 3: Compute the correlation over all shifts.
         # Generate shifts.
@@ -337,7 +333,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 )
 
                 # Reshape to group by shift and symmetric order.
-                corrs = corrs.reshape((n_shifts, order, n_theta_ijs // order))
+                corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
 
                 # For each pair of lines we take the maximum correlation over all shifts.
                 corrs = np.max(np.real(corrs), axis=0)
