@@ -302,6 +302,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         with tqdm(total=n_pairs) as pbar:
             idx = 0
+            # Note: the ordering of i and j in these loops should not be changed as
+            # they correspond to the ordered tuples (i, j), for i<j.
             for i in range(n_img):
                 pf_i = pf[i]
 
@@ -317,18 +319,23 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
                     Rj_tilde = Ri_tildes[j]
 
+                    # Compute all possible rotations between the i'th and j'th images.
                     Us = np.array(
                         [
                             Ri_tilde.T @ R_theta_ij @ Rj_tilde
                             for R_theta_ij in R_theta_ijs
                         ]
                     )
+
+                    # Find the angle between common lines induces by the rotations.
                     c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
                     c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
 
+                    # Convert from angles to indices.
                     c1s = self.clAngles2Ind(c1s, n_theta)
                     c2s = self.clAngles2Ind(c2s, n_theta)
 
+                    # Perform correlation.
                     corrs = np.array(
                         [
                             np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
