@@ -267,13 +267,13 @@ class CoordinateSource(ImageSource, ABC):
 
         # attributes to be populated by the different CTF's
         # unique CTFFilter objects
-        filters = []
+        self._filters = []
         # list indicating which CTFFilter corresponds to which particle
-        filter_indices = np.zeros(self.n, dtype=int)
-        mrc_filepaths = np.zeros(self.n, dtype=object)
-        mrc_indices = np.zeros(self.n, dtype=int)
+        self._filter_indices = np.zeros(self.n, dtype=int)
+        self._mrc_filepaths = np.zeros(self.n, dtype=object)
+        self._mrc_indices = np.zeros(self.n, dtype=int)
         # array of CTF metadata to be inserted
-        ctf_values = np.zeros((self.n, len(ctf_cols)))
+        self._ctf_values = np.zeros((self.n, len(ctf_cols)))
 
         if isinstance(ctf, str):
             populate_ctf = self._populate_ctf_from_relion
@@ -284,32 +284,15 @@ class CoordinateSource(ImageSource, ABC):
                 "Argument to import_ctf() must be a path or a list of paths"
             )
 
-        filters, filter_indices, mrc_filepaths, mrc_indices, ctf_values = populate_ctf(
-            ctf,
-            ctf_cols,
-            filters,
-            filter_indices,
-            mrc_filepaths,
-            mrc_indices,
-            ctf_values,
-        )
+        populate_ctf(ctf, ctf_cols)
 
-        self.filter_indices = filter_indices
-        self.unique_filters = filters
-        self.set_metadata("__mrc_filepath", mrc_filepaths)
-        self.set_metadata("__mrc_index", mrc_indices)
-        self.set_metadata(ctf_cols, ctf_values)
+        self.filter_indices = self._filter_indices
+        self.unique_filters = self._filters
+        self.set_metadata("__mrc_filepath", self._mrc_filepaths)
+        self.set_metadata("__mrc_index", self._mrc_indices)
+        self.set_metadata(ctf_cols, self._ctf_values)
 
-    def _populate_ctf_from_relion(
-        self,
-        ctf_starfile,
-        ctf_cols,
-        filters,
-        filter_indices,
-        mrc_filepaths,
-        mrc_indices,
-        ctf_values,
-    ):
+    def _populate_ctf_from_relion(self, ctf_starfile, ctf_cols):
         star = StarFile(ctf_starfile)
         optics = star["optics"]
         micrographs = star["micrographs"]
@@ -326,110 +309,86 @@ class CoordinateSource(ImageSource, ABC):
                 f" micrographs but this source has {len(self.mrc_paths)} micrographs.",
             )
 
-        for i, row in micrographs.iterrows():
+        for mrc_idx, row in micrographs.iterrows():
             # extract parameters not in the optics groups
-            defocus_u, defocus_v, defocus_angle = (
+            params = {}
+            params["defocus_u"], params["defocus_v"], params["defocus_angle"] = (
                 float(row._rlnDefocusU),
                 float(row._rlnDefocusV),
                 float(row._rlnDefocusAngle),
             )
             # get corresponding optics group using optics group index
             optics_group = optics_groups[int(row._rlnOpticsGroup)]
-            voltage, cs, amplitude_contrast, pixel_size = (
+            (
+                params["voltage"],
+                params["cs"],
+                params["amplitude_contrast"],
+                params["pixel_size"],
+            ) = (
                 optics_group.voltage,
                 optics_group.cs,
                 optics_group.amplitude_contrast,
                 optics_group.pixel_size,
             )
-
-            # create CTF filter
-            filters.append(
-                CTFFilter(
-                    pixel_size=pixel_size,
-                    voltage=voltage,
-                    defocus_u=defocus_u,
-                    defocus_v=defocus_v,
-                    defocus_ang=defocus_angle,
-                    Cs=cs,
-                    alpha=amplitude_contrast,
-                    B=self.B,
-                )
-            )
             # find particle indices corresponding to this micrograph
             indices = [
-                idx for idx, particle in enumerate(self.particles) if particle[0] == i
+                idx
+                for idx, particle in enumerate(self.particles)
+                if particle[0] == mrc_idx
             ]
-            # assign filter indices
-            filter_indices[indices] = i
-            # populate CTF metadata
-            ctf_values[indices] = np.array(
-                [
-                    voltage,
-                    defocus_u,
-                    defocus_v,
-                    defocus_angle,
-                    cs,
-                    amplitude_contrast,
-                ]
-            )
-            # other ASPIRE metadata parameters
-            mrc_filepaths[indices] = self.mrc_paths[i]
-            mrc_indices[indices] = i
-
-        return filters, filter_indices, mrc_filepaths, mrc_indices, ctf_values
+            self._populate_ctf_micrograph(mrc_idx, indices, params)
 
     def _populate_ctf_from_list(
         self,
         ctf_files,
         ctf_cols,
-        filters,
-        filter_indices,
-        mrc_filepaths,
-        mrc_indices,
-        ctf_values,
     ):
         if not len(ctf_files) == len(self.mrc_paths):
             raise ValueError(
                 "Number of CTF STAR files must match number of micrographs."
             )
 
-        for i, ctf_file in enumerate(ctf_files):
+        for mrc_idx, ctf_file in enumerate(ctf_files):
             params = self._read_ctf_star(ctf_file)
-            # add CTF filter to unique filters
-            filters.append(
-                CTFFilter(
-                    pixel_size=params["pixel_size"],
-                    voltage=params["voltage"],
-                    defocus_u=params["defocus_u"],
-                    defocus_v=params["defocus_v"],
-                    defocus_ang=params["defocus_angle"],
-                    Cs=params["cs"],
-                    alpha=params["amplitude_contrast"],
-                    B=self.B,
-                )
-            )
             # find particle indices corresponding to this micrograph
             indices = [
-                idx for idx, particle in enumerate(self.particles) if particle[0] == i
+                idx
+                for idx, particle in enumerate(self.particles)
+                if particle[0] == mrc_idx
             ]
-            # assign filter indices
-            filter_indices[indices] = i
-            # populate CTF metadata
-            ctf_values[indices] = np.array(
-                [
-                    params["voltage"],
-                    params["defocus_u"],
-                    params["defocus_v"],
-                    params["defocus_angle"],
-                    params["cs"],
-                    params["amplitude_contrast"],
-                ]
-            )
-            # other ASPIRE metadata parameters
-            mrc_filepaths[indices] = self.mrc_paths[i]
-            mrc_indices[indices] = i
+            self._populate_ctf_micrograph(mrc_idx, indices, params)
 
-        return filters, filter_indices, mrc_filepaths, mrc_indices, ctf_values
+    def _populate_ctf_micrograph(self, mrc_idx, indices, params):
+        # add CTF filter to unique filters
+        self._filters.append(
+            CTFFilter(
+                pixel_size=params["pixel_size"],
+                voltage=params["voltage"],
+                defocus_u=params["defocus_u"],
+                defocus_v=params["defocus_v"],
+                defocus_ang=params["defocus_angle"],
+                Cs=params["cs"],
+                alpha=params["amplitude_contrast"],
+                B=self.B,
+            )
+        )
+
+        # assign filter indices
+        self._filter_indices[indices] = mrc_idx
+        # populate CTF metadata
+        self._ctf_values[indices] = np.array(
+            [
+                params["voltage"],
+                params["defocus_u"],
+                params["defocus_v"],
+                params["defocus_angle"],
+                params["cs"],
+                params["amplitude_contrast"],
+            ]
+        )
+        # other ASPIRE metadata parameters
+        self._mrc_filepaths[indices] = self.mrc_paths[mrc_idx]
+        self._mrc_indices[indices] = mrc_idx
 
     def _read_ctf_star(self, ctf_file):
         """
