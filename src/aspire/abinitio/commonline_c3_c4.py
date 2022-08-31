@@ -283,8 +283,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         n_shifts = len(shifts)
         all_shift_phases = shift_phases.T
 
-        pairs = all_pairs(n_img)
-        n_pairs = len(pairs)
+        n_pairs = n_img * (n_img - 1) // 2
         max_corrs = np.zeros(n_pairs)
         max_corrs_idx = np.zeros(n_pairs)
 
