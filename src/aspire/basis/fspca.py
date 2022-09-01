@@ -151,7 +151,7 @@ class FSPCABasis(SteerableBasis2D):
             self.noise_var = WhiteNoiseEstimator(self.src).estimate()
         logger.info(f"Setting noise_var={self.noise_var}")
 
-        cov2d = BatchedRotCov2D(self.basis, batch_size=self.batch_size)
+        cov2d = BatchedRotCov2D(src=self.src, basis=self.basis, batch_size=self.batch_size)
         covar_opt = {
             "shrinker": "frobenius_norm",
             "verbose": 0,
@@ -162,9 +162,8 @@ class FSPCABasis(SteerableBasis2D):
             "precision": "float64",
             "preconditioner": "identity",
         }
-        self.mean_coef_est = cov2d.get_mean(coef)
+        self.mean_coef_est = cov2d.get_mean()
         self.covar_coef_est = cov2d.get_covar(
-            coef,
             mean_coeff=self.mean_coef_est,
             noise_var=self.noise_var,
             covar_est_opt=covar_opt,
