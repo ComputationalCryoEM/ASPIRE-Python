@@ -28,18 +28,6 @@ class CtfEstimatorTestCase(TestCase):
             "amplitude_contrast": 0.07,
         }
 
-        self.ctf_args = {
-            "pixel_size": 1,
-            "cs": 2.0,
-            "amplitude_contrast": 0.07,
-            "voltage": 300.0,
-            "num_tapers": 2,
-            "psd_size": 512,
-            "g_min": 30.0,
-            "g_max": 5.0,
-            "dtype": np.float64,
-        }
-
     def tearDown(self):
         pass
 
@@ -55,10 +43,18 @@ class CtfEstimatorTestCase(TestCase):
                 # Returns results in output_dir
                 results = estimate_ctf(
                     data_folder=tmp_input_dir,
+                    pixel_size=1,
+                    cs=2.0,
+                    amplitude_contrast=0.07,
+                    voltage=300.0,
+                    num_tapers=2,
+                    psd_size=512,
+                    g_min=30.0,
+                    g_max=5.0,
                     output_dir=tmp_output_dir,
+                    dtype=np.float64,
                     save_ctf_images=True,
                     save_noise_images=True,
-                    **self.ctf_args,
                 )
 
                 logger.debug(f"results: {results}")
