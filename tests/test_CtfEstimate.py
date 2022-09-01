@@ -85,7 +85,7 @@ class CtfEstimatorTestCase(TestCase):
     # we are chopping the micrograph into a vertical and a horizontal rectangle
     # as small as possible to save testing duration
     @parameterized.expand(
-        [[(slice(0, 200), slice(0, 100))], [(slice(0, 100), slice(0, 200))]]
+        [[(slice(0, 128), slice(0, 64))], [(slice(0, 64), slice(0, 128))]]
     )
     def testRectangularMicrograph(self, slice_range):
         with tempfile.TemporaryDirectory() as tmp_input_dir:
@@ -101,4 +101,4 @@ class CtfEstimatorTestCase(TestCase):
                 data = mrc_in.data[slice_range]
                 mrc_in.set_data(data)
             # make sure we can estimate with no errors
-            _ = estimate_ctf(data_folder=tmp_input_dir, psd_size=100)
+            _ = estimate_ctf(data_folder=tmp_input_dir, psd_size=64)
