@@ -4,7 +4,9 @@ import tempfile
 from shutil import copyfile
 from unittest import TestCase
 
+import mrcfile
 import numpy as np
+from parameterized import parameterized
 
 from aspire.ctf import estimate_ctf
 
@@ -26,6 +28,18 @@ class CtfEstimatorTestCase(TestCase):
             "amplitude_contrast": 0.07,
         }
 
+        self.ctf_args = {
+            "pixel_size": 1,
+            "cs": 2.0,
+            "amplitude_contrast": 0.07,
+            "voltage": 300.0,
+            "num_tapers": 2,
+            "psd_size": 512,
+            "g_min": 30.0,
+            "g_max": 5.0,
+            "dtype": np.float64,
+        }
+
     def tearDown(self):
         pass
 
@@ -41,18 +55,10 @@ class CtfEstimatorTestCase(TestCase):
                 # Returns results in output_dir
                 results = estimate_ctf(
                     data_folder=tmp_input_dir,
-                    pixel_size=1,
-                    cs=2.0,
-                    amplitude_contrast=0.07,
-                    voltage=300.0,
-                    num_tapers=2,
-                    psd_size=512,
-                    g_min=30.0,
-                    g_max=5.0,
                     output_dir=tmp_output_dir,
-                    dtype=np.float64,
                     save_ctf_images=True,
                     save_noise_images=True,
+                    **self.ctf_args,
                 )
 
                 logger.debug(f"results: {results}")
@@ -79,3 +85,24 @@ class CtfEstimatorTestCase(TestCase):
                         self.assertTrue(
                             np.allclose(result[param], self.test_output[param])
                         )
+
+    # we are chopping the micrograph into a vertical and a horizontal rectangle
+    # as small as possible to save testing duration
+    @parameterized.expand(
+        [[(slice(0, 200), slice(0, 100))], [(slice(0, 100), slice(0, 200))]]
+    )
+    def testRectangularMicrograph_vert(self, slice_range):
+        with tempfile.TemporaryDirectory() as tmp_input_dir:
+            # copy input file
+            copyfile(
+                os.path.join(DATA_DIR, self.test_input_fn),
+                os.path.join(tmp_input_dir, "vert_" + self.test_input_fn),
+            )
+            # trim the file into a rectangle
+            with mrcfile.open(
+                os.path.join(tmp_input_dir, "vert_" + self.test_input_fn), "r+"
+            ) as mrc_in:
+                data = mrc_in.data[slice_range]
+                mrc_in.set_data(data)
+            # make sure we can estimate with no errors
+            _ = estimate_ctf(data_folder=tmp_input_dir, psd_size=100)
