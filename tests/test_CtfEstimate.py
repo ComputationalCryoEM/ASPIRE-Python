@@ -91,16 +91,16 @@ class CtfEstimatorTestCase(TestCase):
     @parameterized.expand(
         [[(slice(0, 200), slice(0, 100))], [(slice(0, 100), slice(0, 200))]]
     )
-    def testRectangularMicrograph_vert(self, slice_range):
+    def testRectangularMicrograph(self, slice_range):
         with tempfile.TemporaryDirectory() as tmp_input_dir:
             # copy input file
             copyfile(
                 os.path.join(DATA_DIR, self.test_input_fn),
-                os.path.join(tmp_input_dir, "vert_" + self.test_input_fn),
+                os.path.join(tmp_input_dir, "rect_" + self.test_input_fn),
             )
             # trim the file into a rectangle
             with mrcfile.open(
-                os.path.join(tmp_input_dir, "vert_" + self.test_input_fn), "r+"
+                os.path.join(tmp_input_dir, "rect_" + self.test_input_fn), "r+"
             ) as mrc_in:
                 data = mrc_in.data[slice_range]
                 mrc_in.set_data(data)
