@@ -16,18 +16,15 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class CtfEstimatorTestCase(TestCase):
     def setUp(self):
         self.test_input_fn = "sample.mrc"
-        self.test_output = [
-            [
-                1.1142363760e03,
-                1.0920983202e03,
-                -8.3521800000e-03,
-                2.0,
-                300.0,
-                1,
-                0.07,
-                self.test_input_fn,
-            ]
-        ]
+        self.test_output = {
+            "defocus_u": 1.1142363760e03,
+            "defocus_v": 1.0920983202e03,
+            "defocus_ang": -8.3521800000e-03,
+            "cs": 2.0,
+            "voltage": 300.0,
+            "pixel_size": 1,
+            "amplitude_contrast": 0.07,
+        }
 
     def tearDown(self):
         pass
@@ -54,22 +51,31 @@ class CtfEstimatorTestCase(TestCase):
                     g_max=5.0,
                     output_dir=tmp_output_dir,
                     dtype=np.float64,
+                    save_ctf_images=True,
+                    save_noise_images=True,
                 )
 
                 logger.debug(f"results: {results}")
 
-                for i, result in enumerate(results):
-                    diffs = np.subtract(result[:-1], self.test_output[i][:-1])
-                    logger.debug(f"diffs: {diffs}")
+                for result in results.values():
+                    # the following parameters have higher tolerances
 
                     # defocusU
-                    np.allclose(result[0], self.test_output[i][0], atol=5e-2)
-                    # defocusV
-                    np.allclose(result[1], self.test_output[i][1], atol=5e-2)
-                    # defocusAngle
-                    np.allclose(result[2], self.test_output[i][2], atol=5e-5)
-
-                    self.assertTrue(
-                        np.allclose(result[3:-1], self.test_output[i][3:-1])
+                    np.allclose(
+                        result["defocus_u"], self.test_output["defocus_u"], atol=5e-2
                     )
-                    self.assertTrue(result[-1] == self.test_output[i][-1])
+                    # defocusV
+                    np.allclose(
+                        result["defocus_v"], self.test_output["defocus_v"], atol=5e-2
+                    )
+                    # defocusAngle
+                    np.allclose(
+                        result["defocus_ang"],
+                        self.test_output["defocus_ang"],
+                        atol=5e-5,
+                    )
+
+                    for param in ["cs", "amplitude_contrast", "voltage", "pixel_size"]:
+                        self.assertTrue(
+                            np.allclose(result[param], self.test_output[param])
+                        )
