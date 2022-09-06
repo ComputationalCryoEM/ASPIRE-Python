@@ -7,7 +7,7 @@ from numpy.linalg import qr
 import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.utils import Rotation, grid_2d, grid_3d, mat_to_vec, vec_to_mat
+from aspire.utils import Rotation, crop_pad_3d, grid_2d, grid_3d, mat_to_vec, vec_to_mat
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import Random, randn
 from aspire.utils.types import complex_type
@@ -255,11 +255,16 @@ class Volume:
 
         return Volume(np.flip(self._data, axis))
 
-    def downsample(self, szout, mask=None):
-        if isinstance(szout, int):
-            szout = (szout,) * 3
+    def downsample(self, ds_res):
+        fx = np.array([fft.centered_fftn(self._data[i,:,:,:], axes=(0,1,2)) for i in range(self.n_vols)])
 
-        return Volume(aspire.image.downsample(self._data, szout, mask))
+        crop_fx = np.array([crop_pad_3d(fx[i,:,:,:], ds_res) for i in range(self.n_vols)])
+
+        out = np.real(fft.centered_ifftn(crop_fx, axes=(0,1,2))) * (
+            ds_res**3 / self.resolution**3
+        )
+
+        return Volume(out)
 
     def shift(self):
         raise NotImplementedError

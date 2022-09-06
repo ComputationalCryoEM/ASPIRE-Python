@@ -328,7 +328,7 @@ class VolumeTestCase(TestCase):
 
     def testDownsample(self):
         vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
-        result = vols.downsample((8, 8, 8))
+        result = vols.downsample(8)
         res = vols.resolution
         ds_res = result.resolution
 
