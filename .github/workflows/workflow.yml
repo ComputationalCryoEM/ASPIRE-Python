@@ -21,7 +21,7 @@ jobs:
       run: tox -e check
       
   check2:
-    runs-on: decaf
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python
@@ -69,7 +69,7 @@ jobs:
 
   build2:
     needs: check2
-    runs-on: decaf
+    runs-on: self-hosted
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10']
