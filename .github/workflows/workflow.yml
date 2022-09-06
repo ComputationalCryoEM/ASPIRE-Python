@@ -4,7 +4,7 @@ on:
   - push
   - pull_request
 
-jobs: 
+jobs:
   check2:
     runs-on: self-hosted
     steps:
