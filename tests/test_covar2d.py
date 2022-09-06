@@ -45,7 +45,7 @@ class Cov2DTestCase(TestCase):
                 self.dtype
             )
         )  # RCOPT
-        vols = vols.downsample((L * np.ones(3, dtype=int))) * 1.0e3
+        vols = vols.downsample(L) * 1.0e3
         # Since FFBBasis2D doesn't yet implement dtype, we'll set this to double to match its built in types.
         sim = Simulation(
             n=n,
