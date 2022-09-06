@@ -14,4 +14,5 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
     - name: Run 
-      run: pytest
+    run: |
+        pytest
