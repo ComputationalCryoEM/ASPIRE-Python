@@ -256,15 +256,18 @@ class Volume:
         return Volume(np.flip(self._data, axis))
 
     def downsample(self, ds_res):
-        fx = np.array([fft.centered_fftn(self._data[i,:,:,:], axes=(0,1,2)) for i in range(self.n_vols)])
-
-        crop_fx = np.array([crop_pad_3d(fx[i,:,:,:], ds_res) for i in range(self.n_vols)])
-
-        out = np.real(fft.centered_ifftn(crop_fx, axes=(0,1,2))) * (
+        # take 3D Fourier transform of each volume in the stack
+        fx = fft.centered_fftn(self._data, axes=(1, 2, 3))
+        # crop each volume to the desired resolution in frequency space
+        crop_fx = np.array(
+            [crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)]
+        )
+        # inverse Fourier transform of each volume
+        out = fft.centered_ifftn(crop_fx, axes=(1, 2, 3)) * (
             ds_res**3 / self.resolution**3
         )
-
-        return Volume(out)
+        # returns a new Volume object
+        return Volume(np.real(out))
 
     def shift(self):
         raise NotImplementedError
