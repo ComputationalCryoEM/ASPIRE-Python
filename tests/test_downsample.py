@@ -8,7 +8,6 @@ from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.utils.matrix import anorm
 from aspire.utils.misc import gaussian_3d
-from aspire.utils.rotation import Rotation
 from aspire.volume import Volume
 
 
@@ -92,7 +91,7 @@ class DownsampleTestCase(TestCase):
         return np.allclose(
             imgs_org[(..., *center_org)],
             imgs_ds[(..., *center_ds)],
-            atol=1e-3, # this indeterminacy only appears with the 3D centerpoints..
+            atol=1e-3,  # this indeterminacy only appears with the 3D centerpoints..
         )
 
     def checkSignalEnergy(self, imgs_org, imgs_ds):
