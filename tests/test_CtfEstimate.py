@@ -61,18 +61,28 @@ class CtfEstimatorTestCase(TestCase):
                     # the following parameters have higher tolerances
 
                     # defocusU
-                    np.allclose(
-                        result["defocus_u"], self.test_output["defocus_u"], atol=5e-2
+                    self.assertTrue(
+                        np.allclose(
+                            result["defocus_u"],
+                            self.test_output["defocus_u"],
+                            atol=5e-2,
+                        )
                     )
                     # defocusV
-                    np.allclose(
-                        result["defocus_v"], self.test_output["defocus_v"], atol=5e-2
+                    self.assertTrue(
+                        np.allclose(
+                            result["defocus_u"],
+                            self.test_output["defocus_u"],
+                            atol=5e-2,
+                        )
                     )
                     # defocusAngle
-                    np.allclose(
-                        result["defocus_ang"],
-                        self.test_output["defocus_ang"],
-                        atol=5e-5,
+                    self.assertTrue(
+                        np.allclose(
+                            result["defocus_ang"],
+                            self.test_output["defocus_ang"],
+                            atol=5e-2,
+                        )
                     )
 
                     for param in ["cs", "amplitude_contrast", "voltage", "pixel_size"]:
