@@ -257,13 +257,13 @@ class Volume:
 
     def downsample(self, ds_res):
         # take 3D Fourier transform of each volume in the stack
-        fx = fft.centered_fftn(self._data, axes=(1, 2, 3))
+        fx = fft.fftshift(fft.fftn(self._data, axes=(1, 2, 3)))
         # crop each volume to the desired resolution in frequency space
         crop_fx = np.array(
             [crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)]
         )
         # inverse Fourier transform of each volume
-        out = fft.centered_ifftn(crop_fx, axes=(1, 2, 3)) * (
+        out = fft.ifftn(fft.ifftshift(crop_fx), axes=(1, 2, 3)) * (
             ds_res**3 / self.resolution**3
         )
         # returns a new Volume object
