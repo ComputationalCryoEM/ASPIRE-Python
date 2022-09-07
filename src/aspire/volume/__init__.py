@@ -255,12 +255,19 @@ class Volume:
 
         return Volume(np.flip(self._data, axis))
 
-    def downsample(self, ds_res):
+    def downsample(self, ds_res, mask=None):
+        """
+        Downsample each volume to a desired resolution (only cubic supported).
+
+        :param ds_res: Desired resolution.
+        :param mask: Optional NumPy array mask to multiply in Fourier space.
+        """
         # take 3D Fourier transform of each volume in the stack
         fx = fft.fftshift(fft.fftn(self._data, axes=(1, 2, 3)))
         # crop each volume to the desired resolution in frequency space
-        crop_fx = np.array(
-            [crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)]
+        crop_fx = (
+            np.array([crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)])
+            * mask
         )
         # inverse Fourier transform of each volume
         out = fft.ifftn(fft.ifftshift(crop_fx), axes=(1, 2, 3)) * (
