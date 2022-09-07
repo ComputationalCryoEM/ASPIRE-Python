@@ -17,9 +17,9 @@ class CtfEstimatorTestCase(TestCase):
     def setUp(self):
         self.test_input_fn = "sample.mrc"
         self.test_output = {
-            "defocus_u": 1.1142363760e03,
-            "defocus_v": 1.0920983202e03,
-            "defocus_ang": -8.3521800000e-03,
+            "defocus_u": 1.137359876e03,
+            "defocus_v": 9.617226108e02,
+            "defocus_ang": 1.5706205116381249,
             "cs": 2.0,
             "voltage": 300.0,
             "pixel_size": 1,
