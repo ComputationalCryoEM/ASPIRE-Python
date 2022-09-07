@@ -262,6 +262,9 @@ class Volume:
         :param ds_res: Desired resolution.
         :param mask: Optional NumPy array mask to multiply in Fourier space.
         """
+        if mask is None:
+            mask = 1.0
+
         # take 3D Fourier transform of each volume in the stack
         fx = fft.fftshift(fft.fftn(self._data, axes=(1, 2, 3)))
         # crop each volume to the desired resolution in frequency space
