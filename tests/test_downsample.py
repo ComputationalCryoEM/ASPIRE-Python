@@ -31,13 +31,13 @@ class DownsampleTestCase(TestCase):
 
     def _testDownsample3DCase(self, L, L_ds):
         # downsampling from size L to L_ds
-        imgs_org, imgs_ds = self.createVolumes(L, L_ds)
+        vols_org, vols_ds = self.createVolumes(L, L_ds)
         # check resolution is correct
-        self.assertEqual((self.n, L_ds, L_ds, L_ds), imgs_ds.shape)
+        self.assertEqual((self.n, L_ds, L_ds, L_ds), vols_ds.shape)
         # check center points for all volumes
-        self.assertTrue(self.checkCenterPoint(imgs_org, imgs_ds))
+        self.assertTrue(self.checkCenterPoint(vols_org, vols_ds))
         # check signal energy is conserved
-        self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
+        self.assertTrue(self.checkSignalEnergy(vols_org, vols_ds))
 
     def testDownsample2D_EvenEven(self):
         # source resolution: 64
@@ -77,39 +77,41 @@ class DownsampleTestCase(TestCase):
     def testDownsample3D_OddEven(self):
         # source resolution: 65
         # target resolution: 32
-        self._testDownsample3DCase(64, 32)
+        self._testDownsample3DCase(65, 32)
 
-    def checkCenterPoint(self, imgs_org, imgs_ds):
+    def checkCenterPoint(self, data_org, data_ds):
         # Check that center point is the same after ds
-        L = imgs_org.shape[-1]
-        L_ds = imgs_ds.shape[-1]
+        L = data_org.shape[-1]
+        L_ds = data_ds.shape[-1]
         # grab the center point via tuple of length 2 or 3 (image or volume)
         center_org, center_ds = (L // 2, L // 2), (L_ds // 2, L_ds // 2)
-        if isinstance(imgs_org, Volume):
+        # different tolerances for 2d vs 3d ...
+        tolerance = utest_tolerance(self.dtype)
+        if isinstance(data_org, Volume):
             center_org += (L // 2,)
             center_ds += (L_ds // 2,)
+            # indeterminacy for 3D
+            tolerance = 1e-3
         return np.allclose(
-            imgs_org[(..., *center_org)],
-            imgs_ds[(..., *center_ds)],
-            atol=1e-3,  # this indeterminacy only appears with the 3D centerpoints..
+            data_org[(..., *center_org)],
+            data_ds[(..., *center_ds)],
+            atol=tolerance,
         )
 
-    def checkSignalEnergy(self, imgs_org, imgs_ds):
+    def checkSignalEnergy(self, data_org, data_ds):
         # check conservation of energy after downsample
-        if isinstance(imgs_org, Image):
-            L = imgs_org.res
-            max_resolution = imgs_ds.res
+        L = data_org.shape[-1]
+        L_ds = data_ds.shape[-1]
+        if isinstance(data_org, Image):
             return np.allclose(
-                anorm(imgs_org.asnumpy(), axes=(1, 2)) / L,
-                anorm(imgs_ds.asnumpy(), axes=(1, 2)) / max_resolution,
+                anorm(data_org.asnumpy(), axes=(1, 2)) / L,
+                anorm(data_ds.asnumpy(), axes=(1, 2)) / L_ds,
                 atol=utest_tolerance(self.dtype),
             )
-        elif isinstance(imgs_org, Volume):
-            L = imgs_org.resolution
-            L_ds = imgs_ds.resolution
+        elif isinstance(data_org, Volume):
             return np.allclose(
-                anorm(imgs_org.asnumpy(), axes=(1, 2, 3)) / (L ** (3 / 2)),
-                anorm(imgs_ds.asnumpy(), axes=(1, 2, 3)) / (L_ds ** (3 / 2)),
+                anorm(data_org.asnumpy(), axes=(1, 2, 3)) / (L ** (3 / 2)),
+                anorm(data_ds.asnumpy(), axes=(1, 2, 3)) / (L_ds ** (3 / 2)),
                 atol=utest_tolerance(self.dtype),
             )
 
@@ -134,7 +136,13 @@ class DownsampleTestCase(TestCase):
     def createVolumes(self, L, L_ds):
         # generate a set of volumes with various anisotropic spreads
         sigmas = list(product([L * 0.1, L * 0.2, L * 0.3], repeat=3))
-        vol = Volume(
+
+        # get volumes before downsample
+        vols_org = Volume(
             np.array([gaussian_3d(L, sigma=s, dtype=self.dtype) for s in sigmas])
         )
-        return vol, vol.downsample(L_ds)
+
+        # get volumes after downsample
+        vols_ds = vols_org.downsample(L_ds)
+
+        return vols_org, vols_ds
