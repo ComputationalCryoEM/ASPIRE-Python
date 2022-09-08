@@ -136,14 +136,6 @@ class FSPCABasis(SteerableBasis2D):
         This may take some time for large image stacks.
         """
 
-        coef = np.empty((self.src.n, self.basis.count), dtype=self.dtype)
-        num_batches = (self.src.n + self.batch_size - 1) // self.batch_size
-        for i in range(num_batches):
-            start = i * self.batch_size
-            finish = min((i + 1) * self.batch_size, self.src.n)
-            n = finish - start
-            coef[start:finish] = self.basis.evaluate_t(self.src.images(start, n))
-
         if self.noise_var is None:
             from aspire.noise import WhiteNoiseEstimator
 
@@ -151,7 +143,9 @@ class FSPCABasis(SteerableBasis2D):
             self.noise_var = WhiteNoiseEstimator(self.src).estimate()
         logger.info(f"Setting noise_var={self.noise_var}")
 
-        cov2d = BatchedRotCov2D(src=self.src, basis=self.basis, batch_size=self.batch_size)
+        cov2d = BatchedRotCov2D(
+            src=self.src, basis=self.basis, batch_size=self.batch_size
+        )
         covar_opt = {
             "shrinker": "frobenius_norm",
             "verbose": 0,
@@ -176,17 +170,75 @@ class FSPCABasis(SteerableBasis2D):
 
         self.spca_coef = np.zeros((self.src.n, self.basis.count), dtype=self.dtype)
 
-        self._compute_spca(coef)
+        # Perform the PCA over batches
+        self._compute_spca()
 
         self._compress(self.components)
 
-    def _compute_spca(self, coef):
+    def _compute_spca(self):
         """
         Algorithm 2 from paper.
 
         It has been adopted to use ASPIRE-Python's
         cov2d (real) covariance estimation.
         """
+
+        ## Compute the spectrum blockwise.
+        # For each angular frequency (`ells` in FB code, `k` from paper)
+        #   we use the properties of Block Diagonal Matrices to work
+        #   on the correspong block.
+        eigval_index = 0
+        basis_inds = []
+        for angular_index, C_k in enumerate(self.covar_coef_est):
+
+            # # Eigen/SVD, covariance block C_k should be symmetric.
+            eigvals_k, eigvecs_k = np.linalg.eigh(C_k)
+
+            # Determistically enforce eigen vector sign convention
+            eigvecs_k = fix_signs(eigvecs_k)
+
+            # Sort eigvals_k
+            sorted_indices = np.argsort(-eigvals_k)
+            eigvals_k, eigvecs_k = (
+                eigvals_k[sorted_indices],
+                eigvecs_k[:, sorted_indices],
+            )
+
+            # These are the dense basis indices for this block.
+            _basis_inds = np.arange(eigval_index, eigval_index + len(eigvals_k))
+            basis_inds.append(_basis_inds)
+
+            # Store the eigvals for this block, note this is a flat array.
+            self.eigvals[_basis_inds] = eigvals_k
+
+            # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
+            self.eigvecs[angular_index] = eigvecs_k
+
+            eigval_index += len(eigvals_k)
+
+        # Sanity check we have same dimension of eigvals and basis coefs.
+        if eigval_index != self.basis.count:
+            raise RuntimeError(
+                f"eigvals dimension {eigval_index} != basis coef count {self.basis.count}."
+            )
+
+        # Store a map of indices sorted by eigenvalue.
+        #  We don't resort then now because this would destroy the block diagonal structure.
+        #
+        # sorted_indices[i] is the ith most powerful eigendecomposition index
+        #
+        # We can pass a full or truncated slice of sorted_indices to any array indexed by
+        # the coefs.  This is used later for compression and index re-generation.
+        self.sorted_indices = np.argsort(-np.abs(self.eigvals))
+
+        # Hack
+        coef = np.empty((self.src.n, self.basis.count), dtype=self.dtype)
+        num_batches = (self.src.n + self.batch_size - 1) // self.batch_size
+        for i in range(num_batches):
+            start = i * self.batch_size
+            finish = min((i + 1) * self.batch_size, self.src.n)
+            n = finish - start
+            coef[start:finish] = self.basis.evaluate_t(self.src.images(start, n))
 
         # Compute coefficient vector of mean image at zeroth component
         self.mean_coef_zero = self.mean_coef_est[self.angular_indices == 0]
@@ -232,56 +284,17 @@ class FSPCABasis(SteerableBasis2D):
                 f" {len(A)} != {len(self.covar_coef_est)}",
             )
 
+        ## Compute new FSPCA coefficients.
         # For each angular frequency (`ells` in FB code, `k` from paper)
         #   we use the properties of Block Diagonal Matrices to work
         #   on the correspong block.
-        eigval_index = 0
         for angular_index, C_k in enumerate(self.covar_coef_est):
-
-            # # Eigen/SVD, covariance block C_k should be symmetric.
-            eigvals_k, eigvecs_k = np.linalg.eigh(C_k)
-
-            # Determistically enforce eigen vector sign convention
-            eigvecs_k = fix_signs(eigvecs_k)
-
-            # Sort eigvals_k
-            sorted_indices = np.argsort(-eigvals_k)
-            eigvals_k, eigvecs_k = (
-                eigvals_k[sorted_indices],
-                eigvecs_k[:, sorted_indices],
-            )
-
-            # These are the dense basis indices for this block.
-            basis_inds = np.arange(eigval_index, eigval_index + len(eigvals_k))
-
-            # Store the eigvals for this block, note this is a flat array.
-            self.eigvals[basis_inds] = eigvals_k
-
-            # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
-            self.eigvecs[angular_index] = eigvecs_k
-
+            
             # To compute new expansion coefficients using spca basis
             #   we combine the basis coefs using the eigen decomposition.
             # Note image stack slow moving axis, otherwise this is just a
-            #   block by block matrix multiply.
-            self.spca_coef[:, basis_inds] = A[angular_index] @ eigvecs_k
-
-            eigval_index += len(eigvals_k)
-
-        # Sanity check we have same dimension of eigvals and basis coefs.
-        if eigval_index != self.basis.count:
-            raise RuntimeError(
-                f"eigvals dimension {eigval_index} != basis coef count {self.basis.count}."
-            )
-
-        # Store a map of indices sorted by eigenvalue.
-        #  We don't resort then now because this would destroy the block diagonal structure.
-        #
-        # sorted_indices[i] is the ith most powerful eigendecomposition index
-        #
-        # We can pass a full or truncated slice of sorted_indices to any array indexed by
-        # the coefs.  This is used later for compression and index re-generation.
-        self.sorted_indices = np.argsort(-np.abs(self.eigvals))
+            #   block by block matrix multiply.            
+            self.spca_coef[:, basis_inds[angular_index]] = A[angular_index] @ self.eigvecs[angular_index]
 
     def expand_from_image_basis(self, x):
         """
