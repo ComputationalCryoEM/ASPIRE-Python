@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 
 import mrcfile
 import numpy as np
@@ -252,6 +253,8 @@ class Volume:
 
         :return: Volume instance.
         """
+        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
+            raise ValueError("Cannot flip Axis 0, stack axis.")
 
         return Volume(np.flip(self._data, axis))
 

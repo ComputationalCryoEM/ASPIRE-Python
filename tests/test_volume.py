@@ -316,7 +316,7 @@ class VolumeTestCase(TestCase):
 
     def testFlip(self):
         # Test over all sane axis.
-        for axis in powerset(range(4)):
+        for axis in powerset(range(1, 4)):
             if not axis:
                 # test default
                 result = self.vols_1.flip()
@@ -325,6 +325,14 @@ class VolumeTestCase(TestCase):
                 result = self.vols_1.flip(axis)
             self.assertTrue(np.all(result == np.flip(self.data_1, axis)))
             self.assertTrue(isinstance(result, Volume))
+
+        # Test axis 0 raises
+        msg = r"Cannot flip Axis 0, stack axis."
+        with raises(ValueError, match=msg):
+            _ = self.vols_1.flip(axis=0)
+
+        with raises(ValueError, match=msg):
+            _ = self.vols_1.flip(axis=(0, 1))
 
     def testDownsample(self):
         vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
