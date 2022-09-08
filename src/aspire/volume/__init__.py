@@ -243,12 +243,12 @@ class Volume:
 
         return self._data.flatten()
 
-    def flip(self, axis=0):
+    def flip(self, axis=1):
         """
         Flip volume stack data along axis using numpy.flip
 
         :param axis: Optionally specify axis as integer or tuple.
-        Defaults to axis=0.
+        Defaults to axis=1.
 
         :return: Volume instance.
         """

@@ -320,7 +320,7 @@ class VolumeTestCase(TestCase):
             if not axis:
                 # test default
                 result = self.vols_1.flip()
-                axis = 0
+                axis = 1
             else:
                 result = self.vols_1.flip(axis)
             self.assertTrue(np.all(result == np.flip(self.data_1, axis)))
