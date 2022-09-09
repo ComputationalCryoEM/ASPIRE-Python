@@ -1,10 +1,9 @@
 import logging
-import os
 
 import numpy as np
-from scipy.io import loadmat
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
+from aspire.basis.basis_utils import besselj_zeros
 from aspire.image import Image
 
 logger = logging.getLogger(__name__)
@@ -95,10 +94,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Compute the eigenvalues of the Laplacian operator on a disk with Dirichlet boundary conditions.
         """
-        # number of Bessel function orders being considered
-        nc = int(3 * np.sqrt(self.num_basis_functions))
+        # max number of Bessel function orders being considered
+        nc = int(3 * np.sqrt(self.max_basis_functions))
         # max number of zeros per Bessel function (number of frequencies per bessel)
-        nd = int(2 * np.sqrt(self.num_basis_functions))
+        nd = int(2 * np.sqrt(self.max_basis_functions))
 
         # preallocate containers for roots
         # 0 frequency plus pos and negative frequencies for each bessel function
@@ -107,30 +106,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.ns = np.zeros((nn, nd), dtype=int, order="F")
         self.ks = np.zeros((nn, nd), dtype=int, order="F")
         self.bessel_roots = np.ones((nn, nd), dtype=np.float64) * np.Inf
-
-        path_to_module = os.path.dirname(__file__)
-        zeros_path = os.path.join(path_to_module, "jn_zeros_n=3000_nt=2500.mat")
-        data = loadmat(zeros_path)
-        roots_table = data["roots_table"]
-
-        # table of values of n, the Bessel function order
-        self.ns[0, :] = 0
-        # lmds[0, m] is the m'th zero of J_0
-        self.bessel_roots[0, :] = roots_table[0, :nd]
-        # table of values of k, the zeros of the given Bessel function
-        self.ks[0, :] = np.arange(nd) + 1
-
-        # add roots of J_n for n>0 twice with +k and -k (frequencies)
-        # iterate over Bessel function order
-        for n in range(1, nc + 1):
-            self.ns[2 * n - 1, :] = -n
-            self.ks[2 * n - 1, :] = np.arange(nd) + 1
-
-            self.bessel_roots[2 * n - 1, :nd] = roots_table[n, :nd]
-
-            self.ns[2 * n, :] = n
-            self.ks[2 * n, :] = self.ks[2 * n - 1, :]
-            self.bessel_roots[2 * n, :] = self.bessel_roots[2 * n - 1, :]
 
         ### bessel_roots
 
@@ -161,6 +136,45 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # ...
         # [1, 2, 3, ... nd ]
 
+        # Initially compute the max Bessel function zeros that will be needed
+        # and organize the n's (Bessel function orders) and k's (frequencies)
+        # into tables
+        self._populate_bessel_roots()
+
+        # Reshape the arrays and order by the size of the Bessel function zeros
+        self._flatten_and_sort_bessel_roots()
+
+        # Apply threshold criterion to throw out some basis functions
+        # Grab final number of basis functions for this Basis
+        self.num_basis_functions = self._threshold_basis_functions()
+
+    def _populate_bessel_roots(self):
+        """
+        Populates self.ns, self.ks, and self.bessel_roots.
+        """
+        # keep track of which order Bessel function we're on
+        self.ns[0, :] = 0
+        # bessel_roots[0, m] is the m'th zero of J_0
+        self.bessel_roots[0, :] = besselj_zeros(0, nd)
+        # table of values of which zero of J_0 we are finding
+        self.ks[0, :] = np.arange(nd) + 1
+
+        # add roots of J_n for n>0 twice with +k and -k (frequencies)
+        # iterate over Bessel function order
+        for n in range(1, nc + 1):
+            self.ns[2 * n - 1, :] = -n
+            self.ks[2 * n - 1, :] = np.arange(nd) + 1
+
+            self.bessel_roots[2 * n - 1, :nd] = besselj_zeros(n, nd)
+
+            self.ns[2 * n, :] = n
+            self.ks[2 * n, :] = self.ks[2 * n - 1, :]
+            self.bessel_roots[2 * n, :] = self.bessel_roots[2 * n - 1, :]
+
+    def _flatten_and_sort_bessel_roots(self):
+        """
+        Reshapes arrays self.ns, self.ks, and self.bessel_roots
+        """
         # flatten list of zeros, ns and ks:
         self.ns = self.ns.flatten()
         self.ks = self.ks.flatten()
@@ -172,21 +186,26 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         idx = np.argsort(self.bessel_roots)
         self.ns = self.ns[idx]
         self.ks = self.ks[idx]
-
         # sort complex conjugate pairs: -n first, +n second
         idx = np.arange(self.max_basis_functions + 1)
         for i in range(self.max_basis_functions + 1):
             if self.ns[i] >= 0:
                 continue
-            if np.abs(self.bessel_zeros[i] - self.bessel_zeros[i + 1]) < 1e-14:
+            if np.abs(self.bessel_roots[i] - self.bessel_roots[i + 1]) < 1e-14:
                 continue
             idx[i - 1] = i
             idx[i] = i - 1
 
         self.ns = self.ns[idx]
         self.ks = self.ks[idx]
-        self.bessel_zeros = self.bessel_zeros[idx]
-        
+        self.bessel_roots = self.bessel_roots[idx]
+
+    def _threshold_basis_functions(self):
+        """
+        Implements the bandlimit threshold which caps the number of basis functions
+        that are actually required.
+        :return: The final overall number of basis functions to be used.
+        """
         # Maximum bandlimit
         # (Section 4.1)
         # Can remove frequencies above this threshold based on the fact that
@@ -194,20 +213,20 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # unit disk inscribed on the image
         _final_num_basis_functions = self.max_basis_functions
         if self.bandlimit:
-            for i in range(len(self.bessel_zeros)):
-                if self.bessel_zeros[_final_num_basis_functions] / (np.pi) >= (self.bandlimit -1)//2:
+            for i in range(len(self.bessel_roots)):
+                if (
+                    self.bessel_roots[_final_num_basis_functions] / (np.pi)
+                    >= (self.bandlimit - 1) // 2
+                ):
                     _final_num_basis_functions -= 1
 
         # potentially subtract one to keep complex conjugate pairs
-        if self.ns[_final_num_basis_functions -1] < 0:
+        if self.ns[_final_num_basis_functions - 1] < 0:
             _final_num_basis_functions -= 1
 
         # discard zeros above the threshold
         self.ns = self.ns[:_final_num_basis_functions]
         self.ks = self.ks[:_final_num_basis_functions]
-        self.bessel_zeros = self.bessel_zeros[:_final_num_basis_functions]
+        self.bessel_roots = self.bessel_roots[:_final_num_basis_functions]
 
-        self.num_basis_functions = _final_num_basis_functions
-
-
-        
+        return _final_num_basis_functions
