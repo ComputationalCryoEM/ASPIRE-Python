@@ -49,6 +49,9 @@ class FLEBasis2D(Basis):
 
     def _precomp(self):
 
+        # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
+        self.num_basis_functions = int(L**2 * np.pi / 4)
+
         # Number of radial nodes
         # (Lemma 4.1)
         # compute max {2.4 * self.nres , Log2 ( 1 / epsilon) }
@@ -60,3 +63,34 @@ class FLEBasis2D(Basis):
                 num_radial_nodes = int(max(q, np.log2(1 / self.epsilon)))
                 break
         num_radial_nodes = max(num_radial_nodes, int(np.ceil(np.log2(1 / eps))))
+
+        # Number of angular nodes
+        # (Lemma 4.2)
+        # compute max {7.08 * self.nres, Log2(1/epsilon) + Log2(self.nres**2) }
+        S = int(max(7.08*self.nres, -np.log2(epsilon) + 2*np.log2(self.nres)))
+        num_angular_nodes = S
+        for s in range(int(lmd1 + ndmax) + 1, S + 1):
+            tmp = L**2 * ((lmd1 + ndmax) / s)**s
+            if tmp <= self.epsilon:
+                num_angular_nodes = int(max(int(s), np.log2(1/self.epsilon)))
+                break
+
+        # must be even
+        if num_angular_nodes % 2 == 1:
+            num_angular_nodes += 1
+
+    def _lap_eig_disk(self):
+        """
+        Compute the eigenvalues of the Laplacian operator on a disk with Dirichlet boundary conditions.
+        """
+        
+        
+        # Maximum bandlimit
+        # (Section 4.1)
+        # Can remove frequencies above this threshold based on the fact that
+        # there should not be more basis functions than pixels contained in the
+        # unit disk inscribed on the image
+        if self.bandlimit:
+            pass
+        
+        
