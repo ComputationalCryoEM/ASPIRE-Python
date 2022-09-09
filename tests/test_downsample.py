@@ -14,7 +14,7 @@ from aspire.volume import Volume
 
 class DownsampleTestCase(TestCase):
     def setUp(self):
-        self.n = 8
+        self.n = 27
         self.dtype = np.float32
 
     def tearDown(self):
