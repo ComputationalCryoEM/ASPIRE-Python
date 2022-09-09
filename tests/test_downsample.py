@@ -2,6 +2,7 @@ from itertools import product
 from unittest import TestCase
 
 import numpy as np
+from parameterized import parameterized
 
 from aspire.image import Image
 from aspire.source import Simulation
@@ -13,13 +14,14 @@ from aspire.volume import Volume
 
 class DownsampleTestCase(TestCase):
     def setUp(self):
-        self.n = 27
+        self.n = 8
         self.dtype = np.float32
 
     def tearDown(self):
         pass
 
-    def _testDownsample2DCase(self, L, L_ds):
+    @parameterized.expand([[64, 32], [64, 33], [65, 33], [65, 32]])
+    def testDownsample2DCase(self, L, L_ds):
         # downsampling from size L to L_ds
         imgs_org, imgs_ds = self.createImages(L, L_ds)
         # check resolution is correct
@@ -29,7 +31,8 @@ class DownsampleTestCase(TestCase):
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(imgs_org, imgs_ds))
 
-    def _testDownsample3DCase(self, L, L_ds):
+    @parameterized.expand([[64, 32], [64, 33], [65, 33], [65, 32]])
+    def testDownsample3DCase(self, L, L_ds):
         # downsampling from size L to L_ds
         vols_org, vols_ds = self.createVolumes(L, L_ds)
         # check resolution is correct
@@ -38,46 +41,6 @@ class DownsampleTestCase(TestCase):
         self.assertTrue(self.checkCenterPoint(vols_org, vols_ds))
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(vols_org, vols_ds))
-
-    def testDownsample2D_EvenEven(self):
-        # source resolution: 64
-        # target resolution: 32
-        self._testDownsample2DCase(64, 32)
-
-    def testDownsample2D_EvenOdd(self):
-        # source resolution: 64
-        # target resolution: 33
-        self._testDownsample2DCase(64, 33)
-
-    def testDownsample2D_OddOdd(self):
-        # source resolution: 65
-        # target resolution: 33
-        self._testDownsample2DCase(65, 33)
-
-    def testDownsample2D_OddEven(self):
-        # source resolution: 65
-        # target resolution: 32
-        self._testDownsample2DCase(65, 32)
-
-    def testDownsample3D_EvenEven(self):
-        # source resolution: 64
-        # target resolution: 32
-        self._testDownsample3DCase(64, 32)
-
-    def testDownsample3D_EvenOdd(self):
-        # source resolution: 64
-        # target resolution: 33
-        self._testDownsample3DCase(64, 33)
-
-    def testDownsample3D_OddOdd(self):
-        # source resolution: 65
-        # target resolution: 33
-        self._testDownsample3DCase(65, 33)
-
-    def testDownsample3D_OddEven(self):
-        # source resolution: 65
-        # target resolution: 32
-        self._testDownsample3DCase(65, 32)
 
     def checkCenterPoint(self, data_org, data_ds):
         # Check that center point is the same after ds
@@ -136,7 +99,6 @@ class DownsampleTestCase(TestCase):
     def createVolumes(self, L, L_ds):
         # generate a set of volumes with various anisotropic spreads
         sigmas = list(product([L * 0.1, L * 0.2, L * 0.3], repeat=3))
-
         # get volumes before downsample
         vols_org = Volume(
             np.array([gaussian_3d(L, sigma=s, dtype=self.dtype) for s in sigmas])
