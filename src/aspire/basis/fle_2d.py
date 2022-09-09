@@ -58,19 +58,27 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
         self.max_basis_functions = int(self.nres**2 * np.pi / 4)
 
+        # Compute basis functions
         self._lap_eig_disk()
+
+        # Some important constants
+        self.smallest_lambda = np.min(self.bessel_roots)
+        self.greatest_lambda = np.max(self.bessel_roots)
+        # TODO: explain
+        self.ndmax = np.max(2 * np.abs(self.ns) - (self.ns < 0))
 
         # Number of radial nodes
         # (Lemma 4.1)
         # compute max {2.4 * self.nres , Log2 ( 1 / epsilon) }
         Q = int(np.ceil(2.4 * self.nres))
+        num_radial_nodes = Q
         tmp = 1 / (np.sqrt(np.pi))
         for q in range(1, Q + 1):
             tmp = tmp / q * (np.sqrt(np.pi) * self.nres / 4)
             if tmp <= self.epsilon:
                 num_radial_nodes = int(max(q, np.log2(1 / self.epsilon)))
                 break
-        num_radial_nodes = max(
+        self.num_radial_nodes = max(
             num_radial_nodes, int(np.ceil(np.log2(1 / self.epsilon)))
         )
 
@@ -78,17 +86,19 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # (Lemma 4.2)
         # compute max {7.08 * self.nres, Log2(1/epsilon) + Log2(self.nres**2) }
 
-    #        S = int(max(7.08*self.nres, -np.log2(epsilon) + 2*np.log2(self.nres)))
-    #        num_angular_nodes = S
-    #        for s in range(int(lmd1 + ndmax) + 1, S + 1):
-    #            tmp = self.nres**2 * ((lmd1 + ndmax) / s)**s
-    #            if tmp <= self.epsilon:
-    #                num_angular_nodes = int(max(int(s), np.log2(1/self.epsilon)))
-    #                break
+        S = int(max(7.08 * self.nres, -np.log2(self.epsilon) + 2 * np.log2(self.nres)))
+        num_angular_nodes = S
+        for s in range(int(self.greatest_lambda + self.ndmax) + 1, S + 1):
+            tmp = self.nres**2 * ((self.greatest_lambda + self.ndmax) / s) ** s
+            if tmp <= self.epsilon:
+                num_angular_nodes = int(max(int(s), np.log2(1 / self.epsilon)))
+                break
 
-    # must be even
-    #        if num_angular_nodes % 2 == 1:
-    #            num_angular_nodes += 1
+        # must be even
+        if num_angular_nodes % 2 == 1:
+            num_angular_nodes += 1
+
+        self.num_angular_nodes = num_angular_nodes
 
     def _lap_eig_disk(self):
         """
@@ -106,6 +116,25 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.ns = np.zeros((nn, nd), dtype=int, order="F")
         self.ks = np.zeros((nn, nd), dtype=int, order="F")
         self.bessel_roots = np.ones((nn, nd), dtype=np.float64) * np.Inf
+
+        # keep track of which order Bessel function we're on
+        self.ns[0, :] = 0
+        # bessel_roots[0, m] is the m'th zero of J_0
+        self.bessel_roots[0, :] = besselj_zeros(0, nd)
+        # table of values of which zero of J_0 we are finding
+        self.ks[0, :] = np.arange(nd) + 1
+
+        # add roots of J_n for n>0 twice with +k and -k (frequencies)
+        # iterate over Bessel function order
+        for n in range(1, nc + 1):
+            self.ns[2 * n - 1, :] = -n
+            self.ks[2 * n - 1, :] = np.arange(nd) + 1
+
+            self.bessel_roots[2 * n - 1, :nd] = besselj_zeros(n, nd)
+
+            self.ns[2 * n, :] = n
+            self.ks[2 * n, :] = self.ks[2 * n - 1, :]
+            self.bessel_roots[2 * n, :] = self.bessel_roots[2 * n - 1, :]
 
         ### bessel_roots
 
@@ -136,40 +165,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # ...
         # [1, 2, 3, ... nd ]
 
-        # Initially compute the max Bessel function zeros that will be needed
-        # and organize the n's (Bessel function orders) and k's (frequencies)
-        # into tables
-        self._populate_bessel_roots()
-
         # Reshape the arrays and order by the size of the Bessel function zeros
         self._flatten_and_sort_bessel_roots()
 
         # Apply threshold criterion to throw out some basis functions
         # Grab final number of basis functions for this Basis
         self.num_basis_functions = self._threshold_basis_functions()
-
-    def _populate_bessel_roots(self):
-        """
-        Populates self.ns, self.ks, and self.bessel_roots.
-        """
-        # keep track of which order Bessel function we're on
-        self.ns[0, :] = 0
-        # bessel_roots[0, m] is the m'th zero of J_0
-        self.bessel_roots[0, :] = besselj_zeros(0, nd)
-        # table of values of which zero of J_0 we are finding
-        self.ks[0, :] = np.arange(nd) + 1
-
-        # add roots of J_n for n>0 twice with +k and -k (frequencies)
-        # iterate over Bessel function order
-        for n in range(1, nc + 1):
-            self.ns[2 * n - 1, :] = -n
-            self.ks[2 * n - 1, :] = np.arange(nd) + 1
-
-            self.bessel_roots[2 * n - 1, :nd] = besselj_zeros(n, nd)
-
-            self.ns[2 * n, :] = n
-            self.ks[2 * n, :] = self.ks[2 * n - 1, :]
-            self.bessel_roots[2 * n, :] = self.bessel_roots[2 * n - 1, :]
 
     def _flatten_and_sort_bessel_roots(self):
         """
