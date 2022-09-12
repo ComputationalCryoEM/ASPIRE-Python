@@ -31,7 +31,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         assert ndim == 2, "Only two-dimensional basis functions are supported."
         assert len(set(size)) == 1, "Only square domains are supported"
 
-        self.bandlimit = bandlimit            
+        self.bandlimit = bandlimit
         self.epsilon = epsilon
         self.dtype = dtype
         super().__init__(size, ell_max=None, dtype=self.dtype)
@@ -43,7 +43,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         if not self.bandlimit:
             self.bandlimit = self.nres
-        
+
         # Heuristic for max iterations
         maxitr = 1 + int(3 * np.log2(self.nres))
         numsparse = 32
@@ -206,7 +206,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.ells = self.ells[idx]
         self.ks = self.ks[idx]
         self.bessel_zeros = self.bessel_zeros[idx]
-        
+
         # sort complex conjugate pairs: -n first, +n second
         idx = np.arange(self.max_basis_functions + 1)
         for i in range(self.max_basis_functions + 1):
