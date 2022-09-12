@@ -22,6 +22,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                  Currently only square images are supported.
         :param bandlimit: Maximum frequency band for computing basis functions. Note that the
             `ell_max` of other Basis objects is computed *from* the bandlimit for the FLE basis.
+             Defaults to the resolution of the basis.
         :param epsilon: Relative precision between FLE fast method and dense matrix multiplication.
         """
         if isinstance(size, int):
@@ -30,7 +31,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         assert ndim == 2, "Only two-dimensional basis functions are supported."
         assert len(set(size)) == 1, "Only square domains are supported"
 
-        self.bandlimit = bandlimit
+        self.bandlimit = bandlimit            
         self.epsilon = epsilon
         self.dtype = dtype
         super().__init__(size, ell_max=None, dtype=self.dtype)
@@ -40,6 +41,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # self._calc_k_max()
         # self.count = self.k_max[0] + sum(2*self.k_max[1:])
 
+        if not self.bandlimit:
+            self.bandlimit = self.nres
+        
         # Heuristic for max iterations
         maxitr = 1 + int(3 * np.log2(self.nres))
         numsparse = 32
@@ -184,6 +188,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Grab final number of basis functions for this Basis
         self.count = self._threshold_basis_functions()
 
+        self._create_basis_functions()
+
     def _flatten_and_sort_bessel_zeros(self):
         """
         Reshapes arrays self.ells, self.ks, and self.bessel_zeros
@@ -199,6 +205,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         idx = np.argsort(self.bessel_zeros)
         self.ells = self.ells[idx]
         self.ks = self.ks[idx]
+        self.bessel_zeros = self.bessel_zeros[idx]
+        
         # sort complex conjugate pairs: -n first, +n second
         idx = np.arange(self.max_basis_functions + 1)
         for i in range(self.max_basis_functions + 1):
@@ -248,11 +256,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Generate the actual basis functions as Python lambda operators
         """
-        # For each basis function, compute the normalization constant
-        # See Equations 1 and 6
         norm_constants = np.zeros(self.count)
-
-        # To store lambda functions
         basis_functions = [None] * self.count
 
         for i in range(self.count):
@@ -261,8 +265,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             bessel_zero = self.bessel_zeros[i]
 
             # compute normalization constant
+            # see Eq. 6
             c = 1 / (np.sqrt(np.pi) * jv(ell + 1, bessel_zero))
             # create function
+            # See Eq. 1
             if ell == 0:
                 basis_functions[i] = (
                     lambda r, t, c=c, ell=ell, bessel_zero=bessel_zero: c
