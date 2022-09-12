@@ -24,7 +24,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             `ell_max` of other Basis objects is computed *from* the bandlimit for the FLE basis.
         :param epsilon: Relative precision between FLE fast method and dense matrix multiplication.
         """
-        self.size = size
+        if isinstance(size, int):
+            size = (size, size)
+        ndim = len(size)
+        assert ndim == 2, "Only two-dimensional basis functions are supported."
+        assert len(set(size)) == 1, "Only square domains are supported"
+
         self.bandlimit = bandlimit
         self.epsilon = epsilon
         self.dtype = dtype
@@ -62,10 +67,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self._lap_eig_disk()
 
         # Some important constants
-        self.smallest_lambda = np.min(self.bessel_roots)
-        self.greatest_lambda = np.max(self.bessel_roots)
+        self.smallest_lambda = np.min(self.bessel_zeros)
+        self.greatest_lambda = np.max(self.bessel_zeros)
         # TODO: explain
-        self.ndmax = np.max(2 * np.abs(self.ns) - (self.ns < 0))
+        self.ndmax = np.max(2 * np.abs(self.ells) - (self.ells < 0))
 
         # radial and angular nodes for fast Chebyshev interpolation
         self._compute_chebyshev_nodes()
@@ -123,7 +128,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_ells = 1 + 2 * max_ell
         self.ells = np.zeros((num_ells, max_k), dtype=int, order="F")
         self.ks = np.zeros((num_ells, max_k), dtype=int, order="F")
-        self.bessel_zeross = np.ones((num_ells, max_k), dtype=np.float64) * np.Inf
+        self.bessel_zeros = np.ones((num_ells, max_k), dtype=np.float64) * np.Inf
 
         # keep track of which order Bessel function we're on
         self.ells[0, :] = 0
@@ -178,7 +183,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         # Apply threshold criterion to throw out some basis functions
         # Grab final number of basis functions for this Basis
-        self.num_basis_functions = self._threshold_basis_functions()
+        self.count = self._threshold_basis_functions()
 
     def _flatten_and_sort_bessel_zeros(self):
         """
@@ -239,3 +244,26 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.bessel_zeros = self.bessel_zeros[:_final_num_basis_functions]
 
         return _final_num_basis_functions
+
+    def _evaluate(self, coeffs):
+        """
+        Placeholder.
+
+        Evaluate FLE coefficients and return in standard 2D Cartesian coordinates.
+
+        :param v: A coefficient vector (or an array of coefficient vectors) to
+            be evaluated. The last dimension must be equal to `self.count`
+        """
+        return np.zeros((self.nres, self.nres))
+
+    def _evaluate_t(self, imgs):
+        """
+        Placeholder.
+
+        Evaluate 2D Cartesian image(s) and return the corresponding FLE coefficients.
+
+        :param imgs: The array to be evaluated. The last dimensions
+            must equal `self.sz`
+        """
+
+        return np.zeros((imgs.shape[0],) + (self.count,))
