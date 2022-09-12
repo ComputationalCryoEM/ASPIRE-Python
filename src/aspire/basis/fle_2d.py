@@ -1,10 +1,10 @@
 import logging
 
 import numpy as np
+from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
-from aspire.image import Image
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.bandlimit = bandlimit
         self.epsilon = epsilon
         self.dtype = dtype
-        # Basis.__init__()
         super().__init__(size, ell_max=None, dtype=self.dtype)
 
     def _build(self):
@@ -149,7 +148,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             self.ks[2 * ell, :] = self.ks[2 * ell - 1, :]
             self.bessel_zeros[2 * ell, :] = self.bessel_zeros[2 * ell - 1, :]
 
-        ### bessel_zeros
+        # bessel_zeros
 
         # [ R_0_1, R_0_2, R_0_3 ... R_0_maxk ]
         # [ R_1_1, R_1_2, R_1_3 ... R_1_maxk ]
@@ -160,7 +159,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # [ R_numells_1,R_numells_2,R_numells_3 ... R_numells_maxk ]
         # [ R_numells_1,R_numells_2,R_numells_3 ... R_numells_maxk ]
 
-        ### ells
+        # ells
 
         # [ 0, 0, 0, ... 0 ] (max_k)
         # [-1,-1,-1, ...-1 ]
@@ -171,7 +170,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # [-num_ells,-num_ells,-num_ells...-num_ells ]
         # [ num_ells, num_ells, num_ells... num_ells ]
 
-        ### ks
+        # ks
 
         # [1, 2, 3, ... max_k ]
         # [1, 2, 3, ... max_k ]
@@ -194,8 +193,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.ks = self.ks.flatten()
         self.bessel_zeros = self.bessel_zeros.flatten()
 
-        ### TODO: Better way of doing the next two sections
-        ### (Specifically ordering the neg and pos integers in the correct way)
+        # TODO: Better way of doing the next two sections
+        # (Specifically ordering the neg and pos integers in the correct way)
         # sort by size of zeros
         idx = np.argsort(self.bessel_zeros)
         self.ells = self.ells[idx]
@@ -227,7 +226,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # unit disk inscribed on the image
         _final_num_basis_functions = self.max_basis_functions
         if self.bandlimit:
-            for i in range(len(self.bessel_zeros)):
+            for _ in range(len(self.bessel_zeros)):
                 if (
                     self.bessel_zeros[_final_num_basis_functions] / (np.pi)
                     >= (self.bandlimit - 1) // 2
@@ -244,6 +243,46 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.bessel_zeros = self.bessel_zeros[:_final_num_basis_functions]
 
         return _final_num_basis_functions
+
+    def _create_basis_functions(self):
+        """
+        Generate the actual basis functions as Python lambda operators
+        """
+        # For each basis function, compute the normalization constant
+        # See Equations 1 and 6
+        norm_constants = np.zeros(self.count)
+
+        # To store lambda functions
+        basis_functions = [None] * self.count
+
+        for i in range(self.count):
+            # parameters defining the basis function: bessel order and which bessel root
+            ell = self.ells[i]
+            bessel_zero = self.bessel_zeros[i]
+
+            # compute normalization constant
+            c = 1 / (np.sqrt(np.pi) * jv(ell + 1, bessel_zero))
+            # create function
+            if ell == 0:
+                basis_functions[i] = (
+                    lambda r, t, c=c, ell=ell, bessel_zero=bessel_zero: c
+                    * jv(ell, bessel_zero * r)
+                    * (r <= 1)
+                )
+            else:
+                c *= np.sqrt(2)
+                basis_functions[i] = (
+                    lambda r, t, c=c, ell=ell, bessel_zero=bessel_zero: c
+                    * jv(ell, bessel_zero * r)
+                    * np.exp(1j * ell * t)
+                    * (-(1 ** np.abs(ell)))
+                    * (r <= 1)
+                )
+
+            norm_constants[i] = c
+
+        self.norm_constants = norm_constants
+        self.basis_functions = basis_functions
 
     def _evaluate(self, coeffs):
         """

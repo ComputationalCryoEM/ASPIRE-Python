@@ -1,4 +1,3 @@
-import os.path
 from unittest import TestCase
 
 import numpy as np
