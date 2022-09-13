@@ -116,6 +116,30 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         self.num_angular_nodes = num_angular_nodes
 
+        # chebyshev nodes
+        # see Section 3.5
+        nodes = 1 - (2*np.arange(self.num_radial_nodes) + 1) / (2*self.num_radial_nodes)
+        nodes = (np.cos(np.pi*nodes) + 1) / 2
+        nodes = (self.greatest_lambda - self.smallest_lambda) * nodes + self.smallest_lambda
+        import pdb
+        pdb.set_trace()
+        nodes = nodes.reshape(-1,1)
+
+        radius = self.nres // 2
+        h = 1/radius
+
+        phi = 2*np.pi*np.arange(self.num_angular_nodes // 2) / self.num_angular_nodes
+        x = np.cos(phi).reshape(1,-1)
+        y = np.sin(phi).reshape(1,-1)
+        x = x * nodes * h
+        y = y * nodes * h
+        x = x.flatten()
+        y = y.flatten()
+
+        # set up finufft plans ....
+        
+        
+
     def _lap_eig_disk(self):
         """
         Compute the eigenvalues of the Laplacian operator on a disk with Dirichlet boundary conditions.
