@@ -1,4 +1,3 @@
-import copy
 import logging
 from collections import OrderedDict
 
@@ -168,10 +167,11 @@ class FSPCABasis(SteerableBasis2D):
 
         self.eigvecs = BlkDiagMatrix.empty(2 * self.basis.ell_max + 1, dtype=self.dtype)
 
-        # Perform the PCA over batches
+        # Perform the PCA over batches, storing the compressed coefficients.
         self._compute_spca()
 
-        self._compress(self.components)
+        #  Complete compression by mutating class
+        self._compress()
 
     def _compute_spca(self):
         """
@@ -372,12 +372,12 @@ class FSPCABasis(SteerableBasis2D):
         return c @ eigvecs.T
 
     # @cache_once
-    def _get_compressed_indices(self, n):
+    def _get_compressed_indices(self):
         """
         Return the sorted compressed (truncated) indices into the full FSPCA basis.
 
         Note that we return some number of indices in the real representation (in +- pairs)
-        required to cover the `n` components in the complex representation.
+        required to cover the `self.components` in the complex representation.
         """
 
         unsigned_components = zip(
@@ -394,7 +394,7 @@ class FSPCABasis(SteerableBasis2D):
             ordered_components.setdefault((k, q))  # inserts when not exists yet
 
         # Select the top n (k,q) pairs
-        top_components = list(ordered_components)[:n]
+        top_components = list(ordered_components)[: self.components]
 
         # Now we need to find the locations of both the + and - sgns.
         pos_mask = self.basis._indices["sgns"] == 1
@@ -412,45 +412,38 @@ class FSPCABasis(SteerableBasis2D):
                 compressed_indices.append(neg_index)
         return compressed_indices
 
-    # # Noting this is awful, but I'm still trying to work out how we can push the complex arithmetic out and away...
-    def _compress(self, n):
+    def _compress(self):
         """
         Use the eigendecomposition to select the most powerful
         coefficients.
 
         Using those coefficients new indice mappings are constructed.
 
+        Mutates `self`.
+
         :param n: Number of components (coef)
-        :return: New FSPCABasis instance
         """
 
-        if n >= self.count:
+        if self.components >= self.count:
             logger.warning(
-                f"Requested compression to {n} components,"
+                f"Requested compression to {self.components} components,"
                 f" but already {self.count}."
                 "  Skipping compression."
             )
             return self
 
-        # Create a deepcopy.
-        old = copy.deepcopy(self)
-
         # Create compressed mapping
-        compressed_indices = old._get_compressed_indices(n)
-        logger.debug(f"compressed_indices {compressed_indices}")
+        compressed_indices = self._get_compressed_indices()
         self.count = len(compressed_indices)
-        logger.debug(f"n {n} compressed count {self.count}")
 
-        # NOTE, no longer blk_diag! ugh
-        # Note can copy from old or self, should be same...
-        self.eigvals = old.eigvals[compressed_indices]
-        if isinstance(old.eigvecs, BlkDiagMatrix):
-            old.eigvecs = old.eigvecs.dense()
-        self.eigvecs = old.eigvecs[:, compressed_indices]
+        self.eigvals = self.eigvals[compressed_indices]
+        if isinstance(self.eigvecs, BlkDiagMatrix):
+            self.eigvecs = self.eigvecs.dense()
+        self.eigvecs = self.eigvecs[:, compressed_indices]
 
-        self.angular_indices = old.angular_indices[compressed_indices]
-        self.radial_indices = old.radial_indices[compressed_indices]
-        self.signs_indices = old.signs_indices[compressed_indices]
+        self.angular_indices = self.angular_indices[compressed_indices]
+        self.radial_indices = self.radial_indices[compressed_indices]
+        self.signs_indices = self.signs_indices[compressed_indices]
 
         self.complex_indices_map = self._get_complex_indices_map()
         self.complex_count = len(self.complex_indices_map)
@@ -460,13 +453,6 @@ class FSPCABasis(SteerableBasis2D):
             ang, rad = key
             self.complex_angular_indices[i] = ang
             self.complex_radial_indices[i] = rad
-
-        logger.debug(
-            f"complex_radial_indices: {self.complex_radial_indices} {len(self.complex_radial_indices)}"
-        )
-        logger.debug(
-            f"complex_angular_indices: {self.complex_angular_indices} {len(self.complex_angular_indices)}"
-        )
 
     def to_complex(self, coef):
         """
