@@ -229,7 +229,7 @@ class FSPCABasis(SteerableBasis2D):
         # the coefs.  This is used later for compression and index re-generation.
         self.sorted_indices = np.argsort(-np.abs(self.eigvals))
 
-        compressed_indices = self._get_compressed_indices(self.components)
+        compressed_indices = self._get_compressed_indices()
 
         self.spca_coef = np.zeros(
             (self.src.n, len(compressed_indices)), dtype=self.dtype
