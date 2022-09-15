@@ -32,13 +32,8 @@ class Cov2DTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
 
-        L = 8
+        self.L = L = 8
         n = 32
-        self.pixel_size = 5.0 * 65 / L
-        self.voltage = 200
-        self.defocus_min = 1.5e4
-        self.defocus_max = 2.5e4
-        self.defocus_ct = 7
 
         self.noise_var = 1.3957e-4
         noise_filter = ScalarFilter(dim=2, value=self.noise_var)
@@ -164,8 +159,8 @@ class Cov2DTestCaseCTF(Cov2DTestCase):
     @property
     def unique_filters(self):
         return [
-            RadialCTFFilter(self.pixel_size, self.voltage, defocus=d, Cs=2.0, alpha=0.1)
-            for d in np.linspace(self.defocus_min, self.defocus_max, self.defocus_ct)
+            RadialCTFFilter(5.0 * 65 / self.L, 200, defocus=d, Cs=2.0, alpha=0.1)
+            for d in np.linspace(1.5e4, 2.5e4, 7)
         ]
 
     @property
