@@ -4,7 +4,9 @@ import tempfile
 from shutil import copyfile
 from unittest import TestCase
 
+import mrcfile
 import numpy as np
+from parameterized import parameterized
 
 from aspire.ctf import estimate_ctf
 
@@ -79,3 +81,24 @@ class CtfEstimatorTestCase(TestCase):
                         self.assertTrue(
                             np.allclose(result[param], self.test_output[param])
                         )
+
+    # we are chopping the micrograph into a vertical and a horizontal rectangle
+    # as small as possible to save testing duration
+    @parameterized.expand(
+        [[(slice(0, 128), slice(0, 64))], [(slice(0, 64), slice(0, 128))]]
+    )
+    def testRectangularMicrograph(self, slice_range):
+        with tempfile.TemporaryDirectory() as tmp_input_dir:
+            # copy input file
+            copyfile(
+                os.path.join(DATA_DIR, self.test_input_fn),
+                os.path.join(tmp_input_dir, "rect_" + self.test_input_fn),
+            )
+            # trim the file into a rectangle
+            with mrcfile.open(
+                os.path.join(tmp_input_dir, "rect_" + self.test_input_fn), "r+"
+            ) as mrc_in:
+                data = mrc_in.data[slice_range]
+                mrc_in.set_data(data)
+            # make sure we can estimate with no errors
+            _ = estimate_ctf(data_folder=tmp_input_dir, psd_size=64)
