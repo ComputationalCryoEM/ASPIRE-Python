@@ -334,8 +334,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
 
                     # Convert from angles to indices.
-                    c1s = self.clAngles2Ind(c1s, n_theta)
-                    c2s = self.clAngles2Ind(c2s, n_theta)
+                    c1s = self.cl_angles_to_ind(c1s, n_theta)
+                    c2s = self.cl_angles_to_ind(c2s, n_theta)
 
                     # Perform correlation.
                     corrs = np.array(
@@ -826,8 +826,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         return np.vstack((r1, r2, r3))
 
     @staticmethod
-    def clAngles2Ind(clAngles, n_theta):
-        thetas = np.arctan2(clAngles[:, 1], clAngles[:, 0])
+    def cl_angles_to_ind(cl_angles, n_theta):
+        thetas = np.arctan2(cl_angles[:, 1], cl_angles[:, 0])
 
         # Shift from [-pi,pi] to [0,2*pi).
         thetas = np.mod(thetas, 2 * np.pi)
