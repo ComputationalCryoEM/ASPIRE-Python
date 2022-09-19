@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 
 import mrcfile
 import numpy as np
@@ -243,15 +244,17 @@ class Volume:
 
         return self._data.flatten()
 
-    def flip(self, axis=0):
+    def flip(self, axis=1):
         """
         Flip volume stack data along axis using numpy.flip
 
         :param axis: Optionally specify axis as integer or tuple.
-        Defaults to axis=0.
+        Defaults to axis=1.
 
         :return: Volume instance.
         """
+        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
+            raise ValueError("Cannot flip Axis 0, stack axis.")
 
         return Volume(np.flip(self._data, axis))
 
