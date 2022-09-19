@@ -269,7 +269,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
         # the corresponding third rows vis.
-        Ri_tildes = np.array([self.complete_third_row_to_rot(vi) for vi in vis])
+        Ri_tildes = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
 
         # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
         max_angle = (360 // order) * order
@@ -797,9 +797,14 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
     # Secondary Methods fo In-Plane Rotations #
     ###########################################
     @staticmethod
-    def complete_third_row_to_rot(r3):
+    def _complete_third_row_to_rot(r3):
         """
         Construct a rotation matrix whose third row is equal to the given row vector.
+        For vector r3 = [a, b, c], where [a, b, c] != [0, 0, 1], we return the matrix
+        with rows r1, r2, r3, given by:
+
+        r1 = 1/sqrt(a^2 + b^2)[b, -a, 0],
+        r2 = 1/sqrt(a^2 + b^2)[ac, bc, -(a^2 + b^2)].
 
         :param r3: A 1x3 vector of norm 1.
         :return: A 3x3 rotation matrix whose third row is r3.
@@ -809,14 +814,14 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         if norm(r3 - [0, 0, 1]) < 1e-5:
             return np.eye(3)
 
-        # tmp is non-zero since r3 does not coincide with the z-axis.
-        tmp = np.sqrt(r3[0] ** 2 + r3[1] ** 2)
+        # 'norm_fac' is non-zero since r3 does not coincide with the z-axis.
+        norm_fac = np.sqrt(r3[0] ** 2 + r3[1] ** 2)
 
         # Construct an orthogonal row vector of norm 1.
-        r1 = np.array([r3[1] / tmp, -r3[0] / tmp, 0])
+        r1 = np.array([r3[1] / norm_fac, -r3[0] / norm_fac, 0])
 
         # Construct r2 so that r3 = r1xr2
-        r2 = np.array([r3[0] * r3[2] / tmp, r3[1] * r3[2] / tmp, -tmp])
+        r2 = np.array([r3[0] * r3[2] / norm_fac, r3[1] * r3[2] / norm_fac, -norm_fac])
 
         return np.vstack((r1, r2, r3))
 
