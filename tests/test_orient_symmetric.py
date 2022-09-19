@@ -7,6 +7,7 @@ from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
+from aspire.utils import Rotation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
@@ -41,6 +42,7 @@ class OrientSymmTestCase(TestCase):
                 dtype=self.dtype,
                 vols=self.vols[order],
                 C=1,
+                seed=123,
             )
 
             self.cl_orient_ests[order] = CLSymmetryC3C4(
@@ -91,26 +93,26 @@ class OrientSymmTestCase(TestCase):
         gs = cyclic_rotations(order, self.dtype).matrices
         rots_gt = src.rots
 
-        nchoose2 = int(n_img * (n_img - 1) / 2)
-        errs = np.zeros(nchoose2)
-        diffs = np.zeros(order)
+        # Find the angular distance between each Rij and the ground truth.
         pairs = all_pairs(n_img)
+        angular_distance = np.zeros(len(pairs))
         for idx, (i, j) in enumerate(pairs):
             Rij = Rijs[idx]
             Rij_J = J_conjugate(Rij)
             Ri_gt = rots_gt[i]
             Rj_gt = rots_gt[j]
+            dist = np.zeros(order)
             for s in range(order):
                 Rij_s_gt = Ri_gt.T @ gs[s] @ Rj_gt
-                diffs[s] = np.minimum(norm(Rij - Rij_s_gt), norm(Rij_J - Rij_s_gt))
-            errs[idx] = np.min(diffs)
-        mse = np.mean(errs**2)
+                dist[s] = np.minimum(
+                    Rotation.angle_dist(Rij, Rij_s_gt),
+                    Rotation.angle_dist(Rij_J, Rij_s_gt),
+                )
+            angular_distance[idx] = np.min(dist)
+        mean_angular_distance = np.mean(angular_distance)
 
-        # Mean-squared-error is better for C3 than for C4.
-        if order == 3:
-            self.assertTrue(mse < 0.005)
-        else:
-            self.assertTrue(mse < 0.03)
+        # Assert that the mean_angular_distance is less than 5 degrees.
+        self.assertTrue(mean_angular_distance < 5)
 
     @parameterized.expand([(3,), (4,)])
     def testSelfRelativeRotations(self, order):
@@ -122,37 +124,31 @@ class OrientSymmTestCase(TestCase):
         cl_symm = self.cl_orient_ests[order]
 
         # Estimate self-relative viewing directions, Riis.
-        scl, _, _ = cl_symm._self_clmatrix_c3_c4()
+        scl = cl_symm._self_clmatrix_c3_c4()
         Riis = cl_symm._estimate_all_Riis_c3_c4(scl)
 
         # Each estimated Rii belongs to the set
-        # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}
-        # We find the minimum mean-squared-error over the 4 possibilities.
+        # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}.
+        # We find the minimum angular distance between the estimate Rii
+        # and the 4 possible ground truths.
         rots_symm = cyclic_rotations(order, self.dtype).matrices
         g = rots_symm[1]
         rots_gt = src.rots
 
-        min_idx = np.zeros(n_img, dtype=int)
-        errs = np.zeros(n_img)
+        # Find angular distance between estimate and ground truth.
+        dist = np.zeros(4)
+        angular_distance = np.zeros(n_img)
         for i, rot_gt in enumerate(rots_gt):
             Rii_gt = rot_gt.T @ g @ rot_gt
             Rii = Riis[i]
+            cases = np.array([Rii, Rii.T, J_conjugate(Rii), J_conjugate(Rii.T)])
+            for i, estimate in enumerate(cases):
+                dist[i] = Rotation.angle_dist(estimate, Rii_gt)
+            angular_distance[i] = dist[np.argmin(dist)]
+        mean_angular_distance = np.mean(angular_distance)
 
-            diff0 = norm(Rii - Rii_gt)
-            diff1 = norm(Rii.T - Rii_gt)
-            diff2 = norm(J_conjugate(Rii) - Rii_gt)
-            diff3 = norm(J_conjugate(Rii.T) - Rii_gt)
-            diffs = [diff0, diff1, diff2, diff3]
-            min_idx[i] = np.argmin(diffs)
-            errs[i] = diffs[min_idx[i]]
-
-        mse = np.mean(errs**2)
-
-        # Mean-squared-error is better for C3 than for C4.
-        if order == 3:
-            self.assertTrue(mse < 0.0006)
-        else:
-            self.assertTrue(mse < 0.0025)
+        # Check that mean_angular_distance is less than 5 degrees.
+        self.assertTrue(mean_angular_distance < 5)
 
     @parameterized.expand([(3,), (4,)])
     def testRelativeViewingDirections(self, order):
@@ -182,32 +178,55 @@ class OrientSymmTestCase(TestCase):
         # Estimate relative viewing directions.
         vijs, viis = cl_symm._estimate_relative_viewing_directions_c3_c4()
 
-        # Calculate the mean squared error for vijs.
-        errs_vijs = np.zeros(n_pairs)
-        diffs_vijs = np.zeros(2)
-        for idx, (vij_gt, vij) in enumerate(zip(vijs_gt, vijs)):
-            diffs_vijs[0] = norm(vij - vij_gt)
-            diffs_vijs[1] = norm(J_conjugate(vij) - vij_gt)
-            errs_vijs[idx] = np.min(diffs_vijs)
-        mse_vijs = np.mean(errs_vijs**2)
+        # Since ground truth vijs and viis are rank 1 matrices they span a 1D subspace.
+        # We use SVD to find this subspace for our estimates and the ground truth relative viewing directions.
+        # We then calculate the angular distance between these subspaces (and take the mean).
+        # SVD's:
+        uij_gt, _, _ = np.linalg.svd(vijs_gt)
+        uii_gt, _, _ = np.linalg.svd(viis_gt)
+        uij_est, sij, _ = np.linalg.svd(vijs)
+        uii_est, sii, _ = np.linalg.svd(viis)
+        uij_J_est, _, _ = np.linalg.svd(J_conjugate(vijs))
+        uii_J_est, _, _ = np.linalg.svd(J_conjugate(viis))
 
-        # Calculate the mean squared error for viis.
-        errs_viis = np.zeros(n_img)
-        diffs_viis = np.zeros(2)
-        for idx, (vii_gt, vii) in enumerate(zip(viis_gt, viis)):
-            diffs_viis[0] = norm(vii - vii_gt)
-            diffs_viis[1] = norm(J_conjugate(vii) - vii_gt)
-            errs_viis[idx] = np.min(diffs_viis)
-        mse_viis = np.mean(errs_viis**2)
+        # Ground truth 1D supbspaces.
+        uij_gt = uij_gt[:, :, 0]
+        uii_gt = uii_gt[:, :, 0]
 
-        # Check that MSE is small.
-        # MSE is better for C3 than C4.
-        if order == 3:
-            self.assertTrue(mse_vijs < 0.0008)
-            self.assertTrue(mse_viis < 0.0002)
-        else:
-            self.assertTrue(mse_vijs < 0.01)
-            self.assertTrue(mse_viis < 0.0011)
+        # 1D subspace of estimates.
+        uij_est = uij_est[:, :, 0]
+        uii_est = uii_est[:, :, 0]
+        uij_J_est = uij_J_est[:, :, 0]
+        uii_J_est = uii_J_est[:, :, 0]
+
+        # Calculate angular distance between subspaces.
+        theta_vij = np.arccos(np.sum(uij_gt * uij_est, axis=1))
+        theta_vij_J = np.arccos(np.sum(uij_gt * uij_J_est, axis=1))
+        theta_vii = np.arccos(np.sum(uii_gt * uii_est, axis=1))
+        theta_vii_J = np.arccos(np.sum(uii_gt * uii_J_est, axis=1))
+
+        # Minimum angle between subspaces.
+        min_theta_vij = np.min(
+            (theta_vij, theta_vij_J, np.pi - theta_vij, np.pi - theta_vij_J), axis=0
+        )
+        min_theta_vii = np.min(
+            (theta_vii, theta_vii_J, np.pi - theta_vii, np.pi - theta_vii_J), axis=0
+        )
+
+        # Calculate the mean minimum angular distance.
+        angular_dist_vijs = np.mean(min_theta_vij)
+        angular_dist_viis = np.mean(min_theta_vii)
+
+        # Check that estimates are indeed approximately rank 1.
+        # ie. check that the two smaller singular values are close to zero.
+        tol = 5e-2
+        self.assertTrue(np.max(sij[:, 1:]) < tol)
+        self.assertTrue(np.max(sii[:, 1:]) < tol)
+
+        # Check that the mean angular difference is within 2 degrees.
+        angle_tol = 2 * np.pi / 180
+        self.assertTrue(angular_dist_vijs < angle_tol)
+        self.assertTrue(angular_dist_viis < angle_tol)
 
     def testGlobalJSync(self):
         n_img = self.n_img
@@ -221,6 +240,8 @@ class OrientSymmTestCase(TestCase):
         viis_conj[::2] = J_conjugate(viis_conj[::2])
 
         # Synchronize vijs_conj and viis_conj.
+        # Note: `_global_J_sync()` does not depend on cyclic order, so we can use
+        # either cl_orient_ests[3] or cl_orient_ests[4] to access the method.
         vijs_sync, viis_sync = self.cl_orient_ests[3]._global_J_sync(
             vijs_conj, viis_conj
         )
@@ -251,17 +272,26 @@ class OrientSymmTestCase(TestCase):
 
     @parameterized.expand([(3,), (4,)])
     def testSelfCommonLines(self, order):
-        n_img = self.n_img
         n_theta = self.n_theta
         src = self.srcs[order]
+        L = src.L
         cl_symm = self.cl_orient_ests[order]
 
         # Initialize common-lines orientation estimation object and compute self-common-lines matrix.
-        scl, _, _ = cl_symm._self_clmatrix_c3_c4()
+        scl = cl_symm._self_clmatrix_c3_c4()
 
         # Compute ground truth self-common-lines matrix.
         rots = src.rots
         scl_gt = self.buildSelfCommonLinesMatrix(rots, order)
+
+        # Since we search for self common lines whose angle differences fall
+        # outside of 180 degrees by a tolerance of 2 * (360 // L), we must exclude
+        # indices whose ground truth self common lines fall within that tolerance.
+        gt_diffs = abs(scl_gt[:, 0] - scl_gt[:, 1])
+        res = 2 * (360 // L)
+        good_indices = (gt_diffs < (180 - res)) | (gt_diffs > (180 + res))
+        scl = scl[good_indices]
+        scl_gt = scl_gt[good_indices]
 
         # Get angle difference between scl_gt and scl.
         scl_diff1 = scl_gt - scl
@@ -280,14 +310,17 @@ class OrientSymmTestCase(TestCase):
 
         # Assert scl detection rate is 100% for 5 degree angle tolerance
         angle_tol_err = 5 * pi / 180
-        detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / n_img
-        self.assertTrue(detection_rate == 1.0)
+        detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / len(
+            scl
+        )
+        self.assertTrue(np.allclose(detection_rate, 1.0))
 
     @parameterized.expand([(3,), (4,)])
     def testCommonLines(self, order):
         n_img = self.n_img
         src = self.srcs[order]
         cl_symm = self.cl_orient_ests[order]
+        n_theta = self.n_theta
 
         # Build common-lines matrix.
         cl_symm.build_clmatrix()
@@ -302,8 +335,9 @@ class OrientSymmTestCase(TestCase):
         for (i, j) in pairs:
             a_ij_s = np.zeros(order)
             a_ji_s = np.zeros(order)
-            cl_ij = cl[i, j] % 180
-            cl_ji = cl[j, i] % 180
+            # Convert common-line indices to angles. Use angle of common line in [0, 180).
+            cl_ij = (cl[i, j] * 360 / n_theta) % 180
+            cl_ji = (cl[j, i] * 360 / n_theta) % 180
 
             # The common-line estimates cl_ij, cl_ji should match the
             # true common-line angles a_ij_s, a_ji_s for some value s,
@@ -329,13 +363,13 @@ class OrientSymmTestCase(TestCase):
             elif diff_ji < 5:
                 within_5_degrees += 1
 
-        # Assert that at least 99% of estimates are within 5 degrees and
-        # at least 95% of estimates are within 1 degree.
+        # Assert that at least 98% of estimates are within 5 degrees and
+        # at least 90% of estimates are within 1 degree.
         n_estimates = 2 * len(pairs)
         within_5 = within_5_degrees / n_estimates
         within_1 = within_1_degree / n_estimates
-        self.assertTrue(within_5 > 0.99)
-        self.assertTrue(within_1 > 0.95)
+        self.assertTrue(within_5 > 0.98)
+        self.assertTrue(within_1 > 0.90)
 
     def testCompleteThirdRow(self):
         # Complete third row that coincides with z-axis
@@ -391,17 +425,14 @@ class OrientSymmTestCase(TestCase):
             centers[0, o, :] = rots_symm[o] @ centers[0, 0, :]
             centers[1, o, :] = rots_symm[o] @ centers[1, 0, :]
             centers[2, o, :] = rots_symm[o] @ centers[2, 0, :]
-        sigmas = np.zeros((3, 3), dtype=self.dtype)
-        sigmas[0] = [res / 15, res / 15, res / 15]
-        sigmas[1] = [res / 20, res / 20, res / 20]
-        sigmas[2] = [res / 30, res / 30, res / 30]
+        sigmas = [res / 15, res / 20, res / 30]
 
         # Build volume
         vol = np.zeros((res, res, res), dtype=self.dtype)
         n_blobs = centers.shape[0]
         for o in range(order):
             for i in range(n_blobs):
-                vol += gaussian_3d(res, centers[i, o, :], sigmas[i])
+                vol += gaussian_3d(res, centers[i, o, :], sigmas[i], indexing="xyz")
 
         volume = Volume(vol)
 

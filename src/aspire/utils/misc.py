@@ -103,16 +103,18 @@ def sha256sum(filename):
     return h.hexdigest()
 
 
-def gaussian_1d(size, mu=0, sigma=1, peak=1, dtype=np.float64):
+def gaussian_1d(size, mu=0, sigma=1, dtype=np.float64):
     """
-    Returns a 1d Gaussian in a 1D numpy array.
+    Returns the 1D Gaussian
 
-    Default is a centered disc of spread=peak=1.
+    .. math::
+        g(x)=\\exp\\left(\\frac{ -(x - \\mu)^2}{2\\sigma^2}\\right)
 
-    :param size: The height and width of returned array (pixels)
+    in a 1D numpy array.
+
+    :param size: The length of the returned array (pixels)
     :param mu: mean or center (pixels)
-    :param sigma: spread
-    :param peak: peak height at center
+    :param sigma: standard deviation of the Gaussian
     :param dtype: dtype of returned array
     :return: Numpy array (1D)
     """
@@ -122,57 +124,83 @@ def gaussian_1d(size, mu=0, sigma=1, peak=1, dtype=np.float64):
 
     p = (g["x"] - mu) ** 2 / (2 * sigma**2)
 
-    return (peak * np.exp(-p)).astype(dtype, copy=False)
+    return np.exp(-p).astype(dtype, copy=False)
 
 
-def gaussian_2d(size, x0=0, y0=0, sigma_x=1, sigma_y=1, peak=1, dtype=np.float64):
+def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), dtype=np.float64):
     """
-    Returns a 2d Gaussian in a square 2d numpy array.
+    Returns the 2D Gaussian
 
-    Default is a centered disc of spread=peak=1.
+    .. math::
+        g(x,y)=\\exp\\left(\\frac{-(x - \\mu_x)^2}{2\\sigma_x^2} +
+                \\frac{-(y - \\mu_y)^2}{2\\sigma_y^2}\\right)
 
-    :param size: The height and width of returned array (pixels)
-    :param x0: x coordinate of center (pixels)
-    :param y0: y coordinate of center (pixels)
-    :param sigma_x: spread in x direction
-    :param sigma_y: spread in y direction
-    :param peak: peak height at center
+    in a square 2D numpy array.
+
+    :param size: The length of each dimension of the returned array (pixels)
+    :param mu: A 2-tuple, :math:`(\\mu_x, \\mu_y)`, indicating the center of the Gaussian
+    :param sigma: A 2-tuple, :math:`(\\sigma_x, \\sigma_y)`, of the standard
+            deviation in the x and y directions. A single value, :math:`\\sigma`, can be
+            used when :math:`\\sigma_x = \\sigma_y`.
     :param dtype: dtype of returned array
     :return: Numpy array (2D)
     """
+    if np.ndim(sigma) == 0:
+        sigma = (sigma, sigma)
+    else:
+        assert (
+            isinstance(sigma, tuple) and len(sigma) == 2
+        ), "sigma must be a scalar or 2-tuple."
 
     # Construct centered mesh
-    g = grid_2d(size, shifted=False, normalized=False, indexing="xy", dtype=dtype)
+    g = grid_2d(size, shifted=False, normalized=False, indexing="yx", dtype=dtype)
 
-    p = (g["x"] - x0) ** 2 / (2 * sigma_x**2) + (g["y"] - y0) ** 2 / (
-        2 * sigma_y**2
+    p = (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2) + (g["y"] - mu[1]) ** 2 / (
+        2 * sigma[1] ** 2
     )
-    return (peak * np.exp(-p)).astype(dtype, copy=False)
+    return np.exp(-p).astype(dtype, copy=False)
 
 
-def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), peak=1, dtype=np.float64):
+def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.float64):
     """
-    Returns a 3d Gaussian in a size-by-size-by-size 3d numpy array.
+    Returns the 3D Gaussian
 
-    Default is a centered volume of spread=peak=1.
+    .. math::
+        g(x,y,z)=\\exp\\left(\\frac{-(x - \\mu_x)^2}{2\\sigma_x^2} +
+                \\frac{-(y - \\mu_y)^2}{2\\sigma_y^2} +
+                \\frac{-(z - \\mu_z)^2}{2\\sigma_z^2}\\right)
 
-    :param size: The height and width of returned array (pixels)
-    :param mu: A 3-tuple indicating the center of the Gaussian
-    :param sigma: A 3-tuple of spreads corresponding to mu
-    :param peak: peak height at center
+    in a 3D numpy array.
+
+    :param size: The length of each dimension of the returned array (pixels)
+    :param mu: A 3-tuple, :math:`(\\mu_x, \\mu_y, \\mu_z)`, indicating the center of the Gaussian
+    :param sigma: A 3-tuple, :math:`(\\sigma_x, \\sigma_y, \\sigma_z)`, of the standard deviation
+            in the x, y, and z directions. A single value, :math:`\\sigma`, can be
+            used when :math:`\\sigma_x = \\sigma_y = \\sigma_z`
     :param dtype: dtype of returned array
     :return: Numpy array (3D)
     """
+    if np.ndim(sigma) == 0:
+        sigma = (sigma, sigma, sigma)
+    else:
+        assert (
+            isinstance(sigma, tuple) and len(sigma) == 3
+        ), "sigma must be a scalar or 3-tuple."
+
+    if indexing == "zyx":
+        mu, sigma = mu[::-1], sigma[::-1]
+    elif indexing != "xyz":
+        raise ValueError("Indexing must be `zyx` or `xyz`.")
 
     # Construct centered mesh
-    g = grid_3d(size, shifted=False, normalized=False, indexing="xyz", dtype=dtype)
+    g = grid_3d(size, shifted=False, normalized=False, indexing=indexing, dtype=dtype)
 
     p = (
         (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2)
         + (g["y"] - mu[1]) ** 2 / (2 * sigma[1] ** 2)
         + (g["z"] - mu[2]) ** 2 / (2 * sigma[2] ** 2)
     )
-    return (peak * np.exp(-p)).astype(dtype, copy=False)
+    return np.exp(-p).astype(dtype, copy=False)
 
 
 def circ(size, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):

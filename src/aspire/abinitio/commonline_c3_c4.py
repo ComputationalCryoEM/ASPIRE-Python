@@ -92,7 +92,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
     def estimate_rotations(self):
         """
-        Estimate rotation matrices for symmetric molecules.
+        Estimate rotation matrices for molecules with C3 or C4 symmetry.
+
+        :return: Array of rotation matrices, size n_imgx3x3.
         """
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
         vijs, viis = self._estimate_relative_viewing_directions_c3_c4()
@@ -123,7 +125,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
-        sclmatrix, corrs_stats, shifts_stats = self._self_clmatrix_c3_c4()
+        sclmatrix = self._self_clmatrix_c3_c4()
 
         # Step 3: Calculate self-relative-rotations
         Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
@@ -260,7 +262,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         pf = self.pf
         n_img = self.n_img
         n_theta = self.n_theta
-        max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
+        max_shift_1d = self.max_shift
         shift_step = self.shift_step
         order = self.order
         degree_res = self.degree_res
@@ -272,11 +274,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
         max_angle = (360 // order) * order
         theta_ijs = np.arange(0, max_angle, degree_res) * np.pi / 180
-        n_theta_ijs = len(theta_ijs)
-
-        euler_angles = np.zeros((n_theta_ijs, 3), dtype=self.dtype)
-        euler_angles[:, 2] = theta_ijs
-        R_theta_ijs = Rotation.from_euler(euler_angles, dtype=self.dtype).matrices
+        R_theta_ijs = Rotation.about_axis("z", theta_ijs, dtype=self.dtype).matrices
 
         # Step 3: Compute the correlation over all shifts.
         # Generate shifts.
@@ -287,8 +285,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         n_shifts = len(shifts)
         all_shift_phases = shift_phases.T
 
-        pairs = all_pairs(n_img)
-        n_pairs = len(pairs)
+        n_pairs = n_img * (n_img - 1) // 2
         max_corrs = np.zeros(n_pairs)
         max_corrs_idx = np.zeros(n_pairs)
 
@@ -302,63 +299,76 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         pf = pf.transpose((2, 1, 0))
         pf = np.concatenate((pf, np.conj(pf)), axis=1)
 
+        # Normalize rays.
+        pf /= norm(pf, axis=-1)[..., np.newaxis]
+
         with tqdm(total=n_pairs) as pbar:
-            for idx, (i, j) in enumerate(pairs):
+            idx = 0
+            # Note: the ordering of i and j in these loops should not be changed as
+            # they correspond to the ordered tuples (i, j), for i<j.
+            for i in range(n_img):
                 pf_i = pf[i]
-                pf_j = pf[j]
 
                 # Generate shifted versions of images.
                 pf_i_shifted = np.array(
                     [pf_i * shift_phase for shift_phase in all_shift_phases]
                 )
 
-                # Normalize each ray.
-                for ray in pf_i_shifted:
-                    ray /= norm(ray)
-                for ray in pf_j:
-                    ray /= norm(ray)
-
                 Ri_tilde = Ri_tildes[i]
-                Rj_tilde = Ri_tildes[j]
 
-                Us = np.array(
-                    [Ri_tilde.T @ R_theta_ij @ Rj_tilde for R_theta_ij in R_theta_ijs]
-                )
-                c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
-                c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
+                for j in range(i + 1, n_img):
+                    pf_j = pf[j]
 
-                c1s = self.clAngles2Ind(c1s, n_theta)
-                c2s = self.clAngles2Ind(c2s, n_theta)
+                    Rj_tilde = Ri_tildes[j]
 
-                corrs = np.array(
-                    [
-                        np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
-                        for pf_i_shift in pf_i_shifted
-                        for c1, c2 in zip(c1s, c2s)
-                    ]
-                )
+                    # Compute all possible rotations between the i'th and j'th images.
+                    Us = np.array(
+                        [
+                            Ri_tilde.T @ R_theta_ij @ Rj_tilde
+                            for R_theta_ij in R_theta_ijs
+                        ]
+                    )
 
-                # Reshape to group by shift and symmetric order.
-                corrs = corrs.reshape((n_shifts, order, n_theta_ijs // order))
+                    # Find the angle between common lines induces by the rotations.
+                    c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
+                    c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
 
-                # For each pair of lines we take the maximum correlation over all shifts.
-                corrs = np.max(np.real(corrs), axis=0)
+                    # Convert from angles to indices.
+                    c1s = self.clAngles2Ind(c1s, n_theta)
+                    c2s = self.clAngles2Ind(c2s, n_theta)
 
-                # We take the mean score over the 'order' groups and find the group that attains the maximum.
-                # This produces the index corresponding to theta_ij in the range [0, 2pi/order).
-                corrs = np.mean(np.real(corrs), axis=0)
-                max_idx_corr = np.argmax(corrs)
-                max_corr = corrs[max_idx_corr]
+                    # Perform correlation.
+                    corrs = np.array(
+                        [
+                            np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
+                            for pf_i_shift in pf_i_shifted
+                            for c1, c2 in zip(c1s, c2s)
+                        ]
+                    )
 
-                max_corrs[idx] = max_corr  # This is only for stats.
-                max_corrs_idx[idx] = max_idx_corr  # This is only for stats.
+                    # Reshape to group by shift and symmetric order.
+                    corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
 
-                theta_ij = degree_res * max_idx_corr * np.pi / 180
+                    # For each pair of lines we take the maximum correlation over all shifts.
+                    corrs = np.max(np.real(corrs), axis=0)
 
-                Q[i, j] = np.cos(order * theta_ij) - 1j * np.sin(order * theta_ij)
+                    # We take the mean score over the 'order' groups and find the group that attains the maximum.
+                    # This produces the index corresponding to theta_ij in the range [0, 2pi/order).
+                    corrs = np.mean(np.real(corrs), axis=0)
+                    max_idx_corr = np.argmax(corrs)
+                    max_corr = corrs[max_idx_corr]
 
-                if np.mod(idx, 10) == 0:
-                    pbar.update(10)
+                    max_corrs[idx] = max_corr  # This is only for stats.
+                    max_corrs_idx[idx] = max_idx_corr  # This is only for stats.
+
+                    theta_ij = degree_res * max_idx_corr * np.pi / 180
+
+                    Q[i, j] = np.cos(order * theta_ij) - 1j * np.sin(order * theta_ij)
+
+                    if np.mod(idx, 10) == 0:
+                        pbar.update(10)
+
+                    idx += 1
 
             # Populate the lower triangle and diagonal of Q.
             # Diagonals are 1 since e^{i*0}=1.
@@ -398,45 +408,42 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         """
         pf = self.pf
         n_img = self.n_img
+        L = self.src.L
         n_theta = self.n_theta
-        max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
+        max_shift_1d = self.max_shift
         shift_step = self.shift_step
         order = self.order
 
-        # The angle between self-common-lines is in the range [60, 180] for C3 symmetry
-        # and [90, 180] for C4 symmetry. Since antipodal lines are perfectly correlated
-        # we search for common lines in a smaller window.
-        # Note: matlab code used [60, 165] for order=3 and [90, 160] for order=4.
-        # We've increased this window to improve the MSE of our estimates.
+        # The angle between two self-common-lines is constrained by the underlying symmetry
+        # of the molecule (See Lemma A.2 in the listed publication for further details).
+        # This angle is in the range [60, 180] for C3 symmetry and [90, 180] for C4 symmetry.
+        # Since antipodal lines are perfectly correlated we search for common lines in a smaller window.
+        # Note: matlab code used [60, 165] for C3 and [90, 160] for C4.
+        # We set the upper bound of this window to be within a factor of 1/L of 180.
         if order == 3:
             min_angle_diff = 60 * np.pi / 180
-            max_angle_diff = 175 * np.pi / 180
         else:
             min_angle_diff = 90 * np.pi / 180
-            max_angle_diff = 175 * np.pi / 180
 
-        # The self-common-lines matrix holds two indices per image that represent
-        # the two self common-lines in the image.
-        sclmatrix = np.zeros((n_img, 2))
-        corrs_stats = np.zeros(n_img)
-        shifts_stats = np.zeros(n_img)
+        res = 2 * (360 // L)
+        max_angle_diff = np.pi - res * np.pi / 180
 
         # We create a mask associated with angle differences that fall in the
         # range [min_angle_diff, max_angle_diff].
 
-        # X and Y are grids of theta values associate with the polar Fourier transforms
+        # `theta_full` and `theta_half` are grids of theta values associate with the polar Fourier transforms
         # `pf_full` and `pf`, respectively.
-        X, Y = np.meshgrid(range(n_theta), range(n_theta // 2))
+        theta_vals = np.linspace(0, 360, n_theta)
+        theta_vals_half = theta_vals[: len(theta_vals) // 2]
+        theta_full, theta_half = np.meshgrid(theta_vals, theta_vals_half)
 
-        # `diff` is all possible angle differences between potential pairs of self-common-lines.
-        diff = Y - X
+        # `diff` is the unsigned angle differences between all pairs of polar Fourier rays.
+        diff = abs(theta_half - theta_full)
+        diff[diff > 180] = 360 - diff[diff > 180]
+        diff = np.deg2rad(diff)
 
-        # The `unsigned_angle_diff` is the smallest positive angle between potential pairs of
-        # of self-common-lines associated with angle difference `diff`.
-        unsigned_angle_diff = np.arccos(np.cos(diff * 2 * np.pi / n_theta))
-        good_diffs = (min_angle_diff < unsigned_angle_diff) & (
-            unsigned_angle_diff < max_angle_diff
-        )
+        # Build mask.
+        good_diffs = (min_angle_diff < diff) & (diff < max_angle_diff)
 
         # Compute the correlation over all shifts.
         # Generate Shifts.
@@ -448,9 +455,14 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         all_shift_phases = shift_phases.T
 
         # Transpose pf and reconstruct the full polar Fourier for use in correlation.
-        # self.pf only consists of rays in the range [180, 360).
+        # self.pf only consists of rays in the range [180, 360) and is in column major order,
+        # ie. self.pf has shape (n_rad-1, n_theta//2, n_img).
         pf = pf.T
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
+
+        # The self-common-lines matrix holds two indices per image that represent
+        # the two self common-lines in the image.
+        sclmatrix = np.zeros((n_img, 2))
 
         for i in tqdm(range(n_img)):
             pf_i = pf[i]
@@ -476,10 +488,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             # Find maximum correlation.
             shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
             sclmatrix[i] = [scl1, scl2]
-            corrs_stats[i] = np.real(corrs[shift, scl1, scl2])
-            shifts_stats[i] = shift
 
-        return sclmatrix, corrs_stats, shifts_stats
+        return sclmatrix
 
     def _estimate_all_Riis_c3_c4(self, sclmatrix):
         """

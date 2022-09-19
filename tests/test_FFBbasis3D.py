@@ -5,13 +5,16 @@ import numpy as np
 
 from aspire.basis import FFBBasis3D
 
+from ._basis_util import UniversalBasisMixin
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class FFBBasis3DTestCase(TestCase):
+class FFBBasis3DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
+        self.L = 8
         self.dtype = np.float32
-        self.basis = FFBBasis3D((8, 8, 8), dtype=self.dtype)
+        self.basis = FFBBasis3D((self.L, self.L, self.L), dtype=self.dtype)
 
     def tearDown(self):
         pass
