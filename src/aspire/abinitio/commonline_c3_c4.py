@@ -106,7 +106,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         vis = self._estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
-        Ris, _ = self._estimate_inplane_rotations(vis)
+        Ris = self._estimate_inplane_rotations(vis)
 
         self.rotations = Ris
 
@@ -381,7 +381,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
             # Extract in-plane rotations, R_thetas, from eigenvector and construct the rotations, Ris.
             Ris = np.zeros((n_img, 3, 3))
-            R_thetas = np.zeros((n_img, 3, 3))
             for i in range(n_img):
                 zi = evect1[i]
                 # Rescale so it lies on the unit circle.
@@ -390,12 +389,12 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                 s = np.imag(zi ** (1 / order))
 
                 # Form the in-plane rotation, R_theta_i
-                R_thetas[i] = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+                R_theta_i = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
 
                 # Form the rotation matrices Ris.
-                Ris[i] = R_thetas[i] @ Ri_tildes[i]
+                Ris[i] = R_theta_i @ Ri_tildes[i]
 
-            return Ris, R_thetas
+            return Ris
 
     #################################################
     # Secondary Methods for computing outer product #

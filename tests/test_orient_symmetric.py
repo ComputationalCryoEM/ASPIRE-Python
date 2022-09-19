@@ -1,4 +1,4 @@
-from unittest import TestCaseA
+from unittest import TestCase
 
 import numpy as np
 from numpy import pi, random
