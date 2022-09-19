@@ -282,10 +282,10 @@ def cyclic_rotations(order, dtype=np.float64):
     Build all rotation matrices that rotate by multiples of 2pi/order about the z-axis.
 
     :param order: The order of cyclic symmetry
-    :return: (order)x3x3 array of rotation matrices.
+    :return: A Rotation object containing an (order)x3x3 array of rotation matrices.
     """
     angles = np.zeros((order, 3), dtype=dtype)
     angles[:, 2] = 2 * np.pi * np.arange(order) / order
-    rots_symm = Rotation.from_euler(angles).matrices
+    rots_symm = Rotation.from_euler(angles)
 
     return rots_symm

@@ -1,4 +1,4 @@
-from unittest import TestCase
+from unittest import TestCaseA
 
 import numpy as np
 from numpy import pi, random
@@ -88,8 +88,7 @@ class OrientSymmTestCase(TestCase):
         # Each Rij belongs to the set {Ri.Tg_n^sRj, JRi.Tg_n^sRjJ},
         # s = 1, 2, ..., order. We find the mean squared error over
         # the minimum error between Rij and the above set.
-        rots_symm = cyclic_rotations(order, self.dtype)
-        gs = rots_symm
+        gs = cyclic_rotations(order, self.dtype).matrices
         rots_gt = src.rots
 
         nchoose2 = int(n_img * (n_img - 1) / 2)
@@ -129,7 +128,7 @@ class OrientSymmTestCase(TestCase):
         # Each estimated Rii belongs to the set
         # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}
         # We find the minimum mean-squared-error over the 4 possibilities.
-        rots_symm = cyclic_rotations(order, self.dtype)
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
         g = rots_symm[1]
         rots_gt = src.rots
 
@@ -296,7 +295,7 @@ class OrientSymmTestCase(TestCase):
 
         # Compare common-line indices with ground truth angles.
         rots = src.rots  # ground truth rotations
-        rots_symm = cyclic_rotations(order, self.dtype)
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
         pairs = all_pairs(n_img)
         within_1_degree = 0
         within_5_degrees = 0
@@ -381,7 +380,7 @@ class OrientSymmTestCase(TestCase):
 
     def buildSimpleSymmetricVolume(self, res, order):
         # Construct rotatation matrices associated with cyclic order.
-        rots_symm = cyclic_rotations(order, self.dtype)
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
 
         # Assign centers and sigmas of Gaussian blobs
         centers = np.zeros((3, order, 3), dtype=self.dtype)
@@ -410,7 +409,7 @@ class OrientSymmTestCase(TestCase):
 
     def buildSelfCommonLinesMatrix(self, rots, order):
         # Construct rotatation matrices associated with cyclic order.
-        rots_symm = cyclic_rotations(order, self.dtype)
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
 
         # Build ground truth self-common-lines matrix.
         scl_gt = np.zeros((self.n_img, 2), dtype=self.dtype)

@@ -841,7 +841,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         ), "Number of estimates not equal to number of references."
         n_img = len(rots)
 
-        rots_symm = cyclic_rotations(order, dtype)
+        rots_symm = cyclic_rotations(order, dtype).matrices
 
         A_g = np.zeros((n_img, n_img), dtype=complex)
 
