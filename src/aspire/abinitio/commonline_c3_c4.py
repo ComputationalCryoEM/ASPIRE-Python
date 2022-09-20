@@ -887,20 +887,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         evect1 = eig_vecs[:, -1]
 
         angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
-        sign_g_Ri = np.zeros(n_img)
-
-        for ii in range(n_img):
-            zi = evect1[ii]
-            zi = zi / np.abs(zi)  # rescale so it lies on unit circle
-            # Since a ccw and a cw closest are just as good,
-            # we take the absolute value of the angle
-            angleDists = np.abs(np.angle(zi / angles))
-            ind = np.argmin(angleDists)
-            sign_g_Ri[ii] = ind
-
         rots_gt_sync = np.zeros((n_img, 3, 3), dtype=dtype)
+
         for i, rot_gt in enumerate(rots_gt):
-            s = int(sign_g_Ri[i])
-            rots_gt_sync[i] = rots_symm[s] @ rot_gt
+            # Since the closest ccw or cw rotation are just as good,
+            # we take the absolute value of the angle differences.
+            angle_dists = np.abs(np.angle(evect1[i] / angles))
+            power_g_Ri = np.argmin(angle_dists)
+            rots_gt_sync[i] = rots_symm[power_g_Ri] @ rot_gt
 
         return rots_gt_sync
