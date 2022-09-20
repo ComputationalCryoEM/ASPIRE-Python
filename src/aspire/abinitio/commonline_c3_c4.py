@@ -285,23 +285,21 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         n_shifts = len(shifts)
         all_shift_phases = shift_phases.T
 
-        n_pairs = n_img * (n_img - 1) // 2
-        max_corrs = np.zeros(n_pairs)
-        max_corrs_idx = np.zeros(n_pairs)
-
         # Q is the n_img x n_img  Hermitian matrix defined by Q = q*q^H,
         # where q = (exp(i*order*theta_0), ..., exp(i*order*theta_{n_img-1}))^H,
         # and theta_i in [0, 2pi/order) is the in-plane rotation angle for the i'th image.
         Q = np.zeros((n_img, n_img), dtype=complex)
 
         # Transpose pf and reconstruct the full polar Fourier for use in correlation.
-        # self.pf only consists of rays in the range [180, 360).
-        pf = pf.transpose((2, 1, 0))
+        # self.pf only consists of rays in the range [180, 360) and is in column major order,
+        # ie. self.pf has shape (n_rad-1, n_theta//2, n_img).
+        pf = pf.T
         pf = np.concatenate((pf, np.conj(pf)), axis=1)
 
         # Normalize rays.
         pf /= norm(pf, axis=-1)[..., np.newaxis]
 
+        n_pairs = n_img * (n_img - 1) // 2
         with tqdm(total=n_pairs) as pbar:
             idx = 0
             # Note: the ordering of i and j in these loops should not be changed as
@@ -329,7 +327,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                         ]
                     )
 
-                    # Find the angle between common lines induces by the rotations.
+                    # Find the angle between common lines induced by the rotations.
                     c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
                     c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
 
@@ -337,7 +335,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     c1s = self.cl_angles_to_ind(c1s, n_theta)
                     c2s = self.cl_angles_to_ind(c2s, n_theta)
 
-                    # Perform correlation.
+                    # Perform correlation, corrs is shape n_shifts x len(theta_ijs).
                     corrs = np.array(
                         [
                             np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
@@ -352,21 +350,18 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     # For each pair of lines we take the maximum correlation over all shifts.
                     corrs = np.max(np.real(corrs), axis=0)
 
-                    # We take the mean score over the 'order' groups and find the group that attains the maximum.
-                    # This produces the index corresponding to theta_ij in the range [0, 2pi/order).
+                    # corrs[i] is the set of correlations for theta_ij in [2pi * i / order, 2pi * (i + 1) / order).
+                    # Due to symmetry, each corrs[i] represents correlations over identical pairs of lines.
+                    # With that in mind, we average over corrs[i] and find the max correlation.
+                    # This produces an index corresponding to theta_ij in the range [0, 2pi/order).
                     corrs = np.mean(np.real(corrs), axis=0)
                     max_idx_corr = np.argmax(corrs)
-                    max_corr = corrs[max_idx_corr]
-
-                    max_corrs[idx] = max_corr  # This is only for stats.
-                    max_corrs_idx[idx] = max_idx_corr  # This is only for stats.
 
                     theta_ij = degree_res * max_idx_corr * np.pi / 180
 
                     Q[i, j] = np.cos(order * theta_ij) - 1j * np.sin(order * theta_ij)
 
-                    if np.mod(idx, 10) == 0:
-                        pbar.update(10)
+                    pbar.update()
 
                     idx += 1
 
@@ -376,13 +371,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
             # Q is a rank-1 Hermitian matrix.
             eig_vals, eig_vecs = eigh(Q)
-            evect1 = eig_vecs[:, -1]
-            logger.info(f"Top 5 eigenvalues of Q are {str(eig_vals[-5:])}.")
+            leading_eig_vec = eig_vecs[:, -1]
+            logger.info(f"Top 5 eigenvalues of Q are {str(eig_vals[-5:][::-1])}.")
 
             # Extract in-plane rotations, R_thetas, from eigenvector and construct the rotations, Ris.
             Ris = np.zeros((n_img, 3, 3))
             for i in range(n_img):
-                zi = evect1[i]
+                zi = leading_eig_vec[i]
                 # Rescale so it lies on the unit circle.
                 zi /= np.abs(zi)
                 c = np.real(zi ** (1 / order))
