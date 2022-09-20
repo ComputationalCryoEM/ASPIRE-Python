@@ -883,8 +883,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
         A_g += np.conj(A_g).T + np.eye(n_img)
 
-        eig_vals, eig_vecs = eigh(A_g)
-        evect1 = eig_vecs[:, -1]
+        _, eig_vecs = eigh(A_g)
+        leading_eig_vec = eig_vecs[:, -1]
 
         angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
         rots_gt_sync = np.zeros((n_img, 3, 3), dtype=dtype)
@@ -892,7 +892,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         for i, rot_gt in enumerate(rots_gt):
             # Since the closest ccw or cw rotation are just as good,
             # we take the absolute value of the angle differences.
-            angle_dists = np.abs(np.angle(evect1[i] / angles))
+            angle_dists = np.abs(np.angle(leading_eig_vec[i] / angles))
             power_g_Ri = np.argmin(angle_dists)
             rots_gt_sync[i] = rots_symm[power_g_Ri] @ rot_gt
 
