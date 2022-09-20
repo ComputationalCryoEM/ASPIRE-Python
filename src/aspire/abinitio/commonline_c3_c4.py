@@ -836,7 +836,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         return np.mod(np.round(thetas / (2 * np.pi) * n_theta), n_theta).astype(int)
 
     @staticmethod
-    def g_sync(rots, order, rots_gt, dtype=np.float32):
+    def g_sync(rots, order, rots_gt):
         """
         Every estimated rotation might be a version of the ground truth rotation
         rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes the
@@ -846,7 +846,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         :param rots: Estimated rotation matrices
         :param order: The cyclic order asssociated with the symmetry of the underlying molecule.
         :param rots_gt: Ground truth rotation matrices.
-        :param dtype: The dtype of the rotation
 
         :return: g-synchronized ground truth rotations.
         """
@@ -854,6 +853,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             rots_gt
         ), "Number of estimates not equal to number of references."
         n_img = len(rots)
+        dtype = rots.dtype
 
         rots_symm = cyclic_rotations(order, dtype).matrices
 

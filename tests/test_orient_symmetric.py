@@ -63,7 +63,7 @@ class OrientSymmTestCase(TestCase):
 
         # g-synchronize ground truth rotations.
         rots_gt = src.rots
-        rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt, dtype=self.dtype)
+        rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt)
 
         # Register estimates to ground truth rotations and compute MSE.
         Q_mat, flag = register_rotations(rots_est, rots_gt_sync)
