@@ -197,7 +197,7 @@ logger.info("Begin Orientation Estimation")
 
 # Stash true rotations for later comparison,
 #   note this line only works with naive class selection...
-true_rotations = src.rots[:n_classes]
+true_rotations = src.rotations[:n_classes]
 
 orient_est = CLSyncVoting(avgs, n_theta=36)
 # Get the estimated rotations
@@ -222,7 +222,7 @@ logger.info(
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rots = rots_est
+avgs.rotations = rots_est
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((v.resolution,) * 3, dtype=v.dtype)

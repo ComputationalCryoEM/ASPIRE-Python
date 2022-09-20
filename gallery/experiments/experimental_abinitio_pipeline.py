@@ -172,7 +172,7 @@ rots_est = orient_est.rotations
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rots = rots_est
+avgs.rotations = rots_est
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((img_size,) * 3, dtype=src.dtype)

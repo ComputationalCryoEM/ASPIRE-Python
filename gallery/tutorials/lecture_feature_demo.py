@@ -214,7 +214,7 @@ sim_seed = Simulation(L=v.resolution, n=num_imgs, vols=v, seed=42)
 sim_seed.images(0, 10).show()
 
 # We can also view the rotations used to create these projections
-# logger.info(sim2.rots)  # Commented due to long output
+# logger.info(sim2.rotations)  # Commented due to long output
 
 # %%
 # Simulation with Noise - Filters
@@ -274,7 +274,7 @@ for desc, _sim in [
     ("Downsampled with Noise", sim3),
 ]:
     logger.info(desc)
-    true_rotations = _sim.rots  # for later comparison
+    true_rotations = _sim.rotations  # for later comparison
 
     orient_est = CLSyncVoting(_sim, n_theta=36)
     # Get the estimated rotations
