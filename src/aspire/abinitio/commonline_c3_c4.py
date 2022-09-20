@@ -374,20 +374,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             leading_eig_vec = eig_vecs[:, -1]
             logger.info(f"Top 5 eigenvalues of Q are {str(eig_vals[-5:][::-1])}.")
 
-            # Extract in-plane rotations, R_thetas, from eigenvector and construct the rotations, Ris.
-            Ris = np.zeros((n_img, 3, 3))
-            for i in range(n_img):
-                zi = leading_eig_vec[i]
-                # Rescale so it lies on the unit circle.
-                zi /= np.abs(zi)
-                c = np.real(zi ** (1 / order))
-                s = np.imag(zi ** (1 / order))
+            # Calculate R_thetas.
+            R_thetas = Rotation.about_axis(
+                "z", np.angle(leading_eig_vec ** (1 / order))
+            )
 
-                # Form the in-plane rotation, R_theta_i
-                R_theta_i = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-
-                # Form the rotation matrices Ris.
-                Ris[i] = R_theta_i @ Ri_tildes[i]
+            # Form rotation matrices Ris.
+            Ris = R_thetas @ Ri_tildes
 
             return Ris
 
