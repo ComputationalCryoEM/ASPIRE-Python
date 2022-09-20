@@ -359,7 +359,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
                     theta_ij = degree_res * max_idx_corr * np.pi / 180
 
-                    Q[i, j] = np.cos(order * theta_ij) - 1j * np.sin(order * theta_ij)
+                    Q[i, j] = np.exp(-1j * order * theta_ij)
 
                     pbar.update()
 
