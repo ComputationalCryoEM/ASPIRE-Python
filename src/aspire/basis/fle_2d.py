@@ -125,9 +125,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         nodes = (
             self.greatest_lambda - self.smallest_lambda
         ) * nodes + self.smallest_lambda
-        import pdb
-
-        pdb.set_trace()
         nodes = nodes.reshape(-1, 1)
 
         radius = self.nres // 2
