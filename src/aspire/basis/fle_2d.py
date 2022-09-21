@@ -118,27 +118,32 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         # chebyshev nodes
         # see Section 3.5
-        nodes = 1 - (2*np.arange(self.num_radial_nodes) + 1) / (2*self.num_radial_nodes)
-        nodes = (np.cos(np.pi*nodes) + 1) / 2
-        nodes = (self.greatest_lambda - self.smallest_lambda) * nodes + self.smallest_lambda
+        nodes = 1 - (2 * np.arange(self.num_radial_nodes) + 1) / (
+            2 * self.num_radial_nodes
+        )
+        nodes = (np.cos(np.pi * nodes) + 1) / 2
+        nodes = (
+            self.greatest_lambda - self.smallest_lambda
+        ) * nodes + self.smallest_lambda
         import pdb
+
         pdb.set_trace()
-        nodes = nodes.reshape(-1,1)
+        nodes = nodes.reshape(-1, 1)
 
         radius = self.nres // 2
-        h = 1/radius
+        h = 1 / radius
 
-        phi = 2*np.pi*np.arange(self.num_angular_nodes // 2) / self.num_angular_nodes
-        x = np.cos(phi).reshape(1,-1)
-        y = np.sin(phi).reshape(1,-1)
+        phi = (
+            2 * np.pi * np.arange(self.num_angular_nodes // 2) / self.num_angular_nodes
+        )
+        x = np.cos(phi).reshape(1, -1)
+        y = np.sin(phi).reshape(1, -1)
         x = x * nodes * h
         y = y * nodes * h
         x = x.flatten()
         y = y.flatten()
 
         # set up finufft plans ....
-        
-        
 
     def _lap_eig_disk(self):
         """
@@ -175,35 +180,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             self.ells[2 * ell, :] = ell
             self.ks[2 * ell, :] = self.ks[2 * ell - 1, :]
             self.bessel_zeros[2 * ell, :] = self.bessel_zeros[2 * ell - 1, :]
-
-        # bessel_zeros
-
-        # [ R_0_1, R_0_2, R_0_3 ... R_0_maxk ]
-        # [ R_1_1, R_1_2, R_1_3 ... R_1_maxk ]
-        # [ R_1_1, R_1_2, R_1_3 ... R_1_maxk ]
-        # [ R_2_1, R_2_2, R_2_3 ... R_2_maxk ]
-        # [ R_2_1, R_2_2, R_2_3 ... R_2_maxk ]
-        # ... ...
-        # [ R_numells_1,R_numells_2,R_numells_3 ... R_numells_maxk ]
-        # [ R_numells_1,R_numells_2,R_numells_3 ... R_numells_maxk ]
-
-        # ells
-
-        # [ 0, 0, 0, ... 0 ] (max_k)
-        # [-1,-1,-1, ...-1 ]
-        # [ 1, 1, 1, ... 1 ]
-        # [-2,-2,-2, ...-2 ]
-        # [ 2, 2, 2, ... 2 ]
-        # ... ...
-        # [-num_ells,-num_ells,-num_ells...-num_ells ]
-        # [ num_ells, num_ells, num_ells... num_ells ]
-
-        # ks
-
-        # [1, 2, 3, ... max_k ]
-        # [1, 2, 3, ... max_k ]
-        # ...
-        # [1, 2, 3, ... max_k ]
 
         # Reshape the arrays and order by the size of the Bessel function zeros
         self._flatten_and_sort_bessel_zeros()
