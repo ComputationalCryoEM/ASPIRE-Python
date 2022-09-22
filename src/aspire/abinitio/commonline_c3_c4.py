@@ -11,6 +11,7 @@ from aspire.utils import (
     all_pairs,
     all_triplets,
     anorm,
+    cyclic_rotations,
     pairs_to_linear,
 )
 from aspire.utils.random import randn
@@ -47,6 +48,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         shift_step=1,
         epsilon=1e-3,
         max_iters=1000,
+        degree_res=1,
         seed=None,
     ):
         """
@@ -60,6 +62,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
+        :param degree_res: Degree resolution for estimating in-plane rotations.
         :param seed: Optional seed for RNG.
         """
 
@@ -84,13 +87,28 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             self.order = int(symmetry[1])
         self.epsilon = epsilon
         self.max_iters = max_iters
+        self.degree_res = degree_res
         self.seed = seed
 
     def estimate_rotations(self):
         """
-        Estimate rotation matrices for symmetric molecules.
+        Estimate rotation matrices for molecules with C3 or C4 symmetry.
+
+        :return: Array of rotation matrices, size n_imgx3x3.
         """
-        pass
+        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
+        vijs, viis = self._estimate_relative_viewing_directions_c3_c4()
+
+        logger.info("Performing global handedness synchronization.")
+        vijs, viis = self._global_J_sync(vijs, viis)
+
+        logger.info("Estimating third rows of rotation matrices.")
+        vis = self._estimate_third_rows(vijs, viis)
+
+        logger.info("Estimating in-plane rotations and rotations matrices.")
+        Ris = self._estimate_inplane_rotations(vis)
+
+        self.rotations = Ris
 
     ###########################################
     # Primary Methods                         #
@@ -231,11 +249,140 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         return vis
 
-    def _estimate_inplane_rotations(
-        self, pf, vis, inplane_rot_res, max_shift, shift_step
-    ):
-        # return rots
-        pass
+    def _estimate_inplane_rotations(self, vis):
+        """
+        Estimate the rotation matrices for each image by constructing arbitrary rotation matrices
+        populated with the given third rows, vis, and then rotating by an appropriate in-plane rotation.
+
+        :param vis: An n_imgx3 array where the i'th row holds the estimate for the third row of
+        the i'th rotation matrix.
+
+        :return: Rotation matrices Ris and in-plane rotation matrices R_thetas, both size n_imgx3x3.
+        """
+        pf = self.pf
+        n_img = self.n_img
+        n_theta = self.n_theta
+        max_shift_1d = self.max_shift
+        shift_step = self.shift_step
+        order = self.order
+        degree_res = self.degree_res
+
+        # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
+        # the corresponding third rows vis.
+        Ri_tildes = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
+
+        # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
+        max_angle = (360 // order) * order
+        theta_ijs = np.arange(0, max_angle, degree_res) * np.pi / 180
+        R_theta_ijs = Rotation.about_axis("z", theta_ijs, dtype=self.dtype).matrices
+
+        # Step 3: Compute the correlation over all shifts.
+        # Generate shifts.
+        r_max = pf.shape[0]
+        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
+            r_max, max_shift_1d, shift_step
+        )
+        n_shifts = len(shifts)
+        all_shift_phases = shift_phases.T
+
+        # Q is the n_img x n_img  Hermitian matrix defined by Q = q*q^H,
+        # where q = (exp(i*order*theta_0), ..., exp(i*order*theta_{n_img-1}))^H,
+        # and theta_i in [0, 2pi/order) is the in-plane rotation angle for the i'th image.
+        Q = np.zeros((n_img, n_img), dtype=complex)
+
+        # Transpose pf and reconstruct the full polar Fourier for use in correlation.
+        # self.pf only consists of rays in the range [180, 360) and is in column major order,
+        # ie. self.pf has shape (n_rad-1, n_theta//2, n_img).
+        pf = pf.T
+        pf = np.concatenate((pf, np.conj(pf)), axis=1)
+
+        # Normalize rays.
+        pf /= norm(pf, axis=-1)[..., np.newaxis]
+
+        n_pairs = n_img * (n_img - 1) // 2
+        with tqdm(total=n_pairs) as pbar:
+            idx = 0
+            # Note: the ordering of i and j in these loops should not be changed as
+            # they correspond to the ordered tuples (i, j), for i<j.
+            for i in range(n_img):
+                pf_i = pf[i]
+
+                # Generate shifted versions of images.
+                pf_i_shifted = np.array(
+                    [pf_i * shift_phase for shift_phase in all_shift_phases]
+                )
+
+                Ri_tilde = Ri_tildes[i]
+
+                for j in range(i + 1, n_img):
+                    pf_j = pf[j]
+
+                    Rj_tilde = Ri_tildes[j]
+
+                    # Compute all possible rotations between the i'th and j'th images.
+                    Us = np.array(
+                        [
+                            Ri_tilde.T @ R_theta_ij @ Rj_tilde
+                            for R_theta_ij in R_theta_ijs
+                        ]
+                    )
+
+                    # Find the angle between common lines induced by the rotations.
+                    c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
+                    c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
+
+                    # Convert from angles to indices.
+                    c1s = self.cl_angles_to_ind(c1s, n_theta)
+                    c2s = self.cl_angles_to_ind(c2s, n_theta)
+
+                    # Perform correlation, corrs is shape n_shifts x len(theta_ijs).
+                    corrs = np.array(
+                        [
+                            np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
+                            for pf_i_shift in pf_i_shifted
+                            for c1, c2 in zip(c1s, c2s)
+                        ]
+                    )
+
+                    # Reshape to group by shift and symmetric order.
+                    corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
+
+                    # For each pair of lines we take the maximum correlation over all shifts.
+                    corrs = np.max(np.real(corrs), axis=0)
+
+                    # corrs[i] is the set of correlations for theta_ij in [2pi * i / order, 2pi * (i + 1) / order).
+                    # Due to symmetry, each corrs[i] represents correlations over identical pairs of lines.
+                    # With that in mind, we average over corrs[i] and find the max correlation.
+                    # This produces an index corresponding to theta_ij in the range [0, 2pi/order).
+                    corrs = np.mean(np.real(corrs), axis=0)
+                    max_idx_corr = np.argmax(corrs)
+
+                    theta_ij = degree_res * max_idx_corr * np.pi / 180
+
+                    Q[i, j] = np.exp(-1j * order * theta_ij)
+
+                    pbar.update()
+
+                    idx += 1
+
+            # Populate the lower triangle and diagonal of Q.
+            # Diagonals are 1 since e^{i*0}=1.
+            Q += np.conj(Q).T + np.eye(n_img)
+
+            # Q is a rank-1 Hermitian matrix.
+            eig_vals, eig_vecs = eigh(Q)
+            leading_eig_vec = eig_vecs[:, -1]
+            logger.info(f"Top 5 eigenvalues of Q are {str(eig_vals[-5:][::-1])}.")
+
+            # Calculate R_thetas.
+            R_thetas = Rotation.about_axis(
+                "z", np.angle(leading_eig_vec ** (1 / order))
+            )
+
+            # Form rotation matrices Ris.
+            Ris = R_thetas @ Ri_tildes
+
+            return Ris
 
     #################################################
     # Secondary Methods for computing outer product #
@@ -633,3 +780,108 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]
 
         return new_vec
+
+    ###########################################
+    # Secondary Methods fo In-Plane Rotations #
+    ###########################################
+    @staticmethod
+    def _complete_third_row_to_rot(r3):
+        """
+        Construct a rotation matrix whose third row is equal to the given row vector.
+        For vector r3 = [a, b, c], where [a, b, c] != [0, 0, 1], we return the matrix
+        with rows r1, r2, r3, given by:
+
+        r1 = 1/sqrt(a^2 + b^2)[b, -a, 0],
+        r2 = 1/sqrt(a^2 + b^2)[ac, bc, -(a^2 + b^2)].
+
+        :param r3: A 1x3 vector of norm 1.
+        :return: A 3x3 rotation matrix whose third row is r3.
+        """
+
+        # If the third row coincides with the z-axis we return the identity matrix.
+        if norm(r3 - [0, 0, 1]) < 1e-5:
+            return np.eye(3)
+
+        # 'norm_fac' is non-zero since r3 does not coincide with the z-axis.
+        norm_12 = np.sqrt(r3[0] ** 2 + r3[1] ** 2)
+
+        # Construct an orthogonal row vector of norm 1.
+        r1 = np.array([r3[1] / norm_12, -r3[0] / norm_12, 0])
+
+        # Construct r2 so that r3 = r1xr2
+        r2 = np.array([r3[0] * r3[2] / norm_12, r3[1] * r3[2] / norm_12, -norm_12])
+
+        return np.vstack((r1, r2, r3))
+
+    @staticmethod
+    def cl_angles_to_ind(cl_angles, n_theta):
+        thetas = np.arctan2(cl_angles[:, 1], cl_angles[:, 0])
+
+        # Shift from [-pi,pi] to [0,2*pi).
+        thetas = np.mod(thetas, 2 * np.pi)
+
+        # linear scale from [0,2*pi) to [0,n_theta).
+        return np.mod(np.round(thetas / (2 * np.pi) * n_theta), n_theta).astype(int)
+
+    @staticmethod
+    def g_sync(rots, order, rots_gt):
+        """
+        Every estimated rotation might be a version of the ground truth rotation
+        rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes the
+        ground truth rotations so that only a single global rotation need be applied
+        to all estimates for error analysis.
+
+        :param rots: Estimated rotation matrices
+        :param order: The cyclic order asssociated with the symmetry of the underlying molecule.
+        :param rots_gt: Ground truth rotation matrices.
+
+        :return: g-synchronized ground truth rotations.
+        """
+        assert len(rots) == len(
+            rots_gt
+        ), "Number of estimates not equal to number of references."
+        n_img = len(rots)
+        dtype = rots.dtype
+
+        rots_symm = cyclic_rotations(order, dtype).matrices
+
+        A_g = np.zeros((n_img, n_img), dtype=complex)
+
+        pairs = all_pairs(n_img)
+
+        for (i, j) in pairs:
+            Ri = rots[i]
+            Rj = rots[j]
+            Rij = Ri.T @ Rj
+
+            Ri_gt = rots_gt[i]
+            Rj_gt = rots_gt[j]
+
+            diffs = np.zeros(order)
+            for s, g_s in enumerate(rots_symm):
+                Rij_gt = Ri_gt.T @ g_s @ Rj_gt
+                diffs[s] = min([norm(Rij - Rij_gt), norm(Rij - J_conjugate(Rij_gt))])
+
+            idx = np.argmin(diffs)
+
+            A_g[i, j] = np.exp(-1j * 2 * np.pi / order * idx)
+
+        # A_g(k,l) is exp(-j(-theta_k+theta_l))
+        # Diagonal elements correspond to exp(-i*0) so put 1.
+        # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
+        A_g += np.conj(A_g).T + np.eye(n_img)
+
+        _, eig_vecs = eigh(A_g)
+        leading_eig_vec = eig_vecs[:, -1]
+
+        angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
+        rots_gt_sync = np.zeros((n_img, 3, 3), dtype=dtype)
+
+        for i, rot_gt in enumerate(rots_gt):
+            # Since the closest ccw or cw rotation are just as good,
+            # we take the absolute value of the angle differences.
+            angle_dists = np.abs(np.angle(leading_eig_vec[i] / angles))
+            power_g_Ri = np.argmin(angle_dists)
+            rots_gt_sync[i] = rots_symm[power_g_Ri] @ rot_gt
+
+        return rots_gt_sync

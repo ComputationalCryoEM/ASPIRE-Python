@@ -2,13 +2,19 @@ from unittest import TestCase
 
 import numpy as np
 from numpy import pi, random
-from numpy.linalg import norm
+from numpy.linalg import det, norm
 from parameterized import parameterized
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
 from aspire.utils import Rotation
-from aspire.utils.misc import J_conjugate, all_pairs, gaussian_3d
+from aspire.utils.coor_trans import (
+    get_aligned_rotations,
+    get_rots_mse,
+    register_rotations,
+)
+from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations, gaussian_3d
+from aspire.utils.random import randn
 from aspire.volume import Volume
 
 
@@ -47,6 +53,27 @@ class OrientSymmTestCase(TestCase):
         pass
 
     @parameterized.expand([(3,), (4,)])
+    def testEstimateRotations(self, order):
+        src = self.srcs[order]
+        cl_symm = self.cl_orient_ests[order]
+
+        # Estimate rotations.
+        cl_symm.estimate_rotations()
+        rots_est = cl_symm.rotations
+
+        # g-synchronize ground truth rotations.
+        rots_gt = src.rots
+        rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt)
+
+        # Register estimates to ground truth rotations and compute MSE.
+        Q_mat, flag = register_rotations(rots_est, rots_gt_sync)
+        regrot = get_aligned_rotations(rots_est, Q_mat, flag)
+        mse_reg = get_rots_mse(regrot, rots_gt_sync)
+
+        # Assert mse is small.
+        self.assertTrue(mse_reg < 0.005)
+
+    @parameterized.expand([(3,), (4,)])
     def testRelativeRotations(self, order):
         n_img = self.n_img
 
@@ -63,8 +90,7 @@ class OrientSymmTestCase(TestCase):
         # Each Rij belongs to the set {Ri.Tg_n^sRj, JRi.Tg_n^sRjJ},
         # s = 1, 2, ..., order. We find the mean squared error over
         # the minimum error between Rij and the above set.
-        rots_symm = self.buildCyclicRotations(order)
-        gs = rots_symm
+        gs = cyclic_rotations(order, self.dtype).matrices
         rots_gt = src.rots
 
         # Find the angular distance between each Rij and the ground truth.
@@ -105,7 +131,7 @@ class OrientSymmTestCase(TestCase):
         # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}.
         # We find the minimum angular distance between the estimate Rii
         # and the 4 possible ground truths.
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
         g = rots_symm[1]
         rots_gt = src.rots
 
@@ -302,7 +328,7 @@ class OrientSymmTestCase(TestCase):
 
         # Compare common-line indices with ground truth angles.
         rots = src.rots  # ground truth rotations
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
         pairs = all_pairs(n_img)
         within_1_degree = 0
         within_5_degrees = 0
@@ -345,6 +371,23 @@ class OrientSymmTestCase(TestCase):
         self.assertTrue(within_5 > 0.98)
         self.assertTrue(within_1 > 0.90)
 
+    def testCompleteThirdRow(self):
+        # Complete third row that coincides with z-axis
+        z = np.array([0, 0, 1])
+        Rz = CLSymmetryC3C4._complete_third_row_to_rot(z)
+
+        # Complete random third row.
+        r3 = randn(3, seed=123)
+        r3 /= norm(r3)
+        R = CLSymmetryC3C4._complete_third_row_to_rot(r3)
+
+        # Assert that Rz is the identity matrix.
+        self.assertTrue(np.allclose(Rz, np.eye(3)))
+
+        # Assert that R is orthogonal with determinant 1.
+        self.assertTrue(np.allclose(R @ R.T, np.eye(3)))
+        self.assertTrue(np.allclose(det(R), 1))
+
     def buildOuterProducts(self, n_img):
         # Build random third rows, ground truth vis (unit vectors)
         gt_vis = np.zeros((n_img, 3), dtype=np.float32)
@@ -371,7 +414,7 @@ class OrientSymmTestCase(TestCase):
 
     def buildSimpleSymmetricVolume(self, res, order):
         # Construct rotatation matrices associated with cyclic order.
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
 
         # Assign centers and sigmas of Gaussian blobs
         centers = np.zeros((3, order, 3), dtype=self.dtype)
@@ -397,7 +440,7 @@ class OrientSymmTestCase(TestCase):
 
     def buildSelfCommonLinesMatrix(self, rots, order):
         # Construct rotatation matrices associated with cyclic order.
-        rots_symm = self.buildCyclicRotations(order)
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
 
         # Build ground truth self-common-lines matrix.
         scl_gt = np.zeros((self.n_img, 2), dtype=self.dtype)
@@ -420,11 +463,3 @@ class OrientSymmTestCase(TestCase):
             scl_gt[i, 1] = np.round(theta_gn * n_theta / (2 * np.pi)) % n_theta
 
         return scl_gt
-
-    def buildCyclicRotations(self, order):
-        # Construct rotatation matrices associated with cyclic order.
-        angles = np.zeros((order, 3), dtype=self.dtype)
-        angles[:, 2] = 2 * np.pi * np.arange(order) / order
-        rots_symm = Rotation.from_euler(angles).matrices
-
-        return rots_symm

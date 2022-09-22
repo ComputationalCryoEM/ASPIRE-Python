@@ -15,6 +15,7 @@ from .misc import (  # isort:skip
     all_triplets,
     abs2,
     circ,
+    cyclic_rotations,
     gaussian_1d,
     gaussian_2d,
     gaussian_3d,
