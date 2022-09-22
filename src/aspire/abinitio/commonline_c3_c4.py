@@ -803,13 +803,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             return np.eye(3)
 
         # 'norm_fac' is non-zero since r3 does not coincide with the z-axis.
-        norm_fac = np.sqrt(r3[0] ** 2 + r3[1] ** 2)
+        norm_12 = np.sqrt(r3[0] ** 2 + r3[1] ** 2)
 
         # Construct an orthogonal row vector of norm 1.
-        r1 = np.array([r3[1] / norm_fac, -r3[0] / norm_fac, 0])
+        r1 = np.array([r3[1] / norm_12, -r3[0] / norm_12, 0])
 
         # Construct r2 so that r3 = r1xr2
-        r2 = np.array([r3[0] * r3[2] / norm_fac, r3[1] * r3[2] / norm_fac, -norm_fac])
+        r2 = np.array([r3[0] * r3[2] / norm_12, r3[1] * r3[2] / norm_12, -norm_12])
 
         return np.vstack((r1, r2, r3))
 
