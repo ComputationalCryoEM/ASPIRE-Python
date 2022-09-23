@@ -1,11 +1,17 @@
 import logging
-
+import time
 import numpy as np
 
 from aspire.basis import Basis
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
 from aspire.utils import ensure, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
+
+from multiprocessing import Pool
+from joblib import Parallel, delayed
+
+from scipy.linalg import lu_factor, lu_solve
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +68,59 @@ class FBBasis3D(Basis):
 
         # get normalized factors
         self._norms = self.norms()
+
+        self.inds, self.idxs, self.ind_angs, self.idx_radials = self.create_parallel_helpers()
+
+    def expand_mat(self):
+        expand_mat = np.zeros((self.count, self.count))
+
+        for k in range(self.count):
+            print(k)
+            tmp = np.zeros((self.count,))
+            tmp[k] = 1
+            expand_mat[k,:] = self.evaluate_t(self.evaluate(tmp))
+
+        lu, piv = lu_factor(expand_mat)
+        self.expand_mat = expand_mat
+        self.lu = lu
+        self.piv = piv
+
+    def create_parallel_helpers(self):
+        self.n_jobs = 30
+
+        inds = []
+        idxs = []
+        ind_angs = []
+        idx_radials = []
+        tmp_ind = 0
+        tmp_ind_radial = 0
+        tmp_ind_ang = 0
+        tmp_idx_radial = 0
+        tmp_idx = 0
+        for ell in range(0, self.ell_max + 1):
+            tmp_inds = []
+            tmp_ind_angs = []
+            tmp_idxs = []
+            
+            k_max = self.k_max[ell]
+            tmp_idx_radial = tmp_ind_radial + np.arange(0, k_max)
+            idx_radials.append(tmp_idx_radial)
+            for _ in range(-ell, ell + 1):
+                tmp_inds.append(tmp_ind)
+                tmp_ind_angs.append(tmp_ind_ang)
+                tmp_idx = tmp_ind + np.arange(0, len(tmp_idx_radial))
+
+                tmp_idxs.append(tmp_idx)
+
+                tmp_ind += len(tmp_idx)
+                tmp_ind_ang += 1
+
+            inds.append(tmp_inds)
+            idxs.append(tmp_idxs)
+            ind_angs.append(tmp_ind_angs)
+            tmp_ind_radial += len(tmp_idx_radial)
+
+        return inds, idxs, ind_angs, idx_radials 
 
     def indices(self):
         """
@@ -146,7 +205,7 @@ class FBBasis3D(Basis):
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
-
+        t1 = time.time()
         v = v.T
         v, sz_roll = unroll_dim(v, 2)
 
@@ -158,30 +217,22 @@ class FBBasis3D(Basis):
         ind_radial = 0
         ind_ang = 0
 
+
+
         x = np.zeros(
-            shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=self.dtype
+            shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=v.dtype
         )
-        for ell in range(0, self.ell_max + 1):
-            k_max = self.k_max[ell]
-            idx_radial = ind_radial + np.arange(0, k_max)
-            nrms = self._norms[idx_radial]
-            radial = self._precomp["radial"][:, idx_radial]
-            radial = radial / nrms
 
-            for _ in range(-ell, ell + 1):
-                ang = self._precomp["ang"][:, ind_ang]
-                ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
-                idx = ind + np.arange(0, len(idx_radial))
-                x[mask] += ang_radial @ v[idx]
-                ind += len(idx)
-                ind_ang += 1
-
-            ind_radial += len(idx_radial)
+        xs = Parallel(n_jobs=self.n_jobs)(delayed(innerloop_helper)(l, v, self.idxs[l], ang_idx, self._precomp["radial"][:, self.idx_radials[l]][r_idx] / self._norms[self.idx_radials[l]], self._precomp["ang"][:,self.ind_angs[l]]) for l in range(0, self.ell_max + 1))
+        x[mask] = sum(xs)
 
         x = m_reshape(x, self.sz + x.shape[1:])
         x = roll_dim(x, sz_roll)
 
+        print('evaluate took ' + str(time.time()-t1))
+
         return x.T
+
 
     def evaluate_t(self, v):
         """
@@ -194,13 +245,13 @@ class FBBasis3D(Basis):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
+        t1 = time.time()
 
         v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(
             x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
         )
-
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
         mask = m_flatten(self.basis_coords["mask"])
@@ -209,23 +260,79 @@ class FBBasis3D(Basis):
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=self.dtype)
+        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=x.dtype)
+
+
+        vss = Parallel(n_jobs=self.n_jobs)(delayed(innerloop_helper_t)(l, x[mask], ang_idx, self._precomp["radial"][:, self.idx_radials[l]][r_idx] / self._norms[self.idx_radials[l]], self._precomp["ang"][:,self.ind_angs[l]]) for l in range(0, self.ell_max + 1))
+
         for ell in range(0, self.ell_max + 1):
-            k_max = self.k_max[ell]
-            idx_radial = ind_radial + np.arange(0, k_max)
-            nrms = self._norms[idx_radial]
-            radial = self._precomp["radial"][:, idx_radial]
-            radial = radial / nrms
+            inds = [index for inner in self.idxs[ell] for index in inner]
+            vs = [index for inner in vss[ell] for index in inner]
+            v[inds] = vs
 
-            for _ in range(-ell, ell + 1):
-                ang = self._precomp["ang"][:, ind_ang]
-                ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
-                idx = ind + np.arange(0, len(idx_radial))
-                v[idx] = np.real(ang_radial.T @ x[mask])
-                ind += len(idx)
-                ind_ang += 1
 
-            ind_radial += len(idx_radial)
-
+        print('evaluate_t took ' + str(time.time()-t1))
         v = roll_dim(v, sz_roll)
         return v.T
+
+
+
+    def expand_direct_lu(self, x):
+        """
+        Obtain coefficients in the basis from those in standard coordinate basis
+
+        This is a similar function to evaluate_t but with more accuracy by using
+        the cg optimizing of linear equation, Ax=b.
+
+        :param x: An array whose last two or three dimensions are to be expanded
+            the desired basis. These dimensions must equal `self.sz`.
+        :return : The coefficients of `v` expanded in the desired basis.
+            The last dimension of `v` is with size of `count` and the
+            first dimensions of the return value correspond to
+            those first dimensions of `x`.
+
+        """
+        # ensure the first dimensions with size of self.sz
+        sz_roll = x.shape[: -self.ndim]
+
+        x = x.reshape((-1, *self.sz))
+
+        ensure(
+            x.shape[-self.ndim :] == self.sz,
+            f"Last {self.ndim} dimensions of x must match {self.sz}.",
+        )
+
+        # number of image samples
+        n_data = x.shape[0]
+        v = np.zeros((n_data, self.count), dtype=x.dtype)
+
+        for isample in range(0, n_data):
+            b = self.evaluate_t(x[isample]).T
+            v[isample] = lu_solve((self.lu, self.piv), b)
+
+        # return v coefficients with the last dimension of self.count
+        v = v.reshape((-1, *sz_roll))
+        return v
+
+
+
+def innerloop_helper_t(ell, xm, ang_idx, radial_normed, precomp_ang):
+    vs = [0]*(2*ell+1)
+    curr = 0
+    for m in range(-ell, ell + 1):
+        ang = precomp_ang[:, curr]
+        ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial_normed
+        vs[curr] = ang_radial.T @ xm
+        curr += 1
+    return vs
+
+
+def innerloop_helper(ell, v, idx, ang_idx, radial_normed, precomp_ang):
+    curr = 0
+    x = 0
+    for m in range(-ell, ell + 1):
+        ang = precomp_ang[:, curr]
+        ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial_normed
+        x += ang_radial @ v[idx[curr]]
+        curr += 1
+    return x

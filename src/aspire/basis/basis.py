@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from scipy.sparse.linalg import LinearOperator, cg
+from scipy.sparse.linalg import LinearOperator, cg, gmres, bicg
 
 from aspire.basis.basis_utils import num_besselj_zeros
 from aspire.utils import ensure, mdim_mat_fun_conj
@@ -190,8 +190,13 @@ class Basis:
             dtype=self.dtype,
         )
 
+
+
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
         tol = 10 * np.finfo(x.dtype).eps
+
+#        tol = 1e-4
+
         logger.info("Expanding array in basis")
 
         # number of image samples
@@ -200,9 +205,13 @@ class Basis:
 
         for isample in range(0, n_data):
             b = self.evaluate_t(x[isample]).T
+            print(b.shape)
             # TODO: need check the initial condition x0 can improve the results or not.
-            v[isample], info = cg(operator, b, tol=tol, atol=0)
+
+            v[isample], info = cg(operator, b, tol=tol, atol=0, maxiter=100)
+
             if info != 0:
+                print("Unable to converge!")
                 raise RuntimeError("Unable to converge!")
 
         # return v coefficients with the last dimension of self.count

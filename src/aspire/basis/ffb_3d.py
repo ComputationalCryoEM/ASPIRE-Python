@@ -3,6 +3,9 @@ import logging
 import numpy as np
 from numpy import pi
 
+from scipy.linalg import lu_factor, lu_solve
+
+from aspire.utils import ensure
 from aspire.basis import FBBasis3D
 from aspire.basis.basis_utils import lgwt, norm_assoc_legendre, sph_bessel
 from aspire.nufft import anufft, nufft
@@ -46,6 +49,23 @@ class FFBBasis3D(FBBasis3D):
 
         # get normalized factors
         self._norms = self.norms()
+        
+        
+
+    def expand_mat(self):
+        expand_mat = np.zeros((self.count, self.count))
+
+        for k in range(self.count):
+            print(k)
+            tmp = np.zeros((self.count,))
+            tmp[k] = 1
+            expand_mat[k,:] = self.evaluate_t(self.evaluate(tmp))
+
+        lu, piv = lu_factor(expand_mat)
+        self.expand_mat = expand_mat
+        self.lu = lu
+        self.piv = piv
+
 
     def _precomp(self):
         """
@@ -54,9 +74,12 @@ class FFBBasis3D(FBBasis3D):
         Gaussian quadrature points and weights are also generated
         in radical and phi dimensions.
         """
-        n_r = int(self.ell_max + 1)
-        n_theta = int(2 * self.sz[0])
-        n_phi = int(self.ell_max + 1)
+
+
+        n_r = 3*int(np.ceil(4 * self.rcut * self.kcut))
+        n_theta = 1*int(2 * self.sz[0])
+        n_phi = 3*int(np.ceil(4 * self.rcut * self.kcut))
+
 
         r, wt_r = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
         z, wt_z = lgwt(n_phi, -1, 1, dtype=self.dtype)
@@ -163,6 +186,7 @@ class FFBBasis3D(FBBasis3D):
             coordinate basis. This is an array whose last three dimensions equal
             `self.sz` and the remaining dimensions correspond to `v`.
         """
+        print(v.dtype)
         # roll dimensions of v
         sz_roll = v.shape[:-1]
         v = v.reshape((-1, self.count))
@@ -273,6 +297,7 @@ class FFBBasis3D(FBBasis3D):
         freqs = m_reshape(self._precomp["fourier_pts"], (3, n_r * n_theta * n_phi))
         x = anufft(pf, freqs, self.sz, real=True)
 
+
         # Roll, return the x with the last three dimensions as self.sz
         # Higher dimensions should be like v.
         x = x.reshape((*sz_roll, *self.sz))
@@ -289,7 +314,9 @@ class FFBBasis3D(FBBasis3D):
             `self.count` and whose remaining dimensions correspond to higher
             dimensions of `x`.
         """
+        print(x.dtype)
         # roll dimensions
+#        print(np.linalg.norm(np.imag(x.flatten())))
         sz_roll = x.shape[:-3]
         x = x.reshape((-1, *self.sz))
 
@@ -300,7 +327,7 @@ class FFBBasis3D(FBBasis3D):
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
         pf = nufft(x, self._precomp["fourier_pts"])
-
+        
         pf = m_reshape(pf.T, (n_theta, n_phi * n_r * n_data))
 
         # evaluate the theta parts
@@ -321,6 +348,7 @@ class FFBBasis3D(FBBasis3D):
             (int(np.ceil(self.ell_max / 2)), n_r, 2 * self.ell_max + 1, n_data),
             dtype=x.dtype,
         )
+
 
         # evaluate the phi parts
         for m in range(0, self.ell_max + 1):
@@ -355,8 +383,9 @@ class FFBBasis3D(FBBasis3D):
         w_even = np.transpose(w_even, (1, 2, 3, 0))
         w_odd = np.transpose(w_odd, (1, 2, 3, 0))
 
-        # evaluate the radial parts
+
         v = np.zeros((n_data, self.count), dtype=x.dtype)
+
         for ell in range(0, self.ell_max + 1):
             k_max_ell = self.k_max[ell]
             radial_wtd = self._precomp["radial_wtd"][:, 0:k_max_ell, ell]
@@ -386,7 +415,45 @@ class FFBBasis3D(FBBasis3D):
             ind = self._indices["ells"] == ell
             v[:, ind] = v_ell.T
 
-        # Roll dimensions, last dimension should be self.count,
-        # Higher dimensions like x.
         v = v.reshape((*sz_roll, self.count))
+
         return v
+        
+            
+    def expand_direct_lu(self, x):
+        """
+        Obtain coefficients in the basis from those in standard coordinate basis
+
+        This is a similar function to evaluate_t but with more accuracy by using
+        the cg optimizing of linear equation, Ax=b.
+
+        :param x: An array whose last two or three dimensions are to be expanded
+            the desired basis. These dimensions must equal `self.sz`.
+        :return : The coefficients of `v` expanded in the desired basis.
+            The last dimension of `v` is with size of `count` and the
+            first dimensions of the return value correspond to
+            those first dimensions of `x`.
+
+        """
+        # ensure the first dimensions with size of self.sz
+        sz_roll = x.shape[: -self.ndim]
+
+        x = x.reshape((-1, *self.sz))
+
+        ensure(
+            x.shape[-self.ndim :] == self.sz,
+            f"Last {self.ndim} dimensions of x must match {self.sz}.",
+        )
+
+        # number of image samples
+        n_data = x.shape[0]
+        v = np.zeros((n_data, self.count), dtype=x.dtype)
+
+        for isample in range(0, n_data):
+            b = self.evaluate_t(x[isample]).T
+            v[isample] = lu_solve((self.lu, self.piv), b)
+
+        # return v coefficients with the last dimension of self.count
+        v = v.reshape((-1, *sz_roll))
+        return v
+            
