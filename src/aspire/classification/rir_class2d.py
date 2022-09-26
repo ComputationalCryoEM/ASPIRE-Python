@@ -193,9 +193,6 @@ class RIRClass2D(Class2D):
         """
 
         # # Stage 1: Compute coef and reduce dimensionality.
-        # Memioze/batch this later when result is working
-        # Initial round of component truncation is before bispectrum.
-        # Instantiate a new compressed (truncated) basis.
         if self.pca_basis is None:
             self.pca_basis = FSPCABasis(
                 self.src, components=self.fspca_components, batch_size=self.batch_size

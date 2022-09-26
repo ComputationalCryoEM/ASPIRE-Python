@@ -238,7 +238,7 @@ class FSPCABasis(SteerableBasis2D):
         # Compute coefficient vector of mean image at zeroth component
         self.mean_coef_zero = self.mean_coef_est[self.angular_indices == 0]
 
-        # Hack
+        # Apply Data matrix batchwise
         num_batches = (self.src.n + self.batch_size - 1) // self.batch_size
         for i in range(num_batches):
             start = i * self.batch_size
@@ -371,7 +371,7 @@ class FSPCABasis(SteerableBasis2D):
 
         return c @ eigvecs.T
 
-    # @cache_once
+    # TODO: Python>=3.8 @cached_property
     def _get_compressed_indices(self):
         """
         Return the sorted compressed (truncated) indices into the full FSPCA basis.

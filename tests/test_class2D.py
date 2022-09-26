@@ -290,7 +290,7 @@ class RIRClass2DTestCase(TestCase):
         # Check they are close.
         # Note it is expected the compression reorders the eigvecs,
         #  and thus the eigimages.
-        # We sum over all the eigimages to yield and "average" for comparison
+        # We sum over all the eigimages to yield an "average" for comparison
         self.assertTrue(
             np.allclose(
                 np.sum(eigimg_uncompressed.asnumpy(), axis=0),
