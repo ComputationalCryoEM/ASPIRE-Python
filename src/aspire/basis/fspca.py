@@ -238,13 +238,18 @@ class FSPCABasis(SteerableBasis2D):
         # Compute coefficient vector of mean image at zeroth component
         self.mean_coef_zero = self.mean_coef_est[self.angular_indices == 0]
 
+        # Define mask for zero angular mode, used in loop below
+        zero_ell_mask = self.basis._indices["ells"] == 0
+
         # Apply Data matrix batchwise
         num_batches = (self.src.n + self.batch_size - 1) // self.batch_size
         for i in range(num_batches):
+
+            # Compute the coefficients for this batch
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, self.src.n)
             n = finish - start
-            coef = self.basis.evaluate_t(self.src.images(start, n))
+            batch_coef = self.basis.evaluate_t(self.src.images(start, n))
 
             # Make the Data matrix (A_k)
             # # Construct A_k, matrix of expansion coefficients a^i_k_q
@@ -257,12 +262,10 @@ class FSPCABasis(SteerableBasis2D):
             # #  then use the transpose so image stack becomes columns.
 
             # Initialize a totally empty BlkDiagMatrix, then build incrementally.
-            A = BlkDiagMatrix.empty(0, dtype=coef.dtype)
+            A = BlkDiagMatrix.empty(0, dtype=batch_coef.dtype)
 
-            # TODO: The masks here can be factored out of loop
             # Zero angular index is special case of indexing.
-            mask = self.basis._indices["ells"] == 0
-            A_0 = coef[:, mask] - self.mean_coef_zero
+            A_0 = batch_coef[:, zero_ell_mask] - self.mean_coef_zero
             A.append(A_0)
 
             # Remaining angular indices have postive and negative entries in real representation.
@@ -279,8 +282,8 @@ class FSPCABasis(SteerableBasis2D):
                     for i in range(len(mask))
                 ]
 
-                A.append(coef[:, mask_pos])
-                A.append(coef[:, mask_neg])
+                A.append(batch_coef[:, mask_pos])
+                A.append(batch_coef[:, mask_neg])
 
             if len(A) != len(self.covar_coef_est):
                 raise RuntimeError(
@@ -289,22 +292,23 @@ class FSPCABasis(SteerableBasis2D):
                 )
 
             # -- Compute new FSPCA coefficients. --
-            # For each angular frequency (`ells` in FB code, `k` from paper)
-            #   we use the properties of Block Diagonal Matrices to work
-            #   on the correspong block.
-            full_spca_coef = np.empty_like(coef)
+            # For each batch
+            #   For each angular frequency (`ells` in FB code, `k` from paper)
+            #     Use the properties of Block Diagonal Matrices to work
+            #     on the correspong block.
+            blk_spca_coef = np.empty_like(batch_coef)
             for angular_index, a_blk in enumerate(A):
 
                 # To compute new expansion coefficients using spca basis
                 #   we combine the basis coefs using the eigen decomposition.
                 # Note image stack slow moving axis, otherwise this is just a
                 #   block by block matrix multiply.
-                full_spca_coef[:, basis_inds[angular_index]] = (
+                blk_spca_coef[:, basis_inds[angular_index]] = (
                     a_blk @ self.eigvecs[angular_index]
                 )
 
-            # Truncate
-            self.spca_coef[start:finish, :] = full_spca_coef[:, compressed_indices]
+            # Assign truncated block to global spca_coef
+            self.spca_coef[start:finish, :] = blk_spca_coef[:, compressed_indices]
 
     def expand_from_image_basis(self, x):
         """
