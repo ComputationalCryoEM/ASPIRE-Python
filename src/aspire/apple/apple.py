@@ -47,7 +47,7 @@ class Apple:
             Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
 
         :param particle_size: Particle size (pixels) is required.
-        Remaining parameters generally have defaults based on particle size.
+            Remaining parameters generally have defaults based on particle size.
         :param min_particle_size:
         :param max_particle_size:
         :param query_image_size:
