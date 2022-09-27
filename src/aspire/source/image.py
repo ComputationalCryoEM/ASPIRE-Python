@@ -2,6 +2,7 @@ import logging
 import os.path
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from collections.abc import Iterable
 
 import mrcfile
 import numpy as np
@@ -49,12 +50,10 @@ class ImageAccessor:
         an end of self.num_imgs, and a step of 1.
         :return: An Image object containing the requested images.
         """
-        if isinstance(indices, (range, filter, tuple)):
+        if isinstance(indices, Iterable) and not isinstance(indices, np.ndarray):
             indices = np.fromiter(indices, int)
         if isinstance(indices, (int, np.integer)):
             indices = np.array([indices])
-        if isinstance(indices, list):
-            indices = np.array(indices)
         if isinstance(indices, slice):
             start, stop, step = indices.start, indices.stop, indices.step
             if not start:
@@ -65,7 +64,9 @@ class ImageAccessor:
                 step = 1
             indices = np.arange(start, stop, step)
         if not isinstance(indices, np.ndarray):
-            raise KeyError("Key for .images must be a slice, 1-D NumPy array, or list.")
+            raise KeyError(
+                "Key for .images must be a slice, 1-D NumPy array, or iterable yielding integers."
+            )
         if not indices.ndim == 1:
             raise KeyError("Only one-dimensional indexing is allowed for images.")
         return self.fun(indices)
