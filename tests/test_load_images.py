@@ -84,13 +84,39 @@ class LoadImagesTestCase(TestCase):
         )
         self.assertTrue(np.array_equal(odd_from_src.asnumpy(), odd_from_mrc.asnumpy()))
 
+    def testRelionSourceNDArray(self):
+        indices = np.arange(self.n)
+        from_src = self.src.images[indices]
+        from_mrc = self.getParticlesFromIndices(list(indices))
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionSourceRange(self):
+        indices = range(self.n)
+        from_src = self.src.images[indices]
+        from_mrc = self.getParticlesFromIndices(list(indices))
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionSourceFilter(self):
+        indices = filter(lambda x: x % 2 == 0, list(range(self.n)))
+        from_src = self.src.images[indices]
+        from_mrc = self.getParticlesFromIndices(
+            [i for i in range(self.n) if i % 2 == 0]
+        )
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionSourceTuple(self):
+        indices = (1, 2, 3, 4, 5)
+        from_src = self.src.images[indices]
+        from_mrc = self.getParticlesFromIndices([1, 2, 3, 4, 5])
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
     def testBadKey(self):
         with self.assertRaisesRegex(
             KeyError, "Key for .images must be a slice, 1-D NumPy array, or list."
         ):
             _ = self.src.images["no strings"]
 
-    def testNDArray(self):
+    def testBadNDArray(self):
         with self.assertRaisesRegex(
             KeyError, "Only one-dimensional indexing is allowed for images."
         ):
