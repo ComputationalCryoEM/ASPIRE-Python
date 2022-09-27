@@ -151,6 +151,7 @@ class Simulation(ImageSource):
     def projections(self, start=0, num=np.inf, indices=None):
         """
         Return projections of generated volumes, without applying filters/shifts/amplitudes/noise
+
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
@@ -205,6 +206,7 @@ class Simulation(ImageSource):
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
         Coordinates of simulation volumes in a given basis
+
         :param mean_vol: A mean volume in the form of a Volume Instance (default `mean_true`).
         :param eig_vols: A set of k volumes in a Volume instance (default `eigs`).
         :return:
@@ -292,6 +294,7 @@ class Simulation(ImageSource):
     def eval_volmat(self, volmat_true, volmat_est):
         """
         Evaluate volume matrix estimation accuracy
+
         :param volmat_true: The true volume matrices in the form of an L-by-L-by-L-by-L-by-L-by-L-by-K array.
         :param volmat_est: The estimated volume matrices in the same form.
         :return:
@@ -307,6 +310,7 @@ class Simulation(ImageSource):
     def eval_eigs(self, eigs_est, lambdas_est):
         """
         Evaluate covariance eigendecomposition accuracy
+
         :param eigs_est: The estimated volume eigenvectors in an L-by-L-by-L-by-K array.
         :param lambdas_est: The estimated eigenvalues in a K-by-K diagonal matrix (default `diag(ones(K, 1))`).
         :return:
@@ -329,6 +333,7 @@ class Simulation(ImageSource):
     def eval_clustering(self, vol_idx):
         """
         Evaluate clustering estimation
+
         :param vol_idx: Indexes of the volumes determined (0-indexed)
         :return: Accuracy [0-1] in terms of proportion of correctly assigned labels
         """
@@ -343,6 +348,7 @@ class Simulation(ImageSource):
     def eval_coords(self, mean_vol, eig_vols, coords_est):
         """
         Evaluate coordinate estimation
+
         :param mean_vol: A mean volume in the form of a Volume instance.
         :param eig_vols: A set of eigenvolumes in an Volume instance.
         :param coords_est: The estimated coordinates in the affine space defined centered at `mean_vol` and spanned

@@ -75,6 +75,7 @@ class RelionSource(ImageSource):
     ):
         """
         Load STAR file at given filepath
+
         :param filepath: Absolute or relative path to STAR file
         :param data_folder: Path to folder w.r.t which all relative paths to .mrcs files are resolved.
             If None, the folder corresponding to filepath is used.
