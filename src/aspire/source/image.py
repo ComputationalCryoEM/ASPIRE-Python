@@ -141,6 +141,8 @@ class ImageSource:
     @property
     def angles(self):
         """
+        Rotation angles in radians.
+
         :return: Rotation angles in radians, as a n x 3 array
         """
         # Call a private method. This allows sub classes to effeciently override.
@@ -155,6 +157,8 @@ class ImageSource:
     @property
     def rots(self):
         """
+        Returns rotation matrices.
+
         :return: Rotation matrices as a n x 3 x 3 array
         """
         # Call a private method. This allows sub classes to effeciently override.
@@ -163,6 +167,7 @@ class ImageSource:
     def _rots(self):
         """
         Converts internal `_rotations` representation to expected matrix form.
+
         :return: Rotation matrices as a n x 3 x 3 array
         """
         return self._rotations.matrices.astype(self.dtype)
@@ -171,6 +176,7 @@ class ImageSource:
     def angles(self, values):
         """
         Set rotation angles
+
         :param values: Rotation angles in radians, as a n x 3 array
         :return: None
         """
@@ -183,6 +189,7 @@ class ImageSource:
     def rots(self, values):
         """
         Set rotation matrices
+
         :param values: Rotation matrices as a n x 3 x 3 array
         :return: None
         """
@@ -195,6 +202,7 @@ class ImageSource:
     def set_metadata(self, metadata_fields, values, indices=None):
         """
         Modify metadata field information of this ImageSource for selected indices
+
         :param metadata_fields: A string, or list of strings, representing the metadata field(s) to be modified
         :param values: A scalar or vector (of length |indices|) of replacement values.
         :param indices: A list of 0-based indices indicating the indices for which to modify metadata.
@@ -223,6 +231,7 @@ class ImageSource:
     def has_metadata(self, metadata_fields):
         """
         Find out if one more more metadata fields are available for this `ImageSource`.
+
         :param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
         :return: Boolean value indicating whether the field(s) are available.
         """
@@ -233,6 +242,7 @@ class ImageSource:
     def get_metadata(self, metadata_fields, indices=None, default_value=None):
         """
         Get metadata field information of this ImageSource for selected indices
+
         :param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
         :param indices: A list of 0-based indices indicating the indices for which to get metadata.
             If indices is None, then values corresponding to all indices in this Source object are returned.
@@ -276,6 +286,7 @@ class ImageSource:
         """
         Return images WITHOUT applying any filters/translations/rotations/amplitude corrections/noise
         Subclasses may want to implement their own caching mechanisms.
+
         :param start: start index of image
         :param num: number of images to return
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
@@ -294,6 +305,7 @@ class ImageSource:
         """
         For images in `im_orig`, `filters` associated with the corresponding
         index in the supplied `indices` are applied. The images are then returned as an `Image` stack.
+
         :param im_orig: An `Image` object
         :param filters: A list of `Filter` objects
         :param indices: A list of indices indicating the corresponding filter in `filters`
@@ -329,6 +341,7 @@ class ImageSource:
     def images(self, start, num, *args, **kwargs):
         """
         Return images from this ImageSource as an Image object.
+
         :param start: The inclusive start index from which to return images.
         :param num: The exclusive end index up to which to return images.
         :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
@@ -364,6 +377,7 @@ class ImageSource:
     def whiten(self, noise_filter):
         """
         Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
+
         :param noise_filter: The noise psd of the images as a `Filter` object. Typically determined by a
             NoiseEstimator class, and available as its `filter` attribute.
         :return: On return, the `ImageSource` object has been modified in place.
@@ -381,7 +395,6 @@ class ImageSource:
     def phase_flip(self):
         """
         Perform phase flip on images in the source object using CTF information.
-
         If no CTFFilters exist this will emit a warning and otherwise no-op.
         """
 
@@ -478,6 +491,7 @@ class ImageSource:
     def im_backward(self, im, start):
         """
         Apply adjoint mapping to set of images
+
         :param im: An Image instance to which we wish to apply the adjoint of the forward model.
         :param start: Start index of image to consider
         :return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.
@@ -496,6 +510,7 @@ class ImageSource:
     def vol_forward(self, vol, start, num):
         """
         Apply forward image model to volume
+
         :param vol: A volume instance.
         :param start: Start index of image to consider
         :param num: Number of images to consider
@@ -719,7 +734,8 @@ class ArrayImageSource(ImageSource):
 
     def __init__(self, im, metadata=None, angles=None):
         """
-        Initialize from an `Image` object
+        Initialize from an `Image` object.
+
         :param im: An `Image` or Numpy array object representing image data served up by this `ImageSource`.
         In the case of a Numpy array, attempts to create an 'Image' object.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
