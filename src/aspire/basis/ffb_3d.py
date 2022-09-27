@@ -53,16 +53,16 @@ class FFBBasis3D(FBBasis3D):
         
 
     def expand_mat(self):
-        expand_mat = np.zeros((self.count, self.count))
+        expanded_mat = np.zeros((self.count, self.count))
 
         for k in range(self.count):
             print(k)
             tmp = np.zeros((self.count,))
             tmp[k] = 1
-            expand_mat[k,:] = self.evaluate_t(self.evaluate(tmp))
+            expanded_mat[k,:] = self.evaluate_t(self.evaluate(tmp))
 
-        lu, piv = lu_factor(expand_mat)
-        self.expand_mat = expand_mat
+        lu, piv = lu_factor(expanded_mat)
+        self.expanded_mat = expanded_mat
         self.lu = lu
         self.piv = piv
 
@@ -186,7 +186,6 @@ class FFBBasis3D(FBBasis3D):
             coordinate basis. This is an array whose last three dimensions equal
             `self.sz` and the remaining dimensions correspond to `v`.
         """
-        print(v.dtype)
         # roll dimensions of v
         sz_roll = v.shape[:-1]
         v = v.reshape((-1, self.count))
@@ -314,9 +313,7 @@ class FFBBasis3D(FBBasis3D):
             `self.count` and whose remaining dimensions correspond to higher
             dimensions of `x`.
         """
-        print(x.dtype)
         # roll dimensions
-#        print(np.linalg.norm(np.imag(x.flatten())))
         sz_roll = x.shape[:-3]
         x = x.reshape((-1, *self.sz))
 

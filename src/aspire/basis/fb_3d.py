@@ -205,7 +205,6 @@ class FBBasis3D(Basis):
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
-        t1 = time.time()
         v = v.T
         v, sz_roll = unroll_dim(v, 2)
 
@@ -229,7 +228,6 @@ class FBBasis3D(Basis):
         x = m_reshape(x, self.sz + x.shape[1:])
         x = roll_dim(x, sz_roll)
 
-        print('evaluate took ' + str(time.time()-t1))
 
         return x.T
 
@@ -245,7 +243,6 @@ class FBBasis3D(Basis):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
-        t1 = time.time()
 
         v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
@@ -271,7 +268,6 @@ class FBBasis3D(Basis):
             v[inds] = vs
 
 
-        print('evaluate_t took ' + str(time.time()-t1))
         v = roll_dim(v, sz_roll)
         return v.T
 

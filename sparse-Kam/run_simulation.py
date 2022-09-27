@@ -2,20 +2,18 @@ import copy
 from generate import *
 from simulate import *
 from scipy.io import savemat
-import warnings
-warnings.filterwarnings('ignore')
+
 
 
 ## Setting parameters
-L = 8
+L = 12
 M = 64
 speed = 'fast'
 s = (M,M,M)
 max_restarts = 1
 maxiter = 50
 alg = 'RRR'#'alternating'
-restart_tol = 1e-4
-K = 5000
+K = 4000
 beta = 0.5
 wav = 'haar'
 lev = 6
@@ -50,7 +48,7 @@ for l in range(L,L+1):
 
 
     for k in range(1,num_batch):
-        U_l, Vest = run_RRR_bessel_wavelet(K,A_l,py_basis_l,U0=U_l,beta=beta,wav=wav,lev=lev,speed=speed,M=M,max_restarts=max_restarts,maxiter=maxiter,alg=alg,restart_tol=restart_tol)
+        U_l, Vest = run_RRR_bessel_wavelet(K,A_l,py_basis_l,U0=U_l,beta=beta,wav=wav,lev=lev,speed=speed,M=M,max_restarts=max_restarts,maxiter=maxiter,alg=alg)
         numiter += maxiter
         Vestsmooth = besselcoeff2cart(py_basis_l,A_l@U_l,speed)
         fsave = './simulation_results/data_0409_M='+str(M)+'_l='+str(l)+'_k='+str(k)+'.mat'

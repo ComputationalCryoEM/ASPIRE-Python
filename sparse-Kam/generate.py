@@ -25,9 +25,9 @@ def block_orth(L):
     
 def gen_matrices_3D_dictionary_bessel(M,L,speed='fast'):
 
-    V = emd_0409()
+    #V = emd_0409()
     #V = phantom3d()
-    #V = emd_25892()
+    V = emd_25892()
     V = np.float64(V)
 
     py_basis = gen_bas((M,M,M),L,speed,0)
@@ -42,13 +42,25 @@ def gen_bas(s,l,speed='fast',gen=0):
         if gen == 1:
             py_basis = FFBBasis3D(s, ell_max = l, dtype=np.float64)
             py_basis.expand_mat()
-            file_save = open("precomputed_matrices/3fast_saved_py_basis_"+str(l)+str(s[0]), "wb")
-            pickle.dump(py_basis, file_save)
-            file_save.close()
+
+            np.save("precomputed_matrices/piv_fast_saved_py_basis_"+str(l)+str(s[0]),py_basis.piv,allow_pickle=False)
+            np.save("precomputed_matrices/lu1_fast_saved_py_basis_"+str(l)+str(s[0]),py_basis.lu[0:2500,:],allow_pickle=False)
+            np.save("precomputed_matrices/lu2_fast_saved_py_basis_"+str(l)+str(s[0]),py_basis.lu[2500::,:],allow_pickle=False)
+
+            # file_save = open("precomputed_matrices/3fast_saved_py_basis_"+str(l)+str(s[0]), "wb")
+            # pickle.dump(py_basis, file_save)
+            # file_save.close()
         else:
-            file_load = open("precomputed_matrices/3fast_saved_py_basis_"+str(l)+str(s[0]), "rb")
-            py_basis = pickle.load(file_load)
-            file_load.close()
+            py_basis = FFBBasis3D(s, ell_max = l, dtype=np.float64)
+            piv=np.load("precomputed_matrices/piv_fast_saved_py_basis_"+str(l)+str(s[0])+".npy",allow_pickle=False)
+            lu1=np.load("precomputed_matrices/lu1_fast_saved_py_basis_"+str(l)+str(s[0])+".npy",allow_pickle=False)
+            lu2=np.load("precomputed_matrices/lu2_fast_saved_py_basis_"+str(l)+str(s[0])+".npy",allow_pickle=False)
+            lu = np.vstack((lu1,lu2))
+            py_basis.piv = piv
+            py_basis.lu = lu
+            # file_load = open("precomputed_matrices/3fast_saved_py_basis_"+str(l)+str(s[0]), "rb")
+            # py_basis = pickle.load(file_load)
+            # file_load.close()
     elif speed == 'slow':
         if gen == 1:
             py_basis = FBBasis3D(s, ell_max = l, dtype=np.float64)
@@ -253,9 +265,9 @@ def procrustes_block(M):
 
     for l in range(L+1):
         if l == 0:
-            U[0,0] = M[0,0]/abs(M[0,0])
+            U[0,0] = np.real(M[0,0])/abs(M[0,0])
         else:
-            U[l**2:(l+1)**2,l**2:(l+1)**2] = procrustes(M[l**2:(l+1)**2,l**2:(l+1)**2])
+            U[l**2:(l+1)**2,l**2:(l+1)**2] = np.real(procrustes(M[l**2:(l+1)**2,l**2:(l+1)**2]))
 
     return U
     
@@ -263,7 +275,7 @@ def procrustes_block(M):
 def procrustes_block_l(M,l):
     U = np.zeros( ((l+1)**2, (l+1)**2))
     if l == 0:
-        U = M[0,0]/abs(M[0,0])
+        U = np.real(M[0,0])/abs(M[0,0])
     else:
         U = procrustes(M[l**2:(l+1)**2,l**2:(l+1)**2])
 

@@ -14,7 +14,6 @@ def run_RRR_bessel_wavelet(cut,A,py_basis,beta=0.5,wav='haar',lev=6,speed='fast'
 
     max_restarts = kwargs.get('max_restarts', 1)
     maxiter = kwargs.get('maxiter', 10)
-    restart_tol = kwargs.get('restart_tol', 1e-4)
 
     carted = A@U
     carted = besselcoeff2cart(py_basis,carted,speed)
@@ -32,9 +31,7 @@ def run_RRR_bessel_wavelet(cut,A,py_basis,beta=0.5,wav='haar',lev=6,speed='fast'
 
 
         for iter in range(maxiter):
-            if iter%1 == 0:
-                print(errs[iter-1])
-                print((r, iter, rest))
+            print("iteration: ",iter)
 
             tmp = copy.deepcopy(tmpold)
 
