@@ -29,11 +29,9 @@ class DenoisedImageSource(ImageSource):
 
     def _images(self, indices):
         """
-        Internal function to return a set of images after denoising
-
-        :param start: The inclusive start index from which to return images.
-        :param num: The exclusive end index up to which to return images.
-        :param indices: The indices of images to return.
+        Internal function to return a set of images after denoising, when accessed via the
+        `ImageSource.images` property.
+        :param indices: The indices of images to return as a 1-D NumPy array.
         :return: an `Image` object after denoisng.
         """
         # check for cached images first

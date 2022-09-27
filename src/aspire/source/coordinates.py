@@ -430,14 +430,14 @@ class CoordinateSource(ImageSource, ABC):
     def _images(self, indices):
         """
         Given a range or selection of indices, returns an Image stack
-        when accessed via the `ImageSource.images` property. 
+        when accessed via the `ImageSource.images` property.
         Note that the indices refer to the order
         of the particles loaded in this *specific* CoordinateSource. This may
         not correspond to the particles in the original source on disk, if some
         particles were excluded due to their box not fitting into the mrc
         dimensions. Thus, the exact particles returned are a function of the
         `particle_size`.
-        :param indices: A numpy array of integer indices.
+        :param indices: A 1-D NumPy array of integer indices.
         :return: An `Image` object.
         """
         # check for cached images first

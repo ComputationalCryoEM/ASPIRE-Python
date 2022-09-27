@@ -785,6 +785,12 @@ class ArrayImageSource(ImageSource):
             self.angles = angles
 
     def _images(self, indices):
+        """
+        Returns images corresponding to `indices` after being accessed via the
+        `ImageSource.images` property
+        :param indices: A 1-D NumPy array of indices.
+        :return: An `Image` object.
+        """
         # Load cached data and apply transforms
         return self.generation_pipeline.forward(
             Image(self._cached_im[indices, :, :]), indices
