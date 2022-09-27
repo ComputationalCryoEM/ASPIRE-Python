@@ -205,7 +205,7 @@ class Simulation(ImageSource):
         if enable_noise and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
-        # Finally apply transforms to resulting image
+        # Finally, apply transforms to resulting Image
         return self.generation_pipeline.forward(im, indices)
 
     def _apply_sim_filters(self, im, indices):

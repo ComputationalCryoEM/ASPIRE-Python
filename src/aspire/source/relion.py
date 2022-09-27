@@ -275,5 +275,5 @@ class RelionSource(ImageSource):
 
         logger.info(f"Loading {len(indices)} images complete")
 
-        # Finally apply transforms to resulting Image object
+        # Finally, apply transforms to resulting Image
         return self.generation_pipeline.forward(Image(im), indices)

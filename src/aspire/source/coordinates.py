@@ -488,7 +488,7 @@ class CoordinateSource(ImageSource, ABC):
                 if idx == mrc_index:
                     cropped = self._crop_micrograph(arr, next(coord))
                     im[i] = cropped
-        # Apply transforms added to the final Image
+        # Finally, apply transforms to resulting Image
         return self.generation_pipeline.forward(Image(im), indices)
 
     @staticmethod
