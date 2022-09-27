@@ -270,7 +270,7 @@ class Simulation(ImageSource):
 
         # Arrange in descending order (flip column order in eigenvector matrix)
         w = w[::-1]
-        eigs_true = eigs_true.flip()
+        eigs_true = Volume(eigs_true[::-1])
 
         return eigs_true, np.diag(w)
 

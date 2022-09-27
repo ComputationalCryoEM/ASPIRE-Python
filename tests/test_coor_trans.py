@@ -6,6 +6,7 @@ import numpy as np
 from aspire.utils import (
     Rotation,
     crop_pad_2d,
+    crop_pad_3d,
     get_aligned_rotations,
     grid_2d,
     grid_3d,
@@ -115,6 +116,36 @@ class UtilsTestCase(TestCase):
         test_a = np.diag(np.arange(8))
         self.assertTrue(np.array_equal(test_a, crop_pad_2d(a, 8)))
 
+    def testSquareCrop3D(self):
+        # even to even
+        a = np.zeros((8, 8, 8))
+        # pad it with the parts that will be cropped off from a 10x10x10
+        a = np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        # after cropping
+        test_a = np.zeros((8, 8, 8))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
+
+        # even to odd
+        a = np.zeros((7, 7, 7))
+        # pad it with the parts that will be cropped off from a 10x10x10
+        a = np.pad(a, ((2, 1), (2, 1), (2, 1)), "constant", constant_values=1)
+        test_a = np.zeros((7, 7, 7))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 7), test_a))
+
+        # odd to odd
+        a = np.zeros((7, 7, 7))
+        # pad it with the parts that will be cropped off from a 9x9x9
+        a = np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        test_a = np.zeros((7, 7, 7))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 7), test_a))
+
+        # odd to even
+        a = np.zeros((8, 8, 8))
+        # pad it with the parts that will be cropped off from 11x11x11
+        a = np.pad(a, ((1, 2), (1, 2), (1, 2)), "constant", constant_values=1)
+        test_a = np.zeros((8, 8, 8))
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 8), test_a))
+
     def testSquarePad2D(self):
         # Test even/odd cases based on the convention that the center of a sequence of length n
         # is (n+1)/2 if n is odd and n/2 + 1 if even.
@@ -150,6 +181,31 @@ class UtilsTestCase(TestCase):
         a = np.diag(np.arange(1, 10))
         test_a = np.diag([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         self.assertTrue(np.array_equal(test_a, crop_pad_2d(a, 10)))
+
+    def testSquarePad3D(self):
+        # even to even
+        a = np.zeros((8, 8, 8))
+        # after padding to 10x10x10
+        test_a = np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 10, fill_value=1), test_a))
+
+        # even to odd
+        a = np.zeros((8, 8, 8))
+        # after padding to 11x11x11
+        test_a = np.pad(a, ((1, 2), (1, 2), (1, 2)), "constant", constant_values=1)
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 11, fill_value=1), test_a))
+
+        # odd to odd
+        a = np.zeros((7, 7, 7))
+        # after padding to 9x9x9
+        test_a = np.pad(a, ((1, 1), (1, 1), (1, 1)), "constant", constant_values=1)
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 9, fill_value=1), test_a))
+
+        # odd to even
+        a = np.zeros((7, 7, 7))
+        # after padding to 10x10x10
+        test_a = np.pad(a, ((2, 1), (2, 1), (2, 1)), "constant", constant_values=1)
+        self.assertTrue(np.array_equal(crop_pad_3d(a, 10, fill_value=1), test_a))
 
     def testRectCrop2D(self):
         # Additional sanity checks for rectangular cropping case
@@ -240,8 +296,15 @@ class UtilsTestCase(TestCase):
     def testCropPad2DError(self):
         with self.assertRaises(ValueError) as e:
             _ = crop_pad_2d(np.zeros((6, 10)), 8)
-            self.assertTrue(
+            self.assertEqual(
                 "Cannot crop and pad an image at the same time.", str(e.exception)
+            )
+
+    def testCropPad3DError(self):
+        with self.assertRaises(ValueError) as e:
+            _ = crop_pad_3d(np.zeros((6, 8, 10)), 8)
+            self.assertEqual(
+                "Cannot crop and pad a volume at the same time.", str(e.exception)
             )
 
     def testCrop2DDtype(self):
@@ -252,6 +315,12 @@ class UtilsTestCase(TestCase):
             crop_pad_2d(np.eye(10).astype("complex"), 5).dtype, np.dtype("complex128")
         )
 
+    def testCrop3DDtype(self):
+        self.assertEqual(
+            crop_pad_3d(np.ones((8, 8, 8)).astype("complex"), 5).dtype,
+            np.dtype("complex128"),
+        )
+
     def testCrop2DFillValue(self):
         # make sure the fill value is as expected
         # we are padding from an odd to an even dimension
@@ -259,3 +328,10 @@ class UtilsTestCase(TestCase):
         a = np.ones((4, 3))
         b = crop_pad_2d(a, 4, fill_value=-1)
         self.assertTrue(np.array_equal(b[:, 0], np.array([-1, -1, -1, -1])))
+
+    def testCrop3DFillValue(self):
+        # make sure the fill value is expected. Since we are padding from odd to even
+        # the padded side is added to the 0-end of dimension 3
+        a = np.ones((4, 4, 3))
+        b = crop_pad_3d(a, 4, fill_value=-1)
+        self.assertTrue(np.array_equal(b[:, :, 0], -1 * np.ones((4, 4))))
