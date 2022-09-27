@@ -22,7 +22,7 @@ class Basis:
 
         :param size: The size of the vectors for which to define the basis.
             Currently only square images and cubic volumes are supported.
-        :ell_max: The maximum order ell of the basis elements. If no input
+        :param ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
             below the Nyquist frequency (default Inf).

@@ -59,8 +59,8 @@ class Apple:
         :param model: One of svm/gaussian_mixture/gaussian_naive_bayes/xgboost/thunder_svm
         :param model_opts: Optional dictionary of svm model options. Defaults to None.
         :param n_processes: Concurrent processes to spawn.
-        May improve performance on very large machines.
-        Otherwise use default of 1.
+            May improve performance on very large machines.
+            Otherwise use default of 1.
         """
 
         self.particle_size = particle_size
