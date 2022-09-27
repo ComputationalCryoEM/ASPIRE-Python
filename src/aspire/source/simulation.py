@@ -190,7 +190,12 @@ class Simulation(ImageSource):
         return self._images(indices, enable_noise=False)
 
     def _images(self, indices, enable_noise=True):
-
+        """
+        Returns particle images when accessed via the `ImageSource.images` property.
+        :param indices: A 1-D NumPy array of integer indices.
+        :param enable_noise: Only used internally, toggled off when `clean_images` requested.
+        :return: An `Image` object.
+        """
         # check for cached images first
         if self._cached_im is not None:
             logger.info("Loading images from cache")

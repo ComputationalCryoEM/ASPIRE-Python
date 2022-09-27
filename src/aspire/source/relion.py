@@ -228,6 +228,12 @@ class RelionSource(ImageSource):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
 
     def _images(self, indices):
+        """                                                                                                                                             
+        Returns particle images when accessed via the `ImageSource.images` property.
+        Loads particle images corresponding to `indices` from StarFile and .mrcs stacks.
+        :param indices: A 1-D NumPy array of integer indices.                                                                                   
+        :return: An `Image` object.                                                                                                                  
+        """
 
         # check for cached images first
         if self._cached_im is not None:
