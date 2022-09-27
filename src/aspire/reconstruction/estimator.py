@@ -135,6 +135,7 @@ class Estimator:
     def apply_kernel(self, vol_coeff, kernel=None):
         """
         Applies the kernel represented by convolution
+
         :param vol_coeff: The volume to be convolved, stored in the basis coefficients.
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
         :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by
