@@ -26,7 +26,7 @@ class FBBasis3D(Basis, FBBasisMixin):
         :param size: The size of the vectors for which to define the basis.
             May be a 3-tuple or an integer, in which case a cubic basis is assumed.
             Currently only cubic images are supported.
-        :ell_max: The maximum order ell of the basis elements. If no input
+        :param ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
             below the Nyquist frequency (default Inf).
@@ -144,6 +144,7 @@ class FBBasis3D(Basis, FBBasisMixin):
     def _evaluate(self, v):
         """
         Evaluate coefficients in standard 3D coordinate basis from those in FB basis
+
         :param v: A coefficient vector (or an array of coefficient vectors) to
             be evaluated. The first dimension must equal `self.count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.

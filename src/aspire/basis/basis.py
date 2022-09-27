@@ -162,7 +162,7 @@ class Basis:
 
         :param x: An array whose last two or three dimensions are to be expanded
             the desired basis. These dimensions must equal `self.sz`.
-        :return : The coefficients of `v` expanded in the desired basis.
+        :return: The coefficients of `v` expanded in the desired basis.
             The last dimension of `v` is with size of `count` and the
             first dimensions of the return value correspond to
             those first dimensions of `x`.
