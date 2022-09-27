@@ -17,6 +17,7 @@ def fill_struct(obj=None, att_vals=None):
         pass
     else:
         setattr(s, key, att_vals[key])
+
     :param obj:
     :param att_vals:
     :param overwrite
@@ -41,6 +42,7 @@ def conj_grad(a_fun, b, cg_opt=None, init=None):
     Conjugate Gradient method to solve the linear system.
 
     This is corresponding to the implemented version in the ASPIRE Matlab package.
+
     :param a_fun:  A function handle specifying the linear operation x -> Ax.
         When multiple right-hand sides are supplied, this function takes as
         input an array of shape (n, p), where n is the number of right-hand
