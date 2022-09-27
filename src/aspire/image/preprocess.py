@@ -122,7 +122,7 @@ def downsample(insamples, szout, mask=None):
 
     The function handles odd and even-sized arrays correctly. The center of
     an odd array is taken to be at (n+1)/2, and an even array is n/2+1.
-    
+
     :param insamples: Set of objects to be downsampled in the form of an array.
         the first dimension is the number of objects.
     :param szout: The desired resolution of for output objects.

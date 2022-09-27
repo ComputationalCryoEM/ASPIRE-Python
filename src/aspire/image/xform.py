@@ -219,7 +219,7 @@ class FilterXform(SymmetricXform):
     def __init__(self, filter):
         """
         Initialize the Filter `Xform` using a `Filter` object
-        
+
         :param filter: An object of type `aspire.operators.Filter`
         """
         super().__init__()
