@@ -180,6 +180,10 @@ class Simulation(ImageSource):
 
     @property
     def clean_images(self):
+        """
+        Return projections with filters/shifts/amplitudes applied, but without noise.
+        Subscriptable property.
+        """
         return self._clean_images_accessor
 
     def _clean_images(self, indices):
