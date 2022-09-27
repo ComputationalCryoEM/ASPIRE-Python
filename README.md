@@ -18,5 +18,5 @@ pip install -e .
 5. Run the simulation script with:
 
 ```
-python3 -i run_simulation.py
+python -i run_simulation.py
 ```
