@@ -36,6 +36,13 @@ class DenoisedImageSource(ImageSource):
         :param indices: The indices of images to return.
         :return: an `Image` object after denoisng.
         """
+        # check for cached images first
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            return self.generation_pipeline.forward(
+                Image(self._cached_im[indices, :, :]), indices
+            )
+
         # start and end (and indices) refer to the indices in the DenoisedImageSource
         # that are being denoised and returned in batches
         start = indices.min()
@@ -54,4 +61,5 @@ class DenoisedImageSource(ImageSource):
             # we subtract start here to correct for any offset in the indices
             im[batch_start - start : batch_end - start] = imgs_denoised.asnumpy()
 
-        return Image(im)
+        # Finally, apply transforms to resulting Image
+        return self.generation_pipeline.forward(Image(im), indices)

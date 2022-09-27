@@ -133,7 +133,7 @@ class ImageSource(ABC):
         self._metadata_out = None
 
         # instantiate the accessor for the `images` property
-        self._img_accessor = ImageAccessor(self._images_super, self.n)
+        self._img_accessor = ImageAccessor(self._images, self.n)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
@@ -319,19 +319,6 @@ class ImageSource(ABC):
 
         return result.to_numpy().squeeze()
 
-    def _images_super(self, indices):
-        """
-        Performs operations universal to all Sources when accessing images:
-        checking for cached data, and applying pipeline transformations.
-        Called by `self._image_accessor`
-        """
-        if self._cached_im is not None:
-            logger.info("Loading images from cache")
-            im = Image(self._cached_im[indices, :, :])
-        else:
-            im = self._images(indices)
-        return self.generation_pipeline.forward(im, indices)
-
     def _apply_filters(
         self,
         im_orig,
@@ -385,6 +372,7 @@ class ImageSource(ABC):
     def _images(self, indices):
         """
         Subclasses must implement a private _images() method accepting a 1-D NumPy array of indices.
+        Subclasses handle cached image check as well as applying transforms in the generation pipeline.
         """
 
     def downsample(self, L):
@@ -796,7 +784,10 @@ class ArrayImageSource(ImageSource):
             self.angles = angles
 
     def _images(self, indices):
-        return Image(self._cached_im[indices, :, :])
+        # Load cached data and apply transforms
+        return self.generation_pipeline.forward(
+            Image(self._cached_im[indices, :, :]), indices
+        )
 
     def _rots(self):
         """

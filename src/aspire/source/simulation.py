@@ -186,6 +186,13 @@ class Simulation(ImageSource):
         return self._images(indices, enable_noise=False)
 
     def _images(self, indices, enable_noise=True):
+
+        # check for cached images first
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            return self.generation_pipeline.forward(
+                Image(self._cached_im[indices, :, :]), indices
+            )
         im = self.projections[indices]
 
         # apply original CTF distortion to image
@@ -198,7 +205,8 @@ class Simulation(ImageSource):
         if enable_noise and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
-        return im
+        # Finally apply transforms to resulting image
+        return self.generation_pipeline.forward(im, indices)
 
     def _apply_sim_filters(self, im, indices):
         return self._apply_filters(

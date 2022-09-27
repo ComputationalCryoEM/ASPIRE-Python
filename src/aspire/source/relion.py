@@ -229,6 +229,13 @@ class RelionSource(ImageSource):
 
     def _images(self, indices):
 
+        # check for cached images first
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            return self.generation_pipeline.forward(
+                Image(self._cached_im[indices, :, :]), indices
+            )
+
         logger.info(f"Loading {len(indices)} images from STAR file")
 
         def load_single_mrcs(filepath, df):
@@ -268,4 +275,5 @@ class RelionSource(ImageSource):
 
         logger.info(f"Loading {len(indices)} images complete")
 
-        return Image(im)
+        # Finally apply transforms to resulting Image object
+        return self.generation_pipeline.forward(Image(im), indices)

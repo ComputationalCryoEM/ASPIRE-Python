@@ -438,6 +438,12 @@ class CoordinateSource(ImageSource, ABC):
         `particle_size`.
         :param indices: A numpy array of integer indices.
         """
+        # check for cached images first
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            return self.generation_pipeline.forward(
+                Image(self._cached_im[indices, :, :]), indices
+            )
 
         logger.info(f"Loading {len(indices)} images from micrographs")
 
@@ -482,8 +488,8 @@ class CoordinateSource(ImageSource, ABC):
                 if idx == mrc_index:
                     cropped = self._crop_micrograph(arr, next(coord))
                     im[i] = cropped
-
-        return Image(im)
+        # Apply transforms added to the final Image
+        return self.generation_pipeline.forward(Image(im), indices)
 
     @staticmethod
     def _is_number(text):
