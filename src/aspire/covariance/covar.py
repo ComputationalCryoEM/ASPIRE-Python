@@ -141,6 +141,7 @@ class CovarianceEstimator(Estimator):
     def apply_kernel(self, coeff, kernel=None, packed=False):
         """
         Applies the kernel represented by convolution
+
         :param coeff: The volume matrix (6 dimensions) to be convolved (but see the `packed` argument below).
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
         :param packed: whether the `coeff` matrix represents an isometrically mapped packed vector,
@@ -165,7 +166,7 @@ class CovarianceEstimator(Estimator):
         Apply adjoint mapping to source
 
         :return: The sum of the outer products of the mean-subtracted images in `src`, corrected by the expected noise
-        contribution and expressed as coefficients of `basis`.
+            contribution and expressed as coefficients of `basis`.
         """
         covar_b = np.zeros(
             (self.src.L, self.src.L, self.src.L, self.src.L, self.src.L, self.src.L),
@@ -192,6 +193,7 @@ class CovarianceEstimator(Estimator):
     def _shrink(self, covar_b_coeff, noise_variance, method=None):
         """
         Shrink covariance matrix
+
         :param covar_b_coeff: Outer products of the mean-subtracted images
         :param noise_variance: Noise variance
         :param method: One of None/'frobenius_norm'/'operator_norm'/'soft_threshold'
