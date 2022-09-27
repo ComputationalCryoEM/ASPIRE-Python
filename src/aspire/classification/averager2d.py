@@ -27,8 +27,8 @@ class Averager2D(ABC):
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
         :param num_procs: Number of processes to use.
-        `None` will attempt computing a suggestion based on machine resources.
-        Note some underlying code may already use threading.
+            `None` will attempt computing a suggestion based on machine resources.
+            Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -83,9 +83,9 @@ class Averager2D(ABC):
 
         :param classes: class indices, refering to src. (n_classes, n_nbor).
         :param reflections: Bool representing whether to reflect image in `classes`.
-        (n_clases, n_nbor)
+            (n_clases, n_nbor)
         :param coefs: Optional basis coefs (could avoid recomputing).
-        (n_classes, coef_count)
+            (n_classes, coef_count)
         :return: Stack of synthetic class average images as Image instance.
         """
 
@@ -95,9 +95,9 @@ class Averager2D(ABC):
         preserving the class/nbor order.
 
         :param cls: An iterable (0/1-D array or list) that holds the indices of images to align.
-        In class averaging, this would be a class.
+            In class averaging, this would be a class.
         :param src: Optionally override the src, for example, if you want to use a different
-        source for a certain operation (ie alignment).
+            source for a certain operation (ie alignment).
         """
         src = src or self.src
 
@@ -124,7 +124,7 @@ class AligningAverager2D(Averager2D):
         :param src: Source of original images.
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
         :param num_procs: Number of processes to use.
-        Note some underlying code may already use threading.
+            Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -490,10 +490,10 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         :param composite_basis:  Basis to be used during class average composition.
         :param src: Source of original images.
         :param alignment_src: Optional, source to be used during class average alignment.
-        Must be the same resolution as `src`.
+            Must be the same resolution as `src`.
         :param num_procs: Number of processes to use.
-        `None` will attempt computing a suggestion based on machine resources.
-        Note some underlying code may already use threading.
+            `None` will attempt computing a suggestion based on machine resources.
+            Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -646,19 +646,19 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
     ):
         """
         :param alignment_basis: Basis to be used during alignment.
-        For current implementation of ReddyChatterjiAverager2D this should be `None`.
-        Instead see `alignment_src`.
+            For current implementation of ReddyChatterjiAverager2D this should be `None`.
+            Instead see `alignment_src`.
         :param src: Source of original images.
         :param composite_basis:  Basis to be used during class average composition.
         :param alignment_src: Optional, source to be used during class average alignment.
-        Must be the same resolution as `src`.
+            Must be the same resolution as `src`.
         :param radius: Brute force translation search radius.
-        Defaults to src.L//8.
+            Defaults to src.L//8.
         :param dtype: Numpy dtype to be used during alignment.
 
         :param num_procs: Number of processes to use.
-        `None` will attempt computing a suggestion based on machine resources.
-        Note some underlying code may already use threading.
+            `None` will attempt computing a suggestion based on machine resources.
+            Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 

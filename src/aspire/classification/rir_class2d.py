@@ -54,13 +54,13 @@ class RIRClass2D(Class2D):
         for Viewing Direction Classification in Cryo-EM. (2014)
 
         :param src: Source instance.  Note it is possible to use one `source` for classification (ie CWF),
-        and a different `source` for stacking in the `averager`.
+            and a different `source` for stacking in the `averager`.
         :param pca_basis: Optional FSPCA Basis instance
         :param fspca_components: Optinally set number of components (top eigvals) to keep from full FSCPA.
-        Default value of None will infer from `pca_basis` when provided, otherwise defaults to 400.
+            Default value of None will infer from `pca_basis` when provided, otherwise defaults to 400.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
         :param sample_n: Threshold for random sampling of bispectrum coefs. Default 4000,
-        high values such as 50000 reduce random sampling.
+            high values such as 50000 reduce random sampling.
         :param n_nbor: Number of nearest neighbors to compute.
         :param n_classes: Number of class averages to return.
         :param bispectrum_freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
@@ -70,7 +70,7 @@ class RIRClass2D(Class2D):
         :param selector: A ClassSelector subclass. Defaults to RandomClassSelector.
         :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param num_procs: Number of processes to use.
-        `None` will attempt computing a suggestion based on machine resources.
+            `None` will attempt computing a suggestion based on machine resources.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
@@ -279,9 +279,9 @@ class RIRClass2D(Class2D):
         :param coef_b:
         :param coef_b_r:
         :returns:  Tuple of classes, refl, dists where
-        classes is an integer array of indices representing image ids,
-        refl is a bool array representing reflections (True is refl),
-        and distances is an array of distances as returned by NN implementation.
+            classes is an integer array of indices representing image ids,
+            refl is a bool array representing reflections (True is refl),
+            and distances is an array of distances as returned by NN implementation.
         """
         # _nn_classification is assigned during initialization.
         return self._nn_classification(coef_b, coef_b_r)
