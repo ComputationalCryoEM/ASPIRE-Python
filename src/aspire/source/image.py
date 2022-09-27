@@ -52,9 +52,9 @@ class ImageAccessor:
         """
         if isinstance(indices, Iterable) and not isinstance(indices, np.ndarray):
             indices = np.fromiter(indices, int)
-        if isinstance(indices, (int, np.integer)):
+        elif isinstance(indices, (int, np.integer)):
             indices = np.array([indices])
-        if isinstance(indices, slice):
+        elif isinstance(indices, slice):
             start, stop, step = indices.start, indices.stop, indices.step
             if not start:
                 start = 0
@@ -133,7 +133,7 @@ class ImageSource(ABC):
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
 
-        # instantiate the accessor for the `images` property
+        # Instantiate the accessor for the `images` property
         self._img_accessor = ImageAccessor(self._images, self.n)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
