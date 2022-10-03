@@ -28,8 +28,7 @@ class CufinufftPlan(Plan):
         self.ntransforms = ntransforms
 
         # Basic dtype passthough.
-        self._dtype = fourier_pts.dtype
-        dtype = np.float64
+        dtype = fourier_pts.dtype
         if dtype == np.float64 or dtype == np.complex128:
             self.dtype = np.float64
             self.complex_dtype = np.complex128
@@ -133,7 +132,7 @@ class CufinufftPlan(Plan):
 
         result = result_gpu.get()
 
-        return result.astype(self._dtype, copy=False)
+        return result
 
     def adjoint(self, signal):
         """
@@ -173,4 +172,4 @@ class CufinufftPlan(Plan):
 
         result = result_gpu.get()
 
-        return result.astype(self._dtype, copy=False)
+        return result
