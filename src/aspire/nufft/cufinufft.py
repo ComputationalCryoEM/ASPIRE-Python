@@ -133,7 +133,7 @@ class CufinufftPlan(Plan):
 
         result = result_gpu.get()
 
-        return result.astype(self._dtype, copy=False
+        return result.astype(self._dtype, copy=False)
 
     def adjoint(self, signal):
         """
