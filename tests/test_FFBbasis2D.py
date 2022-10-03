@@ -163,7 +163,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
             )
         ).downsample(self.L)
 
-        src = Simulation(L=self.L, n=n_img, vols=v, dtype=np.float64)
+        src = Simulation(L=self.L, n=n_img, vols=v, dtype=self.dtype)
 
         # Shift images using the Image method directly
         shifted_imgs = src.images(0, n_img).shift(test_shift)

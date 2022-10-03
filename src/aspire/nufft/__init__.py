@@ -159,12 +159,11 @@ def anufft(sig_f, fourier_pts, sz, real=False):
     """
 
     if fourier_pts.dtype != real_type(sig_f.dtype):
-        logger.warning(
+        raise RuntimeError(
             "anufft passed inconsistent dtypes."
             f" fourier_pts: {fourier_pts.dtype}"
-            f" forcing precision of signal data: {sig_f.dtype}."
+            f" does not match precision of signal data: {sig_f.dtype}."
         )
-        fourier_pts = fourier_pts.astype(real_type(sig_f.dtype))
 
     if sig_f.dtype != complex_type(sig_f.dtype):
         logger.debug("anufft passed real_type for signal, converting")
@@ -196,12 +195,11 @@ def nufft(sig_f, fourier_pts, real=False):
     """
 
     if fourier_pts.dtype != real_type(sig_f.dtype):
-        logger.warning(
+        raise RuntimeError(
             "nufft passed inconsistent dtypes."
             f" fourier_pts: {fourier_pts.dtype}"
-            f" forcing precision of signal data: {sig_f.dtype}."
+            f" does not match precision of signal data: {sig_f.dtype}."
         )
-        fourier_pts = fourier_pts.astype(real_type(sig_f.dtype))
 
     if sig_f.dtype != complex_type(sig_f.dtype):
         logger.debug("nufft passed real_type for signal, converting")
