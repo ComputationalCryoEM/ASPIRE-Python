@@ -8,7 +8,7 @@ from numpy.linalg import qr
 import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.utils import Rotation, grid_2d, grid_3d, mat_to_vec, vec_to_mat
+from aspire.utils import Rotation, crop_pad_3d, grid_2d, grid_3d, mat_to_vec, vec_to_mat
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import Random, randn
 from aspire.utils.types import complex_type
@@ -258,11 +258,29 @@ class Volume:
 
         return Volume(np.flip(self._data, axis))
 
-    def downsample(self, szout, mask=None):
-        if isinstance(szout, int):
-            szout = (szout,) * 3
+    def downsample(self, ds_res, mask=None):
+        """
+        Downsample each volume to a desired resolution (only cubic supported).
 
-        return Volume(aspire.image.downsample(self._data, szout, mask))
+        :param ds_res: Desired resolution.
+        :param mask: Optional NumPy array mask to multiply in Fourier space.
+        """
+        if mask is None:
+            mask = 1.0
+
+        # take 3D Fourier transform of each volume in the stack
+        fx = fft.fftshift(fft.fftn(self._data, axes=(1, 2, 3)))
+        # crop each volume to the desired resolution in frequency space
+        crop_fx = (
+            np.array([crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)])
+            * mask
+        )
+        # inverse Fourier transform of each volume
+        out = fft.ifftn(fft.ifftshift(crop_fx), axes=(1, 2, 3)) * (
+            ds_res**3 / self.resolution**3
+        )
+        # returns a new Volume object
+        return Volume(np.real(out))
 
     def shift(self):
         raise NotImplementedError

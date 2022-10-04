@@ -111,7 +111,7 @@ v = Volume(d)
 img_size = 64
 # Volume.downsample() Returns a new Volume instance.
 #   We will use this lower resolution volume later.
-v2 = v.downsample((img_size, img_size, img_size))
+v2 = v.downsample(img_size)
 L = v2.resolution
 
 # %%
