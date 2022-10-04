@@ -69,7 +69,7 @@ logger.info(
 )
 infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 vols = Volume(infile.data.astype(dtype))
-vols = vols.downsample((img_size,) * 3)
+vols = vols.downsample(img_size)
 
 # %%
 # Create Simulation Object and Obtain True Rotation Angles

@@ -7,6 +7,7 @@ from pytest import raises
 from scipy.special import jv
 
 from aspire.basis import FBBasis2D
+from aspire.image import Image
 from aspire.utils import complex_type, real_type
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
@@ -82,10 +83,10 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
             self._testElement(ell, k, sgn)
 
     def testComplexCoversion(self):
-        x = randn(*self.basis.sz, seed=self.seed)
+        x = Image(randn(*self.basis.sz, seed=self.seed), dtype=self.dtype)
 
         # Express in an FB basis
-        v1 = self.basis.expand(x.astype(self.dtype))
+        v1 = self.basis.expand(x)
 
         # Convert real FB coef to complex coef,
         cv = self.basis.to_complex(v1)
