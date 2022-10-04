@@ -148,7 +148,7 @@ class Estimator:
         vol = self.basis.evaluate(vol_coeff)
         # convolve_volume expects a 3-dimensional array
         # so we remove the first dimension of the volume, which is 1
-        vol = Volume(kernel.convolve_volume(np.squeeze(vol.asnumpy(), axis=0)))
+        vol = kernel.convolve_volume(vol[0])
         vol = self.basis.evaluate_t(vol)
 
         return vol
