@@ -83,14 +83,15 @@ class Estimator:
         :return: The adjoint mapping applied to the images, averaged over the whole dataset and expressed
             as coefficients of `basis`.
         """
-        mean_b = np.zeros((self.src.L, self.src.L, self.src.L), dtype=self.dtype)
+        mean_b = Volume(
+            np.zeros((self.src.L, self.src.L, self.src.L), dtype=self.dtype)
+        )
 
         for i in range(0, self.src.n, self.batch_size):
             im = self.src.images(i, self.batch_size)
             batch_mean_b = self.src.im_backward(im, i) / self.src.n
             mean_b += batch_mean_b.astype(self.dtype)
 
-        mean_b = Volume(mean_b)
         res = self.basis.evaluate_t(mean_b)
         logger.info(f"Determined adjoint mappings. Shape = {res.shape}")
         return res
