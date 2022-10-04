@@ -8,6 +8,7 @@ from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
 from aspire.reconstruction.kernel import FourierKernel
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,7 @@ class Estimator:
             batch_mean_b = self.src.im_backward(im, i) / self.src.n
             mean_b += batch_mean_b.astype(self.dtype)
 
+        mean_b = Volume(mean_b)
         res = self.basis.evaluate_t(mean_b)
         logger.info(f"Determined adjoint mappings. Shape = {res.shape}")
         return res
@@ -145,7 +147,7 @@ class Estimator:
         vol = self.basis.evaluate(vol_coeff)
         # convolve_volume expects a 3-dimensional array
         # so we remove the first dimension of the volume, which is 1
-        vol = kernel.convolve_volume(np.squeeze(vol.asnumpy(), axis=0))
+        vol = Volume(kernel.convolve_volume(np.squeeze(vol.asnumpy(), axis=0)))
         vol = self.basis.evaluate_t(vol)
 
         return vol
