@@ -4,7 +4,9 @@ import tempfile
 from shutil import copyfile
 from unittest import TestCase
 
+import mrcfile
 import numpy as np
+from parameterized import parameterized
 
 from aspire.ctf import estimate_ctf
 
@@ -17,9 +19,9 @@ class CtfEstimatorTestCase(TestCase):
     def setUp(self):
         self.test_input_fn = "sample.mrc"
         self.test_output = {
-            "defocus_u": 1.1142363760e03,
-            "defocus_v": 1.0920983202e03,
-            "defocus_ang": -8.3521800000e-03,
+            "defocus_u": 1.137359876e03,
+            "defocus_v": 9.617226108e02,
+            "defocus_ang": 1.5706205116381249,
             "cs": 2.0,
             "voltage": 300.0,
             "pixel_size": 1,
@@ -61,21 +63,52 @@ class CtfEstimatorTestCase(TestCase):
                     # the following parameters have higher tolerances
 
                     # defocusU
-                    np.allclose(
-                        result["defocus_u"], self.test_output["defocus_u"], atol=5e-2
+                    self.assertTrue(
+                        np.allclose(
+                            result["defocus_u"],
+                            self.test_output["defocus_u"],
+                            atol=5e-2,
+                        )
                     )
                     # defocusV
-                    np.allclose(
-                        result["defocus_v"], self.test_output["defocus_v"], atol=5e-2
+                    self.assertTrue(
+                        np.allclose(
+                            result["defocus_u"],
+                            self.test_output["defocus_u"],
+                            atol=5e-2,
+                        )
                     )
                     # defocusAngle
-                    np.allclose(
-                        result["defocus_ang"],
-                        self.test_output["defocus_ang"],
-                        atol=5e-5,
+                    self.assertTrue(
+                        np.allclose(
+                            result["defocus_ang"],
+                            self.test_output["defocus_ang"],
+                            atol=5e-2,
+                        )
                     )
 
                     for param in ["cs", "amplitude_contrast", "voltage", "pixel_size"]:
                         self.assertTrue(
                             np.allclose(result[param], self.test_output[param])
                         )
+
+    # we are chopping the micrograph into a vertical and a horizontal rectangle
+    # as small as possible to save testing duration
+    @parameterized.expand(
+        [[(slice(0, 128), slice(0, 64))], [(slice(0, 64), slice(0, 128))]]
+    )
+    def testRectangularMicrograph(self, slice_range):
+        with tempfile.TemporaryDirectory() as tmp_input_dir:
+            # copy input file
+            copyfile(
+                os.path.join(DATA_DIR, self.test_input_fn),
+                os.path.join(tmp_input_dir, "rect_" + self.test_input_fn),
+            )
+            # trim the file into a rectangle
+            with mrcfile.open(
+                os.path.join(tmp_input_dir, "rect_" + self.test_input_fn), "r+"
+            ) as mrc_in:
+                data = mrc_in.data[slice_range]
+                mrc_in.set_data(data)
+            # make sure we can estimate with no errors
+            _ = estimate_ctf(data_folder=tmp_input_dir, psd_size=64)

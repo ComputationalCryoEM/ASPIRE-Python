@@ -35,7 +35,7 @@ class Simulation(ImageSource):
         amplitudes=None,
         dtype=np.float32,
         C=2,
-        symmetry_type=None,
+        symmetry=None,
         angles=None,
         seed=0,
         memory=None,
@@ -65,7 +65,7 @@ class Simulation(ImageSource):
 
         if vols is None:
             self.vols = gaussian_blob_vols(
-                L=L, C=C, symmetry_type=symmetry_type, seed=self.seed, dtype=self.dtype
+                L=L, C=C, symmetry=symmetry, seed=self.seed, dtype=self.dtype
             )
         else:
             assert isinstance(vols, Volume)
@@ -265,7 +265,7 @@ class Simulation(ImageSource):
 
         # Arrange in descending order (flip column order in eigenvector matrix)
         w = w[::-1]
-        eigs_true = eigs_true.flip()
+        eigs_true = Volume(eigs_true[::-1])
 
         return eigs_true, np.diag(w)
 

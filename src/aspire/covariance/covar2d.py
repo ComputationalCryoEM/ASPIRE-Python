@@ -502,7 +502,7 @@ class BatchedRotCov2D(RotCov2D):
 
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
-        if src.unique_filters is None:
+        if not src.unique_filters:
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)

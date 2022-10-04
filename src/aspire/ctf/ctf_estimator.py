@@ -153,7 +153,7 @@ class CtfEstimator:
 
         block_list = [
             micrograph[
-                i * step_size : (i + 2) * step_size, j * step_size : (j + 2) * step_size
+                j * step_size : (j + 2) * step_size, i * step_size : (i + 2) * step_size
             ]
             for j in range(range_y)
             for i in range(range_x)
@@ -340,7 +340,8 @@ class CtfEstimator:
             convex_condition = np.concatenate(
                 (np.zeros((N, N)), convex_condition), axis=1
             )
-            convex_condition = convex_condition[1 : N - 1]
+            convex_condition = np.roll(convex_condition, -1, axis=0)
+            convex_condition[N - 2 :] = 0
 
             positivity_condition = np.concatenate(
                 (np.zeros((N, N)), -1 * np.eye(N)), axis=1

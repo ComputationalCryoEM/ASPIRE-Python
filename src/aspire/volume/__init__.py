@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 
 import mrcfile
 import numpy as np
@@ -243,15 +244,17 @@ class Volume:
 
         return self._data.flatten()
 
-    def flip(self, axis=0):
+    def flip(self, axis=1):
         """
         Flip volume stack data along axis using numpy.flip
 
         :param axis: Optionally specify axis as integer or tuple.
-        Defaults to axis=0.
+        Defaults to axis=1.
 
         :return: Volume instance.
         """
+        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
+            raise ValueError("Cannot flip Axis 0, stack axis.")
 
         return Volume(np.flip(self._data, axis))
 
@@ -385,14 +388,14 @@ class Volume:
         return Volume(loaded_data.astype(dtype))
 
 
-def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.float64):
+def gaussian_blob_vols(L=8, C=2, K=16, symmetry=None, seed=None, dtype=np.float64):
     """
     Builds gaussian blob volumes with chosen symmetry type.
 
     :param L: The resolution of the volume.
     :param C: Number of volumes.
     :param K: The number of gaussian blobs used to generate the volume.
-    :param symmetry_type: A string indicating the type of symmetry.
+    :param symmetry: A string indicating the type of symmetry.
     :param seed: The random seed to produce centers and variances of the gaussian blobs.
     :param dtype: Data type.
 
@@ -401,13 +404,13 @@ def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.f
 
     order = 1
     sym_type = None
-    if symmetry_type is not None:
+    if symmetry is not None:
         # safer to make string consistent
-        symmetry_type = symmetry_type.upper()
+        symmetry = symmetry.upper()
         # get the first letter
-        sym_type = symmetry_type[0]
+        sym_type = symmetry[0]
         # if there is a number denoting rotational symmetry, get that
-        order = symmetry_type[1:] or None
+        order = symmetry[1:] or None
 
     # map our sym_types to classes of Volumes
     map_sym_to_generator = {

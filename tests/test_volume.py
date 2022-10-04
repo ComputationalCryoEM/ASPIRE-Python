@@ -238,9 +238,7 @@ class VolumeTestCase(TestCase):
         for k, s in sym_type.items():
 
             # Build `Volume` instance with symmetry type s.
-            vol = gaussian_blob_vols(
-                L=L, C=1, symmetry_type=s, seed=0, dtype=self.dtype
-            )
+            vol = gaussian_blob_vols(L=L, C=1, symmetry=s, seed=0, dtype=self.dtype)
 
             # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
             angles = np.zeros(shape=(k, 3))
@@ -264,11 +262,11 @@ class VolumeTestCase(TestCase):
 
         # Test we raise with expected error message when volume is instantiated with unsupported symmetry.
         with raises(NotImplementedError, match=r"CH2 symmetry not supported.*"):
-            _ = gaussian_blob_vols(symmetry_type="Ch2")
+            _ = gaussian_blob_vols(symmetry="Ch2")
 
         # Test we raise with expected message for junk symmetry.
         with raises(NotImplementedError, match=r"J type symmetry.*"):
-            _ = gaussian_blob_vols(symmetry_type="junk")
+            _ = gaussian_blob_vols(symmetry="junk")
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
@@ -316,15 +314,23 @@ class VolumeTestCase(TestCase):
 
     def testFlip(self):
         # Test over all sane axis.
-        for axis in powerset(range(4)):
+        for axis in powerset(range(1, 4)):
             if not axis:
                 # test default
                 result = self.vols_1.flip()
-                axis = 0
+                axis = 1
             else:
                 result = self.vols_1.flip(axis)
             self.assertTrue(np.all(result == np.flip(self.data_1, axis)))
             self.assertTrue(isinstance(result, Volume))
+
+        # Test axis 0 raises
+        msg = r"Cannot flip Axis 0, stack axis."
+        with raises(ValueError, match=msg):
+            _ = self.vols_1.flip(axis=0)
+
+        with raises(ValueError, match=msg):
+            _ = self.vols_1.flip(axis=(0, 1))
 
     def testDownsample(self):
         vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
