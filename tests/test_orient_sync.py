@@ -40,7 +40,7 @@ class OrientSyncTestCase(TestCase):
                 self.dtype
             )
         )
-        vols = vols.downsample((L * np.ones(3, dtype=int)))
+        vols = vols.downsample(L)
 
         sim = Simulation(L=L, n=n, vols=vols, unique_filters=filters, dtype=self.dtype)
 
