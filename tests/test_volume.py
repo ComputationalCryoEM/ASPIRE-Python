@@ -238,9 +238,7 @@ class VolumeTestCase(TestCase):
         for k, s in sym_type.items():
 
             # Build `Volume` instance with symmetry type s.
-            vol = gaussian_blob_vols(
-                L=L, C=1, symmetry_type=s, seed=0, dtype=self.dtype
-            )
+            vol = gaussian_blob_vols(L=L, C=1, symmetry=s, seed=0, dtype=self.dtype)
 
             # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
             angles = np.zeros(shape=(k, 3))
@@ -264,11 +262,11 @@ class VolumeTestCase(TestCase):
 
         # Test we raise with expected error message when volume is instantiated with unsupported symmetry.
         with raises(NotImplementedError, match=r"CH2 symmetry not supported.*"):
-            _ = gaussian_blob_vols(symmetry_type="Ch2")
+            _ = gaussian_blob_vols(symmetry="Ch2")
 
         # Test we raise with expected message for junk symmetry.
         with raises(NotImplementedError, match=r"J type symmetry.*"):
-            _ = gaussian_blob_vols(symmetry_type="junk")
+            _ = gaussian_blob_vols(symmetry="junk")
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
