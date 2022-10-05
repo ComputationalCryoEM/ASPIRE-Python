@@ -168,7 +168,6 @@ class Basis:
             those first dimensions of `x`.
 
         """
-
         if isinstance(x, Image) or isinstance(x, Volume):
             x = x.asnumpy()
 
@@ -181,6 +180,11 @@ class Basis:
         sz_roll = x.shape[: -self.ndim]
         # convert to standardized shape e.g. (L,L) to (1,L,L)
         x = x.reshape((-1, *self.sz))
+
+        if x.ndim == 3:
+            _class = Image
+        else:
+            _class = Volume
 
         operator = LinearOperator(
             shape=(self.count, self.count),
@@ -197,7 +201,7 @@ class Basis:
         v = np.zeros((n_data, self.count), dtype=x.dtype)
 
         for isample in range(0, n_data):
-            b = self.evaluate_t(x[isample]).T
+            b = self.evaluate_t(_class(x[isample])).T
             # TODO: need check the initial condition x0 can improve the results or not.
             v[isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
