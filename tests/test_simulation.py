@@ -73,6 +73,22 @@ class SimTestCase(TestCase):
             )
         )
 
+    def testSimulationCached(self):
+        sim_cached = Simulation(
+            n=1024,
+            L=8,
+            unique_filters=[
+                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
+            ],
+            seed=0,
+            noise_filter=IdentityFilter(),
+            dtype="single",
+        )
+        sim_cached.cache()
+        self.assertTrue(
+            np.array_equal(sim_cached.images[:].asnumpy(), self.sim.images[:].asnumpy())
+        )
+
     def testSimulationImagesNoisy(self):
         images = self.sim.images[:512].asnumpy()
         self.assertTrue(

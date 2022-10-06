@@ -373,6 +373,16 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs_box[i], imgs_coord[i]))
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
 
+    def testCached(self):
+        src_cached = BoxesCoordinateSource(self.files_box)
+        src_uncached = BoxesCoordinateSource(self.files_box)
+        src_cached.cache()
+        self.assertTrue(
+            np.array_equal(
+                src_cached.images[:].asnumpy(), src_uncached.images[:].asnumpy()
+            )
+        )
+
     def testImagesRandomIndices(self):
         # ensure that we can load a specific, possibly out of order, list of
         # indices, and that the result is in the order we asked for
