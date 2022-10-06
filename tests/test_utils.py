@@ -2,13 +2,17 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import numpy as np
+from parameterized import parameterized
 from pytest import raises
 
 from aspire import __version__
 from aspire.utils import (
+    all_pairs,
+    all_triplets,
     get_full_version,
     mem_based_cpu_suggestion,
     num_procs_suggestion,
+    pairs_to_linear,
     physical_core_cpu_suggestion,
     powerset,
     utest_tolerance,
@@ -79,17 +83,18 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(g_x, g_1d_x))
         self.assertTrue(np.allclose(g_y, g_1d_y))
 
-    def testGaussian3d(self):
+    @parameterized.expand([("zyx",), ("xyz")])
+    def testGaussian3d(self, indexing):
         L = 100
         mu = (0, 5, 10)
         sigma = (5, 7, 9)
 
-        G = gaussian_3d(L, mu, sigma)
+        G = gaussian_3d(L, mu, sigma, indexing=indexing)
 
         # The normalized sum across two axes should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        G_x = np.sum(G, axis=(0, 1)) / np.sum(G)
+        G_x = np.sum(G, axis=(1, 2)) / np.sum(G)
         G_y = np.sum(G, axis=(0, 2)) / np.sum(G)
-        G_z = np.sum(G, axis=(1, 2)) / np.sum(G)
+        G_z = np.sum(G, axis=(0, 1)) / np.sum(G)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
@@ -103,6 +108,30 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(G_x, g_1d_x))
         self.assertTrue(np.allclose(G_y, g_1d_y))
         self.assertTrue(np.allclose(G_z, g_1d_z))
+
+    def testAllPairs(self):
+        n = 25
+        pairs = all_pairs(n)
+        nchoose2 = n * (n - 1) // 2
+        self.assertTrue(len(pairs) == nchoose2)
+        self.assertTrue(len(pairs[0]) == 2)
+
+    def testPairsToLinear(self):
+        n = 10
+        pairs = all_pairs(n)
+        all_pairs_index = np.zeros(len(pairs))
+        pairs_to_linear_index = np.zeros(len(pairs))
+        for idx, (i, j) in enumerate(pairs):
+            all_pairs_index[idx] = pairs.index((i, j))
+            pairs_to_linear_index[idx] = pairs_to_linear(n, i, j)
+        self.assertTrue(np.allclose(all_pairs_index, pairs_to_linear_index))
+
+    def testAllTriplets(self):
+        n = 25
+        triplets = all_triplets(n)
+        nchoose3 = n * (n - 1) * (n - 2) // 6
+        self.assertTrue(len(triplets) == nchoose3)
+        self.assertTrue(len(triplets[0]) == 3)
 
     def testGaussianScalarParam(self):
         L = 100

@@ -70,7 +70,7 @@ vols = Volume(infile.data)
 # Downsample the volume to a desired resolution and increase density
 # by 1.0e5 time for a better graph view
 logger.info(f"Downsample map to a resolution of {img_size} x {img_size} x {img_size}")
-vols = vols.downsample((img_size,) * 3) * 1.0e5
+vols = vols.downsample(img_size) * 1.0e5
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info("Use downsampled map to create simulation object.")
