@@ -64,6 +64,42 @@ class LoadImagesTestCase(TestCase):
         from_mrc = self.getParticlesFromIndices([i for i in range(0, 500)])
         self.assertTrue(np.array_equal(imgs.asnumpy(), from_mrc.asnumpy()))
 
+    def testRelionSourceSlice(self):
+        imgs_full = self.src.images[0 : self.n : 2]
+        imgs_infer_start = self.src.images[: self.n : 2]
+        imgs_infer_end = self.src.images[0::2]
+        imgs_infer_both = self.src.images[::2]
+        from_mrc = self.getParticlesFromIndices([i for i in range(0, self.n, 2)])
+        self.assertTrue(
+            np.array_equal(
+                imgs_full.asnumpy(),
+                from_mrc.asnumpy(),
+            )
+        )
+        self.assertTrue(
+            np.array_equal(
+                imgs_infer_start.asnumpy(),
+                from_mrc.asnumpy(),
+            )
+        )
+        self.assertTrue(
+            np.array_equal(
+                imgs_infer_end.asnumpy(),
+                from_mrc.asnumpy(),
+            )
+        )
+        self.assertTrue(
+            np.array_equal(
+                imgs_infer_both.asnumpy(),
+                from_mrc.asnumpy(),
+            )
+        )
+
+    def testRelionSourceOutOfRange(self):
+        from_src = self.src.images[5:2000]
+        from_mrc = self.getParticlesFromIndices([i for i in range(5, self.n)])
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
     def testRelionSourceNonsequential(self):
         # ensure that we can load particles from different mrc files,
         # nonsequentially, and end up with the ordering we asked for
