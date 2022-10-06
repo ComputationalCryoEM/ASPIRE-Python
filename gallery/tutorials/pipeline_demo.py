@@ -6,6 +6,9 @@ Ab-initio Reconstruction Pipeline Demonstration
 This tutorial demonstrates some key components of an ab-initio reconstruction pipeline using
 synthetic data generated with ASPIRE's ``Simulation`` class of objects.
 """
+# sphinx_gallery_start_ignore
+# flake8: noqa
+# sphinx_gallery_end_ignore
 
 # %%
 # Download a Volume
@@ -13,21 +16,23 @@ synthetic data generated with ASPIRE's ``Simulation`` class of objects.
 # We begin by downloading a high resolution volume map of the 80S Ribosome, sourced from
 # EMDB: https://www.ebi.ac.uk/emdb/EMD-2660.
 
+import os
+
 import numpy as np
 import requests
-import os
+
 
 # Download volume
 def download(url, save_path, chunk_size=1024 * 1024):
     r = requests.get(url, stream=True)
-    with open(save_path, 'wb') as fd:
+    with open(save_path, "wb") as fd:
         for chunk in r.iter_content(chunk_size=chunk_size):
             fd.write(chunk)
 
-if not os.path.exists('data/emd_2660.map'):
-    url = 'https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz'
-    print(f"downloading {url}")
-    download(url, 'data/emd_2660.map')
+
+if not os.path.exists("data/emd_2660.map"):
+    url = "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz"
+    download(url, "data/emd_2660.map")
 
 # %%
 # Load a Volume
@@ -35,6 +40,7 @@ if not os.path.exists('data/emd_2660.map'):
 # We use ASPIRE's ``Volume`` class to load and downsample the volume.
 
 from aspire.volume import Volume
+
 # Load 80s Ribosome
 original_vol = Volume.load("data/emd_2660.map", dtype=np.float32)
 
@@ -66,18 +72,20 @@ vol = original_vol.downsample(res)
 # Gaussian white noise and ``RadialCTFFilter`` to generate a set of CTF filters with various defocus values.
 
 # Create noise and CTF filters
-from aspire.operators import ScalarFilter, RadialCTFFilter
+from aspire.operators import RadialCTFFilter, ScalarFilter
 
 # Gaussian noise filter
 noise_filter = ScalarFilter(value=1e-5)
 
 # Radial CTF Filter
-defocus_min = 15000 # unit is angstroms
+defocus_min = 15000  # unit is angstroms
 defocus_max = 25000
 defocus_ct = 7
 
-ctf_filters = [RadialCTFFilter(pixel_size=5, defocus=d)
-              for d in np.linspace(defocus_min, defocus_max, defocus_ct)]
+ctf_filters = [
+    RadialCTFFilter(pixel_size=5, defocus=d)
+    for d in np.linspace(defocus_min, defocus_max, defocus_ct)
+]
 
 
 # %%
@@ -86,17 +94,18 @@ ctf_filters = [RadialCTFFilter(pixel_size=5, defocus=d)
 # We feed our ``Volume`` and filters into ``Simulation`` to generate the dataset of images.
 
 from aspire.source import Simulation
+
 # set parameters
 res = 41
 n_imgs = 2500
 
 src = Simulation(
-    L=res, # resolution 
-    n=n_imgs, # number of projections
-    vols=vol, # volume source
-    offsets=np.zeros((n_imgs,2)), # Default: images are randomly shifted
+    L=res,  # resolution
+    n=n_imgs,  # number of projections
+    vols=vol,  # volume source
+    offsets=np.zeros((n_imgs, 2)),  # Default: images are randomly shifted
     noise_filter=noise_filter,
-    unique_filters=ctf_filters
+    unique_filters=ctf_filters,
 )
 
 
@@ -106,17 +115,17 @@ src = Simulation(
 # We can access several views of the projection images at various levels of filtering.
 
 # with no filters
-src.projections(0,10).show()
+src.projections(0, 10).show()
 
 # %%
 
 # with no noise filter
-src.clean_images(0,10).show()
+src.clean_images(0, 10).show()
 
 # %%
 
 # with noise and ctf filters
-src.images(0,10).show()
+src.images(0, 10).show()
 
 
 # %%
@@ -125,7 +134,7 @@ src.images(0,10).show()
 # We apply ``phase_flip()`` to correct for CTF effects.
 
 src.phase_flip()
-src.images(0,10).show()
+src.images(0, 10).show()
 
 
 # %%
@@ -150,7 +159,7 @@ rir = RIRClass2D(
     n_nbor=n_nbor,
     n_classes=n_classes,
     selector=TopClassSelector(),
-    )
+)
 
 # classify and average
 classes, reflections, distances = rir.classify()
@@ -162,12 +171,12 @@ avgs = rir.averages(classes, reflections, distances)
 # -----------------------
 
 # Show class averages
-avgs.images(0,10).show()
+avgs.images(0, 10).show()
 
 # %%
 
 # Show original images corresponding to those classes
-src.images(0,10).show()
+src.images(0, 10).show()
 
 
 # %%
@@ -195,9 +204,9 @@ rots_est = orient_est.rotations
 # to the true rotations and computing the mean squared error.
 
 from aspire.utils.coor_trans import (
-    register_rotations,
     get_aligned_rotations,
     get_rots_mse,
+    register_rotations,
 )
 
 # Compare with known true rotations
@@ -213,8 +222,8 @@ mse_reg
 # Now that we have our class averages and rotation estimates, we can estimate the
 # mean volume by supplying the class averages and basis for back projection.
 
-from aspire.reconstruction import MeanEstimator
 from aspire.basis import FFBBasis3D
+from aspire.reconstruction import MeanEstimator
 
 # Assign the estimated rotations to the class averages
 avgs.rots = rots_est
@@ -243,10 +252,9 @@ from aspire.source import ArrayImageSource
 projections_est = ArrayImageSource(estimated_volume.project(0, rots_est))
 
 # We view the first 10 projections of the estimated volume.
-projections_est.images(0,10).show()
+projections_est.images(0, 10).show()
 
 # %%
 
 # For comparison, we view the first 10 source projections.
-src.projections(0,10).show()
-
+src.projections(0, 10).show()
