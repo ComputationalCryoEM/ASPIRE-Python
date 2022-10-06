@@ -698,11 +698,10 @@ class ImageSource(ABC):
                 # Loop over source setting data into mrc file
                 for i_start in np.arange(0, self.n, batch_size):
                     i_end = min(self.n, i_start + batch_size)
-                    num = i_end - i_start
                     logger.info(
                         f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                     )
-                    datum = self.images[i_start : i_start + num].data.astype("float32")
+                    datum = self.images[i_start:i_end].data.astype("float32")
 
                     # Assign to mrcfile
                     mrc.data[i_start:i_end] = datum
@@ -723,7 +722,6 @@ class ImageSource(ABC):
             # save all images into multiple mrc files in batch size
             for i_start in np.arange(0, self.n, batch_size):
                 i_end = min(self.n, i_start + batch_size)
-                num = i_end - i_start
 
                 mrcs_filepath = os.path.join(
                     os.path.dirname(starfile_filepath), filename_indices[i_start]
@@ -732,7 +730,7 @@ class ImageSource(ABC):
                 logger.info(
                     f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                 )
-                im = self.images[i_start : i_start + num]
+                im = self.images[i_start:i_end]
                 im.save(mrcs_filepath, overwrite=overwrite)
 
 

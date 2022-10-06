@@ -140,10 +140,7 @@ class FSPCABasis(SteerableBasis2D):
         for i in range(num_batches):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, self.src.n)
-            n = finish - start
-            coef[start:finish] = self.basis.evaluate_t(
-                self.src.images[start : start + n]
-            )
+            coef[start:finish] = self.basis.evaluate_t(self.src.images[start:finish])
 
         if self.noise_var is None:
             from aspire.noise import WhiteNoiseEstimator
