@@ -107,7 +107,7 @@ class LoadImagesTestCase(TestCase):
         )
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
 
-    def testRelionSourceOutOfRange(self):
+    def testRelionSourceMaxStop(self):
         from_src = self.src.images[5:2000]
         from_mrc = self.getParticlesFromIndices([i for i in range(5, self.n)])
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
@@ -162,6 +162,14 @@ class LoadImagesTestCase(TestCase):
         # test a non-iterable, non-NumPy, non-integer input
         with self.assertRaisesRegex(KeyError, "Key for .images"):
             _ = self.src.images[3.14]
+
+    def testRelionSourceBadSlice(self):
+        with self.assertRaisesRegex(TypeError, "Non-integer slice components."):
+            _ = self.src.images[1.5:1.5:1.5]
+
+    def testRelionSourceOutOfRange(self):
+        with self.assertRaisesRegex(KeyError, "Out-of-range indices: "):
+            _ = self.src.images[[0, 1, 1100]]
 
     def testBadNDArray(self):
         with self.assertRaisesRegex(

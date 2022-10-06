@@ -62,6 +62,8 @@ class _ImageAccessor:
                 stop = self.num_imgs
             if not step:
                 step = 1
+            if not all(isinstance(i, (int, np.integer)) for i in [start, stop, step]):
+                raise TypeError("Non-integer slice components.")
             indices = np.arange(start, stop, step)
         if not isinstance(indices, np.ndarray):
             raise KeyError(
@@ -72,6 +74,10 @@ class _ImageAccessor:
         # check for negative indices and flip to positive
         neg = indices < 0
         indices[neg] = indices[neg] % self.num_imgs
+        # final check for out-of-range indices
+        out_of_range = indices > self.num_imgs
+        if out_of_range.any():
+            raise KeyError(f"Out-of-range indices: {list(indices[out_of_range])}")
         return self.fun(indices)
 
 
