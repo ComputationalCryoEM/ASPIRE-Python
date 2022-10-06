@@ -404,10 +404,10 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
 
         # include negative indices
-        random_sample = np.array(random.sample([i for i in range(-200, 200)], 100))
-        random_images = src_from_box.images[random_sample]
-        for i, idx in enumerate(random_sample):
-            self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
+        random_sample_neg = np.array(random.sample([i for i in range(-200, 200)], 100))
+        random_images_neg = src_from_box.images[random_sample_neg]
+        for i, idx in enumerate(random_sample_neg):
+            self.assertTrue(np.array_equal(images_in_order[idx], random_images_neg[i]))
 
     def testMaxRows(self):
         src_from_box = BoxesCoordinateSource(self.files_box)
