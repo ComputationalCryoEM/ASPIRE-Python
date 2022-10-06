@@ -180,7 +180,7 @@ class DenoiserCov2D(Denoiser):
         img_start = istart
         img_end = min(istart + batch_size, src.n)
         imgs_noise = src.images(img_start, batch_size)
-        coeffs_noise = self.basis.evaluate_t(imgs_noise.data)
+        coeffs_noise = self.basis.evaluate_t(imgs_noise)
         logger.info(
             f"Estimating Cov2D coefficients for images from {img_start} to {img_end-1}"
         )

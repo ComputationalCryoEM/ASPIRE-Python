@@ -106,6 +106,7 @@ src = Simulation(
     vols=v,
     noise_filter=custom_noise_filter,
     unique_filters=ctf_filters,
+    dtype=v.dtype,
 )
 # Peek
 if interactive:

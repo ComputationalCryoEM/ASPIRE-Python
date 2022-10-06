@@ -119,12 +119,11 @@ class Steerable2DMixin:
         if isinstance(Au, Image):
             Au = Au.asnumpy()
 
-        x = randn(*self.basis.sz, seed=self.seed)
-        x = x.astype(self.dtype)
+        x = Image(randn(*self.basis.sz, seed=self.seed), dtype=self.dtype)
 
         ATx = self.basis.evaluate_t(x)
 
-        Au_dot_x = np.sum(Au * x)
+        Au_dot_x = np.sum(Au * x.asnumpy())
         u_dot_ATx = np.sum(u * ATx)
 
         self.assertTrue(Au_dot_x.shape == u_dot_ATx.shape)

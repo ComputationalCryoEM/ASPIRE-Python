@@ -4,6 +4,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis import FFBBasis3D
+from aspire.volume import Volume
 
 from ._basis_util import UniversalBasisMixin
 
@@ -480,7 +481,7 @@ class FFBBasis3DTestCase(TestCase, UniversalBasisMixin):
 
     def testFFBBasis3DEvaluate_t(self):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
-        result = self.basis.evaluate_t(x)
+        result = self.basis.evaluate_t(Volume(x))
 
         ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_8_8_8.npy"))[..., 0]
 
