@@ -7,7 +7,8 @@ from scipy.linalg import eigh, qr
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
-from aspire.source import ImageAccessor, ImageSource
+from aspire.source import ImageSource
+from aspire.source.image import _ImageAccessor
 from aspire.utils import (
     acorr,
     ainner,
@@ -113,8 +114,8 @@ class Simulation(ImageSource):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
-        self._projections_accessor = ImageAccessor(self._projections, self.n)
-        self._clean_images_accessor = ImageAccessor(self._clean_images, self.n)
+        self._projections_accessor = _ImageAccessor(self._projections, self.n)
+        self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
 
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct

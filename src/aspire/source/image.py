@@ -29,7 +29,7 @@ from aspire.utils import Rotation, grid_2d
 logger = logging.getLogger(__name__)
 
 
-class ImageAccessor:
+class _ImageAccessor:
     """
     Helper class for accessing images from an ImageSource as slices via the `src.images[start:stop:step]` API.
     """
@@ -137,7 +137,7 @@ class ImageSource(ABC):
         self._metadata_out = None
 
         # Instantiate the accessor for the `images` property
-        self._img_accessor = ImageAccessor(self._images, self.n)
+        self._img_accessor = _ImageAccessor(self._images, self.n)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
