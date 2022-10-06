@@ -180,9 +180,8 @@ class LoadImagesTestCase(TestCase):
     def testRelionSourceCached(self):
         src_cached = RelionSource(self.starfile_path, data_folder=self.data_folder)
         src_cached.cache()
-        cached_ims = src_cached.images[:]
         self.assertTrue(
-            np.array_equal(cached_ims.asnumpy(), self.src.images[:].asnumpy())
+            np.array_equal(src_cached.images[:].asnumpy(), self.src.images[:].asnumpy())
         )
 
     def getParticlesFromIndices(self, indices):
