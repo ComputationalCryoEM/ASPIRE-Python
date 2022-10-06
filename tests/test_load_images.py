@@ -95,6 +95,18 @@ class LoadImagesTestCase(TestCase):
             )
         )
 
+    def testRelionSourceNegIndex(self):
+        from_src = self.src.images[-1]
+        from_mrc = self.getParticlesFromIndices([self.n - 1])
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionSourceNegSlice(self):
+        from_src = self.src.images[-100:100]
+        from_mrc = self.getParticlesFromIndices(
+            [i for i in range(900, 1000)] + [i for i in range(0, 100)]
+        )
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
     def testRelionSourceOutOfRange(self):
         from_src = self.src.images[5:2000]
         from_mrc = self.getParticlesFromIndices([i for i in range(5, self.n)])
