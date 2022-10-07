@@ -6,6 +6,7 @@ from aspire.image import Image
 from aspire.utils import gaussian_2d, utest_tolerance
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
+from aspire.volume import Volume
 
 
 class Steerable2DMixin:
@@ -39,9 +40,7 @@ class Steerable2DMixin:
         # Want sigma to be as large as possible without the Gaussian
         # spilling too much outside the central disk.
         sigma = self.L / 8
-        im1 = gaussian_2d(
-            self.L, x0=x0, y0=y0, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype
-        )
+        im1 = gaussian_2d(self.L, mu=(x0, y0), sigma=sigma, dtype=self.dtype)
 
         coef = self.basis.expand(im1)
         im2 = self.basis.evaluate(coef)
@@ -62,7 +61,7 @@ class Steerable2DMixin:
 
     def testIsotropic(self):
         sigma = self.L / 8
-        im = gaussian_2d(self.L, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype)
+        im = gaussian_2d(self.L, sigma=sigma, dtype=self.dtype)
 
         coef = self.basis.expand(im)
 
@@ -82,7 +81,7 @@ class Steerable2DMixin:
         ell = 1
 
         sigma = self.L / 8
-        im = gaussian_2d(self.L, sigma_x=sigma, sigma_y=sigma, dtype=self.dtype)
+        im = gaussian_2d(self.L, sigma=sigma, dtype=self.dtype)
 
         g2d = grid_2d(self.L)
 
@@ -120,12 +119,11 @@ class Steerable2DMixin:
         if isinstance(Au, Image):
             Au = Au.asnumpy()
 
-        x = randn(*self.basis.sz, seed=self.seed)
-        x = x.astype(self.dtype)
+        x = Image(randn(*self.basis.sz, seed=self.seed), dtype=self.dtype)
 
         ATx = self.basis.evaluate_t(x)
 
-        Au_dot_x = np.sum(Au * x)
+        Au_dot_x = np.sum(Au * x.asnumpy())
         u_dot_ATx = np.sum(u * ATx)
 
         self.assertTrue(Au_dot_x.shape == u_dot_ATx.shape)

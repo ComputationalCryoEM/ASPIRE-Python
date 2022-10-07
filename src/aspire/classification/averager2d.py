@@ -2,16 +2,17 @@ import logging
 from abc import ABC, abstractmethod
 from itertools import product
 
-import matplotlib.pyplot as plt
 import numpy as np
-from skimage.filters import difference_of_gaussians, window
-from skimage.transform import rotate, warp_polar
+import ray
+from ray.util.multiprocessing import Pool
 from tqdm import tqdm, trange
 
+from aspire import config
+from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image
-from aspire.numeric import fft
 from aspire.source import ArrayImageSource
 from aspire.utils.coor_trans import grid_2d
+from aspire.utils.multiprocessing import num_procs_suggestion
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,13 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, src, dtype=None):
+    def __init__(self, composite_basis, src, num_procs=1, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
+        :param num_procs: Number of processes to use.
+        `None` will attempt computing a suggestion based on machine resources.
+        Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -40,15 +44,26 @@ class Averager2D(ABC):
         else:
             self.dtype = np.dtype(dtype)
 
+        if num_procs is None:
+            num_procs = num_procs_suggestion()
+            # Only enable multiprocessing when several cores available
+            if num_procs < 3:
+                num_procs = 1
+        elif not (isinstance(num_procs, int) and num_procs > 0):
+            raise ValueError(
+                f"num_procs should be a positive integer, passed {num_procs}."
+            )
+        self.num_procs = num_procs
+
         if self.src and self.dtype != self.src.dtype:
             logger.warning(
                 f"{self.__class__.__name__} dtype {dtype}"
-                "does not match dtype of source {self.src.dtype}."
+                f"does not match dtype of source {self.src.dtype}."
             )
         if self.composite_basis and self.dtype != self.composite_basis.dtype:
             logger.warning(
                 f"{self.__class__.__name__} dtype {dtype}"
-                "does not match dtype of basis {self.composite_basis.dtype}."
+                f"does not match dtype of basis {self.composite_basis.dtype}."
             )
 
     @abstractmethod
@@ -101,17 +116,22 @@ class AligningAverager2D(Averager2D):
     Subclass supporting averagers which perfom an aligning stage.
     """
 
-    def __init__(self, composite_basis, src, alignment_basis=None, dtype=None):
+    def __init__(
+        self, composite_basis, src, alignment_basis=None, num_procs=1, dtype=None
+    ):
         """
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D).
         :param src: Source of original images.
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
+        :param num_procs: Number of processes to use.
+        Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         super().__init__(
             composite_basis=composite_basis,
             src=src,
+            num_procs=num_procs,
             dtype=dtype,
         )
         # If alignment_basis is None, use composite_basis
@@ -163,40 +183,55 @@ class AligningAverager2D(Averager2D):
         This subclass assumes we get alignment details from `align` method. Otherwise. see Averager2D.average
         """
 
-        rotations, shifts, _ = self.align(classes, reflections, coefs)
+        self.rotations, self.shifts, self.correlations = self.align(
+            classes, reflections, coefs
+        )
 
         n_classes, n_nbor = classes.shape
 
         b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
 
-        for i in tqdm(range(n_classes)):
-
-            # Get coefs in Composite_Basis if not provided as an argumen.
+        def _innerloop(i):
+            # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
                 # Retrieve relavent images directly from source.
                 neighbors_imgs = Image(self._cls_images(classes[i]))
 
                 # Do shifts
-                if shifts is not None:
-                    neighbors_imgs.shift(shifts[i])
+                if self.shifts is not None:
+                    neighbors_imgs.shift(self.shifts[i])
 
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
                 # Get the neighbors
                 neighbors_ids = classes[i]
                 neighbors_coefs = coefs[neighbors_ids]
-                if shifts is not None:
+                if self.shifts is not None:
                     neighbors_coefs = self.composite_basis.shift(
-                        neighbors_coefs, shifts[i]
+                        neighbors_coefs, self.shifts[i]
                     )
 
             # Rotate in composite_basis
             neighbors_coefs = self.composite_basis.rotate(
-                neighbors_coefs, rotations[i], reflections[i]
+                neighbors_coefs, self.rotations[i], reflections[i]
             )
 
             # Averaging in composite_basis
-            b_avgs[i] = np.mean(neighbors_coefs, axis=0)
+            return np.mean(neighbors_coefs, axis=0)
+
+        if self.num_procs <= 1:
+            for i in tqdm(range(n_classes)):
+                b_avgs[i] = _innerloop(i)
+        else:
+            logger.info(f"Starting Pool({self.num_procs})")
+            ray.init(_temp_dir=config.ray.temp_dir)
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
+
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for i, result in enumerate(results):
+                b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
         return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
@@ -217,6 +252,7 @@ class BFRAverager2D(AligningAverager2D):
         src,
         alignment_basis=None,
         n_angles=360,
+        num_procs=1,
         dtype=None,
     ):
         """
@@ -224,7 +260,9 @@ class BFRAverager2D(AligningAverager2D):
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         """
-        super().__init__(composite_basis, src, alignment_basis, dtype)
+        super().__init__(
+            composite_basis, src, alignment_basis, num_procs=num_procs, dtype=dtype
+        )
 
         self.n_angles = n_angles
 
@@ -306,6 +344,7 @@ class BFSRAverager2D(BFRAverager2D):
         n_angles=360,
         n_x_shifts=1,
         n_y_shifts=1,
+        num_procs=1,
         dtype=None,
     ):
         """
@@ -327,6 +366,7 @@ class BFSRAverager2D(BFRAverager2D):
             src,
             alignment_basis,
             n_angles,
+            num_procs=num_procs,
             dtype=dtype,
         )
 
@@ -443,7 +483,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         composite_basis,
         src,
         alignment_src=None,
-        diagnostics=False,
+        num_procs=None,
         dtype=None,
     ):
         """
@@ -451,12 +491,12 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         :param src: Source of original images.
         :param alignment_src: Optional, source to be used during class average alignment.
         Must be the same resolution as `src`.
+        :param num_procs: Number of processes to use.
+        `None` will attempt computing a suggestion based on machine resources.
+        Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
-        self.__cache = dict()
-        self.diagnostics = diagnostics
-        self.do_cross_corr_translations = True
         self.alignment_src = alignment_src or src
 
         # TODO, for accomodating different resolutions we minimally need to adapt shifting.
@@ -468,41 +508,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         self.mask = grid_2d(src.L, normalized=False)["r"] < src.L // 2
 
-        super().__init__(composite_basis, src, composite_basis, dtype=dtype)
-
-    def _phase_cross_correlation(self, img0, img1):
-        """
-        # Adapted from skimage.registration.phase_cross_correlation
-
-        :param img0: Fixed image.
-        :param img1: Translated image.
-        :returns: (cross-correlation magnitudes (2D array), shifts)
-        """
-
-        # Cache img0 transform, this saves n_classes*(n_nbor-1) transforms
-        # Note we use the `id` because ndarray are unhashable
-        key = id(img0)
-        if key not in self.__cache:
-            self.__cache[key] = fft.fft2(img0)
-        src_f = self.__cache[key]
-
-        target_f = fft.fft2(img1)
-
-        # Whole-pixel shifts - Compute cross-correlation by an IFFT
-        shape = src_f.shape
-        image_product = src_f * target_f.conj()
-        cross_correlation = fft.ifft2(image_product)
-
-        # Locate maximum
-        maxima = np.unravel_index(
-            np.argmax(np.abs(cross_correlation)), cross_correlation.shape
+        super().__init__(
+            composite_basis, src, composite_basis, num_procs=num_procs, dtype=dtype
         )
-        midpoints = np.array([np.fix(axis_size / 2) for axis_size in shape])
-
-        shifts = np.array(maxima, dtype=np.float64)
-        shifts[shifts > midpoints] -= np.array(shape)[shifts > midpoints]
-
-        return np.abs(cross_correlation), shifts
 
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -521,203 +529,33 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         correlations = np.zeros(classes.shape, dtype=self.dtype)
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
-        for k in trange(n_classes):
-            # # Get the array of images for this class, using the `alignment_src`.
-            images = self._cls_images(classes[k], src=self.alignment_src)
-
-            rotations[k], shifts[k], correlations[k] = self._reddychatterji(
-                images, classes[k], reflections[k]
+        def _innerloop(k):
+            # Get the array of images for this class, using the `alignment_src`.
+            images_k = self._cls_images(classes[k], src=self.alignment_src)
+            return reddy_chatterji_register(
+                images_k,
+                reflections[k],
+                mask=self.mask,
+                do_cross_corr_translations=True,
+                dtype=self.dtype,
             )
+
+        if self.num_procs <= 1:
+            for k in trange(n_classes):
+                rotations[k], shifts[k], correlations[k] = _innerloop(k)
+
+        else:
+            logger.info(f"Starting Pool({self.num_procs})")
+            ray.init(_temp_dir=config.ray.temp_dir)
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
+
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for k, result in enumerate(results):
+                rotations[k], shifts[k], correlations[k] = result
 
         return rotations, shifts, correlations
-
-    def _reddychatterji(self, images, class_k, reflection_k):
-        """
-        Compute the Reddy Chatterji method registering images[1:] to image[0].
-
-        This differs from papers and published scikit implimentations by
-        computing the fixed base image[0] pipeline once then reusing.
-
-        This is a util function to help loop over `classes`.
-
-        :param images: Image data (m_img, L, L)
-        :param class_k: Image indices (m_img,)
-        :param reflection_k: Image reflections (m_img,)
-        :returns: (rotations_k, correlations_k, shifts_k) corresponding to `images`
-        """
-
-        # Result arrays
-        M = len(images)
-        rotations_k = np.zeros(M, dtype=self.dtype)
-        correlations_k = np.full(M, -np.inf, dtype=self.dtype)
-        shifts_k = np.zeros((M, 2), dtype=int)
-
-        # De-Mean, note images is mutated and should be a `copy`.
-        images -= images.mean(axis=(-1, -2))[:, np.newaxis, np.newaxis]
-
-        # Precompute fixed_img data used repeatedly in the loop below.
-        fixed_img = images[0]
-        # Difference of Gaussians (Band Filter)
-        fixed_img_dog = difference_of_gaussians(fixed_img, 1, 4)
-        # Window Images (Fix spectral boundary)
-        wfixed_img = fixed_img_dog * window("hann", fixed_img.shape)
-        # Transform image to Fourier space
-        fixed_img_fs = np.abs(fft.fftshift(fft.fft2(wfixed_img))) ** 2
-        # Compute Log Polar Transform
-        radius = fixed_img_fs.shape[0] // 8  # Low Pass
-        warped_fixed_img_fs = warp_polar(
-            fixed_img_fs,
-            radius=radius,
-            output_shape=fixed_img_fs.shape,
-            scaling="log",
-        )
-        # Only use half of FFT, because it's symmetrical
-        warped_fixed_img_fs = warped_fixed_img_fs[: fixed_img_fs.shape[0] // 2, :]
-
-        # Now prepare for rotating original images,
-        #   and searching for translations.
-        # We start back at the raw fixed_img.
-        twfixed_img = fixed_img * window("hann", fixed_img.shape)
-
-        # Register image `m` against image[0]
-        for m in range(1, len(images)):
-            # Get the image to register
-            regis_img = images[m]
-
-            # Reflect images when necessary
-            if reflection_k[m]:
-                regis_img = np.flipud(regis_img)
-
-            # Difference of Gaussians (Band Filter)
-            regis_img_dog = difference_of_gaussians(regis_img, 1, 4)
-
-            # Window Images (Fix spectral boundary)
-            wregis_img = regis_img_dog * window("hann", regis_img.shape)
-
-            self._input_images_diagnostic(
-                class_k[0], wfixed_img, class_k[m], wregis_img
-            )
-
-            # Transform image to Fourier space
-            regis_img_fs = np.abs(fft.fftshift(fft.fft2(wregis_img))) ** 2
-
-            self._windowed_psd_diagnostic(
-                class_k[0], fixed_img_fs, class_k[m], regis_img_fs
-            )
-
-            # Compute Log Polar Transform
-            warped_regis_img_fs = warp_polar(
-                regis_img_fs,
-                radius=radius,  # Low Pass
-                output_shape=fixed_img_fs.shape,
-                scaling="log",
-            )
-
-            self._log_polar_diagnostic(
-                class_k[0], warped_fixed_img_fs, class_k[m], warped_regis_img_fs
-            )
-
-            # Only use half of FFT, because it's symmetrical
-            warped_regis_img_fs = warped_regis_img_fs[: fixed_img_fs.shape[0] // 2, :]
-
-            # Compute the Cross_Correlation to estimate rotation
-            # Note that _phase_cross_correlation uses the mangnitudes (abs()),
-            #  ie it is using both freq and phase information.
-            cross_correlation, _ = self._phase_cross_correlation(
-                warped_fixed_img_fs, warped_regis_img_fs
-            )
-
-            # Rotating Cartesian space translates the angular log polar component.
-            # Scaling Cartesian space translates the radial log polar component.
-            # In common image resgistration problems, both components are used
-            #   to simultaneously estimate scaling and rotation.
-            # Since we are not currently concerned with scaling transformation,
-            #   disregard the second axis of the `cross_correlation` returned by
-            #   `_phase_cross_correlation`.
-            cross_correlation_score = cross_correlation[:, 0].ravel()
-
-            self._rotation_cross_corr_diagnostic(
-                cross_correlation, cross_correlation_score
-            )
-
-            # Recover the angle from index representing maximal cross_correlation
-            recovered_angle_degrees = (360 / regis_img_fs.shape[0]) * np.argmax(
-                cross_correlation_score
-            )
-
-            if recovered_angle_degrees > 90:
-                r = 180 - recovered_angle_degrees
-            else:
-                r = -recovered_angle_degrees
-
-            # For now, try the hack below, attempting two cases ...
-            # Some papers mention running entire algos /twice/,
-            #   when admitting reflections, so this hack is not
-            #   the worst you could do :).
-            # Hack
-            regis_img_estimated = rotate(regis_img, r)
-            regis_img_rotated_p180 = rotate(regis_img, r + 180)
-            da = np.dot(fixed_img[self.mask], regis_img_estimated[self.mask])
-            db = np.dot(fixed_img[self.mask], regis_img_rotated_p180[self.mask])
-            if db > da:
-                regis_img_estimated = regis_img_rotated_p180
-                r += 180
-
-            self._rotated_diagnostic(
-                class_k[0],
-                fixed_img,
-                class_k[m],
-                regis_img_estimated,
-                reflection_k[m],
-                r,
-            )
-
-            # Assign estimated rotations results
-            rotations_k[m] = -r * np.pi / 180  # Reverse rot and convert to radians
-
-            if self.do_cross_corr_translations:
-                # Prepare for searching over translations using cross-correlation with the rotated image.
-                twregis_img = regis_img_estimated * window("hann", regis_img.shape)
-                cross_correlation, shift = self._phase_cross_correlation(
-                    twfixed_img, twregis_img
-                )
-
-                self._translation_cross_corr_diagnostic(cross_correlation)
-
-                # Compute the shifts as integer number of pixels,
-                shift_x, shift_y = int(shift[1]), int(shift[0])
-                # then apply the shifts
-                regis_img_estimated = np.roll(regis_img_estimated, shift_y, axis=0)
-                regis_img_estimated = np.roll(regis_img_estimated, shift_x, axis=1)
-                # Assign estimated shift to results
-                shifts_k[m] = shift[::-1].astype(int)
-
-                self._averaged_diagnostic(
-                    class_k[0],
-                    fixed_img,
-                    class_k[m],
-                    regis_img_estimated,
-                    reflection_k[m],
-                    r,
-                )
-            else:
-                shift = None  # For logger line
-
-            # Estimated `corr` metric
-            corr = np.dot(fixed_img[self.mask], regis_img_estimated[self.mask])
-            correlations_k[m] = corr
-
-            logger.debug(
-                f"ref {class_k[0]}, Neighbor {m} Index {class_k[m]}"
-                f" Estimates: {r}*, Shift: {shift},"
-                f" Corr: {corr}, Refl?: {reflection_k[m]}"
-            )
-
-        # Cleanup some cached stuff for this class
-        self.__cache.pop(id(warped_fixed_img_fs), None)
-        self.__cache.pop(id(twfixed_img), None)
-
-        return rotations_k, shifts_k, correlations_k
 
     def average(
         self,
@@ -730,13 +568,15 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         Otherwise is similar to `AligningAverager2D.average`.
         """
 
-        rotations, shifts, _ = self.align(classes, reflections, coefs)
+        self.rotations, self.shifts, self.correlations = self.align(
+            classes, reflections, coefs
+        )
 
         n_classes, n_nbor = classes.shape
 
         b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
 
-        for i in tqdm(range(n_classes)):
+        def _innerloop(i):
 
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
@@ -750,150 +590,33 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
             # Rotate in composite_basis
             neighbors_coefs = self.composite_basis.rotate(
-                neighbors_coefs, rotations[i], reflections[i]
+                neighbors_coefs, self.rotations[i], reflections[i]
             )
 
             # Note shifts are after rotation for this approach!
-            if shifts is not None:
-                neighbors_coefs = self.composite_basis.shift(neighbors_coefs, shifts[i])
+            if self.shifts is not None:
+                neighbors_coefs = self.composite_basis.shift(
+                    neighbors_coefs, self.shifts[i]
+                )
 
             # Averaging in composite_basis
-            b_avgs[i] = np.mean(neighbors_coefs, axis=0)
+            return np.mean(neighbors_coefs, axis=0)
+
+        for i in tqdm(range(n_classes)):
+            b_avgs[i] = _innerloop(i)
+        else:
+            logger.info(f"Starting Pool({self.num_procs})")
+            ray.init(_temp_dir=config.ray.temp_dir)
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
+
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for i, result in enumerate(results):
+                b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
         return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
-
-    def _input_images_diagnostic(self, ia, a, ib, b):
-        if not self.diagnostics:
-            return
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        ax[0].set_title(f"Image {ia}")
-        ax[0].imshow(a)
-        ax[1].set_title(f"Image {ib}")
-        ax[1].imshow(b)
-        plt.show()
-
-    def _windowed_psd_diagnostic(self, ia, a, ib, b):
-        if not self.diagnostics:
-            return
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        ax[0].set_title(f"Image {ia} PSD")
-        ax[0].imshow(np.log(a))
-        ax[1].set_title(f"Image {ib} PSD")
-        ax[1].imshow(np.log(b))
-        plt.show()
-
-    def _log_polar_diagnostic(self, ia, a, ib, b):
-        if not self.diagnostics:
-            return
-        labels = np.arange(0, 360, 60)
-        y = labels / (360 / a.shape[0])
-
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        ax[0].set_title(f"Image {ia}")
-        ax[0].imshow(a)
-        ax[0].set_yticks(y, minor=False)
-        ax[0].set_yticklabels(labels)
-        ax[0].set_ylabel("Theta (Degrees)")
-
-        ax[1].set_title(f"Image {ib}")
-        ax[1].imshow(b)
-        ax[1].set_yticks(y, minor=False)
-        ax[1].set_yticklabels(labels)
-        plt.show()
-
-    def _rotation_cross_corr_diagnostic(
-        self, cross_correlation, cross_correlation_score
-    ):
-        if not self.diagnostics:
-            return
-        labels = [0, 30, 60, 90, -60, -30]
-        x = y = np.arange(0, 180, 30) / (180 / cross_correlation.shape[0])
-        plt.title("Rotation Cross Correlation Map")
-        plt.imshow(cross_correlation)
-        plt.xlabel("Scale")
-        plt.yticks(y, labels, rotation="vertical")
-        plt.ylabel("Theta (Degrees)")
-        plt.show()
-
-        plt.plot(cross_correlation_score)
-        plt.title("Angle vs Cross Correlation Score")
-        plt.xticks(x, labels)
-        plt.xlabel("Theta (Degrees)")
-        plt.ylabel("Cross Correlation Score")
-        plt.grid()
-        plt.show()
-
-    def _rotated_diagnostic(self, ia, a, ib, b, sb, rb):
-        """
-        Plot the image after estimated rotation and reflection.
-
-        :param ia: index image `a`
-        :param a: image `a`
-        :param ib: index image `b`
-        :param b: image `b` after reflection `sb` and rotion `rb`
-        :param sb: Reflection, Boolean
-        :param rb: Estimated rotation, degrees
-        """
-
-        if not self.diagnostics:
-            return
-
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        ax[0].set_title(f"Image {ia}")
-        ax[0].imshow(a)
-        ax[0].grid()
-        ax[1].set_title(f"Image {ib} Refl: {str(sb)[0]} Rotated {rb:.1f}")
-        ax[1].imshow(b)
-        ax[1].grid()
-        plt.show()
-
-    def _translation_cross_corr_diagnostic(self, cross_correlation):
-        if not self.diagnostics:
-            return
-        plt.title("Translation Cross Correlation Map")
-        plt.imshow(cross_correlation)
-        plt.xlabel("x shift (pixels)")
-        plt.ylabel("y shift (pixels)")
-        L = self.alignment_src.L
-        labels = [0, 10, 20, 30, 0, -10, -20, -30]
-        tick_location = [0, 10, 20, 30, L, L - 10, L - 20, L - 30]
-        plt.xticks(tick_location, labels)
-        plt.yticks(tick_location, labels)
-        plt.show()
-
-    def _averaged_diagnostic(self, ia, a, ib, b, sb, rb):
-        """
-        Plot the stacked average image after
-        estimated rotation and reflections.
-
-        Compare in a three way plot.
-
-        :param ia: index image `a`
-        :param a: image `a`
-        :param ib: index image `b`
-        :param b: image `b` after reflection `sb` and rotion `rb`
-        :param sb: Reflection, Boolean
-        :param rb: Estimated rotation, degrees
-        """
-        if not self.diagnostics:
-            return
-        fig, axes = plt.subplots(1, 3)
-        ax = axes.ravel()
-        ax[0].set_title(f"{ia}")
-        ax[0].imshow(a)
-        ax[0].grid()
-        ax[1].set_title(f"{ib} Refl: {str(sb)[0]} Rot: {rb:.1f}")
-        ax[1].imshow(b)
-        ax[1].grid()
-        ax[2].set_title("Stacked Avg")
-        plt.imshow((a + b) / 2.0)
-        ax[2].grid()
-        plt.show()
 
 
 class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
@@ -918,7 +641,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         src,
         alignment_src=None,
         radius=None,
-        diagnostics=False,
+        num_procs=None,
         dtype=None,
     ):
         """
@@ -933,7 +656,9 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         Defaults to src.L//8.
         :param dtype: Numpy dtype to be used during alignment.
 
-        :param diagnostics: Plot interactive diagnostic graphics (for debugging).
+        :param num_procs: Number of processes to use.
+        `None` will attempt computing a suggestion based on machine resources.
+        Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -941,12 +666,10 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             composite_basis,
             src,
             alignment_src,
-            diagnostics,
+            num_procs=num_procs,
             dtype=dtype,
         )
 
-        # For brute force we disable the cross_corr translation code
-        self.do_cross_corr_translations = False
         # Assign search radius
         self.radius = radius or src.L // 8
 
@@ -973,30 +696,55 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         disc = g["r"] <= self.radius
         X, Y = g["x"][disc], g["y"][disc]
 
-        for k in trange(n_classes):
+        def _innerloop(k):
             unshifted_images = self._cls_images(classes[k])
+            # Instantiate matrices for inner loop, and best results.
+            _rotations = np.zeros(classes.shape[1:], dtype=self.dtype)
+            _correlations = np.ones(classes.shape[1:], dtype=self.dtype) * -np.inf
+            _shifts = np.zeros((*classes.shape[1:], 2), dtype=int)
 
             for xs, ys in zip(X, Y):
                 s = np.array([xs, ys])
                 # Get the array of images for this class
 
                 # Note we mutate `images` here with shifting,
-                #   then later in `_reddychatterji`
+                #   then later reddy_chatterji_register
                 images = unshifted_images.copy()
                 # Don't shift the base image
                 images[1:] = Image(unshifted_images[1:]).shift(s).asnumpy()
 
-                _rotations, _, _correlations = self._reddychatterji(
-                    images, classes[k], reflections[k]
+                # returned shifts ignored since we are forcing shift of `s` above
+                __rotations, _, __correlations = reddy_chatterji_register(
+                    images,
+                    reflections[k],
+                    mask=self.mask,
+                    do_cross_corr_translations=False,  # When forcing s, we skip cross corr translations
+                    dtype=self.dtype,
                 )
 
                 # Where corr has improved
                 #  update our rolling best results with this loop.
-                improved = _correlations > correlations[k]
-                correlations[k] = np.where(improved, _correlations, correlations[k])
-                rotations[k] = np.where(improved, _rotations, rotations[k])
-                shifts[k] = np.where(improved[..., np.newaxis], s, shifts[k])
+                improved = __correlations > _correlations
+                _correlations = np.where(improved, __correlations, _correlations)
+                _rotations = np.where(improved, __rotations, _rotations)
+                _shifts = np.where(improved[..., np.newaxis], s, _shifts)
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
+
+            return _rotations, _shifts, _correlations
+
+        if self.num_procs <= 1:
+            for k in trange(n_classes):
+                rotations[k], shifts[k], correlations[k] = _innerloop(k)
+        else:
+            logger.info(f"Starting Pool({self.num_procs})")
+            ray.init(_temp_dir=config.ray.temp_dir)
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
+
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for k, result in enumerate(results):
+                rotations[k], shifts[k], correlations[k] = result
 
         return rotations, shifts, correlations
 

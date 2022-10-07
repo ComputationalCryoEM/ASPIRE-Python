@@ -350,8 +350,10 @@ class RotCov2D:
             p = np.size(A_ell[0], 0)
             b_ell = m_reshape(b[ell], (p**2,))
             S = inv(M[ell])
-            cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
-            covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            cg_opt["preconditioner"] = lambda x, S=S: precond_fun(S, x)
+            covar_coeff_ell, _, _ = conj_grad(
+                lambda x, A_ell=A_ell: apply(A_ell, x), b_ell, cg_opt
+            )
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
         if not covar_coeff.check_psd():
@@ -500,7 +502,7 @@ class BatchedRotCov2D(RotCov2D):
 
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
-        if src.unique_filters is None:
+        if not src.unique_filters:
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
@@ -528,7 +530,7 @@ class BatchedRotCov2D(RotCov2D):
             batch = np.arange(start, min(start + self.batch_size, src.n))
 
             im = src.images(batch[0], len(batch))
-            coeff = basis.evaluate_t(im.data)
+            coeff = basis.evaluate_t(im)
 
             for k in np.unique(ctf_idx[batch]):
                 coeff_k = coeff[ctf_idx[batch] == k]
@@ -658,8 +660,10 @@ class BatchedRotCov2D(RotCov2D):
             p = np.size(A_ell[0], 0)
             b_ell = m_reshape(b_covar[ell], (p**2,))
             S = inv(M[ell])
-            cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
-            covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            cg_opt["preconditioner"] = lambda x, S=S: precond_fun(S, x)
+            covar_coeff_ell, _, _ = conj_grad(
+                lambda x, A_ell=A_ell: apply(A_ell, x), b_ell, cg_opt
+            )
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
         return covar_coeff

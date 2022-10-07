@@ -31,17 +31,24 @@ class FSPCABasis(SteerableBasis2D):
 
     """
 
-    def __init__(self, src, basis=None, noise_var=None, components=400):
+    def __init__(
+        self, src, basis=None, noise_var=None, components=None, batch_size=512
+    ):
         """
 
         :param src: Source instance
         :param basis: Optional Fourier Bessel Basis (usually FFBBasis2D)
-        :param noise_var: None estimates noise (default).
-        0 forces "clean" treatment (no weighting).
-        Other values assigned to noise_var.
+        :param components: Optionally assign number of principal components
+        to use for the FSPCA basis.
+        Default value of `None` will use `self.basis.count`.
+        :param noise_var: Optionally assign noise variance.
+        Default value of `None` will estimate noise with WhiteNoiseEstimator.
+        Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
+        :param batch_size: Batch size for computing basis coefficients.
         """
 
         self.src = src
+        self.batch_size = batch_size
 
         # Automatically generate basis if needed.
         if basis is None:
@@ -49,7 +56,8 @@ class FSPCABasis(SteerableBasis2D):
         self.basis = basis
 
         # Components are used for `compress` during `build`.
-        self.components = components
+        self.components = components or self.basis.count
+        self._check_components()
 
         # check/warn dtypes
         self.dtype = self.src.dtype
@@ -75,6 +83,16 @@ class FSPCABasis(SteerableBasis2D):
         self.noise_var = noise_var  # noise_var is handled during `build` call.
 
         self.build()
+
+    def _check_components(self):
+        """
+        Check that our (compressed) count is not larger than our basis count.
+        """
+        if self.components > self.basis.count:
+            raise ValueError(
+                f"Provided components {self.components} > {self.basis.count} basis coefficients."
+                "  Reduce components."
+            )
 
     def _get_complex_indices_map(self):
         """
@@ -117,7 +135,13 @@ class FSPCABasis(SteerableBasis2D):
         This may take some time for large image stacks.
         """
 
-        coef = self.basis.evaluate_t(self.src.images(0, self.src.n))
+        coef = np.empty((self.src.n, self.basis.count), dtype=self.dtype)
+        num_batches = (self.src.n + self.batch_size - 1) // self.batch_size
+        for i in range(num_batches):
+            start = i * self.batch_size
+            finish = min((i + 1) * self.batch_size, self.src.n)
+            n = finish - start
+            coef[start:finish] = self.basis.evaluate_t(self.src.images(start, n))
 
         if self.noise_var is None:
             from aspire.noise import WhiteNoiseEstimator

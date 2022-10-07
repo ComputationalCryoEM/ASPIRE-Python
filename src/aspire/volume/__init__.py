@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 
 import mrcfile
 import numpy as np
@@ -7,7 +8,7 @@ from numpy.linalg import qr
 import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.utils import Rotation, grid_2d, grid_3d, mat_to_vec, vec_to_mat
+from aspire.utils import Rotation, crop_pad_3d, grid_2d, grid_3d, mat_to_vec, vec_to_mat
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import Random, randn
 from aspire.utils.types import complex_type
@@ -87,6 +88,15 @@ class Volume:
         """
         return self._data
 
+    def astype(self, dtype):
+        """
+        Return `Volume` instance with the prescribed dtype.
+
+        :param dtype: Numpy dtype
+        :return: Volume instance
+        """
+        return Volume(self.asnumpy().astype(dtype))
+
     def __getitem__(self, item):
         # this is one reason why you might want Volume and VolumeStack classes...
         # return Volume(self._data[item])
@@ -94,6 +104,9 @@ class Volume:
 
     def __setitem__(self, key, value):
         self._data[key] = value
+
+    def __repr__(self):
+        return f"{self.n_vols} volumes of size {self.resolution}x{self.resolution}x{self.resolution}"
 
     def __len__(self):
         return self.n_vols
@@ -231,23 +244,43 @@ class Volume:
 
         return self._data.flatten()
 
-    def flip(self, axis=0):
+    def flip(self, axis=1):
         """
         Flip volume stack data along axis using numpy.flip
 
         :param axis: Optionally specify axis as integer or tuple.
-        Defaults to axis=0.
+        Defaults to axis=1.
 
         :return: Volume instance.
         """
+        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
+            raise ValueError("Cannot flip Axis 0, stack axis.")
 
         return Volume(np.flip(self._data, axis))
 
-    def downsample(self, szout, mask=None):
-        if isinstance(szout, int):
-            szout = (szout,) * 3
+    def downsample(self, ds_res, mask=None):
+        """
+        Downsample each volume to a desired resolution (only cubic supported).
 
-        return Volume(aspire.image.downsample(self._data, szout, mask))
+        :param ds_res: Desired resolution.
+        :param mask: Optional NumPy array mask to multiply in Fourier space.
+        """
+        if mask is None:
+            mask = 1.0
+
+        # take 3D Fourier transform of each volume in the stack
+        fx = fft.fftshift(fft.fftn(self._data, axes=(1, 2, 3)))
+        # crop each volume to the desired resolution in frequency space
+        crop_fx = (
+            np.array([crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)])
+            * mask
+        )
+        # inverse Fourier transform of each volume
+        out = fft.ifftn(fft.ifftshift(crop_fx), axes=(1, 2, 3)) * (
+            ds_res**3 / self.resolution**3
+        )
+        # returns a new Volume object
+        return Volume(np.real(out))
 
     def shift(self):
         raise NotImplementedError
@@ -355,14 +388,14 @@ class Volume:
         return Volume(loaded_data.astype(dtype))
 
 
-def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.float64):
+def gaussian_blob_vols(L=8, C=2, K=16, symmetry=None, seed=None, dtype=np.float64):
     """
     Builds gaussian blob volumes with chosen symmetry type.
 
     :param L: The resolution of the volume.
     :param C: Number of volumes.
     :param K: The number of gaussian blobs used to generate the volume.
-    :param symmetry_type: A string indicating the type of symmetry.
+    :param symmetry: A string indicating the type of symmetry.
     :param seed: The random seed to produce centers and variances of the gaussian blobs.
     :param dtype: Data type.
 
@@ -371,13 +404,13 @@ def gaussian_blob_vols(L=8, C=2, K=16, symmetry_type=None, seed=None, dtype=np.f
 
     order = 1
     sym_type = None
-    if symmetry_type is not None:
+    if symmetry is not None:
         # safer to make string consistent
-        symmetry_type = symmetry_type.upper()
+        symmetry = symmetry.upper()
         # get the first letter
-        sym_type = symmetry_type[0]
+        sym_type = symmetry[0]
         # if there is a number denoting rotational symmetry, get that
-        order = symmetry_type[1:] or None
+        order = symmetry[1:] or None
 
     # map our sym_types to classes of Volumes
     map_sym_to_generator = {

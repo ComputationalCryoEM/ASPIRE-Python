@@ -6,10 +6,12 @@ import numpy as np
 from aspire.basis import PSWFBasis2D
 from aspire.image import Image
 
+from ._basis_util import UniversalBasisMixin
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class PSWFBasis2DTestCase(TestCase):
+class PSWFBasis2DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
         self.basis = PSWFBasis2D((8, 8), 1.0, 1.0)
         self.L = 8
@@ -26,10 +28,6 @@ class PSWFBasis2DTestCase(TestCase):
         images = Image(img_ary)
 
         result = self.basis.evaluate_t(images)
-        result_ary = self.basis.evaluate_t(img_ary)
-
-        # Confirm output from passing ndarray or Image is the same
-        self.assertTrue(np.allclose(result, result_ary))
 
         coeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
@@ -48,7 +46,3 @@ class PSWFBasis2DTestCase(TestCase):
         result = self.basis.evaluate(coeffs)
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         self.assertTrue(np.allclose(result.asnumpy(), images))
-
-    def testInitWithIntSize(self):
-        # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((8, 8), PSWFBasis2D(8).sz)
