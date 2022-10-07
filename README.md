@@ -15,7 +15,9 @@ pip install -e .
 
 4. Navigate to sparse-Kam
 
-5. Run the simulation script with:
+6. Download datafiles from https://github.com/oscarmickelin/sparse-Kam-matrices and place them into sparse-Kam/precomputed_matrices
+
+6. Run the simulation script with:
 
 ```
 python -i run_simulation.py
