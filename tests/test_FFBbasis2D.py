@@ -159,7 +159,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
         # Construct some synthetic data
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                np.float64
+                self.dtype
             )
         ).downsample(self.L)
 
