@@ -1,10 +1,12 @@
 import logging
 
 import numpy as np
+import scipy.sparse as sparse
 from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
+from aspire.nufft import anufft, nufft
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,18 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.maxitr = maxitr
         self.numsparse = numsparse
 
+        # Compute grid points
+        self.R = self.nres // 2
+        self.h = 1 / self.R
+        x = np.arange(-self.R, self.R + self.nres % 2)
+        y = np.arange(-self.R, self.R + self.nres % 2)
+        xs, ys = np.meshgrid(x, y)
+        xs, ys = xs / self.R, ys / self.R
+        rs = np.sqrt(xs**2 + ys**2)
+        # radial mask to remove energy outside disk
+        self.radial_mask = rs > 1 + 1e-13
+
+        #
         self._precomp()
 
     def _precomp(self):
@@ -72,9 +86,16 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Some important constants
         self.smallest_lambda = np.min(self.bessel_zeros)
         self.greatest_lambda = np.max(self.bessel_zeros)
+        self.nmax = np.max(np.abs(self.ells))
         # TODO: explain
         self.ndmax = np.max(2 * np.abs(self.ells) - (self.ells < 0))
-
+        self.nus = np.zeros(1 + 2 * self.nmax, dtype=int)
+        self.nus[0] = 0
+        for i in range(1, self.nmax + 1):
+            self.nus[2 * i - 1] = -i
+            self.nus[2 * i] = i
+        self.c2r_nus = self.precomp_transform_complex_to_real(self.nus)
+        self.r2c_nus = sparse.csr_matrix(self.c2r_nus.transpose().conj())
         # radial and angular nodes for fast Chebyshev interpolation
         self._compute_chebyshev_nodes()
 
@@ -137,8 +158,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         y = np.sin(phi).reshape(1, -1)
         x = x * nodes * h
         y = y * nodes * h
-        x = x.flatten()
-        y = y.flatten()
+        self.grid_x = x.flatten()
+        self.grid_y = y.flatten()
 
         # set up finufft plans ....
 
@@ -307,5 +328,128 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :param imgs: The array to be evaluated. The last dimensions
             must equal `self.sz`
         """
+        imgs = imgs.asnumpy()
+        if np.prod(imgs.shape) == self.nres**2:
+
+            f = np.copy(imgs).reshape(self.nres, self.nres)
+
+            # Remove pixels outside disk
+            f[self.radial_mask] = 0
+            f = f.flatten()
+        else:
+            nf = imgs.shape[0]
+
+            f = np.copy(imgs).reshape(nf, self.nres, self.nres)
+
+            # Remove pixels outside disk
+            f[:, self.radial_mask] = 0
+            f = f.reshape(nf, self.nres**2)
+
+        z = self._step1(imgs)
+        b = self._step2(z)
 
         return np.zeros((imgs.shape[0],) + (self.count,))
+
+    def _step1(self, f):
+
+        if np.prod(f.shape) == self.nres**2:
+            f = f.reshape(self.nres, self.nres)
+            f = np.array(f, dtype=np.complex128)
+            z = np.zeros(
+                (self.num_radial_nodes, self.num_angular_nodes), dtype=np.complex128
+            )
+            z0 = nufft(f, np.stack((self.grid_x, self.grid_y))) * self.h**2
+            z0 = z0.reshape(self.num_radial_nodes, self.num_angular_nodes // 2)
+            z[:, : self.num_angular_nodes // 2] = z0
+            z[:, self.num_angular_nodes // 2 :] = np.conj(z0)
+            z = z.flatten()
+        else:
+
+            L = self.nres
+            nf = f.shape[0]
+            f = f.reshape(nf, L, L)
+            f = np.array(f, dtype=np.complex128)
+
+            z = np.zeros(
+                (nf, self.num_radial_nodes, self.num_angular_nodes), dtype=np.complex128
+            )
+            nufft_type = 2
+            plan2v = finufft.Plan(nufft_type, (L, L), n_trans=nf, eps=sel)
+            plan2v.setpts(self.grid_x, self.grid_y)
+
+            z0 = nufft(f, np.stack(self.grid_x, self.grid_y)) * self.h**2
+            z0 = z0.reshape(nf, self.n_radial, self.n_angular // 2)
+
+            z[:, :, : self.n_angular // 2] = z0
+            z[:, :, self.n_angular // 2 :] = np.conj(z0)
+            z = z.reshape(nf, self.n_angular * self.n_radial)
+
+        return z
+
+    def _step2(self, z):
+        if np.prod(z.shape) == self.num_radial_nodes * self.num_angular_nodes:
+            # Compute Fourier coefficients along rings
+            z = z.reshape(self.num_radial_nodes, self.num_angular_nodes)
+            b = np.fft.fft(z, n=self.num_angular_nodes, axis=1) / self.num_angular_nodes
+            b = b[:, self.nus]
+            b = np.conj(b).T
+            b = self.c2r_nus @ b
+            b = np.real(b).T
+        else:
+            nz = z.shape[0]
+            ind_vec = self.ind_vec
+            z = z.reshape(nz, self.n_radial, self.n_angular)
+            b = np.fft.fft(z, n=self.n_angular, axis=2) / self.n_angular
+            b = b[:, :, self.nus]
+            b = np.conj(b)
+
+            b = np.swapaxes(b, 0, 2)
+            b = b.reshape(-1, self.n_radial * nz)
+            b = self.c2r_nus @ b
+            b = b.reshape(-1, self.n_radial, nz)
+            b = np.real(np.swapaxes(b, 0, 2))
+
+        return b
+
+    def precomp_transform_complex_to_real(self, ns):
+
+        ne = len(ns)
+        nnz = np.sum(ns == 0) + 2 * np.sum(ns != 0)
+        idx = np.zeros(nnz, dtype=int)
+        jdx = np.zeros(nnz, dtype=int)
+        vals = np.zeros(nnz, dtype=np.complex128)
+
+        k = 0
+        for i in range(ne):
+            n = ns[i]
+            if n == 0:
+                vals[k] = 1
+                idx[k] = i
+                jdx[k] = i
+                k = k + 1
+            if n < 0:
+                s = (-1) ** np.abs(n)
+
+                vals[k] = 1 / np.sqrt(2)
+                idx[k] = i
+                jdx[k] = i
+                k = k + 1
+
+                vals[k] = s / np.sqrt(2)
+                idx[k] = i
+                jdx[k] = i + 1
+                k = k + 1
+
+                vals[k] = -1 / (1j * np.sqrt(2))
+                idx[k] = i + 1
+                jdx[k] = i
+                k = k + 1
+
+                vals[k] = s / (1j * np.sqrt(2))
+                idx[k] = i + 1
+                jdx[k] = i + 1
+                k = k + 1
+
+        A = sparse.csr_matrix((vals, (idx, jdx)), shape=(ne, ne), dtype=np.complex128)
+
+        return A
