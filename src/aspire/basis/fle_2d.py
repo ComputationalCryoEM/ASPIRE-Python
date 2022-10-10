@@ -406,7 +406,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             b = np.real(b).T
         else:
             nz = z.shape[0]
-            ind_vec = self.ind_vec
             z = z.reshape(nz, self.n_radial, self.n_angular)
             b = np.fft.fft(z, n=self.n_angular, axis=2) / self.n_angular
             b = b[:, :, self.nus]
@@ -426,8 +425,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128)
         for i in range(self.count):
-            B[:,:,i] = self.basis_functions[i](rs, ts) * self.h
-        B = B.reshape(self.nres **2, self.count)
+            B[:, :, i] = self.basis_functions[i](self.rs, ts) * self.h
+        B = B.reshape(self.nres**2, self.count)
         B = self._transform_complex_to_real(np.conj(B), self.ells)
         return B.reshape(self.nres**2, self.count)
 
@@ -452,7 +451,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                 X[:, i + 1] = np.real(x1)
 
         return X
-    
+
     def precomp_transform_complex_to_real(self, ns):
 
         ne = len(ns)
@@ -512,8 +511,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         jdx = np.zeros((n, s))
         vals = np.zeros((n, s))
         xss = np.zeros((n, s))
-        idps = np.zeros((n, s))
-        numer = np.zeros((n, 1))
         denom = np.zeros((n, 1))
         temp = np.zeros((n, 1))
         ws = np.zeros((n, s))
@@ -539,7 +536,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         Iw[0] = False
         const = np.zeros((n, 1))
-        for j in range(s):
+        for _ in range(s):
             ew = np.sum(-np.log(np.abs(xss[:, 0].reshape(-1, 1) - xss[:, Iw])), axis=1)
             constw = np.exp(ew / s)
             constw = constw.reshape(-1, 1)
@@ -566,24 +563,24 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         vals = vals.flatten()
         idx = idx.flatten()
         jdx = jdx.flatten()
-        A = spr.csr_matrix((vals, (idx, jdx)), shape=(n, m), dtype=np.float64)
-        A_T = spr.csr_matrix((vals, (jdx, idx)), shape=(m, n), dtype=np.float64)
+        A = sparse.csr_matrix((vals, (idx, jdx)), shape=(n, m), dtype=np.float64)
+        A_T = sparse.csr_matrix((vals, (jdx, idx)), shape=(m, n), dtype=np.float64)
 
         return A, A_T
 
     def get_weights(self, xs):
 
         m = len(xs)
-        I = np.ones(m, dtype=bool)
-        I[0] = False
-        e = np.sum(-np.log(np.abs(xs[0] - xs[I])))
+        ident = np.ones(m, dtype=bool)
+        ident[0] = False
+        e = np.sum(-np.log(np.abs(xs[0] - xs[ident])))
         const = np.exp(e / m)
         ws = np.zeros(m)
-        I = np.ones(m, dtype=bool)
+        ident = np.ones(m, dtype=bool)
         for j in range(m):
-            I[j] = False
-            xt = const * (xs[j] - xs[I])
+            ident[j] = False
+            xt = const * (xs[j] - xs[ident])
             ws[j] = 1 / np.prod(xt)
-            I[j] = True
+            ident[j] = True
 
         return ws
