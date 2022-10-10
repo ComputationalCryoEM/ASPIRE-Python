@@ -67,7 +67,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         x = np.arange(-self.R, self.R + self.nres % 2)
         y = np.arange(-self.R, self.R + self.nres % 2)
         xs, ys = np.meshgrid(x, y)
-        xs, ys = xs / self.R, ys / self.R
+        self.xs, self.ys = xs / self.R, ys / self.R
         rs = np.sqrt(xs**2 + ys**2)
         # radial mask to remove energy outside disk
         self.radial_mask = rs > 1 + 1e-13
@@ -88,7 +88,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.greatest_lambda = np.max(self.bessel_zeros)
         self.nmax = np.max(np.abs(self.ells))
         # TODO: explain
-        self.ndmax = np.max(2 * np.abs(self.ells) - (self.ells < 0))
+        self.ndx = 2 * np.abs(self.ells) - (self.ells < 0)
+        self.ndmax = np.max(self.ndx)
+        idx_list = [[] for i in range(self.ndmax + 1)]
+        for i in range(self.count):
+            nd = self.ndx[i]
+            idx_list[nd].append(i)
+        self.idx_list = idx_list
+
         self.nus = np.zeros(1 + 2 * self.nmax, dtype=int)
         self.nus[0] = 0
         for i in range(1, self.nmax + 1):
@@ -96,8 +103,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             self.nus[2 * i] = i
         self.c2r_nus = self.precomp_transform_complex_to_real(self.nus)
         self.r2c_nus = sparse.csr_matrix(self.c2r_nus.transpose().conj())
+
         # radial and angular nodes for fast Chebyshev interpolation
         self._compute_chebyshev_nodes()
+        self.num_interp = self.num_radial_nodes
+        if self.numsparse > 0:
+            self.num_interp = 2 * self.num_radial_nodes
 
     def _compute_chebyshev_nodes(self):
         """
@@ -160,8 +171,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         y = y * nodes * h
         self.grid_x = x.flatten()
         self.grid_y = y.flatten()
-
-        # set up finufft plans ....
 
     def _lap_eig_disk(self):
         """
@@ -411,6 +420,39 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return b
 
+    def create_dense_matrix(self):
+
+        ts = np.arctan2(self.xs, self.ys)
+
+        B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128)
+        for i in range(self.count):
+            B[:,:,i] = self.basis_functions[i](rs, ts) * self.h
+        B = B.reshape(self.nres **2, self.count)
+        B = self._transform_complex_to_real(np.conj(B), self.ells)
+        return B.reshape(self.nres**2, self.count)
+
+    def _transform_complex_to_real(self, Z, ns):
+        """
+        Transforms coefficients of the matrix B (see Eq. 3) from complex
+        to real. B is the linear transformation that takes FB coefficients
+        to images.
+        """
+        ne = Z.shape[1]
+        X = np.zeros(Z.shape, dtype=np.float64)
+
+        for i in range(ne):
+            n = ns[i]
+            if n == 0:
+                X[:, i] = np.real(Z[:, i])
+            if n < 0:
+                s = (-1) ** np.abs(n)
+                x0 = (Z[:, i] + s * Z[:, i + 1]) / np.sqrt(2)
+                x1 = (-Z[:, i] + s * Z[:, i + 1]) / (1j * np.sqrt(2))
+                X[:, i] = np.real(x0)
+                X[:, i + 1] = np.real(x1)
+
+        return X
+    
     def precomp_transform_complex_to_real(self, ns):
 
         ne = len(ns)
@@ -453,3 +495,95 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         A = sparse.csr_matrix((vals, (idx, jdx)), shape=(ne, ne), dtype=np.complex128)
 
         return A
+
+    def barycentric_interp_sparse(self, x, xs, ys, s):
+        # https://people.maths.ox.ac.uk/trefethen/barycentric.pdf
+
+        n = len(x)
+        m = len(xs)
+
+        # Modify points by 2e-16 to avoid division by zero
+        vals, x_ind, xs_ind = np.intersect1d(
+            x, xs, return_indices=True, assume_unique=True
+        )
+        x[x_ind] = x[x_ind] + 2e-16
+
+        idx = np.zeros((n, s))
+        jdx = np.zeros((n, s))
+        vals = np.zeros((n, s))
+        xss = np.zeros((n, s))
+        idps = np.zeros((n, s))
+        numer = np.zeros((n, 1))
+        denom = np.zeros((n, 1))
+        temp = np.zeros((n, 1))
+        ws = np.zeros((n, s))
+        xdiff = np.zeros(n)
+        for i in range(n):
+
+            # get a kind of blanced interval around our point
+            k = np.searchsorted(x[i] < xs, True)
+
+            idp = np.arange(k - s // 2, k + (s + 1) // 2)
+            if idp[0] < 0:
+                idp = np.arange(s)
+            if idp[-1] >= m:
+                idp = np.arange(m - s, m)
+            xss[i, :] = xs[idp]
+            jdx[i, :] = idp
+            idx[i, :] = i
+
+        x = x.reshape(-1, 1)
+        Iw = np.ones(s, dtype=bool)
+        ew = np.zeros((n, 1))
+        xtw = np.zeros((n, s - 1))
+
+        Iw[0] = False
+        const = np.zeros((n, 1))
+        for j in range(s):
+            ew = np.sum(-np.log(np.abs(xss[:, 0].reshape(-1, 1) - xss[:, Iw])), axis=1)
+            constw = np.exp(ew / s)
+            constw = constw.reshape(-1, 1)
+            const += constw
+        const = const / s
+
+        for j in range(s):
+            Iw[j] = False
+            xtw = const * (xss[:, j].reshape(-1, 1) - xss[:, Iw])
+            ws[:, j] = 1 / np.prod(xtw, axis=1)
+            Iw[j] = True
+
+        xdiff = xdiff.flatten()
+        x = x.flatten()
+        temp = temp.flatten()
+        denom = denom.flatten()
+        for j in range(s):
+            xdiff = x - xss[:, j]
+            temp = ws[:, j] / xdiff
+            vals[:, j] = vals[:, j] + temp
+            denom = denom + temp
+        vals = vals / denom.reshape(-1, 1)
+
+        vals = vals.flatten()
+        idx = idx.flatten()
+        jdx = jdx.flatten()
+        A = spr.csr_matrix((vals, (idx, jdx)), shape=(n, m), dtype=np.float64)
+        A_T = spr.csr_matrix((vals, (jdx, idx)), shape=(m, n), dtype=np.float64)
+
+        return A, A_T
+
+    def get_weights(self, xs):
+
+        m = len(xs)
+        I = np.ones(m, dtype=bool)
+        I[0] = False
+        e = np.sum(-np.log(np.abs(xs[0] - xs[I])))
+        const = np.exp(e / m)
+        ws = np.zeros(m)
+        I = np.ones(m, dtype=bool)
+        for j in range(m):
+            I[j] = False
+            xt = const * (xs[j] - xs[I])
+            ws[j] = 1 / np.prod(xt)
+            I[j] = True
+
+        return ws
