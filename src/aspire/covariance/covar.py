@@ -51,7 +51,7 @@ class CovarianceEstimator(Estimator):
 
         for i in tqdm(range(0, n, self.batch_size)):
             _range = np.arange(i, min(n, i + self.batch_size))
-            pts_rot = rotated_grids(L, self.src.rots[_range, :, :])
+            pts_rot = rotated_grids(L, self.src.rotations[_range, :, :])
             weights = sq_filters_f[:, :, _range]
             weights *= self.src.amplitudes[_range] ** 2
 

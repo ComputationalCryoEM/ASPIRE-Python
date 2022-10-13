@@ -62,7 +62,7 @@ class OrientSymmTestCase(TestCase):
         rots_est = cl_symm.rotations
 
         # g-synchronize ground truth rotations.
-        rots_gt = src.rots
+        rots_gt = src.rotations
         rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt)
 
         # Register estimates to ground truth rotations and compute MSE.
@@ -91,7 +91,7 @@ class OrientSymmTestCase(TestCase):
         # s = 1, 2, ..., order. We find the mean squared error over
         # the minimum error between Rij and the above set.
         gs = cyclic_rotations(order, self.dtype).matrices
-        rots_gt = src.rots
+        rots_gt = src.rotations
 
         # Find the angular distance between each Rij and the ground truth.
         pairs = all_pairs(n_img)
@@ -133,7 +133,7 @@ class OrientSymmTestCase(TestCase):
         # and the 4 possible ground truths.
         rots_symm = cyclic_rotations(order, self.dtype).matrices
         g = rots_symm[1]
-        rots_gt = src.rots
+        rots_gt = src.rotations
 
         # Find angular distance between estimate and ground truth.
         dist = np.zeros(4)
@@ -160,7 +160,7 @@ class OrientSymmTestCase(TestCase):
         cl_symm = self.cl_orient_ests[order]
 
         # Calculate ground truth relative viewing directions, viis and vijs.
-        rots_gt = src.rots
+        rots_gt = src.rotations
 
         viis_gt = np.zeros((n_img, 3, 3))
         for i in range(n_img):
@@ -281,7 +281,7 @@ class OrientSymmTestCase(TestCase):
         scl = cl_symm._self_clmatrix_c3_c4()
 
         # Compute ground truth self-common-lines matrix.
-        rots = src.rots
+        rots = src.rotations
         scl_gt = self.buildSelfCommonLinesMatrix(rots, order)
 
         # Since we search for self common lines whose angle differences fall
@@ -327,7 +327,7 @@ class OrientSymmTestCase(TestCase):
         cl = cl_symm.clmatrix
 
         # Compare common-line indices with ground truth angles.
-        rots = src.rots  # ground truth rotations
+        rots = src.rotations  # ground truth rotations
         rots_symm = cyclic_rotations(order, self.dtype).matrices
         pairs = all_pairs(n_img)
         within_1_degree = 0

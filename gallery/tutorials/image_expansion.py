@@ -52,7 +52,7 @@ dtime = tstop - tstart
 logger.info(f"Finish normal FB expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on FB basis
-fb_images = fb_basis.evaluate(fb_coeffs)
+fb_images = fb_basis.evaluate(fb_coeffs).asnumpy()
 logger.info("Finish reconstruction of images from normal FB expansion coefficients.")
 
 # Calculate the mean value of maximum differences between the FB estimated images and the original images
