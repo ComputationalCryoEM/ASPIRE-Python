@@ -37,7 +37,7 @@ class ImageTestCase(TestCase):
         )
 
         # Expose images as numpy array.
-        self.ims_np = sim.images(0, sim.n).asnumpy()
+        self.ims_np = sim.images[:].asnumpy()
         self.im = Image(self.ims_np)
 
         # Vol estimation requires a 3D basis
@@ -51,7 +51,7 @@ class ImageTestCase(TestCase):
         """
 
         src = ArrayImageSource(self.im)
-        im = src.images(start=0, num=np.inf)  # returns Image instance
+        im = src.images[:]  # returns Image instance
         self.assertTrue(np.allclose(im.asnumpy(), self.ims_np))
 
     def testArrayImageSourceFromNumpy(self):
@@ -65,7 +65,7 @@ class ImageTestCase(TestCase):
         src = ArrayImageSource(self.ims_np)
 
         # Ask the Source for all images in the stack as a Numpy array
-        ims_np = src.images(start=0, num=np.inf).asnumpy()
+        ims_np = src.images[:].asnumpy()
 
         # Comparison should be yield identity
         self.assertTrue(np.allclose(ims_np, self.ims_np))

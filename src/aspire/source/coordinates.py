@@ -427,22 +427,25 @@ class CoordinateSource(ImageSource, ABC):
         start_x, start_y, size_x, size_y = coord
         return data[start_y : start_y + size_y, start_x : start_x + size_x]
 
-    def _images(self, start=0, num=np.inf, indices=None):
+    def _images(self, indices):
         """
         Given a range or selection of indices, returns an Image stack
-        of the particles specified. Note that the indices refer to the order
+        when accessed via the `ImageSource.images` property.
+        Note that the indices refer to the order
         of the particles loaded in this *specific* CoordinateSource. This may
         not correspond to the particles in the original source on disk, if some
         particles were excluded due to their box not fitting into the mrc
         dimensions. Thus, the exact particles returned are a function of the
         `particle_size`.
-        :param start: Starting index (default: 0)
-        :param num: number of images to return starting from `start` (default: numpy.inf)
-        :param indices: A numpy array of integer indices. If specified, supersedes
-        `start` and `num`.
+        :param indices: A 1-D NumPy array of integer indices.
+        :return: An `Image` object.
         """
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
+        # check for cached images first
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            return self.generation_pipeline.forward(
+                Image(self._cached_im[indices, :, :]), indices
+            )
 
         logger.info(f"Loading {len(indices)} images from micrographs")
 
@@ -487,8 +490,8 @@ class CoordinateSource(ImageSource, ABC):
                 if idx == mrc_index:
                     cropped = self._crop_micrograph(arr, next(coord))
                     im[i] = cropped
-
-        return Image(im)
+        # Finally, apply transforms to resulting Image
+        return self.generation_pipeline.forward(Image(im), indices)
 
     @staticmethod
     def _is_number(text):

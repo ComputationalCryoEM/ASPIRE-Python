@@ -22,3 +22,6 @@ class OrientEstSource(ImageSource):
         self._im = None
         self.orient_method = orient_method
         self.rotations = orient_method.rotations
+
+    def _images(self, indices):
+        return self._im[indices, :, :]

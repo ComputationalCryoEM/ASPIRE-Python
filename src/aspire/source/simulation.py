@@ -8,6 +8,7 @@ from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
+from aspire.source.image import _ImageAccessor
 from aspire.utils import (
     acorr,
     ainner,
@@ -113,6 +114,9 @@ class Simulation(ImageSource):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
 
+        self._projections_accessor = _ImageAccessor(self._projections, self.n)
+        self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
+
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
         # metadata based on the CTF filters by hand and set the values
@@ -148,17 +152,18 @@ class Simulation(ImageSource):
             filter_values,
         )
 
-    def projections(self, start=0, num=np.inf, indices=None):
+    @property
+    def projections(self):
         """
-        Return projections of generated volumes, without applying filters/shifts/amplitudes/noise
-        :param start: start index (0-indexed) of the start image to return
-        :param num: Number of images to return. If None, *all* images are returned.
-        :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :return: An Image instance.
+        Return projections of generated volumes, without applying filters/shifts/amplitudes/noise.
+        Subscriptable property.
         """
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
+        return self._projections_accessor
 
+    def _projections(self, indices):
+        """
+        Accesses and returns projections as an `Image` instance. Called by self._projections_accessor
+        """
         im = np.zeros(
             (len(indices), self._original_L, self._original_L), dtype=self.dtype
         )
@@ -174,14 +179,31 @@ class Simulation(ImageSource):
 
         return Image(im)
 
-    def clean_images(self, start=0, num=np.inf, indices=None):
-        return self._images(start=start, num=num, indices=indices, enable_noise=False)
+    @property
+    def clean_images(self):
+        """
+        Return projections with filters/shifts/amplitudes applied, but without noise.
+        Subscriptable property.
+        """
+        return self._clean_images_accessor
 
-    def _images(self, start=0, num=np.inf, indices=None, enable_noise=True):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n), dtype=int)
+    def _clean_images(self, indices):
+        return self._images(indices, enable_noise=False)
 
-        im = self.projections(start=start, num=num, indices=indices)
+    def _images(self, indices, enable_noise=True):
+        """
+        Returns particle images when accessed via the `ImageSource.images` property.
+        :param indices: A 1-D NumPy array of integer indices.
+        :param enable_noise: Only used internally, toggled off when `clean_images` requested.
+        :return: An `Image` object.
+        """
+        # check for cached images first
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            return self.generation_pipeline.forward(
+                Image(self._cached_im[indices, :, :]), indices
+            )
+        im = self.projections[indices]
 
         # apply original CTF distortion to image
         im = self._apply_sim_filters(im, indices)
@@ -193,7 +215,8 @@ class Simulation(ImageSource):
         if enable_noise and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
-        return im
+        # Finally, apply transforms to resulting Image
+        return self.generation_pipeline.forward(im, indices)
 
     def _apply_sim_filters(self, im, indices):
         return self._apply_filters(
