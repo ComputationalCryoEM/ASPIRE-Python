@@ -18,10 +18,10 @@ import os
 import numpy as np
 import requests
 
+
 # sphinx_gallery_start_ignore
 # flake8: noqa
 # sphinx_gallery_end_ignore
-
 # Download volume
 def download(url, save_path, chunk_size=1024 * 1024):
     r = requests.get(url, stream=True)
@@ -115,17 +115,17 @@ src = Simulation(
 # We can access several views of the projection images at various levels of filtering.
 
 # with no filters
-src.projections(0, 10).show()
+src.projections[0:10].show()
 
 # %%
 
 # with no noise filter
-src.clean_images(0, 10).show()
+src.clean_images[0:10].show()
 
 # %%
 
 # with noise and ctf filters
-src.images(0, 10).show()
+src.images[0:10].show()
 
 
 # %%
@@ -134,7 +134,7 @@ src.images(0, 10).show()
 # We apply ``phase_flip()`` to correct for CTF effects.
 
 src.phase_flip()
-src.images(0, 10).show()
+src.images[0:10].show()
 
 
 # %%
@@ -171,12 +171,12 @@ avgs = rir.averages(classes, reflections, distances)
 # -----------------------
 
 # Show class averages
-avgs.images(0, 10).show()
+avgs.images[0:10].show()
 
 # %%
 
 # Show original images corresponding to those classes
-src.images(0, 10).show()
+src.images[0:10].show()
 
 
 # %%
@@ -188,7 +188,7 @@ src.images(0, 10).show()
 from aspire.abinitio import CLSyncVoting
 
 # Stash true rotations for later comparison
-true_rotations = src.rots[:n_classes]
+true_rotations = src.rotations[:n_classes]
 
 orient_est = CLSyncVoting(avgs, n_theta=72)
 
@@ -226,7 +226,7 @@ from aspire.basis import FFBBasis3D
 from aspire.reconstruction import MeanEstimator
 
 # Assign the estimated rotations to the class averages
-avgs.rots = rots_est
+avgs.rotations = rots_est
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((res,) * 3, dtype=vol.dtype)
@@ -252,9 +252,9 @@ from aspire.source import ArrayImageSource
 projections_est = ArrayImageSource(estimated_volume.project(0, rots_est))
 
 # We view the first 10 projections of the estimated volume.
-projections_est.images(0, 10).show()
+projections_est.images[0:10].show()
 
 # %%
 
 # For comparison, we view the first 10 source projections.
-src.projections(0, 10).show()
+src.projections[0:10].show()
