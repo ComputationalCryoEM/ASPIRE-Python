@@ -585,7 +585,7 @@ class ImageSource(ABC):
             overwrite=overwrite,
         )
         # return some information about the saved files
-        info = {"path": starfile_filepath, "files": unique_filenames}
+        info = {"starfile": starfile_filepath, "mrcs": unique_filenames}
         return info
 
     def save_metadata(
