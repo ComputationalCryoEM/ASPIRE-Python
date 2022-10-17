@@ -108,7 +108,7 @@ class ImageTestCase(TestCase):
         """
         Test that ArrayImageSource when instantiated without required
         rotations/angles gives an appropriate error.
-        Here we specifically test `rots`.
+        Here we specifically test `rotations`.
         """
 
         # Construct the source for testing.
@@ -116,7 +116,7 @@ class ImageTestCase(TestCase):
 
         # Test we raise with expected message from getter.
         with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
-            _ = src.rots
+            _ = src.rotations
 
     def testArrayImageSourceMeanVol(self):
         """
@@ -152,7 +152,7 @@ class ImageTestCase(TestCase):
 
     def testArrayImageSourceRotsSetGet(self):
         """
-        Test ArrayImageSource `rots` property, setter and getter function.
+        Test ArrayImageSource `rotations` property, setter and getter function.
         """
 
         # Construct the source for testing
@@ -167,11 +167,11 @@ class ImageTestCase(TestCase):
         self.assertTrue(rotations.shape == (src.n, 3, 3))
 
         # Excercise the setter
-        src.rots = rotations
+        src.rotations = rotations
 
-        # Test Rots Getter
+        # Test Rotations Getter
         self.assertTrue(
-            np.allclose(rotations, src.rots, atol=utest_tolerance(self.dtype))
+            np.allclose(rotations, src.rotations, atol=utest_tolerance(self.dtype))
         )
 
         # Test Angles Getter

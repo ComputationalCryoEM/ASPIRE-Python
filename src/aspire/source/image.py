@@ -66,7 +66,7 @@ class ImageSource:
         self._cached_im = None
 
         # _rotations is assigned non None value
-        #  by `rots` or `angles` setters.
+        #  by `rotations` or `angles` setters.
         #  It is potentially used by sublasses to test if we've used setters.
         #  This must come before the Relion/starfile meta data parsing below.
         self._rotations = None
@@ -155,7 +155,7 @@ class ImageSource:
         return self._rotations.angles.astype(self.dtype)
 
     @property
-    def rots(self):
+    def rotations(self):
         """
         Returns rotation matrices.
 
@@ -185,8 +185,8 @@ class ImageSource:
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
         )
 
-    @rots.setter
-    def rots(self, values):
+    @rotations.setter
+    def rotations(self, values):
         """
         Set rotation matrices
 
@@ -503,7 +503,7 @@ class ImageSource:
         im = im.shift(-self.offsets[all_idx, :])
         im = self._apply_source_filters(im, all_idx)
 
-        vol = im.backproject(self.rots[start : start + num, :, :])[0]
+        vol = im.backproject(self.rotations[start : start + num, :, :])[0]
 
         return vol
 
@@ -523,7 +523,7 @@ class ImageSource:
         if vol.dtype != self.dtype:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
-        im = vol.project(0, self.rots[all_idx, :, :])
+        im = vol.project(0, self.rotations[all_idx, :, :])
         im = self._apply_source_filters(im, all_idx)
         im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
@@ -768,21 +768,21 @@ class ArrayImageSource(ImageSource):
             if angles.shape != (self.n, 3):
                 raise ValueError(f"Angles should be shape {(self.n, 3)}")
             # This will populate `_rotations`,
-            #   which is exposed by properties `angles` and `rots`.
+            #   which is exposed by properties `angles` and `rotations`.
             self.angles = angles
 
     def _rots(self):
         """
         Private method, checks if `_rotations` has been set,
-        then returns inherited rots, otherwise raise.
+        then returns inherited rotations, otherwise raise.
         """
 
         if self._rotations is not None:
             return super()._rots()
         else:
             raise RuntimeError(
-                "Consumer of ArrayImageSource trying to access rots,"
-                " but rots were not defined for this source."
+                "Consumer of ArrayImageSource trying to access rotations,"
+                " but rotations were not defined for this source."
                 "  Try instantiating with angles."
             )
 

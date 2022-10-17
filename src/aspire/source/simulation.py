@@ -168,7 +168,7 @@ class Simulation(ImageSource):
         unique_states = np.unique(states)
         for k in unique_states:
             idx_k = np.where(states == k)[0]
-            rot = self.rots[indices[idx_k], :, :]
+            rot = self.rotations[indices[idx_k], :, :]
 
             im_k = self.vols.project(vol_idx=k - 1, rot_matrices=rot)
             im[idx_k, :, :] = im_k.asnumpy()
