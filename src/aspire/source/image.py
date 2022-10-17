@@ -575,6 +575,7 @@ class ImageSource(ABC):
             batch_size=batch_size,
             save_mode=save_mode,
         )
+        unique_filenames = list(dict.fromkeys(filename_indices))
 
         logger.info("save images into MRCS file")
         self.save_images(
@@ -583,6 +584,9 @@ class ImageSource(ABC):
             batch_size=batch_size,
             overwrite=overwrite,
         )
+        # return some information about the saved files
+        info = {"path": starfile_filepath, "files": unique_filenames}
+        return info
 
     def save_metadata(
         self, starfile_filepath, new_mrcs=True, batch_size=512, save_mode=None
