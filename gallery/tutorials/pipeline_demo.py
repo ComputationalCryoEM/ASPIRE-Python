@@ -6,9 +6,6 @@ Ab-initio Reconstruction Pipeline Demonstration
 This tutorial demonstrates some key components of an ab-initio reconstruction pipeline using
 synthetic data generated with ASPIRE's ``Simulation`` class of objects.
 """
-# sphinx_gallery_start_ignore
-# flake8: noqa
-# sphinx_gallery_end_ignore
 
 # %%
 # Download a Volume
@@ -21,6 +18,9 @@ import os
 import numpy as np
 import requests
 
+# sphinx_gallery_start_ignore
+# flake8: noqa
+# sphinx_gallery_end_ignore
 
 # Download volume
 def download(url, save_path, chunk_size=1024 * 1024):
