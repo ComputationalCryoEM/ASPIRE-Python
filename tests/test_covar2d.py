@@ -58,9 +58,9 @@ class Cov2DTestCase(TestCase):
 
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)
 
-        self.imgs_clean = self.sim.projections()
-        self.imgs_ctf_clean = self.sim.clean_images()
-        self.imgs_ctf_noise = self.sim.images(start=0, num=n)
+        self.imgs_clean = self.sim.projections[:]
+        self.imgs_ctf_clean = self.sim.clean_images[:]
+        self.imgs_ctf_noise = self.sim.images[:n]
 
         self.cov2d = RotCov2D(self.basis)
         self.coeff_clean = self.basis.evaluate_t(self.imgs_clean)

@@ -30,16 +30,16 @@ class StarFileTestCase(TestCase):
 class StarFileMainCase(StarFileTestCase):
     def testImageStackType(self):
         # Since src is an ImageSource, we can call images() on it to get an Image
-        image_stack = self.src.images(start=0, num=np.inf)
+        image_stack = self.src.images[:]
         self.assertIsInstance(image_stack, Image)
 
     def testImageStackShape(self):
         # Load 10 images starting at index 0
-        images = self.src.images(0, 10)
+        images = self.src.images[:10]
         self.assertEqual(images.shape, (10, 200, 200))
 
     def testImage0(self):
-        image_stack = self.src.images(0, 1)
+        image_stack = self.src.images[0]
         first_image = image_stack[0]
         self.assertTrue(
             np.allclose(
@@ -57,7 +57,7 @@ class StarFileMainCase(StarFileTestCase):
 
     def testImageDownsample(self):
         self.src.downsample(16)
-        first_image = self.src.images(0, 1)[0]
+        first_image = self.src.images[0][0]
         self.assertEqual(first_image.shape, (16, 16))
 
 
@@ -83,5 +83,5 @@ class StarFileSingleImage(StarFileTestCase):
     def testMRCSWithOneParticle(self):
         # tests conversion of 2D numpy arrays into 3D stacks in the case
         # where there is only one image in the mrcs
-        single_image = self.src.images(0, 1)[0]
+        single_image = self.src.images[0][0]
         self.assertEqual(single_image.shape, (200, 200))

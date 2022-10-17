@@ -60,7 +60,7 @@ class CLOrient3D:
         if self.n_check is None:
             self.n_check = self.n_img
 
-        imgs = self.src.images(start=0, num=np.inf)
+        imgs = self.src.images[:]
 
         # Obtain coefficients in polar Fourier basis for input 2D images
         self.basis = PolarBasis2D(

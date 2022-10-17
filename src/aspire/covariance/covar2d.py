@@ -529,7 +529,7 @@ class BatchedRotCov2D(RotCov2D):
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
 
-            im = src.images(batch[0], len(batch))
+            im = src.images[batch[0] : batch[0] + len(batch)]
             coeff = basis.evaluate_t(im)
 
             for k in np.unique(ctf_idx[batch]):

@@ -46,7 +46,7 @@ def adaptive_support(img_src, energy_threshold=0.99):
     noise_var = noise_est.estimate()
 
     # Transform to Fourier space
-    img = img_src.images(0, img_src.n).asnumpy()
+    img = img_src.images[:].asnumpy()
     imgf = fft.centered_fft2(img)
 
     # Compute the Variance and Power Spectrum
