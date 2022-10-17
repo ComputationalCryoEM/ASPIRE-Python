@@ -174,7 +174,7 @@ class CovarianceEstimator(Estimator):
         )
 
         for i in range(0, self.src.n, self.batch_size):
-            im = self.src.images(i, self.batch_size)
+            im = self.src.images[i : i + self.batch_size]
             batch_n = im.n_images
             im_centered = im - self.src.vol_forward(mean_vol, i, self.batch_size)
 

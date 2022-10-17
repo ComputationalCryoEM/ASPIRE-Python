@@ -15,7 +15,5 @@ class MrcStack(ImageSource):
             dtype=dtype,
         )
 
-    def _images(self, start=0, num=np.inf, indices=None):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
+    def _images(self, indices):
         return Image(self.im[indices, :, :])

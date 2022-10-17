@@ -88,7 +88,7 @@ class Estimator:
         )
 
         for i in range(0, self.src.n, self.batch_size):
-            im = self.src.images(i, self.batch_size)
+            im = self.src.images[i : i + self.batch_size]
             batch_mean_b = self.src.im_backward(im, i) / self.src.n
             mean_b += batch_mean_b.astype(self.dtype)
 

@@ -27,7 +27,7 @@ class BispectrumTestCase(TestCase):
         self.src = Simulation(L=v.resolution, n=10, vols=v, dtype=v.dtype)
 
         # Original projection image to transform.
-        self.orig_img = self.src.images(0, 1)
+        self.orig_img = self.src.images[0]
 
         # Rotate 90 degrees in cartesian coordinates using third party tool.
         self.rt90_img = Image(np.rot90(self.orig_img.asnumpy(), axes=(1, 2)))
