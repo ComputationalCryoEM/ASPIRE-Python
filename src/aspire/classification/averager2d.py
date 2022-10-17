@@ -106,7 +106,7 @@ class Averager2D(ABC):
         images = np.empty((n_nbor, src.L, src.L), dtype=self.dtype)
 
         for i, index in enumerate(cls):
-            images[i] = src.images(index, 1).asnumpy()
+            images[i] = src.images[index].asnumpy()
 
         return images
 
@@ -412,9 +412,7 @@ class BFSRAverager2D(BFRAverager2D):
             # Retrieve image coefficients, this is bad, it load all images.
             # TODO: Refactor this s.t. the following code blocks and super().align
             #   only require coefficients relating to their class.  See _cls_images.
-            basis_coefficients = self.composite_basis.evaluate_t(
-                self.src.images(0, np.inf)
-            )
+            basis_coefficients = self.composite_basis.evaluate_t(self.src.images[:])
 
         # We want to maintain the original coefs for the base images,
         #  because we will mutate them with shifts in the loop.

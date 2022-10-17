@@ -38,7 +38,7 @@ class BatchedRotCov2DTestCase(TestCase):
             noise_filter=noise_filter,
         )
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)
-        self.coeff = self.basis.evaluate_t(self.src.images(0, self.src.n))
+        self.coeff = self.basis.evaluate_t(self.src.images[:])
 
         self.cov2d = RotCov2D(self.basis)
         self.bcov2d = BatchedRotCov2D(self.src, self.basis, batch_size=7)

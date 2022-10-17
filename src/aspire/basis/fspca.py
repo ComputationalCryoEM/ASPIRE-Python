@@ -249,7 +249,7 @@ class FSPCABasis(SteerableBasis2D):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, self.src.n)
             n = finish - start
-            batch_coef = self.basis.evaluate_t(self.src.images(start, n))
+            batch_coef = self.basis.evaluate_t(self.src[start:finish])
 
             # Make the Data matrix (A_k)
             # # Construct A_k, matrix of expansion coefficients a^i_k_q

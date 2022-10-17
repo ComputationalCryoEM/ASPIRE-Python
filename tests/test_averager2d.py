@@ -128,7 +128,7 @@ class Averager2DBase:
             _rots[n] = r(-theta)
 
         # Use our Rotation class (maybe it should be able to do this one day?)
-        self.rots = Rotation.from_matrix(_rots)
+        self.rotations = Rotation.from_matrix(_rots)
 
 
 @pytest.mark.filterwarnings("ignore:Gimbal lock detected")
@@ -165,7 +165,7 @@ class AligningAverager2DBase(Averager2DBase):
         self.src = self._getSrc()
 
         # Get the image coef
-        self.coefs = self.basis.evaluate_t(self.src.images(0, self.n_img))
+        self.coefs = self.basis.evaluate_t(self.src.images[: self.n_img])
 
     def _call_averager(self):
         # Construct the Averager
@@ -196,7 +196,7 @@ class AligningAverager2DBase(Averager2DBase):
             L=self.resolution,
             n=self.n_img,
             C=1,
-            angles=self.rots.angles,
+            angles=self.rotations.angles,
             offsets=self.shifts,
             amplitudes=np.ones(self.n_img),
             seed=12345,

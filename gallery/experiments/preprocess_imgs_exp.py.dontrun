@@ -28,29 +28,29 @@ source = RelionSource(
 nimgs_ext = 1
 
 print('Obtain original images')
-imgs_od = source.images(start=0, num=nimgs_ext)
+imgs_od = source.images[:nimgs_ext]
 
 print('Perform phase flip to input images')
 source.phase_flip()
-imgs_pf = source.images(start=0, num=nimgs_ext)
+imgs_pf = source.images[:nimgs_ext]
 
 max_resolution = 60
 print(f'Downsample resolution to {max_resolution} X {max_resolution}')
 source.downsample(max_resolution)
-imgs_ds = source.images(start=0, num=nimgs_ext)
+imgs_ds = source.images[:nimgs_ext]
 
 print('Normalize images to noise background')
 source.normalize_background()
-imgs_nb = source.images(start=0, num=nimgs_ext)
+imgs_nb = source.images[:nimgs_ext]
 
 print('Whiten noise of images')
 noise_estimator = WhiteNoiseEstimator(source)
 source.whiten(noise_estimator.filter)
-imgs_wt = source.images(start=0, num=nimgs_ext)
+imgs_wt = source.images[:nimgs_ext]
 
 print('Invert global density contrast')
 source.invert_contrast()
-imgs_rc = source.images(start=0, num=nimgs_ext)
+imgs_rc = source.images[:nimgs_ext]
 
 # plot the first images
 print('plot the first images')

@@ -1,6 +1,8 @@
 import logging
 import os.path
+from abc import ABC, abstractmethod
 from collections import OrderedDict
+from collections.abc import Iterable
 
 import mrcfile
 import numpy as np
@@ -27,7 +29,59 @@ from aspire.utils import Rotation, grid_2d
 logger = logging.getLogger(__name__)
 
 
-class ImageSource:
+class _ImageAccessor:
+    """
+    Helper class for accessing images from an ImageSource as slices via the `src.images[start:stop:step]` API.
+    """
+
+    def __init__(self, fun, num_imgs):
+        """
+        :param fun: The private image-accessing method specific to the ImageSource associated with this ImageAccessor.
+                    Generally _images() but can be substituted with a custom method.
+        :param num_imgs: The max number of images that this ImageAccessor can load (generally ImageSource.n).
+        """
+        self.fun = fun
+        self.num_imgs = num_imgs
+
+    def __getitem__(self, indices):
+        """
+        ImageAccessor can be indexed via Python slice object, 1-D NumPy array, list, or a single integer,
+        corresponding to the indices of the requested images. By default, slices default to a start of 0,
+        an end of self.num_imgs, and a step of 1.
+        :return: An Image object containing the requested images.
+        """
+        if isinstance(indices, Iterable) and not isinstance(indices, np.ndarray):
+            indices = np.fromiter(indices, int)
+        elif isinstance(indices, (int, np.integer)):
+            indices = np.array([indices])
+        elif isinstance(indices, slice):
+            start, stop, step = indices.start, indices.stop, indices.step
+            if not start:
+                start = 0
+            if not stop or stop > self.num_imgs:
+                stop = self.num_imgs
+            if not step:
+                step = 1
+            if not all(isinstance(i, (int, np.integer)) for i in [start, stop, step]):
+                raise TypeError("Non-integer slice components.")
+            indices = np.arange(start, stop, step)
+        if not isinstance(indices, np.ndarray):
+            raise KeyError(
+                "Key for .images must be a slice, 1-D NumPy array, or iterable yielding integers."
+            )
+        if not indices.ndim == 1:
+            raise KeyError("Only one-dimensional indexing is allowed for images.")
+        # check for negative indices and flip to positive
+        neg = indices < 0
+        indices[neg] = indices[neg] % self.num_imgs
+        # final check for out-of-range indices
+        out_of_range = indices >= self.num_imgs
+        if out_of_range.any():
+            raise KeyError(f"Out-of-range indices: {list(indices[out_of_range])}")
+        return self.fun(indices)
+
+
+class ImageSource(ABC):
     """
     When creating an `ImageSource` object, a 'metadata' table holds metadata information about all images in the
     `ImageSource`. The number of rows in this metadata table will equal the total number of images supported by this
@@ -66,7 +120,7 @@ class ImageSource:
         self._cached_im = None
 
         # _rotations is assigned non None value
-        #  by `rots` or `angles` setters.
+        #  by `rotations` or `angles` setters.
         #  It is potentially used by sublasses to test if we've used setters.
         #  This must come before the Relion/starfile meta data parsing below.
         self._rotations = None
@@ -87,6 +141,9 @@ class ImageSource:
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
+
+        # Instantiate the accessor for the `images` property
+        self._img_accessor = _ImageAccessor(self._images, self.n)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
@@ -153,7 +210,7 @@ class ImageSource:
         return self._rotations.angles.astype(self.dtype)
 
     @property
-    def rots(self):
+    def rotations(self):
         """
         :return: Rotation matrices as a n x 3 x 3 array
         """
@@ -179,8 +236,8 @@ class ImageSource:
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
         )
 
-    @rots.setter
-    def rots(self, values):
+    @rotations.setter
+    def rotations(self, values):
         """
         Set rotation matrices
         :param values: Rotation matrices as a n x 3 x 3 array
@@ -272,19 +329,6 @@ class ImageSource:
 
         return result.to_numpy().squeeze()
 
-    def _images(self, start=0, num=np.inf, indices=None):
-        """
-        Return images WITHOUT applying any filters/translations/rotations/amplitude corrections/noise
-        Subclasses may want to implement their own caching mechanisms.
-        :param start: start index of image
-        :param num: number of images to return
-        :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :return: A 3D volume of images of size L x L x n
-        """
-        raise NotImplementedError(
-            "Subclasses should implement this and return an Image object"
-        )
-
     def _apply_filters(
         self,
         im_orig,
@@ -323,29 +367,23 @@ class ImageSource:
 
     def cache(self):
         logger.info("Caching source images")
-        self._cached_im = self.images(start=0, num=np.inf)
+        self._cached_im = self.images[:]
         self.generation_pipeline.reset()
 
-    def images(self, start, num, *args, **kwargs):
+    @property
+    def images(self):
         """
-        Return images from this ImageSource as an Image object.
-        :param start: The inclusive start index from which to return images.
-        :param num: The exclusive end index up to which to return images.
-        :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
-        :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
-        :return: an `Image` object.
+        Subscriptable property which returns the images contained in this source
+        corresponding to the indices given.
         """
-        indices = np.arange(start, min(start + num, self.n), dtype=int)
+        return self._img_accessor
 
-        if self._cached_im is not None:
-            logger.info("Loading images from cache")
-            im = Image(self._cached_im[indices, :, :])
-        else:
-            im = self._images(indices=indices, *args, **kwargs)
-
-        im = self.generation_pipeline.forward(im, indices=indices)
-        logger.info(f"Loaded {len(indices)} images")
-        return im
+    @abstractmethod
+    def _images(self, indices):
+        """
+        Subclasses must implement a private _images() method accepting a 1-D NumPy array of indices.
+        Subclasses handle cached image check as well as applying transforms in the generation pipeline.
+        """
 
     def downsample(self, L):
         assert (
@@ -431,7 +469,7 @@ class ImageSource:
         noise_mean = 0.0
 
         for i in range(0, self.n, batch_size):
-            images = self.images(i, batch_size).asnumpy()
+            images = self.images[i : i + batch_size].asnumpy()
             signal = images * signal_mask
             noise = images * noise_mask
             signal_mean += np.sum(signal)
@@ -489,7 +527,7 @@ class ImageSource:
         im = im.shift(-self.offsets[all_idx, :])
         im = self._apply_source_filters(im, all_idx)
 
-        vol = im.backproject(self.rots[start : start + num, :, :])[0]
+        vol = im.backproject(self.rotations[start : start + num, :, :])[0]
 
         return vol
 
@@ -508,7 +546,7 @@ class ImageSource:
         if vol.dtype != self.dtype:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
-        im = vol.project(0, self.rots[all_idx, :, :])
+        im = vol.project(0, self.rotations[all_idx, :, :])
         im = self._apply_source_filters(im, all_idx)
         im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
@@ -669,11 +707,10 @@ class ImageSource:
                 # Loop over source setting data into mrc file
                 for i_start in np.arange(0, self.n, batch_size):
                     i_end = min(self.n, i_start + batch_size)
-                    num = i_end - i_start
                     logger.info(
                         f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                     )
-                    datum = self.images(start=i_start, num=num).data.astype("float32")
+                    datum = self.images[i_start:i_end].data.astype("float32")
 
                     # Assign to mrcfile
                     mrc.data[i_start:i_end] = datum
@@ -694,7 +731,6 @@ class ImageSource:
             # save all images into multiple mrc files in batch size
             for i_start in np.arange(0, self.n, batch_size):
                 i_end = min(self.n, i_start + batch_size)
-                num = i_end - i_start
 
                 mrcs_filepath = os.path.join(
                     os.path.dirname(starfile_filepath), filename_indices[i_start]
@@ -703,7 +739,7 @@ class ImageSource:
                 logger.info(
                     f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                 )
-                im = self.images(start=i_start, num=num)
+                im = self.images[i_start:i_end]
                 im.save(mrcs_filepath, overwrite=overwrite)
 
 
@@ -752,21 +788,33 @@ class ArrayImageSource(ImageSource):
             if angles.shape != (self.n, 3):
                 raise ValueError(f"Angles should be shape {(self.n, 3)}")
             # This will populate `_rotations`,
-            #   which is exposed by properties `angles` and `rots`.
+            #   which is exposed by properties `angles` and `rotations`.
             self.angles = angles
+
+    def _images(self, indices):
+        """
+        Returns images corresponding to `indices` after being accessed via the
+        `ImageSource.images` property
+        :param indices: A 1-D NumPy array of indices.
+        :return: An `Image` object.
+        """
+        # Load cached data and apply transforms
+        return self.generation_pipeline.forward(
+            Image(self._cached_im[indices, :, :]), indices
+        )
 
     def _rots(self):
         """
         Private method, checks if `_rotations` has been set,
-        then returns inherited rots, otherwise raise.
+        then returns inherited rotations, otherwise raise.
         """
 
         if self._rotations is not None:
             return super()._rots()
         else:
             raise RuntimeError(
-                "Consumer of ArrayImageSource trying to access rots,"
-                " but rots were not defined for this source."
+                "Consumer of ArrayImageSource trying to access rotations,"
+                " but rotations were not defined for this source."
                 "  Try instantiating with angles."
             )
 
