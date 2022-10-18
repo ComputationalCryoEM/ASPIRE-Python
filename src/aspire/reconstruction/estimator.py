@@ -8,6 +8,7 @@ from scipy.sparse.linalg import LinearOperator
 
 from aspire import config
 from aspire.reconstruction.kernel import FourierKernel
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -82,10 +83,12 @@ class Estimator:
         :return: The adjoint mapping applied to the images, averaged over the whole dataset and expressed
             as coefficients of `basis`.
         """
-        mean_b = np.zeros((self.src.L, self.src.L, self.src.L), dtype=self.dtype)
+        mean_b = Volume(
+            np.zeros((self.src.L, self.src.L, self.src.L), dtype=self.dtype)
+        )
 
         for i in range(0, self.src.n, self.batch_size):
-            im = self.src.images(i, self.batch_size)
+            im = self.src.images[i : i + self.batch_size]
             batch_mean_b = self.src.im_backward(im, i) / self.src.n
             mean_b += batch_mean_b.astype(self.dtype)
 
@@ -145,7 +148,7 @@ class Estimator:
         vol = self.basis.evaluate(vol_coeff)
         # convolve_volume expects a 3-dimensional array
         # so we remove the first dimension of the volume, which is 1
-        vol = kernel.convolve_volume(np.squeeze(vol.asnumpy(), axis=0))
+        vol = Volume(kernel.convolve_volume(vol[0]))
         vol = self.basis.evaluate_t(vol)
 
         return vol

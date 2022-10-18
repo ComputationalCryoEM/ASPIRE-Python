@@ -133,7 +133,7 @@ plt.show()
 imgs_src = ArrayImageSource(imgs_with_noise)
 
 # We'll copy the orginals for comparison later, before we process them further.
-noisy_imgs_copy = imgs_src.images(0, n_imgs)
+noisy_imgs_copy = imgs_src.images[:n_imgs]
 
 # One of the tools we can use is a NoiseEstimator,
 #   which consumes from a Source.
@@ -146,7 +146,7 @@ imgs_src.whiten(noise_estimator.filter)
 
 # Peek at two whitened images and their corresponding spectrum.
 fig, axs = plt.subplots(2, 2)
-for i, img in enumerate(imgs_src.images(0, 2)):
+for i, img in enumerate(imgs_src.images[:2]):
     axs[0, i].imshow(img, cmap=plt.cm.gray)
     axs[0, i].set_title(f"Whitened Noisy Image {i}")
     img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(img)))
@@ -177,7 +177,7 @@ def radial_profile(data):
 
 # Lets pickout several images and plot their the radial profile of their noise.
 colors = ["r", "g", "b", "k", "c"]
-for i, img in enumerate(imgs_src.images(0, len(colors))):
+for i, img in enumerate(imgs_src.images[: len(colors)]):
     img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(noisy_imgs_copy[i])))
     plt.plot(
         radial_profile(img_with_noise_f),

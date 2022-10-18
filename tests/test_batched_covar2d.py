@@ -10,13 +10,17 @@ from aspire.utils import utest_tolerance
 
 
 class BatchedRotCov2DTestCase(TestCase):
+    """
+    Tests batched cov2d without providing any CTF filters.
+    """
+
+    filters = None
+    ctf_idx = None
+    ctf_fb = None
+
     def setUp(self):
         n = 32
         L = 8
-        filters = [
-            RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
-            for d in np.linspace(1.5e4, 2.5e4, 7)
-        ]
         self.dtype = np.float32
         self.noise_var = 0.1848
 
@@ -27,13 +31,14 @@ class BatchedRotCov2DTestCase(TestCase):
         noise_filter = ScalarFilter(dim=2, value=self.noise_var * 0.001)
 
         self.src = Simulation(
-            L, n, unique_filters=filters, dtype=self.dtype, noise_filter=noise_filter
+            L,
+            n,
+            unique_filters=self.filters,
+            dtype=self.dtype,
+            noise_filter=noise_filter,
         )
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)
-        self.coeff = self.basis.evaluate_t(self.src.images(0, self.src.n))
-
-        self.ctf_idx = self.src.filter_indices
-        self.ctf_fb = [f.fb_mat(self.basis) for f in self.src.unique_filters]
+        self.coeff = self.basis.evaluate_t(self.src.images[:])
 
         self.cov2d = RotCov2D(self.basis)
         self.bcov2d = BatchedRotCov2D(self.src, self.basis, batch_size=7)
@@ -234,3 +239,24 @@ class BatchedRotCov2DTestCase(TestCase):
                 atol=utest_tolerance(self.dtype),
             )
         )
+
+
+class BatchedRotCov2DTestCaseCTF(BatchedRotCov2DTestCase):
+    """
+    Tests batched cov2d with CTF information.
+    """
+
+    @property
+    def filters(self):
+        return [
+            RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
+            for d in np.linspace(1.5e4, 2.5e4, 7)
+        ]
+
+    @property
+    def ctf_idx(self):
+        return self.src.filter_indices
+
+    @property
+    def ctf_fb(self):
+        return [f.fb_mat(self.basis) for f in self.src.unique_filters]

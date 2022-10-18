@@ -21,4 +21,7 @@ class OrientEstSource(ImageSource):
         super().__init__(src.L, src.n, dtype=src.dtype, metadata=src._metadata.copy())
         self._im = None
         self.orient_method = orient_method
-        self.rots = orient_method.rotations
+        self.rotations = orient_method.rotations
+
+    def _images(self, indices):
+        return self._im[indices, :, :]

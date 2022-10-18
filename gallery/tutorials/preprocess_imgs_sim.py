@@ -70,7 +70,7 @@ vols = Volume(infile.data)
 # Downsample the volume to a desired resolution and increase density
 # by 1.0e5 time for a better graph view
 logger.info(f"Downsample map to a resolution of {img_size} x {img_size} x {img_size}")
-vols = vols.downsample((img_size,) * 3) * 1.0e5
+vols = vols.downsample(img_size) * 1.0e5
 
 # Create a simulation object with specified filters and the downsampled 3D map
 logger.info("Use downsampled map to create simulation object.")
@@ -87,30 +87,30 @@ source = Simulation(
 # ------------------------------
 
 logger.info("Obtain original images.")
-imgs_od = source.images(start=0, num=1).asnumpy()
+imgs_od = source.images[0].asnumpy()
 
 logger.info("Perform phase flip to input images.")
 source.phase_flip()
-imgs_pf = source.images(start=0, num=1).asnumpy()
+imgs_pf = source.images[0].asnumpy()
 
 max_resolution = 15
 logger.info(f"Downsample resolution to {max_resolution} X {max_resolution}")
 if max_resolution < source.L:
     source.downsample(max_resolution)
-imgs_ds = source.images(start=0, num=1).asnumpy()
+imgs_ds = source.images[0].asnumpy()
 
 logger.info("Normalize images to background noise.")
 source.normalize_background()
-imgs_nb = source.images(start=0, num=1).asnumpy()
+imgs_nb = source.images[0].asnumpy()
 
 logger.info("Whiten noise of images")
 noise_estimator = WhiteNoiseEstimator(source)
 source.whiten(noise_estimator.filter)
-imgs_wt = source.images(start=0, num=1).asnumpy()
+imgs_wt = source.images[0].asnumpy()
 
 logger.info("Invert the global density contrast if need")
 source.invert_contrast()
-imgs_rc = source.images(start=0, num=1).asnumpy()
+imgs_rc = source.images[0].asnumpy()
 
 
 # %%

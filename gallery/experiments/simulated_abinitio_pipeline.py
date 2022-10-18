@@ -106,10 +106,11 @@ src = Simulation(
     vols=v,
     noise_filter=custom_noise_filter,
     unique_filters=ctf_filters,
+    dtype=v.dtype,
 )
 # Peek
 if interactive:
-    src.images(0, 10).show()
+    src.images[:10].show()
 
 # Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
@@ -126,7 +127,7 @@ if interactive:
 
 # Peek, what do the whitened images look like...
 if interactive:
-    src.images(0, 10).show()
+    src.images[:10].show()
 
 # Cache to memory for some speedup
 src.cache()
@@ -154,7 +155,7 @@ if do_cov2d:
     classification_src = cwf_denoiser.denoise()
     # Peek, what do the denoised images look like...
     if interactive:
-        classification_src.images(0, 10).show()
+        classification_src.images[:10].show()
 
     # Use regular `src` for the alignment and composition (averaging).
     composite_basis = FFBBasis2D((src.L,) * 2, dtype=src.dtype)
@@ -184,7 +185,7 @@ rir = RIRClass2D(
 classes, reflections, distances = rir.classify()
 avgs = rir.averages(classes, reflections, distances)
 if interactive:
-    avgs.images(0, 10).show()
+    avgs.images[:10].show()
 
 # %%
 # Common Line Estimation
@@ -197,7 +198,7 @@ logger.info("Begin Orientation Estimation")
 
 # Stash true rotations for later comparison,
 #   note this line only works with naive class selection...
-true_rotations = src.rots[:n_classes]
+true_rotations = src.rotations[:n_classes]
 
 orient_est = CLSyncVoting(avgs, n_theta=36)
 # Get the estimated rotations
@@ -222,7 +223,7 @@ logger.info(
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rots = rots_est
+avgs.rotations = rots_est
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((v.resolution,) * 3, dtype=v.dtype)

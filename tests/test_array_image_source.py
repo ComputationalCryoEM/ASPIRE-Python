@@ -37,7 +37,7 @@ class ImageTestCase(TestCase):
         )
 
         # Expose images as numpy array.
-        self.ims_np = sim.images(0, sim.n).asnumpy()
+        self.ims_np = sim.images[:].asnumpy()
         self.im = Image(self.ims_np)
 
         # Vol estimation requires a 3D basis
@@ -51,7 +51,7 @@ class ImageTestCase(TestCase):
         """
 
         src = ArrayImageSource(self.im)
-        im = src.images(start=0, num=np.inf)  # returns Image instance
+        im = src.images[:]  # returns Image instance
         self.assertTrue(np.allclose(im.asnumpy(), self.ims_np))
 
     def testArrayImageSourceFromNumpy(self):
@@ -65,7 +65,7 @@ class ImageTestCase(TestCase):
         src = ArrayImageSource(self.ims_np)
 
         # Ask the Source for all images in the stack as a Numpy array
-        ims_np = src.images(start=0, num=np.inf).asnumpy()
+        ims_np = src.images[:].asnumpy()
 
         # Comparison should be yield identity
         self.assertTrue(np.allclose(ims_np, self.ims_np))
@@ -108,7 +108,7 @@ class ImageTestCase(TestCase):
         """
         Test that ArrayImageSource when instantiated without required
         rotations/angles gives an appropriate error.
-        Here we specifically test `rots`.
+        Here we specifically test `rotations`.
         """
 
         # Construct the source for testing.
@@ -116,7 +116,7 @@ class ImageTestCase(TestCase):
 
         # Test we raise with expected message from getter.
         with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
-            _ = src.rots
+            _ = src.rotations
 
     def testArrayImageSourceMeanVol(self):
         """
@@ -152,7 +152,7 @@ class ImageTestCase(TestCase):
 
     def testArrayImageSourceRotsSetGet(self):
         """
-        Test ArrayImageSource `rots` property, setter and getter function.
+        Test ArrayImageSource `rotations` property, setter and getter function.
         """
 
         # Construct the source for testing
@@ -167,11 +167,11 @@ class ImageTestCase(TestCase):
         self.assertTrue(rotations.shape == (src.n, 3, 3))
 
         # Excercise the setter
-        src.rots = rotations
+        src.rotations = rotations
 
-        # Test Rots Getter
+        # Test Rotations Getter
         self.assertTrue(
-            np.allclose(rotations, src.rots, atol=utest_tolerance(self.dtype))
+            np.allclose(rotations, src.rotations, atol=utest_tolerance(self.dtype))
         )
 
         # Test Angles Getter

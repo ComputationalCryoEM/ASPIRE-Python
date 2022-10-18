@@ -111,7 +111,7 @@ v = Volume(d)
 img_size = 64
 # Volume.downsample() Returns a new Volume instance.
 #   We will use this lower resolution volume later.
-v2 = v.downsample((img_size, img_size, img_size))
+v2 = v.downsample(img_size)
 L = v2.resolution
 
 # %%
@@ -201,20 +201,20 @@ num_imgs = 100  # How many images in our source.
 # Generate a Simulation instance based on the original volume data.
 sim = Simulation(L=v.resolution, n=num_imgs, vols=v)
 # Display the first 10 images
-sim.images(0, 10).show()  # Hi Res
+sim.images[:10].show()  # Hi Res
 
 # Repeat for the lower resolution (downsampled) volume v2.
 sim2 = Simulation(L=v2.resolution, n=num_imgs, vols=v2)
-sim2.images(0, 10).show()  # Lo Res
+sim2.images[:10].show()  # Lo Res
 
 # Note both of those simulations have the same rotations
 #   because they had the same seed by default,
 # We can set our own seed to get a different random samples (of rotations).
 sim_seed = Simulation(L=v.resolution, n=num_imgs, vols=v, seed=42)
-sim_seed.images(0, 10).show()
+sim_seed.images[:10].show()
 
 # We can also view the rotations used to create these projections
-# logger.info(sim2.rots)  # Commented due to long output
+# logger.info(sim2.rotations)  # Commented due to long output
 
 # %%
 # Simulation with Noise - Filters
@@ -238,7 +238,7 @@ sim_seed.images(0, 10).show()
 # Similar to before, if you require a different sample, this would be controlled via a ``seed``.
 
 # Using the sample variance, we'll compute a target noise variance
-var = np.var(sim2.images(0, sim2.n).asnumpy())
+var = np.var(sim2.images[:].asnumpy())
 logger.info(f"sim2 clean sample var {var}")
 noise_variance = 100.0 * var
 logger.info(f"noise var {noise_variance}")
@@ -247,7 +247,7 @@ logger.info(f"noise var {noise_variance}")
 white_noise_filter = ScalarFilter(dim=2, value=noise_variance)
 # We can create a similar simulation with this additional noise_filter argument:
 sim3 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, noise_filter=white_noise_filter)
-sim3.images(0, 10).show()
+sim3.images[:10].show()
 # These should be rather noisy now ...
 
 # %%
@@ -274,7 +274,7 @@ for desc, _sim in [
     ("Downsampled with Noise", sim3),
 ]:
     logger.info(desc)
-    true_rotations = _sim.rots  # for later comparison
+    true_rotations = _sim.rotations  # for later comparison
 
     orient_est = CLSyncVoting(_sim, n_theta=36)
     # Get the estimated rotations
@@ -347,7 +347,7 @@ custom_noise_filter = FunctionFilter(noise_function)
 sim4 = Simulation(
     L=v2.resolution, n=num_imgs, vols=v2, noise_filter=custom_noise_filter
 )
-sim4.images(0, 10).show()
+sim4.images[:10].show()
 
 # %%
 # Noise Whitening
@@ -363,7 +363,7 @@ aiso_noise_estimator = AnisotropicNoiseEstimator(sim4)
 sim4.whiten(aiso_noise_estimator.filter)
 
 # What do the whitened images look like...
-sim4.images(0, 10).show()
+sim4.images[:10].show()
 
 # %%
 # Homework Task 4
@@ -396,7 +396,7 @@ src = RelionSource(
 # )
 src.downsample(img_size)
 
-src.images(0, 10).show()
+src.images[:10].show()
 
 noise_estimator = WhiteNoiseEstimator(src)
 src.whiten(noise_estimator.filter)
@@ -441,7 +441,7 @@ filters = [
 ]
 
 sim5 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, unique_filters=filters)
-sim5.images(0, 10).show()
+sim5.images[:10].show()
 
 
 # Here we will combine CTF and noise features to our projections.
@@ -452,11 +452,11 @@ sim6 = Simulation(
     unique_filters=filters,
     noise_filter=custom_noise_filter,
 )
-sim6.images(0, 10).show()
+sim6.images[:10].show()
 
 # Estimate noise.
 aiso_noise_estimator = AnisotropicNoiseEstimator(sim6)
 
 # Whiten based on the estimated noise
 sim6.whiten(aiso_noise_estimator.filter)
-sim6.images(0, 10).show()
+sim6.images[:10].show()

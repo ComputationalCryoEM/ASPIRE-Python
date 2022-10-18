@@ -32,7 +32,7 @@ class PreprocessPLTestCase(TestCase):
             noise_filter=self.noise_filter,
             dtype=self.dtype,
         )
-        self.imgs_org = self.sim.images(start=0, num=self.n)
+        self.imgs_org = self.sim.images[: self.n]
 
     # This is a workaround to use a `pytest` fixture with `unittest` style cases.
     # We use it below to capture and inspect the log
@@ -42,7 +42,7 @@ class PreprocessPLTestCase(TestCase):
 
     def testPhaseFlip(self):
         self.sim.phase_flip()
-        imgs_pf = self.sim.images(start=0, num=self.n)
+        imgs_pf = self.sim.images[: self.n]
 
         # check energy conservation
         self.assertTrue(
@@ -75,7 +75,7 @@ class PreprocessPLTestCase(TestCase):
         grid = grid_2d(self.L, indexing="yx")
         mask = grid["r"] > bg_radius
         self.sim.normalize_background()
-        imgs_nb = self.sim.images(start=0, num=self.n).asnumpy()
+        imgs_nb = self.sim.images[: self.n].asnumpy()
         new_mean = np.mean(imgs_nb[:, mask])
         new_variance = np.var(imgs_nb[:, mask])
 
@@ -85,7 +85,7 @@ class PreprocessPLTestCase(TestCase):
     def testWhiten(self):
         noise_estimator = AnisotropicNoiseEstimator(self.sim)
         self.sim.whiten(noise_estimator.filter)
-        imgs_wt = self.sim.images(start=0, num=self.n).asnumpy()
+        imgs_wt = self.sim.images[: self.n].asnumpy()
 
         # calculate correlation between two neighboring pixels from background
         corr_coef = np.corrcoef(
@@ -114,7 +114,7 @@ class PreprocessPLTestCase(TestCase):
         )
         noise_estimator = AnisotropicNoiseEstimator(sim)
         sim.whiten(noise_estimator.filter)
-        imgs_wt = sim.images(start=0, num=self.n).asnumpy()
+        imgs_wt = sim.images[: self.n].asnumpy()
 
         corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
 
@@ -123,13 +123,13 @@ class PreprocessPLTestCase(TestCase):
 
     def testInvertContrast(self):
         sim1 = self.sim
-        imgs1 = sim1.images(start=0, num=128)
+        imgs1 = sim1.images[:128]
         sim1.invert_contrast()
-        imgs1_rc = sim1.images(start=0, num=128)
+        imgs1_rc = sim1.images[:128]
         # need to set the negative images to the second simulation object
         sim2 = ArrayImageSource(-imgs1)
         sim2.invert_contrast()
-        imgs2_rc = sim2.images(start=0, num=128)
+        imgs2_rc = sim2.images[:128]
 
         # all images should be the same after inverting contrast
         self.assertTrue(np.allclose(imgs1_rc.asnumpy(), imgs2_rc.asnumpy()))
