@@ -7,6 +7,7 @@ from scipy.special import jv
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.nufft import anufft, nufft
+from aspire.numeric import fft
 
 logger = logging.getLogger(__name__)
 
@@ -104,15 +105,15 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.c2r_nus = self.precomp_transform_complex_to_real(self.nus)
         self.r2c_nus = sparse.csr_matrix(self.c2r_nus.transpose().conj())
 
-        # radial and angular nodes for fast Chebyshev interpolation
-        self._compute_chebyshev_nodes()
+        # radial and angular nodes for NUFFT
+        self._compute_nufft_points()
         self.num_interp = self.num_radial_nodes
         if self.numsparse > 0:
             self.num_interp = 2 * self.num_radial_nodes
 
-    def _compute_chebyshev_nodes(self):
+    def _compute_nufft_points(self):
         """
-        Compute the number of radial and angular nodes for fast Chebyshev interpolation
+        Compute the number of radial and angular nodes for the non-uniform FFT.
         """
 
         # Number of radial nodes
@@ -148,8 +149,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         self.num_angular_nodes = num_angular_nodes
 
-        # chebyshev nodes
-        # see Section 3.5
+        # create gridpoints
         nodes = 1 - (2 * np.arange(self.num_radial_nodes) + 1) / (
             2 * self.num_radial_nodes
         )
@@ -359,65 +359,37 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return np.zeros((imgs.shape[0],) + (self.count,))
 
-    def _step1(self, f):
+    def _step1(self, im):
+        """
+        Step 1 of the adjoint transformation (images to coefficients).
+        Calculates the NUFFT of the image on gridpoints self.grid_x and self.grid_y.
+        """
+        im = im.reshape(-1, self.nres, self.nres).astype(np.complex128)
+        num_img = im.shape[0]
+        z = np.zeros(
+            (num_img, self.num_radial_nodes, self.num_angular_nodes),
+            dtype=np.complex128,
+        )
 
-        if np.prod(f.shape) == self.nres**2:
-            f = f.reshape(self.nres, self.nres)
-            f = np.array(f, dtype=np.complex128)
-            z = np.zeros(
-                (self.num_radial_nodes, self.num_angular_nodes), dtype=np.complex128
-            )
-            z0 = nufft(f, np.stack((self.grid_x, self.grid_y))) * self.h**2
-            z0 = z0.reshape(self.num_radial_nodes, self.num_angular_nodes // 2)
-            z[:, : self.num_angular_nodes // 2] = z0
-            z[:, self.num_angular_nodes // 2 :] = np.conj(z0)
-            z = z.flatten()
-        else:
-
-            L = self.nres
-            nf = f.shape[0]
-            f = f.reshape(nf, L, L)
-            f = np.array(f, dtype=np.complex128)
-
-            z = np.zeros(
-                (nf, self.num_radial_nodes, self.num_angular_nodes), dtype=np.complex128
-            )
-            nufft_type = 2
-            plan2v = finufft.Plan(nufft_type, (L, L), n_trans=nf, eps=sel)
-            plan2v.setpts(self.grid_x, self.grid_y)
-
-            z0 = nufft(f, np.stack(self.grid_x, self.grid_y)) * self.h**2
-            z0 = z0.reshape(nf, self.n_radial, self.n_angular // 2)
-
-            z[:, :, : self.n_angular // 2] = z0
-            z[:, :, self.n_angular // 2 :] = np.conj(z0)
-            z = z.reshape(nf, self.n_angular * self.n_radial)
-
+        _z = nufft(im, np.stack((self.grid_x, self.grid_y))) * self.h**2
+        _z = _z.reshape(-1, self.num_radial_nodes, self.num_angular_nodes // 2)
+        z[:, :, : self.num_angular_nodes // 2] = _z
+        z[:, :, self.num_angular_nodes // 2 :] = np.conj(_z)
+        z = z.reshape(-1, self.num_radial_nodes * self.num_angular_nodes)
         return z
 
     def _step2(self, z):
-        if np.prod(z.shape) == self.num_radial_nodes * self.num_angular_nodes:
-            # Compute Fourier coefficients along rings
-            z = z.reshape(self.num_radial_nodes, self.num_angular_nodes)
-            b = np.fft.fft(z, n=self.num_angular_nodes, axis=1) / self.num_angular_nodes
-            b = b[:, self.nus]
-            b = np.conj(b).T
-            b = self.c2r_nus @ b
-            b = np.real(b).T
-        else:
-            nz = z.shape[0]
-            z = z.reshape(nz, self.n_radial, self.n_angular)
-            b = np.fft.fft(z, n=self.n_angular, axis=2) / self.n_angular
-            b = b[:, :, self.nus]
-            b = np.conj(b)
-
-            b = np.swapaxes(b, 0, 2)
-            b = b.reshape(-1, self.n_radial * nz)
-            b = self.c2r_nus @ b
-            b = b.reshape(-1, self.n_radial, nz)
-            b = np.real(np.swapaxes(b, 0, 2))
-
-        return b
+        z = z.reshape(-1, self.num_radial_nodes, self.num_angular_nodes)
+        num_img = z.shape[0]
+        # Compute FFT along angular nodes
+        betas = fft.fft(z, axis=2) / self.num_angular_nodes
+        betas = betas[:, :, self.nus]
+        betas = np.conj(betas)
+        betas = betas.reshape(-1, self.num_radial_nodes * num_img)
+        betas = self.c2r_nus @ betas
+        betas = betas.reshape(-1, self.num_radial_nodes, num_img)
+        betas = np.real(np.swapaxes(betas, 0, 2))
+        return betas
 
     def create_dense_matrix(self):
 
