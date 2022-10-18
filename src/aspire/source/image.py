@@ -339,20 +339,6 @@ class ImageSource(ABC):
 
         return result.to_numpy().squeeze()
 
-    def _images(self, start=0, num=np.inf, indices=None):
-        """
-        Return images WITHOUT applying any filters/translations/rotations/amplitude corrections/noise
-        Subclasses may want to implement their own caching mechanisms.
-
-        :param start: start index of image
-        :param num: number of images to return
-        :param indices: A numpy array of image indices. If specified, start and num are ignored.
-        :return: A 3D volume of images of size L x L x n
-        """
-        raise NotImplementedError(
-            "Subclasses should implement this and return an Image object"
-        )
-
     def _apply_filters(
         self,
         im_orig,
@@ -398,18 +384,8 @@ class ImageSource(ABC):
     @property
     def images(self):
         """
-<<<<<<< HEAD
-        Return images from this ImageSource as an Image object.
-
-        :param start: The inclusive start index from which to return images.
-        :param num: The exclusive end index up to which to return images.
-        :param args: Any additional positional arguments to pass on to the `ImageSource`'s underlying `_images` method.
-        :param kwargs: Any additional keyword arguments to pass on to the `ImageSource`'s underlying `_images` method.
-        :return: an `Image` object.
-=======
         Subscriptable property which returns the images contained in this source
         corresponding to the indices given.
->>>>>>> origin/develop
         """
         return self._img_accessor
 
