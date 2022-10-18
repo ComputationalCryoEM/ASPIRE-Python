@@ -111,6 +111,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         if self.numsparse > 0:
             self.num_interp = 2 * self.num_radial_nodes
 
+        self._build_interpolation_matrix()
+
     def _compute_nufft_points(self):
         """
         Compute the number of radial and angular nodes for the non-uniform FFT.
@@ -171,6 +173,42 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         y = y * nodes * h
         self.grid_x = x.flatten()
         self.grid_y = y.flatten()
+
+    def _build_interpolation_matrix(self):
+        A3 = A3_T = [None] * (self.ndmax + 1)
+        chebyshev_pts = np.cos(
+            np.pi * (1 - (2 * np.arange(self.num_interp) + 1) / (2 * self.num_interp))
+        )
+        weights = self.get_weights(chebyshev_pts)
+        for i in range(self.ndmax + 1):
+            ys = np.zeros(self.num_interp)
+
+            # target points
+            x = (
+                2
+                * (self.bessel_zeros[self.idx_list[i]] - self.smallest_lambda)
+                / (self.greatest_lambda - self.smallest_lambda)
+                - 1
+            )
+            vals, x_ind, xs_ind = np.intersect1d(x, chebyshev_pts, return_indices=True)
+            x[x_ind] = x[x_ind] + 2e-16
+
+            n = len(x)
+            mm = len(chebyshev_pts)
+
+            A3[i] = np.zeros((n, mm))
+            denom = np.zeros(n)
+            for j in range(mm):
+                xdiff = x - chebyshev_pts[j]
+                temp = weights[j] / xdiff
+                A3[i][:, j] = temp.flatten()
+                denom = denom + temp
+            denom = denom.reshape(-1, 1)
+            A3[i] = A3[i] / denom
+            A3_T[i] = A3[i].T
+
+        self.A3 = A3
+        self.A3_T = A3_T
 
     def _lap_eig_disk(self):
         """
