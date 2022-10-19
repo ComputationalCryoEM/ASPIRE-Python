@@ -11,7 +11,7 @@ from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 logger = logging.getLogger(__name__)
 
 
-def voltage_to_wavelength(voltage):
+def voltage_to_wavelength_old(voltage):
     """
     Convert from electron voltage to wavelength.
     :param voltage: float, The electron voltage in kV.
@@ -20,7 +20,7 @@ def voltage_to_wavelength(voltage):
     return 12.2643247 / math.sqrt(voltage * 1e3 + 0.978466 * voltage**2)
 
 
-def wavelength_to_voltage(wavelength):
+def wavelength_to_voltage_old(wavelength):
     """
     Convert from electron voltage to wavelength.
     :param wavelength: float, The electron wavelength in nm.
@@ -29,6 +29,52 @@ def wavelength_to_voltage(wavelength):
     return (
         -1e3 + math.sqrt(1e6 + 4 * 12.2643247**2 * 0.978466 / wavelength**2)
     ) / (2 * 0.978466)
+
+
+def voltage_to_wavelength(voltage):
+    """
+    Convert from electron voltage to wavelength.
+    :param voltage: float, The electron voltage in kV.
+    :return: float, The electron wavelength in nm.
+    """
+    h = float(6.62607015e-34)  # Planck's constant
+    q = float(1.602176634e-19)  # elementary charge
+    m = float(9.1093837015e-31)  # electron mass
+    c = float(299792458)  # speed of light
+
+    # Voltage in volts
+    V = 1e3 * voltage
+
+    # Relativistic de Broglie formula for wavelength in meters
+    wavelength = h * c / np.sqrt(q**2 * V**2 + 2 * q * V * m * c**2)
+
+    # Convert wavelength from meters to nanometers
+    wavelength *= 1e9
+
+    return wavelength
+
+
+def wavelength_to_voltage(wavelength):
+    """
+    Convert from electron voltage to wavelength.
+    :param wavelength: float, The electron wavelength in nm.
+    :return: float, The electron voltage in kV.
+    """
+    h = float(6.62607015e-34)  # Planck's constant
+    q = float(1.602176634e-19)  # elementary charge
+    m = float(9.1093837015e-31)  # electron mass
+    c = float(299792458)  # speed of light
+
+    # Convert wavelength from nanometers to meters
+    w = 1e-9 * wavelength
+
+    # Inverse relativistic de Broglie formula for voltage in volts
+    voltage = (-m * c**2 + c * np.sqrt(m**2 * c**2 + (h / w) ** 2)) / q
+
+    # Convert voltage to kV
+    voltage *= 1e-3
+
+    return voltage
 
 
 def evaluate_src_filters_on_grid(src):
