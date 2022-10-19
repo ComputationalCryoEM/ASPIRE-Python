@@ -2,7 +2,7 @@ import os
 from unittest import TestCase
 
 import numpy as np
-from scipy.io import loadmat, savemat
+from scipy.io import loadmat
 
 from aspire.basis import FLEBasis2D
 
@@ -32,7 +32,6 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
 
         result_dense = dense_b.T @ xvec
         result_fast = basis.evaluate_t(x)
-        np.save("fle_result.npy", result_fast)
 
         self.assertTrue(self.relerr(result_dense, result_fast) < 1e-8)
 

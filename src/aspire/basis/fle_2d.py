@@ -7,7 +7,7 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
-from aspire.nufft import anufft, nufft
+from aspire.nufft import nufft
 from aspire.numeric import fft
 
 logger = logging.getLogger(__name__)
@@ -335,7 +335,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
             # compute normalization constant
             # see Eq. 6
-            c = 1 / np.sqrt(np.pi * jv(ell + 1, bessel_zero)**2)
+            c = 1 / np.sqrt(np.pi * jv(ell + 1, bessel_zero) ** 2)
             # create function
             # See Eq. 1
             if ell == 0:
