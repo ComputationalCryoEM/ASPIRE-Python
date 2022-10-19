@@ -328,7 +328,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         norm_constants = np.zeros(self.count)
         basis_functions = [None] * self.count
-
         for i in range(self.count):
             # parameters defining the basis function: bessel order and which bessel root
             ell = self.ells[i]
@@ -336,7 +335,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
             # compute normalization constant
             # see Eq. 6
-            c = 1 / (np.sqrt(np.pi) * jv(ell + 1, bessel_zero))
+            c = 1 / np.sqrt(np.pi * jv(ell + 1, bessel_zero)**2)
             # create function
             # See Eq. 1
             if ell == 0:
@@ -346,7 +345,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                     * (r <= 1)
                 )
             else:
-                c *= np.sqrt(2)
                 basis_functions[i] = (
                     lambda r, t, c=c, ell=ell, bessel_zero=bessel_zero: c
                     * jv(ell, bessel_zero * r)
