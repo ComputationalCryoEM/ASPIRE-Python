@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 import scipy.sparse as sparse
 from scipy.fft import dct, idct
@@ -196,18 +197,21 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
             n = len(x)
             mm = len(chebyshev_pts)
-
-            A3[i] = np.zeros((n, mm))
-            denom = np.zeros(n)
-            for j in range(mm):
-                xdiff = x - chebyshev_pts[j]
-                temp = weights[j] / xdiff
-                A3[i][:, j] = temp.flatten()
-                denom = denom + temp
-            denom = denom.reshape(-1, 1)
-            A3[i] = A3[i] / denom
-            A3_T[i] = A3[i].T
-
+            if self.numsparse > 0:
+                A3[i], A3_T[i] = self.barycentric_interp_sparse(
+                    x, chebyshev_pts, ys, self.numsparse
+                )
+            else:
+                A3[i] = np.zeros((n, mm))
+                denom = np.zeros(n)
+                for j in range(mm):
+                    xdiff = x - chebyshev_pts[j]
+                    temp = weights[j] / xdiff
+                    A3[i][:, j] = temp.flatten()
+                    denom = denom + temp
+                denom = denom.reshape(-1, 1)
+                A3[i] = A3[i] / denom
+                A3_T[i] = A3[i].T
         self.A3 = A3
         self.A3_T = A3_T
 
@@ -429,6 +433,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         betas = fft.fft(z, axis=2) / self.num_angular_nodes
         betas = betas[:, :, self.nus]
         betas = np.conj(betas)
+        betas = np.swapaxes(betas, 0, 2)
         betas = betas.reshape(-1, self.num_radial_nodes * num_img)
         betas = self.c2r_nus @ betas
         betas = betas.reshape(-1, self.num_radial_nodes, num_img)
