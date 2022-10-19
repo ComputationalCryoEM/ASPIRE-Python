@@ -1,7 +1,7 @@
 import logging
-
 import numpy as np
 import scipy.sparse as sparse
+from scipy.fft import dct, idct
 from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
@@ -69,9 +69,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         y = np.arange(-self.R, self.R + self.nres % 2)
         xs, ys = np.meshgrid(x, y)
         self.xs, self.ys = xs / self.R, ys / self.R
-        rs = np.sqrt(xs**2 + ys**2)
+        self.rs = np.sqrt(xs**2 + ys**2)
         # radial mask to remove energy outside disk
-        self.radial_mask = rs > 1 + 1e-13
+        self.radial_mask = self.rs > 1 + 1e-13
 
         #
         self._precomp()
@@ -175,7 +175,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.grid_y = y.flatten()
 
     def _build_interpolation_matrix(self):
-        A3 = A3_T = [None] * (self.ndmax + 1)
+        A3 = [None] * (self.ndmax + 1)
+        A3_T = [None] * (self.ndmax + 1)
         chebyshev_pts = np.cos(
             np.pi * (1 - (2 * np.arange(self.num_interp) + 1) / (2 * self.num_interp))
         )
@@ -394,8 +395,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         z = self._step1(imgs)
         b = self._step2(z)
+        coeffs = self._step3(b)
 
-        return np.zeros((imgs.shape[0],) + (self.count,))
+        return coeffs
 
     def _step1(self, im):
         """
@@ -417,6 +419,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         return z
 
     def _step2(self, z):
+        """
+        Compute values of the analytic functions Beta_n at the Chebyshev nodes.
+        See Lemma 2.2.
+        """
         z = z.reshape(-1, self.num_radial_nodes, self.num_angular_nodes)
         num_img = z.shape[0]
         # Compute FFT along angular nodes
@@ -429,11 +435,31 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         betas = np.real(np.swapaxes(betas, 0, 2))
         return betas
 
+    def _step3(self, betas):
+        """
+        Use barycenteric interpolation to compute the values of the Betas
+        at the Bessel roots to arrive at the Fourier-Bessel coefficients.
+        """
+        num_img = betas.shape[0]
+        if self.num_interp > self.num_radial_nodes:
+            betas = dct(betas, axis=1, type=2) / (2 * self.num_radial_nodes)
+            zeros = np.zeros(betas.shape)
+            betas = np.concatenate((betas, zeros), axis=1)
+            betas = idct(betas, axis=1, type=2) * 2 * betas.shape[1]
+        betas = np.moveaxis(betas, 0, -1)
+
+        coeffs = np.zeros((self.count, num_img), dtype=np.float64)
+        for i in range(self.ndmax + 1):
+            coeffs[self.idx_list[i]] = self.A3[i] @ betas[:, i, :]
+        coeffs = coeffs.T
+
+        return coeffs * self.norm_constants / self.h
+
     def create_dense_matrix(self):
 
         ts = np.arctan2(self.xs, self.ys)
 
-        B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128)
+        B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128, order="F")
         for i in range(self.count):
             B[:, :, i] = self.basis_functions[i](self.rs, ts) * self.h
         B = B.reshape(self.nres**2, self.count)
