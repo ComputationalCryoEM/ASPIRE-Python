@@ -568,7 +568,7 @@ class ImageSource(ABC):
         :param save_mode: Whether to save all images in a single or multiple files in batch size.
         :param overwrite: Option to overwrite the output MRCS files.
         :return: A dictionary containing "starfile"--the path to the saved starfile-- and "mrcs", a
-        list of the saved particle stack .mrcs filenames.
+            list of the saved particle stack .mrcs filenames.
         """
         logger.info("save metadata into STAR file")
         filename_indices = self.save_metadata(
