@@ -69,8 +69,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         x = np.arange(-self.R, self.R + self.nres % 2)
         y = np.arange(-self.R, self.R + self.nres % 2)
         xs, ys = np.meshgrid(x, y)
-        self.xs, self.ys = xs / self.R, ys / self.R
-        self.rs = np.sqrt(xs**2 + ys**2)
+        self.xs, self.ys, = (
+            xs / self.R,
+            ys / self.R,
+        )
+        self.rs = np.sqrt(self.xs**2 + self.ys**2)
         # radial mask to remove energy outside disk
         self.radial_mask = self.rs > 1 + 1e-13
 
@@ -459,8 +462,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         return coeffs * self.norm_constants / self.h
 
     def create_dense_matrix(self):
-
-        ts = np.arctan2(self.xs, self.ys)
+        ts = np.arctan2(self.ys, self.xs)
 
         B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128, order="F")
         for i in range(self.count):
