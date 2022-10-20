@@ -2,7 +2,6 @@ import os
 from unittest import TestCase
 
 import numpy as np
-from scipy.io import loadmat
 
 from aspire.basis import FLEBasis2D
 
