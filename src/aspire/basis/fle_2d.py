@@ -352,7 +352,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                     lambda r, t, c=c, ell=ell, bessel_zero=bessel_zero: c
                     * jv(ell, bessel_zero * r)
                     * np.exp(1j * ell * t)
-                    * (-(1 ** np.abs(ell)))
+                    * (-1) ** np.abs(ell)
                     * (r <= 1)
                 )
 
@@ -382,22 +382,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             must equal `self.sz`
         """
         imgs = imgs.asnumpy()
-        if np.prod(imgs.shape) == self.nres**2:
-
-            f = np.copy(imgs).reshape(self.nres, self.nres)
-
-            # Remove pixels outside disk
-            f[self.radial_mask] = 0
-            f = f.flatten()
-        else:
-            nf = imgs.shape[0]
-
-            f = np.copy(imgs).reshape(nf, self.nres, self.nres)
-
-            # Remove pixels outside disk
-            f[:, self.radial_mask] = 0
-            f = f.reshape(nf, self.nres**2)
-
+        imgs[:, self.radial_mask] = 0
         z = self._step1(imgs)
         b = self._step2(z)
         coeffs = self._step3(b)

@@ -24,16 +24,14 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         dense_b = basis.create_dense_matrix()
 
         # load test data
-        data_file = os.path.join(DATA_DIR, "fle_sample_32.mat")
-        data = loadmat(data_file)
-        x = data["x"]
+        x = np.load("fle_data_32.npy")
         x = x / np.max(np.abs(x.flatten()))
         xvec = x.reshape((sz**2, 1))
 
         result_dense = dense_b.T @ xvec
         result_fast = basis.evaluate_t(x)
 
-        self.assertTrue(self.relerr(result_dense, result_fast) < 1e-8)
+        self.assertTrue(self.relerr(result_dense.T, result_fast) < 1e-8)
 
     def relerr(self, x, y):
         x = np.array(x).flatten()
