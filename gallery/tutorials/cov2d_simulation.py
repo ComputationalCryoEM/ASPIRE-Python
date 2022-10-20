@@ -9,6 +9,7 @@ that covariance matrix.
 """
 
 import logging
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -81,7 +82,7 @@ logger.info(
     f"Load 3D map and downsample 3D map to desired grids "
     f"of {img_size} x {img_size} x {img_size}."
 )
-vols = Volume.load(DATA_DIR + "/clean70SRibosome_vol_65p.mrc", dtype=dtype)
+vols = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"), dtype=dtype)
 
 # Scale and downsample
 vols[0] /= np.max(vols[0])

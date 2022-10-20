@@ -7,6 +7,7 @@ matrix and the voting method, based on simulated data projected from a 3D cryo-E
 """
 
 import logging
+import os
 
 import numpy as np
 
@@ -65,7 +66,7 @@ logger.info(
     f"Load 3D map and downsample 3D map to desired grids "
     f"of {img_size} x {img_size} x {img_size}."
 )
-vols = Volume.load(DATA_DIR + "/clean70SRibosome_vol_65p.mrc", dtype=dtype)
+vols = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"), dtype=dtype)
 vols = vols.downsample(img_size)
 
 # %%

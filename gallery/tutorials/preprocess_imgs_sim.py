@@ -6,6 +6,7 @@ This script illustrates the preprocess steps implemented prior to starting the p
 reconstructing a 3D map using simulated 2D images.
 """
 import logging
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,7 +57,7 @@ ctf_filters = [
 
 # Load the map file of a 70S ribosome and downsample the 3D map to desired resolution.
 logger.info("Load 3D map from mrc file")
-vols = Volume.load(DATA_DIR + "/clean70SRibosome_vol_65p.mrc")
+vols = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 
 # Downsample the volume to a desired resolution and increase density
 # by 1.0e5 time for a better graph view
