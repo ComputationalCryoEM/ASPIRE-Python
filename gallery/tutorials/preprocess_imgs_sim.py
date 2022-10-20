@@ -19,12 +19,6 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = "data"
 
-
-logger.info(
-    "This script illustrates orientation estimation using "
-    "synchronization matrix and voting method"
-)
-
 # %%
 # Specify Parameters
 # ------------------
