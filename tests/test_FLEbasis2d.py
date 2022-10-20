@@ -2,8 +2,11 @@ import os
 from unittest import TestCase
 
 import numpy as np
+from parameterized import parameterized
 
 from aspire.basis import FLEBasis2D
+from aspire.source import Simulation
+from aspire.volume import Volume
 
 from ._basis_util import UniversalBasisMixin
 
@@ -17,20 +20,38 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
         self.basis = FLEBasis2D((self.L, self.L), dtype=self.dtype)
 
-    def testFastVDense(self):
-        sz = 32
-        basis = FLEBasis2D(32)
+    @parameterized.expand(
+        [
+            [32, 1e-4],
+            [32, 1e-7],
+            [32, 1e-10],
+            [32, 1e-14],
+        ]
+    )
+    def testFastVDense(self, L, epsilon):
+        basis = FLEBasis2D(L, epsilon=epsilon)
         dense_b = basis.create_dense_matrix()
 
         # load test data
-        x = np.load("fle_data_32.npy")
+        x = np.load(os.path.join(DATA_DIR, "fle_data_32.npy"))
         x = x / np.max(np.abs(x.flatten()))
-        xvec = x.reshape((sz**2, 1))
+        xvec = x.reshape((L**2, 1))
 
         result_dense = dense_b.T @ xvec
         result_fast = basis.evaluate_t(x)
+        relerr = self.relerr(result_dense.T, result_fast)
+        self.assertTrue(relerr < epsilon)
 
-        self.assertTrue(self.relerr(result_dense.T, result_fast) < 1e-8)
+    def create_image(self, L):
+        v = Volume(
+            np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
+                np.float64
+            )
+        )
+        v = v.downsample(L)
+        sim = Simulation(L=L, n=1, vols=v, dtype=v.dtype, seed=1103)
+        img = sim.images[0]
+        return img
 
     def relerr(self, x, y):
         x = np.array(x).flatten()
