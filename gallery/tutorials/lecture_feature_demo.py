@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 # A low res example file is included in the repo as a sanity check.
 # We can instantiate this as an ASPIRE Volume instance using ``Volume.load()``.
 DATA_DIR = "data"
-v = Volume.load(os.path.join(DATA_DIR, "/clean70SRibosome_vol_65p.mrc"))
+v = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 
 # More interesting data requires downloading locally.
 # v = Volume.load("EMD-2660/map/emd_2660.map")
