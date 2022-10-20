@@ -8,9 +8,7 @@ generate projections of a Volume using prescribed rotations.
 """
 
 import logging
-import os
 
-import mrcfile
 import numpy as np
 
 from aspire.operators import ScalarFilter
@@ -28,15 +26,13 @@ n_img = 10
 # %%
 # Load our Volume data
 # --------------------
-# This example starts with an mrc, loading it as an numpy array
+# This example starts with an mrc, which can be loaded as an ASPIRE Volume.
 
 DATA_DIR = "data"  # Tutorial example data folder
-v_npy = mrcfile.open(
-    os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc")
-).data.astype(np.float64)
+v = Volume.load(DATA_DIR + "/clean70SRibosome_vol_65p.mrc", dtype=np.float64)
 
-# Then using that to instantiate a Volume, which is downsampled to 60x60x60
-v = Volume(v_npy).downsample(60)
+# Then we downsample to 60x60x60
+v.downsample(60)
 
 # %%
 # Defining rotations

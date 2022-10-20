@@ -9,10 +9,8 @@ that covariance matrix.
 """
 
 import logging
-import os
 
 import matplotlib.pyplot as plt
-import mrcfile
 import numpy as np
 
 from aspire.basis import FFBBasis2D
@@ -83,10 +81,10 @@ logger.info(
     f"Load 3D map and downsample 3D map to desired grids "
     f"of {img_size} x {img_size} x {img_size}."
 )
-infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
+vols = Volume.load(DATA_DIR + "/clean70SRibosome_vol_65p.mrc", dtype=dtype)
 
-# We prefer that our various arrays have consistent dtype.
-vols = Volume(infile.data.astype(dtype) / np.max(infile.data))
+# Scale and downsample
+vols[0] /= np.max(vols[0])
 vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
