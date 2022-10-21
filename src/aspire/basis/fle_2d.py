@@ -527,9 +527,17 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :param bandlimit: Integer bandlimit (max frequency).
         :return: Band-limited coefficient array.
         """
-        num_img, num_coeffs = coeffs.shape
-        k = num_img - 1
-        for i in range(num_img):
+        if len(coeffs.shape) == 1:
+            coeffs = coeffs.reshape((1, coeffs.shape[0]))
+        assert (
+            len(coeffs.shape) == 2
+        ), "Input a stack of coefficients of dimension (num_images, self.count)."
+        assert (
+            coeffs.shape[1] == self.count
+        ), "Number of coefficients must match self.count."
+
+        k = self.count - 1
+        for i in range(self.count):
             if self.bessel_zeros[k] / (np.pi) > (bandlimit - 1) // 2:
                 k = k - 1
         coeffs[:, k + 1 :] = 0

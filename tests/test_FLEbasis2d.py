@@ -79,6 +79,50 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         relerr = self.relerr(result_dense, result_fast)
         self.assertTrue(relerr < epsilon)
 
+    def testLowPass(self):
+        # test that low passing removes more and more high frequency
+        # elements as bandlimit decreases
+
+        L = 128
+        basis = FLEBasis2D(L)
+
+        # sample coefficients
+        ims = self.create_images(L, 1)
+        coeffs = basis.evaluate_t(ims)
+
+        nonzero_coeffs = []
+        for i in range(4):
+            bandlimit = L // (2**i)
+            coeffs_lowpassed = basis.lowpass(coeffs, bandlimit)
+            nonzero_coeffs.append(np.sum(coeffs_lowpassed != 0))
+
+        # for bandlimit == L, no frequencies should be removed
+        self.assertEqual(nonzero_coeffs[0], basis.count)
+
+        # for lower bandlimits, there should be fewer and fewer nonzero coeffs
+        self.assertTrue(
+            nonzero_coeffs[0]
+            > nonzero_coeffs[1]
+            > nonzero_coeffs[2]
+            > nonzero_coeffs[3]
+        )
+
+        # make sure you can pass in a 1-D array if you want
+        _ = basis.lowpass(coeffs[0, :], L)
+
+        # cannot pass in the wrong number of coefficients
+        with self.assertRaisesRegex(
+            AssertionError, "Number of coefficients must match self.count."
+        ):
+            _ = basis.lowpass(coeffs[:, :1000], L)
+
+        # cannot pass in wrong shape
+        with self.assertRaisesRegex(
+            AssertionError,
+            "Input a stack of coefficients of dimension",
+        ):
+            _ = basis.lowpass(np.zeros((3, 3, 3)), L)
+
     def create_images(self, L, n):
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
