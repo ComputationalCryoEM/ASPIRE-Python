@@ -1,6 +1,5 @@
 import logging
 
-import finufft
 import numpy as np
 import scipy.sparse as sparse
 from scipy.fft import dct, idct
@@ -8,6 +7,7 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
+from aspire.nufft import nufft
 from aspire.numeric import fft
 
 logger = logging.getLogger(__name__)
@@ -400,15 +400,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
             dtype=np.complex128,
         )
-        nufft_type = 2
-        plan = finufft.Plan(
-            nufft_type, (self.nres, self.nres), n_trans=num_img, eps=self.epsilon
+        _z = (
+            nufft(im, np.stack((self.grid_x, self.grid_y)), epsilon=self.epsilon)
+            * self.h**2
         )
-        plan.setpts(self.grid_x, self.grid_y)
-        # finufft plan expects 2D array if n_trans=1
-        if num_img == 1:
-            im = im[0, :, :]
-        _z = plan.execute(im) * self.h**2
         _z = _z.reshape(-1, self.num_radial_nodes, self.num_angular_nodes // 2)
         z[:, :, : self.num_angular_nodes // 2] = _z
         z[:, :, self.num_angular_nodes // 2 :] = np.conj(_z)
@@ -454,13 +449,15 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         return coeffs * self.norm_constants / self.h
 
     def _step3(self, coeffs):
-        
+
         coeffs = coeffs.reshape(-1, self.count)
         num_img = coeffs.shape[0]
-        coeffs *= (self.h*self.norm_constants)
+        coeffs *= self.h * self.norm_constants
         coeffs = coeffs.T
 
-        out = np.zeros((self.num_interp, 2*self.nmax+1, num_img), dtype=np.float64, order="F")
+        out = np.zeros(
+            (self.num_interp, 2 * self.nmax + 1, num_img), dtype=np.float64, order="F"
+        )
         for i in range(self.ndmax + 1):
             out[:, i, :] = self.A3_T[i] @ coeffs[self.idx_list[i]]
         out = np.moveaxis(out, -1, 0)
@@ -468,11 +465,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             out = dct(out, axis=1, type=2)
             out = out[:, : self.num_radial_nodes, :]
             out = idct(out, axis=1, type=2)
-            
+
         return out
 
     def _step2(self, betas):
-        
+        pass
 
     def create_dense_matrix(self):
         ts = np.arctan2(self.ys, self.xs)
