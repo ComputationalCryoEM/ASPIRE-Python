@@ -7,6 +7,7 @@ from parameterized import parameterized
 from aspire.basis import FLEBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
+from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
 from ._basis_util import UniversalBasisMixin
@@ -128,11 +129,56 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         L = 128
         basis = FLEBasis2D(L)
 
-        # sample coefficients                                                                                                                                
+        # sample image
         ims = self.create_images(L, 1)
-        coeffs = basis.evaluate_t(ims)
+        # rotate 90 degrees in cartesian coordinates
+        ims_90 = Image(np.rot90(ims.asnumpy(), axes=(1, 2)))
 
-        coeffs_rot = basis.rotate(coeffs, np.pi / 3)
+        # get FLE coefficients
+        coeffs = basis.evaluate_t(ims)
+        coeffs_cart_rot = basis.evaluate_t(ims_90)
+
+        # rotate original image in FLE space
+        coeffs_fle_rot = basis.rotate(coeffs, np.pi / 2)
+
+        # back to cartesian
+        ims_cart_rot = basis.evaluate(coeffs_cart_rot)
+        ims_fle_rot = basis.evaluate(coeffs_fle_rot)
+
+        # test rot90 close
+        self.assertTrue(np.allclose(ims_cart_rot[0], ims_fle_rot[0], atol=1e-4))
+
+        # 2Pi identity in FLE space (rotate by 2Pi)
+        coeffs_fle_2pi = basis.rotate(coeffs, 2 * np.pi)
+        ims_fle_2pi = basis.evaluate(coeffs_fle_2pi)
+
+        # test 2Pi identity
+        self.assertTrue(
+            np.allclose(ims[0], ims_fle_2pi[0], atol=utest_tolerance(basis.dtype))
+        )
+
+        # Reflect in FLE space (rotate by Pi)
+        coeffs_fle_pi = basis.rotate(coeffs, np.pi)
+        ims_fle_pi = basis.evaluate(coeffs_fle_pi)
+
+        # test reflection
+        self.assertTrue(np.allclose(np.flipud(ims[0]), ims_fle_pi[0], atol=1e-4))
+
+        # make sure you can pass in a 1-D array if you want
+        _ = basis.lowpass(np.zeros((basis.count,)), np.pi)
+
+        # cannot pass in the wrong number of coefficients
+        with self.assertRaisesRegex(
+            AssertionError, "Number of coefficients must match self.count."
+        ):
+            _ = basis.rotate(np.zeros((1, 10)), np.pi)
+
+        # cannot pass in wrong shape
+        with self.assertRaisesRegex(
+            AssertionError,
+            "Input a stack of coefficients of dimension",
+        ):
+            _ = basis.lowpass(np.zeros((3, 3, 3)), np.pi)
 
     def create_images(self, L, n):
         v = Volume(

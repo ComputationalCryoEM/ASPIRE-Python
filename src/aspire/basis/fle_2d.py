@@ -5,7 +5,7 @@ import scipy.sparse as sparse
 from scipy.fft import dct, idct
 from scipy.special import jv
 
-from aspire.basis import FBBasisMixin, SteerableBasis2D
+from aspire.basis import SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
@@ -541,7 +541,7 @@ class FLEBasis2D(SteerableBasis2D):
         ), "Number of coefficients must match self.count."
 
         k = self.count - 1
-        for i in range(self.count):
+        for _ in range(self.count):
             if self.bessel_zeros[k] / (np.pi) > (bandlimit - 1) // 2:
                 k = k - 1
         coeffs[:, k + 1 :] = 0
@@ -558,19 +558,23 @@ class FLEBasis2D(SteerableBasis2D):
         """
         if len(coeffs.shape) == 1:
             coeffs = coeffs.reshape((1, self.count))
-        assert len(coeffs.shape) == 2, "Input a stack of coefficients of dimension (num_images, self.count)."
-        assert coeffs.shape[1] == self.count, "Number of coefficients must match self.count."
-        
+        assert (
+            len(coeffs.shape) == 2
+        ), "Input a stack of coefficients of dimension (num_images, self.count)."
+        assert (
+            coeffs.shape[1] == self.count
+        ), "Number of coefficients must match self.count."
+
         coeffs_rot = np.zeros(coeffs.shape)
         num_img = coeffs.shape[0]
         for k in range(num_img):
-            _coeffs = coeffs[k,:]
+            _coeffs = coeffs[k, :]
             b = np.zeros(self.count, dtype=np.complex128)
             for i in range(self.count):
                 b[i] = np.exp(1j * theta * self.ells[i])
             b = b.flatten()
-            coeffs_rot[k,:] = self.c2r @ (b * (self.r2c @ _coeffs).flatten())
-                
+            coeffs_rot[k, :] = self.c2r @ (b * (self.r2c @ _coeffs).flatten())
+
         return coeffs_rot
 
     def _transform_complex_to_real(self, Z, ns):
