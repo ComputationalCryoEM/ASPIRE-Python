@@ -363,8 +363,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
     def _evaluate(self, coeffs):
         """
-        Placeholder.
-
         Evaluate FLE coefficients and return in standard 2D Cartesian coordinates.
 
         :param v: A coefficient vector (or an array of coefficient vectors) to
@@ -374,12 +372,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         z = self._step2(betas)
         im = self._step1(z)
         return im
-        return np.zeros((coeffs.shape[0], self.nres, self.nres))
 
     def _evaluate_t(self, imgs):
         """
-        Placeholder.
-
         Evaluate 2D Cartesian image(s) and return the corresponding FLE coefficients.
 
         :param imgs: The array to be evaluated. The last dimensions
@@ -453,7 +448,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         return coeffs * self.norm_constants / self.h
 
     def _step3(self, coeffs):
-
+        """
+        Use barycenteric interpolation in reverse to compute values of Betas
+        at Chebyshev nodes, given an array of FLE coefficients.
+        """
         coeffs = coeffs.reshape(-1, self.count)
         num_img = coeffs.shape[0]
         coeffs *= self.h * self.norm_constants
@@ -473,6 +471,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         return out
 
     def _step2(self, betas):
+        """
+        Use the IFFT to convert Beta values into Fourier-space images.
+        """
         num_img = betas.shape[0]
         tmp = np.zeros(
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
@@ -491,6 +492,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         return z
 
     def _step1(self, z):
+        """
+        Perform the NUFFT on Fourier-space images to compute real-space images.
+        """
         num_img = z.shape[0]
         z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
         im = anufft(
