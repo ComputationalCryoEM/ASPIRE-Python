@@ -587,14 +587,14 @@ class FLEBasis2D(SteerableBasis2D):
         num_img = coeffs.shape[0]
         coeffs_conv = np.zeros(coeffs.shape)
         for k in range(num_img):
-            _coeffs = coeffs[k,:]
+            _coeffs = coeffs[k, :]
             z = self._step1_t(radial_img)
             b = self._step2_t(z)
             weights = self._radialconv_weights(b)
-            b = weights / (self.h **2)
+            b = weights / (self.h**2)
             b = b.reshape(self.count)
-            coeffs_conv[k, :] = self.c2r @ (b*(self.r2c @ _coeffs).flatten())
-            
+            coeffs_conv[k, :] = self.c2r @ (b * (self.r2c @ _coeffs).flatten())
+
         return coeffs_conv
 
     def _radialconv_weights(self, b):
@@ -604,15 +604,15 @@ class FLEBasis2D(SteerableBasis2D):
         b = np.squeeze(b)
         b = np.array(b, order="F")
         if self.num_interp > self.num_radial_nodes:
-            b = dct(b, axis=0, type=2) / (2*self.num_radial_nodes)
+            b = dct(b, axis=0, type=2) / (2 * self.num_radial_nodes)
             bz = np.zeros(b.shape)
             b = np.concatenate((b, bz), axis=0)
-            b = idct(b, axis=0, type=2)*2*b.shape[0]
+            b = idct(b, axis=0, type=2) * 2 * b.shape[0]
         a = np.zeros(self.count, dtype=np.float64)
-        y = [None]*(self.ndmax+1)
+        y = [None] * (self.ndmax + 1)
         for i in range(self.ndmax + 1):
-            y[i] = (self.A3[i] @ b[:,0]).flatten()
-        for i in range(self.ndmax+1):
+            y[i] = (self.A3[i] @ b[:, 0]).flatten()
+        for i in range(self.ndmax + 1):
             a[self.idx_list[i]] = y[i]
 
         return a.flatten()
