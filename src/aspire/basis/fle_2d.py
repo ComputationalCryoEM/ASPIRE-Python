@@ -370,6 +370,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :param v: A coefficient vector (or an array of coefficient vectors) to
             be evaluated. The last dimension must be equal to `self.count`
         """
+        betas = self._step3(coeffs)
+        z = self._step2(betas)
+        im = self._step1(z)
+        return im
         return np.zeros((coeffs.shape[0], self.nres, self.nres))
 
     def _evaluate_t(self, imgs):
