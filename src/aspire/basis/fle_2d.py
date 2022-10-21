@@ -7,7 +7,7 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
-from aspire.nufft import nufft
+from aspire.nufft import nufft, anufft
 from aspire.numeric import fft
 
 logger = logging.getLogger(__name__)
@@ -469,7 +469,38 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         return out
 
     def _step2(self, betas):
-        pass
+        num_img = betas.shape[0]
+        tmp = np.zeros(
+            (num_img, self.num_radial_nodes, self.num_angular_nodes),
+            dtype=np.complex128,
+        )
+
+        betas = np.swapaxes(betas, 0, 2)
+        betas = betas.reshape(-1, self.num_radial_nodes * num_img)
+        betas = self.r2c_nus @ betas
+        betas = betas.reshape(-1, self.num_radial_nodes, num_img)
+        betas = np.swapaxes(betas, 0, 2)
+
+        tmp[:, :, self.nus] = np.conj(betas)
+        z = fft.ifft(tmp, axis=2)
+
+        return z
+
+    def _step1(self, z):
+        num_img = z.shape[0]
+        z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
+        im = anufft(
+            z,
+            np.stack((self.grid_x, self.grid_y)),
+            (self.nres, self.nres),
+            epsilon=self.epsilon,
+        )
+        im = im + np.conj(im)
+        im = np.real(im)
+        im = im.reshape(num_img, self.nres, self.nres)
+        im[:, self.radial_mask] = 0
+
+        return im
 
     def create_dense_matrix(self):
         ts = np.arctan2(self.ys, self.xs)
