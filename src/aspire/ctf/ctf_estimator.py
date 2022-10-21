@@ -59,7 +59,7 @@ class CtfEstimator:
         self.voltage = voltage
         self.psd_size = psd_size
         self.num_tapers = num_tapers
-        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # (Angstrom)
+        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Angstrom to nm
         self.dtype = np.dtype(dtype)
 
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
@@ -407,6 +407,7 @@ class CtfEstimator:
         rb = grid["x"][center:] / 2
 
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
+        lmbd /= 10.0  # Angstrom to nm
 
         signal = amplitude_spectrum.T
         signal = np.maximum(0.0, signal)
@@ -559,6 +560,8 @@ class CtfEstimator:
         :param cs: Spherical aberration in mm.
         :return: Optimal defocus parameters
         """
+
+        lmbd /= 10.0  # Angstrom to nm
 
         # step size
         alpha1 = 1e5
@@ -726,7 +729,7 @@ def estimate_ctf(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
 
-    lmbd = voltage_to_wavelength(voltage) / 10  # (Angstrom)
+    lmbd = voltage_to_wavelength(voltage)  # Angstrom
 
     ctf_object = CtfEstimator(
         pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
@@ -766,7 +769,7 @@ def estimate_ctf(
             signal_1d,
             pixel_size,
             cs,
-            lmbd,  # (Angstrom)
+            lmbd,  # Angstrom
             amplitude_contrast,
             signal_observed.shape[-1],
         )
@@ -806,7 +809,7 @@ def estimate_ctf(
                 g_min,
                 g_max,
                 amplitude_contrast,
-                lmbd,  # (Angstrom)
+                lmbd,  # Angstrom
                 cs,
             )
 
@@ -850,8 +853,13 @@ def estimate_ctf(
             ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
                 2 * theta - 2 * cc_array[ml, 2] * np.ones(theta.shape, theta.dtype)
             )
+            # Note `lmbd` conversion from Angstrom to nm
             ctf_im = -np.sin(
-                np.pi * lmbd * r_ctf**2 / 2 * (df - lmbd**2 * r_ctf**2 * cs * 1e6)
+                np.pi
+                * (lmbd / 10.0)
+                * r_ctf**2
+                / 2
+                * (df - (lmbd / 10.0) ** 2 * r_ctf**2 * cs * 1e6)
                 + amplitude_contrast
             )
             ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
