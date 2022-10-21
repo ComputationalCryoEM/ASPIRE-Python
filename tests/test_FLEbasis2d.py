@@ -123,6 +123,17 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         ):
             _ = basis.lowpass(np.zeros((3, 3, 3)), L)
 
+    def testRotate(self):
+
+        L = 128
+        basis = FLEBasis2D(L)
+
+        # sample coefficients                                                                                                                                
+        ims = self.create_images(L, 1)
+        coeffs = basis.evaluate_t(ims)
+
+        coeffs_rot = basis.rotate(coeffs, np.pi / 3)
+
     def create_images(self, L, n):
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(

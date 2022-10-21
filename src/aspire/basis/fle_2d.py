@@ -13,7 +13,7 @@ from aspire.numeric import fft
 logger = logging.getLogger(__name__)
 
 
-class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
+class FLEBasis2D(SteerableBasis2D):
     """
     FLE Basis.
 
@@ -100,6 +100,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             nd = self.ndx[i]
             idx_list[nd].append(i)
         self.idx_list = idx_list
+
+        # real <-> complex
+        self.c2r = self.precomp_transform_complex_to_real(self.ells)
+        self.r2c = sparse.csr_matrix(self.c2r.transpose().conj())
 
         self.nus = np.zeros(1 + 2 * self.nmax, dtype=int)
         self.nus[0] = 0
@@ -552,15 +556,22 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :param theta: An angle in radians.
         :return: Rotated coefficient stack.
         """
-        coeffs = coeffs.flatten()
-
-        b = np.zeros(self.count, dtype=np.complex128)
-        for i in range(self.count):
-            b[i] = np.exp(1j * theta * self.rs[i])
-        b = b.flatten()
-        a_rot = self.c2r @ (b * (self.r2c @ coeffs).flatten())
-
-        return a_rot.flatten()
+        if len(coeffs.shape) == 1:
+            coeffs = coeffs.reshape((1, self.count))
+        assert len(coeffs.shape) == 2, "Input a stack of coefficients of dimension (num_images, self.count)."
+        assert coeffs.shape[1] == self.count, "Number of coefficients must match self.count."
+        
+        coeffs_rot = np.zeros(coeffs.shape)
+        num_img = coeffs.shape[0]
+        for k in range(num_img):
+            _coeffs = coeffs[k,:]
+            b = np.zeros(self.count, dtype=np.complex128)
+            for i in range(self.count):
+                b[i] = np.exp(1j * theta * self.ells[i])
+            b = b.flatten()
+            coeffs_rot[k,:] = self.c2r @ (b * (self.r2c @ _coeffs).flatten())
+                
+        return coeffs_rot
 
     def _transform_complex_to_real(self, Z, ns):
         """
