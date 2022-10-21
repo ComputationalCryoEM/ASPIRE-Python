@@ -573,7 +573,7 @@ class FLEBasis2D(SteerableBasis2D):
             for i in range(self.count):
                 b[i] = np.exp(1j * theta * self.ells[i])
             b = b.flatten()
-            coeffs_rot[k, :] = self.c2r @ (b * (self.r2c @ _coeffs).flatten())
+            coeffs_rot[k, :] = np.real(self.c2r @ (b * (self.r2c @ _coeffs).flatten()))
 
         return coeffs_rot
 
@@ -593,7 +593,7 @@ class FLEBasis2D(SteerableBasis2D):
             weights = self._radialconv_weights(b)
             b = weights / (self.h**2)
             b = b.reshape(self.count)
-            coeffs_conv[k, :] = self.c2r @ (b * (self.r2c @ _coeffs).flatten())
+            coeffs_conv[k, :] = np.real(self.c2r @ (b * (self.r2c @ _coeffs).flatten()))
 
         return coeffs_conv
 

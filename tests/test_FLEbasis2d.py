@@ -211,9 +211,9 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
             convolution_fft_pad = fft.fftshift(
                 fft.ifft2(np.fft.fft2(ctf_shift) * np.fft.fft2(ims_shift))
             )
-            imgs_convolved_slow[i, :, :] = convolution_fft_pad[
-                L // 2 : L // 2 + L, L // 2 : L // 2 + L
-            ]
+            imgs_convolved_slow[i, :, :] = np.real(
+                convolution_fft_pad[L // 2 : L // 2 + L, L // 2 : L // 2 + L]
+            )
 
         self.assertTrue(np.allclose(imgs_convolved_fle, imgs_convolved_slow, atol=1e-5))
 
