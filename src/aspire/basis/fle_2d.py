@@ -520,6 +520,22 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         B = self._transform_complex_to_real(np.conj(B), self.ells)
         return B.reshape(self.nres**2, self.count)
 
+    def lowpass(self, coeffs, bandlimit):
+        """
+        Apply a low-pass filter to FLE coefficients `coeffs` with threshold `bandlimit`.
+        :param coeffs: A NumPy array of FLE coefficients, of shape (num_images, self.count)
+        :param bandlimit: Integer bandlimit (max frequency).
+        :return: Band-limited coefficient array.
+        """
+        num_img, num_coeffs = coeffs.shape
+        k = num_img - 1
+        for i in range(num_img):
+            if self.bessel_zeros[k] / (np.pi) > (bandlimit - 1) // 2:
+                k = k - 1
+        coeffs[:, k + 1 :] = 0
+
+        return coeffs
+
     def _transform_complex_to_real(self, Z, ns):
         """
         Transforms coefficients of the matrix B (see Eq. 3) from complex
