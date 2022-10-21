@@ -383,13 +383,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         imgs = imgs.asnumpy()
         imgs[:, self.radial_mask] = 0
-        z = self._step1(imgs)
-        b = self._step2(z)
-        coeffs = self._step3(b)
+        z = self._step1_t(imgs)
+        b = self._step2_t(z)
+        coeffs = self._step3_t(b)
 
         return coeffs
 
-    def _step1(self, im):
+    def _step1_t(self, im):
         """
         Step 1 of the adjoint transformation (images to coefficients).
         Calculates the NUFFT of the image on gridpoints self.grid_x and self.grid_y.
@@ -415,7 +415,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         z = z.reshape(-1, self.num_radial_nodes * self.num_angular_nodes)
         return z
 
-    def _step2(self, z):
+    def _step2_t(self, z):
         """
         Compute values of the analytic functions Beta_n at the Chebyshev nodes.
         See Lemma 2.2.
@@ -433,7 +433,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         betas = np.real(np.swapaxes(betas, 0, 2))
         return betas
 
-    def _step3(self, betas):
+    def _step3_t(self, betas):
         """
         Use barycenteric interpolation to compute the values of the Betas
         at the Bessel roots to arrive at the Fourier-Bessel coefficients.
