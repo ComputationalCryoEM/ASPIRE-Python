@@ -1,5 +1,6 @@
 import logging
 
+import finufft
 import numpy as np
 import scipy.sparse as sparse
 from scipy.fft import dct, idct
@@ -7,7 +8,6 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
-from aspire.nufft import nufft
 from aspire.numeric import fft
 
 logger = logging.getLogger(__name__)
@@ -400,8 +400,15 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
             dtype=np.complex128,
         )
-
-        _z = nufft(im, np.stack((self.grid_x, self.grid_y))) * self.h**2
+        nufft_type = 2
+        plan = finufft.Plan(
+            nufft_type, (self.nres, self.nres), n_trans=num_img, eps=self.epsilon
+        )
+        plan.setpts(self.grid_x, self.grid_y)
+        # finufft plan expects 2D array if n_trans=1
+        if num_img == 1:
+            im = im[0, :, :]
+        _z = plan.execute(im) * self.h**2
         _z = _z.reshape(-1, self.num_radial_nodes, self.num_angular_nodes // 2)
         z[:, :, : self.num_angular_nodes // 2] = _z
         z[:, :, self.num_angular_nodes // 2 :] = np.conj(_z)
