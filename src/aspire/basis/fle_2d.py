@@ -7,7 +7,7 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
-from aspire.nufft import nufft, anufft
+from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
 
 logger = logging.getLogger(__name__)

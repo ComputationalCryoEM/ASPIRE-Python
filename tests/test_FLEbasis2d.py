@@ -35,12 +35,12 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         ]
     )
     # check closeness guarantees for fast vs dense matrix method
-    def testFastVDense(self, L, epsilon):
+    def testFastVDense_T(self, L, epsilon):
         basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64)
         dense_b = basis.create_dense_matrix()
 
         # create sample particle
-        x = self.create_image(L).asnumpy()
+        x = self.create_images(L, 1).asnumpy()
         x = x / np.max(np.abs(x.flatten()))
         xvec = x.reshape((L**2, 1))
 
@@ -52,15 +52,42 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         relerr = self.relerr(result_dense.T, result_fast)
         self.assertTrue(relerr < epsilon)
 
-    def create_image(self, L):
+    @parameterized.expand(
+        [
+            [32, 1e-4],
+            [32, 1e-7],
+            [32, 1e-10],
+            [32, 1e-14],
+            [33, 1e-4],
+            [33, 1e-7],
+            [33, 1e-10],
+            [33, 1e-14],
+        ]
+    )
+    def testFastVDense(self, L, epsilon):
+        basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64)
+        dense_b = basis.create_dense_matrix()
+
+        # get sample coefficients
+        x = self.create_images(L, 1)
+        # hold input test data constant (would depend on epsilon parameter)
+        coeffs = FLEBasis2D(L, epsilon=1e-4, dtype=np.float64).evaluate_t(x)
+
+        result_dense = dense_b @ coeffs.T
+        result_fast = basis.evaluate(coeffs).asnumpy()
+
+        relerr = self.relerr(result_dense, result_fast)
+        self.assertTrue(relerr < epsilon)
+
+    def create_images(self, L, n):
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
                 np.float64
             )
         )
         v = v.downsample(L)
-        sim = Simulation(L=L, n=1, vols=v, dtype=v.dtype, seed=1103)
-        img = sim.clean_images[0]
+        sim = Simulation(L=L, n=n, vols=v, dtype=v.dtype, seed=1103)
+        img = sim.clean_images[:]
         return img
 
     def relerr(self, x, y):
