@@ -180,6 +180,20 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         ):
             _ = basis.lowpass(np.zeros((3, 3, 3)), np.pi)
 
+    def testRadialConvolution(self):
+        basis = FLEBasis2D(32)
+        # load test CTF
+        ctf = np.load(os.path.join(DATA_DIR, "ctf_32x32.npy"))
+        # get sample images
+        ims = self.create_images(32, 10)
+        # convolve using coefficients
+        coeffs = basis.evaluate_t(ims)
+
+        coeffs_convolved = basis.radialconv(coeffs, ctf)
+
+        import pdb
+        pdb.set_trace()
+
     def create_images(self, L, n):
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(

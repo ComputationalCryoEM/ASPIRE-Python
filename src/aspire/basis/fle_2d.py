@@ -577,6 +577,46 @@ class FLEBasis2D(SteerableBasis2D):
 
         return coeffs_rot
 
+    def radialconv(self, coeffs, radial_img):
+        """
+        Convolve a stack of FLE coefficients with a 2D radial function.
+        :param coeffs: A NumPy array of FLE coefficients of size (num_images, self.count).
+        :param radial_img: A 2D NumPy array of size (self.nres, self.nres).
+        :return: Convolved FLE coefficients.
+        """
+        num_img = coeffs.shape[0]
+        coeffs_conv = np.zeros(coeffs.shape)
+        for k in range(num_img):
+            _coeffs = coeffs[k,:]
+            z = self._step1_t(radial_img)
+            b = self._step2_t(z)
+            weights = self._radialconv_weights(b)
+            b = weights / (self.h **2)
+            b = b.reshape(self.count)
+            coeffs_conv[k, :] = self.c2r @ (b*(self.r2c @ _coeffs).flatten())
+            
+        return coeffs_conv
+
+    def _radialconv_weights(self, b):
+        """
+        Helper function for step 3 of convolving with a radial function.
+        """
+        b = np.squeeze(b)
+        b = np.array(b, order="F")
+        if self.num_interp > self.num_radial_nodes:
+            b = dct(b, axis=0, type=2) / (2*self.num_radial_nodes)
+            bz = np.zeros(b.shape)
+            b = np.concatenate((b, bz), axis=0)
+            b = idct(b, axis=0, type=2)*2*b.shape[0]
+        a = np.zeros(self.count, dtype=np.float64)
+        y = [None]*(self.ndmax+1)
+        for i in range(self.ndmax + 1):
+            y[i] = (self.A3[i] @ b[:,0]).flatten()
+        for i in range(self.ndmax+1):
+            a[self.idx_list[i]] = y[i]
+
+        return a.flatten()
+
     def _transform_complex_to_real(self, Z, ns):
         """
         Transforms coefficients of the matrix B (see Eq. 3) from complex
