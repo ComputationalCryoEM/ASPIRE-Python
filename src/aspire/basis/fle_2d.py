@@ -453,6 +453,27 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return coeffs * self.norm_constants / self.h
 
+    def _step3(self, coeffs):
+        
+        coeffs = coeffs.reshape(-1, self.count)
+        num_img = coeffs.shape[0]
+        coeffs *= (self.h*self.norm_constants)
+        coeffs = coeffs.T
+
+        out = np.zeros((self.num_interp, 2*self.nmax+1, num_img), dtype=np.float64, order="F")
+        for i in range(self.ndmax + 1):
+            out[:, i, :] = self.A3_T[i] @ coeffs[self.idx_list[i]]
+        out = np.moveaxis(out, -1, 0)
+        if self.num_interp > self.num_radial_nodes:
+            out = dct(out, axis=1, type=2)
+            out = out[:, : self.num_radial_nodes, :]
+            out = idct(out, axis=1, type=2)
+            
+        return out
+
+    def _step2(self, betas):
+        
+
     def create_dense_matrix(self):
         ts = np.arctan2(self.ys, self.xs)
 
