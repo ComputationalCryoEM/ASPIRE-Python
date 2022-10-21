@@ -544,6 +544,24 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return coeffs
 
+    def rotate(self, coeffs, theta):
+        """
+        Compute FLE coefficients for rotating an image by an angle `theta`.
+        :param coeffs: A NumPy array of FLE coefficients of shape (num_images, self.count)
+            to be rotated.
+        :param theta: An angle in radians.
+        :return: Rotated coefficient stack.
+        """
+        coeffs = coeffs.flatten()
+
+        b = np.zeros(self.count, dtype=np.complex128)
+        for i in range(self.count):
+            b[i] = np.exp(1j * theta * self.rs[i])
+        b = b.flatten()
+        a_rot = self.c2r @ (b * (self.r2c @ coeffs).flatten())
+
+        return a_rot.flatten()
+
     def _transform_complex_to_real(self, Z, ns):
         """
         Transforms coefficients of the matrix B (see Eq. 3) from complex
