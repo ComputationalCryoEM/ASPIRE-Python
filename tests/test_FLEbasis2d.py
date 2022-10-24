@@ -80,6 +80,33 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         relerr = self.relerr(result_dense, result_fast)
         self.assertTrue(relerr < epsilon)
 
+    @parameterized.expand(
+        [
+            [32, 1e-4],
+            [32, 1e-7],
+            [32, 1e-10],
+            [32, 1e-14],
+            [64, 1e-4],
+            [64, 1e-7],
+            [64, 1e-10],
+            [64, 1e-14],
+        ]
+    )
+    def testEvaluateExpand(self, L, epsilon):
+        basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64)
+        dense_b = basis.create_dense_matrix()
+
+        # get sample coefficients
+        x = self.create_images(L, 1)
+        #x = np.load("fle_data_32.npy")
+        # hold input test data constant (would depend on epsilon parameter)
+        evaluate_t = basis.evaluate(basis.evaluate_t(x))
+        expand = basis.evaluate(basis.expand(evaluate_t))
+        
+    
+        relerr = self.relerr(evaluate_t.asnumpy(), expand.asnumpy())
+        self.assertTrue(relerr < epsilon)
+
     def testLowPass(self):
         # test that low passing removes more and more high frequency
         # elements as bandlimit decreases

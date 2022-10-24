@@ -371,6 +371,13 @@ class FLEBasis2D(SteerableBasis2D):
         self.norm_constants = norm_constants
         self.basis_functions = basis_functions
 
+    def _expand(self, imgs):
+        coeffs = self.evaluate_t(imgs)
+        tmp = coeffs
+        for i in range(self.maxitr):
+            tmp = tmp - self.evaluate_t(self.evaluate(tmp)) + coeffs
+        return tmp
+
     def _evaluate(self, coeffs):
         """
         Evaluate FLE coefficients and return in standard 2D Cartesian coordinates.
@@ -390,7 +397,7 @@ class FLEBasis2D(SteerableBasis2D):
         :param imgs: The array to be evaluated. The last dimensions
             must equal `self.sz`
         """
-        imgs = imgs.asnumpy()
+        imgs = imgs.asnumpy().copy()
         imgs[:, self.radial_mask] = 0
         z = self._step1_t(imgs)
         b = self._step2_t(z)
