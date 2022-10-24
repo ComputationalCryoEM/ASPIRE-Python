@@ -7,6 +7,7 @@ import pycuda.gpuarray as gpuarray  # noqa: F401
 from cufinufft import cufinufft
 
 from aspire.nufft import Plan
+from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,12 @@ class CufinufftPlan(Plan):
 
         # Passing "ntransforms" > 1 expects one large higher dimensional array later.
         self.ntransforms = ntransforms
+
+        # Workaround cufinufft A100 singles issue
+        # ASPIRE-Python/703
+        # Cast to doubles.
+        self._original_dtype = fourier_pts.dtype
+        fourier_pts = fourier_pts.astype(np.float64, copy=False)
 
         # Basic dtype passthough.
         dtype = fourier_pts.dtype
@@ -95,7 +102,9 @@ class CufinufftPlan(Plan):
         `(ntransforms, num_pts)`.
         """
 
-        if not (signal.dtype == self.dtype or signal.dtype == self.complex_dtype):
+        if (self._original_dtype == self.dtype) and not (
+            signal.dtype == self.dtype or signal.dtype == self.complex_dtype
+        ):
             logger.warning(
                 "Incorrect dtypes passed to (a)nufft."
                 " In the future this will be an error."
@@ -131,6 +140,8 @@ class CufinufftPlan(Plan):
         self._transform_plan.execute(result_gpu, signal_gpu)
 
         result = result_gpu.get()
+        # ASPIRE-Python/703
+        result = result.astype(complex_type(self._original_dtype), copy=False)
 
         return result
 
@@ -145,7 +156,9 @@ class CufinufftPlan(Plan):
         :returns: Transformed signal `(sz)` or `(sz, ntransforms)`.
         """
 
-        if not (signal.dtype == self.complex_dtype or signal.dtype == self.dtype):
+        if (self._original_dtype == self.dtype) and not (
+            signal.dtype == self.complex_dtype or signal.dtype == self.dtype
+        ):
             logger.warning(
                 "Incorrect dtypes passed to (a)nufft."
                 " In the future this will be an error."
@@ -171,5 +184,7 @@ class CufinufftPlan(Plan):
         self._adjoint_plan.execute(signal_gpu, result_gpu)
 
         result = result_gpu.get()
+        # ASPIRE-Python/703
+        result = result.astype(complex_type(self._original_dtype), copy=False)
 
         return result
