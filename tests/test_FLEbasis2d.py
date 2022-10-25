@@ -53,6 +53,7 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         relerr = self.relerr(result_dense.T, result_fast)
         self.assertTrue(relerr < epsilon)
 
+    # even and odd images with all guaranteed epsilons from paper
     @parameterized.expand(
         [
             [32, 1e-4],
@@ -89,6 +90,7 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         ]
     )
     def testEvaluateExpand(self, L, epsilon):
+        # compare result of evaluate() vs more accurate expand()
         basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64)
         # get sample coefficients
         x = self.create_images(L, 1)
@@ -144,6 +146,8 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
             _ = basis.lowpass(np.zeros((3, 3, 3)), L)
 
     def testRotate(self):
+        # test ability to accurately rotate images via
+        # FLE coefficients
 
         L = 128
         basis = FLEBasis2D(L)
@@ -200,6 +204,9 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
             _ = basis.lowpass(np.zeros((3, 3, 3)), np.pi)
 
     def testRadialConvolution(self):
+        # test ability to accurately convolve with a radial
+        # (e.g. CTF) function via FLE coefficients
+
         L = 32
         basis = FLEBasis2D(L)
         # load test CTF
@@ -237,6 +244,7 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         self.assertTrue(np.allclose(imgs_convolved_fle, imgs_convolved_slow, atol=1e-5))
 
     def create_images(self, L, n):
+        # create sample data
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
                 np.float64
@@ -248,6 +256,7 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         return img
 
     def relerr(self, x, y):
+        # relative error of two arrays
         x = np.array(x).flatten()
         y = np.array(y).flatten()
         return np.linalg.norm(x - y) / np.linalg.norm(x)
