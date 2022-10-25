@@ -371,10 +371,10 @@ class FLEBasis2D(SteerableBasis2D):
         self.norm_constants = norm_constants
         self.basis_functions = basis_functions
 
-    def _expand(self, imgs):
+    def expand(self, imgs):
         coeffs = self.evaluate_t(imgs)
         tmp = coeffs
-        for i in range(self.maxitr):
+        for _ in range(self.maxitr):
             tmp = tmp - self.evaluate_t(self.evaluate(tmp)) + coeffs
         return tmp
 
@@ -469,7 +469,7 @@ class FLEBasis2D(SteerableBasis2D):
         Use barycenteric interpolation in reverse to compute values of Betas
         at Chebyshev nodes, given an array of FLE coefficients.
         """
-        coeffs = coeffs.reshape(-1, self.count)
+        coeffs = coeffs.copy().reshape(-1, self.count)
         num_img = coeffs.shape[0]
         coeffs *= self.h * self.norm_constants
         coeffs = coeffs.T

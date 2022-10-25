@@ -94,16 +94,12 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
     )
     def testEvaluateExpand(self, L, epsilon):
         basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64)
-        dense_b = basis.create_dense_matrix()
-
         # get sample coefficients
         x = self.create_images(L, 1)
-        #x = np.load("fle_data_32.npy")
         # hold input test data constant (would depend on epsilon parameter)
         evaluate_t = basis.evaluate(basis.evaluate_t(x))
         expand = basis.evaluate(basis.expand(evaluate_t))
-        
-    
+
         relerr = self.relerr(evaluate_t.asnumpy(), expand.asnumpy())
         self.assertTrue(relerr < epsilon)
 
