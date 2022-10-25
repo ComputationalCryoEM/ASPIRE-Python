@@ -142,7 +142,7 @@ class FLEBasis2D(SteerableBasis2D):
 
     def _compute_nufft_points(self):
         """
-        Compute the number of radial and angular nodes for the non-uniform FFT.
+        Computes gridpoints for the non-uniform FFT.
         """
 
         # Number of radial nodes
@@ -202,6 +202,10 @@ class FLEBasis2D(SteerableBasis2D):
         self.grid_y = y.flatten()
 
     def _build_interpolation_matrix(self):
+        """
+        Create the matrix used in the third step of evaluate_t() and the first step of evaluate()
+        for barycentric interpolation from Chebyshev nodes.
+        """
         A3 = [None] * (self.ndmax + 1)
         A3_T = [None] * (self.ndmax + 1)
         chebyshev_pts = np.cos(
@@ -385,6 +389,13 @@ class FLEBasis2D(SteerableBasis2D):
         self.basis_functions = basis_functions
 
     def expand(self, imgs):
+        """
+        Overrides `Basis.expand()`. Computes FLE coefficients from a stack of
+            images in Cartesian coordinates.
+        :param imgs: An Image object containing square images of size `self.nres`.
+        :return: A NumPy array of size `(num_images, self.count)` containing the FLE
+            coefficients.
+        """
         coeffs = self.evaluate_t(imgs)
         tmp = coeffs
         for _ in range(self.maxitr):
@@ -393,10 +404,11 @@ class FLEBasis2D(SteerableBasis2D):
 
     def _evaluate(self, coeffs):
         """
-        Evaluate FLE coefficients and return in standard 2D Cartesian coordinates.
+        Evaluates FLE coefficients and return in standard 2D Cartesian coordinates.
 
         :param v: A coefficient vector (or an array of coefficient vectors) to
             be evaluated. The last dimension must be equal to `self.count`
+        :return: An Image object containing the corresponding images.
         """
         betas = self._step3(coeffs)
         z = self._step2(betas)
@@ -407,8 +419,9 @@ class FLEBasis2D(SteerableBasis2D):
         """
         Evaluate 2D Cartesian image(s) and return the corresponding FLE coefficients.
 
-        :param imgs: The array to be evaluated. The last dimensions
-            must equal `self.sz`
+        :param imgs: An Image object containing square images of size `self.nres`.
+        :return: A NumPy array of size `(num_images, self.count)` containing the FLE
+            coefficients.
         """
         imgs = imgs.asnumpy().copy()
         imgs[:, self.radial_mask] = 0
@@ -421,7 +434,7 @@ class FLEBasis2D(SteerableBasis2D):
     def _step1_t(self, im):
         """
         Step 1 of the adjoint transformation (images to coefficients).
-        Calculates the NUFFT of the image on gridpoints self.grid_x and self.grid_y.
+        Calculates the NUFFT of the image on gridpoints `self.grid_x` and `self.grid_y`.
         """
         im = im.reshape(-1, self.nres, self.nres).astype(np.complex128)
         num_img = im.shape[0]
@@ -441,7 +454,8 @@ class FLEBasis2D(SteerableBasis2D):
 
     def _step2_t(self, z):
         """
-        Compute values of the analytic functions Beta_n at the Chebyshev nodes.
+        Step 2 of the adjoint transformation (images to coefficients).
+        Computes values of the analytic functions Beta_n at the Chebyshev nodes.
         See Lemma 2.2.
         """
         z = z.reshape(-1, self.num_radial_nodes, self.num_angular_nodes)
@@ -459,7 +473,8 @@ class FLEBasis2D(SteerableBasis2D):
 
     def _step3_t(self, betas):
         """
-        Use barycenteric interpolation to compute the values of the Betas
+        Step 3 of the adjoint transformation (images to coefficients).
+        Uses barycenteric interpolation to compute the values of the Betas
         at the Bessel roots to arrive at the Fourier-Bessel coefficients.
         """
         num_img = betas.shape[0]
@@ -479,8 +494,10 @@ class FLEBasis2D(SteerableBasis2D):
 
     def _step3(self, coeffs):
         """
-        Use barycenteric interpolation in reverse to compute values of Betas
-        at Chebyshev nodes, given an array of FLE coefficients.
+        Adjoint of _step3_t and Step 1 of the forward transformation (coefficients
+            to images).
+        Uses barycenteric interpolation in reverse to compute values of Betas
+            at Chebyshev nodes, given an array of FLE coefficients.
         """
         coeffs = coeffs.copy().reshape(-1, self.count)
         num_img = coeffs.shape[0]
@@ -502,7 +519,9 @@ class FLEBasis2D(SteerableBasis2D):
 
     def _step2(self, betas):
         """
-        Use the IFFT to convert Beta values into Fourier-space images.
+        Adjoint of _step2_t and Step 2 of the forward transformation (coefficients
+            to images).
+        Uses the IFFT to convert Beta values into Fourier-space images.
         """
         num_img = betas.shape[0]
         tmp = np.zeros(
@@ -523,7 +542,9 @@ class FLEBasis2D(SteerableBasis2D):
 
     def _step1(self, z):
         """
-        Perform the NUFFT on Fourier-space images to compute real-space images.
+        Adjoint of _step1_t and final step of the forward transformation (coefficients
+            to images).
+        Performs the NUFFT on Fourier-space images to compute real-space images.
         """
         num_img = z.shape[0]
         z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
@@ -541,6 +562,12 @@ class FLEBasis2D(SteerableBasis2D):
         return im
 
     def create_dense_matrix(self):
+        """
+        Directly computes the transformation matrix from Cartesian coordinates to
+        FLE coordinates without any shortcuts.
+        :return: A NumPy array of size `(self.nres**2, self.count)` containing the matrix
+            entries.
+        """
         ts = np.arctan2(self.ys, self.xs)
 
         B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128, order="F")
