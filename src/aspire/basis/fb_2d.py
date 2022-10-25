@@ -412,6 +412,56 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         :param refl: Optional reflect image (bool)
         :return: rotated coefs.
         """
+        # Covert radians to a broadcastable shape
+        if isinstance(radians, np.ndarray):
+            if len(radians) != len(coef):
+                raise RuntimeError(
+                    "`rotate` call `radians` length cannot broadcast with"
+                    f" `coef` {len(coef)} != {len(radians)}"
+                )
+            radians = radians.reshape(-1, 1)
+        # else: radians can be a constant
+
+        ks = self.angular_indices
+        assert len(ks) == coef.shape[-1]
+
+        # Get the indices for positive and negative ells
+        # Note zero is special case
+        pos_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
+        neg_inds = self.signs_indices == -1
+
+        # Compute the ks * radian used in the trig functions
+        ks_rad = ks * -1 * radians
+        ks_pos = ks_rad[pos_inds]
+        ks_neg = ks_rad[neg_inds]
+
+        # Slice the coef on postive and negative ells
+        coef_pos = coef[:, pos_inds]
+        coef_neg = coef[:, neg_inds]
+
+        # refl
+        if refl is not None:
+            if isinstance(refl, np.ndarray):
+                assert len(refl) == len(coef)
+            # else: refl can be a constant
+            # negate the coefs corresponding to negative ells
+            coef_neg[refl] *= -1
+
+        # Apply formula
+        coef[:, pos_inds] = coef_pos * np.cos(ks_pos) + coef_neg * np.sin(ks_neg)
+        coef[:, neg_inds] = coef_neg * np.cos(ks_neg) - coef_pos * np.sin(ks_pos)
+
+        return coef
+
+    def _rotate(self, coef, radians, refl=None):
+        """
+        Returns coefs rotated by `radians`.
+
+        :param coef: Basis coefs.
+        :param radians: Rotation in radians.
+        :param refl: Optional reflect image (bool)
+        :return: rotated coefs.
+        """
 
         # Base class rotation expects complex representation of coefficients.
         #  Convert, rotate and convert back to real representation.
