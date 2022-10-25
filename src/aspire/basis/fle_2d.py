@@ -303,9 +303,6 @@ class FLEBasis2D(SteerableBasis2D):
         self.ks = self.ks.flatten()
         self.bessel_zeros = self.bessel_zeros.flatten()
 
-        # TODO: Better way of doing the next two sections
-        # (Specifically ordering the neg and pos integers in the correct way)
-        # sort by size of zeros
         idx = np.argsort(self.bessel_zeros)
         self.ells = self.ells[idx]
         self.ks = self.ks[idx]
