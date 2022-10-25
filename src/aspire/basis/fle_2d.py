@@ -47,51 +47,26 @@ class FLEBasis2D(SteerableBasis2D):
         super().__init__(size, ell_max=None, dtype=self.dtype)
 
     def _build(self):
-        # get upper bound of zeros, ells, and ks of Bessel functions
-        # self._calc_k_max()
-        # self.count = self.k_max[0] + sum(2*self.k_max[1:])
 
+        # bandlimit set to basis size by default
         if not self.bandlimit:
             self.bandlimit = self.nres
 
-        # Heuristic for max iterations
-        maxitr = 1 + int(3 * np.log2(self.nres))
-        numsparse = 32
-        if self.epsilon >= 1e-10:
-            numsparse = 22
-            maxitr = 1 + int(2 * np.log2(self.nres))
-        if self.epsilon >= 1e-7:
-            numsparse = 16
-            maxitr = 1 + int(np.log2(self.nres))
-        if self.epsilon >= 1e-4:
-            numsparse = 8
-            maxitr = 1 + int(np.log2(self.nres)) // 2
-        self.maxitr = maxitr
-        self.numsparse = numsparse
+        # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
+        # Final self.count will be < self.max_basis_functions
+        # See self._threshold_basis_functions()
+        self.max_basis_functions = int(self.nres**2 * np.pi / 4)
 
-        # Compute grid points
-        self.R = self.nres // 2
-        self.h = 1 / self.R
-        x = np.arange(-self.R, self.R + self.nres % 2)
-        y = np.arange(-self.R, self.R + self.nres % 2)
-        xs, ys = np.meshgrid(x, y)
-        self.xs, self.ys, = (
-            xs / self.R,
-            ys / self.R,
-        )
-        self.rs = np.sqrt(self.xs**2 + self.ys**2)
-        # radial mask to remove energy outside disk
-        self.radial_mask = self.rs > 1 + 1e-13
+        self._compute_maxitr_and_numsparse()
 
-        #
+        self._compute_cartesian_gridpoints()
+
         self._precomp()
 
     def _precomp(self):
 
-        # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
-        self.max_basis_functions = int(self.nres**2 * np.pi / 4)
-
-        # Compute basis functions
+        # Find bessel functions zeros (the eigenvalues of the Laplacian on
+        # the disk) and generate the FLE Basis functions
         self._lap_eig_disk()
 
         # Some important constants
@@ -126,6 +101,44 @@ class FLEBasis2D(SteerableBasis2D):
             self.num_interp = 2 * self.num_radial_nodes
 
         self._build_interpolation_matrix()
+
+    def _compute_maxitr_and_numsparse(self):
+        """
+        Uses heuristics from paper to assign self.maxitr and self.numsparse.
+        """
+        # maxitr: maximum number of iterations for numerically solving linear
+        # system in self.evaluate()
+        maxitr = 1 + int(3 * np.log2(self.nres))
+        # numsparse: parameter used to create sparse Chebyshev interpolation matrix
+        # see self._build_interpolation_matrix()
+        numsparse = 32
+        if self.epsilon >= 1e-10:
+            numsparse = 22
+            maxitr = 1 + int(2 * np.log2(self.nres))
+        if self.epsilon >= 1e-7:
+            numsparse = 16
+            maxitr = 1 + int(np.log2(self.nres))
+        if self.epsilon >= 1e-4:
+            numsparse = 8
+            maxitr = 1 + int(np.log2(self.nres)) // 2
+        self.maxitr = maxitr
+        self.numsparse = numsparse
+
+    def _compute_cartesian_gridpoints(self):
+        """
+        Creates meshgrids based on basis size.
+        """
+        self.R = self.nres // 2
+        self.h = 1 / self.R
+        x = np.arange(-self.R, self.R + self.nres % 2)
+        y = np.arange(-self.R, self.R + self.nres % 2)
+        xs, ys = np.meshgrid(x, y)
+        self.xs, self.ys, = (
+            xs / self.R,
+            ys / self.R,
+        )
+        self.rs = np.sqrt(self.xs**2 + self.ys**2)
+        self.radial_mask = self.rs > 1 + 1e-13
 
     def _compute_nufft_points(self):
         """
