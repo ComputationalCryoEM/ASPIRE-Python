@@ -21,7 +21,11 @@ logger = logging.getLogger(__name__)
 
 class FLEBasis2D(SteerableBasis2D):
     """
-    FLE Basis.
+    Define a derived class for Fast Fourier Bessel expansion for 2D images
+        using interpolation from Chebyshev nodes.
+    The algorithms used are described in the following publication:
+    N. F. Marshall, O. Mickelin, A. Singer, Fast Expansion into Harmonics on the Disk:
+        A Steerable Basis with Fast Radial Convolution. (submitted)
 
     https://arxiv.org/pdf/2207.13674.pdf
     """
