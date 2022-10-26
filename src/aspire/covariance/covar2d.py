@@ -137,15 +137,10 @@ class RotCov2D:
         covar_coeff.append(covar_ell)
 
         for ell in range(1, self.basis.ell_max + 1):
-            mask = self.basis._indices["ells"] == ell
-            mask_pos = [
-                mask[i] and (self.basis._indices["sgns"][i] == +1)
-                for i in range(len(mask))
-            ]
-            mask_neg = [
-                mask[i] and (self.basis._indices["sgns"][i] == -1)
-                for i in range(len(mask))
-            ]
+            mask_ell = self.basis._indices["ells"] == ell
+            mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
+            mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
+
             covar_ell_diag = np.array(
                 coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
                 + coeffs[:, mask_neg].T @ coeffs[:, mask_neg]
