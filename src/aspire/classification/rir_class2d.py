@@ -36,6 +36,7 @@ class RIRClass2D(Class2D):
         bispectrum_implementation="legacy",
         selector=None,
         num_procs=None,
+        batch_size=512,
         averager=None,
         dtype=None,
         seed=None,
@@ -68,9 +69,10 @@ class RIRClass2D(Class2D):
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
         :param selector: A ClassSelector subclass. Defaults to RandomClassSelector.
-        :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param num_procs: Number of processes to use.
         `None` will attempt computing a suggestion based on machine resources.
+        :param batch_size: Chunk size (typically number of images) for batched methods.
+        :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
@@ -84,6 +86,7 @@ class RIRClass2D(Class2D):
             dtype=dtype,
         )
         self.num_procs = num_procs
+        self.batch_size = int(batch_size)
 
         # Implementation Checks
         # # Do we have a sane Nearest Neighbor
@@ -190,11 +193,10 @@ class RIRClass2D(Class2D):
         """
 
         # # Stage 1: Compute coef and reduce dimensionality.
-        # Memioze/batch this later when result is working
-        # Initial round of component truncation is before bispectrum.
-        # Instantiate a new compressed (truncated) basis.
         if self.pca_basis is None:
-            self.pca_basis = FSPCABasis(self.src, components=self.fspca_components)
+            self.pca_basis = FSPCABasis(
+                self.src, components=self.fspca_components, batch_size=self.batch_size
+            )
 
         # For convenience, assign the fb_basis used in the pca_basis.
         self.fb_basis = self.pca_basis.basis
@@ -330,7 +332,7 @@ class RIRClass2D(Class2D):
 
         return classes, refl, distances
 
-    def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
+    def _legacy_nn_classification(self, coeff_b, coeff_b_r):
         """
         Perform nearest neighbor classification.
         """
@@ -350,13 +352,13 @@ class RIRClass2D(Class2D):
 
         concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=1)
 
-        num_batches = (n_im + batch_size - 1) // batch_size
+        num_batches = (n_im + self.batch_size - 1) // self.batch_size
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
         distances = np.zeros((n_im, n_nbor), dtype=self.dtype)
         for i in range(num_batches):
-            start = i * batch_size
-            finish = min((i + 1) * batch_size, n_im)
+            start = i * self.batch_size
+            finish = min((i + 1) * self.batch_size, n_im)
             corr = np.real(
                 np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
             )
