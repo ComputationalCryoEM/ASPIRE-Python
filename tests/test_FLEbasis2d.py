@@ -87,6 +87,10 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
             [32, 1e-7],
             [32, 1e-10],
             [32, 1e-14],
+            [33, 1e-4],
+            [33, 1e-7],
+            [33, 1e-10],
+            [33, 1e-14]
         ]
     )
     def testEvaluateExpand(self, L, epsilon):

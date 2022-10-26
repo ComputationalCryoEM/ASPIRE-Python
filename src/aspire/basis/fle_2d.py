@@ -389,7 +389,7 @@ class FLEBasis2D(SteerableBasis2D):
         self.norm_constants = norm_constants
         self.basis_functions = basis_functions
 
-    def expand(self, imgs):
+    def _expand(self, imgs):
         """
         Overrides `Basis.expand()`. Computes FLE coefficients from a stack of
             images in Cartesian coordinates.
@@ -411,6 +411,7 @@ class FLEBasis2D(SteerableBasis2D):
             be evaluated. The last dimension must be equal to `self.count`
         :return: An Image object containing the corresponding images.
         """
+        # See Remark 3.3 and Section 3.4
         betas = self._step3(coeffs)
         z = self._step2(betas)
         im = self._step1(z)
@@ -424,6 +425,7 @@ class FLEBasis2D(SteerableBasis2D):
         :return: A NumPy array of size `(num_images, self.count)` containing the FLE
             coefficients.
         """
+        # See Section 3.5
         imgs = imgs.asnumpy().copy()
         imgs[:, self.radial_mask] = 0
         z = self._step1_t(imgs)
@@ -569,6 +571,7 @@ class FLEBasis2D(SteerableBasis2D):
         :return: A NumPy array of size `(self.nres**2, self.count)` containing the matrix
             entries.
         """
+        # See Eqns. 3 and 4, Section 1.2
         ts = np.arctan2(self.ys, self.xs)
 
         B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128, order="F")
