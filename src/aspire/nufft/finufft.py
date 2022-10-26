@@ -16,12 +16,12 @@ class FinufftPlan(Plan):
 
         :param sz: A tuple indicating the geometry of the signal.
         :param fourier_pts: The points in Fourier space where the Fourier
-        transform is to be calculated, arranged as a dimension-by-K array.
-        These need to be in the range [-pi, pi] in each dimension.
+            transform is to be calculated, arranged as a dimension-by-K array.
+            These need to be in the range [-pi, pi] in each dimension.
         :param epsilon: The desired precision of the NUFFT.
         :param ntransforms: Optional integer indicating if you would like
-        to compute a batch of `ntransforms`.
-        transforms.  Implies vol_f.shape is (`ntransforms`, ...).
+            to compute a batch of `ntransforms`.
+            transforms.  Implies vol_f.shape is (`ntransforms`, ...).
         """
 
         self.ntransforms = ntransforms
@@ -69,11 +69,11 @@ class FinufftPlan(Plan):
         Compute the NUFFT transform using this plan instance.
 
         :param signal: Signal to be transformed. For a single transform,
-        this should be a a 1, 2, or 3D array matching the plan `sz`.
-        For a batch, signal should have shape `(ntransforms, *sz)`.
+            this should be a a 1, 2, or 3D array matching the plan `sz`.
+            For a batch, signal should have shape `(ntransforms, *sz)`.
 
         :returns: Transformed signal of shape `num_pts` or
-        `(ntransforms, num_pts)`.
+            `(ntransforms, num_pts)`.
         """
 
         sig_frame_shape = signal.shape
@@ -110,8 +110,8 @@ class FinufftPlan(Plan):
         Compute the NUFFT adjoint using this plan instance.
 
         :param signal: Signal to be transformed. For a single transform,
-        this should be a a 1D array of len `num_pts`.
-        For a batch, signal should have shape `(ntransforms, num_pts)`.
+            this should be a a 1D array of len `num_pts`.
+            For a batch, signal should have shape `(ntransforms, num_pts)`.
 
         :returns: Transformed signal `(sz)` or `(ntransforms, sz)`.
         """

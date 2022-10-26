@@ -77,6 +77,7 @@ class FourierKernel(Kernel):
     def convolve_volume(self, x):
         """
         Convolve volume with kernel
+
         :param x: An N-by-N-by-N-by-... array of volumes to be convolved.
         :return: The original volumes convolved by the kernel with the same dimensions as before.
         """
@@ -111,6 +112,7 @@ class FourierKernel(Kernel):
     def convolve_volume_matrix(self, x):
         """
         Convolve volume matrix with kernel
+
         :param x: An N-by-...-by-N (6 dimensions) volume matrix to be convolved.
         :return: The original volume matrix convolved by the kernel with the same dimensions as before.
         """
@@ -142,6 +144,7 @@ class FourierKernel(Kernel):
     def toeplitz(self, L=None):
         """
         Compute the 3D Toeplitz matrix corresponding to this Fourier Kernel
+
         :param L: The size of the volumes to be convolved (default M/2, where the dimensions of this Fourier Kernel
             are MxMxM
         :return: An six-dimensional Toeplitz matrix of size L describing the convolution of a volume with this kernel

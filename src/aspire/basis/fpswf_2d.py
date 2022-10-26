@@ -112,7 +112,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         Evaluate coefficient vectors in PSWF basis using the fast method.
 
         :param images: Image stack in the standard 2D coordinate basis.
-        :return : Coefficient array in the PSWF basis.
+        :return: Coefficient array in the PSWF basis.
         """
 
         if not isinstance(images, Image):

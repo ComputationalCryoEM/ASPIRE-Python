@@ -38,11 +38,11 @@ class FSPCABasis(SteerableBasis2D):
         :param src: Source instance
         :param basis: Optional Fourier Bessel Basis (usually FFBBasis2D)
         :param components: Optionally assign number of principal components
-        to use for the FSPCA basis.
-        Default value of `None` will use `self.basis.count`.
+            to use for the FSPCA basis.
+            Default value of `None` will use `self.basis.count`.
         :param noise_var: Optionally assign noise variance.
-        Default value of `None` will estimate noise with WhiteNoiseEstimator.
-        Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
+            Default value of `None` will estimate noise with WhiteNoiseEstimator.
+            Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
         :param batch_size: Batch size for computing basis coefficients.
             `batch_size` is also passed to BatchedRotCov2D.
         """
@@ -311,7 +311,7 @@ class FSPCABasis(SteerableBasis2D):
         basis vectors, described by an eigenvector in FSPCA.
 
         :param x:  The Image instance representing a stack of images in the
-        standard 2D coordinate basis to be evaluated.
+            standard 2D coordinate basis to be evaluated.
         :return: Stack of coefs in the FSPCABasis.
         """
         fb_coefs = self.basis.evaluate_t(x)
@@ -325,7 +325,7 @@ class FSPCABasis(SteerableBasis2D):
         basis vectors, described by an eigenvector in FSPCA.
 
         :param x:  Coefs representing a stack in the
-        Fourier Bessel basis.
+            Fourier Bessel basis.
         :return: Stack of coefs in the FSPCABasis.
         """
 
@@ -342,7 +342,7 @@ class FSPCABasis(SteerableBasis2D):
 
         :param c:  Stack of coefs in the FSPCABasis to be evaluated.
         :return: The Image instance representing a stack of images in the
-        standard 2D coordinate basis..
+            standard 2D coordinate basis..
         """
         c_fb = self.evaluate(c)
 

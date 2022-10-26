@@ -186,7 +186,7 @@ class FFBBasis2D(FBBasis2D):
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
         :param x: The Image instance representing coefficient array in the
-        standard 2D coordinate basis to be evaluated.
+            standard 2D coordinate basis to be evaluated.
         :return v: The evaluation of the coefficient array `v` in the FB basis.
             This is an array of vectors whose last dimension equals `self.count`
             and whose first dimension correspond to `x.n_images`.
