@@ -44,7 +44,7 @@ class FSPCABasis(SteerableBasis2D):
         Default value of `None` will estimate noise with WhiteNoiseEstimator.
         Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
         :param batch_size: Batch size for computing basis coefficients.
-        `batch_size` is also passed to BatchedRotCov2D.
+            `batch_size` is also passed to BatchedRotCov2D.
         """
 
         self.src = src
