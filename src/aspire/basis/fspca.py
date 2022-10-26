@@ -271,15 +271,9 @@ class FSPCABasis(SteerableBasis2D):
             for ell in range(
                 1, self.basis.ell_max + 1
             ):  # `ell` in this code is `k` from paper
-                mask = self.basis._indices["ells"] == ell
-                mask_pos = [
-                    mask[i] and (self.basis._indices["sgns"][i] == +1)
-                    for i in range(len(mask))
-                ]
-                mask_neg = [
-                    mask[i] and (self.basis._indices["sgns"][i] == -1)
-                    for i in range(len(mask))
-                ]
+                mask_ell = self.basis._indices["ells"] == ell
+                mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
+                mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
 
                 A.append(batch_coef[:, mask_pos])
                 A.append(batch_coef[:, mask_neg])
