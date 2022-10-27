@@ -155,17 +155,20 @@ class SteerableBasis2D(Basis):
         ks = self.complex_angular_indices
         assert len(ks) == complex_coef.shape[-1]
 
+        # Don't mutate the input coef array
+        _complex_coef = complex_coef.copy()
+
         # refl
         if refl is not None:
             if isinstance(refl, np.ndarray):
                 assert len(refl) == len(complex_coef)
             # else: refl can be a constant
             # get the coefs corresponding to -ks , aka "ells"
-            complex_coef[refl] = np.conj(complex_coef[refl])
+            _complex_coef[refl] = np.conj(complex_coef[refl])
 
-        complex_coef[:] = complex_coef * np.exp(-1j * ks * radians)
+        _complex_coef = _complex_coef * np.exp(-1j * ks * radians)
 
-        return complex_coef
+        return _complex_coef
 
     def shift(self, coef, shifts):
         """
