@@ -553,7 +553,7 @@ class FSPCABasis(SteerableBasis2D):
         :return: rotated coefs.
         """
 
-        # Sterrable class rotation expects complex representation of coefficients.
+        # Steerable class rotation expects complex representation of coefficients.
         #  Convert, rotate and convert back to real representation.
         return self.to_real(super().rotate(self.to_complex(coef), radians, refl))
 
