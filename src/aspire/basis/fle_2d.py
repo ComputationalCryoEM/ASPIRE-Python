@@ -5,7 +5,7 @@ import scipy.sparse as sparse
 from scipy.fft import dct, idct
 from scipy.special import jv
 
-from aspire.basis import SteerableBasis2D
+from aspire.basis import SteerableBasis2D, FBBasisMixin
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
@@ -19,7 +19,7 @@ from aspire.numeric import fft
 logger = logging.getLogger(__name__)
 
 
-class FLEBasis2D(SteerableBasis2D):
+class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     """
     Define a derived class for Fast Fourier Bessel expansion for 2D images
         using interpolation from Chebyshev nodes.
@@ -30,7 +30,9 @@ class FLEBasis2D(SteerableBasis2D):
     https://arxiv.org/pdf/2207.13674.pdf
     """
 
-    def __init__(self, size, bandlimit=None, epsilon=1e-10, dtype=np.float32):
+    def __init__(
+        self, size, bandlimit=None, epsilon=1e-10, threshold=True, dtype=np.float32
+    ):
         """
         :param size: The size of the vectors for which to define the FLE basis.
                  Currently only square images are supported.
@@ -47,6 +49,7 @@ class FLEBasis2D(SteerableBasis2D):
 
         self.bandlimit = bandlimit
         self.epsilon = epsilon
+        self.threshold = threshold
         self.dtype = dtype
         super().__init__(size, ell_max=None, dtype=self.dtype)
 
@@ -56,10 +59,13 @@ class FLEBasis2D(SteerableBasis2D):
         if not self.bandlimit:
             self.bandlimit = self.nres
 
+        self._calc_k_max()
+
         # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
         # Final self.count will be < self.max_basis_functions
         # See self._threshold_basis_functions()
         self.max_basis_functions = int(self.nres**2 * np.pi / 4)
+        self.max_basis_functions = self.k_max[0] + sum(2 * self.k_max[1:])
 
         self._compute_maxitr_and_numsparse()
 
@@ -334,7 +340,7 @@ class FLEBasis2D(SteerableBasis2D):
         # there should not be more basis functions than pixels contained in the
         # unit disk inscribed on the image
         _final_num_basis_functions = self.max_basis_functions
-        if self.bandlimit:
+        if self.threshold:
             for _ in range(len(self.bessel_zeros)):
                 if (
                     self.bessel_zeros[_final_num_basis_functions] / (np.pi)
