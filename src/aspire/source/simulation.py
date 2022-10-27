@@ -73,10 +73,9 @@ class Simulation(ImageSource):
             self.vols = vols
 
         if self.vols.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}"
-                f" vols.dtype {self.vols.dtype} != self.dtype {self.dtype}."
-                " In the future this will raise an error. Casting..."
+            raise RuntimeError(
+                f"{self.__class__.__name__} dtype {self.dtype}"
+                f" does not match provided vols.dtype {self.vols.dtype}."
             )
             self.vols = self.vols.astype(self.dtype)
 

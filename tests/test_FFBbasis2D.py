@@ -159,11 +159,11 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         # Construct some synthetic data
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                np.float64
+                self.dtype
             )
         ).downsample(self.L)
 
-        src = Simulation(L=self.L, n=n_img, vols=v, dtype=np.float64)
+        src = Simulation(L=self.L, n=n_img, vols=v, dtype=self.dtype)
 
         # Shift images using the Image method directly
         shifted_imgs = src.images[:n_img].shift(test_shift)

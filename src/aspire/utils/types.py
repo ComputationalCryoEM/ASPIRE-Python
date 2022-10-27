@@ -23,7 +23,6 @@ def real_type(complextype):
     elif complextype == np.complex128:
         realtype = np.float64
     elif complextype in (np.float32, np.float64):
-        logger.debug(f"Corresponding type is already real {complextype}.")
         realtype = complextype
     else:
         msg = f"Corresponding real type is not defined for {complextype}."
@@ -47,7 +46,6 @@ def complex_type(realtype):
     elif realtype == np.float64:
         complextype = np.complex128
     elif realtype in (np.complex64, np.complex128):
-        logger.debug(f"Corresponding type is already complex {realtype}.")
         complextype = realtype
     else:
         msg = f"Corresponding complex type is not defined for {realtype}."

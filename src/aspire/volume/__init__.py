@@ -327,7 +327,7 @@ class Volume:
         # If K = n_vols, we apply the ith rotation to ith volume.
         else:
             rot_matrices = rot_matrices.reshape((K, 1, 3, 3))
-            pts_rot = np.zeros((K, 3, self.resolution**3))
+            pts_rot = np.zeros((K, 3, self.resolution**3), dtype=self.dtype)
             vol_f = np.empty(
                 (self.n_vols, self.resolution**3), dtype=complex_type(self.dtype)
             )
