@@ -74,6 +74,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             shift_step=shift_step,
         )
 
+        self._check_symmetry(symmetry)
+        self.epsilon = epsilon
+        self.max_iters = max_iters
+        self.degree_res = degree_res
+        self.seed = seed
+
+    def _check_symmetry(self, symmetry):
         if symmetry is None:
             raise NotImplementedError(
                 "Symmetry type not supplied. Please indicate C3 or C4 symmetry."
@@ -85,10 +92,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     f"Only C3 and C4 symmetry supported. {symmetry} was supplied."
                 )
             self.order = int(symmetry[1])
-        self.epsilon = epsilon
-        self.max_iters = max_iters
-        self.degree_res = degree_res
-        self.seed = seed
 
     def estimate_rotations(self):
         """

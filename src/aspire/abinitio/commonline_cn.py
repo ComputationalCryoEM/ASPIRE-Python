@@ -1,19 +1,10 @@
 import logging
 
 import numpy as np
-from numpy.linalg import eigh, norm, svd
 from tqdm import tqdm
 
-from aspire.abinitio import CLSymmetryC3C4, SyncVotingMixin
-from aspire.utils import (
-    J_conjugate,
-    Rotation,
-    all_pairs,
-    all_triplets,
-    anorm,
-    cyclic_rotations,
-    pairs_to_linear,
-)
+from aspire.abinitio import CLSymmetryC3C4
+from aspire.utils import Rotation, anorm, cyclic_rotations
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -50,8 +41,53 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         self.n_points_sphere = n_points_sphere
 
-    #    def estimate_relative_viewing_directions_cn(self):
+    def _check_symmetry(self, symmetry):
+        if symmetry is None:
+            raise NotImplementedError(
+                "Symmetry type not supplied. Please indicate C3 or C4 symmetry."
+            )
+        else:
+            symmetry = symmetry.upper()
+            if not symmetry[0] == "C":
+                raise NotImplementedError(
+                    f"Only Cn symmetry supported. {symmetry} was supplied."
+                )
+            self.order = int(symmetry[1])
 
+    def compute_scls_inds(self, Ri_cands):
+        """
+        Compute self-common-lines indices induced by candidate rotations.
+
+        :param Ri_cands: An array of size n_candsx3x3 of candidate rotations.
+        :return: An n_cands x (order-1)//2 x 2 array holding the indices of the (order-1)//2
+            non-collinear pairs of self-common-lines for each candidate rotation.
+        """
+        order = self.order
+        n_theta = self.n_theta
+        n_scl_pairs = (order - 1) // 2
+        n_cands = Ri_cands.shape[0]
+        scls_inds = np.zeros((n_cands, n_scl_pairs, 2), dtype=np.uint16)
+        rots_symm = cyclic_rotations(order, dtype=self.dtype).matrices
+
+        for i_cand, Ri_cand in enumerate(Ri_cands):
+            Riigs = Ri_cand.T @ rots_symm[1 : n_scl_pairs + 1] @ Ri_cand
+
+            c1s = np.array((-Riigs[:, 1, 2], Riigs[:, 0, 2])).T
+            c2s = np.array((-Riigs[:, 2, 1], Riigs[:, 2, 0])).T
+
+            c1s_inds = self.cl_angles_to_ind(c1s, n_theta)
+            c2s_inds = self.cl_angles_to_ind(c2s, n_theta)
+
+            inds = np.where(c1s_inds >= (n_theta // 2))
+            c1s_inds[inds] -= n_theta // 2
+            c2s_inds[inds] += n_theta // 2
+            c2s_inds[inds] = np.mod(c2s_inds[inds], n_theta)
+
+            scls_inds[i_cand, :, 0] = c1s_inds
+            scls_inds[i_cand, :, 1] = c2s_inds
+        return scls_inds
+
+    # TODO: cache
     def compute_cls_inds(self, Ris_tilde, R_theta_ijs):
         n_theta = self.n_theta
         n_points_sphere = self.n_points_sphere
