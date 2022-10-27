@@ -427,6 +427,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         # Get the indices for positive and negative ells
         # Note zero is special case
+        zer_inds = self.angular_indices == 0
         pos_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
         neg_inds = self.signs_indices == -1
 
@@ -436,8 +437,13 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         ks_neg = ks_rad[neg_inds]
 
         # Slice the coef on postive and negative ells
+        coef_zer = coef[:, zer_inds]
         coef_pos = coef[:, pos_inds]
         coef_neg = coef[:, neg_inds]
+
+        # Handle zero case and avoid mutating the original array
+        coef = np.empty_like(coef)
+        coef[:, zer_inds] = coef_zer
 
         # refl
         if refl is not None:
