@@ -463,6 +463,11 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Returns coefs rotated by `radians`.
 
+        This implementation uses conversion to complex,
+        and application of complex exponential.
+        It is kept in the code for documentation and
+        reference purposes.
+
         :param coef: Basis coefs.
         :param radians: Rotation in radians.
         :param refl: Optional reflect image (bool)
