@@ -69,7 +69,7 @@ logger.info(
 )
 infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 vols = Volume(infile.data.astype(dtype))
-vols = vols.downsample((img_size,) * 3)
+vols = vols.downsample(img_size)
 
 # %%
 # Create Simulation Object and Obtain True Rotation Angles
@@ -80,7 +80,7 @@ logger.info("Use downsampled map to creat simulation object.")
 sim = Simulation(L=img_size, n=num_imgs, vols=vols, unique_filters=filters, dtype=dtype)
 
 logger.info("Get true rotation angles generated randomly by the simulation object.")
-rots_true = sim.rots
+rots_true = sim.rotations
 
 # %%
 # Estimate Orientation and Rotation Angles

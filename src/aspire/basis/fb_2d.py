@@ -5,7 +5,6 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
-from aspire.image import Image
 from aspire.utils import complex_type, real_type, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
@@ -189,7 +188,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return rad_norm, ang_norm
 
-    def evaluate(self, v):
+    def _evaluate(self, v):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
@@ -199,13 +198,6 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             This is an array whose last dimensions equal `self.sz` and the remaining
             dimensions correspond to first dimensions of `v`.
         """
-
-        if v.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
-            )
-
         # Transpose here once, instead of several times below  #RCOPT
         v = v.reshape(-1, self.count).T
 
@@ -242,7 +234,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return x
 
-    def evaluate_t(self, v):
+    def _evaluate_t(self, v):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
@@ -250,20 +242,10 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual basis
             of `basis`. This is an array of vectors whose last dimension equals
-             `self.count` and whose first dimensions correspond to
-             first dimensions of `v`.
+            `self.count` and whose first dimensions correspond to
+            first dimensions of `v`.
         """
-
-        if v.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
-            )
-
-        if isinstance(v, Image):
-            v = v.asnumpy()
-
-        v = v.T  # RCOPT
+        v = v.asnumpy().T  # RCOPT
 
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(

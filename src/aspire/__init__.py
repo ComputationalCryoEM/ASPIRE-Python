@@ -1,5 +1,7 @@
+import importlib
 import logging.config
 import os
+import pkgutil
 from datetime import datetime
 from importlib.resources import read_text
 from pathlib import Path
@@ -9,7 +11,7 @@ from aspire.config import Config
 from aspire.exceptions import handle_exception
 
 # version in maj.min.bld format
-__version__ = "0.9.2"
+__version__ = "0.10.0"
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 config = Config(read_text(aspire, "config.ini"))
@@ -31,3 +33,8 @@ logging.config.fileConfig(
         "log_dir": config.logging.log_dir,
     },
 )
+
+__all__ = []
+for _, modname, _ in pkgutil.iter_modules(aspire.__path__):
+    __all__.append(modname)  # Add module to __all_
+    importlib.import_module(f"aspire.{modname}")  # Import the module

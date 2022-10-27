@@ -20,7 +20,7 @@ class MeanEstimator(Estimator):
 
         for i in range(0, self.src.n, self.batch_size):
             _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
-            pts_rot = rotated_grids(self.src.L, self.src.rots[_range, :, :])
+            pts_rot = rotated_grids(self.src.L, self.src.rotations[_range, :, :])
             weights = sq_filters_f[:, :, _range]
             weights *= self.src.amplitudes[_range] ** 2
 

@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
     """
     Shrink the covariance matrix
+
     :param covar_in: An input covariance matrix
     :param noise_var: The estimated variance of noise
     :param gamma: An input parameter to specify the maximum values of eigen values to be neglected.
@@ -350,8 +351,10 @@ class RotCov2D:
             p = np.size(A_ell[0], 0)
             b_ell = m_reshape(b[ell], (p**2,))
             S = inv(M[ell])
-            cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
-            covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            cg_opt["preconditioner"] = lambda x, S=S: precond_fun(S, x)
+            covar_coeff_ell, _, _ = conj_grad(
+                lambda x, A_ell=A_ell: apply(A_ell, x), b_ell, cg_opt
+            )
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
         if not covar_coeff.check_psd():
@@ -470,12 +473,11 @@ class BatchedRotCov2D(RotCov2D):
         of single particle cryo-EM images", J. Struct. Biol. 195, 27-81 (2016).
         DOI: 10.1016/j.jsb.2016.04.013
 
-        :param src: The `ImageSource` object from which the sample images are to
+    :param src: The `ImageSource` object from which the sample images are to
         be extracted.
-        :param basis: The `FBBasis2D` object used to decompose the images. By
+    :param basis: The `FBBasis2D` object used to decompose the images. By
         default, this is set to `FFBBasis2D((src.L, src.L))`.
-        :param batch_size: The number of images to process at a time (default
-        8192).
+    :param batch_size: The number of images to process at a time (default 8192).
     """
 
     def __init__(self, src, basis=None, batch_size=8192):
@@ -500,7 +502,7 @@ class BatchedRotCov2D(RotCov2D):
 
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
-        if src.unique_filters is None:
+        if not src.unique_filters:
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
@@ -527,8 +529,8 @@ class BatchedRotCov2D(RotCov2D):
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
 
-            im = src.images(batch[0], len(batch))
-            coeff = basis.evaluate_t(im.data)
+            im = src.images[batch[0] : batch[0] + len(batch)]
+            coeff = basis.evaluate_t(im)
 
             for k in np.unique(ctf_idx[batch]):
                 coeff_k = coeff[ctf_idx[batch] == k]
@@ -658,8 +660,10 @@ class BatchedRotCov2D(RotCov2D):
             p = np.size(A_ell[0], 0)
             b_ell = m_reshape(b_covar[ell], (p**2,))
             S = inv(M[ell])
-            cg_opt["preconditioner"] = lambda x: precond_fun(S, x)
-            covar_coeff_ell, _, _ = conj_grad(lambda x: apply(A_ell, x), b_ell, cg_opt)
+            cg_opt["preconditioner"] = lambda x, S=S: precond_fun(S, x)
+            covar_coeff_ell, _, _ = conj_grad(
+                lambda x, A_ell=A_ell: apply(A_ell, x), b_ell, cg_opt
+            )
             covar_coeff[ell] = m_reshape(covar_coeff_ell, (p, p))
 
         return covar_coeff
@@ -692,9 +696,9 @@ class BatchedRotCov2D(RotCov2D):
 
         :param noise_var: The variance of the noise in the images (default 1)
         :param mean_coeff: If specified, overrides the mean coefficient vector
-        used to calculate the covariance (default `self.get_mean()`).
+            used to calculate the covariance (default `self.get_mean()`).
         :param :covar_est_opt: The estimation parameters for obtaining the covariance
-        matrix in the form of a dictionary. Keys include:
+            matrix in the form of a dictionary. Keys include:
             - 'shrinker': The type of shrinkage we apply to the right-hand side
               in the normal equations. Can be `'None'`, in which case no
               shrinkage is performed. For a list of shrinkers, see the
@@ -714,8 +718,8 @@ class BatchedRotCov2D(RotCov2D):
               documentation for `conj_grad`, default `'float64'`)
         :param make_psd: If True, make the covariance matrix positive semidefinite
         :return: The block diagonal matrix containing the basis coefficients (in
-        `self.basis`) for the estimated covariance matrix. These are
-        implemented using `BlkDiagMatrix`.
+            `self.basis`) for the estimated covariance matrix. These are
+            implemented using `BlkDiagMatrix`.
         """
 
         def identity(x):

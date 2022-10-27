@@ -5,14 +5,18 @@ import numpy as np
 
 from aspire.basis import FBBasis3D
 from aspire.utils import utest_tolerance
+from aspire.volume import Volume
+
+from ._basis_util import UniversalBasisMixin
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-class FBBasis3DTestCase(TestCase):
+class FBBasis3DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
+        self.L = 8
         self.dtype = np.float32
-        self.basis = FBBasis3D((8, 8, 8), dtype=self.dtype)
+        self.basis = FBBasis3D((self.L, self.L, self.L), dtype=self.dtype)
 
     def tearDown(self):
         pass
@@ -472,7 +476,7 @@ class FBBasis3DTestCase(TestCase):
 
         self.assertTrue(
             np.allclose(
-                result,
+                result.asnumpy(),
                 np.load(os.path.join(DATA_DIR, "hbbasis_evaluation_8_8_8.npy")).T,
                 atol=utest_tolerance(self.dtype),
             )
@@ -480,7 +484,9 @@ class FBBasis3DTestCase(TestCase):
 
     def testFBBasis3DEvaluate_t(self):
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
-        result = self.basis.evaluate_t(v.astype(self.dtype))
+        v = Volume(v.astype(self.dtype))
+        result = self.basis.evaluate_t(v)
+
         self.assertTrue(
             np.allclose(
                 result,
@@ -590,7 +596,9 @@ class FBBasis3DTestCase(TestCase):
 
     def testFBBasis3DExpand(self):
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
-        result = self.basis.expand(v.astype(self.dtype))
+        v = Volume(v.astype(self.dtype))
+        result = self.basis.expand(v)
+
         self.assertTrue(
             np.allclose(
                 result,
@@ -697,7 +705,3 @@ class FBBasis3DTestCase(TestCase):
                 atol=utest_tolerance(self.dtype),
             )
         )
-
-    def testInitWithIntSize(self):
-        # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((8, 8, 8), FBBasis3D(8).sz)

@@ -1,12 +1,16 @@
+import importlib
 import logging
 import os
 from unittest import TestCase
 
 import numpy as np
 import pytest
+from packaging.version import parse as parse_version
+from pkg_resources import get_distribution
 
-from aspire.basis import DiracBasis, FFBBasis2D
+from aspire.basis import FFBBasis2D, PolarBasis2D
 from aspire.classification import (
+    AligningAverager2D,
     Averager2D,
     BFRAverager2D,
     BFSRAverager2D,
@@ -14,7 +18,7 @@ from aspire.classification import (
     ReddyChatterjiAverager2D,
 )
 from aspire.source import Simulation
-from aspire.utils import Rotation
+from aspire.utils import Rotation, num_procs_suggestion
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -23,9 +27,31 @@ logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
+def xfail_ray_dev():
+    """
+    Currently ray multiprocessing of the averager is xfail for numpy>=1.22.
+    This unsupported configuration is forced in the '-dev' test environments.
+    Return whether we expect test to fail using ray multiprocessing.
+    """
+    return all(
+        [
+            importlib.util.find_spec("ray"),  # 'ray' installed
+            parse_version(get_distribution("numpy").version)
+            >= parse_version("1.22.0"),  # with unsupported numpy combo
+            num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
+        ]
+    )
+
+
 # Ignore Gimbal lock warning for our in plane rotations.
 @pytest.mark.filterwarnings("ignore:Gimbal lock detected")
-class Averager2DTestCase(TestCase):
+class Averager2DBase:
+    """
+    Configure and setup a unit test case bypassing pytest execution.
+
+    Base class will become inherited into concrete TestCase.
+    """
+
     # Subclasses should override `averager` with a different class.
     averager = Averager2D
 
@@ -102,17 +128,33 @@ class Averager2DTestCase(TestCase):
             _rots[n] = r(-theta)
 
         # Use our Rotation class (maybe it should be able to do this one day?)
-        self.rots = Rotation.from_matrix(_rots)
+        self.rotations = Rotation.from_matrix(_rots)
 
 
 @pytest.mark.filterwarnings("ignore:Gimbal lock detected")
-class BFRAverager2DTestCase(Averager2DTestCase):
+class Averager2DTestCase(Averager2DBase, TestCase):
+    """
+    Concrete TestCase
+    """
 
-    averager = BFRAverager2D
+
+class AligningAverager2DBase(Averager2DBase):
+    """
+    Configure and setup a unit test case bypassing pytest execution.
+
+    Base class will become inherited into concrete TestCase.
+
+    Aligning Averagers are expected to expose
+
+    `.rotations`
+    `.shifts`
+    `.correlations`
+    """
+
+    averager = AligningAverager2D
+    num_procs = 1  # paralleized subclasses may override
 
     def setUp(self):
-
-        self.n_search_angles = 360
 
         super().setUp()
 
@@ -123,7 +165,27 @@ class BFRAverager2DTestCase(Averager2DTestCase):
         self.src = self._getSrc()
 
         # Get the image coef
-        self.coefs = self.basis.evaluate_t(self.src.images(0, self.n_img))
+        self.coefs = self.basis.evaluate_t(self.src.images[: self.n_img])
+
+    def _call_averager(self):
+        # Construct the Averager
+        avgr = self.averager(self.basis, self._getSrc(), num_procs=self.num_procs)
+        # Call the `align` method
+        _ = avgr.align(self.classes, self.reflections, self.coefs)
+        _ = avgr.average(self.classes, self.reflections, self.coefs)
+        return avgr
+
+    def test_rotations_estimate(self):
+        avgr = self._call_averager()
+        self.assertTrue(hasattr(avgr, "rotations"))
+
+    def test_shifts_estimate(self):
+        avgr = self._call_averager()
+        self.assertTrue(hasattr(avgr, "shifts"))
+
+    def test_correlations_estimate(self):
+        avgr = self._call_averager()
+        self.assertTrue(hasattr(avgr, "correlations"))
 
     def _getSrc(self):
         if not hasattr(self, "shifts"):
@@ -134,19 +196,26 @@ class BFRAverager2DTestCase(Averager2DTestCase):
             L=self.resolution,
             n=self.n_img,
             C=1,
-            angles=self.rots.angles,
+            angles=self.rotations.angles,
             offsets=self.shifts,
             amplitudes=np.ones(self.n_img),
             seed=12345,
             dtype=self.dtype,
         )
 
+
+@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
+
+    averager = BFRAverager2D
+    n_search_angles = 360
+
     def testNoRot(self):
         """
         Test we raise an error when our basis does not provide `rotate` method.
         """
         # DiracBasis does not provide `rotate`,
-        basis = DiracBasis((self.resolution, self.resolution), dtype=self.dtype)
+        basis = PolarBasis2D((self.resolution, self.resolution), dtype=self.dtype)
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
@@ -191,22 +260,6 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
         # Execute the remaining setup from BFRAverager2DTestCase
         super().setUp()
 
-    def testNoShift(self):
-        """
-        Test we raise an error when our basis does not provide `shift` method.
-        """
-
-        # DiracBasis does not provide `rotate` or `shift`.
-        basis = DiracBasis((self.resolution, self.resolution), dtype=self.dtype)
-
-        # The missing `rotate` case was already covered by (inherited) NoRot.
-        # Add a dummy rotate method; we will still be missing `shift`,
-        basis.rotate = lambda x: x
-
-        # and that should raise an error during instantiation.
-        with pytest.raises(RuntimeError, match=r".* must provide a `shift` method."):
-            _ = self.averager(basis, self._getSrc())
-
     def testAverager(self):
         """
         Construct a stack of images with known rotations.
@@ -246,6 +299,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
+    num_procs = 1 if xfail_ray_dev() else None
 
     def testAverager(self):
         """
@@ -258,6 +312,7 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         avgr = self.averager(
             composite_basis=self.basis,
             src=self._getSrc(),
+            num_procs=self.num_procs,
             dtype=self.dtype,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)

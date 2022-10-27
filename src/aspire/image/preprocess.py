@@ -122,8 +122,9 @@ def downsample(insamples, szout, mask=None):
 
     The function handles odd and even-sized arrays correctly. The center of
     an odd array is taken to be at (n+1)/2, and an even array is n/2+1.
-    :param insamples: Set of objects to be downsampled in the form of an array.\
-    the first dimension is the number of objects.
+
+    :param insamples: Set of objects to be downsampled in the form of an array.
+        the first dimension is the number of objects.
     :param szout: The desired resolution of for output objects.
     :return: An array consists of the blurred and downsampled objects.
     """
@@ -189,6 +190,7 @@ def fuzzy_mask(L, r0, risetime, origin=None):
     Create a centered 1D to 3D fuzzy mask of radius r0
 
     Made with an error function with effective rise time.
+
     :param L: The sizes of image in tuple structure
     :param r0: The specified radius
     :param risetime: The rise time for `erf` function

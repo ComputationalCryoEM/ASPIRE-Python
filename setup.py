@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.9.2",
+    version="0.10.0",
     data_files=[
         ("", ["src/aspire/config.ini"]),
         ("", ["src/aspire/logging.conf"]),
@@ -30,10 +30,13 @@ setup(
         "matplotlib>=3.2.0",
         "mrcfile",
         "numpy==1.21.5",
+        "packaging",
         "pandas==1.3.5",
+        "psutil",
         "pyfftw",
         "PyWavelets",
         "pillow",
+        "ray",
         "scipy==1.7.3",
         "scikit-learn",
         "scikit-image",

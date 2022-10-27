@@ -8,6 +8,7 @@ from aspire.image import Image
 from aspire.image.xform import NoiseAdder
 from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
+from aspire.source.image import _ImageAccessor
 from aspire.utils import (
     acorr,
     ainner,
@@ -35,7 +36,7 @@ class Simulation(ImageSource):
         amplitudes=None,
         dtype=np.float32,
         C=2,
-        symmetry_type=None,
+        symmetry=None,
         angles=None,
         seed=0,
         memory=None,
@@ -65,7 +66,7 @@ class Simulation(ImageSource):
 
         if vols is None:
             self.vols = gaussian_blob_vols(
-                L=L, C=C, symmetry_type=symmetry_type, seed=self.seed, dtype=self.dtype
+                L=L, C=C, symmetry=symmetry, seed=self.seed, dtype=self.dtype
             )
         else:
             assert isinstance(vols, Volume)
@@ -75,8 +76,9 @@ class Simulation(ImageSource):
             logger.warning(
                 f"{self.__class__.__name__}"
                 f" vols.dtype {self.vols.dtype} != self.dtype {self.dtype}."
-                " In the future this will raise an error."
+                " In the future this will raise an error. Casting..."
             )
+            self.vols = self.vols.astype(self.dtype)
 
         self.C = self.vols.n_vols
 
@@ -111,6 +113,9 @@ class Simulation(ImageSource):
         if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
             logger.info("Appending a NoiseAdder to generation pipeline")
             self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
+
+        self._projections_accessor = _ImageAccessor(self._projections, self.n)
+        self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
 
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
@@ -147,17 +152,22 @@ class Simulation(ImageSource):
             filter_values,
         )
 
-    def projections(self, start=0, num=np.inf, indices=None):
+    @property
+    def projections(self):
         """
         Return projections of generated volumes, without applying filters/shifts/amplitudes/noise
+
         :param start: start index (0-indexed) of the start image to return
         :param num: Number of images to return. If None, *all* images are returned.
         :param indices: A numpy array of image indices. If specified, start and num are ignored.
         :return: An Image instance.
         """
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
+        return self._projections_accessor
 
+    def _projections(self, indices):
+        """
+        Accesses and returns projections as an `Image` instance. Called by self._projections_accessor
+        """
         im = np.zeros(
             (len(indices), self._original_L, self._original_L), dtype=self.dtype
         )
@@ -166,21 +176,38 @@ class Simulation(ImageSource):
         unique_states = np.unique(states)
         for k in unique_states:
             idx_k = np.where(states == k)[0]
-            rot = self.rots[indices[idx_k], :, :]
+            rot = self.rotations[indices[idx_k], :, :]
 
             im_k = self.vols.project(vol_idx=k - 1, rot_matrices=rot)
             im[idx_k, :, :] = im_k.asnumpy()
 
         return Image(im)
 
-    def clean_images(self, start=0, num=np.inf, indices=None):
-        return self._images(start=start, num=num, indices=indices, enable_noise=False)
+    @property
+    def clean_images(self):
+        """
+        Return projections with filters/shifts/amplitudes applied, but without noise.
+        Subscriptable property.
+        """
+        return self._clean_images_accessor
 
-    def _images(self, start=0, num=np.inf, indices=None, enable_noise=True):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n), dtype=int)
+    def _clean_images(self, indices):
+        return self._images(indices, enable_noise=False)
 
-        im = self.projections(start=start, num=num, indices=indices)
+    def _images(self, indices, enable_noise=True):
+        """
+        Returns particle images when accessed via the `ImageSource.images` property.
+        :param indices: A 1-D NumPy array of integer indices.
+        :param enable_noise: Only used internally, toggled off when `clean_images` requested.
+        :return: An `Image` object.
+        """
+        # check for cached images first
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            return self.generation_pipeline.forward(
+                Image(self._cached_im[indices, :, :]), indices
+            )
+        im = self.projections[indices]
 
         # apply original CTF distortion to image
         im = self._apply_sim_filters(im, indices)
@@ -192,7 +219,8 @@ class Simulation(ImageSource):
         if enable_noise and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
-        return im
+        # Finally, apply transforms to resulting Image
+        return self.generation_pipeline.forward(im, indices)
 
     def _apply_sim_filters(self, im, indices):
         return self._apply_filters(
@@ -204,6 +232,7 @@ class Simulation(ImageSource):
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
         Coordinates of simulation volumes in a given basis
+
         :param mean_vol: A mean volume in the form of a Volume Instance (default `mean_true`).
         :param eig_vols: A set of k volumes in a Volume instance (default `eigs`).
         :return:
@@ -264,7 +293,7 @@ class Simulation(ImageSource):
 
         # Arrange in descending order (flip column order in eigenvector matrix)
         w = w[::-1]
-        eigs_true = eigs_true.flip()
+        eigs_true = Volume(eigs_true[::-1])
 
         return eigs_true, np.diag(w)
 
@@ -291,6 +320,7 @@ class Simulation(ImageSource):
     def eval_volmat(self, volmat_true, volmat_est):
         """
         Evaluate volume matrix estimation accuracy
+
         :param volmat_true: The true volume matrices in the form of an L-by-L-by-L-by-L-by-L-by-L-by-K array.
         :param volmat_est: The estimated volume matrices in the same form.
         :return:
@@ -306,6 +336,7 @@ class Simulation(ImageSource):
     def eval_eigs(self, eigs_est, lambdas_est):
         """
         Evaluate covariance eigendecomposition accuracy
+
         :param eigs_est: The estimated volume eigenvectors in an L-by-L-by-L-by-K array.
         :param lambdas_est: The estimated eigenvalues in a K-by-K diagonal matrix (default `diag(ones(K, 1))`).
         :return:
@@ -328,6 +359,7 @@ class Simulation(ImageSource):
     def eval_clustering(self, vol_idx):
         """
         Evaluate clustering estimation
+
         :param vol_idx: Indexes of the volumes determined (0-indexed)
         :return: Accuracy [0-1] in terms of proportion of correctly assigned labels
         """
@@ -342,6 +374,7 @@ class Simulation(ImageSource):
     def eval_coords(self, mean_vol, eig_vols, coords_est):
         """
         Evaluate coordinate estimation
+
         :param mean_vol: A mean volume in the form of a Volume instance.
         :param eig_vols: A set of eigenvolumes in an Volume instance.
         :param coords_est: The estimated coordinates in the affine space defined centered at `mean_vol` and spanned

@@ -146,6 +146,8 @@ class PSWFBasis2D(Basis):
         )
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
         self.samples_conj_transpose = self.samples.conj().transpose()
+        # the column dimension of samples_conj_transpose is the number of basis coefficients
+        self.count = self.samples_conj_transpose.shape[1]
 
     def evaluate_t(self, images):
         """
@@ -153,7 +155,7 @@ class PSWFBasis2D(Basis):
 
         :param images: coefficient array in the standard 2D coordinate basis
             to be evaluated.
-        :return : The evaluation of the coefficient array in the PSWF basis.
+        :return: The evaluation of the coefficient array in the PSWF basis.
         """
 
         if not isinstance(images, Image):
@@ -172,7 +174,7 @@ class PSWFBasis2D(Basis):
         Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
 
         :param coeffcients: A coefficient vector (or an array of coefficient
-        vectors) in PSWF basis to be evaluated. (n_image, count)
+            vectors) in PSWF basis to be evaluated. (n_image, count)
         :return : Image in standard 2D coordinate basis.
 
         """

@@ -153,7 +153,7 @@ class CtfEstimator:
 
         block_list = [
             micrograph[
-                i * step_size : (i + 2) * step_size, j * step_size : (j + 2) * step_size
+                j * step_size : (j + 2) * step_size, i * step_size : (i + 2) * step_size
             ]
             for j in range(range_y)
             for i in range(range_x)
@@ -340,7 +340,8 @@ class CtfEstimator:
             convex_condition = np.concatenate(
                 (np.zeros((N, N)), convex_condition), axis=1
             )
-            convex_condition = convex_condition[1 : N - 1]
+            convex_condition = np.roll(convex_condition, -1, axis=0)
+            convex_condition[N - 2 :] = 0
 
             positivity_condition = np.concatenate(
                 (np.zeros((N, N)), -1 * np.eye(N)), axis=1
@@ -671,22 +672,19 @@ class CtfEstimator:
     # Note, This doesn't actually use anything from the class.
     # It is used in a solver loop of some sort, so it may not be correct
     # to just use what is avail in the obj.
-    def write_star(self, df1, df2, ang, cs, voltage, pixel_size, amp, name, output_dir):
+    def write_star(self, name, params_dict, output_dir):
         """
-        Writes CTF parameters to starfile.
+        Writes CTF parameters to starfile for a single micrograph.
         """
-
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
         data_block = {}
         data_block["_rlnMicrographName"] = name
-        data_block["_rlnDefocusU"] = df1
-        data_block["_rlnDefocusV"] = df2
-        data_block["_rlnDefocusAngle"] = ang
-        data_block["_rlnSphericalAbberation"] = cs
-        data_block["_rlnAmplitudeContrast"] = amp
-        data_block["_rlnVoltage"] = voltage
-        data_block["_rlnDetectorPixelSize"] = pixel_size
+        data_block["_rlnDefocusU"] = params_dict["defocus_u"]
+        data_block["_rlnDefocusV"] = params_dict["defocus_v"]
+        data_block["_rlnDefocusAngle"] = params_dict["defocus_ang"]
+        data_block["_rlnSphericalAberration"] = params_dict["cs"]
+        data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
+        data_block["_rlnVoltage"] = params_dict["voltage"]
+        data_block["_rlnDetectorPixelSize"] = params_dict["pixel_size"]
         df = DataFrame([data_block])
         blocks = OrderedDict()
         blocks["root"] = df
@@ -696,16 +694,18 @@ class CtfEstimator:
 
 def estimate_ctf(
     data_folder,
-    pixel_size,
-    cs,
-    amplitude_contrast,
-    voltage,
-    num_tapers,
-    psd_size,
-    g_min,
-    g_max,
-    output_dir,
+    pixel_size=1.0,
+    cs=2.0,
+    amplitude_contrast=0.07,
+    voltage=300,
+    num_tapers=2,
+    psd_size=512,
+    g_min=30,
+    g_max=5,
+    output_dir="results",
     dtype=np.float32,
+    save_ctf_images=False,
+    save_noise_images=False,
 ):
     """
     Given paramaters estimates CTF from experimental data
@@ -736,7 +736,7 @@ def estimate_ctf(
     #   closer to original code.
     ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
 
-    results = []
+    results = {}
     for name in file_names:
         with mrcfile.open(
             os.path.join(data_folder, name), mode="r", permissive=True
@@ -816,50 +816,55 @@ def estimate_ctf(
             cc_array[a, 3] = p
         ml = np.argmax(cc_array[:, 3], -1)
 
-        result = (
-            cc_array[ml, 0],
-            cc_array[ml, 1],
-            cc_array[ml, 2],  # Radians
-            cs,
-            voltage,
-            pixel_size,
-            amp,
-            name,
-        )
+        result = {
+            "defocus_u": cc_array[ml, 0],
+            "defocus_v": cc_array[ml, 1],
+            "defocus_ang": cc_array[ml, 2],  # Radians
+            "cs": cs,
+            "voltage": voltage,
+            "pixel_size": pixel_size,
+            "amplitude_contrast": amp,
+        }
+        results[name] = result
 
-        ctf_object.write_star(*result, output_dir)
-        results.append(result)
+        # we write each micrograph's ctf parameters to an individual starfile
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+        ctf_object.write_star(name, result, output_dir)
 
-        ctf_object.set_df1(cc_array[ml, 0])
-        ctf_object.set_df2(cc_array[ml, 1])
-        ctf_object.set_angle(cc_array[ml, 2])  # Radians
-        ctf_object.generate_ctf()
+        if save_noise_images:
+            with mrcfile.new(
+                os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
+                overwrite=True,
+            ) as mrc:
+                mrc.set_data(background_2d[0].astype(np.float32))
+                mrc.voxel_size = pixel_size
 
-        with mrcfile.new(
-            output_dir + "/" + os.path.splitext(name)[0] + "_noise.mrc", overwrite=True
-        ) as mrc:
-            mrc.set_data(background_2d[0].astype(np.float32))
-            mrc.voxel_size = pixel_size
-            mrc.close()
+        if save_ctf_images:
+            ctf_object.set_df1(cc_array[ml, 0])
+            ctf_object.set_df2(cc_array[ml, 1])
+            ctf_object.set_angle(cc_array[ml, 2])  # Radians
+            ctf_object.generate_ctf()
+            df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(
+                theta.shape, theta.dtype
+            ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
+                2 * theta - 2 * cc_array[ml, 2] * np.ones(theta.shape, theta.dtype)
+            )
+            ctf_im = -np.sin(
+                np.pi * lmbd * r_ctf**2 / 2 * (df - lmbd**2 * r_ctf**2 * cs * 1e6)
+                + amplitude_contrast
+            )
+            ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
+            ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
+            ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal[
+                :, :, ctf_im.shape[0] // 2 + 1
+            ]
 
-        df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(theta.shape, theta.dtype) + (
-            cc_array[ml, 0] - cc_array[ml, 1]
-        ) * np.cos(2 * theta - 2 * cc_array[ml, 2] * np.ones(theta.shape, theta.dtype))
-        ctf_im = -np.sin(
-            np.pi * lmbd * r_ctf**2 / 2 * (df - lmbd**2 * r_ctf**2 * cs * 1e6)
-            + amplitude_contrast
-        )
-        ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
-        ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
-        ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal[
-            :, :, ctf_im.shape[0] // 2 + 1
-        ]
-
-        with mrcfile.new(
-            output_dir + "/" + os.path.splitext(name)[0] + ".ctf", overwrite=True
-        ) as mrc:
-            mrc.set_data(np.float32(ctf_signal))
-            mrc.voxel_size = pixel_size
-            mrc.close()
+            with mrcfile.new(
+                os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf"),
+                overwrite=True,
+            ) as mrc:
+                mrc.set_data(np.float32(ctf_signal))
+                mrc.voxel_size = pixel_size
 
     return results

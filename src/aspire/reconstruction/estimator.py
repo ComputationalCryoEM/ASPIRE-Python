@@ -69,10 +69,12 @@ class Estimator:
         """Return an estimate as a Volume instance."""
         if b_coeff is None:
             b_coeff = self.src_backward()
+        # conj_grad expects a 1d array if n = 1
+        b_coeff = np.squeeze(b_coeff, axis=0)
         est_coeff = self.conj_grad(b_coeff, tol=tol)
         est = self.basis.evaluate(est_coeff).T
 
-        return Volume(est)
+        return est
 
     def src_backward(self):
         """
@@ -81,10 +83,12 @@ class Estimator:
         :return: The adjoint mapping applied to the images, averaged over the whole dataset and expressed
             as coefficients of `basis`.
         """
-        mean_b = np.zeros((self.src.L, self.src.L, self.src.L), dtype=self.dtype)
+        mean_b = Volume(
+            np.zeros((self.src.L, self.src.L, self.src.L), dtype=self.dtype)
+        )
 
         for i in range(0, self.src.n, self.batch_size):
-            im = self.src.images(i, self.batch_size)
+            im = self.src.images[i : i + self.batch_size]
             batch_mean_b = self.src.im_backward(im, i) / self.src.n
             mean_b += batch_mean_b.astype(self.dtype)
 
@@ -134,6 +138,7 @@ class Estimator:
     def apply_kernel(self, vol_coeff, kernel=None):
         """
         Applies the kernel represented by convolution
+
         :param vol_coeff: The volume to be convolved, stored in the basis coefficients.
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
         :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by
@@ -142,7 +147,9 @@ class Estimator:
         if kernel is None:
             kernel = self.kernel
         vol = self.basis.evaluate(vol_coeff)
-        vol = kernel.convolve_volume(vol)
+        # convolve_volume expects a 3-dimensional array
+        # so we remove the first dimension of the volume, which is 1
+        vol = Volume(kernel.convolve_volume(vol[0]))
         vol = self.basis.evaluate_t(vol)
 
         return vol

@@ -20,6 +20,7 @@ def src_wiener_coords(
 ):
     """
     Calculate coordinates using Wiener filter
+
     :param sim: A simulation object containing the images whose coordinates we want.
     :param mean_vol: The mean volume of the source as Volume instance.
     :param eig_vols: The eigenvolumes of the source as Volume instance.
@@ -76,7 +77,7 @@ def src_wiener_coords(
     covar_noise = noise_var * np.eye(k)
 
     for i in range(0, sim.n, batch_size):
-        ims = sim.images(i, batch_size)
+        ims = sim.images[i : i + batch_size]
         batch_n = ims.shape[0]
         ims -= sim.vol_forward(mean_vol, i, batch_n)
 
@@ -179,8 +180,8 @@ class DenoiserCov2D(Denoiser):
         # Denoise one batch size of 2D images using the SPCAs from the rotationally invariant covariance matrix
         img_start = istart
         img_end = min(istart + batch_size, src.n)
-        imgs_noise = src.images(img_start, batch_size)
-        coeffs_noise = self.basis.evaluate_t(imgs_noise.data)
+        imgs_noise = src.images[img_start : img_start + batch_size]
+        coeffs_noise = self.basis.evaluate_t(imgs_noise)
         logger.info(
             f"Estimating Cov2D coefficients for images from {img_start} to {img_end-1}"
         )

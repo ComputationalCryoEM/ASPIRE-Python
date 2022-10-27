@@ -75,6 +75,7 @@ class RelionSource(ImageSource):
     ):
         """
         Load STAR file at given filepath
+
         :param filepath: Absolute or relative path to STAR file
         :param data_folder: Path to folder w.r.t which all relative paths to .mrcs files are resolved.
             If None, the folder corresponding to filepath is used.
@@ -139,7 +140,7 @@ class RelionSource(ImageSource):
             "_rlnSphericalAberration",
             "_rlnAmplitudeContrast",
         ]
-        # If these exist in the STAR file, we may create CTF filters for the source
+        # If these all exist in the STAR file, we may create CTF filters for the source
         if set(CTF_params).issubset(metadata.columns):
             # partition particles according to unique CTF parameters
             filter_params, filter_indices = np.unique(
@@ -164,10 +165,20 @@ class RelionSource(ImageSource):
             # filter_indices stores, for each particle index, the index in
             # self.unique_filters of the filter that should be applied
             self.filter_indices = filter_indices
+
+        # We have provided some, but not all the required params
+        elif any(param in metadata.columns for param in CTF_params):
+            logger.warning(
+                f"Found partially populated CTF Params."
+                f"  To automatically populate CTFFilters provide {CTF_params}"
+            )
+
         # If no CTF info in STAR, we initialize the filter values of metadata with default values
         else:
             self.unique_filters = [IdentityFilter()]
             self.filter_indices = np.zeros(self.n, dtype=int)
+
+        logger.info(f"Populated {self.n_ctf_filters} CTFFilters from '{filepath}'")
 
     def populate_metadata(self, filepath, data_folder=None, max_rows=None):
         """
@@ -217,11 +228,21 @@ class RelionSource(ImageSource):
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
 
-    def _images(self, start=0, num=np.inf, indices=None):
-        if indices is None:
-            indices = np.arange(start, min(start + num, self.n))
-        else:
-            start = indices.min()
+    def _images(self, indices):
+        """
+        Returns particle images when accessed via the `ImageSource.images` property.
+        Loads particle images corresponding to `indices` from StarFile and .mrcs stacks.
+        :param indices: A 1-D NumPy array of integer indices.
+        :return: An `Image` object.
+        """
+
+        # check for cached images first
+        if self._cached_im is not None:
+            logger.info("Loading images from cache")
+            return self.generation_pipeline.forward(
+                Image(self._cached_im[indices, :, :]), indices
+            )
+
         logger.info(f"Loading {len(indices)} images from STAR file")
 
         def load_single_mrcs(filepath, df):
@@ -256,8 +277,10 @@ class RelionSource(ImageSource):
 
             for future in futures.as_completed(to_do):
                 data_indices, data = future.result()
-                im[data_indices - start] = data
+                for idx, d in enumerate(data_indices):
+                    im[np.where(indices == d)] = data[idx, :, :]
 
         logger.info(f"Loading {len(indices)} images complete")
 
-        return Image(im)
+        # Finally, apply transforms to resulting Image
+        return self.generation_pipeline.forward(Image(im), indices)

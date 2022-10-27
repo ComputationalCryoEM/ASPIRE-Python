@@ -14,6 +14,7 @@ from aspire.utils.random import Random
 def cart2pol(x, y):
     """
     Convert Cartesian to Polar Coordinates. All input arguments must be the same shape.
+
     :param x: x-coordinate in Cartesian space
     :param y: y-coordinate in Cartesian space
     :return: A 2-tuple of values:
@@ -32,7 +33,7 @@ def cart2sph(x, y, z):
     :param z: Z-values of input co-ordinates.
     :return: A 3-tuple of values, all of the same shape as the inputs.
         (<azimuth>, <elevation>, <radius>)
-    azimuth and elevation are returned in radians.
+        azimuth and elevation are returned in radians.
 
     This function is equivalent to MATLAB's cart2sph function.
     """
@@ -100,7 +101,7 @@ def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     :param shifted: shifted by half of grid or not when n is even.
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :param indexing: 'yx' (C) or 'xy' (F), defaulting to 'yx'.
-    See https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
+        See https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
     :return: the rectangular and polar coordinates of all grid points.
     """
 
@@ -126,7 +127,7 @@ def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32)
     :param shifted: shifted by half of grid or not when n is even.
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :param indexing: 'zyx' (C) or 'xyz' (F), defaulting to 'zyx'.
-    See https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
+        See https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
     :return: the rectangular and spherical coordinates of all grid points.
     """
 
@@ -151,6 +152,7 @@ def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32)
 def uniform_random_angles(n, seed=None, dtype=np.float32):
     """
     Generate random 3D rotation angles
+
     :param n: The number of rotation angles to generate
     :param seed: Random integer seed to use. If None, the current random state is used.
     :return: A n-by-3 ndarray of rotation angles
@@ -178,7 +180,7 @@ def register_rotations(rots, rots_ref):
     :param rots_ref: The reference rotations to which we would like to align in
         the form of a n-by-3-by-3 array.
     :return: o_mat, optimal orthogonal 3x3 matrix to align the two sets;
-            flag, flag==1 then J conjugacy is required and 0 is not.
+        flag, flag==1 then J conjugacy is required and 0 is not.
     """
 
     assert (
@@ -333,3 +335,29 @@ def crop_pad_2d(im, size, fill_value=0):
     else:
         # target size is between mat_x and mat_y
         raise ValueError("Cannot crop and pad an image at the same time.")
+
+
+def crop_pad_3d(im, size, fill_value=0):
+    im_y, im_x, im_z = im.shape
+    # shift terms
+    start_x = math.floor(im_x / 2) - math.floor(size / 2)
+    start_y = math.floor(im_y / 2) - math.floor(size / 2)
+    start_z = math.floor(im_z / 2) - math.floor(size / 2)
+
+    # cropping
+    if size <= min(im_y, im_x, im_z):
+        return im[
+            start_y : start_y + size, start_x : start_x + size, start_z : start_z + size
+        ]
+    # padding
+    elif size >= max(im_y, im_x, im_z):
+        to_return = fill_value * np.ones((size, size, size), dtype=im.dtype)
+        to_return[
+            -start_y : im_y - start_y,
+            -start_x : im_x - start_x,
+            -start_z : im_z - start_z,
+        ] = im
+        return to_return
+    else:
+        # target size is between min and max of (im_y, im_x, im_z)
+        raise ValueError("Cannot crop and pad a volume at the same time.")

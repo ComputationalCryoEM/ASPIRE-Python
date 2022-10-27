@@ -8,6 +8,7 @@ from scipy.fftpack import fft, fft2, fftn, fftshift, ifft, ifft2, ifftn, ifftshi
 def centered_ifft1(x):
     """
     Calculate a centered, one-dimensional inverse FFT
+
     :param x: The one-dimensional signal to be transformed.
         The inverse FFT is only applied along the first dimension.
     :return: The centered inverse Fourier transform of x.
@@ -28,6 +29,7 @@ def centered_fft1(x):
 def centered_ifft2(x):
     """
     Calculate a centered, two-dimensional inverse FFT
+
     :param x: The two-dimensional signal to be transformed.
         The inverse FFT is only applied along the last two dimensions.
     :return: The centered inverse Fourier transform of x.
@@ -41,6 +43,7 @@ def centered_ifft2(x):
 def centered_fft2(x):
     """
     Calculate a centered, two-dimensional inverse FFT
+
     :param x: The two-dimensional signal to be transformed.
         The inverse FFT is only applied along the last two dimensions.
     :return: The centered inverse Fourier transform of x.
@@ -55,6 +58,7 @@ def centered_fft2(x):
 def centered_ifft3(x):
     """
     Calculate a centered, three-dimensional inverse FFT
+
     :param x: The three-dimensional signal to be transformed.
         The inverse FFT is only applied along the last three dimensions.
     :return: The centered inverse Fourier transform of x.
@@ -75,6 +79,7 @@ def centered_fft3(x):
 def mdim_ifftshift(x, dims=None):
     """
     Multi-dimensional FFT unshift
+
     :param x: The array to be unshifted.
     :param dims: An array of dimension indices along which the unshift should occur.
         If None, the unshift is performed along all dimensions.

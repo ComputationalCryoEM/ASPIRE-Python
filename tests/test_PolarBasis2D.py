@@ -9,13 +9,16 @@ from aspire.utils import complex_type, utest_tolerance
 from aspire.utils.matlab_compat import m_reshape
 from aspire.utils.random import randn
 
+from ._basis_util import UniversalBasisMixin
+
 logger = logging.getLogger(__name__)
 
 
-class PolarBasis2DTestCase(TestCase):
+class PolarBasis2DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
         self.dtype = np.float32
-        self.basis = PolarBasis2D((8, 8), 4, 32, dtype=self.dtype)
+        self.L = 8
+        self.basis = PolarBasis2D((self.L, self.L), 4, 32, dtype=self.dtype)
         # Note, in practice we got a degenerate random array around 1%
         #   of the time, so we fix a seed for the randn calls.
         self.seed = 8675309
@@ -502,7 +505,3 @@ class PolarBasis2DTestCase(TestCase):
         )
 
         self.assertTrue(np.isclose(lhs, rhs, atol=utest_tolerance(self.dtype)))
-
-    def testInitWithIntSize(self):
-        # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((8, 8), PolarBasis2D(8).sz)

@@ -6,7 +6,6 @@ from scipy.special import jv
 
 from aspire.basis import FBBasis2D
 from aspire.basis.basis_utils import lgwt
-from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
 from aspire.utils import complex_type
@@ -102,7 +101,7 @@ class FFBBasis2D(FBBasis2D):
         """
         return self._precomp["radial"]
 
-    def evaluate(self, v):
+    def _evaluate(self, v):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in FB basis
 
@@ -112,13 +111,6 @@ class FFBBasis2D(FBBasis2D):
             coordinate basis. This is Image instance with resolution of `self.sz`
             and the first dimension correspond to remaining dimension of `v`.
         """
-
-        if v.dtype != self.dtype:
-            logger.debug(
-                f"{self.__class__.__name__}::evaluate"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
-            )
-
         sz_roll = v.shape[:-1]
         v = v.reshape(-1, self.count)
 
@@ -187,32 +179,18 @@ class FFBBasis2D(FBBasis2D):
         # Return X as Image instance with the last two dimensions as *self.sz
         x = x.reshape((*sz_roll, *self.sz))
 
-        return Image(x)
+        return x
 
-    def evaluate_t(self, x):
+    def _evaluate_t(self, x):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
         :param x: The Image instance representing coefficient array in the
-        standard 2D coordinate basis to be evaluated.
+            standard 2D coordinate basis to be evaluated.
         :return v: The evaluation of the coefficient array `v` in the FB basis.
             This is an array of vectors whose last dimension equals `self.count`
             and whose first dimension correspond to `x.n_images`.
         """
-
-        if x.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
-                f" Inconsistent dtypes v: {x.dtype} self: {self.dtype}"
-            )
-
-        if not isinstance(x, Image):
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
-                " passed numpy array instead of Image."
-            )
-            x = Image(x)
-
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
         n_r = np.size(self._precomp["freqs"], 1)

@@ -14,7 +14,7 @@ from aspire.utils import utest_tolerance
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
-from ._basis_util import Steerable2DMixin
+from ._basis_util import Steerable2DMixin, UniversalBasisMixin
 
 logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -31,7 +31,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
         (32, np.float64),
     ],
 )
-class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
+class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
     L = 8
     dtype = np.float32
 
@@ -112,7 +112,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
         )
         src = Simulation(L=v.resolution, n=1, vols=v, dtype=v.dtype)
         # Extract, this is the original image to transform.
-        x1 = src.images(0, 1)
+        x1 = src.images[0]
 
         # Rotate 90 degrees in cartesian coordinates.
         x2 = Image(np.rot90(x1.asnumpy(), axes=(1, 2)))
@@ -166,10 +166,10 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin):
         src = Simulation(L=self.L, n=n_img, vols=v, dtype=np.float64)
 
         # Shift images using the Image method directly
-        shifted_imgs = src.images(0, n_img).shift(test_shift)
+        shifted_imgs = src.images[:n_img].shift(test_shift)
 
         # Convert original images to basis coefficients
-        f_imgs = self.basis.evaluate_t(src.images(0, n_img))
+        f_imgs = self.basis.evaluate_t(src.images[:n_img])
 
         # Use the basis shift method
         f_shifted_imgs = self.basis.shift(f_imgs, test_shift)
