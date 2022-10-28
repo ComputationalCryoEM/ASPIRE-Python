@@ -20,6 +20,7 @@ def src_wiener_coords(
 ):
     """
     Calculate coordinates using Wiener filter
+
     :param sim: A simulation object containing the images whose coordinates we want.
     :param mean_vol: The mean volume of the source as Volume instance.
     :param eig_vols: The eigenvolumes of the source as Volume instance.

@@ -11,7 +11,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     :param fbasis: The basis object for expanding.
 
     :return: a BlkDiagMatrix instance representation using the
-    `fbasis` expansion.
+        `fbasis` expansion.
     """
 
     # These form a circular dependence, import locally until time to clean up.

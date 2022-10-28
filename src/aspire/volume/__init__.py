@@ -20,6 +20,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     """
     TODO: Write docstring
     TODO: Find a better place for this!
+
     :param sim:
     :param s:
     :param n:
@@ -249,7 +250,7 @@ class Volume:
         Flip volume stack data along axis using numpy.flip
 
         :param axis: Optionally specify axis as integer or tuple.
-        Defaults to axis=1.
+            Defaults to axis=1.
 
         :return: Volume instance.
         """
@@ -294,7 +295,7 @@ class Volume:
 
         :param rot_matrices: `Rotation` object of length 1 or n_vols.
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-        Defaults to zero_nyquist=True, removing the Nyquist frequency.
+            Defaults to zero_nyquist=True, removing the Nyquist frequency.
 
         :return: `Volume` instance.
         """
@@ -359,7 +360,7 @@ class Volume:
         :param filename: Filepath where volume will be saved
 
         :param overwrite: Option to overwrite file when set to True.
-        Defaults to overwrite=False.
+            Defaults to overwrite=False.
         """
         with mrcfile.new(filename, overwrite=overwrite) as mrc:
             mrc.set_data(self._data.astype(np.float32))
@@ -373,10 +374,8 @@ class Volume:
         Load an mrc file as a Volume instance.
 
         :param filename: Data filepath to load.
-
         :param permissive: Allows problematic files to load with warning when True.
-        Defaults to permissive=True.
-
+            Defaults to permissive=True.
         :param dtype: Optionally specifiy data type. Defaults to dtype=np.float32.
 
         :return: Volume instance.
@@ -478,7 +477,7 @@ def _gaussian_blob_Cn_vols(
     :param L: The size of the volumes
     :param C: The number of volumes to generate
     :param K: The number of blobs each volume is composed of.
-    A Cn symmetric volume will be composed of n times K blobs.
+        A Cn symmetric volume will be composed of n times K blobs.
     :param order: The order of cyclic symmetry.
     :param alpha: A scale factor of the blob widths
 
@@ -574,6 +573,7 @@ def _gen_gaussians(K, alpha, dtype=np.float64):
 def rotated_grids(L, rot_matrices):
     """
     Generate rotated Fourier grids in 3D from rotation matrices
+
     :param L: The resolution of the desired grids.
     :param rot_matrices: An array of size k-by-3-by-3 containing K rotation matrices
     :return: A set of rotated Fourier grids in three dimensions as specified by the rotation matrices.
