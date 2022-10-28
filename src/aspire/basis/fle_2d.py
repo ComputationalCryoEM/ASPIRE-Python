@@ -5,7 +5,7 @@ import scipy.sparse as sparse
 from scipy.fft import dct, idct
 from scipy.special import jv
 
-from aspire.basis import SteerableBasis2D, FBBasisMixin
+from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
