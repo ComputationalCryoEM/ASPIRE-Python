@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 from parameterized import parameterized
 
-from aspire.basis import FLEBasis2D
+from aspire.basis import FBBasis2D, FLEBasis2D
 from aspire.image import Image
 from aspire.numeric import fft
 from aspire.source import Simulation
@@ -246,6 +246,17 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
             )
 
         self.assertTrue(np.allclose(imgs_convolved_fle, imgs_convolved_slow, atol=1e-5))
+
+    def testFBCoefficients(self):
+        L = 32
+        basis = FLEBasis2D(32, threshold=False)
+        fb = FBBasis2D(32)
+
+        x = self.create_images(L, 1)
+        fle_coeffs = basis.evaluate_t(x)
+        fb_coeffs = fb.evaluate_t(x)
+
+        self.assertTrue(np.allclose(fle_coeffs, fb_coeffs))
 
     def create_images(self, L, n):
         # create sample data
