@@ -202,11 +202,10 @@ class CoordinateSource(ImageSource, ABC):
             self._box_coord_from_center(coord, self.particle_size) for coord in coords
         ]
 
-    def _populate_local_metadata(self, df):
+    def _populate_local_metadata(self):
         """
         Called during ImageSource.save(), populates metadata columns specific to
             `CoordinateSource` when saving to STAR file.
-        :param df: A copy of self._metadata to be modified for saving into STAR file.
         """
         # Insert stored particle coordinates (centers) into metadata
         self.set_metadata(
@@ -223,6 +222,7 @@ class CoordinateSource(ImageSource, ABC):
                 for particle in self.particles
             ],
         )
+        return ["_rlnCoordinateX", "_rlnCoordinateY"]
 
     def _exclude_boundary_particles(self):
         """

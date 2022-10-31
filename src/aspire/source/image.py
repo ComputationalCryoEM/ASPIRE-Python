@@ -598,7 +598,13 @@ class ImageSource(ABC):
         )
 
     def _populate_common_metadata(
-        self, df, starfile_filepath, new_mrcs=True, batch_size=512, save_mode="single"
+        self,
+        df,
+        local_cols,
+        starfile_filepath,
+        new_mrcs=True,
+        batch_size=512,
+        save_mode="single",
     ):
         """
         Populate metadata columns common to all `ImageSource` subclasses.
@@ -636,14 +642,15 @@ class ImageSource(ABC):
                     df.loc[row_indexer, "_rlnImageName"] = [
                         "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
                     ]
+        for col in local_cols:
+            df[col] = df.pop(col)
 
-    def _populate_local_metadata(self, df):  # noqa: B027
+    def _populate_local_metadata(self):
         """
         Populate metadata columns specific to the `ImageSource` subclass being saved.
         Subclasses optionally override.
-        :param df: A copy of self._metadata to be modified for saving into STAR file.
         """
-        pass
+        return []
 
     def save_metadata(
         self, starfile_filepath, new_mrcs=True, batch_size=512, save_mode=None
@@ -663,6 +670,9 @@ class ImageSource(ABC):
         :return: None
         """
 
+        # Get local metadata columns that were added by subclass
+        local_cols = self._populate_local_metadata()
+
         df = self._metadata.copy()
         # Drop any column that doesn't start with a *single* underscore
         df = df.drop(
@@ -676,11 +686,8 @@ class ImageSource(ABC):
 
         # Populates _rlnImageName column, setting up filepaths to .mrcs stacks
         self._populate_common_metadata(
-            df, starfile_filepath, new_mrcs, batch_size, save_mode
+            df, local_cols, starfile_filepath, new_mrcs, batch_size, save_mode
         )
-
-        # Subclass populates its own contingent metadata to the right of "common" columns
-        self._populate_local_metadata(df)
 
         filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
 
