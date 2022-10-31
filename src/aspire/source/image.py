@@ -584,7 +584,6 @@ class ImageSource(ABC):
         logger.info("save metadata into STAR file")
         filename_indices = self.save_metadata(
             starfile_filepath,
-            new_mrcs=True,
             batch_size=batch_size,
             save_mode=save_mode,
         )
@@ -602,46 +601,46 @@ class ImageSource(ABC):
         df,
         local_cols,
         starfile_filepath,
-        new_mrcs=True,
-        batch_size=512,
-        save_mode="single",
+        batch_size,
+        save_mode,
     ):
         """
         Populate metadata columns common to all `ImageSource` subclasses.
         """
-        if new_mrcs:
-            # Create a new column that we will be populating in the loop below
-            df["_rlnImageName"] = ""
+        # Create a new column that we will be populating in the loop below
+        df["_rlnImageName"] = ""
 
-            if save_mode == "single":
-                # Save all images into one single mrc file
-                fname = os.path.basename(starfile_filepath)
-                fstem = os.path.splitext(fname)[0]
-                mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
+        if save_mode == "single":
+            # Save all images into one single mrc file
+            fname = os.path.basename(starfile_filepath)
+            fstem = os.path.splitext(fname)[0]
+            mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
 
-                # Then set name in dataframe for the StarFile
-                # Note, here the row_indexer is :, representing all rows in this data frame.
+            # Then set name in dataframe for the StarFile
+            # Note, here the row_indexer is :, representing all rows in this data frame.
+            #   df.loc will be reponsible for dereferencing and assigning values to df.
+            #   Pandas will assert df.shape[0] == self.n
+            df.loc[:, "_rlnImageName"] = [
+                f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
+            ]
+        else:
+            # save all images into multiple mrc files in batch size
+            for i_start in np.arange(0, self.n, batch_size):
+                i_end = min(self.n, i_start + batch_size)
+                num = i_end - i_start
+                mrcs_filename = (
+                    os.path.splitext(os.path.basename(starfile_filepath))[0]
+                    + f"_{i_start}_{i_end-1}.mrcs"
+                )
+                # Note, here the row_indexer is a slice.
                 #   df.loc will be reponsible for dereferencing and assigning values to df.
-                #   Pandas will assert df.shape[0] == self.n
-                df.loc[:, "_rlnImageName"] = [
-                    f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
+                #   Pandas will assert the lnegth of row_indexer equals num.
+                row_indexer = df[i_start:i_end].index
+                df.loc[row_indexer, "_rlnImageName"] = [
+                    "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
                 ]
-            else:
-                # save all images into multiple mrc files in batch size
-                for i_start in np.arange(0, self.n, batch_size):
-                    i_end = min(self.n, i_start + batch_size)
-                    num = i_end - i_start
-                    mrcs_filename = (
-                        os.path.splitext(os.path.basename(starfile_filepath))[0]
-                        + f"_{i_start}_{i_end-1}.mrcs"
-                    )
-                    # Note, here the row_indexer is a slice.
-                    #   df.loc will be reponsible for dereferencing and assigning values to df.
-                    #   Pandas will assert the lnegth of row_indexer equals num.
-                    row_indexer = df[i_start:i_end].index
-                    df.loc[row_indexer, "_rlnImageName"] = [
-                        "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
-                    ]
+
+        # Subclass-specific columns are popped to the end of the dataframe
         for col in local_cols:
             df[col] = df.pop(col)
 
@@ -653,16 +652,12 @@ class ImageSource(ABC):
         """
         return []
 
-    def save_metadata(
-        self, starfile_filepath, new_mrcs=True, batch_size=512, save_mode=None
-    ):
+    def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         """
         Save updated metadata to a STAR file
 
         :param starfile_filepath: Path to STAR file where we want to
             save image_source
-        :param new_mrcs: Whether to save all images to new MRCS files or not.
-            If True, new file names and pathes need to be created.
         :param batch_size: Batch size of images to query from the
             `ImageSource` object. Every `batch_size` rows, entries are
             written to STAR file.
@@ -687,7 +682,7 @@ class ImageSource(ABC):
 
         # Populates _rlnImageName column, setting up filepaths to .mrcs stacks
         self._populate_common_metadata(
-            df, local_cols, starfile_filepath, new_mrcs, batch_size, save_mode
+            df, local_cols, starfile_filepath, batch_size, save_mode
         )
 
         filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
