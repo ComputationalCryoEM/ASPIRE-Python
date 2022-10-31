@@ -597,35 +597,12 @@ class ImageSource(ABC):
             overwrite=overwrite,
         )
 
-    def save_metadata(
-        self, starfile_filepath, new_mrcs=True, batch_size=512, save_mode=None
+    def _populate_common_metadata(
+        self, df, starfile_filepath, new_mrcs=True, batch_size=512, save_mode="single"
     ):
         """
-        Save updated metadata to a STAR file
-
-        :param starfile_filepath: Path to STAR file where we want to
-            save image_source
-        :param new_mrcs: Whether to save all images to new MRCS files or not.
-            If True, new file names and pathes need to be created.
-        :param batch_size: Batch size of images to query from the
-            `ImageSource` object. Every `batch_size` rows, entries are
-            written to STAR file.
-        :param save_mode: Whether to save all images in a single or
-            multiple files in batch size.
-        :return: None
+        Populate metadata columns common to all `ImageSource` subclasses.
         """
-
-        df = self._metadata.copy()
-        # Drop any column that doesn't start with a *single* underscore
-        df = df.drop(
-            [
-                str(col)
-                for col in df.columns
-                if not col.startswith("_") or col.startswith("__")
-            ],
-            axis=1,
-        )
-
         if new_mrcs:
             # Create a new column that we will be populating in the loop below
             df["_rlnImageName"] = ""
@@ -659,6 +636,50 @@ class ImageSource(ABC):
                     df.loc[row_indexer, "_rlnImageName"] = [
                         "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
                     ]
+
+    def _populate_local_metadata(self):
+        """
+        Populate metadata columns specific to the `ImageSource` subclass being saved.
+        Subclasses optionally override.
+        """
+        pass
+
+    def save_metadata(
+        self, starfile_filepath, new_mrcs=True, batch_size=512, save_mode=None
+    ):
+        """
+        Save updated metadata to a STAR file
+
+        :param starfile_filepath: Path to STAR file where we want to
+            save image_source
+        :param new_mrcs: Whether to save all images to new MRCS files or not.
+            If True, new file names and pathes need to be created.
+        :param batch_size: Batch size of images to query from the
+            `ImageSource` object. Every `batch_size` rows, entries are
+            written to STAR file.
+        :param save_mode: Whether to save all images in a single or
+            multiple files in batch size.
+        :return: None
+        """
+
+        df = self._metadata.copy()
+        # Drop any column that doesn't start with a *single* underscore
+        df = df.drop(
+            [
+                str(col)
+                for col in df.columns
+                if not col.startswith("_") or col.startswith("__")
+            ],
+            axis=1,
+        )
+
+        # Populates _rlnImageName column, setting up filepaths to .mrcs stacks
+        self._populate_common_metadata(
+            df, starfile_filepath, new_mrcs, batch_size, save_mode
+        )
+
+        # Subclass populates its own contingent metadata to the right of "common" columns
+        self._populate_local_metadata()
 
         filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
 
