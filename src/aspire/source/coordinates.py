@@ -125,9 +125,6 @@ class CoordinateSource(ImageSource, ABC):
 
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
-        # update metadata with particle coordinates
-        self._insert_coordinates_metadata()
-
         # CTF envelope decay factor
         self.B = B
         # set CTF metadata to defaults
@@ -205,11 +202,13 @@ class CoordinateSource(ImageSource, ABC):
             self._box_coord_from_center(coord, self.particle_size) for coord in coords
         ]
 
-    def _insert_coordinates_metadata(self):
+    def _populate_local_metadata(self, df):
         """
-        Add particle centers to source metadata under `_rlnCoordinateX`
-            and `_rlnCoordinateY` columns.
+        Called during ImageSource.save(), populates metadata columns specific to
+            `CoordinateSource` when saving to STAR file.
+        :param df: A copy of self._metadata to be modified for saving into STAR file.
         """
+        # Insert stored particle coordinates (centers) into metadata
         self.set_metadata(
             "_rlnCoordinateX",
             [

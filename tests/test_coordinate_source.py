@@ -482,11 +482,9 @@ class CoordinateSourceTestCase(TestCase):
         for i in range(10):
             self.assertTrue(np.array_equal(imgs[i], saved_mrcs_stack[i]))
         # assert that the star file has the correct metadata
-        # note that coordinate columns are inserted before ImageSource.save()
-        # inserts "_rlnImageName", so it appears to their right.
         self.assertEqual(
             saved_star[""].columns.tolist(),
-            ["_rlnCoordinateX", "_rlnCoordinateY", "_rlnImageName"],
+            ["_rlnImageName", "_rlnCoordinateX", "_rlnCoordinateY"],
         )
         # assert that all the correct coordinates were saved
         for i in range(10):

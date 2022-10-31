@@ -637,10 +637,11 @@ class ImageSource(ABC):
                         "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
                     ]
 
-    def _populate_local_metadata(self):  # noqa: B027
+    def _populate_local_metadata(self, df):  # noqa: B027
         """
         Populate metadata columns specific to the `ImageSource` subclass being saved.
         Subclasses optionally override.
+        :param df: A copy of self._metadata to be modified for saving into STAR file.
         """
         pass
 
@@ -679,7 +680,7 @@ class ImageSource(ABC):
         )
 
         # Subclass populates its own contingent metadata to the right of "common" columns
-        self._populate_local_metadata()
+        self._populate_local_metadata(df)
 
         filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
 
