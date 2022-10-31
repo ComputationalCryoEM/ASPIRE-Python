@@ -206,6 +206,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Called during ImageSource.save(), populates metadata columns specific to
             `CoordinateSource` when saving to STAR file.
+        :return: A list of the names of the columns added.
         """
         # Insert stored particle coordinates (centers) into metadata
         self.set_metadata(

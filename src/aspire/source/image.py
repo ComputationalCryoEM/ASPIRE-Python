@@ -648,7 +648,8 @@ class ImageSource(ABC):
     def _populate_local_metadata(self):
         """
         Populate metadata columns specific to the `ImageSource` subclass being saved.
-        Subclasses optionally override.
+        Subclasses optionally override, but must return a list of strings.
+        :return: A list of the names of the columns added.
         """
         return []
 
