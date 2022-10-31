@@ -31,7 +31,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     """
 
     def __init__(
-        self, size, bandlimit=None, epsilon=1e-10, threshold=True, dtype=np.float32
+        self, size, bandlimit=None, epsilon=1e-10, match_fb=False, dtype=np.float32
     ):
         """
         :param size: The size of the vectors for which to define the FLE basis.
@@ -49,7 +49,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         self.bandlimit = bandlimit
         self.epsilon = epsilon
-        self.threshold = threshold
+        self.match_fb = match_fb
         self.dtype = dtype
         super().__init__(size, ell_max=None, dtype=self.dtype)
 
@@ -61,11 +61,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         self._calc_k_max()
 
-        # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
-        # Final self.count will be < self.max_basis_functions
-        # See self._threshold_basis_functions()
-        self.max_basis_functions = int(self.nres**2 * np.pi / 4)
-        self.max_basis_functions = self.k_max[0] + sum(2 * self.k_max[1:])
+        if self.match_fb:
+            # FB2D and FFB2D heuristic
+            self.max_basis_functions = self.k_max[0] + sum(2 * self.k_max[1:])
+        else:
+            # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
+            # Final self.count will be < self.max_basis_functions
+            # See self._threshold_basis_functions()
+            self.max_basis_functions = int(self.nres**2 * np.pi / 4)
 
         self._compute_maxitr_and_numsparse()
 
@@ -340,7 +343,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # there should not be more basis functions than pixels contained in the
         # unit disk inscribed on the image
         _final_num_basis_functions = self.max_basis_functions
-        if self.threshold:
+
+        # implement FLE thresholding unless we want to match count of other FB bases
+        if not self.match_fb:
             for _ in range(len(self.bessel_zeros)):
                 if (
                     self.bessel_zeros[_final_num_basis_functions] / (np.pi)
