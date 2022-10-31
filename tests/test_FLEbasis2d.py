@@ -249,7 +249,6 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
 
     def testFBCoefficients(self):
         # Matching FB and FLE coefficients is an open issue
-        L = 32
         basis = FLEBasis2D(32, match_fb=True)
         fb = FBBasis2D(32)
 
