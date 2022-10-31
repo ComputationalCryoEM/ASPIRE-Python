@@ -116,7 +116,7 @@ To find the CUDA driver version, run ``nvidia-smi``.
      - gpu_102
    * - 11.0
      - gpu_110
-   * - 11.2
+   * - 11.1
      - gpu_111
    * - >=11.2
      - gpu_11x
