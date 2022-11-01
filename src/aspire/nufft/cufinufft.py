@@ -102,6 +102,9 @@ class CufinufftPlan(Plan):
         `(ntransforms, num_pts)`.
         """
 
+        # Check we're not forcing a dtype workaround for ASPIRE-Python/703,
+        #   then check if we have a dtype mismatch.
+        # This avoids false positive complaint for the workaround.
         if (self._original_dtype == self.dtype) and not (
             signal.dtype == self.dtype or signal.dtype == self.complex_dtype
         ):
@@ -156,6 +159,9 @@ class CufinufftPlan(Plan):
         :returns: Transformed signal `(sz)` or `(sz, ntransforms)`.
         """
 
+        # Check we're not forcing a dtype workaround for ASPIRE-Python/703,
+        #   then check if we have a dtype mismatch.
+        # This avoids false positive complaint for the workaround.
         if (self._original_dtype == self.dtype) and not (
             signal.dtype == self.complex_dtype or signal.dtype == self.dtype
         ):
