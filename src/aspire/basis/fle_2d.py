@@ -86,9 +86,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.smallest_lambda = np.min(self.bessel_zeros)
         self.greatest_lambda = np.max(self.bessel_zeros)
         self.nmax = np.max(np.abs(self.ells))
-        # TODO: explain
+
+        # reindex ells from lowest to highest frequency
         self.ndx = 2 * np.abs(self.ells) - (self.ells < 0)
         self.ndmax = np.max(self.ndx)
+        # idx_list[nd] contains all indices with corresponding n
+        # equal to nd
         idx_list = [[] for i in range(self.ndmax + 1)]
         for i in range(self.count):
             nd = self.ndx[i]
@@ -99,6 +102,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.c2r = precomp_transform_complex_to_real(self.ells)
         self.r2c = sparse.csr_matrix(self.c2r.transpose().conj())
 
+        # create self.nus to be able to access the physical value of ell,
+        # rather than the reindexed version
         self.nus = np.zeros(1 + 2 * self.nmax, dtype=int)
         self.nus[0] = 0
         for i in range(1, self.nmax + 1):
