@@ -126,12 +126,12 @@ the command below would install GPU packages required for ASPIRE.
 
 ::
 
-    # From PyPI                                                                                                                      
-    pip install -e "aspire[gpu_112]"                                                                                                 
-                                                                                                                                     
-    # From a local git repo                                                                                                          
-    pip install -e ".[gpu_112]"                                                                                                      
+    # From PyPI
+    pip install -e "aspire[gpu_11x]"
 
+    # From a local git repo
+    pip install -e ".[gpu_11x]"
+    
 By default if GPU extensions are correctly installed,
 ASPIRE should automatically begin using the GPU for select components
 (such as those using ``nufft``).
