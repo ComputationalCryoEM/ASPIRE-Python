@@ -316,7 +316,9 @@ class Image:
         ), "Number of rotation matrices must match the number of images"
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
+        pts_rot = aspire.volume.rotated_grids(L, rot_matrices).astype(
+            self.dtype, copy=False
+        )
         pts_rot = pts_rot.reshape((3, -1))
 
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L**2)

@@ -38,6 +38,7 @@ def roll_dim(X, dim):
 def im_to_vec(im):
     """
     Roll up images into vectors
+
     :param im: An N-by-N-by-... array.
     :return: An N^2-by-... array.
     """
@@ -51,6 +52,7 @@ def im_to_vec(im):
 def vol_to_vec(X):
     """
     Roll up volumes into vectors
+
     :param X: N-by-N-by-N-by-... array.
     :return: An N^3-by-... array.
     """
@@ -66,6 +68,7 @@ def vol_to_vec(X):
 def vec_to_im(X):
     """
     Unroll vectors to images
+
     :param X: N^2-by-... array.
     :return: An N-by-N-by-... array.
     """
@@ -79,6 +82,7 @@ def vec_to_im(X):
 def vec_to_vol(X):
     """
     Unroll vectors to volumes
+
     :param X: N^3-by-... array.
     :return: An N-by-N-by-N-by-... array.
     """
@@ -92,6 +96,7 @@ def vec_to_vol(X):
 def vecmat_to_volmat(X):
     """
     Roll up vector matrices into volume matrices
+
     :param X: A vector matrix of size L1^3-by-L2^3-by-...
     :return: A volume "matrix" of size L1-by-L1-by-L1-by-L2-by-L2-by-L2-by-...
     """
@@ -111,6 +116,7 @@ def vecmat_to_volmat(X):
 def volmat_to_vecmat(X):
     """
     Unroll volume matrices to vector matrices
+
     :param X: A volume "matrix" of size L1-by-L1-by-L1-by-L2-by-L2-by-L2-by-...
     :return: A vector matrix of size L1^3-by-L2^3-by-...
     """
@@ -129,6 +135,7 @@ def volmat_to_vecmat(X):
 def mdim_mat_fun_conj(X, d1, d2, f):
     """
     Conjugate a multidimensional matrix using a linear mapping
+
     :param X: An N_1-by-...-by-N_d1-by-N_1...-by-N_d1-by-... array, with the first 2*d1 dimensions corresponding to
         matrices with columns and rows of dimension d1.
     :param d1: The dimension of the input matrix X
@@ -171,6 +178,7 @@ def mdim_mat_fun_conj(X, d1, d2, f):
 def symmat_to_vec_iso(mat):
     """
     Isometrically maps a symmetric matrix to a packed vector
+
     :param mat: An array of size N-by-N-by-... where the first two dimensions constitute symmetric or Hermitian
         matrices.
     :return: A vector of size N*(N+1)/2-by-... consisting of the lower triangular part of each matrix, reweighted so
@@ -191,6 +199,7 @@ def symmat_to_vec_iso(mat):
 def vec_to_symmat_iso(vec):
     """
     Isometrically map packed vector to symmetric matrix
+
     :param vec: A vector of size N*(N+1)/2-by-... describing a symmetric (or Hermitian) matrix.
     :return: An array of size N-by-N-by-... which indexes symmetric/Hermitian matrices that occupy the first two
         dimensions. The lower triangular parts of these matrices consists of the corresponding vectors in vec,
@@ -210,6 +219,7 @@ def vec_to_symmat_iso(vec):
 def symmat_to_vec(mat):
     """
     Packs a symmetric matrix into a lower triangular vector
+
     :param mat: An array of size N-by-N-by-... where the first two dimensions constitute symmetric or
         Hermitian matrices.
     :return: A vector of size N*(N+1)/2-by-... consisting of the lower triangular part of each matrix.
@@ -232,6 +242,7 @@ def symmat_to_vec(mat):
 def vec_to_symmat(vec):
     """
     Convert packed lower triangular vector to symmetric matrix
+
     :param vec: A vector of size N*(N+1)/2-by-... describing a symmetric (or Hermitian) matrix.
     :return: An array of size N-by-N-by-... which indexes symmetric/Hermitian matrices that occupy the first two
         dimensions. The lower triangular parts of these matrices consists of the corresponding vectors in vec.
@@ -265,6 +276,7 @@ def vec_to_symmat(vec):
 def mat_to_vec(mat, is_symmat=False):
     """
     Converts a matrix into vectorized form
+
     :param mat: An array of size N-by-N-by-... containing the matrices to be vectorized.
     :param is_symmat: Specifies whether the matrices are symmetric/Hermitian, in which case they are stored in packed
         form using symmat_to_vec (default False).
@@ -283,6 +295,7 @@ def mat_to_vec(mat, is_symmat=False):
 def vec_to_mat(vec, is_symmat=False):
     """
     Converts a vectorized matrix into a matrix
+
     :param vec: The vectorized representations. If the matrix is non-symmetric, this array has the dimensions
         N^2-by-..., but if the matrix is symmetric, the dimensions are N*(N+1)/2-by-... .
     :param is_symmat: True if the vectors represent symmetric matrices (default False)
@@ -300,6 +313,7 @@ def vec_to_mat(vec, is_symmat=False):
 def make_symmat(A):
     """
     Symmetrize a matrix
+
     :param A: A matrix.
     :return: The Hermitian matrix (A+A')/2.
     """
@@ -311,6 +325,7 @@ def make_psd(A):
     Make a matrix positive semi-definite
 
     This is the simplest way by setting negative eigenvalues to zero.
+
     :param A: A matrix.
     :return: The positive semi-definite matrix
     """
@@ -324,6 +339,7 @@ def make_psd(A):
 def anorm(x, axes=None):
     """
     Calculate array norm along given axes
+
     :param x: An array of arbitrary size and shape.
     :param axes: The axis along which to compute the norm. If None, the norm is calculated along all axes.
     :return: The Euclidean (l^2) norm of x along specified axes.
@@ -339,6 +355,7 @@ def anorm(x, axes=None):
 def acorr(x, y, axes=None):
     """
     Calculate array correlation along given axes
+
     :param x: An array of arbitrary shape
     :param y: An array of same shape as x
     :param axes: The axis along which to compute the correlation. If None, the correlation is calculated along all axes.
@@ -354,6 +371,7 @@ def acorr(x, y, axes=None):
 def ainner(x, y, axes=None):
     """
     Calculate array inner product along given axes
+
     :param x: An array of arbitrary shape
     :param y: An array of same shape as x
     :param axes: The axis along which to compute the inner product. If None, the product is calculated along all axes.
@@ -370,6 +388,7 @@ def ainner(x, y, axes=None):
 def eigs(A, k):
     """
     Multidimensional partial eigendecomposition
+
     :param A: An array of size `sig_sz`-by-`sig_sz`, where `sig_sz` is a size containing d dimensions.
         The array represents a matrix with d indices for its rows and columns.
     :param k: The number of eigenvalues and eigenvectors to calculate (default 6).

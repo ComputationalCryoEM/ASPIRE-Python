@@ -242,8 +242,8 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual basis
             of `basis`. This is an array of vectors whose last dimension equals
-             `self.count` and whose first dimensions correspond to
-             first dimensions of `v`.
+            `self.count` and whose first dimensions correspond to
+            first dimensions of `v`.
         """
         v = v.asnumpy().T  # RCOPT
 

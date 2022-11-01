@@ -35,9 +35,9 @@ class BlkDiagMatrix:
         Instantiate a BlkDiagMatrix.
 
         :param partition: The matrix block partition
-         in the form of a `nblock`-element list storing all shapes of
-         diagonal matrix blocks, where `partition[i]` corresponds to
-         the shape (number of rows and columns) of the `i` matrix block.
+            in the form of a `nblock`-element list storing all shapes of
+            diagonal matrix blocks, where `partition[i]` corresponds to
+            the shape (number of rows and columns) of the `i` matrix block.
         :param dtype: Datatype for blocks, defaults to np.float32.
         :return: BlkDiagMatrix instance.
         """
@@ -241,9 +241,9 @@ class BlkDiagMatrix:
 
         :param other: The rhs BlkDiagMatrix instance.
         :param inplace: Boolean, when set to True change values in place,
-        otherwise return a new instance (default).
+            otherwise return a new instance (default).
         :return:  BlkDiagMatrix instance with elementwise sum equal
-        to self + other.
+            to self + other.
         """
 
         if self._is_scalar_type(other):
@@ -291,9 +291,9 @@ class BlkDiagMatrix:
 
         :param scalar: constant addend value.
         :param inplace: Boolean, when set to True change values in place,
-        otherwise return a new instance (default).
+            otherwise return a new instance (default).
         :return:  BlkDiagMatrix instance with elementwise sum equal
-        to self + other.
+            to self + other.
         """
 
         assert self._is_scalar_type(scalar)
@@ -314,9 +314,9 @@ class BlkDiagMatrix:
 
         :param other: The rhs BlkDiagMatrix instance.
         :param inplace: Boolean, when set to True change values in place,
-        otherwise return a new instance (default).
+            otherwise return a new instance (default).
         :return: A BlkDiagMatrix instance with elementwise subraction equal to
-         self - other.
+            self - other.
         """
 
         if self._is_scalar_type(other):
@@ -372,7 +372,7 @@ class BlkDiagMatrix:
         :param scalar: constant subtractend value.
         :param inplace: bool, when false (default) return new instance.
         :return:  BlkDiagMatrix instance with elementwise sum equal to
-         self + other.
+            self + other.
         """
 
         assert self._is_scalar_type(scalar)
@@ -393,7 +393,7 @@ class BlkDiagMatrix:
 
         :param other: The rhs BlkDiagMatrix instance.
         :param inplace: Boolean, when set to True change values in place,
-        otherwise return a new instance (default).
+            otherwise return a new instance (default).
         :return: A BlkDiagMatrix of self @ other.
         """
 
@@ -460,7 +460,7 @@ class BlkDiagMatrix:
 
         :param other: The rhs BlkDiagMatrix instance.
         :param inplace: Boolean, when set to True change values in place,
-        otherwise return a new instance (default).
+            otherwise return a new instance (default).
         :return: A BlkDiagMatrix of self * other.
         """
 
@@ -555,8 +555,9 @@ class BlkDiagMatrix:
     def pow(self, val, inplace=False):
         """
         Compute the elementwise power of BlkDiagMatrix instance.
+
         :param inplace: Boolean, when set to True change values in place,
-        otherwise return a new instance (default).
+            otherwise return a new instance (default).
         :return: A BlkDiagMatrix like self.
         """
 
@@ -591,7 +592,7 @@ class BlkDiagMatrix:
         Compute the norm of a BlkDiagMatrix instance.
 
         :param inplace: Boolean, when set to True change values in place,
-        otherwise return a new instance (default).
+            otherwise return a new instance (default).
         :return: The norm of the BlkDiagMatrix instance.
         """
 
@@ -653,8 +654,8 @@ class BlkDiagMatrix:
         Solve a linear system involving a block diagonal matrix.
 
         :param Y: The right-hand side in the linear system.  May be a matrix
-        consisting of coefficient vectors, in which case each column is
-        solved for separately.
+            consisting of coefficient vectors, in which case each column is
+            solved for separately.
 
         :return: The result of solving the linear system formed by the matrix.
         """
@@ -790,7 +791,7 @@ class BlkDiagMatrix:
         such as in a `copy`.
 
         :param nblocks: Number of diagonal matrix blocks.
-        :return BlkDiagMatrix instance where each block is None.
+        :return: BlkDiagMatrix instance where each block is None.
         """
 
         # Empty partition has block dims of zero until they are assigned
@@ -804,9 +805,9 @@ class BlkDiagMatrix:
         Build a BlkDiagMatrix zeros matrix.
 
         :param blk_partition: The matrix block partition in the form of a
-        K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows and
-        columns) of the `i` diagonal matrix block.
+            K-element list storing all shapes of K diagonal matrix blocks,
+            where `blk_partition[i]` corresponds to the shape (number of rows and
+            columns) of the `i` diagonal matrix block.
         :param dtype: The data type to set precision of diagonal matrix block.
         :return: A BlkDiagMatrix instance consisting of `K` zero blocks.
         """
@@ -824,9 +825,9 @@ class BlkDiagMatrix:
         Build a BlkDiagMatrix ones matrix.
 
         :param blk_partition: The matrix block partition in the form of a
-        K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows and
-        columns) of the `i` diagonal matrix block.
+            K-element list storing all shapes of K diagonal matrix blocks,
+            where `blk_partition[i]` corresponds to the shape (number of rows and
+            columns) of the `i` diagonal matrix block.
         :param dtype: The data type to set precision of diagonal matrix block.
         :return: A BlkDiagMatrix instance consisting of `K` ones blocks.
         """
@@ -844,12 +845,12 @@ class BlkDiagMatrix:
         Build a BlkDiagMatrix eye (identity) matrix
 
         :param blk_partition: The matrix block partition in the form of
-        a K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows
-        and columns) of the `i` diagonal matrix block.
+            a K-element list storing all shapes of K diagonal matrix blocks,
+            where `blk_partition[i]` corresponds to the shape (number of rows
+            and columns) of the `i` diagonal matrix block.
         :param dtype: The data type of the diagonal matrix blocks.
         :return: A BlkDiagMatrix instance consisting of `K` eye (identity)
-        blocks.
+            blocks.
         """
 
         A = BlkDiagMatrix(blk_partition, dtype=dtype)
@@ -869,7 +870,7 @@ class BlkDiagMatrix:
         :param A: BlkDiagMatrix instance.
         :param dtype: Optional, data type of the new diagonal matrix blocks.
         :return: BlkDiagMatrix instance consisting of `K` eye (identity)
-        blocks.
+            blocks.
         """
 
         if dtype is None:
@@ -902,9 +903,9 @@ class BlkDiagMatrix:
         using the BlkDiagMatrix class yet.
 
         :param blk_diag; The blk_diag representation in the form of a
-        K-element list storing all shapes of K diagonal matrix blocks,
-        where `blk_partition[i]` corresponds to the shape (number of rows
-        and columns) of the `i` diagonal matrix block.
+            K-element list storing all shapes of K diagonal matrix blocks,
+            where `blk_partition[i]` corresponds to the shape (number of rows
+            and columns) of the `i` diagonal matrix block.
 
         :return: The BlkDiagMatrix instance.
         """
