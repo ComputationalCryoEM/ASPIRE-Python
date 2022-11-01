@@ -543,20 +543,6 @@ class FSPCABasis(SteerableBasis2D):
 
         return coef
 
-    def rotate(self, coef, radians, refl=None):
-        """
-        Returns coefs rotated by `radians`.
-
-        :param coef: Basis coefs.
-        :param radians: Rotation in radians.
-        :param refl: Optional reflect image (bool)
-        :return: rotated coefs.
-        """
-
-        # Steerable class rotation expects complex representation of coefficients.
-        #  Convert, rotate and convert back to real representation.
-        return self.to_real(super().rotate(self.to_complex(coef), radians, refl))
-
     def calculate_bispectrum(
         self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
     ):
