@@ -1,7 +1,6 @@
 import logging
 import os.path
 from unittest import TestCase
-from unittest.case import SkipTest
 
 import numpy as np
 from parameterized import parameterized_class
@@ -10,7 +9,6 @@ from scipy.special import jv
 from aspire.basis import FFBBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
-from aspire.utils import utest_tolerance
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
