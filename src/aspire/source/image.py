@@ -580,6 +580,8 @@ class ImageSource(ABC):
         :param batch_size: Batch size of images to query.
         :param save_mode: Whether to save all images in a single or multiple files in batch size.
         :param overwrite: Option to overwrite the output MRCS files.
+        :return: A dictionary containing "starfile"--the path to the saved starfile-- and "mrcs", a
+            list of the saved particle stack .mrcs filenames.
         """
         logger.info("save metadata into STAR file")
         filename_indices = self.save_metadata(
@@ -588,6 +590,7 @@ class ImageSource(ABC):
             batch_size=batch_size,
             save_mode=save_mode,
         )
+        unique_filenames = list(dict.fromkeys(filename_indices))
 
         logger.info("save images into MRCS file")
         self.save_images(
@@ -596,6 +599,9 @@ class ImageSource(ABC):
             batch_size=batch_size,
             overwrite=overwrite,
         )
+        # return some information about the saved files
+        info = {"starfile": starfile_filepath, "mrcs": unique_filenames}
+        return info
 
     def save_metadata(
         self, starfile_filepath, new_mrcs=True, batch_size=512, save_mode=None
