@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -185,6 +186,20 @@ class Image:
 
     def transpose(self):
         return Image(np.transpose(self.data, (0, 2, 1)))
+
+    def flip(self, axis=1):
+        """
+        Flip image stack data along axis using numpy.flip().
+
+        :param axis: Optionally specify axis as integer or tuple.
+            Defaults to axis=1.
+
+        :return: Image instance.
+        """
+        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
+            raise ValueError("Cannot flip axis 0: stack axis.")
+
+        return Image(np.flip(self.data, axis))
 
     def __repr__(self):
         return f"{self.n_images} images of size {self.res}x{self.res}"
