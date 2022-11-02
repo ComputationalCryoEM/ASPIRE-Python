@@ -65,7 +65,9 @@ class ImageTestCase(TestCase):
 
         # Check individual imgs in a stack
         for i in range(self.ims_np.shape[0]):
-            self.assertTrue(np.allclose(self.ims.transpose()[i], self.ims_np[i].T))
+            self.assertTrue(
+                np.allclose(self.ims.T[i], self.ims.transpose()[i], self.ims_np[i].T)
+            )
 
     def testImageFlip(self):
         axes = list(combinations([1, 2], 2))
@@ -74,9 +76,7 @@ class ImageTestCase(TestCase):
                 axis = axis[0]
             # single image
             self.assertTrue(
-                np.allclose(
-                    np.flip(self.im.asnumpy(), axis), self.im.flip(axis).asnumpy()
-                )
+                np.allclose(np.flip(self.im_np, axis), self.im.flip(axis).asnumpy())
             )
             # stack
             self.assertTrue(
