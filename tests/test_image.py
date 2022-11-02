@@ -1,7 +1,6 @@
 import os.path
-from unittest import TestCase
-
 from itertools import combinations
+from unittest import TestCase
 
 import numpy as np
 from scipy import misc
