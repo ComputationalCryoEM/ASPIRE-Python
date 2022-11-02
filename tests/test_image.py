@@ -1,6 +1,8 @@
 import os.path
 from unittest import TestCase
 
+from itertools import combinations
+
 import numpy as np
 from scipy import misc
 
@@ -18,7 +20,7 @@ class ImageTestCase(TestCase):
         self.im = Image(misc.face(gray=True).astype(self.dtype)[:768, :768])
         # Construct a simple stack of Images
         self.n = 3
-        self.ims_np = np.empty((3, *self.im_np.shape[1:]), dtype=self.dtype)
+        self.ims_np = np.empty((self.n, *self.im_np.shape[1:]), dtype=self.dtype)
         for i in range(self.n):
             self.ims_np[i] = self.im_np * (i + 1) / float(self.n)
         # Independent Image stack object for testing Image methods
@@ -62,6 +64,31 @@ class ImageTestCase(TestCase):
             )
         )
 
-        # Check individual imgs in stack
+        # Check individual imgs in a stack
         for i in range(self.ims_np.shape[0]):
             self.assertTrue(np.allclose(self.ims.transpose()[i], self.ims_np[i].T))
+
+    def testImageFlip(self):
+        axes = list(combinations([1, 2], 2))
+        for axis in axes:
+            if isinstance(axis, tuple):
+                axis = axis[0]
+            # single image
+            self.assertTrue(
+                np.allclose(
+                    np.flip(self.im.asnumpy(), axis), self.im.flip(axis).asnumpy()
+                )
+            )
+            # stack
+            self.assertTrue(
+                np.allclose(
+                    np.flip(self.ims_np, axis),
+                    self.ims.flip(axis).asnumpy(),
+                )
+            )
+
+        # test error for axis 0
+        axes = [0, (0, 1)]
+        for axis in axes:
+            with self.assertRaisesRegex(ValueError, "stack axis"):
+                _ = self.im.flip(axis)
