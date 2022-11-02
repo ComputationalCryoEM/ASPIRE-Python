@@ -53,20 +53,15 @@ class ImageTestCase(TestCase):
         self.assertTrue(np.allclose(self.ims.sqrt().asnumpy(), np.sqrt(self.ims_np)))
 
     def testImageTranspose(self):
+        # test method and abbreviation
         self.assertTrue(
             np.allclose(
-                self.im.flip_axes().asnumpy(), np.transpose(self.im_np, (0, 2, 1))
+                self.im.T.asnumpy(),
+                self.im.transpose().asnumpy(),
+                np.transpose(self.im_np, (0, 2, 1)),
             )
         )
 
-        # This is equivalent to checking np.tranpose(..., (0, 2, 1))
+        # Check individual imgs in stack
         for i in range(self.ims_np.shape[0]):
-
-            self.assertTrue(np.allclose(self.ims.flip_axes()[i], self.ims_np[i].T))
-
-            # Check against the contruction.
-            self.assertTrue(
-                np.allclose(
-                    self.ims.flip_axes()[i], self.im_np[0].T * (i + 1) / float(self.n)
-                )
-            )
+            self.assertTrue(np.allclose(self.ims.transpose()[i], self.ims_np[i].T))

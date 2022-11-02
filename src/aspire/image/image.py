@@ -174,7 +174,16 @@ class Image:
     def sqrt(self):
         return Image(np.sqrt(self.data))
 
-    def flip_axes(self):
+    @property
+    def T(self):
+        """
+        Abbreviation for transpose.
+
+        :return: Image instance.
+        """
+        return self.transpose()
+
+    def transpose(self):
         return Image(np.transpose(self.data, (0, 2, 1)))
 
     def __repr__(self):
