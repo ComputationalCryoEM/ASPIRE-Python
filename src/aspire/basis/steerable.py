@@ -14,6 +14,16 @@ class SteerableBasis2D(Basis):
     `rotation` (steerable) and `calculate_bispectrum` methods.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Beause they are used for core features of SteerableBasis2D,
+        #   cache the indices for positive and negative ells.
+        # Note zero is special case.
+        self.zero_angular_inds = self.angular_indices == 0
+        self.pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
+        self.neg_angular_inds = self.signs_indices == -1
+
     def calculate_bispectrum(
         self, complex_coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
     ):
@@ -151,29 +161,23 @@ class SteerableBasis2D(Basis):
             radians = radians.reshape(-1, 1)
         # else: radians can be a constant
 
-        ks = self.angular_indices
-        assert len(ks) == coef.shape[-1]
-
-        # Get the indices for positive and negative ells
-        # Note zero is special case
-        zer_inds = self.angular_indices == 0
-        pos_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
-        neg_inds = self.signs_indices == -1
+        # self.angular_indices are `ks`
+        assert len(self.angular_indices) == coef.shape[-1]
 
         # For all coef in stack,
-        #   precompute the ks * radian used in the trig functions
-        ks_rad = np.atleast_2d(ks * -1 * radians)
-        ks_pos = ks_rad[:, pos_inds]
-        ks_neg = ks_rad[:, neg_inds]
+        #   compute the ks * radian used in the trig functions
+        ks_rad = np.atleast_2d(self.angular_indices * -1 * radians)
+        ks_pos = ks_rad[:, self.pos_angular_inds]
+        ks_neg = ks_rad[:, self.neg_angular_inds]
 
         # Slice the coef on postive and negative ells
-        coef_zer = coef[:, zer_inds]
-        coef_pos = coef[:, pos_inds]
-        coef_neg = coef[:, neg_inds]
+        coef_zer = coef[:, self.zero_angular_inds]
+        coef_pos = coef[:, self.pos_angular_inds]
+        coef_neg = coef[:, self.neg_angular_inds]
 
         # Handle zero case and avoid mutating the original array
         coef = np.empty_like(coef)
-        coef[:, zer_inds] = coef_zer
+        coef[:, self.zero_angular_inds] = coef_zer
 
         # refl
         if refl is not None:
@@ -181,11 +185,15 @@ class SteerableBasis2D(Basis):
                 assert len(refl) == len(coef)
             # else: refl can be a constant
             # negate the coefs corresponding to negative ells
-            coef_neg[refl] *= -1
+            coef_neg[refl] = coef_neg[refl] * -1
 
         # Apply formula
-        coef[:, pos_inds] = coef_pos * np.cos(ks_pos) + coef_neg * np.sin(ks_neg)
-        coef[:, neg_inds] = coef_neg * np.cos(ks_neg) - coef_pos * np.sin(ks_pos)
+        coef[:, self.pos_angular_inds] = coef_pos * np.cos(ks_pos) + coef_neg * np.sin(
+            ks_neg
+        )
+        coef[:, self.neg_angular_inds] = coef_neg * np.cos(ks_neg) - coef_pos * np.sin(
+            ks_pos
+        )
 
         return coef
 
