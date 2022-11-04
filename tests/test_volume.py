@@ -11,7 +11,7 @@ from pytest import raises, skip
 from aspire.utils import Rotation, grid_3d, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import Volume, gaussian_blob_vols
+from aspire.volume import AsymmetricVolume, CnSymmetricVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -233,22 +233,23 @@ class VolumeTestCase(TestCase):
     def testCnSymmetricVolume(self):
         # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
         L = self.res
-        sym_type = {2: "C2", 3: "C3", 4: "C4", 5: "C5", 6: "C6"}
+        orders = [2, 3, 4, 5, 6]
 
-        for k, s in sym_type.items():
+        for order in orders:
 
             # Build `Volume` instance with symmetry type s.
-            vol = gaussian_blob_vols(L=L, C=1, symmetry=s, seed=0, dtype=self.dtype)
+            vol = CnSymmetricVolume(L=L, C=1, order=order, seed=0, dtype=self.dtype)
+            vol = vol.generate()
 
             # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
-            angles = np.zeros(shape=(k, 3))
-            angles[:, 2] = 2 * np.pi * np.arange(k) / k
+            angles = np.zeros(shape=(order, 3))
+            angles[:, 2] = 2 * np.pi * np.arange(order) / order
             rot_mat = Rotation.from_euler(angles).matrices
 
             # Create mask to compare volumes on.
             selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 2
 
-            for i in range(k):
+            for i in range(order):
                 # Rotate volume.
                 rot = Rotation(rot_mat[i])
                 rot_vol = vol.rotate(rot, zero_nyquist=False)
@@ -260,13 +261,21 @@ class VolumeTestCase(TestCase):
                 # Assert that rotated volume is within .5% of original volume.
                 self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.005)
 
-        # Test we raise with expected error message when volume is instantiated with unsupported symmetry.
-        with raises(NotImplementedError, match=r"CH2 symmetry not supported.*"):
-            _ = gaussian_blob_vols(symmetry="Ch2")
+    def testAsymmetricVolume(self):
+        L = self.res
+        dtype = self.dtype
 
-        # Test we raise with expected message for junk symmetry.
-        with raises(NotImplementedError, match=r"J type symmetry.*"):
-            _ = gaussian_blob_vols(symmetry="junk")
+        vol = AsymmetricVolume(L=L, C=1, dtype=dtype)
+        vol = vol.generate()
+
+        # Mask to check support
+        g_3d = grid_3d(L, dtype=dtype)
+        inside = g_3d["r"] < 1
+        outside = g_3d["r"] > 1
+
+        # Check that volume is zero outside of support and positive inside.
+        self.assertTrue(np.allclose(vol[0][outside], 0))
+        self.assertTrue((vol[0][inside] > 0).all())
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
