@@ -80,6 +80,11 @@ class FSPCABasis(SteerableBasis2D):
             len(self.complex_indices_map) == self.complex_count
         ), f"{len(self.complex_indices_map)} != {self.complex_count}"
 
+        # Map Cached SteerableBasis2D index maps
+        self.zero_angular_inds = self.basis.zero_angular_inds
+        self.pos_angular_inds = self.basis.pos_angular_inds
+        self.neg_angular_inds = self.basis.neg_angular_inds
+
         self.noise_var = noise_var  # noise_var is handled during `build` call.
 
         self.build()
