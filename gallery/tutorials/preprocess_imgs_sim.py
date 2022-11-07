@@ -9,7 +9,6 @@ import logging
 import os
 
 import matplotlib.pyplot as plt
-import mrcfile
 import numpy as np
 
 from aspire.noise import WhiteNoiseEstimator
@@ -20,12 +19,6 @@ from aspire.volume import Volume
 logger = logging.getLogger(__name__)
 
 DATA_DIR = "data"
-
-
-logger.info(
-    "This script illustrates orientation estimation using "
-    "synchronization matrix and voting method"
-)
 
 # %%
 # Specify Parameters
@@ -63,9 +56,8 @@ ctf_filters = [
 ]
 
 # Load the map file of a 70S ribosome and downsample the 3D map to desired resolution.
-infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
-logger.info(f"Load 3D map from mrc file, {infile}")
-vols = Volume(infile.data)
+logger.info("Load 3D map from mrc file")
+vols = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 
 # Downsample the volume to a desired resolution and increase density
 # by 1.0e5 time for a better graph view

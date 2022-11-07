@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 def check_besselj_zeros(nu, z):
     """
     Sanity-check a sequence of estimated zeros of the Bessel function with order `nu`.
+
     :param nu: The real number order of the Bessel function.
     :param z: (Array-like) A sequence of postulated zeros.
     :return result: True or False.
@@ -54,7 +55,7 @@ def besselj_newton(nu, z0, max_iter=10):
     :param nu: The real number order of the Bessel function.
     :param z0: (Array-like) The initial guess(es) for the root-finding algorithm.
     :param max_iter: Maximum number of iterations for Newton-Raphson
-    (default: 10).
+        (default: 10).
     :return z: (Array-like) The estimated root(s).
     """
     z = z0
@@ -254,7 +255,7 @@ def all_besselj_zeros(ell, r):
     :param ell: The real number order of the Bessel function.
     :param r: The upper bound for zeros returned.
     :return n, r0: The number of zeros and the zeros themselves
-    as a NumPy array.
+        as a NumPy array.
     """
     k = 4
     # get the first 4 zeros
@@ -272,6 +273,7 @@ def all_besselj_zeros(ell, r):
 def unique_coords_nd(N, ndim, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate unique polar coordinates from 2D or 3D rectangular coordinates.
+
     :param N: length size of a square or cube.
     :param ndim: number of dimension, 2 or 3.
     :param shifted: shifted half pixel or not for odd N.

@@ -25,3 +25,9 @@ distclean:
 	@echo "Removing auto gallery sources."
 	@rm -rf $(wildcard $(SOURCEDIR)/auto_*)
 	$(MAKE) clean
+
+# Build Sphinx Gallery without running any examples.
+html-noplot:
+	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) $(SOURCEDIR) $(BUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
