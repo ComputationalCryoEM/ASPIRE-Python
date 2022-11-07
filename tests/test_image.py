@@ -55,15 +55,19 @@ class ImageTestCase(TestCase):
 
     def testImageTranspose(self):
         # test method and abbreviation
-        self.assertTrue(np.allclose(self.im.T.asnumpy(), self.im.transpose().asnumpy()))
         self.assertTrue(
             np.allclose(self.im.T.asnumpy(), np.transpose(self.im_np, (0, 2, 1)))
+        )
+        self.assertTrue(
+            np.allclose(
+                self.im.transpose().asnumpy(), np.transpose(self.im_np, (0, 2, 1))
+            )
         )
 
         # Check individual imgs in a stack
         for i in range(self.ims_np.shape[0]):
-            self.assertTrue(np.allclose(self.ims.T[i], self.ims.transpose()[i]))
             self.assertTrue(np.allclose(self.ims.T[i], self.ims_np[i].T))
+            self.assertTrue(np.allclose(self.ims.transpose()[i], self.ims_np[i].T))
 
     def testImageFlip(self):
         for axis in powerset(range(1, 3)):
