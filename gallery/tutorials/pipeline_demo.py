@@ -1,7 +1,7 @@
 """
-===============================================
-Ab-initio Reconstruction Pipeline Demonstration
-===============================================
+================================
+Ab-initio Pipeline Demonstration
+================================
 
 This tutorial demonstrates some key components of an ab-initio reconstruction pipeline using
 synthetic data generated with ASPIRE's ``Simulation`` class of objects.
