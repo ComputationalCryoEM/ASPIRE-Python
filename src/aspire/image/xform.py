@@ -49,6 +49,7 @@ class Xform:
     def __init__(self, active=True):
         """
         Create a Xform object that works at a specific resolution.
+
         :param active: A boolean indicating whether the Xform is active. True by default.
         """
         self.active = active
@@ -56,6 +57,7 @@ class Xform:
     def forward(self, im, indices=None):
         """
         Apply forward transformation for this Xform object to an Image object.
+
         :param im: The incoming Image object of depth `n`, on which to apply the forward transformation.
         :param indices: The indices to use within this Xform. If unspecified, [0..n) is used.
         :return: An Image object after applying the forward transformation.
@@ -97,6 +99,7 @@ class LinearXform(Xform):
     def adjoint(self, im, indices=None):
         """
         Apply adjoint transformation for this Xform object to an Image object.
+
         :param im: The incoming Image object of depth `n`, on which to apply the adjoint transformation.
         :param indices: The indices to use within this Xform. If unspecified, [0..n) is used.
         :return: An Image object after applying the adjoint transformation.
@@ -131,6 +134,7 @@ class Multiply(SymmetricXform):
     def __init__(self, factor):
         """
         Initialize a Multiply Xform using specified factors
+
         :param factor: A float/int or an ndarray of scalar factors to use for amplitude multiplication.
         """
         super().__init__()
@@ -159,6 +163,7 @@ class Shift(LinearXform):
     def __init__(self, shifts):
         """
         Initialize a Shift Xform using a Numpy array of shift values.
+
         :param shifts: An ndarray of shape (2) or (n, 2)
         """
         super().__init__()
@@ -214,6 +219,7 @@ class FilterXform(SymmetricXform):
     def __init__(self, filter):
         """
         Initialize the Filter `Xform` using a `Filter` object
+
         :param filter: An object of type `aspire.operators.Filter`
         """
         super().__init__()
@@ -235,6 +241,7 @@ class Add(Xform):
     def __init__(self, addend):
         """
         Initialize an Add Xform using a Numpy array of predefined values.
+
         :param addend: An float/int or an ndarray of shape (n,)
         """
         super().__init__()
@@ -290,6 +297,7 @@ class NoiseAdder(Xform):
     def __init__(self, seed=0, noise_filter=None):
         """
         Initialize the random state of this NoiseAdder using specified values.
+
         :param seed: The random seed used to generate white noise
         :param noise_filter: An optional aspire.operators.Filter object to use to filter the generated white noise.
             By default, a ZeroFilter is used, generating no noise.
@@ -345,6 +353,7 @@ class IndexedXform(Xform):
     def _indexed_operation(self, im, indices, which):
         """
         Apply either a forward or adjoint transformations to `im`, depending on the value of the 'which' parameter.
+
         :param im: The incoming Image object on which to apply the forward or adjoint transformations.
         :param indices: The indices of the transformations to apply.
         :param which: The attribute indicating the function handle to obtain from underlying `Xform` objects.
@@ -412,6 +421,7 @@ class Pipeline(Xform):
     def __init__(self, xforms=None, memory=None):
         """
         Initialize a `Pipeline` with `Xform` objects.
+
         :param xforms: An iterable of Xform objects to use in the Pipeline.
         :param memory: None for no caching (default), or the location of a directory to use to cache steps of the
             pipeline.
@@ -426,6 +436,7 @@ class Pipeline(Xform):
     def add_xform(self, xform):
         """
         Add a single `Xform` object at the end of the pipeline.
+
         :param xform: A `Xform` object.
         :return: None
         """
@@ -434,6 +445,7 @@ class Pipeline(Xform):
     def add_xforms(self, xforms):
         """
         Add multiple `Xform` objects at the end of the pipeline.
+
         :param xform: An iterable of `Xform` objects.
         :return: None
         """
@@ -442,6 +454,7 @@ class Pipeline(Xform):
     def reset(self):
         """
         Reset the pipeline by removing all `Xform`s.
+
         :return: None
         """
         self.xforms = []

@@ -47,7 +47,7 @@ class Apple:
             Journal of Structural Biology, Vol. 204, No. 2, 11.2018, p. 215-227.
 
         :param particle_size: Particle size (pixels) is required.
-        Remaining parameters generally have defaults based on particle size.
+            Remaining parameters generally have defaults based on particle size.
         :param min_particle_size:
         :param max_particle_size:
         :param query_image_size:
@@ -59,8 +59,8 @@ class Apple:
         :param model: One of svm/gaussian_mixture/gaussian_naive_bayes/xgboost/thunder_svm
         :param model_opts: Optional dictionary of svm model options. Defaults to None.
         :param n_processes: Concurrent processes to spawn.
-        May improve performance on very large machines.
-        Otherwise use default of 1.
+            May improve performance on very large machines.
+            Otherwise use default of 1.
         """
 
         self.particle_size = particle_size

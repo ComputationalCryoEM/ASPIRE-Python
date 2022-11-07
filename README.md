@@ -64,13 +64,6 @@ pip install -e ".[dev]"
 If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.7.
 Please see the full documentation for details.
 
-You may optionally install additional packages for GPU extensions:
-
-```
-# Additional GPU packages (requires CUDA)
-pip install -e ".[gpu]"
-```
-
 ### Make sure everything works
 
 Once ASPIRE is installed, make sure the unit tests run correctly on your platform by doing:

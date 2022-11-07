@@ -158,6 +158,10 @@ class RIRClass2DTestCase(TestCase):
             self.clean_src, self.basis, noise_var=0
         )  # Note noise_var assigned zero, skips eigval filtering.
 
+        self.clean_fspca_basis_compressed = FSPCABasis(
+            self.clean_src, self.basis, components=101, noise_var=0
+        )  # Note noise_var assigned zero, skips eigval filtering.
+
         # Ceate another fspca_basis, use autogeneration FFB2D Basis
         self.noisy_fspca_basis = FSPCABasis(self.noisy_src)
 
@@ -277,21 +281,21 @@ class RIRClass2DTestCase(TestCase):
         Test we can return eigenimages.
         """
 
-        # Get an FSPCA basis for testing
-        fspca = self.clean_fspca_basis
+        # Get the eigenimages from an FSPCA basis for testing
+        eigimg_uncompressed = self.clean_fspca_basis.eigen_images()
 
-        # Get the eigenimages
-        eigimg_uncompressed = fspca.eigen_images()
+        # Get the eigenimages from a compressed FSPCA basis for testing
+        eigimg_compressed = self.clean_fspca_basis_compressed.eigen_images()
 
-        # Compresses the FSPCA basis
-        compressed_fspca = fspca._compress(150)
-
-        # Get the eigenimages
-        eigimg_compressed = compressed_fspca.eigen_images()
-
-        # Check they are close
+        # Check they are close.
+        # Note it is expected the compression reorders the eigvecs,
+        #  and thus the eigimages.
+        # We sum over all the eigimages to yield an "average" for comparison
         self.assertTrue(
-            np.allclose(eigimg_uncompressed.asnumpy(), eigimg_compressed.asnumpy())
+            np.allclose(
+                np.sum(eigimg_uncompressed.asnumpy(), axis=0),
+                np.sum(eigimg_compressed.asnumpy(), axis=0),
+            )
         )
 
     def testComponentSize(self):
