@@ -80,12 +80,12 @@ class ImageTestCase(TestCase):
                 result_single = self.im.flip(axis).asnumpy()
                 result_stack = self.ims.flip(axis).asnumpy()
             # single image
-            self.assertTrue(np.allclose(np.flip(self.im_np, axis), result_single))
+            self.assertTrue(np.allclose(result_single, np.flip(self.im_np, axis)))
             # stack
             self.assertTrue(
                 np.allclose(
-                    np.flip(self.ims_np, axis),
                     result_stack,
+                    np.flip(self.ims_np, axis),
                 )
             )
 
