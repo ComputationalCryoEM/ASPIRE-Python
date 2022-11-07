@@ -1,11 +1,11 @@
 import os.path
-from itertools import combinations
 from unittest import TestCase
 
 import numpy as np
 from scipy import misc
 
 from aspire.image import Image, _im_translate2
+from aspire.utils import powerset
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -66,19 +66,22 @@ class ImageTestCase(TestCase):
             self.assertTrue(np.allclose(self.ims.T[i], self.ims_np[i].T))
 
     def testImageFlip(self):
-        axes = list(combinations([1, 2], 2))
-        for axis in axes:
-            if isinstance(axis, tuple):
-                axis = axis[0]
+        for axis in powerset(range(1, 3)):
+            if not axis:
+                # test default
+                result_single = self.im.flip().asnumpy()
+                result_stack = self.ims.flip().asnumpy()
+                axis = 1
+            else:
+                result_single = self.im.flip(axis).asnumpy()
+                result_stack = self.ims.flip(axis).asnumpy()
             # single image
-            self.assertTrue(
-                np.allclose(np.flip(self.im_np, axis), self.im.flip(axis).asnumpy())
-            )
+            self.assertTrue(np.allclose(np.flip(self.im_np, axis), result_single))
             # stack
             self.assertTrue(
                 np.allclose(
                     np.flip(self.ims_np, axis),
-                    self.ims.flip(axis).asnumpy(),
+                    result_stack,
                 )
             )
 
