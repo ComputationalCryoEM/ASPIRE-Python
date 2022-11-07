@@ -28,6 +28,10 @@ class SyntheticVolumeBase(abc.ABC):
 
 
 class GaussianBlobsVolume(SyntheticVolumeBase):
+    """
+    A base class for all volumes which are generated with randomized 3D Gaussians.
+    """
+
     def __init__(self, L, C, order, K=16, seed=None, dtype=np.float64):
         """
         :param L: Resolution of the Volume(s) in pixels.
@@ -51,7 +55,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
     @abc.abstractmethod
     def _symmetrize_gaussians(self):
         """
-        Called to enforce symmetry of class.
+        Called to add symmetry to Volumes by generating for each Gaussian blob duplicates in symmetric positions.
         """
 
     def generate(self):
