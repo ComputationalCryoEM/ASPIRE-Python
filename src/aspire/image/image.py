@@ -185,6 +185,11 @@ class Image:
         return self.transpose()
 
     def transpose(self):
+        """
+        Returns a new Image instance with image data axis transposed.
+
+        :return: Image instance.
+        """
         return Image(np.transpose(self.data, (0, 2, 1)))
 
     def flip(self, axis=1):
