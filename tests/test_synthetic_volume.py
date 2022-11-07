@@ -2,7 +2,6 @@ from unittest import TestCase
 
 import numpy as np
 from parameterized import parameterized_class
-from pytest import raises
 
 from aspire.source.simulation import Simulation
 from aspire.volume import AsymmetricVolume, CnSymmetricVolume, LegacyVolume
