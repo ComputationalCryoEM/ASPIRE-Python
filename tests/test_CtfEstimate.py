@@ -18,11 +18,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class CtfEstimatorTestCase(TestCase):
     def setUp(self):
         self.test_input_fn = "sample.mrc"
-        # Replaced test_output values after converting `estimate_ctf` units to angstroms.
         self.test_output = {
-            "defocus_u": 10848.056020345417,  # replaced 1.137359876e03
-            "defocus_v": 10562.584332908018,  # replaced 9.617226108e02
-            "defocus_ang": 1.4677603249277478,  # replaced 1.5706205116381249
+            "defocus_u": 10848.056020345417,
+            "defocus_v": 10562.584332908018,
+            "defocus_ang": 1.4677603249277478,
             "cs": 2.0,
             "voltage": 300.0,
             "pixel_size": 1,
