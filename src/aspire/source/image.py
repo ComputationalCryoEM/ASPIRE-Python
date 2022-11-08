@@ -71,11 +71,13 @@ class _ImageAccessor:
             )
         if not indices.ndim == 1:
             raise KeyError("Only one-dimensional indexing is allowed for images.")
+
         # check for negative indices and flip to positive
-        neg = indices < 0
-        indices[neg] = indices[neg] % self.num_imgs
+        indices = indices % self.num_imgs
+
         # final check for out-of-range indices
         out_of_range = indices >= self.num_imgs
+
         if out_of_range.any():
             raise KeyError(f"Out-of-range indices: {list(indices[out_of_range])}")
         return self.fun(indices)
