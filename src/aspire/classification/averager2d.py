@@ -100,7 +100,9 @@ class Averager2D(ABC):
             source for a certain operation (ie alignment).
         """
         src = src or self.src
-        return src.images[cls].asnumpy().astype(self.dtype)
+        images = np.zeros((cls.shape[-1], src.L, src.L), dtype=self.dtype)
+        images[:, :, :] = src.images[cls].asnumpy()
+        return images
 
 
 class AligningAverager2D(Averager2D):
