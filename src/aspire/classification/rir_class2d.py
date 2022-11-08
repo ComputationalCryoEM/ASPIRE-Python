@@ -304,7 +304,7 @@ class RIRClass2D(Class2D):
         """
         Perform nearest neighbor classification using scikit learn.
 
-        Note `distances` are as computed by scikit, defaults to Euclidean.
+        Note "distances" are as computed by scikit, defaults to Euclidean.
         """
 
         n_img = self.src.n
@@ -341,7 +341,7 @@ class RIRClass2D(Class2D):
         """
         Perform nearest neighbor classification using port of ASPIRE legacy MATLAB code.
 
-        Note `distances` are dot products, ie "corr".
+        Note `distances` returned from this method are dot products, ie "corr".
         """
 
         # Note kept ordering from legacy code (n_features, n_img)
