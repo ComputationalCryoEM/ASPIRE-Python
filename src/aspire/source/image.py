@@ -7,6 +7,7 @@ from collections.abc import Iterable
 import mrcfile
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
@@ -479,7 +480,8 @@ class ImageSource(ABC):
         signal_mean = 0.0
         noise_mean = 0.0
 
-        for i in range(0, self.n, batch_size):
+        logger.info("Computing signal vs background contrast on source object")
+        for i in tqdm(range(0, self.n, batch_size)):
             images = self.images[i : i + batch_size].asnumpy()
             signal = images * signal_mask
             noise = images * noise_mask
