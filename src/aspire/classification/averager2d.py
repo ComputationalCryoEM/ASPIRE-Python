@@ -100,15 +100,7 @@ class Averager2D(ABC):
             source for a certain operation (ie alignment).
         """
         src = src or self.src
-
-        n_nbor = cls.shape[-1]  # Includes zero'th neighbor
-
-        images = np.empty((n_nbor, src.L, src.L), dtype=self.dtype)
-
-        for i, index in enumerate(cls):
-            images[i] = src.images[index].asnumpy()
-
-        return images
+        return src.images[cls].asnumpy().astype(self.dtype, copy=False)
 
 
 class AligningAverager2D(Averager2D):
