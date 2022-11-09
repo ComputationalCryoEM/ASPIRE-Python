@@ -162,11 +162,11 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         v2 = basis.evaluate_t(x2)
 
         # Reflect in the FB basis space
-        v4 = basis._rotate(v1, 0, refl=[True])
+        v4 = basis.to_real(basis.complex_rotate(basis.to_complex(v1), 0, refl=[True]))
 
-        # Rotate in the FB basis space
-        v3 = basis._rotate(v1, 2 * np.pi)
-        v1 = basis._rotate(v1, -np.pi / 2)
+        # Complex Rotate in the FB basis space
+        v3 = basis.to_real(basis.complex_rotate(basis.to_complex(v1), 2 * np.pi))
+        v1 = basis.to_real(basis.complex_rotate(basis.to_complex(v1), -np.pi / 2))
 
         # Evaluate back into cartesian
         y1 = basis.evaluate(v1)

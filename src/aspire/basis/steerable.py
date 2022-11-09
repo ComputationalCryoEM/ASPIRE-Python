@@ -247,25 +247,6 @@ class SteerableBasis2D(Basis):
 
         return _complex_coef
 
-    def _rotate(self, coef, radians, refl=None):
-        """
-        Returns coefs rotated by `radians`.
-
-        This implementation uses conversion to complex,
-        and application of complex exponential.
-        It is kept in the code for documentation and
-        reference purposes.
-
-        :param coef: Basis coefs.
-        :param radians: Rotation in radians.
-        :param refl: Optional reflect image (bool)
-        :return: rotated coefs.
-        """
-
-        # Base class rotation expects complex representation of coefficients.
-        #  Convert, rotate and convert back to real representation.
-        return self.to_real(self.complex_rotate(self.to_complex(coef), radians, refl))
-
     def shift(self, coef, shifts):
         """
         Returns coefs shifted by `shifts`.
