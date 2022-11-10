@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+from collections.abc import Iterable
 
 from aspire.basis import Basis
 from aspire.utils import complex_type
@@ -20,9 +21,9 @@ class SteerableBasis2D(Basis):
         # Beause they are used for core features of SteerableBasis2D,
         #   cache the indices for positive and negative ells.
         # Note zero is special case.
-        self.zero_angular_inds = self.angular_indices == 0
-        self.pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
-        self.neg_angular_inds = self.signs_indices == -1
+        self._zero_angular_inds = self.angular_indices == 0
+        self._pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
+        self._neg_angular_inds = self.signs_indices == -1
 
     def calculate_bispectrum(
         self, complex_coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
@@ -151,33 +152,37 @@ class SteerableBasis2D(Basis):
         :param refl: Optional reflect image (bool)
         :return: rotated coefs.
         """
+
+        # Enforce a stack axis to support sanity checks
+        coef = np.atleast_2d(coef)
+
         # Covert radians to a broadcastable shape
-        if isinstance(radians, np.ndarray):
+        if isinstance(radians, Iterable):
+            radians = np.fromiter(radians, dtype=self.dtype).reshape(-1,1)
             if len(radians) != len(coef):
                 raise RuntimeError(
                     "`rotate` call `radians` length cannot broadcast with"
                     f" `coef` {len(coef)} != {len(radians)}"
                 )
-            radians = radians.reshape(-1, 1)
         # else: radians can be a constant
 
-        # self.angular_indices are `ks`
-        assert len(self.angular_indices) == coef.shape[-1]
+        assert self.count == coef.shape[-1]
 
+        # self.angular_indices are `ks`
         # For all coef in stack,
         #   compute the ks * radian used in the trig functions
         ks_rad = np.atleast_2d(self.angular_indices * -1 * radians)
-        ks_pos = ks_rad[:, self.pos_angular_inds]
-        ks_neg = ks_rad[:, self.neg_angular_inds]
+        ks_pos = ks_rad[:, self._pos_angular_inds]
+        ks_neg = ks_rad[:, self._neg_angular_inds]
 
         # Slice the coef on postive and negative ells
-        coef_zer = coef[:, self.zero_angular_inds]
-        coef_pos = coef[:, self.pos_angular_inds]
-        coef_neg = coef[:, self.neg_angular_inds]
+        coef_zer = coef[:, self._zero_angular_inds]
+        coef_pos = coef[:, self._pos_angular_inds]
+        coef_neg = coef[:, self._neg_angular_inds]
 
         # Handle zero case and avoid mutating the original array
         coef = np.empty_like(coef)
-        coef[:, self.zero_angular_inds] = coef_zer
+        coef[:, self._zero_angular_inds] = coef_zer
 
         # refl
         if refl is not None:
@@ -188,10 +193,10 @@ class SteerableBasis2D(Basis):
             coef_neg[refl] = coef_neg[refl] * -1
 
         # Apply formula
-        coef[:, self.pos_angular_inds] = coef_pos * np.cos(ks_pos) + coef_neg * np.sin(
+        coef[:, self._pos_angular_inds] = coef_pos * np.cos(ks_pos) + coef_neg * np.sin(
             ks_neg
         )
-        coef[:, self.neg_angular_inds] = coef_neg * np.cos(ks_neg) - coef_pos * np.sin(
+        coef[:, self._neg_angular_inds] = coef_neg * np.cos(ks_neg) - coef_pos * np.sin(
             ks_pos
         )
 
