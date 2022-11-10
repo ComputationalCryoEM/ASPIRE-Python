@@ -112,7 +112,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         x2 = Image(np.rot90(x1.asnumpy(), axes=(1, 2)))
 
         # Express in an FB basis
-        basis = FFBBasis2D((x1.res,) * 2, dtype=x1.dtype)
+        basis = FFBBasis2D(x1.res, dtype=x1.dtype)
         v1 = basis.evaluate_t(x1)
         v2 = basis.evaluate_t(x2)
 
@@ -153,11 +153,11 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         # Extract, this is the original image to transform.
         x1 = src.images[0]
 
-        # __rotate 90 degrees in cartesian coordinates.
+        # Rotate 90 degrees in cartesian coordinates.
         x2 = Image(np.rot90(x1.asnumpy(), axes=(1, 2)))
 
         # Express in an FB basis
-        basis = FFBBasis2D((x1.res,) * 2, dtype=x1.dtype)
+        basis = FFBBasis2D(x1.res, dtype=x1.dtype)
         v1 = basis.evaluate_t(x1)
         v2 = basis.evaluate_t(x2)
 
