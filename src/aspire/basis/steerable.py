@@ -171,7 +171,7 @@ class SteerableBasis2D(Basis):
         # self.angular_indices are `ks`
         # For all coef in stack,
         #   compute the ks * radian used in the trig functions
-        ks_rad = np.atleast_2d(self.angular_indices * -1 * radians)
+        ks_rad = np.atleast_2d(self.angular_indices * radians)
         ks_pos = ks_rad[:, self._pos_angular_inds]
         ks_neg = ks_rad[:, self._neg_angular_inds]
 
@@ -248,7 +248,9 @@ class SteerableBasis2D(Basis):
             # get the coefs corresponding to -ks , aka "ells"
             _complex_coef[refl] = np.conj(complex_coef[refl])
 
-        _complex_coef = _complex_coef * np.exp(-1j * ks * radians)
+        # Note that radians is negated here to match CCW convention
+        # TODO, check if we should need to negate this for CCW.
+        _complex_coef = _complex_coef * np.exp(1j * ks * radians)
 
         return _complex_coef
 

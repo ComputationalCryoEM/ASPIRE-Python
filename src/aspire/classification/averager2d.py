@@ -154,7 +154,7 @@ class AligningAverager2D(Averager2D):
 
         `rotations` is an (n_classes, n_nbor) array of angles,
         which should represent the rotations needed to align images within
-        that class. `rotations` is measured in radians.
+        that class. `rotations` is measured in CCW radians.
 
         `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
         which should represent the translation needed to best align the images
@@ -284,7 +284,7 @@ class BFRAverager2D(AligningAverager2D):
         n_classes, n_nbor = classes.shape
 
         # Construct array of angles to brute force.
-        test_angles = np.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
+        test_angles = np.linspace(0, -2 * np.pi, self.n_angles, endpoint=False)
 
         # Instantiate matrices for results
         rotations = np.empty(classes.shape, dtype=self.dtype)
@@ -416,7 +416,7 @@ class BFSRAverager2D(BFRAverager2D):
 
         # We want to maintain the original coefs for the base images,
         #  because we will mutate them with shifts in the loop.
-        original_coef = basis_coefficients[classes[:, 0], :]
+        original_coef = basis_coefficients[classes[:, 0], :].copy()
         assert original_coef.shape == (n_classes, self.alignment_basis.count)
 
         # Loop over shift search space, updating best result
