@@ -247,7 +247,7 @@ class VolumeTestCase(TestCase):
             rot_mat = Rotation.from_euler(angles).matrices
 
             # Create mask to compare volumes on.
-            selection = grid_3d(L, dtype=self.dtype)["r"] <= 1/2
+            selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 2
 
             for i in range(order):
                 # Rotate volume.
