@@ -640,7 +640,9 @@ class ImageSource(ABC):
                     "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
                 ]
 
-        # Subclass-specific columns are popped to the end of the dataframe
+        # Subclass-specific columns are popped to the end of the dataframe in order:
+        # pop() both removes the given column and returns its data as a Series,
+        # which is then tacked back on to the rightmost side of the df
         for col in local_cols:
             df[col] = df.pop(col)
 
