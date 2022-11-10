@@ -242,12 +242,12 @@ class VolumeTestCase(TestCase):
             vol = vol.generate()
 
             # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
-            angles = np.zeros(shape=(order, 3))
+            angles = np.zeros((order, 3), dtype=self.dtype)
             angles[:, 2] = 2 * np.pi * np.arange(order) / order
             rot_mat = Rotation.from_euler(angles).matrices
 
             # Create mask to compare volumes on.
-            selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 2
+            selection = grid_3d(L, dtype=self.dtype)["r"] <= 1/2
 
             for i in range(order):
                 # Rotate volume.
