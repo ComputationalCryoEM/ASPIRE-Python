@@ -215,7 +215,7 @@ class Volume:
 
     def transpose(self):
         """
-        Returns a new Volume instance with volume data axis tranposed
+        Returns a new Volume instance with volume data axes tranposed.
 
         :return: Volume instance.
         """
