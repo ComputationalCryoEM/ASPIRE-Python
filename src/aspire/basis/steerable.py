@@ -1,7 +1,7 @@
 import logging
+from collections.abc import Iterable
 
 import numpy as np
-from collections.abc import Iterable
 
 from aspire.basis import Basis
 from aspire.utils import complex_type
@@ -158,7 +158,7 @@ class SteerableBasis2D(Basis):
 
         # Covert radians to a broadcastable shape
         if isinstance(radians, Iterable):
-            radians = np.fromiter(radians, dtype=self.dtype).reshape(-1,1)
+            radians = np.fromiter(radians, dtype=self.dtype).reshape(-1, 1)
             if len(radians) != len(coef):
                 raise RuntimeError(
                     "`rotate` call `radians` length cannot broadcast with"
