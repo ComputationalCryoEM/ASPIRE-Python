@@ -186,7 +186,7 @@ class Image:
 
     def transpose(self):
         """
-        Returns a new Image instance with image data axis transposed.
+        Returns a new Image instance with image data axes transposed.
 
         :return: Image instance.
         """
