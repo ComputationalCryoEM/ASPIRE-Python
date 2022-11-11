@@ -234,7 +234,7 @@ original_img_0 = noisy_src.images[original_img_0_idx].asnumpy()[0]
 original_img_nbr = noisy_src.images[original_img_nbr_idx].asnumpy()[0]
 
 # Rotate using estimated rotations.
-angle = -est_rotations[nbr] * 180 / np.pi
+angle = est_rotations[nbr] * 180 / np.pi
 if reflections[review_class][nbr]:
     original_img_nbr = np.flipud(original_img_nbr)
 rotated_img_nbr = np.asarray(PILImage.fromarray(original_img_nbr).rotate(angle))
