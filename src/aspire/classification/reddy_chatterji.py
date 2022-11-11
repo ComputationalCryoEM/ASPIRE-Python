@@ -157,12 +157,7 @@ def reddy_chatterji_register(
         # The registration angle for image[m],
         #   the angle to apply to image[m] to register with reference,
         #   would be the negation of this,
-        recovered_angle_degrees = -1 * recovered_angle_degrees
-
-        if recovered_angle_degrees > 90:
-            r = 180 - recovered_angle_degrees
-        else:
-            r = recovered_angle_degrees
+        r = -1 * recovered_angle_degrees
 
         # For now, try the hack below, attempting two cases ...
         # Some papers mention running entire algos /twice/,
