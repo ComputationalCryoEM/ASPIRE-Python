@@ -4,7 +4,14 @@ import numpy as np
 from parameterized import parameterized_class
 
 from aspire.source.simulation import Simulation
-from aspire.volume import AsymmetricVolume, CnSymmetricVolume, LegacyVolume
+from aspire.volume import (
+    AsymmetricVolume,
+    CnSymmetricVolume,
+    DnSymmetricVolume,
+    LegacyVolume,
+    OSymmetricVolume,
+    TSymmetricVolume,
+)
 
 
 class Base:
@@ -41,6 +48,20 @@ class Base:
 class CnSymmetricVolumeCase(Base, TestCase):
     vol_class = CnSymmetricVolume
     order = 2
+
+
+@parameterized_class(("order"), [(3,), (4,), (5,), (6,)])
+class DnSymmetricVolumeCase(Base, TestCase):
+    vol_class = DnSymmetricVolume
+    order = 2
+
+
+class TSymmetricVolumeCase(Base, TestCase):
+    vol_class = TSymmetricVolume
+
+
+class OSymmetricVolumeCase(Base, TestCase):
+    vol_class = OSymmetricVolume
 
 
 class AsymmetricVolumeCase(Base, TestCase):
