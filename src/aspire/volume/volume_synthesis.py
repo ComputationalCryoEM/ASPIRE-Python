@@ -32,15 +32,17 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
     A base class for all volumes which are generated with randomized 3D Gaussians.
     """
 
-    def __init__(self, L, C, K=16, seed=None, dtype=np.float64):
+    def __init__(self, L, C, K=16, alpha=1, seed=None, dtype=np.float64):
         """
         :param L: Resolution of the Volume(s) in pixels.
         :param C: Number of Volumes to generate.
         :param K: Number of Gaussian blobs used to construct the Volume(s).
+        :param alpha: Scaling factor for variance of Gaussian blobs. Default=1.
         :param seed: Random seed for generating random Gaussian blobs.
         :param dtype: dtype for Volume(s)
         """
         self.K = int(K)
+        self.alpha = alpha
         super().__init__(L=L, C=C, seed=seed, dtype=dtype)
 
     @abc.abstractmethod
@@ -81,7 +83,6 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
 
         :return: Orientations Q, Variances D, Means mu.
         """
-        alpha = 1
         Q = np.zeros(shape=(self.K, 3, 3)).astype(self.dtype)
         D = np.zeros(shape=(self.K, 3, 3)).astype(self.dtype)
         mu = np.zeros(shape=(self.K, 3)).astype(self.dtype)
@@ -89,7 +90,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         for k in range(self.K):
             V = randn(3, 3).astype(self.dtype) / np.sqrt(3)
             Q[k, :, :] = qr(V)[0]
-            D[k, :, :] = alpha**2 / 16 * np.diag(np.sum(abs(V) ** 2, axis=0))
+            D[k, :, :] = self.alpha**2 / self.K * np.diag(np.sum(abs(V) ** 2, axis=0))
             mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
 
         return Q, D, mu
@@ -132,7 +133,7 @@ class CnSymmetricVolume(GaussianBlobsVolume):
     A Volume object with cyclically symmetric volumes constructed of random 3D Gaussian blobs.
     """
 
-    def __init__(self, L, C, order, K=16, seed=None, dtype=np.float64):
+    def __init__(self, L, C, order, K=16, alpha=1, seed=None, dtype=np.float64):
         """
         :param L: Resolution of the Volume(s) in pixels.
         :param C: Number of Volumes to generate.
@@ -143,8 +144,7 @@ class CnSymmetricVolume(GaussianBlobsVolume):
         """
         self.order = int(order)
         self._check_order()
-        self.K = int(K)
-        super().__init__(L=L, C=C, seed=seed, dtype=dtype)
+        super().__init__(L=L, C=C, K=K, alpha=alpha, seed=seed, dtype=dtype)
 
     def _check_order(self):
         if self.order < 2:
@@ -168,7 +168,7 @@ class CnSymmetricVolume(GaussianBlobsVolume):
         for j in range(self.order):
             for k in range(self.K):
                 Q_rot[idx] = rot[j].T @ Q[k]
-                D_sym[idx] = D[k]
+                D_sym[idx] = 1 / self.order * D[k]
                 mu_rot[idx] = rot[j].T @ mu[k]
                 idx += 1
         return Q_rot, D_sym, mu_rot
@@ -198,7 +198,7 @@ class DnSymmetricVolume(CnSymmetricVolume):
             for k in range(self.K):
                 Q_rot[idx] = rot_z[j].T @ Q[k]
                 Q_rot[idx + 1] = rot_perp @ Q_rot[idx]
-                D_sym[idx : idx + 2] = 1 / self.K * D[k]
+                D_sym[idx : idx + 2] = 1 / (2 * self.order) * D[k]
                 mu_rot[idx] = rot_z[j].T @ mu[k]
                 mu_rot[idx + 1] = rot_perp @ mu_rot[idx]
                 idx += 2
@@ -249,7 +249,7 @@ class TSymmetricVolume(GaussianBlobsVolume):
         for rot in rots_T:
             for k in range(self.K):
                 Q_rot[idx] = rot.T @ Q[k]
-                D_sym[idx] = 1 / self.K * D[k]
+                D_sym[idx] = 1 / 12 * D[k]
                 mu_rot[idx] = rot.T @ mu[k]
                 idx += 1
 
@@ -317,7 +317,7 @@ class OSymmetricVolume(GaussianBlobsVolume):
         for rot in rots_O:
             for k in range(self.K):
                 Q_rot[idx] = rot.T @ Q[k]
-                D_sym[idx] = 1 / self.K * D[k]
+                D_sym[idx] = 1 / 24 * D[k]
                 mu_rot[idx] = rot.T @ mu[k]
                 idx += 1
 
