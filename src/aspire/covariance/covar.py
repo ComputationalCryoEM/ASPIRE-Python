@@ -8,7 +8,6 @@ from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
 from tqdm import tqdm
 
-from aspire import config
 from aspire.image import Image
 from aspire.nufft import anufft
 from aspire.operators import evaluate_src_filters_on_grid
@@ -88,20 +87,19 @@ class CovarianceEstimator(Estimator):
 
         return FourierKernel(kernel_f, centered=False)
 
-    def estimate(self, mean_vol, noise_variance, tol=None):
+    def estimate(self, mean_vol, noise_variance, tol=1e-5, regularizer=0):
         logger.info("Running Covariance Estimator")
         b_coeff = self.src_backward(mean_vol, noise_variance)
-        est_coeff = self.conj_grad(b_coeff, tol=tol)
+        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
         covar_est = self.basis.mat_evaluate(est_coeff)
         covar_est = vecmat_to_volmat(make_symmat(volmat_to_vecmat(covar_est)))
         return covar_est
 
-    def conj_grad(self, b_coeff, tol=None):
+    def conj_grad(self, b_coeff, tol=1e-5, regularizer=0):
         b_coeff = symmat_to_vec_iso(b_coeff)
         N = b_coeff.shape[0]
         kernel = self.kernel
 
-        regularizer = config.covar.regularizer
         if regularizer > 0:
             kernel += regularizer
 
@@ -122,7 +120,6 @@ class CovarianceEstimator(Estimator):
                 dtype=self.dtype,
             )
 
-        tol = tol or config.covar.cg_tol
         target_residual = tol * norm(b_coeff)
 
         def cb(xk):
