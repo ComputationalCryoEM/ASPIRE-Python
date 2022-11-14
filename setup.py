@@ -24,6 +24,7 @@ setup(
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
+        "confuse>=2.0.0",
         "finufft",
         "gemmi>=0.4.8",
         "joblib",
