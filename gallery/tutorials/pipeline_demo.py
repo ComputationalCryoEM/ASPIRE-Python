@@ -61,20 +61,22 @@ vol = original_vol.downsample(res)
 # --------------------------
 # ASPIRE's ``Simulation`` class can be used to generate a synthetic dataset of projection images.
 # A ``Simulation`` object produces random projections of a supplied Volume and applies noise and
-# CTF filters to produce an ASPIRE ``Image`` object.
+# CTF filters. The resulting stack of 2D images is stored in an ``Image`` object.
 
 
 # %%
 # Noise and CTF Filters
 # ^^^^^^^^^^^^^^^^^^^^^
 # Let's start by creating noise and CTF filters. The ``operators`` package contains a collection
-# of filter classes that can be applied to a ``Simulation``. We use ``ScalarFilter`` to create
+# of filter classes that can be supplied to a ``Simulation``. We use ``ScalarFilter`` to create
 # Gaussian white noise and ``RadialCTFFilter`` to generate a set of CTF filters with various defocus values.
 
 # Create noise and CTF filters
 from aspire.operators import RadialCTFFilter, ScalarFilter
 
-# Gaussian noise filter
+# Gaussian noise filter.
+# Note, the value supplied to the ``ScalarFilter``, chosen based on other parameters
+# for this quick tutorial, can be changed to adjust the power of the noise.
 noise_filter = ScalarFilter(value=1e-5)
 
 # Radial CTF Filter
@@ -99,6 +101,8 @@ from aspire.source import Simulation
 res = 41
 n_imgs = 2500
 
+# For this ``Simulation`` we set all 2D offset vectors to zero,
+# but by default offset vectors will be randomly distributed.
 src = Simulation(
     L=res,  # resolution
     n=n_imgs,  # number of projections
@@ -112,19 +116,19 @@ src = Simulation(
 # %%
 # Several Views of the Projection Images
 # --------------------------------------
-# We can access several views of the projection images at various levels of filtering.
+# We can access several views of the projection images.
 
-# with no filters
+# with no corruption applied
 src.projections[0:10].show()
 
 # %%
 
-# with no noise filter
+# with no noise corruption
 src.clean_images[0:10].show()
 
 # %%
 
-# with noise and ctf filters
+# with noise and CTF corruption
 src.images[0:10].show()
 
 
@@ -140,10 +144,10 @@ src.images[0:10].show()
 # %%
 # Class Averaging
 # ---------------
-# We use an ASPIRE ``RIRClass2D`` object to classify the images via the rotationally invariant
-# representation (RIR) algorithm. ``RIRClass2D`` has a ``selector`` option that selects a set
-# of images to be used as base images for classisfication. In this example, we use ``TopClassSelector``,
-# which selects the first ``n_classes`` images from the source.
+# We use ``RIRClass2D`` object to classify the images via the rotationally invariant
+# representation (RIR) algorithm. Class selection is customizable. The classification module
+# also includes a set of protocols for selecting a set of images to be used for classification.
+# Here we're using ``TopClassSelector``, which selects the first ``n_classes`` images from the source.
 
 from aspire.classification import RIRClass2D, TopClassSelector
 
@@ -151,7 +155,8 @@ from aspire.classification import RIRClass2D, TopClassSelector
 n_classes = 200
 n_nbor = 6
 
-# Create a class averaging instance
+# Create a class averaging instance. Note that the ``fspca_components`` and
+# ``bispectrum_components`` were selected for this small tutorial.
 rir = RIRClass2D(
     src,
     fspca_components=40,
@@ -175,7 +180,8 @@ avgs.images[0:10].show()
 
 # %%
 
-# Show original images corresponding to those classes
+# Show original images corresponding to those classes. This 1:1 comparison is only expected to
+# work because we used ``TopClassSelector`` to classify our images.
 src.images[0:10].show()
 
 
@@ -200,7 +206,7 @@ rots_est = orient_est.rotations
 # %%
 # Mean Squared Error
 # ------------------
-# ASIPRE has some built in utility functions for globally aligning the estimated rotations
+# ASIPRE has some built-in utility functions for globally aligning the estimated rotations
 # to the true rotations and computing the mean squared error.
 
 from aspire.utils.coor_trans import (
@@ -229,7 +235,7 @@ from aspire.reconstruction import MeanEstimator
 avgs.rotations = rots_est
 
 # Create a reasonable Basis for the 3d Volume
-basis = FFBBasis3D((res,) * 3, dtype=vol.dtype)
+basis = FFBBasis3D(res, dtype=vol.dtype)
 
 # Setup an estimator to perform the back projection.
 estimator = MeanEstimator(avgs, basis)
