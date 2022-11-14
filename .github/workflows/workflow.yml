@@ -75,6 +75,7 @@ jobs:
       shell: bash
 
   decaf_ampere:
+    needs: check
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2
