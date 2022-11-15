@@ -1,3 +1,4 @@
+version: 0.10.0
 common:
     # numeric module to use - one of numpy/cupy
     numeric: numpy

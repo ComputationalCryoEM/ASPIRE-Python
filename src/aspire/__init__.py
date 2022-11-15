@@ -16,8 +16,8 @@ __version__ = "0.10.0"
 
 
 # Setup `confuse` config
-# This is probably where we would add a config validation template for required vars?
 config = confuse.LazyConfig("ASPIRE", __name__)
+logging.debug(f"ASPIRE configuration directory is {config.config_dir()}")
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 if config["logging"]["log_exceptions"].get(int):
