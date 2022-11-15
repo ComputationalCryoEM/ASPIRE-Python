@@ -31,7 +31,7 @@ Review the default ASPIRE configuration and common patterns for overriding.
 # the logging directory from a local ``logs`` folder to ``/tmp/aspire_logs``.
 
 # %%
-""" 
+"""
 logging:
    # I prefer to log to /tmp so they get cleaned up when I reboot.
    log_dir: /tmp/logs
