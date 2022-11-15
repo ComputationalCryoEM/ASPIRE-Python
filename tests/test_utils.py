@@ -167,7 +167,7 @@ class UtilsTestCase(TestCase):
         outside = g["r"] >= 1
 
         # Test that volume is zero outside of support
-        self.assertTrue(np.allclose(bumped_volume[outside], 0))
+        self.assertTrue(bumped_volume[outside].all() == 0)
 
         # Test that volume is positive inside support
         self.assertTrue((bumped_volume[inside] > 0).all())
