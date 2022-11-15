@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire import cconfig
+from aspire import config
 from aspire.utils import complex_type, real_type
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ def check_backends(raise_errors=True):
             return plan_class
 
     # Note this dictionary is intentionally ordered
-    backends = {k: _try_backend(k) for k in cconfig["nufft"]["backends"].get(list)}
+    backends = {k: _try_backend(k) for k in config["nufft"]["backends"].get(list)}
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
         logger.info(f"Selected NFFT backend = {default_backend}.")
