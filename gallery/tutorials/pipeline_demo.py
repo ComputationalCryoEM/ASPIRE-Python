@@ -164,6 +164,7 @@ rir = RIRClass2D(
     n_nbor=n_nbor,
     n_classes=n_classes,
     selector=TopClassSelector(),
+    num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
 # classify and average
