@@ -216,32 +216,33 @@ class TSymmetricVolume(GaussianBlobsVolume):
         """
         # A tetrahedron has C3 symmetry along the 4 axes through each vertex and
         # perpendicular to the opposite face, and C2 symmetry along the axes through
-        # through the midpoints of opposite edges. We use axis-angles representation
-        # to generate the rotation matrices.
+        # through the midpoints of opposite edges. We convert axis-angle representation
+        # of the symmetry groups to rotation vectors to generate the rotation matrices.
+
+        # C3 rotation vectors, ie. angle * axis.
         axes_C3 = np.array(
             [[1, 1, 1], [-1, -1, 1], [1, -1, -1], [-1, 1, -1]], dtype=self.dtype
         )
+        axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
         angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=self.dtype)
-        rots_C3 = np.zeros((8, 3, 3), dtype=self.dtype)
-        idx = 0
-        for axis in axes_C3:
-            rots_C3[idx : idx + 2] = Rotation.from_axis_angle(
-                axis, angles_C3, dtype=self.dtype
-            ).matrices
-            idx += 2
+        rot_vecs_C3 = np.array(
+            [angle * axes_C3 for angle in angles_C3], dtype=self.dtype
+        ).reshape((8, 3))
 
-        # C2 rotations.
+        # C2 rotation vectors.
         axes_C2 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=self.dtype)
-        rots_C2 = np.zeros((3, 3, 3), dtype=self.dtype)
-        for i, axis in enumerate(axes_C2):
-            rots_C2[i] = Rotation.from_axis_angle(
-                axis, np.pi, dtype=self.dtype
-            ).matrices
+        rot_vecs_C2 = np.pi * axes_C2
 
-        # The full set of rotations inducing tetrahedral symmetry.
-        identity = np.eye(3, dtype=self.dtype).reshape((1, 3, 3))
-        rots_T = np.concatenate((identity, rots_C3, rots_C2), dtype=self.dtype)
+        # The full set of rotation vectors inducing tetrahedral symmetry.
+        rot_vec_I = np.zeros((1, 3), dtype=self.dtype)
+        rot_vecs = np.concatenate(
+            (rot_vec_I, rot_vecs_C3, rot_vecs_C2), dtype=self.dtype
+        )
 
+        # Generate rotations.
+        rots_T = Rotation.from_rotvec(rot_vecs, dtype=self.dtype).matrices
+
+        # Populate coordinates for Gaussian blobs.
         Q_rot = np.zeros((12 * self.K, 3, 3)).astype(self.dtype)
         D_sym = np.zeros((12 * self.K, 3, 3)).astype(self.dtype)
         mu_rot = np.zeros((12 * self.K, 3)).astype(self.dtype)
@@ -268,48 +269,44 @@ class OSymmetricVolume(GaussianBlobsVolume):
         # The symmetry group elements of the octahedral symmetry group O are the identity,
         # the elements of 3 C4 rotation groups whose axes pass through two opposite vertices of the
         # regular octahedron, 4 C3 rotation groups whose axes pass through the midpoints of two of
-        # its opposite faces, and 6 C2 rotation groups whose axe pass through the midpoints of two of
+        # its opposite faces, and 6 C2 rotation groups whose axes pass through the midpoints of two of
         # its opposite edges.
 
-        # C4 rotations
+        # C4 rotation vectors, ie angle * axis
         axes_C4 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=self.dtype)
         angles_C4 = np.array([np.pi / 2, np.pi, 3 * np.pi / 2], dtype=self.dtype)
-        rots_C4 = np.zeros((9, 3, 3), dtype=self.dtype)
-        idx = 0
-        for axis in axes_C4:
-            rots_C4[idx : idx + 3] = Rotation.from_axis_angle(
-                axis, angles_C4, dtype=self.dtype
-            ).matrices
-            idx += 3
+        rot_vecs_C4 = np.array(
+            [angle * axes_C4 for angle in angles_C4], dtype=self.dtype
+        ).reshape((9, 3))
 
-        # C3 rotations
+        # C3 rotation vectors
         axes_C3 = np.array(
             [[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1]], dtype=self.dtype
         )
+        axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
         angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=self.dtype)
-        rots_C3 = np.zeros((8, 3, 3), dtype=self.dtype)
-        idx = 0
-        for axis in axes_C3:
-            rots_C3[idx : idx + 2] = Rotation.from_axis_angle(
-                axis, angles_C3, dtype=self.dtype
-            ).matrices
-            idx += 2
+        rot_vecs_C3 = np.array(
+            [angle * axes_C3 for angle in angles_C3], dtype=self.dtype
+        ).reshape((8, 3))
 
-        # C2 rotations
+        # C2 rotation vectors
         axes_C2 = np.array(
             [[1, 1, 0], [-1, 1, 0], [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1]],
             dtype=self.dtype,
         )
-        rots_C2 = np.zeros((6, 3, 3), dtype=self.dtype)
-        for i, axis in enumerate(axes_C2):
-            rots_C2[i] = Rotation.from_axis_angle(
-                axis, np.pi, dtype=self.dtype
-            ).matrices
+        axes_C2 /= np.linalg.norm(axes_C2, axis=-1)[..., np.newaxis]
+        rot_vecs_C2 = np.pi * axes_C2
 
-        # The full set of rotations inducing octahedral symmetry.
-        identity = np.eye(3, dtype=self.dtype).reshape((1, 3, 3))
-        rots_O = np.concatenate((identity, rots_C4, rots_C3, rots_C2), dtype=self.dtype)
+        # The full set of rotation vectors inducing octahedral symmetry.
+        rot_vec_I = np.zeros((1, 3), dtype=self.dtype)
+        rot_vecs = np.concatenate(
+            (rot_vec_I, rot_vecs_C4, rot_vecs_C3, rot_vecs_C2), dtype=self.dtype
+        )
 
+        # Generate rotations.
+        rots_O = Rotation.from_rotvec(rot_vecs, dtype=self.dtype).matrices
+
+        # Populate coordinates for Gaussian blobs.
         Q_rot = np.zeros((24 * self.K, 3, 3)).astype(self.dtype)
         D_sym = np.zeros((24 * self.K, 3, 3)).astype(self.dtype)
         mu_rot = np.zeros((24 * self.K, 3)).astype(self.dtype)
