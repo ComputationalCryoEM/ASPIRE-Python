@@ -266,45 +266,6 @@ class Rotation:
         return Rotation(matrix)
 
     @staticmethod
-    def from_axis_angle(axis, angles, dtype=np.float32):
-        """
-        Build rotation object given the axis-angle representation.
-
-        :param axis: A 1x3 array representing the axis of rotation.
-        :param angles: angles of rotation.
-
-        :return: A Rotation object
-        """
-        axis /= np.linalg.norm(axis)
-
-        angles = np.asarray(angles, dtype=dtype)
-        if angles.ndim > 2:
-            raise ValueError(
-                f"`angles` must be float, 1D array, or 2D array. Got shape {angles.shape}."
-            )
-        elif angles.ndim == 2 and angles.shape[-1] != 1:
-            raise ValueError(
-                f"Expected `angles` to have shape (N,1), got {angles.shape}"
-            )
-
-        # cross-product matrix
-        K = np.array(
-            [[0, -axis[2], axis[1]], [axis[2], 0, -axis[0]], [-axis[1], axis[0], 0]]
-        )
-
-        # Rodrigues' rotation formula
-        if angles.size == 1:
-            matrices = np.eye(3) + np.sin(angles) * K + (1 - np.cos(angles)) * K @ K
-        else:
-            matrices = np.zeros((len(angles), 3, 3), dtype=dtype)
-            for i, theta in enumerate(angles):
-                matrices[i] = (
-                    np.eye(3) + np.sin(theta) * K + (1 - np.cos(theta)) * K @ K
-                )
-
-        return Rotation(matrices)
-
-    @staticmethod
     def from_rotvec(vec, dtype=np.float32):
         """
         Build a Rotation object from rotation vectors. A rotation vector is a

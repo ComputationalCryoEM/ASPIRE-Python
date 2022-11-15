@@ -5,6 +5,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as sp_rot
 
 from aspire.utils import Rotation, utest_tolerance
+from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
@@ -122,3 +123,16 @@ class UtilsTestCase(TestCase):
         self.assertTrue(
             np.allclose(angles, angular_dist, atol=utest_tolerance(self.dtype))
         )
+
+    def testFromRotvec(self):
+        # Build random rotation vectors.
+        axis = randn(3, seed=222)
+        axis /= np.linalg.norm(axis)
+        rot_vecs = np.array([angle * axis for angle in self.angles], dtype=self.dtype)
+
+        rotations = Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
+        ref_rots = sp_rot.from_rotvec(rot_vecs).as_matrix()
+
+        self.assertTrue(isinstance(rotations, Rotation))
+        self.assertTrue(rotations.matrices.dtype == self.dtype)
+        self.assertTrue(np.allclose(rotations.matrices, ref_rots))
