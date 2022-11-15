@@ -273,7 +273,7 @@ class VolumeTestCase(TestCase):
         outside = g_3d["r"] > 1
 
         # Check that volume is zero outside of support and positive inside.
-        self.assertTrue(np.allclose(vol[0][outside], 0))
+        self.assertTrue(vol[0][outside].all() == 0)
         self.assertTrue((vol[0][inside] > 0).all())
 
     def to_vec(self):
