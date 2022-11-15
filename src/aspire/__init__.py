@@ -9,7 +9,6 @@ from pathlib import Path
 import confuse
 
 import aspire
-from aspire.config import Config
 from aspire.exceptions import handle_exception
 
 # version in maj.min.bld format
@@ -21,7 +20,6 @@ __version__ = "0.10.0"
 cconfig = confuse.LazyConfig("ASPIRE", __name__)
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
-config = Config(read_text(aspire, "config.ini"))
 if cconfig["logging"]["log_exceptions"].get(int):
     import sys
 
