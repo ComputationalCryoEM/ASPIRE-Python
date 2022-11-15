@@ -6,6 +6,8 @@ from datetime import datetime
 from importlib.resources import read_text
 from pathlib import Path
 
+import confuse
+
 import aspire
 from aspire.config import Config
 from aspire.exceptions import handle_exception
@@ -33,6 +35,11 @@ logging.config.fileConfig(
         "log_dir": config.logging.log_dir,
     },
 )
+
+# Setup `confuse` config
+# This is probably where we would add a config validation template for required vars?
+cconfig = confuse.LazyConfig('ASPIRE', __name__)
+
 
 __all__ = []
 for _, modname, _ in pkgutil.iter_modules(aspire.__path__):

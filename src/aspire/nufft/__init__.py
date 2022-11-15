@@ -1,9 +1,8 @@
 import logging
-from collections import OrderedDict
 
 import numpy as np
 
-from aspire import config
+from aspire import cconfig
 from aspire.utils import complex_type, real_type
 
 logger = logging.getLogger(__name__)
@@ -86,7 +85,8 @@ def check_backends(raise_errors=True):
             logger.info(f"NFFT backend {backend} usable.")
             return plan_class
 
-    backends = OrderedDict((k, _try_backend(k)) for k in config.nfft.backends)
+    # Note this dictionary is intentionally ordered
+    backends = {k: _try_backend(k) for k in cconfig['nufft']['backends'].get(list)}
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
         logger.info(f"Selected NFFT backend = {default_backend}.")
