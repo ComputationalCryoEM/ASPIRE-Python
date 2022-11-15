@@ -17,16 +17,11 @@ __version__ = "0.10.0"
 
 # Setup `confuse` config
 config = confuse.LazyConfig("ASPIRE", __name__)
-logging.debug(f"ASPIRE configuration directory is {config.config_dir()}")
 
-# Implements some code that writes out exceptions to 'aspire.err.log'.
-if config["logging"]["log_exceptions"].get(int):
-    import sys
-
-    sys.excepthook = handle_exception
-
-# Ensure the log_dir exists
-config["logging"]["log_dir"].as_path().mkdir(parents=True, exist_ok=True)
+# Ensure the log_dir exists.
+# TODO: Discuss the behavior/location of log_dir
+log_dir = config["logging"]["log_dir"].get(confuse.Filename(cwd="."))
+Path(log_dir).mkdir(parents=True, exist_ok=True)
 
 # Generates file name details and opens log file defined in config file.
 # The default is to use the current time stamp provided in the dictionary,
@@ -35,9 +30,18 @@ logging.config.fileConfig(
     os.path.join(os.path.dirname(__file__), "logging.conf"),
     defaults={
         "dt_stamp": datetime.now().strftime("%Y-%m-%dT%H-%M-%S.%f"),
-        "log_dir": config["logging"]["log_dir"].as_str(),
+        "log_dir": log_dir,
     },
 )
+
+# Log where the package resolves `config_dir()` at this time
+logging.debug(f"ASPIRE initial configuration directory is {config.config_dir()}")
+
+# Implements some code that writes out exceptions to 'aspire.err.log'.
+if config["logging"]["log_exceptions"].get(int):
+    import sys
+
+    sys.excepthook = handle_exception
 
 
 __all__ = []
