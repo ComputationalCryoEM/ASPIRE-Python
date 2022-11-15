@@ -265,8 +265,7 @@ class VolumeTestCase(TestCase):
         L = self.res
         dtype = self.dtype
 
-        vol = AsymmetricVolume(L=L, C=1, dtype=dtype)
-        vol = vol.generate()
+        vol = AsymmetricVolume(L=L, C=1, dtype=dtype).generate()
 
         # Mask to check support
         g_3d = grid_3d(L, dtype=dtype)
