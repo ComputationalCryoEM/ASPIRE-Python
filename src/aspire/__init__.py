@@ -16,10 +16,10 @@ __version__ = "0.10.0"
 
 
 # Setup `confuse` config
-config = confuse.LazyConfig("ASPIRE", __name__)
+config = confuse.Configuration("ASPIRE", __name__)
 
 # Ensure the log_dir exists.
-# TODO: Discuss the behavior/location of log_dir
+# TODO: Discuss the behavior/location of log_dir.
 log_dir = config["logging"]["log_dir"].get(confuse.Filename(cwd="."))
 Path(log_dir).mkdir(parents=True, exist_ok=True)
 
@@ -34,8 +34,18 @@ logging.config.fileConfig(
     },
 )
 
-# Log where the package resolves `config_dir()` at this time
-logging.debug(f"ASPIRE initial configuration directory is {config.config_dir()}")
+# Log where the package resolves `config_dir()`.
+logging.debug(f"ASPIRE configuration directory is {config.config_dir()}")
+
+# Log the resolution of configuration (ie overrides).
+# The list is a stack of configuration sources,
+#   with each entry specifying the variables overridden.
+logging.debug(
+    f"ASPIRE configuration resolution details {list(aspire.config.resolve())}"
+)
+
+# Dump the config at `aspire` import time to our log.
+logging.debug(f"Resolved config.yaml:\n{aspire.config.dump()}\n")
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 if config["logging"]["log_exceptions"].get(int):
