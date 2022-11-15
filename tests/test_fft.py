@@ -2,14 +2,14 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire import config
+from aspire import cconfig
 from aspire.numeric import fft_object, numeric_object
 
 # Create test option combinations between numerical modules and FFT libs
 test_backends = [("numpy", "scipy"), ("numpy", "pyfftw")]
 
 # Create Cupy fft backend if Cupy module is enabled and lib exits.
-if config.common.numeric == "cupy":
+if cconfig["common"]["numeric"].get(str) == "cupy":
     test_backends.append(("cupy", "cupy"))
 
 # Create test objects from option combinations

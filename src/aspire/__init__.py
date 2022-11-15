@@ -15,15 +15,20 @@ from aspire.exceptions import handle_exception
 # version in maj.min.bld format
 __version__ = "0.10.0"
 
+
+# Setup `confuse` config
+# This is probably where we would add a config validation template for required vars?
+cconfig = confuse.LazyConfig("ASPIRE", __name__)
+
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 config = Config(read_text(aspire, "config.ini"))
-if config.logging.log_exceptions:
+if cconfig["logging"]["log_exceptions"].get(int):
     import sys
 
     sys.excepthook = handle_exception
 
 # Ensure the log_dir exists
-Path(config.logging.log_dir).mkdir(parents=True, exist_ok=True)
+Path(cconfig["logging"]["log_dir"].get(str)).mkdir(parents=True, exist_ok=True)
 
 # Generates file name details and opens log file defined in config file.
 # The default is to use the current time stamp provided in the dictionary,
@@ -32,13 +37,9 @@ logging.config.fileConfig(
     os.path.join(os.path.dirname(__file__), "logging.conf"),
     defaults={
         "dt_stamp": datetime.now().strftime("%Y-%m-%dT%H-%M-%S.%f"),
-        "log_dir": config.logging.log_dir,
+        "log_dir": cconfig["logging"]["log_dir"].get(str),
     },
 )
-
-# Setup `confuse` config
-# This is probably where we would add a config validation template for required vars?
-cconfig = confuse.LazyConfig('ASPIRE', __name__)
 
 
 __all__ = []

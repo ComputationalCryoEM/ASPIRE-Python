@@ -1,6 +1,6 @@
 import logging
 
-from aspire import config
+from aspire import cconfig
 
 from .complex_pca.complex_pca import ComplexPCA
 
@@ -17,7 +17,7 @@ def numeric_object(which):
     return NumericClass()
 
 
-xp = numeric_object(config.common.numeric)
+xp = numeric_object(cconfig["common"]["numeric"].get(str))
 
 
 def fft_object(which):
@@ -32,4 +32,4 @@ def fft_object(which):
     return FFTClass()
 
 
-fft = fft_object(config.common.fft)
+fft = fft_object(cconfig["common"]["fft"].get(str))
