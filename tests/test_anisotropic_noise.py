@@ -113,6 +113,7 @@ class SimTestCase(TestCase):
                         +0.00113591,
                     ],
                 ],
+                atol=utest_tolerance(self.sim.dtype),
             )
         )
 
