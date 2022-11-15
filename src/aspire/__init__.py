@@ -26,7 +26,7 @@ if config["logging"]["log_exceptions"].get(int):
     sys.excepthook = handle_exception
 
 # Ensure the log_dir exists
-Path(config["logging"]["log_dir"].get(str)).mkdir(parents=True, exist_ok=True)
+config["logging"]["log_dir"].as_path().mkdir(parents=True, exist_ok=True)
 
 # Generates file name details and opens log file defined in config file.
 # The default is to use the current time stamp provided in the dictionary,
@@ -35,7 +35,7 @@ logging.config.fileConfig(
     os.path.join(os.path.dirname(__file__), "logging.conf"),
     defaults={
         "dt_stamp": datetime.now().strftime("%Y-%m-%dT%H-%M-%S.%f"),
-        "log_dir": config["logging"]["log_dir"].get(str),
+        "log_dir": config["logging"]["log_dir"].as_str(),
     },
 )
 
