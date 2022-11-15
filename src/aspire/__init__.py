@@ -3,7 +3,6 @@ import logging.config
 import os
 import pkgutil
 from datetime import datetime
-from importlib.resources import read_text
 from pathlib import Path
 
 import confuse
