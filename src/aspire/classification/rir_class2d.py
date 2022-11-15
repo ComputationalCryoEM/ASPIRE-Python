@@ -98,6 +98,7 @@ class RIRClass2D(Class2D):
             raise ValueError(
                 f"Provided nn_implementation={nn_implementation} not in {nn_implementations.keys()}"
             )
+        self._nn_implementation = nn_implementation  # Save str for logger
         self._nn_classification = nn_implementations[nn_implementation]
 
         # # Do we have a sane Large Dataset PCA
@@ -215,7 +216,7 @@ class RIRClass2D(Class2D):
         coef_b, coef_b_r = self.bispectrum(self.fspca_coef)
 
         # # Stage 2: Compute Nearest Neighbors
-        logger.info("Calculate Nearest Neighbors")
+        logger.info(f"Calculate Nearest Neighbors using {self._nn_implementation}.")
         classes, reflections, distances = self.nn_classification(coef_b, coef_b_r)
 
         if diagnostics:
@@ -300,7 +301,11 @@ class RIRClass2D(Class2D):
         return self._bispectrum(coef)
 
     def _sk_nn_classification(self, coeff_b, coeff_b_r):
-        # Before we get clever lets just use a generally accepted implementation.
+        """
+        Perform nearest neighbor classification using scikit learn.
+
+        Note "distances" are as computed by scikit, defaults to Euclidean.
+        """
 
         n_img = self.src.n
 
@@ -334,7 +339,9 @@ class RIRClass2D(Class2D):
 
     def _legacy_nn_classification(self, coeff_b, coeff_b_r):
         """
-        Perform nearest neighbor classification.
+        Perform nearest neighbor classification using port of ASPIRE legacy MATLAB code.
+
+        Note `distances` returned from this method are dot products, ie "corr".
         """
 
         # Note kept ordering from legacy code (n_features, n_img)
@@ -356,7 +363,7 @@ class RIRClass2D(Class2D):
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
         distances = np.zeros((n_im, n_nbor), dtype=self.dtype)
-        for i in range(num_batches):
+        for i in tqdm(range(num_batches)):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, n_im)
             corr = np.real(

@@ -35,7 +35,6 @@ import logging
 import os
 
 import matplotlib.pyplot as plt
-import mrcfile
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
@@ -97,15 +96,12 @@ logger = logging.getLogger(__name__)
 # -----------------
 
 # A low res example file is included in the repo as a sanity check.
+# We can instantiate this as an ASPIRE Volume instance using ``Volume.load()``.
 DATA_DIR = "data"
-infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
+v = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 
 # More interesting data requires downloading locally.
-# infile = mrcfile.open("EMD-2660/map/emd_2660.map")
-
-d = infile.data
-logger.info(f"map data shape: {d.shape} dtype:{d.dtype}")
-v = Volume(d)
+# v = Volume.load("EMD-2660/map/emd_2660.map")
 
 # Downsample the volume to a desired resolution
 img_size = 64

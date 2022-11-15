@@ -213,16 +213,11 @@ class Volume:
 
     def transpose(self):
         """
-        Returns a new Volume instance with volume data axis tranposed
+        Returns a new Volume instance with volume data axes tranposed.
 
         :return: Volume instance.
         """
-
-        vol_t = np.empty_like(self._data)
-        for n, v in enumerate(self._data):
-            vol_t[n] = v.T
-
-        return Volume(vol_t)
+        return Volume(np.transpose(self._data, (0, 3, 2, 1)))
 
     @property
     def T(self):

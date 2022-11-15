@@ -30,4 +30,4 @@ orient_est_src = orient_est.save_rotations()
 
 # Output orientational angles
 print("Save orientational angles to STAR file.")
-orient_est_src.save_metadata(STARFILE_OUT, new_mrcs=False)
+orient_est_src.save_metadata(STARFILE_OUT)

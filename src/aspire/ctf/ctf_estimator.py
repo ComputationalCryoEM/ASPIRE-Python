@@ -59,13 +59,13 @@ class CtfEstimator:
         self.voltage = voltage
         self.psd_size = psd_size
         self.num_tapers = num_tapers
-        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # (Angstrom)
+        self.lmbd = voltage_to_wavelength(voltage)  # Angstrom
         self.dtype = np.dtype(dtype)
 
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
 
         # Note range is -half to half.
-        self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
+        self.r_ctf = grid["r"] / 2 * (1 / pixel_size)  # units: inverse angstrom
 
         self.theta = grid["phi"]
         self.defocus1 = 0
@@ -126,7 +126,7 @@ class CtfEstimator:
 
         chi = (
             defocus_factor
-            - np.pi * self.lmbd**3 * self.cs * 1e6 * self.r_ctf**2 / 2
+            - np.pi * self.lmbd**3 * self.cs * 1e7 * self.r_ctf**2 / 2
             + amplitude_contrast_term
         )
         h = -np.sin(chi)
@@ -406,7 +406,7 @@ class CtfEstimator:
         grid = grid_1d(N, normalized=True, dtype=self.dtype)
         rb = grid["x"][center:] / 2
 
-        r_ctf = rb * (10 / pixel_size)  # units: inverse nm
+        r_ctf = rb * (1 / pixel_size)  # units: inverse angstrom
 
         signal = amplitude_spectrum.T
         signal = np.maximum(0.0, signal)
@@ -420,7 +420,7 @@ class CtfEstimator:
             ctf_im = np.abs(
                 np.sin(
                     np.pi * lmbd * f * r_ctf_sq
-                    - 0.5 * np.pi * (lmbd**3) * cs * 1e6 * r_ctf_sq**2
+                    - 0.5 * np.pi * (lmbd**3) * cs * 1e7 * r_ctf_sq**2
                     + w
                 )
             )
@@ -490,7 +490,7 @@ class CtfEstimator:
 
         grid = grid_2d(N, normalized=True, indexing="yx", dtype=self.dtype)
 
-        r_ctf = grid["r"] / 2 * (10 / pixel_size)
+        r_ctf = grid["r"] / 2 * (1 / pixel_size)
 
         grid = grid_2d(N, normalized=False, indexing="yx", dtype=self.dtype)
         X = grid["x"]
@@ -570,7 +570,7 @@ class CtfEstimator:
         z = (df1 - df2) * np.sin(2 * angle_ast)
 
         a = np.pi * lmbd * r**2 / 2
-        b = np.pi * lmbd**3 * cs * 1e6 * r**4 / 2 - np.full(
+        b = np.pi * lmbd**3 * cs * 1e7 * r**4 / 2 - np.full(
             shape=r.shape, fill_value=amplitude_contrast, dtype=self.dtype
         )
 
@@ -726,7 +726,7 @@ def estimate_ctf(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
 
-    lmbd = voltage_to_wavelength(voltage) / 10  # (Angstrom)
+    lmbd = voltage_to_wavelength(voltage)  # Angstrom
 
     ctf_object = CtfEstimator(
         pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
@@ -766,7 +766,7 @@ def estimate_ctf(
             signal_1d,
             pixel_size,
             cs,
-            lmbd,  # (Angstrom)
+            lmbd,  # Angstrom
             amplitude_contrast,
             signal_observed.shape[-1],
         )
@@ -789,7 +789,7 @@ def estimate_ctf(
 
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=dtype)
 
-        r_ctf = grid["r"] / 2 * (10 / pixel_size)
+        r_ctf = grid["r"] / 2 * (1 / pixel_size)
         theta = grid["phi"]
 
         angle = -5 / 12 * np.pi  # Radians (-75 degrees)
@@ -806,7 +806,7 @@ def estimate_ctf(
                 g_min,
                 g_max,
                 amplitude_contrast,
-                lmbd,  # (Angstrom)
+                lmbd,  # Angstrom
                 cs,
             )
 
@@ -850,8 +850,9 @@ def estimate_ctf(
             ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
                 2 * theta - 2 * cc_array[ml, 2] * np.ones(theta.shape, theta.dtype)
             )
+            # Note `lmbd` units in Angstroms
             ctf_im = -np.sin(
-                np.pi * lmbd * r_ctf**2 / 2 * (df - lmbd**2 * r_ctf**2 * cs * 1e6)
+                np.pi * lmbd * r_ctf**2 / 2 * (df - lmbd**2 * r_ctf**2 * cs * 1e7)
                 + amplitude_contrast
             )
             ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)

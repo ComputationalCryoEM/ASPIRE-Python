@@ -513,8 +513,16 @@ class SimTestCase(TestCase):
             # Save the simulation object into STAR and MRCS files
             star_filepath = os.path.join(tmpdir, "save_test.star")
             # Save images into one single MRCS file
-            self.sim.save(
+            info = self.sim.save(
                 star_filepath, batch_size=512, save_mode="single", overwrite=False
+            )
+            # check info output by save()
+            self.assertEqual(
+                info,
+                {
+                    "starfile": star_filepath,
+                    "mrcs": [f"save_test_0_{self.sim.n-1}.mrcs"],
+                },
             )
             imgs_org = self.sim.images[:1024]
             # Input saved images into Relion object
@@ -523,7 +531,19 @@ class SimTestCase(TestCase):
             # Compare original images with saved images
             self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
             # Save images into multiple MRCS files based on batch size
-            self.sim.save(star_filepath, batch_size=512, overwrite=False)
+            batch_size = 512
+            info = self.sim.save(star_filepath, batch_size=batch_size, overwrite=False)
+            # check info output by save()
+            self.assertEqual(
+                info,
+                {
+                    "starfile": star_filepath,
+                    "mrcs": [
+                        f"save_test_{i}_{i+batch_size-1}.mrcs"
+                        for i in range(0, self.sim.n, batch_size)
+                    ],
+                },
+            )
             # Input saved images into Relion object
             relion_src = RelionSource(star_filepath, tmpdir, max_rows=1024)
             imgs_sav = relion_src.images[:1024]

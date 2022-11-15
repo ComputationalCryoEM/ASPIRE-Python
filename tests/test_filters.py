@@ -119,6 +119,10 @@ class SimTestCase(TestCase):
         result = filter.evaluate_grid(8, dtype=self.dtype)
 
         self.assertEqual(result.shape, (8, 8))
+
+        # Setting tolerence to 1e-4.
+        # After precision was improved on `voltage_to_wavelength` method this reference array
+        # is no longer within utest_tolerance: np.max(abs(result - reference)) = 5.2729227306036464e-05
         self.assertTrue(
             np.allclose(
                 result,
@@ -206,7 +210,7 @@ class SimTestCase(TestCase):
                         ],
                     ]
                 ),
-                atol=utest_tolerance(self.dtype),
+                atol=1e-4,
             )
         )
 
@@ -215,6 +219,10 @@ class SimTestCase(TestCase):
         result = filter.evaluate_grid(8, dtype=self.dtype)
 
         self.assertEqual(result.shape, (8, 8))
+
+        # Setting tolerence to 1e-4.
+        # After precision was improved on `voltage_to_wavelength` method this reference array
+        # is no longer within utest_tolerance: np.max(abs(result - reference)) = 4.869387449749074e-05
         self.assertTrue(
             np.allclose(
                 result,
@@ -303,7 +311,7 @@ class SimTestCase(TestCase):
                     ]
                 )
                 ** 2,
-                atol=utest_tolerance(self.dtype),
+                atol=1e-4,
             )
         )
 
