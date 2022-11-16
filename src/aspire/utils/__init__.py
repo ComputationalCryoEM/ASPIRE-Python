@@ -20,6 +20,7 @@ from .misc import (  # isort:skip
     gaussian_2d,
     gaussian_3d,
     get_full_version,
+    importlib_path,
     inverse_r,
     J_conjugate,
     pairs_to_linear,
