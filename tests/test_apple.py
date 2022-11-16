@@ -1,4 +1,3 @@
-import importlib.resources
 import os
 import tempfile
 from shutil import copyfile
@@ -8,6 +7,7 @@ import mrcfile
 
 import tests.saved_test_data
 from aspire.apple.apple import Apple
+from aspire.utils import importlib_path
 
 
 class ApplePickerTestCase(TestCase):
@@ -472,9 +472,7 @@ class ApplePickerTestCase(TestCase):
                 tau2=7100,
                 output_dir=tmpdir_name,
             )
-            with importlib.resources.path(
-                tests.saved_test_data, "sample.mrc"
-            ) as mrc_path:
+            with importlib_path(tests.saved_test_data, "sample.mrc") as mrc_path:
                 centers_found = apple_picker.process_micrograph_centers(mrc_path)
                 for center_found in centers_found:
                     _x, _y = tuple(center_found)
@@ -498,9 +496,7 @@ class ApplePickerTestCase(TestCase):
             apple_picker = Apple(particle_size=42, output_dir=tmpdir_name)
 
             # Get the path of an input mrcfile
-            with importlib.resources.path(
-                tests.saved_test_data, "sample.mrc"
-            ) as good_mrc_path:
+            with importlib_path(tests.saved_test_data, "sample.mrc") as good_mrc_path:
                 # Store bad mrc in tmp test dir so it gets cleaned up
                 bad_mrc_path = os.path.join(tmpdir_name, "bad.mrc")
 
@@ -535,9 +531,7 @@ class ApplePickerTestCase(TestCase):
                 output_dir=tmpdir_name,
             )
 
-            with importlib.resources.path(
-                tests.saved_test_data, "sample.mrc"
-            ) as mrc_path:
+            with importlib_path(tests.saved_test_data, "sample.mrc") as mrc_path:
                 centers_found = apple_picker.process_micrograph_centers(mrc_path)
 
         self.assertTrue(len(centers_found) == 0)
