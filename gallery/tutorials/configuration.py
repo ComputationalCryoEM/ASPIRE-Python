@@ -2,7 +2,8 @@
 ASPIRE Configuration
 ====================
 
-Review the default ASPIRE configuration and common patterns for overriding.
+This tutorials reviews the default ASPIRE configuration
+and common patterns for overriding.
 """
 
 # %%
@@ -14,8 +15,10 @@ Review the default ASPIRE configuration and common patterns for overriding.
 #
 # The ASPIRE package ships with ``config_default.yaml``.
 # This represents a base configuration.
-# The final block in this tutorial should print the complete configuration
-# for this version of ASPIRE.
+# The shipped configuration for this version of ASPIRE is:
+#
+# .. literalinclude:: ../../../src/aspire/config_default.yaml
+
 
 # %%
 # System Overrides
@@ -23,32 +26,62 @@ Review the default ASPIRE configuration and common patterns for overriding.
 # From here we can override with a custom config file in your home dir,
 # specifically ``$HOME/.config/ASPIRE/config.yaml`` on most Linux platforms.
 # Items in this file will take precedence over the default configuration.
+# For other platforms, refer to the `confuse` documentation.
 #
-# Consider wanting to to always store ASPIRE logs at ``/tmp/aspire_logs``
+# Consider wanting to change the ``ray`` ``temp_dir`` variable
 # when working on a specific machine.
 # By creating ``$HOME/.config/ASPIRE/config.yaml`` with the following contents
 # on that machine, ASPIRE's configuration utility will overload
-# the logging directory from a local ``logs`` folder to ``/tmp/aspire_logs``.
+# the ``temp_dir`` directory from a ``/tmp/ray`` folder to ``/scratch/tmp/ray``.
+#
+#     .. code-block:: yaml
+#
+#       ray:
+#         temp_dir: /scratch/tmp/ray
+#
 
 # %%
-"""
-logging:
-   # I prefer to log to /tmp so they get cleaned up when I reboot.
-   log_dir: /tmp/logs
-"""
-
-# %%
-# Local Overrides
-# ---------------
-# A file in your working directory will take precedence over system-overrides.
-# Consider a user who would like to run a specific experiment using a different `nufft`.
+# Override Configuration Directory
+# --------------------------------
+# Users may specify a directory containing the configuration file.
+# This is done by using the enviornment variable ``ASPIREDIR``
+# If you wanted a file in your working directory to take
+# precedence over system-overrides, we can create a local ``config.yaml``.
+#
+# Consider wanting to store ASPIRE logs at ``/tmp/my_proj/aspire_logs``
+# when working on a specific project. We might create the following ``config.yaml``
+#
+#     .. code-block:: yaml
+#
+#       logging:
+#         log_dir: /tmp/my_proj/logs
+#
+# Then we need set that directory before invoking your code. This is done in the shell.
+#
+#     .. code-block:: bash
+#
+#       export ASPIREDIR=$PWD
+#
+# Similarly, you could specify any directory you like that might contain a configuration.
+# This allows you to store configurations for reuse.
 
 # %%
 # In-Code Overrides
 # -----------------
 # You can also specify your own file from an arbitrary location from within Python code.
+# For precise behavior refer to the confuse documentation.
 #
-# Or simply set specific variables.
+#     .. code-block:: python
+#
+#       aspire.config.set_file('/path/to/some_experimental_config.yaml')
+#
+#
+# Or simply set specific variables as needed:
+#
+#     .. code-block:: python
+#
+#       config['nufft']['backend'] = 'cufinufft'
+#
 
 # %%
 # Resolution
