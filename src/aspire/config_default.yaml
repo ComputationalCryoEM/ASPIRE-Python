@@ -12,6 +12,8 @@ logging:
     log_exceptions: 1
 
 nufft:
+    # NUFFT backends should be one of finufft, cufinufft, pynfft.
+    # They will be attempted in order from left to right.
     backends: [cufinufft, finufft, pynfft]
 
 ray:
