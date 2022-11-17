@@ -270,7 +270,8 @@ class Rotation:
         """
         Build a Rotation object from rotation vectors. A rotation vector is a
         3D vector which is co-directional to the axis of rotation and whose norm
-        gives the angle of rotation in radians.
+        gives the angle of rotation in radians. The angle of rotation is counter-clockwise
+        about the axis.
 
         :param vec: array_like, shape (N, 3) or (3,)
         :return: Rotation object
