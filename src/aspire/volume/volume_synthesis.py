@@ -42,7 +42,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         :param dtype: dtype for Volume(s)
         """
         self.K = int(K)
-        self.alpha = alpha
+        self.alpha = float(alpha)
         super().__init__(L=L, C=C, seed=seed, dtype=dtype)
 
     @abc.abstractmethod
