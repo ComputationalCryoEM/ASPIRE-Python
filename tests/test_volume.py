@@ -11,7 +11,7 @@ from pytest import raises, skip
 from aspire.utils import Rotation, grid_3d, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import AsymmetricVolume, CnSymmetricVolume, Volume
+from aspire.volume import CnSymmetricVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -260,21 +260,6 @@ class VolumeTestCase(TestCase):
                 # and a mean error of <0.1%.
                 self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.02)
                 self.assertTrue(np.mean(abs(rot - ref) / ref) < 0.001)
-
-    def testAsymmetricVolume(self):
-        L = self.res
-        dtype = self.dtype
-
-        vol = AsymmetricVolume(L=L, C=1, dtype=dtype).generate()
-
-        # Mask to check support
-        g_3d = grid_3d(L, dtype=dtype)
-        inside = g_3d["r"] < 1
-        outside = g_3d["r"] > 1
-
-        # Check that volume is zero outside of support and positive inside.
-        self.assertTrue(vol[0][outside].all() == 0)
-        self.assertTrue((vol[0][inside] > 0).all())
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
