@@ -18,9 +18,10 @@ __version__ = "0.10.0"
 config = confuse.Configuration("ASPIRE", __name__)
 
 # Ensure the log_dir exists.
-# TODO: Discuss the behavior/location of log_dir.
 log_dir_path = Path(config["logging"]["log_dir"].get(confuse.Filename(cwd=".")))
 log_dir_path.mkdir(parents=True, exist_ok=True)
+# We'll reassign the evaluated log_dir back into the config so it displays well.
+config["logging"]["log_dir"] = log_dir_path.as_posix()
 
 # Generates file name details and opens log file defined in config file.
 # The default is to use the current time stamp provided in the dictionary,
