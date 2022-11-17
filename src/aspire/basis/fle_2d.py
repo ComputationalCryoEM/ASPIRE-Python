@@ -208,7 +208,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         nodes = (
             self.greatest_lambda - self.smallest_lambda
         ) * nodes + self.smallest_lambda
-        nodes = nodes.reshape(-1, 1)
+        nodes = nodes.reshape(self.num_radial_nodes, 1)
 
         radius = self.nres // 2
         h = 1 / radius
@@ -216,8 +216,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         phi = (
             2 * np.pi * np.arange(self.num_angular_nodes // 2) / self.num_angular_nodes
         )
-        x = np.cos(phi).reshape(1, -1)
-        y = np.sin(phi).reshape(1, -1)
+        x = np.cos(phi).reshape(1, self.num_angular_nodes // 2)
+        y = np.sin(phi).reshape(1, self.num_angular_nodes // 2)
         x = x * nodes * h
         y = y * nodes * h
         self.grid_x = x.flatten()
@@ -469,10 +469,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             nufft(im, np.stack((self.grid_x, self.grid_y)), epsilon=self.epsilon)
             * self.h**2
         )
-        _z = _z.reshape(-1, self.num_radial_nodes, self.num_angular_nodes // 2)
+        _z = _z.reshape(num_img, self.num_radial_nodes, self.num_angular_nodes // 2)
         z[:, :, : self.num_angular_nodes // 2] = _z
         z[:, :, self.num_angular_nodes // 2 :] = np.conj(_z)
-        z = z.reshape(-1, self.num_radial_nodes * self.num_angular_nodes)
+        z = z.reshape(num_img, self.num_radial_nodes * self.num_angular_nodes)
         return z
 
     def _step2_t(self, z):
