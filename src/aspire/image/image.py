@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from warnings import catch_warnings, filterwarnings
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -372,11 +373,23 @@ class Image:
         # We never need more columns than images.
         columns = min(columns, self.n_images)
 
-        plt.figure(figsize=figsize)
-        for i, im in enumerate(self):
-            plt.subplot(self.n_images // columns + 1, columns, i + 1)
-            plt.imshow(im, cmap="gray")
-        plt.show()
+        # Create a context manager for altering warnings
+        with catch_warnings():
+
+            # Filter off specific warning.
+            # sphinx-gallery overrides to `agg` backend, but doesn't handle warning.
+            filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="Matplotlib is currently using agg, which is a"
+                " non-GUI backend, so cannot show the figure.",
+            )
+
+            plt.figure(figsize=figsize)
+            for i, im in enumerate(self):
+                plt.subplot(self.n_images // columns + 1, columns, i + 1)
+                plt.imshow(im, cmap="gray")
+            plt.show()
 
 
 class CartesianImage(Image):
