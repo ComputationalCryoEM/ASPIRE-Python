@@ -2,7 +2,7 @@
 ASPIRE Configuration
 ====================
 
-This tutorials reviews the default ASPIRE configuration
+This tutorial reviews the default ASPIRE configuration
 and common patterns for overriding.
 """
 
@@ -11,7 +11,7 @@ and common patterns for overriding.
 # ---------------------
 # ASPIRE uses the `confuse library`_ for managing configuration.
 # While this document should cover common uses,
-# advanced users and developers should consider reviewing their documentation,
+# advanced users and developers should consider reviewing their documentation.
 #
 # The ASPIRE package ships with ``config_default.yaml``.
 # This represents a base configuration.
@@ -28,7 +28,7 @@ and common patterns for overriding.
 # Items in this file will take precedence over the default configuration.
 # For other platforms, refer to the `confuse` documentation.
 #
-# Consider wanting to change the ``ray`` ``temp_dir`` variable
+# As an example, suppose you want to change the ``ray`` ``temp_dir`` variable
 # when working on a specific machine.
 # By creating ``$HOME/.config/ASPIRE/config.yaml`` with the following contents
 # on that machine, ASPIRE's configuration utility will overload
@@ -48,15 +48,16 @@ and common patterns for overriding.
 # If you wanted a file in your working directory to take
 # precedence over system-overrides, we can create a local ``config.yaml``.
 #
-# Consider wanting to store ASPIRE logs at ``/tmp/my_proj/aspire_logs``
-# when working on a specific project. We might create the following ``config.yaml``
+# Suppose you want to store ASPIRE logs at ``/tmp/my_proj/aspire_logs``
+# when working on a specific project. This could be achienve by creating
+# the following ``config.yaml``
 #
 #     .. code-block:: yaml
 #
 #       logging:
 #         log_dir: /tmp/my_proj/logs
 #
-# Then we need set that directory before invoking your code. This is done in the shell.
+# This directory must then be set before invoking any code.
 #
 #     .. code-block:: bash
 #
@@ -89,7 +90,7 @@ and common patterns for overriding.
 # ASPIRE logs the ``config_dir()`` for your system at startup,
 # along with the configuration sources and resolved configuration at import time.
 # This should give an accurate snapshot of the configuration before any in-code overrides.
-# To view these as save in your log, you will need to locate your `log_dir`.
+# To view these as saved in your log, you will need to locate your `log_dir`.
 # If you are not sure where it is, we can ask the config:
 
 import aspire
