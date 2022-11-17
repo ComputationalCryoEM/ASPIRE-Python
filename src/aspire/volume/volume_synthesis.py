@@ -346,7 +346,6 @@ class LegacyVolume(AsymmetricVolume):
 
     def generate(self):
         """
-        Generates a SyntheticVolume with specified symmetry that is multiplied by a bump function
-        to give compact support within the unit sphere.
+        Generates an asymmetric volume composed of random 3D Gaussian blobs.
         """
         return self._gaussian_blob_vols()
