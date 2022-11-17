@@ -49,8 +49,7 @@ and common patterns for overriding.
 # precedence over system-overrides, we can create a local ``config.yaml``.
 #
 # Suppose you want to store ASPIRE logs at ``/tmp/my_proj/aspire_logs``
-# when working on a specific project. This could be achienve by creating
-# the following ``config.yaml``
+# when working on a specific project. Create the following ``config.yaml``.
 #
 #     .. code-block:: yaml
 #
