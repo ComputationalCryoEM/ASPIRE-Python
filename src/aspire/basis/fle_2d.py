@@ -40,6 +40,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             `ell_max` of other Basis objects is computed *from* the bandlimit for the FLE basis.
              Defaults to the resolution of the basis.
         :param epsilon: Relative precision between FLE fast method and dense matrix multiplication.
+        :param match_fb: If this flag is set, the number of basis functions will be forced to match
+            `FBBasis2D` for the same resolution. In particular, the thresholding process will not
+            be performed, meaning `self.count` will be larger.
+        :param dtype: Datatype of images and coefficients represented.
         """
         if isinstance(size, int):
             size = (size, size)
