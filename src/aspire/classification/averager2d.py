@@ -257,6 +257,7 @@ class BFRAverager2D(AligningAverager2D):
         )
 
         self.n_angles = n_angles
+        self._base_image_shift = None
 
         if not hasattr(self.alignment_basis, "rotate"):
             raise RuntimeError(
@@ -289,7 +290,15 @@ class BFRAverager2D(AligningAverager2D):
             if basis_coefficients is None:
                 # Retrieve relavent images
                 neighbors_imgs = Image(self._cls_images(classes[k]))
-                # Evaluate_T into basis
+
+                # We optionally can shift the base image by `_base_image_shift`
+                # Shift in real space to avoid extra conversions
+                if self._base_image_shift is not None:
+                    neighbors_imgs[0] = (
+                        Image(neighbors_imgs[0]).shift(self._base_image_shift).asnumpy()
+                    )
+
+                # Evaluate_t into basis
                 nbr_coef = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
                 nbr_coef = basis_coefficients[classes[k]]
@@ -400,15 +409,16 @@ class BFSRAverager2D(BFRAverager2D):
         correlations = np.ones(classes.shape, dtype=self.dtype) * -np.inf
         shifts = np.empty((*classes.shape, 2), dtype=int)
 
-        if basis_coefficients is None:
-            # Retrieve image coefficients, this is bad, it load all images.
-            # TODO: Refactor this s.t. the following code blocks and super().align
-            #   only require coefficients relating to their class.  See _cls_images.
-            basis_coefficients = self.composite_basis.evaluate_t(self.src.images[:])
-
         # We want to maintain the original coefs for the base images,
         #  because we will mutate them with shifts in the loop.
-        original_coef = basis_coefficients[classes[:, 0], :]
+        if basis_coefficients is None:
+            original_coef = self.composite_basis.evaluate_t(
+                self._cls_images(classes[:, 0], src=self.src)
+            )
+        else:
+            original_coef = basis_coefficients[classes[:, 0], :].copy()
+
+        # Sanity check the original_coef shape
         assert original_coef.shape == (n_classes, self.alignment_basis.count)
 
         # Loop over shift search space, updating best result
@@ -419,9 +429,15 @@ class BFSRAverager2D(BFRAverager2D):
             # Shift the coef representing the first (base) entry in each class
             #   by the negation of the shift
             # Shifting one image is more efficient than shifting every neighbor
-            basis_coefficients[classes[:, 0], :] = self.alignment_basis.shift(
-                original_coef, -shift
-            )
+            if basis_coefficients is not None:
+                basis_coefficients[classes[:, 0], :] = self.alignment_basis.shift(
+                    original_coef, -shift
+                )
+            else:
+                # This variable will be checked and apply by super class (BFR.align)
+                # This allows us to retrieve and shift coefficients on the fly,
+                #   instead of storing them all.
+                self._base_image_shift = -shift
 
             _rotations, _, _correlations = self._bfr_align(
                 classes, reflections, basis_coefficients
@@ -434,8 +450,12 @@ class BFSRAverager2D(BFRAverager2D):
             correlations[improved_indices] = _correlations[improved_indices]
             shifts[improved_indices] = shift
 
-            # Restore unshifted base coefs
-            basis_coefficients[classes[:, 0], :] = original_coef
+            # Cleanup/Restore unshifted base coefs
+            if basis_coefficients is None:
+                # Reset this flag
+                self._base_image_shift = None
+            else:
+                basis_coefficients[classes[:, 0], :] = original_coef
 
             if (x, y) == (0, 0):
                 logger.debug("Initial rotational alignment complete (shift (0,0))")
