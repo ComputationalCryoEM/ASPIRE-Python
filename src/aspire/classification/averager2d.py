@@ -1,6 +1,5 @@
 import logging
 from abc import ABC, abstractmethod
-from itertools import product
 
 import numpy as np
 import ray
@@ -228,6 +227,27 @@ class AligningAverager2D(Averager2D):
         # Now we convert the averaged images from Basis to Cartesian.
         return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
 
+    def _shift_search_grid(self, L, radius, roll_zero=False):
+        """
+        Returns two vectors representing the grid points in the disc <= self.radius.
+
+        :param radius: Disc radius in pixels
+        :returns: Grid points as 2-tuple of vectors X,Y.
+        """
+
+        # We'll brute force all shifts in a grid.
+        g = grid_2d(L, normalized=False)
+        disc = g["r"] <= radius
+        X, Y = g["x"][disc], g["y"][disc]
+
+        # Optionally roll arrays so 0 is first.
+        if roll_zero:
+            zero_ind = np.argwhere(X * X + Y * Y == 0).flatten()[0]
+            X, Y = np.roll(X, -zero_ind), np.roll(Y, -zero_ind)
+            assert (X[0], Y[0]) == (0, 0), (radius, zero_ind, X, Y)
+
+        return X, Y
+
 
 class BFRAverager2D(AligningAverager2D):
     """
@@ -343,24 +363,16 @@ class BFSRAverager2D(BFRAverager2D):
         src,
         alignment_basis=None,
         n_angles=360,
-        n_x_shifts=1,
-        n_y_shifts=1,
+        radius=None,
         num_procs=1,
         dtype=None,
     ):
         """
         See AligningAverager2D and BFRAverager2D, adds: `n_x_shifts`, `n_y_shifts`.
 
-        Note that `n_x_shifts` and `n_y_shifts` are the number of shifts
-        to perform in each direction.
-
-        Example: n_x_shifts=1, n_y_shifts=0 would test {-1,0,1} X {0}.
-
-        n_x_shifts=n_y_shifts=0 is the same as calling BFRAverager2D.
-
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
-        :params n_x_shifts: +- Number of brute force xshifts to attempt, defaults 1.
-        :params n_y_shifts: +- Number of brute force xshifts to attempt, defaults 1.
+        :param radius: Brute force translation search radius.
+            Defaults to src.L//8.
         """
         super().__init__(
             composite_basis,
@@ -371,8 +383,7 @@ class BFSRAverager2D(BFRAverager2D):
             dtype=dtype,
         )
 
-        self.n_x_shifts = n_x_shifts
-        self.n_y_shifts = n_y_shifts
+        self.radius = radius or src.L // 8
 
         # Each shift will require calling the parent BFRAverager2D.align
         self._bfr_align = super().align
@@ -393,16 +404,11 @@ class BFSRAverager2D(BFRAverager2D):
 
         n_classes = classes.shape[0]
 
-        # Compute the shifts. Roll array so 0 is first.
-        x_shifts = np.roll(
-            np.arange(-self.n_x_shifts, self.n_x_shifts + 1), -self.n_x_shifts
+        # Create a search grid and force initial pair to (0,0)
+        # This is done primarily in case of a tie later, we would take unshifted.
+        x_shifts, y_shifts = self._shift_search_grid(
+            self.src.L, self.radius, roll_zero=True
         )
-        y_shifts = np.roll(
-            np.arange(-self.n_y_shifts, self.n_y_shifts + 1), -self.n_y_shifts
-        )
-        # Above rolls should force initial pair of shifts to (0,0).
-        # This is done primarily in case of a tie later we would take unshifted.
-        assert (x_shifts[0], y_shifts[0]) == (0, 0)
 
         # These arrays will incrementally store our best alignment.
         rotations = np.empty(classes.shape, dtype=self.dtype)
@@ -422,7 +428,7 @@ class BFSRAverager2D(BFRAverager2D):
         assert original_coef.shape == (n_classes, self.alignment_basis.count)
 
         # Loop over shift search space, updating best result
-        for x, y in product(x_shifts, y_shifts):
+        for x, y in zip(x_shifts, y_shifts):
             shift = np.array([x, y], dtype=int)
             logger.debug(f"Computing rotational alignment after shift ({x},{y}).")
 
@@ -694,17 +700,13 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         reflections = np.atleast_2d(reflections)
 
         n_classes, n_nbor = classes.shape
-        L = self.alignment_src.L
 
         # Instantiate matrices for inner loop, and best results.
         rotations = np.zeros(classes.shape, dtype=self.dtype)
         correlations = np.ones(classes.shape, dtype=self.dtype) * -np.inf
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
-        # We'll brute force all shifts in a grid.
-        g = grid_2d(L, normalized=False)
-        disc = g["r"] <= self.radius
-        X, Y = g["x"][disc], g["y"][disc]
+        X, Y = self._shift_search_grid(self.alignment_src.L, self.radius)
 
         def _innerloop(k):
             unshifted_images = self._cls_images(classes[k])
