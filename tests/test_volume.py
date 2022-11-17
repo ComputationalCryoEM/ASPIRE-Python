@@ -8,10 +8,10 @@ from numpy import pi
 from parameterized import parameterized
 from pytest import raises, skip
 
-from aspire.utils import Rotation, grid_3d, powerset
+from aspire.utils import Rotation, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import CnSymmetricVolume, Volume
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -229,37 +229,6 @@ class VolumeTestCase(TestCase):
 
         for i in range(self.n):
             self.assertTrue(np.allclose(vols_broadcast[i], vols_unicast[i]))
-
-    @parameterized.expand([(64,), (65,)])
-    def testCnSymmetricVolume(self, L):
-        # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
-        orders = [2, 3, 4, 5, 6]
-        for order in orders:
-            # Build `Volume` instance with symmetry type s.
-            vol = CnSymmetricVolume(L=L, C=1, order=order, seed=0, dtype=self.dtype)
-            vol = vol.generate()
-
-            # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
-            angles = np.zeros((order, 3), dtype=self.dtype)
-            angles[:, 2] = 2 * np.pi * np.arange(order) / order
-            rot_mat = Rotation.from_euler(angles, dtype=self.dtype).matrices
-
-            # Create mask to compare volumes on.
-            selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 3
-
-            for i in range(order):
-                # Rotate volume.
-                rot = Rotation(rot_mat[i])
-                rot_vol = vol.rotate(rot, zero_nyquist=False)
-
-                # Restrict volumes to mask for comparison.
-                ref = vol[0, selection]
-                rot = rot_vol[0, selection]
-
-                # Assert that voxel-wise the rotated volume has a maximum error of <2%
-                # and a mean error of <0.1%.
-                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.02)
-                self.assertTrue(np.mean(abs(rot - ref) / ref) < 0.001)
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
