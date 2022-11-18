@@ -5,7 +5,7 @@ import logging
 import os.path
 import subprocess
 
-import tqdm
+import tqdm as _tqdm
 
 from aspire import config
 
@@ -70,7 +70,7 @@ def tqdm(*args, **kwargs):
     """
 
     disable = config["logging"]["tqdm_disable"]
-    return tqdm.tqdm(*args, **kwargs, disable=disable)
+    return _tqdm.tqdm(*args, **kwargs, disable=disable)
 
 
 def trange(*args, **kwargs):
@@ -82,4 +82,4 @@ def trange(*args, **kwargs):
     """
 
     disable = config["logging"]["tqdm_disable"]
-    return tqdm.trange(*args, **kwargs, disable=disable)
+    return _tqdm.trange(*args, **kwargs, disable=disable)
