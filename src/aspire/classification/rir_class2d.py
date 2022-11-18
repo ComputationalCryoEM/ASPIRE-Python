@@ -3,7 +3,6 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
 from aspire.classification import (
@@ -14,6 +13,7 @@ from aspire.classification import (
 )
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
+from aspire.utils import trange
 from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
@@ -363,7 +363,7 @@ class RIRClass2D(Class2D):
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
         distances = np.zeros((n_im, n_nbor), dtype=self.dtype)
-        for i in tqdm(range(num_batches)):
+        for i in trange(num_batches):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, n_im)
             corr = np.real(
@@ -465,7 +465,7 @@ class RIRClass2D(Class2D):
 
         M = None
 
-        for i in tqdm(range(self.src.n)):
+        for i in trange(self.src.n):
             B = self.pca_basis.calculate_bispectrum(
                 coef_normed[i, np.newaxis],
                 filter_nonzero_freqs=True,

@@ -2,7 +2,6 @@ import logging
 
 import numpy as np
 from numpy.linalg import eigh, norm, svd
-from tqdm import tqdm
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
 from aspire.utils import (
@@ -13,6 +12,8 @@ from aspire.utils import (
     anorm,
     cyclic_rotations,
     pairs_to_linear,
+    tqdm,
+    trange,
 )
 from aspire.utils.random import randn
 
@@ -451,7 +452,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # the two self common-lines in the image.
         sclmatrix = np.zeros((n_img, 2))
 
-        for i in tqdm(range(n_img)):
+        for i in trange(n_img):
             pf_i = pf[i]
             pf_full_i = pf_full[i]
 

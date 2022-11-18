@@ -6,7 +6,6 @@ import scipy.sparse.linalg
 from scipy.fftpack import fftn
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
-from tqdm import tqdm
 
 from aspire.image import Image
 from aspire.nufft import anufft
@@ -15,6 +14,7 @@ from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import (
     make_symmat,
     symmat_to_vec_iso,
+    trange,
     vec_to_symmat_iso,
     vecmat_to_volmat,
     volmat_to_vecmat,
@@ -48,7 +48,7 @@ class CovarianceEstimator(Estimator):
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
-        for i in tqdm(range(0, n, self.batch_size)):
+        for i in trange(0, n, self.batch_size):
             _range = np.arange(i, min(n, i + self.batch_size))
             pts_rot = rotated_grids(L, self.src.rotations[_range, :, :])
             weights = sq_filters_f[:, :, _range]
