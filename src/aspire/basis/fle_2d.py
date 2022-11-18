@@ -471,7 +471,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         _z = _z.reshape(num_img, self.num_radial_nodes, self.num_angular_nodes // 2)
         z[:, :, : self.num_angular_nodes // 2] = _z
         z[:, :, self.num_angular_nodes // 2 :] = np.conj(_z)
-        z = z.reshape(num_img, self.num_radial_nodes * self.num_angular_nodes)
         return z
 
     def _step2_t(self, z):
@@ -480,7 +479,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         Computes values of the analytic functions Beta_n at the Chebyshev nodes.
         See Lemma 2.2.
         """
-        z = z.reshape(-1, self.num_radial_nodes, self.num_angular_nodes)
         num_img = z.shape[0]
         # Compute FFT along angular nodes
         betas = fft.fft(z, axis=2) / self.num_angular_nodes
