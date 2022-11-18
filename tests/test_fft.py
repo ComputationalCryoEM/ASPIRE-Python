@@ -9,7 +9,7 @@ from aspire.numeric import fft_object, numeric_object
 test_backends = [("numpy", "scipy"), ("numpy", "pyfftw")]
 
 # Create Cupy fft backend if Cupy module is enabled and lib exits.
-if config.common.numeric == "cupy":
+if config["common"]["numeric"].as_str() == "cupy":
     test_backends.append(("cupy", "cupy"))
 
 # Create test objects from option combinations

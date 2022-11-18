@@ -216,7 +216,7 @@ class AligningAverager2D(Averager2D):
                 b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config.ray.temp_dir)
+            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -536,7 +536,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config.ray.temp_dir)
+            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -596,7 +596,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config.ray.temp_dir)
+            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -727,7 +727,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config.ray.temp_dir)
+            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
