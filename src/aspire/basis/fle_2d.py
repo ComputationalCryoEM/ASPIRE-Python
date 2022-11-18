@@ -244,8 +244,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                 / (self.greatest_lambda - self.smallest_lambda)
                 - 1
             )
-            vals, x_ind, xs_ind = np.intersect1d(x, chebyshev_pts, return_indices=True)
-            x[x_ind] = x[x_ind] + 2e-16
 
             n = len(x)
             mm = len(chebyshev_pts)
