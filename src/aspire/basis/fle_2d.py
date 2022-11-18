@@ -409,7 +409,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
     def _expand(self, imgs):
         """
-        Overrides `Basis.expand()`. Computes FLE coefficients from a stack of
+        Alternative to `Basis.expand()`, which computes a conjugate gradient solution using
+            `_evaluate` and `_evaluate_t`. Computes FLE coefficients from a stack of
             images in Cartesian coordinates.
         :param imgs: An Image object containing square images of size `self.nres`.
         :return: A NumPy array of size `(num_images, self.count)` containing the FLE
