@@ -129,10 +129,10 @@ class FourierKernel(Kernel):
 
         # Note from MATLAB code:
         # Order is important here.  It's about 20% faster to run from 1 through 6 compared with 6 through 1.
-        # TODO: Experiment with scipy order; try overwrite_x argument
+        # TODO: Experiment with fft axis order
         for i in range(6):
             _pad_width = [(0, 0)] * 6
-            _pad_width[i] = (0, N_ker)
+            _pad_width[i] = (0, N_ker - N)
             x = fft.fft(np.pad(x, _pad_width), axis=i)
 
         x *= kernel_f
