@@ -70,8 +70,8 @@ class UtilsTestCase(TestCase):
         g = gaussian_2d(L, mu=mu, sigma=sigma)
 
         # The normalized sum across an axis should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        g_x = np.sum(g, axis=0) / np.sum(g)
-        g_y = np.sum(g, axis=1) / np.sum(g)
+        g_x = np.sum(g, axis=1) / np.sum(g)
+        g_y = np.sum(g, axis=0) / np.sum(g)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
