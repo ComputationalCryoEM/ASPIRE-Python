@@ -68,6 +68,9 @@ class OrientSyncTestCase(TestCase):
     def testEstRotations(self):
         self.orient_est.estimate_rotations()
         results = np.load(os.path.join(DATA_DIR, "orient_est_rots.npy"))
+        # Check the dtype passthrough is preserved
+        self.assertTrue(self.orient_est.rotations.dtype == self.dtype)
+        # Check the values match reference rotation
         self.assertTrue(
             np.allclose(
                 results,

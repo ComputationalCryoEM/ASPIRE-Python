@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from warnings import catch_warnings, filterwarnings
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -361,22 +362,43 @@ class Image:
 
         return aspire.volume.Volume(vol)
 
-    def show(self, columns=5, figsize=(20, 10)):
+    def show(self, columns=5, figsize=(20, 10), colorbar=True):
         """
         Plotting Utility Function.
 
         :param columns: Number of columns in a row of plots.
         :param figsize: Figure size in inches, consult `matplotlib.figure`.
+        :param colorbar: Optionally plot colorbar to show scale.
+            Defaults to True. Accepts `bool` or `dictionary`,
+            where the dictionary is passed to `matplotlib.pyplot.colorbar`.
         """
 
         # We never need more columns than images.
         columns = min(columns, self.n_images)
 
-        plt.figure(figsize=figsize)
-        for i, im in enumerate(self):
-            plt.subplot(self.n_images // columns + 1, columns, i + 1)
-            plt.imshow(im, cmap="gray")
-        plt.show()
+        # Create an empty colorbar options dictionary as needed.
+        colorbar_opts = colorbar if isinstance(colorbar, dict) else dict()
+
+        # Create a context manager for altering warnings
+        with catch_warnings():
+
+            # Filter off specific warning.
+            # sphinx-gallery overrides to `agg` backend, but doesn't handle warning.
+            filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="Matplotlib is currently using agg, which is a"
+                " non-GUI backend, so cannot show the figure.",
+            )
+
+            plt.figure(figsize=figsize)
+            for i, im in enumerate(self):
+                plt.subplot(self.n_images // columns + 1, columns, i + 1)
+                plt.imshow(im, cmap="gray")
+                if colorbar:
+                    plt.colorbar(**colorbar_opts)
+
+            plt.show()
 
 
 class CartesianImage(Image):
