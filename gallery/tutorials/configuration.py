@@ -88,19 +88,19 @@ from aspire.utils import trange
 
 # Progress bars are displayed by default.
 
-print('Disabling progress bars')
+print("Disabling progress bars")
 config["logging"]["tqdm_disable"] = True
 
-for work in trange(3):
+for _ in trange(3):
     time.sleep(1)
-print('Done Loop 1\n')
+print("Done Loop 1\n")
 
-print('Re-enabling progress bars')
+print("Re-enabling progress bars")
 config["logging"]["tqdm_disable"] = False
 
-for work in trange(3):
+for _ in trange(3):
     time.sleep(1)
-print('Done Loop 2\n')    
+print("Done Loop 2\n")
 
 
 # %%

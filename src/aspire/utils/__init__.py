@@ -29,7 +29,6 @@ from .misc import (  # isort:skip
 )
 
 from .logging import get_full_version, tqdm, trange
-
 from .matrix import (
     acorr,
     ainner,
@@ -62,19 +61,3 @@ from .multiprocessing import (
 )
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance
-
-from .misc import (  # isort:skip
-    all_pairs,
-    all_triplets,
-    abs2,
-    circ,
-    cyclic_rotations,
-    gaussian_1d,
-    gaussian_2d,
-    gaussian_3d,
-    inverse_r,
-    J_conjugate,
-    pairs_to_linear,
-    powerset,
-    sha256sum,
-)
