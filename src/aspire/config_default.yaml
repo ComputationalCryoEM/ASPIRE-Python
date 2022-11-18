@@ -10,6 +10,8 @@ logging:
     # Default is a subfolder `logs` in your current working directory.
     log_dir: logs
     log_exceptions: 1
+    # tqdm_disable=True disables progress bars.
+    tqdm_disable: False
 
 nufft:
     # NUFFT backends should be one of finufft, cufinufft, pynfft.
