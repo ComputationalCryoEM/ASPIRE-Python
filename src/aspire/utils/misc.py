@@ -2,9 +2,11 @@
 Miscellaneous Utilities that have no better place (yet).
 """
 import hashlib
+import importlib.resources
 import logging
 import os.path
 import subprocess
+import sys
 from itertools import chain, combinations
 
 import numpy as np
@@ -13,6 +15,37 @@ from aspire.utils import grid_1d, grid_2d, grid_3d
 from aspire.utils.rotation import Rotation
 
 logger = logging.getLogger(__name__)
+
+
+def importlib_path(package, resource):
+    """
+    Return the path to the resource as an actual file system path.
+    Workaround importlib.resources deprecation of `path` in Python 3.11.
+    This is expected to be safely removed after the minimal supported
+    Python is 3.9.
+
+    See ASPIRE-Python #546.
+
+    :param package: Is either a name or a module object
+        which conforms to the Package requirements.
+    :param resource: Is the name of the resource to open within package;
+        It may not contain path separators and it may not have sub-resources.
+        (i.e. it cannot be a directory)
+    :return: This function returns a context manager for use in a with statement.
+        The context manager provides a pathlib.Path object.
+    """
+
+    py_version = sys.version_info
+
+    # Use the deprecated method
+    if py_version.major == 3 and py_version.minor < 9:
+        p = importlib.resources.path(package, resource)
+    else:
+        p = importlib.resources.as_file(
+            importlib.resources.files(package).joinpath(resource)
+        )
+
+    return p
 
 
 def abs2(x):
