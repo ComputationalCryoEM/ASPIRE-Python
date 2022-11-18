@@ -278,8 +278,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # 0 frequency plus pos and negative frequencies for each bessel function
         # num functions per frequency
         num_ells = 1 + 2 * max_ell
-        self.ells = np.zeros((num_ells, max_k), dtype=int, order="F")
-        self.ks = np.zeros((num_ells, max_k), dtype=int, order="F")
+        self.ells = np.zeros((num_ells, max_k), dtype=int)
+        self.ks = np.zeros((num_ells, max_k), dtype=int)
         self.bessel_zeros = np.ones((num_ells, max_k), dtype=np.float64) * np.Inf
 
         # keep track of which order Bessel function we're on
@@ -324,7 +324,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.ks = self.ks[idx]
         self.bessel_zeros = self.bessel_zeros[idx]
 
-        # sort complex conjugate pairs: -n first, +n second
+        # sort complex conjugate pairs: -ell first, +ell second
         idx = np.arange(self.max_basis_functions + 1)
         for i in range(self.max_basis_functions + 1):
             if self.ells[i] >= 0:
