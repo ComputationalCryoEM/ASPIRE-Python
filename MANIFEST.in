@@ -10,7 +10,7 @@ include LICENSE
 include pytest.ini
 include tox.ini
 include logging.conf
-include config.ini
+include config_default.yaml
 include .zenodo.json
 recursive-include docs *.bat
 recursive-include docs *.bib

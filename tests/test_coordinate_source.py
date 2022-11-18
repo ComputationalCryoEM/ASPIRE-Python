@@ -1,4 +1,3 @@
-import importlib.resources
 import os
 import random
 import shutil
@@ -17,6 +16,7 @@ from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
+from aspire.utils import importlib_path
 
 
 class CoordinateSourceTestCase(TestCase):
@@ -25,7 +25,7 @@ class CoordinateSourceTestCase(TestCase):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.data_folder = self.tmpdir.name
         # get path to test .mrc file
-        with importlib.resources.path(tests.saved_test_data, "sample.mrc") as test_path:
+        with importlib_path(tests.saved_test_data, "sample.mrc") as test_path:
             self.original_mrc_path = str(test_path)
         # save test data root dir
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
