@@ -229,7 +229,8 @@ class AligningAverager2D(Averager2D):
 
     def _shift_search_grid(self, L, radius, roll_zero=False):
         """
-        Returns two vectors representing the grid points in the disc <= self.radius.
+        Returns two 1-D arrays representing the X and Y grid points in the defined
+        shift search space (disc <= self.radius).
 
         :param radius: Disc radius in pixels
         :returns: Grid points as 2-tuple of vectors X,Y.
@@ -440,7 +441,7 @@ class BFSRAverager2D(BFRAverager2D):
                     original_coef, -shift
                 )
             else:
-                # This variable will be checked and apply by super class (BFR.align)
+                # Store the latest shift so that super class can access it.
                 # This allows us to retrieve and shift coefficients on the fly,
                 #   instead of storing them all.
                 self._base_image_shift = -shift
