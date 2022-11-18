@@ -64,6 +64,7 @@ setup(
             "pytest",
             "pytest-cov",
             "pytest-random-order",
+            "pytest-xdist",
             "requests",
             "sphinxcontrib-bibtex",
             "sphinx-gallery",
