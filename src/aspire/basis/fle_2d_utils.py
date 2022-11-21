@@ -25,24 +25,24 @@ def transform_complex_to_real(Z, ns):
     return X
 
 
-def precomp_transform_complex_to_real(ns):
+def precomp_transform_complex_to_real(ells):
 
-    ne = len(ns)
-    nnz = np.sum(ns == 0) + 2 * np.sum(ns != 0)
-    idx = np.zeros(nnz, dtype=int)
-    jdx = np.zeros(nnz, dtype=int)
-    vals = np.zeros(nnz, dtype=np.complex128)
+    count = len(ells)
+    num_nonzero = np.sum(ells == 0) + 2 * np.sum(ells != 0)
+    idx = np.zeros(num_nonzero, dtype=int)
+    jdx = np.zeros(num_nonzero, dtype=int)
+    vals = np.zeros(num_nonzero, dtype=np.complex128)
 
     k = 0
-    for i in range(ne):
-        n = ns[i]
-        if n == 0:
+    for i in range(count):
+        ell = ells[i]
+        if ell == 0:
             vals[k] = 1
             idx[k] = i
             jdx[k] = i
             k = k + 1
-        if n < 0:
-            s = (-1) ** np.abs(n)
+        if ell < 0:
+            s = (-1) ** np.abs(ell)
 
             vals[k] = 1 / np.sqrt(2)
             idx[k] = i
@@ -64,7 +64,7 @@ def precomp_transform_complex_to_real(ns):
             jdx[k] = i + 1
             k = k + 1
 
-    A = sparse.csr_matrix((vals, (idx, jdx)), shape=(ne, ne), dtype=np.complex128)
+    A = sparse.csr_matrix((vals, (idx, jdx)), shape=(count, count), dtype=np.complex128)
 
     return A
 
