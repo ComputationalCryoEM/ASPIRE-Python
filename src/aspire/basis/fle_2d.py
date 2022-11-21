@@ -89,17 +89,17 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Some important constants
         self.smallest_lambda = np.min(self.bessel_zeros)
         self.greatest_lambda = np.max(self.bessel_zeros)
-        self.nmax = np.max(np.abs(self.ells))
+        self.max_ell = np.max(np.abs(self.ells))
 
-        # reindex ells from lowest to highest frequency
-        self.ndx = 2 * np.abs(self.ells) - (self.ells < 0)
-        self.ndmax = np.max(self.ndx)
-        # idx_list[nd] contains all indices with corresponding n
-        # equal to nd
-        idx_list = [[] for i in range(self.ndmax + 1)]
+        # give each ell a positive index increasing first in |ell|
+        # then in sign, e.g. 0->1, -1->2, 1->3, -2->4, 2->5, etc.
+        self.ells_p = 2 * np.abs(self.ells) - (self.ells < 0)
+        self.ell_p_max = np.max(self.ells_p)
+        # idx_list[k] contains the indices j of ells_p where ells_p[j] = k
+        idx_list = [[] for i in range(self.ell_p_max + 1)]
         for i in range(self.count):
-            nd = self.ndx[i]
-            idx_list[nd].append(i)
+            ellp = self.ells_p[i]
+            idx_list[ellp].append(i)
         self.idx_list = idx_list
 
         # real <-> complex
@@ -108,9 +108,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         # create self.nus to be able to access the physical value of ell,
         # rather than the reindexed version
-        self.nus = np.zeros(1 + 2 * self.nmax, dtype=int)
+        self.nus = np.zeros(1 + 2 * self.max_ell, dtype=int)
         self.nus[0] = 0
-        for i in range(1, self.nmax + 1):
+        for i in range(1, self.max_ell + 1):
             self.nus[2 * i - 1] = -i
             self.nus[2 * i] = i
         self.c2r_nus = precomp_transform_complex_to_real(self.nus)
@@ -188,8 +188,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         S = int(max(7.08 * self.nres, -np.log2(self.epsilon) + 2 * np.log2(self.nres)))
         num_angular_nodes = S
-        for s in range(int(self.greatest_lambda + self.ndmax) + 1, S + 1):
-            tmp = self.nres**2 * ((self.greatest_lambda + self.ndmax) / s) ** s
+        for s in range(int(self.greatest_lambda + self.ell_p_max) + 1, S + 1):
+            tmp = self.nres**2 * ((self.greatest_lambda + self.ell_p_max) / s) ** s
             if tmp <= self.epsilon:
                 num_angular_nodes = int(max(int(s), np.log2(1 / self.epsilon)))
                 break
@@ -228,13 +228,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         Create the matrix used in the third step of evaluate_t() and the first step of evaluate()
         for barycentric interpolation from Chebyshev nodes.
         """
-        A3 = [None] * (self.ndmax + 1)
-        A3_T = [None] * (self.ndmax + 1)
+        A3 = [None] * (self.ell_p_max + 1)
+        A3_T = [None] * (self.ell_p_max + 1)
         chebyshev_pts = np.cos(
             np.pi * (1 - (2 * np.arange(self.num_interp) + 1) / (2 * self.num_interp))
         )
         weights = get_weights(chebyshev_pts)
-        for i in range(self.ndmax + 1):
+        for i in range(self.ell_p_max + 1):
             ys = np.zeros(self.num_interp)
 
             # target points
@@ -506,7 +506,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         betas = np.moveaxis(betas, 0, -1)
 
         coeffs = np.zeros((self.count, num_img), dtype=np.float64)
-        for i in range(self.ndmax + 1):
+        for i in range(self.ell_p_max + 1):
             coeffs[self.idx_list[i]] = self.A3[i] @ betas[:, i, :]
         coeffs = coeffs.T
 
@@ -525,9 +525,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         coeffs = coeffs.T
 
         out = np.zeros(
-            (self.num_interp, 2 * self.nmax + 1, num_img), dtype=np.float64, order="F"
+            (self.num_interp, 2 * self.max_ell + 1, num_img), dtype=np.float64, order="F"
         )
-        for i in range(self.ndmax + 1):
+        for i in range(self.ell_p_max + 1):
             out[:, i, :] = self.A3_T[i] @ coeffs[self.idx_list[i]]
         out = np.moveaxis(out, -1, 0)
         if self.num_interp > self.num_radial_nodes:
@@ -683,10 +683,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             b = np.concatenate((b, bz), axis=0)
             b = idct(b, axis=0, type=2) * 2 * b.shape[0]
         a = np.zeros(self.count, dtype=np.float64)
-        y = [None] * (self.ndmax + 1)
-        for i in range(self.ndmax + 1):
+        y = [None] * (self.ell_p_max + 1)
+        for i in range(self.ell_p_max + 1):
             y[i] = (self.A3[i] @ b[:, 0]).flatten()
-        for i in range(self.ndmax + 1):
+        for i in range(self.ell_p_max + 1):
             a[self.idx_list[i]] = y[i]
 
         return a.flatten()
