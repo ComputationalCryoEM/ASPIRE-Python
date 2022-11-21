@@ -525,7 +525,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         coeffs = coeffs.T
 
         out = np.zeros(
-            (self.num_interp, 2 * self.max_ell + 1, num_img), dtype=np.float64, order="F"
+            (self.num_interp, 2 * self.max_ell + 1, num_img),
+            dtype=np.float64,
+            order="F",
         )
         for i in range(self.ell_p_max + 1):
             out[:, i, :] = self.A3_T[i] @ coeffs[self.idx_list[i]]
