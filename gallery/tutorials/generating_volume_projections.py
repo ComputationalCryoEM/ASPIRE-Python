@@ -74,7 +74,6 @@ src = Simulation(
     vols=v,  # our Volume
     L=v.resolution,  # resolution, should match Volume
     n=n_img,  # number of projection images
-    C=len(v),  # Number of volumes in vols. 1 in this case
     angles=rots.angles,  # pass our rotations as Euler angles
     offsets=shifts,  # translations (wrt to origin)
     amplitudes=amplitudes,  # amplification ( 1 is identity)
