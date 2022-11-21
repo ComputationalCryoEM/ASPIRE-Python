@@ -369,7 +369,7 @@ class BFSRAverager2D(BFRAverager2D):
         dtype=None,
     ):
         """
-        See AligningAverager2D and BFRAverager2D, adds: `n_x_shifts`, `n_y_shifts`.
+        See AligningAverager2D and BFRAverager2D, adds: radius
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         :param radius: Brute force translation search radius.
