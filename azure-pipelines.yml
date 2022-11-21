@@ -94,6 +94,8 @@ jobs:
       Python37:
         python.version: '3.7'
 
+# comment for testing
+
   steps:
   - bash: |
       echo "##vso[task.prependpath]$CONDA/bin"
