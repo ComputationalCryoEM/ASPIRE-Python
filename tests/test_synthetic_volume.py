@@ -102,12 +102,12 @@ class CnSymmetricVolumeCase(Base, TestCase):
     ("L", "order"),
     [
         (21, 2),
-        (30, 3),
-        (31, 3),
-        (40, 4),
-        (41, 4),
-        (52, 5),
-        (53, 5),
+        (40, 3),
+        (41, 3),
+        (42, 4),
+        (43, 4),
+        (55, 5),
+        (56, 5),
         (64, 6),
         (65, 6),
     ],
@@ -116,6 +116,31 @@ class DnSymmetricVolumeCase(Base, TestCase):
     vol_class = DnSymmetricVolume
     L = 20
     order = 2
+
+    def testDnSymmetricVolume(self):
+        vol = self.vol
+
+        # Build Rotations 2pi/k about z axis and pi about perpendicular axes.
+        angles = 2 * np.pi * np.arange(self.order, dtype=self.dtype) / self.order
+        rot_z = Rotation.about_axis("z", angles, dtype=self.dtype).matrices
+        rot_perp = Rotation.about_axis("y", np.pi, dtype=self.dtype)
+
+        for i in range(self.order):
+            # Rotate volume about z axis
+            rot = Rotation(rot_z[i])
+            rot_vol = vol.rotate(rot, zero_nyquist=False)
+            rot_vol_perp = rot_vol.rotate(rot_perp, zero_nyquist=False)
+
+            # Check that correlation is close to 1.
+            corr1 = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
+                vol[0].flatten(), vol[0].flatten()
+            )
+            corr2 = np.dot(rot_vol_perp[0].flatten(), vol[0].flatten()) / np.dot(
+                vol[0].flatten(), vol[0].flatten()
+            )
+
+            self.assertTrue(abs(corr1 - 1) < 1e-5)
+            self.assertTrue(abs(corr2 - 1) < 1e-5)
 
 
 @parameterized_class(("L"), [(21,)])
