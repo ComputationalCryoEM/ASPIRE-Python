@@ -65,3 +65,33 @@ class FFT:
         x = self.fftn(x, axes=axes, workers=workers)
         x = self.fftshift(x, axes=axes)
         return x
+
+    def mdim_ifftshift(self, x, dims=None):
+        """
+        Multi-dimensional FFT unshift
+
+        :param x: The array to be unshifted.
+        :param dims: An array of dimension indices along which the unshift should occur.
+            If None, the unshift is performed along all dimensions.
+        :return: The x array unshifted along the desired dimensions.
+        """
+        if dims is None:
+            dims = range(0, x.ndim)
+        for dim in dims:
+            x = self.ifftshift(x, dim)
+        return x
+
+    def mdim_fftshift(self, x, dims=None):
+        """
+        Multi-dimensional FFT shift
+
+        :param x: The array to be shifted.
+        :param dims: An array of dimension indices along which the shift should occur.
+            If None, the shift is performed along all dimensions.
+        :return: The x array shifted along the desired dimensions.
+        """
+        if dims is None:
+            dims = range(0, x.ndim)
+        for dim in dims:
+            x = self.fftshift(x, dim)
+        return x

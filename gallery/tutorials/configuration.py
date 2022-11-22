@@ -76,12 +76,32 @@ and common patterns for overriding.
 #       aspire.config.set_file('/path/to/some_experimental_config.yaml')
 #
 #
-# Or simply set specific variables as needed:
+# Or simply set specific variables as needed.
+# Here we will disable progress bars displayed by
+# ``aspire.utils.trange`` and ``aspire.utils.tqdm``.
 #
-#     .. code-block:: python
-#
-#       config['nufft']['backend'] = 'cufinufft'
-#
+
+import time
+
+from aspire import config
+from aspire.utils import trange
+
+# Progress bars are displayed by default.
+
+print("Disabling progress bars")
+config["logging"]["tqdm_disable"] = True
+
+for _ in trange(3):
+    time.sleep(1)
+print("Done Loop 1\n")
+
+print("Re-enabling progress bars")
+config["logging"]["tqdm_disable"] = False
+
+for _ in trange(3):
+    time.sleep(1)
+print("Done Loop 2\n")
+
 
 # %%
 # Resolution

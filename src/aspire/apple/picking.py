@@ -14,10 +14,10 @@ from scipy.ndimage import (
     center_of_mass,
 )
 from sklearn import preprocessing, svm
-from tqdm import tqdm
 
 from aspire.apple.helper import PickerHelper
 from aspire.numeric import fft, xp
+from aspire.utils import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +205,7 @@ class Picker:
 
         return im
 
-    def query_score(self, show_progress=True):
+    def query_score(self):
         """
         Calculates score for each query image.
 
@@ -213,7 +213,6 @@ class Picker:
         Computes the cross-correlation between these windows,
         and applies a threshold to compute a score for each query image.
 
-        :param show_progress: Whether to show a progress bar
         :return: Matrix containing a score for each query image.
         """
 
@@ -238,7 +237,7 @@ class Picker:
             return index, cc.real.max((2, 3)) - cc.real.mean((2, 3))
 
         n_works = reference_size
-        pbar = tqdm(total=reference_size, disable=not show_progress)
+        pbar = tqdm(total=reference_size)
 
         # Ideally we'd like something like 'SerialExecutor' to enable easy debugging
         # but for now do an if-else

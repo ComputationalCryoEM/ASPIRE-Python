@@ -48,9 +48,7 @@ apple_picker = Apple(
 # Here we use the ``process_micrograph`` method from the ``Apple`` class to find particles in the micrograph.
 # It will also return an image suitable for display, and optionally save a jpg.
 
-centers, particles_img = apple_picker.process_micrograph(
-    filename, show_progress=False, create_jpg=True
-)
+centers, particles_img = apple_picker.process_micrograph(filename, create_jpg=True)
 
 # Note that if you only desire ``centers`` you may call ``process_micrograph_centers(filename,...)``.
 

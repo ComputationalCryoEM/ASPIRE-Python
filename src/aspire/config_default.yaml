@@ -3,13 +3,15 @@ common:
     # numeric module to use - one of numpy/cupy
     numeric: numpy
     # fft backend to use - one of pyfftw/scipy/cupy
-    fft: pyfftw    
+    fft: pyfftw
 
 logging:
     # Set log_dir to a relative or absolute directory
     # Default is a subfolder `logs` in your current working directory.
     log_dir: logs
     log_exceptions: 1
+    # tqdm_disable=True disables progress bars.
+    tqdm_disable: False
 
 nufft:
     # NUFFT backends should be one of finufft, cufinufft, pynfft.

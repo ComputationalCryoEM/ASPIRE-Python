@@ -3,23 +3,22 @@ from functools import partial
 
 import numpy as np
 import scipy.sparse.linalg
-from scipy.fftpack import fftn
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
-from tqdm import tqdm
 
 from aspire.image import Image
 from aspire.nufft import anufft
+from aspire.numeric import fft
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import (
     make_symmat,
     symmat_to_vec_iso,
+    trange,
     vec_to_symmat_iso,
     vecmat_to_volmat,
     volmat_to_vecmat,
 )
-from aspire.utils.fft import mdim_ifftshift
 from aspire.volume import Volume, rotated_grids
 
 logger = logging.getLogger(__name__)
@@ -48,7 +47,7 @@ class CovarianceEstimator(Estimator):
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
-        for i in tqdm(range(0, n, self.batch_size)):
+        for i in trange(0, n, self.batch_size):
             _range = np.arange(i, min(n, i + self.batch_size))
             pts_rot = rotated_grids(L, self.src.rotations[_range, :, :])
             weights = sq_filters_f[:, :, _range]
@@ -80,8 +79,8 @@ class CovarianceEstimator(Estimator):
         kernel[:, :, :, :, :, 0] = 0
 
         logger.info("Computing non-centered Fourier Transform")
-        kernel = mdim_ifftshift(kernel, range(0, 6))
-        kernel_f = fftn(kernel)
+        kernel = fft.mdim_ifftshift(kernel, range(0, 6))
+        kernel_f = fft.fftn(kernel)
         # Kernel is always symmetric in spatial domain and therefore real in Fourier
         kernel_f = np.real(kernel_f)
 

@@ -274,8 +274,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
             self.basis,
             self._getSrc(),
             n_angles=self.n_search_angles,
-            n_x_shifts=1,
-            n_y_shifts=1,
+            radius=2,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
