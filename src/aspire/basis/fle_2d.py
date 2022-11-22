@@ -15,6 +15,7 @@ from aspire.basis.fle_2d_utils import (
 )
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
+from aspire.utils import grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -150,16 +151,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Creates meshgrids based on basis size.
         """
-        self.R = self.nres // 2
-        self.h = 1 / self.R
-        x = np.arange(-self.R, self.R + self.nres % 2)
-        y = np.arange(-self.R, self.R + self.nres % 2)
-        xs, ys = np.meshgrid(x, y)
-        self.xs, self.ys, = (
-            xs / self.R,
-            ys / self.R,
-        )
-        self.rs = np.sqrt(self.xs**2 + self.ys**2)
+        grid = grid_2d(self.nres)
+        self.xs = grid["x"]
+        self.ys = grid["y"]
+        self.rs = grid["r"]
         self.radial_mask = self.rs > 1 + 1e-13
 
     def _compute_nufft_points(self):
