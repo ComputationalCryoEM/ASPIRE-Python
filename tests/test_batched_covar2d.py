@@ -4,7 +4,8 @@ import numpy as np
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import BatchedRotCov2D, RotCov2D
-from aspire.operators import RadialCTFFilter, ScalarFilter
+from aspire.image import WhiteNoiseAdder
+from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.utils import utest_tolerance
 
@@ -28,14 +29,14 @@ class BatchedRotCov2DTestCase(TestCase):
         # Noise variance is set to a value far away that is used to calculate
         # covariance matrix and CWF coefficients in order to check the function
         # for rebuilding positive definite covariance matrix.
-        noise_filter = ScalarFilter(dim=2, value=self.noise_var * 0.001)
+        noise_adder = WhiteNoiseAdder(var=self.noise_var * 0.001)
 
         self.src = Simulation(
             L,
             n,
             unique_filters=self.filters,
             dtype=self.dtype,
-            noise_filter=noise_filter,
+            noise_adder=noise_adder,
         )
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)
         self.coeff = self.basis.evaluate_t(self.src.images[:])

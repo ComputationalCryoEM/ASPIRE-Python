@@ -4,7 +4,8 @@ import numpy as np
 
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.denoising.denoiser_cov2d import DenoiserCov2D
-from aspire.operators.filters import RadialCTFFilter, ScalarFilter
+from aspire.image import WhiteNoiseAdder
+from aspire.operators.filters import RadialCTFFilter
 from aspire.source.simulation import Simulation
 
 
@@ -15,7 +16,7 @@ class BatchedRotCov2DTestCase(TestCase):
         img_size = 64
         num_imgs = 1024
         noise_var = 0.1848
-        noise_filter = ScalarFilter(dim=2, value=noise_var)
+        noise_adder = WhiteNoiseAdder(var=noise_var)
         filters = [
             RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
             for d in np.linspace(1.5e4, 2.5e4, 7)
@@ -28,7 +29,7 @@ class BatchedRotCov2DTestCase(TestCase):
             offsets=0.0,
             amplitudes=1.0,
             dtype=dtype,
-            noise_filter=noise_filter,
+            noise_adder=noise_adder,
         )
         imgs_clean = sim.projections[:]
 

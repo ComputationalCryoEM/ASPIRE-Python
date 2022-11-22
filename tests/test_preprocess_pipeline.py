@@ -5,6 +5,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
+from aspire.image import NoiseAdder
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter
 from aspire.source import ArrayImageSource
@@ -21,7 +22,8 @@ class PreprocessPLTestCase(TestCase):
         self.L = 64
         self.n = 128
         self.dtype = np.float32
-        self.noise_filter = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
+        noise_filter = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
+        self.noise_adder = NoiseAdder(noise_filter=noise_filter)
 
         self.sim = Simulation(
             L=self.L,
@@ -29,7 +31,7 @@ class PreprocessPLTestCase(TestCase):
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            noise_filter=self.noise_filter,
+            noise_adder=self.noise_adder,
             dtype=self.dtype,
         )
         self.imgs_org = self.sim.images[: self.n]
@@ -61,7 +63,7 @@ class PreprocessPLTestCase(TestCase):
         sim = Simulation(
             L=self.L,
             n=self.n,
-            noise_filter=self.noise_filter,
+            noise_adder=self.noise_adder,
             dtype=self.dtype,
         )
 
@@ -109,7 +111,7 @@ class PreprocessPLTestCase(TestCase):
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            noise_filter=self.noise_filter,
+            noise_adder=self.noise_adder,
             dtype=self.dtype,
         )
         noise_estimator = AnisotropicNoiseEstimator(sim)

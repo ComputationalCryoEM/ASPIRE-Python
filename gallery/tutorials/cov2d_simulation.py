@@ -16,7 +16,8 @@ import numpy as np
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
-from aspire.operators import RadialCTFFilter, ScalarFilter
+from aspire.image import WhiteNoiseAdder
+from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.utils import anorm
 from aspire.volume import Volume
@@ -52,7 +53,7 @@ logger.info(f"Simulation running in {dtype} precision.")
 # and initial noise inside the Simulation class.
 
 noise_var = 1.3957e-4
-noise_filter = ScalarFilter(dim=2, value=noise_var)
+noise_adder = WhiteNoiseAdder(var=noise_var)
 
 # %%
 # Specify the CTF Parameters
@@ -98,7 +99,7 @@ sim = Simulation(
     offsets=0.0,
     amplitudes=1.0,
     dtype=dtype,
-    noise_filter=noise_filter,
+    noise_adder=noise_adder,
 )
 
 

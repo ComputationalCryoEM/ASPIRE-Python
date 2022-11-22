@@ -24,6 +24,7 @@ from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis2D, FFBBasis3D
 from aspire.classification import BFSReddyChatterjiAverager2D, RIRClass2D
 from aspire.denoising import DenoiserCov2D
+from aspire.image import NoiseAdder
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
@@ -81,7 +82,7 @@ def noise_function(x, y):
     return (alpha * f1 + beta * f2) / 2.0
 
 
-custom_noise_filter = FunctionFilter(noise_function)
+custom_noise = NoiseAdder(noise_filter=FunctionFilter(noise_function))
 
 logger.info("Initialize CTF filters.")
 # Create some CTF effects
@@ -104,7 +105,7 @@ src = Simulation(
     L=v.resolution,
     n=num_imgs,
     vols=v,
-    noise_filter=custom_noise_filter,
+    noise_adder=custom_noise,
     unique_filters=ctf_filters,
     dtype=v.dtype,
 )

@@ -6,7 +6,6 @@ from scipy.linalg import eigh, qr
 
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder
-from aspire.operators import ZeroFilter
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
@@ -39,13 +38,15 @@ class Simulation(ImageSource):
         angles=None,
         seed=0,
         memory=None,
-        noise_filter=None,
+        noise_adder=None,
     ):
         """
         A Cryo-EM simulation
         Other than the base class attributes, it has:
 
         :param angles: A n-by-3 array of rotation angles
+        :param noise_adder: Optionally append instance of NoiseAdder
+            to generation pipeline.
         """
 
         self.seed = seed
@@ -125,10 +126,11 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
 
-        self.noise_adder = None
-        if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
+        if noise_adder is not None:
             logger.info("Appending a NoiseAdder to generation pipeline")
-            self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
+            if not isinstance(noise_adder, NoiseAdder):
+                raise RuntimeError("`noise_adder` should be instance of NoiseAdder")
+        self.noise_adder = noise_adder
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
