@@ -189,17 +189,19 @@ def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), indexing="yx", dtype=np.float64):
     if len(sigma) != 2:
         raise ValueError("`sigma` must be a scalar or len(2).")
 
-    if indexing == "yx":
-        mu, sigma = mu[::-1], sigma[::-1]
-    elif indexing != "xy":
-        raise ValueError("Indexing must be `yx` or `xy`.")
-
     # Construct centered mesh
     g = grid_2d(size, shifted=False, normalized=False, indexing=indexing, dtype=dtype)
+
+    if indexing == "yx":
+        mu, sigma = mu[::-1], sigma[::-1]
+        g["x"], g["y"] = g["y"], g["x"]
+    elif indexing != "xy":
+        raise ValueError("Indexing must be `yx` or `xy`.")
 
     p = (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2) + (g["y"] - mu[1]) ** 2 / (
         2 * sigma[1] ** 2
     )
+
     return np.exp(-p).astype(dtype, copy=False)
 
 
@@ -233,19 +235,21 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.fl
     if len(sigma) != 3:
         raise ValueError("`sigma` must be a scalar or len(3).")
 
-    if indexing == "zyx":
-        mu, sigma = mu[::-1], sigma[::-1]
-    elif indexing != "xyz":
-        raise ValueError("Indexing must be `zyx` or `xyz`.")
-
     # Construct centered mesh
     g = grid_3d(size, shifted=False, normalized=False, indexing=indexing, dtype=dtype)
+
+    if indexing == "zyx":
+        mu, sigma = mu[::-1], sigma[::-1]
+        g["x"], g["y"], g["z"] = g["z"], g["y"], g["x"]
+    elif indexing != "xyz":
+        raise ValueError("Indexing must be `zyx` or `xyz`.")
 
     p = (
         (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2)
         + (g["y"] - mu[1]) ** 2 / (2 * sigma[1] ** 2)
         + (g["z"] - mu[2]) ** 2 / (2 * sigma[2] ** 2)
     )
+
     return np.exp(-p).astype(dtype, copy=False)
 
 

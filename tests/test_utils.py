@@ -70,8 +70,8 @@ class UtilsTestCase(TestCase):
         g = gaussian_2d(L, mu=mu, sigma=sigma)
 
         # The normalized sum across an axis should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        g_x = np.sum(g, axis=1) / np.sum(g)
-        g_y = np.sum(g, axis=0) / np.sum(g)
+        g_x = np.sum(g, axis=0) / np.sum(g)
+        g_y = np.sum(g, axis=1) / np.sum(g)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
@@ -105,6 +105,8 @@ class UtilsTestCase(TestCase):
         g_1d_z = peak_z * gaussian_1d(L, mu=mu[2], sigma=sigma[2])
 
         # Assert all-close
+        if indexing == "zyx":
+            G_x, G_y, G_z = G_z, G_y, G_x
         self.assertTrue(np.allclose(G_x, g_1d_x))
         self.assertTrue(np.allclose(G_y, g_1d_y))
         self.assertTrue(np.allclose(G_z, g_1d_z))
