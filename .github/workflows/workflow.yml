@@ -75,6 +75,7 @@ jobs:
       shell: bash
 
   decaf_ampere:
+    needs: check
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2
@@ -82,5 +83,5 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev,gpu_11x]"
-    - name: Run 
+    - name: Run
       run: pytest

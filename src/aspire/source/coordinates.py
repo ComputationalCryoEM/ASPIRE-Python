@@ -202,6 +202,29 @@ class CoordinateSource(ImageSource, ABC):
             self._box_coord_from_center(coord, self.particle_size) for coord in coords
         ]
 
+    def _populate_local_metadata(self):
+        """
+        Called during ImageSource.save(), populates metadata columns specific to
+            `CoordinateSource` when saving to STAR file.
+        :return: A list of the names of the columns added.
+        """
+        # Insert stored particle coordinates (centers) into metadata
+        self.set_metadata(
+            "_rlnCoordinateX",
+            [
+                self._center_from_box_coord(particle[1])[0]
+                for particle in self.particles
+            ],
+        )
+        self.set_metadata(
+            "_rlnCoordinateY",
+            [
+                self._center_from_box_coord(particle[1])[1]
+                for particle in self.particles
+            ],
+        )
+        return ["_rlnCoordinateX", "_rlnCoordinateY"]
+
     def _exclude_boundary_particles(self):
         """
         Remove particles boxes which do not fit in the micrograph

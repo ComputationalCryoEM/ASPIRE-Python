@@ -100,15 +100,7 @@ class Averager2D(ABC):
             source for a certain operation (ie alignment).
         """
         src = src or self.src
-
-        n_nbor = cls.shape[-1]  # Includes zero'th neighbor
-
-        images = np.empty((n_nbor, src.L, src.L), dtype=self.dtype)
-
-        for i, index in enumerate(cls):
-            images[i] = src.images[index].asnumpy()
-
-        return images
+        return src.images[cls].asnumpy().astype(self.dtype, copy=False)
 
 
 class AligningAverager2D(Averager2D):
@@ -224,7 +216,7 @@ class AligningAverager2D(Averager2D):
                 b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config.ray.temp_dir)
+            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -544,7 +536,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config.ray.temp_dir)
+            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -604,7 +596,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config.ray.temp_dir)
+            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -735,7 +727,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config.ray.temp_dir)
+            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()

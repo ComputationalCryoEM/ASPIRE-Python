@@ -82,7 +82,7 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest --random-order
+      pytest -s
     displayName: pytest
 
 - job:
@@ -112,7 +112,7 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest --random-order
+      pytest -s
     displayName: pytest
 
 - job:

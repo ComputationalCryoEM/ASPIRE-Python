@@ -5,6 +5,7 @@ import numpy as np
 from scipy import misc
 
 from aspire.image import Image, _im_translate2
+from aspire.utils import powerset
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -18,7 +19,7 @@ class ImageTestCase(TestCase):
         self.im = Image(misc.face(gray=True).astype(self.dtype)[:768, :768])
         # Construct a simple stack of Images
         self.n = 3
-        self.ims_np = np.empty((3, *self.im_np.shape[1:]), dtype=self.dtype)
+        self.ims_np = np.empty((self.n, *self.im_np.shape[1:]), dtype=self.dtype)
         for i in range(self.n):
             self.ims_np[i] = self.im_np * (i + 1) / float(self.n)
         # Independent Image stack object for testing Image methods
@@ -53,20 +54,43 @@ class ImageTestCase(TestCase):
         self.assertTrue(np.allclose(self.ims.sqrt().asnumpy(), np.sqrt(self.ims_np)))
 
     def testImageTranspose(self):
+        # test method and abbreviation
+        self.assertTrue(
+            np.allclose(self.im.T.asnumpy(), np.transpose(self.im_np, (0, 2, 1)))
+        )
         self.assertTrue(
             np.allclose(
-                self.im.flip_axes().asnumpy(), np.transpose(self.im_np, (0, 2, 1))
+                self.im.transpose().asnumpy(), np.transpose(self.im_np, (0, 2, 1))
             )
         )
 
-        # This is equivalent to checking np.tranpose(..., (0, 2, 1))
+        # Check individual imgs in a stack
         for i in range(self.ims_np.shape[0]):
+            self.assertTrue(np.allclose(self.ims.T[i], self.ims_np[i].T))
+            self.assertTrue(np.allclose(self.ims.transpose()[i], self.ims_np[i].T))
 
-            self.assertTrue(np.allclose(self.ims.flip_axes()[i], self.ims_np[i].T))
-
-            # Check against the contruction.
+    def testImageFlip(self):
+        for axis in powerset(range(1, 3)):
+            if not axis:
+                # test default
+                result_single = self.im.flip().asnumpy()
+                result_stack = self.ims.flip().asnumpy()
+                axis = 1
+            else:
+                result_single = self.im.flip(axis).asnumpy()
+                result_stack = self.ims.flip(axis).asnumpy()
+            # single image
+            self.assertTrue(np.allclose(result_single, np.flip(self.im_np, axis)))
+            # stack
             self.assertTrue(
                 np.allclose(
-                    self.ims.flip_axes()[i], self.im_np[0].T * (i + 1) / float(self.n)
+                    result_stack,
+                    np.flip(self.ims_np, axis),
                 )
             )
+
+        # test error for axis 0
+        axes = [0, (0, 1)]
+        for axis in axes:
+            with self.assertRaisesRegex(ValueError, "stack axis"):
+                _ = self.im.flip(axis)

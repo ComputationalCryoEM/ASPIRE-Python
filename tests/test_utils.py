@@ -18,7 +18,7 @@ from aspire.utils import (
     utest_tolerance,
     virtual_core_cpu_suggestion,
 )
-from aspire.utils.misc import gaussian_1d, gaussian_2d, gaussian_3d
+from aspire.utils.misc import bump_3d, gaussian_1d, gaussian_2d, gaussian_3d, grid_3d
 
 
 class UtilsTestCase(TestCase):
@@ -149,6 +149,31 @@ class UtilsTestCase(TestCase):
 
         self.assertTrue(np.allclose(g_2d, g_2d_scalar))
         self.assertTrue(np.allclose(g_3d, g_3d_scalar))
+
+    @parameterized.expand([(29,), (30,)])
+    def testBump3d(self, L):
+        L = L
+        dtype = np.float64
+        a = 10
+
+        # Build volume of 1's and apply bump function
+        volume = np.ones((L,) * 3, dtype=dtype)
+        bump = bump_3d(L, spread=a, dtype=dtype)
+        bumped_volume = np.multiply(bump, volume)
+
+        # Define support for volume
+        g = grid_3d(L, dtype=dtype)
+        inside = g["r"] < (L - 1) / L
+        outside = g["r"] >= 1
+
+        # Test that volume is zero outside of support
+        self.assertTrue(bumped_volume[outside].all() == 0)
+
+        # Test that volume is positive inside support
+        self.assertTrue((bumped_volume[inside] > 0).all())
+
+        # Test that the center is still 1
+        self.assertTrue(np.allclose(bumped_volume[(L // 2,) * 3], 1))
 
 
 class MultiProcessingUtilsTestCase(TestCase):

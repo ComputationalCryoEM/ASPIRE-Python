@@ -17,7 +17,7 @@ def numeric_object(which):
     return NumericClass()
 
 
-xp = numeric_object(config.common.numeric)
+xp = numeric_object(config["common"]["numeric"].as_str())
 
 
 def fft_object(which):
@@ -32,4 +32,4 @@ def fft_object(which):
     return FFTClass()
 
 
-fft = fft_object(config.common.fft)
+fft = fft_object(config["common"]["fft"].as_str())

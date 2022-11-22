@@ -1,4 +1,3 @@
-import importlib.resources
 import os.path
 import tempfile
 from collections import OrderedDict
@@ -13,6 +12,7 @@ import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.storage import StarFile, StarFileError
+from aspire.utils import importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -36,9 +36,7 @@ def grouper(iterable, n, fillvalue=None):
 
 class StarFileTestCase(TestCase):
     def setUp(self):
-        with importlib.resources.path(
-            tests.saved_test_data, "sample_data_model.star"
-        ) as path:
+        with importlib_path(tests.saved_test_data, "sample_data_model.star") as path:
             self.starfile = StarFile(path)
 
         # Independent Image object for testing Image source methods
@@ -168,7 +166,7 @@ class StarFileTestCase(TestCase):
         with self.assertRaises(StarFileError):
             _blocks = OrderedDict()
             _blocks[""] = DataFrame(["test", "data"])
-            with importlib.resources.path(
+            with importlib_path(
                 tests.saved_test_data, "sample_data_model.star"
             ) as path:
                 StarFile(filepath=path, blocks=_blocks)

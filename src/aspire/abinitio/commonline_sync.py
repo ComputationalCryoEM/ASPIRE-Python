@@ -93,7 +93,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         # Actually, there are only 6 unknown variables, because A'*A is symmetric.
         # So we will truncate from 9 variables to 6 variables corresponding
         # to the upper half of the matrix A'*A
-        truncated_equations = np.zeros((3 * n_img, 6))
+        truncated_equations = np.zeros((3 * n_img, 6), dtype=self.dtype)
         k = 0
         for i in range(3):
             for j in range(i, 3):
@@ -110,7 +110,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         ATA_vec = np.linalg.lstsq(truncated_equations, b, rcond=None)[0]
 
         # Construct the matrix A'*A from the vectorized matrix.
-        ATA = np.zeros((3, 3))
+        ATA = np.zeros((3, 3), dtype=self.dtype)
         upper_mask = np.triu_indices(3)
         ATA[upper_mask] = ATA_vec
         lower_mask = np.tril_indices(3)
@@ -127,7 +127,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         r2 = np.dot(a, v2)
         r3 = np.cross(r1, r2, axis=0)
 
-        rotations = np.empty((n_img, 3, 3))
+        rotations = np.empty((n_img, 3, 3), dtype=self.dtype)
         rotations[:, :, 0] = r1.T
         rotations[:, :, 1] = r2.T
         rotations[:, :, 2] = r3.T

@@ -18,7 +18,7 @@ from aspire.utils import (
     vecmat_to_volmat,
 )
 from aspire.utils.random import rand, randi, randn
-from aspire.volume import Volume, gaussian_blob_vols
+from aspire.volume import LegacyVolume, Volume
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class Simulation(ImageSource):
     def __init__(
         self,
-        L=8,
+        L=None,
         n=1024,
         vols=None,
         states=None,
@@ -36,7 +36,6 @@ class Simulation(ImageSource):
         amplitudes=None,
         dtype=np.float32,
         C=2,
-        symmetry=None,
         angles=None,
         seed=0,
         memory=None,
@@ -46,31 +45,23 @@ class Simulation(ImageSource):
         A Cryo-EM simulation
         Other than the base class attributes, it has:
 
-        :param C: The number of distinct volumes
         :param angles: A n-by-3 array of rotation angles
         """
         super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
         self.seed = seed
 
-        # We need to keep track of the original resolution we were initialized with,
-        # to be able to generate projections of volumes later, when we are asked to supply images.
-        self._original_L = L
-
-        if offsets is None:
-            offsets = L / 16 * randn(2, n, seed=seed).astype(dtype).T
-
-        if amplitudes is None:
-            min_, max_ = 2.0 / 3, 3.0 / 2
-            amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
-
+        # If a Volume is not provided we default to the legacy Gaussian blob volume.
+        # If a Simulation resolution is not provided, we default to L=8.
         if vols is None:
-            self.vols = gaussian_blob_vols(
-                L=L, C=C, symmetry=symmetry, seed=self.seed, dtype=self.dtype
-            )
+            self.vols = LegacyVolume(
+                L=L or 8, C=2, seed=self.seed, dtype=self.dtype
+            ).generate()
         else:
-            assert isinstance(vols, Volume)
             self.vols = vols
+
+        if not isinstance(self.vols, Volume):
+            raise RuntimeError("`vols` should be a Volume instance or `None`.")
 
         if self.vols.dtype != self.dtype:
             raise RuntimeError(
@@ -78,6 +69,26 @@ class Simulation(ImageSource):
                 f" does not match provided vols.dtype {self.vols.dtype}."
             )
             self.vols = self.vols.astype(self.dtype)
+
+        self.L = self.vols.resolution
+
+        # If a user provides both `L` and `vols`, resolution should match.
+        if L is not None and L != self.L:
+            raise RuntimeError(
+                f"Simulation must have the same resolution as the provided Volume."
+                f" vols.resolution = {self.vols.resolution}, self.L = {self.L}."
+            )
+
+        # We need to keep track of the original resolution we were initialized with,
+        # to be able to generate projections of volumes later, when we are asked to supply images.
+        self._original_L = self.L
+
+        if offsets is None:
+            offsets = self.L / 16 * randn(2, n, seed=seed).astype(dtype).T
+
+        if amplitudes is None:
+            min_, max_ = 2.0 / 3, 3.0 / 2
+            amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
 
         self.C = self.vols.n_vols
 
@@ -202,7 +213,7 @@ class Simulation(ImageSource):
         """
         # check for cached images first
         if self._cached_im is not None:
-            logger.info("Loading images from cache")
+            logger.debug("Loading images from cache")
             return self.generation_pipeline.forward(
                 Image(self._cached_im[indices, :, :]), indices
             )

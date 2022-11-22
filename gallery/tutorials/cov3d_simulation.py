@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 # ------------------------
 
 # Specify parameters
-num_vols = 2  # number of volumes
 img_size = 8  # image size in square
 num_imgs = 1024  # number of images
 num_eigs = 16  # number of eigen-vectors to keep
@@ -37,9 +36,11 @@ num_eigs = 16  # number of eigen-vectors to keep
 sim = Simulation(
     L=img_size,
     n=num_imgs,
-    C=num_vols,
     unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
 )
+
+# By default, a Simulation object is created using 2 volumes.
+num_vols = sim.C
 
 # Specify the normal FB basis method for expending the 2D images
 basis = FBBasis3D((img_size, img_size, img_size))
@@ -81,7 +82,7 @@ eigs_est = Volume(np.transpose(eigs_est, (3, 0, 1, 2)))
 # Truncate the eigendecomposition. Since we know the true rank of the
 # covariance matrix, we enforce it here.
 
-eigs_est_trunc = Volume(eigs_est[: num_vols - 1])  # hrmm not very convenient
+eigs_est_trunc = Volume(eigs_est[: num_vols - 1])
 lambdas_est_trunc = lambdas_est[: num_vols - 1, : num_vols - 1]
 
 # Estimate the coordinates in the eigenbasis. Given the images, we find the
