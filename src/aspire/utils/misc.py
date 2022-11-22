@@ -172,7 +172,7 @@ def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), indexing="yx", dtype=np.float64):
 
     :param size: The length of each dimension of the returned array (pixels)
     :param mu: Iterable of len(2), :math:`(\\mu_x, \\mu_y)`, indicating the center of the Gaussian
-    :param sigma: Iterable of length(2) or constant, :math:`(\\sigma_x, \\sigma_y)`, of the standard
+    :param sigma: Iterable of len(2) or constant, :math:`(\\sigma_x, \\sigma_y)`, of the standard
             deviation in the x and y directions. A single value, :math:`\\sigma`, can be
             used when :math:`\\sigma_x = \\sigma_y`.
     :param indexing: The order of axis indexing, passed to grid_2d
