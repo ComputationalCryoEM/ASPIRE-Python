@@ -3,7 +3,7 @@ common:
     # numeric module to use - one of numpy/cupy
     numeric: numpy
     # fft backend to use - one of pyfftw/scipy/cupy
-    fft: pyfftw    
+    fft: pyfftw
 
 logging:
     # Set log_dir to a relative or absolute directory
