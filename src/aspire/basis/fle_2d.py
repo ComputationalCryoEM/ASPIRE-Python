@@ -91,6 +91,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.smallest_lambda = np.min(self.bessel_zeros)
         self.greatest_lambda = np.max(self.bessel_zeros)
         self.max_ell = np.max(np.abs(self.ells))
+        self.h = 1 / (self.nres // 2)
 
         # give each ell a positive index increasing first in |ell|
         # then in sign, e.g. 0->1, -1->2, 1->3, -2->4, 2->5, etc.
