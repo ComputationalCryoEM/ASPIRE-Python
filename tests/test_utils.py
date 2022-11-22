@@ -62,16 +62,22 @@ class UtilsTestCase(TestCase):
         with raises(TypeError):
             utest_tolerance(int)
 
-    def testGaussian2d(self):
+    @parameterized.expand([("yx",), ("xy",)])
+    def testGaussian2d(self, indexing):
         L = 100
         mu = (7, -3)
         sigma = (5, 6)
 
-        g = gaussian_2d(L, mu=mu, sigma=sigma)
+        g = gaussian_2d(L, mu=mu, sigma=sigma, indexing=indexing)
 
         # The normalized sum across an axis should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        g_x = np.sum(g, axis=0) / np.sum(g)
-        g_y = np.sum(g, axis=1) / np.sum(g)
+        # We set the axes to sum over based on 'indexing'.
+        x, y = 0, 1
+        if indexing == "yx":
+            x, y = y, x
+
+        g_x = np.sum(g, axis=y) / np.sum(g)
+        g_y = np.sum(g, axis=x) / np.sum(g)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
