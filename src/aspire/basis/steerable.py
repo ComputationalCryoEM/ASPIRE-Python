@@ -248,8 +248,6 @@ class SteerableBasis2D(Basis):
             # get the coefs corresponding to -ks , aka "ells"
             _complex_coef[refl] = np.conj(complex_coef[refl])
 
-        # Note that radians is negated here to match CCW convention
-        # TODO, check if we should need to negate this for CCW.
         _complex_coef = _complex_coef * np.exp(1j * ks * radians)
 
         return _complex_coef
