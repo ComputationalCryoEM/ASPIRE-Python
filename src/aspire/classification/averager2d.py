@@ -5,12 +5,12 @@ from itertools import product
 import numpy as np
 import ray
 from ray.util.multiprocessing import Pool
-from tqdm import tqdm, trange
 
 from aspire import config
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image
 from aspire.source import ArrayImageSource
+from aspire.utils import trange
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.multiprocessing import num_procs_suggestion
 
@@ -212,7 +212,7 @@ class AligningAverager2D(Averager2D):
             return np.mean(neighbors_coefs, axis=0)
 
         if self.num_procs <= 1:
-            for i in tqdm(range(n_classes)):
+            for i in trange(n_classes):
                 b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
@@ -592,7 +592,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # Averaging in composite_basis
             return np.mean(neighbors_coefs, axis=0)
 
-        for i in tqdm(range(n_classes)):
+        for i in trange(n_classes):
             b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
