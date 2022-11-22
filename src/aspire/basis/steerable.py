@@ -18,7 +18,7 @@ class SteerableBasis2D(Basis):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Beause they are used for core features of SteerableBasis2D,
+        # Because they are used for core features of SteerableBasis2D,
         #   cache the indices for positive and negative ells.
         # Note zero is special case.
         self._zero_angular_inds = self.angular_indices == 0
@@ -145,11 +145,11 @@ class SteerableBasis2D(Basis):
 
     def rotate(self, coef, radians, refl=None):
         """
-        Returns coefs rotated by `radians`.
+        Returns coefs rotated counter-clockwise by `radians`.
 
         :param coef: Basis coefs.
         :param radians: Rotation in radians.
-        :param refl: Optional reflect image (bool)
+        :param refl: Optional reflect image (about y=0) (bool)
         :return: rotated coefs.
         """
 
@@ -204,7 +204,7 @@ class SteerableBasis2D(Basis):
 
     def complex_rotate(self, complex_coef, radians, refl=None):
         """
-        Returns complex coefs rotated by `radians`.
+        Returns complex coefs rotated counter-clockwise by `radians`.
 
         This implementation uses the complex exponential.
         It is kept in the code for documentation and
@@ -220,7 +220,7 @@ class SteerableBasis2D(Basis):
 
         :param complex_coef: Basis coefs (in complex representation).
         :param radians: Rotation in radians.
-        :param refl: Optional reflect image (about y=x) (bool)
+        :param refl: Optional reflect image (about y=0) (bool)
         :return: rotated (complex) coefs.
         """
 
