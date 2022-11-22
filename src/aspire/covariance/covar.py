@@ -6,9 +6,7 @@ import scipy.sparse.linalg
 from scipy.fftpack import fftn
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
-from tqdm import tqdm
 
-from aspire import config
 from aspire.image import Image
 from aspire.nufft import anufft
 from aspire.operators import evaluate_src_filters_on_grid
@@ -16,6 +14,7 @@ from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import (
     make_symmat,
     symmat_to_vec_iso,
+    trange,
     vec_to_symmat_iso,
     vecmat_to_volmat,
     volmat_to_vecmat,
@@ -49,7 +48,7 @@ class CovarianceEstimator(Estimator):
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
-        for i in tqdm(range(0, n, self.batch_size)):
+        for i in trange(0, n, self.batch_size):
             _range = np.arange(i, min(n, i + self.batch_size))
             pts_rot = rotated_grids(L, self.src.rotations[_range, :, :])
             weights = sq_filters_f[:, :, _range]
@@ -88,20 +87,19 @@ class CovarianceEstimator(Estimator):
 
         return FourierKernel(kernel_f, centered=False)
 
-    def estimate(self, mean_vol, noise_variance, tol=None):
+    def estimate(self, mean_vol, noise_variance, tol=1e-5, regularizer=0):
         logger.info("Running Covariance Estimator")
         b_coeff = self.src_backward(mean_vol, noise_variance)
-        est_coeff = self.conj_grad(b_coeff, tol=tol)
+        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
         covar_est = self.basis.mat_evaluate(est_coeff)
         covar_est = vecmat_to_volmat(make_symmat(volmat_to_vecmat(covar_est)))
         return covar_est
 
-    def conj_grad(self, b_coeff, tol=None):
+    def conj_grad(self, b_coeff, tol=1e-5, regularizer=0):
         b_coeff = symmat_to_vec_iso(b_coeff)
         N = b_coeff.shape[0]
         kernel = self.kernel
 
-        regularizer = config.covar.regularizer
         if regularizer > 0:
             kernel += regularizer
 
@@ -122,7 +120,6 @@ class CovarianceEstimator(Estimator):
                 dtype=self.dtype,
             )
 
-        tol = tol or config.covar.cg_tol
         target_residual = tol * norm(b_coeff)
 
         def cb(xk):

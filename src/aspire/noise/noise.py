@@ -4,7 +4,7 @@ import numpy as np
 
 from aspire.numeric import fft, xp
 from aspire.operators import ArrayFilter, ScalarFilter
-from aspire.utils import grid_2d
+from aspire.utils import grid_2d, trange
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
 
         first_moment = 0
         second_moment = 0
-        for i in range(0, self.src.n, self.batchSize):
+        for i in trange(0, self.src.n, self.batchSize):
             images = self.src.images[i : i + self.batchSize].asnumpy()
             images_masked = images * mask
 
@@ -121,7 +121,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
 
         mean_est = 0
         noise_psd_est = np.zeros((self.src.L, self.src.L)).astype(self.src.dtype)
-        for i in range(0, self.src.n, self.batchSize):
+        for i in trange(0, self.src.n, self.batchSize):
             images = self.src.images[i : i + self.batchSize].asnumpy()
             images_masked = images * mask
 

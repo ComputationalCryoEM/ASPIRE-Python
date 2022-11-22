@@ -5,9 +5,9 @@ from concurrent import futures
 
 import numpy as np
 from PIL import Image
-from tqdm import tqdm
 
 from aspire.apple.picking import Picker
+from aspire.utils import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -178,13 +178,11 @@ class Apple:
     def process_micrograph_centers(
         self,
         filepath,
-        show_progress=True,
     ):
         """
         Process micrograph at `filepath`, returning `centers`.
 
         :param filepath: MRC filepath
-        :param show_progress: Display progress bar
         :return: `centers`
         """
 
@@ -214,8 +212,8 @@ class Apple:
         )
 
         logger.info("Computing scores for query images")
-        score = picker.query_score(
-            show_progress=show_progress
+        score = (
+            picker.query_score()
         )  # compute score using normalized cross-correlations
 
         while True:
@@ -288,17 +286,16 @@ class Apple:
 
         return particle_image
 
-    def process_micrograph(self, filepath, show_progress=True, create_jpg=False):
+    def process_micrograph(self, filepath, create_jpg=False):
         """
         Process micrograph at `filepath`, returning (`centers`, `particle_image`).
 
         :param filepath: mrc filepath
-        :param show_progress: Display progress bar
         :param create_jpg: Optionally writes JPG file identifying picked particles.
         :return: (`centers`, `particle_image`)
         """
 
-        centers = self.process_micrograph_centers(filepath, show_progress)
+        centers = self.process_micrograph_centers(filepath)
         particle_image = self.process_micrograph_plots(filepath, centers, create_jpg)
         return centers, particle_image
 

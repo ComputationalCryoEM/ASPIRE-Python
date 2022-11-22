@@ -399,10 +399,10 @@ def _apply_xform(xform, im, indices, adjoint=False):
     method.
     """
     if not adjoint:
-        logger.info("  Applying " + str(xform))
+        logger.debug("  Applying " + str(xform))
         return xform.forward(im, indices=indices)
     else:
-        logger.info("  Applying Adjoint " + str(xform))
+        logger.debug("  Applying Adjoint " + str(xform))
         return xform.adjoint(im, indices=indices)
 
 
@@ -463,10 +463,10 @@ class Pipeline(Xform):
         memory = Memory(location=self.memory, verbose=0)
         _apply_transform_cached = memory.cache(_apply_xform)
 
-        logger.info("Applying forward transformations in pipeline")
+        logger.debug("Applying forward transformations in pipeline")
         for xform in self.xforms:
             im = _apply_transform_cached(xform, im, indices, False)
-        logger.info("All forward transformations applied")
+        logger.debug("All forward transformations applied")
 
         return im
 
@@ -476,9 +476,9 @@ class LinearPipeline(Pipeline, LinearXform):
         memory = Memory(location=self.memory, verbose=0)
         _apply_transform_cached = memory.cache(_apply_xform)
 
-        logger.info("Applying adjoint transformations in pipeline")
+        logger.debug("Applying adjoint transformations in pipeline")
         for xform in self.xforms[::-1]:
             im = _apply_transform_cached(xform, im, indices, True)
-        logger.info("All adjoint transformations applied")
+        logger.debug("All adjoint transformations applied")
 
         return im

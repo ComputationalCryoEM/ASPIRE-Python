@@ -24,7 +24,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, grid_2d
+from aspire.utils import Rotation, grid_2d, trange
 
 logger = logging.getLogger(__name__)
 
@@ -71,13 +71,15 @@ class _ImageAccessor:
             )
         if not indices.ndim == 1:
             raise KeyError("Only one-dimensional indexing is allowed for images.")
-        # check for negative indices and flip to positive
-        neg = indices < 0
-        indices[neg] = indices[neg] % self.num_imgs
+
         # final check for out-of-range indices
         out_of_range = indices >= self.num_imgs
         if out_of_range.any():
             raise KeyError(f"Out-of-range indices: {list(indices[out_of_range])}")
+
+        # check for negative indices and flip to positive
+        indices = indices % self.num_imgs
+
         return self.fun(indices)
 
 
@@ -479,7 +481,8 @@ class ImageSource(ABC):
         signal_mean = 0.0
         noise_mean = 0.0
 
-        for i in range(0, self.n, batch_size):
+        logger.info("Computing signal vs background contrast on source object")
+        for i in trange(0, self.n, batch_size):
             images = self.images[i : i + batch_size].asnumpy()
             signal = images * signal_mask
             noise = images * noise_mask
@@ -580,14 +583,16 @@ class ImageSource(ABC):
         :param batch_size: Batch size of images to query.
         :param save_mode: Whether to save all images in a single or multiple files in batch size.
         :param overwrite: Option to overwrite the output MRCS files.
+        :return: A dictionary containing "starfile"--the path to the saved starfile-- and "mrcs", a
+            list of the saved particle stack .mrcs filenames.
         """
         logger.info("save metadata into STAR file")
         filename_indices = self.save_metadata(
             starfile_filepath,
-            new_mrcs=True,
             batch_size=batch_size,
             save_mode=save_mode,
         )
+        unique_filenames = list(dict.fromkeys(filename_indices))
 
         logger.info("save images into MRCS file")
         self.save_images(
@@ -596,17 +601,74 @@ class ImageSource(ABC):
             batch_size=batch_size,
             overwrite=overwrite,
         )
+        # return some information about the saved files
+        info = {"starfile": starfile_filepath, "mrcs": unique_filenames}
+        return info
 
-    def save_metadata(
-        self, starfile_filepath, new_mrcs=True, batch_size=512, save_mode=None
+    def _populate_common_metadata(
+        self,
+        df,
+        local_cols,
+        starfile_filepath,
+        batch_size,
+        save_mode,
     ):
+        """
+        Populate metadata columns common to all `ImageSource` subclasses.
+        """
+        # Create a new column that we will be populating in the loop below
+        df["_rlnImageName"] = ""
+
+        if save_mode == "single":
+            # Save all images into one single mrc file
+            fname = os.path.basename(starfile_filepath)
+            fstem = os.path.splitext(fname)[0]
+            mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
+
+            # Then set name in dataframe for the StarFile
+            # Note, here the row_indexer is :, representing all rows in this data frame.
+            #   df.loc will be reponsible for dereferencing and assigning values to df.
+            #   Pandas will assert df.shape[0] == self.n
+            df.loc[:, "_rlnImageName"] = [
+                f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
+            ]
+        else:
+            # save all images into multiple mrc files in batch size
+            for i_start in np.arange(0, self.n, batch_size):
+                i_end = min(self.n, i_start + batch_size)
+                num = i_end - i_start
+                mrcs_filename = (
+                    os.path.splitext(os.path.basename(starfile_filepath))[0]
+                    + f"_{i_start}_{i_end-1}.mrcs"
+                )
+                # Note, here the row_indexer is a slice.
+                #   df.loc will be reponsible for dereferencing and assigning values to df.
+                #   Pandas will assert the lnegth of row_indexer equals num.
+                row_indexer = df[i_start:i_end].index
+                df.loc[row_indexer, "_rlnImageName"] = [
+                    "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
+                ]
+
+        # Subclass-specific columns are popped to the end of the dataframe in order:
+        # pop() both removes the given column and returns its data as a Series,
+        # which is then tacked back on to the rightmost side of the df
+        for col in local_cols:
+            df[col] = df.pop(col)
+
+    def _populate_local_metadata(self):
+        """
+        Populate metadata columns specific to the `ImageSource` subclass being saved.
+        Subclasses optionally override, but must return a list of strings.
+        :return: A list of the names of the columns added.
+        """
+        return []
+
+    def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         """
         Save updated metadata to a STAR file
 
         :param starfile_filepath: Path to STAR file where we want to
             save image_source
-        :param new_mrcs: Whether to save all images to new MRCS files or not.
-            If True, new file names and pathes need to be created.
         :param batch_size: Batch size of images to query from the
             `ImageSource` object. Every `batch_size` rows, entries are
             written to STAR file.
@@ -614,6 +676,9 @@ class ImageSource(ABC):
             multiple files in batch size.
         :return: None
         """
+
+        # Get local metadata columns that were added by subclass
+        local_cols = self._populate_local_metadata()
 
         df = self._metadata.copy()
         # Drop any column that doesn't start with a *single* underscore
@@ -626,39 +691,10 @@ class ImageSource(ABC):
             axis=1,
         )
 
-        if new_mrcs:
-            # Create a new column that we will be populating in the loop below
-            df["_rlnImageName"] = ""
-
-            if save_mode == "single":
-                # Save all images into one single mrc file
-                fname = os.path.basename(starfile_filepath)
-                fstem = os.path.splitext(fname)[0]
-                mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
-
-                # Then set name in dataframe for the StarFile
-                # Note, here the row_indexer is :, representing all rows in this data frame.
-                #   df.loc will be reponsible for dereferencing and assigning values to df.
-                #   Pandas will assert df.shape[0] == self.n
-                df.loc[:, "_rlnImageName"] = [
-                    f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
-                ]
-            else:
-                # save all images into multiple mrc files in batch size
-                for i_start in np.arange(0, self.n, batch_size):
-                    i_end = min(self.n, i_start + batch_size)
-                    num = i_end - i_start
-                    mrcs_filename = (
-                        os.path.splitext(os.path.basename(starfile_filepath))[0]
-                        + f"_{i_start}_{i_end-1}.mrcs"
-                    )
-                    # Note, here the row_indexer is a slice.
-                    #   df.loc will be reponsible for dereferencing and assigning values to df.
-                    #   Pandas will assert the lnegth of row_indexer equals num.
-                    row_indexer = df[i_start:i_end].index
-                    df.loc[row_indexer, "_rlnImageName"] = [
-                        "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
-                    ]
+        # Populates _rlnImageName column, setting up filepaths to .mrcs stacks
+        self._populate_common_metadata(
+            df, local_cols, starfile_filepath, batch_size, save_mode
+        )
 
         filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
 

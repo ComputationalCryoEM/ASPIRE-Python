@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.abspath("../../src"))
 #
 # needs_sphinx = '1.0'
 
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
@@ -48,6 +49,7 @@ sphinx_gallery_conf = {
      'examples_dirs': ['../../gallery/tutorials', '../../gallery/experiments'],   # path to your example scripts
      'gallery_dirs': ['auto_tutorials', 'auto_experiments'],  # path to where to save gallery generated output
      'download_all_examples': False,
+     'plot_gallery': 'True',
      'within_subsection_order': ExampleTitleSortKey,
      'filename_pattern': r'/tutorials/.*\.py',  # Parse all gallery python files, but only execute tutorials.
 }

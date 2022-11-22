@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Iterable
+from warnings import catch_warnings, filterwarnings
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -174,8 +176,36 @@ class Image:
     def sqrt(self):
         return Image(np.sqrt(self.data))
 
-    def flip_axes(self):
+    @property
+    def T(self):
+        """
+        Abbreviation for transpose.
+
+        :return: Image instance.
+        """
+        return self.transpose()
+
+    def transpose(self):
+        """
+        Returns a new Image instance with image data axes transposed.
+
+        :return: Image instance.
+        """
         return Image(np.transpose(self.data, (0, 2, 1)))
+
+    def flip(self, axis=1):
+        """
+        Flip image stack data along axis using numpy.flip().
+
+        :param axis: Optionally specify axis as integer or tuple.
+            Defaults to axis=1.
+
+        :return: Image instance.
+        """
+        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
+            raise ValueError("Cannot flip axis 0: stack axis.")
+
+        return Image(np.flip(self.data, axis))
 
     def __repr__(self):
         return f"{self.n_images} images of size {self.res}x{self.res}"
@@ -316,7 +346,9 @@ class Image:
         ), "Number of rotation matrices must match the number of images"
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
+        pts_rot = aspire.volume.rotated_grids(L, rot_matrices).astype(
+            self.dtype, copy=False
+        )
         pts_rot = pts_rot.reshape((3, -1))
 
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L**2)
@@ -330,22 +362,43 @@ class Image:
 
         return aspire.volume.Volume(vol)
 
-    def show(self, columns=5, figsize=(20, 10)):
+    def show(self, columns=5, figsize=(20, 10), colorbar=True):
         """
         Plotting Utility Function.
 
         :param columns: Number of columns in a row of plots.
         :param figsize: Figure size in inches, consult `matplotlib.figure`.
+        :param colorbar: Optionally plot colorbar to show scale.
+            Defaults to True. Accepts `bool` or `dictionary`,
+            where the dictionary is passed to `matplotlib.pyplot.colorbar`.
         """
 
         # We never need more columns than images.
         columns = min(columns, self.n_images)
 
-        plt.figure(figsize=figsize)
-        for i, im in enumerate(self):
-            plt.subplot(self.n_images // columns + 1, columns, i + 1)
-            plt.imshow(im, cmap="gray")
-        plt.show()
+        # Create an empty colorbar options dictionary as needed.
+        colorbar_opts = colorbar if isinstance(colorbar, dict) else dict()
+
+        # Create a context manager for altering warnings
+        with catch_warnings():
+
+            # Filter off specific warning.
+            # sphinx-gallery overrides to `agg` backend, but doesn't handle warning.
+            filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="Matplotlib is currently using agg, which is a"
+                " non-GUI backend, so cannot show the figure.",
+            )
+
+            plt.figure(figsize=figsize)
+            for i, im in enumerate(self):
+                plt.subplot(self.n_images // columns + 1, columns, i + 1)
+                plt.imshow(im, cmap="gray")
+                if colorbar:
+                    plt.colorbar(**colorbar_opts)
+
+            plt.show()
 
 
 class CartesianImage(Image):

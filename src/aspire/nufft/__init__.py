@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 import numpy as np
 
@@ -86,7 +85,8 @@ def check_backends(raise_errors=True):
             logger.info(f"NFFT backend {backend} usable.")
             return plan_class
 
-    backends = OrderedDict((k, _try_backend(k)) for k in config.nfft.backends)
+    # Note this dictionary is intentionally ordered
+    backends = {k: _try_backend(k) for k in config["nufft"]["backends"].as_str_seq()}
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
         logger.info(f"Selected NFFT backend = {default_backend}.")
@@ -159,12 +159,11 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
     """
 
     if fourier_pts.dtype != real_type(sig_f.dtype):
-        logger.warning(
+        raise RuntimeError(
             "anufft passed inconsistent dtypes."
             f" fourier_pts: {fourier_pts.dtype}"
-            f" forcing precision of signal data: {sig_f.dtype}."
+            f" does not match precision of signal data: {sig_f.dtype}."
         )
-        fourier_pts = fourier_pts.astype(real_type(sig_f.dtype))
 
     if sig_f.dtype != complex_type(sig_f.dtype):
         logger.debug("anufft passed real_type for signal, converting")
@@ -198,12 +197,11 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
     """
 
     if fourier_pts.dtype != real_type(sig_f.dtype):
-        logger.warning(
+        raise RuntimeError(
             "nufft passed inconsistent dtypes."
             f" fourier_pts: {fourier_pts.dtype}"
-            f" forcing precision of signal data: {sig_f.dtype}."
+            f" does not match precision of signal data: {sig_f.dtype}."
         )
-        fourier_pts = fourier_pts.astype(real_type(sig_f.dtype))
 
     if sig_f.dtype != complex_type(sig_f.dtype):
         logger.debug("nufft passed real_type for signal, converting")
