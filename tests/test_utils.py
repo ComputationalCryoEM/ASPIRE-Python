@@ -65,13 +65,14 @@ class UtilsTestCase(TestCase):
     @parameterized.expand([("yx",), ("xy",)])
     def testGaussian2d(self, indexing):
         L = 100
+        # Note, `mu` and `sigma` are in (x, y) order.
         mu = (7, -3)
         sigma = (5, 6)
 
         g = gaussian_2d(L, mu=mu, sigma=sigma, indexing=indexing)
 
         # The normalized sum across an axis should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        # We set the axes to sum over based on 'indexing'.
+        # Set axes based on 'indexing'.
         x, y = 0, 1
         if indexing == "yx":
             x, y = y, x
@@ -92,15 +93,21 @@ class UtilsTestCase(TestCase):
     @parameterized.expand([("zyx",), ("xyz")])
     def testGaussian3d(self, indexing):
         L = 100
+        # Note, `mu` and `sigma` are in (x, y, z) order.
         mu = (0, 5, 10)
         sigma = (5, 7, 9)
 
         G = gaussian_3d(L, mu, sigma, indexing=indexing)
 
         # The normalized sum across two axes should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        G_x = np.sum(G, axis=(1, 2)) / np.sum(G)
-        G_y = np.sum(G, axis=(0, 2)) / np.sum(G)
-        G_z = np.sum(G, axis=(0, 1)) / np.sum(G)
+        # Set axes based on 'indexing'.
+        x, y, z = 0, 1, 2
+        if indexing == "zyx":
+            x, y, z = z, y, x
+
+        G_x = np.sum(G, axis=(y, z)) / np.sum(G)
+        G_y = np.sum(G, axis=(x, z)) / np.sum(G)
+        G_z = np.sum(G, axis=(x, y)) / np.sum(G)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
@@ -111,8 +118,6 @@ class UtilsTestCase(TestCase):
         g_1d_z = peak_z * gaussian_1d(L, mu=mu[2], sigma=sigma[2])
 
         # Assert all-close
-        if indexing == "zyx":
-            G_x, G_y, G_z = G_z, G_y, G_x
         self.assertTrue(np.allclose(G_x, g_1d_x))
         self.assertTrue(np.allclose(G_y, g_1d_y))
         self.assertTrue(np.allclose(G_z, g_1d_z))
