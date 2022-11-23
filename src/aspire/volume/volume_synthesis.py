@@ -214,33 +214,8 @@ class TSymmetricVolume(GaussianBlobsVolume):
         """
         Called to induce tetrahedral symmetry on the coordinates and orientation of the Gaussian blobs.
         """
-        # A tetrahedron has C3 symmetry along the 4 axes through each vertex and
-        # perpendicular to the opposite face, and C2 symmetry along the axes through
-        # through the midpoints of opposite edges. We convert axis-angle representation
-        # of the symmetry groups to rotation vectors to generate the rotation matrices.
-
-        # C3 rotation vectors, ie. angle * axis.
-        axes_C3 = np.array(
-            [[1, 1, 1], [-1, -1, 1], [1, -1, -1], [-1, 1, -1]], dtype=self.dtype
-        )
-        axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
-        angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=self.dtype)
-        rot_vecs_C3 = np.array(
-            [angle * axes_C3 for angle in angles_C3], dtype=self.dtype
-        ).reshape((8, 3))
-
-        # C2 rotation vectors.
-        axes_C2 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=self.dtype)
-        rot_vecs_C2 = np.pi * axes_C2
-
-        # The full set of rotation vectors inducing tetrahedral symmetry.
-        rot_vec_I = np.zeros((1, 3), dtype=self.dtype)
-        rot_vecs = np.concatenate(
-            (rot_vec_I, rot_vecs_C3, rot_vecs_C2), dtype=self.dtype
-        )
-
-        # Generate rotations.
-        rots_T = Rotation.from_rotvec(rot_vecs, dtype=self.dtype).matrices
+        # Rotations in the tetrahedral symmetry group
+        rots_T = self.T_symmetry_group(self.dtype).matrices
 
         # Populate coordinates for Gaussian blobs.
         Q_rot = np.zeros((12 * self.K, 3, 3)).astype(self.dtype)
@@ -255,6 +230,39 @@ class TSymmetricVolume(GaussianBlobsVolume):
                 idx += 1
 
         return Q_rot, D_sym, mu_rot
+
+    @staticmethod
+    def T_symmetry_group(dtype):
+        """
+        A tetrahedron has C3 symmetry along the 4 axes through each vertex and
+        perpendicular to the opposite face, and C2 symmetry along the axes through
+        through the midpoints of opposite edges. We convert axis-angle representation
+        of the symmetry groups to rotation vectors to generate the rotation matrices.
+
+        :param dtype: dtype for Rotation object
+
+        :return: Rotation object containing tetrahedral symmetry group and Identity.
+        """
+        # C3 rotation vectors, ie. angle * axis.
+        axes_C3 = np.array(
+            [[1, 1, 1], [-1, -1, 1], [1, -1, -1], [-1, 1, -1]], dtype=dtype
+        )
+        axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
+        angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=dtype)
+        rot_vecs_C3 = np.array(
+            [angle * axes_C3 for angle in angles_C3], dtype=dtype
+        ).reshape((8, 3))
+
+        # C2 rotation vectors.
+        axes_C2 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=dtype)
+        rot_vecs_C2 = np.pi * axes_C2
+
+        # The full set of rotation vectors inducing tetrahedral symmetry.
+        rot_vec_I = np.zeros((1, 3), dtype=dtype)
+        rot_vecs = np.concatenate((rot_vec_I, rot_vecs_C3, rot_vecs_C2), dtype=dtype)
+
+        # Return rotations.
+        return Rotation.from_rotvec(rot_vecs, dtype=dtype)
 
 
 class OSymmetricVolume(GaussianBlobsVolume):

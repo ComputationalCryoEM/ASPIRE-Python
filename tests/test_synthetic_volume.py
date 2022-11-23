@@ -62,6 +62,7 @@ class Base:
 @parameterized_class(
     ("L", "order"),
     [
+        (20, 2),
         (21, 2),
         (30, 3),
         (31, 3),
@@ -101,6 +102,7 @@ class CnSymmetricVolumeCase(Base, TestCase):
 @parameterized_class(
     ("L", "order"),
     [
+        (20, 2),
         (21, 2),
         (40, 3),
         (41, 3),
@@ -143,10 +145,27 @@ class DnSymmetricVolumeCase(Base, TestCase):
             self.assertTrue(abs(corr2 - 1) < 1e-5)
 
 
-@parameterized_class(("L"), [(21,)])
+@parameterized_class(("L"), [(20,), (21,)])
 class TSymmetricVolumeCase(Base, TestCase):
     vol_class = TSymmetricVolume
     L = 20
+
+    def testTSymmetricVolume(self):
+        vol = self.vol
+
+        # Rotations in tetrahedral symmetry group.
+        rots_T = TSymmetricVolume.T_symmetry_group(self.dtype).matrices[1:]
+
+        for rot in rots_T:
+            # Rotate volume.
+            rot_vol = vol.rotate(Rotation(rot), zero_nyquist=False)
+
+            # Check that correlation is close to 1.
+            corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
+                vol[0].flatten(), vol[0].flatten()
+            )
+
+            self.assertTrue(abs(corr - 1) < 1e-6)
 
 
 @parameterized_class(("L"), [(21,)])
