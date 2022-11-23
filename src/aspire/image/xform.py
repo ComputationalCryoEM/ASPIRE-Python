@@ -294,12 +294,12 @@ class LambdaXform(Xform):
 
 class NoiseAdder(Xform):
     """
-    Defines interface for `NoiseAdder`s.
+    Defines interface for `CustomNoiseAdder`s.
     """
 
     def __init__(self, noise_filter, seed=0):
         """
-        Initialize the random state of this NoiseAdder using specified values.
+        Initialize the random state of this CustomNoiseAdder using specified values.
 
         :param seed: The random seed used to generate white noise
         :param noise_filter: An aspire.operators.Filter object to use to filter the generated white noise.
@@ -321,6 +321,32 @@ class NoiseAdder(Xform):
 
         return im
 
+    @abc.abstractproperty
+    def noise_var(self):
+        """
+        Return noise variance.
+        """
+
+
+class CustomNoiseAdder(NoiseAdder):
+    """
+    Instantiates a NoiseAdder using the provided `noise_filter`.
+    """
+
+    @property
+    def noise_var(self, sample_n=100, sample_res=128):
+        """
+        Return noise variance.
+
+        CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
+
+        :sample_n: Number of images to sample.
+        :sample_res: Resolution of sample (noise) images.
+        """
+        im_zeros = Image(np.zeros((sample_n, sample_res, sample_res)))
+        im_noise_sample = self._forward(im_zeros, range(sample_n))
+        return np.var(im_noise_sample.asnumpy())
+
 
 class WhiteNoiseAdder(NoiseAdder):
     """
@@ -330,13 +356,20 @@ class WhiteNoiseAdder(NoiseAdder):
     # TODO, check if we can change seed and/or why not.
     def __init__(self, var, seed=0):
         """
-        Return a NoiseAdder instance from `noise_var` and using `seed`.
+        Return a CustomNoiseAdder instance from `noise_var` and using `seed`.
 
         :param noise_var: Target noise variance.
         :param seed: Optinally provide a random seed used to generate white noise.
         """
-
+        self._noise_var = var
         super().__init__(noise_filter=ScalarFilter(dim=2, value=var), seed=seed)
+
+    @property
+    def noise_var(self):
+        """
+        Returns noise variance. Note in this case noise variance is known.
+        """
+        return self._noise_var
 
 
 class IndexedXform(Xform):

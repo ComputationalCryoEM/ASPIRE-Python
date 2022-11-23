@@ -5,7 +5,7 @@ import numpy as np
 from scipy.linalg import eigh, qr
 
 from aspire.image import Image
-from aspire.image.xform import NoiseAdder
+from aspire.image.xform import NoiseAdder, WhiteNoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
@@ -127,9 +127,9 @@ class Simulation(ImageSource):
         self.amplitudes = amplitudes
 
         if noise_adder is not None:
-            logger.info("Appending a NoiseAdder to generation pipeline")
+            logger.info(f"Appending {noise_adder} to generation pipeline")
             if not isinstance(noise_adder, NoiseAdder):
-                raise RuntimeError("`noise_adder` should be instance of NoiseAdder")
+                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
         self.noise_adder = noise_adder
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
@@ -246,6 +246,66 @@ class Simulation(ImageSource):
             self.sim_filters,
             self.filter_indices[indices],
         )
+
+    def estimate_signal(self, sample_n=100):
+        """
+        Estimate the signal power as the mean of `sample_n` projections.
+
+        :param sample_n: Number of projections used for estimate.
+        :returns: Estimated signal power.
+        """
+        # Note, for simulation we are assuming `sample_n` is random
+        estimated_mu = np.mean(self.projections[:sample_n].asnumpy())
+        logger.info(f"Estimated signal mu {estimated_mu}")
+        return estimated_mu
+
+    def estimate_snr(self, sample_n=100):
+        """
+        Estimate the SNR of the simulated data set using estimated mu/variance.
+
+        https://en.wikipedia.org/wiki/Signal-to-noise_ratio#Alternate_definition
+
+        :param sample_n: Number of projections used for estimate.
+        :returns: Estimated signal to noise ratio.
+        """
+        if hasattr(self.noise_adder, "noise_var"):
+            noise_var = self.noise_adder.noise_var
+        else:
+            logging.info(
+                f"For noise_adder {self.noise_adder} noise_var must be estimated"
+            )
+            raise NotImplementedError("Todo")
+
+        return self.estimate_signal(sample_n=sample_n) / noise_var
+
+    @classmethod
+    def from_snr(cls, target_snr, *args, **kwargs):
+        """
+        Generates a Simulation source with a WhiteNoiseAdder
+        configured to produce a target signal to noise ratio.
+
+        :param target_snr: Desired signal to noise ratio of
+            the returned source.
+        :returns: Simulation source.
+        """
+
+        # Create a Simulation
+        sim = cls(*args, **kwargs)
+
+        # Assert NoiseAdder has not been provided
+        if "noise_adder" in kwargs or sim.noise_adder is not None:
+            raise RuntimeError(
+                "Cannot provide 'noise_adder' when using {cls.__name__}.from_snr."
+            )
+
+        # Estimate the required noise variance
+        noise_var = sim.estimate_signal() / target_snr
+
+        # Assign the noise_adder
+        logger.info("Appending WhiteNoiseAdder to generation pipeline")
+        sim.noise_adder = WhiteNoiseAdder(var=noise_var)
+
+        return sim
 
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """

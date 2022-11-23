@@ -5,7 +5,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
-from aspire.image import NoiseAdder
+from aspire.image import CustomNoiseAdder
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter
 from aspire.source import ArrayImageSource
@@ -23,7 +23,7 @@ class PreprocessPLTestCase(TestCase):
         self.n = 128
         self.dtype = np.float32
         noise_filter = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
-        self.noise_adder = NoiseAdder(noise_filter=noise_filter)
+        self.noise_adder = CustomNoiseAdder(noise_filter=noise_filter)
 
         self.sim = Simulation(
             L=self.L,

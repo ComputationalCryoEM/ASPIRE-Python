@@ -5,7 +5,7 @@ from unittest import TestCase
 import numpy as np
 from pytest import raises
 
-from aspire.image import NoiseAdder
+from aspire.image import CustomNoiseAdder
 from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
@@ -96,7 +96,7 @@ class SimTestCase(TestCase):
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             seed=0,
-            noise_adder=NoiseAdder(noise_filter=IdentityFilter()),
+            noise_adder=CustomNoiseAdder(noise_filter=IdentityFilter()),
             dtype="single",
         )
 
@@ -141,7 +141,7 @@ class SimTestCase(TestCase):
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             seed=0,
-            noise_adder=NoiseAdder(noise_filter=IdentityFilter()),
+            noise_adder=CustomNoiseAdder(noise_filter=IdentityFilter()),
             dtype="single",
         )
         sim_cached.cache()

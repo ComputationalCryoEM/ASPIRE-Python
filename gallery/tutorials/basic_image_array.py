@@ -14,7 +14,7 @@ import numpy as np
 from scipy import misc
 
 from aspire.image import Image
-from aspire.image.xform import NoiseAdder, WhiteNoiseAdder
+from aspire.image.xform import CustomNoiseAdder, WhiteNoiseAdder
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators import FunctionFilter
 from aspire.source import ArrayImageSource
@@ -97,7 +97,7 @@ def noise_function(x, y):
 # We can create a custom filter from that function.
 f = FunctionFilter(noise_function)
 # And use the filter to add the noise to our stack of images.
-noise_adder = NoiseAdder(noise_filter=f, seed=123)
+noise_adder = CustomNoiseAdder(noise_filter=f, seed=123)
 imgs_with_noise = noise_adder.forward(imgs)
 
 # Let's see the first two noisy images.

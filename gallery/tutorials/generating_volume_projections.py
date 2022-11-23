@@ -56,7 +56,7 @@ rots = Rotation.about_axis("z", thetas, dtype=np.float64)
 
 noise_variance = 1e-10  # Normally this would be derived from a desired SNR.
 
-# Then create a NoiseAdder that variance, which is passed to Simulation
+# Then create a CustomNoiseAdder that variance, which is passed to Simulation
 white_noise_adder = WhiteNoiseAdder(var=noise_variance)
 
 

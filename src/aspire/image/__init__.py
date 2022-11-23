@@ -7,4 +7,4 @@ from .image import (
     PolarImage,
     normalize_bg,
 )
-from .xform import NoiseAdder, WhiteNoiseAdder
+from .xform import CustomNoiseAdder, WhiteNoiseAdder

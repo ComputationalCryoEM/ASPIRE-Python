@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
-from aspire.image import NoiseAdder, WhiteNoiseAdder
+from aspire.image import CustomNoiseAdder, WhiteNoiseAdder
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.source import RelionSource, Simulation
@@ -240,7 +240,7 @@ logger.info(f"sim2 clean sample var {var}")
 noise_variance = 100.0 * var
 logger.info(f"noise var {noise_variance}")
 
-# Then create a NoiseAdder based on that variance.
+# Then create a CustomNoiseAdder based on that variance.
 white_noise_adder = WhiteNoiseAdder(var=noise_variance)
 # We can create a similar simulation with this additional noise_filter argument:
 sim3 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, noise_adder=white_noise_adder)
@@ -338,7 +338,7 @@ def noise_function(x, y):
 # In python, functions are first class objects.
 # We take advantage of that to pass this function around as a variable.
 # It will be evaluated later...
-custom_noise = NoiseAdder(noise_filter=FunctionFilter(noise_function))
+custom_noise = CustomNoiseAdder(noise_filter=FunctionFilter(noise_function))
 
 # Create yet another Simulation source to tinker with.
 sim4 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, noise_adder=custom_noise)
