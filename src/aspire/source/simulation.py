@@ -3,6 +3,7 @@ import logging
 
 import numpy as np
 from scipy.linalg import eigh, qr
+from sklearn.metrics import mean_squared_error
 
 from aspire.image import Image
 from aspire.image.xform import NoiseAdder, WhiteNoiseAdder
@@ -268,13 +269,8 @@ class Simulation(ImageSource):
         :param sample_n: Number of projections used for estimate.
         :returns: Estimated signal to noise ratio.
         """
-        if hasattr(self.noise_adder, "noise_var"):
-            noise_var = self.noise_adder.noise_var
-        else:
-            logging.info(
-                f"For noise_adder {self.noise_adder} noise_var must be estimated"
-            )
-            raise NotImplementedError("Todo")
+
+        noise_var = self.noise_adder.noise_var
 
         return self.estimate_signal(sample_n=sample_n) / noise_var
 
