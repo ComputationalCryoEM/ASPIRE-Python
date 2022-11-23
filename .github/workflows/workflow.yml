@@ -74,7 +74,7 @@ jobs:
       run: "docs/buildsite.sh"
       shell: bash
 
-  decaf_ampere:
+  ampere_gpu:
     needs: check
     runs-on: self-hosted
     steps:
@@ -83,5 +83,24 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev,gpu_11x]"
+    - name: Customize config
+      run: |
+        echo "Setup tmp dirs and chmod so others can cleanup."
+        CI_TMP_DIR=/var/ci/tmp
+        mkdir -p ${CI_TMP_DIR}
+        chmod g+rwx  ${CI_TMP_DIR}
+        echo "Create and assign a unique temp dir to hold our config."
+        WORK_DIR=$(mktemp -d -p "${CI_TMP_DIR}")
+        echo "WORK_DIR=${WORK_DIR}"
+        echo "Stash the WORK_DIR to GitHub env so we can clean it up later."
+        echo "WORK_DIR=${WORK_DIR}" >> $GITHUB_ENV
+        echo -e "ray:\n    temp_dir: ${WORK_DIR}\n" > ${WORK_DIR}/config.yaml
+        echo "Log the config: ${WORK_DIR}/config.yaml"
+        cat ${WORK_DIR}/config.yaml
     - name: Run
-      run: pytest
+      run: |
+        ASPIREDIR=${{ env.WORK_DIR }} python -c \
+        "import aspire; print(aspire.config['ray']['temp_dir'])"
+        ASPIREDIR=${{ env.WORK_DIR }} pytest
+    - name: Cleanup
+      run: rm -rf ${{ env.WORK_DIR }}
