@@ -303,6 +303,35 @@ class Simulation(ImageSource):
 
         return sim
 
+    def estimate_psnr(self, sample_n=100):
+        """
+        Estimate Peak SNR in decibels as 10*Log(max(signal)^2 / MSE),
+        where MSE is computed between clean signal of `projections`
+        and the resulting simulated `images`.
+
+        PSNR is computed along the stack axis and an average
+        decibel value across the sample is returned.
+
+        Note that PSNR is inherently a poor metric for identical images
+
+        :param sample_n: Number of images used for estimate.
+        :returns: Estimated peak signal to noise ratio in decibels.
+        """
+
+        signal = self.projections[:sample_n].asnumpy()
+        images = self.images[:sample_n].asnumpy()
+        peak = signal.max(axis=(-1, -2))
+
+        # Reshape and Transpose for Scikit metrics,
+        # which expect a 2d (samples, outputs)
+        MSE = mean_squared_error(
+            signal.reshape(sample_n, -1).T,
+            images.reshape(sample_n, -1).T,
+            multioutput="raw_values",
+        )
+
+        return np.mean(10 * np.log10(peak**2 / MSE))
+
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
         Coordinates of simulation volumes in a given basis
