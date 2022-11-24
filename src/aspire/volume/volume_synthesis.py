@@ -156,9 +156,7 @@ class CnSymmetricVolume(GaussianBlobsVolume):
         """
         Called to induce Cn symmetry on the coordinates and orientation of the Gaussian blobs.
         """
-        angles = np.zeros((self.order, 3), dtype=self.dtype)
-        angles[:, 2] = 2 * np.pi * np.arange(self.order) / self.order
-        rot = Rotation.from_euler(angles).matrices
+        rots = self.Cn_symmetry_group(self.order, self.dtype).matrices
 
         self.n_blobs = self.order * self.K
         Q_rot = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
@@ -166,13 +164,19 @@ class CnSymmetricVolume(GaussianBlobsVolume):
         mu_rot = np.zeros(shape=(self.n_blobs, 3)).astype(self.dtype)
         idx = 0
 
-        for j in range(self.order):
+        for rot in rots:
             for k in range(self.K):
-                Q_rot[idx] = rot[j].T @ Q[k]
+                Q_rot[idx] = rot.T @ Q[k]
                 D_sym[idx] = 1 / self.n_blobs * D[k]
-                mu_rot[idx] = rot[j].T @ mu[k]
+                mu_rot[idx] = rot.T @ mu[k]
                 idx += 1
         return Q_rot, D_sym, mu_rot
+
+    @staticmethod
+    def Cn_symmetry_group(order, dtype):
+        angles = np.zeros((order, 3), dtype=dtype)
+        angles[:, 2] = 2 * np.pi * np.arange(order) / order
+        return Rotation.from_euler(angles, dtype=dtype)
 
 
 class DnSymmetricVolume(CnSymmetricVolume):
@@ -184,11 +188,7 @@ class DnSymmetricVolume(CnSymmetricVolume):
         """
         Called to induce dihedral symmetry on the coordinates and orientation of the Gaussian blobs.
         """
-        angles = 2 * np.pi * np.arange(self.order, dtype=self.dtype) / self.order
-        # Rotations to induce cyclic symmetry
-        rot_z = Rotation.about_axis("z", angles).matrices
-        # Perpendicular rotation to induce dihedral symmetry
-        rot_perp = Rotation.about_axis("y", np.pi).matrices
+        rots = self.Dn_symmetry_group(self.order, self.dtype).matrices
 
         self.n_blobs = 2 * self.order * self.K
         Q_rot = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
@@ -196,15 +196,27 @@ class DnSymmetricVolume(CnSymmetricVolume):
         mu_rot = np.zeros(shape=(self.n_blobs, 3)).astype(self.dtype)
         idx = 0
 
-        for j in range(self.order):
+        for rot in rots:
             for k in range(self.K):
-                Q_rot[idx] = rot_z[j].T @ Q[k]
-                Q_rot[idx + 1] = rot_perp @ Q_rot[idx]
+                Q_rot[idx] = rot.T @ Q[k]
                 D_sym[idx : idx + 2] = 1 / self.n_blobs * D[k]
-                mu_rot[idx] = rot_z[j].T @ mu[k]
-                mu_rot[idx + 1] = rot_perp @ mu_rot[idx]
-                idx += 2
+                mu_rot[idx] = rot.T @ mu[k]
+                idx += 1
         return Q_rot, D_sym, mu_rot
+
+    @staticmethod
+    def Dn_symmetry_group(order, dtype):
+        # Rotations to induce cyclic symmetry
+        angles = 2 * np.pi * np.arange(order, dtype=dtype) / order
+        rot_z = Rotation.about_axis("z", angles).matrices
+
+        # Perpendicular rotation to induce dihedral symmetry
+        rot_perp = Rotation.about_axis("y", np.pi).matrices
+
+        # Full set of rotations.
+        rots = np.concatenate((rot_z, rot_z @ rot_perp[0].T), dtype=dtype)
+
+        return Rotation(rots)
 
 
 class TSymmetricVolume(GaussianBlobsVolume):
