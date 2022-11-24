@@ -154,7 +154,7 @@ class TSymmetricVolumeCase(Base, TestCase):
         vol = self.vol
 
         # Rotations in tetrahedral symmetry group, excluding the Identity.
-        rots_T = TSymmetricVolume.symmetry_group(self.dtype).matrices[1:]
+        rots_T = self.vol_obj.symmetry_group.matrices[1:]
 
         for rot in rots_T:
             # Rotate volume.
@@ -177,7 +177,7 @@ class OSymmetricVolumeCase(Base, TestCase):
         vol = self.vol
 
         # Rotations in tetrahedral symmetry group, excluding the Identity.
-        rots_T = OSymmetricVolume.symmetry_group(self.dtype).matrices[1:]
+        rots_T = self.vol_obj.symmetry_group.matrices[1:]
 
         for rot in rots_T:
             # Rotate volume.
