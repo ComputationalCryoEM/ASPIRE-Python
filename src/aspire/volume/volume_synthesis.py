@@ -90,7 +90,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         for k in range(self.K):
             V = randn(3, 3).astype(self.dtype) / np.sqrt(3)
             Q[k, :, :] = qr(V)[0]
-            D[k, :, :] = self.alpha**2 / self.K * np.diag(np.sum(abs(V) ** 2, axis=0))
+            D[k, :, :] = self.alpha**2 * np.diag(np.sum(abs(V) ** 2, axis=0))
             mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
 
         return Q, D, mu
@@ -160,15 +160,16 @@ class CnSymmetricVolume(GaussianBlobsVolume):
         angles[:, 2] = 2 * np.pi * np.arange(self.order) / self.order
         rot = Rotation.from_euler(angles).matrices
 
-        Q_rot = np.zeros(shape=(self.order * self.K, 3, 3)).astype(self.dtype)
-        D_sym = np.zeros(shape=(self.order * self.K, 3, 3)).astype(self.dtype)
-        mu_rot = np.zeros(shape=(self.order * self.K, 3)).astype(self.dtype)
+        self.n_blobs = self.order * self.K
+        Q_rot = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
+        D_sym = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
+        mu_rot = np.zeros(shape=(self.n_blobs, 3)).astype(self.dtype)
         idx = 0
 
         for j in range(self.order):
             for k in range(self.K):
                 Q_rot[idx] = rot[j].T @ Q[k]
-                D_sym[idx] = 1 / self.order * D[k]
+                D_sym[idx] = 1 / self.n_blobs * D[k]
                 mu_rot[idx] = rot[j].T @ mu[k]
                 idx += 1
         return Q_rot, D_sym, mu_rot
@@ -189,16 +190,17 @@ class DnSymmetricVolume(CnSymmetricVolume):
         # Perpendicular rotation to induce dihedral symmetry
         rot_perp = Rotation.about_axis("y", np.pi).matrices
 
-        Q_rot = np.zeros(shape=(2 * self.order * self.K, 3, 3)).astype(self.dtype)
-        D_sym = np.zeros(shape=(2 * self.order * self.K, 3, 3)).astype(self.dtype)
-        mu_rot = np.zeros(shape=(2 * self.order * self.K, 3)).astype(self.dtype)
+        self.n_blobs = 2 * self.order * self.K
+        Q_rot = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
+        D_sym = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
+        mu_rot = np.zeros(shape=(self.n_blobs, 3)).astype(self.dtype)
         idx = 0
 
         for j in range(self.order):
             for k in range(self.K):
                 Q_rot[idx] = rot_z[j].T @ Q[k]
                 Q_rot[idx + 1] = rot_perp @ Q_rot[idx]
-                D_sym[idx : idx + 2] = 1 / (2 * self.order) * D[k]
+                D_sym[idx : idx + 2] = 1 / self.n_blobs * D[k]
                 mu_rot[idx] = rot_z[j].T @ mu[k]
                 mu_rot[idx + 1] = rot_perp @ mu_rot[idx]
                 idx += 2
@@ -218,14 +220,15 @@ class TSymmetricVolume(GaussianBlobsVolume):
         rots_T = self.T_symmetry_group(self.dtype).matrices
 
         # Populate coordinates for Gaussian blobs.
-        Q_rot = np.zeros((12 * self.K, 3, 3)).astype(self.dtype)
-        D_sym = np.zeros((12 * self.K, 3, 3)).astype(self.dtype)
-        mu_rot = np.zeros((12 * self.K, 3)).astype(self.dtype)
+        self.n_blobs = 12 * self.K
+        Q_rot = np.zeros((self.n_blobs, 3, 3)).astype(self.dtype)
+        D_sym = np.zeros((self.n_blobs, 3, 3)).astype(self.dtype)
+        mu_rot = np.zeros((self.n_blobs, 3)).astype(self.dtype)
         idx = 0
         for rot in rots_T:
             for k in range(self.K):
                 Q_rot[idx] = rot.T @ Q[k]
-                D_sym[idx] = 1 / 12 * D[k]
+                D_sym[idx] = 1 / self.n_blobs * D[k]
                 mu_rot[idx] = rot.T @ mu[k]
                 idx += 1
 
@@ -278,14 +281,15 @@ class OSymmetricVolume(GaussianBlobsVolume):
         rots_O = self.O_symmetry_group(self.dtype).matrices
 
         # Populate coordinates for Gaussian blobs.
-        Q_rot = np.zeros((24 * self.K, 3, 3)).astype(self.dtype)
-        D_sym = np.zeros((24 * self.K, 3, 3)).astype(self.dtype)
-        mu_rot = np.zeros((24 * self.K, 3)).astype(self.dtype)
+        self.n_blobs = 24 * self.K
+        Q_rot = np.zeros((self.n_blobs, 3, 3)).astype(self.dtype)
+        D_sym = np.zeros((self.n_blobs, 3, 3)).astype(self.dtype)
+        mu_rot = np.zeros((self.n_blobs, 3)).astype(self.dtype)
         idx = 0
         for rot in rots_O:
             for k in range(self.K):
                 Q_rot[idx] = rot.T @ Q[k]
-                D_sym[idx] = 1 / 24 * D[k]
+                D_sym[idx] = 1 / self.n_blobs * D[k]
                 mu_rot[idx] = rot.T @ mu[k]
                 idx += 1
 
@@ -347,6 +351,8 @@ class AsymmetricVolume(CnSymmetricVolume):
             )
 
     def _symmetrize_gaussians(self, Q, D, mu):
+        self.n_blobs = self.K
+        D = 1 / self.n_blobs * D
         return Q, D, mu
 
 
