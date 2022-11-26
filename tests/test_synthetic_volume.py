@@ -58,6 +58,23 @@ class Base:
             self.assertTrue(self.vol[0][outside].all() == 0)
             self.assertTrue((self.vol[0][inside] > 0).all())
 
+    def testVolumeSymmetry(self):
+        """Test that volumes have intended symmetry."""
+        vol = self.vol
+
+        # Rotations in symmetry group, excluding the Identity.
+        rots = self.vol_obj.symmetry_group.matrices[1:]
+
+        for rot in rots:
+            # Rotate volume by an element of the symmetric group.
+            rot_vol = vol.rotate(Rotation(rot), zero_nyquist=False)
+
+            # Check that correlation is close to 1.
+            corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
+                vol[0].flatten(), vol[0].flatten()
+            )
+            self.assertTrue(abs(corr - 1) < 1e-5)
+
 
 @parameterized_class(
     ("L", "order"),
@@ -78,25 +95,6 @@ class CnSymmetricVolumeCase(Base, TestCase):
     vol_class = CnSymmetricVolume
     L = 20
     order = 2
-
-    def testCnSymmetricVolume(self):
-        vol = self.vol
-
-        # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
-        angles = np.zeros((self.order, 3), dtype=self.dtype)
-        angles[:, 2] = 2 * np.pi * np.arange(self.order) / self.order
-        rot_mat = Rotation.from_euler(angles, dtype=self.dtype).matrices
-
-        for i in range(self.order):
-            # Rotate volume.
-            rot = Rotation(rot_mat[i])
-            rot_vol = vol.rotate(rot, zero_nyquist=False)
-
-            # Check that correlation is close to 1.
-            corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
-                vol[0].flatten(), vol[0].flatten()
-            )
-            self.assertTrue(abs(corr - 1) < 1e-5)
 
 
 @parameterized_class(
@@ -119,76 +117,17 @@ class DnSymmetricVolumeCase(Base, TestCase):
     L = 20
     order = 2
 
-    def testDnSymmetricVolume(self):
-        vol = self.vol
-
-        # Build Rotations 2pi/k about z axis and pi about perpendicular axes.
-        angles = 2 * np.pi * np.arange(self.order, dtype=self.dtype) / self.order
-        rot_z = Rotation.about_axis("z", angles, dtype=self.dtype).matrices
-        rot_perp = Rotation.about_axis("y", np.pi, dtype=self.dtype)
-
-        for i in range(self.order):
-            # Rotate volume about z axis
-            rot = Rotation(rot_z[i])
-            rot_vol = vol.rotate(rot, zero_nyquist=False)
-            rot_vol_perp = rot_vol.rotate(rot_perp, zero_nyquist=False)
-
-            # Check that correlation is close to 1.
-            corr1 = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
-                vol[0].flatten(), vol[0].flatten()
-            )
-            corr2 = np.dot(rot_vol_perp[0].flatten(), vol[0].flatten()) / np.dot(
-                vol[0].flatten(), vol[0].flatten()
-            )
-
-            self.assertTrue(abs(corr1 - 1) < 1e-5)
-            self.assertTrue(abs(corr2 - 1) < 1e-5)
-
 
 @parameterized_class(("L"), [(20,), (21,)])
 class TSymmetricVolumeCase(Base, TestCase):
     vol_class = TSymmetricVolume
     L = 20
 
-    def testTSymmetricVolume(self):
-        vol = self.vol
-
-        # Rotations in tetrahedral symmetry group, excluding the Identity.
-        rots_T = self.vol_obj.symmetry_group.matrices[1:]
-
-        for rot in rots_T:
-            # Rotate volume.
-            rot_vol = vol.rotate(Rotation(rot), zero_nyquist=False)
-
-            # Check that correlation is close to 1.
-            corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
-                vol[0].flatten(), vol[0].flatten()
-            )
-
-            self.assertTrue(abs(corr - 1) < 1e-6)
-
 
 @parameterized_class(("L"), [(20,), (21,)])
 class OSymmetricVolumeCase(Base, TestCase):
     vol_class = OSymmetricVolume
     L = 20
-
-    def testOSymmetricVolume(self):
-        vol = self.vol
-
-        # Rotations in tetrahedral symmetry group, excluding the Identity.
-        rots_T = self.vol_obj.symmetry_group.matrices[1:]
-
-        for rot in rots_T:
-            # Rotate volume.
-            rot_vol = vol.rotate(Rotation(rot), zero_nyquist=False)
-
-            # Check that correlation is close to 1.
-            corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
-                vol[0].flatten(), vol[0].flatten()
-            )
-
-            self.assertTrue(abs(corr - 1) < 1e-6)
 
 
 @parameterized_class(("L"), [(21,)])
