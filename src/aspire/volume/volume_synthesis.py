@@ -84,7 +84,9 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         for k in range(self.K):
             V = randn(3, 3).astype(self.dtype) / np.sqrt(3)
             Q[k, :, :] = qr(V)[0]
-            D[k, :, :] = self.alpha**2 * np.diag(np.sum(abs(V) ** 2, axis=0))
+            D[k, :, :] = (
+                self.alpha**2 / self.n_blobs * np.diag(np.sum(abs(V) ** 2, axis=0))
+            )
             mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
 
         return Q, D, mu
@@ -103,7 +105,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         for rot in rots:
             for k in range(self.K):
                 Q_rot[idx] = rot.T @ Q[k]
-                D_sym[idx] = 1 / self.n_blobs * D[k]
+                D_sym[idx] = D[k]
                 mu_rot[idx] = rot.T @ mu[k]
                 idx += 1
         return Q_rot, D_sym, mu_rot
@@ -214,10 +216,9 @@ class TSymmetricVolume(GaussianBlobsVolume):
         """
         A tetrahedron has C3 symmetry along the 4 axes through each vertex and
         perpendicular to the opposite face, and C2 symmetry along the axes through
-        through the midpoints of opposite edges. We convert axis-angle representation
-        of the symmetry groups to rotation vectors to generate the rotation matrices.
-
-        :param dtype: dtype for Rotation object
+        the midpoints of opposite edges. We convert from axis-angle representation of
+        the symmetry group elements into rotation vectors to generate the rotation
+        matrices via the `from_rotvec()` method.
 
         :return: Rotation object containing tetrahedral symmetry group and Identity.
         """
@@ -312,7 +313,6 @@ class AsymmetricVolume(CnSymmetricVolume):
             )
 
     def _symmetrize_gaussians(self, Q, D, mu):
-        D = 1 / self.K * D
         return Q, D, mu
 
 
