@@ -3,7 +3,6 @@ import logging
 import numpy as np
 
 from aspire.basis.basis_utils import all_besselj_zeros
-from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -53,4 +52,4 @@ class FBBasisMixin(object):
                 (z, np.zeros(max_num_zeros - len(z), dtype=self.dtype))
             )
 
-        self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1)).astype(self.dtype)
+        self.r0 = np.array(zeros, dtype=self.dtype).T
