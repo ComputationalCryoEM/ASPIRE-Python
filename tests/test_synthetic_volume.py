@@ -79,7 +79,6 @@ class Base:
 @parameterized_class(
     ("L", "order"),
     [
-        (20, 2),
         (21, 2),
         (30, 3),
         (31, 3),
@@ -100,7 +99,6 @@ class CnSymmetricVolumeCase(Base, TestCase):
 @parameterized_class(
     ("L", "order"),
     [
-        (20, 2),
         (21, 2),
         (40, 3),
         (41, 3),
@@ -118,13 +116,13 @@ class DnSymmetricVolumeCase(Base, TestCase):
     order = 2
 
 
-@parameterized_class(("L"), [(20,), (21,)])
+@parameterized_class(("L"), [(21,)])
 class TSymmetricVolumeCase(Base, TestCase):
     vol_class = TSymmetricVolume
     L = 20
 
 
-@parameterized_class(("L"), [(20,), (21,)])
+@parameterized_class(("L"), [(21,)])
 class OSymmetricVolumeCase(Base, TestCase):
     vol_class = OSymmetricVolume
     L = 20
