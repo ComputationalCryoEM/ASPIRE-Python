@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 class FBBasis2D(SteerableBasis2D, FBBasisMixin):
     """
-    Define a derived class using the Fourier-Bessel basis for mapping 2D images
+    .. _mathematical:fourier-bessel basis 2d::
+    Define a derived class using the Fourier-Bessel basis for mapping 2D images.
+
+    See :ref:`the reference page for Fourier-Bessel 2D <mathematical:fourier-bessel basis 2d>`::
 
     The expansion coefficients of 2D images on this basis are obtained by
     the least squares method. The algorithm is described in the publication:

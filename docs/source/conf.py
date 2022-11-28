@@ -37,12 +37,15 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.mathjax",
     "sphinxcontrib.bibtex",
     "sphinx.ext.napoleon",
     "sphinx_gallery.gen_gallery",
 ]
 bibtex_bibfiles = ["references.bib"]
+
+autosectionlabel_prefix_document=True
 
 # Sphinx-Gallery Configuration
 sphinx_gallery_conf = {
