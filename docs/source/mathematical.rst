@@ -1,6 +1,8 @@
 Mathematical Reference Guide
 =============================
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Index of mathematical topics
 
-Fourier-Bessel Basis 2D
-############################
+   math/bases

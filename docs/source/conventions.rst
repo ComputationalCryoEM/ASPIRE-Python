@@ -2,7 +2,7 @@ Conventions
 ==============
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Index of conventions articles
 	     
-   grids_and_centering
+   conventions/grids_and_centering
