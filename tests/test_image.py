@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 from scipy import misc
 
-from aspire.image import Image, _im_translate2
+from aspire.image import Image
 from aspire.utils import powerset
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -29,24 +29,50 @@ class ImageTestCase(TestCase):
         pass
 
     def testImShift(self):
-        # Ensure that the two separate im_translate functions we have return the same thing
-
-        # A single shift applied to all images
+        # Note that the _im_translate method can handle float input shifts, as it
+        # computes the shifts in Fourier space, rather than performing a roll
+        # However, NumPy's roll() only accepts integer inputs
         shifts = np.array([100, 200])
 
+        # test built-in
         im = self.im.shift(shifts)
-
+        # test explicit call
         im1 = self.im._im_translate(shifts)
-        # Note the difference in the concept of shifts for _im_translate2 - negative sign
-        im2 = _im_translate2(self.im_np, -shifts)
-
-        # Pure numpy 'shifting'
-        # 'Shifting' an Image corresponds to a 'roll' of a numpy array - again, note the negated signs and the axes
+        # test that float input returns the same thing
+        im2 = self.im.shift(shifts.astype(np.float64))
+        # ground truth numpy roll
         im3 = np.roll(self.im.asnumpy()[0], -shifts, axis=(0, 1))
 
         self.assertTrue(np.allclose(im.asnumpy(), im1.asnumpy()))
         self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
-        self.assertTrue(np.allclose(im1.asnumpy()[0, :, :], im3))
+        self.assertTrue(np.allclose(im.asnumpy()[0, :, :], im3))
+
+        # test bad shift shape
+        with self.assertRaisesRegex(ValueError, "Input shifts must be of shape"):
+            _ = self.im.shift(np.array([100, 100, 100]))
+        # test bad number of shifts
+        with self.assertRaisesRegex(ValueError, "The number of shifts"):
+            _ = self.im.shift(np.array([[100, 200], [100, 200]]))
+
+        # test stack of shifts (same number as Image.n)
+        shifts = np.array([[100, 200], [200, 150], [50, 300]])
+
+        # test built-in
+        im = self.ims.shift(shifts)
+        # test explicit call
+        im1 = self.ims._im_translate(shifts)
+        # test that float input returns the same thing
+        im2 = self.ims.shift(shifts.astype(np.float64))
+        # ground truth numpy roll
+        im3 = np.array(
+            [
+                np.roll(self.ims.asnumpy()[i], -shifts[i], axis=(0, 1))
+                for i in range(self.n)
+            ]
+        )
+        self.assertTrue(np.allclose(im.asnumpy(), im1.asnumpy()))
+        self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
+        self.assertTrue(np.allclose(im.asnumpy(), im3))
 
     def testImageSqrt(self):
         self.assertTrue(np.allclose(self.im.sqrt().asnumpy(), np.sqrt(self.im_np)))
