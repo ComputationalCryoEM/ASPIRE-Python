@@ -47,15 +47,10 @@ class ImageTestCase(TestCase):
         self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
         self.assertTrue(np.allclose(im.asnumpy()[0, :, :], im3))
 
-        # test bad shift shape
-        with self.assertRaisesRegex(ValueError, "Input shifts must be of shape"):
-            _ = self.im.shift(np.array([100, 100, 100]))
-        # test bad number of shifts
-        with self.assertRaisesRegex(ValueError, "The number of shifts"):
-            _ = self.im.shift(np.array([[100, 200], [100, 200]]))
-
-        # test stack of shifts (same number as Image.n)
-        shifts = np.array([[100, 200], [200, 150], [50, 300]])
+    def testImShiftStack(self):
+        # test stack of shifts (same number as Image.num_img)
+        # mix of odd and even
+        shifts = np.array([[100, 200], [203, 150], [55, 307]])
 
         # test built-in
         im = self.ims.shift(shifts)
@@ -73,6 +68,14 @@ class ImageTestCase(TestCase):
         self.assertTrue(np.allclose(im.asnumpy(), im1.asnumpy()))
         self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
         self.assertTrue(np.allclose(im.asnumpy(), im3))
+
+    def testImageShiftErrors(self):
+        # test bad shift shape
+        with self.assertRaisesRegex(ValueError, "Input shifts must be of shape"):
+            _ = self.im.shift(np.array([100, 100, 100]))
+        # test bad number of shifts
+        with self.assertRaisesRegex(ValueError, "The number of shifts"):
+            _ = self.im.shift(np.array([[100, 200], [100, 200]]))
 
     def testImageSqrt(self):
         self.assertTrue(np.allclose(self.im.sqrt().asnumpy(), np.sqrt(self.im_np)))
