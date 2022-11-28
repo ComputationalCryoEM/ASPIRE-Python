@@ -154,7 +154,7 @@ class AligningAverager2DBase(Averager2DBase):
     """
 
     averager = AligningAverager2D
-    num_procs = 1  # paralleized subclasses may override
+    num_procs = 1 if xfail_ray_dev() else None
 
     def setUp(self):
 
@@ -300,7 +300,6 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
-    num_procs = 1 if xfail_ray_dev() else None
 
     def testAverager(self):
         """
