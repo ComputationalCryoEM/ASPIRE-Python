@@ -46,38 +46,47 @@ def qr_vols_forward(sim, s, n, vols, k):
 
 class Volume:
     """
-    Volume is an N x L x L x L array, along with associated utility methods.
+    Volume is an (N1 x ...) x L x L x L array, along with associated utility methods.
     """
 
-    def __init__(self, data):
+    def __init__(self, data, dtype=None):
         """
         Create a volume initialized with `data`.
 
         Volumes should be N x L x L x L,
-        or L x L x L which implies N=1.
+        or L x L x L which implies N1=1.
 
         :param data: Volume data
+        :param dtype: Optionally cast `data` to this dtype. Defaults to `data.dtype`.
 
         :return: A volume instance.
         """
 
-        if data.ndim == 3:
-            data = data[np.newaxis, :, :, :]
+        if not isinstance(data, np.ndarray):
+            raise ValueError("Volume should be instantiated with an ndarray")
 
-        assert data.ndim == 4, (
-            "Volume data should be ndarray with shape NxLxLxL" " or LxLxL."
-        )
+        if data.ndim < 3:
+            raise ValueError(
+                "Volume data should be ndarray with shape (N1...)xLxLxL or LxLxL."
+            )
+        elif data.ndim == 3:
+            data = np.expand_dims(data, axis=0)
 
-        assert (
-            data.shape[1] == data.shape[2] == data.shape[3]
-        ), "Only cubed ndarrays are supported."
+        if dtype is None:
+            self.dtype = data.dtype
+        else:
+            self.dtype = np.dtype(dtype)
 
-        self._data = data
-        self.n_vols = self._data.shape[0]
-        self.dtype = self._data.dtype
-        self.resolution = self._data.shape[1]
+        if not (data.shape[-1] == data.shape[-2] == data.shape[-3]):
+            raise ValueError("Only cubed ndarrays are supported.")
+
+        self._data = data.astype(self.dtype, copy=False)
+        self.ndim = self._data.ndim
         self.shape = self._data.shape
-        self.volume_shape = self._data.shape[1:]
+        self.stack_ndim = self._data.ndim - 3
+        self.stack_shape = self._data.shape[:-3]
+        self.n_vols = sum(self.stack_shape)
+        self.resolution = self._data.shape[-1]
 
     def asnumpy(self):
         """
@@ -96,12 +105,16 @@ class Volume:
         """
         return Volume(self.asnumpy().astype(dtype))
 
-    def __getitem__(self, item):
-        # this is one reason why you might want Volume and VolumeStack classes...
-        # return Volume(self._data[item])
-        return self._data[item]
+    def _check_key_dims(self, key):
+        if isinstance(key, tuple):
+            assert len(key) <= self._data.ndim
+
+    def __getitem__(self, key):
+        self._check_key_dims(key)
+        return self._data[key]
 
     def __setitem__(self, key, value):
+        self._check_key_dims(key)
         self._data[key] = value
 
     def __repr__(self):

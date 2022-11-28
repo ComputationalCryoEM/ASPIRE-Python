@@ -198,7 +198,7 @@ class FFBBasis2D(FBBasis2D):
 
         # number of 2D image samples
         n_images = x.n_images
-        x_data = x.data
+        x_data = x.asnumpy()
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
         pf = nufft(x_data, 2 * pi * freqs)

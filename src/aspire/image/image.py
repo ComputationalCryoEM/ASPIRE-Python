@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Iterable
-from warnings import catch_warnings, filterwarnings
+from warnings import catch_warnings, filterwarnings, warn
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -77,55 +77,75 @@ class Image:
         :return: Image instance storing `data`.
         """
 
-        assert isinstance(
-            data, np.ndarray
-        ), "Image should be instantiated with an ndarray"
+        if not isinstance(data, np.ndarray):
+            raise ValueError("Image should be instantiated with an ndarray")
 
-        if data.ndim == 2:
-            data = data[np.newaxis, :, :]
+        if data.ndim < 2:
+            raise ValueError(
+                "Image data should be ndarray with shape (N1...)xLxL or LxL."
+            )
+        elif data.ndim == 2:
+            data = np.expand_dims(data, axis=0)
 
         if dtype is None:
             self.dtype = data.dtype
         else:
             self.dtype = np.dtype(dtype)
 
-        self.data = data.astype(self.dtype, copy=False)
-        self.ndim = self.data.ndim
-        self.shape = self.data.shape
-        self.n_images = self.shape[0]
-        self.res = self.shape[1]
+        if not data.shape[-1] == data.shape[-2]:
+            raise ValueError("Only square ndarrays are supported.")
 
-        assert data.shape[1] == data.shape[2], "Only square ndarrays are supported."
+        self._data = data.astype(self.dtype, copy=False)
+        self.ndim = self._data.ndim
+        self.shape = self._data.shape
+        self.stack_ndim = self._data.ndim - 2
+        self.stack_shape = self._data.shape[:-2]
+        self.n_images = sum(self.stack_shape)
+        self.resolution = self._data.shape[-1]
 
-    def __getitem__(self, item):
-        return self.data[item]
+    @property
+    def res(self):
+        warn(
+            "`Image.res` will be deprecated in favor or Image.resolution in an upcoming release.",
+            DeprecationWarning,
+        )
+        return self.resolution
+
+    def _check_key_dims(self, key):
+        if isinstance(key, tuple):
+            assert len(key) <= self._data.ndim
+
+    def __getitem__(self, key):
+        self._check_key_dims(key)
+        return self._data[key]
 
     def __setitem__(self, key, value):
-        self.data[key] = value
+        self._check_key_dims(key)
+        self._data[key] = value
 
     def __add__(self, other):
         if isinstance(other, Image):
-            other = other.data
+            other = other._data
 
-        return Image(self.data + other)
+        return Image(self._data + other)
 
     def __sub__(self, other):
         if isinstance(other, Image):
-            other = other.data
+            other = other._data
 
-        return Image(self.data - other)
+        return Image(self._data - other)
 
     def __mul__(self, other):
         if isinstance(other, Image):
-            other = other.data
+            other = other._data
 
-        return Image(self.data * other)
+        return Image(self._data * other)
 
     def __neg__(self):
-        return Image(-self.data)
+        return Image(-self._data)
 
     def sqrt(self):
-        return Image(np.sqrt(self.data))
+        return Image(np.sqrt(self._data))
 
     @property
     def T(self):
@@ -142,7 +162,7 @@ class Image:
 
         :return: Image instance.
         """
-        return Image(np.transpose(self.data, (0, 2, 1)))
+        return Image(np.transpose(self._data, (0, 2, 1)))
 
     def flip(self, axis=1):
         """
@@ -156,16 +176,16 @@ class Image:
         if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
             raise ValueError("Cannot flip axis 0: stack axis.")
 
-        return Image(np.flip(self.data, axis))
+        return Image(np.flip(self._data, axis))
 
     def __repr__(self):
-        return f"{self.n_images} images of size {self.res}x{self.res}"
+        return f"{self.n_images} images of size {self.resolution}x{self.resolution}"
 
     def asnumpy(self):
-        return self.data
+        return self._data
 
     def copy(self):
-        return Image(self.data.copy())
+        return Image(self._data.copy())
 
     def shift(self, shifts):
         """
@@ -199,11 +219,13 @@ class Image:
         :return: The downsampled Image object.
         """
         # compute FT with centered 0-frequency
-        fx = fft.centered_fft2(self.data)
+        fx = fft.centered_fft2(self._data)
         # crop 2D Fourier transform for each image
         crop_fx = np.array([crop_pad_2d(fx[i], ds_res) for i in range(self.n_images)])
         # take back to real space, discard complex part, and scale
-        out = np.real(fft.centered_ifft2(crop_fx)) * (ds_res**2 / self.res**2)
+        out = np.real(fft.centered_ifft2(crop_fx)) * (
+            ds_res**2 / self.resolution**2
+        )
 
         return Image(out)
 
@@ -214,10 +236,11 @@ class Image:
         :param filter: An object of type `Filter`.
         :return: A new filtered `Image` object.
         """
-        filter_values = filter.evaluate_grid(self.res)
+        filter_values = filter.evaluate_grid(self.resolution)
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data)))
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data)))
 
+        # TODO: why are these different? Doesn't the broadcast work?
         if im_f.ndim > filter_values.ndim:
             im_f *= filter_values
         else:
@@ -233,7 +256,7 @@ class Image:
     def save(self, mrcs_filepath, overwrite=False):
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
-            mrc.set_data(self.data.astype(np.float32))
+            mrc.set_data(self._data.astype(np.float32))
 
     def _im_translate(self, shifts):
         """
@@ -245,7 +268,7 @@ class Image:
 
         TODO: This implementation is slower than _im_translate2
         """
-        im = self.data
+        im = self._data
 
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
@@ -259,7 +282,7 @@ class Image:
         # Cast shifts to this instance's internal dtype
         shifts = shifts.astype(self.dtype)
 
-        L = self.res
+        L = self.resolution
         im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))
         grid_shifted = fft.ifftshift(
             xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
@@ -282,12 +305,12 @@ class Image:
         return Image(im_translated)
 
     def norm(self):
-        return anorm(self.data)
+        return anorm(self._data)
 
     @property
     def size(self):
         # probably not needed, transition
-        return np.size(self.data)
+        return np.size(self._data)
 
     def backproject(self, rot_matrices):
         """
@@ -299,7 +322,7 @@ class Image:
         :return: Volume instance corresonding to the backprojected images.
         """
 
-        L = self.res
+        L = self.resolution
 
         assert (
             self.n_images == rot_matrices.shape[0]
@@ -311,7 +334,7 @@ class Image:
         )
         pts_rot = pts_rot.reshape((3, -1))
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L**2)
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data))) / (L**2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0

@@ -86,7 +86,7 @@ def src_wiener_coords(
         Q_vecs = mat_to_vec(Qs)
 
         # RCOPT
-        ims = np.moveaxis(ims.data, 0, 2)
+        ims = np.moveaxis(ims.asnumpy(), 0, 2)
         im_vecs = mat_to_vec(ims)
 
         for j in range(batch_n):
