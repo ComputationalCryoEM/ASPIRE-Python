@@ -175,7 +175,7 @@ def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), indexing="yx", dtype=np.float64):
     :param sigma: Iterable of len(2) or constant, :math:`(\\sigma_x, \\sigma_y)`, of the standard
             deviation in the x and y directions. A single value, :math:`\\sigma`, can be
             used when :math:`\\sigma_x = \\sigma_y`.
-    :param indexing: The order of axis indexing, passed to grid_2d
+    :param indexing: The order of axis indexing, passed to `aspire.utils.grid_2d`
     :param dtype: dtype of returned array
     :return: Numpy array (2D)
     """
@@ -221,7 +221,7 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.fl
     :param sigma: Iterable of len(3) or constant, :math:`(\\sigma_x, \\sigma_y, \\sigma_z)`, of the standard deviation
             in the x, y, and z directions. A single value, :math:`\\sigma`, can be
             used when :math:`\\sigma_x = \\sigma_y = \\sigma_z`
-    :param indexing: The order of axis indexing, passed to grid_3d
+    :param indexing: The order of axis indexing, passed to `aspire.utils.grid_3d`
     :param dtype: dtype of returned array
     :return: Numpy array (3D)
     """
