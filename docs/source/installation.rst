@@ -1,7 +1,7 @@
 Installation
 ============
 
-ASPIRE comes with an ``environment.yml`` for reconstructing a working Conda environment based on Python 3.8 to run the package.
+ASPIRE comes with an ``environment.yml`` for reproducing a working Conda environment based on Python 3.8 to run the package.
 The package is tested on Linux/Windows/Mac OS X. Pre-built binaries are available for all platform-specific components. No manual
 compilation should be needed.
 
