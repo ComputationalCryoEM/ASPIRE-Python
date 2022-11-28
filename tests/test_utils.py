@@ -90,6 +90,12 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(g_x, g_1d_x))
         self.assertTrue(np.allclose(g_y, g_1d_y))
 
+        # Test errors are raised with improper `mu` and `sigma` length.
+        with raises(ValueError, match="`mu` must be len(2)*"):
+            gaussian_2d(L, mu=(1,), sigma=sigma, indexing=indexing)
+        with raises(ValueError, match="`sigma` must be*"):
+            gaussian_2d(L, mu=mu, sigma=(1, 2, 3), indexing=indexing)
+
     @parameterized.expand([("zyx",), ("xyz")])
     def testGaussian3d(self, indexing):
         L = 100
@@ -121,6 +127,12 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(G_x, g_1d_x))
         self.assertTrue(np.allclose(G_y, g_1d_y))
         self.assertTrue(np.allclose(G_z, g_1d_z))
+
+        # Test errors are raised with improper `mu` and `sigma` length.
+        with raises(ValueError, match="`mu` must be len(3)*"):
+            gaussian_3d(L, mu=(1, 2), sigma=sigma, indexing=indexing)
+        with raises(ValueError, match="`sigma` must be*"):
+            gaussian_3d(L, mu=mu, sigma=(1, 2), indexing=indexing)
 
     def testAllPairs(self):
         n = 25
