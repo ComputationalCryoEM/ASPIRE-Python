@@ -105,7 +105,7 @@ class FBBasis3D(Basis, FBBasisMixin):
 
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[:, ind_radial] = sph_bessel(ell, self.r0[k - 1, ell] * r_unique)
+                radial[:, ind_radial] = sph_bessel(ell, self.r0[ell][k - 1] * r_unique)
                 ind_radial += 1
 
             for m in range(-ell, ell + 1):
@@ -136,7 +136,7 @@ class FBBasis3D(Basis, FBBasisMixin):
         Calculate the normalized factor of a specified basis function.
         """
         return (
-            np.abs(sph_bessel(ell + 1, self.r0[k - 1, ell]))
+            np.abs(sph_bessel(ell + 1, self.r0[ell][k - 1]))
             / np.sqrt(2)
             * np.sqrt((self.nres / 2) ** 3)
         )

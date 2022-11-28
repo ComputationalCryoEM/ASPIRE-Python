@@ -46,10 +46,6 @@ class FBBasisMixin(object):
         #  set the maximum of k for each ell
         self.k_max = np.array(n, dtype=int)
 
-        max_num_zeros = max(len(z) for z in zeros)
-        for i, z in enumerate(zeros):
-            zeros[i] = np.hstack(
-                (z, np.zeros(max_num_zeros - len(z), dtype=self.dtype))
-            )
-
-        self.r0 = np.array(zeros, dtype=self.dtype).T
+        # set the zeros for each ell
+        # this is a ragged list of 1d ndarrays, where the i'th element is of size self.k_max[i]
+        self.r0 = zeros

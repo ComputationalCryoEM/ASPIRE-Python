@@ -49,7 +49,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         g2d = grid_2d(self.L, dtype=self.dtype)
         mask = g2d["r"] < 1
 
-        r0 = self.basis.r0[k, ell]
+        r0 = self.basis.r0[ell][k]
 
         # TODO: Figure out where these factors of 1 / 2 are coming from.
         # Intuitively, the grid should go from -L / 2 to L / 2, not -L / 2 to

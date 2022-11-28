@@ -75,11 +75,11 @@ class FFBBasis3D(FBBasis3D):
         )
         for ell in range(0, self.ell_max + 1):
             k_max_ell = self.k_max[ell]
-            rmat = r * self.r0[0:k_max_ell, ell].T / self.kcut
+            rmat = r * self.r0[ell][0:k_max_ell].T / self.kcut
             radial_ell = np.zeros_like(rmat)
             for ik in range(0, k_max_ell):
                 radial_ell[:, ik] = sph_bessel(ell, rmat[:, ik])
-            nrm = np.abs(sph_bessel(ell + 1, self.r0[0:k_max_ell, ell].T) / 4)
+            nrm = np.abs(sph_bessel(ell + 1, self.r0[ell][0:k_max_ell].T) / 4)
             radial_ell = radial_ell / nrm
             radial_ell_wtd = r**2 * wt_r * radial_ell
             radial_wtd[:, 0:k_max_ell, ell] = radial_ell_wtd

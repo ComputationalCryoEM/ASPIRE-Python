@@ -51,7 +51,7 @@ class FBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         g2d = grid_2d(self.L, dtype=self.dtype)
         mask = g2d["r"] < 1
 
-        r0 = self.basis.r0[k, ell]
+        r0 = self.basis.r0[ell][k]
 
         im = np.zeros((self.L, self.L), dtype=self.dtype)
         im[mask] = jv(ell, g2d["r"][mask] * r0)

@@ -74,7 +74,7 @@ class FFBBasis2D(FBBasis2D):
         ind_radial = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
+                radial[ind_radial] = jv(ell, self.r0[ell][k - 1] * r / self.kcut)
                 # NOTE: We need to remove the factor due to the discretization here
                 # since it is already included in our quadrature weights
                 # Only normalized by the radial part of basis function
