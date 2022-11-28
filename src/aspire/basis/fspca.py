@@ -80,6 +80,11 @@ class FSPCABasis(SteerableBasis2D):
             len(self.complex_indices_map) == self.complex_count
         ), f"{len(self.complex_indices_map)} != {self.complex_count}"
 
+        # Map Cached SteerableBasis2D index maps
+        self._zero_angular_inds = self.basis._zero_angular_inds
+        self._pos_angular_inds = self.basis._pos_angular_inds
+        self._neg_angular_inds = self.basis._neg_angular_inds
+
         self.noise_var = noise_var  # noise_var is handled during `build` call.
 
         self.build()
@@ -542,20 +547,6 @@ class FSPCABasis(SteerableBasis2D):
                 coef[:, neg_i] = -2.0 * complex_coef[:, i].imag
 
         return coef
-
-    def rotate(self, coef, radians, refl=None):
-        """
-        Returns coefs rotated by `radians`.
-
-        :param coef: Basis coefs.
-        :param radians: Rotation in radians.
-        :param refl: Optional reflect image (bool)
-        :return: rotated coefs.
-        """
-
-        # Sterrable class rotation expects complex representation of coefficients.
-        #  Convert, rotate and convert back to real representation.
-        return self.to_real(super().rotate(self.to_complex(coef), radians, refl))
 
     def calculate_bispectrum(
         self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None

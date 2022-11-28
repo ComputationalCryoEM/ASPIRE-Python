@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.10.0",
+    version="0.10.1",
     data_files=[
         ("", ["src/aspire/config_default.yaml"]),
         ("", ["src/aspire/logging.conf"]),
@@ -62,7 +62,7 @@ setup(
             "pyflakes",
             "pydocstyle",
             "parameterized",
-            "pytest",
+            "pytest==7.1.3",
             "pytest-cov",
             "pytest-random-order",
             "pytest-xdist",
