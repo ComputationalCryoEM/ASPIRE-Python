@@ -122,3 +122,17 @@ class UtilsTestCase(TestCase):
         self.assertTrue(
             np.allclose(angles, angular_dist, atol=utest_tolerance(self.dtype))
         )
+
+    def testFromRotvec(self):
+        # Build random rotation vectors.
+        axis = np.array([1, 0, 0], dtype=self.dtype)
+        angles = np.random.uniform(0, 2 * np.pi, 10)
+        rot_vecs = np.array([angle * axis for angle in angles], dtype=self.dtype)
+
+        # Build rotations using from_rotvec and about_axis (as reference).
+        rotations = Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
+        ref_rots = Rotation.about_axis("x", angles, dtype=self.dtype)
+
+        self.assertTrue(isinstance(rotations, Rotation))
+        self.assertTrue(rotations.matrices.dtype == self.dtype)
+        self.assertTrue(np.allclose(rotations.matrices, ref_rots.matrices))

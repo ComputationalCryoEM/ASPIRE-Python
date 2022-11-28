@@ -4,8 +4,6 @@ Miscellaneous Utilities that have no better place (yet).
 import hashlib
 import importlib.resources
 import logging
-import os.path
-import subprocess
 import sys
 from itertools import chain, combinations
 
@@ -54,55 +52,6 @@ def abs2(x):
     """
 
     return x.real**2 + x.imag**2
-
-
-def get_full_version():
-    """
-    Get as much version information as we can, including git info (if applicable)
-    This method should never raise exceptions!
-
-    :return: A version number in the form:
-        <maj>.<min>.<bld>
-            If we're running as a package distributed through setuptools
-        <maj>.<min>.<bld>.<rev>
-            If we're running as a 'regular' python source folder, possibly locally modified
-
-            <rev> is one of:
-                'src': The package is running as a source folder
-                <git_tag> or <git_rev> or <git_rev>-dirty: A git tag or commit revision, possibly followed by a suffix
-                    '-dirty' if source is modified locally
-                'x':   The revision cannot be determined
-
-    """
-    import aspire
-
-    full_version = aspire.__version__
-    rev = None
-    try:
-        path = aspire.__path__[0]
-        if os.path.isdir(path):
-            # We have a package folder where we can get git information
-            try:
-                rev = (
-                    subprocess.check_output(
-                        ["git", "describe", "--tags", "--always", "--dirty"],
-                        stderr=subprocess.STDOUT,
-                        cwd=path,
-                    )
-                    .decode("utf-8")
-                    .strip()
-                )
-            except (FileNotFoundError, subprocess.CalledProcessError):
-                # no git or not a git repo? assume 'src'
-                rev = "src"
-    except Exception:  # nopep8  # noqa: E722
-        # Something unexpected happened - rev number defaults to 'x'
-        rev = "x"
-
-    if rev is not None:
-        full_version += f".{rev}"
-
-    return full_version
 
 
 def powerset(iterable):
@@ -251,6 +200,26 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.fl
     )
 
     return np.exp(-p).astype(dtype, copy=False)
+
+
+def bump_3d(size, spread=1, dtype=np.float64):
+    """
+    Returns a centered 3D bump function in a (size)x(size)x(size) numpy array.
+    :param size: The length of the dimensions of the array (pixels.
+    :param spread: A factor controling the spread of the bump function.
+    :param dtype: dtype of returned array
+    :return: Numpy array (3D)
+    """
+    g = grid_3d(size, dtype=dtype)
+    selection = g["r"] < 1
+
+    p = g["x"] ** 2 + g["y"] ** 2 + g["z"] ** 2
+
+    bump = np.zeros((size,) * 3, dtype=dtype)
+    bump[selection] = np.exp(-1 / (spread - spread * p[selection]))
+    bump /= np.exp(-1 / spread)
+
+    return bump
 
 
 def circ(size, x0=0, y0=0, radius=1, peak=1, dtype=np.float64):

@@ -3,6 +3,7 @@ import tempfile
 from unittest import TestCase
 
 import numpy as np
+from pytest import raises
 
 from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source.relion import RelionSource
@@ -25,6 +26,29 @@ class SingleSimTestCase(TestCase):
     def testImage(self):
         """Test we can get an Image from a length 1 Sim."""
         _ = self.sim.images[0]
+
+
+class SimVolTestCase(TestCase):
+    """Test Simulation with Volume provided."""
+
+    def setUp(self):
+        self.dtype = np.float32
+        self.vol_res = 10
+        self.vol_arr = np.ones((self.vol_res,) * 3, dtype=self.dtype)
+        self.vol = Volume(self.vol_arr)
+
+    def tearDown(self):
+        pass
+
+    def testResolutionMismatch(self):
+        # Test we raise with expected error message with Volume/Simulation mismatch.
+        with raises(RuntimeError, match=r"Simulation must have the same resolution*"):
+            _ = Simulation(L=8, vols=self.vol)
+
+    def testNonVolumeError(self):
+        # Test we raise with expected error if vols is not a Volume instance.
+        with raises(RuntimeError, match=r"`vols` should be a Volume instance*"):
+            _ = Simulation(L=self.vol_res, vols=self.vol_arr)
 
 
 class SimTestCase(TestCase):

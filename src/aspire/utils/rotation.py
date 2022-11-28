@@ -266,6 +266,21 @@ class Rotation:
         return Rotation(matrix)
 
     @staticmethod
+    def from_rotvec(vec, dtype=np.float32):
+        """
+        Build a Rotation object from rotation vectors. A rotation vector is a
+        3D vector which is co-directional to the axis of rotation and whose norm
+        gives the angle of rotation in radians. The angle of rotation is counter-clockwise
+        about the axis.
+
+        :param vec: array_like, shape (N, 3) or (3,)
+        :return: Rotation object
+        """
+        rots = sp_rot.from_rotvec(vec)
+        matrices = rots.as_matrix().astype(dtype)
+        return Rotation(matrices)
+
+    @staticmethod
     def from_matrix(values, dtype=np.float32):
         """
         build rotation object from rotational matrices

@@ -7,7 +7,6 @@ from collections.abc import Iterable
 import mrcfile
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
@@ -25,7 +24,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, grid_2d
+from aspire.utils import Rotation, grid_2d, trange
 
 logger = logging.getLogger(__name__)
 
@@ -483,7 +482,7 @@ class ImageSource(ABC):
         noise_mean = 0.0
 
         logger.info("Computing signal vs background contrast on source object")
-        for i in tqdm(range(0, self.n, batch_size)):
+        for i in trange(0, self.n, batch_size):
             images = self.images[i : i + batch_size].asnumpy()
             signal = images * signal_mask
             noise = images * noise_mask

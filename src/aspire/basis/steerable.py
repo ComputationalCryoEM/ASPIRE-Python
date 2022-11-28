@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 
 import numpy as np
 
@@ -13,6 +14,16 @@ class SteerableBasis2D(Basis):
     SteerableBasis2D is an extension of Basis that is expected to have
     `rotation` (steerable) and `calculate_bispectrum` methods.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Because they are used for core features of SteerableBasis2D,
+        #   cache the indices for positive and negative ells.
+        # Note zero is special case.
+        self._zero_angular_inds = self.angular_indices == 0
+        self._pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
+        self._neg_angular_inds = self.signs_indices == -1
 
     def calculate_bispectrum(
         self, complex_coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
@@ -132,13 +143,84 @@ class SteerableBasis2D(Basis):
 
         return B
 
-    def rotate(self, complex_coef, radians, refl=None):
+    def rotate(self, coef, radians, refl=None):
         """
-        Returns complex coefs rotated by `radians`.
+        Returns coefs rotated counter-clockwise by `radians`.
+
+        :param coef: Basis coefs.
+        :param radians: Rotation in radians.
+        :param refl: Optional reflect image (about y=0) (bool)
+        :return: rotated coefs.
+        """
+
+        # Enforce a stack axis to support sanity checks
+        coef = np.atleast_2d(coef)
+
+        # Covert radians to a broadcastable shape
+        if isinstance(radians, Iterable):
+            radians = np.fromiter(radians, dtype=self.dtype).reshape(-1, 1)
+            if len(radians) != len(coef):
+                raise RuntimeError(
+                    "`rotate` call `radians` length cannot broadcast with"
+                    f" `coef` {len(coef)} != {len(radians)}"
+                )
+        # else: radians can be a constant
+
+        assert self.count == coef.shape[-1]
+
+        # self.angular_indices are `ks`
+        # For all coef in stack,
+        #   compute the ks * radian used in the trig functions
+        ks_rad = np.atleast_2d(self.angular_indices * radians)
+        ks_pos = ks_rad[:, self._pos_angular_inds]
+        ks_neg = ks_rad[:, self._neg_angular_inds]
+
+        # Slice the coef on postive and negative ells
+        coef_zer = coef[:, self._zero_angular_inds]
+        coef_pos = coef[:, self._pos_angular_inds]
+        coef_neg = coef[:, self._neg_angular_inds]
+
+        # Handle zero case and avoid mutating the original array
+        coef = np.empty_like(coef)
+        coef[:, self._zero_angular_inds] = coef_zer
+
+        # refl
+        if refl is not None:
+            if isinstance(refl, np.ndarray):
+                assert len(refl) == len(coef)
+            # else: refl can be a constant
+            # negate the coefs corresponding to negative ells
+            coef_neg[refl] = coef_neg[refl] * -1
+
+        # Apply formula
+        coef[:, self._pos_angular_inds] = coef_pos * np.cos(ks_pos) + coef_neg * np.sin(
+            ks_neg
+        )
+        coef[:, self._neg_angular_inds] = coef_neg * np.cos(ks_neg) - coef_pos * np.sin(
+            ks_pos
+        )
+
+        return coef
+
+    def complex_rotate(self, complex_coef, radians, refl=None):
+        """
+        Returns complex coefs rotated counter-clockwise by `radians`.
+
+        This implementation uses the complex exponential.
+        It is kept in the code for documentation and
+        reference purposes.
+
+        To invoke in code:
+
+        self.to_real(
+            self.complex_rotate(
+                self.to_complex(coef), radians, refl)
+            )
+        )
 
         :param complex_coef: Basis coefs (in complex representation).
         :param radians: Rotation in radians.
-        :param refl: Optional reflect image (about y=x) (bool)
+        :param refl: Optional reflect image (about y=0) (bool)
         :return: rotated (complex) coefs.
         """
 
@@ -155,17 +237,20 @@ class SteerableBasis2D(Basis):
         ks = self.complex_angular_indices
         assert len(ks) == complex_coef.shape[-1]
 
+        # Don't mutate the input coef array (danger)
+        _complex_coef = complex_coef.copy()
+
         # refl
         if refl is not None:
             if isinstance(refl, np.ndarray):
                 assert len(refl) == len(complex_coef)
             # else: refl can be a constant
             # get the coefs corresponding to -ks , aka "ells"
-            complex_coef[refl] = np.conj(complex_coef[refl])
+            _complex_coef[refl] = np.conj(complex_coef[refl])
 
-        complex_coef[:] = complex_coef * np.exp(-1j * ks * radians)
+        _complex_coef = _complex_coef * np.exp(1j * ks * radians)
 
-        return complex_coef
+        return _complex_coef
 
     def shift(self, coef, shifts):
         """

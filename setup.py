@@ -9,9 +9,9 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.10.0",
+    version="0.10.1",
     data_files=[
-        ("", ["src/aspire/config.ini"]),
+        ("", ["src/aspire/config_default.yaml"]),
         ("", ["src/aspire/logging.conf"]),
     ],
     include_package_data=True,
@@ -24,6 +24,7 @@ setup(
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
+        "confuse>=2.0.0",
         "finufft",
         "gemmi>=0.4.8",
         "joblib",
@@ -61,9 +62,10 @@ setup(
             "pyflakes",
             "pydocstyle",
             "parameterized",
-            "pytest",
+            "pytest==7.1.3",
             "pytest-cov",
             "pytest-random-order",
+            "pytest-xdist",
             "requests",
             "sphinxcontrib-bibtex",
             "sphinx-gallery",
@@ -75,7 +77,7 @@ setup(
     },
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    package_data={"aspire": ["config.ini"]},
+    package_data={"aspire": ["config_default.yaml"]},
     zip_safe=True,
     test_suite="tests",
     classifiers=[

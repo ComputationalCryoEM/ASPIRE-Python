@@ -10,16 +10,17 @@ from .coor_trans import (  # isort:skip
     register_rotations,
     uniform_random_angles,
 )
+
 from .misc import (  # isort:skip
     all_pairs,
     all_triplets,
     abs2,
+    bump_3d,
     circ,
     cyclic_rotations,
     gaussian_1d,
     gaussian_2d,
     gaussian_3d,
-    get_full_version,
     importlib_path,
     inverse_r,
     J_conjugate,
@@ -27,6 +28,8 @@ from .misc import (  # isort:skip
     powerset,
     sha256sum,
 )
+
+from .logging import get_full_version, tqdm, trange
 from .matrix import (
     acorr,
     ainner,

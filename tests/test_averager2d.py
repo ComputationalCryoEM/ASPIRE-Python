@@ -124,7 +124,9 @@ class Averager2DBase:
         # Construct a sequence of rotation matrices using thetas
         _rots = np.empty((self.n_img, 3, 3), dtype=self.dtype)
         for n, theta in enumerate(self.thetas):
-            # Note we negate theta to match Rotation convention.
+            # `theta` is CCW rotation.
+            # We'll rotate the test images by -theta,
+            #   so the alignments should produce a correction of `theta`
             _rots[n] = r(-theta)
 
         # Use our Rotation class (maybe it should be able to do this one day?)
@@ -272,8 +274,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
             self.basis,
             self._getSrc(),
             n_angles=self.n_search_angles,
-            n_x_shifts=1,
-            n_y_shifts=1,
+            radius=2,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
