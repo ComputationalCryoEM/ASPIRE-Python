@@ -1,11 +1,14 @@
 name: ASPIRE Python Pip CI
 
 on:
-  - push
-  - pull_request
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   check:
+    if: github.event.schedule != '0 0 * * *'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -21,6 +24,7 @@ jobs:
       run: tox -e check
 
   build:
+    if: github.event.schedule != '0 0 * * *'
     needs: check
     runs-on: ubuntu-latest
     strategy:
@@ -54,7 +58,7 @@ jobs:
 
 
   docs:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.event.schedule == '0 0 * * *'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
