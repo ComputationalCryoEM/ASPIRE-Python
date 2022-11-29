@@ -4,7 +4,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '50 1 * * *'
 
 jobs:
   check:
@@ -58,7 +58,7 @@ jobs:
 
 
   docs:
-    if: github.ref == 'refs/heads/master' || github.event.schedule == '0 0 * * *'
+    if: github.event.schedule == '50 1 * * *'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
