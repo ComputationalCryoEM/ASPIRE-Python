@@ -13,9 +13,9 @@ from aspire.utils.coor_trans import (
     get_rots_mse,
     register_rotations,
 )
-from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations, gaussian_3d
+from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations
 from aspire.utils.random import randn
-from aspire.volume import CnSymmetricVolume, Volume
+from aspire.volume import CnSymmetricVolume
 
 
 class OrientSymmTestCase(TestCase):
@@ -227,7 +227,6 @@ class OrientSymmTestCase(TestCase):
         # ie. check that the svd is close to [1, 0, 0].
         error_ij = np.linalg.norm(np.array([1, 0, 0], dtype=self.dtype) - sij, axis=1)
         error_ii = np.linalg.norm(np.array([1, 0, 0], dtype=self.dtype) - sii, axis=1)
-
         self.assertTrue(np.max(error_ij) < 0.2)
         self.assertTrue(np.max(error_ii) < 1e-5)
         self.assertTrue(np.mean(error_ij) < 0.002)
