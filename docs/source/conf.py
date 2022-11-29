@@ -45,7 +45,7 @@ extensions = [
 ]
 bibtex_bibfiles = ["references.bib"]
 
-autosectionlabel_prefix_document=True
+autosectionlabel_prefix_document = True
 
 # Sphinx-Gallery Configuration
 sphinx_gallery_conf = {
