@@ -101,6 +101,6 @@ jobs:
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
         "import aspire; print(aspire.config['ray']['temp_dir'])"
-        ASPIREDIR=${{ env.WORK_DIR }} pytest
+        ASPIREDIR=${{ env.WORK_DIR }} pytest --durations=50
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
