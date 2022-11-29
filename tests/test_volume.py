@@ -27,8 +27,12 @@ class VolumeTestCase(TestCase):
             n, self.res, self.res, self.res
         )
         self.data_2 = 123 * self.data_1.copy()
+        self.data_12 = np.concatenate([self.data_1, self.data_2], axis=0).reshape(
+            2, *self.data_1.shape
+        )
         self.vols_1 = Volume(self.data_1)
         self.vols_2 = Volume(self.data_2)
+        self.vols_12 = Volume(self.data_12)
         self.random_data = np.random.randn(self.res, self.res, self.res).astype(
             self.dtype
         )
@@ -326,3 +330,76 @@ class VolumeTestCase(TestCase):
                 atol=1e-4,
             )
         )
+
+    def testShape(self):
+        self.assertEqual(self.vols_1.shape, (self.n, self.res, self.res, self.res))
+        self.assertEqual(self.vols_1.stack_shape, (self.n,))
+
+    def testMultiDimShape(self):
+        self.assertEqual(self.vols_12.shape, (2, self.n, self.res, self.res, self.res))
+        self.assertEqual(self.vols_12.stack_shape, (2, self.n))
+
+    def testMultiDimGets(self):
+        self.assertTrue(np.allclose(self.vols_12[0], self.data_1))
+        # Test a slice
+        self.assertTrue(np.allclose(self.vols_12[1, 1:], self.data_2[1:]))
+
+    def testMultiDimSets(self):
+        self.vols_12[0, 1] = 123
+        # Check the values changed
+        self.assertTrue(np.allclose(self.vols_12[0, 1], 123))
+        # and only those values changed
+        self.assertTrue(np.allclose(self.vols_12[0, 0], self.data_1[0]))
+        self.assertTrue(np.allclose(self.vols_12[0, 2:], self.data_1[2:]))
+        self.assertTrue(np.allclose(self.vols_12[1, :], self.data_2))
+
+    def testMultiDimSetsSlice(self):
+        self.vols_12[0, 1:] = 456
+        # Check the values changed
+        self.assertTrue(np.allclose(self.vols_12[0, 1:], 456))
+        # and only those values changed
+        self.assertTrue(np.allclose(self.vols_12[0, 0], self.data_1[0]))
+        self.assertTrue(np.allclose(self.vols_12[1, :], self.data_2))
+
+    def testMultiDimReshape(self):
+        X = self.vols_12.stack_reshape(self.n, 2)
+        self.assertTrue(
+            np.allclose(
+                X, self.data_12.reshape(self.n, 2, self.res, self.res, self.res)
+            )
+        )
+        # and as tuples
+        Y = self.vols_12.stack_reshape((self.n, 2))
+        self.assertTrue(np.allclose(X, Y))
+
+    def testMultiDimFlattens(self):
+        X = self.vols_12.stack_reshape(2 * self.n)
+        self.assertTrue(
+            np.allclose(X, self.data_12.reshape(-1, self.res, self.res, self.res))
+        )
+        # and as tuples
+        Y = self.vols_12.stack_reshape((2 * self.n,))
+        self.assertTrue(np.allclose(X, Y))
+
+    def testMultiDimFlattensTrick(self):
+        X = self.vols_12.stack_reshape(-1)
+        self.assertTrue(
+            np.allclose(X, self.data_12.reshape(-1, self.res, self.res, self.res))
+        )
+        # and as tuples
+        Y = self.vols_12.stack_reshape((-1,))
+        self.assertTrue(np.allclose(X, Y))
+
+    def testMultiDimBadReshape(self):
+        # Incorrect flat shape
+        with self.assertRaisesRegex(ValueError, "Number of volumes"):
+            _ = self.vols_12.stack_reshape(8675309)
+
+        # Incorrect mdin shape
+        with self.assertRaisesRegex(ValueError, "Number of volumes"):
+            _ = self.vols_12.stack_reshape(42, 8675309)
+
+    def testMultiDimBroadcast(self):
+        X = self.data_12 + self.data_1
+        self.assertTrue(np.allclose(X[0], 2 * self.data_1))
+        self.assertTrue(np.allclose(X[1], self.data_1 + self.data_2))

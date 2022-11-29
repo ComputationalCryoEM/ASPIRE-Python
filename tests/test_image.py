@@ -164,7 +164,9 @@ class ImageTestCase(TestCase):
         # and only those values changed
         self.assertTrue(np.allclose(self.mdim_ims[0, 0], self.ims_np[0]))
         self.assertTrue(np.allclose(self.mdim_ims[0, 2:], self.ims_np[2:]))
+        self.assertTrue(np.allclose(self.mdim_ims[1, :], self.ims_np))
 
+    def testMultiDimSetsSlice(self):
         # Test setting a slice
         self.mdim_ims[0, 1:] = 456
         # Check the values changed
@@ -205,3 +207,7 @@ class ImageTestCase(TestCase):
         # Incorrect mdin shape
         with self.assertRaisesRegex(ValueError, "Number of images"):
             _ = self.mdim_ims.stack_reshape(42, 8675309)
+
+    def testMultiDimBroadcast(self):
+        X = self.mdim_ims + self.ims
+        self.assertTrue(np.allclose(X[0], 2 * self.ims.asnumpy()))

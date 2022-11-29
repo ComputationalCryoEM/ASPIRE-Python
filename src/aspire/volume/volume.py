@@ -118,6 +118,30 @@ class Volume:
         self._check_key_dims(key)
         self._data[key] = value
 
+    def stack_reshape(self, *args):
+        """
+        Reshape the stack axis.
+
+        :param shape: Args, tuple or integer describing the intended shape.
+
+        :returns: Volume instance
+        """
+
+        # If we're passed a tuple, use that
+        if len(args) == 1 and isinstance(args[0], tuple):
+            shape = args[0]
+        else:
+            # Otherwise use the variadic args
+            shape = args
+
+        # Sanity check the size
+        if shape != (-1,) and prod(shape) != self.n_vols:
+            raise ValueError(
+                f"Number of volumes {self.n_vols} cannot be reshaped to {shape}."
+            )
+
+        return Volume(self._data.reshape(*shape, *self._data.shape[-3:]))
+
     def __repr__(self):
         return f"{self.n_vols} volumes of size {self.resolution}x{self.resolution}x{self.resolution}"
 
