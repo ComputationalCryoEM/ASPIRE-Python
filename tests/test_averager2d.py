@@ -38,15 +38,18 @@ def xfail_ray_dev():
     timeouts due to hangs on Azure.  This code will disable the flaky
     environments by only attempting to run on Linux platforms.
     """
-    return all(
+    xfail = all(
         [
             importlib.util.find_spec("ray"),  # 'ray' installed
             parse_version(get_distribution("numpy").version)
             >= parse_version("1.22.0"),  # with unsupported numpy combo
             num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
-            platform.system == "Linux",  # and we're on Linux
         ]
     )
+    # Don't run for OSX/Windows and don't abuse GitHub Actions
+    skip = (platform.system != "Linux") or (os.getenv("GITHUB_ACTIONS") == "true")
+
+    return xfail or skip
 
 
 # Ignore Gimbal lock warning for our in plane rotations.
