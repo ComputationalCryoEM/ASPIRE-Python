@@ -300,7 +300,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
-    num_procs = 1 if xfail_ray_dev() else None
+    num_procs = 1 if xfail_ray_dev() else 3
 
     def testAverager(self):
         """
