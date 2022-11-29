@@ -18,7 +18,14 @@ from aspire.utils import (
     utest_tolerance,
     virtual_core_cpu_suggestion,
 )
-from aspire.utils.misc import bump_3d, gaussian_1d, gaussian_2d, gaussian_3d, grid_3d
+from aspire.utils.misc import (
+    bump_3d,
+    fuzzy_mask,
+    gaussian_1d,
+    gaussian_2d,
+    gaussian_3d,
+    grid_3d,
+)
 
 
 class UtilsTestCase(TestCase):
@@ -199,6 +206,94 @@ class UtilsTestCase(TestCase):
 
         # Test that the center is still 1
         self.assertTrue(np.allclose(bumped_volume[(L // 2,) * 3], 1))
+
+    def testFuzzyMask(self):
+        results = np.array(
+            [
+                [
+                    2.03406033e-06,
+                    7.83534653e-05,
+                    9.19567967e-04,
+                    3.73368194e-03,
+                    5.86559882e-03,
+                    3.73368194e-03,
+                    9.19567967e-04,
+                    7.83534653e-05,
+                ],
+                [
+                    7.83534653e-05,
+                    2.35760928e-03,
+                    2.15315317e-02,
+                    7.15226076e-02,
+                    1.03823087e-01,
+                    7.15226076e-02,
+                    2.15315317e-02,
+                    2.35760928e-03,
+                ],
+                [
+                    9.19567967e-04,
+                    2.15315317e-02,
+                    1.48272439e-01,
+                    3.83057355e-01,
+                    5.00000000e-01,
+                    3.83057355e-01,
+                    1.48272439e-01,
+                    2.15315317e-02,
+                ],
+                [
+                    3.73368194e-03,
+                    7.15226076e-02,
+                    3.83057355e-01,
+                    7.69781837e-01,
+                    8.96176913e-01,
+                    7.69781837e-01,
+                    3.83057355e-01,
+                    7.15226076e-02,
+                ],
+                [
+                    5.86559882e-03,
+                    1.03823087e-01,
+                    5.00000000e-01,
+                    8.96176913e-01,
+                    9.94134401e-01,
+                    8.96176913e-01,
+                    5.00000000e-01,
+                    1.03823087e-01,
+                ],
+                [
+                    3.73368194e-03,
+                    7.15226076e-02,
+                    3.83057355e-01,
+                    7.69781837e-01,
+                    8.96176913e-01,
+                    7.69781837e-01,
+                    3.83057355e-01,
+                    7.15226076e-02,
+                ],
+                [
+                    9.19567967e-04,
+                    2.15315317e-02,
+                    1.48272439e-01,
+                    3.83057355e-01,
+                    5.00000000e-01,
+                    3.83057355e-01,
+                    1.48272439e-01,
+                    2.15315317e-02,
+                ],
+                [
+                    7.83534653e-05,
+                    2.35760928e-03,
+                    2.15315317e-02,
+                    7.15226076e-02,
+                    1.03823087e-01,
+                    7.15226076e-02,
+                    2.15315317e-02,
+                    2.35760928e-03,
+                ],
+            ]
+        )
+        fmask = fuzzy_mask((8, 8), 2, 2)
+        self.assertTrue(np.allclose(results, fmask, atol=1e-7))
 
 
 class MultiProcessingUtilsTestCase(TestCase):
