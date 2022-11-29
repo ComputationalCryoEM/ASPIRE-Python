@@ -15,7 +15,7 @@ from aspire.utils.coor_trans import (
 )
 from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations, gaussian_3d
 from aspire.utils.random import randn
-from aspire.volume import Volume
+from aspire.volume import CnSymmetricVolume, Volume
 
 
 class OrientSymmTestCase(TestCase):
@@ -25,7 +25,7 @@ class OrientSymmTestCase(TestCase):
         self.dtype = np.float32
         self.n_theta = 360
 
-        # Build symmetric volume and associated Simulation object and common-lines class.
+        # Generate CnSymmetricVolume, associated Simulation object, and common-lines class.
         # For the Simulation object we use clean, non-shifted projection images.
         orders = [3, 4]
         self.vols = {}
@@ -33,7 +33,13 @@ class OrientSymmTestCase(TestCase):
         self.cl_orient_ests = {}
 
         for order in orders:
-            self.vols[order] = self.buildSimpleSymmetricVolume(self.L, order)
+            self.vols[order] = CnSymmetricVolume(
+                L=self.L,
+                C=1,
+                order=order,
+                seed=0,
+                dtype=self.dtype,
+            ).generate()
 
             self.srcs[order] = Simulation(
                 L=self.L,
@@ -218,10 +224,14 @@ class OrientSymmTestCase(TestCase):
         angular_dist_viis = np.mean(min_theta_vii)
 
         # Check that estimates are indeed approximately rank 1.
-        # ie. check that the two smaller singular values are close to zero.
-        tol = 5e-2
-        self.assertTrue(np.max(sij[:, 1:]) < tol)
-        self.assertTrue(np.max(sii[:, 1:]) < tol)
+        # ie. check that the svd is close to [1, 0, 0].
+        error_ij = np.linalg.norm(np.array([1, 0, 0], dtype=self.dtype) - sij, axis=1)
+        error_ii = np.linalg.norm(np.array([1, 0, 0], dtype=self.dtype) - sii, axis=1)
+
+        self.assertTrue(np.max(error_ij) < 0.2)
+        self.assertTrue(np.max(error_ii) < 1e-5)
+        self.assertTrue(np.mean(error_ij) < 0.002)
+        self.assertTrue(np.mean(error_ii) < 1e-5)
 
         # Check that the mean angular difference is within 2 degrees.
         angle_tol = 2 * np.pi / 180
@@ -411,32 +421,6 @@ class OrientSymmTestCase(TestCase):
             viis[i] = np.outer(gt_vis[i], gt_vis[i])
 
         return vijs, viis, gt_vis
-
-    def buildSimpleSymmetricVolume(self, res, order):
-        # Construct rotatation matrices associated with cyclic order.
-        rots_symm = cyclic_rotations(order, self.dtype).matrices
-
-        # Assign centers and sigmas of Gaussian blobs
-        centers = np.zeros((3, order, 3), dtype=self.dtype)
-        centers[0, 0, :] = np.array([res // 12, res // 12, 0])
-        centers[1, 0, :] = np.array([res // 6, res // 6, res // 20])
-        centers[2, 0, :] = np.array([res // 4, res // 7, res // 16])
-        for o in range(order):
-            centers[0, o, :] = rots_symm[o] @ centers[0, 0, :]
-            centers[1, o, :] = rots_symm[o] @ centers[1, 0, :]
-            centers[2, o, :] = rots_symm[o] @ centers[2, 0, :]
-        sigmas = [res / 15, res / 20, res / 30]
-
-        # Build volume
-        vol = np.zeros((res, res, res), dtype=self.dtype)
-        n_blobs = centers.shape[0]
-        for o in range(order):
-            for i in range(n_blobs):
-                vol += gaussian_3d(res, centers[i, o, :], sigmas[i], indexing="xyz")
-
-        volume = Volume(vol)
-
-        return volume
 
     def buildSelfCommonLinesMatrix(self, rots, order):
         # Construct rotatation matrices associated with cyclic order.
