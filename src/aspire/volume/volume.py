@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from math import prod
 
 import mrcfile
 import numpy as np
@@ -85,7 +86,7 @@ class Volume:
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 3
         self.stack_shape = self._data.shape[:-3]
-        self.n_vols = sum(self.stack_shape)
+        self.n_vols = prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
     def asnumpy(self):

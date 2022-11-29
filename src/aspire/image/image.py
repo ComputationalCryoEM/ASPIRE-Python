@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from math import prod
 from warnings import catch_warnings, filterwarnings, warn
 
 import matplotlib.pyplot as plt
@@ -100,7 +101,7 @@ class Image:
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 2
         self.stack_shape = self._data.shape[:-2]
-        self.n_images = sum(self.stack_shape)
+        self.n_images = prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
     @property
@@ -122,6 +123,30 @@ class Image:
     def __setitem__(self, key, value):
         self._check_key_dims(key)
         self._data[key] = value
+
+    def stack_reshape(self, *args):
+        """
+        Reshape the stack axis.
+
+        :param shape: Args, tuple or integer describing the intended shape.
+
+        :returns: Image instance
+        """
+
+        # If we're passed a tuple, use that
+        if len(args) == 1 and isinstance(args[0], tuple):
+            shape = args[0]
+        else:
+            # Otherwise use the variadic args
+            shape = args
+
+        # Sanity check the size
+        if shape != (-1,) and prod(shape) != self.n_images:
+            raise ValueError(
+                f"Number of images {self.n_images} cannot be reshaped to {shape}."
+            )
+
+        return Image(self._data.reshape(*shape, *self._data.shape[-2:]))
 
     def __add__(self, other):
         if isinstance(other, Image):
