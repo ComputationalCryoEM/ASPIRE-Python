@@ -27,7 +27,8 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest --random-order
+      pip freeze --all
+      pytest --durations=50 --random-order
     displayName: pytest
 
 - job:
@@ -52,7 +53,8 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest --random-order
+      pip freeze --all
+      pytest --durations=50 --random-order
     displayName: pytest
 
 - job:
@@ -82,7 +84,8 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest -s
+      pip freeze --all
+      pytest --durations=50 -s
     displayName: pytest
 
 - job:
@@ -112,7 +115,8 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest -s
+      pip freeze --all
+      pytest --durations=50 -s
     displayName: pytest
 
 - job:
@@ -137,5 +141,6 @@ jobs:
   - script: |
       call activate myEnvironment
       pip install -e .[dev]
-      pytest --random-order 
+      pip freeze --all
+      pytest --durations=50 --random-order
     displayName: pytest
