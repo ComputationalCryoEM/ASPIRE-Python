@@ -62,16 +62,23 @@ class UtilsTestCase(TestCase):
         with raises(TypeError):
             utest_tolerance(int)
 
-    def testGaussian2d(self):
+    @parameterized.expand([("yx",), ("xy",)])
+    def testGaussian2d(self, indexing):
         L = 100
+        # Note, `mu` and `sigma` are in (x, y) order.
         mu = (7, -3)
         sigma = (5, 6)
 
-        g = gaussian_2d(L, mu=mu, sigma=sigma)
+        g = gaussian_2d(L, mu=mu, sigma=sigma, indexing=indexing)
 
         # The normalized sum across an axis should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        g_x = np.sum(g, axis=0) / np.sum(g)
-        g_y = np.sum(g, axis=1) / np.sum(g)
+        # Set axes based on 'indexing'.
+        x, y = 0, 1
+        if indexing == "yx":
+            x, y = y, x
+
+        g_x = np.sum(g, axis=y) / np.sum(g)
+        g_y = np.sum(g, axis=x) / np.sum(g)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
@@ -83,18 +90,30 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(g_x, g_1d_x))
         self.assertTrue(np.allclose(g_y, g_1d_y))
 
+        # Test errors are raised with improper `mu` and `sigma` length.
+        with raises(ValueError, match="`mu` must be len(2)*"):
+            gaussian_2d(L, mu=(1,), sigma=sigma, indexing=indexing)
+        with raises(ValueError, match="`sigma` must be*"):
+            gaussian_2d(L, mu=mu, sigma=(1, 2, 3), indexing=indexing)
+
     @parameterized.expand([("zyx",), ("xyz")])
     def testGaussian3d(self, indexing):
         L = 100
+        # Note, `mu` and `sigma` are in (x, y, z) order.
         mu = (0, 5, 10)
         sigma = (5, 7, 9)
 
         G = gaussian_3d(L, mu, sigma, indexing=indexing)
 
         # The normalized sum across two axes should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        G_x = np.sum(G, axis=(1, 2)) / np.sum(G)
-        G_y = np.sum(G, axis=(0, 2)) / np.sum(G)
-        G_z = np.sum(G, axis=(0, 1)) / np.sum(G)
+        # Set axes based on 'indexing'.
+        x, y, z = 0, 1, 2
+        if indexing == "zyx":
+            x, y, z = z, y, x
+
+        G_x = np.sum(G, axis=(y, z)) / np.sum(G)
+        G_y = np.sum(G, axis=(x, z)) / np.sum(G)
+        G_z = np.sum(G, axis=(x, y)) / np.sum(G)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
@@ -108,6 +127,12 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(G_x, g_1d_x))
         self.assertTrue(np.allclose(G_y, g_1d_y))
         self.assertTrue(np.allclose(G_z, g_1d_z))
+
+        # Test errors are raised with improper `mu` and `sigma` length.
+        with raises(ValueError, match="`mu` must be len(3)*"):
+            gaussian_3d(L, mu=(1, 2), sigma=sigma, indexing=indexing)
+        with raises(ValueError, match="`sigma` must be*"):
+            gaussian_3d(L, mu=mu, sigma=(1, 2), indexing=indexing)
 
     def testAllPairs(self):
         n = 25
