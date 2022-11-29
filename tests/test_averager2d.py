@@ -1,6 +1,7 @@
 import importlib
 import logging
 import os
+import platform
 from unittest import TestCase
 
 import numpy as np
@@ -32,6 +33,10 @@ def xfail_ray_dev():
     Currently ray multiprocessing of the averager is xfail for numpy>=1.22.
     This unsupported configuration is forced in the '-dev' test environments.
     Return whether we expect test to fail using ray multiprocessing.
+
+    While Ray seems to work fine locally for OSX, we have experienced
+    timeouts due to hangs on Azure.  This code will disable the flaky
+    environments by only attempting to run on Linux platforms.
     """
     return all(
         [
@@ -39,6 +44,7 @@ def xfail_ray_dev():
             parse_version(get_distribution("numpy").version)
             >= parse_version("1.22.0"),  # with unsupported numpy combo
             num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
+            platform.system == "Linux",  # and we're on Linux
         ]
     )
 
@@ -177,16 +183,13 @@ class AligningAverager2DBase(Averager2DBase):
         _ = avgr.average(self.classes, self.reflections, self.coefs)
         return avgr
 
-    def test_rotations_estimate(self):
+    def test_attributes(self):
         avgr = self._call_averager()
+
         self.assertTrue(hasattr(avgr, "rotations"))
 
-    def test_shifts_estimate(self):
-        avgr = self._call_averager()
         self.assertTrue(hasattr(avgr, "shifts"))
 
-    def test_correlations_estimate(self):
-        avgr = self._call_averager()
         self.assertTrue(hasattr(avgr, "correlations"))
 
     def _getSrc(self):
