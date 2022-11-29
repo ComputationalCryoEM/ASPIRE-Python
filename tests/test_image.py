@@ -2,23 +2,30 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+from parameterized import parameterized_class
 from scipy import misc
 
-from aspire.image import Image, _im_translate2
+from aspire.image import Image
 from aspire.utils import powerset
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
+@parameterized_class(("parity",), [(0,), (1,)])
 class ImageTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float64
-        # numpy array for top-level functions that directly expect it
-        self.im_np = misc.face(gray=True).astype(self.dtype)[np.newaxis, :768, :768]
-        # Independent Image object for testing Image methods
-        self.im = Image(misc.face(gray=True).astype(self.dtype)[:768, :768])
-        # Construct a simple stack of Images
         self.n = 3
+        self.size = 768 - self.parity
+        # numpy array for top-level functions that directly expect it
+        self.im_np = misc.face(gray=True).astype(self.dtype)[
+            np.newaxis, : self.size, : self.size
+        ]
+        # Independent Image object for testing Image methods
+        self.im = Image(
+            misc.face(gray=True).astype(self.dtype)[: self.size, : self.size]
+        )
+        # Construct a simple stack of Images
         self.ims_np = np.empty((self.n, *self.im_np.shape[1:]), dtype=self.dtype)
         for i in range(self.n):
             self.ims_np[i] = self.im_np * (i + 1) / float(self.n)
@@ -29,28 +36,56 @@ class ImageTestCase(TestCase):
         pass
 
     def testImShift(self):
-        # Ensure that the two separate im_translate functions we have return the same thing
-
-        # A single shift applied to all images
+        # Note that the _im_translate method can handle float input shifts, as it
+        # computes the shifts in Fourier space, rather than performing a roll
+        # However, NumPy's roll() only accepts integer inputs
         shifts = np.array([100, 200])
 
-        im = self.im.shift(shifts)
-
+        # test built-in
+        im0 = self.im.shift(shifts)
+        # test explicit call
         im1 = self.im._im_translate(shifts)
-        # Note the difference in the concept of shifts for _im_translate2 - negative sign
-        im2 = _im_translate2(self.im_np, -shifts)
+        # test that float input returns the same thing
+        im2 = self.im.shift(shifts.astype(np.float64))
+        # ground truth numpy roll
+        im3 = np.roll(self.im_np[0, :, :], -shifts, axis=(0, 1))
 
-        # Pure numpy 'shifting'
-        # 'Shifting' an Image corresponds to a 'roll' of a numpy array - again, note the negated signs and the axes
-        im3 = np.roll(self.im.asnumpy()[0], -shifts, axis=(0, 1))
-
-        self.assertTrue(np.allclose(im.asnumpy(), im1.asnumpy()))
+        self.assertTrue(np.allclose(im0.asnumpy(), im1.asnumpy()))
         self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
-        self.assertTrue(np.allclose(im1.asnumpy()[0, :, :], im3))
+        self.assertTrue(np.allclose(im0.asnumpy()[0, :, :], im3))
+
+    def testImShiftStack(self):
+        # test stack of shifts (same number as Image.num_img)
+        # mix of odd and even
+        shifts = np.array([[100, 200], [203, 150], [55, 307]])
+
+        # test built-in
+        im0 = self.ims.shift(shifts)
+        # test explicit call
+        im1 = self.ims._im_translate(shifts)
+        # test that float input returns the same thing
+        im2 = self.ims.shift(shifts.astype(np.float64))
+        # ground truth numpy roll
+        im3 = np.array(
+            [
+                np.roll(self.ims_np[i, :, :], -shifts[i], axis=(0, 1))
+                for i in range(self.n)
+            ]
+        )
+        self.assertTrue(np.allclose(im0.asnumpy(), im1.asnumpy()))
+        self.assertTrue(np.allclose(im1.asnumpy(), im2.asnumpy()))
+        self.assertTrue(np.allclose(im0.asnumpy(), im3))
+
+    def testImageShiftErrors(self):
+        # test bad shift shape
+        with self.assertRaisesRegex(ValueError, "Input shifts must be of shape"):
+            _ = self.im.shift(np.array([100, 100, 100]))
+        # test bad number of shifts
+        with self.assertRaisesRegex(ValueError, "The number of shifts"):
+            _ = self.im.shift(np.array([[100, 200], [100, 200]]))
 
     def testImageSqrt(self):
         self.assertTrue(np.allclose(self.im.sqrt().asnumpy(), np.sqrt(self.im_np)))
-
         self.assertTrue(np.allclose(self.ims.sqrt().asnumpy(), np.sqrt(self.ims_np)))
 
     def testImageTranspose(self):
