@@ -324,7 +324,8 @@ class NoiseAdder(Xform):
     @abc.abstractproperty
     def noise_var(self):
         """
-        Return noise variance.
+        Concrete implementations are expected to provide a method that
+        returns the noise variance for the NoiseAdder.
         """
 
 

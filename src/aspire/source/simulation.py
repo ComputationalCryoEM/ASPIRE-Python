@@ -312,7 +312,7 @@ class Simulation(ImageSource):
         PSNR is computed along the stack axis and an average
         decibel value across the sample is returned.
 
-        Note that PSNR is inherently a poor metric for identical images
+        Note that PSNR is inherently a poor metric for identical images.
 
         :param sample_n: Number of images used for estimate.
         :returns: Estimated peak signal to noise ratio in decibels.
@@ -324,13 +324,13 @@ class Simulation(ImageSource):
 
         # Reshape and Transpose for Scikit metrics,
         # which expect a 2d (samples, outputs)
-        MSE = mean_squared_error(
+        mse = mean_squared_error(
             signal.reshape(sample_n, -1).T,
             images.reshape(sample_n, -1).T,
             multioutput="raw_values",
         )
 
-        return np.mean(10 * np.log10(peak**2 / MSE))
+        return np.mean(10 * np.log10(peak**2 / mse))
 
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
