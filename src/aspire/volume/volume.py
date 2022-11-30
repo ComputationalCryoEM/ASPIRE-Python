@@ -51,15 +51,24 @@ class Volume:
 
     def __init__(self, data, dtype=None):
         """
-        Create a volume initialized with `data`.
+        A stack of one or more volumes.
 
-        Volumes should be N x L x L x L,
-        or L x L x L which implies N1=1.
+        This is a wrapper of numpy.ndarray which provides methods
+        for common processing tasks.
 
-        :param data: Volume data
-        :param dtype: Optionally cast `data` to this dtype. Defaults to `data.dtype`.
+        The stack can be multidimensional with `n_vols` equal
+        to the product of the stack dimensions.  Singletons will be
+        expanded into a stack with one entry.
 
-        :return: A volume instance.
+        The last three axes represent the volume size,
+        and are checked to be cubic.
+
+        :param data: Numpy array containing volume data with shape
+            `(..., resolution, resolution, resolution)`.
+        :param dtype: Optionally cast `data` to this dtype.
+            Defaults to `data.dtype`.
+
+        :return: A volume instance holding `data`.
         """
 
         if not isinstance(data, np.ndarray):
@@ -121,7 +130,7 @@ class Volume:
         """
         Reshape the stack axis.
 
-        :param shape: Args, tuple or integer describing the intended shape.
+        :*args: Integer(s) or tuple describing the intended shape.
 
         :returns: Volume instance
         """

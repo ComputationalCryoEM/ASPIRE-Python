@@ -72,9 +72,19 @@ class Image:
         This is a wrapper of numpy.ndarray which provides methods
         for common processing tasks.
 
-        :param data: Numpy array containing image data with shape `(n_images, res, res)`.
-        :param dtype: Optionally cast `data` to this dtype. Defaults to `data.dtype`.
-        :return: Image instance storing `data`.
+        The stack can be multidimensional with `n_images` equal
+        to the product of the stack dimensions.  Singletons will be
+        expanded into a stack with one entry.
+
+        The last two axes represent the image size,
+        and are checked to be square.
+
+        :param data: Numpy array containing image data with shape
+            `(..., resolution, resolution)`.
+        :param dtype: Optionally cast `data` to this dtype.
+            Defaults to `data.dtype`.
+
+        :return: Image instance holding `data`.
         """
 
         if not isinstance(data, np.ndarray):
@@ -127,7 +137,7 @@ class Image:
         """
         Reshape the stack axis.
 
-        :param shape: Args, tuple or integer describing the intended shape.
+        :*args: Integer(s) or tuple describing the intended shape.
 
         :returns: Image instance
         """
