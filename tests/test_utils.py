@@ -18,7 +18,14 @@ from aspire.utils import (
     utest_tolerance,
     virtual_core_cpu_suggestion,
 )
-from aspire.utils.misc import bump_3d, gaussian_1d, gaussian_2d, gaussian_3d, grid_3d
+from aspire.utils.misc import (
+    bump_3d,
+    fuzzy_mask,
+    gaussian_1d,
+    gaussian_2d,
+    gaussian_3d,
+    grid_3d,
+)
 
 
 class UtilsTestCase(TestCase):
@@ -62,16 +69,23 @@ class UtilsTestCase(TestCase):
         with raises(TypeError):
             utest_tolerance(int)
 
-    def testGaussian2d(self):
+    @parameterized.expand([("yx",), ("xy",)])
+    def testGaussian2d(self, indexing):
         L = 100
+        # Note, `mu` and `sigma` are in (x, y) order.
         mu = (7, -3)
         sigma = (5, 6)
 
-        g = gaussian_2d(L, mu=mu, sigma=sigma)
+        g = gaussian_2d(L, mu=mu, sigma=sigma, indexing=indexing)
 
         # The normalized sum across an axis should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        g_x = np.sum(g, axis=0) / np.sum(g)
-        g_y = np.sum(g, axis=1) / np.sum(g)
+        # Set axes based on 'indexing'.
+        x, y = 0, 1
+        if indexing == "yx":
+            x, y = y, x
+
+        g_x = np.sum(g, axis=y) / np.sum(g)
+        g_y = np.sum(g, axis=x) / np.sum(g)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
@@ -83,18 +97,30 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(g_x, g_1d_x))
         self.assertTrue(np.allclose(g_y, g_1d_y))
 
+        # Test errors are raised with improper `mu` and `sigma` length.
+        with raises(ValueError, match="`mu` must be len(2)*"):
+            gaussian_2d(L, mu=(1,), sigma=sigma, indexing=indexing)
+        with raises(ValueError, match="`sigma` must be*"):
+            gaussian_2d(L, mu=mu, sigma=(1, 2, 3), indexing=indexing)
+
     @parameterized.expand([("zyx",), ("xyz")])
     def testGaussian3d(self, indexing):
         L = 100
+        # Note, `mu` and `sigma` are in (x, y, z) order.
         mu = (0, 5, 10)
         sigma = (5, 7, 9)
 
         G = gaussian_3d(L, mu, sigma, indexing=indexing)
 
         # The normalized sum across two axes should correspond to a 1d gaussian with appropriate mu, sigma, peak.
-        G_x = np.sum(G, axis=(1, 2)) / np.sum(G)
-        G_y = np.sum(G, axis=(0, 2)) / np.sum(G)
-        G_z = np.sum(G, axis=(0, 1)) / np.sum(G)
+        # Set axes based on 'indexing'.
+        x, y, z = 0, 1, 2
+        if indexing == "zyx":
+            x, y, z = z, y, x
+
+        G_x = np.sum(G, axis=(y, z)) / np.sum(G)
+        G_y = np.sum(G, axis=(x, z)) / np.sum(G)
+        G_z = np.sum(G, axis=(x, y)) / np.sum(G)
 
         # Corresponding 1d gaussians
         peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
@@ -108,6 +134,12 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.allclose(G_x, g_1d_x))
         self.assertTrue(np.allclose(G_y, g_1d_y))
         self.assertTrue(np.allclose(G_z, g_1d_z))
+
+        # Test errors are raised with improper `mu` and `sigma` length.
+        with raises(ValueError, match="`mu` must be len(3)*"):
+            gaussian_3d(L, mu=(1, 2), sigma=sigma, indexing=indexing)
+        with raises(ValueError, match="`sigma` must be*"):
+            gaussian_3d(L, mu=mu, sigma=(1, 2), indexing=indexing)
 
     def testAllPairs(self):
         n = 25
@@ -174,6 +206,94 @@ class UtilsTestCase(TestCase):
 
         # Test that the center is still 1
         self.assertTrue(np.allclose(bumped_volume[(L // 2,) * 3], 1))
+
+    def testFuzzyMask(self):
+        results = np.array(
+            [
+                [
+                    2.03406033e-06,
+                    7.83534653e-05,
+                    9.19567967e-04,
+                    3.73368194e-03,
+                    5.86559882e-03,
+                    3.73368194e-03,
+                    9.19567967e-04,
+                    7.83534653e-05,
+                ],
+                [
+                    7.83534653e-05,
+                    2.35760928e-03,
+                    2.15315317e-02,
+                    7.15226076e-02,
+                    1.03823087e-01,
+                    7.15226076e-02,
+                    2.15315317e-02,
+                    2.35760928e-03,
+                ],
+                [
+                    9.19567967e-04,
+                    2.15315317e-02,
+                    1.48272439e-01,
+                    3.83057355e-01,
+                    5.00000000e-01,
+                    3.83057355e-01,
+                    1.48272439e-01,
+                    2.15315317e-02,
+                ],
+                [
+                    3.73368194e-03,
+                    7.15226076e-02,
+                    3.83057355e-01,
+                    7.69781837e-01,
+                    8.96176913e-01,
+                    7.69781837e-01,
+                    3.83057355e-01,
+                    7.15226076e-02,
+                ],
+                [
+                    5.86559882e-03,
+                    1.03823087e-01,
+                    5.00000000e-01,
+                    8.96176913e-01,
+                    9.94134401e-01,
+                    8.96176913e-01,
+                    5.00000000e-01,
+                    1.03823087e-01,
+                ],
+                [
+                    3.73368194e-03,
+                    7.15226076e-02,
+                    3.83057355e-01,
+                    7.69781837e-01,
+                    8.96176913e-01,
+                    7.69781837e-01,
+                    3.83057355e-01,
+                    7.15226076e-02,
+                ],
+                [
+                    9.19567967e-04,
+                    2.15315317e-02,
+                    1.48272439e-01,
+                    3.83057355e-01,
+                    5.00000000e-01,
+                    3.83057355e-01,
+                    1.48272439e-01,
+                    2.15315317e-02,
+                ],
+                [
+                    7.83534653e-05,
+                    2.35760928e-03,
+                    2.15315317e-02,
+                    7.15226076e-02,
+                    1.03823087e-01,
+                    7.15226076e-02,
+                    2.15315317e-02,
+                    2.35760928e-03,
+                ],
+            ]
+        )
+        fmask = fuzzy_mask((8, 8), 2, 2)
+        self.assertTrue(np.allclose(results, fmask, atol=1e-7))
 
 
 class MultiProcessingUtilsTestCase(TestCase):
