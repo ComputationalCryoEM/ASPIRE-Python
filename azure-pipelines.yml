@@ -14,8 +14,8 @@ jobs:
     vmImage: 'ubuntu-22.04'
   strategy:
     matrix:
-      Python37:
-        python.version: '3.7'
+      Python38:
+        python.version: '3.8'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
@@ -27,7 +27,8 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest --random-order
+      pip freeze --all
+      pytest --durations=50 --random-order
     displayName: pytest
 
 - job:
@@ -36,8 +37,8 @@ jobs:
     vmImage: 'ubuntu-20.04'
   strategy:
     matrix:
-      Python37:
-        python.version: '3.7'
+      Python38:
+        python.version: '3.8'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
@@ -52,7 +53,8 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest --random-order
+      pip freeze --all
+      pytest --durations=50 --random-order
     displayName: pytest
 
 - job:
@@ -61,8 +63,8 @@ jobs:
     vmImage: 'macOS-latest'
   strategy:
     matrix:
-      Python37:
-        python.version: '3.7'
+      Python38:
+        python.version: '3.8'
 
   steps:
   - bash: |
@@ -82,7 +84,8 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest -s
+      pip freeze --all
+      pytest --durations=50 -s
     displayName: pytest
 
 - job:
@@ -91,8 +94,8 @@ jobs:
     vmImage: 'macOS-11'
   strategy:
     matrix:
-      Python37:
-        python.version: '3.7'
+      Python38:
+        python.version: '3.8'
 
   steps:
   - bash: |
@@ -112,7 +115,8 @@ jobs:
   - bash: |
       source activate myEnvironment
       pip install -e .[dev]
-      pytest -s
+      pip freeze --all
+      pytest --durations=50 -s
     displayName: pytest
 
 - job:
@@ -121,8 +125,8 @@ jobs:
     vmImage: 'windows-latest'
   strategy:
     matrix:
-      Python37:
-        python.version: '3.7'
+      Python38:
+        python.version: '3.8'
 
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
@@ -137,5 +141,6 @@ jobs:
   - script: |
       call activate myEnvironment
       pip install -e .[dev]
-      pytest --random-order 
+      pip freeze --all
+      pytest --durations=50 --random-order
     displayName: pytest

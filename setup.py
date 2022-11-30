@@ -62,7 +62,7 @@ setup(
             "pyflakes",
             "pydocstyle",
             "parameterized",
-            "pytest==7.1.3",
+            "pytest",
             "pytest-cov",
             "pytest-random-order",
             "pytest-xdist",

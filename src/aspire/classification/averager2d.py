@@ -215,7 +215,11 @@ class AligningAverager2D(Averager2D):
                 b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
+            ray.init(
+                _temp_dir=config["ray"]["temp_dir"].as_filename(),
+                num_cpus=self.num_procs,
+                num_gpus=0,
+            )
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -563,7 +567,11 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
+            ray.init(
+                _temp_dir=config["ray"]["temp_dir"].as_filename(),
+                num_cpus=self.num_procs,
+                num_gpus=0,
+            )
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -619,11 +627,16 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # Averaging in composite_basis
             return np.mean(neighbors_coefs, axis=0)
 
-        for i in trange(n_classes):
-            b_avgs[i] = _innerloop(i)
+        if self.num_procs <= 1:
+            for i in trange(n_classes):
+                b_avgs[i] = _innerloop(i)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
+            ray.init(
+                _temp_dir=config["ray"]["temp_dir"].as_filename(),
+                num_cpus=self.num_procs,
+                num_gpus=0,
+            )
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
@@ -750,7 +763,11 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
+            ray.init(
+                _temp_dir=config["ray"]["temp_dir"].as_filename(),
+                num_cpus=self.num_procs,
+                num_gpus=0,
+            )
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
