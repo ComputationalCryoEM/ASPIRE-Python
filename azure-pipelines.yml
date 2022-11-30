@@ -120,6 +120,37 @@ jobs:
     displayName: pytest
 
 - job:
+  displayName: macOS-12
+  pool:
+    vmImage: 'macOS-12'
+  strategy:
+    matrix:
+      Python38:
+        python.version: '3.8'
+
+  steps:
+  - bash: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      sudo chown -R $USER $CONDA
+    displayName: Add conda to PATH
+
+  - bash: conda update -q -y conda
+    displayName: Update conda
+
+  - bash: conda clean -i -t -y
+    displayName: Removing conda cached package tarballs.
+
+  - bash: conda env create --name myEnvironment --file environment.yml
+    displayName: Create Anaconda environment
+
+  - bash: |
+      source activate myEnvironment
+      pip install -e .[dev]
+      pip freeze --all
+      pytest --durations=50 -s
+    displayName: pytest
+
+- job:
   displayName: windows-latest
   pool:
     vmImage: 'windows-latest'
