@@ -52,7 +52,10 @@ class OrientSymmTestCase(TestCase):
             )
 
             self.cl_orient_ests[order] = CLSymmetryC3C4(
-                self.srcs[order], symmetry=f"C{order}", n_theta=self.n_theta
+                self.srcs[order],
+                symmetry=f"C{order}",
+                n_theta=self.n_theta,
+                max_shift=1 / self.L,
             )
 
     def tearDown(self):
