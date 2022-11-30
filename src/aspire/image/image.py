@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Iterable
+from warnings import catch_warnings, filterwarnings
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -12,55 +14,6 @@ from aspire.utils import crop_pad_2d, grid_2d
 from aspire.utils.matrix import anorm
 
 logger = logging.getLogger(__name__)
-
-
-def _im_translate2(im, shifts):
-    """
-    Translate image by shifts
-    :param im: An Image instance to be translated.
-    :param shifts: An array of size n-by-2 specifying the shifts in pixels.
-        Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
-    :return: An Image instance translated by the shifts.
-
-    TODO: This implementation has been moved here from aspire.aspire.abinitio and is faster than _im_translate.
-    """
-
-    if not isinstance(im, Image):
-        logger.warning(
-            "_im_translate2 expects an Image, attempting to convert array."
-            "Expects array of size n-by-L-by-L."
-        )
-        im = Image(im)
-
-    if shifts.ndim == 1:
-        shifts = shifts[np.newaxis, :]
-
-    n_shifts = shifts.shape[0]
-
-    if shifts.shape[1] != 2:
-        raise ValueError("Input `shifts` must be of size n-by-2")
-
-    if n_shifts != 1 and n_shifts != im.n_images:
-        raise ValueError("The number of shifts must be 1 or match the number of images")
-
-    resolution = im.res
-    grid = xp.asnumpy(
-        fft.ifftshift(xp.asarray(np.ceil(np.arange(-resolution / 2, resolution / 2))))
-    )
-    om_y, om_x = np.meshgrid(grid, grid)
-    phase_shifts = np.einsum("ij, k -> ijk", om_x, shifts[:, 0]) + np.einsum(
-        "ij, k -> ijk", om_y, shifts[:, 1]
-    )
-    # TODO: figure out how why the result of einsum requires reshape
-    phase_shifts = phase_shifts.reshape(n_shifts, resolution, resolution)
-    phase_shifts /= resolution
-
-    mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
-    im_f = xp.asnumpy(fft.fft2(xp.asarray(im.asnumpy())))
-    im_translated_f = im_f * mult_f
-    im_translated = np.real(xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f))))
-
-    return Image(im_translated)
 
 
 def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
@@ -174,8 +127,36 @@ class Image:
     def sqrt(self):
         return Image(np.sqrt(self.data))
 
-    def flip_axes(self):
+    @property
+    def T(self):
+        """
+        Abbreviation for transpose.
+
+        :return: Image instance.
+        """
+        return self.transpose()
+
+    def transpose(self):
+        """
+        Returns a new Image instance with image data axes transposed.
+
+        :return: Image instance.
+        """
         return Image(np.transpose(self.data, (0, 2, 1)))
+
+    def flip(self, axis=1):
+        """
+        Flip image stack data along axis using numpy.flip().
+
+        :param axis: Optionally specify axis as integer or tuple.
+            Defaults to axis=1.
+
+        :return: Image instance.
+        """
+        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
+            raise ValueError("Cannot flip axis 0: stack axis.")
+
+        return Image(np.flip(self.data, axis))
 
     def __repr__(self):
         return f"{self.n_images} images of size {self.res}x{self.res}"
@@ -197,6 +178,15 @@ class Image:
         """
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
+
+        n_shifts = shifts.shape[0]
+
+        if not shifts.shape[1] == 2:
+            raise ValueError("Input shifts must be of shape (n_images, 2) or (1, 2).")
+        if not n_shifts == 1 and not n_shifts == self.n_images:
+            raise ValueError(
+                "The number of shifts must be 1 or equal to self.n_images."
+            )
 
         return self._im_translate(shifts)
 
@@ -316,7 +306,9 @@ class Image:
         ), "Number of rotation matrices must match the number of images"
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
+        pts_rot = aspire.volume.rotated_grids(L, rot_matrices).astype(
+            self.dtype, copy=False
+        )
         pts_rot = pts_rot.reshape((3, -1))
 
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L**2)
@@ -330,22 +322,43 @@ class Image:
 
         return aspire.volume.Volume(vol)
 
-    def show(self, columns=5, figsize=(20, 10)):
+    def show(self, columns=5, figsize=(20, 10), colorbar=True):
         """
         Plotting Utility Function.
 
         :param columns: Number of columns in a row of plots.
         :param figsize: Figure size in inches, consult `matplotlib.figure`.
+        :param colorbar: Optionally plot colorbar to show scale.
+            Defaults to True. Accepts `bool` or `dictionary`,
+            where the dictionary is passed to `matplotlib.pyplot.colorbar`.
         """
 
         # We never need more columns than images.
         columns = min(columns, self.n_images)
 
-        plt.figure(figsize=figsize)
-        for i, im in enumerate(self):
-            plt.subplot(self.n_images // columns + 1, columns, i + 1)
-            plt.imshow(im, cmap="gray")
-        plt.show()
+        # Create an empty colorbar options dictionary as needed.
+        colorbar_opts = colorbar if isinstance(colorbar, dict) else dict()
+
+        # Create a context manager for altering warnings
+        with catch_warnings():
+
+            # Filter off specific warning.
+            # sphinx-gallery overrides to `agg` backend, but doesn't handle warning.
+            filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="Matplotlib is currently using agg, which is a"
+                " non-GUI backend, so cannot show the figure.",
+            )
+
+            plt.figure(figsize=figsize)
+            for i, im in enumerate(self):
+                plt.subplot(self.n_images // columns + 1, columns, i + 1)
+                plt.imshow(im, cmap="gray")
+                if colorbar:
+                    plt.colorbar(**colorbar_opts)
+
+            plt.show()
 
 
 class CartesianImage(Image):

@@ -9,9 +9,9 @@ def read(fname):
 
 setup(
     name="aspire",
-    version="0.10.0",
+    version="0.10.1",
     data_files=[
-        ("", ["src/aspire/config.ini"]),
+        ("", ["src/aspire/config_default.yaml"]),
         ("", ["src/aspire/logging.conf"]),
     ],
     include_package_data=True,
@@ -24,6 +24,7 @@ setup(
     author_email="devs.aspire@gmail.com",
     install_requires=[
         "click",
+        "confuse>=2.0.0",
         "finufft",
         "gemmi>=0.4.8",
         "joblib",
@@ -47,7 +48,10 @@ setup(
     #   for example gpu packages which may not install for all users,
     #   or developer tools that are handy but not required for users.
     extras_require={
-        "gpu": ["pycuda", "cupy", "cufinufft==1.2"],
+        "gpu_102": ["pycuda", "cupy-cuda102", "cufinufft==1.2"],
+        "gpu_110": ["pycuda", "cupy-cuda110", "cufinufft==1.2"],
+        "gpu_111": ["pycuda", "cupy-cuda111", "cufinufft==1.2"],
+        "gpu_11x": ["pycuda", "cupy-cuda11x", "cufinufft==1.2"],
         "dev": [
             "black",
             "bumpversion",
@@ -61,6 +65,8 @@ setup(
             "pytest",
             "pytest-cov",
             "pytest-random-order",
+            "pytest-xdist",
+            "requests",
             "sphinxcontrib-bibtex",
             "sphinx-gallery",
             "sphinx-rtd-theme>=0.4.2",
@@ -71,7 +77,7 @@ setup(
     },
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    package_data={"aspire": ["config.ini"]},
+    package_data={"aspire": ["config_default.yaml"]},
     zip_safe=True,
     test_suite="tests",
     classifiers=[

@@ -1,4 +1,3 @@
-import importlib.resources
 import os
 import os.path
 from unittest import TestCase
@@ -9,6 +8,7 @@ import numpy as np
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source.relion import RelionSource
+from aspire.utils import importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -16,7 +16,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class StarFileTestCase(TestCase):
     def setUpStarFile(self, starfile_name):
         # set up RelionSource object for tests
-        with importlib.resources.path(tests.saved_test_data, starfile_name) as starfile:
+        with importlib_path(tests.saved_test_data, starfile_name) as starfile:
             self.src = RelionSource(starfile, data_folder=DATA_DIR, max_rows=12)
 
     def setUp(self):
@@ -64,7 +64,7 @@ class StarFileMainCase(StarFileTestCase):
 class StarFileSingleImage(StarFileTestCase):
     def setUp(self):
         # create new mrcs containing only one particle image
-        with importlib.resources.path(tests.saved_test_data, "sample.mrcs") as path:
+        with importlib_path(tests.saved_test_data, "sample.mrcs") as path:
             stack_path = str(path)
             new_mrcs_path = os.path.join(
                 os.path.dirname(stack_path), "sample_one_image.mrcs"
@@ -75,9 +75,7 @@ class StarFileSingleImage(StarFileTestCase):
         self.setUpStarFile("sample_relion_one_image.star")
 
     def tearDown(self):
-        with importlib.resources.path(
-            tests.saved_test_data, "sample_one_image.mrcs"
-        ) as path:
+        with importlib_path(tests.saved_test_data, "sample_one_image.mrcs") as path:
             os.remove(str(path))
 
     def testMRCSWithOneParticle(self):

@@ -113,9 +113,11 @@ class PyfftwFFT(FFT):
         return b
 
     def fftn(self, a, axes=None, workers=-1):
-        mutex.acquire()
 
+        axes = axes or tuple(range(a.ndim))
         comp_type = complex_type(a.dtype)
+
+        mutex.acquire()
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             b = pyfftw.empty_aligned(a.shape, dtype=comp_type)
@@ -129,9 +131,15 @@ class PyfftwFFT(FFT):
         return b
 
     def ifftn(self, a, axes=None, workers=-1):
-        mutex.acquire()
 
-        comp_type = a.dtype
+        axes = axes or tuple(range(a.ndim))
+
+        # FFTW_BACKWARD requires complex input array, cast as needed.
+        # See https://pyfftw.readthedocs.io/en/latest/source/pyfftw/pyfftw.html#scheme-table
+        comp_type = complex_type(a.dtype)
+        a = a.astype(comp_type, copy=False)
+
+        mutex.acquire()
         try:
             a_ = pyfftw.empty_aligned(a.shape, dtype=comp_type)
             b = pyfftw.empty_aligned(a.shape, dtype=comp_type)

@@ -1,4 +1,3 @@
-import importlib.resources
 import os
 import random
 import shutil
@@ -17,6 +16,7 @@ from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
+from aspire.utils import importlib_path
 
 
 class CoordinateSourceTestCase(TestCase):
@@ -25,7 +25,7 @@ class CoordinateSourceTestCase(TestCase):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.data_folder = self.tmpdir.name
         # get path to test .mrc file
-        with importlib.resources.path(tests.saved_test_data, "sample.mrc") as test_path:
+        with importlib_path(tests.saved_test_data, "sample.mrc") as test_path:
             self.original_mrc_path = str(test_path)
         # save test data root dir
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
@@ -481,8 +481,20 @@ class CoordinateSourceTestCase(TestCase):
         # assert that the particles saved are correct
         for i in range(10):
             self.assertTrue(np.array_equal(imgs[i], saved_mrcs_stack[i]))
-        # assert that the star file has no metadata: the only col is _rlnImageName
-        self.assertEqual(list(saved_star[""].columns), ["_rlnImageName"])
+        # assert that the star file has the correct metadata
+        self.assertEqual(
+            saved_star[""].columns.tolist(),
+            ["_rlnImageName", "_rlnCoordinateX", "_rlnCoordinateY"],
+        )
+        # assert that all the correct coordinates were saved
+        for i in range(10):
+            self.assertEqual(
+                src._center_from_box_coord(src.particles[i][1]),
+                [
+                    src.get_metadata("_rlnCoordinateX", i),
+                    src.get_metadata("_rlnCoordinateY", i),
+                ],
+            )
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error

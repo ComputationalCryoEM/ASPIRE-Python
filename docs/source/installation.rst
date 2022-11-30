@@ -1,7 +1,7 @@
 Installation
 ============
 
-ASPIRE is based on Python 3.7, and comes with an ``environment.yml`` for reconstructing a working Conda environment to run the package.
+ASPIRE comes with an ``environment.yml`` for reproducing a working Conda environment based on Python 3.8 to run the package.
 The package is tested on Linux/Windows/Mac OS X. Pre-built binaries are available for all platform-specific components. No manual
 compilation should be needed.
 
@@ -32,7 +32,7 @@ Finally, we install the ``aspire`` package inside the activated environment. Thi
 
 ::
 
-   conda create --name aspire_env python=3.7 pip
+   conda create --name aspire_env python=3.8 pip
    conda activate aspire_env
    pip install aspire
 
@@ -99,6 +99,42 @@ Make sure all unit tests run correctly by doing:
 
 Tests currently take around 5 minutes to run, but this depends on your specific machine's resources.
 
+Installing GPU Extensions
+*************************
+
+GPU extensions can be installed using pip.
+Extensions are grouped based on CUDA versions.
+To find the CUDA driver version, run ``nvidia-smi``.
+
+.. list-table:: CUDA GPU Extension Versions
+   :widths: 25 25
+   :header-rows: 1
+
+   * - CUDA Version
+     - ASPIRE Extension
+   * - 10.2
+     - gpu_102
+   * - 11.0
+     - gpu_110
+   * - 11.1
+     - gpu_111
+   * - >=11.2
+     - gpu_11x
+
+For example, if you have CUDA 11.7 installed on your system,
+the command below would install GPU packages required for ASPIRE.
+
+::
+
+    # From PyPI
+    pip install -e "aspire[gpu_11x]"
+
+    # From a local git repo
+    pip install -e ".[gpu_11x]"
+    
+By default if GPU extensions are correctly installed,
+ASPIRE should automatically begin using the GPU for select components
+(such as those using ``nufft``).
 
 Generating Documentation
 ************************

@@ -140,19 +140,23 @@ class UniversalBasisMixin:
     def testEvaluate(self):
         # evaluate should take a NumPy array and return an Image/Volume
         _class = self.getClass()
-        result = self.basis.evaluate(np.zeros((self.basis.count)))
+        result = self.basis.evaluate(np.zeros((self.basis.count), dtype=self.dtype))
         self.assertTrue(isinstance(result, _class))
 
     def testEvaluate_t(self):
         # evaluate_t should take an Image/Volume and return a NumPy array
         _class = self.getClass()
-        result = self.basis.evaluate_t(_class(np.zeros((self.L,) * self.basis.ndim)))
+        result = self.basis.evaluate_t(
+            _class(np.zeros((self.L,) * self.basis.ndim, dtype=self.dtype))
+        )
         self.assertTrue(isinstance(result, np.ndarray))
 
     def testExpand(self):
         _class = self.getClass()
         # expand should take an Image/Volume and return a NumPy array
-        result = self.basis.expand(_class(np.zeros((self.L,) * self.basis.ndim)))
+        result = self.basis.expand(
+            _class(np.zeros((self.L,) * self.basis.ndim, dtype=self.dtype))
+        )
         self.assertTrue(isinstance(result, np.ndarray))
 
     def testInitWithIntSize(self):

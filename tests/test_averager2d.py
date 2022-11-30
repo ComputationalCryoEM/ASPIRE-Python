@@ -1,6 +1,7 @@
 import importlib
 import logging
 import os
+import platform
 from unittest import TestCase
 
 import numpy as np
@@ -32,8 +33,12 @@ def xfail_ray_dev():
     Currently ray multiprocessing of the averager is xfail for numpy>=1.22.
     This unsupported configuration is forced in the '-dev' test environments.
     Return whether we expect test to fail using ray multiprocessing.
+
+    While Ray seems to work fine locally for OSX, we have experienced
+    timeouts due to hangs on Azure.  This code will disable the flaky
+    environments by only attempting to run on Linux platforms.
     """
-    return all(
+    xfail = all(
         [
             importlib.util.find_spec("ray"),  # 'ray' installed
             parse_version(get_distribution("numpy").version)
@@ -41,6 +46,10 @@ def xfail_ray_dev():
             num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
         ]
     )
+    # Don't run for OSX/Windows and don't abuse GitHub Actions
+    skip = (platform.system != "Linux") or (os.getenv("GITHUB_ACTIONS") == "true")
+
+    return xfail or skip
 
 
 # Ignore Gimbal lock warning for our in plane rotations.
@@ -124,7 +133,9 @@ class Averager2DBase:
         # Construct a sequence of rotation matrices using thetas
         _rots = np.empty((self.n_img, 3, 3), dtype=self.dtype)
         for n, theta in enumerate(self.thetas):
-            # Note we negate theta to match Rotation convention.
+            # `theta` is CCW rotation.
+            # We'll rotate the test images by -theta,
+            #   so the alignments should produce a correction of `theta`
             _rots[n] = r(-theta)
 
         # Use our Rotation class (maybe it should be able to do this one day?)
@@ -175,16 +186,13 @@ class AligningAverager2DBase(Averager2DBase):
         _ = avgr.average(self.classes, self.reflections, self.coefs)
         return avgr
 
-    def test_rotations_estimate(self):
+    def test_attributes(self):
         avgr = self._call_averager()
+
         self.assertTrue(hasattr(avgr, "rotations"))
 
-    def test_shifts_estimate(self):
-        avgr = self._call_averager()
         self.assertTrue(hasattr(avgr, "shifts"))
 
-    def test_correlations_estimate(self):
-        avgr = self._call_averager()
         self.assertTrue(hasattr(avgr, "correlations"))
 
     def _getSrc(self):
@@ -272,8 +280,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
             self.basis,
             self._getSrc(),
             n_angles=self.n_search_angles,
-            n_x_shifts=1,
-            n_y_shifts=1,
+            radius=2,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
@@ -299,7 +306,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
-    num_procs = 1 if xfail_ray_dev() else None
+    num_procs = 1 if xfail_ray_dev() else 2
 
     def testAverager(self):
         """
