@@ -1,7 +1,7 @@
 Installation
 ============
 
-ASPIRE is based on Python 3.7, and comes with an ``environment.yml`` for reconstructing a working Conda environment to run the package.
+ASPIRE comes with an ``environment.yml`` for reproducing a working Conda environment based on Python 3.8 to run the package.
 The package is tested on Linux/Windows/Mac OS X. Pre-built binaries are available for all platform-specific components. No manual
 compilation should be needed.
 
@@ -32,7 +32,7 @@ Finally, we install the ``aspire`` package inside the activated environment. Thi
 
 ::
 
-   conda create --name aspire_env python=3.7 pip
+   conda create --name aspire_env python=3.8 pip
    conda activate aspire_env
    pip install aspire
 

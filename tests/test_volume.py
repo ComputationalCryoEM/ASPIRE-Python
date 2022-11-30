@@ -134,6 +134,7 @@ class VolumeTestCase(TestCase):
             self.assertTrue(np.allclose(self.vols_1, vols_loaded_double))
 
     def testProject(self):
+        # first test with synthetic data
         # Create a stack of rotations to test.
         r_stack = np.empty((12, 3, 3), dtype=self.dtype)
         for r, ax in enumerate(["x", "y", "z"]):
@@ -159,6 +160,14 @@ class VolumeTestCase(TestCase):
             # The projection and Volume should be equivalent
             #  centered along the rotation axis for multiples of pi/2.
             self.assertTrue(np.allclose(vol_along_axis, prj_along_axis))
+
+        # test with saved ribosome data
+        results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_down8_imgs32.npy"))
+        vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
+        rots = np.load(os.path.join(DATA_DIR, "rand_rot_matrices32.npy"))
+        rots = np.moveaxis(rots, 2, 0)
+        imgs_clean = vols.project(0, rots).asnumpy()
+        self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
     # Parameterize over even and odd resolutions
     @parameterized.expand([(res,), (res - 1,)])
