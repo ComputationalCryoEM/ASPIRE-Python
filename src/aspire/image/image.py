@@ -16,55 +16,6 @@ from aspire.utils.matrix import anorm
 logger = logging.getLogger(__name__)
 
 
-def _im_translate2(im, shifts):
-    """
-    Translate image by shifts
-    :param im: An Image instance to be translated.
-    :param shifts: An array of size n-by-2 specifying the shifts in pixels.
-        Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
-    :return: An Image instance translated by the shifts.
-
-    TODO: This implementation has been moved here from aspire.aspire.abinitio and is faster than _im_translate.
-    """
-
-    if not isinstance(im, Image):
-        logger.warning(
-            "_im_translate2 expects an Image, attempting to convert array."
-            "Expects array of size n-by-L-by-L."
-        )
-        im = Image(im)
-
-    if shifts.ndim == 1:
-        shifts = shifts[np.newaxis, :]
-
-    n_shifts = shifts.shape[0]
-
-    if shifts.shape[1] != 2:
-        raise ValueError("Input `shifts` must be of size n-by-2")
-
-    if n_shifts != 1 and n_shifts != im.n_images:
-        raise ValueError("The number of shifts must be 1 or match the number of images")
-
-    resolution = im.res
-    grid = xp.asnumpy(
-        fft.ifftshift(xp.asarray(np.ceil(np.arange(-resolution / 2, resolution / 2))))
-    )
-    om_y, om_x = np.meshgrid(grid, grid)
-    phase_shifts = np.einsum("ij, k -> ijk", om_x, shifts[:, 0]) + np.einsum(
-        "ij, k -> ijk", om_y, shifts[:, 1]
-    )
-    # TODO: figure out how why the result of einsum requires reshape
-    phase_shifts = phase_shifts.reshape(n_shifts, resolution, resolution)
-    phase_shifts /= resolution
-
-    mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
-    im_f = xp.asnumpy(fft.fft2(xp.asarray(im.asnumpy())))
-    im_translated_f = im_f * mult_f
-    im_translated = np.real(xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f))))
-
-    return Image(im_translated)
-
-
 def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     """
     Normalize backgrounds and apply to a stack of images
@@ -227,6 +178,15 @@ class Image:
         """
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
+
+        n_shifts = shifts.shape[0]
+
+        if not shifts.shape[1] == 2:
+            raise ValueError("Input shifts must be of shape (n_images, 2) or (1, 2).")
+        if not n_shifts == 1 and not n_shifts == self.n_images:
+            raise ValueError(
+                "The number of shifts must be 1 or equal to self.n_images."
+            )
 
         return self._im_translate(shifts)
 
