@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Iterable
-from math import prod
 from warnings import catch_warnings, filterwarnings, warn
 
 import matplotlib.pyplot as plt
@@ -101,7 +100,7 @@ class Image:
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 2
         self.stack_shape = self._data.shape[:-2]
-        self.n_images = prod(self.stack_shape)
+        self.n_images = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
     @property
@@ -141,7 +140,7 @@ class Image:
             shape = args
 
         # Sanity check the size
-        if shape != (-1,) and prod(shape) != self.n_images:
+        if shape != (-1,) and np.prod(shape) != self.n_images:
             raise ValueError(
                 f"Number of images {self.n_images} cannot be reshaped to {shape}."
             )

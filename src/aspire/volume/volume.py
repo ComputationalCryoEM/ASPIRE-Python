@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Iterable
-from math import prod
 
 import mrcfile
 import numpy as np
@@ -86,7 +85,7 @@ class Volume:
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 3
         self.stack_shape = self._data.shape[:-3]
-        self.n_vols = prod(self.stack_shape)
+        self.n_vols = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
     def asnumpy(self):
@@ -135,7 +134,7 @@ class Volume:
             shape = args
 
         # Sanity check the size
-        if shape != (-1,) and prod(shape) != self.n_vols:
+        if shape != (-1,) and np.prod(shape) != self.n_vols:
             raise ValueError(
                 f"Number of volumes {self.n_vols} cannot be reshaped to {shape}."
             )
