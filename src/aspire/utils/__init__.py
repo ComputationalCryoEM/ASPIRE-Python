@@ -27,6 +27,7 @@ from .misc import (  # isort:skip
     pairs_to_linear,
     powerset,
     sha256sum,
+    fuzzy_mask,
 )
 
 from .logging import get_full_version, tqdm, trange
