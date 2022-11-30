@@ -8,6 +8,7 @@ import sys
 from itertools import chain, combinations
 
 import numpy as np
+from scipy.special import erf
 
 from aspire.utils import grid_1d, grid_2d, grid_3d
 from aspire.utils.rotation import Rotation
@@ -109,7 +110,7 @@ def gaussian_1d(size, mu=0, sigma=1, dtype=np.float64):
     return np.exp(-p).astype(dtype, copy=False)
 
 
-def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), dtype=np.float64):
+def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), indexing="yx", dtype=np.float64):
     """
     Returns the 2D Gaussian
 
@@ -120,26 +121,37 @@ def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), dtype=np.float64):
     in a square 2D numpy array.
 
     :param size: The length of each dimension of the returned array (pixels)
-    :param mu: A 2-tuple, :math:`(\\mu_x, \\mu_y)`, indicating the center of the Gaussian
-    :param sigma: A 2-tuple, :math:`(\\sigma_x, \\sigma_y)`, of the standard
+    :param mu: Iterable of len(2), :math:`(\\mu_x, \\mu_y)`, indicating the center of the Gaussian
+    :param sigma: Iterable of len(2) or constant, :math:`(\\sigma_x, \\sigma_y)`, of the standard
             deviation in the x and y directions. A single value, :math:`\\sigma`, can be
             used when :math:`\\sigma_x = \\sigma_y`.
+    :param indexing: The order of axis indexing, passed to `aspire.utils.grid_2d`
     :param dtype: dtype of returned array
     :return: Numpy array (2D)
     """
     if np.ndim(sigma) == 0:
         sigma = (sigma, sigma)
-    else:
-        assert (
-            isinstance(sigma, tuple) and len(sigma) == 2
-        ), "sigma must be a scalar or 2-tuple."
+
+    mu = np.array(mu, dtype=dtype)
+    sigma = np.array(sigma, dtype=dtype)
+    if len(mu) != 2:
+        raise ValueError("`mu` must be len(2).")
+    if len(sigma) != 2:
+        raise ValueError("`sigma` must be a scalar or len(2).")
 
     # Construct centered mesh
-    g = grid_2d(size, shifted=False, normalized=False, indexing="yx", dtype=dtype)
+    g = grid_2d(size, shifted=False, normalized=False, indexing=indexing, dtype=dtype)
+
+    if indexing == "yx":
+        mu, sigma = mu[::-1], sigma[::-1]
+        g["x"], g["y"] = g["y"], g["x"]
+    elif indexing != "xy":
+        raise ValueError("Indexing must be `yx` or `xy`.")
 
     p = (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2) + (g["y"] - mu[1]) ** 2 / (
         2 * sigma[1] ** 2
     )
+
     return np.exp(-p).astype(dtype, copy=False)
 
 
@@ -155,33 +167,39 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.fl
     in a 3D numpy array.
 
     :param size: The length of each dimension of the returned array (pixels)
-    :param mu: A 3-tuple, :math:`(\\mu_x, \\mu_y, \\mu_z)`, indicating the center of the Gaussian
-    :param sigma: A 3-tuple, :math:`(\\sigma_x, \\sigma_y, \\sigma_z)`, of the standard deviation
+    :param mu: Iterable of len(3), :math:`(\\mu_x, \\mu_y, \\mu_z)`, indicating the center of the Gaussian
+    :param sigma: Iterable of len(3) or constant, :math:`(\\sigma_x, \\sigma_y, \\sigma_z)`, of the standard deviation
             in the x, y, and z directions. A single value, :math:`\\sigma`, can be
             used when :math:`\\sigma_x = \\sigma_y = \\sigma_z`
+    :param indexing: The order of axis indexing, passed to `aspire.utils.grid_3d`
     :param dtype: dtype of returned array
     :return: Numpy array (3D)
     """
     if np.ndim(sigma) == 0:
         sigma = (sigma, sigma, sigma)
-    else:
-        assert (
-            isinstance(sigma, tuple) and len(sigma) == 3
-        ), "sigma must be a scalar or 3-tuple."
 
-    if indexing == "zyx":
-        mu, sigma = mu[::-1], sigma[::-1]
-    elif indexing != "xyz":
-        raise ValueError("Indexing must be `zyx` or `xyz`.")
+    mu = np.array(mu, dtype=dtype)
+    sigma = np.array(sigma, dtype=dtype)
+    if len(mu) != 3:
+        raise ValueError("`mu` must be len(3).")
+    if len(sigma) != 3:
+        raise ValueError("`sigma` must be a scalar or len(3).")
 
     # Construct centered mesh
     g = grid_3d(size, shifted=False, normalized=False, indexing=indexing, dtype=dtype)
+
+    if indexing == "zyx":
+        mu, sigma = mu[::-1], sigma[::-1]
+        g["x"], g["y"], g["z"] = g["z"], g["y"], g["x"]
+    elif indexing != "xyz":
+        raise ValueError("Indexing must be `zyx` or `xyz`.")
 
     p = (
         (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2)
         + (g["y"] - mu[1]) ** 2 / (2 * sigma[1] ** 2)
         + (g["z"] - mu[2]) ** 2 / (2 * sigma[2] ** 2)
     )
+
     return np.exp(-p).astype(dtype, copy=False)
 
 
@@ -255,6 +273,33 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     vals = np.sqrt(1 + (g["x"] - x0) ** 2 + (g["y"] - y0) ** 2)
 
     return (peak / vals).astype(dtype)
+
+
+def fuzzy_mask(L, r0, risetime, origin=None):
+    """
+    Create a centered 1D to 3D fuzzy mask of radius r0
+
+    Made with an error function with effective rise time.
+
+    :param L: The sizes of image in tuple structure
+    :param r0: The specified radius
+    :param risetime: The rise time for `erf` function
+    :param origin: The coordinates of origin
+    :return: The desired fuzzy mask
+    """
+
+    center = [sz // 2 + 1 for sz in L]
+    if origin is None:
+        origin = center
+
+    grids = [np.arange(1 - org, ell - org + 1) for ell, org in zip(L, origin)]
+    XYZ = np.meshgrid(*grids, indexing="ij")
+    XYZ_sq = [X**2 for X in XYZ]
+    R = np.sqrt(np.sum(XYZ_sq, axis=0))
+    k = 1.782 / risetime
+    m = 0.5 * (1 - erf(k * (R - r0)))
+
+    return m
 
 
 def all_pairs(n):
