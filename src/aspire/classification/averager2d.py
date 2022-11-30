@@ -356,7 +356,11 @@ class BFRAverager2D(AligningAverager2D):
 
         else:
             logger.info(f"Starting Pool({self.num_procs})")
-            ray.init(_temp_dir=config["ray"]["temp_dir"].as_filename())
+            ray.init(
+                _temp_dir=config["ray"]["temp_dir"].as_filename(),
+                num_cpus=self.num_procs,
+                num_gpus=0,
+            )
             with Pool(self.num_procs) as p:
                 results = p.map(_innerloop, range(n_classes))
             ray.shutdown()
