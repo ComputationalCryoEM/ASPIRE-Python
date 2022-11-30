@@ -627,7 +627,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # Averaging in composite_basis
             return np.mean(neighbors_coefs, axis=0)
 
-        if self.num_procs <=1:
+        if self.num_procs <= 1:
             for i in trange(n_classes):
                 b_avgs[i] = _innerloop(i)
         else:
