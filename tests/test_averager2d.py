@@ -163,7 +163,7 @@ class AligningAverager2DBase(Averager2DBase):
     """
 
     averager = AligningAverager2D
-    num_procs = 1 if xfail_ray_dev() else None
+    num_procs = 1 if xfail_ray_dev() else 2
 
     def setUp(self):
 
