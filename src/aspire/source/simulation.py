@@ -42,10 +42,33 @@ class Simulation(ImageSource):
         noise_filter=None,
     ):
         """
-        A Cryo-EM simulation
-        Other than the base class attributes, it has:
+        Simulation generates a synthetic dataset of realistic cryo-EM images, stored as an Image object.
+        The images are produced by taking projections of a supplied Volume object and applying optional
+        filters.
 
-        :param angles: A n-by-3 array of rotation angles
+        :param L: Resolution of projection images (integer).
+            Default is 8 or vols.resolution if a volume is provided.
+        :param n: The number of images to generate (integer).
+        :param vols: A Volume object. Default is a LegacyVolume.
+        :param states: A 1d array of n integers in the interval [0, C). The i'th integer indicates
+            the volume used to produce the i'th projection image. Default is a random set.
+        :param unique_filters: A list of Filter objects to be applied to projection images.
+        :param filter_indices: A 1d array of n integers indicating the unique_filter indices associated
+            with each image. Default is a random set of filter indices.
+        :param offsets: A n-by-2 array of coordinates to offset the images. Default is a normally
+            distributed set of offsets.
+        :param amplitude: A 1d array of n amplitudes to scale the projection images. Default is
+            a random set in the interval [2/3, 3/2].
+        :param dtype: dtype for the Simulation
+        :param C: Numer of Volumes used to generate projection images. If no Volume is provided
+            the default is C=2, otherwise C=self.vols.n_vols.
+        :param angles: A n-by-3 array of Euler angles for use in projection. Default is a random set.
+        :param seed: Random seed.
+        :param memory: str or None. The path of the base directory to use as a data store or None.
+            If None is given, no caching is performed.
+        :param noise_filter: A Filter object.
+
+        :return: A Simulation object.
         """
         super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
