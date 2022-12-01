@@ -160,8 +160,6 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
 class CnSymmetricVolume(GaussianBlobsVolume):
     """
     A Volume object with cyclically symmetric volumes constructed of random 3D Gaussian blobs.
-
-    :return: Rotation object containing the Dn symmetry group and the Identity.
     """
 
     def __init__(self, L, C, order, K=16, alpha=1, seed=None, dtype=np.float64):
@@ -196,7 +194,7 @@ class CnSymmetricVolume(GaussianBlobsVolume):
         In the case of an AsymmetricVolume or LegacyVolume, `symmetry_group`
         contains only the identity.
 
-        :return: Rotation object containing the Cn symmetry group and the Identity.
+        :return: Rotation object containing the Cn symmetry group and the identity.
         """
         angles = np.zeros((self.order, 3), dtype=self.dtype)
         angles[:, 2] = 2 * np.pi * np.arange(self.order) / self.order
@@ -206,8 +204,6 @@ class CnSymmetricVolume(GaussianBlobsVolume):
 class DnSymmetricVolume(CnSymmetricVolume):
     """
     A Volume object with n-fold dihedral symmetry constructed of random 3D Gaussian blobs.
-
-    :return: Rotation object containing the Dn symmetry group and the Identity.
     """
 
     @property
@@ -220,6 +216,8 @@ class DnSymmetricVolume(CnSymmetricVolume):
         The Dn symmetry group contains all elements of the Cn symmetry group.
         In addition, for each element of the Cn symmetric group we rotate by
         pi about a perpendicular axis, in this case the y-axis.
+
+        :return: Rotation object containing the Dn symmetry group and the identity.
         """
         # Rotations to induce cyclic symmetry
         angles = 2 * np.pi * np.arange(self.order, dtype=self.dtype) / self.order
@@ -252,7 +250,7 @@ class TSymmetricVolume(GaussianBlobsVolume):
         the symmetry group elements into rotation vectors to generate the rotation
         matrices via the `from_rotvec()` method.
 
-        :return: Rotation object containing tetrahedral symmetry group and Identity.
+        :return: Rotation object containing the tetrahedral symmetry group and the identity.
         """
         # C3 rotation vectors, ie. angle * axis.
         axes_C3 = np.array(
@@ -295,6 +293,8 @@ class OSymmetricVolume(GaussianBlobsVolume):
         regular octahedron, 4 C3 rotation groups whose axes pass through the midpoints of two of
         its opposite faces, and 6 C2 rotation groups whose axes pass through the midpoints of two of
         its opposite edges.
+
+        :return: Rotation object containing the octahedral symmetry group and the identity.
         """
 
         # C4 rotation vectors, ie angle * axis
