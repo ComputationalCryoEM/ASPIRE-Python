@@ -215,7 +215,9 @@ class AligningAverager2D(Averager2D):
             for i in trange(n_classes):
                 b_avgs[i] = _innerloop(i)
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.average"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,
@@ -355,7 +357,9 @@ class BFRAverager2D(AligningAverager2D):
                 rotations[k], correlations[k] = _innerloop(k)
 
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,
@@ -587,7 +591,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
 
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,
@@ -652,7 +658,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             for i in trange(n_classes):
                 b_avgs[i] = _innerloop(i)
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.average"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,
@@ -782,7 +790,9 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             for k in trange(n_classes):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,
