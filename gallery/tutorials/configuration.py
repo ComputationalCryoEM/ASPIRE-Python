@@ -155,8 +155,9 @@ print(aspire.config.dump())
 #          console_level: ERROR
 #          log_file_level: DEBUG
 #
-# By default, the filename of the log file is ``aspire-{MM-DD-YYYYThh:mm:ss}.log``. This can be customized via the ``log_file_name``
-# option. Note that if the same log file name is used for multiple sessions, it will be appended to, not overwritten.
+# By default, the filename of the log file is ``aspire-{%Y-%m-%dT%H:%m:%s.%f}.log``, the timestamp making it unique to every session.
+# This can be customized via the ``log_file_name`` option. Note that if the same log file name is used for multiple sessions, it will
+# be appended to, not overwritten.
 #
 # More details on logging behavior in Python can be found in the `Python logging HOWTO`_.
 
