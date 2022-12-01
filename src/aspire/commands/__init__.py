@@ -1,4 +1,5 @@
 import click
+
 from aspire import config
 
 # universal option for aspire commands
