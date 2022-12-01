@@ -23,13 +23,14 @@ log_dir_path.mkdir(parents=True, exist_ok=True)
 # We'll reassign the evaluated log_dir back into the config so it displays well.
 config["logging"]["log_dir"] = log_dir_path.as_posix()
 
-# get logging options from `confuse` config
+# default config file does not have 'log_file'
 try:
-    log_file = config["logging"]["log_filename"].get()
+    log_file = config["logging"]["log_file"].get()
 except confuse.exceptions.NotFoundError:
     dtime = datetime.now().strftime("%Y-%m-%dT%H-%M-%S.%f")
     log_file = f"aspire-{dtime}.log"
 
+# DEBUG, INFO, etc.
 console_level = config["logging"]["console_level"].get()
 log_file_level = config["logging"]["log_file_level"].get()
 
@@ -64,9 +65,6 @@ if config["logging"]["log_exceptions"].get(int):
     import sys
 
     sys.excepthook = handle_exception
-
-# if config["logging"]["level"] == "DEBUG":
-#   logging.setLevel(logging.DEBUG)
 
 __all__ = []
 for _, modname, _ in pkgutil.iter_modules(aspire.__path__):
