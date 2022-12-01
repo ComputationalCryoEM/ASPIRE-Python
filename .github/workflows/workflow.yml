@@ -2,7 +2,7 @@ name: ASPIRE Python Pip CI
 
 on:
   schedule:
-    - cron: '37 1 * * *'
+    - cron: '* */1 * * *'
 
 jobs:
   check:
