@@ -248,9 +248,9 @@ class Simulation(ImageSource):
             self.filter_indices[indices],
         )
 
-    def estimate_signal(self, sample_n=100):
+    def estimate_signal_mean(self, sample_n=100):
         """
-        Estimate the signal power as the mean of `sample_n` projections.
+        Estimate the signal mean of `sample_n` projections.
 
         :param sample_n: Number of projections used for estimate.
         :returns: Estimated signal power.
@@ -260,7 +260,19 @@ class Simulation(ImageSource):
         logger.info(f"Estimated signal mu {estimated_mu}")
         return estimated_mu
 
-    def estimate_snr(self, sample_n=100):
+    def estimate_signal_var(self, sample_n=100):
+        """
+        Estimate the signal the variance of `sample_n` projections.
+
+        :param sample_n: Number of projections used for estimate.
+        :returns: Estimated signal power.
+        """
+        # Note, for simulation we are assuming `sample_n` is random
+        estimated_var = np.var(self.projections[:sample_n].asnumpy())
+        logger.info(f"Estimated signal var {estimated_var}")
+        return estimated_var
+
+    def estimate_asnr(self, sample_n=100):
         """
         Estimate the SNR of the simulated data set using estimated mu/variance.
 
@@ -272,7 +284,20 @@ class Simulation(ImageSource):
 
         noise_var = self.noise_adder.noise_var
 
-        return self.estimate_signal(sample_n=sample_n) / noise_var
+        return self.estimate_signal_mean(sample_n=sample_n) / noise_var
+
+    def estimate_snr(self, sample_n=100):
+        """
+        Estimate the SNR of the simulated data set using
+        estimated signal variance / noise variance.
+
+        :param sample_n: Number of projections used for estimate.
+        :returns: Estimated signal to noise ratio.
+        """
+
+        noise_var = self.noise_adder.noise_var
+
+        return self.estimate_signal_var(sample_n=sample_n) / noise_var
 
     @classmethod
     def from_snr(cls, target_snr, *args, **kwargs):
