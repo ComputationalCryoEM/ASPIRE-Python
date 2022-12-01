@@ -23,13 +23,25 @@ log_dir_path.mkdir(parents=True, exist_ok=True)
 # We'll reassign the evaluated log_dir back into the config so it displays well.
 config["logging"]["log_dir"] = log_dir_path.as_posix()
 
+# get logging options from `confuse` config
+try:
+    log_file = config["logging"]["log_filename"].get()
+except confuse.exceptions.NotFoundError:
+    dtime = datetime.now().strftime("%Y-%m-%dT%H-%M-%S.%f")
+    log_file = f"aspire-{dtime}.log"
+
+console_level = config["logging"]["console_level"].get()
+log_file_level = config["logging"]["log_file_level"].get()
+
 # Generates file name details and opens log file defined in config file.
 # The default is to use the current time stamp provided in the dictionary,
 #   but that is not required if a user wishes to customize logging config.
 logging.config.fileConfig(
     os.path.join(os.path.dirname(__file__), "logging.conf"),
     defaults={
-        "dt_stamp": datetime.now().strftime("%Y-%m-%dT%H-%M-%S.%f"),
+        "console_level": console_level,
+        "log_file_level": log_file_level,
+        "log_file": log_file,
         "log_dir": log_dir_path.as_posix(),
     },
 )
@@ -53,6 +65,8 @@ if config["logging"]["log_exceptions"].get(int):
 
     sys.excepthook = handle_exception
 
+# if config["logging"]["level"] == "DEBUG":
+#   logging.setLevel(logging.DEBUG)
 
 __all__ = []
 for _, modname, _ in pkgutil.iter_modules(aspire.__path__):

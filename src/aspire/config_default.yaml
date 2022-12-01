@@ -13,6 +13,15 @@ logging:
     # tqdm_disable=True disables progress bars.
     tqdm_disable: False
 
+    # set Python logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    # logging level for console output:
+    console_level: INFO
+    # logging level for log file output:
+    log_file_level: DEBUG
+
+    # custom log file name can be set using 'log_file'
+    # defaults to '[log_dir]/aspire-{timestamp}.log'
+
 nufft:
     # NUFFT backends should be one of finufft, cufinufft, pynfft.
     # They will be attempted in order from left to right.
