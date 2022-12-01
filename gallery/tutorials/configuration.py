@@ -130,8 +130,9 @@ print(aspire.config.dump())
 # as in the example above):
 #
 #    .. code-block:: yaml
-#    [logging]
-#    log_dir=/tmp/my_proj/aspire_logs
+#
+#    logging:
+#        log_dir=/tmp/my_proj/aspire_logs
 #
 # ASPIRE directs output streams to both the console and to a log file during each session. The logging verbosity for both of these
 # can be specified individually via ``console_level`` and ``log_file_level``. These levels are passed through to Python's logging
@@ -140,17 +141,19 @@ print(aspire.config.dump())
 # detailed ``DEBUG`` messages are saved to disk:
 #
 #    .. code-block:: yaml
-#    [logging]
-#    console_level: INFO
-#    log_file_level: DEBUG
+#
+#    logging:
+#        console_level: INFO
+#        log_file_level: DEBUG
 #
 # The following modification would save all ``DEBUG`` messages to the log file, but only print ``ERROR`` and ``CRITICAL`` messages
 # in the terminal:
 #
 #    .. code-block:: yaml
-#    [logging]
-#    console_level: ERROR
-#    log_file_level: DEBUG
+#
+#    logging:
+#        console_level: ERROR
+#        log_file_level: DEBUG
 #
 # By default, the filename of the log file is ``aspire-{MM-DD-YYYYThh:mm:ss}.log``. This can be customized via the ``log_file_name``
 # option. Note that if the same log file name is used for multiple sessions, it will be appended to, not overwritten.
