@@ -264,7 +264,7 @@ class Simulation(ImageSource):
         """
         Estimate the SNR of the simulated data set using estimated mu/variance.
 
-        https://en.wikipedia.org/wiki/Signal-to-noise_ratio#Alternate_definition
+        https://en.wikipedia.org/wiki/Signal-to-noise_ratio#Alternative_definition
 
         :param sample_n: Number of projections used for estimate.
         :returns: Estimated signal to noise ratio.
