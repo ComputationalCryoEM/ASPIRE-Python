@@ -3,6 +3,7 @@ import logging
 import click
 
 from aspire.basis import FFBBasis2D
+from aspire.commands import log_level_option
 from aspire.denoising.denoiser_cov2d import DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.source.relion import RelionSource
@@ -46,6 +47,7 @@ logger = logging.getLogger(__name__)
     type=str,
     help="Specified method for denoising 2D images",
 )
+@log_level_option
 def denoise(
     data_folder,
     starfile_in,
@@ -55,10 +57,12 @@ def denoise(
     max_resolution,
     noise_type,
     denoise_method,
+    loglevel,
 ):
     """
     Denoise the images and output the clean images using the default CWF method.
     """
+    logger.setLevel(getattr(logging, loglevel))
     # Create a source object for 2D images
     logger.info(f"Read in images from {starfile_in} and preprocess the images.")
     source = RelionSource(

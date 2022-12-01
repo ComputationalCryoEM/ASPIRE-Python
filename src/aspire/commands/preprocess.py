@@ -2,6 +2,7 @@ import logging
 
 import click
 
+from aspire.commands import log_level_option
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source.relion import RelionSource
 
@@ -64,6 +65,7 @@ logger = logging.getLogger(__name__)
     default=False,
     help="Whether to overwrite MRC files if they already exist",
 )
+@log_level_option
 def preprocess(
     data_folder,
     starfile_in,
@@ -78,10 +80,12 @@ def preprocess(
     batch_size,
     save_mode,
     overwrite,
+    loglevel,
 ):
     """
     Preprocess the raw images and output desired images for future analysis
     """
+    logger.setLevel(getattr(logging, loglevel))
     # Create a source object for 2D images
     logger.info(f"Read in images from {starfile_in} and preprocess the images.")
     source = RelionSource(

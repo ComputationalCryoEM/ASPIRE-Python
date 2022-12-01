@@ -3,6 +3,7 @@ import logging
 import click
 
 from aspire.basis import FBBasis3D
+from aspire.commands import log_level_option
 from aspire.covariance import CovarianceEstimator
 from aspire.noise import WhiteNoiseEstimator
 from aspire.reconstruction import MeanEstimator
@@ -32,8 +33,13 @@ logger = logging.getLogger(__name__)
     help="Resolution of downsampled images read from starfile",
 )
 @click.option("--cg_tol", default=1e-5, help="Tolerance for optimization convergence")
-def cov3d(starfile, data_folder, pixel_size, max_rows, max_resolution, cg_tol):
+@log_level_option
+def cov3d(
+    starfile, data_folder, pixel_size, max_rows, max_resolution, cg_tol, loglevel
+):
     """Estimate mean volume and covariance from a starfile."""
+
+    logger.setLevel(getattr(logging, loglevel))
 
     source = RelionSource(
         starfile, data_folder=data_folder, pixel_size=pixel_size, max_rows=max_rows
