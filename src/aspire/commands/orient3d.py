@@ -65,7 +65,7 @@ def orient3d(
     n_theta,
     max_shift,
     shift_step,
-    log_level_option,
+    loglevel,
 ):
     """
     Input images from STAR file and estimate orientational angles
