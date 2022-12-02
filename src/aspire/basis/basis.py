@@ -38,9 +38,9 @@ class Basis:
         self.ell_max = ell_max
         self.ndim = ndim
         if self.ndim == 2:
-            self.cls = Image
+            self._cls = Image
         elif self.ndim == 3:
-            self.cls = Volume
+            self._cls = Volume
         else:
             raise RuntimeError("Basis ndim must be 2 or 3")
         self.dtype = np.dtype(dtype)
@@ -92,7 +92,7 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        return self.cls(self._evaluate(v))
+        return self._cls(self._evaluate(v))
 
     def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
@@ -113,10 +113,10 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        if not isinstance(v, self.cls):
+        if not isinstance(v, self._cls):
             logger.warning(
                 f"{self.__class__.__name__}::evaluate_t"
-                f" passed numpy array instead of {self.cls}."
+                f" passed numpy array instead of {self._cls}."
             )
         else:
             v = v.asnumpy()
@@ -196,7 +196,7 @@ class Basis:
         v = np.zeros((n_data, self.count), dtype=x.dtype)
 
         for isample in range(0, n_data):
-            b = self.evaluate_t(self.cls(x[isample])).T
+            b = self.evaluate_t(self._cls(x[isample])).T
             # TODO: need check the initial condition x0 can improve the results or not.
             v[isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
