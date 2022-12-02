@@ -23,13 +23,9 @@ log_dir_path.mkdir(parents=True, exist_ok=True)
 # We'll reassign the evaluated log_dir back into the config so it displays well.
 config["logging"]["log_dir"] = log_dir_path.as_posix()
 
-# default config file does not have 'log_file'
-try:
-    log_file = config["logging"]["log_file"].get()
-except confuse.exceptions.NotFoundError:
-    dtime = datetime.now().strftime("%Y-%m-%dT%H-%M-%S.%f")
-    log_file = f"aspire-{dtime}.log"
-
+# log output file prefix
+log_prefix = config["logging"]["log_prefix"].get()
+    
 # DEBUG, INFO, etc.
 console_level = config["logging"]["console_level"].get()
 log_file_level = config["logging"]["log_file_level"].get()
@@ -42,8 +38,9 @@ logging.config.fileConfig(
     defaults={
         "console_level": console_level,
         "log_file_level": log_file_level,
-        "log_file": log_file,
         "log_dir": log_dir_path.as_posix(),
+        "log_prefix": log_prefix,
+        "dt_stamp" : datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
     },
 )
 

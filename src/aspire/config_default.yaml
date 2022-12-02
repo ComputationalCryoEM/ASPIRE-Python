@@ -19,8 +19,9 @@ logging:
     # logging level for log file output:
     log_file_level: DEBUG
 
-    # custom log file name can be set using 'log_file'
-    # defaults to '[log_dir]/aspire-{timestamp}.log'
+    # custom log file name prefix can be set using 'log_prefix'
+    # will appear as '[log_dir]/[log_prefix]-{timestamp}.log'
+    log_prefix: ctf_proj
 
 nufft:
     # NUFFT backends should be one of finufft, cufinufft, pynfft.
