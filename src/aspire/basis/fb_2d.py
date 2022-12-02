@@ -245,8 +245,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             `self.count` and whose first dimensions correspond to
             first dimensions of `v`.
         """
-        v = v.asnumpy().T  # RCOPT
-
+        v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(
             x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))

@@ -197,11 +197,10 @@ class FFBBasis2D(FBBasis2D):
         freqs = np.reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # number of 2D image samples
-        n_images = x.n_images
-        x_data = x.data
+        n_images = x.shape[0]
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pf = nufft(x_data, 2 * pi * freqs)
+        pf = nufft(x, 2 * pi * freqs)
         pf = np.reshape(pf, (n_images, n_r, n_theta))
 
         # Recover "negative" frequencies from "positive" half plane.

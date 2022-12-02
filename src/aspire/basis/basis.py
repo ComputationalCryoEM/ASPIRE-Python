@@ -118,7 +118,8 @@ class Basis:
                 f"{self.__class__.__name__}::evaluate_t"
                 f" passed numpy array instead of {self.cls}."
             )
-            v = self.cls(v)
+        else:
+            v = v.asnumpy()
         return self._evaluate_t(v)
 
     def _evaluate_t(self, v):
