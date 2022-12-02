@@ -335,7 +335,17 @@ class CustomNoiseAdder(NoiseAdder):
     """
 
     @property
-    def noise_var(self, sample_n=100, sample_res=128):
+    def noise_var(self):
+        """
+        Return noise variance.
+
+        CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
+
+        If you require tuning the noise_var sampling, see `get_noise_var`.
+        """        
+        return self.get_noise_var()
+    
+    def get_noise_var(self, sample_n=100, sample_res=128):
         """
         Return noise variance.
 

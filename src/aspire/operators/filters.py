@@ -99,7 +99,7 @@ class Filter:
         if omega.ndim == 1:
             assert self.radial, "Cannot evaluate a non-radial filter on 1D input array."
         elif omega.ndim == 2 and self.dim:
-            assert omega.shape[0] == self.dim, f"Omega must be of size {self.dim} x n"
+            assert omega.shape[0] == self.dim, f"Omega must be of size {self.dim} x n; Passed omega.shape {omega.shape}"
 
         if self.radial:
             if omega.ndim > 1:
