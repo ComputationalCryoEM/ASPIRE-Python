@@ -155,7 +155,7 @@ print(aspire.config.dump())
 #          console_level: ERROR
 #          log_file_level: DEBUG
 #
-# By default, the filename of the log file is ``aspire-{%Y-%m-%dT%H:%M:%S.%f}.log``. The prefix before the timestamp can be customized
+# By default, the filename of the log file is ``aspire-{%Y-%m-%dT%H-%M-%S.%f}.log``. The prefix before the timestamp can be customized
 # via the ``log_prefix`` option.
 #
 # More details on logging behavior in Python can be found in the `Python logging HOWTO`_.
