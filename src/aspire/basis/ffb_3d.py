@@ -289,8 +289,6 @@ class FFBBasis3D(FBBasis3D):
             `self.count` and whose remaining dimensions correspond to higher
             dimensions of `x`.
         """
-        x = x.asnumpy()
-
         # roll dimensions
         sz_roll = x.shape[:-3]
         x = x.reshape((-1, *self.sz))
