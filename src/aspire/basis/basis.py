@@ -37,6 +37,12 @@ class Basis:
         self.count = 0
         self.ell_max = ell_max
         self.ndim = ndim
+        if self.ndim == 2:
+            self.cls = Image
+        elif self.ndim == 3:
+            self.cls = Volume
+        else:
+            raise RuntimeError("Basis ndim must be 2 or 3")
         self.dtype = np.dtype(dtype)
         if self.dtype not in (np.float32, np.float64):
             raise NotImplementedError(
@@ -86,10 +92,7 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        if self.ndim == 2:
-            return Image(self._evaluate(v))
-        elif self.ndim == 3:
-            return Volume(self._evaluate(v))
+        return self.cls(self._evaluate(v))
 
     def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
@@ -110,16 +113,12 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        if not isinstance(v, Image) and not isinstance(v, Volume):
-            if self.ndim == 2:
-                _class = Image
-            elif self.ndim == 3:
-                _class = Volume
+        if not isinstance(v, self.cls):
             logger.warning(
                 f"{self.__class__.__name__}::evaluate_t"
-                f" passed numpy array instead of {_class}."
+                f" passed numpy array instead of {self.cls}."
             )
-            v = _class(v)
+            v = self.cls(v)
         return self._evaluate_t(v)
 
     def _evaluate_t(self, v):
@@ -181,11 +180,6 @@ class Basis:
         # convert to standardized shape e.g. (L,L) to (1,L,L)
         x = x.reshape((-1, *self.sz))
 
-        if x.ndim == 3:
-            _class = Image
-        else:
-            _class = Volume
-
         operator = LinearOperator(
             shape=(self.count, self.count),
             matvec=lambda v: self.evaluate_t(self.evaluate(v)),
@@ -201,7 +195,7 @@ class Basis:
         v = np.zeros((n_data, self.count), dtype=x.dtype)
 
         for isample in range(0, n_data):
-            b = self.evaluate_t(_class(x[isample])).T
+            b = self.evaluate_t(self.cls(x[isample])).T
             # TODO: need check the initial condition x0 can improve the results or not.
             v[isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
