@@ -320,7 +320,7 @@ class Simulation(ImageSource):
             )
 
         # Estimate the required noise variance
-        noise_var = sim.estimate_signal() / target_snr
+        noise_var = sim.estimate_signal_var() / target_snr
 
         # Assign the noise_adder
         logger.info("Appending WhiteNoiseAdder to generation pipeline")
