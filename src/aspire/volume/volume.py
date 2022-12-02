@@ -87,14 +87,16 @@ class Volume:
         """
         return self._data
 
-    def astype(self, dtype):
+    def astype(self, dtype, copy=True):
         """
         Return `Volume` instance with the prescribed dtype.
 
         :param dtype: Numpy dtype
+        :param copy: Boolean, optionally avoid copying if Volume.dtype already matches.
+            Defaults to True.
         :return: Volume instance
         """
-        return Volume(self.asnumpy().astype(dtype))
+        return Volume(self.asnumpy().astype(dtype, copy=copy))
 
     def __getitem__(self, item):
         # this is one reason why you might want Volume and VolumeStack classes...
