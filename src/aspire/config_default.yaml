@@ -21,7 +21,7 @@ logging:
 
     # custom log file name prefix can be set using 'log_prefix'
     # will appear as '[log_dir]/[log_prefix]-{timestamp}.log'
-    log_prefix: ctf_proj
+    log_prefix: aspire
 
 nufft:
     # NUFFT backends should be one of finufft, cufinufft, pynfft.
