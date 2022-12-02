@@ -40,7 +40,7 @@ logging.config.fileConfig(
         "log_file_level": log_file_level,
         "log_dir": log_dir_path.as_posix(),
         "log_prefix": log_prefix,
-        "dt_stamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+        "dt_stamp": datetime.now().strftime("%Y-%m-%dT%H-%M-%S.%f"),
     },
 )
 
