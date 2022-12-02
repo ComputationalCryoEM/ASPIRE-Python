@@ -25,7 +25,7 @@ config["logging"]["log_dir"] = log_dir_path.as_posix()
 
 # log output file prefix
 log_prefix = config["logging"]["log_prefix"].get()
-    
+
 # DEBUG, INFO, etc.
 console_level = config["logging"]["console_level"].get()
 log_file_level = config["logging"]["log_file_level"].get()
@@ -40,7 +40,7 @@ logging.config.fileConfig(
         "log_file_level": log_file_level,
         "log_dir": log_dir_path.as_posix(),
         "log_prefix": log_prefix,
-        "dt_stamp" : datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        "dt_stamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f"),
     },
 )
 
