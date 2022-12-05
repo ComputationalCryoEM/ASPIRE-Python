@@ -284,7 +284,7 @@ class FFBBasis3D(FBBasis3D):
 
         :param x: The coefficient array in the standard 3D coordinate basis
             to be evaluated. The last three dimensions must equal `self.sz`.
-        :return v: The evaluation of the coefficient array `v` in the FB basis.
+        :return: The evaluation of the coefficient array `x` in the FB basis.
             This is an array of vectors whose last dimension equals
             `self.count` and whose remaining dimensions correspond to higher
             dimensions of `x`.
