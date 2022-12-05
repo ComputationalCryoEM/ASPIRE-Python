@@ -103,15 +103,15 @@ class PolarBasis2D(Basis):
 
         :param x: The Image instance representing coefficient array in the
             standard 2D coordinate basis to be evaluated.
-        :return v: The evaluation of the coefficient array `v` in the polar
+        :return: The evaluation of the coefficient array `x` in the polar
             Fourier grid. This is an array of vectors whose first dimension
-            corresponds to x.n_images, and last dimension equals `self.count`.
+            corresponds to `x.shape[0]`, and last dimension equals `self.count`.
         """
-        nimgs = x.n_images
+        nimgs = x.shape[0]
 
         half_size = self.ntheta // 2
 
-        pf = nufft(x.asnumpy(), self.freqs)
+        pf = nufft(x, self.freqs)
 
         pf = pf.reshape((nimgs, self.nrad, half_size))
         v = np.concatenate((pf, pf.conj()), axis=1)

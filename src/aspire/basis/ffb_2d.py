@@ -187,9 +187,9 @@ class FFBBasis2D(FBBasis2D):
 
         :param x: The Image instance representing coefficient array in the
             standard 2D coordinate basis to be evaluated.
-        :return v: The evaluation of the coefficient array `v` in the FB basis.
+        :return: The evaluation of the coefficient array `x` in the FB basis.
             This is an array of vectors whose last dimension equals `self.count`
-            and whose first dimension correspond to `x.n_images`.
+            and whose first dimension correspond to `x.shape[0]`.
         """
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
@@ -197,11 +197,10 @@ class FFBBasis2D(FBBasis2D):
         freqs = np.reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # number of 2D image samples
-        n_images = x.n_images
-        x_data = x.data
+        n_images = x.shape[0]
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pf = nufft(x_data, 2 * pi * freqs)
+        pf = nufft(x, 2 * pi * freqs)
         pf = np.reshape(pf, (n_images, n_r, n_theta))
 
         # Recover "negative" frequencies from "positive" half plane.
