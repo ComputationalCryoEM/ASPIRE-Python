@@ -17,10 +17,12 @@ from ._basis_util import Steerable2DMixin, UniversalBasisMixin
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-# NOTE: Class with default values is already present, so don't list it below.
+# NOTE: Default class values (ie. L=8, dtype=np.float32) are listed here and below to
+# to be picked up by TestCase. This means the default values are tested twice by the Mixins.
 @parameterized_class(
     ("L", "dtype"),
     [
+        (8, np.float32),
         (8, np.float64),
         (16, np.float32),
         (16, np.float64),
