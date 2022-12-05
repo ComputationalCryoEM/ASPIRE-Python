@@ -38,7 +38,7 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
     )
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, L, epsilon):
-        basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64)
+        basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64, match_fb=False)
         dense_b = basis.create_dense_matrix()
 
         # create sample particle
@@ -67,7 +67,7 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         ]
     )
     def testFastVDense(self, L, epsilon):
-        basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64)
+        basis = FLEBasis2D(L, epsilon=epsilon, dtype=np.float64, match_fb=False)
         dense_b = basis.create_dense_matrix()
 
         # get sample coefficients
@@ -214,7 +214,7 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         L = 32
         basis = FLEBasis2D(L)
         # load test CTF
-        ctf = np.load(os.path.join(DATA_DIR, "ctf_32x32.npy"))
+        ctf = np.load(os.path.join(DATA_DIR, "ctf_32x32.npy")).reshape(1, 32, 32)
         ctf = ctf / np.max(np.abs(ctf.flatten()))
 
         # get sample images

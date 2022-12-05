@@ -81,6 +81,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         self._precomp()
 
+        # Steerable basis indices
+        self._build_indices()
+
+    def _build_indices(self):
+        self.angular_indices = None
+        self.radial_indices = None
+        self.signs_indices = None
+
     def _precomp(self):
 
         # Find bessel functions zeros (the eigenvalues of the Laplacian on
@@ -152,10 +160,21 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Creates meshgrids based on basis size.
         """
-        grid = grid_2d(self.nres)
-        self.xs = grid["x"]
-        self.ys = grid["y"]
-        self.rs = grid["r"]
+        if self.match_fb:
+            # creates correct odd-resolution grid
+            # matching other FB classes
+            grid = grid_2d(self.nres)
+            self.xs = grid["x"]
+            self.ys = grid["y"]
+            self.rs = grid["r"]
+        else:
+            # original implementation
+            R = self.nres // 2
+            x = np.arange(-R, R + self.nres % 2)
+            y = np.arange(-R, R + self.nres % 2)
+            xs, ys = np.meshgrid(x, y)
+            self.xs, self.ys = xs / R, ys / R
+            self.rs = np.sqrt(self.xs**2 + self.ys**2)
         self.radial_mask = self.rs > 1 + 1e-13
 
     def _compute_nufft_points(self):
@@ -441,7 +460,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             coefficients.
         """
         # See Section 3.5
-        imgs = imgs.asnumpy().copy()
+        imgs = imgs.copy()
         imgs[:, self.radial_mask] = 0
         z = self._step1_t(imgs)
         b = self._step2_t(z)
