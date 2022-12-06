@@ -102,7 +102,7 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         evaluate_t = basis.evaluate(basis.evaluate_t(x))
         expand = basis.evaluate(basis.expand(evaluate_t))
 
-        relerr = self.relerr(evaluate_t.asnumpy(), expand.asnumpy())
+        relerr = self.relerr(expand.asnumpy(), evaluate_t.asnumpy())
         self.assertTrue(relerr < epsilon)
 
     def testLowPass(self):
@@ -267,8 +267,8 @@ class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
         img = sim.clean_images[:]
         return img
 
-    def relerr(self, x, y):
+    def relerr(self, base, approx):
         # relative error of two arrays
-        x = np.array(x).flatten()
-        y = np.array(y).flatten()
-        return np.linalg.norm(x - y) / np.linalg.norm(x)
+        base = np.array(base).flatten()
+        approx = np.array(approx).flatten()
+        return np.linalg.norm(base - approx) / np.linalg.norm(base)
