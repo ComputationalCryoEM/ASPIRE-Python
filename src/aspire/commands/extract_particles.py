@@ -8,6 +8,7 @@ from click import UsageError
 from aspire.commands import log_level_option
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import BoxesCoordinateSource, CentersCoordinateSource
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
 

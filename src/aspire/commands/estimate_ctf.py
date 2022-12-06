@@ -6,6 +6,7 @@ import click
 import aspire.commands._config  # noqa: F401
 from aspire import ctf
 from aspire.commands import log_level_option
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger("aspire")
 

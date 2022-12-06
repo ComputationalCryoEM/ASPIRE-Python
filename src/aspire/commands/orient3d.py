@@ -5,6 +5,7 @@ import click
 from aspire.abinitio import CLSyncVoting
 from aspire.commands import log_level_option
 from aspire.source.relion import RelionSource
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
 

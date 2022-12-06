@@ -7,6 +7,7 @@ from aspire.commands import log_level_option
 from aspire.denoising.denoiser_cov2d import DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.source.relion import RelionSource
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
 

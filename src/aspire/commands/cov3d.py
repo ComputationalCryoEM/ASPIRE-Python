@@ -8,6 +8,7 @@ from aspire.covariance import CovarianceEstimator
 from aspire.noise import WhiteNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source.relion import RelionSource
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
 
