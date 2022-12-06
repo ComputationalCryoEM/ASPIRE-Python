@@ -97,11 +97,11 @@ def setConsoleLoggingLevel(level_name):
     Note this will supersede the `logging.console_level` option stored in ASPIRE's configuration file.
     :param level_name: One of "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
     """
-    # handler list is ordered according to logging.conf
     if level_name not in LOGGING_LEVEL_NAMES:
         raise ValueError(
             f"{level_name} not a recognized logging level. Must be one of {LOGGING_LEVEL_NAMES}"
         )
+    # handler list is ordered according to logging.conf
     stream_handler = logging.getLogger().handlers[0]
     stream_handler.setLevel(getattr(logging, level_name))
 
