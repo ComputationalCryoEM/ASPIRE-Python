@@ -88,6 +88,7 @@ def preprocess(
     """
     # Set desired logging option for the command line
     setConsoleLoggingLevel(loglevel)
+
     # Create a source object for 2D images
     logger.info(f"Read in images from {starfile_in} and preprocess the images.")
     source = RelionSource(

@@ -71,7 +71,9 @@ def orient3d(
     """
     Input images from STAR file and estimate orientational angles
     """
-    logger.setLevel(getattr(logging, loglevel))
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
+
     logger.info(f"Read in images from {starfile_in} and estimate orientational angles.")
     # Create a source object for 2D images
     source = RelionSource(

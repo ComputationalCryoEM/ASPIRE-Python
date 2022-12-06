@@ -97,7 +97,9 @@ def extract_particles(
 
     aspire extract-particles --mrc_paths=my/data/*.mrc --coord_paths=my/data/coords/*.coord --starfile_out=my_dataset_stack.star --particle_size=256 --centers
     """
-    logger.setLevel(getattr(logging, loglevel))
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
+
     # mrc_paths and coord_paths can be either paths to text files
     # listing the micrograph and coordinate file paths, or glob-type
     # expressions

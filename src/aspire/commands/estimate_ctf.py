@@ -80,7 +80,8 @@ def estimate_ctf(
     the aspire.ctf module.
     """
 
-    logger.setLevel(getattr(logging, loglevel.upper()))
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
 
     return ctf.estimate_ctf(
         data_folder,

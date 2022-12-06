@@ -40,7 +40,8 @@ def cov3d(
 ):
     """Estimate mean volume and covariance from a starfile."""
 
-    logger.setLevel(getattr(logging, loglevel))
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
 
     source = RelionSource(
         starfile, data_folder=data_folder, pixel_size=pixel_size, max_rows=max_rows

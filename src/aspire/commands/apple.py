@@ -88,7 +88,8 @@ def apple(
 ):
     """Pick and save particles from one or more mrc files."""
 
-    logger.setLevel(getattr(logging, loglevel))
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
 
     # Convert model_opts string to a dictionary
     if model_opts is not None:
