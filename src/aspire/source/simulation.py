@@ -34,7 +34,7 @@ class Simulation(ImageSource):
         filter_indices=None,
         offsets=None,
         amplitudes=None,
-        dtype=np.float32,
+        dtype=None,
         C=2,
         angles=None,
         seed=0,
@@ -47,30 +47,36 @@ class Simulation(ImageSource):
 
         :param angles: A n-by-3 array of rotation angles
         """
-        super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
         self.seed = seed
 
         # If a Volume is not provided we default to the legacy Gaussian blob volume.
-        # If a Simulation resolution is not provided, we default to L=8.
+        # If a Simulation resolution or dtype is not provided, we default to L=8 and np.float32.
         if vols is None:
             self.vols = LegacyVolume(
-                L=L or 8, C=2, seed=self.seed, dtype=self.dtype
+                L=L or 8,
+                C=2,
+                seed=self.seed,
+                dtype=dtype or np.float32,
             ).generate()
         else:
+            if dtype is not None and vols.dtype != dtype:
+                raise RuntimeError(
+                    f"Explicit {self.__class__.__name__} dtype {dtype}"
+                    f" does not match provided vols.dtype {vols.dtype}."
+                    " Please change the Volume using `astype`"
+                    " or the Simuation `dtype` argument."
+                )
+            # Assign the explicitly provided volume.
             self.vols = vols
 
         if not isinstance(self.vols, Volume):
             raise RuntimeError("`vols` should be a Volume instance or `None`.")
 
-        if self.vols.dtype != self.dtype:
-            raise RuntimeError(
-                f"{self.__class__.__name__} dtype {self.dtype}"
-                f" does not match provided vols.dtype {self.vols.dtype}."
-            )
-            self.vols = self.vols.astype(self.dtype)
-
-        self.L = self.vols.resolution
+        # Infer the details from volume when possible.
+        super().__init__(
+            L=self.vols.resolution, n=n, dtype=self.vols.dtype, memory=memory
+        )
 
         # If a user provides both `L` and `vols`, resolution should match.
         if L is not None and L != self.L:
