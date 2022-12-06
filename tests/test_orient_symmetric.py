@@ -1,9 +1,10 @@
 from unittest import TestCase
 
 import numpy as np
+import pytest
 from numpy import pi, random
 from numpy.linalg import det, norm
-from parameterized import parameterized
+from parameterized import param, parameterized, parameterized_class
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
@@ -18,53 +19,44 @@ from aspire.utils.random import randn
 from aspire.volume import CnSymmetricVolume
 
 
-class OrientSymmTestCase(TestCase):
+class OrientSymmTestCase:
     def setUp(self):
-        self.L = 64
-        self.n_img = 32
-        self.dtype = np.float32
+        self.n_img = 24
         self.n_theta = 360
 
-        # Generate CnSymmetricVolume, associated Simulation object, and common-lines class.
+        # Generate CnSymmetricVolume, associated Simulation object, and orientation estimation object.
         # For the Simulation object we use clean, non-shifted projection images.
-        orders = [3, 4]
-        self.vols = {}
-        self.srcs = {}
-        self.cl_orient_ests = {}
+        self.vol = CnSymmetricVolume(
+            L=self.L,
+            C=1,
+            order=self.order,
+            seed=0,
+            dtype=self.dtype,
+        ).generate()
 
-        for order in orders:
-            self.vols[order] = CnSymmetricVolume(
-                L=self.L,
-                C=1,
-                order=order,
-                seed=0,
-                dtype=self.dtype,
-            ).generate()
+        self.src = Simulation(
+            L=self.L,
+            n=self.n_img,
+            offsets=np.zeros((self.n_img, 2)),
+            dtype=self.dtype,
+            vols=self.vol,
+            C=1,
+            seed=123,
+        )
 
-            self.srcs[order] = Simulation(
-                L=self.L,
-                n=self.n_img,
-                offsets=np.zeros((self.n_img, 2)),
-                dtype=self.dtype,
-                vols=self.vols[order],
-                C=1,
-                seed=123,
-            )
-
-            self.cl_orient_ests[order] = CLSymmetryC3C4(
-                self.srcs[order],
-                symmetry=f"C{order}",
-                n_theta=self.n_theta,
-                max_shift=1 / self.L,
-            )
+        self.cl_orient_est = CLSymmetryC3C4(
+            self.src,
+            symmetry=f"C{self.order}",
+            n_theta=self.n_theta,
+            max_shift=1 / self.L,
+        )
 
     def tearDown(self):
         pass
 
-    @parameterized.expand([(3,), (4,)])
-    def testEstimateRotations(self, order):
-        src = self.srcs[order]
-        cl_symm = self.cl_orient_ests[order]
+    def testEstimateRotations(self):
+        src = self.src
+        cl_symm = self.cl_orient_est
 
         # Estimate rotations.
         cl_symm.estimate_rotations()
@@ -72,7 +64,7 @@ class OrientSymmTestCase(TestCase):
 
         # g-synchronize ground truth rotations.
         rots_gt = src.rotations
-        rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt)
+        rots_gt_sync = cl_symm.g_sync(rots_est, self.order, rots_gt)
 
         # Register estimates to ground truth rotations and compute MSE.
         Q_mat, flag = register_rotations(rots_est, rots_gt_sync)
@@ -82,14 +74,13 @@ class OrientSymmTestCase(TestCase):
         # Assert mse is small.
         self.assertTrue(mse_reg < 0.005)
 
-    @parameterized.expand([(3,), (4,)])
-    def testRelativeRotations(self, order):
+    def testRelativeRotations(self):
         n_img = self.n_img
 
         # Simulation source and common lines estimation instance
         # corresponding to volume with C3 or C4 symmetry.
-        src = self.srcs[order]
-        cl_symm = self.cl_orient_ests[order]
+        src = self.src
+        cl_symm = self.cl_orient_est
 
         # Estimate relative viewing directions.
         cl_symm.build_clmatrix()
@@ -99,7 +90,7 @@ class OrientSymmTestCase(TestCase):
         # Each Rij belongs to the set {Ri.Tg_n^sRj, JRi.Tg_n^sRjJ},
         # s = 1, 2, ..., order. We find the mean squared error over
         # the minimum error between Rij and the above set.
-        gs = cyclic_rotations(order, self.dtype).matrices
+        gs = cyclic_rotations(self.order, self.dtype).matrices
         rots_gt = src.rotations
 
         # Find the angular distance between each Rij and the ground truth.
@@ -110,8 +101,8 @@ class OrientSymmTestCase(TestCase):
             Rij_J = J_conjugate(Rij)
             Ri_gt = rots_gt[i]
             Rj_gt = rots_gt[j]
-            dist = np.zeros(order)
-            for s in range(order):
+            dist = np.zeros(self.order)
+            for s in range(self.order):
                 Rij_s_gt = Ri_gt.T @ gs[s] @ Rj_gt
                 dist[s] = np.minimum(
                     Rotation.angle_dist(Rij, Rij_s_gt),
@@ -123,14 +114,13 @@ class OrientSymmTestCase(TestCase):
         # Assert that the mean_angular_distance is less than 5 degrees.
         self.assertTrue(mean_angular_distance < 5)
 
-    @parameterized.expand([(3,), (4,)])
-    def testSelfRelativeRotations(self, order):
+    def testSelfRelativeRotations(self):
         n_img = self.n_img
 
         # Simulation source and common lines Class corresponding to
         # volume with C3 or C4 symmetry.
-        src = self.srcs[order]
-        cl_symm = self.cl_orient_ests[order]
+        src = self.src
+        cl_symm = self.cl_orient_est
 
         # Estimate self-relative viewing directions, Riis.
         scl = cl_symm._self_clmatrix_c3_c4()
@@ -140,7 +130,7 @@ class OrientSymmTestCase(TestCase):
         # {Ri.Tg_nRi, Ri.Tg_n^{n-1}Ri, JRi.Tg_nRiJ, JRi.Tg_n^{n-1}RiJ}.
         # We find the minimum angular distance between the estimate Rii
         # and the 4 possible ground truths.
-        rots_symm = cyclic_rotations(order, self.dtype).matrices
+        rots_symm = cyclic_rotations(self.order, self.dtype).matrices
         g = rots_symm[1]
         rots_gt = src.rotations
 
@@ -159,14 +149,13 @@ class OrientSymmTestCase(TestCase):
         # Check that mean_angular_distance is less than 5 degrees.
         self.assertTrue(mean_angular_distance < 5)
 
-    @parameterized.expand([(3,), (4,)])
-    def testRelativeViewingDirections(self, order):
+    def testRelativeViewingDirections(self):
         n_img = self.n_img
 
         # Simulation source and common lines Class corresponding to
         # volume with C3 or C4 symmetry.
-        src = self.srcs[order]
-        cl_symm = self.cl_orient_ests[order]
+        src = self.src
+        cl_symm = self.cl_orient_est
 
         # Calculate ground truth relative viewing directions, viis and vijs.
         rots_gt = src.rotations
@@ -240,61 +229,18 @@ class OrientSymmTestCase(TestCase):
         self.assertTrue(angular_dist_vijs < angle_tol)
         self.assertTrue(angular_dist_viis < angle_tol)
 
-    def testGlobalJSync(self):
-        n_img = self.n_img
-
-        # Build a set of outer products of random third rows.
-        vijs, viis, _ = self.buildOuterProducts(n_img)
-
-        # J-conjugate some of these outer products (every other element).
-        vijs_conj, viis_conj = vijs.copy(), viis.copy()
-        vijs_conj[::2] = J_conjugate(vijs_conj[::2])
-        viis_conj[::2] = J_conjugate(viis_conj[::2])
-
-        # Synchronize vijs_conj and viis_conj.
-        # Note: `_global_J_sync()` does not depend on cyclic order, so we can use
-        # either cl_orient_ests[3] or cl_orient_ests[4] to access the method.
-        vijs_sync, viis_sync = self.cl_orient_ests[3]._global_J_sync(
-            vijs_conj, viis_conj
-        )
-
-        # Check that synchronized outer products equal original
-        # up to J-conjugation of the entire set.
-        if (vijs[0] == vijs_sync[0]).all():
-            self.assertTrue(np.allclose(vijs, vijs_sync))
-            self.assertTrue(np.allclose(viis, viis_sync))
-        else:
-            self.assertTrue(np.allclose(vijs, J_conjugate(vijs_sync)))
-            self.assertTrue(np.allclose(viis, J_conjugate(viis_sync)))
-
-    def testEstimateThirdRows(self):
-        n_img = self.n_img
-
-        # Build outer products vijs, viis, and get ground truth third rows.
-        vijs, viis, gt_vis = self.buildOuterProducts(n_img)
-
-        # Estimate third rows from outer products.
-        # Due to factorization of V, these might be negated third rows.
-        vis = self.cl_orient_ests[3]._estimate_third_rows(vijs, viis)
-
-        # Check if all-close up to difference of sign
-        ground_truth = np.sign(gt_vis[0, 0]) * gt_vis
-        estimate = np.sign(vis[0, 0]) * vis
-        self.assertTrue(np.allclose(ground_truth, estimate))
-
-    @parameterized.expand([(3,), (4,)])
-    def testSelfCommonLines(self, order):
+    def testSelfCommonLines(self):
         n_theta = self.n_theta
-        src = self.srcs[order]
+        src = self.src
         L = src.L
-        cl_symm = self.cl_orient_ests[order]
+        cl_symm = self.cl_orient_est
 
         # Initialize common-lines orientation estimation object and compute self-common-lines matrix.
         scl = cl_symm._self_clmatrix_c3_c4()
 
         # Compute ground truth self-common-lines matrix.
         rots = src.rotations
-        scl_gt = self.buildSelfCommonLinesMatrix(rots, order)
+        scl_gt = self.buildSelfCommonLinesMatrix(rots, self.order)
 
         # Since we search for self common lines whose angle differences fall
         # outside of 180 degrees by a tolerance of 2 * (360 // L), we must exclude
@@ -327,11 +273,10 @@ class OrientSymmTestCase(TestCase):
         )
         self.assertTrue(np.allclose(detection_rate, 1.0))
 
-    @parameterized.expand([(3,), (4,)])
-    def testCommonLines(self, order):
+    def testCommonLines(self):
         n_img = self.n_img
-        src = self.srcs[order]
-        cl_symm = self.cl_orient_ests[order]
+        src = self.src
+        cl_symm = self.cl_orient_est
         n_theta = self.n_theta
 
         # Build common-lines matrix.
@@ -340,21 +285,21 @@ class OrientSymmTestCase(TestCase):
 
         # Compare common-line indices with ground truth angles.
         rots = src.rotations  # ground truth rotations
-        rots_symm = cyclic_rotations(order, self.dtype).matrices
+        rots_symm = cyclic_rotations(self.order, self.dtype).matrices
         pairs = all_pairs(n_img)
         within_1_degree = 0
         within_5_degrees = 0
         for (i, j) in pairs:
-            a_ij_s = np.zeros(order)
-            a_ji_s = np.zeros(order)
+            a_ij_s = np.zeros(self.order)
+            a_ji_s = np.zeros(self.order)
             # Convert common-line indices to angles. Use angle of common line in [0, 180).
             cl_ij = (cl[i, j] * 360 / n_theta) % 180
             cl_ji = (cl[j, i] * 360 / n_theta) % 180
 
             # The common-line estimates cl_ij, cl_ji should match the
             # true common-line angles a_ij_s, a_ji_s for some value s,
-            # where s is the number of common-lines induced by the symmetric order.
-            for s in range(order):
+            # where s is the number of common-lines induced by the symmetric self.order.
+            for s in range(self.order):
                 rel_rot = rots[i].T @ rots_symm[s] @ rots[j]
                 a_ij_s[s] = np.rad2deg(np.arctan(-rel_rot[0, 2] / rel_rot[1, 2])) % 180
                 a_ji_s[s] = np.rad2deg(np.arctan(-rel_rot[2, 0] / rel_rot[2, 1])) % 180
@@ -382,6 +327,141 @@ class OrientSymmTestCase(TestCase):
         within_1 = within_1_degree / n_estimates
         self.assertTrue(within_5 > 0.98)
         self.assertTrue(within_1 > 0.90)
+
+    def buildSelfCommonLinesMatrix(self, rots, order):
+        # Construct rotatation matrices associated with cyclic order.
+        rots_symm = cyclic_rotations(order, self.dtype).matrices
+
+        # Build ground truth self-common-lines matrix.
+        scl_gt = np.zeros((self.n_img, 2), dtype=self.dtype)
+        n_theta = self.n_theta
+        g = rots_symm[1]
+        g_n = rots_symm[-1]
+        for i in range(self.n_img):
+            Ri = rots[i]
+
+            U1 = Ri.T @ g @ Ri
+            U2 = Ri.T @ g_n @ Ri
+
+            c1 = np.array([-U1[1, 2], U1[0, 2]])
+            c2 = np.array([-U2[1, 2], U2[0, 2]])
+
+            theta_g = np.arctan2(c1[1], c1[0]) % (2 * np.pi)
+            theta_gn = np.arctan2(c2[1], c2[0]) % (2 * np.pi)
+
+            scl_gt[i, 0] = np.round(theta_g * n_theta / (2 * np.pi)) % n_theta
+            scl_gt[i, 1] = np.round(theta_gn * n_theta / (2 * np.pi)) % n_theta
+
+        return scl_gt
+
+
+@parameterized_class(("L", "order", "dtype"), [(44, 4, np.float32)])
+class OrientSymmSmallSuite(OrientSymmTestCase, TestCase):
+    """Small test suite for OrientSymmTestCase."""
+
+    L = 44
+    order = 3
+    dtype = np.float32
+
+
+@pytest.mark.expensive
+@parameterized_class(
+    ("L", "order", "dtype"),
+    [
+        (44, 4, np.float64),
+        (45, 3, np.float32),
+        (45, 4, np.float32),
+        (45, 3, np.float64),
+        (45, 4, np.float64),
+    ],
+)
+class OrientSymmLargeSuite(OrientSymmTestCase, TestCase):
+    """Large test suite for OrientSymmTestCase."""
+
+    L = 44
+    order = 3
+    dtype = np.float64
+
+
+@parameterized_class(
+    ("L", "dtype"),
+    [
+        (16, np.float32),
+        (16, np.float64),
+        (17, np.float32),
+        (17, np.float64),
+    ],
+)
+class OrderFreeTestCase(TestCase):
+    """Tests for methods that do not depend on cyclic order."""
+
+    def setUp(self):
+        self.n_img = 16
+        self.n_theta = 360
+
+        self.vols = CnSymmetricVolume(
+            L=self.L,
+            C=1,
+            order=3,
+            seed=0,
+            dtype=self.dtype,
+        ).generate()
+
+        self.src = Simulation(
+            L=self.L,
+            n=self.n_img,
+            offsets=np.zeros((self.n_img, 2)),
+            dtype=self.dtype,
+            vols=self.vols,
+            C=1,
+            seed=123,
+        )
+
+        self.orient_est = CLSymmetryC3C4(
+            self.src,
+            symmetry=f"C3",
+            n_theta=self.n_theta,
+            max_shift=1 / self.L,
+        )
+
+    def testGlobalJSync(self):
+        n_img = self.n_img
+        # Build a set of outer products of random third rows.
+        vijs, viis, _ = self.buildOuterProducts(n_img)
+
+        # J-conjugate some of these outer products (every other element).
+        vijs_conj, viis_conj = vijs.copy(), viis.copy()
+        vijs_conj[::2] = J_conjugate(vijs_conj[::2])
+        viis_conj[::2] = J_conjugate(viis_conj[::2])
+
+        # Synchronize vijs_conj and viis_conj.
+        # Note: `_global_J_sync()` does not depend on cyclic order, so we can use
+        # either cl_orient_ests[3] or cl_orient_ests[4] to access the method.
+        vijs_sync, viis_sync = self.orient_est._global_J_sync(vijs_conj, viis_conj)
+
+        # Check that synchronized outer products equal original
+        # up to J-conjugation of the entire set.
+        if (vijs[0] == vijs_sync[0]).all():
+            self.assertTrue(np.allclose(vijs, vijs_sync))
+            self.assertTrue(np.allclose(viis, viis_sync))
+        else:
+            self.assertTrue(np.allclose(vijs, J_conjugate(vijs_sync)))
+            self.assertTrue(np.allclose(viis, J_conjugate(viis_sync)))
+
+    def testEstimateThirdRows(self):
+        n_img = self.n_img
+
+        # Build outer products vijs, viis, and get ground truth third rows.
+        vijs, viis, gt_vis = self.buildOuterProducts(n_img)
+
+        # Estimate third rows from outer products.
+        # Due to factorization of V, these might be negated third rows.
+        vis = self.orient_est._estimate_third_rows(vijs, viis)
+
+        # Check if all-close up to difference of sign
+        ground_truth = np.sign(gt_vis[0, 0]) * gt_vis
+        estimate = np.sign(vis[0, 0]) * vis
+        self.assertTrue(np.allclose(ground_truth, estimate))
 
     def testCompleteThirdRow(self):
         # Complete third row that coincides with z-axis
@@ -423,29 +503,3 @@ class OrientSymmTestCase(TestCase):
             viis[i] = np.outer(gt_vis[i], gt_vis[i])
 
         return vijs, viis, gt_vis
-
-    def buildSelfCommonLinesMatrix(self, rots, order):
-        # Construct rotatation matrices associated with cyclic order.
-        rots_symm = cyclic_rotations(order, self.dtype).matrices
-
-        # Build ground truth self-common-lines matrix.
-        scl_gt = np.zeros((self.n_img, 2), dtype=self.dtype)
-        n_theta = self.n_theta
-        g = rots_symm[1]
-        g_n = rots_symm[-1]
-        for i in range(self.n_img):
-            Ri = rots[i]
-
-            U1 = Ri.T @ g @ Ri
-            U2 = Ri.T @ g_n @ Ri
-
-            c1 = np.array([-U1[1, 2], U1[0, 2]])
-            c2 = np.array([-U2[1, 2], U2[0, 2]])
-
-            theta_g = np.arctan2(c1[1], c1[0]) % (2 * np.pi)
-            theta_gn = np.arctan2(c2[1], c2[0]) % (2 * np.pi)
-
-            scl_gt[i, 0] = np.round(theta_g * n_theta / (2 * np.pi)) % n_theta
-            scl_gt[i, 1] = np.round(theta_gn * n_theta / (2 * np.pi)) % n_theta
-
-        return scl_gt
