@@ -24,11 +24,12 @@ log_dir_path.mkdir(parents=True, exist_ok=True)
 config["logging"]["log_dir"] = log_dir_path.as_posix()
 
 # log output file prefix
-log_prefix = config["logging"]["log_prefix"].get()
+log_prefix = config["logging"]["log_prefix"].get(str)
 
 # DEBUG, INFO, etc.
-console_level = config["logging"]["console_level"].get()
-log_file_level = config["logging"]["log_file_level"].get()
+log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+console_level = config["logging"]["console_level"].as_choice(log_levels)
+log_file_level = config["logging"]["log_file_level"].as_choice(log_levels)
 
 # Generates file name details and opens log file defined in config file.
 # The default is to use the current time stamp provided in the dictionary,
