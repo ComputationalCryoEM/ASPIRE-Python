@@ -101,7 +101,6 @@ def barycentric_interp_sparse(x, xs, ys, s):
         jdx[i, :] = idp
         idx[i, :] = i
 
-    x = x.reshape(-1, 1)
     Iw = np.ones(s, dtype=bool)
     ew = np.zeros((n, 1))
     xtw = np.zeros((n, s - 1))
