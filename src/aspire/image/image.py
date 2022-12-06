@@ -110,6 +110,7 @@ class Image:
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 2
         self.stack_shape = self._data.shape[:-2]
+        self.singleton_shape = self._data.shape[:-2]
         self.n_images = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 

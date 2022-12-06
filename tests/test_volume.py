@@ -57,6 +57,28 @@ class VolumeTestCase(TestCase):
         self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
         self.assertTrue(v2.dtype == new_dtype)
 
+    def testAsTypeCopy(self):
+        """
+        `astype(copy=False)` is an optimization partially mimicked from numpy.
+        """
+        # Same dtype, copy=False
+        v2 = self.vols_1.astype(self.vols_1.dtype, copy=False)
+        # Details should match,
+        self.assertTrue(isinstance(v2, Volume))
+        self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
+        self.assertTrue(v2.dtype == self.vols_1.dtype)
+        # and they should share the same memory (np.ndarray.base).
+        self.assertTrue(v2.asnumpy().base is self.vols_1.asnumpy().base)
+
+        # Same dtype, default copy=True
+        v2 = self.vols_1.astype(self.vols_1.dtype)
+        # Details should match,
+        self.assertTrue(isinstance(v2, Volume))
+        self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
+        self.assertTrue(v2.dtype == self.vols_1.dtype)
+        # but they should not share the same memory (np.ndarray.base)
+        self.assertTrue(v2.asnumpy().base is not self.vols_1.asnumpy().base)
+
     def testGetter(self):
         k = np.random.randint(self.n)
         self.assertTrue(np.all(self.vols_1[k] == self.data_1[k]))

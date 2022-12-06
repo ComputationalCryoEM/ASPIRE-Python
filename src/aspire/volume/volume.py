@@ -94,6 +94,7 @@ class Volume:
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 3
         self.stack_shape = self._data.shape[:-3]
+        self.singleton_shape = self._data.shape[-3:]
         self.n_vols = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
@@ -105,14 +106,16 @@ class Volume:
         """
         return self._data
 
-    def astype(self, dtype):
+    def astype(self, dtype, copy=True):
         """
         Return `Volume` instance with the prescribed dtype.
 
         :param dtype: Numpy dtype
+        :param copy: Boolean, optionally avoid copying if Volume.dtype already matches.
+            Defaults to True.
         :return: Volume instance
         """
-        return Volume(self.asnumpy().astype(dtype))
+        return Volume(self.asnumpy().astype(dtype, copy=copy))
 
     def _check_key_dims(self, key):
         if isinstance(key, tuple):

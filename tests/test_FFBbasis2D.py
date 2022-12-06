@@ -18,10 +18,12 @@ logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-# NOTE: Class with default values is already present, so don't list it below.
+# NOTE: Default class values (ie. L=8, dtype=np.float32) are listed here and below to
+# to be picked up by TestCase. This means the default values are tested twice by the Mixins.
 @parameterized_class(
     ("L", "dtype"),
     [
+        (8, np.float32),
         (8, np.float64),
         (16, np.float32),
         (16, np.float64),
@@ -49,7 +51,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         g2d = grid_2d(self.L, dtype=self.dtype)
         mask = g2d["r"] < 1
 
-        r0 = self.basis.r0[k, ell]
+        r0 = self.basis.r0[ell][k]
 
         # TODO: Figure out where these factors of 1 / 2 are coming from.
         # Intuitively, the grid should go from -L / 2 to L / 2, not -L / 2 to
