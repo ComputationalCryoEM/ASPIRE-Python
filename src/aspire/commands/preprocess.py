@@ -5,6 +5,7 @@ import click
 from aspire.commands import log_level_option
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source.relion import RelionSource
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,8 @@ def preprocess(
     """
     Preprocess the raw images and output desired images for future analysis
     """
-    logger.setLevel(getattr(logging, loglevel))
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
     # Create a source object for 2D images
     logger.info(f"Read in images from {starfile_in} and preprocess the images.")
     source = RelionSource(
