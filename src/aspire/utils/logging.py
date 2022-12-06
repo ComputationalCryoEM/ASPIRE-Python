@@ -11,6 +11,8 @@ from aspire import config
 
 logger = logging.getLogger(__name__)
 
+LOGGING_LEVEL_NAMES = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
 
 def get_full_version():
     """
@@ -96,9 +98,9 @@ def setConsoleLoggingLevel(level_name):
     :param level_name: One of "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
     """
     # handler list is ordered according to logging.conf
-    if level_name not in pythonLoggingLevelDict().keys():
+    if level_name not in LOGGING_LEVEL_NAMES:
         raise ValueError(
-            f"{level_name} not a recognized logging level. Must be one of {list(pythonLoggingLevelDict().keys())}"
+            f"{level_name} not a recognized logging level. Must be one of {LOGGING_LEVEL_NAMES}"
         )
     stream_handler = logging.getLogger().handlers[0]
     stream_handler.setLevel(getattr(logging, level_name))
@@ -123,9 +125,9 @@ def setFileLoggingLevel(level_name):
     Note this will supersede the `logging.log_file_level` option stored in ASPIRE's configuration file.
     :param level_name: One of "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
     """
-    if level_name not in pythonLoggingLevelDict().keys():
+    if level_name not in LOGGING_LEVEL_NAMES:
         raise ValueError(
-            f"{level_name} not a recognized logging level. Must be one of {list(pythonLoggingLevelDict().keys())}"
+            f"{level_name} not a recognized logging level. Must be one of {LOGGING_LEVEL_NAMES}"
         )
     # handler list is ordered according to logging.conf
     file_handler = logging.getLogger().handlers[1]
@@ -143,10 +145,3 @@ def getFileLoggingLevel():
     # handler list is ordered according to logging.conf
     file_handler = logging.getLogger().handlers[1]
     return logging.getLevelName(file_handler.level)
-
-
-def pythonLoggingLevelDict():
-    """
-    Returns a dictionary mapping Python logging level names to their numeric values.
-    """
-    return {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40, "CRITICAL": 50}

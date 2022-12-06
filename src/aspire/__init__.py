@@ -9,6 +9,7 @@ import confuse
 
 import aspire
 from aspire.exceptions import handle_exception
+from aspire.utils.logging import LOGGING_LEVEL_NAMES
 
 # version in maj.min.bld format
 __version__ = "0.10.1"
@@ -27,9 +28,8 @@ config["logging"]["log_dir"] = log_dir_path.as_posix()
 log_prefix = config["logging"]["log_prefix"].get(str)
 
 # DEBUG, INFO, etc.
-log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-console_level = config["logging"]["console_level"].as_choice(log_levels)
-log_file_level = config["logging"]["log_file_level"].as_choice(log_levels)
+console_level = config["logging"]["console_level"].as_choice(LOGGING_LEVEL_NAMES)
+log_file_level = config["logging"]["log_file_level"].as_choice(LOGGING_LEVEL_NAMES)
 
 # Generates file name details and opens log file defined in config file.
 # The default is to use the current time stamp provided in the dictionary,
