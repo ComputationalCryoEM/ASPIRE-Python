@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from numpy import pi, random
 from numpy.linalg import det, norm
-from parameterized import param, parameterized, parameterized_class
+from parameterized import parameterized_class
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
@@ -419,7 +419,7 @@ class OrderFreeTestCase(TestCase):
 
         self.orient_est = CLSymmetryC3C4(
             self.src,
-            symmetry=f"C3",
+            symmetry="C3",
             n_theta=self.n_theta,
             max_shift=1 / self.L,
         )
