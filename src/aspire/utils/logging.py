@@ -69,7 +69,9 @@ def tqdm(*args, **kwargs):
     true/false will disable/enable tqdm progress bars.
     """
 
-    disable = config["logging"]["tqdm_disable"]
+    disable = config["logging"]["tqdm_disable"] or (
+        getConsoleLoggingLevel() not in ["DEBUG", "INFO"]
+    )
     return _tqdm.tqdm(*args, **kwargs, disable=disable)
 
 
@@ -81,5 +83,70 @@ def trange(*args, **kwargs):
     true/false will disable/enable tqdm progress bars.
     """
 
-    disable = config["logging"]["tqdm_disable"]
+    disable = config["logging"]["tqdm_disable"] or (
+        getConsoleLoggingLevel() not in ["DEBUG", "INFO"]
+    )
     return _tqdm.trange(*args, **kwargs, disable=disable)
+
+
+def setConsoleLoggingLevel(level_name):
+    """
+    Dynamically sets the console logging level by setting the level of the root logger's StreamHandler to `level_name`.
+    Note this will supersede the `logging.console_level` option stored in ASPIRE's configuration file.
+    :param level_name: One of "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
+    """
+    # handler list is ordered according to logging.conf
+    if level_name not in pythonLoggingLevelDict().keys():
+        raise ValueError(
+            f"{level_name} not a recognized logging level. Must be one of {list(pythonLoggingLevelDict().keys())}"
+        )
+    stream_handler = logging.getLogger().handlers[0]
+    stream_handler.setLevel(getattr(logging, level_name))
+
+
+def getConsoleLoggingLevel():
+    """
+    Returns the Python logging level of the root logger's StreamHandler, i.e. console output.
+    This is the same as the `logging.console_level` option in ASPIRE's configuration file unless
+    the console logging level has been changed dynamically during a session. (e.g. by a CLI option)
+    :return: The current console logging level name as a string. One of "DEBUG". "INFO", "WARNING",
+    "ERROR", "CRITICAL".
+    """
+    # handler list is ordered according to logging.conf
+    stream_handler = logging.getLogger().handlers[0]
+    return logging.getLevelName(stream_handler.level)
+
+
+def setFileLoggingLevel(level_name):
+    """
+    Dynamically sets the log file logging level by setting the level of the root logger's FileHandler to `level_name`.
+    Note this will supersede the `logging.log_file_level` option stored in ASPIRE's configuration file.
+    :param level_name: One of "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
+    """
+    if level_name not in pythonLoggingLevelDict().keys():
+        raise ValueError(
+            f"{level_name} not a recognized logging level. Must be one of {list(pythonLoggingLevelDict().keys())}"
+        )
+    # handler list is ordered according to logging.conf
+    file_handler = logging.getLogger().handlers[1]
+    file_handler.setLevel(getattr(logging, level_name))
+
+
+def getFileLoggingLevel():
+    """
+    Returns the Python logging level of the root logger's FileHandler, i.e. log file output.
+    This is the same as the `logging.log_file_level` option in ASPIRE's configuration file
+    unless the file logging level has been changed dynamically during a session. (e.g. by a CLI option)
+    :return: The current file logging level name as a string. One of "DEBUG", "INFO", "WARNING",
+    "ERROR", "CRITICAL".
+    """
+    # handler list is ordered according to logging.conf
+    file_handler = logging.getLogger().handlers[1]
+    return logging.getLevelName(file_handler.level)
+
+
+def pythonLoggingLevelDict():
+    """
+    Returns a dictionary mapping Python logging level names to their numeric values.
+    """
+    return {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40, "CRITICAL": 50}
