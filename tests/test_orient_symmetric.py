@@ -402,6 +402,15 @@ def testCompleteThirdRow(dtype):
     assert np.allclose(det(R), 1)
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def testDtypePassThrough(dtype):
+    L = 16
+    n_img = 20
+    order = 3  # test does not depend on order
+    src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
+    assert src.dtype == cl_symm.dtype
+
+
 def buildSelfCommonLinesMatrix(n_theta, rots, order):
     # Construct rotatation matrices associated with cyclic order.
     rots_symm = cyclic_rotations(order, rots.dtype).matrices
