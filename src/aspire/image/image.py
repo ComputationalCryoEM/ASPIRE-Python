@@ -124,7 +124,7 @@ class Image:
     def _check_key_dims(self, key):
         if isinstance(key, tuple) and (len(key) > self._data.ndim):
             raise ValueError(
-                f"Image stack_dim is {self.stack_ndim}, slice length must be =< f{self.ndim}"
+                f"Image stack_dim is {self.stack_ndim}, slice length must be =< {self.ndim}"
             )
 
     def __getitem__(self, key):
