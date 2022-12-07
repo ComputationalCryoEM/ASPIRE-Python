@@ -150,6 +150,10 @@ class ImageTestCase(TestCase):
         self.assertEqual(self.mdim_ims.stack_ndim, self.mdim)
         self.assertEqual(self.mdim_ims.n_images, self.mdim * self.ims.n_images)
 
+    def testBadKey(self):
+        with self.assertRaisesRegex(ValueError, "slice length must be"):
+            _ = self.mdim_ims[tuple(range(self.mdim_ims.ndim + 1))]
+
     def testMultiDimGets(self):
         for X in self.mdim_ims:
             self.assertTrue(np.allclose(self.ims_np, X))
@@ -179,6 +183,9 @@ class ImageTestCase(TestCase):
         # Try mdim reshape
         X = self.mdim_ims.stack_reshape(*self.mdim_ims.stack_shape[::-1])
         self.assertEqual(X.stack_shape, self.mdim_ims.stack_shape[::-1])
+        # Compare with direct np.reshape of axes of ndarray
+        shape = (*self.mdim_ims_np.shape[:-2][::-1], *self.mdim_ims_np.shape[-2:])
+        self.assertTrue(np.allclose(X.asnumpy(), self.mdim_ims_np.reshape(shape)))
 
     def testMultiDimFlattens(self):
         # Try flattening

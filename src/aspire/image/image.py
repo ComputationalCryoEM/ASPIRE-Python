@@ -110,7 +110,6 @@ class Image:
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 2
         self.stack_shape = self._data.shape[:-2]
-        self.singleton_shape = self._data.shape[:-2]
         self.n_images = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
@@ -123,8 +122,10 @@ class Image:
         return self.resolution
 
     def _check_key_dims(self, key):
-        if isinstance(key, tuple):
-            assert len(key) <= self._data.ndim
+        if isinstance(key, tuple) and (len(key) > self._data.ndim):
+            raise ValueError(
+                f"Image stack_dim is {self.stack_ndim}, slice length must be =< f{self.ndim}"
+            )
 
     def __getitem__(self, key):
         self._check_key_dims(key)

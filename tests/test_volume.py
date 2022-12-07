@@ -356,10 +356,18 @@ class VolumeTestCase(TestCase):
     def testShape(self):
         self.assertEqual(self.vols_1.shape, (self.n, self.res, self.res, self.res))
         self.assertEqual(self.vols_1.stack_shape, (self.n,))
+        self.assertEqual(self.vols_1.stack_ndim, 1)
+        self.assertEqual(self.vols_1.n_vols, self.n)
 
     def testMultiDimShape(self):
         self.assertEqual(self.vols_12.shape, (2, self.n, self.res, self.res, self.res))
         self.assertEqual(self.vols_12.stack_shape, (2, self.n))
+        self.assertEqual(self.vols_12.stack_ndim, 2)
+        self.assertEqual(self.vols_12.n_vols, 2 * self.n)
+
+    def testBadKey(self):
+        with self.assertRaisesRegex(ValueError, "slice length must be"):
+            _ = self.vols_12[tuple(range(self.vols_12.ndim + 1))]
 
     def testMultiDimGets(self):
         self.assertTrue(np.allclose(self.vols_12[0], self.data_1))
@@ -385,6 +393,7 @@ class VolumeTestCase(TestCase):
 
     def testMultiDimReshape(self):
         X = self.vols_12.stack_reshape(self.n, 2)
+        # Compare with np.reshape of stack axes of ndarray
         self.assertTrue(
             np.allclose(
                 X, self.data_12.reshape(self.n, 2, self.res, self.res, self.res)

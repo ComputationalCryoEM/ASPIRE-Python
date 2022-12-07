@@ -68,7 +68,7 @@ class Volume:
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
 
-        :return: A volume instance holding `data`.
+        :return: A Volume instance holding `data`.
         """
 
         if not isinstance(data, np.ndarray):
@@ -94,7 +94,6 @@ class Volume:
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 3
         self.stack_shape = self._data.shape[:-3]
-        self.singleton_shape = self._data.shape[-3:]
         self.n_vols = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
@@ -118,8 +117,10 @@ class Volume:
         return Volume(self.asnumpy().astype(dtype, copy=copy))
 
     def _check_key_dims(self, key):
-        if isinstance(key, tuple):
-            assert len(key) <= self._data.ndim
+        if isinstance(key, tuple) and (len(key) > self._data.ndim):
+            raise ValueError(
+                f"Volume stack_dim is {self.stack_ndim}, slice length must be =< f{self.ndim}"
+            )
 
     def __getitem__(self, key):
         self._check_key_dims(key)
