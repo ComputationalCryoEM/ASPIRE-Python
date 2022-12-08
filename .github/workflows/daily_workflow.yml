@@ -1,9 +1,8 @@
 name: ASPIRE Python Daily Build CI
 
 on:
-  push:
-    branches:
-      - daily_doc_build
+  schedule:
+    -cron: '0 0 * * *'
 
 jobs:
   dev_docs:
