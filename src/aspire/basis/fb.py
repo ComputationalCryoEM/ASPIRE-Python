@@ -3,7 +3,6 @@ import logging
 import numpy as np
 
 from aspire.basis.basis_utils import all_besselj_zeros
-from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +46,6 @@ class FBBasisMixin(object):
         #  set the maximum of k for each ell
         self.k_max = np.array(n, dtype=int)
 
-        max_num_zeros = max(len(z) for z in zeros)
-        for i, z in enumerate(zeros):
-            zeros[i] = np.hstack(
-                (z, np.zeros(max_num_zeros - len(z), dtype=self.dtype))
-            )
-
-        self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1)).astype(self.dtype)
+        # set the zeros for each ell
+        # this is a ragged list of 1d ndarrays, where the i'th element is of size self.k_max[i]
+        self.r0 = zeros
