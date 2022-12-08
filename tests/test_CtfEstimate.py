@@ -18,13 +18,14 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class CtfEstimatorTestCase(TestCase):
     def setUp(self):
         self.test_input_fn = "sample.mrc"
+        # These values are from CTFFIND4
         self.test_output = {
-            "defocus_u": 10848.056020345417,
-            "defocus_v": 10562.584332908018,
-            "defocus_ang": 1.4677603249277478,
+            "defocus_u": 34914.63,  # Angstrom
+            "defocus_v": 33944.32,  # Angstrom
+            "defocus_ang": -65.26,  # Degree wrt some axis
             "cs": 2.0,
             "voltage": 300.0,
-            "pixel_size": 1,
+            "pixel_size": 1.77,
             "amplitude_contrast": 0.07,
         }
 
@@ -43,7 +44,7 @@ class CtfEstimatorTestCase(TestCase):
                 # Returns results in output_dir
                 results = estimate_ctf(
                     data_folder=tmp_input_dir,
-                    pixel_size=1,
+                    pixel_size=1.77,
                     cs=2.0,
                     amplitude_contrast=0.07,
                     voltage=300.0,
@@ -67,7 +68,7 @@ class CtfEstimatorTestCase(TestCase):
                         np.allclose(
                             result["defocus_u"],
                             self.test_output["defocus_u"],
-                            atol=5e-2,
+                            atol=0.05,
                         )
                     )
                     # defocusV
@@ -75,15 +76,15 @@ class CtfEstimatorTestCase(TestCase):
                         np.allclose(
                             result["defocus_u"],
                             self.test_output["defocus_u"],
-                            atol=5e-2,
+                            rtol=0.05,
                         )
-                    )
+                    )                    
                     # defocusAngle
                     self.assertTrue(
                         np.allclose(
                             result["defocus_ang"],
                             self.test_output["defocus_ang"],
-                            atol=5e-2,
+                            atol=1,
                         )
                     )
 
