@@ -20,8 +20,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: Build Sphinx docs
-        working-directory: ./docs
-        run: |
+        defaults:
+	  run:
+	    working-directory: ./docs
+	run: |
 	  make clean
 	  sphinx-apidoc -f -o ./source ../src -H Modules
 	  make html
