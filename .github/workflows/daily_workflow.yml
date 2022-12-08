@@ -2,7 +2,7 @@ name: ASPIRE Python Daily Build CI
 
 on:
   schedule:
-    - cron: '0 5 * * *'
+    - cron: '0 14 * * *'
 
 jobs:
   dev_docs:
@@ -21,10 +21,9 @@ jobs:
           pip install -e ".[dev]"
       - name: Build Sphinx docs
         defaults:
-	  run:
-	    working-directory: ./docs
-	run: |
-	  make clean
-	  sphinx-apidoc -f -o ./source ../src -H Modules
-	  make html
-	  
+          run:
+            working-directory: ./docs
+        run: |
+          make clean
+          sphinx-apidoc -f -o ./source ../src -H Modules
+          make html
