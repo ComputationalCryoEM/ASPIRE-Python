@@ -186,7 +186,7 @@ class AligningAverager2D(Averager2D):
         def _innerloop(i):
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
-                # Retrieve relavent images directly from source.
+                # Retrieve relevant images directly from source.
                 neighbors_imgs = Image(self._cls_images(classes[i]))
 
                 # Do shifts
@@ -316,7 +316,7 @@ class BFRAverager2D(AligningAverager2D):
             _correlations = np.empty((n_nbor, self.n_angles))
             # Get the coefs for these neighbors
             if basis_coefficients is None:
-                # Retrieve relavent images
+                # Retrieve relevant images
                 neighbors_imgs = Image(self._cls_images(classes[k]))
 
                 # We optionally can shift the base image by `_base_image_shift`
@@ -632,7 +632,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
-                # Retrieve relavent images directly from source.
+                # Retrieve relevant images directly from source.
                 neighbors_imgs = Image(self._cls_images(classes[i]))
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
