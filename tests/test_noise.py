@@ -7,7 +7,7 @@ from parameterized import parameterized, parameterized_class
 
 from aspire.image import CustomNoiseAdder, WhiteNoiseAdder
 from aspire.noise import WhiteNoiseEstimator
-from aspire.operators import FunctionFilter, RadialCTFFilter, ScaledFilter
+from aspire.operators import FunctionFilter
 from aspire.source.simulation import Simulation
 from aspire.volume import AsymmetricVolume
 
@@ -71,27 +71,19 @@ class NoiseAdder(TestCase):
             f"testCustomNoiseAdder dtype={self.dtype} L={self.L} noise_var={noise_var}"
         )
 
-        # def noise_function(x, y):
-        #     return 1e-7 * np.exp(-(x * x + y * y) / (2 * 0.3**2))
-        def brownish_spectrum(x, y):
-            return np.minimum(1, 2 / (x * x + y * y + 1))
+        def pinkish_spectrum(x, y):
+            s = x[-1] - x[-2]
+            f = 2 * s / (np.hypot(x, y) + s)
+            m = np.mean(f)
+            return f * noise_var / m
 
-        brownish_filter = FunctionFilter(f=brownish_spectrum)
-        # Scale the filter function to a target variance
-        print("xxx", np.mean(brownish_filter.evaluate_grid(self.L)))
-        m = np.mean(brownish_filter.evaluate_grid(self.L))
-        scalar = noise_var / m
-        custom_filter = ScaledFilter(brownish_filter, scalar)
+        custom_filter = FunctionFilter(f=pinkish_spectrum)
 
         # Check we are achieving an estimate near the target
         self.sim.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
         est_noise_var = self.sim.noise_adder.noise_var
         logger.debug(f"Estimated Noise Variance {est_noise_var}")
         self.assertTrue(np.isclose(est_noise_var, noise_var, rtol=0.1))
-
-        # noise_estimator = WhiteNoiseEstimator(self.sim, batchSize=512)
-        # # Match estimate within 1%
-        # self.assertTrue(np.isclose(noise_var, noise_estimator.estimate(), rtol=0.01))
 
     @parameterized.expand([(10 ** (-x),) for x in range(1, 4)])
     def testWhiteNoiseAdder(self, noise_var):
