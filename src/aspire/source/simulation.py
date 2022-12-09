@@ -1,4 +1,4 @@
-import copy
+import copyA
 import logging
 
 import numpy as np
@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 class Simulation(ImageSource):
     """
     A `Simulation` represents a synthetic dataset of realistic cryo-EM images with corresponding
-    'metadata'. The images are generated via projections of a supplied `Volume` object, 'vols', over
-    orientations define by the Euler angles, 'angles'. Various types of corruption, such as noise and
-    CTF effects, can be added to the images by supplying a `Filter` object to the 'noise_filter' or
-    'unique_filters' arguments.
+    `metadata`. The images are generated via projections of a supplied `Volume` object, `vols`, over
+    orientations define by the Euler angles, `angles`. Various types of corruption, such as noise and
+    CTF effects, can be added to the images by supplying a `Filter` object to the `noise_filter` or
+    `unique_filters` arguments.
     """
 
     def __init__(
@@ -53,14 +53,16 @@ class Simulation(ImageSource):
         A `Simulation` object that supplies images along with other parameters for image manipulation.
 
         :param L: Resolution of projection images (integer).
-            Default is 8 or vols.resolution if a volume is provided.
+            Default is 8 or `vols.resolution` if a volume is provided.
         :param n: The number of images to generate (integer).
-        :param vols: A Volume object. Default is a LegacyVolume.
+        :param vols: A `Volume` object representing a stack of volumes.
+            Default is generated with `volume.volume_synthesis.LegacyVolume`.
         :param states: A 1d array of n integers in the interval [0, C). The i'th integer indicates
-            the volume used to produce the i'th projection image. Default is a random set.
+            the volume stack index used to produce the i'th projection image. Default is a random set.
         :param unique_filters: A list of Filter objects to be applied to projection images.
-        :param filter_indices: A 1d array of n integers indicating the unique_filter indices associated
-            with each image. Default is a random set of filter indices.
+        :param filter_indices: A 1d array of n integers indicating the `unique_filter` indices associated
+            with each image. Default is a random set of filter indices, .ie the filters from `unique_filters`
+            are randomly assigned to the stack of images.
         :param offsets: A n-by-2 array of coordinates to offset the images. Default is a normally
             distributed set of offsets.
         :param amplitude: A 1d array of n amplitudes to scale the projection images. Default is
