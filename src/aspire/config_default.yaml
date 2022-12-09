@@ -2,7 +2,7 @@ version: 0.10.1
 common:
     # numeric module to use - one of numpy/cupy
     numeric: numpy
-    # fft backend to use - one of pyfftw/scipy/cupy
+    # fft backend to use - one of pyfftw/scipy/cupy/mkl
     fft: pyfftw
 
 logging:
