@@ -14,6 +14,7 @@ dependencies:
   - scipy=1.7.3
   - scikit-learn
   - scikit-image
+  - libblas=*=*openblas
   - pip:
     - .
 
