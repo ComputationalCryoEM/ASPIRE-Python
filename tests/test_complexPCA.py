@@ -77,7 +77,7 @@ class ComplexPCACase(TestCase):
 
         pca = ComplexPCA(n_components=self.components_small)
         sparse_X = csr_matrix(self.X_small)
-        with pytest.raises(TypeError, match=r"PCA does not support sparse.*"):
+        with pytest.raises(TypeError):
             _ = pca.fit_transform(sparse_X)
 
     def testDefault_n_components(self):
@@ -98,5 +98,5 @@ class ComplexPCACase(TestCase):
         """
 
         pca = ComplexPCA(n_components=self.components_small, svd_solver="notasolver")
-        with pytest.raises(ValueError, match=r"Unrecognized svd_solver.*"):
+        with pytest.raises(ValueError):
             _ = pca.fit_transform(self.X_small)

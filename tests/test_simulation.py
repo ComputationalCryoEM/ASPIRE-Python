@@ -50,6 +50,41 @@ class SimVolTestCase(TestCase):
         with raises(RuntimeError, match=r"`vols` should be a Volume instance*"):
             _ = Simulation(L=self.vol_res, vols=self.vol_arr)
 
+    def testDtypeMismatch(self):
+        """
+        Test we raise when the volume dtype does not match explicit Simulation dtype.
+        """
+        with raises(RuntimeError, match=r".*does not match provided vols.dtype.*"):
+            _ = Simulation(vols=self.vol.astype(np.float16), dtype=self.dtype)
+
+    def testPassthroughFromVol(self):
+        """
+        Test we do not crash when passing a volume to Simulation,
+        without an explcit Simulation dtype.
+        """
+        for dtype in (np.float32, np.float64):
+            sim = Simulation(vols=self.vol.astype(dtype, copy=False))
+            # Did we assign the right type?
+            self.assertTrue(sim.dtype == dtype)
+
+            # Is the Volume the intended type?
+            self.assertTrue(sim.vols.dtype == dtype)
+
+    def testPassthroughFromSim(self):
+        """
+        Test we do not crash when passing a volume to Simulation,
+        with out an explcit Volume.
+        """
+        for dtype in (np.float32, np.float64):
+            # Create a minimal sim
+            sim = Simulation(dtype=dtype)
+
+            # Did we assign the right type?
+            self.assertTrue(sim.dtype == dtype)
+
+            # Is the Volume the intended type?
+            self.assertTrue(sim.vols.dtype == dtype)
+
 
 class SimTestCase(TestCase):
     def setUp(self):
