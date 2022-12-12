@@ -38,7 +38,8 @@ class StarFileTestCase(TestCase):
     def setUp(self):
         with importlib_path(tests.saved_test_data, "sample_data_model.star") as path:
             self.starfile = StarFile(path)
-
+        with importlib_path(tests.saved_test_data, "sample_particles_relion31.star") as path:
+            star = StarFile(path)
         # Independent Image object for testing Image source methods
         L = 768
         self.im = Image(misc.face(gray=True).astype("float64")[:L, :L])
