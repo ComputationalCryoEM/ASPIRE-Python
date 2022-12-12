@@ -206,6 +206,11 @@ class Volume:
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
         :return: `Image` instance.
         """
+        # See Issue #727
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`project` is currently limited to 1D Volume stacks."
+            )
 
         # If we are an ASPIRE Rotation, get the numpy representation.
         if isinstance(rot_matrices, Rotation):
@@ -271,7 +276,10 @@ class Volume:
 
         :return: Volume instance.
         """
-        return Volume(np.transpose(self._data, (*range(self.ndim - 3), -1, -2, -3)))
+        original_stack_shape = self.stack_shape
+        v = self.stack_reshape(-1)
+        vt = np.transpose(v._data, (0, -1, -2, -3))
+        return Volume(vt).stack_reshape(original_stack_shape)
 
     @property
     def T(self):
@@ -292,17 +300,25 @@ class Volume:
 
         return self._data.flatten()
 
-    def flip(self, axis=1):
+    def flip(self, axis=-3):
         """
         Flip volume stack data along axis using numpy.flip
 
         :param axis: Optionally specify axis as integer or tuple.
-            Defaults to axis=1.
+            Defaults to axis=-3.
 
         :return: Volume instance.
         """
-        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
-            raise ValueError("Cannot flip Axis 0, stack axis.")
+        # Convert integer to tuple, so we can always loop.
+        if isinstance(axis, int):
+            axis = (axis,)
+
+        for ax in axis:
+            ax = ax % self.ndim  # modulo [0, ndim)
+            if ax < self.stack_ndim:
+                raise ValueError(
+                    f"Cannot flip axis {ax}: stack axis. Did you mean {ax-4}?"
+                )
 
         return Volume(np.flip(self._data, axis))
 
@@ -316,8 +332,11 @@ class Volume:
         if mask is None:
             mask = 1.0
 
+        original_stack_shape = self.stack_shape
+        v = self.stack_reshape(-1)
+
         # take 3D Fourier transform of each volume in the stack
-        fx = fft.fftshift(fft.fftn(self._data, axes=(1, 2, 3)))
+        fx = fft.fftshift(fft.fftn(v._data, axes=(1, 2, 3)))
         # crop each volume to the desired resolution in frequency space
         crop_fx = (
             np.array([crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)])
@@ -328,7 +347,7 @@ class Volume:
             ds_res**3 / self.resolution**3
         )
         # returns a new Volume object
-        return Volume(np.real(out))
+        return Volume(np.real(out)).stack_reshape(original_stack_shape)
 
     def shift(self):
         raise NotImplementedError
@@ -346,6 +365,10 @@ class Volume:
 
         :return: `Volume` instance.
         """
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`rotation` is currently limited to 1D Volume stacks."
+            )
 
         assert isinstance(
             rot_matrices, Rotation
@@ -409,6 +432,11 @@ class Volume:
         :param overwrite: Option to overwrite file when set to True.
             Defaults to overwrite=False.
         """
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`save` is currently limited to 1D Volume stacks."
+            )
+
         with mrcfile.new(filename, overwrite=overwrite) as mrc:
             mrc.set_data(self._data.astype(np.float32))
 

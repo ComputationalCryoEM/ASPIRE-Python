@@ -334,7 +334,7 @@ class VolumeTestCase(TestCase):
             self.assertTrue(isinstance(result, Volume))
 
         # Test axis 0 raises
-        msg = r"Cannot flip Axis 0, stack axis."
+        msg = r"Cannot flip axis 0: stack axis."
         with raises(ValueError, match=msg):
             _ = self.vols_1.flip(axis=0)
 
