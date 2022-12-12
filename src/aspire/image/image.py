@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Iterable
 from warnings import catch_warnings, filterwarnings, warn
 
 import matplotlib.pyplot as plt
