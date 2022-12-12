@@ -302,12 +302,19 @@ class NoiseAdder(Xform):
         Initialize the random state of this CustomNoiseAdder using specified values.
 
         :param seed: The random seed used to generate white noise
-        :param noise_filter: An aspire.operators.Filter object to use to filter the generated white noise.
+        :param noise_filter: An `aspire.operators.Filter` object to use to filter the generated white noise.
             Note the `noise_filter` will be raised to the 1/2 power.
         """
         super().__init__()
         self.seed = seed
+        self._noise_filter = noise_filter
         self.noise_filter = PowerFilter(noise_filter, power=0.5)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(noise_filter={self._noise_filter}, seed={self.seed})"
+
+    def __str__(self):
+        return f"{self.__class__.__name__}"
 
     def _forward(self, im, indices):
         im = im.copy()
@@ -367,7 +374,7 @@ class WhiteNoiseAdder(NoiseAdder):
     # TODO, check if we can change seed and/or why not.
     def __init__(self, var, seed=0):
         """
-        Return a CustomNoiseAdder instance from `noise_var` and using `seed`.
+        Return a `CustomNoiseAdder` instance from `noise_var` and using `seed`.
 
         :param noise_var: Target noise variance.
         :param seed: Optinally provide a random seed used to generate white noise.
@@ -375,10 +382,19 @@ class WhiteNoiseAdder(NoiseAdder):
         self._noise_var = var
         super().__init__(noise_filter=ScalarFilter(dim=2, value=var), seed=seed)
 
+    def __str__(self):
+        return f"{self.__class__.__name__} with variance={self._noise_var}"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(var={self._noise_var}, seed={self.seed})"
+
     @property
     def noise_var(self):
         """
-        Returns noise variance. Note in this case noise variance is known.
+        Returns noise variance.
+
+        Note in this white noise case noise variance is known,
+        because the `WhiteNoiseAdder` was instantied with an explicit variance.
         """
         return self._noise_var
 

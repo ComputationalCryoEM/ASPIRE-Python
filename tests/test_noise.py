@@ -7,7 +7,7 @@ from parameterized import parameterized, parameterized_class
 
 from aspire.image import CustomNoiseAdder, WhiteNoiseAdder
 from aspire.noise import WhiteNoiseEstimator
-from aspire.operators import FunctionFilter
+from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source.simulation import Simulation
 from aspire.volume import AsymmetricVolume
 
@@ -61,6 +61,28 @@ class NoiseAdder(TestCase):
 
     def tearDown(self):
         pass
+
+    def testWhiteRepr(self):
+        """Test __repr__ does not crash."""
+        x = WhiteNoiseAdder(var=1)
+        logger.info(f"Example repr:\n{repr(x)}")
+
+    def testWhiteStr(self):
+        """Test __str__ does not crash."""
+        x = WhiteNoiseAdder(var=1)
+        logger.info(f"Example str:\n{str(x)}")
+
+    def testCustomRepr(self):
+        """Test __repr__ does not crash."""
+        custom_filter = ScalarFilter(dim=2, value=1)
+        x = CustomNoiseAdder(noise_filter=custom_filter)
+        logger.info(f"Example repr:\n{repr(x)}")
+
+    def testCustomStr(self):
+        """Test __str__ does not crash."""
+        custom_filter = ScalarFilter(dim=2, value=1)
+        x = CustomNoiseAdder(noise_filter=custom_filter)
+        logger.info(f"Example str:\n{str(x)}")
 
     @parameterized.expand([(10 ** (-x),) for x in range(1, 4)])
     def testCustomNoiseAdder(self, noise_var):

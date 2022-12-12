@@ -46,7 +46,7 @@ class Simulation(ImageSource):
         Other than the base class attributes, it has:
 
         :param angles: A n-by-3 array of rotation angles
-        :param noise_adder: Optionally append instance of NoiseAdder
+        :param noise_adder: Optionally append instance of `NoiseAdder`
             to generation pipeline.
         """
 
@@ -253,7 +253,7 @@ class Simulation(ImageSource):
         Estimate the signal mean of `sample_n` projections.
 
         :param sample_n: Number of projections used for estimate.
-        :returns: Estimated signal power.
+        :returns: Estimated signal mean.
         """
         # Note, for simulation we are assuming `sample_n` is random
         estimated_mu = np.mean(self.projections[:sample_n].asnumpy())
@@ -265,7 +265,7 @@ class Simulation(ImageSource):
         Estimate the signal the variance of `sample_n` projections.
 
         :param sample_n: Number of projections used for estimate.
-        :returns: Estimated signal power.
+        :returns: Estimated signal variance.
         """
         # Note, for simulation we are assuming `sample_n` is random
         estimated_var = np.var(self.projections[:sample_n].asnumpy())
@@ -323,8 +323,8 @@ class Simulation(ImageSource):
         noise_var = sim.estimate_signal_var() / target_snr
 
         # Assign the noise_adder
-        logger.info("Appending WhiteNoiseAdder to generation pipeline")
         sim.noise_adder = WhiteNoiseAdder(var=noise_var)
+        logger.info(f"Appended {sim.noise_adder} to generation pipeline")
 
         return sim
 
