@@ -271,7 +271,7 @@ class Volume:
 
         :return: Volume instance.
         """
-        return Volume(np.transpose(self._data, (0, 3, 2, 1)))
+        return Volume(np.transpose(self._data, (*range(self.ndim - 3), -1, -2, -3)))
 
     @property
     def T(self):

@@ -27,6 +27,11 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
             Otherwise, a constant background level from all images is used.
     :return: The modified images
     """
+    if self.stack_ndim > 1:
+        raise NotImplementedError(
+            "`normalize_bg` is currently limited to 1D image stacks."
+        )
+
     L = imgs.shape[-1]
     grid = grid_2d(L, indexing="yx")
     mask = grid["r"] > bg_radius
@@ -198,19 +203,33 @@ class Image:
 
         :return: Image instance.
         """
-        return Image(np.transpose(self._data, (0, 2, 1)))
+        original_stack_shape = self.stack_shape
 
-    def flip(self, axis=1):
+        im = self.stack_reshape(-1)
+        imt = np.transpose(im._data, (0, -1, -2))
+
+        return Image(imt).stack_reshape(original_stack_shape)
+
+    def flip(self, axis=-2):
         """
         Flip image stack data along axis using numpy.flip().
 
         :param axis: Optionally specify axis as integer or tuple.
-            Defaults to axis=1.
+            Defaults to axis=-2.
 
         :return: Image instance.
         """
-        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
-            raise ValueError("Cannot flip axis 0: stack axis.")
+        # Convert integer to tuple, so we can always loop.
+        if isinstance(axis, int):
+            axis = (axis,)
+
+        # Check we are not attempting to flip any stack axis.
+        for ax in axis:
+            ax = ax % self.ndim  # modulo [0, ndim)
+            if ax < self.stack_ndim:
+                raise ValueError(
+                    f"Cannot flip axis {ax}: stack axis. Did you mean {ax-3}?"
+                )
 
         return Image(np.flip(self._data, axis))
 
@@ -256,8 +275,12 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
+
+        original_stack_shape = self.stack_shape
+        im = self.stack_reshape(-1)
+
         # compute FT with centered 0-frequency
-        fx = fft.centered_fft2(self._data)
+        fx = fft.centered_fft2(im._data)
         # crop 2D Fourier transform for each image
         crop_fx = np.array([crop_pad_2d(fx[i], ds_res) for i in range(self.n_images)])
         # take back to real space, discard complex part, and scale
@@ -265,7 +288,7 @@ class Image:
             ds_res**2 / self.resolution**2
         )
 
-        return Image(out)
+        return Image(out).stack_reshape(original_stack_shape)
 
     def filter(self, filter):
         """
@@ -274,9 +297,13 @@ class Image:
         :param filter: An object of type `Filter`.
         :return: A new filtered `Image` object.
         """
+        original_stack_shape = self.stack_shape
+
+        im = self.stack_reshape(-1)
+
         filter_values = filter.evaluate_grid(self.resolution)
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data)))
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(im._data)))
 
         # TODO: why are these different? Doesn't the broadcast work?
         if im_f.ndim > filter_values.ndim:
@@ -286,12 +313,15 @@ class Image:
         im = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
         im = np.real(im)
 
-        return Image(im)
+        return Image(im).stack_reshape(original_stack_shape)
 
     def rotate(self):
         raise NotImplementedError
 
     def save(self, mrcs_filepath, overwrite=False):
+        if self.stack_ndim > 1:
+            raise NotImplementedError("`save` is currently limited to 1D image stacks.")
+
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
             mrc.set_data(self._data.astype(np.float32))
@@ -303,10 +333,11 @@ class Image:
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
             Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
         :return: The images translated by the shifts, with periodic boundaries.
-
-        TODO: This implementation is slower than _im_translate2
         """
-        im = self._data
+
+        # Note original stack shape and flatten stack
+        stack_shape = self.stack_shape
+        im = self.stack_reshape(-1)._data
 
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
@@ -340,7 +371,8 @@ class Image:
         im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f)))
         im_translated = np.real(im_translated)
 
-        return Image(im_translated)
+        # Reshape to stack shape
+        return Image(im_translated).stack_reshape(stack_shape)
 
     def norm(self):
         return anorm(self._data)
@@ -359,6 +391,11 @@ class Image:
 
         :return: Volume instance corresonding to the backprojected images.
         """
+
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`Backprojection` is currently limited to 1D image stacks."
+            )
 
         L = self.resolution
 
@@ -393,6 +430,9 @@ class Image:
             Defaults to True. Accepts `bool` or `dictionary`,
             where the dictionary is passed to `matplotlib.pyplot.colorbar`.
         """
+
+        if self.stack_ndim > 1:
+            raise NotImplementedError("`show` is currently limited to 1D image stacks.")
 
         # We never need more columns than images.
         columns = min(columns, self.n_images)

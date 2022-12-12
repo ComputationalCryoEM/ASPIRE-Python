@@ -48,6 +48,11 @@ class VolumeTestCase(TestCase):
         r = repr(self.vols_12)
         logger.info(f"Volume repr:\n{r}")
 
+    def testNonCube(self):
+        """Test that an irregular Volume array raises."""
+        with raises(ValueError, match=r".* cubed .*"):
+            _ = Volume(np.empty((4, 5, 6), dtype=self.dtype))
+
     def testAsNumpy(self):
         self.assertTrue(np.all(self.data_1 == self.vols_1.asnumpy()))
 

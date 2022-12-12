@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import numpy as np
 from parameterized import parameterized_class
+from pytest import raises
 from scipy import misc
 
 from aspire.image import Image
@@ -50,6 +51,11 @@ class ImageTestCase(TestCase):
     def testRepr(self):
         r = repr(self.mdim_ims)
         logger.info(f"Image repr:\n{r}")
+
+    def testNonSquare(self):
+        """Test that an irregular Image array raises."""
+        with raises(ValueError, match=r".* square .*"):
+            _ = Image(np.empty((4, 5), dtype=self.dtype))
 
     def testImShift(self):
         # Note that the _im_translate method can handle float input shifts, as it
