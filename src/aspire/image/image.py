@@ -27,7 +27,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
             Otherwise, a constant background level from all images is used.
     :return: The modified images
     """
-    if self.stack_ndim > 1:
+    if imgs.ndim > 3:
         raise NotImplementedError(
             "`normalize_bg` is currently limited to 1D image stacks."
         )
