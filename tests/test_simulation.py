@@ -5,7 +5,7 @@ from unittest import TestCase
 import numpy as np
 from pytest import raises
 
-from aspire.image import WhiteNoiseAdder
+from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation

@@ -13,7 +13,7 @@ from PIL import Image as PILImage
 
 from aspire.classification import RIRClass2D, TopClassSelector
 from aspire.image import Image
-from aspire.image.xform import WhiteNoiseAdder
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
 from aspire.utils import gaussian_2d
 

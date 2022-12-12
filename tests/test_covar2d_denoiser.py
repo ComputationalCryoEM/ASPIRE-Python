@@ -4,7 +4,7 @@ import numpy as np
 
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.denoising.denoiser_cov2d import DenoiserCov2D
-from aspire.image import WhiteNoiseAdder
+from aspire.noise import WhiteNoiseAdder
 from aspire.operators.filters import RadialCTFFilter
 from aspire.source.simulation import Simulation
 

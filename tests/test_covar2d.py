@@ -8,7 +8,7 @@ from pytest import raises
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
-from aspire.image import WhiteNoiseAdder
+from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.utils import utest_tolerance

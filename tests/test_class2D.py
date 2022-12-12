@@ -14,7 +14,7 @@ from aspire.classification import (
     TopClassSelector,
 )
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
-from aspire.image import WhiteNoiseAdder
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume

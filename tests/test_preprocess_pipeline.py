@@ -5,8 +5,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
-from aspire.image import CustomNoiseAdder
-from aspire.noise import AnisotropicNoiseEstimator
+from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation

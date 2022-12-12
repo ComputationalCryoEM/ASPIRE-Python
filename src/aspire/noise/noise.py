@@ -3,7 +3,8 @@ import logging
 
 import numpy as np
 
-from aspire.image import Image, Xform
+from aspire.image import Image
+from aspire.image.xform import Xform
 from aspire.numeric import fft, xp
 from aspire.operators import ArrayFilter, PowerFilter, ScalarFilter
 from aspire.utils import grid_2d, randn, trange

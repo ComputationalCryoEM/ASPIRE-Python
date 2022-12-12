@@ -12,7 +12,7 @@ import os
 
 import numpy as np
 
-from aspire.image import WhiteNoiseAdder
+from aspire.noise import WhiteNoiseAdder
 from aspire.source.simulation import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume

@@ -72,7 +72,7 @@ vol = original_vol.downsample(res)
 # Gaussian white noise and ``RadialCTFFilter`` to generate a set of CTF filters with various defocus values.
 
 # Create noise and CTF filters
-from aspire.image import WhiteNoiseAdder
+from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 
 # Gaussian noise filter.

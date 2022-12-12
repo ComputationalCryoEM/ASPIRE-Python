@@ -14,8 +14,7 @@ import numpy as np
 from scipy import misc
 
 from aspire.image import Image
-from aspire.image.xform import CustomNoiseAdder, WhiteNoiseAdder
-from aspire.noise import AnisotropicNoiseEstimator
+from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder, WhiteNoiseAdder
 from aspire.operators import FunctionFilter
 from aspire.source import ArrayImageSource
 

@@ -38,8 +38,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
-from aspire.image import CustomNoiseAdder, WhiteNoiseAdder
-from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
+from aspire.noise import (
+    AnisotropicNoiseEstimator,
+    CustomNoiseAdder,
+    WhiteNoiseAdder,
+    WhiteNoiseEstimator,
+)
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.source import RelionSource, Simulation
 from aspire.utils import (

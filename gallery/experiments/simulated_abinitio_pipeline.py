@@ -24,8 +24,7 @@ from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis2D, FFBBasis3D
 from aspire.classification import BFSReddyChatterjiAverager2D, RIRClass2D
 from aspire.denoising import DenoiserCov2D
-from aspire.image import CustomNoiseAdder
-from aspire.noise import AnisotropicNoiseEstimator
+from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import Simulation
