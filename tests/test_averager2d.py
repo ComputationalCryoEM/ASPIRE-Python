@@ -106,7 +106,7 @@ class Averager2DBase:
             test_dtype = np.float32
 
         with self._caplog.at_level(logging.WARN):
-            self.averager(self.basis, self._getSrc(), dtype=test_dtype)
+            self.averager(self.basis, self._getSrc(), dtype=test_dtype, num_procs=1)
             assert "does not match dtype" in self._caplog.text
 
     def _construct_rotations(self):
@@ -163,7 +163,7 @@ class AligningAverager2DBase(Averager2DBase):
     """
 
     averager = AligningAverager2D
-    num_procs = 1  # paralleized subclasses may override
+    num_procs = 1 if xfail_ray_dev() else 2
 
     def setUp(self):
 
@@ -227,7 +227,7 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
-            _ = self.averager(basis, self._getSrc())
+            _ = self.averager(basis, self._getSrc(), num_procs=1)
 
     def testAverager(self):
         """
@@ -237,7 +237,12 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
         """
 
         # Construct the Averager and then call the `align` method
-        avgr = self.averager(self.basis, self._getSrc(), n_angles=self.n_search_angles)
+        avgr = self.averager(
+            self.basis,
+            self._getSrc(),
+            n_angles=self.n_search_angles,
+            num_procs=self.num_procs,
+        )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         self.assertIsNone(_shifts)
@@ -281,6 +286,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
             self._getSrc(),
             n_angles=self.n_search_angles,
             radius=2,
+            num_procs=self.num_procs,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
