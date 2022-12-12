@@ -1,15 +1,124 @@
+import abc
 import logging
 
 import numpy as np
 
+from aspire.image import Image, Xform
 from aspire.numeric import fft, xp
-from aspire.operators import ArrayFilter, ScalarFilter
-from aspire.utils import grid_2d, trange
+from aspire.operators import ArrayFilter, PowerFilter, ScalarFilter
+from aspire.utils import grid_2d, randn, trange
 
 logger = logging.getLogger(__name__)
 
 
 # TODO: Implement correct hierarchy and DRY
+
+
+class NoiseAdder(Xform):
+    """
+    Defines interface for `CustomNoiseAdder`s.
+    """
+
+    def __init__(self, noise_filter, seed=0):
+        """
+        Initialize the random state of this CustomNoiseAdder using specified values.
+
+        :param seed: The random seed used to generate white noise
+        :param noise_filter: An `aspire.operators.Filter` object to use to filter the generated white noise.
+            Note the `noise_filter` will be raised to the 1/2 power.
+        """
+        super().__init__()
+        self.seed = seed
+        self._noise_filter = noise_filter
+        self.noise_filter = PowerFilter(noise_filter, power=0.5)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(noise_filter={self._noise_filter}, seed={self.seed})"
+
+    def __str__(self):
+        return f"{self.__class__.__name__}"
+
+    def _forward(self, im, indices):
+        im = im.copy()
+
+        for i, idx in enumerate(indices):
+            # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
+            random_seed = self.seed + 191 * (idx + 1)
+            im_s = randn(2 * im.res, 2 * im.res, seed=random_seed)
+            im_s = Image(im_s).filter(self.noise_filter)[0]
+            im[i] += im_s[: im.res, : im.res]
+
+        return im
+
+    @abc.abstractproperty
+    def noise_var(self):
+        """
+        Concrete implementations are expected to provide a method that
+        returns the noise variance for the NoiseAdder.
+        """
+
+
+class CustomNoiseAdder(NoiseAdder):
+    """
+    Instantiates a NoiseAdder using the provided `noise_filter`.
+    """
+
+    @property
+    def noise_var(self):
+        """
+        Return noise variance.
+
+        CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
+
+        If you require tuning the noise_var sampling, see `get_noise_var`.
+        """
+        return self.get_noise_var()
+
+    def get_noise_var(self, sample_n=100, sample_res=128):
+        """
+        Return noise variance.
+
+        CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
+
+        :sample_n: Number of images to sample.
+        :sample_res: Resolution of sample (noise) images.
+        """
+        im_zeros = Image(np.zeros((sample_n, sample_res, sample_res)))
+        im_noise_sample = self._forward(im_zeros, range(sample_n))
+        return np.var(im_noise_sample.asnumpy())
+
+
+class WhiteNoiseAdder(NoiseAdder):
+    """
+    A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
+    """
+
+    # TODO, check if we can change seed and/or why not.
+    def __init__(self, var, seed=0):
+        """
+        Return a `CustomNoiseAdder` instance from `noise_var` and using `seed`.
+
+        :param noise_var: Target noise variance.
+        :param seed: Optinally provide a random seed used to generate white noise.
+        """
+        self._noise_var = var
+        super().__init__(noise_filter=ScalarFilter(dim=2, value=var), seed=seed)
+
+    def __str__(self):
+        return f"{self.__class__.__name__} with variance={self._noise_var}"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(var={self._noise_var}, seed={self.seed})"
+
+    @property
+    def noise_var(self):
+        """
+        Returns noise variance.
+
+        Note in this white noise case noise variance is known,
+        because the `WhiteNoiseAdder` was instantied with an explicit variance.
+        """
+        return self._noise_var
 
 
 class NoiseEstimator:
