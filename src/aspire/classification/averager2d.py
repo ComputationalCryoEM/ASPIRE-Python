@@ -413,7 +413,7 @@ class BFSRAverager2D(BFRAverager2D):
             dtype=dtype,
         )
 
-        self.radius = radius or src.L // 8
+        self.radius = radius if radius is not None else src.L // 8
 
         # Each shift will require calling the parent BFRAverager2D.align
         self._bfr_align = super().align
@@ -729,7 +729,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         )
 
         # Assign search radius
-        self.radius = radius or src.L // 8
+        self.radius = radius if radius is not None else src.L // 8
 
     def align(self, classes, reflections, basis_coefficients):
         """
