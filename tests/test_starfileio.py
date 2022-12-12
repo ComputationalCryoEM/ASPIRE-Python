@@ -184,6 +184,8 @@ class StarFileTestCase(TestCase):
         self.assertEqual(len(empty.blocks), 0)
 
     def testGetRelionStarFileVersion(self):
+        # This method should identify the version correctly
         self.assertEqual(getRelionStarFileVersion(self.particles30), "3.0")
         self.assertEqual(getRelionStarFileVersion(self.particles31), "3.1")
+        # This STAR file is not a valid Relion particles star file
         self.assertEqual(getRelionStarFileVersion(self.starfile.filepath), None)
