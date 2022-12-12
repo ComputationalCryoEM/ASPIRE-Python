@@ -2,6 +2,7 @@ class RlnOpticsGroup:
     """
     A thin container to store RELION Optics Group parameters.
     """
+
     def __init__(self, df_row):
         """
         Creates a simple object to store optics group data given a pandas dataframe row.

@@ -1,2 +1,2 @@
 from .mrc import MrcStats
-from .starfile import StarFile, StarFileError
+from .starfile import StarFile, StarFileError, getRelionStarFileVersion

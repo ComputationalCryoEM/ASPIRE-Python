@@ -11,7 +11,7 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.storage import StarFile, StarFileError
+from aspire.storage import StarFile, StarFileError, getRelionStarFileVersion
 from aspire.utils import importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -38,6 +38,14 @@ class StarFileTestCase(TestCase):
     def setUp(self):
         with importlib_path(tests.saved_test_data, "sample_data_model.star") as path:
             self.starfile = StarFile(path)
+        with importlib_path(
+            tests.saved_test_data, "sample_particles_relion30.star"
+        ) as path:
+            self.particles30 = path
+        with importlib_path(
+            tests.saved_test_data, "sample_particles_relion31.star"
+        ) as path:
+            self.particles31 = path
         # Independent Image object for testing Image source methods
         L = 768
         self.im = Image(misc.face(gray=True).astype("float64")[:L, :L])
@@ -174,3 +182,8 @@ class StarFileTestCase(TestCase):
         empty = StarFile()
         self.assertTrue(isinstance(empty.blocks, OrderedDict))
         self.assertEqual(len(empty.blocks), 0)
+
+    def testGetRelionStarFileVersion(self):
+        self.assertEqual(getRelionStarFileVersion(self.particles30), "3.0")
+        self.assertEqual(getRelionStarFileVersion(self.particles31), "3.1")
+        self.assertEqual(getRelionStarFileVersion(self.starfile.filepath), None)

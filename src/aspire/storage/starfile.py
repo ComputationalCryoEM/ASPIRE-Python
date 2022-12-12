@@ -205,3 +205,33 @@ class StarFile:
                 if not self_list[i][1] == other_list[i][1]:
                     return False
         return True
+
+
+def getRelionStarFileVersion(filepath):
+    """
+    Determines whether a supplied STAR file is of Relion 3.0 or 3.1 and on
+        format.
+    :param filepath: Path to a STAR file.
+    :return: Either "3.0" or "3.1", or `None` if ASPIRE cannot interpret this file as a RELION
+        STAR file.
+    """
+    # define the minimal columns that each type of block must contain
+    # to be recognized by ASPIRE
+    minimal_fields_particle_block = ["_rlnImageName"]
+    minimal_fields_optics_block = ["_rlnOpticsGroupName", "_rlnOpticsGroup"]
+    star = StarFile(filepath)
+    # 3.0
+    if len(star) == 1:
+        # must have _rlnImageName to be parsed by RelionSource
+        particles_block = star.get_block_by_index(0)
+        if set(minimal_fields_particle_block).issubset(
+            set(particles_block.columns.to_list())
+        ):
+            return "3.0"
+    # 3.1
+    if len(star) == 2:
+        # must have a block called "optics" and contain group name and number
+        if "optics" in star.blocks and set(minimal_fields_optics_block).issubset(
+            set(star["optics"].columns.to_list())
+        ):
+            return "3.1"
