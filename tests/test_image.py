@@ -1,3 +1,4 @@
+import logging
 import os.path
 from unittest import TestCase
 
@@ -9,6 +10,8 @@ from aspire.image import Image
 from aspire.utils import powerset
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
+
+logger = logging.getLogger(__name__)
 
 
 @parameterized_class(("parity",), [(0,), (1,)])
@@ -43,6 +46,10 @@ class ImageTestCase(TestCase):
 
     def tearDown(self):
         pass
+
+    def testRepr(self):
+        r = repr(self.mdim_ims)
+        logger.info(f"Image repr:\n{r}")
 
     def testImShift(self):
         # Note that the _im_translate method can handle float input shifts, as it

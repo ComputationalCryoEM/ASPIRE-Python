@@ -215,7 +215,9 @@ class Image:
         return Image(np.flip(self._data, axis))
 
     def __repr__(self):
-        return f"{self.n_images} images of size {self.resolution}x{self.resolution}"
+        msg = f"{self.n_images} {self.dtype} images of arranged as a {self.stack_shape} stack"
+        msg += f" each of size {self.resolution}x{self.resolution}."
+        return msg
 
     def asnumpy(self):
         return self._data

@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from itertools import product
@@ -14,6 +15,8 @@ from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
+
+logger = logging.getLogger(__name__)
 
 
 class VolumeTestCase(TestCase):
@@ -40,6 +43,10 @@ class VolumeTestCase(TestCase):
 
     def tearDown(self):
         pass
+
+    def testRepr(self):
+        r = repr(self.vols_12)
+        logger.info(f"Volume repr:\n{r}")
 
     def testAsNumpy(self):
         self.assertTrue(np.all(self.data_1 == self.vols_1.asnumpy()))

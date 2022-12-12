@@ -155,7 +155,11 @@ class Volume:
         return Volume(self._data.reshape(*shape, *self._data.shape[-3:]))
 
     def __repr__(self):
-        return f"{self.n_vols} volumes of size {self.resolution}x{self.resolution}x{self.resolution}"
+        msg = (
+            f"{self.n_vols} {self.dtype} volumes arranged as a {self.stack_shape} stack"
+        )
+        msg += f" each of size {self.resolution}x{self.resolution}x{self.resolution}."
+        return msg
 
     def __len__(self):
         return self.n_vols
