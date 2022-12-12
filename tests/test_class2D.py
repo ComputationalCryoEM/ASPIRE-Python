@@ -270,6 +270,7 @@ class RIRClass2DTestCase(TestCase):
                 self.noisy_fspca_basis.basis,  # FFB basis
                 self.noisy_src,
                 n_angles=100,
+                num_procs=1,
             ),
         )
 
