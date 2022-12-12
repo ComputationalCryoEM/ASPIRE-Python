@@ -21,7 +21,7 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, src, num_procs=1, dtype=None):
+    def __init__(self, composite_basis, src, num_procs=None, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
@@ -108,13 +108,14 @@ class AligningAverager2D(Averager2D):
     """
 
     def __init__(
-        self, composite_basis, src, alignment_basis=None, num_procs=1, dtype=None
+        self, composite_basis, src, alignment_basis=None, num_procs=None, dtype=None
     ):
         """
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D).
         :param src: Source of original images.
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
         :param num_procs: Number of processes to use.
+            `None` will attempt computing a suggestion based on machine resources.
             Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
@@ -185,7 +186,7 @@ class AligningAverager2D(Averager2D):
         def _innerloop(i):
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
-                # Retrieve relavent images directly from source.
+                # Retrieve relevant images directly from source.
                 neighbors_imgs = Image(self._cls_images(classes[i]))
 
                 # Do shifts
@@ -214,7 +215,9 @@ class AligningAverager2D(Averager2D):
             for i in trange(n_classes):
                 b_avgs[i] = _innerloop(i)
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.average"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,
@@ -269,7 +272,7 @@ class BFRAverager2D(AligningAverager2D):
         src,
         alignment_basis=None,
         n_angles=360,
-        num_procs=1,
+        num_procs=None,
         dtype=None,
     ):
         """
@@ -307,13 +310,13 @@ class BFRAverager2D(AligningAverager2D):
         # Instantiate matrices for results
         rotations = np.empty(classes.shape, dtype=self.dtype)
         correlations = np.empty(classes.shape, dtype=self.dtype)
-        results = np.empty((n_nbor, self.n_angles))
 
-        for k in trange(n_classes):
+        def _innerloop(k):
 
+            _correlations = np.empty((n_nbor, self.n_angles))
             # Get the coefs for these neighbors
             if basis_coefficients is None:
-                # Retrieve relavent images
+                # Retrieve relevant images
                 neighbors_imgs = Image(self._cls_images(classes[k]))
 
                 # We optionally can shift the base image by `_base_image_shift`
@@ -336,17 +339,39 @@ class BFRAverager2D(AligningAverager2D):
 
                 # then store dot between class base image (0) and each nbor
                 for j, nbor in enumerate(rotated_nbrs):
-                    results[j, i] = np.dot(nbr_coef[0], nbor)
+                    _correlations[j, i] = np.dot(nbr_coef[0], nbor)
 
             # Now along each class, find the index of the angle reporting highest correlation
-            angle_idx = np.argmax(results, axis=1)
+            angle_idx = np.argmax(_correlations, axis=1)
 
-            # Store that angle as our rotation for this image
-            rotations[k, :] = test_angles[angle_idx]
+            # Take the correlation corresponding to angle_idx
+            _correlations = np.take_along_axis(
+                _correlations, np.expand_dims(angle_idx, axis=1), axis=1
+            ).reshape(n_nbor)
 
-            # Also store the correlations for each neighbor
-            for j in range(n_nbor):
-                correlations[k, j] = results[j, angle_idx[j]]
+            return test_angles[angle_idx], _correlations
+
+        if self.num_procs <= 1:
+            for k in trange(n_classes):
+                # Store angles and correlations for this class
+                rotations[k], correlations[k] = _innerloop(k)
+
+        else:
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
+            )
+            ray.init(
+                _temp_dir=config["ray"]["temp_dir"].as_filename(),
+                num_cpus=self.num_procs,
+                num_gpus=0,
+            )
+            with Pool(self.num_procs) as p:
+                results = p.map(_innerloop, range(n_classes))
+            ray.shutdown()
+
+            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
+            for k, result in enumerate(results):
+                rotations[k], correlations[k] = result
 
         return rotations, None, correlations
 
@@ -369,7 +394,7 @@ class BFSRAverager2D(BFRAverager2D):
         alignment_basis=None,
         n_angles=360,
         radius=None,
-        num_procs=1,
+        num_procs=None,
         dtype=None,
     ):
         """
@@ -566,7 +591,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
 
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,
@@ -605,7 +632,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
-                # Retrieve relavent images directly from source.
+                # Retrieve relevant images directly from source.
                 neighbors_imgs = Image(self._cls_images(classes[i]))
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
@@ -631,7 +658,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             for i in trange(n_classes):
                 b_avgs[i] = _innerloop(i)
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.average"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,
@@ -685,7 +714,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         :param radius: Brute force translation search radius.
             Defaults to src.L//8.
         :param dtype: Numpy dtype to be used during alignment.
-
         :param num_procs: Number of processes to use.
             `None` will attempt computing a suggestion based on machine resources.
             Note some underlying code may already use threading.
@@ -762,7 +790,9 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             for k in trange(n_classes):
                 rotations[k], shifts[k], correlations[k] = _innerloop(k)
         else:
-            logger.info(f"Starting Pool({self.num_procs})")
+            logger.info(
+                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
+            )
             ray.init(
                 _temp_dir=config["ray"]["temp_dir"].as_filename(),
                 num_cpus=self.num_procs,

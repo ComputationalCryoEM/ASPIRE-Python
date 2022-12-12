@@ -208,6 +208,14 @@ class RIRClass2D(Class2D):
             self.averager = BFSReddyChatterjiAverager2D(
                 self.fb_basis, self.src, num_procs=self.num_procs, dtype=self.dtype
             )
+        else:
+            # When user provides `averager` and `num_procs`
+            #   we should warn when `num_procs` mismatched.
+            if self.num_procs is not None and self.averager.num_procs != self.num_procs:
+                logger.warning(
+                    f"{self.__class__.__name__} intialized with num_procs={self.num_procs} does not"
+                    f" match provided {self.averager.__class__.__name__}.{self.averager.num_procs}"
+                )
 
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
