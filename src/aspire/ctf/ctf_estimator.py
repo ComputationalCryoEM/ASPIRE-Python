@@ -678,9 +678,9 @@ class CtfEstimator:
         """
         data_block = {}
         data_block["_rlnMicrographName"] = name
-        data_block["_rlnDefocusU"] = params_dict["defocus_u"]
-        data_block["_rlnDefocusV"] = params_dict["defocus_v"]
-        data_block["_rlnDefocusAngle"] = params_dict["defocus_ang"]
+        data_block["_rlnDefocusU"] = params_dict["defocus_u"]  # Should already be in A
+        data_block["_rlnDefocusV"] = params_dict["defocus_v"]  # Should already be in A
+        data_block["_rlnDefocusAngle"] = params_dict["defocus_ang"] * 180/np.pi  # Convert from radian to degree
         data_block["_rlnSphericalAberration"] = params_dict["cs"]
         data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
         data_block["_rlnVoltage"] = params_dict["voltage"]
@@ -817,8 +817,8 @@ def estimate_ctf(
         ml = np.argmax(cc_array[:, 3], -1)
 
         result = {
-            "defocus_u": cc_array[ml, 0],
-            "defocus_v": cc_array[ml, 1],
+            "defocus_u": cc_array[ml, 0] * 10,  # Convert from nm to A
+            "defocus_v": cc_array[ml, 1] * 10,  # Convert from nm to A
             "defocus_ang": cc_array[ml, 2],  # Radians
             "cs": cs,
             "voltage": voltage,

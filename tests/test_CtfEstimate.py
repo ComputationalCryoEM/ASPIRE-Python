@@ -61,14 +61,14 @@ class CtfEstimatorTestCase(TestCase):
                 logger.debug(f"results: {results}")
 
                 for result in results.values():
-                    # the following parameters have higher tolerances
+                    # The defocus values are set to be within 5% of CTFFIND4
 
                     # defocusU
                     self.assertTrue(
                         np.allclose(
                             result["defocus_u"],
                             self.test_output["defocus_u"],
-                            atol=0.05,
+                            rtol=0.05,
                         )
                     )
                     # defocusV
@@ -78,13 +78,14 @@ class CtfEstimatorTestCase(TestCase):
                             self.test_output["defocus_u"],
                             rtol=0.05,
                         )
-                    )                    
+                    )  
+                    
                     # defocusAngle
                     self.assertTrue(
                         np.allclose(
                             result["defocus_ang"],
                             self.test_output["defocus_ang"],
-                            atol=1,
+                            atol=1*np.pi/180,  # one degree, lol
                         )
                     )
 
