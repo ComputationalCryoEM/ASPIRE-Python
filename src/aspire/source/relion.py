@@ -207,6 +207,7 @@ class RelionSource(ImageSource):
                 f"Cannot interpret {self.filepath} as a valid RELION STAR file representing particles."
             )
 
+        metadata = None
         # load the STAR file
         starfile = StarFile(self.filepath)
         if rln_starfile_version == "3.0":
@@ -215,55 +216,46 @@ class RelionSource(ImageSource):
             df = starfile.get_block_by_index(0)
 
             # Split paths and add ASPIRE-specific metadata columns to the particle block
-            self._process_starfile_particles_block(df)
+            df = self._process_starfile_particles_block(df)
+
+            metadata = df
 
         elif rln_starfile_version == "3.1":
             # Relion 3.1 STAR files store certain fields in a separate optics block
             # which defines optics groups with parameters applying to all particles in that group
             # We have to grab both blocks and build the metadata table applying the
             # parameters for each group to all the particles
-            optics, particles = star["optics"], star["particles"]
+            optics, particles = starfile["optics"], starfile["particles"]
 
             # Split paths and add ASPIRE-specific metadata columns to the particle block
-            self._process_starfile_particles_block(particles)
+            particles = self._process_starfile_particles_block(particles)
 
             # Populate additional parameters coming from optics groups
-            optics_groups = [None]  # start indexing at 1 for readability
+            optics_groups = []
             for _, row in optics.iterrows():
                 optics_groups.append(RlnOpticsGroup(row))
 
             # Now that we have the optics info, we'll inject the data into the particles df
+            optics_params = {
+                "_rlnImagePixelSize": "pixel_size",
+                "_rlnVoltage": "voltage",
+                "_rlnSphericalAberration": "cs",
+                "_rlnAmplitudeContrast": "amplitude_contrast",
+                "_rlnOpticsGroupName": "name",
+            }
             for i, grp in enumerate(optics_groups):
-                indices = np.where(particles["_rlnOpticsGroup"] == i)
-                self.set_metadata(
-                    [
-                        "_rlnOpticsGroupName",
-                        "_rlnVoltage",
-                        "_rlnSphericalAberration",
-                        "_rlnAmplitudeContrast",
-                        "_rlnImagePixelSize",
-                    ],
-                    np.array(
-                        [
-                            [
-                                grp.name,
-                                grp.voltage,
-                                grp.cs,
-                                grp.amplitude_contrast,
-                                grp.pixel_size,
-                            ]
-                        ]
-                        * len(indices)
-                    ),
-                    indices,
-                )
+                match = np.where(particles["_rlnOpticsGroup"] == i + 1)[0]
+                for k, v in optics_params.items():
+                    particles.loc[match, k] = getattr(grp, v)
+
+                metadata = particles
 
         # finally, chop off the df at max_rows
         if self.max_rows is None:
-            return df
+            return metadata
         else:
-            max_rows = min(self.max_rows, len(df))
-            return df.iloc[:max_rows]
+            max_rows = min(self.max_rows, len(metadata))
+            return metadata.iloc[:max_rows]
 
     def _process_starfile_particles_block(self, df):
         """
@@ -292,6 +284,8 @@ class RelionSource(ImageSource):
         df["__mrc_filepath"] = df["__mrc_filename"].apply(
             lambda filename: os.path.join(self.data_folder, filename)
         )
+
+        return df
 
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
