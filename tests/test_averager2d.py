@@ -52,8 +52,6 @@ def xfail_ray_dev():
     return xfail or skip
 
 
-# Ignore Gimbal lock warning for our in plane rotations.
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class Averager2DBase:
     """
     Configure and setup a unit test case bypassing pytest execution.
@@ -119,30 +117,12 @@ class Averager2DBase:
             0, 2 * np.pi, num=self.n_img, endpoint=False, retstep=True, dtype=self.dtype
         )
 
-        # Common 3D rotation matrix, about z.
-        def r(theta):
-            return np.array(
-                [
-                    [np.cos(theta), -np.sin(theta), 0],
-                    [np.sin(theta), np.cos(theta), 0],
-                    [0, 0, 1],
-                ],
-                dtype=self.dtype,
-            )
-
-        # Construct a sequence of rotation matrices using thetas
-        _rots = np.empty((self.n_img, 3, 3), dtype=self.dtype)
-        for n, theta in enumerate(self.thetas):
-            # `theta` is CCW rotation.
-            # We'll rotate the test images by -theta,
-            #   so the alignments should produce a correction of `theta`
-            _rots[n] = r(-theta)
-
-        # Use our Rotation class (maybe it should be able to do this one day?)
-        self.rotations = Rotation.from_matrix(_rots)
+        # `thetas` are CCW rotation.
+        # We'll rotate the test images by -thetas,
+        #   so the alignments should produce a correction of `thetas`
+        self.rotations = Rotation.about_axis("z", -self.thetas, dtype=self.dtype)
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class Averager2DTestCase(Averager2DBase, TestCase):
     """
     Concrete TestCase
@@ -212,7 +192,6 @@ class AligningAverager2DBase(Averager2DBase):
         )
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
 
     averager = BFRAverager2D
@@ -263,7 +242,6 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
         )
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 
     averager = BFSRAverager2D
@@ -322,7 +300,6 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
         self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
@@ -369,7 +346,6 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class BFSReddyChatterjiAverager2DTestCase(ReddyChatterjiAverager2DTestCase):
 
     averager = BFSReddyChatterjiAverager2D
