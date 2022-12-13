@@ -68,8 +68,8 @@ class Simulation(ImageSource):
         :param amplitude: A 1d array of n amplitudes to scale the projection images. Default is
             a random set in the interval [2/3, 3/2].
         :param dtype: dtype for the Simulation
-        :param C: Number of Volumes used to generate projection images. If no Volume is provided
-            the default is C=2, otherwise C=self.vols.n_vols.
+        :param C: Number of Volumes used to generate projection images. The default is C=2.
+            If a `Volume` object is provided this parameter is overridden and `self.C` = `self.vols.n_vols`.
         :param angles: A n-by-3 array of Euler angles for use in projection. Default is a random set.
         :param seed: Random seed.
         :param memory: str or None. The path of the base directory to use as a data store or None.
@@ -86,7 +86,7 @@ class Simulation(ImageSource):
         if vols is None:
             self.vols = LegacyVolume(
                 L=L or 8,
-                C=2,
+                C=C,
                 seed=self.seed,
                 dtype=dtype or np.float32,
             ).generate()
