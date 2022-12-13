@@ -1,6 +1,7 @@
 import inspect
 import logging
 import math
+from functools import lru_cache
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
@@ -56,8 +57,7 @@ def evaluate_src_filters_on_grid(src):
         array containing the evaluated filters at each gridpoint
     """
 
-    grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
-    omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
+    omega = Filter.omega(src.L, src.dtype)
 
     h = np.empty((omega.shape[-1], len(src.filter_indices)), dtype=src.dtype)
     for i, filt in enumerate(src.unique_filters):
@@ -66,7 +66,7 @@ def evaluate_src_filters_on_grid(src):
             filter_values = filt.evaluate(omega)
             h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
-    h = np.reshape(h, grid2d["x"].shape + (len(src.filter_indices),))
+    h = np.reshape(h, (src.L, src.L) + (len(src.filter_indices),))
 
     return h
 
@@ -76,6 +76,9 @@ class Filter:
     def __init__(self, dim=None, radial=False):
         self.dim = dim
         self.radial = radial
+
+        # We want a local cache per instance so it is cleaned up with the instance.
+        self.evaluate_grid = lru_cache(maxsize=8)(self.evaluate_grid)
 
     def __mul__(self, other):
         return MultiplicativeFilter(self, other)
@@ -87,6 +90,21 @@ class Filter:
         """
         return self.__class__.__name__
 
+    @staticmethod
+    @lru_cache(maxsize=8)
+    def omega(L, dtype):
+        """
+        Generate omega grid.
+
+        :param L: Number of grid points (L by L).
+        :param dtype: dtype of grid, defaults np.float32.
+        :return: omega grid as ndarray.
+        """
+        # This grid depends only on `L` and `dtype` and can be cached
+        grid2d = grid_2d(L, indexing="yx", dtype=dtype)
+        return np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
+
+    # This could be cached, but evaluate_grid can be cached based on only L, dtype.
     def evaluate(self, omega):
         """
         Evaluate the filter at specified frequencies.
@@ -146,14 +164,9 @@ class Filter:
         :return: Filter values at omega's points.
         """
 
-        # Note we can probably unwind the "F"/m_reshape here
-        grid2d = grid_2d(L, indexing="yx", dtype=dtype)
-        omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
-        h = self.evaluate(omega, *args, **kwargs)
+        h = self.evaluate(self.omega(L, dtype), *args, **kwargs)
 
-        h = h.reshape(grid2d["x"].shape)
-
-        return h
+        return h.reshape((L, L))
 
     def dual(self):
         return DualFilter(self)
