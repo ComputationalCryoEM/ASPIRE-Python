@@ -255,6 +255,12 @@ class Simulation(ImageSource):
         :param sample_n: Number of projections used for estimate.
         :returns: Estimated signal mean.
         """
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_signal_mean` sample_n > Simulation.n: {sample_n} > Simulation.n."
+                " Accuracy may be impaired."
+            )
+
         # Note, for simulation we are assuming `sample_n` is random
         estimated_mu = np.mean(self.projections[:sample_n].asnumpy())
         logger.info(f"Estimated signal mu {estimated_mu}")
@@ -267,6 +273,12 @@ class Simulation(ImageSource):
         :param sample_n: Number of projections used for estimate.
         :returns: Estimated signal variance.
         """
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_signal_var` sample_n > Simulation.n: {sample_n} > Simulation.n."
+                " Accuracy may be impaired."
+            )
+
         # Note, for simulation we are assuming `sample_n` is random
         estimated_var = np.var(self.projections[:sample_n].asnumpy())
         logger.info(f"Estimated signal var {estimated_var}")
@@ -281,6 +293,11 @@ class Simulation(ImageSource):
         :param sample_n: Number of projections used for estimate.
         :returns: Estimated signal to noise ratio.
         """
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_asnr` sample_n > Simulation.n: {sample_n} > Simulation.n."
+                " Accuracy may be impaired."
+            )
 
         noise_var = self.noise_adder.noise_var
 
@@ -294,6 +311,11 @@ class Simulation(ImageSource):
         :param sample_n: Number of projections used for estimate.
         :returns: Estimated signal to noise ratio.
         """
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_snr` sample_n > Simulation.n: {sample_n} > Simulation.n."
+                " Accuracy may be impaired."
+            )
 
         noise_var = self.noise_adder.noise_var
 
@@ -342,6 +364,11 @@ class Simulation(ImageSource):
         :param sample_n: Number of images used for estimate.
         :returns: Estimated peak signal to noise ratio in decibels.
         """
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_psnr` sample_n > Simulation.n: {sample_n} > Simulation.n."
+                " Accuracy may be impaired."
+            )
 
         signal = self.projections[:sample_n].asnumpy()
         images = self.images[:sample_n].asnumpy()

@@ -81,8 +81,14 @@ class CustomNoiseAdder(NoiseAdder):
 
         CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
 
+        It is highly encouraged that authors of `CustomNoiseAdder`s consider
+        any theoretically superior methods of calculating noise variance,
+        or test that this method's default values are satisfactory for their
+        implementation.
+
         :sample_n: Number of images to sample.
         :sample_res: Resolution of sample (noise) images.
+        :returns: Noise Variance.
         """
         im_zeros = Image(np.zeros((sample_n, sample_res, sample_res)))
         im_noise_sample = self._forward(im_zeros, range(sample_n))
