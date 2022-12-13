@@ -11,7 +11,7 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
 from aspire.storage import StarFile, getRelionStarFileVersion
-from aspire.utils.relion_interop import RlnOpticsGroup
+from aspire.utils.relion_interop import RlnParticleOpticsGroup
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +233,7 @@ class RelionSource(ImageSource):
             # Populate additional parameters coming from optics groups
             optics_groups = []
             for _, row in optics.iterrows():
-                optics_groups.append(RlnOpticsGroup(row))
+                optics_groups.append(RlnParticleOpticsGroup(row, version="3.1"))
 
             # Now that we have the optics info, we'll inject the data into the particles df
             optics_params = {

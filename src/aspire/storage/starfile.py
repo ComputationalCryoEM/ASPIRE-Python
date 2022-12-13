@@ -218,6 +218,7 @@ def getRelionStarFileVersion(filepath):
     # define the minimal columns that each type of block must contain
     # to be recognized by ASPIRE
     minimal_fields_particle_block = ["_rlnImageName"]
+    minimal_fields_micrograph_block = ["_rlnMicrographName"]
     minimal_fields_optics_block = ["_rlnOpticsGroupName", "_rlnOpticsGroup"]
     star = StarFile(filepath)
     # 3.0
@@ -225,6 +226,8 @@ def getRelionStarFileVersion(filepath):
         # must have _rlnImageName to be parsed by RelionSource
         particles_block = star.get_block_by_index(0)
         if set(minimal_fields_particle_block).issubset(
+            set(particles_block.columns.to_list())
+        ) or set(minimal_fields_micrograph_block).issubset(
             set(particles_block.columns.to_list())
         ):
             return "3.0"

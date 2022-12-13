@@ -10,8 +10,8 @@ import numpy as np
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
-from aspire.storage import StarFile
-from aspire.utils.relion_interop import RlnOpticsGroup
+from aspire.storage import StarFile, getRelionStarFileVersion
+from aspire.utils.relion_interop import RlnMicrographOpticsGroup
 
 logger = logging.getLogger(__name__)
 
@@ -316,6 +316,11 @@ class CoordinateSource(ImageSource, ABC):
         (Note: number of micrographs must match number of micrographs in CoordinateSource)
         """
         # RELION star files store CTF data in two separate blocks
+        relion_version = getRelionStarFileVersion(ctf_starfile)
+        if relion_version == None:
+            raise ValueError(
+                f"Cannot recognize {ctf_starfile} as a valid RELION micrographs file."
+            )
         star = StarFile(ctf_starfile)
         optics = star["optics"]
         micrographs = star["micrographs"]
@@ -323,7 +328,7 @@ class CoordinateSource(ImageSource, ABC):
         # optics groups
         optics_groups = [None]  # start indexing at 1
         for _, row in optics.iterrows():
-            optics_groups.append(RlnOpticsGroup(row))
+            optics_groups.append(RlnMicrographOpticsGroup(row, relion_version))
 
         # micrographs
         if not len(micrographs) == len(self.mrc_paths):
