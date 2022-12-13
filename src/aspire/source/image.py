@@ -568,6 +568,13 @@ class ImageSource(ABC):
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
 
+    @abstractmethod
+    def copy(self, starfile_filepath=None):
+        """
+        `ImageSource` subclasses must implement a `copy()` method that returns an identical
+             instance.
+        """
+
     def save(
         self,
         starfile_filepath,
