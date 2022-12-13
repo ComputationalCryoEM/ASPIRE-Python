@@ -728,7 +728,7 @@ def estimate_ctf(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
 
-    lmbd = voltage_to_wavelength(voltage) / 10  # Convert from Angstrong to nm
+    lmbd = voltage_to_wavelength(voltage) / 10  # Convert from Angstrom to nm
 
     ctf_object = CtfEstimator(
         pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
