@@ -25,7 +25,7 @@ class CtfEstimatorTestCase(TestCase):
             "defocus_ang": -65.26,  # Degree wrt some axis
             "cs": 2.0,
             "voltage": 300.0,
-            "pixel_size": 1.77,
+            "pixel_size": 1.77,     # EMPIAR 10017
             "amplitude_contrast": 0.07,
         }
 
