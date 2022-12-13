@@ -317,7 +317,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         # RELION star files store CTF data in two separate blocks
         relion_version = getRelionStarFileVersion(ctf_starfile)
-        if relion_version == None:
+        if not relion_version:
             raise ValueError(
                 f"Cannot recognize {ctf_starfile} as a valid RELION micrographs file."
             )
