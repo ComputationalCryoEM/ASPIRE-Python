@@ -21,7 +21,7 @@ class StarFileTestCase(TestCase):
 
     def setUp(self):
         # this method is used by StarFileMainCase but overridden by StarFileOneImage
-        self.setUpStarFile("sample_relion_data.star")
+        self.setUpStarFile("sample_particles_relion30.star")
 
     def tearDown(self):
         pass

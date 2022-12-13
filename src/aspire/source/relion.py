@@ -10,7 +10,8 @@ import pandas as pd
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
-from aspire.storage import StarFile
+from aspire.storage import StarFile, getRelionStarFileVersion
+from aspire.utils.relion_interop import RlnOpticsGroup
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,8 @@ class RelionSource(ImageSource):
         "_rlnNrOfSignificantSamples": float,
         "_rlnNrOfFrames": int,
         "_rlnMaxValueProbDistribution": float,
+        "_rlnOpticsGroup": int,
+        "_rlnOpticsGroupName": str,
     }
 
     def __init__(
@@ -90,11 +93,14 @@ class RelionSource(ImageSource):
         """
         logger.info(f"Creating ImageSource from STAR file at path {filepath}")
 
+        self.filepath = filepath
+        self.data_folder = data_folder
         self.pixel_size = pixel_size
         self.B = B
         self.n_workers = n_workers
+        self.max_rows = max_rows
 
-        metadata = self.populate_metadata(filepath, data_folder, max_rows)
+        metadata = self.populate_metadata()
 
         n = len(metadata)
         if n == 0:
@@ -180,21 +186,89 @@ class RelionSource(ImageSource):
 
         logger.info(f"Populated {self.n_ctf_filters} CTFFilters from '{filepath}'")
 
-    def populate_metadata(self, filepath, data_folder=None, max_rows=None):
+    def populate_metadata(self):
         """
         Relion STAR files may contain a large number of metadata columns in addition
         to the locations of particles. We read this into a Pandas DataFrame and add some of
         our own columns for convenience.
         """
-        if data_folder is not None:
-            if not os.path.isabs(data_folder):
-                data_folder = os.path.join(os.path.dirname(filepath), data_folder)
+        if self.data_folder is not None:
+            if not os.path.isabs(self.data_folder):
+                self.data_folder = os.path.join(
+                    os.path.dirname(self.filepath), self.data_folder
+                )
         else:
-            data_folder = os.path.dirname(filepath)
+            self.data_folder = os.path.dirname(self.filepath)
 
-        # Valid Relion STAR files always have their data in the first loop of the first block.
-        # We are getting the first (and only) block in this StarFile object
-        df = StarFile(filepath).get_block_by_index(0)
+        rln_starfile_version = getRelionStarFileVersion(self.filepath)
+
+        if not rln_starfile_version:
+            raise ValueError(
+                f"Cannot interpret {self.filepath} as a valid RELION STAR file representing particles."
+            )
+
+        # load the STAR file
+        starfile = StarFile(self.filepath)
+        if rln_starfile_version == "3.0":
+            # Relion 3.0 STAR files contain one block containing all particle information
+            # We are getting the first (and only) block in this StarFile object
+            df = starfile.get_block_by_index(0)
+
+            # Split paths and add ASPIRE-specific metadata columns to the particle block
+            self._process_starfile_particles_block(df)
+
+        elif rln_starfile_version == "3.1":
+            # Relion 3.1 STAR files store certain fields in a separate optics block
+            # which defines optics groups with parameters applying to all particles in that group
+            # We have to grab both blocks and build the metadata table applying the
+            # parameters for each group to all the particles
+            optics, particles = star["optics"], star["particles"]
+
+            # Split paths and add ASPIRE-specific metadata columns to the particle block
+            self._process_starfile_particles_block(particles)
+
+            # Populate additional parameters coming from optics groups
+            optics_groups = [None]  # start indexing at 1 for readability
+            for _, row in optics.iterrows():
+                optics_groups.append(RlnOpticsGroup(row))
+
+            # Now that we have the optics info, we'll inject the data into the particles df
+            for i, grp in enumerate(optics_groups):
+                indices = np.where(particles["_rlnOpticsGroup"] == i)
+                self.set_metadata(
+                    [
+                        "_rlnOpticsGroupName",
+                        "_rlnVoltage",
+                        "_rlnSphericalAberration",
+                        "_rlnAmplitudeContrast",
+                        "_rlnImagePixelSize",
+                    ],
+                    np.array(
+                        [
+                            [
+                                grp.name,
+                                grp.voltage,
+                                grp.cs,
+                                grp.amplitude_contrast,
+                                grp.pixel_size,
+                            ]
+                        ]
+                        * len(indices)
+                    ),
+                    indices,
+                )
+
+        # finally, chop off the df at max_rows
+        if self.max_rows is None:
+            return df
+        else:
+            max_rows = min(self.max_rows, len(df))
+            return df.iloc[:max_rows]
+
+    def _process_starfile_particles_block(self, df):
+        """
+        Do DataFrame manipulation common to both 3.0 and 3.1 Relion STAR files.
+        """
         # convert STAR file strings to data type for each field
         # columns without a specified data type are read as dtype=object
         column_types = {
@@ -216,14 +290,8 @@ class RelionSource(ImageSource):
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself
         df["__mrc_filepath"] = df["__mrc_filename"].apply(
-            lambda filename: os.path.join(data_folder, filename)
+            lambda filename: os.path.join(self.data_folder, filename)
         )
-
-        if max_rows is None:
-            return df
-        else:
-            max_rows = min(max_rows, len(df))
-            return df.iloc[:max_rows]
 
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
