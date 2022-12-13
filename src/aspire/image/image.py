@@ -233,7 +233,7 @@ class Image:
         return Image(np.flip(self._data, axis))
 
     def __repr__(self):
-        msg = f"{self.n_images} {self.dtype} images of arranged as a {self.stack_shape} stack"
+        msg = f"{self.n_images} {self.dtype} images arranged as a {self.stack_shape} stack"
         msg += f" each of size {self.resolution}x{self.resolution}."
         return msg
 
