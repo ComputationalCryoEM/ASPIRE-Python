@@ -313,9 +313,9 @@ class NoiseAdder(Xform):
         for i, idx in enumerate(indices):
             # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
             random_seed = self.seed + 191 * (idx + 1)
-            im_s = randn(2 * im.res, 2 * im.res, seed=random_seed)
+            im_s = randn(2 * im.resolution, 2 * im.resolution, seed=random_seed)
             im_s = Image(im_s).filter(self.noise_filter)[0]
-            im[i] += im_s[: im.res, : im.res]
+            im[i] += im_s[: im.resolution, : im.resolution]
 
         return im
 

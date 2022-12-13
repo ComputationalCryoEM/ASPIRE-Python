@@ -92,7 +92,16 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        return self._cls(self._evaluate(v))
+        # Flatten stack, ndim is wrt Basis (2 or 3)
+        stack_shape = v.shape[:-1]
+        v = v.reshape(-1, self.count)
+        # Compute the transform
+        x = self._evaluate(v)
+        # Restore stack shape
+        x = x.reshape(*stack_shape, *self.sz)
+
+        # Return the appropriate class
+        return self._cls(x)
 
     def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
@@ -120,7 +129,17 @@ class Basis:
             )
         else:
             v = v.asnumpy()
-        return self._evaluate_t(v)
+
+        # Flatten stack, ndim is wrt Basis (2 or 3)
+        stack_shape = v.shape[: -self.ndim]
+        v = v.reshape(-1, *v.shape[-self.ndim :])
+        # Compute the adjoint
+        x = self._evaluate_t(v)
+        # Restore stack shape
+        x = x.reshape(*stack_shape, self.count)
+
+        # Return an ndarray
+        return x
 
     def _evaluate_t(self, v):
         raise NotImplementedError("Subclasses should implement this")
@@ -203,5 +222,5 @@ class Basis:
                 raise RuntimeError("Unable to converge!")
 
         # return v coefficients with the last dimension of self.count
-        v = v.reshape((*sz_roll, -1))
+        v = v.reshape((*sz_roll, self.count))
         return v
