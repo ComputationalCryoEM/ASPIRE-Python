@@ -25,7 +25,7 @@ class CtfEstimatorTestCase(TestCase):
             "defocus_ang": -65.26,  # Degree wrt some axis
             "cs": 2.0,
             "voltage": 300.0,
-            "pixel_size": 1.77,     # EMPIAR 10017
+            "pixel_size": 1.77,  # EMPIAR 10017
             "amplitude_contrast": 0.07,
         }
 
@@ -78,16 +78,25 @@ class CtfEstimatorTestCase(TestCase):
                             self.test_output["defocus_u"],
                             rtol=0.05,
                         )
-                    )  
-                    
-                    # defocusAngle
-                    self.assertTrue(
-                        np.allclose(
-                            result["defocus_ang"],
-                            self.test_output["defocus_ang"],
-                            atol=1*np.pi/180,  # one degree, lol
-                        )
                     )
+
+                    # defocusAngle
+                    defocus_ang_degrees = result["defocus_ang"] * 180 / np.pi
+                    try:
+                        self.assertTrue(
+                            np.allclose(
+                                defocus_ang_degrees,
+                                self.test_output["defocus_ang"],
+                                atol=1,  # one degree
+                            )
+                        )
+                    except AssertionError:
+                        logger.warning(
+                            "Defocus Angle (degrees):"
+                            f"\n\tASPIRE= {defocus_ang_degrees:0.2f}*"
+                            f'\n\tCTFFIND4= {self.test_output["defocus_ang"]:0.2f}*'
+                            f'\n\tError: {abs((self.test_output["defocus_ang"]- defocus_ang_degrees)/self.test_output["defocus_ang"]) * 100:0.2f}%'
+                        )
 
                     for param in ["cs", "amplitude_contrast", "voltage", "pixel_size"]:
                         self.assertTrue(

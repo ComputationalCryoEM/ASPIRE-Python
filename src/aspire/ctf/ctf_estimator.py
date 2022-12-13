@@ -59,7 +59,7 @@ class CtfEstimator:
         self.voltage = voltage
         self.psd_size = psd_size
         self.num_tapers = num_tapers
-        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # (Angstrom)
+        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert Angstrom to nm
         self.dtype = np.dtype(dtype)
 
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
@@ -404,7 +404,7 @@ class CtfEstimator:
         center = N // 2
 
         grid = grid_1d(N, normalized=True, dtype=self.dtype)
-        rb = grid["x"][center:] / 2
+        rb = grid["r"][center:] / 2
 
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
@@ -680,7 +680,9 @@ class CtfEstimator:
         data_block["_rlnMicrographName"] = name
         data_block["_rlnDefocusU"] = params_dict["defocus_u"]  # Should already be in A
         data_block["_rlnDefocusV"] = params_dict["defocus_v"]  # Should already be in A
-        data_block["_rlnDefocusAngle"] = params_dict["defocus_ang"] * 180/np.pi  # Convert from radian to degree
+        data_block["_rlnDefocusAngle"] = (
+            params_dict["defocus_ang"] * 180 / np.pi
+        )  # Convert from radian to degree
         data_block["_rlnSphericalAberration"] = params_dict["cs"]
         data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
         data_block["_rlnVoltage"] = params_dict["voltage"]
@@ -726,7 +728,7 @@ def estimate_ctf(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
 
-    lmbd = voltage_to_wavelength(voltage) / 10  # (Angstrom)
+    lmbd = voltage_to_wavelength(voltage) / 10  # Convert from Angstrong to nm
 
     ctf_object = CtfEstimator(
         pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
@@ -841,8 +843,8 @@ def estimate_ctf(
                 mrc.voxel_size = pixel_size
 
         if save_ctf_images:
-            ctf_object.set_df1(cc_array[ml, 0])
-            ctf_object.set_df2(cc_array[ml, 1])
+            ctf_object.set_df1(cc_array[ml, 0])  # Angstrom
+            ctf_object.set_df2(cc_array[ml, 1])  # Angstrom
             ctf_object.set_angle(cc_array[ml, 2])  # Radians
             ctf_object.generate_ctf()
             df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(
