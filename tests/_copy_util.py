@@ -59,14 +59,26 @@ def img_accessors_deepcopied(i1, i2):
     return i1.fun is not i2.fun
 
 
+def ndarrays_deepcopied(ar1, ar2):
+    # Source attributes which are just numpy arrays
+    # should not have the same ID
+    return ar1 is not ar2
+
+
+def unique_filters_deepcopied(l1, l2):
+    return all([l1[i] is not l2[i] for i in range(len(l1))])
+
+
 # map ImageSource/subclass attributes to functions in this file that will
 # ensure they are deep copied
 _source_vars = {
-    "_image_accessor": img_accessors_deepcopied,
+    "_img_accessor": img_accessors_deepcopied,
     "_projections_accessor": img_accessors_deepcopied,
-    "_clean_image_accessor": img_accessors_deepcopied,
+    "_clean_images_accessor": img_accessors_deepcopied,
     "_rotations": rotations_deepcopied,
     "generation_pipeline": xforms_deepcopied,
+    "filter_indices": ndarrays_deepcopied,
+    "unique_filters": unique_filters_deepcopied,
 }
 
 # test files can import the list of source vars to test against
