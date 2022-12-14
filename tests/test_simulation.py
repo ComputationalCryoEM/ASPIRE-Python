@@ -11,6 +11,8 @@ from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
 
+from . import _copy_util
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
@@ -584,3 +586,13 @@ class SimTestCase(TestCase):
             imgs_sav = relion_src.images[:1024]
             # Compare original images with saved images
             self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
+
+    def testSimCopy(self):
+        sim_copy = self.sim.copy()
+        for var in _copy_util.source_vars:
+            if hasattr(self.sim, var):
+                self.assertTrue(
+                    _copy_util.source_vars_deepcopied(
+                        getattr(self.sim, var), getattr(sim_copy, var), var
+                    )
+                )

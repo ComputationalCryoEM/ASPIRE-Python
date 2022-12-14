@@ -12,7 +12,7 @@ from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import Rotation, utest_tolerance
 
-from ._copy_util import rotations_deepcopied, xforms_deepcopied
+from . import _copy_util
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -205,7 +205,10 @@ class ImageTestCase(TestCase):
         # test deep copy of an ArrayImageSource
         src1 = ArrayImageSource(self.im, angles=np.random.random((self.n, 3)))
         src2 = src1.copy()
-        self.assertTrue(
-            xforms_deepcopied(src1.generation_pipeline, src2.generation_pipeline)
-        )
-        self.assertTrue(rotations_deepcopied(src1._rotations, src2._rotations))
+        for var in _copy_util.source_vars:
+            if hasattr(src1, var):
+                self.assertTrue(
+                    _copy_util.source_vars_deepcopied(
+                        getattr(src1, var), getattr(src2, var), var
+                    )
+                )

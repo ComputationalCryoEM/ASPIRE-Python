@@ -50,3 +50,30 @@ def xforms_deepcopied(xf1, xf2):
 
     # All other Xform objects we assume are deepcopied
     return True
+
+
+def img_accessors_deepcopied(i1, i2):
+    # functions should have different ids after deep copy
+    return i1.fun is not i2.fun
+
+
+# map ImageSource/subclass attributes to functions in this file that will
+# ensure they are deep copied
+_source_vars = {
+    "_image_accessor": img_accessors_deepcopied,
+    "_projections_accessor": img_accessors_deepcopied,
+    "_clean_image_accessor": img_accessors_deepcopied,
+    "_rotations": rotations_deepcopied,
+    "generation_pipeline": xforms_deepcopied,
+}
+
+# test files can import the list of source vars to test against
+source_vars = list(_source_vars.keys())
+
+
+def source_vars_deepcopied(v1, v2, name):
+    # if both are None, then no check necessary
+    if v1 is None and v2 is None:
+        return True
+    fun = _source_vars[name]
+    return fun(v1, v2)

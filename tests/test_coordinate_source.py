@@ -18,6 +18,8 @@ from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
 from aspire.utils import importlib_path
 
+from . import _copy_util
+
 
 class CoordinateSourceTestCase(TestCase):
     def setUp(self):
@@ -495,6 +497,17 @@ class CoordinateSourceTestCase(TestCase):
                     src.get_metadata("_rlnCoordinateY", i),
                 ],
             )
+
+    def testCopy(self):
+        src = BoxesCoordinateSource(self.files_box)
+        src_copy = src.copy()
+        for var in _copy_util.source_vars:
+            if hasattr(src, var):
+                self.assertTrue(
+                    _copy_util.source_vars_deepcopied(
+                        getattr(src, var), getattr(src_copy, var), var
+                    )
+                )
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
