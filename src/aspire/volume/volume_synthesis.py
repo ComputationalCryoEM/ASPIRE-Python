@@ -45,10 +45,18 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         self.alpha = float(alpha)
         super().__init__(L=L, C=C, seed=seed, dtype=dtype)
 
-    @abc.abstractmethod
-    def _symmetrize_gaussians(self):
+    @abc.abstractproperty
+    def n_blobs(self):
         """
-        Called to add symmetry to Volumes by generating for each Gaussian blob duplicates in symmetric positions.
+        The total number of Gaussian blobs used to generate a Volume.
+        This value differs from `self.K` as it accounts for the blobs
+        which have been duplicated during `_symmetrize_gaussians`.
+        """
+
+    @abc.abstractproperty
+    def symmetry_group(self):
+        """
+        This property will be implemented by each subclass.
         """
 
     def generate(self):
@@ -90,10 +98,31 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         for k in range(self.K):
             V = randn(3, 3).astype(self.dtype) / np.sqrt(3)
             Q[k, :, :] = qr(V)[0]
-            D[k, :, :] = self.alpha**2 / self.K * np.diag(np.sum(abs(V) ** 2, axis=0))
+            D[k, :, :] = (
+                self.alpha**2 / self.n_blobs * np.diag(np.sum(abs(V) ** 2, axis=0))
+            )
             mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
 
         return Q, D, mu
+
+    def _symmetrize_gaussians(self, Q, D, mu):
+        """
+        Called to add symmetry to Volumes by generating for each Gaussian blob duplicates in symmetric positions.
+        """
+        rots = self.symmetry_group.matrices
+
+        Q_rot = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
+        D_sym = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
+        mu_rot = np.zeros(shape=(self.n_blobs, 3)).astype(self.dtype)
+        idx = 0
+
+        for rot in rots:
+            for k in range(self.K):
+                Q_rot[idx] = rot.T @ Q[k]
+                D_sym[idx] = D[k]
+                mu_rot[idx] = rot.T @ mu[k]
+                idx += 1
+        return Q_rot, D_sym, mu_rot
 
     def _eval_gaussians(self, Q, D, mu):
         """
@@ -152,26 +181,24 @@ class CnSymmetricVolume(GaussianBlobsVolume):
                 f"For a {self.__class__.__name__} the cyclic order must be greater than 1. Provided order was {self.order}"
             )
 
-    def _symmetrize_gaussians(self, Q, D, mu):
+    @property
+    def n_blobs(self):
+        return self.order * self.K
+
+    @property
+    def symmetry_group(self):
         """
-        Called to induce Cn symmetry on the coordinates and orientation of the Gaussian blobs.
+        The Cn symmetry group contains all rotations about the z-axis
+        by multiples of 2pi/n.
+
+        In the case of an AsymmetricVolume or LegacyVolume, `symmetry_group`
+        contains only the identity.
+
+        :return: Rotation object containing the Cn symmetry group and the identity.
         """
         angles = np.zeros((self.order, 3), dtype=self.dtype)
         angles[:, 2] = 2 * np.pi * np.arange(self.order) / self.order
-        rot = Rotation.from_euler(angles).matrices
-
-        Q_rot = np.zeros(shape=(self.order * self.K, 3, 3)).astype(self.dtype)
-        D_sym = np.zeros(shape=(self.order * self.K, 3, 3)).astype(self.dtype)
-        mu_rot = np.zeros(shape=(self.order * self.K, 3)).astype(self.dtype)
-        idx = 0
-
-        for j in range(self.order):
-            for k in range(self.K):
-                Q_rot[idx] = rot[j].T @ Q[k]
-                D_sym[idx] = 1 / self.order * D[k]
-                mu_rot[idx] = rot[j].T @ mu[k]
-                idx += 1
-        return Q_rot, D_sym, mu_rot
+        return Rotation.from_euler(angles, dtype=self.dtype)
 
 
 class DnSymmetricVolume(CnSymmetricVolume):
@@ -179,30 +206,30 @@ class DnSymmetricVolume(CnSymmetricVolume):
     A Volume object with n-fold dihedral symmetry constructed of random 3D Gaussian blobs.
     """
 
-    def _symmetrize_gaussians(self, Q, D, mu):
+    @property
+    def n_blobs(self):
+        return 2 * self.order * self.K
+
+    @property
+    def symmetry_group(self):
         """
-        Called to induce dihedral symmetry on the coordinates and orientation of the Gaussian blobs.
+        The Dn symmetry group contains all elements of the Cn symmetry group.
+        In addition, for each element of the Cn symmetric group we rotate by
+        pi about a perpendicular axis, in this case the y-axis.
+
+        :return: Rotation object containing the Dn symmetry group and the identity.
         """
-        angles = 2 * np.pi * np.arange(self.order, dtype=self.dtype) / self.order
         # Rotations to induce cyclic symmetry
+        angles = 2 * np.pi * np.arange(self.order, dtype=self.dtype) / self.order
         rot_z = Rotation.about_axis("z", angles).matrices
+
         # Perpendicular rotation to induce dihedral symmetry
-        rot_perp = Rotation.about_axis("y", np.pi).matrices
+        rot_perp = Rotation.about_axis("y", np.pi, dtype=self.dtype).matrices
 
-        Q_rot = np.zeros(shape=(2 * self.order * self.K, 3, 3)).astype(self.dtype)
-        D_sym = np.zeros(shape=(2 * self.order * self.K, 3, 3)).astype(self.dtype)
-        mu_rot = np.zeros(shape=(2 * self.order * self.K, 3)).astype(self.dtype)
-        idx = 0
+        # Full set of rotations.
+        rots = np.concatenate((rot_z, rot_z @ rot_perp[0].T), dtype=self.dtype)
 
-        for j in range(self.order):
-            for k in range(self.K):
-                Q_rot[idx] = rot_z[j].T @ Q[k]
-                Q_rot[idx + 1] = rot_perp @ Q_rot[idx]
-                D_sym[idx : idx + 2] = 1 / (2 * self.order) * D[k]
-                mu_rot[idx] = rot_z[j].T @ mu[k]
-                mu_rot[idx + 1] = rot_perp @ mu_rot[idx]
-                idx += 2
-        return Q_rot, D_sym, mu_rot
+        return Rotation(rots)
 
 
 class TSymmetricVolume(GaussianBlobsVolume):
@@ -210,15 +237,21 @@ class TSymmetricVolume(GaussianBlobsVolume):
     A Volume object with tetrahedral symmetry constructed of random 3D Gaussian blobs.
     """
 
-    def _symmetrize_gaussians(self, Q, D, mu):
-        """
-        Called to induce tetrahedral symmetry on the coordinates and orientation of the Gaussian blobs.
-        """
-        # A tetrahedron has C3 symmetry along the 4 axes through each vertex and
-        # perpendicular to the opposite face, and C2 symmetry along the axes through
-        # through the midpoints of opposite edges. We convert axis-angle representation
-        # of the symmetry groups to rotation vectors to generate the rotation matrices.
+    @property
+    def n_blobs(self):
+        return 12 * self.K
 
+    @property
+    def symmetry_group(self):
+        """
+        A tetrahedron has C3 symmetry along the 4 axes through each vertex and
+        perpendicular to the opposite face, and C2 symmetry along the axes through
+        the midpoints of opposite edges. We convert from axis-angle representation of
+        the symmetry group elements into rotation vectors to generate the rotation
+        matrices via the `from_rotvec()` method.
+
+        :return: Rotation object containing the tetrahedral symmetry group and the identity.
+        """
         # C3 rotation vectors, ie. angle * axis.
         axes_C3 = np.array(
             [[1, 1, 1], [-1, -1, 1], [1, -1, -1], [-1, 1, -1]], dtype=self.dtype
@@ -239,22 +272,8 @@ class TSymmetricVolume(GaussianBlobsVolume):
             (rot_vec_I, rot_vecs_C3, rot_vecs_C2), dtype=self.dtype
         )
 
-        # Generate rotations.
-        rots_T = Rotation.from_rotvec(rot_vecs, dtype=self.dtype).matrices
-
-        # Populate coordinates for Gaussian blobs.
-        Q_rot = np.zeros((12 * self.K, 3, 3)).astype(self.dtype)
-        D_sym = np.zeros((12 * self.K, 3, 3)).astype(self.dtype)
-        mu_rot = np.zeros((12 * self.K, 3)).astype(self.dtype)
-        idx = 0
-        for rot in rots_T:
-            for k in range(self.K):
-                Q_rot[idx] = rot.T @ Q[k]
-                D_sym[idx] = 1 / 12 * D[k]
-                mu_rot[idx] = rot.T @ mu[k]
-                idx += 1
-
-        return Q_rot, D_sym, mu_rot
+        # Return rotations.
+        return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
 
 
 class OSymmetricVolume(GaussianBlobsVolume):
@@ -262,15 +281,21 @@ class OSymmetricVolume(GaussianBlobsVolume):
     A Volume object with octahedral symmetry constructed of random 3D Gaussian blobs.
     """
 
-    def _symmetrize_gaussians(self, Q, D, mu):
+    @property
+    def n_blobs(self):
+        return 24 * self.K
+
+    @property
+    def symmetry_group(self):
         """
-        Called to induce tetrahedral symmetry on the coordinates and orientation of the Gaussian blobs.
+        The symmetry group elements of the octahedral symmetry group O are the identity,
+        the elements of 3 C4 rotation groups whose axes pass through two opposite vertices of the
+        regular octahedron, 4 C3 rotation groups whose axes pass through the midpoints of two of
+        its opposite faces, and 6 C2 rotation groups whose axes pass through the midpoints of two of
+        its opposite edges.
+
+        :return: Rotation object containing the octahedral symmetry group and the identity.
         """
-        # The symmetry group elements of the octahedral symmetry group O are the identity,
-        # the elements of 3 C4 rotation groups whose axes pass through two opposite vertices of the
-        # regular octahedron, 4 C3 rotation groups whose axes pass through the midpoints of two of
-        # its opposite faces, and 6 C2 rotation groups whose axes pass through the midpoints of two of
-        # its opposite edges.
 
         # C4 rotation vectors, ie angle * axis
         axes_C4 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=self.dtype)
@@ -303,22 +328,8 @@ class OSymmetricVolume(GaussianBlobsVolume):
             (rot_vec_I, rot_vecs_C4, rot_vecs_C3, rot_vecs_C2), dtype=self.dtype
         )
 
-        # Generate rotations.
-        rots_O = Rotation.from_rotvec(rot_vecs, dtype=self.dtype).matrices
-
-        # Populate coordinates for Gaussian blobs.
-        Q_rot = np.zeros((24 * self.K, 3, 3)).astype(self.dtype)
-        D_sym = np.zeros((24 * self.K, 3, 3)).astype(self.dtype)
-        mu_rot = np.zeros((24 * self.K, 3)).astype(self.dtype)
-        idx = 0
-        for rot in rots_O:
-            for k in range(self.K):
-                Q_rot[idx] = rot.T @ Q[k]
-                D_sym[idx] = 1 / 24 * D[k]
-                mu_rot[idx] = rot.T @ mu[k]
-                idx += 1
-
-        return Q_rot, D_sym, mu_rot
+        # Return rotations.
+        return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
 
 
 class AsymmetricVolume(CnSymmetricVolume):
