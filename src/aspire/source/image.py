@@ -212,13 +212,7 @@ class ImageSource(ABC):
         """
         Converts internal _rotations representation to expected matrix form.
         """
-        if self._rotations is not None:
-            return self._rotations.angles.astype(self.dtype)
-        else:
-            logger.warning(
-                f"{self.__class__.__name__} was not initialized with rotations. No Euler rotations to return."
-            )
-            return None
+        return self._rotations.angles.astype(self.dtype)
 
     @property
     def rotations(self):
@@ -236,13 +230,7 @@ class ImageSource(ABC):
 
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        if self._rotations is not None:
-            return self._rotations.matrices.astype(self.dtype)
-        else:
-            logger.warning(
-                f"{self.__class__.__name__} was not initialized with rotations. No rotation matrices to return."
-            )
-            return None
+        return self._rotations.matrices.astype(self.dtype)
 
     @angles.setter
     def angles(self, values):
@@ -875,3 +863,33 @@ class ArrayImageSource(ImageSource):
         return self.generation_pipeline.forward(
             Image(self._cached_im[indices, :, :]), indices
         )
+
+    def _rots(self):
+        """
+        Private method, checks if `_rotations` has been set,
+        then returns inherited rotations, otherwise raise.
+        """
+
+        if self._rotations is not None:
+            return super()._rots()
+        else:
+            raise RuntimeError(
+                "Consumer of ArrayImageSource trying to access rotations,"
+                " but rotations were not defined for this source."
+                "  Try instantiating with angles."
+            )
+
+    def _angles(self):
+        """
+        Private method, checks if `_rotations` has been set,
+        then returns inherited angles, otherwise raise.
+        """
+
+        if self._rotations is not None:
+            return super()._angles()
+        else:
+            raise RuntimeError(
+                "Consumer of ArrayImageSource trying to access angles,"
+                " but angles were not defined for this source."
+                "  Try instantiating with angles."
+            )
