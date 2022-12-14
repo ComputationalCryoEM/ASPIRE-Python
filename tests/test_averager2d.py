@@ -225,10 +225,7 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
         self.assertIsNone(_shifts)
         # Crude check that we are closer to known angle than the next rotation
         self.assertTrue(
-            np.all(
-                abs((_rotations % (2 * np.pi)) - self.thetas)
-                <= (self.step / 2)
-            )
+            np.all(abs((_rotations % (2 * np.pi)) - self.thetas) <= (self.step / 2))
         )
 
         # Fine check that we are within n_angles.
@@ -275,10 +272,7 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 
         # Crude check that we are closer to known angle than the next rotation
         self.assertTrue(
-            np.all(
-                abs((_rotations % (2 * np.pi)) - self.thetas)
-                <= (self.step / 2)
-            )
+            np.all(abs((_rotations % (2 * np.pi)) - self.thetas) <= (self.step / 2))
         )
         # Fine check that we are within n_angles.
         self.assertTrue(
@@ -321,17 +315,11 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
         # Crude check that we are closer to known angle than the next rotation
         self.assertTrue(
-            np.all(
-                abs((_rotations % (2 * np.pi)) - self.thetas)
-                <= (self.step / 2)
-            )
+            np.all(abs((_rotations % (2 * np.pi)) - self.thetas) <= (self.step / 2))
         )
         # Fine check that we are within 4 degrees.
         self.assertTrue(
-            np.all(
-                abs((_rotations % (2 * np.pi)) - self.thetas)
-                <= (np.pi / 45)
-            )
+            np.all(abs((_rotations % (2 * np.pi)) - self.thetas) <= (np.pi / 45))
         )
 
         # Check that we are _not_ shifting the base image
