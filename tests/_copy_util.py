@@ -53,7 +53,9 @@ def xforms_deepcopied(xf1, xf2):
 
 
 def img_accessors_deepcopied(i1, i2):
-    # functions should have different ids after deep copy
+    # the image-getting function associated with the ImageAccessor
+    # should have a different ID between different sources.
+    # NOTE: This works because fun is a *function* not a *method*
     return i1.fun is not i2.fun
 
 
