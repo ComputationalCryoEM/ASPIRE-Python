@@ -37,6 +37,12 @@ class Basis:
         self.count = 0
         self.ell_max = ell_max
         self.ndim = ndim
+        if self.ndim == 2:
+            self._cls = Image
+        elif self.ndim == 3:
+            self._cls = Volume
+        else:
+            raise RuntimeError("Basis ndim must be 2 or 3")
         self.dtype = np.dtype(dtype)
         if self.dtype not in (np.float32, np.float64):
             raise NotImplementedError(
@@ -86,10 +92,16 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        if self.ndim == 2:
-            return Image(self._evaluate(v))
-        elif self.ndim == 3:
-            return Volume(self._evaluate(v))
+        # Flatten stack, ndim is wrt Basis (2 or 3)
+        stack_shape = v.shape[:-1]
+        v = v.reshape(-1, self.count)
+        # Compute the transform
+        x = self._evaluate(v)
+        # Restore stack shape
+        x = x.reshape(*stack_shape, *self.sz)
+
+        # Return the appropriate class
+        return self._cls(x)
 
     def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
@@ -110,17 +122,24 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        if not isinstance(v, Image) and not isinstance(v, Volume):
-            if self.ndim == 2:
-                _class = Image
-            elif self.ndim == 3:
-                _class = Volume
+        if not isinstance(v, self._cls):
             logger.warning(
                 f"{self.__class__.__name__}::evaluate_t"
-                f" passed numpy array instead of {_class}."
+                f" passed numpy array instead of {self._cls}."
             )
-            v = _class(v)
-        return self._evaluate_t(v)
+        else:
+            v = v.asnumpy()
+
+        # Flatten stack, ndim is wrt Basis (2 or 3)
+        stack_shape = v.shape[: -self.ndim]
+        v = v.reshape(-1, *v.shape[-self.ndim :])
+        # Compute the adjoint
+        x = self._evaluate_t(v)
+        # Restore stack shape
+        x = x.reshape(*stack_shape, self.count)
+
+        # Return an ndarray
+        return x
 
     def _evaluate_t(self, v):
         raise NotImplementedError("Subclasses should implement this")
@@ -181,11 +200,6 @@ class Basis:
         # convert to standardized shape e.g. (L,L) to (1,L,L)
         x = x.reshape((-1, *self.sz))
 
-        if x.ndim == 3:
-            _class = Image
-        else:
-            _class = Volume
-
         operator = LinearOperator(
             shape=(self.count, self.count),
             matvec=lambda v: self.evaluate_t(self.evaluate(v)),
@@ -201,12 +215,12 @@ class Basis:
         v = np.zeros((n_data, self.count), dtype=x.dtype)
 
         for isample in range(0, n_data):
-            b = self.evaluate_t(_class(x[isample])).T
+            b = self.evaluate_t(self._cls(x[isample])).T
             # TODO: need check the initial condition x0 can improve the results or not.
             v[isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
                 raise RuntimeError("Unable to converge!")
 
         # return v coefficients with the last dimension of self.count
-        v = v.reshape((*sz_roll, -1))
+        v = v.reshape((*sz_roll, self.count))
         return v

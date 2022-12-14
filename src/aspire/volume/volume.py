@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Iterable
 
 import mrcfile
 import numpy as np
@@ -46,38 +45,56 @@ def qr_vols_forward(sim, s, n, vols, k):
 
 class Volume:
     """
-    Volume is an N x L x L x L array, along with associated utility methods.
+    Volume is an (N1 x ...) x L x L x L array, along with associated utility methods.
     """
 
-    def __init__(self, data):
+    def __init__(self, data, dtype=None):
         """
-        Create a volume initialized with `data`.
+        A stack of one or more volumes.
 
-        Volumes should be N x L x L x L,
-        or L x L x L which implies N=1.
+        This is a wrapper of numpy.ndarray which provides methods
+        for common processing tasks.
 
-        :param data: Volume data
+        The stack can be multidimensional with `n_vols` equal
+        to the product of the stack dimensions.  Singletons will be
+        expanded into a stack with one entry.
 
-        :return: A volume instance.
+        The last three axes represent the volume size,
+        and are checked to be cubic.
+
+        :param data: Numpy array containing volume data with shape
+            `(..., resolution, resolution, resolution)`.
+        :param dtype: Optionally cast `data` to this dtype.
+            Defaults to `data.dtype`.
+
+        :return: A Volume instance holding `data`.
         """
 
-        if data.ndim == 3:
-            data = data[np.newaxis, :, :, :]
+        if not isinstance(data, np.ndarray):
+            raise ValueError("Volume should be instantiated with an ndarray")
 
-        assert data.ndim == 4, (
-            "Volume data should be ndarray with shape NxLxLxL" " or LxLxL."
-        )
+        if data.ndim < 3:
+            raise ValueError(
+                "Volume data should be ndarray with shape (N1...)xLxLxL or LxLxL."
+            )
+        elif data.ndim == 3:
+            data = np.expand_dims(data, axis=0)
 
-        assert (
-            data.shape[1] == data.shape[2] == data.shape[3]
-        ), "Only cubed ndarrays are supported."
+        if dtype is None:
+            self.dtype = data.dtype
+        else:
+            self.dtype = np.dtype(dtype)
 
-        self._data = data
-        self.n_vols = self._data.shape[0]
-        self.dtype = self._data.dtype
-        self.resolution = self._data.shape[1]
+        if not (data.shape[-1] == data.shape[-2] == data.shape[-3]):
+            raise ValueError("Only cubed ndarrays are supported.")
+
+        self._data = data.astype(self.dtype, copy=False)
+        self.ndim = self._data.ndim
         self.shape = self._data.shape
-        self.volume_shape = self._data.shape[1:]
+        self.stack_ndim = self._data.ndim - 3
+        self.stack_shape = self._data.shape[:-3]
+        self.n_vols = np.prod(self.stack_shape)
+        self.resolution = self._data.shape[-1]
 
     def asnumpy(self):
         """
@@ -87,25 +104,61 @@ class Volume:
         """
         return self._data
 
-    def astype(self, dtype):
+    def astype(self, dtype, copy=True):
         """
         Return `Volume` instance with the prescribed dtype.
 
         :param dtype: Numpy dtype
+        :param copy: Boolean, optionally avoid copying if Volume.dtype already matches.
+            Defaults to True.
         :return: Volume instance
         """
-        return Volume(self.asnumpy().astype(dtype))
+        return Volume(self.asnumpy().astype(dtype, copy=copy))
 
-    def __getitem__(self, item):
-        # this is one reason why you might want Volume and VolumeStack classes...
-        # return Volume(self._data[item])
-        return self._data[item]
+    def _check_key_dims(self, key):
+        if isinstance(key, tuple) and (len(key) > self._data.ndim):
+            raise ValueError(
+                f"Volume stack_dim is {self.stack_ndim}, slice length must be =< {self.ndim}"
+            )
+
+    def __getitem__(self, key):
+        self._check_key_dims(key)
+        return self._data[key]
 
     def __setitem__(self, key, value):
+        self._check_key_dims(key)
         self._data[key] = value
 
+    def stack_reshape(self, *args):
+        """
+        Reshape the stack axis.
+
+        :*args: Integer(s) or tuple describing the intended shape.
+
+        :returns: Volume instance
+        """
+
+        # If we're passed a tuple, use that
+        if len(args) == 1 and isinstance(args[0], tuple):
+            shape = args[0]
+        else:
+            # Otherwise use the variadic args
+            shape = args
+
+        # Sanity check the size
+        if shape != (-1,) and np.prod(shape) != self.n_vols:
+            raise ValueError(
+                f"Number of volumes {self.n_vols} cannot be reshaped to {shape}."
+            )
+
+        return Volume(self._data.reshape(*shape, *self._data.shape[-3:]))
+
     def __repr__(self):
-        return f"{self.n_vols} volumes of size {self.resolution}x{self.resolution}x{self.resolution}"
+        msg = (
+            f"{self.n_vols} {self.dtype} volumes arranged as a {self.stack_shape} stack"
+        )
+        msg += f" each of size {self.resolution}x{self.resolution}x{self.resolution}."
+        return msg
 
     def __len__(self):
         return self.n_vols
@@ -152,6 +205,11 @@ class Volume:
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
         :return: `Image` instance.
         """
+        # See Issue #727
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`project` is currently limited to 1D Volume stacks."
+            )
 
         # If we are an ASPIRE Rotation, get the numpy representation.
         if isinstance(rot_matrices, Rotation):
@@ -217,7 +275,10 @@ class Volume:
 
         :return: Volume instance.
         """
-        return Volume(np.transpose(self._data, (0, 3, 2, 1)))
+        original_stack_shape = self.stack_shape
+        v = self.stack_reshape(-1)
+        vt = np.transpose(v._data, (0, -1, -2, -3))
+        return Volume(vt).stack_reshape(original_stack_shape)
 
     @property
     def T(self):
@@ -238,17 +299,25 @@ class Volume:
 
         return self._data.flatten()
 
-    def flip(self, axis=1):
+    def flip(self, axis=-3):
         """
         Flip volume stack data along axis using numpy.flip
 
         :param axis: Optionally specify axis as integer or tuple.
-            Defaults to axis=1.
+            Defaults to axis=-3.
 
         :return: Volume instance.
         """
-        if axis == 0 or (isinstance(axis, Iterable) and 0 in axis):
-            raise ValueError("Cannot flip Axis 0, stack axis.")
+        # Convert integer to tuple, so we can always loop.
+        if isinstance(axis, int):
+            axis = (axis,)
+
+        for ax in axis:
+            ax = ax % self.ndim  # modulo [0, ndim)
+            if ax < self.stack_ndim:
+                raise ValueError(
+                    f"Cannot flip axis {ax}: stack axis. Did you mean {ax-4}?"
+                )
 
         return Volume(np.flip(self._data, axis))
 
@@ -262,8 +331,11 @@ class Volume:
         if mask is None:
             mask = 1.0
 
+        original_stack_shape = self.stack_shape
+        v = self.stack_reshape(-1)
+
         # take 3D Fourier transform of each volume in the stack
-        fx = fft.fftshift(fft.fftn(self._data, axes=(1, 2, 3)))
+        fx = fft.fftshift(fft.fftn(v._data, axes=(1, 2, 3)))
         # crop each volume to the desired resolution in frequency space
         crop_fx = (
             np.array([crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)])
@@ -274,7 +346,7 @@ class Volume:
             ds_res**3 / self.resolution**3
         )
         # returns a new Volume object
-        return Volume(np.real(out))
+        return Volume(np.real(out)).stack_reshape(original_stack_shape)
 
     def shift(self):
         raise NotImplementedError
@@ -292,6 +364,10 @@ class Volume:
 
         :return: `Volume` instance.
         """
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`rotation` is currently limited to 1D Volume stacks."
+            )
 
         assert isinstance(
             rot_matrices, Rotation
@@ -355,6 +431,11 @@ class Volume:
         :param overwrite: Option to overwrite file when set to True.
             Defaults to overwrite=False.
         """
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`save` is currently limited to 1D Volume stacks."
+            )
+
         with mrcfile.new(filename, overwrite=overwrite) as mrc:
             mrc.set_data(self._data.astype(np.float32))
 
