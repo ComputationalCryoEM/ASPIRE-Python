@@ -117,10 +117,8 @@ class Averager2DBase:
             0, 2 * np.pi, num=self.n_img, endpoint=False, retstep=True, dtype=self.dtype
         )
 
-        # `thetas` are CCW rotation.
-        # We'll rotate the test images by -thetas,
-        #   so the alignments should produce a correction of `thetas`
-        self.rotations = Rotation.about_axis("z", -self.thetas, dtype=self.dtype)
+        # Generate rotations to be used by `Simulation`
+        self.rotations = Rotation.about_axis("z", self.thetas, dtype=self.dtype)
 
 
 class Averager2DTestCase(Averager2DBase, TestCase):
@@ -228,7 +226,7 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
         # Crude check that we are closer to known angle than the next rotation
         self.assertTrue(
             np.all(
-                abs((-_rotations % (2 * np.pi)) - self.thetas % (2 * np.pi))
+                abs((_rotations % (2 * np.pi)) - self.thetas)
                 <= (self.step / 2)
             )
         )
@@ -236,7 +234,7 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
         # Fine check that we are within n_angles.
         self.assertTrue(
             np.all(
-                abs((-_rotations % (2 * np.pi)) - self.thetas % (2 * np.pi))
+                abs((_rotations % (2 * np.pi)) - self.thetas)
                 <= (2 * np.pi / self.n_search_angles)
             )
         )
@@ -278,14 +276,14 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
         # Crude check that we are closer to known angle than the next rotation
         self.assertTrue(
             np.all(
-                abs((-_rotations % (2 * np.pi)) - self.thetas % (2 * np.pi))
+                abs((_rotations % (2 * np.pi)) - self.thetas)
                 <= (self.step / 2)
             )
         )
         # Fine check that we are within n_angles.
         self.assertTrue(
             np.all(
-                abs((-_rotations % (2 * np.pi)) - self.thetas % (2 * np.pi))
+                abs((_rotations % (2 * np.pi)) - self.thetas)
                 <= (2 * np.pi / self.n_search_angles)
             )
         )
@@ -324,14 +322,14 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         # Crude check that we are closer to known angle than the next rotation
         self.assertTrue(
             np.all(
-                abs((-_rotations % (2 * np.pi)) - self.thetas % (2 * np.pi))
+                abs((_rotations % (2 * np.pi)) - self.thetas)
                 <= (self.step / 2)
             )
         )
         # Fine check that we are within 4 degrees.
         self.assertTrue(
             np.all(
-                abs((-_rotations % (2 * np.pi)) - self.thetas % (2 * np.pi))
+                abs((_rotations % (2 * np.pi)) - self.thetas)
                 <= (np.pi / 45)
             )
         )
