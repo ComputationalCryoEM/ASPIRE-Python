@@ -3,6 +3,7 @@ import os.path
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Iterable
+from copy import deepcopy
 
 import mrcfile
 import numpy as np
@@ -211,7 +212,13 @@ class ImageSource(ABC):
         """
         Converts internal _rotations representation to expected matrix form.
         """
-        return self._rotations.angles.astype(self.dtype)
+        if self._rotations is not None:
+            return self._rotations.angles.astype(self.dtype)
+        else:
+            logger.warning(
+                f"{self.__class__.__name__} was not initialized with rotations. No Euler rotations to return."
+            )
+            return None
 
     @property
     def rotations(self):
@@ -229,7 +236,13 @@ class ImageSource(ABC):
 
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        return self._rotations.matrices.astype(self.dtype)
+        if self._rotations is not None:
+            return self._rotations.matrices.astype(self.dtype)
+        else:
+            logger.warning(
+                f"{self.__class__.__name__} was not initialized with rotations. No rotation matrices to return."
+            )
+            return None
 
     @angles.setter
     def angles(self, values):
@@ -568,12 +581,11 @@ class ImageSource(ABC):
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
         return im
 
-    @abstractmethod
-    def copy(self, starfile_filepath=None):
+    def copy(self):
         """
-        `ImageSource` subclasses must implement a `copy()` method that returns an identical
-             instance.
+        Returns a copy of this `ImageSource`. All parameters are deep-copied.
         """
+        return deepcopy(self)
 
     def save(
         self,
@@ -863,33 +875,3 @@ class ArrayImageSource(ImageSource):
         return self.generation_pipeline.forward(
             Image(self._cached_im[indices, :, :]), indices
         )
-
-    def _rots(self):
-        """
-        Private method, checks if `_rotations` has been set,
-        then returns inherited rotations, otherwise raise.
-        """
-
-        if self._rotations is not None:
-            return super()._rots()
-        else:
-            raise RuntimeError(
-                "Consumer of ArrayImageSource trying to access rotations,"
-                " but rotations were not defined for this source."
-                "  Try instantiating with angles."
-            )
-
-    def _angles(self):
-        """
-        Private method, checks if `_rotations` has been set,
-        then returns inherited angles, otherwise raise.
-        """
-
-        if self._rotations is not None:
-            return super()._angles()
-        else:
-            raise RuntimeError(
-                "Consumer of ArrayImageSource trying to access angles,"
-                " but angles were not defined for this source."
-                "  Try instantiating with angles."
-            )
