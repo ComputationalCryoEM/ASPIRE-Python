@@ -136,7 +136,7 @@ print(aspire.config.dump())
 #
 # ASPIRE directs output streams to both the console and to a log file during each session. The logging verbosity for both of these
 # can be specified individually via ``console_level`` and ``log_file_level``. These levels are passed through to Python's logging
-# system, so the labels are the same: ``DEBUG, INFO, WARNING, ERROR, CRITICAL``. In general, it may make sense to have the log file
+# system, so the labels are the same: ``"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"``. In general, it may make sense to have the log file
 # store more verbose output than the console. By default, only ``INFO`` and above level messages are printed to the terminal, while
 # detailed ``DEBUG`` messages are saved to disk:
 #

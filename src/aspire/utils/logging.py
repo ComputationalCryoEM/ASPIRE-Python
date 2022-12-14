@@ -95,6 +95,7 @@ def setConsoleLoggingLevel(level_name):
     """
     Dynamically sets the console logging level by setting the level of the root logger's StreamHandler to `level_name`.
     Note this will supersede the `logging.console_level` option stored in ASPIRE's configuration file.
+
     :param level_name: One of "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
     """
     if level_name not in LOGGING_LEVEL_NAMES:
@@ -111,6 +112,7 @@ def getConsoleLoggingLevel():
     Returns the Python logging level of the root logger's StreamHandler, i.e. console output.
     This is the same as the `logging.console_level` option in ASPIRE's configuration file unless
     the console logging level has been changed dynamically during a session. (e.g. by a CLI option)
+
     :return: The current console logging level name as a string. One of "DEBUG". "INFO", "WARNING",
     "ERROR", "CRITICAL".
     """
@@ -123,6 +125,7 @@ def setFileLoggingLevel(level_name):
     """
     Dynamically sets the log file logging level by setting the level of the root logger's FileHandler to `level_name`.
     Note this will supersede the `logging.log_file_level` option stored in ASPIRE's configuration file.
+
     :param level_name: One of "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
     """
     if level_name not in LOGGING_LEVEL_NAMES:
@@ -139,6 +142,7 @@ def getFileLoggingLevel():
     Returns the Python logging level of the root logger's FileHandler, i.e. log file output.
     This is the same as the `logging.log_file_level` option in ASPIRE's configuration file
     unless the file logging level has been changed dynamically during a session. (e.g. by a CLI option)
+
     :return: The current file logging level name as a string. One of "DEBUG", "INFO", "WARNING",
     "ERROR", "CRITICAL".
     """
