@@ -10,6 +10,8 @@ from aspire.image import Image
 from aspire.source.relion import RelionSource
 from aspire.utils import importlib_path
 
+from . import _copy_util
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
@@ -59,6 +61,18 @@ class StarFileMainCase(StarFileTestCase):
         self.src.downsample(16)
         first_image = self.src.images[0][0]
         self.assertEqual(first_image.shape, (16, 16))
+
+    def testRelionSourceCopy(self):
+        src_copy = self.src.copy()
+        for var in _copy_util.source_vars:
+            if hasattr(self.src, var):
+                self.assertTrue(
+                    (
+                        _copy_util.source_vars_deepcopied(
+                            getattr(self.src, var), getattr(src_copy, var), var
+                        )
+                    )
+                )
 
 
 class StarFileSingleImage(StarFileTestCase):
