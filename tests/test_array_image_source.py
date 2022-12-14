@@ -203,12 +203,12 @@ class ImageTestCase(TestCase):
 
     def testArrayImageSourceCopy(self):
         # test deep copy of an ArrayImageSource
-        src1 = ArrayImageSource(self.im, angles=np.random.random((self.n, 3)))
-        src2 = src1.copy()
+        src = ArrayImageSource(self.im, angles=np.random.random((self.n, 3)))
+        src_copy = src.copy()
         for var in _copy_util.source_vars:
-            if hasattr(src1, var):
+            if hasattr(src, var):
                 self.assertTrue(
                     _copy_util.source_vars_deepcopied(
-                        getattr(src1, var), getattr(src2, var), var
+                        getattr(src, var), getattr(src_copy, var), var
                     )
                 )
