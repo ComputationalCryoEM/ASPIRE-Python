@@ -82,6 +82,44 @@ class ImageTestCase(TestCase):
         with raises(RuntimeError, match=r"Creating Image object from Numpy.*"):
             _ = ArrayImageSource(np.empty((3, 2, 1)))
 
+    def testArrayImageSourceAngGetterError(self):
+        """
+        Test that ArrayImageSource when instantiated without required
+        rotations/angles gives an appropriate error.
+        """
+
+        # Construct the source for testing.
+        #   Rotations (via angles) are required,
+        #   but we intentionally do not pass
+        #   to instantiater here.
+        src = ArrayImageSource(self.im)
+
+        # Test we raise with expected message
+        with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
+            _ = src.angles
+
+        # We also test that a source consumer generates same error,
+        #   by instantiating a volume estimator.
+        estimator = MeanEstimator(src, self.basis, preconditioner="none")
+
+        # Test we raise with expected message
+        with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
+            _ = estimator.estimate()
+
+    def testArrayImageSourceRotGetterError(self):
+        """
+        Test that ArrayImageSource when instantiated without required
+        rotations/angles gives an appropriate error.
+        Here we specifically test `rotations`.
+        """
+
+        # Construct the source for testing.
+        src = ArrayImageSource(self.im)
+
+        # Test we raise with expected message from getter.
+        with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
+            _ = src.rotations
+
     def testArrayImageSourceMeanVol(self):
         """
         Test that ArrayImageSource can be consumed by mean/volume codes.
@@ -162,44 +200,6 @@ class ImageTestCase(TestCase):
         wrong_dim = np.random.randn(self.n, 3, 3)
         with raises(ValueError, match=msg):
             _ = ArrayImageSource(self.im, angles=wrong_dim)
-
-    def testArrayImageSourceAngGetterError(self):
-        """
-        Test that ArrayImageSource when instantiated without required
-        rotations/angles gives an appropriate error.
-        """
-
-        # Construct the source for testing.
-        #   Rotations (via angles) are required,
-        #   but we intentionally do not pass
-        #   to instantiater here.
-        src = ArrayImageSource(self.im)
-
-        # Test we raise with expected message
-        with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
-            _ = src.angles
-
-        # We also test that a source consumer generates same error,
-        #   by instantiating a volume estimator.
-        estimator = MeanEstimator(src, self.basis, preconditioner="none")
-
-        # Test we raise with expected message
-        with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
-            _ = estimator.estimate()
-
-    def testArrayImageSourceRotGetterError(self):
-        """
-        Test that ArrayImageSource when instantiated without required
-        rotations/angles gives an appropriate error.
-        Here we specifically test `rotations`.
-        """
-
-        # Construct the source for testing.
-        src = ArrayImageSource(self.im)
-
-        # Test we raise with expected message from getter.
-        with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
-            _ = src.rotations
 
     def testArrayImageSourceCopy(self):
         # test deep copy of an ArrayImageSource
