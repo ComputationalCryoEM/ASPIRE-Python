@@ -12,7 +12,7 @@ from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import Rotation, utest_tolerance
 
-from ._copy_util import *
+from ._copy_util import rotations_deepcopied, xforms_deepcopied
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
