@@ -499,8 +499,13 @@ class CoordinateSourceTestCase(TestCase):
             )
 
     def testCopy(self):
-        src = BoxesCoordinateSource(self.files_box)
+        original_size = 200
+        src = CentersCoordinateSource(
+            self.files_coord, particle_size=original_size, max_rows=10
+        )
         src_copy = src.copy()
+        # sanity check that ASPIRE objects that are attributes of the source
+        # were deepcopied
         for var in _copy_util.source_vars:
             if hasattr(src, var):
                 self.assertTrue(
@@ -508,6 +513,18 @@ class CoordinateSourceTestCase(TestCase):
                         getattr(src, var), getattr(src_copy, var), var
                     )
                 )
+        # make sure we can perform operations on both sources separately
+        src_copy.downsample(8)
+        img = src.images[:1]
+        img_copy = src_copy.images[:1]
+        self.assertEqual(img.resolution, original_size)
+        self.assertEqual(img_copy.resolution, 8)
+        # copy should have an updated xform pipeline
+        self.assertTrue(len(src.generation_pipeline.xforms) == 0)
+        self.assertTrue(len(src_copy.generation_pipeline.xforms) == 1)
+        # make sure metadata can be modified separately
+        src_copy.set_metadata("test_col", 0)
+        self.assertFalse(src.has_metadata("test_col"))
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
