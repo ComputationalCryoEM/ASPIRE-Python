@@ -133,7 +133,7 @@ class CoordinateSource(ImageSource, ABC):
         self.B = B
         # set CTF metadata to defaults
         # this can be updated with import_ctf()
-        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
+        self._populate_metadata()
         self.unique_filters = [IdentityFilter()]
 
     def _populate_particles(self, num_micrographs, coord_paths):
@@ -147,6 +147,14 @@ class CoordinateSource(ImageSource, ABC):
             self.particles += [
                 (i, coord) for coord in self._coords_list_from_file(coord_paths[i])
             ]
+
+    def _populate_metadata(self):
+        for i, particle in enumerate(self.particles):
+            mrc_idx = particle[0]
+            self.set_metadata("__mrc_index",mrc_idx, [i])
+            self.set_metadata("__mrc_filepath", self.mrc_paths[mrc_idx], [i])
+
+        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
 
     @abstractmethod
     def _coords_list_from_file(self, coord_file):
@@ -310,11 +318,14 @@ class CoordinateSource(ImageSource, ABC):
         if relion_version == "3.1":
             starfile = RelionMicrographsStarFile(ctf)
 
+        # data_block is a pandas Dataframe containing the micrographs
         if not len(starfile.data_block) == len(self.mrc_paths):
             raise ValueError(
                 f"{ctf_starfile} has CTF information for {len(micrographs)}",
                 f" micrographs but this source has {len(self.mrc_paths)} micrographs.",
             )
+
+
 
     def import_ctf(self, ctf):
         """

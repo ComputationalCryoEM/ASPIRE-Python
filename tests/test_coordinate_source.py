@@ -141,6 +141,7 @@ class CoordinateSourceTestCase(TestCase):
         :param index: The number appended to the end of the temporary file's name.
         """
         box_fp = os.path.join(self.data_folder, f"sample{index+1}.box")
+        box_fp = "sample.box"
         # box file with nonsquare particles
         box_fp_nonsquare = os.path.join(
             self.data_folder, f"nonsquare_sample{index+1}.box"
