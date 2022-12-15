@@ -52,6 +52,17 @@ def xfail_ray_dev():
     return xfail or skip
 
 
+def check_angle_diff(est, ref, tol):
+    """
+    Helper function to check if a set of estimated rotation angles are within
+    a tolerance of a set of reference angles.
+
+    :return: boolean
+    """
+    all_within_tol = np.all(abs(est % (2 * np.pi) - ref % (2 * np.pi)) <= tol)
+    return all_within_tol
+
+
 class Averager2DBase:
     """
     Configure and setup a unit test case bypassing pytest execution.
@@ -224,16 +235,11 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
 
         self.assertIsNone(_shifts)
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(
-            np.all(abs((_rotations % (2 * np.pi)) - self.thetas) <= (self.step / 2))
-        )
+        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
 
         # Fine check that we are within n_angles.
         self.assertTrue(
-            np.all(
-                abs((_rotations % (2 * np.pi)) - self.thetas)
-                <= (2 * np.pi / self.n_search_angles)
-            )
+            check_angle_diff(_rotations, self.thetas, 2 * np.pi / self.n_search_angles)
         )
 
 
@@ -271,15 +277,11 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(
-            np.all(abs((_rotations % (2 * np.pi)) - self.thetas) <= (self.step / 2))
-        )
+        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
+
         # Fine check that we are within n_angles.
         self.assertTrue(
-            np.all(
-                abs((_rotations % (2 * np.pi)) - self.thetas)
-                <= (2 * np.pi / self.n_search_angles)
-            )
+            check_angle_diff(_rotations, self.thetas, 2 * np.pi / self.n_search_angles)
         )
 
         # Check that we are _not_ shifting the base image
@@ -314,13 +316,10 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(
-            np.all(abs((_rotations % (2 * np.pi)) - self.thetas) <= (self.step / 2))
-        )
+        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
+
         # Fine check that we are within 4 degrees.
-        self.assertTrue(
-            np.all(abs((_rotations % (2 * np.pi)) - self.thetas) <= (np.pi / 45))
-        )
+        self.assertTrue(check_angle_diff(_rotations, self.thetas, np.pi / 45))
 
         # Check that we are _not_ shifting the base image
         self.assertTrue(np.all(_shifts[0][0] == 0))

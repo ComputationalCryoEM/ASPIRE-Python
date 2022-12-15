@@ -75,11 +75,9 @@ class Rotation:
         # If `about_axis` was used to generate rotations about the z-axis
         # turn off Gimbal lock warning.
         with warnings.catch_warnings():
-            action = "default"
             if self._about_z:
-                action = "ignore"
-            msg = "Gimbal lock detected*"
-            warnings.filterwarnings(action, message=msg, category=UserWarning)
+                msg = "Gimbal lock detected*"
+                warnings.filterwarnings("ignore", message=msg, category=UserWarning)
             euler_angles = rotations.as_euler(self._seq_order, degrees=False).astype(
                 self.dtype
             )
