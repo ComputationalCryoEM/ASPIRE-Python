@@ -4,6 +4,7 @@ import numpy as np
 
 from aspire.basis import Basis
 from aspire.nufft import anufft, nufft
+from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class PolarBasis2D(Basis):
         self.nrad = nrad
         self.ntheta = ntheta
         # expected dtype of basis coefficients
-        self.coefficient_dtype = dtype
+        self.coefficient_dtype = complex_type(dtype)
 
         super().__init__(size, dtype=dtype)
 
