@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from aspire.storage import StarFile, getRelionStarFileVersion
+from aspire.storage import StarFile
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,7 @@ def df_to_relion_types(df):
     # columns without a specified data type are read as dtype=object
     column_types = {name: relion_metadata_fields.get(name, str) for name in df.columns}
     return df.astype(column_types)
+
 
 class RelionLegacyParticlesStarFile(StarFile):
     """ """
@@ -119,7 +120,6 @@ class RelionLegacyMoviesStarFile(StarFile):
 
 
 class RelionDataStarFile(StarFile):
-
     def __init__(self, filepath):
         super().__init__(filepath, blocks=None)
         # convert types
@@ -184,6 +184,7 @@ class RelionParticlesStarFile(RelionDataStarFile):
     An extension of the `aspire.storage.StarFile` class representing Relion STAR files containing image/particle data.
         Note, for Relion <=3.0 STAR files, `RelionLegacyParticlesStarFile` should be used.
     """
+
     optics_params = [
         "_rlnImagePixelSize",
         "_rlnVoltage",
@@ -253,7 +254,7 @@ class RelionMicrographsStarFile(StarFile):
         pass
 
     def process_micrographs_block(self):
-        pass 
+        pass
 
     def _data_block(self):
         return self.blocks[self.data_type]

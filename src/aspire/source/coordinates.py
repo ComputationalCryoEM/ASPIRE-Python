@@ -12,7 +12,10 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile, getRelionStarFileVersion
-from aspire.utils.relion_interop import RelionLegacyMicrographsStarFile, RelionMicrographsStarFile
+from aspire.utils.relion_interop import (
+    RelionLegacyMicrographsStarFile,
+    RelionMicrographsStarFile,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -293,16 +296,18 @@ class CoordinateSource(ImageSource, ABC):
         """
         Import CTF information Relion micrograph STAR files containing CTF information.
 
-        :param ctf: Path to a Relion micrograph STAR file containing CTF information. 
+        :param ctf: Path to a Relion micrograph STAR file containing CTF information.
             Note that number of files provided must match number of micrographs in this
             `CoordinateSource`.
         """
         relion_version = getRelionStarFileVersion(ctf)
         if not relion_version:
-            raise ValueError(f"Cannot recognize {ctf} as a valid Relion STAR file containing micrograph information.")
+            raise ValueError(
+                f"Cannot recognize {ctf} as a valid Relion STAR file containing micrograph information."
+            )
         if relion_version == "3.0":
             starfile = RelionLegacyMicrographsStarFile(ctf)
-        else relion_version == "3.1":
+        if relion_version == "3.1":
             starfile = RelionMicrographsStarFile(ctf)
 
         if not len(starfile.data_block) == len(self.mrc_paths):
@@ -350,7 +355,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Populates CTF filters and metadata based on a micrographs .star file with CTF parameters
             in RELION format.
-        :param ctf_starfile: A RELION micrographs .star file containing CTF parameters for micrographs. 
+        :param ctf_starfile: A RELION micrographs .star file containing CTF parameters for micrographs.
             (Note: number of micrographs must match number of micrographs in CoordinateSource)
         """
         # RELION star files store CTF data in two separate blocks
