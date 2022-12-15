@@ -9,7 +9,7 @@ from aspire.noise import AnisotropicNoiseEstimator
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
-from aspire.utils import grid_2d
+from aspire.utils import grid_2d, utest_tolerance
 from aspire.utils.matrix import anorm
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -83,7 +83,10 @@ class PreprocessPLTestCase(TestCase):
         new_variance = np.var(imgs_nb[:, mask])
 
         # new mean of noise should be close to zero and variance should be close to 1
-        self.assertTrue(new_mean < 1e-7 and abs(new_variance - 1) < 1e-7)
+        self.assertTrue(
+            new_mean < utest_tolerance(self.dtype)
+            and abs(new_variance - 1) < utest_tolerance(self.dtype)
+        )
         # dtype of returned images should be the same
         self.assertEqual(self.dtype, imgs_nb.dtype)
 
