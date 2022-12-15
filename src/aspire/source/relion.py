@@ -12,9 +12,8 @@ from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
 from aspire.storage import StarFile, getRelionStarFileVersion
 from aspire.utils.relion_interop import (
+    RelionLegacyParticlesStarFile,
     RelionParticlesStarFile,
-    RlnParticleOpticsGroup,
-    relion_metadata_fields,
 )
 
 logger = logging.getLogger(__name__)
@@ -173,16 +172,9 @@ class RelionSource(ImageSource):
 
         metadata = None
         # load the STAR file
-        starfile = StarFile(self.filepath)
         if rln_starfile_version == "3.0":
-            # Relion 3.0 STAR files contain one block containing all particle information
-            # We are getting the first (and only) block in this StarFile object
-            df = starfile.get_block_by_index(0)
-
-            # Split paths and add ASPIRE-specific metadata columns to the particle block
-            df = self._process_starfile_particles_block(df)
-
-            metadata = df
+            starfile = RelionLegacyParticlesStarFile(self.filepath)
+            metadata = starfile.get_aspire_metadata(self.data_folder)
 
         elif rln_starfile_version == "3.1":
             starfile = RelionParticlesStarFile(self.filepath)
@@ -194,35 +186,6 @@ class RelionSource(ImageSource):
         else:
             max_rows = min(self.max_rows, len(metadata))
             return metadata.iloc[:max_rows]
-
-    def _process_starfile_particles_block(self, df):
-        """
-        Do DataFrame manipulation common to both 3.0 and 3.1 Relion STAR files.
-        """
-        # convert STAR file strings to data type for each field
-        # columns without a specified data type are read as dtype=object
-        column_types = {
-            name: relion_metadata_fields.get(name, str) for name in df.columns
-        }
-        df = df.astype(column_types)
-
-        # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
-        # in the _rlnImageName column. here, we're splitting this information
-        # so we can get the particle's index in the .mrcs stack as an int
-        df[["__mrc_index", "__mrc_filename"]] = df["_rlnImageName"].str.split(
-            "@", 1, expand=True
-        )
-        # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
-        # Note that this is 1-based indexing
-        df["__mrc_index"] = pd.to_numeric(df["__mrc_index"])
-
-        # Adding a full-filepath field to the Dataframe helps us save time later
-        # Note that os.path.join works as expected when the second argument is an absolute path itself
-        df["__mrc_filepath"] = df["__mrc_filename"].apply(
-            lambda filename: os.path.join(self.data_folder, filename)
-        )
-
-        return df
 
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
