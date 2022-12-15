@@ -64,6 +64,8 @@ class StarFileMainCase(StarFileTestCase):
 
     def testRelionSourceCopy(self):
         src_copy = self.src.copy()
+        # sanity check that ASPIRE objects that are attributes of the source
+        # were deepcopied
         for var in _copy_util.source_vars:
             if hasattr(self.src, var):
                 self.assertTrue(
@@ -73,6 +75,18 @@ class StarFileMainCase(StarFileTestCase):
                         )
                     )
                 )
+        # make sure we can perform operations on both sources separately
+        src_copy.downsample(8)
+        img = self.src.images[:1]
+        img_copy = src_copy.images[:1]
+        self.assertEqual(img.resolution, 200)
+        self.assertEqual(img_copy.resolution, 8)
+        # copy should have an updated xform pipeline
+        self.assertTrue(len(self.src.generation_pipeline.xforms) == 0)
+        self.assertTrue(len(src_copy.generation_pipeline.xforms) == 1)
+        # make sure metadata can be modified separately
+        src_copy.set_metadata("test_col", 0)
+        self.assertFalse(self.src.has_metadata("test_col"))
 
 
 class StarFileSingleImage(StarFileTestCase):

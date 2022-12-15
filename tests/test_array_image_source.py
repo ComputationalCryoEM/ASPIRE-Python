@@ -205,6 +205,8 @@ class ImageTestCase(TestCase):
         # test deep copy of an ArrayImageSource
         src = ArrayImageSource(self.im, angles=np.random.random((self.n, 3)))
         src_copy = src.copy()
+        # sanity check that ASPIRE objects that are attributes of the source
+        # were deepcopied
         for var in _copy_util.source_vars:
             if hasattr(src, var):
                 self.assertTrue(
@@ -212,3 +214,15 @@ class ImageTestCase(TestCase):
                         getattr(src, var), getattr(src_copy, var), var
                     )
                 )
+        # make sure we can perform operations on both sources separately
+        src_copy.downsample(4)
+        img = src.images[:1]
+        img_copy = src_copy.images[:1]
+        self.assertEqual(img.resolution, self.resolution)
+        self.assertEqual(img_copy.resolution, 4)
+        # copy should have an updated xform pipeline
+        self.assertTrue(len(src.generation_pipeline.xforms) == 0)
+        self.assertTrue(len(src_copy.generation_pipeline.xforms) == 1)
+        # make sure metadata can be modified separately
+        src_copy.set_metadata("test_col", 0)
+        self.assertFalse(src.has_metadata("test_col"))

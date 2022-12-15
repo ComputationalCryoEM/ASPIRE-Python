@@ -589,6 +589,8 @@ class SimTestCase(TestCase):
 
     def testSimCopy(self):
         sim_copy = self.sim.copy()
+        # sanity check that ASPIRE objects that are attributes of the source
+        # were deepcopied
         for var in _copy_util.source_vars:
             if hasattr(self.sim, var):
                 self.assertTrue(
@@ -596,3 +598,15 @@ class SimTestCase(TestCase):
                         getattr(self.sim, var), getattr(sim_copy, var), var
                     )
                 )
+        # make sure we can perform operations on both sources separately
+        sim_copy.downsample(4)
+        img = self.sim.images[:1]
+        img_copy = sim_copy.images[:1]
+        self.assertEqual(img.resolution, 8)
+        self.assertEqual(img_copy.resolution, 4)
+        # copy should have an updated xform pipeline
+        self.assertTrue(len(self.sim.generation_pipeline.xforms) == 0)
+        self.assertTrue(len(sim_copy.generation_pipeline.xforms) == 1)
+        # make sure metadata can be modified separately
+        sim_copy.set_metadata("test_col", 0)
+        self.assertFalse(self.sim.has_metadata("test_col"))
