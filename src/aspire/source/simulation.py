@@ -52,8 +52,8 @@ class Simulation(ImageSource):
         """
         A `Simulation` object that supplies images along with other parameters for image manipulation.
 
-        :param L: Resolution of projection images (integer).
-            Default is 8 or `vols.resolution` if a volume is provided.
+        :param L: Resolution of projection images (integer). Default is 8.
+            If a `Volume` is provided `L` and `vols.resolution` must agree.
         :param n: The number of images to generate (integer).
         :param vols: A `Volume` object representing a stack of volumes.
             Default is generated with `volume.volume_synthesis.LegacyVolume`.
@@ -64,9 +64,9 @@ class Simulation(ImageSource):
             with each image. Default is a random set of filter indices, .ie the filters from `unique_filters`
             are randomly assigned to the stack of images.
         :param offsets: A n-by-2 array of coordinates to offset the images. Default is a normally
-            distributed set of offsets.
+            distributed set of offsets. Set `offsets = 0` to disable offsets.
         :param amplitude: A 1d array of n amplitudes to scale the projection images. Default is
-            a random set in the interval [2/3, 3/2].
+            a random set in the interval [2/3, 3/2]. Set `amplitude = 1` to disable amplitudes.
         :param dtype: dtype for the Simulation
         :param C: Number of Volumes used to generate projection images. The default is C=2.
             If a `Volume` object is provided this parameter is overridden and `self.C` = `self.vols.n_vols`.
@@ -113,7 +113,7 @@ class Simulation(ImageSource):
         if L is not None and L != self.L:
             raise RuntimeError(
                 f"Simulation must have the same resolution as the provided Volume."
-                f" vols.resolution = {self.vols.resolution}, self.L = {self.L}."
+                f" Provided vols.resolution = {self.vols.resolution} and L = {L}."
             )
 
         # We need to keep track of the original resolution we were initialized with,
