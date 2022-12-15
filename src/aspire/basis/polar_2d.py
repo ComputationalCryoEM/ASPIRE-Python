@@ -31,6 +31,8 @@ class PolarBasis2D(Basis):
 
         self.nrad = nrad
         self.ntheta = ntheta
+        # expected dtype of basis coefficients
+        self.coefficient_dtype = dtype
 
         super().__init__(size, dtype=dtype)
 
