@@ -56,37 +56,6 @@ def df_to_relion_types(df):
     column_types = {name: relion_metadata_fields.get(name, str) for name in df.columns}
     return df.astype(column_types)
 
-
-class RlnOpticsGroup:
-    """
-    A thin container to store RELION Optics Group parameters.
-    """
-
-    def __init__(self, df_row):
-        """
-        Creates a simple object to store optics group data given a pandas dataframe row.
-        """
-        self.name = df_row._rlnOpticsGroupName
-        self.number = int(df_row._rlnOpticsGroup)
-        self.voltage = float(df_row._rlnVoltage)
-        self.cs = float(df_row._rlnSphericalAberration)
-        self.amplitude_contrast = float(df_row._rlnAmplitudeContrast)
-
-
-class RlnParticleOpticsGroup(RlnOpticsGroup):
-    def __init__(self, df_row, version="3.1"):
-        if version == "3.1":
-            self.pixel_size = float(df_row._rlnImagePixelSize)
-        super().__init__(df_row)
-
-
-class RlnMicrographOpticsGroup(RlnOpticsGroup):
-    def __init__(self, df_row, version="3.1"):
-        if version == "3.1":
-            self.pixel_size = float(df_row._rlnMicrographPixelSize)
-        super().__init__(df_row)
-
-
 class RelionLegacyParticlesStarFile(StarFile):
     """ """
 
@@ -150,13 +119,6 @@ class RelionLegacyMoviesStarFile(StarFile):
 
 
 class RelionDataStarFile(StarFile):
-    optics_params = [
-        "_rlnImagePixelSize",
-        "_rlnVoltage",
-        "_rlnSphericalAberration",
-        "_rlnAmplitudeContrast",
-        "_rlnOpticsGroupName",
-    ]
 
     def __init__(self, filepath):
         super().__init__(filepath, blocks=None)
@@ -218,7 +180,17 @@ class RelionDataStarFile(StarFile):
 
 
 class RelionParticlesStarFile(RelionDataStarFile):
-    """ """
+    """
+    An extension of the `aspire.storage.StarFile` class representing Relion STAR files containing image/particle data.
+        Note, for Relion <=3.0 STAR files, `RelionLegacyParticlesStarFile` should be used.
+    """
+    optics_params = [
+        "_rlnImagePixelSize",
+        "_rlnVoltage",
+        "_rlnSphericalAberration",
+        "_rlnAmplitudeContrast",
+        "_rlnOpticsGroupName",
+    ]
 
     def __init__(self, filepath):
         super().__init__(filepath)
@@ -269,10 +241,19 @@ class RelionParticlesStarFile(RelionDataStarFile):
 
 
 class RelionMicrographsStarFile(StarFile):
-    """ """
+    """
+    An extension of the `aspire.storage.StarFile` class representing Relion STAR files containing micrograph data.
+        Note, for Relion <=3.0 STAR files, `RelionLegacyMicrographsStarFile` should be used.
+    """
 
     def __init__(self, filepath):
         super().__init__(filepath, blocks=None)
+
+    def get_aspire_metadata(self, data_folder):
+        pass
+
+    def process_micrographs_block(self):
+        pass 
 
     def _data_block(self):
         return self.blocks[self.data_type]
