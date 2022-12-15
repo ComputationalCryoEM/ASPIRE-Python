@@ -11,7 +11,11 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
 from aspire.storage import StarFile, getRelionStarFileVersion
-from aspire.utils.relion_interop import RlnParticleOpticsGroup
+from aspire.utils.relion_interop import (
+    RelionParticlesStarFile,
+    RlnParticleOpticsGroup,
+    relion_metadata_fields,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,46 +29,6 @@ class RelionSource(ImageSource):
     its metadata. The metadata table may be augmented or modified via helper methods found in ImageSource. It may
     store, for example, Filter objects added during preprocessing.
     """
-
-    # The metadata_fields dictionary below specifies default data types
-    # of certain key fields used in the codebase,
-    # which are originally read from Relion STAR files.
-    relion_metadata_fields = {
-        "_rlnVoltage": float,
-        "_rlnDefocusU": float,
-        "_rlnDefocusV": float,
-        "_rlnDefocusAngle": float,
-        "_rlnSphericalAberration": float,
-        "_rlnDetectorPixelSize": float,
-        "_rlnCtfFigureOfMerit": float,
-        "_rlnMagnification": float,
-        "_rlnAmplitudeContrast": float,
-        "_rlnImageName": str,
-        "_rlnOriginalName": str,
-        "_rlnCtfImage": str,
-        "_rlnCoordinateX": float,
-        "_rlnCoordinateY": float,
-        "_rlnCoordinateZ": float,
-        "_rlnNormCorrection": float,
-        "_rlnMicrographName": str,
-        "_rlnGroupName": str,
-        "_rlnGroupNumber": str,
-        "_rlnOriginX": float,
-        "_rlnOriginY": float,
-        "_rlnAngleRot": float,
-        "_rlnAngleTilt": float,
-        "_rlnAnglePsi": float,
-        "_rlnClassNumber": int,
-        "_rlnLogLikeliContribution": float,
-        "_rlnRandomSubset": int,
-        "_rlnParticleName": str,
-        "_rlnOriginalParticleName": str,
-        "_rlnNrOfSignificantSamples": float,
-        "_rlnNrOfFrames": int,
-        "_rlnMaxValueProbDistribution": float,
-        "_rlnOpticsGroup": int,
-        "_rlnOpticsGroupName": str,
-    }
 
     def __init__(
         self,
@@ -221,34 +185,8 @@ class RelionSource(ImageSource):
             metadata = df
 
         elif rln_starfile_version == "3.1":
-            # Relion 3.1 STAR files store certain fields in a separate optics block
-            # which defines optics groups with parameters applying to all particles in that group
-            # We have to grab both blocks and build the metadata table applying the
-            # parameters for each group to all the particles
-            optics, particles = starfile["optics"], starfile["particles"]
-
-            # Split paths and add ASPIRE-specific metadata columns to the particle block
-            particles = self._process_starfile_particles_block(particles)
-
-            # Populate additional parameters coming from optics groups
-            optics_groups = []
-            for _, row in optics.iterrows():
-                optics_groups.append(RlnParticleOpticsGroup(row, version="3.1"))
-
-            # Now that we have the optics info, we'll inject the data into the particles df
-            optics_params = {
-                "_rlnImagePixelSize": "pixel_size",
-                "_rlnVoltage": "voltage",
-                "_rlnSphericalAberration": "cs",
-                "_rlnAmplitudeContrast": "amplitude_contrast",
-                "_rlnOpticsGroupName": "name",
-            }
-            for i, grp in enumerate(optics_groups):
-                match = np.where(particles["_rlnOpticsGroup"] == i + 1)[0]
-                for k, v in optics_params.items():
-                    particles.loc[match, k] = getattr(grp, v)
-
-                metadata = particles
+            starfile = RelionParticlesStarFile(self.filepath)
+            metadata = starfile.get_aspire_metadata(self.data_folder)
 
         # finally, chop off the df at max_rows
         if self.max_rows is None:
@@ -264,8 +202,7 @@ class RelionSource(ImageSource):
         # convert STAR file strings to data type for each field
         # columns without a specified data type are read as dtype=object
         column_types = {
-            name: RelionSource.relion_metadata_fields.get(name, str)
-            for name in df.columns
+            name: relion_metadata_fields.get(name, str) for name in df.columns
         }
         df = df.astype(column_types)
 
