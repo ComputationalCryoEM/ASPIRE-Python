@@ -52,6 +52,9 @@ class PreprocessPLTestCase(TestCase):
             )
         )
 
+        # dtype of returned images should be the same
+        self.assertTrue(self.dtype, imgs_pf.dtype)
+
     def testEmptyPhaseFlip(self):
         """
         Attempting phase_flip without CTFFilters should raise.
@@ -81,6 +84,8 @@ class PreprocessPLTestCase(TestCase):
 
         # new mean of noise should be close to zero and variance should be close to 1
         self.assertTrue(new_mean < 1e-7 and abs(new_variance - 1) < 1e-7)
+        # dtype of returned images should be the same
+        self.assertEqual(self.dtype, imgs_nb.dtype)
 
     def testWhiten(self):
         noise_estimator = AnisotropicNoiseEstimator(self.sim)
@@ -94,6 +99,8 @@ class PreprocessPLTestCase(TestCase):
 
         # correlation matrix should be close to identity
         self.assertTrue(np.allclose(np.eye(2), corr_coef, atol=1e-1))
+        # dtype of returned images should be the same
+        self.assertEqual(self.dtype, imgs_wt.dtype)
 
     def testWhiten2(self):
         # Excercises missing cases using odd image resolutions with filter.
@@ -133,3 +140,6 @@ class PreprocessPLTestCase(TestCase):
 
         # all images should be the same after inverting contrast
         self.assertTrue(np.allclose(imgs1_rc.asnumpy(), imgs2_rc.asnumpy()))
+        # dtype of returned images should be the same
+        self.assertEqual(self.dtype, imgs1_rc.dtype)
+        self.assertEqual(self.dtype, imgs2_rc.dtype)
