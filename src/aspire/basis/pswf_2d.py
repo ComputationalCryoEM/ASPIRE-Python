@@ -56,7 +56,6 @@ class PSWFBasis2D(Basis):
         self.rcut = size[0] // 2
         self.gmcut = gamma_trunc
         self.beta = beta
-
         super().__init__(size, dtype=dtype)
 
         # this basis has complex coefficients
