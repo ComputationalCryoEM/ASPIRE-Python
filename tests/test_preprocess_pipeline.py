@@ -17,6 +17,8 @@ dtypes = [np.float32, np.float64]
 
 num_images = 128
 
+L = 64
+
 
 def get_sim_object(L, dtype):
     noise_filter = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
@@ -34,7 +36,6 @@ def get_sim_object(L, dtype):
 
 @pytest.mark.parametrize("dtype", dtypes)
 def testPhaseFlip(dtype):
-    L = 64
     sim = get_sim_object(L, dtype)
     imgs_org = sim.images[:num_images]
     sim.phase_flip()
@@ -54,7 +55,6 @@ def testEmptyPhaseFlip(caplog):
     """
     Attempting phase_flip without CTFFilters should warn.
     """
-    L = 64
     # this test doesn't depend on dtype, not parametrized
     # Create a Simulation without any CTFFilters
     sim = Simulation(
@@ -70,7 +70,6 @@ def testEmptyPhaseFlip(caplog):
 
 @pytest.mark.parametrize("dtype", dtypes)
 def testNormBackground(dtype):
-    L = 64
     sim = get_sim_object(L, dtype)
     bg_radius = 1.0
     grid = grid_2d(sim.L, indexing="yx")
@@ -91,7 +90,6 @@ def testNormBackground(dtype):
 
 @pytest.mark.parametrize("dtype", dtypes)
 def testWhiten(dtype):
-    L = 64
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
     sim.whiten(noise_estimator.filter)
@@ -114,13 +112,14 @@ def testWhiten2(dtype):
     #  Relates to GitHub issue #401.
     # Otherwise this is the same as testWhiten, though the accuracy
     #  (atol) for odd resolutions seems slightly worse.
-    L = 63
-    sim = get_sim_object(L, dtype)
+    assert (L - 1) % 2 == 1, "testWhiten2: not testing an odd resolution"
+    res = L - 1
+    sim = get_sim_object(res, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
     sim.whiten(noise_estimator.filter)
     imgs_wt = sim.images[:num_images].asnumpy()
 
-    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+    corr_coef = np.corrcoef(imgs_wt[:, res - 1, res - 1], imgs_wt[:, res - 2, res - 1])
 
     # Correlation matrix should be close to identity
     assert np.allclose(np.eye(2), corr_coef, atol=2e-1)
@@ -128,7 +127,6 @@ def testWhiten2(dtype):
 
 @pytest.mark.parametrize("dtype", dtypes)
 def testInvertContrast(dtype):
-    L = 64
     sim1 = get_sim_object(L, dtype)
     imgs1 = sim1.images[:num_images]
     sim1.invert_contrast()
