@@ -96,9 +96,7 @@ def testWhiten(dtype):
     imgs_wt = sim.images[:num_images].asnumpy()
 
     # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(
-        imgs_wt[:, sim.L - 1, sim.L - 1], imgs_wt[:, sim.L - 2, sim.L - 1]
-    )
+    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
 
     # correlation matrix should be close to identity
     assert np.allclose(np.eye(2), corr_coef, atol=1e-1)
