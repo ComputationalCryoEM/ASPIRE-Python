@@ -126,11 +126,11 @@ def testWhiten2(dtype):
 @pytest.mark.parametrize("dtype", dtypes)
 def testInvertContrast(dtype):
     sim1 = get_sim_object(L, dtype)
-    imgs1 = sim1.images[:num_images]
+    imgs_org = sim1.images[:num_images]
     sim1.invert_contrast()
     imgs1_rc = sim1.images[:num_images]
     # need to set the negative images to the second simulation object
-    sim2 = ArrayImageSource(-imgs1)
+    sim2 = ArrayImageSource(-imgs_org)
     sim2.invert_contrast()
     imgs2_rc = sim2.images[:num_images]
 
