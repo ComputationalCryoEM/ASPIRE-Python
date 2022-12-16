@@ -13,11 +13,9 @@ from aspire.utils.matrix import anorm
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
-dtypes = [np.float32, np.float64]
+params = [(64, np.float32), (64, np.float64), (63, np.float32), (63, np.float64)]
 
 num_images = 128
-
-L = 64
 
 
 def get_sim_object(L, dtype):
@@ -34,8 +32,8 @@ def get_sim_object(L, dtype):
     return sim
 
 
-@pytest.mark.parametrize("dtype", dtypes)
-def testPhaseFlip(dtype):
+@pytest.mark.parametrize("L, dtype", params)
+def testPhaseFlip(L, dtype):
     sim = get_sim_object(L, dtype)
     imgs_org = sim.images[:num_images]
     sim.phase_flip()
@@ -58,7 +56,7 @@ def testEmptyPhaseFlip(caplog):
     # this test doesn't depend on dtype, not parametrized
     # Create a Simulation without any CTFFilters
     sim = Simulation(
-        L=L,
+        L=8,
         n=num_images,
         dtype=np.float32,
     )
@@ -68,8 +66,8 @@ def testEmptyPhaseFlip(caplog):
         assert "No Filters found" in caplog.text
 
 
-@pytest.mark.parametrize("dtype", dtypes)
-def testNormBackground(dtype):
+@pytest.mark.parametrize("L, dtype", params)
+def testNormBackground(L, dtype):
     sim = get_sim_object(L, dtype)
     bg_radius = 1.0
     grid = grid_2d(sim.L, indexing="yx")
@@ -88,8 +86,10 @@ def testNormBackground(dtype):
     assert dtype == imgs_nb.dtype
 
 
-@pytest.mark.parametrize("dtype", dtypes)
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def testWhiten(dtype):
+    # Note this atol holds only for L even. Odd tested in testWhiten2.
+    L = 64
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
     sim.whiten(noise_estimator.filter)
@@ -104,27 +104,26 @@ def testWhiten(dtype):
     assert dtype == imgs_wt.dtype
 
 
-@pytest.mark.parametrize("dtype", dtypes)
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def testWhiten2(dtype):
     # Excercises missing cases using odd image resolutions with filter.
     #  Relates to GitHub issue #401.
     # Otherwise this is the same as testWhiten, though the accuracy
     #  (atol) for odd resolutions seems slightly worse.
-    assert (L - 1) % 2 == 1, "testWhiten2: not testing an odd resolution"
-    res = L - 1
-    sim = get_sim_object(res, dtype)
+    L = 63
+    sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
     sim.whiten(noise_estimator.filter)
     imgs_wt = sim.images[:num_images].asnumpy()
 
-    corr_coef = np.corrcoef(imgs_wt[:, res - 1, res - 1], imgs_wt[:, res - 2, res - 1])
+    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
 
     # Correlation matrix should be close to identity
     assert np.allclose(np.eye(2), corr_coef, atol=2e-1)
 
 
-@pytest.mark.parametrize("dtype", dtypes)
-def testInvertContrast(dtype):
+@pytest.mark.parametrize("L, dtype", params)
+def testInvertContrast(L, dtype):
     sim1 = get_sim_object(L, dtype)
     imgs_org = sim1.images[:num_images]
     sim1.invert_contrast()
