@@ -35,8 +35,6 @@ class FBBasis3D(Basis, FBBasisMixin):
         ndim = len(size)
         assert ndim == 3, "Only three-dimensional basis functions are supported."
         assert len(set(size)) == 1, "Only cubic domains are supported."
-        # expected dtype of basis coefficients
-        self.coefficient_dtype = dtype
 
         super().__init__(size, ell_max, dtype=dtype)
 

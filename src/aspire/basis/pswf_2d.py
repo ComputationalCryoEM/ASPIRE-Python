@@ -56,10 +56,11 @@ class PSWFBasis2D(Basis):
         self.rcut = size[0] // 2
         self.gmcut = gamma_trunc
         self.beta = beta
-        # expected dtype of basis coefficients
-        self.coefficient_dtype = complex_type(dtype)
 
         super().__init__(size, dtype=dtype)
+
+        # this basis has complex coefficients
+        self.coefficient_dtype = complex_type(self.dtype)
 
     def _build(self):
         """

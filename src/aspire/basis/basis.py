@@ -48,6 +48,9 @@ class Basis:
             raise NotImplementedError(
                 "Currently only implemented for float32 and float64 types"
             )
+        # dtype of coefficients is the same as self.dtype for real bases
+        # subclasses with complex coefficients override this attribute
+        self.coefficient_dtype = self.dtype
 
         self._build()
 
