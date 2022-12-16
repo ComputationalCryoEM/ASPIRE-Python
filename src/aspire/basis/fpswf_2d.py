@@ -7,7 +7,6 @@ from scipy.special import jn
 
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
-from aspire.image import Image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.utils import complex_type
@@ -107,21 +106,13 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.n_max = n_max
         self.size_x = len(self._disk_mask)
 
-    def evaluate_t(self, images):
+    def _evaluate_t(self, images):
         """
         Evaluate coefficient vectors in PSWF basis using the fast method.
 
         :param images: Image stack in the standard 2D coordinate basis.
         :return: Coefficient array in the PSWF basis.
         """
-
-        if not isinstance(images, Image):
-            logger.warning(
-                "FPSWFBasis2D.evaluate_t expects Image instance,"
-                " attempting conversion."
-            )
-            images = Image(images)
-
         # Construct array with zeros outside mask
         images_disk = np.zeros(images.shape, dtype=images.dtype)
         images_disk[:, self._disk_mask] = images[:, self._disk_mask]
