@@ -1,10 +1,8 @@
 import logging
 import os.path
-from unittest import TestCase
 
 import numpy as np
 import pytest
-from parameterized import parameterized_class
 from pytest import raises
 from scipy import misc
 
@@ -86,9 +84,11 @@ def testImShift(parity, dtype):
     # ground truth numpy roll
     im3 = np.roll(im_np[0, :, :], -shifts, axis=(0, 1))
 
-    assert np.allclose(im0.asnumpy(), im1.asnumpy(), atol=1e-3)
-    assert np.allclose(im1.asnumpy(), im2.asnumpy(), atol=1e-3)
-    assert np.allclose(im0.asnumpy()[0, :, :], im3, atol=1e-3)
+    atol = 1e-3 if dtype == np.float32 else utest_tolerance(dtype)
+
+    assert np.allclose(im0.asnumpy(), im1.asnumpy(), atol=atol)
+    assert np.allclose(im1.asnumpy(), im2.asnumpy(), atol=atol)
+    assert np.allclose(im0.asnumpy()[0, :, :], im3, atol=atol)
 
 
 @pytest.mark.parametrize("parity,dtype", params)
@@ -108,9 +108,12 @@ def testImShiftStack(parity, dtype):
     im3 = np.array(
         [np.roll(ims_np[i, :, :], -shifts[i], axis=(0, 1)) for i in range(n)]
     )
-    assert np.allclose(im0.asnumpy(), im1.asnumpy(), atol=utest_tolerance(dtype))
-    assert np.allclose(im1.asnumpy(), im2.asnumpy(), atol=utest_tolerance(dtype))
-    assert np.allclose(im0.asnumpy(), im3, atol=utest_tolerance(dtype))
+
+    atol = 5e-2 if dtype == np.float32 else utest_tolerance(dtype)
+
+    assert np.allclose(im0.asnumpy(), im1.asnumpy(), atol=atol)
+    assert np.allclose(im1.asnumpy(), im2.asnumpy(), atol=atol)
+    assert np.allclose(im0.asnumpy(), im3, atol=atol)
 
 
 def testImageShiftErrors():
