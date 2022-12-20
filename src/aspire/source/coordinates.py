@@ -134,9 +134,25 @@ class CoordinateSource(ImageSource, ABC):
         self.pixel_size = pixel_size
         self.B = B
         # set CTF metadata to defaults
-        # this can be updated with import_ctf()
+        # this can be updated by importing CTF information
         self.unique_filters = [IdentityFilter()]
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
+
+        # populate __mrc_filename and __mrc_index
+        for mrc_index, particle in self.particles:
+            particle_indices_this_mrc = [
+                idx
+                for idx, particle in enumerate(self.particles)
+                if particle[0] == mrc_index
+            ]
+            self.set_metadata(
+                "__mrc_index",
+                np.arange(1, len(particle_indices_this_mrc) + 1),
+                particle_indices_this_mrc,
+            )
+            self.set_metadata(
+                "__mrc_filepath", self.mrc_paths[mrc_index], particle_indices_this_mrc
+            )
 
     def _populate_particles(self, num_micrographs, coord_paths):
         """

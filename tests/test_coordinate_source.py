@@ -511,7 +511,7 @@ class CoordinateSourceTestCase(TestCase):
         # trying to give 3 CTF files to a source with 2 micrographs should error
         with self.assertRaises(ValueError):
             src = BoxesCoordinateSource(self.files_box)
-            src.import_ctf(["badfile", "badfile", "badfile"])
+            src.import_aspire_ctf(["badfile", "badfile", "badfile"])
 
     def testImportCtfFromList(self):
         src = BoxesCoordinateSource(self.files_box)
@@ -576,7 +576,9 @@ class CoordinateSourceTestCase(TestCase):
             np.array_equal(mrc_fp_metadata, src.get_metadata("__mrc_filepath"))
         )
         # __mrc_index
-        mrc_idx_metadata = np.array([0] * 200 + [1] * 200)
+        mrc_idx_metadata = np.array(
+            [i for i in range(1, 201)] + [i for i in range(1, 201)]
+        )
         self.assertTrue(
             np.array_equal(mrc_idx_metadata, src.get_metadata("__mrc_index"))
         )
