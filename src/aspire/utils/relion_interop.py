@@ -125,6 +125,18 @@ class RelionDataStarFile(StarFile):
         # convert types
         self.data_block = df_to_relion_types(self.data_block)
         self.optics_block = df_to_relion_types(self.optics_block)
+        self.optics_block_applied = False
+
+    def apply_optics_block(self):
+        for optics_index, row in self.optics_block.iterrows():
+            match = np.argwhere(
+                self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
+                == optics_index + 1
+            )
+            match = np.atleast_1d(np.squeeze(match.T))
+            for param in self.optics_block.columns:
+                self.data_block.loc[match, param] = getattr(row, param)
+        self.optics_block_applied = True
 
     @property
     def data_block(self):
@@ -185,14 +197,6 @@ class RelionParticlesStarFile(RelionDataStarFile):
         Note, for Relion <=3.0 STAR files, `RelionLegacyParticlesStarFile` should be used.
     """
 
-    optics_params = [
-        "_rlnImagePixelSize",
-        "_rlnVoltage",
-        "_rlnSphericalAberration",
-        "_rlnAmplitudeContrast",
-        "_rlnOpticsGroupName",
-    ]
-
     def __init__(self, filepath):
         super().__init__(filepath)
 
@@ -211,16 +215,6 @@ class RelionParticlesStarFile(RelionDataStarFile):
         self.apply_optics_block()
 
         return self.data_block
-
-    def apply_optics_block(self):
-        for optics_index, row in self.optics_block.iterrows():
-            match = np.argwhere(
-                self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
-                == optics_index + 1
-            )
-            match = np.squeeze(match.T)
-            for param in RelionDataStarFile.optics_params:
-                self.data_block.loc[match, param] = getattr(row, param)
 
     def process_particles_block(self, data_folder):
         df = self.data_block
@@ -241,14 +235,14 @@ class RelionParticlesStarFile(RelionDataStarFile):
         )
 
 
-class RelionMicrographsStarFile(StarFile):
+class RelionMicrographsStarFile(RelionDataStarFile):
     """
     An extension of the `aspire.storage.StarFile` class representing Relion STAR files containing micrograph data.
         Note, for Relion <=3.0 STAR files, `RelionLegacyMicrographsStarFile` should be used.
     """
 
     def __init__(self, filepath):
-        super().__init__(filepath, blocks=None)
+        super().__init__(filepath)
 
     def get_aspire_metadata(self, data_folder):
         pass

@@ -141,7 +141,6 @@ class CoordinateSourceTestCase(TestCase):
         :param index: The number appended to the end of the temporary file's name.
         """
         box_fp = os.path.join(self.data_folder, f"sample{index+1}.box")
-        box_fp = "sample.box"
         # box file with nonsquare particles
         box_fp_nonsquare = os.path.join(
             self.data_folder, f"nonsquare_sample{index+1}.box"
@@ -517,13 +516,13 @@ class CoordinateSourceTestCase(TestCase):
 
     def testImportCtfFromList(self):
         src = BoxesCoordinateSource(self.files_box)
-        src.import_ctf(self.ctf_files)
+        src.import_aspire_ctf(self.ctf_files)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
     def testImportCtfFromRelion(self):
         src = BoxesCoordinateSource(self.files_box)
-        src.import_ctf(self.relion_ctf_file)
+        src.import_relion_ctf(self.relion_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
