@@ -131,6 +131,7 @@ class CoordinateSource(ImageSource, ABC):
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
         # CTF envelope decay factor
+        self.pixel_size = pixel_size
         self.B = B
         # set CTF metadata to defaults
         # this can be updated with import_ctf()
@@ -347,7 +348,7 @@ class CoordinateSource(ImageSource, ABC):
         # get unique ctfs from the data block
         # i'th entry of `indices` contains the index of `filter_params` with corresponding CTF params
         filter_params, indices = np.unique(
-            df[CTF_params].values, return_inverse=True, axis=0
+            df[CTF_params].astype(self.dtype).values, return_inverse=True, axis=0
         )
 
         # construct filters
@@ -362,7 +363,7 @@ class CoordinateSource(ImageSource, ABC):
                 alpha=filter_params[i, 5],
                 B=self.B,
             )
-            for i in len(filter_params)
+            for i in range(len(filter_params))
         ]
 
         # set metadata
