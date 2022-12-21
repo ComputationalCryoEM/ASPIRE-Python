@@ -50,7 +50,7 @@ class CoordinateSource(ImageSource, ABC):
     This also allows the CoordinateSource to be saved to an `.mrcs` stack.
     """
 
-    def __init__(self, files, particle_size, max_rows, pixel_size, B):
+    def __init__(self, files, particle_size, max_rows, B):
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
         # and is used in self._populate_particles
@@ -131,7 +131,6 @@ class CoordinateSource(ImageSource, ABC):
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
         # CTF envelope decay factor
-        self.pixel_size = pixel_size
         self.B = B
         # set CTF metadata to defaults
         # this can be updated by importing CTF information
@@ -352,6 +351,11 @@ class CoordinateSource(ImageSource, ABC):
         self._extract_ctf(starfile.data_block)
 
     def _extract_ctf(self, df):
+        """
+        Receives a flattened DataFrame containing micrograph CTF information, and populates
+            the Source's CTF Filters, filter indices, and metadata.
+        """
+        # required CTF params excluding pixel size
         CTF_params = [
             "_rlnVoltage",
             "_rlnDefocusU",
@@ -359,6 +363,7 @@ class CoordinateSource(ImageSource, ABC):
             "_rlnDefocusAngle",
             "_rlnSphericalAberration",
             "_rlnAmplitudeContrast",
+            "_rlnMicrographPixelSize",
         ]
 
         # get unique ctfs from the data block
@@ -367,14 +372,17 @@ class CoordinateSource(ImageSource, ABC):
             df[CTF_params].astype(self.dtype).values, return_inverse=True, axis=0
         )
 
+        # convert defocus_ang from degrees to radians
+        filter_params[:, 3] *= np.pi / 180.0
+
         # construct filters
         self.unique_filters = [
             CTFFilter(
-                pixel_size=self.pixel_size,
+                pixel_size=filter_params[i, 6],
                 voltage=filter_params[i, 0],
                 defocus_u=filter_params[i, 1],
                 defocus_v=filter_params[i, 2],
-                defocus_ang=filter_params[i, 3] * np.pi / 180.0,  # degrees to radians
+                defocus_ang=filter_params[i, 3],
                 Cs=filter_params[i, 4],
                 alpha=filter_params[i, 5],
                 B=self.B,
@@ -497,7 +505,6 @@ class BoxesCoordinateSource(CoordinateSource):
         files,
         particle_size=None,
         max_rows=None,
-        pixel_size=1.0,
         B=0,
     ):
         """
@@ -506,7 +513,7 @@ class BoxesCoordinateSource(CoordinateSource):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         """
         # instantiate super
-        CoordinateSource.__init__(self, files, particle_size, max_rows, pixel_size, B)
+        CoordinateSource.__init__(self, files, particle_size, max_rows, B)
 
     def _extract_box_size(self, box_file):
         with open(box_file, "r") as box:
@@ -609,7 +616,7 @@ class CentersCoordinateSource(CoordinateSource):
     Represents a data source consisting of micrographs and coordinate files specifying particle centers only. Files can be text (.coord) or STAR files.
     """
 
-    def __init__(self, files, particle_size, max_rows=None, pixel_size=1.0, B=0):
+    def __init__(self, files, particle_size, max_rows=None, B=0):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
         :particle_size: Desired size of cropped particles (mandatory)
@@ -617,7 +624,7 @@ class CentersCoordinateSource(CoordinateSource):
         attempt to load all particles)
         """
         # instantiate super
-        CoordinateSource.__init__(self, files, particle_size, max_rows, pixel_size, B)
+        CoordinateSource.__init__(self, files, particle_size, max_rows, B)
 
     def _validate_centers_file(self, coord_file):
         """

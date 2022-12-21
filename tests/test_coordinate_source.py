@@ -266,6 +266,7 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnSphericalAberration": 700 + index,
             "_rlnAmplitudeContrast": 600 + index,
             "_rlnVoltage": 500 + index,
+            "_rlnMicrographPixelSize": 400 + index,
         }
         blocks = OrderedDict(
             {"root": DataFrame([params_dict], columns=params_dict.keys())}
@@ -533,28 +534,44 @@ class CoordinateSourceTestCase(TestCase):
         # based on the arbitrary values we added to the CTF files
         # note these values are not realistic
         filter0 = src.unique_filters[0]
-        self.assertEqual(
-            (1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0),
-            (
-                filter0.defocus_u,
-                filter0.defocus_v,
-                filter0.defocus_ang,
-                filter0.Cs,
-                filter0.alpha,
-                filter0.voltage,
-            ),
+        self.assertTrue(
+            np.allclose(
+                np.array(
+                    [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0],
+                    dtype=src.dtype,
+                ),
+                np.array(
+                    [
+                        filter0.defocus_u,
+                        filter0.defocus_v,
+                        filter0.defocus_ang,
+                        filter0.Cs,
+                        filter0.alpha,
+                        filter0.voltage,
+                        filter0.pixel_size,
+                    ]
+                ),
+            )
         )
         filter1 = src.unique_filters[1]
-        self.assertEqual(
-            (1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0),
-            (
-                filter1.defocus_u,
-                filter1.defocus_v,
-                filter1.defocus_ang,
-                filter1.Cs,
-                filter1.alpha,
-                filter1.voltage,
-            ),
+        self.assertTrue(
+            np.allclose(
+                np.array(
+                    [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, 401.0],
+                    dtype=src.dtype,
+                ),
+                np.array(
+                    [
+                        filter1.defocus_u,
+                        filter1.defocus_v,
+                        filter1.defocus_ang,
+                        filter1.Cs,
+                        filter1.alpha,
+                        filter1.voltage,
+                        filter1.pixel_size,
+                    ]
+                ),
+            )
         )
         # the first 200 particles should correspond to the first filter
         # since they came from the first micrograph
@@ -597,13 +614,14 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnSphericalAberration",
             "_rlnAmplitudeContrast",
             "_rlnVoltage",
+            "_rlnMicrographPixelSize",
         ]
         ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=np.float64)
         ctf_metadata[:200] = np.array(
-            [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0]
+            [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0]
         )
         ctf_metadata[200:400] = np.array(
-            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0]
+            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, 401.0]
         )
         self.assertTrue(np.array_equal(ctf_metadata, src.get_metadata(ctf_cols)))
 

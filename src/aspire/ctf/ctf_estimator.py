@@ -684,7 +684,7 @@ class CtfEstimator:
         data_block["_rlnSphericalAberration"] = params_dict["cs"]
         data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
         data_block["_rlnVoltage"] = params_dict["voltage"]
-        data_block["_rlnDetectorPixelSize"] = params_dict["pixel_size"]
+        data_block["_rlnMicrographPixelSize"] = params_dict["pixel_size"]
         df = DataFrame([data_block])
         blocks = OrderedDict()
         blocks["root"] = df
