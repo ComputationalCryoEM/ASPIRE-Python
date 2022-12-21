@@ -616,7 +616,7 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnVoltage",
             "_rlnMicrographPixelSize",
         ]
-        ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=np.float64)
+        ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=src.dtype)
         ctf_metadata[:200] = np.array(
             [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0]
         )
