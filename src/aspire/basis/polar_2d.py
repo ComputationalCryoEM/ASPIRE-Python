@@ -4,6 +4,7 @@ import numpy as np
 
 from aspire.basis import Basis
 from aspire.nufft import anufft, nufft
+from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,9 @@ class PolarBasis2D(Basis):
         self.ntheta = ntheta
 
         super().__init__(size, dtype=dtype)
+
+        # this basis has complex coefficients
+        self.coefficient_dtype = complex_type(self.dtype)
 
     def _build(self):
         """

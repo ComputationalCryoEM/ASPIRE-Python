@@ -53,7 +53,7 @@ class StarFileTestCase(TestCase):
 
         # We also want to flex the stack logic.
         self.n = 21
-        im_stack = np.broadcast_to(self.im.data, (self.n, L, L))
+        im_stack = np.broadcast_to(self.im.asnumpy(), (self.n, L, L))
         # make each image methodically different
         im_stack = np.multiply(im_stack, np.arange(self.n)[:, None, None])
         self.im_stack = Image(im_stack)
