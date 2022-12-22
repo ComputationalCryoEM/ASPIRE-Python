@@ -84,7 +84,7 @@ def testImShift(parity, dtype):
     # ground truth numpy roll
     im3 = np.roll(im_np[0, :, :], -shifts, axis=(0, 1))
 
-    atol = 1e-3 if dtype == np.float32 else utest_tolerance(dtype)
+    atol = utest_tolerance(dtype)
 
     assert np.allclose(im0.asnumpy(), im1.asnumpy(), atol=atol)
     assert np.allclose(im1.asnumpy(), im2.asnumpy(), atol=atol)
@@ -109,7 +109,7 @@ def testImShiftStack(parity, dtype):
         [np.roll(ims_np[i, :, :], -shifts[i], axis=(0, 1)) for i in range(n)]
     )
 
-    atol = 5e-2 if dtype == np.float32 else utest_tolerance(dtype)
+    atol = utest_tolerance(dtype)
 
     assert np.allclose(im0.asnumpy(), im1.asnumpy(), atol=atol)
     assert np.allclose(im1.asnumpy(), im2.asnumpy(), atol=atol)
