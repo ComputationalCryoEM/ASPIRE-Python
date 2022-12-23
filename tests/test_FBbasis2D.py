@@ -25,12 +25,14 @@ params = [
         (32, np.float64),
     ]
 
-SEED = 9161341
+seed = 9161341
 
-def getBasis(L, dtype):
-    return FBBasis2D(L, dtype=dtype)
+@pytest.mark.parametrize("L,dtype", params)
+class TestFBBasis2D(UniversalBasisMixin):
 
-class TestFBBasis2D:
+    def getBasis(self, L, dtype):
+        return FBBasis2D(L, dtype=dtype)
+
     def _testElement(self, basis, ell, k, sgn):
         # This is covered by the isotropic test.
         assert ell > 0
@@ -47,7 +49,7 @@ class TestFBBasis2D:
 
         im = np.zeros((basis.nres, basis.nres), dtype=basis.dtype)
         im[mask] = jv(ell, g2d["r"][mask] * r0)
-        im *= np.sqrt(2**2 / basis.nres.L**2)
+        im *= np.sqrt(2**2 / basis.nres**2)
         im *= 1 / (np.sqrt(np.pi) * np.abs(jv(ell + 1, r0)))
 
         if sgn == 1:
@@ -67,7 +69,7 @@ class TestFBBasis2D:
         assert np.allclose(coef, coef_ref, atol=1e-4)
 
     def testElements(self, L, dtype):
-        basis = getBasis(L, dtype)
+        basis = self.getBasis(L, dtype)
         ells = [1, 1, 1, 1]
         ks = [1, 2, 1, 2]
         sgns = [-1, -1, 1, 1]
@@ -76,7 +78,7 @@ class TestFBBasis2D:
             self._testElement(basis, ell, k, sgn)
 
     def testComplexCoversion(self, L, dtype):
-        basis = getBasis(L, dtype)
+        basis = self.getBasis(L, dtype)
         x = Image(randn(*basis.sz, seed=seed), dtype=dtype)
 
         # Express in an FB basis
@@ -91,7 +93,7 @@ class TestFBBasis2D:
         assert np.allclose(v1, v2)
 
     def testComplexCoversionErrorsToComplex(self, L, dtype):
-        basis = getBasis(L, dtype)
+        basis = self.getBasis(L, dtype)
         x = randn(*basis.sz, seed=seed)
 
         # Express in an FB basis
@@ -117,7 +119,7 @@ class TestFBBasis2D:
         _ = basis.to_complex(v1.reshape(-1))
 
     def testComplexCoversionErrorsToReal(self, L, dtype):
-        basis = getBasis(L, dtype)
+        basis = self.getBasis(L, dtype)
         x = randn(*basis.sz, seed=seed)
 
         # Express in an FB basis

@@ -2,6 +2,8 @@ from unittest.case import SkipTest
 
 import numpy as np
 
+import pytest
+
 from aspire.image import Image
 from aspire.utils import gaussian_2d, utest_tolerance
 from aspire.utils.coor_trans import grid_2d
@@ -131,41 +133,49 @@ class Steerable2DMixin:
 
 
 class UniversalBasisMixin:
-    def getClass(self):
-        if self.basis.ndim == 2:
+    """
+    Each function must take L and dtype as parameters
+    """
+    def getClass(self, L, dtype):
+        basis = self.getBasis(L, dtype)
+        if basis.ndim == 2:
             return Image
-        elif self.basis.ndim == 3:
+        elif basis.ndim == 3:
             return Volume
 
-    def testEvaluate(self):
+    def testEvaluate(self, L, dtype):
         # evaluate should take a NumPy array of type basis.coefficient_dtype
         # and return an Image/Volume
-        _class = self.getClass()
-        result = self.basis.evaluate(
-            np.zeros((self.basis.count), dtype=self.basis.coefficient_dtype)
+        _class = self.getClass(L, dtype)
+        basis = self.getBasis(L, dtype)
+        result = basis.evaluate(
+            np.zeros((basis.count), dtype=basis.coefficient_dtype)
         )
-        self.assertTrue(isinstance(result, _class))
+        assert isinstance(result, _class)
 
-    def testEvaluate_t(self):
+    def testEvaluate_t(self, L, dtype):
         # evaluate_t should take an Image/Volume and return a NumPy array of type
         # basis.coefficient_dtype
-        _class = self.getClass()
-        result = self.basis.evaluate_t(
-            _class(np.zeros((self.L,) * self.basis.ndim, dtype=self.dtype))
+        _class = self.getClass(L, dtype)
+        basis = self.getBasis(L, dtype)
+        result = basis.evaluate_t(
+            _class(np.zeros((L,) * basis.ndim, dtype=dtype))
         )
-        self.assertTrue(isinstance(result, np.ndarray))
-        self.assertEqual(result.dtype, self.basis.coefficient_dtype)
+        assert isinstance(result, np.ndarray)
+        assert result.dtype == basis.coefficient_dtype
 
-    def testExpand(self):
-        _class = self.getClass()
+    def testExpand(self, L, dtype):
+        _class = self.getClass(L, dtype)
+        basis = self.getBasis(L, dtype)
         # expand should take an Image/Volume and return a NumPy array of type
         # basis.coefficient_dtype
-        result = self.basis.expand(
-            _class(np.zeros((self.L,) * self.basis.ndim, dtype=self.dtype))
+        result = basis.expand(
+            _class(np.zeros((L,) * basis.ndim, dtype=dtype))
         )
-        self.assertTrue(isinstance(result, np.ndarray))
-        self.assertEqual(result.dtype, self.basis.coefficient_dtype)
+        assert isinstance(result, np.ndarray)
+        assert result.dtype == basis.coefficient_dtype
 
-    def testInitWithIntSize(self):
+    def testInitWithIntSize(self, L, dtype):
+        basis = self.getBasis(L, dtype)
         # make sure we can instantiate with just an int as a shortcut
-        self.assertEqual((self.L,) * self.basis.ndim, self.basis.__class__(self.L).sz)
+        assert (L,) * basis.ndim == basis.__class__(L).sz
