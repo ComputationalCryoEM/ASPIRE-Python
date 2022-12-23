@@ -38,9 +38,6 @@ def show_basis_params(basis):
 class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
     seed = 9161341
 
-    def getBasis(self, L, dtype):
-        return FBBasis2D(L, dtype=dtype)
-
     def _testElement(self, basis, ell, k, sgn):
         # This is covered by the isotropic test.
         assert ell > 0
