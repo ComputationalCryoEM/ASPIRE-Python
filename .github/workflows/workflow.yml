@@ -19,10 +19,6 @@ jobs:
         pip install tox tox-gh-actions
     - name: Run Tox Check
       run: tox -e check
-    - name: Test Bourne Shell
-      run: |
-        which sh
-        which bash
 
   build:
     needs: check
