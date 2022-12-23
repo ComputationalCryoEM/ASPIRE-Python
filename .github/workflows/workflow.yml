@@ -22,7 +22,7 @@ jobs:
     - name: Test Bourne Shell
       run: |
         which sh
-	which bash
+        which bash
 
   build:
     needs: check
