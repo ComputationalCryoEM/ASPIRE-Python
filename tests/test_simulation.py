@@ -584,3 +584,6 @@ class SimTestCase(TestCase):
             imgs_sav = relion_src.images[:1024]
             # Compare original images with saved images
             self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
+
+    def testTest(self):
+        assert self.sim.n // 2 == 512
