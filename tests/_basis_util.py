@@ -1,5 +1,4 @@
 import numpy as np
-
 import pytest
 
 from aspire.image import Image
@@ -8,8 +7,13 @@ from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
 from aspire.volume import Volume
 
-seed = 0
+
 class Steerable2DMixin:
+    """
+    Inheriting Test class will expect all Steerable2DMixin functions to take a Basis object
+        as a parameter
+    """
+
     def testIndices(self, basis):
         ell_max = basis.ell_max
         k_max = basis.k_max
@@ -103,8 +107,8 @@ class Steerable2DMixin:
 
             assert energy_ratio < 0.10
 
-    def testEvaluateExpand(self,basis):
-        coef1 = randn(basis.count, seed=seed)
+    def testEvaluateExpand(self, basis):
+        coef1 = randn(basis.count, seed=self.seed)
         coef1 = coef1.astype(basis.dtype)
 
         im = basis.evaluate(coef1)
@@ -116,14 +120,14 @@ class Steerable2DMixin:
         assert np.allclose(coef1, coef2, atol=utest_tolerance(basis.dtype))
 
     def testAdjoint(self, basis):
-        u = randn(basis.count, seed=seed)
+        u = randn(basis.count, seed=self.seed)
         u = u.astype(basis.dtype)
 
         Au = basis.evaluate(u)
         if isinstance(Au, Image):
             Au = Au.asnumpy()
 
-        x = Image(randn(*basis.sz, seed=seed), dtype=basis.dtype)
+        x = Image(randn(*basis.sz, seed=self.seed), dtype=basis.dtype)
 
         ATx = basis.evaluate_t(x)
 
@@ -136,8 +140,10 @@ class Steerable2DMixin:
 
 class UniversalBasisMixin:
     """
-    Each function must take L and dtype as parameters
+    Inheriting Test class will expect all UniversalBasisMixin functions to take a Basis object
+        as a parameter.
     """
+
     def getClass(self, basis):
         if basis.ndim == 2:
             return Image
@@ -148,12 +154,10 @@ class UniversalBasisMixin:
         # evaluate should take a NumPy array of type basis.coefficient_dtype
         # and return an Image/Volume
         _class = self.getClass(basis)
-        result = basis.evaluate(
-            np.zeros((basis.count), dtype=basis.coefficient_dtype)
-        )
+        result = basis.evaluate(np.zeros((basis.count), dtype=basis.coefficient_dtype))
         assert isinstance(result, _class)
 
-    def testEvaluate_t(self,basis ):
+    def testEvaluate_t(self, basis):
         # evaluate_t should take an Image/Volume and return a NumPy array of type
         # basis.coefficient_dtype
         _class = self.getClass(basis)
@@ -173,6 +177,6 @@ class UniversalBasisMixin:
         assert isinstance(result, np.ndarray)
         assert result.dtype == basis.coefficient_dtype
 
-    def testInitWithIntSize(self,basis):
+    def testInitWithIntSize(self, basis):
         # make sure we can instantiate with just an int as a shortcut
         assert (basis.nres,) * basis.ndim == basis.__class__(basis.nres).sz

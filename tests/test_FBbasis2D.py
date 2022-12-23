@@ -1,8 +1,8 @@
 import os.path
 
 import numpy as np
-from pytest import raises
 import pytest
+from pytest import raises
 from scipy.special import jv
 
 from aspire.basis import FBBasis2D
@@ -17,25 +17,27 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 params = [
-        (8, np.float32),
-        (8, np.float64),
-        (16, np.float32),
-        (16, np.float64),
-        (32, np.float32),
-        (32, np.float64),
-    ]
+    (8, np.float32),
+    (8, np.float64),
+    (16, np.float32),
+    (16, np.float64),
+    (32, np.float32),
+    (32, np.float64),
+]
 
-test_bases = [FBBasis2D(L, dtype=dtype) for L,dtype in params]
-seed = 9161341
+test_bases = [FBBasis2D(L, dtype=dtype) for L, dtype in params]
+
 
 def show_basis_params(basis):
     # print descriptive test name for parametrized test
     # run pytest with option -rA to see explicitly
     return f"{basis.nres}-{basis.dtype}"
 
+
 @pytest.mark.parametrize("basis", test_bases, ids=show_basis_params)
 class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
     seed = 9161341
+
     def getBasis(self, L, dtype):
         return FBBasis2D(L, dtype=dtype)
 
@@ -83,7 +85,7 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
             self._testElement(basis, ell, k, sgn)
 
     def testComplexCoversion(self, basis):
-        x = Image(randn(*basis.sz, seed=seed), dtype=basis.dtype)
+        x = Image(randn(*basis.sz, seed=self.seed), dtype=basis.dtype)
 
         # Express in an FB basis
         v1 = basis.expand(x)
@@ -97,7 +99,7 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         assert np.allclose(v1, v2)
 
     def testComplexCoversionErrorsToComplex(self, basis):
-        x = randn(*basis.sz, seed=seed)
+        x = randn(*basis.sz, seed=self.seed)
 
         # Express in an FB basis
         v1 = basis.expand(x.astype(basis.dtype))
@@ -122,7 +124,7 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         _ = basis.to_complex(v1.reshape(-1))
 
     def testComplexCoversionErrorsToReal(self, basis):
-        x = randn(*basis.sz, seed=seed)
+        x = randn(*basis.sz, seed=self.seed)
 
         # Express in an FB basis
         cv1 = basis.to_complex(basis.expand(x.astype(basis.dtype)))
