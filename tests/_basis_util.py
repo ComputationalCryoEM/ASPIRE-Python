@@ -10,8 +10,7 @@ from aspire.volume import Volume
 
 seed = 0
 class Steerable2DMixin:
-    def testIndices(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testIndices(self, basis):
         ell_max = basis.ell_max
         k_max = basis.k_max
 
@@ -33,16 +32,17 @@ class Steerable2DMixin:
 
                     i += 1
 
-    def testGaussianExpand(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testGaussianExpand(self, basis):
         # Offset slightly
         x0 = 0.50
         y0 = 0.75
 
+        L = basis.nres
+
         # Want sigma to be as large as possible without the Gaussian
         # spilling too much outside the central disk.
         sigma = L / 8
-        im1 = gaussian_2d(L, mu=(x0, y0), sigma=sigma, dtype=dtype)
+        im1 = gaussian_2d(L, mu=(x0, y0), sigma=sigma, dtype=basis.dtype)
 
         coef = basis.expand(im1)
         im2 = basis.evaluate(coef)
@@ -61,10 +61,10 @@ class Steerable2DMixin:
         assert im1.shape == im2.shape
         assert np.allclose(im1, im2, atol=atol)
 
-    def testIsotropic(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testIsotropic(self, basis):
+        L = basis.nres
         sigma = L / 8
-        im = gaussian_2d(L, sigma=sigma, dtype=dtype)
+        im = gaussian_2d(L, sigma=sigma, dtype=basis.dtype)
 
         coef = basis.expand(im)
 
@@ -77,15 +77,15 @@ class Steerable2DMixin:
 
         assert energy_ratio < 0.01
 
-    def testModulated(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testModulated(self, basis):
+        L = basis.nres
         if L < 32:
             pytest.skip()
 
         ell = 1
 
         sigma = L / 8
-        im = gaussian_2d(L, sigma=sigma, dtype=dtype)
+        im = gaussian_2d(L, sigma=sigma, dtype=basis.dtype)
 
         g2d = grid_2d(L)
 
@@ -103,10 +103,9 @@ class Steerable2DMixin:
 
             assert energy_ratio < 0.10
 
-    def testEvaluateExpand(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testEvaluateExpand(self,basis):
         coef1 = randn(basis.count, seed=seed)
-        coef1 = coef1.astype(dtype)
+        coef1 = coef1.astype(basis.dtype)
 
         im = basis.evaluate(coef1)
         if isinstance(im, Image):
@@ -114,18 +113,17 @@ class Steerable2DMixin:
         coef2 = basis.expand(im)[0]
 
         assert coef1.shape == coef2.shape
-        assert np.allclose(coef1, coef2, atol=utest_tolerance(dtype))
+        assert np.allclose(coef1, coef2, atol=utest_tolerance(basis.dtype))
 
-    def testAdjoint(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testAdjoint(self, basis):
         u = randn(basis.count, seed=seed)
-        u = u.astype(dtype)
+        u = u.astype(basis.dtype)
 
         Au = basis.evaluate(u)
         if isinstance(Au, Image):
             Au = Au.asnumpy()
 
-        x = Image(randn(*basis.sz, seed=seed), dtype=dtype)
+        x = Image(randn(*basis.sz, seed=seed), dtype=basis.dtype)
 
         ATx = basis.evaluate_t(x)
 
@@ -140,46 +138,41 @@ class UniversalBasisMixin:
     """
     Each function must take L and dtype as parameters
     """
-    def getClass(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def getClass(self, basis):
         if basis.ndim == 2:
             return Image
         elif basis.ndim == 3:
             return Volume
 
-    def testEvaluate(self, L, dtype):
+    def testEvaluate(self, basis):
         # evaluate should take a NumPy array of type basis.coefficient_dtype
         # and return an Image/Volume
-        _class = self.getClass(L, dtype)
-        basis = self.getBasis(L, dtype)
+        _class = self.getClass(basis)
         result = basis.evaluate(
             np.zeros((basis.count), dtype=basis.coefficient_dtype)
         )
         assert isinstance(result, _class)
 
-    def testEvaluate_t(self, L, dtype):
+    def testEvaluate_t(self,basis ):
         # evaluate_t should take an Image/Volume and return a NumPy array of type
         # basis.coefficient_dtype
-        _class = self.getClass(L, dtype)
-        basis = self.getBasis(L, dtype)
+        _class = self.getClass(basis)
         result = basis.evaluate_t(
-            _class(np.zeros((L,) * basis.ndim, dtype=dtype))
+            _class(np.zeros((basis.nres,) * basis.ndim, dtype=basis.dtype))
         )
         assert isinstance(result, np.ndarray)
         assert result.dtype == basis.coefficient_dtype
 
-    def testExpand(self, L, dtype):
-        _class = self.getClass(L, dtype)
-        basis = self.getBasis(L, dtype)
+    def testExpand(self, basis):
+        _class = self.getClass(basis)
         # expand should take an Image/Volume and return a NumPy array of type
         # basis.coefficient_dtype
         result = basis.expand(
-            _class(np.zeros((L,) * basis.ndim, dtype=dtype))
+            _class(np.zeros((basis.nres,) * basis.ndim, dtype=basis.dtype))
         )
         assert isinstance(result, np.ndarray)
         assert result.dtype == basis.coefficient_dtype
 
-    def testInitWithIntSize(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testInitWithIntSize(self,basis):
         # make sure we can instantiate with just an int as a shortcut
-        assert (L,) * basis.ndim == basis.__class__(L).sz
+        assert (basis.nres,) * basis.ndim == basis.__class__(basis.nres).sz

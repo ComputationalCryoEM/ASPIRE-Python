@@ -25,9 +25,15 @@ params = [
         (32, np.float64),
     ]
 
+test_bases = [FBBasis2D(L, dtype=dtype) for L,dtype in params]
 seed = 9161341
 
-@pytest.mark.parametrize("L,dtype", params)
+def show_basis_params(basis):
+    # print descriptive test name for parametrized test
+    # run pytest with option -rA to see explicitly
+    return f"{basis.nres}-{basis.dtype}"
+
+@pytest.mark.parametrize("basis", test_bases, ids=show_basis_params)
 class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
     seed = 9161341
     def getBasis(self, L, dtype):
@@ -68,8 +74,7 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         assert np.allclose(im, im_ref.asnumpy(), atol=1e-4)
         assert np.allclose(coef, coef_ref, atol=1e-4)
 
-    def testElements(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testElements(self, basis):
         ells = [1, 1, 1, 1]
         ks = [1, 2, 1, 2]
         sgns = [-1, -1, 1, 1]
@@ -77,9 +82,8 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         for ell, k, sgn in zip(ells, ks, sgns):
             self._testElement(basis, ell, k, sgn)
 
-    def testComplexCoversion(self, L, dtype):
-        basis = self.getBasis(L, dtype)
-        x = Image(randn(*basis.sz, seed=seed), dtype=dtype)
+    def testComplexCoversion(self, basis):
+        x = Image(randn(*basis.sz, seed=seed), dtype=basis.dtype)
 
         # Express in an FB basis
         v1 = basis.expand(x)
@@ -92,12 +96,11 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # The round trip should be equivalent up to machine precision
         assert np.allclose(v1, v2)
 
-    def testComplexCoversionErrorsToComplex(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testComplexCoversionErrorsToComplex(self, basis):
         x = randn(*basis.sz, seed=seed)
 
         # Express in an FB basis
-        v1 = basis.expand(x.astype(dtype))
+        v1 = basis.expand(x.astype(basis.dtype))
 
         # Test catching Errors
         with raises(TypeError):
@@ -118,12 +121,11 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # Try 0d vector, should not crash.
         _ = basis.to_complex(v1.reshape(-1))
 
-    def testComplexCoversionErrorsToReal(self, L, dtype):
-        basis = self.getBasis(L, dtype)
+    def testComplexCoversionErrorsToReal(self, basis):
         x = randn(*basis.sz, seed=seed)
 
         # Express in an FB basis
-        cv1 = basis.to_complex(basis.expand(x.astype(dtype)))
+        cv1 = basis.to_complex(basis.expand(x.astype(basis.dtype)))
 
         # Test catching Errors
         with raises(TypeError):
