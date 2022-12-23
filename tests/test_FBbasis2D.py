@@ -28,8 +28,8 @@ params = [
 seed = 9161341
 
 @pytest.mark.parametrize("L,dtype", params)
-class TestFBBasis2D(UniversalBasisMixin):
-
+class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
+    seed = 9161341
     def getBasis(self, L, dtype):
         return FBBasis2D(L, dtype=dtype)
 
