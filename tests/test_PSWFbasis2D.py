@@ -46,3 +46,23 @@ class PSWFBasis2DTestCase(TestCase, UniversalBasisMixin):
         result = self.basis.evaluate(coeffs)
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         self.assertTrue(np.allclose(result.asnumpy(), images))
+
+    # The following functions of UniversalBasisMixin expect a `basis`
+    # arg to be passed in. When PSWF2D tests are parametrized
+    # over size and dtype, this will be possible by passing in a basis
+    # automatically via @pytest.mark.parametrize() decorator on the test class
+    #
+    # See: test_FBBasis2D and test_FFBBasis2D
+    #
+    # for now, pass in the basis we are using
+    def testEvaluate(self):
+        super().testEvaluate(self.basis)
+
+    def testEvaluate_t(self):
+        super().testEvaluate_t(self.basis)
+
+    def testExpand(self):
+        super().testExpand(self.basis)
+
+    def testInitWithIntSize(self):
+        super().testInitWithIntSize(self.basis)

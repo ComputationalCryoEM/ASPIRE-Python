@@ -705,3 +705,23 @@ class FBBasis3DTestCase(TestCase, UniversalBasisMixin):
                 atol=utest_tolerance(self.dtype),
             )
         )
+
+    # The following functions of UniversalBasisMixin expect a `basis`
+    # arg to be passed in. When FB3D tests are parametrized
+    # over size and dtype, this will be possible by passing in a basis
+    # automatically via @pytest.mark.parametrize() decorator on the test class
+    #
+    # See: test_FBBasis2D and test_FFBBasis2D
+    #
+    # for now, pass in the basis we are using
+    def testEvaluate(self):
+        super().testEvaluate(self.basis)
+
+    def testEvaluate_t(self):
+        super().testEvaluate_t(self.basis)
+
+    def testExpand(self):
+        super().testExpand(self.basis)
+
+    def testInitWithIntSize(self):
+        super().testInitWithIntSize(self.basis)
