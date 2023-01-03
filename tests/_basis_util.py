@@ -11,7 +11,7 @@ from aspire.volume import Volume
 class Steerable2DMixin:
     """
     Inheriting Test class will expect all Steerable2DMixin functions to take a Basis object
-        as a parameter
+        as a parameter.
     """
 
     def testIndices(self, basis):
