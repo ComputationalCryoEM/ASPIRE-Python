@@ -21,11 +21,12 @@ mdim = 2
 
 def get_images(parity=0, dtype=np.float32):
     size = 768 - parity
-    im_np = misc.face(gray=True).astype(dtype)
     # numpy array for top-level functions that directly expect it
     im_np = misc.face(gray=True).astype(dtype)[np.newaxis, :size, :size]
+    denom = np.max(np.abs(im_np))
+    im_np = im_np / denom  # Normalize test image data to 0,1
     # Independent Image object for testing Image methods
-    im = Image(misc.face(gray=True).astype(dtype)[:size, :size])
+    im = Image(im_np.copy())
     return im_np, im
 
 
@@ -54,7 +55,6 @@ def get_mdim_images(parity=0, dtype=np.float32):
 
 
 def testRepr():
-    # don't need to parametrize this test
     _, mdim_ims = get_mdim_images()
     r = repr(mdim_ims)
     logger.info(f"Image repr:\n{r}")

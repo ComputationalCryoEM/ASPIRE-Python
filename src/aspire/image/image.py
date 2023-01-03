@@ -341,8 +341,7 @@ class Image:
 
         # Note original stack shape and flatten stack
         stack_shape = self.stack_shape
-        # upcast to np.float64 to preserve numerical stability in FFT ops
-        im = self.stack_reshape(-1)._data.astype(np.float64)
+        im = self.stack_reshape(-1)._data
 
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
@@ -358,7 +357,9 @@ class Image:
 
         L = self.resolution
         im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))
-        grid_shifted = fft.ifftshift(xp.asarray(np.ceil(np.arange(-L / 2, L / 2))))
+        grid_shifted = fft.ifftshift(
+            xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
+        )
         grid_1d = xp.asnumpy(grid_shifted) * 2 * np.pi / L
         om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing="ij")
 
@@ -372,8 +373,7 @@ class Image:
         mult_f = np.exp(-1j * phase_shifts)
         im_translated_f = im_f * mult_f
         im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f)))
-        # downcast back to Image's internal dtype
-        im_translated = np.real(im_translated).astype(self.dtype)
+        im_translated = np.real(im_translated)
 
         # Reshape to stack shape
         return Image(im_translated).stack_reshape(stack_shape)
