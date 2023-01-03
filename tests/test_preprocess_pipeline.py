@@ -19,14 +19,14 @@ num_images = 128
 
 
 def get_sim_object(L, dtype):
-    CustomNoiseAdder(noise_filter=FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2)))
+    noise_adder = CustomNoiseAdder(noise_filter=FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2)))
     sim = Simulation(
         L=L,
         n=num_images,
         unique_filters=[
             RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
         ],
-        noise_filter=noise_filter,
+        noise_adder=noise_adder,
         dtype=dtype,
     )
     return sim
