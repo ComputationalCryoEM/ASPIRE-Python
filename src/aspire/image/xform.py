@@ -289,6 +289,7 @@ class LambdaXform(Xform):
     def __str__(self):
         return f"LambdaXform ({self.lambda_fun.__name__})"
 
+
 class IndexedXform(Xform):
     """
     An IndexedXform is a Xform where individual Xform objects are used at specific indices of the incoming Image object.

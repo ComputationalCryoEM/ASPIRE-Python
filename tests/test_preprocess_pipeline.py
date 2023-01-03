@@ -19,7 +19,9 @@ num_images = 128
 
 
 def get_sim_object(L, dtype):
-    noise_adder = CustomNoiseAdder(noise_filter=FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2)))
+    noise_adder = CustomNoiseAdder(
+        noise_filter=FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
+    )
     sim = Simulation(
         L=L,
         n=num_images,
