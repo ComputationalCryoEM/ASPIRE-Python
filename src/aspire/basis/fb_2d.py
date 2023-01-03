@@ -146,7 +146,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             for k in range(1, self.k_max[ell] + 1):
                 # Only normalized by the radial part of basis function
                 radial[:, ind_radial] = (
-                    jv(ell, self.r0[k - 1, ell] * r_unique)
+                    jv(ell, self.r0[ell][k - 1] * r_unique)
                     / self.radial_norms[ind_radial]
                 )
                 ind_radial += 1
@@ -180,7 +180,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         Calculate the normalized factors from radial and angular parts of a specified basis function
         """
         rad_norm = (
-            np.abs(jv(ell + 1, self.r0[k - 1, ell]))
+            np.abs(jv(ell + 1, self.r0[ell][k - 1]))
             * np.sqrt(1 / 2.0)
             * self.nres
             / 2.0
@@ -248,8 +248,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             `self.count` and whose first dimensions correspond to
             first dimensions of `v`.
         """
-        v = v.asnumpy().T  # RCOPT
-
+        v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(
             x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
