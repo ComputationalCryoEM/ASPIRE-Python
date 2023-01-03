@@ -18,7 +18,7 @@ from aspire.utils import (
     vecmat_to_volmat,
 )
 from aspire.utils.random import rand, randi, randn
-from aspire.volume import LegacyVolume, Volume
+from aspire.volume import AsymmetricVolume, Volume
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class Simulation(ImageSource):
             If a `Volume` is provided `L` and `vols.resolution` must agree.
         :param n: The number of images to generate (integer).
         :param vols: A `Volume` object representing a stack of volumes.
-            Default is generated with `volume.volume_synthesis.LegacyVolume`.
+            Default is generated with `volume.volume_synthesis.AsymmetricVolume`.
         :param states: A 1d array of n integers in the interval [0, C). The i'th integer indicates
             the volume stack index used to produce the i'th projection image. Default is a random set.
         :param unique_filters: A list of Filter objects to be applied to projection images.
@@ -84,7 +84,7 @@ class Simulation(ImageSource):
         # If a Volume is not provided we default to the legacy Gaussian blob volume.
         # If a Simulation resolution or dtype is not provided, we default to L=8 and np.float32.
         if vols is None:
-            self.vols = LegacyVolume(
+            self.vols = AsymmetricVolume(
                 L=L or 8,
                 C=C,
                 seed=self.seed,

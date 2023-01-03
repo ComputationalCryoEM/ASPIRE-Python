@@ -9,7 +9,7 @@ from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
-from aspire.volume import Volume
+from aspire.volume import LegacyVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -88,15 +88,28 @@ class SimVolTestCase(TestCase):
 
 class SimTestCase(TestCase):
     def setUp(self):
+        self.n = 1024
+        self.L = 8
+        self.seed = 0
+        self.dtype = np.float32
+
+        self.vols = LegacyVolume(
+            L=self.L,
+            C=2,
+            seed=self.seed,
+            dtype=self.dtype,
+        ).generate()
+
         self.sim = Simulation(
-            n=1024,
-            L=8,
+            n=self.n,
+            L=self.L,
+            vols=self.vols,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            seed=0,
+            seed=self.seed,
             noise_filter=IdentityFilter(),
-            dtype="single",
+            dtype=self.dtype,
         )
 
     def tearDown(self):
@@ -134,14 +147,15 @@ class SimTestCase(TestCase):
 
     def testSimulationCached(self):
         sim_cached = Simulation(
-            n=1024,
-            L=8,
+            n=self.n,
+            L=self.L,
+            vols=self.vols,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            seed=0,
+            seed=self.seed,
             noise_filter=IdentityFilter(),
-            dtype="single",
+            dtype=self.dtype,
         )
         sim_cached.cache()
         self.assertTrue(

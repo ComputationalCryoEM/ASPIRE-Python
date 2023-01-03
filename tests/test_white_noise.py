@@ -6,17 +6,22 @@ import numpy as np
 from aspire.noise import WhiteNoiseEstimator
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
+from aspire.volume import LegacyVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class SimTestCase(TestCase):
     def setUp(self):
+        self.dtype = np.float32
+        self.vols = LegacyVolume(L=8, C=2, seed=0, dtype=self.dtype).generate()
         self.sim = Simulation(
             n=1024,
+            vols=self.vols,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
+            dtype=self.dtype,
         )
 
     def tearDown(self):

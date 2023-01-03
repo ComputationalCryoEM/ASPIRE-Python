@@ -7,6 +7,7 @@ from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import RadialCTFFilter
 from aspire.source import ArrayImageSource, Simulation
 from aspire.utils.types import utest_tolerance
+from aspire.volume import LegacyVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -14,8 +15,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class SimTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
+        self.vol = LegacyVolume(L=8, C=2, dtype=self.dtype, seed=0).generate()
         self.sim = Simulation(
             n=1024,
+            vols=self.vol,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
