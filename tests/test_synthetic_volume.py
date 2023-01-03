@@ -58,6 +58,23 @@ class Base:
             self.assertTrue(self.vol[0][outside].all() == 0)
             self.assertTrue((self.vol[0][inside] > 0).all())
 
+    def testVolumeSymmetry(self):
+        """Test that volumes have intended symmetry."""
+        vol = self.vol
+
+        # Rotations in symmetry group, excluding the Identity.
+        rots = self.vol_obj.symmetry_group.matrices[1:]
+
+        for rot in rots:
+            # Rotate volume by an element of the symmetric group.
+            rot_vol = vol.rotate(Rotation(rot), zero_nyquist=False)
+
+            # Check that correlation is close to 1.
+            corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
+                vol[0].flatten(), vol[0].flatten()
+            )
+            self.assertTrue(abs(corr - 1) < 1e-5)
+
 
 @parameterized_class(
     ("L", "order"),
@@ -78,36 +95,17 @@ class CnSymmetricVolumeCase(Base, TestCase):
     L = 20
     order = 2
 
-    def testCnSymmetricVolume(self):
-        vol = self.vol
-
-        # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
-        angles = np.zeros((self.order, 3), dtype=self.dtype)
-        angles[:, 2] = 2 * np.pi * np.arange(self.order) / self.order
-        rot_mat = Rotation.from_euler(angles, dtype=self.dtype).matrices
-
-        for i in range(self.order):
-            # Rotate volume.
-            rot = Rotation(rot_mat[i])
-            rot_vol = vol.rotate(rot, zero_nyquist=False)
-
-            # Check that correlation is close to 1.
-            corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
-                vol[0].flatten(), vol[0].flatten()
-            )
-            self.assertTrue(abs(corr - 1) < 1e-5)
-
 
 @parameterized_class(
     ("L", "order"),
     [
         (21, 2),
-        (30, 3),
-        (31, 3),
-        (40, 4),
-        (41, 4),
-        (52, 5),
-        (53, 5),
+        (40, 3),
+        (41, 3),
+        (42, 4),
+        (43, 4),
+        (55, 5),
+        (56, 5),
         (64, 6),
         (65, 6),
     ],

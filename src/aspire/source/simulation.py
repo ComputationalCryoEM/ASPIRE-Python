@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 
 
 class Simulation(ImageSource):
+    """
+    A `Simulation` represents a synthetic dataset of realistic cryo-EM images with corresponding
+    `metadata`. The images are generated via projections of a supplied `Volume` object, `vols`, over
+    orientations define by the Euler angles, `angles`. Various types of corruption, such as noise and
+    CTF effects, can be added to the images by supplying a `Filter` object to the `noise_filter` or
+    `unique_filters` arguments.
+    """
+
     def __init__(
         self,
         L=None,
@@ -41,12 +49,34 @@ class Simulation(ImageSource):
         noise_adder=None,
     ):
         """
-        A Cryo-EM simulation
-        Other than the base class attributes, it has:
+        A `Simulation` object that supplies images along with other parameters for image manipulation.
 
-        :param angles: A n-by-3 array of rotation angles
+        :param L: Resolution of projection images (integer). Default is 8.
+            If a `Volume` is provided `L` and `vols.resolution` must agree.
+        :param n: The number of images to generate (integer).
+        :param vols: A `Volume` object representing a stack of volumes.
+            Default is generated with `volume.volume_synthesis.LegacyVolume`.
+        :param states: A 1d array of n integers in the interval [0, C). The i'th integer indicates
+            the volume stack index used to produce the i'th projection image. Default is a random set.
+        :param unique_filters: A list of Filter objects to be applied to projection images.
+        :param filter_indices: A 1d array of n integers indicating the `unique_filter` indices associated
+            with each image. Default is a random set of filter indices, .ie the filters from `unique_filters`
+            are randomly assigned to the stack of images.
+        :param offsets: A n-by-2 array of coordinates to offset the images. Default is a normally
+            distributed set of offsets. Set `offsets = 0` to disable offsets.
+        :param amplitude: A 1d array of n amplitudes to scale the projection images. Default is
+            a random set in the interval [2/3, 3/2]. Set `amplitude = 1` to disable amplitudes.
+        :param dtype: dtype for the Simulation
+        :param C: Number of Volumes used to generate projection images. The default is C=2.
+            If a `Volume` object is provided this parameter is overridden and `self.C` = `self.vols.n_vols`.
+        :param angles: A n-by-3 array of Euler angles for use in projection. Default is a random set.
+        :param seed: Random seed.
+        :param memory: str or None. The path of the base directory to use as a data store or None.
+            If None is given, no caching is performed.
         :param noise_adder: Optionally append instance of `NoiseAdder`
             to generation pipeline.
+
+        :return: A Simulation object.
         """
 
         self.seed = seed
@@ -56,7 +86,7 @@ class Simulation(ImageSource):
         if vols is None:
             self.vols = LegacyVolume(
                 L=L or 8,
-                C=2,
+                C=C,
                 seed=self.seed,
                 dtype=dtype or np.float32,
             ).generate()
@@ -83,7 +113,7 @@ class Simulation(ImageSource):
         if L is not None and L != self.L:
             raise RuntimeError(
                 f"Simulation must have the same resolution as the provided Volume."
-                f" vols.resolution = {self.vols.resolution}, self.L = {self.L}."
+                f" Provided vols.resolution = {self.vols.resolution} and L = {L}."
             )
 
         # We need to keep track of the original resolution we were initialized with,

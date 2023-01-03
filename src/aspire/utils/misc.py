@@ -212,12 +212,11 @@ def bump_3d(size, spread=1, dtype=np.float64):
     :return: Numpy array (3D)
     """
     g = grid_3d(size, dtype=dtype)
-    selection = g["r"] < 1
 
     p = g["x"] ** 2 + g["y"] ** 2 + g["z"] ** 2
 
     bump = np.zeros((size,) * 3, dtype=dtype)
-    bump[selection] = np.exp(-1 / (spread - spread * p[selection]))
+    bump[p < 1] = np.exp(-1 / (spread - spread * p[p < 1]))
     bump /= np.exp(-1 / spread)
 
     return bump
