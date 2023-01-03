@@ -285,7 +285,7 @@ class ImageSource(ABC):
                     series, how="left", left_index=True, right_index=True
                 )
             else:
-                self._metadata.update(series.astype(object))
+                self._metadata.update(series)
 
     def has_metadata(self, metadata_fields):
         """
