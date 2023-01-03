@@ -48,6 +48,9 @@ class Basis:
             raise NotImplementedError(
                 "Currently only implemented for float32 and float64 types"
             )
+        # dtype of coefficients is the same as self.dtype for real bases
+        # subclasses with complex coefficients override this attribute
+        self.coefficient_dtype = self.dtype
 
         self._build()
 
@@ -86,10 +89,10 @@ class Basis:
             This is an Image or a Volume object containing one image/volume for each
             coefficient vector, and of size `self.sz`.
         """
-        if v.dtype != self.dtype:
+        if v.dtype != self.coefficient_dtype:
             logger.warning(
                 f"{self.__class__.__name__}::evaluate"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+                f" Inconsistent dtypes v: {v.dtype} self coefficient dtype: {self.coefficient_dtype}"
             )
 
         # Flatten stack, ndim is wrt Basis (2 or 3)
@@ -190,6 +193,12 @@ class Basis:
         if isinstance(x, Image) or isinstance(x, Volume):
             x = x.asnumpy()
 
+        if x.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::expand"
+                f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
+            )
+
         # check that last ndim values of input shape match
         # the shape of this basis
         assert (
@@ -212,7 +221,7 @@ class Basis:
 
         # number of image samples
         n_data = x.shape[0]
-        v = np.zeros((n_data, self.count), dtype=x.dtype)
+        v = np.zeros((n_data, self.count), dtype=self.coefficient_dtype)
 
         for isample in range(0, n_data):
             b = self.evaluate_t(self._cls(x[isample])).T

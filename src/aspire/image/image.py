@@ -32,7 +32,8 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
         )
 
     L = imgs.shape[-1]
-    grid = grid_2d(L, indexing="yx")
+    input_dtype = imgs.dtype
+    grid = grid_2d(L, indexing="yx", dtype=input_dtype)
     mask = grid["r"] > bg_radius
 
     if do_ramp:
@@ -42,11 +43,15 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
             (
                 grid["x"][mask].flatten(),
                 grid["y"][mask].flatten(),
-                np.ones(grid["y"][mask].flatten().size),
+                np.ones(grid["y"][mask].flatten().size, dtype=input_dtype),
             )
         ).T
         ramp_all = np.vstack(
-            (grid["x"].flatten(), grid["y"].flatten(), np.ones(L * L))
+            (
+                grid["x"].flatten(),
+                grid["y"].flatten(),
+                np.ones(L * L, dtype=input_dtype),
+            )
         ).T
         mask_reshape = mask.reshape((L * L))
         imgs = imgs.reshape((-1, L * L))

@@ -1,0 +1,33 @@
+name: ASPIRE Python Daily Build CI
+
+on:
+  schedule:
+    -cron: '0 0 * * *'
+
+jobs:
+  dev_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: develop
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Build Sphinx docs
+        run: |
+          make clean
+          sphinx-apidoc -f -o ./source ../src -H Modules
+          make html
+        working-directory: ./docs
+      - name: Archive Sphinx docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: sphinx-docs
+          path: docs
+          retention-days: 7

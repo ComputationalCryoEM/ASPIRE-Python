@@ -5,8 +5,10 @@ import os
 import click
 from click import UsageError
 
+from aspire.commands import log_level_option
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source.coordinates import BoxesCoordinateSource, CentersCoordinateSource
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +72,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--overwrite", is_flag=True, help="Overwrite output if it already exists?"
 )
+@log_level_option
 def extract_particles(
     mrc_paths,
     coord_paths,
@@ -83,6 +86,7 @@ def extract_particles(
     batch_size,
     save_mode,
     overwrite,
+    loglevel,
 ):
     """
     Given a dataset of full micrographs and corresponding coordinate files
@@ -93,6 +97,8 @@ def extract_particles(
 
     aspire extract-particles --mrc_paths=my/data/*.mrc --coord_paths=my/data/coords/*.coord --starfile_out=my_dataset_stack.star --particle_size=256 --centers
     """
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
 
     # mrc_paths and coord_paths can be either paths to text files
     # listing the micrograph and coordinate file paths, or glob-type

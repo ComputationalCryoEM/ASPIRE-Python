@@ -3,7 +3,9 @@ import logging
 import click
 
 from aspire.abinitio import CLSyncVoting
+from aspire.commands import log_level_option
 from aspire.source.relion import RelionSource
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,7 @@ logger = logging.getLogger(__name__)
     type=int,
     help="Resolution for shift estimation in pixels",
 )
+@log_level_option
 def orient3d(
     data_folder,
     starfile_in,
@@ -63,10 +66,14 @@ def orient3d(
     n_theta,
     max_shift,
     shift_step,
+    loglevel,
 ):
     """
     Input images from STAR file and estimate orientational angles
     """
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
+
     logger.info(f"Read in images from {starfile_in} and estimate orientational angles.")
     # Create a source object for 2D images
     source = RelionSource(
