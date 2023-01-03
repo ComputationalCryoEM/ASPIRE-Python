@@ -1,9 +1,9 @@
+import itertools
 import logging
 import os.path
-from unittest import TestCase
 
 import numpy as np
-from parameterized import parameterized, parameterized_class
+import pytest
 
 from aspire.noise import CustomNoiseAdder, WhiteNoiseAdder, WhiteNoiseEstimator
 from aspire.operators import FunctionFilter, ScalarFilter
@@ -14,108 +14,108 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 logger = logging.getLogger(__name__)
 
-
-@parameterized_class(("L"), [(64,), (65,)])
-class SimTestCase(TestCase):
-    # Note L needs to be large enough that we have sufficient image "corners".
-    L = 64
-
-    def setUp(self):
-
-        # Setup a sim with no noise, no ctf, no shifts,
-        #   using a compactly supported volume.
-        # ie, clean centered projections.
-        self.sim = Simulation(
-            vols=AsymmetricVolume(L=self.L, C=1).generate(),
-            n=16,
-            offsets=0,
-        )
-
-    def tearDown(self):
-        pass
-
-    def testWhiteNoise(self):
-        noise_estimator = WhiteNoiseEstimator(self.sim, batchSize=512)
-        noise_variance = noise_estimator.estimate()
-        # Using a compactly supported volume should yield
-        #   virtually no noise in the image corners.
-        self.assertTrue(np.isclose(noise_variance, 0))
+RESOLUTIONS = [64, 65]
+DTYPES = [np.float32, np.float64]
+# Check one case for each of the above, but other combinations can be checked as part of the `expensive` suite.
+VARS = [0.1] + [
+    pytest.param(10 ** (-x), marks=pytest.mark.expensive) for x in range(2, 5)
+]
 
 
-@parameterized_class(("L"), [(64,), (65,)])
-class NoiseAdder(TestCase):
-    L = 64
-    dtype = np.float32
+@pytest.fixture(params=itertools.product(RESOLUTIONS, DTYPES))
+def sim_fixture(request):
+    resolution, dtype = request.param
+    # Setup a sim with no noise, no ctf, no shifts,
+    #   using a compactly supported volume.
+    # ie, clean centered projections.
+    return Simulation(
+        vols=AsymmetricVolume(L=resolution, C=1, dtype=dtype).generate(),
+        n=16,
+        offsets=0,
+        dtype=dtype,
+    )
 
-    def setUp(self):
 
-        # Setup a sim with no noise, no ctf, no shifts,
-        #   using a compactly supported volume.
-        # ie, clean centered projections.
-        self.sim = Simulation(
-            vols=AsymmetricVolume(L=self.L, C=1, dtype=self.dtype).generate(),
-            n=16,
-            offsets=0,
-        )
+@pytest.fixture(
+    params=[
+        WhiteNoiseAdder(var=1),
+        CustomNoiseAdder(noise_filter=ScalarFilter(dim=2, value=1)),
+    ]
+)
+def adder(request):
+    return request.param
 
-    def tearDown(self):
-        pass
 
-    def testWhiteRepr(self):
-        """Test __repr__ does not crash."""
-        x = WhiteNoiseAdder(var=1)
-        logger.info(f"Example repr:\n{repr(x)}")
+def test_white_noise_estimator_clean_corners(sim_fixture):
+    """
+    Tests that a clean image yields a noise estimate that is virtually zero.
+    """
+    noise_estimator = WhiteNoiseEstimator(sim_fixture, batchSize=512)
+    noise_variance = noise_estimator.estimate()
+    # Using a compactly supported volume should yield
+    #   virtually no noise in the image corners.
+    assert np.isclose(noise_variance, 0)
 
-    def testWhiteStr(self):
-        """Test __str__ does not crash."""
-        x = WhiteNoiseAdder(var=1)
-        logger.info(f"Example str:\n{str(x)}")
 
-    def testCustomRepr(self):
-        """Test __repr__ does not crash."""
-        custom_filter = ScalarFilter(dim=2, value=1)
-        x = CustomNoiseAdder(noise_filter=custom_filter)
-        logger.info(f"Example repr:\n{repr(x)}")
+def test_adder_reprs(adder):
+    """Test __repr__ does not crash."""
+    logger.info(f"Example repr:\n{repr(adder)}")
 
-    def testCustomStr(self):
-        """Test __str__ does not crash."""
-        custom_filter = ScalarFilter(dim=2, value=1)
-        x = CustomNoiseAdder(noise_filter=custom_filter)
-        logger.info(f"Example str:\n{str(x)}")
 
-    @parameterized.expand([(10 ** (-x),) for x in range(1, 4)])
-    def testCustomNoiseAdder(self, noise_var):
-        """
-        Custom Noise adder uses custom `Filter`.
-        """
-        logger.debug(
-            f"testCustomNoiseAdder dtype={self.dtype} L={self.L} noise_var={noise_var}"
-        )
+def test_adder_strs(adder):
+    """Test __str__ does not crash."""
+    logger.info(f"Example str:\n{str(adder)}")
 
-        def pinkish_spectrum(x, y):
-            s = x[-1] - x[-2]
-            f = 2 * s / (np.hypot(x, y) + s)
-            m = np.mean(f)
-            return f * noise_var / m
 
-        custom_filter = FunctionFilter(f=pinkish_spectrum)
+@pytest.mark.parametrize("target_noise_variance", VARS)
+def test_white_noise_adder(sim_fixture, target_noise_variance):
+    """
+    Test `noise_var` property is set exactly
+    and the variance estimated by WhiteNoiseEstimator is within 1%
+    for a variety of variances, resolutions and dtypes.
+    """
+    logger.debug(
+        f"testWhiteNoiseAdder dtype={sim_fixture.dtype} L={sim_fixture.L} target_noise_variance={target_noise_variance}"
+    )
+    sim_fixture.noise_adder = WhiteNoiseAdder(var=target_noise_variance)
 
-        # Check we are achieving an estimate near the target
-        self.sim.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
-        est_noise_var = self.sim.noise_adder.noise_var
-        logger.debug(f"Estimated Noise Variance {est_noise_var}")
-        self.assertTrue(np.isclose(est_noise_var, noise_var, rtol=0.1))
+    # Assert we have passed through the var exactly
+    assert sim_fixture.noise_adder.noise_var == target_noise_variance
 
-    @parameterized.expand([(10 ** (-x),) for x in range(1, 4)])
-    def testWhiteNoiseAdder(self, noise_var):
-        logger.debug(
-            f"testWhiteNoiseAdder dtype={self.dtype} L={self.L} noise_var={noise_var}"
-        )
-        self.sim.noise_adder = WhiteNoiseAdder(var=noise_var)
+    # Create an estimator from the source
+    noise_estimator = WhiteNoiseEstimator(sim_fixture, batchSize=512)
 
-        # Assert we have passed through the var exactly
-        self.assertTrue(self.sim.noise_adder.noise_var == noise_var)
+    # Match estimate within 1%
+    assert np.isclose(target_noise_variance, noise_estimator.estimate(), rtol=0.01)
 
-        noise_estimator = WhiteNoiseEstimator(self.sim, batchSize=512)
-        # Match estimate within 1%
-        self.assertTrue(np.isclose(noise_var, noise_estimator.estimate(), rtol=0.01))
+
+@pytest.mark.parametrize("target_noise_variance", VARS)
+def test_custom_noise_adder(sim_fixture, target_noise_variance):
+    """
+    Custom Noise adder uses custom `Filter`.
+    Test `noise_var` property is near target_noise_variance used during construction.
+    For custom noise adders the default behavior is to estimate `noise_var`
+    by generating a sample of the noise.
+    """
+    logger.debug(
+        f"testCustomNoiseAdder dtype={sim_fixture.dtype} L={sim_fixture.L} target_noise_variance={target_noise_variance}"
+    )
+
+    # Create the custom noise function and associated Filter
+    def pinkish_spectrum(x, y):
+        s = x[-1] - x[-2]
+        f = 2 * s / (np.hypot(x, y) + s)
+        m = np.mean(f)
+        return f * target_noise_variance / m
+
+    custom_filter = FunctionFilter(f=pinkish_spectrum)
+
+    # Create the CustomNoiseAdder
+    sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
+
+    # Estimate the noise_variance
+    estimated_noise_var = sim_fixture.noise_adder.noise_var
+
+    # Check we are achieving an estimate near the target
+    logger.debug(f"Estimated Noise Variance {estimated_noise_var}")
+    assert np.isclose(estimated_noise_var, target_noise_variance, rtol=0.1)

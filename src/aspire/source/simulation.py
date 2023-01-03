@@ -3,10 +3,9 @@ import logging
 
 import numpy as np
 from scipy.linalg import eigh, qr
-from sklearn.metrics import mean_squared_error
 
 from aspire.image import Image
-from aspire.noise import NoiseAdder, WhiteNoiseAdder
+from aspire.noise import NoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
