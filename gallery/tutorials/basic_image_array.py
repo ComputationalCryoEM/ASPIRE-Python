@@ -46,7 +46,7 @@ stock_img /= np.max(stock_img)
 # Construct the Image class by passing it an array of data.
 img = Image(stock_img)
 # Downsample (just to speeds things up)
-new_resolution = img.res // 4
+new_resolution = img.resolution // 4
 img = img.downsample(new_resolution)
 
 
@@ -83,7 +83,7 @@ plt.show()
 # with each image just being a copy of the data from ``img``.
 
 n_imgs = 128
-imgs_data = np.empty((n_imgs, img.res, img.res), dtype=np.float64)
+imgs_data = np.empty((n_imgs, img.resolution, img.resolution), dtype=np.float64)
 for i in range(n_imgs):
     imgs_data[i] = img[0]
 imgs = Image(imgs_data)
