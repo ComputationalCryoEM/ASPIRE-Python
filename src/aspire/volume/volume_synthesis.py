@@ -356,7 +356,7 @@ class LegacyVolume(AsymmetricVolume):
     """
 
     def __init__(self, L, C=2, K=16, seed=0, dtype=np.float64):
-        super().__init__(L=L, C=C, seed=seed, dtype=dtype)
+        super().__init__(L=L, C=C, K=K, seed=seed, dtype=dtype)
 
     def generate(self):
         """
