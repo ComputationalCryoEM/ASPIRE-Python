@@ -90,13 +90,10 @@ class SimTestCase(TestCase):
     def setUp(self):
         self.n = 1024
         self.L = 8
-        self.seed = 0
         self.dtype = np.float32
 
         self.vols = LegacyVolume(
             L=self.L,
-            C=2,
-            seed=self.seed,
             dtype=self.dtype,
         ).generate()
 
@@ -107,7 +104,6 @@ class SimTestCase(TestCase):
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            seed=self.seed,
             noise_filter=IdentityFilter(),
             dtype=self.dtype,
         )
@@ -153,7 +149,6 @@ class SimTestCase(TestCase):
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            seed=self.seed,
             noise_filter=IdentityFilter(),
             dtype=self.dtype,
         )

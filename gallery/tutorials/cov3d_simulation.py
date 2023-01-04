@@ -33,11 +33,10 @@ num_imgs = 1024  # number of images
 num_eigs = 16  # number of eigen-vectors to keep
 dtype = np.float32
 
-# Generate a ``Volume`` object for use in the simulation.
+# Generate a ``Volume`` object for use in the simulation. Here we use a ``LegacyVolume`` which
+# by default generates 2 unique random volumes.
 vols = LegacyVolume(
     L=img_size,
-    C=2,  # number of volumes
-    seed=0,
     dtype=dtype,
 ).generate()
 

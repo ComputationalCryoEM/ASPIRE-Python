@@ -17,9 +17,7 @@ class MeanEstimatorTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.resolution = 8
-        self.vols = LegacyVolume(
-            L=self.resolution, C=2, seed=0, dtype=self.dtype
-        ).generate()
+        self.vols = LegacyVolume(L=self.resolution, dtype=self.dtype).generate()
         self.sim = sim = Simulation(
             n=1024,
             vols=self.vols,

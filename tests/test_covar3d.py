@@ -24,7 +24,7 @@ class Covar3DTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dtype = np.float32
-        cls.vols = LegacyVolume(L=8, C=2, seed=0, dtype=cls.dtype).generate()
+        cls.vols = LegacyVolume(L=8, dtype=cls.dtype).generate()
         cls.sim = Simulation(
             n=1024,
             vols=cls.vols,

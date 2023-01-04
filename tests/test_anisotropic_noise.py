@@ -15,7 +15,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class SimTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
-        self.vol = LegacyVolume(L=8, C=2, dtype=self.dtype, seed=0).generate()
+        self.vol = LegacyVolume(L=8, dtype=self.dtype).generate()
         self.sim = Simulation(
             n=1024,
             vols=self.vol,
