@@ -22,10 +22,14 @@ class NoiseAdder(Xform):
 
     def __init__(self, noise_filter, seed=0):
         """
-        Initialize the random state of this CustomNoiseAdder using specified values.
+        Initialize the random state of this `NoiseAdder` using `noise_filter` and `seed`.
 
-        :param seed: The random seed used to generate white noise
-        :param noise_filter: An `aspire.operators.Filter` object to use to filter the generated white noise.
+        `noise_filter` will be provided by the user or instantiated automatically by the subclass.
+
+        :param seed: The random seed used to generate white noise.
+        :param noise_filter: An `aspire.operators.Filter` object.
+            `NoiseAdders` start by generating gaussian noise,
+            then apply `noise_filter` to transform the noise.
             Note the `noise_filter` will be raised to the 1/2 power.
         """
         super().__init__()
@@ -103,9 +107,9 @@ class WhiteNoiseAdder(NoiseAdder):
     # TODO, check if we can change seed and/or why not.
     def __init__(self, var, seed=0):
         """
-        Return a `CustomNoiseAdder` instance from `noise_var` and using `seed`.
+        Return a `WhiteNoiseAdder` instance from `var` and using `seed`.
 
-        :param noise_var: Target noise variance.
+        :param var: Target noise variance.
         :param seed: Optinally provide a random seed used to generate white noise.
         """
         self._noise_var = var

@@ -22,7 +22,13 @@ VARS = [0.1] + [
 ]
 
 
-@pytest.fixture(params=itertools.product(RESOLUTIONS, DTYPES))
+def sim_fixture_id(params):
+    res = params[0]
+    dtype = params[1]
+    return f"res={res}, dtype={dtype.__name__}"
+
+
+@pytest.fixture(params=itertools.product(RESOLUTIONS, DTYPES), ids=sim_fixture_id)
 def sim_fixture(request):
     resolution, dtype = request.param
     # Setup a sim with no noise, no ctf, no shifts,
@@ -40,7 +46,8 @@ def sim_fixture(request):
     params=[
         WhiteNoiseAdder(var=1),
         CustomNoiseAdder(noise_filter=ScalarFilter(dim=2, value=1)),
-    ]
+    ],
+    ids=lambda param: str(param),
 )
 def adder(request):
     return request.param
@@ -67,16 +74,16 @@ def test_adder_strs(adder):
     logger.info(f"Example str:\n{str(adder)}")
 
 
-@pytest.mark.parametrize("target_noise_variance", VARS)
+@pytest.mark.parametrize(
+    "target_noise_variance", VARS, ids=lambda param: f"var={param}"
+)
 def test_white_noise_adder(sim_fixture, target_noise_variance):
     """
     Test `noise_var` property is set exactly
     and the variance estimated by WhiteNoiseEstimator is within 1%
     for a variety of variances, resolutions and dtypes.
     """
-    logger.debug(
-        f"testWhiteNoiseAdder dtype={sim_fixture.dtype} L={sim_fixture.L} target_noise_variance={target_noise_variance}"
-    )
+
     sim_fixture.noise_adder = WhiteNoiseAdder(var=target_noise_variance)
 
     # Assert we have passed through the var exactly
@@ -89,7 +96,9 @@ def test_white_noise_adder(sim_fixture, target_noise_variance):
     assert np.isclose(target_noise_variance, noise_estimator.estimate(), rtol=0.01)
 
 
-@pytest.mark.parametrize("target_noise_variance", VARS)
+@pytest.mark.parametrize(
+    "target_noise_variance", VARS, ids=lambda param: f"var={param}"
+)
 def test_custom_noise_adder(sim_fixture, target_noise_variance):
     """
     Custom Noise adder uses custom `Filter`.
@@ -97,9 +106,6 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     For custom noise adders the default behavior is to estimate `noise_var`
     by generating a sample of the noise.
     """
-    logger.debug(
-        f"testCustomNoiseAdder dtype={sim_fixture.dtype} L={sim_fixture.L} target_noise_variance={target_noise_variance}"
-    )
 
     # Create the custom noise function and associated Filter
     def pinkish_spectrum(x, y):
