@@ -122,4 +122,7 @@ class CtfEstimatorTestCase(TestCase):
                 data = mrc_in.data[slice_range]
                 mrc_in.set_data(data)
             # make sure we can estimate with no errors
-            _ = estimate_ctf(data_folder=tmp_input_dir, psd_size=64)
+            with tempfile.TemporaryDirectory() as tmp_output_dir:
+                _ = estimate_ctf(
+                    data_folder=tmp_input_dir, output_dir=tmp_output_dir, psd_size=64
+                )
