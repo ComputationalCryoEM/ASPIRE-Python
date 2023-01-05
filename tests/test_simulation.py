@@ -150,14 +150,8 @@ class SimTestCase(TestCase):
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-<<<<<<< HEAD
-            noise_filter=IdentityFilter(),
-            dtype=self.dtype,
-=======
-            seed=0,
             noise_adder=WhiteNoiseAdder(var=1),
-            dtype="single",
->>>>>>> origin/develop
+            dtype=self.dtype,
         )
         sim_cached.cache()
         self.assertTrue(
