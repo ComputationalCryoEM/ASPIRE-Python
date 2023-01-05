@@ -72,12 +72,13 @@ vol = original_vol.downsample(res)
 # Gaussian white noise and ``RadialCTFFilter`` to generate a set of CTF filters with various defocus values.
 
 # Create noise and CTF filters
-from aspire.operators import RadialCTFFilter, ScalarFilter
+from aspire.noise import WhiteNoiseAdder
+from aspire.operators import RadialCTFFilter
 
 # Gaussian noise filter.
-# Note, the value supplied to the ``ScalarFilter``, chosen based on other parameters
+# Note, the value supplied to the ``WhiteNoiseAdder``, chosen based on other parameters
 # for this quick tutorial, can be changed to adjust the power of the noise.
-noise_filter = ScalarFilter(value=1e-5)
+noise_adder = WhiteNoiseAdder(var=1e-5)
 
 # Radial CTF Filter
 defocus_min = 15000  # unit is angstroms
@@ -108,7 +109,7 @@ src = Simulation(
     n=n_imgs,  # number of projections
     vols=vol,  # volume source
     offsets=np.zeros((n_imgs, 2)),  # Default: images are randomly shifted
-    noise_filter=noise_filter,
+    noise_adder=noise_adder,
     unique_filters=ctf_filters,
 )
 
