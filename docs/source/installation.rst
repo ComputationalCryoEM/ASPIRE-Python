@@ -43,7 +43,7 @@ Finally, we install the ``aspire`` package inside the activated environment. Thi
 
 
 Alternative Developer Installations
-************************************
+***********************************
 
 Developers are expected to be able to manage their own code and environments.
 However, for consistency and newcomers, we recommend the following procedure using `conda`.
@@ -65,8 +65,8 @@ you would probably want to keep that in a seperate environment.
    # Activate the environment
    conda activate aspire_dev
 
-   # Command to install the aspire package in a locally editable way:
-   pip install -e .
+   # Command to install the aspire package, along with developer extensions, in a locally editable way:
+   pip install -e ".[dev]"
 
 We recommend using ``conda`` or a ``virtualenv`` environment managing solutions because ASPIRE may have conflicts or change installed versions of Python packages on your system.
 
@@ -149,3 +149,45 @@ Sphinx Documentation of the source (a local copy of what you're looking at right
     make html
 
 The built html files can be found at ``/path/to/git/clone/folder/docs/build/html``
+
+
+Optimized Numerical Backends
+****************************
+
+Conda provides optimized numerical backends that can provide significant
+performance improvements on appropriate machines.  The backends accelerate
+the performance of ``numpy``, ``scipy``, and ``scikit`` packages.
+ASPIRE ships several ``environment*.yml`` files which define tested package
+versions along with these optimized numerical installations.
+
+The default ``environment.yml`` does not force a specific backend,
+instead relying on ``conda`` to select something reasonable.
+In the case of an Intel machine, the default ``conda`` install
+will automatically install some optimizations for you.
+However, these files can be used to specify a specific setup
+or as the basis for your own customized ``conda`` environment.
+
+.. list-table:: Suggested Conda Environments
+   :widths: 25 25
+   :header-rows: 1
+
+   * - Architecture
+     - Recommended Environment File
+   * - Default
+     - environment.yml
+   * - Intel x86_64
+     - environment-intel.yml
+   * - AMD x86_64
+     - environment-openblas.yml
+   * - Apple M1
+     - environment-accelerate.yml
+
+Using any of these environments follows the same pattern outlined above in the developer's section.
+As an example to specify using the ``accelerate`` backend on an M1 laptop:
+
+::
+
+   cd ASPIRE-Python
+   conda env create -f environment-accelerate.yml --name aspire_acc
+   conda activate aspire_acc
+   pip install -e ".[dev]"

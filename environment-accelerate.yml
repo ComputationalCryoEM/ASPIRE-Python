@@ -1,0 +1,20 @@
+name: 'aspire'
+
+channels:
+  - defaults
+  - conda-forge
+
+dependencies:
+  - fftw
+  - pyfftw
+  - pip
+  - python=3.8
+  - numpy=1.23.5
+  - pandas=1.3.5
+  - scipy=1.9.3
+  - scikit-learn
+  - scikit-image
+  - libblas=*=*accelerate
+  - pip:
+    - .
+
