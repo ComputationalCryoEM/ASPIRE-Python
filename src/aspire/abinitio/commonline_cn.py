@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+from numpy.linalg import norm
 from tqdm import tqdm
 
 from aspire.abinitio import CLSymmetryC3C4
@@ -53,6 +54,64 @@ class CLSymmetryCn(CLSymmetryC3C4):
                     f"Only Cn symmetry supported. {symmetry} was supplied."
                 )
             self.order = int(symmetry[1])
+
+    def estimate_relative_viewing_directions_cn(self):
+        n_img = self.n_img
+        # n_rad = self.n_rad
+        n_theta = self.n_theta
+        pf = self.pf
+        max_shift_1d = self.max_shift
+        shift_step = self.shift_step
+
+        # Generate candidate rotation matrices and the common-line and
+        # self-common-line indices induced by those rotations.
+        Ris_tilde, R_theta_ijs = self.generate_cand_rots()
+        # cijs_inds = self.compute_cls_inds(Ris_tilde, R_theta_ijs)
+        scls_inds = self.compute_scls_inds(Ris_tilde)
+
+        # Generate shift phases.
+        r_max = pf.shape[0]
+        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
+            r_max, max_shift_1d, shift_step
+        )
+        n_shifts = len(shifts)
+        all_shift_phases = shift_phases.T
+
+        # Transpose and reconstruct full polar Fourier for use in correlation.
+        pf = pf.T
+        pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
+
+        # Step 1: pre-calculate the likelihood with respect to the self-common-lines.
+        scores_self_corrs = np.zeros((n_img, n_img), dtype=self.dtype)
+        for i in range(n_img):
+            pf_i = pf[i]
+            pf_full_i = pf_full[i]
+
+            # Generate shifted versions of image.
+            pf_i_shifted = np.array(
+                [pf_i * shift_phase for shift_phase in all_shift_phases]
+            )
+            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
+
+            # Normalize each ray.
+            pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
+            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
+
+            # Compute correlation.
+            corrs = pf_i_shifted @ np.conj(pf_full_i).T
+            corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
+            corrs_cands = np.array(
+                [
+                    np.max(
+                        np.real(corrs[:, scls_inds_cand[:, 0], scls_inds_cand[:, 1]]),
+                        axis=0,
+                    )
+                    for scls_inds_cand in scls_inds
+                ]
+            )
+
+            scores_self_corrs[i] = np.mean(np.real(corrs_cands), axis=1)
+        return scores_self_corrs
 
     def compute_scls_inds(self, Ri_cands):
         """
