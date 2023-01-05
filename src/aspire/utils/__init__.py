@@ -61,5 +61,6 @@ from .multiprocessing import (
     physical_core_cpu_suggestion,
     virtual_core_cpu_suggestion,
 )
+from .random import Random, choice, rand, randi, randn, random
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance

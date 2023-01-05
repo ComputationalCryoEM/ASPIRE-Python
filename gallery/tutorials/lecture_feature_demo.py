@@ -38,8 +38,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
-from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
-from aspire.operators import FunctionFilter, RadialCTFFilter, ScalarFilter
+from aspire.noise import (
+    AnisotropicNoiseEstimator,
+    CustomNoiseAdder,
+    WhiteNoiseAdder,
+    WhiteNoiseEstimator,
+)
+from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.source import RelionSource, Simulation
 from aspire.utils import (
     Rotation,
@@ -239,10 +244,10 @@ logger.info(f"sim2 clean sample var {var}")
 noise_variance = 100.0 * var
 logger.info(f"noise var {noise_variance}")
 
-# Then create a constant filter based on that variance
-white_noise_filter = ScalarFilter(dim=2, value=noise_variance)
+# Then create a CustomNoiseAdder based on that variance.
+white_noise_adder = WhiteNoiseAdder(var=noise_variance)
 # We can create a similar simulation with this additional noise_filter argument:
-sim3 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, noise_filter=white_noise_filter)
+sim3 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, noise_adder=white_noise_adder)
 sim3.images[:10].show()
 # These should be rather noisy now ...
 
@@ -314,7 +319,7 @@ for desc, _sim in [
 
 # Create another Simulation source to tinker with.
 sim_wht = Simulation(
-    L=v2.resolution, n=num_imgs, vols=v2, noise_filter=white_noise_filter
+    L=v2.resolution, n=num_imgs, vols=v2, noise_adder=white_noise_adder
 )
 
 # Estimate the white noise.
@@ -337,12 +342,10 @@ def noise_function(x, y):
 # In python, functions are first class objects.
 # We take advantage of that to pass this function around as a variable.
 # It will be evaluated later...
-custom_noise_filter = FunctionFilter(noise_function)
+custom_noise = CustomNoiseAdder(noise_filter=FunctionFilter(noise_function))
 
 # Create yet another Simulation source to tinker with.
-sim4 = Simulation(
-    L=v2.resolution, n=num_imgs, vols=v2, noise_filter=custom_noise_filter
-)
+sim4 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, noise_adder=custom_noise)
 sim4.images[:10].show()
 
 # %%
@@ -446,7 +449,7 @@ sim6 = Simulation(
     n=num_imgs,
     vols=v2,
     unique_filters=filters,
-    noise_filter=custom_noise_filter,
+    noise_adder=custom_noise,
 )
 sim6.images[:10].show()
 

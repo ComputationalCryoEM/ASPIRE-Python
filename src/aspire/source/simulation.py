@@ -5,8 +5,7 @@ import numpy as np
 from scipy.linalg import eigh, qr
 
 from aspire.image import Image
-from aspire.image.xform import NoiseAdder
-from aspire.operators import ZeroFilter
+from aspire.noise import NoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
@@ -47,7 +46,7 @@ class Simulation(ImageSource):
         angles=None,
         seed=0,
         memory=None,
-        noise_filter=None,
+        noise_adder=None,
     ):
         """
         A `Simulation` object that supplies images along with other parameters for image manipulation.
@@ -74,7 +73,8 @@ class Simulation(ImageSource):
         :param seed: Random seed.
         :param memory: str or None. The path of the base directory to use as a data store or None.
             If None is given, no caching is performed.
-        :param noise_filter: A Filter object.
+        :param noise_adder: Optionally append instance of `NoiseAdder`
+            to generation pipeline.
 
         :return: A Simulation object.
         """
@@ -151,15 +151,16 @@ class Simulation(ImageSource):
             self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices
         else:
-            self.filter_indices = np.zeros(n)
+            self.filter_indices = np.zeros(n, dtype=int)
 
         self.offsets = offsets
         self.amplitudes = amplitudes
 
-        self.noise_adder = None
-        if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
-            logger.info("Appending a NoiseAdder to generation pipeline")
-            self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
+        if noise_adder is not None:
+            logger.info(f"Appending {noise_adder} to generation pipeline")
+            if not isinstance(noise_adder, NoiseAdder):
+                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
+        self.noise_adder = noise_adder
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)

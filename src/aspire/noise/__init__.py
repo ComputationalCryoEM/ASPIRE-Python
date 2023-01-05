@@ -1,1 +1,8 @@
-from .noise import AnisotropicNoiseEstimator, NoiseEstimator, WhiteNoiseEstimator
+from .noise import (
+    AnisotropicNoiseEstimator,
+    CustomNoiseAdder,
+    NoiseAdder,
+    NoiseEstimator,
+    WhiteNoiseAdder,
+    WhiteNoiseEstimator,
+)
