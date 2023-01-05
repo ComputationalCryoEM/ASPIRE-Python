@@ -24,7 +24,8 @@ def get_images(parity=0, dtype=np.float32):
     # numpy array for top-level functions that directly expect it
     im_np = misc.face(gray=True).astype(dtype)[np.newaxis, :size, :size]
     denom = np.max(np.abs(im_np))
-    im_np = im_np / denom  # Normalize test image data to 0,1
+    im_np /= denom  # Normalize test image data to 0,1
+
     # Independent Image object for testing Image methods
     im = Image(im_np.copy())
     return im_np, im
@@ -40,7 +41,6 @@ def get_stacks(parity=0, dtype=np.float32):
 
     # Independent Image stack object for testing Image methods
     ims = Image(ims_np)
-
     return ims_np, ims
 
 
@@ -49,8 +49,9 @@ def get_mdim_images(parity=0, dtype=np.float32):
     # Multi dimensional stack Image object
     mdim = 2
     mdim_ims_np = np.concatenate([ims_np] * mdim).reshape(mdim, *ims_np.shape)
-    mdim_ims = Image(mdim_ims_np)
 
+    # Independent multidimensional Image stack object for testing Image methods
+    mdim_ims = Image(mdim_ims_np)
     return mdim_ims_np, mdim_ims
 
 
