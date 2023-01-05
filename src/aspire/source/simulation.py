@@ -151,7 +151,7 @@ class Simulation(ImageSource):
             self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices
         else:
-            self.filter_indices = np.zeros(n)
+            self.filter_indices = np.zeros(n, dtype=int)
 
         self.offsets = offsets
         self.amplitudes = amplitudes
