@@ -6,7 +6,6 @@ from aspire.basis import Basis, FBBasisMixin
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
 from aspire.utils import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
-from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class FBBasis3D(Basis, FBBasisMixin):
         :param size: The size of the vectors for which to define the basis.
             May be a 3-tuple or an integer, in which case a cubic basis is assumed.
             Currently only cubic images are supported.
-        :ell_max: The maximum order ell of the basis elements. If no input
+        :param ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
             below the Nyquist frequency (default Inf).
@@ -105,7 +104,7 @@ class FBBasis3D(Basis, FBBasisMixin):
 
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[:, ind_radial] = sph_bessel(ell, self.r0[k - 1, ell] * r_unique)
+                radial[:, ind_radial] = sph_bessel(ell, self.r0[ell][k - 1] * r_unique)
                 ind_radial += 1
 
             for m in range(-ell, ell + 1):
@@ -136,7 +135,7 @@ class FBBasis3D(Basis, FBBasisMixin):
         Calculate the normalized factor of a specified basis function.
         """
         return (
-            np.abs(sph_bessel(ell + 1, self.r0[k - 1, ell]))
+            np.abs(sph_bessel(ell + 1, self.r0[ell][k - 1]))
             / np.sqrt(2)
             * np.sqrt((self.nres / 2) ** 3)
         )
@@ -144,6 +143,7 @@ class FBBasis3D(Basis, FBBasisMixin):
     def _evaluate(self, v):
         """
         Evaluate coefficients in standard 3D coordinate basis from those in FB basis
+
         :param v: A coefficient vector (or an array of coefficient vectors) to
             be evaluated. The first dimension must equal `self.count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
@@ -198,10 +198,6 @@ class FBBasis3D(Basis, FBBasisMixin):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
-        # v may be a Volume object or a 7D array passed from Basis.mat_evaluate_t
-        # making this check important
-        if isinstance(v, Volume):
-            v = v.asnumpy()
         v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(

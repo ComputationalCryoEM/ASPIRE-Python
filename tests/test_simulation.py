@@ -3,8 +3,10 @@ import tempfile
 from unittest import TestCase
 
 import numpy as np
+from pytest import raises
 
-from aspire.operators import IdentityFilter, RadialCTFFilter
+from aspire.noise import WhiteNoiseAdder
+from aspire.operators import RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
@@ -27,6 +29,64 @@ class SingleSimTestCase(TestCase):
         _ = self.sim.images[0]
 
 
+class SimVolTestCase(TestCase):
+    """Test Simulation with Volume provided."""
+
+    def setUp(self):
+        self.dtype = np.float32
+        self.vol_res = 10
+        self.vol_arr = np.ones((self.vol_res,) * 3, dtype=self.dtype)
+        self.vol = Volume(self.vol_arr)
+
+    def tearDown(self):
+        pass
+
+    def testResolutionMismatch(self):
+        # Test we raise with expected error message with Volume/Simulation mismatch.
+        with raises(RuntimeError, match=r"Simulation must have the same resolution*"):
+            _ = Simulation(L=8, vols=self.vol)
+
+    def testNonVolumeError(self):
+        # Test we raise with expected error if vols is not a Volume instance.
+        with raises(RuntimeError, match=r"`vols` should be a Volume instance*"):
+            _ = Simulation(L=self.vol_res, vols=self.vol_arr)
+
+    def testDtypeMismatch(self):
+        """
+        Test we raise when the volume dtype does not match explicit Simulation dtype.
+        """
+        with raises(RuntimeError, match=r".*does not match provided vols.dtype.*"):
+            _ = Simulation(vols=self.vol.astype(np.float16), dtype=self.dtype)
+
+    def testPassthroughFromVol(self):
+        """
+        Test we do not crash when passing a volume to Simulation,
+        without an explcit Simulation dtype.
+        """
+        for dtype in (np.float32, np.float64):
+            sim = Simulation(vols=self.vol.astype(dtype, copy=False))
+            # Did we assign the right type?
+            self.assertTrue(sim.dtype == dtype)
+
+            # Is the Volume the intended type?
+            self.assertTrue(sim.vols.dtype == dtype)
+
+    def testPassthroughFromSim(self):
+        """
+        Test we do not crash when passing a volume to Simulation,
+        with out an explcit Volume.
+        """
+        for dtype in (np.float32, np.float64):
+            # Create a minimal sim
+            sim = Simulation(dtype=dtype)
+
+            # Did we assign the right type?
+            self.assertTrue(sim.dtype == dtype)
+
+            # Is the Volume the intended type?
+            self.assertTrue(sim.vols.dtype == dtype)
+
+
 class SimTestCase(TestCase):
     def setUp(self):
         self.sim = Simulation(
@@ -36,7 +96,7 @@ class SimTestCase(TestCase):
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             seed=0,
-            noise_filter=IdentityFilter(),
+            noise_adder=WhiteNoiseAdder(var=1),
             dtype="single",
         )
 
@@ -81,7 +141,7 @@ class SimTestCase(TestCase):
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             seed=0,
-            noise_filter=IdentityFilter(),
+            noise_adder=WhiteNoiseAdder(var=1),
             dtype="single",
         )
         sim_cached.cache()
@@ -489,8 +549,16 @@ class SimTestCase(TestCase):
             # Save the simulation object into STAR and MRCS files
             star_filepath = os.path.join(tmpdir, "save_test.star")
             # Save images into one single MRCS file
-            self.sim.save(
+            info = self.sim.save(
                 star_filepath, batch_size=512, save_mode="single", overwrite=False
+            )
+            # check info output by save()
+            self.assertEqual(
+                info,
+                {
+                    "starfile": star_filepath,
+                    "mrcs": [f"save_test_0_{self.sim.n-1}.mrcs"],
+                },
             )
             imgs_org = self.sim.images[:1024]
             # Input saved images into Relion object
@@ -499,7 +567,19 @@ class SimTestCase(TestCase):
             # Compare original images with saved images
             self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
             # Save images into multiple MRCS files based on batch size
-            self.sim.save(star_filepath, batch_size=512, overwrite=False)
+            batch_size = 512
+            info = self.sim.save(star_filepath, batch_size=batch_size, overwrite=False)
+            # check info output by save()
+            self.assertEqual(
+                info,
+                {
+                    "starfile": star_filepath,
+                    "mrcs": [
+                        f"save_test_{i}_{i+batch_size-1}.mrcs"
+                        for i in range(0, self.sim.n, batch_size)
+                    ],
+                },
+            )
             # Input saved images into Relion object
             relion_src = RelionSource(star_filepath, tmpdir, max_rows=1024)
             imgs_sav = relion_src.images[:1024]

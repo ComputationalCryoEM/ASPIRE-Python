@@ -10,22 +10,27 @@ from .coor_trans import (  # isort:skip
     register_rotations,
     uniform_random_angles,
 )
+
 from .misc import (  # isort:skip
     all_pairs,
     all_triplets,
     abs2,
+    bump_3d,
     circ,
     cyclic_rotations,
     gaussian_1d,
     gaussian_2d,
     gaussian_3d,
-    get_full_version,
+    importlib_path,
     inverse_r,
     J_conjugate,
     pairs_to_linear,
     powerset,
     sha256sum,
+    fuzzy_mask,
 )
+
+from .logging import get_full_version, tqdm, trange
 from .matrix import (
     acorr,
     ainner,
@@ -56,5 +61,6 @@ from .multiprocessing import (
     physical_core_cpu_suggestion,
     virtual_core_cpu_suggestion,
 )
+from .random import Random, choice, rand, randi, randn, random
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance

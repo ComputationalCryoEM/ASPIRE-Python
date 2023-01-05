@@ -9,23 +9,16 @@ import logging
 import os
 
 import matplotlib.pyplot as plt
-import mrcfile
 import numpy as np
 
-from aspire.noise import WhiteNoiseEstimator
-from aspire.operators import RadialCTFFilter, ScalarFilter
+from aspire.noise import WhiteNoiseAdder, WhiteNoiseEstimator
+from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
 DATA_DIR = "data"
-
-
-logger.info(
-    "This script illustrates orientation estimation using "
-    "synchronization matrix and voting method"
-)
 
 # %%
 # Specify Parameters
@@ -39,7 +32,7 @@ num_imgs = 512
 
 # Set the noise variance and build the noise filter
 noise_variance = 4e-1
-noise_filter = ScalarFilter(dim=2, value=noise_variance)
+noise_adder = WhiteNoiseAdder(var=noise_variance)
 
 # Specify the CTF parameters not used for this example
 # but necessary for initializing the simulation object
@@ -63,9 +56,8 @@ ctf_filters = [
 ]
 
 # Load the map file of a 70S ribosome and downsample the 3D map to desired resolution.
-infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
-logger.info(f"Load 3D map from mrc file, {infile}")
-vols = Volume(infile.data)
+logger.info("Load 3D map from mrc file")
+vols = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 
 # Downsample the volume to a desired resolution and increase density
 # by 1.0e5 time for a better graph view
@@ -79,7 +71,7 @@ source = Simulation(
     n=num_imgs,
     vols=vols,
     unique_filters=ctf_filters,
-    noise_filter=noise_filter,
+    noise_adder=noise_adder,
 )
 
 # %%

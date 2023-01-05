@@ -13,8 +13,7 @@ from PIL import Image as PILImage
 
 from aspire.classification import RIRClass2D, TopClassSelector
 from aspire.image import Image
-from aspire.image.xform import NoiseAdder
-from aspire.operators import ScalarFilter
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
 from aspire.utils import gaussian_2d
 
@@ -139,11 +138,8 @@ avgs.images[:10].show()
 var = np.var(src.images[:].asnumpy())
 noise_var = var * 2**4
 
-# We create a uniform noise to apply to the 2D images
-noise_filter = ScalarFilter(dim=2, value=noise_var)
-
-# Then create noise with the ``NoiseAdder`` class.
-noise = NoiseAdder(seed=123, noise_filter=noise_filter)
+# Then create noise with the ``WhiteNoiseAdder`` class.
+noise = WhiteNoiseAdder(var=noise_var, seed=123)
 
 # Add noise to the images by performing ``forward``
 noisy_im = noise.forward(src.images[:])
@@ -234,7 +230,7 @@ original_img_0 = noisy_src.images[original_img_0_idx].asnumpy()[0]
 original_img_nbr = noisy_src.images[original_img_nbr_idx].asnumpy()[0]
 
 # Rotate using estimated rotations.
-angle = -est_rotations[nbr] * 180 / np.pi
+angle = est_rotations[nbr] * 180 / np.pi
 if reflections[review_class][nbr]:
     original_img_nbr = np.flipud(original_img_nbr)
 rotated_img_nbr = np.asarray(PILImage.fromarray(original_img_nbr).rotate(angle))

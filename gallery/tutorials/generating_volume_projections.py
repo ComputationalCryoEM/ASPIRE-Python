@@ -10,10 +10,9 @@ generate projections of a Volume using prescribed rotations.
 import logging
 import os
 
-import mrcfile
 import numpy as np
 
-from aspire.operators import ScalarFilter
+from aspire.noise import WhiteNoiseAdder
 from aspire.source.simulation import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
@@ -28,46 +27,27 @@ n_img = 10
 # %%
 # Load our Volume data
 # --------------------
-# This example starts with an mrc, loading it as an numpy array
+# This example starts with an mrc, which can be loaded as an ASPIRE Volume.
 
 DATA_DIR = "data"  # Tutorial example data folder
-v_npy = mrcfile.open(
-    os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc")
-).data.astype(np.float64)
+v = Volume.load(
+    os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"), dtype=np.float64
+)
 
-# Then using that to instantiate a Volume, which is downsampled to 60x60x60
-v = Volume(v_npy).downsample(60)
+# Then we downsample to 60x60x60
+v.downsample(60)
 
 # %%
 # Defining rotations
 # ------------------
-# This will force a collection of in plane rotations about z.
+# We generate a collection of in-plane rotations about the z-axis.
 
 # First get a list of angles to test
 thetas = np.linspace(0, 2 * np.pi, num=n_img, endpoint=False)
 
-# Define helper function for common 3D rotation matrix, about z.
-
-
-def r_z(theta):
-    return np.array(
-        [
-            [np.cos(theta), -np.sin(theta), 0],
-            [np.sin(theta), np.cos(theta), 0],
-            [0, 0, 1],
-        ]
-    )
-
-
-# Construct a sequence of rotation matrices using r_z(thetas)
-_rots = np.empty((n_img, 3, 3))
-for n, theta in enumerate(thetas):
-    # Note we negate theta to match Rotation convention.
-    _rots[n] = r_z(-theta)
-
-# Instantiate ASPIRE's Rotation class with the rotation matrices.
+# Instantiate ASPIRE's Rotation class with the set of angles.
 # This will allow us to use or access the rotations in a variety of ways.
-rots = Rotation.from_matrix(_rots)
+rots = Rotation.about_axis("z", thetas, dtype=np.float64)
 
 # %%
 # Configure Noise
@@ -76,8 +56,8 @@ rots = Rotation.from_matrix(_rots)
 
 noise_variance = 1e-10  # Normally this would be derived from a desired SNR.
 
-# Then create a constant filter based on that variance, which is passed to Simulation
-white_noise_filter = ScalarFilter(dim=2, value=noise_variance)
+# Then create a CustomNoiseAdder based on that variance, which is passed to Simulation.
+white_noise_adder = WhiteNoiseAdder(var=noise_variance)
 
 
 # %%
@@ -94,13 +74,12 @@ src = Simulation(
     vols=v,  # our Volume
     L=v.resolution,  # resolution, should match Volume
     n=n_img,  # number of projection images
-    C=len(v),  # Number of volumes in vols. 1 in this case
     angles=rots.angles,  # pass our rotations as Euler angles
     offsets=shifts,  # translations (wrt to origin)
     amplitudes=amplitudes,  # amplification ( 1 is identity)
     seed=12345,  # RNG seed for reproducibility
     dtype=v.dtype,  # match our datatype to the Volume.
-    noise_filter=white_noise_filter,  # optionally prescribe noise
+    noise_adder=white_noise_adder,  # optionally prescribe noise
 )
 
 # %%

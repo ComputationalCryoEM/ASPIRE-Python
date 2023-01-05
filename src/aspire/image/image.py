@@ -1,4 +1,5 @@
 import logging
+from warnings import catch_warnings, filterwarnings, warn
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -14,55 +15,6 @@ from aspire.utils.matrix import anorm
 logger = logging.getLogger(__name__)
 
 
-def _im_translate2(im, shifts):
-    """
-    Translate image by shifts
-    :param im: An Image instance to be translated.
-    :param shifts: An array of size n-by-2 specifying the shifts in pixels.
-        Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
-    :return: An Image instance translated by the shifts.
-
-    TODO: This implementation has been moved here from aspire.aspire.abinitio and is faster than _im_translate.
-    """
-
-    if not isinstance(im, Image):
-        logger.warning(
-            "_im_translate2 expects an Image, attempting to convert array."
-            "Expects array of size n-by-L-by-L."
-        )
-        im = Image(im)
-
-    if shifts.ndim == 1:
-        shifts = shifts[np.newaxis, :]
-
-    n_shifts = shifts.shape[0]
-
-    if shifts.shape[1] != 2:
-        raise ValueError("Input `shifts` must be of size n-by-2")
-
-    if n_shifts != 1 and n_shifts != im.n_images:
-        raise ValueError("The number of shifts must be 1 or match the number of images")
-
-    resolution = im.res
-    grid = xp.asnumpy(
-        fft.ifftshift(xp.asarray(np.ceil(np.arange(-resolution / 2, resolution / 2))))
-    )
-    om_y, om_x = np.meshgrid(grid, grid)
-    phase_shifts = np.einsum("ij, k -> ijk", om_x, shifts[:, 0]) + np.einsum(
-        "ij, k -> ijk", om_y, shifts[:, 1]
-    )
-    # TODO: figure out how why the result of einsum requires reshape
-    phase_shifts = phase_shifts.reshape(n_shifts, resolution, resolution)
-    phase_shifts /= resolution
-
-    mult_f = np.exp(-2 * np.pi * 1j * phase_shifts)
-    im_f = xp.asnumpy(fft.fft2(xp.asarray(im.asnumpy())))
-    im_translated_f = im_f * mult_f
-    im_translated = np.real(xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f))))
-
-    return Image(im_translated)
-
-
 def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     """
     Normalize backgrounds and apply to a stack of images
@@ -74,8 +26,14 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
             Otherwise, a constant background level from all images is used.
     :return: The modified images
     """
+    if imgs.ndim > 3:
+        raise NotImplementedError(
+            "`normalize_bg` is currently limited to 1D image stacks."
+        )
+
     L = imgs.shape[-1]
-    grid = grid_2d(L, indexing="yx")
+    input_dtype = imgs.dtype
+    grid = grid_2d(L, indexing="yx", dtype=input_dtype)
     mask = grid["r"] > bg_radius
 
     if do_ramp:
@@ -85,11 +43,15 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
             (
                 grid["x"][mask].flatten(),
                 grid["y"][mask].flatten(),
-                np.ones(grid["y"][mask].flatten().size),
+                np.ones(grid["y"][mask].flatten().size, dtype=input_dtype),
             )
         ).T
         ramp_all = np.vstack(
-            (grid["x"].flatten(), grid["y"].flatten(), np.ones(L * L))
+            (
+                grid["x"].flatten(),
+                grid["y"].flatten(),
+                np.ones(L * L, dtype=input_dtype),
+            )
         ).T
         mask_reshape = mask.reshape((L * L))
         imgs = imgs.reshape((-1, L * L))
@@ -119,72 +81,172 @@ class Image:
         This is a wrapper of numpy.ndarray which provides methods
         for common processing tasks.
 
-        :param data: Numpy array containing image data with shape `(n_images, res, res)`.
-        :param dtype: Optionally cast `data` to this dtype. Defaults to `data.dtype`.
-        :return: Image instance storing `data`.
+        The stack can be multidimensional with `n_images` equal
+        to the product of the stack dimensions.  Singletons will be
+        expanded into a stack with one entry.
+
+        The last two axes represent the image size,
+        and are checked to be square.
+
+        :param data: Numpy array containing image data with shape
+            `(..., resolution, resolution)`.
+        :param dtype: Optionally cast `data` to this dtype.
+            Defaults to `data.dtype`.
+
+        :return: Image instance holding `data`.
         """
 
-        assert isinstance(
-            data, np.ndarray
-        ), "Image should be instantiated with an ndarray"
+        if not isinstance(data, np.ndarray):
+            raise ValueError("Image should be instantiated with an ndarray")
 
-        if data.ndim == 2:
-            data = data[np.newaxis, :, :]
+        if data.ndim < 2:
+            raise ValueError(
+                "Image data should be ndarray with shape (N1...)xLxL or LxL."
+            )
+        elif data.ndim == 2:
+            data = np.expand_dims(data, axis=0)
 
         if dtype is None:
             self.dtype = data.dtype
         else:
             self.dtype = np.dtype(dtype)
 
-        self.data = data.astype(self.dtype, copy=False)
-        self.ndim = self.data.ndim
-        self.shape = self.data.shape
-        self.n_images = self.shape[0]
-        self.res = self.shape[1]
+        if not data.shape[-1] == data.shape[-2]:
+            raise ValueError("Only square ndarrays are supported.")
 
-        assert data.shape[1] == data.shape[2], "Only square ndarrays are supported."
+        self._data = data.astype(self.dtype, copy=False)
+        self.ndim = self._data.ndim
+        self.shape = self._data.shape
+        self.stack_ndim = self._data.ndim - 2
+        self.stack_shape = self._data.shape[:-2]
+        self.n_images = np.prod(self.stack_shape)
+        self.resolution = self._data.shape[-1]
 
-    def __getitem__(self, item):
-        return self.data[item]
+    @property
+    def res(self):
+        warn(
+            "`Image.res` will be deprecated in favor or Image.resolution in an upcoming release.",
+            DeprecationWarning,
+        )
+        return self.resolution
+
+    def _check_key_dims(self, key):
+        if isinstance(key, tuple) and (len(key) > self._data.ndim):
+            raise ValueError(
+                f"Image stack_dim is {self.stack_ndim}, slice length must be =< {self.ndim}"
+            )
+
+    def __getitem__(self, key):
+        self._check_key_dims(key)
+        return self._data[key]
 
     def __setitem__(self, key, value):
-        self.data[key] = value
+        self._check_key_dims(key)
+        self._data[key] = value
+
+    def stack_reshape(self, *args):
+        """
+        Reshape the stack axis.
+
+        :*args: Integer(s) or tuple describing the intended shape.
+
+        :returns: Image instance
+        """
+
+        # If we're passed a tuple, use that
+        if len(args) == 1 and isinstance(args[0], tuple):
+            shape = args[0]
+        else:
+            # Otherwise use the variadic args
+            shape = args
+
+        # Sanity check the size
+        if shape != (-1,) and np.prod(shape) != self.n_images:
+            raise ValueError(
+                f"Number of images {self.n_images} cannot be reshaped to {shape}."
+            )
+
+        return Image(self._data.reshape(*shape, *self._data.shape[-2:]))
 
     def __add__(self, other):
         if isinstance(other, Image):
-            other = other.data
+            other = other._data
 
-        return Image(self.data + other)
+        return Image(self._data + other)
 
     def __sub__(self, other):
         if isinstance(other, Image):
-            other = other.data
+            other = other._data
 
-        return Image(self.data - other)
+        return Image(self._data - other)
 
     def __mul__(self, other):
         if isinstance(other, Image):
-            other = other.data
+            other = other._data
 
-        return Image(self.data * other)
+        return Image(self._data * other)
 
     def __neg__(self):
-        return Image(-self.data)
+        return Image(-self._data)
 
     def sqrt(self):
-        return Image(np.sqrt(self.data))
+        return Image(np.sqrt(self._data))
 
-    def flip_axes(self):
-        return Image(np.transpose(self.data, (0, 2, 1)))
+    @property
+    def T(self):
+        """
+        Abbreviation for transpose.
+
+        :return: Image instance.
+        """
+        return self.transpose()
+
+    def transpose(self):
+        """
+        Returns a new Image instance with image data axes transposed.
+
+        :return: Image instance.
+        """
+        original_stack_shape = self.stack_shape
+
+        im = self.stack_reshape(-1)
+        imt = np.transpose(im._data, (0, -1, -2))
+
+        return Image(imt).stack_reshape(original_stack_shape)
+
+    def flip(self, axis=-2):
+        """
+        Flip image stack data along axis using numpy.flip().
+
+        :param axis: Optionally specify axis as integer or tuple.
+            Defaults to axis=-2.
+
+        :return: Image instance.
+        """
+        # Convert integer to tuple, so we can always loop.
+        if isinstance(axis, int):
+            axis = (axis,)
+
+        # Check we are not attempting to flip any stack axis.
+        for ax in axis:
+            ax = ax % self.ndim  # modulo [0, ndim)
+            if ax < self.stack_ndim:
+                raise ValueError(
+                    f"Cannot flip axis {ax}: stack axis. Did you mean {ax-3}?"
+                )
+
+        return Image(np.flip(self._data, axis))
 
     def __repr__(self):
-        return f"{self.n_images} images of size {self.res}x{self.res}"
+        msg = f"{self.n_images} {self.dtype} images arranged as a {self.stack_shape} stack"
+        msg += f" each of size {self.resolution}x{self.resolution}."
+        return msg
 
     def asnumpy(self):
-        return self.data
+        return self._data
 
     def copy(self):
-        return Image(self.data.copy())
+        return Image(self._data.copy())
 
     def shift(self, shifts):
         """
@@ -198,6 +260,15 @@ class Image:
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
 
+        n_shifts = shifts.shape[0]
+
+        if not shifts.shape[1] == 2:
+            raise ValueError("Input shifts must be of shape (n_images, 2) or (1, 2).")
+        if not n_shifts == 1 and not n_shifts == self.n_images:
+            raise ValueError(
+                "The number of shifts must be 1 or equal to self.n_images."
+            )
+
         return self._im_translate(shifts)
 
     def downsample(self, ds_res):
@@ -208,14 +279,20 @@ class Image:
             of this Image
         :return: The downsampled Image object.
         """
+
+        original_stack_shape = self.stack_shape
+        im = self.stack_reshape(-1)
+
         # compute FT with centered 0-frequency
-        fx = fft.centered_fft2(self.data)
+        fx = fft.centered_fft2(im._data)
         # crop 2D Fourier transform for each image
         crop_fx = np.array([crop_pad_2d(fx[i], ds_res) for i in range(self.n_images)])
         # take back to real space, discard complex part, and scale
-        out = np.real(fft.centered_ifft2(crop_fx)) * (ds_res**2 / self.res**2)
+        out = np.real(fft.centered_ifft2(crop_fx)) * (
+            ds_res**2 / self.resolution**2
+        )
 
-        return Image(out)
+        return Image(out).stack_reshape(original_stack_shape)
 
     def filter(self, filter):
         """
@@ -224,10 +301,15 @@ class Image:
         :param filter: An object of type `Filter`.
         :return: A new filtered `Image` object.
         """
-        filter_values = filter.evaluate_grid(self.res)
+        original_stack_shape = self.stack_shape
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data)))
+        im = self.stack_reshape(-1)
 
+        filter_values = filter.evaluate_grid(self.resolution)
+
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(im._data)))
+
+        # TODO: why are these different? Doesn't the broadcast work?
         if im_f.ndim > filter_values.ndim:
             im_f *= filter_values
         else:
@@ -235,15 +317,18 @@ class Image:
         im = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
         im = np.real(im)
 
-        return Image(im)
+        return Image(im).stack_reshape(original_stack_shape)
 
     def rotate(self):
         raise NotImplementedError
 
     def save(self, mrcs_filepath, overwrite=False):
+        if self.stack_ndim > 1:
+            raise NotImplementedError("`save` is currently limited to 1D image stacks.")
+
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
-            mrc.set_data(self.data.astype(np.float32))
+            mrc.set_data(self._data.astype(np.float32))
 
     def _im_translate(self, shifts):
         """
@@ -252,10 +337,11 @@ class Image:
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
             Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
         :return: The images translated by the shifts, with periodic boundaries.
-
-        TODO: This implementation is slower than _im_translate2
         """
-        im = self.data
+
+        # Note original stack shape and flatten stack
+        stack_shape = self.stack_shape
+        im = self.stack_reshape(-1)._data
 
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
@@ -269,7 +355,7 @@ class Image:
         # Cast shifts to this instance's internal dtype
         shifts = shifts.astype(self.dtype)
 
-        L = self.res
+        L = self.resolution
         im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))
         grid_shifted = fft.ifftshift(
             xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
@@ -289,15 +375,16 @@ class Image:
         im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f)))
         im_translated = np.real(im_translated)
 
-        return Image(im_translated)
+        # Reshape to stack shape
+        return Image(im_translated).stack_reshape(stack_shape)
 
     def norm(self):
-        return anorm(self.data)
+        return anorm(self._data)
 
     @property
     def size(self):
         # probably not needed, transition
-        return np.size(self.data)
+        return np.size(self._data)
 
     def backproject(self, rot_matrices):
         """
@@ -309,17 +396,24 @@ class Image:
         :return: Volume instance corresonding to the backprojected images.
         """
 
-        L = self.res
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`Backprojection` is currently limited to 1D image stacks."
+            )
+
+        L = self.resolution
 
         assert (
             self.n_images == rot_matrices.shape[0]
         ), "Number of rotation matrices must match the number of images"
 
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = aspire.volume.rotated_grids(L, rot_matrices)
+        pts_rot = aspire.volume.rotated_grids(L, rot_matrices).astype(
+            self.dtype, copy=False
+        )
         pts_rot = pts_rot.reshape((3, -1))
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self.data))) / (L**2)
+        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data))) / (L**2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
@@ -330,22 +424,46 @@ class Image:
 
         return aspire.volume.Volume(vol)
 
-    def show(self, columns=5, figsize=(20, 10)):
+    def show(self, columns=5, figsize=(20, 10), colorbar=True):
         """
         Plotting Utility Function.
 
         :param columns: Number of columns in a row of plots.
         :param figsize: Figure size in inches, consult `matplotlib.figure`.
+        :param colorbar: Optionally plot colorbar to show scale.
+            Defaults to True. Accepts `bool` or `dictionary`,
+            where the dictionary is passed to `matplotlib.pyplot.colorbar`.
         """
+
+        if self.stack_ndim > 1:
+            raise NotImplementedError("`show` is currently limited to 1D image stacks.")
 
         # We never need more columns than images.
         columns = min(columns, self.n_images)
 
-        plt.figure(figsize=figsize)
-        for i, im in enumerate(self):
-            plt.subplot(self.n_images // columns + 1, columns, i + 1)
-            plt.imshow(im, cmap="gray")
-        plt.show()
+        # Create an empty colorbar options dictionary as needed.
+        colorbar_opts = colorbar if isinstance(colorbar, dict) else dict()
+
+        # Create a context manager for altering warnings
+        with catch_warnings():
+
+            # Filter off specific warning.
+            # sphinx-gallery overrides to `agg` backend, but doesn't handle warning.
+            filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="Matplotlib is currently using agg, which is a"
+                " non-GUI backend, so cannot show the figure.",
+            )
+
+            plt.figure(figsize=figsize)
+            for i, im in enumerate(self):
+                plt.subplot(self.n_images // columns + 1, columns, i + 1)
+                plt.imshow(im, cmap="gray")
+                if colorbar:
+                    plt.colorbar(**colorbar_opts)
+
+            plt.show()
 
 
 class CartesianImage(Image):

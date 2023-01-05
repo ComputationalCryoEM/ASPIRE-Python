@@ -12,12 +12,12 @@ import logging
 import os
 
 import matplotlib.pyplot as plt
-import mrcfile
 import numpy as np
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
-from aspire.operators import RadialCTFFilter, ScalarFilter
+from aspire.noise import WhiteNoiseAdder
+from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.utils import anorm
 from aspire.volume import Volume
@@ -53,7 +53,7 @@ logger.info(f"Simulation running in {dtype} precision.")
 # and initial noise inside the Simulation class.
 
 noise_var = 1.3957e-4
-noise_filter = ScalarFilter(dim=2, value=noise_var)
+noise_adder = WhiteNoiseAdder(var=noise_var)
 
 # %%
 # Specify the CTF Parameters
@@ -83,10 +83,10 @@ logger.info(
     f"Load 3D map and downsample 3D map to desired grids "
     f"of {img_size} x {img_size} x {img_size}."
 )
-infile = mrcfile.open(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
+vols = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"), dtype=dtype)
 
-# We prefer that our various arrays have consistent dtype.
-vols = Volume(infile.data.astype(dtype) / np.max(infile.data))
+# Scale and downsample
+vols[0] /= np.max(vols[0])
 vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
@@ -99,7 +99,7 @@ sim = Simulation(
     offsets=0.0,
     amplitudes=1.0,
     dtype=dtype,
-    noise_filter=noise_filter,
+    noise_adder=noise_adder,
 )
 
 

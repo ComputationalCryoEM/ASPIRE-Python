@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from itertools import product
@@ -8,12 +9,14 @@ from numpy import pi
 from parameterized import parameterized
 from pytest import raises, skip
 
-from aspire.utils import Rotation, grid_3d, powerset
+from aspire.utils import Rotation, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import Volume, gaussian_blob_vols
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
+
+logger = logging.getLogger(__name__)
 
 
 class VolumeTestCase(TestCase):
@@ -27,8 +30,12 @@ class VolumeTestCase(TestCase):
             n, self.res, self.res, self.res
         )
         self.data_2 = 123 * self.data_1.copy()
+        self.data_12 = np.concatenate([self.data_1, self.data_2], axis=0).reshape(
+            2, *self.data_1.shape
+        )
         self.vols_1 = Volume(self.data_1)
         self.vols_2 = Volume(self.data_2)
+        self.vols_12 = Volume(self.data_12)
         self.random_data = np.random.randn(self.res, self.res, self.res).astype(
             self.dtype
         )
@@ -36,6 +43,15 @@ class VolumeTestCase(TestCase):
 
     def tearDown(self):
         pass
+
+    def testRepr(self):
+        r = repr(self.vols_12)
+        logger.info(f"Volume repr:\n{r}")
+
+    def testNonCube(self):
+        """Test that an irregular Volume array raises."""
+        with raises(ValueError, match=r".* cubed .*"):
+            _ = Volume(np.empty((4, 5, 6), dtype=self.dtype))
 
     def testAsNumpy(self):
         self.assertTrue(np.all(self.data_1 == self.vols_1.asnumpy()))
@@ -52,6 +68,28 @@ class VolumeTestCase(TestCase):
         self.assertTrue(isinstance(v2, Volume))
         self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
         self.assertTrue(v2.dtype == new_dtype)
+
+    def testAsTypeCopy(self):
+        """
+        `astype(copy=False)` is an optimization partially mimicked from numpy.
+        """
+        # Same dtype, copy=False
+        v2 = self.vols_1.astype(self.vols_1.dtype, copy=False)
+        # Details should match,
+        self.assertTrue(isinstance(v2, Volume))
+        self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
+        self.assertTrue(v2.dtype == self.vols_1.dtype)
+        # and they should share the same memory (np.ndarray.base).
+        self.assertTrue(v2.asnumpy().base is self.vols_1.asnumpy().base)
+
+        # Same dtype, default copy=True
+        v2 = self.vols_1.astype(self.vols_1.dtype)
+        # Details should match,
+        self.assertTrue(isinstance(v2, Volume))
+        self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
+        self.assertTrue(v2.dtype == self.vols_1.dtype)
+        # but they should not share the same memory (np.ndarray.base)
+        self.assertTrue(v2.asnumpy().base is not self.vols_1.asnumpy().base)
 
     def testGetter(self):
         k = np.random.randint(self.n)
@@ -134,6 +172,7 @@ class VolumeTestCase(TestCase):
             self.assertTrue(np.allclose(self.vols_1, vols_loaded_double))
 
     def testProject(self):
+        # first test with synthetic data
         # Create a stack of rotations to test.
         r_stack = np.empty((12, 3, 3), dtype=self.dtype)
         for r, ax in enumerate(["x", "y", "z"]):
@@ -159,6 +198,14 @@ class VolumeTestCase(TestCase):
             # The projection and Volume should be equivalent
             #  centered along the rotation axis for multiples of pi/2.
             self.assertTrue(np.allclose(vol_along_axis, prj_along_axis))
+
+        # test with saved ribosome data
+        results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_down8_imgs32.npy"))
+        vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
+        rots = np.load(os.path.join(DATA_DIR, "rand_rot_matrices32.npy"))
+        rots = np.moveaxis(rots, 2, 0)
+        imgs_clean = vols.project(0, rots).asnumpy()
+        self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
     # Parameterize over even and odd resolutions
     @parameterized.expand([(res,), (res - 1,)])
@@ -196,13 +243,13 @@ class VolumeTestCase(TestCase):
         angles = [0, pi / 2, pi, 3 * pi / 2]
         for axis, angle in product(axes, angles):
             # Build rotation matrices
-            rot_mat = Rotation.about_axis(axis, angle)
+            rot_mat = Rotation.about_axis(axis, angle, dtype=self.dtype)
 
             # Rotate Volume 'vol' by rotations 'rot_mat'
             rot_vol = vol.rotate(rot_mat, zero_nyquist=False)
 
             # Build reference volumes using dict 'ref_pts'
-            ref_vol = np.zeros((L, L, L), dtype=np.float32)
+            ref_vol = np.zeros((L, L, L), dtype=self.dtype)
             # Assign the location of non zero voxel
             loc = center + np.array(ref_pts[axis, angle])
             ref_vol[tuple(loc)] = 1
@@ -215,9 +262,9 @@ class VolumeTestCase(TestCase):
     def testRotateBroadcastUnicast(self):
         # Build `Rotation` objects. A singleton for broadcasting and a stack for unicasting.
         # The stack consists of copies of the singleton.
-        angles = np.array([pi, pi / 2, 0])
+        angles = np.array([pi, pi / 2, 0], dtype=self.dtype)
         angles = np.tile(angles, (3, 1))
-        rot_mat = Rotation.from_euler(angles).matrices
+        rot_mat = Rotation.from_euler(angles, dtype=self.dtype).matrices
         rot = Rotation(rot_mat[0])
         rots = Rotation(rot_mat)
 
@@ -229,44 +276,6 @@ class VolumeTestCase(TestCase):
 
         for i in range(self.n):
             self.assertTrue(np.allclose(vols_broadcast[i], vols_unicast[i]))
-
-    def testCnSymmetricVolume(self):
-        # We create volumes with Cn symmetry and check that they align when rotated by multiples of 2pi/n.
-        L = self.res
-        sym_type = {2: "C2", 3: "C3", 4: "C4", 5: "C5", 6: "C6"}
-
-        for k, s in sym_type.items():
-
-            # Build `Volume` instance with symmetry type s.
-            vol = gaussian_blob_vols(L=L, C=1, symmetry=s, seed=0, dtype=self.dtype)
-
-            # Build rotation matrices that rotate by multiples of 2pi/k about the z axis.
-            angles = np.zeros(shape=(k, 3))
-            angles[:, 2] = 2 * np.pi * np.arange(k) / k
-            rot_mat = Rotation.from_euler(angles).matrices
-
-            # Create mask to compare volumes on.
-            selection = grid_3d(L, dtype=self.dtype)["r"] <= 1 / 2
-
-            for i in range(k):
-                # Rotate volume.
-                rot = Rotation(rot_mat[i])
-                rot_vol = vol.rotate(rot, zero_nyquist=False)
-
-                # Restrict volumes to mask for comparison.
-                ref = vol[0, selection]
-                rot = rot_vol[0, selection]
-
-                # Assert that rotated volume is within .5% of original volume.
-                self.assertTrue(np.amax(abs(rot - ref) / ref) < 0.005)
-
-        # Test we raise with expected error message when volume is instantiated with unsupported symmetry.
-        with raises(NotImplementedError, match=r"CH2 symmetry not supported.*"):
-            _ = gaussian_blob_vols(symmetry="Ch2")
-
-        # Test we raise with expected message for junk symmetry.
-        with raises(NotImplementedError, match=r"J type symmetry.*"):
-            _ = gaussian_blob_vols(symmetry="junk")
 
     def to_vec(self):
         """Compute the to_vec method and compare."""
@@ -325,7 +334,7 @@ class VolumeTestCase(TestCase):
             self.assertTrue(isinstance(result, Volume))
 
         # Test axis 0 raises
-        msg = r"Cannot flip Axis 0, stack axis."
+        msg = r"Cannot flip axis 0: stack axis."
         with raises(ValueError, match=msg):
             _ = self.vols_1.flip(axis=0)
 
@@ -355,3 +364,85 @@ class VolumeTestCase(TestCase):
                 atol=1e-4,
             )
         )
+
+    def testShape(self):
+        self.assertEqual(self.vols_1.shape, (self.n, self.res, self.res, self.res))
+        self.assertEqual(self.vols_1.stack_shape, (self.n,))
+        self.assertEqual(self.vols_1.stack_ndim, 1)
+        self.assertEqual(self.vols_1.n_vols, self.n)
+
+    def testMultiDimShape(self):
+        self.assertEqual(self.vols_12.shape, (2, self.n, self.res, self.res, self.res))
+        self.assertEqual(self.vols_12.stack_shape, (2, self.n))
+        self.assertEqual(self.vols_12.stack_ndim, 2)
+        self.assertEqual(self.vols_12.n_vols, 2 * self.n)
+
+    def testBadKey(self):
+        with self.assertRaisesRegex(ValueError, "slice length must be"):
+            _ = self.vols_12[tuple(range(self.vols_12.ndim + 1))]
+
+    def testMultiDimGets(self):
+        self.assertTrue(np.allclose(self.vols_12[0], self.data_1))
+        # Test a slice
+        self.assertTrue(np.allclose(self.vols_12[1, 1:], self.data_2[1:]))
+
+    def testMultiDimSets(self):
+        self.vols_12[0, 1] = 123
+        # Check the values changed
+        self.assertTrue(np.allclose(self.vols_12[0, 1], 123))
+        # and only those values changed
+        self.assertTrue(np.allclose(self.vols_12[0, 0], self.data_1[0]))
+        self.assertTrue(np.allclose(self.vols_12[0, 2:], self.data_1[2:]))
+        self.assertTrue(np.allclose(self.vols_12[1, :], self.data_2))
+
+    def testMultiDimSetsSlice(self):
+        self.vols_12[0, 1:] = 456
+        # Check the values changed
+        self.assertTrue(np.allclose(self.vols_12[0, 1:], 456))
+        # and only those values changed
+        self.assertTrue(np.allclose(self.vols_12[0, 0], self.data_1[0]))
+        self.assertTrue(np.allclose(self.vols_12[1, :], self.data_2))
+
+    def testMultiDimReshape(self):
+        X = self.vols_12.stack_reshape(self.n, 2)
+        # Compare with np.reshape of stack axes of ndarray
+        self.assertTrue(
+            np.allclose(
+                X, self.data_12.reshape(self.n, 2, self.res, self.res, self.res)
+            )
+        )
+        # and as tuples
+        Y = self.vols_12.stack_reshape((self.n, 2))
+        self.assertTrue(np.allclose(X, Y))
+
+    def testMultiDimFlattens(self):
+        X = self.vols_12.stack_reshape(2 * self.n)
+        self.assertTrue(
+            np.allclose(X, self.data_12.reshape(-1, self.res, self.res, self.res))
+        )
+        # and as tuples
+        Y = self.vols_12.stack_reshape((2 * self.n,))
+        self.assertTrue(np.allclose(X, Y))
+
+    def testMultiDimFlattensTrick(self):
+        X = self.vols_12.stack_reshape(-1)
+        self.assertTrue(
+            np.allclose(X, self.data_12.reshape(-1, self.res, self.res, self.res))
+        )
+        # and as tuples
+        Y = self.vols_12.stack_reshape((-1,))
+        self.assertTrue(np.allclose(X, Y))
+
+    def testMultiDimBadReshape(self):
+        # Incorrect flat shape
+        with self.assertRaisesRegex(ValueError, "Number of volumes"):
+            _ = self.vols_12.stack_reshape(8675309)
+
+        # Incorrect mdin shape
+        with self.assertRaisesRegex(ValueError, "Number of volumes"):
+            _ = self.vols_12.stack_reshape(42, 8675309)
+
+    def testMultiDimBroadcast(self):
+        X = self.data_12 + self.data_1
+        self.assertTrue(np.allclose(X[0], 2 * self.data_1))
+        self.assertTrue(np.allclose(X[1], self.data_1 + self.data_2))

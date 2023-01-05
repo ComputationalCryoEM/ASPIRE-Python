@@ -14,29 +14,46 @@ logger = logging.getLogger(__name__)
 def voltage_to_wavelength(voltage):
     """
     Convert from electron voltage to wavelength.
+
     :param voltage: float, The electron voltage in kV.
-    :return: float, The electron wavelength in nm.
+    :return: float, The electron wavelength in angstroms.
     """
-    return 12.2643247 / math.sqrt(voltage * 1e3 + 0.978466 * voltage**2)
+    # We use de Broglie's relativistic formula for wavelength given by:
+    # wavelength = h / np.sqrt(2 * m * q * V * (1 + q * V / (2 * m * c**2))),
+    # where
+    # h = float(6.62607015e-34) is Planck's constant
+    # q = float(1.602176634e-19) is elementary charge
+    # m = float(9.1093837015e-31) is electron mass
+    # c = float(299792458) is speed of light
+
+    # We precalculate a = 1e10 * a / np.sqrt(2*m*q) and b = 1e6 * q / (2*m*c^2).
+    # 1e10 and 1e6 are conversions from meters to angstroms and volts to kilovolts, respectively.
+    a = float(12.264259661581491)
+    b = float(0.9784755917869367)
+
+    return a / math.sqrt(voltage * 1e3 + b * voltage**2)
 
 
 def wavelength_to_voltage(wavelength):
     """
     Convert from electron voltage to wavelength.
-    :param wavelength: float, The electron wavelength in nm.
+
+    :param wavelength: float, The electron wavelength in angstroms.
     :return: float, The electron voltage in kV.
     """
-    return (
-        -1e3 + math.sqrt(1e6 + 4 * 12.2643247**2 * 0.978466 / wavelength**2)
-    ) / (2 * 0.978466)
+    a = float(12.264259661581491)
+    b = float(0.9784755917869367)
+
+    return (-1e3 + math.sqrt(1e6 + 4 * a**2 * b / wavelength**2)) / (2 * b)
 
 
 def evaluate_src_filters_on_grid(src):
     """
     Given an ImageSource object, compute the source's unique filters
     at the filter_indices specified in its metadata.
+
     :return: an `src.L x src.L x len(src.filter_indices)`
-    array containing the evaluated filters at each gridpoint
+        array containing the evaluated filters at each gridpoint
     """
 
     grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
@@ -73,6 +90,7 @@ class Filter:
     def evaluate(self, omega):
         """
         Evaluate the filter at specified frequencies.
+
         :param omega: A vector of size n (for 1d filters), or an array of size 2-by-n, representing the spatial
             frequencies at which the filter is to be evaluated. These are normalized so that pi is equal to the Nyquist
             frequency.
@@ -81,7 +99,9 @@ class Filter:
         if omega.ndim == 1:
             assert self.radial, "Cannot evaluate a non-radial filter on 1D input array."
         elif omega.ndim == 2 and self.dim:
-            assert omega.shape[0] == self.dim, f"Omega must be of size {self.dim} x n"
+            assert (
+                omega.shape[0] == self.dim
+            ), f"Omega must be of size {self.dim} x n; Passed omega.shape {omega.shape}"
 
         if self.radial:
             if omega.ndim > 1:
@@ -108,6 +128,7 @@ class Filter:
     def scale(self, c=1):
         """
         Scale filter by a constant factor
+
         :param c: The scaling factor. For c < 1, it dilates the filter(s) in frequency, while for c > 1,
             it compresses (default 1).
         :return: A ScaledFilter object
@@ -256,6 +277,7 @@ class ScaledFilter(Filter):
     def __str__(self):
         """
         Show class name of ScaledFilter and related information
+
         :return: A string of class name and related information
         """
         return f"ScaledFilter (scales {self._filter} by {self._scale})"
@@ -265,6 +287,7 @@ class ArrayFilter(Filter):
     def __init__(self, xfer_fn_array):
         """
         A Filter corresponding to the filter with the specified transfer function.
+
         :param xfer_fn_array: The transfer function of the filter in the form of an array of one or two dimensions.
         """
         dim = xfer_fn_array.ndim
@@ -311,7 +334,8 @@ class ArrayFilter(Filter):
         #  for values slightly outside the interpolation grid bounds.
         interpolator = RegularGridInterpolator(
             _input_pts,
-            self.xfer_fn_array,
+            # https://github.com/scipy/scipy/issues/17718
+            self.xfer_fn_array.astype(np.float64),
             method="linear",
             bounds_error=False,
             fill_value=None,

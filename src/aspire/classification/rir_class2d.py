@@ -3,7 +3,6 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-from tqdm import tqdm
 
 from aspire.basis import FSPCABasis
 from aspire.classification import (
@@ -14,6 +13,7 @@ from aspire.classification import (
 )
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
+from aspire.utils import trange
 from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,7 @@ class RIRClass2D(Class2D):
         bispectrum_implementation="legacy",
         selector=None,
         num_procs=None,
+        batch_size=512,
         averager=None,
         dtype=None,
         seed=None,
@@ -54,13 +55,13 @@ class RIRClass2D(Class2D):
         for Viewing Direction Classification in Cryo-EM. (2014)
 
         :param src: Source instance.  Note it is possible to use one `source` for classification (ie CWF),
-        and a different `source` for stacking in the `averager`.
+            and a different `source` for stacking in the `averager`.
         :param pca_basis: Optional FSPCA Basis instance
         :param fspca_components: Optinally set number of components (top eigvals) to keep from full FSCPA.
-        Default value of None will infer from `pca_basis` when provided, otherwise defaults to 400.
+            Default value of None will infer from `pca_basis` when provided, otherwise defaults to 400.
         :param alpha: Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).
         :param sample_n: Threshold for random sampling of bispectrum coefs. Default 4000,
-        high values such as 50000 reduce random sampling.
+            high values such as 50000 reduce random sampling.
         :param n_nbor: Number of nearest neighbors to compute.
         :param n_classes: Number of class averages to return.
         :param bispectrum_freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
@@ -68,9 +69,10 @@ class RIRClass2D(Class2D):
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
         :param selector: A ClassSelector subclass. Defaults to RandomClassSelector.
-        :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param num_procs: Number of processes to use.
-        `None` will attempt computing a suggestion based on machine resources.
+            `None` will attempt computing a suggestion based on machine resources.
+        :param batch_size: Chunk size (typically number of images) for batched methods.
+        :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
@@ -84,6 +86,7 @@ class RIRClass2D(Class2D):
             dtype=dtype,
         )
         self.num_procs = num_procs
+        self.batch_size = int(batch_size)
 
         # Implementation Checks
         # # Do we have a sane Nearest Neighbor
@@ -95,6 +98,7 @@ class RIRClass2D(Class2D):
             raise ValueError(
                 f"Provided nn_implementation={nn_implementation} not in {nn_implementations.keys()}"
             )
+        self._nn_implementation = nn_implementation  # Save str for logger
         self._nn_classification = nn_implementations[nn_implementation]
 
         # # Do we have a sane Large Dataset PCA
@@ -190,11 +194,10 @@ class RIRClass2D(Class2D):
         """
 
         # # Stage 1: Compute coef and reduce dimensionality.
-        # Memioze/batch this later when result is working
-        # Initial round of component truncation is before bispectrum.
-        # Instantiate a new compressed (truncated) basis.
         if self.pca_basis is None:
-            self.pca_basis = FSPCABasis(self.src, components=self.fspca_components)
+            self.pca_basis = FSPCABasis(
+                self.src, components=self.fspca_components, batch_size=self.batch_size
+            )
 
         # For convenience, assign the fb_basis used in the pca_basis.
         self.fb_basis = self.pca_basis.basis
@@ -205,6 +208,14 @@ class RIRClass2D(Class2D):
             self.averager = BFSReddyChatterjiAverager2D(
                 self.fb_basis, self.src, num_procs=self.num_procs, dtype=self.dtype
             )
+        else:
+            # When user provides `averager` and `num_procs`
+            #   we should warn when `num_procs` mismatched.
+            if self.num_procs is not None and self.averager.num_procs != self.num_procs:
+                logger.warning(
+                    f"{self.__class__.__name__} intialized with num_procs={self.num_procs} does not"
+                    f" match provided {self.averager.__class__.__name__}.{self.averager.num_procs}"
+                )
 
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
@@ -213,7 +224,7 @@ class RIRClass2D(Class2D):
         coef_b, coef_b_r = self.bispectrum(self.fspca_coef)
 
         # # Stage 2: Compute Nearest Neighbors
-        logger.info("Calculate Nearest Neighbors")
+        logger.info(f"Calculate Nearest Neighbors using {self._nn_implementation}.")
         classes, reflections, distances = self.nn_classification(coef_b, coef_b_r)
 
         if diagnostics:
@@ -279,9 +290,9 @@ class RIRClass2D(Class2D):
         :param coef_b:
         :param coef_b_r:
         :returns:  Tuple of classes, refl, dists where
-        classes is an integer array of indices representing image ids,
-        refl is a bool array representing reflections (True is refl),
-        and distances is an array of distances as returned by NN implementation.
+            classes is an integer array of indices representing image ids,
+            refl is a bool array representing reflections (True is refl),
+            and distances is an array of distances as returned by NN implementation.
         """
         # _nn_classification is assigned during initialization.
         return self._nn_classification(coef_b, coef_b_r)
@@ -298,7 +309,11 @@ class RIRClass2D(Class2D):
         return self._bispectrum(coef)
 
     def _sk_nn_classification(self, coeff_b, coeff_b_r):
-        # Before we get clever lets just use a generally accepted implementation.
+        """
+        Perform nearest neighbor classification using scikit learn.
+
+        Note "distances" are as computed by scikit, defaults to Euclidean.
+        """
 
         n_img = self.src.n
 
@@ -330,9 +345,11 @@ class RIRClass2D(Class2D):
 
         return classes, refl, distances
 
-    def _legacy_nn_classification(self, coeff_b, coeff_b_r, batch_size=2000):
+    def _legacy_nn_classification(self, coeff_b, coeff_b_r):
         """
-        Perform nearest neighbor classification.
+        Perform nearest neighbor classification using port of ASPIRE legacy MATLAB code.
+
+        Note `distances` returned from this method are dot products, ie "corr".
         """
 
         # Note kept ordering from legacy code (n_features, n_img)
@@ -350,13 +367,13 @@ class RIRClass2D(Class2D):
 
         concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=1)
 
-        num_batches = (n_im + batch_size - 1) // batch_size
+        num_batches = (n_im + self.batch_size - 1) // self.batch_size
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
         distances = np.zeros((n_im, n_nbor), dtype=self.dtype)
-        for i in range(num_batches):
-            start = i * batch_size
-            finish = min((i + 1) * batch_size, n_im)
+        for i in trange(num_batches):
+            start = i * self.batch_size
+            finish = min((i + 1) * self.batch_size, n_im)
             corr = np.real(
                 np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
             )
@@ -456,7 +473,7 @@ class RIRClass2D(Class2D):
 
         M = None
 
-        for i in tqdm(range(self.src.n)):
+        for i in trange(self.src.n):
             B = self.pca_basis.calculate_bispectrum(
                 coef_normed[i, np.newaxis],
                 filter_nonzero_freqs=True,

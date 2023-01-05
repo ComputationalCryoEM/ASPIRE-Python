@@ -1,10 +1,9 @@
 import logging
 
 import numpy as np
-from scipy.fftpack import fft, fftn, fftshift, ifft, ifftn
 
+from aspire.numeric import fft
 from aspire.utils import roll_dim, unroll_dim, vec_to_vol, vecmat_to_volmat, vol_to_vec
-from aspire.utils.fft import mdim_fftshift, mdim_ifftshift
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
@@ -44,14 +43,14 @@ class FourierKernel(Kernel):
 
     def circularize(self):
         logger.info("Circularizing kernel")
-        kernel = np.real(ifftn(self.kernel))
-        kernel = mdim_fftshift(kernel)
+        kernel = np.real(fft.ifftn(self.kernel))
+        kernel = fft.mdim_fftshift(kernel)
 
         for dim in range(self.ndim):
             logger.info(f"Circularizing dimension {dim}")
             kernel = self.circularize_1d(kernel, dim)
 
-        xx = fftn(mdim_ifftshift(kernel))
+        xx = fft.fftn(fft.mdim_ifftshift(kernel))
         return xx
 
     def circularize_1d(self, kernel, dim):
@@ -72,11 +71,12 @@ class FourierKernel(Kernel):
         mult = m_reshape((np.arange(N, 0, -1, dtype=self.dtype) / N), mult_shape)
         kernel_circ += mult * bottom
 
-        return fftshift(kernel_circ, dim)
+        return fft.fftshift(kernel_circ, dim)
 
     def convolve_volume(self, x):
         """
         Convolve volume with kernel
+
         :param x: An N-by-N-by-N-by-... array of volumes to be convolved.
         :return: The original volumes convolved by the kernel with the same dimensions as before.
         """
@@ -92,14 +92,16 @@ class FourierKernel(Kernel):
         is_singleton = x.shape[3] == 1
 
         if is_singleton:
-            x = fftn(x[..., 0], (N_ker, N_ker, N_ker))[..., np.newaxis]
+            pad_width = [(0, N_ker - N)] * 3
+            x = np.pad(x[..., 0], pad_width)
+            x = fft.fftn(x)[..., np.newaxis]
         else:
             raise NotImplementedError("not yet")
 
         x = x * kernel_f
 
         if is_singleton:
-            x[..., 0] = np.real(ifftn(x[..., 0]))
+            x[..., 0] = np.real(fft.ifftn(x[..., 0]))
             x = x[:N, :N, :N, :]
         else:
             raise NotImplementedError("not yet")
@@ -111,6 +113,7 @@ class FourierKernel(Kernel):
     def convolve_volume_matrix(self, x):
         """
         Convolve volume matrix with kernel
+
         :param x: An N-by-...-by-N (6 dimensions) volume matrix to be convolved.
         :return: The original volume matrix convolved by the kernel with the same dimensions as before.
         """
@@ -126,15 +129,17 @@ class FourierKernel(Kernel):
 
         # Note from MATLAB code:
         # Order is important here.  It's about 20% faster to run from 1 through 6 compared with 6 through 1.
-        # TODO: Experiment with scipy order; try overwrite_x argument
+        # TODO: Experiment with fft axis order
         for i in range(6):
-            x = fft(x, N_ker, i, overwrite_x=True)
+            _pad_width = [(0, 0)] * 6
+            _pad_width[i] = (0, N_ker - N)
+            x = fft.fft(np.pad(x, _pad_width), axis=i)
 
         x *= kernel_f
 
         indices = list(range(N))
         for i in range(5, -1, -1):
-            x = ifft(x, None, i, overwrite_x=True)
+            x = fft.ifft(x, axis=i)
             x = x.take(indices, axis=i)
 
         return np.real(x)
@@ -142,6 +147,7 @@ class FourierKernel(Kernel):
     def toeplitz(self, L=None):
         """
         Compute the 3D Toeplitz matrix corresponding to this Fourier Kernel
+
         :param L: The size of the volumes to be convolved (default M/2, where the dimensions of this Fourier Kernel
             are MxMxM
         :return: An six-dimensional Toeplitz matrix of size L describing the convolution of a volume with this kernel

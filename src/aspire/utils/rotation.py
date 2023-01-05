@@ -2,6 +2,8 @@
 Define a Rotation Class for customized rotation operations used by ASPIRE.
 """
 
+import warnings
+
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import svd
@@ -25,6 +27,10 @@ class Rotation:
         ), f"Bad rotation matrix shape: {matrices.shape}"
         self._matrices = matrices
         self._seq_order = "ZYZ"
+
+        # Attribute indicating if rotation matrices are about the z-axis,
+        # which will cause a gimbal lock warning for ZYZ convention.
+        self._about_z = False
 
     def __str__(self):
         """
@@ -65,7 +71,18 @@ class Rotation:
         :return: Rotation matrices as a n x 3 array
         """
         rotations = sp_rot.from_matrix(self._matrices.astype(self.dtype))
-        return rotations.as_euler(self._seq_order, degrees=False).astype(self.dtype)
+
+        # If `about_axis` was used to generate rotations about the z-axis
+        # turn off Gimbal lock warning.
+        with warnings.catch_warnings():
+            if self._about_z:
+                msg = "Gimbal lock detected*"
+                warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+            euler_angles = rotations.as_euler(self._seq_order, degrees=False).astype(
+                self.dtype
+            )
+
+        return euler_angles
 
     def invert(self):
         """
@@ -263,7 +280,25 @@ class Rotation:
 
         rotation = sp_rot.from_euler(axis, angles, degrees=False)
         matrix = rotation.as_matrix().astype(dtype)
-        return Rotation(matrix)
+        rot = Rotation(matrix)
+        if axis.lower() == "z":
+            rot._about_z = True
+        return rot
+
+    @staticmethod
+    def from_rotvec(vec, dtype=np.float32):
+        """
+        Build a Rotation object from rotation vectors. A rotation vector is a
+        3D vector which is co-directional to the axis of rotation and whose norm
+        gives the angle of rotation in radians. The angle of rotation is counter-clockwise
+        about the axis.
+
+        :param vec: array_like, shape (N, 3) or (3,)
+        :return: Rotation object
+        """
+        rots = sp_rot.from_rotvec(vec)
+        matrices = rots.as_matrix().astype(dtype)
+        return Rotation(matrices)
 
     @staticmethod
     def from_matrix(values, dtype=np.float32):

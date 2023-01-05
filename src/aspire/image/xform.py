@@ -1,16 +1,15 @@
+import abc
 import logging
 
 import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
-from aspire.operators import PowerFilter, ZeroFilter
-from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
 
-class Xform:
+class Xform(abc.ABC):
     """
     An Xform is anything that implements a `forward` method (and an `adjoint` method, in the case of a LinearXform),
     that takes in a square Image object and spits out a square Image object corresponding to forward/adjoint operations.
@@ -49,6 +48,7 @@ class Xform:
     def __init__(self, active=True):
         """
         Create a Xform object that works at a specific resolution.
+
         :param active: A boolean indicating whether the Xform is active. True by default.
         """
         self.active = active
@@ -56,6 +56,7 @@ class Xform:
     def forward(self, im, indices=None):
         """
         Apply forward transformation for this Xform object to an Image object.
+
         :param im: The incoming Image object of depth `n`, on which to apply the forward transformation.
         :param indices: The indices to use within this Xform. If unspecified, [0..n) is used.
         :return: An Image object after applying the forward transformation.
@@ -66,10 +67,11 @@ class Xform:
             indices = np.arange(im.n_images)
         return self._forward(im, indices=indices)
 
+    @abc.abstractmethod
     def _forward(self, im, indices):
-        raise NotImplementedError(
-            "Subclasses must implement the _forward method applicable to im/indices."
-        )
+        """
+        Subclasses must implement the _forward method applicable to im/indices.
+        """
 
     def enabled(self):
         """
@@ -97,6 +99,7 @@ class LinearXform(Xform):
     def adjoint(self, im, indices=None):
         """
         Apply adjoint transformation for this Xform object to an Image object.
+
         :param im: The incoming Image object of depth `n`, on which to apply the adjoint transformation.
         :param indices: The indices to use within this Xform. If unspecified, [0..n) is used.
         :return: An Image object after applying the adjoint transformation.
@@ -107,10 +110,11 @@ class LinearXform(Xform):
             indices = np.arange(im.n_images)
         return self._adjoint(im, indices=indices)
 
+    @abc.abstractmethod
     def _adjoint(self, im, indices):
-        raise NotImplementedError(
-            "Subclasses must implement the _adjoint method applicable to im/indices."
-        )
+        """
+        Subclasses must implement the _adjoint method applicable to im/indices.
+        """
 
 
 class SymmetricXform(LinearXform):
@@ -131,6 +135,7 @@ class Multiply(SymmetricXform):
     def __init__(self, factor):
         """
         Initialize a Multiply Xform using specified factors
+
         :param factor: A float/int or an ndarray of scalar factors to use for amplitude multiplication.
         """
         super().__init__()
@@ -159,6 +164,7 @@ class Shift(LinearXform):
     def __init__(self, shifts):
         """
         Initialize a Shift Xform using a Numpy array of shift values.
+
         :param shifts: An ndarray of shape (2) or (n, 2)
         """
         super().__init__()
@@ -214,6 +220,7 @@ class FilterXform(SymmetricXform):
     def __init__(self, filter):
         """
         Initialize the Filter `Xform` using a `Filter` object
+
         :param filter: An object of type `aspire.operators.Filter`
         """
         super().__init__()
@@ -235,6 +242,7 @@ class Add(Xform):
     def __init__(self, addend):
         """
         Initialize an Add Xform using a Numpy array of predefined values.
+
         :param addend: An float/int or an ndarray of shape (n,)
         """
         super().__init__()
@@ -282,36 +290,6 @@ class LambdaXform(Xform):
         return f"LambdaXform ({self.lambda_fun.__name__})"
 
 
-class NoiseAdder(Xform):
-    """
-    A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
-    """
-
-    def __init__(self, seed=0, noise_filter=None):
-        """
-        Initialize the random state of this NoiseAdder using specified values.
-        :param seed: The random seed used to generate white noise
-        :param noise_filter: An optional aspire.operators.Filter object to use to filter the generated white noise.
-            By default, a ZeroFilter is used, generating no noise.
-        """
-        super().__init__()
-        self.seed = seed
-        noise_filter = noise_filter or ZeroFilter()
-        self.noise_filter = PowerFilter(noise_filter, power=0.5)
-
-    def _forward(self, im, indices):
-        im = im.copy()
-
-        for i, idx in enumerate(indices):
-            # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
-            random_seed = self.seed + 191 * (idx + 1)
-            im_s = randn(2 * im.res, 2 * im.res, seed=random_seed)
-            im_s = Image(im_s).filter(self.noise_filter)[0]
-            im[i] += im_s[: im.res, : im.res]
-
-        return im
-
-
 class IndexedXform(Xform):
     """
     An IndexedXform is a Xform where individual Xform objects are used at specific indices of the incoming Image object.
@@ -345,6 +323,7 @@ class IndexedXform(Xform):
     def _indexed_operation(self, im, indices, which):
         """
         Apply either a forward or adjoint transformations to `im`, depending on the value of the 'which' parameter.
+
         :param im: The incoming Image object on which to apply the forward or adjoint transformations.
         :param indices: The indices of the transformations to apply.
         :param which: The attribute indicating the function handle to obtain from underlying `Xform` objects.
@@ -390,10 +369,10 @@ def _apply_xform(xform, im, indices, adjoint=False):
     method.
     """
     if not adjoint:
-        logger.info("  Applying " + str(xform))
+        logger.debug("  Applying " + str(xform))
         return xform.forward(im, indices=indices)
     else:
-        logger.info("  Applying Adjoint " + str(xform))
+        logger.debug("  Applying Adjoint " + str(xform))
         return xform.adjoint(im, indices=indices)
 
 
@@ -412,6 +391,7 @@ class Pipeline(Xform):
     def __init__(self, xforms=None, memory=None):
         """
         Initialize a `Pipeline` with `Xform` objects.
+
         :param xforms: An iterable of Xform objects to use in the Pipeline.
         :param memory: None for no caching (default), or the location of a directory to use to cache steps of the
             pipeline.
@@ -426,6 +406,7 @@ class Pipeline(Xform):
     def add_xform(self, xform):
         """
         Add a single `Xform` object at the end of the pipeline.
+
         :param xform: A `Xform` object.
         :return: None
         """
@@ -434,6 +415,7 @@ class Pipeline(Xform):
     def add_xforms(self, xforms):
         """
         Add multiple `Xform` objects at the end of the pipeline.
+
         :param xform: An iterable of `Xform` objects.
         :return: None
         """
@@ -442,6 +424,7 @@ class Pipeline(Xform):
     def reset(self):
         """
         Reset the pipeline by removing all `Xform`s.
+
         :return: None
         """
         self.xforms = []
@@ -450,10 +433,10 @@ class Pipeline(Xform):
         memory = Memory(location=self.memory, verbose=0)
         _apply_transform_cached = memory.cache(_apply_xform)
 
-        logger.info("Applying forward transformations in pipeline")
+        logger.debug("Applying forward transformations in pipeline")
         for xform in self.xforms:
             im = _apply_transform_cached(xform, im, indices, False)
-        logger.info("All forward transformations applied")
+        logger.debug("All forward transformations applied")
 
         return im
 
@@ -463,9 +446,9 @@ class LinearPipeline(Pipeline, LinearXform):
         memory = Memory(location=self.memory, verbose=0)
         _apply_transform_cached = memory.cache(_apply_xform)
 
-        logger.info("Applying adjoint transformations in pipeline")
+        logger.debug("Applying adjoint transformations in pipeline")
         for xform in self.xforms[::-1]:
             im = _apply_transform_cached(xform, im, indices, True)
-        logger.info("All adjoint transformations applied")
+        logger.debug("All adjoint transformations applied")
 
         return im

@@ -1,0 +1,37 @@
+version: 0.10.1
+common:
+    # numeric module to use - one of numpy/cupy
+    numeric: numpy
+    # fft backend to use - one of pyfftw/scipy/cupy
+    fft: pyfftw
+
+logging:
+    # Set log_dir to a relative or absolute directory
+    # Default is a subfolder `logs` in your current working directory.
+    log_dir: logs
+    log_exceptions: 1
+    # tqdm_disable=True disables progress bars.
+    tqdm_disable: False
+
+    # set Python logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    # logging level for console output:
+    console_level: INFO
+    # logging level for log file output:
+    log_file_level: DEBUG
+
+    # custom log file name prefix can be set using 'log_prefix'
+    # will appear as '[log_dir]/[log_prefix]-{timestamp}.log'
+    log_prefix: aspire
+
+nufft:
+    # NUFFT backends should be one of finufft, cufinufft, pynfft.
+    # They will be attempted in order from left to right.
+    backends: [cufinufft, finufft, pynfft]
+
+ray:
+    # Ray will default to a OS specific tmp dir.
+    #   By default on linux this is `/tmp/ray`.
+    # If you find your machine has a very small /tmp,
+    #   try setting `temp_dir` to `/dev/shm`
+    #   or some other fast scratch dir.
+    temp_dir: /tmp/ray

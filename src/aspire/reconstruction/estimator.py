@@ -6,7 +6,6 @@ import scipy.sparse.linalg
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
 
-from aspire import config
 from aspire.reconstruction.kernel import FourierKernel
 from aspire.volume import Volume
 
@@ -65,13 +64,13 @@ class Estimator:
     def compute_kernel(self):
         raise NotImplementedError("Subclasses must implement the compute_kernel method")
 
-    def estimate(self, b_coeff=None, tol=None):
+    def estimate(self, b_coeff=None, tol=1e-5, regularizer=0):
         """Return an estimate as a Volume instance."""
         if b_coeff is None:
             b_coeff = self.src_backward()
         # conj_grad expects a 1d array if n = 1
         b_coeff = np.squeeze(b_coeff, axis=0)
-        est_coeff = self.conj_grad(b_coeff, tol=tol)
+        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
         est = self.basis.evaluate(est_coeff).T
 
         return est
@@ -96,11 +95,10 @@ class Estimator:
         logger.info(f"Determined adjoint mappings. Shape = {res.shape}")
         return res
 
-    def conj_grad(self, b_coeff, tol=None):
+    def conj_grad(self, b_coeff, tol=1e-5, regularizer=0):
         n = b_coeff.shape[0]
         kernel = self.kernel
 
-        regularizer = config.mean.regularizer
         if regularizer > 0:
             kernel += regularizer
 
@@ -119,7 +117,6 @@ class Estimator:
                 dtype=self.dtype,
             )
 
-        tol = tol or config.mean.cg_tol
         target_residual = tol * norm(b_coeff)
 
         def cb(xk):
@@ -138,6 +135,7 @@ class Estimator:
     def apply_kernel(self, vol_coeff, kernel=None):
         """
         Applies the kernel represented by convolution
+
         :param vol_coeff: The volume to be convolved, stored in the basis coefficients.
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
         :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by

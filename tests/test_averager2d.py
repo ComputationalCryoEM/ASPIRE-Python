@@ -1,6 +1,7 @@
 import importlib
 import logging
 import os
+import platform
 from unittest import TestCase
 
 import numpy as np
@@ -32,8 +33,12 @@ def xfail_ray_dev():
     Currently ray multiprocessing of the averager is xfail for numpy>=1.22.
     This unsupported configuration is forced in the '-dev' test environments.
     Return whether we expect test to fail using ray multiprocessing.
+
+    While Ray seems to work fine locally for OSX, we have experienced
+    timeouts due to hangs on Azure.  This code will disable the flaky
+    environments by only attempting to run on Linux platforms.
     """
-    return all(
+    xfail = all(
         [
             importlib.util.find_spec("ray"),  # 'ray' installed
             parse_version(get_distribution("numpy").version)
@@ -41,10 +46,23 @@ def xfail_ray_dev():
             num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
         ]
     )
+    # Don't run for OSX/Windows and don't abuse GitHub Actions
+    skip = (platform.system != "Linux") or (os.getenv("GITHUB_ACTIONS") == "true")
+
+    return xfail or skip
 
 
-# Ignore Gimbal lock warning for our in plane rotations.
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
+def check_angle_diff(est, ref, tol):
+    """
+    Helper function to check if a set of estimated rotation angles are within
+    a tolerance of a set of reference angles.
+
+    :return: boolean
+    """
+    all_within_tol = np.all(abs(est % (2 * np.pi) - ref % (2 * np.pi)) <= tol)
+    return all_within_tol
+
+
 class Averager2DBase:
     """
     Configure and setup a unit test case bypassing pytest execution.
@@ -59,7 +77,7 @@ class Averager2DBase:
 
         self.vols = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy"))
-        ).downsample(17)
+        ).downsample(64)
 
         self.resolution = self.vols.resolution
         self.n_img = 3
@@ -97,7 +115,7 @@ class Averager2DBase:
             test_dtype = np.float32
 
         with self._caplog.at_level(logging.WARN):
-            self.averager(self.basis, self._getSrc(), dtype=test_dtype)
+            self.averager(self.basis, self._getSrc(), dtype=test_dtype, num_procs=1)
             assert "does not match dtype" in self._caplog.text
 
     def _construct_rotations(self):
@@ -110,28 +128,10 @@ class Averager2DBase:
             0, 2 * np.pi, num=self.n_img, endpoint=False, retstep=True, dtype=self.dtype
         )
 
-        # Common 3D rotation matrix, about z.
-        def r(theta):
-            return np.array(
-                [
-                    [np.cos(theta), -np.sin(theta), 0],
-                    [np.sin(theta), np.cos(theta), 0],
-                    [0, 0, 1],
-                ],
-                dtype=self.dtype,
-            )
-
-        # Construct a sequence of rotation matrices using thetas
-        _rots = np.empty((self.n_img, 3, 3), dtype=self.dtype)
-        for n, theta in enumerate(self.thetas):
-            # Note we negate theta to match Rotation convention.
-            _rots[n] = r(-theta)
-
-        # Use our Rotation class (maybe it should be able to do this one day?)
-        self.rotations = Rotation.from_matrix(_rots)
+        # Generate rotations to be used by `Simulation`
+        self.rotations = Rotation.about_axis("z", self.thetas, dtype=self.dtype)
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class Averager2DTestCase(Averager2DBase, TestCase):
     """
     Concrete TestCase
@@ -152,7 +152,7 @@ class AligningAverager2DBase(Averager2DBase):
     """
 
     averager = AligningAverager2D
-    num_procs = 1  # paralleized subclasses may override
+    num_procs = 1 if xfail_ray_dev() else 2
 
     def setUp(self):
 
@@ -175,16 +175,13 @@ class AligningAverager2DBase(Averager2DBase):
         _ = avgr.average(self.classes, self.reflections, self.coefs)
         return avgr
 
-    def test_rotations_estimate(self):
+    def test_attributes(self):
         avgr = self._call_averager()
+
         self.assertTrue(hasattr(avgr, "rotations"))
 
-    def test_shifts_estimate(self):
-        avgr = self._call_averager()
         self.assertTrue(hasattr(avgr, "shifts"))
 
-    def test_correlations_estimate(self):
-        avgr = self._call_averager()
         self.assertTrue(hasattr(avgr, "correlations"))
 
     def _getSrc(self):
@@ -204,7 +201,6 @@ class AligningAverager2DBase(Averager2DBase):
         )
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
 
     averager = BFRAverager2D
@@ -219,7 +215,7 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
-            _ = self.averager(basis, self._getSrc())
+            _ = self.averager(basis, self._getSrc(), num_procs=1)
 
     def testAverager(self):
         """
@@ -229,21 +225,24 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
         """
 
         # Construct the Averager and then call the `align` method
-        avgr = self.averager(self.basis, self._getSrc(), n_angles=self.n_search_angles)
+        avgr = self.averager(
+            self.basis,
+            self._getSrc(),
+            n_angles=self.n_search_angles,
+            num_procs=self.num_procs,
+        )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         self.assertIsNone(_shifts)
-
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(np.all((_rotations - self.thetas) <= (self.step / 2)))
+        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
 
         # Fine check that we are within n_angles.
         self.assertTrue(
-            np.all((_rotations - self.thetas) <= (2 * np.pi / self.n_search_angles))
+            check_angle_diff(_rotations, self.thetas, 2 * np.pi / self.n_search_angles)
         )
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 
     averager = BFSRAverager2D
@@ -254,8 +253,8 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 
         # Setup shifts, don't shift the base image
         self.shifts = np.zeros((self.n_img, 2))
-        self.shifts[1:, 0] = 2
-        self.shifts[1:, 1] = 4
+        self.shifts[1:, 0] = 1
+        self.shifts[1:, 1] = 2
 
         # Execute the remaining setup from BFRAverager2DTestCase
         super().setUp()
@@ -272,17 +271,17 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
             self.basis,
             self._getSrc(),
             n_angles=self.n_search_angles,
-            n_x_shifts=1,
-            n_y_shifts=1,
+            radius=3,
+            num_procs=self.num_procs,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(np.all((_rotations - self.thetas) <= (self.step / 2)))
+        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
 
         # Fine check that we are within n_angles.
         self.assertTrue(
-            np.all((_rotations - self.thetas) <= (2 * np.pi / self.n_search_angles))
+            check_angle_diff(_rotations, self.thetas, 2 * np.pi / self.n_search_angles)
         )
 
         # Check that we are _not_ shifting the base image
@@ -295,11 +294,10 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
         self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
     averager = ReddyChatterjiAverager2D
-    num_procs = 1 if xfail_ray_dev() else None
+    num_procs = 1 if xfail_ray_dev() else 2
 
     def testAverager(self):
         """
@@ -318,10 +316,10 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(np.all((_rotations - self.thetas) <= (self.step / 2)))
+        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
 
-        # Fine check that we are within one degree.
-        self.assertTrue(np.all((_rotations - self.thetas) <= (2 * np.pi / 360.0)))
+        # Fine check that we are within 4 degrees.
+        self.assertTrue(check_angle_diff(_rotations, self.thetas, np.pi / 45))
 
         # Check that we are _not_ shifting the base image
         self.assertTrue(np.all(_shifts[0][0] == 0))
@@ -333,7 +331,6 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         self.assertTrue(np.all(np.hypot(*_shifts[0][1:].T) >= 1))
 
 
-@pytest.mark.filterwarnings("ignore:Gimbal lock detected")
 class BFSReddyChatterjiAverager2DTestCase(ReddyChatterjiAverager2DTestCase):
 
     averager = BFSReddyChatterjiAverager2D

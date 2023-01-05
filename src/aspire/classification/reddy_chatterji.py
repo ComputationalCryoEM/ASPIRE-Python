@@ -153,10 +153,11 @@ def reddy_chatterji_register(
             cross_correlation_score
         )
 
-        if recovered_angle_degrees > 90:
-            r = 180 - recovered_angle_degrees
-        else:
-            r = -recovered_angle_degrees
+        # The recovered angle represents an estimate of the rotation from reference to image[m].
+        # The registration angle for image[m],
+        #   the angle to apply to image[m] to register with reference,
+        #   would be the negation of this,
+        r = -1 * recovered_angle_degrees
 
         # For now, try the hack below, attempting two cases ...
         # Some papers mention running entire algos /twice/,
@@ -172,7 +173,7 @@ def reddy_chatterji_register(
             r += 180
 
         # Assign estimated rotations results
-        rotations[m] = -r * np.pi / 180  # Reverse rot and convert to radians
+        rotations[m] = r * np.pi / 180  # Convert to radians
 
         if do_cross_corr_translations:
             # Prepare for searching over translations using cross-correlation with the rotated image.

@@ -8,7 +8,8 @@ from pytest import raises
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
-from aspire.operators import RadialCTFFilter, ScalarFilter
+from aspire.noise import WhiteNoiseAdder
+from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
@@ -36,7 +37,7 @@ class Cov2DTestCase(TestCase):
         n = 32
 
         self.noise_var = 1.3957e-4
-        noise_filter = ScalarFilter(dim=2, value=self.noise_var)
+        noise_adder = WhiteNoiseAdder(var=self.noise_var)
 
         vols = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
@@ -53,7 +54,7 @@ class Cov2DTestCase(TestCase):
             offsets=0.0,
             amplitudes=1.0,
             dtype=self.dtype,
-            noise_filter=noise_filter,
+            noise_adder=noise_adder,
         )
 
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)

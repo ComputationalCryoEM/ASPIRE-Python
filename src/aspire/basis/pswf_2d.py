@@ -12,7 +12,6 @@ from aspire.basis.basis_utils import (
     t_x_mat,
 )
 from aspire.basis.pswf_utils import BNMatrix
-from aspire.image import Image
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -58,6 +57,9 @@ class PSWFBasis2D(Basis):
         self.gmcut = gamma_trunc
         self.beta = beta
         super().__init__(size, dtype=dtype)
+
+        # this basis has complex coefficients
+        self.coefficient_dtype = complex_type(self.dtype)
 
     def _build(self):
         """
@@ -149,32 +151,24 @@ class PSWFBasis2D(Basis):
         # the column dimension of samples_conj_transpose is the number of basis coefficients
         self.count = self.samples_conj_transpose.shape[1]
 
-    def evaluate_t(self, images):
+    def _evaluate_t(self, images):
         """
         Evaluate coefficient vectors in PSWF basis using the direct method
 
         :param images: coefficient array in the standard 2D coordinate basis
             to be evaluated.
-        :return : The evaluation of the coefficient array in the PSWF basis.
+        :return: The evaluation of the coefficient array in the PSWF basis.
         """
-
-        if not isinstance(images, Image):
-            logger.warning(
-                "FPSWFBasis2D.evaluate_t expects Image instance,"
-                " attempting conversion."
-            )
-            images = Image(images)
-
         flattened_images = images[:, self._disk_mask]
 
         return flattened_images @ self.samples_conj_transpose
 
-    def evaluate(self, coefficients):
+    def _evaluate(self, coefficients):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
 
         :param coeffcients: A coefficient vector (or an array of coefficient
-        vectors) in PSWF basis to be evaluated. (n_image, count)
+            vectors) in PSWF basis to be evaluated. (n_image, count)
         :return : Image in standard 2D coordinate basis.
 
         """
@@ -196,7 +190,7 @@ class PSWFBasis2D(Basis):
         )
         images[:, self._disk_mask] = np.real(flatten_images)
 
-        return Image(images)
+        return images
 
     def _init_pswf_func2d(self, c, eps):
         """

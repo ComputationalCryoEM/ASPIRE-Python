@@ -3,24 +3,22 @@ from functools import partial
 
 import numpy as np
 import scipy.sparse.linalg
-from scipy.fftpack import fftn
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
-from tqdm import tqdm
 
-from aspire import config
 from aspire.image import Image
 from aspire.nufft import anufft
+from aspire.numeric import fft
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import (
     make_symmat,
     symmat_to_vec_iso,
+    trange,
     vec_to_symmat_iso,
     vecmat_to_volmat,
     volmat_to_vecmat,
 )
-from aspire.utils.fft import mdim_ifftshift
 from aspire.volume import Volume, rotated_grids
 
 logger = logging.getLogger(__name__)
@@ -49,7 +47,7 @@ class CovarianceEstimator(Estimator):
         kernel = np.zeros((_2L, _2L, _2L, _2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
-        for i in tqdm(range(0, n, self.batch_size)):
+        for i in trange(0, n, self.batch_size):
             _range = np.arange(i, min(n, i + self.batch_size))
             pts_rot = rotated_grids(L, self.src.rotations[_range, :, :])
             weights = sq_filters_f[:, :, _range]
@@ -81,27 +79,26 @@ class CovarianceEstimator(Estimator):
         kernel[:, :, :, :, :, 0] = 0
 
         logger.info("Computing non-centered Fourier Transform")
-        kernel = mdim_ifftshift(kernel, range(0, 6))
-        kernel_f = fftn(kernel)
+        kernel = fft.mdim_ifftshift(kernel, range(0, 6))
+        kernel_f = fft.fftn(kernel)
         # Kernel is always symmetric in spatial domain and therefore real in Fourier
         kernel_f = np.real(kernel_f)
 
         return FourierKernel(kernel_f, centered=False)
 
-    def estimate(self, mean_vol, noise_variance, tol=None):
+    def estimate(self, mean_vol, noise_variance, tol=1e-5, regularizer=0):
         logger.info("Running Covariance Estimator")
         b_coeff = self.src_backward(mean_vol, noise_variance)
-        est_coeff = self.conj_grad(b_coeff, tol=tol)
+        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
         covar_est = self.basis.mat_evaluate(est_coeff)
         covar_est = vecmat_to_volmat(make_symmat(volmat_to_vecmat(covar_est)))
         return covar_est
 
-    def conj_grad(self, b_coeff, tol=None):
+    def conj_grad(self, b_coeff, tol=1e-5, regularizer=0):
         b_coeff = symmat_to_vec_iso(b_coeff)
         N = b_coeff.shape[0]
         kernel = self.kernel
 
-        regularizer = config.covar.regularizer
         if regularizer > 0:
             kernel += regularizer
 
@@ -122,7 +119,6 @@ class CovarianceEstimator(Estimator):
                 dtype=self.dtype,
             )
 
-        tol = tol or config.covar.cg_tol
         target_residual = tol * norm(b_coeff)
 
         def cb(xk):
@@ -141,6 +137,7 @@ class CovarianceEstimator(Estimator):
     def apply_kernel(self, coeff, kernel=None, packed=False):
         """
         Applies the kernel represented by convolution
+
         :param coeff: The volume matrix (6 dimensions) to be convolved (but see the `packed` argument below).
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
         :param packed: whether the `coeff` matrix represents an isometrically mapped packed vector,
@@ -165,7 +162,7 @@ class CovarianceEstimator(Estimator):
         Apply adjoint mapping to source
 
         :return: The sum of the outer products of the mean-subtracted images in `src`, corrected by the expected noise
-        contribution and expressed as coefficients of `basis`.
+            contribution and expressed as coefficients of `basis`.
         """
         covar_b = np.zeros(
             (self.src.L, self.src.L, self.src.L, self.src.L, self.src.L, self.src.L),
@@ -192,6 +189,7 @@ class CovarianceEstimator(Estimator):
     def _shrink(self, covar_b_coeff, noise_variance, method=None):
         """
         Shrink covariance matrix
+
         :param covar_b_coeff: Outer products of the mean-subtracted images
         :param noise_variance: Noise variance
         :param method: One of None/'frobenius_norm'/'operator_norm'/'soft_threshold'

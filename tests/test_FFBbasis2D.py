@@ -1,7 +1,6 @@
 import logging
 import os.path
 from unittest import TestCase
-from unittest.case import SkipTest
 
 import numpy as np
 from parameterized import parameterized_class
@@ -10,7 +9,6 @@ from scipy.special import jv
 from aspire.basis import FFBBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
-from aspire.utils import utest_tolerance
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
@@ -20,10 +18,12 @@ logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-# NOTE: Class with default values is already present, so don't list it below.
+# NOTE: Default class values (ie. L=8, dtype=np.float32) are listed here and below to
+# to be picked up by TestCase. This means the default values are tested twice by the Mixins.
 @parameterized_class(
     ("L", "dtype"),
     [
+        (8, np.float32),
         (8, np.float64),
         (16, np.float32),
         (16, np.float64),
@@ -51,7 +51,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         g2d = grid_2d(self.L, dtype=self.dtype)
         mask = g2d["r"] < 1
 
-        r0 = self.basis.r0[k, ell]
+        r0 = self.basis.r0[ell][k]
 
         # TODO: Figure out where these factors of 1 / 2 are coming from.
         # Intuitively, the grid should go from -L / 2 to L / 2, not -L / 2 to
@@ -96,10 +96,6 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
             self._testElement(ell, k, sgn)
 
     def testRotate(self):
-        # Convergence issues for double precision.
-        if np.dtype(self.dtype) is np.dtype(np.float64):
-            raise SkipTest
-
         # Now low res (8x8) had problems;
         #  better with odd (7x7), but still not good.
         # We'll use a higher res test image.
@@ -107,29 +103,27 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         # Use a real data volume to generate a clean test image.
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                np.float64
+                self.dtype
             )
         )
         src = Simulation(L=v.resolution, n=1, vols=v, dtype=v.dtype)
         # Extract, this is the original image to transform.
         x1 = src.images[0]
 
-        # Rotate 90 degrees in cartesian coordinates.
+        # Rotate 90 degrees CCW in cartesian coordinates.
         x2 = Image(np.rot90(x1.asnumpy(), axes=(1, 2)))
 
         # Express in an FB basis
-        basis = FFBBasis2D((x1.res,) * 2, dtype=x1.dtype)
+        basis = FFBBasis2D(x1.resolution, dtype=x1.dtype)
         v1 = basis.evaluate_t(x1)
         v2 = basis.evaluate_t(x2)
-        v3 = basis.evaluate_t(x1)
-        v4 = basis.evaluate_t(x1)
 
         # Reflect in the FB basis space
         v4 = basis.rotate(v1, 0, refl=[True])
 
         # Rotate in the FB basis space
         v3 = basis.rotate(v1, 2 * np.pi)
-        v1 = basis.rotate(v1, -np.pi / 2)
+        v1 = basis.rotate(v1, np.pi / 2)
 
         # Evaluate back into cartesian
         y1 = basis.evaluate(v1)
@@ -138,13 +132,58 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         y4 = basis.evaluate(v4)
 
         # Rotate 90
-        self.assertTrue(np.allclose(y1[0], y2[0], atol=1e-4))
+        self.assertTrue(np.allclose(y1[0], y2[0], atol=1e-5))
 
         # 2*pi Identity
-        self.assertTrue(np.allclose(x1[0], y3[0], atol=utest_tolerance(self.dtype)))
+        self.assertTrue(np.allclose(x1[0], y3[0], atol=1e-5))
 
         # Refl (flipped using flipud)
-        self.assertTrue(np.allclose(np.flipud(x1[0]), y4[0], atol=1e-4))
+        self.assertTrue(np.allclose(np.flipud(x1[0]), y4[0], atol=1e-5))
+
+    def testRotateComplex(self):
+        # Now low res (8x8) had problems;
+        #  better with odd (7x7), but still not good.
+        # We'll use a higher res test image.
+        # fh = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy'))[:7,:7]
+        # Use a real data volume to generate a clean test image.
+        v = Volume(
+            np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
+                self.dtype
+            )
+        )
+        src = Simulation(L=v.resolution, n=1, vols=v, dtype=v.dtype)
+        # Extract, this is the original image to transform.
+        x1 = src.images[0]
+
+        # Rotate 90 degrees CCW in cartesian coordinates.
+        x2 = Image(np.rot90(x1.asnumpy(), axes=(1, 2)))
+
+        # Express in an FB basis
+        basis = FFBBasis2D(x1.resolution, dtype=x1.dtype)
+        v1 = basis.evaluate_t(x1)
+        v2 = basis.evaluate_t(x2)
+
+        # Reflect in the FB basis space
+        v4 = basis.to_real(basis.complex_rotate(basis.to_complex(v1), 0, refl=[True]))
+
+        # Complex Rotate in the FB basis space
+        v3 = basis.to_real(basis.complex_rotate(basis.to_complex(v1), 2 * np.pi))
+        v1 = basis.to_real(basis.complex_rotate(basis.to_complex(v1), np.pi / 2))
+
+        # Evaluate back into cartesian
+        y1 = basis.evaluate(v1)
+        y2 = basis.evaluate(v2)
+        y3 = basis.evaluate(v3)
+        y4 = basis.evaluate(v4)
+
+        # Rotate 90
+        self.assertTrue(np.allclose(y1[0], y2[0], atol=1e-5))
+
+        # 2*pi Identity
+        self.assertTrue(np.allclose(x1[0], y3[0], atol=1e-5))
+
+        # Refl (flipped using flipud)
+        self.assertTrue(np.allclose(np.flipud(x1[0]), y4[0], atol=1e-5))
 
     def testShift(self):
         """
@@ -159,11 +198,11 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         # Construct some synthetic data
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                np.float64
+                self.dtype
             )
         ).downsample(self.L)
 
-        src = Simulation(L=self.L, n=n_img, vols=v, dtype=np.float64)
+        src = Simulation(L=self.L, n=n_img, vols=v, dtype=self.dtype)
 
         # Shift images using the Image method directly
         shifted_imgs = src.images[:n_img].shift(test_shift)

@@ -20,6 +20,7 @@ def src_wiener_coords(
 ):
     """
     Calculate coordinates using Wiener filter
+
     :param sim: A simulation object containing the images whose coordinates we want.
     :param mean_vol: The mean volume of the source as Volume instance.
     :param eig_vols: The eigenvolumes of the source as Volume instance.
@@ -85,7 +86,7 @@ def src_wiener_coords(
         Q_vecs = mat_to_vec(Qs)
 
         # RCOPT
-        ims = np.moveaxis(ims.data, 0, 2)
+        ims = np.moveaxis(ims.asnumpy(), 0, 2)
         im_vecs = mat_to_vec(ims)
 
         for j in range(batch_n):

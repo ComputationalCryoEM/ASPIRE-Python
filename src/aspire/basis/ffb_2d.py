@@ -74,7 +74,7 @@ class FFBBasis2D(FBBasis2D):
         ind_radial = 0
         for ell in range(0, self.ell_max + 1):
             for k in range(1, self.k_max[ell] + 1):
-                radial[ind_radial] = jv(ell, self.r0[k - 1, ell] * r / self.kcut)
+                radial[ind_radial] = jv(ell, self.r0[ell][k - 1] * r / self.kcut)
                 # NOTE: We need to remove the factor due to the discretization here
                 # since it is already included in our quadrature weights
                 # Only normalized by the radial part of basis function
@@ -186,10 +186,10 @@ class FFBBasis2D(FBBasis2D):
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
         :param x: The Image instance representing coefficient array in the
-        standard 2D coordinate basis to be evaluated.
-        :return v: The evaluation of the coefficient array `v` in the FB basis.
+            standard 2D coordinate basis to be evaluated.
+        :return: The evaluation of the coefficient array `x` in the FB basis.
             This is an array of vectors whose last dimension equals `self.count`
-            and whose first dimension correspond to `x.n_images`.
+            and whose first dimension correspond to `x.shape[0]`.
         """
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["freqs"], 2)
@@ -197,11 +197,10 @@ class FFBBasis2D(FBBasis2D):
         freqs = np.reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
         # number of 2D image samples
-        n_images = x.n_images
-        x_data = x.data
+        n_images = x.shape[0]
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pf = nufft(x_data, 2 * pi * freqs)
+        pf = nufft(x, 2 * pi * freqs)
         pf = np.reshape(pf, (n_images, n_r, n_theta))
 
         # Recover "negative" frequencies from "positive" half plane.

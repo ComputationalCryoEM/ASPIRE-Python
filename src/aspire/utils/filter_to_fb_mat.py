@@ -11,7 +11,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     :param fbasis: The basis object for expanding.
 
     :return: a BlkDiagMatrix instance representation using the
-    `fbasis` expansion.
+        `fbasis` expansion.
     """
 
     # These form a circular dependence, import locally until time to clean up.
@@ -43,7 +43,7 @@ def filter_to_fb_mat(h_fun, fbasis):
     ind_ell = 0
     for ell in range(0, fbasis.ell_max + 1):
         k_max = fbasis.k_max[ell]
-        rmat = 2 * k_vals.reshape(n_k, 1) * fbasis.r0[0:k_max, ell].T
+        rmat = 2 * k_vals.reshape(n_k, 1) * fbasis.r0[ell][0:k_max].T
         fb_vals = np.zeros_like(rmat)
         ind_radial = np.sum(fbasis.k_max[0:ell])
         fb_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T

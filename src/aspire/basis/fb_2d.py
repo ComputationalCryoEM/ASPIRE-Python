@@ -143,7 +143,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             for k in range(1, self.k_max[ell] + 1):
                 # Only normalized by the radial part of basis function
                 radial[:, ind_radial] = (
-                    jv(ell, self.r0[k - 1, ell] * r_unique)
+                    jv(ell, self.r0[ell][k - 1] * r_unique)
                     / self.radial_norms[ind_radial]
                 )
                 ind_radial += 1
@@ -177,7 +177,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         Calculate the normalized factors from radial and angular parts of a specified basis function
         """
         rad_norm = (
-            np.abs(jv(ell + 1, self.r0[k - 1, ell]))
+            np.abs(jv(ell + 1, self.r0[ell][k - 1]))
             * np.sqrt(1 / 2.0)
             * self.nres
             / 2.0
@@ -242,11 +242,10 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual basis
             of `basis`. This is an array of vectors whose last dimension equals
-             `self.count` and whose first dimensions correspond to
-             first dimensions of `v`.
+            `self.count` and whose first dimensions correspond to
+            first dimensions of `v`.
         """
-        v = v.asnumpy().T  # RCOPT
-
+        v = v.T
         x, sz_roll = unroll_dim(v, self.ndim + 1)
         x = m_reshape(
             x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
@@ -402,17 +401,3 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             filter_nonzero_freqs=filter_nonzero_freqs,
             freq_cutoff=freq_cutoff,
         )
-
-    def rotate(self, coef, radians, refl=None):
-        """
-        Returns coefs rotated by `radians`.
-
-        :param coef: Basis coefs.
-        :param radians: Rotation in radians.
-        :param refl: Optional reflect image (bool)
-        :return: rotated coefs.
-        """
-
-        # Base class rotation expects complex representation of coefficients.
-        #  Convert, rotate and convert back to real representation.
-        return self.to_real(super().rotate(self.to_complex(coef), radians, refl))

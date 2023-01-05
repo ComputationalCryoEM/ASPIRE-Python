@@ -22,7 +22,7 @@ class Basis:
 
         :param size: The size of the vectors for which to define the basis.
             Currently only square images and cubic volumes are supported.
-        :ell_max: The maximum order ell of the basis elements. If no input
+        :param ell_max: The maximum order ell of the basis elements. If no input
             (= None), it will be set to np.Inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
             below the Nyquist frequency (default Inf).
@@ -37,11 +37,20 @@ class Basis:
         self.count = 0
         self.ell_max = ell_max
         self.ndim = ndim
+        if self.ndim == 2:
+            self._cls = Image
+        elif self.ndim == 3:
+            self._cls = Volume
+        else:
+            raise RuntimeError("Basis ndim must be 2 or 3")
         self.dtype = np.dtype(dtype)
         if self.dtype not in (np.float32, np.float64):
             raise NotImplementedError(
                 "Currently only implemented for float32 and float64 types"
             )
+        # dtype of coefficients is the same as self.dtype for real bases
+        # subclasses with complex coefficients override this attribute
+        self.coefficient_dtype = self.dtype
 
         self._build()
 
@@ -80,16 +89,22 @@ class Basis:
             This is an Image or a Volume object containing one image/volume for each
             coefficient vector, and of size `self.sz`.
         """
-        if v.dtype != self.dtype:
+        if v.dtype != self.coefficient_dtype:
             logger.warning(
                 f"{self.__class__.__name__}::evaluate"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+                f" Inconsistent dtypes v: {v.dtype} self coefficient dtype: {self.coefficient_dtype}"
             )
 
-        if self.ndim == 2:
-            return Image(self._evaluate(v))
-        elif self.ndim == 3:
-            return Volume(self._evaluate(v))
+        # Flatten stack, ndim is wrt Basis (2 or 3)
+        stack_shape = v.shape[:-1]
+        v = v.reshape(-1, self.count)
+        # Compute the transform
+        x = self._evaluate(v)
+        # Restore stack shape
+        x = x.reshape(*stack_shape, *self.sz)
+
+        # Return the appropriate class
+        return self._cls(x)
 
     def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
@@ -110,17 +125,24 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
             )
 
-        if not isinstance(v, Image) and not isinstance(v, Volume):
-            if self.ndim == 2:
-                _class = Image
-            elif self.ndim == 3:
-                _class = Volume
+        if not isinstance(v, self._cls):
             logger.warning(
                 f"{self.__class__.__name__}::evaluate_t"
-                f" passed numpy array instead of {_class}."
+                f" passed numpy array instead of {self._cls}."
             )
-            v = _class(v)
-        return self._evaluate_t(v)
+        else:
+            v = v.asnumpy()
+
+        # Flatten stack, ndim is wrt Basis (2 or 3)
+        stack_shape = v.shape[: -self.ndim]
+        v = v.reshape(-1, *v.shape[-self.ndim :])
+        # Compute the adjoint
+        x = self._evaluate_t(v)
+        # Restore stack shape
+        x = x.reshape(*stack_shape, self.count)
+
+        # Return an ndarray
+        return x
 
     def _evaluate_t(self, v):
         raise NotImplementedError("Subclasses should implement this")
@@ -162,7 +184,7 @@ class Basis:
 
         :param x: An array whose last two or three dimensions are to be expanded
             the desired basis. These dimensions must equal `self.sz`.
-        :return : The coefficients of `v` expanded in the desired basis.
+        :return: The coefficients of `v` expanded in the desired basis.
             The last dimension of `v` is with size of `count` and the
             first dimensions of the return value correspond to
             those first dimensions of `x`.
@@ -170,6 +192,12 @@ class Basis:
         """
         if isinstance(x, Image) or isinstance(x, Volume):
             x = x.asnumpy()
+
+        if x.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::expand"
+                f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
+            )
 
         # check that last ndim values of input shape match
         # the shape of this basis
@@ -180,11 +208,6 @@ class Basis:
         sz_roll = x.shape[: -self.ndim]
         # convert to standardized shape e.g. (L,L) to (1,L,L)
         x = x.reshape((-1, *self.sz))
-
-        if x.ndim == 3:
-            _class = Image
-        else:
-            _class = Volume
 
         operator = LinearOperator(
             shape=(self.count, self.count),
@@ -198,15 +221,15 @@ class Basis:
 
         # number of image samples
         n_data = x.shape[0]
-        v = np.zeros((n_data, self.count), dtype=x.dtype)
+        v = np.zeros((n_data, self.count), dtype=self.coefficient_dtype)
 
         for isample in range(0, n_data):
-            b = self.evaluate_t(_class(x[isample])).T
+            b = self.evaluate_t(self._cls(x[isample])).T
             # TODO: need check the initial condition x0 can improve the results or not.
             v[isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
                 raise RuntimeError("Unable to converge!")
 
         # return v coefficients with the last dimension of self.count
-        v = v.reshape((*sz_roll, -1))
+        v = v.reshape((*sz_roll, self.count))
         return v

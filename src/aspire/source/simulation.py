@@ -5,8 +5,7 @@ import numpy as np
 from scipy.linalg import eigh, qr
 
 from aspire.image import Image
-from aspire.image.xform import NoiseAdder
-from aspire.operators import ZeroFilter
+from aspire.noise import NoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
@@ -18,15 +17,23 @@ from aspire.utils import (
     vecmat_to_volmat,
 )
 from aspire.utils.random import rand, randi, randn
-from aspire.volume import Volume, gaussian_blob_vols
+from aspire.volume import LegacyVolume, Volume
 
 logger = logging.getLogger(__name__)
 
 
 class Simulation(ImageSource):
+    """
+    A `Simulation` represents a synthetic dataset of realistic cryo-EM images with corresponding
+    `metadata`. The images are generated via projections of a supplied `Volume` object, `vols`, over
+    orientations define by the Euler angles, `angles`. Various types of corruption, such as noise and
+    CTF effects, can be added to the images by supplying a `Filter` object to the `noise_filter` or
+    `unique_filters` arguments.
+    """
+
     def __init__(
         self,
-        L=8,
+        L=None,
         n=1024,
         vols=None,
         states=None,
@@ -34,51 +41,91 @@ class Simulation(ImageSource):
         filter_indices=None,
         offsets=None,
         amplitudes=None,
-        dtype=np.float32,
+        dtype=None,
         C=2,
-        symmetry=None,
         angles=None,
         seed=0,
         memory=None,
-        noise_filter=None,
+        noise_adder=None,
     ):
         """
-        A Cryo-EM simulation
-        Other than the base class attributes, it has:
+        A `Simulation` object that supplies images along with other parameters for image manipulation.
 
-        :param C: The number of distinct volumes
-        :param angles: A n-by-3 array of rotation angles
+        :param L: Resolution of projection images (integer). Default is 8.
+            If a `Volume` is provided `L` and `vols.resolution` must agree.
+        :param n: The number of images to generate (integer).
+        :param vols: A `Volume` object representing a stack of volumes.
+            Default is generated with `volume.volume_synthesis.LegacyVolume`.
+        :param states: A 1d array of n integers in the interval [0, C). The i'th integer indicates
+            the volume stack index used to produce the i'th projection image. Default is a random set.
+        :param unique_filters: A list of Filter objects to be applied to projection images.
+        :param filter_indices: A 1d array of n integers indicating the `unique_filter` indices associated
+            with each image. Default is a random set of filter indices, .ie the filters from `unique_filters`
+            are randomly assigned to the stack of images.
+        :param offsets: A n-by-2 array of coordinates to offset the images. Default is a normally
+            distributed set of offsets. Set `offsets = 0` to disable offsets.
+        :param amplitude: A 1d array of n amplitudes to scale the projection images. Default is
+            a random set in the interval [2/3, 3/2]. Set `amplitude = 1` to disable amplitudes.
+        :param dtype: dtype for the Simulation
+        :param C: Number of Volumes used to generate projection images. The default is C=2.
+            If a `Volume` object is provided this parameter is overridden and `self.C` = `self.vols.n_vols`.
+        :param angles: A n-by-3 array of Euler angles for use in projection. Default is a random set.
+        :param seed: Random seed.
+        :param memory: str or None. The path of the base directory to use as a data store or None.
+            If None is given, no caching is performed.
+        :param noise_adder: Optionally append instance of `NoiseAdder`
+            to generation pipeline.
+
+        :return: A Simulation object.
         """
-        super().__init__(L=L, n=n, dtype=dtype, memory=memory)
 
         self.seed = seed
 
+        # If a Volume is not provided we default to the legacy Gaussian blob volume.
+        # If a Simulation resolution or dtype is not provided, we default to L=8 and np.float32.
+        if vols is None:
+            self.vols = LegacyVolume(
+                L=L or 8,
+                C=C,
+                seed=self.seed,
+                dtype=dtype or np.float32,
+            ).generate()
+        else:
+            if dtype is not None and vols.dtype != dtype:
+                raise RuntimeError(
+                    f"Explicit {self.__class__.__name__} dtype {dtype}"
+                    f" does not match provided vols.dtype {vols.dtype}."
+                    " Please change the Volume using `astype`"
+                    " or the Simuation `dtype` argument."
+                )
+            # Assign the explicitly provided volume.
+            self.vols = vols
+
+        if not isinstance(self.vols, Volume):
+            raise RuntimeError("`vols` should be a Volume instance or `None`.")
+
+        # Infer the details from volume when possible.
+        super().__init__(
+            L=self.vols.resolution, n=n, dtype=self.vols.dtype, memory=memory
+        )
+
+        # If a user provides both `L` and `vols`, resolution should match.
+        if L is not None and L != self.L:
+            raise RuntimeError(
+                f"Simulation must have the same resolution as the provided Volume."
+                f" Provided vols.resolution = {self.vols.resolution} and L = {L}."
+            )
+
         # We need to keep track of the original resolution we were initialized with,
         # to be able to generate projections of volumes later, when we are asked to supply images.
-        self._original_L = L
+        self._original_L = self.L
 
         if offsets is None:
-            offsets = L / 16 * randn(2, n, seed=seed).astype(dtype).T
+            offsets = self.L / 16 * randn(2, n, seed=seed).astype(dtype).T
 
         if amplitudes is None:
             min_, max_ = 2.0 / 3, 3.0 / 2
             amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
-
-        if vols is None:
-            self.vols = gaussian_blob_vols(
-                L=L, C=C, symmetry=symmetry, seed=self.seed, dtype=self.dtype
-            )
-        else:
-            assert isinstance(vols, Volume)
-            self.vols = vols
-
-        if self.vols.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}"
-                f" vols.dtype {self.vols.dtype} != self.dtype {self.dtype}."
-                " In the future this will raise an error. Casting..."
-            )
-            self.vols = self.vols.astype(self.dtype)
 
         self.C = self.vols.n_vols
 
@@ -104,15 +151,16 @@ class Simulation(ImageSource):
             self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices
         else:
-            self.filter_indices = np.zeros(n)
+            self.filter_indices = np.zeros(n, dtype=int)
 
         self.offsets = offsets
         self.amplitudes = amplitudes
 
-        self.noise_adder = None
-        if noise_filter is not None and not isinstance(noise_filter, ZeroFilter):
-            logger.info("Appending a NoiseAdder to generation pipeline")
-            self.noise_adder = NoiseAdder(seed=self.seed, noise_filter=noise_filter)
+        if noise_adder is not None:
+            logger.info(f"Appending {noise_adder} to generation pipeline")
+            if not isinstance(noise_adder, NoiseAdder):
+                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
+        self.noise_adder = noise_adder
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
@@ -155,8 +203,12 @@ class Simulation(ImageSource):
     @property
     def projections(self):
         """
-        Return projections of generated volumes, without applying filters/shifts/amplitudes/noise.
-        Subscriptable property.
+        Return projections of generated volumes, without applying filters/shifts/amplitudes/noise
+
+        :param start: start index (0-indexed) of the start image to return
+        :param num: Number of images to return. If None, *all* images are returned.
+        :param indices: A numpy array of image indices. If specified, start and num are ignored.
+        :return: An Image instance.
         """
         return self._projections_accessor
 
@@ -199,7 +251,7 @@ class Simulation(ImageSource):
         """
         # check for cached images first
         if self._cached_im is not None:
-            logger.info("Loading images from cache")
+            logger.debug("Loading images from cache")
             return self.generation_pipeline.forward(
                 Image(self._cached_im[indices, :, :]), indices
             )
@@ -228,6 +280,7 @@ class Simulation(ImageSource):
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
         Coordinates of simulation volumes in a given basis
+
         :param mean_vol: A mean volume in the form of a Volume Instance (default `mean_true`).
         :param eig_vols: A set of k volumes in a Volume instance (default `eigs`).
         :return:
@@ -315,6 +368,7 @@ class Simulation(ImageSource):
     def eval_volmat(self, volmat_true, volmat_est):
         """
         Evaluate volume matrix estimation accuracy
+
         :param volmat_true: The true volume matrices in the form of an L-by-L-by-L-by-L-by-L-by-L-by-K array.
         :param volmat_est: The estimated volume matrices in the same form.
         :return:
@@ -330,6 +384,7 @@ class Simulation(ImageSource):
     def eval_eigs(self, eigs_est, lambdas_est):
         """
         Evaluate covariance eigendecomposition accuracy
+
         :param eigs_est: The estimated volume eigenvectors in an L-by-L-by-L-by-K array.
         :param lambdas_est: The estimated eigenvalues in a K-by-K diagonal matrix (default `diag(ones(K, 1))`).
         :return:
@@ -352,6 +407,7 @@ class Simulation(ImageSource):
     def eval_clustering(self, vol_idx):
         """
         Evaluate clustering estimation
+
         :param vol_idx: Indexes of the volumes determined (0-indexed)
         :return: Accuracy [0-1] in terms of proportion of correctly assigned labels
         """
@@ -366,6 +422,7 @@ class Simulation(ImageSource):
     def eval_coords(self, mean_vol, eig_vols, coords_est):
         """
         Evaluate coordinate estimation
+
         :param mean_vol: A mean volume in the form of a Volume instance.
         :param eig_vols: A set of eigenvolumes in an Volume instance.
         :param coords_est: The estimated coordinates in the affine space defined centered at `mean_vol` and spanned

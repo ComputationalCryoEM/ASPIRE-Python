@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python/branch/master/graph/badge.svg?token=3XFC4VONX0)](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5657281.svg)](https://doi.org/10.5281/zenodo.5657281)
 
-# ASPIRE - Algorithms for Single Particle Reconstruction - v0.10.0
+# ASPIRE - Algorithms for Single Particle Reconstruction - v0.10.1
 
 This is the Python version to supersede the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire).
 
@@ -20,7 +20,7 @@ For more information about the project, algorithms, and related publications ple
 Please cite using the following DOI. This DOI represents all versions, and will always resolve to the latest one.
 
 ```
-ComputationalCryoEM/ASPIRE-Python: v0.10.0 https://doi.org/10.5281/zenodo.5657281
+ComputationalCryoEM/ASPIRE-Python: v0.10.1 https://doi.org/10.5281/zenodo.5657281
 
 ```
 
@@ -29,10 +29,10 @@ ComputationalCryoEM/ASPIRE-Python: v0.10.0 https://doi.org/10.5281/zenodo.565728
 For end-users
 -------------
 
-ASPIRE is a pip-installable package that works on Linux/Mac/Windows, and requires Python 3.7. The simplest option is to use Anaconda 64-bit for your platform with a minimum of Python 3.7 and `pip`, and then use `pip` to install `aspire` in that environment.
+ASPIRE is a pip-installable package that works on Linux/Mac/Windows, and requires Python 3.7-3.10. The recommended method of installation is to use Anaconda 64-bit for your platform to install Python 3.8 and `pip`, and then use `pip` to install `aspire` in that environment.
 
 ```
-conda create -n aspire_env python=3.7 pip
+conda create -n aspire_env python=3.8 pip
 conda activate aspire_env
 pip install aspire
 ```
@@ -63,13 +63,6 @@ pip install -e ".[dev]"
 
 If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.7.
 Please see the full documentation for details.
-
-You may optionally install additional packages for GPU extensions:
-
-```
-# Additional GPU packages (requires CUDA)
-pip install -e ".[gpu]"
-```
 
 ### Make sure everything works
 

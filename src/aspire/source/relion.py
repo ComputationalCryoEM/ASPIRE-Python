@@ -75,6 +75,7 @@ class RelionSource(ImageSource):
     ):
         """
         Load STAR file at given filepath
+
         :param filepath: Absolute or relative path to STAR file
         :param data_folder: Path to folder w.r.t which all relative paths to .mrcs files are resolved.
             If None, the folder corresponding to filepath is used.
@@ -87,7 +88,7 @@ class RelionSource(ImageSource):
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         """
-        logger.debug(f"Creating ImageSource from STAR file at path {filepath}")
+        logger.info(f"Creating ImageSource from STAR file at path {filepath}")
 
         self.pixel_size = pixel_size
         self.B = B
@@ -237,12 +238,14 @@ class RelionSource(ImageSource):
 
         # check for cached images first
         if self._cached_im is not None:
-            logger.info("Loading images from cache")
+            logger.debug("Loading images from cache")
             return self.generation_pipeline.forward(
                 Image(self._cached_im[indices, :, :]), indices
             )
 
-        logger.info(f"Loading {len(indices)} images from STAR file")
+        logger.debug(f"Loading {len(indices)} images from STAR file")
+        # Log the indices in case needed to debug a crash
+        logger.debug(f"Indices: {indices}")
 
         def load_single_mrcs(filepath, df):
             arr = mrcfile.open(filepath).data
@@ -279,7 +282,7 @@ class RelionSource(ImageSource):
                 for idx, d in enumerate(data_indices):
                     im[np.where(indices == d)] = data[idx, :, :]
 
-        logger.info(f"Loading {len(indices)} images complete")
+        logger.debug(f"Loading {len(indices)} images complete")
 
         # Finally, apply transforms to resulting Image
         return self.generation_pipeline.forward(Image(im), indices)

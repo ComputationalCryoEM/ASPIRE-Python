@@ -14,7 +14,7 @@ from aspire.classification import (
     TopClassSelector,
 )
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
-from aspire.operators import ScalarFilter
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
@@ -140,13 +140,13 @@ class RIRClass2DTestCase(TestCase):
 
         # With Noise
         noise_var = 0.01 * np.var(np.sum(v[0], axis=0))
-        noise_filter = ScalarFilter(dim=2, value=noise_var)
+        noise_adder = WhiteNoiseAdder(var=noise_var)
         self.noisy_src = Simulation(
             L=self.resolution,
             n=self.n_img,
             vols=v,
             dtype=self.dtype,
-            noise_filter=noise_filter,
+            noise_adder=noise_adder,
         )
 
         # Set up FFB
@@ -156,6 +156,10 @@ class RIRClass2DTestCase(TestCase):
         # Create Basis, use precomputed Basis
         self.clean_fspca_basis = FSPCABasis(
             self.clean_src, self.basis, noise_var=0
+        )  # Note noise_var assigned zero, skips eigval filtering.
+
+        self.clean_fspca_basis_compressed = FSPCABasis(
+            self.clean_src, self.basis, components=101, noise_var=0
         )  # Note noise_var assigned zero, skips eigval filtering.
 
         # Ceate another fspca_basis, use autogeneration FFB2D Basis
@@ -222,7 +226,7 @@ class RIRClass2DTestCase(TestCase):
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
             selector=TopClassSelector(),
-            num_procs=1 if xfail_ray_dev() else None,
+            num_procs=1 if xfail_ray_dev() else 2,
         )
 
         classification_results = rir.classify()
@@ -241,7 +245,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="devel",
-            num_procs=1 if xfail_ray_dev() else None,
+            num_procs=1 if xfail_ray_dev() else 2,
         )
 
         _ = rir.classify()
@@ -266,6 +270,7 @@ class RIRClass2DTestCase(TestCase):
                 self.noisy_fspca_basis.basis,  # FFB basis
                 self.noisy_src,
                 n_angles=100,
+                num_procs=1,
             ),
         )
 
@@ -277,21 +282,21 @@ class RIRClass2DTestCase(TestCase):
         Test we can return eigenimages.
         """
 
-        # Get an FSPCA basis for testing
-        fspca = self.clean_fspca_basis
+        # Get the eigenimages from an FSPCA basis for testing
+        eigimg_uncompressed = self.clean_fspca_basis.eigen_images()
 
-        # Get the eigenimages
-        eigimg_uncompressed = fspca.eigen_images()
+        # Get the eigenimages from a compressed FSPCA basis for testing
+        eigimg_compressed = self.clean_fspca_basis_compressed.eigen_images()
 
-        # Compresses the FSPCA basis
-        compressed_fspca = fspca._compress(150)
-
-        # Get the eigenimages
-        eigimg_compressed = compressed_fspca.eigen_images()
-
-        # Check they are close
+        # Check they are close.
+        # Note it is expected the compression reorders the eigvecs,
+        #  and thus the eigimages.
+        # We sum over all the eigimages to yield an "average" for comparison
         self.assertTrue(
-            np.allclose(eigimg_uncompressed.asnumpy(), eigimg_compressed.asnumpy())
+            np.allclose(
+                np.sum(eigimg_uncompressed.asnumpy(), axis=0),
+                np.sum(eigimg_compressed.asnumpy(), axis=0),
+            )
         )
 
     def testComponentSize(self):

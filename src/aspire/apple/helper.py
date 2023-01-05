@@ -138,7 +138,7 @@ class PickerHelper:
             img: Micrograph image.
             query_size: Reference images must be of the same size of query images, i.e. (query_size x query_size).
             container_size: Containers are large regions used to select reference images. The size of each
-            region is (container_size x container_size)
+                region is (container_size x container_size)
 
         Returns:
             3D Matrix of reference images.  windows[0] is the first reference window.

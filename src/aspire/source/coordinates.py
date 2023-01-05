@@ -129,7 +129,7 @@ class CoordinateSource(ImageSource, ABC):
         self.B = B
         # set CTF metadata to defaults
         # this can be updated with import_ctf()
-        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
+        self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
 
     def _populate_particles(self, num_micrographs, coord_paths):
@@ -201,6 +201,29 @@ class CoordinateSource(ImageSource, ABC):
         return [
             self._box_coord_from_center(coord, self.particle_size) for coord in coords
         ]
+
+    def _populate_local_metadata(self):
+        """
+        Called during ImageSource.save(), populates metadata columns specific to
+            `CoordinateSource` when saving to STAR file.
+        :return: A list of the names of the columns added.
+        """
+        # Insert stored particle coordinates (centers) into metadata
+        self.set_metadata(
+            "_rlnCoordinateX",
+            [
+                self._center_from_box_coord(particle[1])[0]
+                for particle in self.particles
+            ],
+        )
+        self.set_metadata(
+            "_rlnCoordinateY",
+            [
+                self._center_from_box_coord(particle[1])[1]
+                for particle in self.particles
+            ],
+        )
+        return ["_rlnCoordinateX", "_rlnCoordinateY"]
 
     def _exclude_boundary_particles(self):
         """
