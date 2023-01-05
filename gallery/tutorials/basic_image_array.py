@@ -14,9 +14,8 @@ import numpy as np
 from scipy import misc
 
 from aspire.image import Image
-from aspire.image.xform import NoiseAdder
-from aspire.noise import AnisotropicNoiseEstimator
-from aspire.operators import FunctionFilter, ScalarFilter
+from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder, WhiteNoiseAdder
+from aspire.operators import FunctionFilter
 from aspire.source import ArrayImageSource
 
 # %%
@@ -53,12 +52,11 @@ img = img.downsample(new_resolution)
 # We will begin processing by adding some noise.
 # We would like to create uniform noise for a 2d image with prescibed variance,
 noise_var = np.var(img.asnumpy()) * 5
-noise_filter = ScalarFilter(dim=2, value=noise_var)
 
-# Then create a NoiseAdder.
-noise = NoiseAdder(seed=123, noise_filter=noise_filter)
+# Then create a WhiteNoiseAdder.
+noise = WhiteNoiseAdder(var=noise_var, seed=123)
 
-# We can apply the NoiseAdder to our image data.
+# We can apply the WhiteNoiseAdder to our image data.
 img_with_noise = noise.forward(img)
 
 # We will plot the original and first noisy image,
@@ -98,7 +96,7 @@ def noise_function(x, y):
 # We can create a custom filter from that function.
 f = FunctionFilter(noise_function)
 # And use the filter to add the noise to our stack of images.
-noise_adder = NoiseAdder(seed=123, noise_filter=f)
+noise_adder = CustomNoiseAdder(noise_filter=f, seed=123)
 imgs_with_noise = noise_adder.forward(imgs)
 
 # Let's see the first two noisy images.
