@@ -33,7 +33,7 @@ class BispectrumTestCase(TestCase):
         self.rt90_img = Image(np.rot90(self.orig_img.asnumpy(), axes=(1, 2)))
 
         # Prepare a Fourier Bessel Basis
-        self.basis = FFBBasis2D((self.orig_img.res,) * 2, dtype=self.dtype)
+        self.basis = FFBBasis2D((self.orig_img.resolution,) * 2, dtype=self.dtype)
         self.v1 = self.basis.evaluate_t(self.orig_img)
         self.v2 = self.basis.evaluate_t(self.rt90_img)
         # These should _not_ be equal or the test is pointless.

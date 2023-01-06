@@ -5,6 +5,8 @@ import os
 import click
 
 from aspire.apple.apple import Apple
+from aspire.commands import log_level_option
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,7 @@ logger = logging.getLogger(__name__)
     "Otherwise use default.",
     default=1,
 )
+@log_level_option
 def apple(
     mrc_path,
     create_jpg,
@@ -81,8 +84,12 @@ def apple(
     response_thresh_norm_factor,
     conv_map_nthreads,
     n_processes,
+    loglevel,
 ):
     """Pick and save particles from one or more mrc files."""
+
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
 
     # Convert model_opts string to a dictionary
     if model_opts is not None:

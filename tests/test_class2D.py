@@ -14,7 +14,7 @@ from aspire.classification import (
     TopClassSelector,
 )
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
-from aspire.operators import ScalarFilter
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
@@ -140,13 +140,13 @@ class RIRClass2DTestCase(TestCase):
 
         # With Noise
         noise_var = 0.01 * np.var(np.sum(v[0], axis=0))
-        noise_filter = ScalarFilter(dim=2, value=noise_var)
+        noise_adder = WhiteNoiseAdder(var=noise_var)
         self.noisy_src = Simulation(
             L=self.resolution,
             n=self.n_img,
             vols=v,
             dtype=self.dtype,
-            noise_filter=noise_filter,
+            noise_adder=noise_adder,
         )
 
         # Set up FFB

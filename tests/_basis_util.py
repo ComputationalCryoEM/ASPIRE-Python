@@ -138,26 +138,33 @@ class UniversalBasisMixin:
             return Volume
 
     def testEvaluate(self):
-        # evaluate should take a NumPy array and return an Image/Volume
+        # evaluate should take a NumPy array of type basis.coefficient_dtype
+        # and return an Image/Volume
         _class = self.getClass()
-        result = self.basis.evaluate(np.zeros((self.basis.count), dtype=self.dtype))
+        result = self.basis.evaluate(
+            np.zeros((self.basis.count), dtype=self.basis.coefficient_dtype)
+        )
         self.assertTrue(isinstance(result, _class))
 
     def testEvaluate_t(self):
-        # evaluate_t should take an Image/Volume and return a NumPy array
+        # evaluate_t should take an Image/Volume and return a NumPy array of type
+        # basis.coefficient_dtype
         _class = self.getClass()
         result = self.basis.evaluate_t(
             _class(np.zeros((self.L,) * self.basis.ndim, dtype=self.dtype))
         )
         self.assertTrue(isinstance(result, np.ndarray))
+        self.assertEqual(result.dtype, self.basis.coefficient_dtype)
 
     def testExpand(self):
         _class = self.getClass()
-        # expand should take an Image/Volume and return a NumPy array
+        # expand should take an Image/Volume and return a NumPy array of type
+        # basis.coefficient_dtype
         result = self.basis.expand(
             _class(np.zeros((self.L,) * self.basis.ndim, dtype=self.dtype))
         )
         self.assertTrue(isinstance(result, np.ndarray))
+        self.assertEqual(result.dtype, self.basis.coefficient_dtype)
 
     def testInitWithIntSize(self):
         # make sure we can instantiate with just an int as a shortcut

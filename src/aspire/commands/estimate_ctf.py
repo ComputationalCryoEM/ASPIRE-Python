@@ -5,6 +5,8 @@ import click
 # Overrides click.option with ASPIRE global defaults, see ./__init__.py
 import aspire.commands._config  # noqa: F401
 from aspire import ctf
+from aspire.commands import log_level_option
+from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger("aspire")
 
@@ -55,6 +57,7 @@ logger = logging.getLogger("aspire")
     default="results",
     help="Path to output files, defaults to './results'",
 )
+@log_level_option
 def estimate_ctf(
     data_folder,
     pixel_size,
@@ -67,6 +70,7 @@ def estimate_ctf(
     g_max,
     output_dir,
     dtype,
+    loglevel,
 ):
     """
     Given parameters estimates CTF from experimental data
@@ -75,6 +79,10 @@ def estimate_ctf(
     This is a Click command line interface wrapper for
     the aspire.ctf module.
     """
+
+    # Set desired logging option for the command line
+    setConsoleLoggingLevel(loglevel)
+
     return ctf.estimate_ctf(
         data_folder,
         pixel_size,

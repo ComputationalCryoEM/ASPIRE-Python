@@ -129,7 +129,7 @@ class CoordinateSource(ImageSource, ABC):
         self.B = B
         # set CTF metadata to defaults
         # this can be updated with import_ctf()
-        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
+        self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
 
     def _populate_particles(self, num_micrographs, coord_paths):

@@ -48,6 +48,9 @@ class Basis:
             raise NotImplementedError(
                 "Currently only implemented for float32 and float64 types"
             )
+        # dtype of coefficients is the same as self.dtype for real bases
+        # subclasses with complex coefficients override this attribute
+        self.coefficient_dtype = self.dtype
 
         self._build()
 
@@ -86,13 +89,22 @@ class Basis:
             This is an Image or a Volume object containing one image/volume for each
             coefficient vector, and of size `self.sz`.
         """
-        if v.dtype != self.dtype:
+        if v.dtype != self.coefficient_dtype:
             logger.warning(
                 f"{self.__class__.__name__}::evaluate"
-                f" Inconsistent dtypes v: {v.dtype} self: {self.dtype}"
+                f" Inconsistent dtypes v: {v.dtype} self coefficient dtype: {self.coefficient_dtype}"
             )
 
-        return self._cls(self._evaluate(v))
+        # Flatten stack, ndim is wrt Basis (2 or 3)
+        stack_shape = v.shape[:-1]
+        v = v.reshape(-1, self.count)
+        # Compute the transform
+        x = self._evaluate(v)
+        # Restore stack shape
+        x = x.reshape(*stack_shape, *self.sz)
+
+        # Return the appropriate class
+        return self._cls(x)
 
     def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
@@ -120,7 +132,17 @@ class Basis:
             )
         else:
             v = v.asnumpy()
-        return self._evaluate_t(v)
+
+        # Flatten stack, ndim is wrt Basis (2 or 3)
+        stack_shape = v.shape[: -self.ndim]
+        v = v.reshape(-1, *v.shape[-self.ndim :])
+        # Compute the adjoint
+        x = self._evaluate_t(v)
+        # Restore stack shape
+        x = x.reshape(*stack_shape, self.count)
+
+        # Return an ndarray
+        return x
 
     def _evaluate_t(self, v):
         raise NotImplementedError("Subclasses should implement this")
@@ -171,6 +193,12 @@ class Basis:
         if isinstance(x, Image) or isinstance(x, Volume):
             x = x.asnumpy()
 
+        if x.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::expand"
+                f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
+            )
+
         # check that last ndim values of input shape match
         # the shape of this basis
         assert (
@@ -193,7 +221,7 @@ class Basis:
 
         # number of image samples
         n_data = x.shape[0]
-        v = np.zeros((n_data, self.count), dtype=x.dtype)
+        v = np.zeros((n_data, self.count), dtype=self.coefficient_dtype)
 
         for isample in range(0, n_data):
             b = self.evaluate_t(self._cls(x[isample])).T
@@ -203,5 +231,5 @@ class Basis:
                 raise RuntimeError("Unable to converge!")
 
         # return v coefficients with the last dimension of self.count
-        v = v.reshape((*sz_roll, -1))
+        v = v.reshape((*sz_roll, self.count))
         return v

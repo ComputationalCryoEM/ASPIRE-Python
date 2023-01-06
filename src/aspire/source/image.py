@@ -759,7 +759,7 @@ class ImageSource(ABC):
                     logger.info(
                         f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                     )
-                    datum = self.images[i_start:i_end].data.astype("float32")
+                    datum = self.images[i_start:i_end].asnumpy().astype("float32")
 
                     # Assign to mrcfile
                     mrc.data[i_start:i_end] = datum
@@ -823,7 +823,11 @@ class ArrayImageSource(ImageSource):
                 )
 
         super().__init__(
-            L=im.res, n=im.n_images, dtype=im.dtype, metadata=metadata, memory=None
+            L=im.resolution,
+            n=im.n_images,
+            dtype=im.dtype,
+            metadata=metadata,
+            memory=None,
         )
 
         self._cached_im = im
