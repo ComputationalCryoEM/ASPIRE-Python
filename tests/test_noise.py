@@ -8,6 +8,7 @@ import pytest
 from aspire.noise import CustomNoiseAdder, WhiteNoiseAdder, WhiteNoiseEstimator
 from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source.simulation import Simulation
+from aspire.utils import utest_tolerance
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -61,7 +62,7 @@ def test_white_noise_estimator_clean_corners(sim_fixture):
     noise_variance = noise_estimator.estimate()
     # Using a compactly supported volume should yield
     #   virtually no noise in the image corners.
-    assert np.isclose(noise_variance, 0)
+    assert np.isclose(noise_variance, 0, atol=utest_tolerance(sim_fixture.dtype))
 
 
 def test_adder_reprs(adder):
