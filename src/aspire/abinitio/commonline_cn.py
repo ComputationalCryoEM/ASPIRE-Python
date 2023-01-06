@@ -5,7 +5,7 @@ from numpy.linalg import norm
 from tqdm import tqdm
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.utils import Rotation, anorm, cyclic_rotations
+from aspire.utils import Rotation, anorm, cyclic_rotations, trange
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
     def estimate_relative_viewing_directions_cn(self):
         n_img = self.n_img
-        # n_rad = self.n_rad
         n_theta = self.n_theta
         pf = self.pf
         max_shift_1d = self.max_shift
@@ -66,8 +65,10 @@ class CLSymmetryCn(CLSymmetryC3C4):
         # Generate candidate rotation matrices and the common-line and
         # self-common-line indices induced by those rotations.
         Ris_tilde, R_theta_ijs = self.generate_cand_rots()
-        # cijs_inds = self.compute_cls_inds(Ris_tilde, R_theta_ijs)
+        cijs_inds = self.compute_cls_inds(Ris_tilde, R_theta_ijs)
         scls_inds = self.compute_scls_inds(Ris_tilde)
+        n_cands = len(Ris_tilde)
+        n_theta_ijs = len(R_theta_ijs)
 
         # Generate shift phases.
         r_max = pf.shape[0]
@@ -82,7 +83,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
         # Step 1: pre-calculate the likelihood with respect to the self-common-lines.
-        scores_self_corrs = np.zeros((n_img, n_img), dtype=self.dtype)
+        scores_self_corrs = np.zeros((n_img, n_cands), dtype=self.dtype)
         for i in range(n_img):
             pf_i = pf[i]
             pf_full_i = pf_full[i]
@@ -92,6 +93,10 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 [pf_i * shift_phase for shift_phase in all_shift_phases]
             )
             pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
+
+            # Ignore dc-component.
+            pf_full_i[:, 0] = 0
+            pf_i_shifted[:, 0] = 0
 
             # Normalize each ray.
             pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
@@ -111,7 +116,132 @@ class CLSymmetryCn(CLSymmetryC3C4):
             )
 
             scores_self_corrs[i] = np.mean(np.real(corrs_cands), axis=1)
-        return scores_self_corrs
+
+        # Remove candidates that are equator images.
+        # TODO: Should the threshold be parameter-dependent instead of set to 10 degrees?
+        cii_equators_inds = np.array(
+            [
+                ind
+                for (ind, Ri_tilde) in enumerate(Ris_tilde)
+                if abs(np.arccos(Ri_tilde[2, 2]) - np.pi / 2) < 10 * np.pi / 180
+            ]
+        )
+        scores_self_corrs[:, cii_equators_inds] = 0
+
+        # Step 2: Compute likelihood with respect to pairwise images.
+        logger.info("Computing pairwise likelihood")
+        n_vijs = n_img * (n_img - 1) // 2
+        vijs = np.zeros((n_vijs, 3, 3), dtype=self.dtype)
+        viis = np.zeros((n_img, 3, 3), dtype=self.dtype)
+        rots_symm = cyclic_rotations(self.order, self.dtype).matrices
+        c = 0
+        e1 = [1, 0, 0]
+        min_ii_norm = min_jj_norm = float("inf")
+        for i in trange(n_img):
+            pf_i = pf[i]
+
+            # Generate shifted versions of the images.
+            pf_i_shifted = np.array(
+                [pf_i * shift_phase for shift_phase in all_shift_phases]
+            )
+            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
+
+            # Ignore dc-component.
+            pf_i_shifted[:, 0] = 0
+
+            # Normalize each ray.
+            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
+
+            for j in range(i + 1, n_img):
+                pf_full_j = pf_full[j]
+
+                # Ignore dc-component.
+                pf_full_j[:, 0] = 0
+
+                # Normalize each ray.
+                pf_full_j /= norm(pf_full_j, axis=1)[..., np.newaxis]
+
+                # Compute correlation.
+                corrs_ij = pf_i_shifted @ np.conj(pf_full_j).T
+
+                # Max out over shifts.
+                corrs_ij = np.max(
+                    np.reshape(np.real(corrs_ij), (n_shifts, n_theta // 2, n_theta)),
+                    axis=0,
+                )
+
+                # Arrange correlation based on common lines induced by candidate rotations.
+                corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
+                corrs = np.reshape(corrs, (-1, self.order, n_theta_ijs // self.order))
+                corrs = np.mean(
+                    corrs, axis=1
+                )  # take the mean over all symmetric common lines
+                corrs = np.reshape(
+                    corrs,
+                    (
+                        self.n_points_sphere,
+                        self.n_points_sphere,
+                        n_theta_ijs // self.order,
+                    ),
+                )
+
+                # Self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles) so max them out.
+                opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
+                corrs = np.max(corrs, axis=-1)
+
+                # Maximum likelihood while taking into consideration both cls and scls.
+                corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
+
+                # Extract the optimal candidates.
+                opt_sphere_i, opt_sphere_j = np.unravel_index(
+                    np.argmax(corrs), corrs.shape
+                )
+                opt_theta_ij = opt_theta_ij_ind_per_sphere_points[
+                    opt_sphere_i, opt_sphere_j
+                ]
+
+                opt_Ri_tilde = Ris_tilde[opt_sphere_i]
+                opt_Rj_tilde = Ris_tilde[opt_sphere_j]
+                opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
+
+                # Compute the estimate of vi*vi.T as given by j.
+                vii_j = np.mean(
+                    np.array(
+                        [opt_Ri_tilde.T @ rot @ opt_Ri_tilde for rot in rots_symm]
+                    ),
+                    axis=0,
+                )
+
+                _, svals, _ = np.linalg.svd(vii_j)
+                if np.linalg.norm(svals - e1, 2) < min_ii_norm:
+                    viis[i] = vii_j
+
+                # Compute the estimate of vj*vj.T as given by i.
+                vjj_i = np.mean(
+                    np.array(
+                        [opt_Rj_tilde.T @ rot @ opt_Rj_tilde for rot in rots_symm]
+                    ),
+                    axis=0,
+                )
+
+                _, svals, _ = np.linalg.svd(vjj_i)
+                if np.linalg.norm(svals - e1, 2) < min_jj_norm:
+                    viis[j] = vjj_i
+
+                # Compute the estimate of vi*vj.T.
+                vijs[c] = np.mean(
+                    np.array(
+                        [
+                            opt_Ri_tilde.T @ rot @ opt_R_theta_ij @ opt_Rj_tilde
+                            for rot in rots_symm
+                        ]
+                    ),
+                    axis=0,
+                )
+
+                c += 1
+
+            return viis, vijs
 
     def compute_scls_inds(self, Ri_cands):
         """
@@ -178,11 +308,13 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
     def generate_cand_rots(self):
         # Construct candidate rotations, Ris_tilde.
-        vis = self.generate_cand_rots_third_rows(self.n_points_sphere)
+        vis = self.generate_cand_rots_third_rows()
         Ris_tilde = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
 
         # Construct all in-plane rotations, R_theta_ijs
-        theta_ij = np.arange(0, 360, self.degree_res) * np.pi / 180
+        # The number of R_theta_ijs must be divisible by the symmetric order.
+        n_theta_ij = 360 - (360 % self.order)
+        theta_ij = np.arange(0, n_theta_ij, self.degree_res) * np.pi / 180
         R_theta_ijs = Rotation.about_axis("z", theta_ij).matrices
 
         return Ris_tilde, R_theta_ijs
