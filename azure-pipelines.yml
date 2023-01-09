@@ -32,7 +32,7 @@ jobs:
     displayName: pytest
 
 - job:
-  displayName: ubuntu-20.04
+  displayName: ubuntu-20.04-openblas
   pool:
     vmImage: 'ubuntu-20.04'
   strategy:
@@ -47,15 +47,39 @@ jobs:
 #  - bash: conda update -q -y conda
 #    displayName: Update conda
 
-  - bash: conda env create --name myEnvironment --file environment.yml
+  - bash: conda env create --name openblas_env --file environment-openblas.yml
     displayName: Create Anaconda environment
 
   - bash: |
-      source activate myEnvironment
+      source activate openblas_env
       pip install -e .[dev]
       pip freeze --all
       pytest --durations=50 --random-order
     displayName: pytest
+
+- job:
+  displayName: ubuntu-20.04-intel
+  pool:
+    vmImage: 'ubuntu-20.04'
+  strategy:
+    matrix:
+      Python38:
+        python.version: '3.8'
+
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+
+  - bash: conda env create --name intel_env --file environment-intel.yml
+    displayName: Create Anaconda environment
+
+  - bash: |
+      source activate intel_env
+      pip install -e .[dev]
+      pip freeze --all
+      pytest --durations=50 --random-order
+    displayName: pytest
+
 
 - job:
   displayName: macOS-latest
