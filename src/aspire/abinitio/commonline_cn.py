@@ -84,7 +84,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Step 1: pre-calculate the likelihood with respect to the self-common-lines.
         scores_self_corrs = np.zeros((n_img, n_cands), dtype=self.dtype)
-        for i in range(n_img):
+        logger.info("Computing likelihood wrt self common-lines.")
+        for i in trange(n_img):
             pf_i = pf[i]
             pf_full_i = pf_full[i]
 
@@ -117,18 +118,20 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
             scores_self_corrs[i] = np.mean(np.real(corrs_cands), axis=1)
 
-        # Remove candidates that are equator images.
+        # Remove candidates that are equator images. Equator candidates induce collinear
+        # self common-lines, which always have perfect correlation.
         # TODO: Should the threshold be parameter-dependent instead of set to 10 degrees?
         cii_equators_inds = np.array(
             [
                 ind
                 for (ind, Ri_tilde) in enumerate(Ris_tilde)
-                if abs(np.arccos(Ri_tilde[2, 2]) - np.pi / 2) < 10 * np.pi / 180
+                if abs(np.arccos(Ri_tilde[2, 2]) - np.pi / 2) < 5 * np.pi / 180
             ]
         )
         scores_self_corrs[:, cii_equators_inds] = 0
 
-        # Step 2: Compute likelihood with respect to pairwise images.
+        # Step 2: Compute the likelihood for each pair of candidate matrices with respect
+        # to the common-lines they induce.
         logger.info("Computing pairwise likelihood")
         n_vijs = n_img * (n_img - 1) // 2
         vijs = np.zeros((n_vijs, 3, 3), dtype=self.dtype)
@@ -136,7 +139,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         rots_symm = cyclic_rotations(self.order, self.dtype).matrices
         c = 0
         e1 = [1, 0, 0]
-        min_ii_norm = min_jj_norm = float("inf")
+        min_ii_norm = float("inf") * np.ones(n_img)
         for i in trange(n_img):
             pf_i = pf[i]
 
@@ -173,9 +176,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 # Arrange correlation based on common lines induced by candidate rotations.
                 corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
                 corrs = np.reshape(corrs, (-1, self.order, n_theta_ijs // self.order))
-                corrs = np.mean(
-                    corrs, axis=1
-                )  # take the mean over all symmetric common lines
+                # Take the mean over all symmetric common lines.
+                corrs = np.mean(corrs, axis=1)
                 corrs = np.reshape(
                     corrs,
                     (
@@ -205,43 +207,29 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
 
                 # Compute the estimate of vi*vi.T as given by j.
-                vii_j = np.mean(
-                    np.array(
-                        [opt_Ri_tilde.T @ rot @ opt_Ri_tilde for rot in rots_symm]
-                    ),
-                    axis=0,
-                )
+                vii_j = np.mean(opt_Ri_tilde.T @ rots_symm @ opt_Ri_tilde, axis=0)
 
-                _, svals, _ = np.linalg.svd(vii_j)
-                if np.linalg.norm(svals - e1, 2) < min_ii_norm:
+                svals = np.linalg.svd(vii_j, compute_uv=False)
+                if np.linalg.norm(svals - e1, 2) < min_ii_norm[i]:
                     viis[i] = vii_j
+                    min_ii_norm[i] = np.linalg.norm(svals - e1, 2)
 
                 # Compute the estimate of vj*vj.T as given by i.
-                vjj_i = np.mean(
-                    np.array(
-                        [opt_Rj_tilde.T @ rot @ opt_Rj_tilde for rot in rots_symm]
-                    ),
-                    axis=0,
-                )
+                vjj_i = np.mean(opt_Rj_tilde.T @ rots_symm @ opt_Rj_tilde, axis=0)
 
-                _, svals, _ = np.linalg.svd(vjj_i)
-                if np.linalg.norm(svals - e1, 2) < min_jj_norm:
+                svals = np.linalg.svd(vjj_i, compute_uv=False)
+                if np.linalg.norm(svals - e1, 2) < min_ii_norm[j]:
                     viis[j] = vjj_i
+                    min_ii_norm[j] = np.linalg.norm(svals - e1, 2)
 
                 # Compute the estimate of vi*vj.T.
                 vijs[c] = np.mean(
-                    np.array(
-                        [
-                            opt_Ri_tilde.T @ rot @ opt_R_theta_ij @ opt_Rj_tilde
-                            for rot in rots_symm
-                        ]
-                    ),
-                    axis=0,
+                    opt_Ri_tilde.T @ rots_symm @ opt_R_theta_ij @ opt_Rj_tilde, axis=0
                 )
 
                 c += 1
 
-            return viis, vijs
+        return viis, vijs
 
     def compute_scls_inds(self, Ri_cands):
         """
@@ -307,6 +295,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         return cij_inds
 
     def generate_cand_rots(self):
+        logger.info("Generating candidate rotations.")
         # Construct candidate rotations, Ris_tilde.
         vis = self.generate_cand_rots_third_rows()
         Ris_tilde = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
@@ -321,7 +310,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
     def generate_cand_rots_third_rows(self, legacy=True):
         n_points_sphere = self.n_points_sphere
-
         if legacy:
             # Genereate random points on the sphere
             third_rows = randn(n_points_sphere, 3)
