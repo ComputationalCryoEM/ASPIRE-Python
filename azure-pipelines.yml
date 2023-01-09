@@ -33,7 +33,7 @@ jobs:
     displayName: pytest
 
 - job:
-  displayName: ubuntu-20.04-openblas
+  displayName: ubuntu-20.04-open
   pool:
     vmImage: 'ubuntu-20.04'
   strategy:
@@ -45,14 +45,15 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
 
-  - bash: conda env create --name openblas_env --file environment-openblas.yml
+  - bash: conda env create --name open_env --file environment-openblas.yml
     displayName: Create Anaconda environment
 
   - bash: |
-      source activate openblas_env
+      source activate open_env
       pip install -e .[dev]
       pip freeze --all
-      python -c "import numpy; numpy.show_config()"      
+      python -c "import numpy; numpy.show_config()"
+      python -c "import numpy; numpy.show_config()" | grep -qi openblas
       pytest --durations=50 --random-order
     displayName: pytest
 
@@ -77,6 +78,7 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"
+      python -c "import numpy; numpy.show_config()" | grep -qi mkl
       pytest --durations=50 --random-order
     displayName: pytest
 
