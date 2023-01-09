@@ -61,7 +61,12 @@ def test_white_noise_estimator_clean_corners(sim_fixture):
     noise_variance = noise_estimator.estimate()
     # Using a compactly supported volume should yield
     #   virtually no noise in the image corners.
-    assert np.isclose(noise_variance, 0)
+    assert np.isclose(noise_variance, 0, atol=1e-6)
+    # 1e-6 was chosen by running the unit test suite 10k (x4 fixture expansion) times.
+    #   min=7.544584748608862e-12 max=1.6798412007391812e-07
+    #   mean=1.0901885456753326e-09 var=5.27460957578949e-18
+    # To reduce the randomness would require a increasing simulation `n`
+    # and/or increasing resolution. Both would increase test time.
 
 
 def test_adder_reprs(adder):
