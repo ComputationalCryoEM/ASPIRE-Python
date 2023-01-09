@@ -28,6 +28,7 @@ jobs:
       source activate myEnvironment
       pip install -e .[dev]
       pip freeze --all
+      python -c "import numpy; numpy.show_config()"
       pytest --durations=50 --random-order
     displayName: pytest
 
@@ -51,6 +52,7 @@ jobs:
       source activate openblas_env
       pip install -e .[dev]
       pip freeze --all
+      python -c "import numpy; numpy.show_config()"      
       pytest --durations=50 --random-order
     displayName: pytest
 
@@ -74,6 +76,7 @@ jobs:
       source activate intel_env
       pip install -e .[dev]
       pip freeze --all
+      python -c "import numpy; numpy.show_config()"
       pytest --durations=50 --random-order
     displayName: pytest
 
@@ -106,6 +109,7 @@ jobs:
       source activate myEnvironment
       pip install -e .[dev]
       pip freeze --all
+      python -c "import numpy; numpy.show_config()"      
       pytest --durations=50 -s
     displayName: pytest
 
@@ -137,6 +141,7 @@ jobs:
       source activate myEnvironment
       pip install -e .[dev]
       pip freeze --all
+      python -c "import numpy; numpy.show_config()"      
       pytest --durations=50 -s
     displayName: pytest
 
@@ -163,5 +168,6 @@ jobs:
       call activate myEnvironment
       pip install -e .[dev]
       pip freeze --all
+      python -c "import numpy; numpy.show_config()"      
       pytest --durations=50 --random-order
     displayName: pytest
