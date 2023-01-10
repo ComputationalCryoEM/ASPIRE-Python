@@ -65,19 +65,6 @@ if config["logging"]["log_exceptions"].get(int):
     sys.excepthook = handle_exception
 
 
-# When we are using Intel numerical backends, patch scikit to use Intel extensions.
-# Note this must occur before any scikit learn imports for the patch to be effective.
-try:
-    from sklearnex import patch_sklearn
-
-    patch_sklearn()
-
-except ModuleNotFoundError:
-    logging.debug(
-        "scikit-learn-intelex was not installed, skipping sklearn intel extension patching"
-    )
-
-
 __all__ = []
 for _, modname, _ in pkgutil.iter_modules(aspire.__path__):
     __all__.append(modname)  # Add module to __all_
