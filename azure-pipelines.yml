@@ -54,6 +54,7 @@ jobs:
       pip freeze --all
       python -c "import numpy; numpy.show_config()"
       python -c "import numpy; numpy.show_config()" | grep -qi openblas
+      export OMP_NUM_THREADS=2
       pytest --durations=50 --random-order
     displayName: pytest
 
@@ -79,6 +80,7 @@ jobs:
       pip freeze --all
       python -c "import numpy; numpy.show_config()"
       python -c "import numpy; numpy.show_config()" | grep -qi mkl
+      export OMP_NUM_THREADS=2
       pytest --durations=50 --random-order
     displayName: pytest
 
