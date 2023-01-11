@@ -29,7 +29,7 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"
-      pytest --durations=50 --random-order
+      pytest -n 2 --durations=50 --random-order
     displayName: pytest
 
 - job:
@@ -40,20 +40,24 @@ jobs:
     matrix:
       Python38:
         python.version: '3.8'
+  timeoutInMinutes: 120 # how long to run the job before automatically cancelling
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
 
-  - bash: conda env create --name open_env --file environment-openblas.yml
-    displayName: Create Anaconda environment
-
   - bash: |
+      conda env create --name open_env --file environment-openblas.yml
       source activate open_env
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"
       python -c "import numpy; numpy.show_config()" | grep -qi openblas
+
+    displayName: Create Anaconda environment
+
+  - bash: |
+      source activate open_env
       export OMP_NUM_THREADS=1
       pytest --durations=50 --random-order
     displayName: pytest
@@ -66,20 +70,23 @@ jobs:
     matrix:
       Python38:
         python.version: '3.8'
+  timeoutInMinutes: 120 # how long to run the job before automatically cancelling
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
 
-  - bash: conda env create --name intel_env --file environment-intel.yml
-    displayName: Create Anaconda environment
-
   - bash: |
+      conda env create --name intel_env --file environment-intel.yml
       source activate intel_env
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"
       python -c "import numpy; numpy.show_config()" | grep -qi mkl
+    displayName: Create Anaconda environment
+
+  - bash: |
+      source activate intel_env
       export OMP_NUM_THREADS=1
       pytest --durations=50 --random-order
     displayName: pytest
@@ -114,7 +121,7 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"      
-      pytest --durations=50 -s
+      pytest -n 3 --durations=50 -s
     displayName: pytest
 
 - job:
@@ -146,7 +153,7 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"      
-      pytest --durations=50 -s
+      pytest -n 3 --durations=50 -s
     displayName: pytest
 
 - job:
@@ -173,5 +180,5 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"      
-      pytest --durations=50 --random-order
+      pytest -n 2 --durations=50 --random-order
     displayName: pytest
