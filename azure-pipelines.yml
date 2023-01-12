@@ -28,8 +28,10 @@ jobs:
       source activate myEnvironment
       pip install -e .[dev]
       pip freeze --all
+      export MKL_THREADING_LAYER=GNU
+      export OMP_NUM_THREADS=2
       python -c "import numpy; numpy.show_config()"
-      pytest -n 2 --durations=50 --random-order
+      pytest --durations=50 --random-order
     displayName: pytest
 
 - job:
@@ -58,7 +60,8 @@ jobs:
 
   - bash: |
       source activate open_env
-      export OMP_NUM_THREADS=1
+      export MKL_THREADING_LAYER=GNU
+      export OMP_NUM_THREADS=2
       pytest --durations=50 --random-order
     displayName: pytest
 
@@ -87,7 +90,8 @@ jobs:
 
   - bash: |
       source activate intel_env
-      export OMP_NUM_THREADS=1
+      export MKL_THREADING_LAYER=GNU
+      export OMP_NUM_THREADS=2
       pytest --durations=50 --random-order
     displayName: pytest
 
@@ -121,7 +125,7 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"      
-      pytest -n 3 --durations=50 -s
+      pytest --durations=50 -s
     displayName: pytest
 
 - job:
@@ -153,7 +157,7 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"      
-      pytest -n 3 --durations=50 -s
+      pytest --durations=50 -s
     displayName: pytest
 
 - job:
@@ -180,5 +184,5 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"      
-      pytest -n 2 --durations=50 --random-order
+      pytest --durations=50 --random-order
     displayName: pytest
