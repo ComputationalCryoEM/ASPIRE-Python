@@ -96,12 +96,12 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
     def estimate_rotations(self):
         """
-        Estimate rotation matrices for molecules with C3 or C4 symmetry.
+        Estimate rotation matrices for molecules with Cn symmetry.
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        vijs, viis = self._estimate_relative_viewing_directions_c3_c4()
+        vijs, viis = self._estimate_relative_viewing_directions()
 
         logger.info("Performing global handedness synchronization.")
         vijs, viis = self._global_J_sync(vijs, viis)
@@ -118,7 +118,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
     # Primary Methods                         #
     ###########################################
 
-    def _estimate_relative_viewing_directions_c3_c4(self):
+    def _estimate_relative_viewing_directions(self):
         """
         Estimate the relative viewing directions vij = vi*vj^T, i<j, and vii = vi*vi^T, where
         vi is the third row of the i'th rotation matrix Ri.

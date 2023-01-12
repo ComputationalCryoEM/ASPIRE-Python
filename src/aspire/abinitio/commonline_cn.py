@@ -54,7 +54,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 )
             self.order = int(symmetry[1])
 
-    def estimate_relative_viewing_directions_cn(self):
+    def _estimate_relative_viewing_directions(self):
         n_img = self.n_img
         n_theta = self.n_theta
         pf = self.pf
