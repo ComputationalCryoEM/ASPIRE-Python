@@ -228,7 +228,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
                 c += 1
 
-        return viis, vijs
+        return vijs, viis
 
     def compute_scls_inds(self, Ri_cands):
         """
