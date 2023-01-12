@@ -2,10 +2,9 @@ import logging
 
 import numpy as np
 from numpy.linalg import norm
-from tqdm import tqdm
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.utils import Rotation, anorm, cyclic_rotations, trange
+from aspire.utils import Rotation, anorm, cyclic_rotations, tqdm, trange
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -103,7 +102,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
             pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
 
-            # Compute correlation.
+            # Compute correlation of pf_i with itself over all shifts.
             corrs = pf_i_shifted @ np.conj(pf_full_i).T
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
             corrs_cands = np.array(
@@ -132,7 +131,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Step 2: Compute the likelihood for each pair of candidate matrices with respect
         # to the common-lines they induce.
-        logger.info("Computing pairwise likelihood")
+        logger.info("Computing pairwise likelihood.")
         n_vijs = n_img * (n_img - 1) // 2
         vijs = np.zeros((n_vijs, 3, 3), dtype=self.dtype)
         viis = np.zeros((n_img, 3, 3), dtype=self.dtype)
@@ -250,7 +249,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             Riigs = Ri_cand.T @ rots_symm[1 : n_scl_pairs + 1] @ Ri_cand
 
             c1s = np.array((-Riigs[:, 1, 2], Riigs[:, 0, 2])).T
-            c2s = np.array((-Riigs[:, 2, 1], Riigs[:, 2, 0])).T
+            c2s = np.array((Riigs[:, 2, 1], -Riigs[:, 2, 0])).T
 
             c1s_inds = self.cl_angles_to_ind(c1s, n_theta)
             c2s_inds = self.cl_angles_to_ind(c2s, n_theta)
@@ -279,7 +278,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
                     R_cands = Ris_tilde[i].T @ R_theta_ijs @ Ris_tilde[j]
 
                     c1s = np.array((-R_cands[:, 1, 2], R_cands[:, 0, 2])).T
-                    c2s = np.array((-R_cands[:, 2, 1], R_cands[:, 2, 0])).T
+                    c2s = np.array((R_cands[:, 2, 1], -R_cands[:, 2, 0])).T
 
                     c1s = self.cl_angles_to_ind(c1s, n_theta)
                     c2s = self.cl_angles_to_ind(c2s, n_theta)
@@ -312,7 +311,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         n_points_sphere = self.n_points_sphere
         if legacy:
             # Genereate random points on the sphere
-            third_rows = randn(n_points_sphere, 3)
+            third_rows = randn(n_points_sphere, 3, seed=self.seed)
             third_rows /= anorm(third_rows, axes=(-1,))[:, np.newaxis]
         else:
             # Use Fibonocci sphere points
