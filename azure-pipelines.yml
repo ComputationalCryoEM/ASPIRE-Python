@@ -13,6 +13,7 @@ jobs:
   pool:
     vmImage: 'ubuntu-22.04'
   strategy:
+    maxParallel: 4
     matrix:
       Python38:
         python.version: '3.8'
@@ -39,6 +40,7 @@ jobs:
   pool:
     vmImage: 'ubuntu-20.04'
   strategy:
+    maxParallel: 4
     matrix:
       Python38:
         python.version: '3.8'
@@ -68,6 +70,7 @@ jobs:
   pool:
     vmImage: 'ubuntu-20.04'
   strategy:
+    maxParallel: 4
     matrix:
       Python38:
         python.version: '3.8'
@@ -98,6 +101,7 @@ jobs:
   pool:
     vmImage: 'macOS-latest'
   strategy:
+    maxParallel: 4
     matrix:
       Python38:
         python.version: '3.8'
@@ -130,6 +134,7 @@ jobs:
   pool:
     vmImage: 'macOS-11'
   strategy:
+    maxParallel: 4
     matrix:
       Python38:
         python.version: '3.8'
@@ -162,6 +167,7 @@ jobs:
   pool:
     vmImage: 'windows-latest'
   strategy:
+    maxParallel: 4
     matrix:
       Python38:
         python.version: '3.8'

@@ -1,9 +1,8 @@
 name: 'aspire'
 
 channels:
-  - conda-forge
   - defaults
-
+  - conda-forge
 
 dependencies:
   - fftw
