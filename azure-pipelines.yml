@@ -54,8 +54,6 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"
-      python -c "import numpy; numpy.show_config()" | grep -qi openblas
-
     displayName: Create Anaconda environment
 
   - bash: |
@@ -85,7 +83,6 @@ jobs:
       pip install -e .[dev]
       pip freeze --all
       python -c "import numpy; numpy.show_config()"
-      python -c "import numpy; numpy.show_config()" | grep -qi mkl
     displayName: Create Anaconda environment
 
   - bash: |
