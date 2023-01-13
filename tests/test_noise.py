@@ -5,6 +5,7 @@ import os.path
 import numpy as np
 import pytest
 
+from aspire.image import Image
 from aspire.noise import CustomNoiseAdder, WhiteNoiseAdder, WhiteNoiseEstimator
 from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source.simulation import Simulation
@@ -130,3 +131,13 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     # Check we are achieving an estimate near the target
     logger.debug(f"Estimated Noise Variance {estimated_noise_var}")
     assert np.isclose(estimated_noise_var, target_noise_variance, rtol=0.1)
+
+    # Check sampling yields an estimate near target.
+    sample_n = 16
+    sample_res = 32
+    im_zeros = Image(np.zeros((sample_n, sample_res, sample_res)))
+    im_noise_sample = sim_fixture.noise_adder._forward(im_zeros, range(sample_n))
+    sampled_noise_var = np.var(im_noise_sample.asnumpy())
+
+    logger.debug(f"Sampled Noise Variance {sampled_noise_var}")
+    assert np.isclose(sampled_noise_var, target_noise_variance, rtol=0.1)

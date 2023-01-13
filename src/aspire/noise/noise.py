@@ -60,6 +60,9 @@ class NoiseAdder(Xform):
         """
         Concrete implementations are expected to provide a method that
         returns the noise variance for the NoiseAdder.
+
+        Authors of `NoiseAdder`s are encouraged to consider any theoretically
+        superior methods of calculating noise variance directly,
         """
 
 
@@ -69,34 +72,15 @@ class CustomNoiseAdder(NoiseAdder):
     """
 
     @property
-    def noise_var(self):
+    def noise_var(self, res=512):
         """
         Return noise variance.
 
-        CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
-
-        If you require tuning the noise_var sampling, see `get_noise_var`.
+        CustomNoiseAdder will estimate noise_var using the `noise_filter`.
+        :param res: Resolution to use when evaluating noise filter, default 512.
         """
-        return self.get_noise_var()
-
-    def get_noise_var(self, sample_n=100, sample_res=128):
-        """
-        Return noise variance.
-
-        CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
-
-        It is highly encouraged that authors of `CustomNoiseAdder`s consider
-        any theoretically superior methods of calculating noise variance,
-        or test that this method's default values are satisfactory for their
-        implementation.
-
-        :sample_n: Number of images to sample.
-        :sample_res: Resolution of sample (noise) images.
-        :returns: Noise Variance.
-        """
-        im_zeros = Image(np.zeros((sample_n, sample_res, sample_res)))
-        im_noise_sample = self._forward(im_zeros, range(sample_n))
-        return np.var(im_noise_sample.asnumpy())
+        # Take mean of user provided _noise_filter, before the PowerFilter is applied.
+        return np.mean(self._noise_filter.evaluate_grid(res))
 
 
 class WhiteNoiseAdder(NoiseAdder):
