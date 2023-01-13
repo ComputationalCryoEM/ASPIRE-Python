@@ -169,3 +169,40 @@ def test_psnr(res, target_noise_variance, dtype):
     psnr = sim.estimate_psnr()
     logger.debug(f"PSNR target={target_noise_variance} L={sim.L} {sim.dtype} {psnr}")
     assert np.isclose(psnr, -10 * np.log10(target_noise_variance), rtol=0.01)
+
+
+@pytest.mark.parametrize(
+    "target_noise_variance", VARS, ids=lambda param: f"var={param}"
+)
+def test_from_snr_white(sim_fixture, target_noise_variance):
+    """
+    Test that prescribing noise directly by var and  by `from_snr`,
+    are close for a variety of paramaters.
+    """
+
+    # First add an explicit amount of noise to the base simulation,
+    sim_fixture.noise_adder = WhiteNoiseAdder(var=target_noise_variance)
+    # and compute the resulting snr of the sim.
+    target_snr = sim_fixture.estimate_snr()
+
+    # print("noise_var", sim_fixture.noise_adder.noise_var)
+    # print("signal_var", sim_fixture.estimate_signal_var())
+    # print("snr", target_snr)
+
+    # Attempt to create a new simulation at this `target_snr`
+    sim_from_snr = Simulation.from_snr(
+        target_snr,
+        # vols=AsymmetricVolume(L=sim_fixture.L, C=1, dtype=sim_fixture.dtype).generate(),
+        vols=sim_fixture.vols,  # but, this only tests that garrett can do division
+        n=sim_fixture.n,
+        offsets=0,
+        amplitudes=1.0,
+    )
+    # print("from_snr noise_var", sim_from_snr.noise_adder.noise_var)
+    # print("from_snr signal_var", sim_from_snr.estimate_signal_var())
+    # print("from_snr snr", sim_from_snr.estimate_snr())
+
+    # Check we're within 10%
+    assert np.isclose(
+        sim_from_snr.noise_adder.noise_var, target_noise_variance, rtol=0.1
+    )

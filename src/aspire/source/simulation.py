@@ -6,13 +6,14 @@ from scipy.linalg import eigh, qr
 from sklearn.metrics import mean_squared_error
 
 from aspire.image import Image
-from aspire.noise import NoiseAdder
+from aspire.noise import NoiseAdder, WhiteNoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
     acorr,
     ainner,
     anorm,
+    grid_2d,
     make_symmat,
     trange,
     uniform_random_angles,
@@ -512,3 +513,97 @@ class Simulation(ImageSource):
             )
 
         return np.mean(10 * np.log10(peaksq / mse))
+
+    @classmethod
+    def from_snr(
+        cls,
+        target_snr,
+        *args,
+        sample_n=100,
+        support_radius=1,
+        **kwargs,
+    ):
+        """
+        Generates a Simulation source with a WhiteNoiseAdder
+        configured to produce a target signal to noise ratio.
+        :param target_snr: Desired signal to noise ratio of
+            the returned source.
+        :returns: Simulation source.
+        """
+
+        # Create a Simulation
+        sim = cls(*args, **kwargs)
+
+        # Assert NoiseAdder has not been provided
+        if "noise_adder" in kwargs or sim.noise_adder is not None:
+            raise RuntimeError(
+                "Cannot provide 'noise_adder' when using {cls.__name__}.from_snr."
+            )
+
+        # Estimate the required noise variance
+        signal_var = sim.estimate_signal_var(
+            sample_n=sample_n, support_radius=support_radius
+        )
+        noise_var = signal_var / target_snr
+
+        # Assign the noise_adder
+        sim.noise_adder = WhiteNoiseAdder(var=noise_var)
+        logger.info(f"Appended {sim.noise_adder} to generation pipeline")
+
+        return sim
+
+    def estimate_signal_var(self, sample_n=None, support_radius=1):
+        """
+        Estimate the signal variance of `sample_n` projections.
+        :param sample_n: Number of projections used for estimate.
+        :returns: Estimated signal variance.
+        """
+
+        if sample_n is None:
+            sample_n = self.n
+
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_signal_var` sample_n > Simulation.n: {sample_n} > Simulation.n."
+                " Accuracy may be impaired."
+            )
+
+        g2d = grid_2d(self.L, indexing="yx", normalized=False, dtype=self.dtype)
+        mask = g2d["r"] < self.L // 2
+
+        # TODO, batch this
+        # Note, for simulation we are assuming `sample_n` is random
+        # estimated_var = np.var(self.projections[:sample_n].asnumpy()[..., mask])
+        estimated_var = np.var(self.clean_images[:sample_n].asnumpy()[..., mask])
+
+        logger.info(f"Estimated signal var {estimated_var}")
+        return estimated_var
+
+    def estimate_snr(self, sample_n=None, support_radius=1):
+        """
+        Estimate the SNR of the simulated data set using
+        estimated signal variance / noise variance.
+        :param sample_n: Number of projections used for estimate.
+        :returns: Estimated signal to noise ratio.
+        """
+
+        if sample_n is None:
+            sample_n = self.n
+
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_snr` sample_n > Simulation.n: {sample_n} > Simulation.n."
+                " Accuracy may be impaired."
+            )
+
+        # For clean images return infinite SNR.
+        # Note, relationship with CTF and other sim corrupotions still isn't clear to me...
+        if self.noise_adder is None:
+            return np.inf
+
+        noise_var = self.noise_adder.noise_var
+        signal_var = self.estimate_signal_var(
+            sample_n=sample_n, support_radius=support_radius
+        )
+
+        return signal_var / noise_var
