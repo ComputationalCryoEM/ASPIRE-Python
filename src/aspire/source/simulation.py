@@ -3,6 +3,7 @@ import logging
 
 import numpy as np
 from scipy.linalg import eigh, qr
+from sklearn.metrics import mean_squared_error
 
 from aspire.image import Image
 from aspire.noise import NoiseAdder
@@ -13,6 +14,7 @@ from aspire.utils import (
     ainner,
     anorm,
     make_symmat,
+    trange,
     uniform_random_angles,
     vecmat_to_volmat,
 )
@@ -468,3 +470,45 @@ class Simulation(ImageSource):
         corr = inner / (norm_true * norm_est)
 
         return {"err": err, "rel_err": rel_err, "corr": corr}
+
+    def estimate_psnr(self, sample_n=None, batch_size=512):
+        """
+        Estimate Peak SNR in decibels as 10*Log(max(signal)^2 / MSE),
+        where MSE is computed between `projections`
+        and the resulting simulated `images`.
+        PSNR is computed along the stack axis and an average
+        decibel value across the sample is returned.
+        Note that PSNR is inherently a poor metric for identical images.
+
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :returns: Estimated peak signal to noise ratio in decibels.
+        """
+
+        if sample_n is None:
+            sample_n = self.n
+
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_psnr` sample_n > Simulation.n: {sample_n} > Simulation.n."
+                " Accuracy may be impaired."
+            )
+
+        peaksq = np.empty(sample_n, dtype=self.dtype)
+        mse = np.empty(sample_n, dtype=self.dtype)
+        for start in trange(0, sample_n, batch_size):
+            end = min(start + batch_size, sample_n)
+
+            signal = self.projections[start:end].asnumpy()
+            images = self.images[start:end].asnumpy()
+            peaksq[start:end] = np.square(signal).max(axis=(-1, -2))  # max per image
+
+            # Reshape and Transpose for Scikit metrics,
+            # which expect a 2d (samples, outputs)
+            mse[start:end] = mean_squared_error(
+                signal.reshape(sample_n, -1).T,
+                images.reshape(sample_n, -1).T,
+                multioutput="raw_values",
+            )
+
+        return np.mean(10 * np.log10(peaksq / mse))
