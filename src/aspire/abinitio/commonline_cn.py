@@ -124,7 +124,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             [
                 ind
                 for (ind, Ri_tilde) in enumerate(Ris_tilde)
-                if abs(np.arccos(Ri_tilde[2, 2]) - np.pi / 2) < 5 * np.pi / 180
+                if abs(np.arccos(Ri_tilde[2, 2]) - np.pi / 2) < 10 * np.pi / 180
             ]
         )
         scores_self_corrs[:, cii_equators_inds] = 0

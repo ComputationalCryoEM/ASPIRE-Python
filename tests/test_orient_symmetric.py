@@ -3,7 +3,7 @@ import pytest
 from numpy import pi, random
 from numpy.linalg import det, norm
 
-from aspire.abinitio import CLSymmetryC3C4
+from aspire.abinitio import CLSymmetryC3C4, CLSymmetryCn
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.utils.coor_trans import (
@@ -16,7 +16,7 @@ from aspire.utils.random import randn
 from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
-param_list = [
+param_list_c3_c4 = [
     (44, 3, np.float32),
     (45, 4, np.float64),
     pytest.param(44, 4, np.float32, marks=pytest.mark.expensive),
@@ -25,6 +25,10 @@ param_list = [
     pytest.param(45, 3, np.float32, marks=pytest.mark.expensive),
     pytest.param(45, 4, np.float32, marks=pytest.mark.expensive),
     pytest.param(45, 3, np.float64, marks=pytest.mark.expensive),
+]
+
+param_list_cn = [
+    (44, 5, np.float32),
 ]
 
 
@@ -48,26 +52,50 @@ def source_orientation_objs(L, n_img, order, dtype):
         seed=123,
     )
 
-    orient_est = CLSymmetryC3C4(
+    if order in [3, 4]:
+        CLclass = CLSymmetryC3C4
+    else:
+        CLclass = CLSymmetryCn
+    orient_est = CLclass(
         src,
         symmetry=f"C{order}",
         n_theta=360,
         max_shift=1 / L,  # set to 1 pixel
+        seed=1,
     )
     return src, orient_est
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list)
+@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4 + param_list_cn)
 def testEstimateRotations(L, order, dtype):
     n_img = 24
+    if order > 4:
+        n_img = 32
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
 
     # Estimate rotations.
     cl_symm.estimate_rotations()
     rots_est = cl_symm.rotations
 
-    # g-synchronize ground truth rotations.
+    # Ground truth rotations.
     rots_gt = src.rotations
+
+    # For order>4 we cannot expect estimates from equator images to be accurate.
+    # So we exclude those from testing.
+    if order > 4:
+        equator_inds = np.array(
+            [
+                ind
+                for (ind, rot_gt) in enumerate(rots_gt)
+                if abs(np.arccos(rot_gt[2, 2]) - np.pi / 2) < 10 * np.pi / 180
+            ]
+        )
+
+        # Exclude equator estimates and ground truths.
+        rots_est = np.delete(rots_est, equator_inds, axis=0)
+        rots_gt = np.delete(rots_gt, equator_inds, axis=0)
+
+    # g-synchronize ground truth rotations.
     rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt)
 
     # Register estimates to ground truth rotations and compute MSE.
@@ -79,7 +107,7 @@ def testEstimateRotations(L, order, dtype):
     assert mse_reg < 0.005
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list)
+@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
 def testRelativeRotations(L, order, dtype):
     # Simulation source and common lines estimation instance
     # corresponding to volume with C3 or C4 symmetry.
@@ -119,7 +147,7 @@ def testRelativeRotations(L, order, dtype):
     assert mean_angular_distance < 5
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list)
+@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
 def testSelfRelativeRotations(L, order, dtype):
     # Simulation source and common lines Class corresponding to
     # volume with C3 or C4 symmetry.
@@ -154,11 +182,13 @@ def testSelfRelativeRotations(L, order, dtype):
     assert mean_angular_distance < 5
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list)
+@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
 def testRelativeViewingDirections(L, order, dtype):
     # Simulation source and common lines Class corresponding to
     # volume with C3 or C4 symmetry.
     n_img = 24
+    if order > 4:
+        n_img = 32
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
 
     # Calculate ground truth relative viewing directions, viis and vijs.
@@ -178,7 +208,7 @@ def testRelativeViewingDirections(L, order, dtype):
         vijs_gt[idx] = np.outer(vi, vj)
 
     # Estimate relative viewing directions.
-    vijs, viis = cl_symm._estimate_relative_viewing_directions_c3_c4()
+    vijs, viis = cl_symm._estimate_relative_viewing_directions()
 
     # Since ground truth vijs and viis are rank 1 matrices they span a 1D subspace.
     # We use SVD to find this subspace for our estimates and the ground truth relative viewing directions.
@@ -215,6 +245,30 @@ def testRelativeViewingDirections(L, order, dtype):
         (theta_vii, theta_vii_J, np.pi - theta_vii, np.pi - theta_vii_J), axis=0
     )
 
+    # For order>4 we cannot expect estimates from equator images to be accurate.
+    # So we exclude those from testing.
+    if order > 4:
+        equator_inds = np.array(
+            [
+                ind
+                for (ind, rot_gt) in enumerate(rots_gt)
+                if abs(np.arccos(rot_gt[2, 2]) - np.pi / 2) < 10 * np.pi / 180
+            ]
+        )
+
+        # Exclude ii estimates and ground truths.
+        min_theta_vii = np.delete(min_theta_vii, equator_inds, axis=0)
+        sii = np.delete(sii, equator_inds, axis=0)
+
+        # Exclude ij estimates and ground truths.
+        pairwise_equator_inds = []
+        for pair in pairs:
+            for ind in equator_inds:
+                if ind in pair:
+                    pairwise_equator_inds.append(pairs.index(pair))
+        min_theta_vij = np.delete(min_theta_vij, pairwise_equator_inds, axis=0)
+        sij = np.delete(sij, pairwise_equator_inds, axis=0)
+
     # Calculate the mean minimum angular distance.
     angular_dist_vijs = np.mean(min_theta_vij)
     angular_dist_viis = np.mean(min_theta_vii)
@@ -230,11 +284,13 @@ def testRelativeViewingDirections(L, order, dtype):
 
     # Check that the mean angular difference is within 2 degrees.
     angle_tol = 2 * np.pi / 180
+    if order > 4:
+        angle_tol = 6 * np.pi / 180
     assert angular_dist_vijs < angle_tol
     assert angular_dist_viis < angle_tol
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list)
+@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
 def testSelfCommonLines(L, order, dtype):
     n_img = 24
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
@@ -277,7 +333,7 @@ def testSelfCommonLines(L, order, dtype):
     assert np.allclose(detection_rate, 1.0)
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list)
+@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
 def testCommonLines(L, order, dtype):
     n_img = 24
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
