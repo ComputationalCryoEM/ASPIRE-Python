@@ -215,26 +215,33 @@ def getRelionStarFileVersion(filepath):
     :return: Either "3.0" or "3.1", or `None` if ASPIRE cannot interpret this file as a RELION
         STAR file.
     """
-    # define the minimal columns that each type of block must contain
-    # to be recognized by ASPIRE
-    minimal_fields_particle_block = ["_rlnImageName"]
-    minimal_fields_micrograph_block = ["_rlnMicrographName"]
-    minimal_fields_optics_block = ["_rlnOpticsGroupName", "_rlnOpticsGroup"]
     star = StarFile(filepath)
-    # 3.0
+    # 3.0 files have one block, >=3.1 files have two
     if len(star) == 1:
-        # must have _rlnImageName to be parsed by RelionSource
-        particles_block = star.get_block_by_index(0)
-        if set(minimal_fields_particle_block).issubset(
-            set(particles_block.columns.to_list())
-        ) or set(minimal_fields_micrograph_block).issubset(
-            set(particles_block.columns.to_list())
+        data_block_columns = star.get_block_by_index(0).columns.to_list()
+        # must have a column determining the type of data
+        if not any(
+            column in data_block_columns
+            for column in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
         ):
-            return "3.0"
+            return None
+
+        return "3.0"
+
     # 3.1
     if len(star) == 2:
-        # must have a block called "optics" and contain group name and number
-        if "optics" in star.blocks and set(minimal_fields_optics_block).issubset(
-            set(star["optics"].columns.to_list())
+        # first block must be called "optics"
+        if not star.blocks.get_block_by_index(0).name == "optics":
+            return None
+        # optics block must contain group number
+        if not "_rlnOpticsGroupNumber" in star["optics"].columns.to_list():
+            return None
+        # lastly, the second  block must have a column determining the type of data
+        data_block_columns = star.get_block_by_index(1).columns.to_list()
+        if not any(
+            column in data_block_columns
+            for column in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
         ):
-            return "3.1"
+            return None
+
+        return "3.1"
