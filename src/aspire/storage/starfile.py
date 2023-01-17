@@ -234,7 +234,7 @@ def getRelionStarFileVersion(filepath):
         if not star.blocks.get_block_by_index(0).name == "optics":
             return None
         # optics block must contain group number
-        if not "_rlnOpticsGroupNumber" in star["optics"].columns.to_list():
+        if "_rlnOpticsGroupNumber" not in star["optics"].columns.to_list():
             return None
         # lastly, the second  block must have a column determining the type of data
         data_block_columns = star.get_block_by_index(1).columns.to_list()
