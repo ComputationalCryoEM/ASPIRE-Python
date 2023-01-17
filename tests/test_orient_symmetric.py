@@ -28,7 +28,7 @@ param_list_c3_c4 = [
 ]
 
 param_list_cn = [
-    (44, 5, np.float32),
+    pytest.param(44, 5, np.float32, marks=pytest.mark.expensive),
 ]
 
 
