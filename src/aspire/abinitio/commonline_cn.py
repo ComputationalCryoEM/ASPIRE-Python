@@ -105,14 +105,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
             # Compute correlation of pf_i with itself over all shifts.
             corrs = pf_i_shifted @ np.conj(pf_full_i).T
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
-            corrs_cands = np.array(
-                [
-                    np.max(
-                        np.real(corrs[:, scls_inds_cand[:, 0], scls_inds_cand[:, 1]]),
-                        axis=0,
-                    )
-                    for scls_inds_cand in scls_inds
-                ]
+            corrs_cands = np.max(
+                np.real(corrs[:, scls_inds[:, :, 0], scls_inds[:, :, 1]]), axis=0
             )
 
             scores_self_corrs[i] = np.mean(np.real(corrs_cands), axis=1)

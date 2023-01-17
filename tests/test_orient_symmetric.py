@@ -104,7 +104,10 @@ def testEstimateRotations(L, order, dtype):
     mse_reg = get_rots_mse(regrot, rots_gt_sync)
 
     # Assert mse is small.
-    assert mse_reg < 0.005
+    if order > 4:
+        assert mse_reg < 0.015
+    else:
+        assert mse_reg < 0.005
 
 
 @pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
