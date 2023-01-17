@@ -5,14 +5,15 @@ from multiprocessing import cpu_count
 
 import mrcfile
 import numpy as np
+import pandas as pd
 
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
 from aspire.storage import getRelionStarFileVersion
 from aspire.utils.relion_interop import (
-    RelionLegacyParticlesStarFile,
-    RelionParticlesStarFile,
+    RelionLegacyDataStarFile,
+    RelionDataStarFile,
 )
 
 logger = logging.getLogger(__name__)
@@ -172,19 +173,36 @@ class RelionSource(ImageSource):
         metadata = None
         # load the STAR file
         if rln_starfile_version == "3.0":
-            starfile = RelionLegacyParticlesStarFile(self.filepath)
-            metadata = starfile.get_aspire_metadata(self.data_folder)
+            starfile = RelionLegacyDataStarFile(self.filepath)
+            df = starfile.get_block_by_index(0)
 
         elif rln_starfile_version == "3.1":
-            starfile = RelionParticlesStarFile(self.filepath)
-            metadata = starfile.get_aspire_metadata(self.data_folder)
+            starfile = RelionDataStarFile(self.filepath)
+            # get flattened data from starfile
+            df = starfile.apply_optics_block()
+
+        # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
+        # in the _rlnImageName column. here, we're splitting this information
+        # so we can get the particle's index in the .mrcs stack as an int
+        df[["__mrc_index", "__mrc_filename"]] = df["_rlnImageName"].str.split(
+            "@", 1, expand=True
+        )
+        # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
+        # Note that this is 1-based indexing
+        df["__mrc_index"] = pd.to_numeric(df["__mrc_index"])
+
+        # Adding a full-filepath field to the Dataframe helps us save time later
+        # Note that os.path.join works as expected when the second argument is an absolute path itself
+        df["__mrc_filepath"] = df["__mrc_filename"].apply(
+            lambda filename: os.path.join(self.data_folder, filename)
+        )
 
         # finally, chop off the df at max_rows
         if self.max_rows is None:
-            return metadata
+            return df
         else:
-            max_rows = min(self.max_rows, len(metadata))
-            return metadata.iloc[:max_rows]
+            max_rows = min(self.max_rows, len(df))
+            return df.iloc[:max_rows]
 
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from aspire.storage import StarFile
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -56,78 +57,30 @@ def df_to_relion_types(df):
     column_types = {name: relion_metadata_fields.get(name, str) for name in df.columns}
     return df.astype(column_types)
 
-
-class RelionLegacyParticlesStarFile(StarFile):
-    """ """
-
+class RelionLegacyDataStarFile(StarFile):
     def __init__(self, filepath):
+
         super().__init__(filepath, blocks=None)
-        self.data_block = df_to_relion_types(self.data_block)
 
-    def get_aspire_metadata(self, data_folder):
-        self.process_particles_block(data_folder)
-        return self.data_block
+        # first convert types where possible
+        _blocks = OrderedDict()
+        for block_name, block in self.blocks.items():
+            _blocks[block_name] = df_to_relion_types(block)
+        self.blocks = _blocks
 
-    def process_particles_block(self, data_folder):
-        df = self.data_block
-        # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
-        # in the _rlnImageName column. here, we're splitting this information
-        # so we can get the particle's index in the .mrcs stack as an int
-        df[["__mrc_index", "__mrc_filename"]] = df["_rlnImageName"].str.split(
-            "@", 1, expand=True
-        )
-        # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
-        # Note that this is 1-based indexing
-        df["__mrc_index"] = pd.to_numeric(df["__mrc_index"])
-
-        # Adding a full-filepath field to the Dataframe helps us save time later
-        # Note that os.path.join works as expected when the second argument is an absolute path itself
-        df["__mrc_filepath"] = df["__mrc_filename"].apply(
-            lambda filename: os.path.join(data_folder, filename)
-        )
-
-    @property
-    def data_block(self):
-        return self.get_block_by_index(0)
-
-    @data_block.setter
-    def data_block(self, df):
-        """
-        Set the underlying StarFile block representing image/micrograph/movie data to a new DataFrame.
-
-        :param df: A Pandas DataFrame.
-        """
-        # get name of sole block
-        block_name = list(self.blocks.keys())[0]
-        return self.set_starfile_block(block_name, df)
-
-    def set_starfile_block(self, block_name, df):
-        """
-        Create a new name/DataFrame pair in this StarFile, or overwrite an existing block with a new DataFrame.
-
-        :param block_name: The name of the block in this StarFile.
-        :param df: A pandas DataFrame.
-        """
-        self.blocks[block_name] = df
-
-
-class RelionLegacyMicrographsStarFile(StarFile):
-    """ """
-
-
-class RelionLegacyMoviesStarFile(StarFile):
-    """ """
-
-
-class RelionDataStarFile(StarFile):
+class RelionDataStarFile(RelionLegacyDataStarFile):
     def __init__(self, filepath):
-        super().__init__(filepath, blocks=None)
-        # convert types
-        self.data_block = df_to_relion_types(self.data_block)
-        self.optics_block = df_to_relion_types(self.optics_block)
-        self.optics_block_applied = False
+        super().__init__(filepath)
+        self.optics_block = self.get_block_by_index(0)
+        self.data_block = self.get_block_by_index(1)
 
     def apply_optics_block(self):
+        """
+        Applies the parameters in the optics block as new columns in the data block,
+            based on the corresponding optics group number. Returns a new DataFrame.
+        :return: A new DataFrame with the optics parameters added as columns.
+        """
+        data_block = self.data_block.copy()
         for optics_index, row in self.optics_block.iterrows():
             match = np.argwhere(
                 self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
@@ -135,136 +88,9 @@ class RelionDataStarFile(StarFile):
             )
             match = np.atleast_1d(np.squeeze(match.T))
             for param in self.optics_block.columns:
-                self.data_block.loc[match, param] = getattr(row, param)
-        self.optics_block_applied = True
-
-    @property
-    def data_block(self):
-        """
-        Returns the DataFrame containing the image/micrograph/movie data represented by this STAR file.
-
-        :return: A Pandas DataFrame.
-        """
-        return self._data_block()
-
-    @data_block.setter
-    def data_block(self, df):
-        """
-        Set the underlying StarFile block representing image/micrograph/movie data to a new DataFrame.
-
-        :param df: A Pandas DataFrame.
-        """
-        return self.set_starfile_block(self.data_type, df)
-
-    @property
-    def data_type(self):
-        """
-        Returns either "particles", "micrographs" or "movies" depending on the underlying data being represented.
-        """
-        return self._data_type()
-
-    @property
-    def optics_block(self):
-        """
-        Returns the DataFrame containing the RELION optics group information for this STAR file.
-
-        :return: A Pandas DataFrame.
-        """
-        return self.blocks["optics"]
-
-    @optics_block.setter
-    def optics_block(self, df):
-        """
-        Set the underlying StarFile block representing the RELION optics group information to a new DataFrame.
-
-        :param df: A Pandas DataFrame.
-        """
-        return self.set_starfile_block("optics", df)
-
-    def set_starfile_block(self, block_name, df):
-        """
-        Create a new name/DataFrame pair in this StarFile, or overwrite an existing block with a new DataFrame.
-
-        :param block_name: The name of the block in this StarFile.
-        :param df: A pandas DataFrame.
-        """
-        self.blocks[block_name] = df
+                data_block.loc[match, param] = getattr(row, param)
+        return data_block
 
 
-class RelionParticlesStarFile(RelionDataStarFile):
-    """
-    An extension of the `aspire.storage.StarFile` class representing Relion STAR files containing image/particle data.
-        Note, for Relion <=3.0 STAR files, `RelionLegacyParticlesStarFile` should be used.
-    """
-
-    def __init__(self, filepath):
-        super().__init__(filepath)
-
-    def _data_block(self):
-        return self.blocks[self.data_type]
-
-    def _data_type(self):
-        return "particles"
-
-    def get_aspire_metadata(self, data_folder):
-
-        # get processed data block (ASPIRE columnsadded  and type conversion applied)
-        self.process_particles_block(data_folder)
-
-        # apply optics parameters into data block and get one metadata DF out
-        self.apply_optics_block()
-
-        return self.data_block
-
-    def process_particles_block(self, data_folder):
-        df = self.data_block
-        # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
-        # in the _rlnImageName column. here, we're splitting this information
-        # so we can get the particle's index in the .mrcs stack as an int
-        df[["__mrc_index", "__mrc_filename"]] = df["_rlnImageName"].str.split(
-            "@", 1, expand=True
-        )
-        # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
-        # Note that this is 1-based indexing
-        df["__mrc_index"] = pd.to_numeric(df["__mrc_index"])
-
-        # Adding a full-filepath field to the Dataframe helps us save time later
-        # Note that os.path.join works as expected when the second argument is an absolute path itself
-        df["__mrc_filepath"] = df["__mrc_filename"].apply(
-            lambda filename: os.path.join(data_folder, filename)
-        )
 
 
-class RelionMicrographsStarFile(RelionDataStarFile):
-    """
-    An extension of the `aspire.storage.StarFile` class representing Relion STAR files containing micrograph data.
-        Note, for Relion <=3.0 STAR files, `RelionLegacyMicrographsStarFile` should be used.
-    """
-
-    def __init__(self, filepath):
-        super().__init__(filepath)
-
-    def get_aspire_metadata(self, data_folder):
-        pass
-
-    def process_micrographs_block(self):
-        pass
-
-    def _data_block(self):
-        return self.blocks[self.data_type]
-
-    def _data_type(self):
-        return "micrographs"
-
-
-class RelionMoviesStarFile(StarFile):
-    """ """
-
-    def __init__(self, filepath):
-        super().__init__(filepath, blocks=None)
-
-    def _data_block(self):
-        return self.blocks[self.data_type]
-
-    def _data_type(self):
-        return "movies"

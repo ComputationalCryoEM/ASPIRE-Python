@@ -231,10 +231,10 @@ def getRelionStarFileVersion(filepath):
     # 3.1
     if len(star) == 2:
         # first block must be called "optics"
-        if not star.blocks.get_block_by_index(0).name == "optics":
+        if "optics" not in star.blocks.keys():
             return None
         # optics block must contain group number
-        if "_rlnOpticsGroupNumber" not in star["optics"].columns.to_list():
+        if "_rlnOpticsGroup" not in star["optics"].columns.to_list():
             return None
         # lastly, the second  block must have a column determining the type of data
         data_block_columns = star.get_block_by_index(1).columns.to_list()
