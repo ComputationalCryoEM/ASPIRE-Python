@@ -79,6 +79,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Transpose and reconstruct full polar Fourier for use in correlation.
         pf = pf.T
+        pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
         # Step 1: pre-calculate the likelihood with respect to the self-common-lines.
@@ -97,10 +98,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
             # Ignore dc-component.
             pf_full_i[:, 0] = 0
             pf_i_shifted[:, 0] = 0
-
-            # Normalize each ray.
-            pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
-            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
 
             # Compute correlation of pf_i with itself over all shifts.
             corrs = pf_i_shifted @ np.conj(pf_full_i).T
@@ -133,94 +130,98 @@ class CLSymmetryCn(CLSymmetryC3C4):
         c = 0
         e1 = [1, 0, 0]
         min_ii_norm = float("inf") * np.ones(n_img)
-        for i in trange(n_img):
-            pf_i = pf[i]
 
-            # Generate shifted versions of the images.
-            pf_i_shifted = np.array(
-                [pf_i * shift_phase for shift_phase in all_shift_phases]
-            )
-            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
+        with tqdm(total=n_vijs) as pbar:
+            for i in range(n_img):
+                pf_i = pf[i]
 
-            # Ignore dc-component.
-            pf_i_shifted[:, 0] = 0
-
-            # Normalize each ray.
-            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
-
-            for j in range(i + 1, n_img):
-                pf_full_j = pf_full[j]
+                # Generate shifted versions of the images.
+                pf_i_shifted = np.array(
+                    [pf_i * shift_phase for shift_phase in all_shift_phases]
+                )
+                pf_i_shifted = np.reshape(
+                    pf_i_shifted, (n_shifts * n_theta // 2, r_max)
+                )
 
                 # Ignore dc-component.
-                pf_full_j[:, 0] = 0
+                pf_i_shifted[:, 0] = 0
 
-                # Normalize each ray.
-                pf_full_j /= norm(pf_full_j, axis=1)[..., np.newaxis]
+                for j in range(i + 1, n_img):
+                    pf_full_j = pf_full[j]
 
-                # Compute correlation.
-                corrs_ij = pf_i_shifted @ np.conj(pf_full_j).T
+                    # Ignore dc-component.
+                    pf_full_j[:, 0] = 0
 
-                # Max out over shifts.
-                corrs_ij = np.max(
-                    np.reshape(np.real(corrs_ij), (n_shifts, n_theta // 2, n_theta)),
-                    axis=0,
-                )
+                    # Compute correlation.
+                    corrs_ij = pf_i_shifted @ np.conj(pf_full_j).T
 
-                # Arrange correlation based on common lines induced by candidate rotations.
-                corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
-                corrs = np.reshape(corrs, (-1, self.order, n_theta_ijs // self.order))
-                # Take the mean over all symmetric common lines.
-                corrs = np.mean(corrs, axis=1)
-                corrs = np.reshape(
-                    corrs,
-                    (
-                        self.n_points_sphere,
-                        self.n_points_sphere,
-                        n_theta_ijs // self.order,
-                    ),
-                )
+                    # Max out over shifts.
+                    corrs_ij = np.max(
+                        np.reshape(
+                            np.real(corrs_ij), (n_shifts, n_theta // 2, n_theta)
+                        ),
+                        axis=0,
+                    )
 
-                # Self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles) so max them out.
-                opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
-                corrs = np.max(corrs, axis=-1)
+                    # Arrange correlation based on common lines induced by candidate rotations.
+                    corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
+                    corrs = np.reshape(
+                        corrs, (-1, self.order, n_theta_ijs // self.order)
+                    )
+                    # Take the mean over all symmetric common lines.
+                    corrs = np.mean(corrs, axis=1)
+                    corrs = np.reshape(
+                        corrs,
+                        (
+                            self.n_points_sphere,
+                            self.n_points_sphere,
+                            n_theta_ijs // self.order,
+                        ),
+                    )
 
-                # Maximum likelihood while taking into consideration both cls and scls.
-                corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
+                    # Self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles) so max them out.
+                    opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
+                    corrs = np.max(corrs, axis=-1)
 
-                # Extract the optimal candidates.
-                opt_sphere_i, opt_sphere_j = np.unravel_index(
-                    np.argmax(corrs), corrs.shape
-                )
-                opt_theta_ij = opt_theta_ij_ind_per_sphere_points[
-                    opt_sphere_i, opt_sphere_j
-                ]
+                    # Maximum likelihood while taking into consideration both cls and scls.
+                    corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
 
-                opt_Ri_tilde = Ris_tilde[opt_sphere_i]
-                opt_Rj_tilde = Ris_tilde[opt_sphere_j]
-                opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
+                    # Extract the optimal candidates.
+                    opt_sphere_i, opt_sphere_j = np.unravel_index(
+                        np.argmax(corrs), corrs.shape
+                    )
+                    opt_theta_ij = opt_theta_ij_ind_per_sphere_points[
+                        opt_sphere_i, opt_sphere_j
+                    ]
 
-                # Compute the estimate of vi*vi.T as given by j.
-                vii_j = np.mean(opt_Ri_tilde.T @ rots_symm @ opt_Ri_tilde, axis=0)
+                    opt_Ri_tilde = Ris_tilde[opt_sphere_i]
+                    opt_Rj_tilde = Ris_tilde[opt_sphere_j]
+                    opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
 
-                svals = np.linalg.svd(vii_j, compute_uv=False)
-                if np.linalg.norm(svals - e1, 2) < min_ii_norm[i]:
-                    viis[i] = vii_j
-                    min_ii_norm[i] = np.linalg.norm(svals - e1, 2)
+                    # Compute the estimate of vi*vi.T as given by j.
+                    vii_j = np.mean(opt_Ri_tilde.T @ rots_symm @ opt_Ri_tilde, axis=0)
 
-                # Compute the estimate of vj*vj.T as given by i.
-                vjj_i = np.mean(opt_Rj_tilde.T @ rots_symm @ opt_Rj_tilde, axis=0)
+                    svals = np.linalg.svd(vii_j, compute_uv=False)
+                    if np.linalg.norm(svals - e1, 2) < min_ii_norm[i]:
+                        viis[i] = vii_j
+                        min_ii_norm[i] = np.linalg.norm(svals - e1, 2)
 
-                svals = np.linalg.svd(vjj_i, compute_uv=False)
-                if np.linalg.norm(svals - e1, 2) < min_ii_norm[j]:
-                    viis[j] = vjj_i
-                    min_ii_norm[j] = np.linalg.norm(svals - e1, 2)
+                    # Compute the estimate of vj*vj.T as given by i.
+                    vjj_i = np.mean(opt_Rj_tilde.T @ rots_symm @ opt_Rj_tilde, axis=0)
 
-                # Compute the estimate of vi*vj.T.
-                vijs[c] = np.mean(
-                    opt_Ri_tilde.T @ rots_symm @ opt_R_theta_ij @ opt_Rj_tilde, axis=0
-                )
+                    svals = np.linalg.svd(vjj_i, compute_uv=False)
+                    if np.linalg.norm(svals - e1, 2) < min_ii_norm[j]:
+                        viis[j] = vjj_i
+                        min_ii_norm[j] = np.linalg.norm(svals - e1, 2)
 
-                c += 1
+                    # Compute the estimate of vi*vj.T.
+                    vijs[c] = np.mean(
+                        opt_Ri_tilde.T @ rots_symm @ opt_R_theta_ij @ opt_Rj_tilde,
+                        axis=0,
+                    )
+
+                    c += 1
+                    pbar.update()
 
         return vijs, viis
 
