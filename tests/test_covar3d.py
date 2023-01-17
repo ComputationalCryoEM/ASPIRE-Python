@@ -15,7 +15,7 @@ from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils import eigs
 from aspire.utils.random import Random
-from aspire.volume import Volume
+from aspire.volume import LegacyVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -24,8 +24,10 @@ class Covar3DTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dtype = np.float32
+        cls.vols = LegacyVolume(L=8, dtype=cls.dtype).generate()
         cls.sim = Simulation(
             n=1024,
+            vols=cls.vols,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],

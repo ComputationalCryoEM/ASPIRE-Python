@@ -133,7 +133,8 @@ class CoordinateSource(ImageSource, ABC):
         # CTF envelope decay factor
         self.B = B
         # set CTF metadata to defaults
-        # this can be updated by importing CTF information
+        # this can be updated with import_ctf()
+        self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
 

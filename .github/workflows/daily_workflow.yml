@@ -2,7 +2,7 @@ name: ASPIRE Python Daily Build CI
 
 on:
   schedule:
-    -cron: '0 0 * * *'
+    - cron: '0 0 * * *'
 
 jobs:
   dev_docs:
