@@ -57,6 +57,7 @@ def df_to_relion_types(df):
     column_types = {name: relion_metadata_fields.get(name, str) for name in df.columns}
     return df.astype(column_types)
 
+
 class RelionLegacyDataStarFile(StarFile):
     def __init__(self, filepath):
 
@@ -67,6 +68,7 @@ class RelionLegacyDataStarFile(StarFile):
         for block_name, block in self.blocks.items():
             _blocks[block_name] = df_to_relion_types(block)
         self.blocks = _blocks
+
 
 class RelionDataStarFile(RelionLegacyDataStarFile):
     def __init__(self, filepath):
@@ -90,7 +92,3 @@ class RelionDataStarFile(RelionLegacyDataStarFile):
             for param in self.optics_block.columns:
                 data_block.loc[match, param] = getattr(row, param)
         return data_block
-
-
-
-
