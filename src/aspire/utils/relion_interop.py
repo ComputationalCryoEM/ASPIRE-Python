@@ -1,11 +1,9 @@
 import logging
-import os
+from collections import OrderedDict
 
 import numpy as np
-import pandas as pd
 
 from aspire.storage import StarFile
-from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 

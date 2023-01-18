@@ -13,6 +13,7 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile, getRelionStarFileVersion
+from aspire.utils.relion_interop import RelionDataStarFile, RelionLegacyDataStarFile
 
 logger = logging.getLogger(__name__)
 
@@ -309,7 +310,8 @@ class CoordinateSource(ImageSource, ABC):
         # merge DataFrames from CTF files
         dfs = []
         for f in ctf:
-            star = RelionLegacyMicrographsStarFile(f)
+            # ASPIRE's CTF Estimator produces legacy (=< 3.0) STAR files
+            star = RelionLegacyDataStarFile(f)
             dfs.append(star.get_block_by_index(0))
 
         df = pd.concat(dfs, ignore_index=True)
@@ -330,22 +332,22 @@ class CoordinateSource(ImageSource, ABC):
                 f"Cannot recognize {ctf} as a valid Relion STAR file containing micrograph information."
             )
         if relion_version == "3.0":
-            starfile = RelionLegacyMicrographsStarFile(ctf)
+            data_block = RelionLegacyDataStarFile(ctf).get_block_by_index(0)
         if relion_version == "3.1":
-            starfile = RelionMicrographsStarFile(ctf)
+            starfile = RelionDataStarFile(ctf)
             # populate CTF parameters in main data block (from optics groups block)
             # specifically: voltage, Cs, amplitude_contrast, micrograph pixel size
             # this feature does not exist for 3.0 starfile
-            starfile.apply_optics_block()
+            data_block = starfile.apply_optics_block()
 
         # data_block is a pandas Dataframe containing the micrographs
-        if not len(starfile.data_block) == len(self.mrc_paths):
+        if not len(data_block) == len(self.mrc_paths):
             raise ValueError(
                 f"{starfile.filepath} has CTF information for {len(starfile.data_block)}",
                 f" micrographs but this source has {len(self.mrc_paths)} micrographs.",
             )
 
-        self._extract_ctf(starfile.data_block)
+        self._extract_ctf(data_block)
 
     def _extract_ctf(self, df):
         """
