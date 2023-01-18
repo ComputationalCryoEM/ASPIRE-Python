@@ -190,6 +190,22 @@ class StarFileTestCase(TestCase):
         star_legacy = RelionLegacyDataStarFile(self.particles30)
         star_current = RelionDataStarFile(self.particles31)
 
+        # in the current format, CTF parameters are stored in the optics group block
+        # RelionDataStarFile provides a method to flatten all the data into one
+        # table, representable as ASPIRE metadata
+        data_block = star_current.apply_optics_block()
+
+        # make sure they were applied correctly
+        ctf_params = [
+            "_rlnVoltage",
+            "_rlnDefocusU",
+            "_rlnDefocusV",
+            "_rlnDefocusAngle",
+            "_rlnSphericalAberration",
+        ]
+        data_block_legacy = star_legacy.get_block_by_index(0)
+        self.assertTrue(data_block[ctf_params].equals(data_block_legacy[ctf_params]))
+
     def testRelionStarFileVersion(self):
         # This method should identify the version correctly
         self.assertEqual(getRelionStarFileVersion(self.particles30), "3.0")
