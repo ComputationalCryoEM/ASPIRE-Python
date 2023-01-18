@@ -13,6 +13,7 @@ from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.storage import StarFile, StarFileError, getRelionStarFileVersion
 from aspire.utils import importlib_path
+from aspire.utils.relion_interop import RelionDataStarFile, RelionLegacyDataStarFile
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -183,7 +184,13 @@ class StarFileTestCase(TestCase):
         self.assertTrue(isinstance(empty.blocks, OrderedDict))
         self.assertEqual(len(empty.blocks), 0)
 
-    def testGetRelionStarFileVersion(self):
+    def testRelionStarFile(self):
+        # these starfiles represent Relion particles according to
+        # the legacy 3.0 format and the current 3.1/4.0 format, respectively
+        star_legacy = RelionLegacyDataStarFile(self.particles30)
+        star_current = RelionDataStarFile(self.particles31)
+
+    def testRelionStarFileVersion(self):
         # This method should identify the version correctly
         self.assertEqual(getRelionStarFileVersion(self.particles30), "3.0")
         self.assertEqual(getRelionStarFileVersion(self.particles31), "3.1")
