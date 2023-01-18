@@ -266,7 +266,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         cij_inds = np.zeros(
             (n_points_sphere, n_points_sphere, n_theta_ijs, 2), dtype=np.uint16
         )
-
+        logger.info("Computing common-line indices induced by candidate rotations.")
         with tqdm(total=n_points_sphere) as pbar:
             for i in range(n_points_sphere):
                 for j in range(n_points_sphere):
