@@ -167,7 +167,6 @@ class RelionSource(ImageSource):
                 f"Cannot interpret {self.filepath} as a valid RELION STAR file representing particles."
             )
 
-        metadata = None
         # load the STAR file
         if rln_starfile_version == "3.0":
             starfile = RelionLegacyDataStarFile(self.filepath)
