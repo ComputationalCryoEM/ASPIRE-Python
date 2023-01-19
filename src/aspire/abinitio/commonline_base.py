@@ -26,7 +26,7 @@ class CLOrient3D:
         :param src: The source object of 2D denoised or class-averaged imag
         :param n_rad: The number of points in the radial direction. If None,
             n_rad will default to the ceiling of half the resolution of the source.
-        :param n_theta: The number of points in the theta direction.
+        :param n_theta: The number of points in the theta direction. This value must be even.
             Default is 360.
         :param n_check: For each image/projection find its common-lines with
             n_check images. If n_check is less than the total number of images,
@@ -59,6 +59,10 @@ class CLOrient3D:
             self.n_rad = math.ceil(0.5 * self.n_res)
         if self.n_check is None:
             self.n_check = self.n_img
+        if self.n_theta % 2 == 1:
+            msg = "n_theta must be even"
+            logger.error(msg)
+            raise NotImplementedError(msg)
 
         imgs = self.src.images[:]
 
@@ -68,11 +72,6 @@ class CLOrient3D:
         )
         self.pf = self.basis.evaluate_t(imgs)
         self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad).T  # RCOPT
-
-        if self.n_theta % 2 == 1:
-            msg = "n_theta must be even"
-            logger.error(msg)
-            raise NotImplementedError(msg)
 
         n_theta_half = self.n_theta // 2
 
