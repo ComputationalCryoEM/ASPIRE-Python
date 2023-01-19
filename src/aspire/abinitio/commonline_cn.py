@@ -260,6 +260,14 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
     # TODO: cache
     def compute_cls_inds(self, Ris_tilde, R_theta_ijs):
+        """
+        Compute the common-lines indices induced by the candidate rotations.
+
+        :param Ris_tilde: An array of size n_candsx3x3 of candidate rotations.
+        :param R_theta_ijs: An array of size n_theta_ijsx3x3 of inplane rotations.
+        :return: An array of size n_cands x n_cands x n_theta_ijs x 2 holding common-lines
+            indices induced by the supplied rotations.
+        """
         n_theta = self.n_theta
         n_points_sphere = self.n_points_sphere
         n_theta_ijs = R_theta_ijs.shape[0]
