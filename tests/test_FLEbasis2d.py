@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class FLEBasis2DTestCase(TestCase, UniversalBasisMixin):
     L = 8
-    dtype = np.float32
+    dtype = np.float64
 
     def setUp(self):
         self.basis = FLEBasis2D((self.L, self.L), dtype=self.dtype)
