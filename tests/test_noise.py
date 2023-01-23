@@ -185,24 +185,18 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
     # and compute the resulting snr of the sim.
     target_snr = sim_fixture.estimate_snr()
 
-    # print("noise_var", sim_fixture.noise_adder.noise_var)
-    # print("signal_var", sim_fixture.estimate_signal_var())
-    # print("snr", target_snr)
-
     # Attempt to create a new simulation at this `target_snr`
+    # For unit testing, we will use `sim_fixture`'s volume,
+    #   but the new Simulation instance should yield different projects.
     sim_from_snr = Simulation.from_snr(
         target_snr,
-        # vols=AsymmetricVolume(L=sim_fixture.L, C=1, dtype=sim_fixture.dtype).generate(),
-        vols=sim_fixture.vols,  # but, this only tests that garrett can do division
+        vols=sim_fixture.vols,  # Force the previously generated volume.
         n=sim_fixture.n,
         offsets=0,
         amplitudes=1.0,
     )
-    # print("from_snr noise_var", sim_from_snr.noise_adder.noise_var)
-    # print("from_snr signal_var", sim_from_snr.estimate_signal_var())
-    # print("from_snr snr", sim_from_snr.estimate_snr())
 
-    # Check we're within 10%
+    # Check we're within 1%
     assert np.isclose(
-        sim_from_snr.noise_adder.noise_var, target_noise_variance, rtol=0.1
+        sim_from_snr.noise_adder.noise_var, target_noise_variance, rtol=0.01
     )

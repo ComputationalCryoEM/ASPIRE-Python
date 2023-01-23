@@ -491,9 +491,10 @@ class Simulation(ImageSource):
 
         if sample_n > self.n:
             logger.warning(
-                f"`estimate_psnr` sample_n > Simulation.n: {sample_n} > Simulation.n."
-                " Accuracy may be impaired."
+                f"`estimate_psnr` sample_n > Simulation.n: {sample_n} > {self.n}."
+                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
             )
+            sample_n = self.n
 
         peaksq = np.empty(sample_n, dtype=self.dtype)
         mse = np.empty(sample_n, dtype=self.dtype)
@@ -519,8 +520,9 @@ class Simulation(ImageSource):
         cls,
         target_snr,
         *args,
-        sample_n=100,
-        support_radius=1,
+        sample_n=None,
+        support_radius=None,
+        batch_size=512,
         **kwargs,
     ):
         """
@@ -528,6 +530,11 @@ class Simulation(ImageSource):
         configured to produce a target signal to noise ratio.
         :param target_snr: Desired signal to noise ratio of
             the returned source.
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :param support_radius: Pixel radius used for masking signal support.
+            Default of None will compute inscribed circle, `self.L // 2`.
+        :param batch_size: Images per batch, defaults 512.
         :returns: Simulation source.
         """
 
@@ -552,10 +559,14 @@ class Simulation(ImageSource):
 
         return sim
 
-    def estimate_signal_var(self, sample_n=None, support_radius=1):
+    def estimate_signal_var(self, sample_n=None, support_radius=None, batch_size=512):
         """
         Estimate the signal variance of `sample_n` projections.
-        :param sample_n: Number of projections used for estimate.
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :param support_radius: Pixel radius used for masking signal support.
+            Default of None will compute inscribed circle, `self.L // 2`.
+        :param batch_size: Images per batch, defaults 512.
         :returns: Estimated signal variance.
         """
 
@@ -564,26 +575,52 @@ class Simulation(ImageSource):
 
         if sample_n > self.n:
             logger.warning(
-                f"`estimate_signal_var` sample_n > Simulation.n: {sample_n} > Simulation.n."
-                " Accuracy may be impaired."
+                f"`estimate_signal_var` sample_n > Simulation.n: {sample_n} > {self.n}."
+                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
+            )
+            sample_n = self.n
+
+        if support_radius is None:
+            support_radius = self.L // 2
+        elif not 0 < support_radius <= self.L * np.sqrt(2):
+            raise ValueError(
+                "`estimate_signal_var`'s support_radius should be"
+                f" `(0, L*sqrt(2)={self.L*np.sqrt(2)}]`,"
+                f" passed {support_radius}."
             )
 
         g2d = grid_2d(self.L, indexing="yx", normalized=False, dtype=self.dtype)
-        mask = g2d["r"] < self.L // 2
+        mask = g2d["r"] < support_radius
 
-        # TODO, batch this
-        # Note, for simulation we are assuming `sample_n` is random
-        # estimated_var = np.var(self.projections[:sample_n].asnumpy()[..., mask])
-        estimated_var = np.var(self.clean_images[:sample_n].asnumpy()[..., mask])
+        # Var is estimated batch-wise, compare with numpy
+        # np_estimated_var = np.var(self.clean_images[:sample_n].asnumpy()[..., mask])
+        # Note, for simulation we are implicitly assuming taking `sample_n` is random,
+        #   but this does not need to be the case.  We can add a `random_shuffle` param.
+        first_moment = 0.0
+        second_moment = 0.0
+        _denom = sample_n * np.sum(mask)
+        for i in trange(0, sample_n, batch_size):
+            # Gather this batch of images and mask off area outside support_radius
+            images_masked = self.clean_images[i : i + batch_size].asnumpy()[..., mask]
+            # Accumulate first and second moments
+            first_moment += np.sum(images_masked) / _denom
+            second_moment += np.sum(images_masked**2) / _denom
 
-        logger.info(f"Estimated signal var {estimated_var}")
+        # E[X**2] - E[X]**2
+        estimated_var = second_moment - first_moment**2
+        logger.info(f"Simulation estimated signal var: {estimated_var}")
+
         return estimated_var
 
-    def estimate_snr(self, sample_n=None, support_radius=1):
+    def estimate_snr(self, sample_n=None, support_radius=None, batch_size=512):
         """
         Estimate the SNR of the simulated data set using
         estimated signal variance / noise variance.
-        :param sample_n: Number of projections used for estimate.
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :param support_radius: Pixel radius used for masking signal support.
+            Default of None will compute inscribed circle, `self.L // 2`.
+        :param batch_size: Images per batch, defaults 512.
         :returns: Estimated signal to noise ratio.
         """
 
@@ -592,18 +629,19 @@ class Simulation(ImageSource):
 
         if sample_n > self.n:
             logger.warning(
-                f"`estimate_snr` sample_n > Simulation.n: {sample_n} > Simulation.n."
-                " Accuracy may be impaired."
+                f"`estimate_snr` sample_n > Simulation.n: {sample_n} > {self.n}."
+                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
             )
+            sample_n = self.n
 
         # For clean images return infinite SNR.
-        # Note, relationship with CTF and other sim corrupotions still isn't clear to me...
+        # Note, relationship with CTF and other sim corruptions still isn't clear to me...
         if self.noise_adder is None:
             return np.inf
 
         noise_var = self.noise_adder.noise_var
         signal_var = self.estimate_signal_var(
-            sample_n=sample_n, support_radius=support_radius
+            sample_n=sample_n, support_radius=support_radius, batch_size=batch_size
         )
 
         return signal_var / noise_var
