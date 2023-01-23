@@ -399,7 +399,7 @@ class CoordinateSource(ImageSource, ABC):
             num_particles_this_mrc = len(particle_indices_this_mrc)
             self.set_metadata(
                 CTF_params,
-                np.tile(filter_params[filter_index], (num_particles_this_mrc, 1)),
+                np.vstack((filter_params[filter_index],) * num_particles_this_mrc),
                 particle_indices_this_mrc,
             )
             self.set_metadata(
