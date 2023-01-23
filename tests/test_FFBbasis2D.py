@@ -11,21 +11,13 @@ from aspire.source import Simulation
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
-from ._basis_util import Steerable2DMixin, UniversalBasisMixin
+from ._basis_util import Steerable2DMixin, UniversalBasisMixin, basis_params_2d
 
 logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
-params = [
-    (8, np.float32),
-    (8, np.float64),
-    (16, np.float32),
-    (16, np.float64),
-    (32, np.float32),
-    (32, np.float64),
-]
-
-test_bases = [FFBBasis2D(L, dtype=dtype) for L, dtype in params]
+# Create a test Basis object for each combination of parameters we want to test
+test_bases = [FFBBasis2D(L, dtype=dtype) for L, dtype in basis_params_2d]
 
 
 def show_basis_params(basis):

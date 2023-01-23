@@ -7,6 +7,17 @@ from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
 from aspire.volume import Volume
 
+# Parameter combinations for testing 2D bases
+# Each tuple represents (resolution in pixels, datatype of basis)
+basis_params_2d = [
+    (8, np.float32),
+    (8, np.float64),
+    (16, np.float32),
+    (16, np.float64),
+    (32, np.float32),
+    (32, np.float64),
+]
+
 
 class Steerable2DMixin:
     """
