@@ -310,7 +310,7 @@ class CoordinateSource(ImageSource, ABC):
         # merge DataFrames from CTF files
         dfs = []
         for f in ctf:
-            # ASPIRE's CTF Estimator produces legacy (=< 3.0) STAR files
+            # ASPIRE's CTF Estimator produces legacy (=< 3.0) STAR files containing one row
             star = RelionLegacyDataStarFile(f)
             dfs.append(star.get_block_by_index(0))
 

@@ -170,35 +170,35 @@ class RelionSource(ImageSource):
         # load the STAR file
         if rln_starfile_version == "3.0":
             starfile = RelionLegacyDataStarFile(self.filepath)
-            df = starfile.get_block_by_index(0)
+            metadata = starfile.get_block_by_index(0)
 
         elif rln_starfile_version == "3.1":
             starfile = RelionDataStarFile(self.filepath)
             # get flattened data from starfile
-            df = starfile.apply_optics_block()
+            metadata = starfile.apply_optics_block()
 
         # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
         # in the _rlnImageName column. here, we're splitting this information
         # so we can get the particle's index in the .mrcs stack as an int
-        df[["__mrc_index", "__mrc_filename"]] = df["_rlnImageName"].str.split(
-            "@", 1, expand=True
-        )
+        metadata[["__mrc_index", "__mrc_filename"]] = metadata[
+            "_rlnImageName"
+        ].str.split("@", 1, expand=True)
         # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
         # Note that this is 1-based indexing
-        df["__mrc_index"] = pd.to_numeric(df["__mrc_index"])
+        metadata["__mrc_index"] = pd.to_numeric(metadata["__mrc_index"])
 
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself
-        df["__mrc_filepath"] = df["__mrc_filename"].apply(
+        metadata["__mrc_filepath"] = metadata["__mrc_filename"].apply(
             lambda filename: os.path.join(self.data_folder, filename)
         )
 
-        # finally, chop off the df at max_rows
+        # finally, chop off the metadata df at max_rows
         if self.max_rows is None:
-            return df
+            return metadata
         else:
-            max_rows = min(self.max_rows, len(df))
-            return df.iloc[:max_rows]
+            max_rows = min(self.max_rows, len(metadata))
+            return metadata.iloc[:max_rows]
 
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
