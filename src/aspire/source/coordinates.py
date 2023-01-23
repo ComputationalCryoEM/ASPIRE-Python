@@ -57,6 +57,7 @@ class CoordinateSource(ImageSource, ABC):
         # keep this list to identify micrograph paths by index rather than
         # storing many copies of the same string
         self.mrc_paths = mrc_paths
+        self.num_micrographs = len(self.mrc_paths)
 
         # The internal representation of micrographs and their picked coords
         # is a list of tuples (index of micrograph, coordinate), where
@@ -68,6 +69,18 @@ class CoordinateSource(ImageSource, ABC):
 
         # Read shapes of all micrographs
         self.mrc_shapes = self._get_mrc_shapes()
+
+        # map mrc indices to particle indices
+        # i'th element contains a list of particle indices corresponding to i'th mrc
+        self.mrc_index_to_particles = []
+        for mrc_idx in range(self.num_micrographs):
+            self.mrc_index_to_particles.append(
+                [
+                    particle_idx
+                    for particle_idx, particle in enumerate(self.particles)
+                    if particle[0] == mrc_idx
+                ]
+            )
 
         # get first mrc and coordinate file to report some data
         first_mrc_index, first_coord = self.particles[0]
@@ -136,19 +149,14 @@ class CoordinateSource(ImageSource, ABC):
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
 
         # populate __mrc_filename and __mrc_index
-        for mrc_index, particle in self.particles:
-            particle_indices_this_mrc = [
-                idx
-                for idx, particle in enumerate(self.particles)
-                if particle[0] == mrc_index
-            ]
+        for mrc_index, particle_indices in enumerate(self.mrc_index_to_particles):
             self.set_metadata(
                 "__mrc_index",
-                np.arange(1, len(particle_indices_this_mrc) + 1),
-                particle_indices_this_mrc,
+                mrc_index,
+                particle_indices,
             )
             self.set_metadata(
-                "__mrc_filepath", self.mrc_paths[mrc_index], particle_indices_this_mrc
+                "__mrc_filepath", self.mrc_paths[mrc_index], particle_indices
             )
 
     def _populate_particles(self, num_micrographs, coord_paths):
