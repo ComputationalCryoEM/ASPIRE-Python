@@ -23,6 +23,10 @@ class StarFileTestCase(TestCase):
         # this method is used by StarFileMainCase but overridden by StarFileOneImage
         self.setUpStarFile("sample_particles_relion31.star")
 
+    def testLegacyStarFile(self):
+        # test setting up a RelionSource from a 3.0 (Legacy) RELION star file
+        self.setUpStarFile("sample_particles_relion30.star")
+
     def tearDown(self):
         pass
 
