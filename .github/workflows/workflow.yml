@@ -26,7 +26,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10']
-        pyenv: pip
+        pyenv: [pip]
         exclude:
           # Exclude 3.7-pip so we can add pre/post tasks to that environment.
           - python-version: '3.7'
@@ -60,20 +60,20 @@ jobs:
         #os: [ubuntu-latest, windows-latest, macOS-latest]
         #backend: [default, intel, openblas]
         os: [ubuntu-latest, macOS-latest]
-        backend: default
+        backend: [default]
         python-version: ['3.8']
 
     steps:
     - uses: actions/checkout@v3
     - name: Set up Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
-          activate-environment: aspire
-          # TODO update yaml docs to -default`
-          environment-file: environment-${{ matrix.backend }}.yml
-          auto-activate-base: false
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+        activate-environment: aspire
+        # TODO update yaml docs to -default`
+        environment-file: environment-${{ matrix.backend }}.yml
+        auto-activate-base: false
     - name: Complete Install and Log Environment
       run: |
         conda info
