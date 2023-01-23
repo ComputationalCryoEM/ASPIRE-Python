@@ -15,7 +15,7 @@ jobs:
         python-version: '3.7'
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip  # check still needed
         pip install tox tox-gh-actions
     - name: Run Tox Check
       run: tox -e check
@@ -26,15 +26,15 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10']
-        pyenv: [stable, dev]
+	pyenv: ['pip']
         exclude:
-          # Exclude 3.7-stable so we can add pre and post tasks to that environment.
+          # Exclude 3.7-pip so we can add pre/post tasks to that environment.
           - python-version: '3.7'
-            pyenv: stable
+	    pyenv: pip
         include:
-          # Re-include 3.7-stable with additional tox tasks.
+          # Re-include 3.7 with additional tox tasks.
           - python-version: '3.7'
-            pyenv: stable,docs
+            pyenv: pip,docs
 
 
     steps:
@@ -45,13 +45,45 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip  # check still needed
         pip install tox tox-gh-actions
     - name: Test with tox
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
     - name: Upload Coverage to CodeCov
       uses: codecov/codecov-action@v3
 
+  conda-build:
+    needs: check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+	#os: [ubuntu-latest, windows-latest, macOS-latest]
+	#backend: [default, intel, openblas]
+        os: [ubuntu-latest, macOS-latest]
+	backend: [default]
+        python-version: ['3.8']
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          activate-environment: aspire
+	  # TODO update yaml docs to -default`
+          environment-file: environment-${{ matrix.backend }}.yml
+          auto-activate-base: false
+    - name: Complete Install and Log Environment
+      run: |
+        conda info
+        conda list
+	pip install -e ".[dev]"
+	pip freeze
+        python -c "import numpy; numpy.show_config()"
+    - name: Execute Tests
+      run: |
+        pytest --durations=50 -s
 
   docs:
     if: github.ref == 'refs/heads/master'
@@ -64,7 +96,7 @@ jobs:
         python-version: '3.7'
     - name: Install Dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip  # check still needed
         pip install -e ".[dev]"
     - name: Run Sphinx doc build script
       env:
@@ -81,7 +113,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip  # check still needed
         pip install -e ".[dev,gpu_11x]"
     - name: Customize config
       run: |
