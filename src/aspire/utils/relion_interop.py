@@ -81,12 +81,12 @@ class RelionDataStarFile(RelionLegacyDataStarFile):
         :return: A new DataFrame with the optics parameters added as columns.
         """
         data_block = self.data_block.copy()
+        # get a NumPy array of optics indices for each row of data
+        optics_indices = self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
         for optics_index, row in self.optics_block.iterrows():
-            match = np.argwhere(
-                self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
-                == optics_index + 1
-            )
-            match = np.atleast_1d(np.squeeze(match.T))
+            # find row indices with this optics index
+            # Note optics group number is 1-indexed in Relion
+            match = np.nonzero(optics_indices == optics_index + 1)[0]  # returns 1-tuple
             for param in self.optics_block.columns:
                 data_block.loc[match, param] = getattr(row, param)
         return data_block
