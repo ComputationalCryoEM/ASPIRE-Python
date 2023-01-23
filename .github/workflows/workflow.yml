@@ -55,6 +55,9 @@ jobs:
   conda-build:
     needs: check
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
     strategy:
       matrix:
         #os: [ubuntu-latest, windows-latest, macOS-latest]
@@ -74,14 +77,14 @@ jobs:
         # TODO update yaml docs to -default`
         environment-file: environment-${{ matrix.backend }}.yml
         auto-activate-base: false
-    - name: Complete Install and Log Environment
+    - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         conda info
         conda list
         pip install -e ".[dev]"
         pip freeze
         python -c "import numpy; numpy.show_config()"
-    - name: Execute Tests
+    - name: Execute Pytest Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         pytest --durations=50 -s
 
