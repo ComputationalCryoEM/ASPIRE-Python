@@ -95,7 +95,7 @@ class OrientSyncTestCase(TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             # Save the simulation object into STAR and MRCS files
             starfile_out = os.path.join(tmpdir, "save_test.star")
-            starfile_in = os.path.join(DATA_DIR, "sample_particles_relion30.star")
+            starfile_in = os.path.join(DATA_DIR, "sample_particles_relion31.star")
             result = runner.invoke(
                 orient3d,
                 [
