@@ -65,7 +65,7 @@ class CoordinateSource(ImageSource, ABC):
         # [lower left X, lower left Y, size X, size Y].
         # The micrograph's filepath can be recovered from self.mrc_paths
         self.particles = []
-        self._populate_particles(len(mrc_paths), coord_paths)
+        self._populate_particles(coord_paths)
 
         # Read shapes of all micrographs
         self.mrc_shapes = self._get_mrc_shapes()
@@ -108,7 +108,7 @@ class CoordinateSource(ImageSource, ABC):
 
         # total micrographs and particles represented by source (info)
         logger.info(
-            f"{self.__class__.__name__} from {os.path.dirname(self.mrc_paths[0])} contains {len(mrc_paths)} micrographs, {len(self.particles)} picked particles."
+            f"{self.__class__.__name__} from {os.path.dirname(self.mrc_paths[0])} contains {self.num_micrographs} micrographs, {len(self.particles)} picked particles."
         )
         # report different mrc shapes
         logger.info(f"Micrographs have the following shapes: {*set(self.mrc_shapes),}")
@@ -159,12 +159,12 @@ class CoordinateSource(ImageSource, ABC):
                 "__mrc_filepath", self.mrc_paths[mrc_index], particle_indices
             )
 
-    def _populate_particles(self, num_micrographs, coord_paths):
+    def _populate_particles(self, coord_paths):
         """
         All subclasses create mrc_paths and coord_paths lists and pass them to
         this method.
         """
-        for i in range(num_micrographs):
+        for i in range(self.num_micrographs):
             # read in all coordinates for the given mrc using subclass's
             # method of reading the corresponding coord file
             self.particles += [
@@ -310,7 +310,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         if not isinstance(ctf, Iterable):
             ctf = [ctf]
-        if not len(ctf) == len(self.mrc_paths):
+        if not len(ctf) == self.num_micrographs:
             raise ValueError(
                 "Number of CTF STAR files must match number of micrographs."
             )
@@ -349,10 +349,10 @@ class CoordinateSource(ImageSource, ABC):
             data_block = starfile.apply_optics_block()
 
         # data_block is a pandas Dataframe containing the micrographs
-        if not len(data_block) == len(self.mrc_paths):
+        if not len(data_block) == self.num_micrographs:
             raise ValueError(
                 f"{starfile.filepath} has CTF information for {len(starfile.data_block)}",
-                f" micrographs but this source has {len(self.mrc_paths)} micrographs.",
+                f" micrographs but this source has {self.num_micrographs} micrographs.",
             )
 
         self._extract_ctf(data_block)
@@ -575,7 +575,7 @@ class BoxesCoordinateSource(CoordinateSource):
                         "Particle size must be consistent."
                     )
 
-    def _populate_particles(self, num_micrographs, coord_paths):
+    def _populate_particles(self, coord_paths):
         # overrides CoordinateSource._populate_particles because of the
         # possibility that force_new_particle_size will be called,
         # which requires self.particles to be populated already.
@@ -587,7 +587,7 @@ class BoxesCoordinateSource(CoordinateSource):
             self._validate_box_file(coord_path, global_particle_size)
 
         # populate self.particles
-        super()._populate_particles(num_micrographs, coord_paths)
+        super()._populate_particles(coord_paths)
 
         # if particle size set by user, we have to re-do the coordinates
         if self.particle_size:
@@ -671,7 +671,7 @@ class CentersCoordinateSource(CoordinateSource):
             logger.error(f"Problem with coordinate file: {coord_file}")
             raise ValueError("STAR file contains non-numeric coordinate values.")
 
-    def _populate_particles(self, num_micrographs, coord_paths):
+    def _populate_particles(self, coord_paths):
         # overrides CoordinateSource._populate_particles() in order
         # to validate coordinate files
         for coord_file in coord_paths:
@@ -680,7 +680,7 @@ class CentersCoordinateSource(CoordinateSource):
             else:
                 # assume text/.coord format
                 self._validate_centers_file(coord_file)
-        super()._populate_particles(num_micrographs, coord_paths)
+        super()._populate_particles(coord_paths)
 
     def _coords_list_from_file(self, coord_file):
         """
