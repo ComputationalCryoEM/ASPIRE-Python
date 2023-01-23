@@ -18,7 +18,7 @@ def adaptive_support(img_src, energy_threshold=0.99):
     and R_limit (support radius in real space).
 
     Fourier c_limit is scaled in range [0, 0.5].
-    R_limit is in pixels [0, Image.res/2].
+    R_limit is in pixels [0, Image.resolution/2].
 
     :param img_src: Input `Source` of images.
     :param energy_threshold: [0, 1] threshold limit

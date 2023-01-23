@@ -355,6 +355,9 @@ class LegacyVolume(AsymmetricVolume):
     An asymmetric Volume object used for testing of legacy code.
     """
 
+    def __init__(self, L, C=2, K=16, seed=0, dtype=np.float64):
+        super().__init__(L=L, C=C, K=K, seed=seed, dtype=dtype)
+
     def generate(self):
         """
         Generates an asymmetric volume composed of random 3D Gaussian blobs.

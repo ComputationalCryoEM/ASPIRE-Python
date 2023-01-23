@@ -12,7 +12,7 @@ import os
 
 import numpy as np
 
-from aspire.operators import ScalarFilter
+from aspire.noise import WhiteNoiseAdder
 from aspire.source.simulation import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
@@ -56,8 +56,8 @@ rots = Rotation.about_axis("z", thetas, dtype=np.float64)
 
 noise_variance = 1e-10  # Normally this would be derived from a desired SNR.
 
-# Then create a constant filter based on that variance, which is passed to Simulation
-white_noise_filter = ScalarFilter(dim=2, value=noise_variance)
+# Then create a CustomNoiseAdder based on that variance, which is passed to Simulation.
+white_noise_adder = WhiteNoiseAdder(var=noise_variance)
 
 
 # %%
@@ -79,7 +79,7 @@ src = Simulation(
     amplitudes=amplitudes,  # amplification ( 1 is identity)
     seed=12345,  # RNG seed for reproducibility
     dtype=v.dtype,  # match our datatype to the Volume.
-    noise_filter=white_noise_filter,  # optionally prescribe noise
+    noise_adder=white_noise_adder,  # optionally prescribe noise
 )
 
 # %%
