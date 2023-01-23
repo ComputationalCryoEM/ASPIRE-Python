@@ -593,9 +593,7 @@ class CoordinateSourceTestCase(TestCase):
             np.array_equal(mrc_fp_metadata, src.get_metadata("__mrc_filepath"))
         )
         # __mrc_index
-        mrc_idx_metadata = np.array(
-            [0 for i in range(1, 201)] + [1 for i in range(1, 201)]
-        )
+        mrc_idx_metadata = np.array([0] * 200 + [1] * 200)
         self.assertTrue(
             np.array_equal(mrc_idx_metadata, src.get_metadata("__mrc_index"))
         )
