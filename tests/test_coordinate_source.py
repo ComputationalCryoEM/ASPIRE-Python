@@ -17,6 +17,7 @@ from aspire.noise import WhiteNoiseEstimator
 from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
 from aspire.utils import importlib_path
+from aspire.utils.relion_interop import RelionDataStarFile
 
 
 class CoordinateSourceTestCase(TestCase):
@@ -129,6 +130,7 @@ class CoordinateSourceTestCase(TestCase):
 
         self.ctf_files = sorted(glob(os.path.join(self.data_folder, "ctf*.star")))
         self.relion_ctf_file = self.createTestRelionCtfFile()
+        self.relion_legacy_ctf_file = self.createTestRelionLegacyCtfFile()
 
     def tearDown(self):
         self.tmpdir.cleanup()
@@ -315,6 +317,14 @@ class CoordinateSourceTestCase(TestCase):
         star = StarFile(blocks=blocks)
         star.write(star_fp)
         return star_fp
+
+    def createTestRelionLegacyCtfFile(self):
+        legacy_star_fp = os.path.join("micrographs_ctf_legacy.star")
+        star = RelionDataStarFile(self.relion_ctf_file)
+        df = star.apply_optics_block()
+        legacy_star = StarFile(blocks=OrderedDict({"": df}))
+        legacy_star.write(legacy_star_fp)
+        return legacy_star_fp
 
     def testLoadFromBox(self):
         # ensure successful loading from box files
@@ -523,6 +533,12 @@ class CoordinateSourceTestCase(TestCase):
     def testImportCtfFromRelion(self):
         src = BoxesCoordinateSource(self.files_box)
         src.import_relion_ctf(self.relion_ctf_file)
+        self._testCtfFilters(src)
+        self._testCtfMetadata(src)
+
+    def testImportCtfFromRelionLegacy(self):
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_relion_ctf(self.relion_legacy_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
