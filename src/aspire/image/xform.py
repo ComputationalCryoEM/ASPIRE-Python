@@ -1,16 +1,15 @@
+import abc
 import logging
 
 import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
-from aspire.operators import PowerFilter, ZeroFilter
-from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
 
-class Xform:
+class Xform(abc.ABC):
     """
     An Xform is anything that implements a `forward` method (and an `adjoint` method, in the case of a LinearXform),
     that takes in a square Image object and spits out a square Image object corresponding to forward/adjoint operations.
@@ -68,10 +67,11 @@ class Xform:
             indices = np.arange(im.n_images)
         return self._forward(im, indices=indices)
 
+    @abc.abstractmethod
     def _forward(self, im, indices):
-        raise NotImplementedError(
-            "Subclasses must implement the _forward method applicable to im/indices."
-        )
+        """
+        Subclasses must implement the _forward method applicable to im/indices.
+        """
 
     def enabled(self):
         """
@@ -110,10 +110,11 @@ class LinearXform(Xform):
             indices = np.arange(im.n_images)
         return self._adjoint(im, indices=indices)
 
+    @abc.abstractmethod
     def _adjoint(self, im, indices):
-        raise NotImplementedError(
-            "Subclasses must implement the _adjoint method applicable to im/indices."
-        )
+        """
+        Subclasses must implement the _adjoint method applicable to im/indices.
+        """
 
 
 class SymmetricXform(LinearXform):
@@ -287,37 +288,6 @@ class LambdaXform(Xform):
 
     def __str__(self):
         return f"LambdaXform ({self.lambda_fun.__name__})"
-
-
-class NoiseAdder(Xform):
-    """
-    A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
-    """
-
-    def __init__(self, seed=0, noise_filter=None):
-        """
-        Initialize the random state of this NoiseAdder using specified values.
-
-        :param seed: The random seed used to generate white noise
-        :param noise_filter: An optional aspire.operators.Filter object to use to filter the generated white noise.
-            By default, a ZeroFilter is used, generating no noise.
-        """
-        super().__init__()
-        self.seed = seed
-        noise_filter = noise_filter or ZeroFilter()
-        self.noise_filter = PowerFilter(noise_filter, power=0.5)
-
-    def _forward(self, im, indices):
-        im = im.copy()
-
-        for i, idx in enumerate(indices):
-            # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
-            random_seed = self.seed + 191 * (idx + 1)
-            im_s = randn(2 * im.resolution, 2 * im.resolution, seed=random_seed)
-            im_s = Image(im_s).filter(self.noise_filter)[0]
-            im[i] += im_s[: im.resolution, : im.resolution]
-
-        return im
 
 
 class IndexedXform(Xform):

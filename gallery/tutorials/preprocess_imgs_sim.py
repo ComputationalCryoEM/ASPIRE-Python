@@ -11,8 +11,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire.noise import WhiteNoiseEstimator
-from aspire.operators import RadialCTFFilter, ScalarFilter
+from aspire.noise import WhiteNoiseAdder, WhiteNoiseEstimator
+from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.volume import Volume
 
@@ -32,7 +32,7 @@ num_imgs = 512
 
 # Set the noise variance and build the noise filter
 noise_variance = 4e-1
-noise_filter = ScalarFilter(dim=2, value=noise_variance)
+noise_adder = WhiteNoiseAdder(var=noise_variance)
 
 # Specify the CTF parameters not used for this example
 # but necessary for initializing the simulation object
@@ -71,7 +71,7 @@ source = Simulation(
     n=num_imgs,
     vols=vols,
     unique_filters=ctf_filters,
-    noise_filter=noise_filter,
+    noise_adder=noise_adder,
 )
 
 # %%
