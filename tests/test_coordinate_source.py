@@ -16,8 +16,7 @@ from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
-from aspire.utils import importlib_path
-from aspire.utils.relion_interop import RelionDataStarFile
+from aspire.utils import RelionDataStarFile, importlib_path
 
 
 class CoordinateSourceTestCase(TestCase):

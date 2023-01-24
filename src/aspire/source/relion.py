@@ -11,7 +11,7 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
 from aspire.storage import getRelionStarFileVersion
-from aspire.utils.relion_interop import RelionDataStarFile, RelionLegacyDataStarFile
+from aspire.utils import RelionDataStarFile, RelionLegacyDataStarFile
 
 logger = logging.getLogger(__name__)
 

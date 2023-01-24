@@ -62,5 +62,6 @@ from .multiprocessing import (
     virtual_core_cpu_suggestion,
 )
 from .random import Random, choice, rand, randi, randn, random
+from .relion_interop import RelionDataStarFile, RelionLegacyDataStarFile
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance

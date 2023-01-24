@@ -12,8 +12,7 @@ import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.storage import StarFile, StarFileError, getRelionStarFileVersion
-from aspire.utils import importlib_path
-from aspire.utils.relion_interop import RelionDataStarFile, RelionLegacyDataStarFile
+from aspire.utils import RelionDataStarFile, RelionLegacyDataStarFile, importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
