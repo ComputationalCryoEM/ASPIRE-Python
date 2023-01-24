@@ -71,22 +71,22 @@ class CLOrient3D:
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
         self.pf = self.basis.evaluate_t(imgs)
-        self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad).T  # RCOPT
+        self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad)
 
         n_theta_half = self.n_theta // 2
 
-        # The first two dimension of pf is of size n_rad x n_theta. We will convert pf
-        # into an array of size (n_rad-1) x n_theta/2, that is, take half of ray
+        # The last two dimension of pf is of size n_theta x n_rad. We will convert pf
+        # into an array of size (n_theta/2) x (n_rad-1), that is, take half of each ray
         # through the origin except the DC part, and also take the angles only up to PI.
         # This is due to the fact that the original images are real, and thus each ray
         # is conjugate symmetric. We therefore gain nothing by taking longer correlations
-        # (of length 2*n_rad-1 instead of n_rad-1). In the Matlab version, pf is convert to
-        # the size of (2*n_rad-1) x n_theta/2 but most of calculations of build_clmatrix
-        # and estimate_shifts below only use the size of (n_rad-1) x n_theta/2. In the
-        # Python version we will use the size of (n_rad-1) x n_theta/2 directly and make
-        # sure every part is using it. By taking shorter correlation we can speed the
+        # (of length 2*n_rad-1 instead of n_rad-1). In the Matlab version, pf is converted to
+        # the size of (n_theta/2) x (2*n_rad-1) but most of the calculations of build_clmatrix
+        # and estimate_shifts below only use the size of (n_theta/2) x (n_rad-1). In the
+        # Python version we will use the size of (n_theta/2) x (n_rad-1) directly and make
+        # sure every part is using it. By taking shorter correlations we can speed the
         # computation by a factor of two.
-        self.pf = np.flip(self.pf[1:, n_theta_half:], 0)
+        self.pf = np.flip(self.pf[:, n_theta_half:, 1:], 2)
 
     def estimate_rotations(self):
         """
@@ -147,7 +147,7 @@ class CLOrient3D:
         shifts_1d = np.zeros((n_img, n_img))
 
         # Prepare the shift phases to try and generate filter for common-line detection
-        r_max = pf.shape[0]
+        r_max = pf.shape[2]
         shifts, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, max_shift, shift_step
         )
@@ -155,10 +155,7 @@ class CLOrient3D:
 
         # Apply bandpass filter, normalize each ray of each image
         # Note that only use half of each ray
-        pf = self._apply_filter_and_norm("ijk, i -> ijk", pf, r_max, h)
-
-        # change dimensions of axes to (n_img, n_rad/2, n_theta/2)
-        pf = pf.transpose((2, 1, 0))
+        pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
         # Search for common lines between [i, j] pairs of images.
         # Creating pf and building common lines are different to the Matlab version.
@@ -305,7 +302,7 @@ class CLOrient3D:
         # is also applied to the radial direction for easier detection.
         max_shift = self.max_shift
         shift_step = self.shift_step
-        r_max = pf.shape[0]
+        r_max = pf.shape[2]
         _, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, max_shift, shift_step
         )
@@ -325,7 +322,7 @@ class CLOrient3D:
             c_ij, c_ji = self._get_cl_indices(rotations, i, j, n_theta_half)
 
             # Extract the Fourier rays that correspond to the common line
-            pf_i = pf[:, c_ij, i]
+            pf_i = pf[i, c_ij]
 
             # Check whether need to flip or not Fourier ray of j image
             # Is the common line in image j in the positive
@@ -333,9 +330,9 @@ class CLOrient3D:
             # negative direction (is_pf_j_flipped=True).
             is_pf_j_flipped = c_ji >= n_theta_half
             if not is_pf_j_flipped:
-                pf_j = pf[:, c_ji, j]
+                pf_j = pf[j, c_ji]
             else:
-                pf_j = pf[:, c_ji - n_theta_half, j]
+                pf_j = pf[j, c_ji - n_theta_half]
 
             # perform bandpass filter, normalize each ray of each image,
             pf_i = self._apply_filter_and_norm("i, i -> i", pf_i, r_max, h)
@@ -519,7 +516,7 @@ class CLOrient3D:
         # Note if we'd rather not have the dtype and casting args,
         #   we can control h.dtype instead.
         np.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
-        pf[r_max - 1 : r_max + 2] = 0
-        pf /= np.linalg.norm(pf, axis=0)
+        pf[..., r_max - 1 : r_max + 2] = 0
+        pf /= np.linalg.norm(pf, axis=-1)[..., np.newaxis]
 
         return pf
