@@ -11,18 +11,17 @@ from aspire.utils import complex_type, real_type
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
 
-from ._basis_util import Steerable2DMixin, UniversalBasisMixin, basis_params_2d
+from ._basis_util import (
+    Steerable2DMixin,
+    UniversalBasisMixin,
+    basis_params_2d,
+    show_basis_params,
+)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 # Create a test Basis object for each combination of parameters we want to test
 test_bases = [FBBasis2D(L, dtype=dtype) for L, dtype in basis_params_2d]
-
-
-def show_basis_params(basis):
-    # print descriptive test name for parametrized test
-    # run pytest with option -rA to see explicitly
-    return f"{basis.nres}-{basis.dtype}"
 
 
 @pytest.mark.parametrize("basis", test_bases, ids=show_basis_params)

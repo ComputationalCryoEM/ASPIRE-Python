@@ -18,6 +18,21 @@ basis_params_2d = [
     (32, np.float64),
 ]
 
+basis_params_3d = [
+    (8, np.float32),
+    (8, np.float64),
+    (16, np.float32),
+    (16, np.float64),
+    (32, np.float32),
+    (32, np.float64),
+]
+
+
+def show_basis_params(basis):
+    # print descriptive test name for parametrized test
+    # run pytest with option -rA to see explicitly
+    return f"{basis.nres}-{basis.dtype}"
+
 
 class Steerable2DMixin:
     """

@@ -7,19 +7,21 @@ from aspire.basis import FBBasis3D
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
-from ._basis_util import UniversalBasisMixin, basis_params_2d
+from ._basis_util import UniversalBasisMixin, basis_params_3d, show_basis_params
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
-test_bases = [FBBasis3D(L, dtype=dtype) for L, dtype in basis_params_2d]
+test_bases = [FBBasis3D(L, dtype=dtype) for L, dtype in basis_params_3d]
 
 
 def check_pytest_skip(basis):
+    # Run a parameter check for each test to determine whether we want to run it.
+    # Testing not currently implemented for L > 8
     if basis.nres != 8:
-        pytest.skip()
+        pytest.skip("Testing not implemented for L > 8")
 
 
-@pytest.mark.parametrize("basis", test_bases)
+@pytest.mark.parametrize("basis", test_bases, ids=show_basis_params)
 class TestFBBasis3D(UniversalBasisMixin):
     def testFBBasis3DIndices(self, basis):
         check_pytest_skip(basis)
