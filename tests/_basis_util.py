@@ -21,10 +21,6 @@ basis_params_2d = [
 basis_params_3d = [
     (8, np.float32),
     (8, np.float64),
-    (16, np.float32),
-    (16, np.float64),
-    (32, np.float32),
-    (32, np.float64),
 ]
 
 
