@@ -30,7 +30,7 @@ jobs:
   - bash: conda clean -i -t -y
     displayName: Removing conda cached package tarballs.
 
-  - bash: conda env create --name myEnvironment --file environment.yml
+  - bash: conda env create --name myEnvironment --file environment-default.yml
     displayName: Create Anaconda environment
 
   - bash: |
@@ -55,7 +55,7 @@ jobs:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Add conda to PATH
 
-  - script: conda env create --name myEnvironment --file environment.yml
+  - script: conda env create --name myEnvironment --file environment-default.yml
     displayName: Create Anaconda environment
 
   - script: conda update -q -y conda
