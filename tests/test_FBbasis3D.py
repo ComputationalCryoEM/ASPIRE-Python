@@ -14,18 +14,9 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 test_bases = [FBBasis3D(L, dtype=dtype) for L, dtype in basis_params_3d]
 
 
-def check_pytest_skip(basis):
-    # Run a parameter check for each test to determine whether we want to run it.
-    # Testing not currently implemented for L > 8
-    if basis.nres != 8:
-        pytest.skip("Testing not implemented for L > 8")
-
-
 @pytest.mark.parametrize("basis", test_bases, ids=show_basis_params)
 class TestFBBasis3D(UniversalBasisMixin):
     def testFBBasis3DIndices(self, basis):
-        check_pytest_skip(basis)
-
         indices = basis.indices()
 
         assert np.allclose(
@@ -341,7 +332,6 @@ class TestFBBasis3D(UniversalBasisMixin):
         )
 
     def testFBBasis3DNorms(self, basis):
-        check_pytest_skip(basis)
         norms = basis.norms()
         assert np.allclose(
             norms,
@@ -366,7 +356,6 @@ class TestFBBasis3D(UniversalBasisMixin):
         )
 
     def testFBBasis3DEvaluate(self, basis):
-        check_pytest_skip(basis)
         coeffs = np.array(
             [
                 1.07338590e-01,
@@ -479,7 +468,6 @@ class TestFBBasis3D(UniversalBasisMixin):
         )
 
     def testFBBasis3DEvaluate_t(self, basis):
-        check_pytest_skip(basis)
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         v = Volume(v.astype(basis.dtype))
         result = basis.evaluate_t(v)
@@ -590,8 +578,6 @@ class TestFBBasis3D(UniversalBasisMixin):
         )
 
     def testFBBasis3DExpand(self, basis):
-        check_pytest_skip(basis)
-
         v = np.load(os.path.join(DATA_DIR, "hbbasis_coefficients_8_8_8.npy")).T
         v = Volume(v.astype(basis.dtype))
         result = basis.expand(v)
