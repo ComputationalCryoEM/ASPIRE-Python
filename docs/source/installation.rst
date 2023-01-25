@@ -1,7 +1,7 @@
 Installation
 ============
 
-ASPIRE comes with an ``environment.yml`` for reproducing a working Conda environment based on Python 3.8 to run the package.
+ASPIRE comes with an ``environment-default.yml`` for reproducing a working Conda environment based on Python 3.8 to run the package.
 The package is tested on Linux/Windows/Mac OS X. Pre-built binaries are available for all platform-specific components. No manual
 compilation should be needed.
 
@@ -60,7 +60,7 @@ you would probably want to keep that in a seperate environment.
    cd ASPIRE-Python
 
    # Create's the conda environment and installs base dependencies.
-   conda env create -f environment.yml --name aspire_dev
+   conda env create -f environment-default.yml --name aspire_dev
 
    # Activate the environment
    conda activate aspire_dev
@@ -160,7 +160,7 @@ the performance of ``numpy``, ``scipy``, and ``scikit`` packages.
 ASPIRE ships several ``environment*.yml`` files which define tested package
 versions along with these optimized numerical installations.
 
-The default ``environment.yml`` does not force a specific backend,
+The default ``environment-default.yml`` does not force a specific backend,
 instead relying on ``conda`` to select something reasonable.
 In the case of an Intel machine, the default ``conda`` install
 will automatically install some optimizations for you.
@@ -174,7 +174,7 @@ or as the basis for your own customized ``conda`` environment.
    * - Architecture
      - Recommended Environment File
    * - Default
-     - environment.yml
+     - environment-default.yml
    * - Intel x86_64
      - environment-intel.yml
    * - AMD x86_64

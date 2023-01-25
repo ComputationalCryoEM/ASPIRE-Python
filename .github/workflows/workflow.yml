@@ -79,7 +79,6 @@ jobs:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
         activate-environment: aspire
-        # TODO update yaml docs to -default`
         environment-file: environment-${{ matrix.backend }}.yml
         auto-activate-base: false
     - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
