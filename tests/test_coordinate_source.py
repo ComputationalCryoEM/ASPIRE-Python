@@ -318,7 +318,7 @@ class CoordinateSourceTestCase(TestCase):
         return star_fp
 
     def createTestRelionLegacyCtfFile(self):
-        legacy_star_fp = os.path.join("micrographs_ctf_legacy.star")
+        legacy_star_fp = os.path.join(self.data_folder, "micrographs_ctf_legacy.star")
         star = Relion31StarFile(self.relion_ctf_file)
         df = star.apply_optics_block()
         legacy_star = StarFile(blocks=OrderedDict({"": df}))
