@@ -1,65 +1,39 @@
 import os.path
-from unittest import TestCase
 
 import numpy as np
+import pytest
 
 from aspire.basis import FPSWFBasis2D
 from aspire.image import Image
 
-from ._basis_util import UniversalBasisMixin
+from ._basis_util import UniversalBasisMixin, pswf_params_2d, show_basis_params
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
+test_bases = [FPSWFBasis2D(L, dtype=dtype) for L, dtype in pswf_params_2d]
 
-class FPSWFBasis2DTestCase(TestCase, UniversalBasisMixin):
-    def setUp(self):
-        self.L = 8
-        self.dtype = np.float64
-        self.basis = FPSWFBasis2D((self.L, self.L), 1.0, 1.0, dtype=self.dtype)
 
-    def tearDown(self):
-        pass
-
-    def testFPSWFBasis2DEvaluate_t(self):
+@pytest.mark.parametrize("basis", test_bases, ids=show_basis_params)
+class TestFPSWFBasis2D(UniversalBasisMixin):
+    def testFPSWFBasis2DEvaluate_t(self, basis):
         img_ary = np.load(
             os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")
         ).T  # RCOPT
         images = Image(img_ary)
-        result = self.basis.evaluate_t(images)
+        result = basis.evaluate_t(images)
         coeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
 
         # make sure both real and imaginary parts are consistent.
-        self.assertTrue(
-            np.allclose(np.real(result), np.real(coeffs))
-            and np.allclose(np.imag(result) * 1j, np.imag(coeffs) * 1j)
+        assert np.allclose(np.real(result), np.real(coeffs)) and np.allclose(
+            np.imag(result) * 1j, np.imag(coeffs) * 1j
         )
 
-    def testFPSWFBasis2DEvaluate(self):
+    def testFPSWFBasis2DEvaluate(self, basis):
         coeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
-        result = self.basis.evaluate(coeffs)
+        result = basis.evaluate(coeffs)
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
-        self.assertTrue(np.allclose(result.asnumpy(), images))
-
-    # The following functions of UniversalBasisMixin expect a `basis`
-    # arg to be passed in. When FPSFW2D tests are parametrized
-    # over size and dtype, this will be possible by passing in a basis
-    # automatically via @pytest.mark.parametrize() decorator on the test class
-    #
-    # See: test_FBBasis2D and test_FFBBasis2D
-    #
-    # for now, pass in the basis we are using
-    def testEvaluate(self):
-        super().testEvaluate(self.basis)
-
-    def testEvaluate_t(self):
-        super().testEvaluate_t(self.basis)
-
-    def testExpand(self):
-        super().testExpand(self.basis)
-
-    def testInitWithIntSize(self):
-        super().testInitWithIntSize(self.basis)
+        assert np.allclose(result.asnumpy(), images)

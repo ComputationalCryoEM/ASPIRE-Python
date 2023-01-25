@@ -23,6 +23,11 @@ basis_params_3d = [
     (8, np.float64),
 ]
 
+pswf_params_2d = [
+    (8, np.float32),
+    (8, np.float64),
+]
+
 
 def show_basis_params(basis):
     # print descriptive test name for parametrized test
