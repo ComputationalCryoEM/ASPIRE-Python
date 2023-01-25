@@ -318,9 +318,13 @@ class CoordinateSourceTestCase(TestCase):
         return star_fp
 
     def createTestRelionLegacyCtfFile(self):
+        # create a Relion 3.0 format CTF file by loading the 3.1 file,
+        # and applying the optics block CTF parameters to the data block,
+        # creating a single df saved back to a new star file
         legacy_star_fp = os.path.join(self.data_folder, "micrographs_ctf_legacy.star")
         star = Relion31StarFile(self.relion_ctf_file)
         df = star.apply_optics_block()
+        # save as a new star file containing identical information but in 3.0 format
         legacy_star = StarFile(blocks=OrderedDict({"": df}))
         legacy_star.write(legacy_star_fp)
         return legacy_star_fp
