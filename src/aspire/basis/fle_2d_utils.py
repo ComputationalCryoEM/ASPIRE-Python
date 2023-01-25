@@ -138,21 +138,3 @@ def barycentric_interp_sparse(x, xs, ys, s):
     A_T = sparse.csr_matrix((vals, (jdx, idx)), shape=(m, n), dtype=np.float64)
 
     return A, A_T
-
-
-def get_weights(xs):
-
-    m = len(xs)
-    ident = np.ones(m, dtype=bool)
-    ident[0] = False
-    e = np.sum(-np.log(np.abs(xs[0] - xs[ident])))
-    const = np.exp(e / m)
-    ws = np.zeros(m)
-    ident = np.ones(m, dtype=bool)
-    for j in range(m):
-        ident[j] = False
-        xt = const * (xs[j] - xs[ident])
-        ws[j] = 1 / np.prod(xt)
-        ident[j] = True
-
-    return ws

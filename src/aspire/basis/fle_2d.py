@@ -9,7 +9,6 @@ from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
-    get_weights,
     precomp_transform_complex_to_real,
     transform_complex_to_real,
 )
@@ -248,7 +247,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         chebyshev_pts = np.cos(
             np.pi * (1 - (2 * np.arange(self.num_interp) + 1) / (2 * self.num_interp))
         )
-        weights = get_weights(chebyshev_pts)
         for i in range(self.ell_p_max + 1):
             ys = np.zeros(self.num_interp)
 
@@ -260,23 +258,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                 - 1
             )
 
-            n = len(x)
-            mm = len(chebyshev_pts)
-            if self.numsparse > 0:
-                A3[i], A3_T[i] = barycentric_interp_sparse(
-                    x, chebyshev_pts, ys, self.numsparse
-                )
-            else:
-                A3[i] = np.zeros((n, mm))
-                denom = np.zeros(n)
-                for j in range(mm):
-                    xdiff = x - chebyshev_pts[j]
-                    temp = weights[j] / xdiff
-                    A3[i][:, j] = temp.flatten()
-                    denom = denom + temp
-                denom = denom.reshape(-1, 1)
-                A3[i] = A3[i] / denom
-                A3_T[i] = A3[i].T
+            A3[i], A3_T[i] = barycentric_interp_sparse(
+                x, chebyshev_pts, ys, self.numsparse
+            )
         self.A3 = A3
         self.A3_T = A3_T
 
