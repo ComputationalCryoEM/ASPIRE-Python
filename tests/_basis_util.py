@@ -24,7 +24,6 @@ basis_params_3d = [
 ]
 
 pswf_params_2d = [
-    (8, np.float32),
     (8, np.float64),
 ]
 
