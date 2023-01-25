@@ -1,7 +1,3 @@
-# Sample Relion particles STAR file based on Relion 3.1/4.0 tutorial data
-# This file is strictly for testing ASPIRE starfile parsing. Values and columns may have been modified for testing purposes
-# so the contents of this file do not necessarily represent a realistic dataset
-
 data_optics
 
 loop_ 
