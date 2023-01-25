@@ -55,16 +55,21 @@ jobs:
   conda-build:
     needs: check
     runs-on: ${{ matrix.os }}
+    # Only run on pull_requests
+    if: ${{ github.event_name == 'pull_request' }}
     defaults:
       run:
         shell: bash -el {0}
     strategy:
       matrix:
-        #os: [ubuntu-latest, windows-latest, macOS-latest]
-        #backend: [default, intel, openblas]
-        os: [ubuntu-latest, macOS-latest]
-        backend: [default]
+        os: [ubuntu-latest, ubuntu-20.04, macOS-latest, macOS-11, windows-latest]
+        backend: [default, openblas]
         python-version: ['3.8']
+        include:
+          - os: ubuntu-latest
+            backend: intel
+          - os: macOS-latest
+	    backend: accelerate
 
     steps:
     - uses: actions/checkout@v3
