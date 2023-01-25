@@ -5,8 +5,9 @@ import scipy.sparse as sparse
 def transform_complex_to_real(B_conj, ells):
     """
     Transforms coefficients of the matrix B (see Eq. 3) from complex
-    to real. B is the linear transformation that takes FLE coefficients
-    to images.
+        to real. B is the linear transformation that takes FLE coefficients
+        to images.
+
     :param B_conj: Complex conjugate of the matrix B.
     :param ells: List of ells (Bessel function orders) in this basis.
     :return: Transformed matrix.
@@ -75,7 +76,17 @@ def precomp_transform_complex_to_real(ells):
 
 
 def barycentric_interp_sparse(x, xs, ys, s):
-    # https://people.maths.ox.ac.uk/trefethen/barycentric.pdf
+    """
+    Perform barycentric interpolation to compute values of Betas at the points
+        `x`, based on their values (`ys`) at known points (`xs`).
+        https://people.maths.ox.ac.uk/trefethen/barycentric.pdf
+
+    :param x: The target set of points at which to evaluate the functions.
+    :param xs: The points at which the values of the functions are known.
+    :param ys: The values of the functions at the points `xs`.
+    :param s: Numsparse.
+    :return: The interpolation matrix and its transpose as a 2-tuple.
+    """
 
     n = len(x)
     m = len(xs)
