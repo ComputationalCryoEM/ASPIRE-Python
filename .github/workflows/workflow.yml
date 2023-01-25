@@ -69,7 +69,7 @@ jobs:
           - os: ubuntu-latest
             backend: intel
           - os: macOS-latest
-	    backend: accelerate
+            backend: accelerate
 
     steps:
     - uses: actions/checkout@v3
@@ -91,6 +91,7 @@ jobs:
         python -c "import numpy; numpy.show_config()"
     - name: Execute Pytest Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
+        export OMP_NUM_THREADS=2
         pytest --durations=50 -s
 
   docs:
