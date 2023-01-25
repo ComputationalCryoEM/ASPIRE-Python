@@ -56,7 +56,7 @@ def df_to_relion_types(df):
     return df.astype(column_types)
 
 
-class RelionLegacyDataStarFile(StarFile):
+class Relion30StarFile(StarFile):
     def __init__(self, filepath):
 
         super().__init__(filepath, blocks=None)
@@ -68,7 +68,7 @@ class RelionLegacyDataStarFile(StarFile):
         self.blocks = _blocks
 
 
-class RelionDataStarFile(RelionLegacyDataStarFile):
+class Relion31StarFile(Relion30StarFile):
     def __init__(self, filepath):
         super().__init__(filepath)
         self.optics_block = self.get_block_by_index(0)

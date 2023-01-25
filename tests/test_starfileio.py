@@ -12,7 +12,7 @@ import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.storage import StarFile, StarFileError, getRelionStarFileVersion
-from aspire.utils import RelionDataStarFile, RelionLegacyDataStarFile, importlib_path
+from aspire.utils import Relion30StarFile, Relion31StarFile, importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -186,8 +186,8 @@ class StarFileTestCase(TestCase):
     def testRelionStarFile(self):
         # these starfiles represent Relion particles according to
         # the legacy 3.0 format and the current 3.1/4.0 format, respectively
-        star_legacy = RelionLegacyDataStarFile(self.particles30)
-        star_current = RelionDataStarFile(self.particles31)
+        star_legacy = Relion30StarFile(self.particles30)
+        star_current = Relion31StarFile(self.particles31)
 
         # in the current format, CTF parameters are stored in the optics group block
         # RelionDataStarFile provides a method to flatten all the data into one

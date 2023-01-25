@@ -13,7 +13,7 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile, getRelionStarFileVersion
-from aspire.utils import RelionDataStarFile, RelionLegacyDataStarFile
+from aspire.utils import Relion30StarFile, Relion31StarFile
 
 logger = logging.getLogger(__name__)
 
@@ -319,7 +319,7 @@ class CoordinateSource(ImageSource, ABC):
         dfs = []
         for f in ctf:
             # ASPIRE's CTF Estimator produces legacy (=< 3.0) STAR files containing one row
-            star = RelionLegacyDataStarFile(f)
+            star = Relion30StarFile(f)
             dfs.append(star.get_block_by_index(0))
 
         df = pd.concat(dfs, ignore_index=True)
@@ -340,9 +340,9 @@ class CoordinateSource(ImageSource, ABC):
                 f"Cannot recognize {ctf} as a valid Relion STAR file containing micrograph information."
             )
         if relion_version == "3.0":
-            data_block = RelionLegacyDataStarFile(ctf).get_block_by_index(0)
+            data_block = Relion30StarFile(ctf).get_block_by_index(0)
         if relion_version == "3.1":
-            starfile = RelionDataStarFile(ctf)
+            starfile = Relion31StarFile(ctf)
             # populate CTF parameters in main data block (from optics groups block)
             # specifically: voltage, Cs, amplitude_contrast, micrograph pixel size
             # this feature does not exist for 3.0 starfile

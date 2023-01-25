@@ -11,7 +11,7 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
 from aspire.storage import getRelionStarFileVersion
-from aspire.utils import RelionDataStarFile, RelionLegacyDataStarFile
+from aspire.utils import Relion30StarFile, Relion31StarFile
 
 logger = logging.getLogger(__name__)
 
@@ -169,11 +169,11 @@ class RelionSource(ImageSource):
 
         # load the STAR file
         if rln_starfile_version == "3.0":
-            starfile = RelionLegacyDataStarFile(self.filepath)
+            starfile = Relion30StarFile(self.filepath)
             metadata = starfile.get_block_by_index(0)
 
         elif rln_starfile_version == "3.1":
-            starfile = RelionDataStarFile(self.filepath)
+            starfile = Relion31StarFile(self.filepath)
             # get flattened data from starfile
             metadata = starfile.apply_optics_block()
 
