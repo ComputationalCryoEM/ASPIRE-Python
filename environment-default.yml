@@ -6,7 +6,9 @@ channels:
 
 dependencies:
   - fftw
-  - pyfftw
+  # There is a potential pyFFTW bug
+  #   https://github.com/pyFFTW/pyFFTW/issues/294
+  - pyfftw=0.12
   - pip
   - python=3.8
   - numpy=1.23.5
