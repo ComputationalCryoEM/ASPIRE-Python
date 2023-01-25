@@ -2,23 +2,26 @@ import numpy as np
 import scipy.sparse as sparse
 
 
-def transform_complex_to_real(Z, ns):
+def transform_complex_to_real(B_conj, ells):
     """
     Transforms coefficients of the matrix B (see Eq. 3) from complex
-    to real. B is the linear transformation that takes FB coefficients
+    to real. B is the linear transformation that takes FLE coefficients
     to images.
+    :param B_conj: Complex conjugate of the matrix B.
+    :param ells: List of ells (Bessel function orders) in this basis.
+    :return: Transformed matrix.
     """
-    ne = Z.shape[1]
-    X = np.zeros(Z.shape, dtype=np.float64)
+    num_basis_functions = B_conj.shape[1]
+    X = np.zeros(B_conj.shape, dtype=np.float64)
 
-    for i in range(ne):
-        n = ns[i]
-        if n == 0:
-            X[:, i] = np.real(Z[:, i])
-        if n < 0:
-            s = (-1) ** np.abs(n)
-            x0 = (Z[:, i] + s * Z[:, i + 1]) / np.sqrt(2)
-            x1 = (-Z[:, i] + s * Z[:, i + 1]) / (1j * np.sqrt(2))
+    for i in range(num_basis_functions):
+        ell = ells[i]
+        if ell == 0:
+            X[:, i] = np.real(B_conj[:, i])
+        if ell < 0:
+            s = (-1) ** np.abs(ell)
+            x0 = (B_conj[:, i] + s * B_conj[:, i + 1]) / np.sqrt(2)
+            x1 = (-B_conj[:, i] + s * B_conj[:, i + 1]) / (1j * np.sqrt(2))
             X[:, i] = np.real(x0)
             X[:, i + 1] = np.real(x1)
 
