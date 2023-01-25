@@ -18,6 +18,8 @@ def transform_complex_to_real(B_conj, ells):
         ell = ells[i]
         if ell == 0:
             X[:, i] = np.real(B_conj[:, i])
+        # for each ell != 0, we can populate two entries of the matrix
+        # by taking the complex conjugate of the ell with the opposite sign
         if ell < 0:
             s = (-1) ** np.abs(ell)
             x0 = (B_conj[:, i] + s * B_conj[:, i + 1]) / np.sqrt(2)
