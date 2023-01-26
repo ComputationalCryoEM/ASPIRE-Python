@@ -55,8 +55,8 @@ jobs:
   conda-build:
     needs: check
     runs-on: ${{ matrix.os }}
-    # Only run on pull_requests
-    if: ${{ github.event_name == 'pull_request' }}
+    # Only run on review ready pull_requests
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
     defaults:
       run:
         shell: bash -el {0}
