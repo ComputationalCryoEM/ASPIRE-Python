@@ -2,6 +2,7 @@ import logging
 from unittest import TestCase
 
 import numpy as np
+from pytest import raises
 
 from aspire.basis import PolarBasis2D
 from aspire.image import Image
@@ -25,6 +26,16 @@ class PolarBasis2DTestCase(TestCase, UniversalBasisMixin):
 
     def tearDown(self):
         pass
+
+    def testPolarBasis2DThetaError(self):
+        """
+        Test that PolarBasis2D when instantiated with odd value for `ntheta`
+        gives appropriate error.
+        """
+
+        # Test we raise with expected error.
+        with raises(NotImplementedError, match=r"Only even values for ntheta*"):
+            _ = PolarBasis2D(size=self.L, ntheta=143, dtype=self.dtype)
 
     def testPolarBasis2DEvaluate_t(self):
         x = Image(
