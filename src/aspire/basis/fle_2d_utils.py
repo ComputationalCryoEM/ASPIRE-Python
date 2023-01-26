@@ -75,73 +75,83 @@ def precomp_transform_complex_to_real(ells):
     return A
 
 
-def barycentric_interp_sparse(x, xs, ys, s):
+def barycentric_interp_sparse(target_points, known_points, beta_values, numsparse):
     """
     Perform barycentric interpolation to compute values of Betas at the points
-        `x`, based on their values (`ys`) at known points (`xs`).
+        `target_points`, based on their values (`beta_values`) at known points
+        (`known_points`).
+        Performed via the method described in
+
+        "Barycentric Lagrange Interpolation", Jean-Paul Berrut and Lloyd Trefethen.
+        SIAM Review 2004 46:3, 501-517
         https://people.maths.ox.ac.uk/trefethen/barycentric.pdf
 
-    :param x: The target set of points at which to evaluate the functions.
-    :param xs: The points at which the values of the functions are known.
-    :param ys: The values of the functions at the points `xs`.
-    :param s: Numsparse.
+    :param target_points: The target set of points at which to evaluate the functions.
+    :param known_points: The points at which the values of the functions are known.
+    :param beta_values: The values of the functions at the points `xs`.
+    :param numsparse: Number of points used for interpolation around each target point.
     :return: The interpolation matrix and its transpose as a 2-tuple.
     """
 
-    n = len(x)
-    m = len(xs)
+    n = len(target_points)
+    m = len(known_points)
 
     # Modify points by 2e-16 to avoid division by zero
-    vals, x_ind, xs_ind = np.intersect1d(x, xs, return_indices=True, assume_unique=True)
-    x[x_ind] = x[x_ind] + 2e-16
+    vals, x_ind, xs_ind = np.intersect1d(
+        target_points, known_points, return_indices=True, assume_unique=True
+    )
+    target_points[x_ind] = target_points[x_ind] + 2e-16
 
-    idx = np.zeros((n, s))
-    jdx = np.zeros((n, s))
-    vals = np.zeros((n, s))
-    xss = np.zeros((n, s))
+    idx = np.zeros((n, numsparse))
+    jdx = np.zeros((n, numsparse))
+    vals = np.zeros((n, numsparse))
+    xss = np.zeros((n, numsparse))
     denom = np.zeros((n, 1))
     temp = np.zeros((n, 1))
-    ws = np.zeros((n, s))
+    ws = np.zeros((n, numsparse))
     xdiff = np.zeros(n)
+
+    # loop over target points
     for i in range(n):
+        # get a balanced interval around our point
+        k = np.searchsorted(target_points[i] < known_points, True)
 
-        # get a kind of blanced interval around our point
-        k = np.searchsorted(x[i] < xs, True)
-
-        idp = np.arange(k - s // 2, k + (s + 1) // 2)
+        idp = np.arange(k - numsparse // 2, k + (numsparse + 1) // 2)
         if idp[0] < 0:
-            idp = np.arange(s)
+            idp = np.arange(numsparse)
         if idp[-1] >= m:
-            idp = np.arange(m - s, m)
-        xss[i, :] = xs[idp]
+            idp = np.arange(m - numsparse, m)
+        xss[i, :] = known_points[idp]
         jdx[i, :] = idp
         idx[i, :] = i
 
-    Iw = np.ones(s, dtype=bool)
+    Iw = np.ones(numsparse, dtype=bool)
     ew = np.zeros((n, 1))
-    xtw = np.zeros((n, s - 1))
+    xtw = np.zeros((n, numsparse - 1))
 
     Iw[0] = False
     const = np.zeros((n, 1))
-    for _ in range(s):
+
+    for _ in range(numsparse):
         ew = np.sum(-np.log(np.abs(xss[:, 0].reshape(-1, 1) - xss[:, Iw])), axis=1)
-        constw = np.exp(ew / s)
+        constw = np.exp(ew / numsparse)
         constw = constw.reshape(-1, 1)
         const += constw
-    const = const / s
+    const = const / numsparse
 
-    for j in range(s):
+    for j in range(numsparse):
         Iw[j] = False
         xtw = const * (xss[:, j].reshape(-1, 1) - xss[:, Iw])
         ws[:, j] = 1 / np.prod(xtw, axis=1)
         Iw[j] = True
 
     xdiff = xdiff.flatten()
-    x = x.flatten()
+    target_points = target_points.flatten()
     temp = temp.flatten()
     denom = denom.flatten()
-    for j in range(s):
-        xdiff = x - xss[:, j]
+
+    for j in range(numsparse):
+        xdiff = target_points - xss[:, j]
         temp = ws[:, j] / xdiff
         vals[:, j] = vals[:, j] + temp
         denom = denom + temp
