@@ -23,6 +23,8 @@ jobs:
   build:
     needs: check
     runs-on: ubuntu-latest
+    # Run on every code push, but only on review ready PRs
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10']
@@ -117,6 +119,8 @@ jobs:
   ampere_gpu:
     needs: check
     runs-on: self-hosted
+    # Run on every code push, but only on review ready PRs
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
