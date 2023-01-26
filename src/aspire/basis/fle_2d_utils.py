@@ -77,9 +77,12 @@ def precomp_transform_complex_to_real(ells):
 
 def barycentric_interp_sparse(target_points, known_points, beta_values, numsparse):
     """
-    Perform barycentric interpolation to compute values of Betas at the points
-        `target_points`, based on their values (`beta_values`) at known points
-        (`known_points`).
+    Returns the sparse matrices that perform barycentric interpolation to compute values
+        of Betas at the points `target_points` based on their values `beta_values` at
+        known points `known_points`, and the transpose of this operation. For each target
+        point in `target_points`, only `numsparse` centered source points from `known_points`
+        around the target point are used.
+
         Performed via the method described in
 
         "Barycentric Lagrange Interpolation", Jean-Paul Berrut and Lloyd Trefethen.
@@ -113,7 +116,9 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
 
     # loop over target points
     for i in range(n):
-        # get a balanced interval around our point
+        # choose `numsparse` source points centered around each target point
+        # in order to apply a sparse barycentric interpolation to this target
+        # points
         k = np.searchsorted(target_points[i] < known_points, True)
 
         idp = np.arange(k - numsparse // 2, k + (numsparse + 1) // 2)
@@ -121,10 +126,15 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
             idp = np.arange(numsparse)
         if idp[-1] >= m:
             idp = np.arange(m - numsparse, m)
+        # xss stores the values from `known_points` used for interpolation on the i'th
+        # target point
         xss[i, :] = known_points[idp]
         jdx[i, :] = idp
         idx[i, :] = i
 
+    # Auxiliary vector for computing products of expressions of the form  xss[:,i] - xss[:,j]
+    # in order not to include xss[:,i] - xss[:,i] = 0. Will be all ones except for the index i
+    # not to include in the running product. this index is updated in the loop
     Iw = np.ones(numsparse, dtype=bool)
     ew = np.zeros((n, 1))
     xtw = np.zeros((n, numsparse - 1))
@@ -134,13 +144,17 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
 
     for _ in range(numsparse):
         ew = np.sum(-np.log(np.abs(xss[:, 0].reshape(-1, 1) - xss[:, Iw])), axis=1)
+        # normalization constant
         constw = np.exp(ew / numsparse)
         constw = constw.reshape(-1, 1)
         const += constw
+    # this normalization constant prevents numerical issues and cancels out in the end
+    # not included in return result
     const = const / numsparse
 
     for j in range(numsparse):
         Iw[j] = False
+        # compute the denominator in Eq 3.2 of barycentric lagrange interpolation paper
         xtw = const * (xss[:, j].reshape(-1, 1) - xss[:, Iw])
         ws[:, j] = 1 / np.prod(xtw, axis=1)
         Iw[j] = True
@@ -155,6 +169,9 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
         temp = ws[:, j] / xdiff
         vals[:, j] = vals[:, j] + temp
         denom = denom + temp
+
+    # Eq 4.2
+    # note that const cancels in numerator and denominator
     vals = vals / denom.reshape(-1, 1)
 
     vals = vals.flatten()
