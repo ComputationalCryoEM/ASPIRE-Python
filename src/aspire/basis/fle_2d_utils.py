@@ -32,7 +32,15 @@ def transform_complex_to_real(B_conj, ells):
 
 
 def precomp_transform_complex_to_real(ells):
+    """
+    Returns a sparse matrix that transforms coefficients into the complex
+        representation of the basis to coefficients in the real
+        representation of the basis. See Remark 1.1 of Marshall, Mickelin,
+        and Singer.
 
+    :param ells: The list of integer Bessel function orders.
+    :return: Sparse complex to real transformation matrix.
+    """
     count = len(ells)
     num_nonzero = np.sum(ells == 0) + 2 * np.sum(ells != 0)
     idx = np.zeros(num_nonzero, dtype=int)
@@ -42,29 +50,36 @@ def precomp_transform_complex_to_real(ells):
     k = 0
     for i in range(count):
         ell = ells[i]
+        # ell = 0 is a special case (DC component)
         if ell == 0:
             vals[k] = 1
             idx[k] = i
             jdx[k] = i
             k = k + 1
+        # Only branch the case ell < 0 and also update -ell
+        # via complex conjugation
         if ell < 0:
             s = (-1) ** np.abs(ell)
 
+            # positive ell
             vals[k] = 1 / np.sqrt(2)
             idx[k] = i
             jdx[k] = i
             k = k + 1
 
+            # positive ell
             vals[k] = s / np.sqrt(2)
             idx[k] = i
             jdx[k] = i + 1
             k = k + 1
 
+            # negative ell
             vals[k] = -1 / (1j * np.sqrt(2))
             idx[k] = i + 1
             jdx[k] = i
             k = k + 1
 
+            # negative ell
             vals[k] = s / (1j * np.sqrt(2))
             idx[k] = i + 1
             jdx[k] = i + 1
