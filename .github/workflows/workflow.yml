@@ -1,10 +1,9 @@
 name: ASPIRE Python Pip CI
 
 on:
-  - push
-  # //docs.github.com/en/actions/reference/events-that-trigger-workflows
-  - pull_request
+  pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
   
 
 jobs:
