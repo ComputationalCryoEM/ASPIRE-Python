@@ -133,7 +133,7 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
     for i in range(n):
         # choose `numsparse` source points centered around each target point
         # in order to apply a sparse barycentric interpolation to this target
-        # points
+        # point
         k = np.searchsorted(target_points[i] < known_points, True)
 
         idp = np.arange(k - numsparse // 2, k + (numsparse + 1) // 2)
@@ -169,7 +169,7 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
 
     for j in range(numsparse):
         Iw[j] = False
-        # compute the denominator in Eq 3.2 of barycentric lagrange interpolation paper
+        # compute the denominator in Eq 3.2 of Berrut and Trefethen
         xtw = const * (xss[:, j].reshape(-1, 1) - xss[:, Iw])
         ws[:, j] = 1 / np.prod(xtw, axis=1)
         Iw[j] = True
@@ -180,6 +180,8 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
     denom = denom.flatten()
 
     for j in range(numsparse):
+        # xdiff[i] is the i'th target point minus the j'th source point for that target pt
+        # see the denominator in Eq. 3.3 of Berrut and Trefethen
         xdiff = target_points - xss[:, j]
         temp = ws[:, j] / xdiff
         vals[:, j] = vals[:, j] + temp
@@ -192,6 +194,8 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
     vals = vals.flatten()
     idx = idx.flatten()
     jdx = jdx.flatten()
+    # A is the linear operator mapping the function values from the fixed source
+    # points to the fixed target points.
     A = sparse.csr_matrix((vals, (idx, jdx)), shape=(n, m), dtype=np.float64)
     A_T = sparse.csr_matrix((vals, (jdx, idx)), shape=(m, n), dtype=np.float64)
 
