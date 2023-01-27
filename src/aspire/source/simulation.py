@@ -523,7 +523,7 @@ class Simulation(ImageSource):
         sample_n=None,
         support_radius=None,
         batch_size=512,
-        signal_power_method="estimate_signal_var",
+        signal_power_method="estimate_signal_mean",
         **kwargs,
     ):
         """
@@ -712,7 +712,7 @@ class Simulation(ImageSource):
         sample_n=None,
         support_radius=None,
         batch_size=512,
-        signal_power_method="estimate_signal_var",
+        signal_power_method="estimate_signal_mean",
     ):
         """
         Estimate the SNR of the simulated data set using
