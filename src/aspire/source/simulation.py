@@ -136,8 +136,10 @@ class Simulation(ImageSource):
             states = randi(self.C, n, seed=seed)
         self.states = states
 
+        self._uniform_random_angles = False
         if angles is None:
             angles = uniform_random_angles(n, seed=seed, dtype=self.dtype)
+            self._uniform_random_angles = True
         self.angles = angles
 
         if unique_filters is None:
@@ -546,6 +548,15 @@ class Simulation(ImageSource):
         # Create a Simulation
         sim = cls(*args, **kwargs)
 
+        # When a user supplies angles and requests `sample_n` subset of images
+        #   randomize the rotations for them to avoid as much bias as possible.
+        shuffle = (not sim._uniform_random_angles) and (sample_n is not None)
+        if shuffle:
+            # Store the original rotations.
+            _rots = sim.rotations.copy()
+            # Shuffle the Sim rotations
+            sim.rotations = sim.rotations[np.random.permutation(sim.n)]
+
         # Assert NoiseAdder has not been provided
         if "noise_adder" in kwargs or sim.noise_adder is not None:
             raise RuntimeError(
@@ -563,6 +574,10 @@ class Simulation(ImageSource):
         # Assign the noise_adder
         sim.noise_adder = WhiteNoiseAdder(var=noise_var)
         logger.info(f"Appended {sim.noise_adder} to generation pipeline")
+
+        # Restore the original rotations when previously shuffled.
+        if shuffle:
+            sim.rotations = _rots
 
         return sim
 
@@ -693,7 +708,7 @@ class Simulation(ImageSource):
 
         try:
             signal_estimate_method = getattr(self, signal_power_method)
-        except AttributeError as e:
+        except AttributeError:
             raise ValueError(
                 f"Cannot find signal_power_method={signal_power_method}."
                 "  Try the default 'estimate_signal_mean' or 'estimate_signal_var'"

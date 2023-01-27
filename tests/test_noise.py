@@ -14,7 +14,7 @@ from aspire.noise import (
 )
 from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source.simulation import Simulation
-from aspire.utils import grid_3d
+from aspire.utils import grid_3d, uniform_random_angles
 from aspire.volume import AsymmetricVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -43,7 +43,7 @@ def sim_fixture(request):
     # ie, clean centered projections.
     return Simulation(
         vols=AsymmetricVolume(L=resolution, C=1, dtype=dtype).generate(),
-        n=16,
+        n=128,
         amplitudes=1,
         offsets=0,
         dtype=dtype,
@@ -199,6 +199,9 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
         n=sim_fixture.n,
         offsets=0,
         amplitudes=1.0,
+        # Excercise the `sample_n` and shuffle branches
+        angles=uniform_random_angles(sim_fixture.n, dtype=sim_fixture.dtype),
+        sample_n=sim_fixture.n - 1,
     )
 
     # Check we're within 1% of explicit target
