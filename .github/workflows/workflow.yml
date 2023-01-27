@@ -15,7 +15,6 @@ jobs:
         python-version: '3.7'
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip  # check still needed
         pip install tox tox-gh-actions
     - name: Run Tox Check
       run: tox -e check
@@ -47,7 +46,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip  # check still needed
         pip install tox tox-gh-actions
     - name: Test with tox
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
@@ -106,7 +104,6 @@ jobs:
         python-version: '3.7'
     - name: Install Dependencies
       run: |
-        python -m pip install --upgrade pip  # check still needed
         pip install -e ".[dev]"
     - name: Run Sphinx doc build script
       env:
@@ -125,7 +122,6 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip  # check still needed
         pip install -e ".[dev,gpu_11x]"
     - name: Customize config
       run: |
