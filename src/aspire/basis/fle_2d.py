@@ -244,14 +244,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         A3 = [None] * (self.ell_p_max + 1)
         A3_T = [None] * (self.ell_p_max + 1)
-        chebyshev_pts = np.cos(
+        # known points from which to interpolate Beta values to desired points
+        known_points = np.cos(
             np.pi * (1 - (2 * np.arange(self.num_interp) + 1) / (2 * self.num_interp))
         )
         for i in range(self.ell_p_max + 1):
-            ys = np.zeros(self.num_interp)
-
-            # target points
-            x = (
+            # target points to evaluate Betas
+            target_points = (
                 2
                 * (self.bessel_zeros[self.idx_list[i]] - self.smallest_lambda)
                 / (self.greatest_lambda - self.smallest_lambda)
@@ -259,7 +258,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             )
 
             A3[i], A3_T[i] = barycentric_interp_sparse(
-                x, chebyshev_pts, ys, self.numsparse
+                target_points, known_points, self.numsparse
             )
         self.A3 = A3
         self.A3_T = A3_T

@@ -90,13 +90,12 @@ def precomp_transform_complex_to_real(ells):
     return A
 
 
-def barycentric_interp_sparse(target_points, known_points, beta_values, numsparse):
+def barycentric_interp_sparse(target_points, known_points, numsparse):
     """
     Returns the sparse matrices that perform barycentric interpolation to compute values
-        of Betas at the points `target_points` based on their values `beta_values` at
-        known points `known_points`, and the transpose of this operation. For each target
-        point in `target_points`, only `numsparse` centered source points from `known_points`
-        around the target point are used.
+        of Betas at the points `target_points` at known points `known_points`, and the transpose
+        of this operation. For each target point in `target_points`, only `numsparse` centered
+        source points from `known_points` around the target point are used.
 
         Performed via the method described in
 
@@ -106,7 +105,6 @@ def barycentric_interp_sparse(target_points, known_points, beta_values, numspars
 
     :param target_points: The target set of points at which to evaluate the functions.
     :param known_points: The points at which the values of the functions are known.
-    :param beta_values: The values of the functions at the points `xs`.
     :param numsparse: Number of points used for interpolation around each target point.
     :return: The interpolation matrix and its transpose as a 2-tuple.
     """
