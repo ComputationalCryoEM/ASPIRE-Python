@@ -91,7 +91,7 @@ jobs:
     - name: Execute Pytest Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         export OMP_NUM_THREADS=2
-        pytest --durations=50 -s
+        pytest -n2 --durations=50 -s
 
   docs:
     if: github.ref == 'refs/heads/master'
