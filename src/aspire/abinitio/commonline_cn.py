@@ -332,3 +332,99 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 third_rows[i] = x, y, z
 
         return third_rows
+
+
+class VeeOuterProductEstimator:
+    """
+    Incrementally accumulate outer product entries of unknown conjugation.
+    """
+
+    # These arrays are small enough to just use doubles.
+    # Then we can probably avoid numerical summing concerns without precomputing denom
+    dtype = np.float64
+
+    # conjugation
+    J = np.array([[0, 0, -1], [0, 0, -1], [-1, -1, 0]], dtype=np.float64)
+
+    # Create a mask selecting elements unchanged by J
+    mask = J == 0
+    mask_inverse = ~mask
+
+    def __init__(self):
+        # Create storage for non_negative (index 0) and negative_entries (index 1)
+        self.V_estimates = np.zeros((2, 3, 3), dtype=self.dtype)
+        self.counts = np.zeros((2, 3, 3), dtype=int)
+        # Might as well gather the second moment for var in case you need it later
+        self.V_estimates_moment2 = self.V_estimates.copy()
+
+    def push(self, V):
+        """
+        Given V, accumulate entries into two running averages.
+        """
+
+        self.V_estimates[:, self.mask] += V[self.mask]
+
+        # Parens are important here
+        non_negative_entries = (V >= 0) & self.mask_inverse
+        negative_entries = (V < 0) & self.mask_inverse
+
+        self.V_estimates[0][non_negative_entries] += V[non_negative_entries]
+        self.V_estimates[1][negative_entries] += V[negative_entries]
+
+        self.counts[:, self.mask] += 1
+        self.counts[0][non_negative_entries] += 1
+        self.counts[1][negative_entries] += 1
+
+        self.V_estimates_moment2[..., self.mask] += V[self.mask] ** 2
+        self.V_estimates_moment2[0][non_negative_entries] += (
+            V[non_negative_entries] ** 2
+        )
+        self.V_estimates_moment2[1][negative_entries] += V[negative_entries] ** 2
+
+    def mean(self):
+        """
+        Running mean.
+        """
+        # note double sum and double count for `mask` elements cancel out
+        return np.sum(self.V_estimates, axis=0) / np.sum(self.counts, axis=0)
+
+    def second_moment(self):
+        """
+        Running second moment.
+        """
+        # note double sum and double count for `mask` elements cancel out
+        return np.sum(self.V_estimates_moment2, axis=0) / np.sum(self.counts, axis=0)
+
+    def variance(self):
+        """
+        Running variance.
+        """
+        return self.second_moment() - self.mean() ** 2
+
+    def median_sign_mean_estimate(self):
+        """
+        Return the mean for the group of entries in V containing
+        the median value.
+
+        Seperately computes running metrics (mean) for the group of
+        non_negative and negative entries.  Keeps seperate counts
+        so we can compute an effective median sign estimate.
+
+        """
+
+        # Find whether non negative or negative had the most entries
+        # This should effectively give the the group which has the same
+        #   sign as median.
+        # Note on tie this code will return non_negative.
+        # Technically the effective median would be mean(group_means) in that case,
+        #   but I don't think that logic is necessary yet. If needed we can add easily.
+        group_ind = np.argmax(self.counts, axis=0)
+        group_sum = np.take_along_axis(self.V_estimates, group_ind[np.newaxis], axis=0)
+        group_count = np.take_along_axis(self.counts, group_ind[np.newaxis], axis=0)
+        group_mean = group_sum / group_count
+        # group_moment2 = np.take_along_axis(
+        #     self.V_estimates_moment2, group_ind[np.newaxis], axis=0
+        # )
+        # group_var = group_moment2 / group_count - group_mean**2  # might be interesting...
+
+        return group_mean
