@@ -354,6 +354,11 @@ class VeeOuterProductEstimator:
         # Create storage for non_negative (index 0) and negative_entries (index 1)
         self.V_estimates = np.zeros((2, 3, 3), dtype=self.dtype)
         self.counts = np.zeros((2, 3, 3), dtype=int)
+
+        # Create storage for J-synchronized estimates.
+        self.V_estimates_sync = np.zeros((3,3), dtype=self.dtype)
+        self.count = 0
+        
         # Might as well gather the second moment for var in case you need it later
         self.V_estimates_moment2 = self.V_estimates.copy()
 
@@ -381,6 +386,17 @@ class VeeOuterProductEstimator:
         )
         self.V_estimates_moment2[1][negative_entries] += V[negative_entries] ** 2
 
+        # Accumulate synchronized entries to compute synchronized mean.
+        if self.count == 0:
+            self.V_estimates_sync += V
+        else:
+            if (np.sign(V) == np.sign(self.V_estimates_sync)).all():
+                self.V_estimates_sync += V
+            else:
+                self.V_estimates_sync += J_conjugate(V)
+
+        self.count += 1
+        
     def mean(self):
         """
         Running mean.
@@ -388,6 +404,12 @@ class VeeOuterProductEstimator:
         # note double sum and double count for `mask` elements cancel out
         return np.sum(self.V_estimates, axis=0) / np.sum(self.counts, axis=0)
 
+    def synchronized_mean(self):
+        """
+        Calculate the mean of synchronized outer product estimates.
+        """
+        return self.V_estimate_sync / self.count
+    
     def second_moment(self):
         """
         Running second moment.
