@@ -363,3 +363,23 @@ def cyclic_rotations(order, dtype=np.float64):
     rots_symm = Rotation.from_euler(angles)
 
     return rots_symm
+
+
+# Potentially cache this in the future.
+def support_mask(L, support_radius=None, dtype=np.float64):
+    if support_radius is None:
+        support_radius = L // 2
+    elif support_radius == -1:
+        # Disables mask, here to reduce code duplication.
+        return np.full((L, L), fill_value=True, dtype=bool)
+    elif not 0 < support_radius <= L * np.sqrt(2):
+        raise ValueError(
+            "support_radius should be"
+            f" `(0, L*sqrt(2)={L*np.sqrt(2)}]` or -1 to disable."
+            f" passed {support_radius}."
+        )
+
+    g2d = grid_2d(L, indexing="yx", normalized=False, dtype=dtype)
+    mask = g2d["r"] < support_radius
+
+    return mask

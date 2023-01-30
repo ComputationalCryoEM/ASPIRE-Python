@@ -13,7 +13,6 @@ from aspire.utils import (
     acorr,
     ainner,
     anorm,
-    grid_2d,
     make_symmat,
     ratio_to_decibel,
     trange,
@@ -170,6 +169,8 @@ class Simulation(ImageSource):
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
+        # For Simulation, signal can be computed directly from clean_images.
+        self._signal_images = self.clean_images
 
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
@@ -475,56 +476,17 @@ class Simulation(ImageSource):
 
         return {"err": err, "rel_err": rel_err, "corr": corr}
 
-    def estimate_psnr(self, sample_n=None, batch_size=512, units=None):
+    def estimate_snr(self, *args, **kwargs):
         """
-        Estimate Peak SNR as max(signal)^2 / MSE,
-        where MSE is computed between `projections`
-        and the resulting simulated `images`.
-        PSNR is computed along the stack axis and an average
-        value across the sample is returned.
-        Note that PSNR is inherently a poor metric for identical images.
-
-        :param sample_n: Number of images used for estimate.
-            Defaults to all images in source.
-        :param units: Optionally, convert from default ratio to log scale (`dB`).
-        :returns: Estimated peak signal to noise ratio.
+        See ImageSource.estimate_snr() for documentation.
         """
+        # For clean images return infinite SNR.
+        # Note, relationship with CTF and other sim corruptions still isn't clear to me...
+        if self.noise_adder is None:
+            return np.inf
 
-        if sample_n is None:
-            sample_n = self.n
-
-        if sample_n > self.n:
-            logger.warning(
-                f"`estimate_psnr` sample_n > Simulation.n: {sample_n} > {self.n}."
-                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
-            )
-            sample_n = self.n
-
-        peaksq = np.empty(sample_n, dtype=self.dtype)
-        mse = np.empty(sample_n, dtype=self.dtype)
-        for start in trange(0, sample_n, batch_size):
-            end = min(start + batch_size, sample_n)
-
-            signal = self.projections[start:end].asnumpy()
-            images = self.images[start:end].asnumpy()
-            peaksq[start:end] = np.square(signal).max(axis=(-1, -2))  # max per image
-
-            # Reshape and Transpose for Scikit metrics,
-            # which expect a 2d (samples, outputs)
-            mse[start:end] = mean_squared_error(
-                signal.reshape(sample_n, -1).T,
-                images.reshape(sample_n, -1).T,
-                multioutput="raw_values",
-            )
-
-        psnr = peaksq / mse
-        if units == "dB":
-            psnr = ratio_to_decibel(psnr)
-        elif units is not None:
-            raise ValueError("Units should be `None` or `dB`.")
-
-        # Return the mean psnr of the stack.
-        return np.mean(psnr)
+        # For SNR, Use the noise variance known from the noise_adder.
+        return super().estimate_snr(noise_power=self.noise_adder.noise_var)
 
     @classmethod
     def from_snr(
@@ -590,169 +552,19 @@ class Simulation(ImageSource):
 
         return sim
 
-    def estimate_signal_mean(self, sample_n=None, support_radius=None, batch_size=512):
+    def estimate_psnr(self, sample_n=None, batch_size=512, units=None):
         """
-        Estimate the signal mean of `sample_n` projections.
+        Estimate Peak SNR as max(signal)^2 / MSE,
+        where MSE is computed between `projections`
+        and the resulting simulated `images`.
+        PSNR is computed along the stack axis and an average
+        value across the sample is returned.
+        Note that PSNR is inherently a poor metric for identical images.
 
         :param sample_n: Number of images used for estimate.
             Defaults to all images in source.
-        :param support_radius: Pixel radius used for masking signal support.
-            Default of None will compute inscribed circle, `self.L // 2`.
-        :param batch_size: Images per batch, defaults 512.
-        :returns: Estimated signal mean
-        """
-
-        if sample_n is None:
-            sample_n = self.n
-
-        if sample_n > self.n:
-            logger.warning(
-                f"`estimate_signal_mean` sample_n > Simulation.n: {sample_n} > {self.n}."
-                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
-            )
-            sample_n = self.n
-
-        if support_radius is None:
-            support_radius = self.L // 2
-        elif not 0 < support_radius <= self.L * np.sqrt(2):
-            raise ValueError(
-                "`estimate_signal_mean`'s support_radius should be"
-                f" `(0, L*sqrt(2)={self.L*np.sqrt(2)}]`,"
-                f" passed {support_radius}."
-            )
-
-        g2d = grid_2d(self.L, indexing="yx", normalized=False, dtype=self.dtype)
-        mask = g2d["r"] < support_radius
-
-        # mean is estimated batch-wise, compare with numpy
-        # Note, for simulation we are implicitly assuming taking `sample_n` is random,
-        #   but this does not need to be the case.  We can add a `random_shuffle` param.
-        first_moment = 0.0
-        _denom = sample_n * np.sum(mask)
-        for i in trange(0, sample_n, batch_size):
-            # Gather this batch of images and mask off area outside support_radius
-            images_masked = self.clean_images[i : i + batch_size].asnumpy()[..., mask]
-            # Accumulate first and second moments
-            first_moment += np.sum(images_masked) / _denom
-
-        logger.info(f"Simulation estimated signal mean: {first_moment}")
-
-        return first_moment
-
-    def estimate_signal_var(self, sample_n=None, support_radius=None, batch_size=512):
-        """
-        Estimate the signal variance of `sample_n` projections.
-
-        :param sample_n: Number of images used for estimate.
-            Defaults to all images in source.
-        :param support_radius: Pixel radius used for masking signal support.
-            Default of None will compute inscribed circle, `self.L // 2`.
-        :param batch_size: Images per batch, defaults 512.
-        :returns: Estimated signal variance.
-        """
-
-        if sample_n is None:
-            sample_n = self.n
-
-        if sample_n > self.n:
-            logger.warning(
-                f"`estimate_signal_var` sample_n > Simulation.n: {sample_n} > {self.n}."
-                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
-            )
-            sample_n = self.n
-
-        if support_radius is None:
-            support_radius = self.L // 2
-        elif not 0 < support_radius <= self.L * np.sqrt(2):
-            raise ValueError(
-                "`estimate_signal_var`'s support_radius should be"
-                f" `(0, L*sqrt(2)={self.L*np.sqrt(2)}]`,"
-                f" passed {support_radius}."
-            )
-
-        g2d = grid_2d(self.L, indexing="yx", normalized=False, dtype=self.dtype)
-        mask = g2d["r"] < support_radius
-
-        # Var is estimated batch-wise, compare with numpy
-        # np_estimated_var = np.var(self.clean_images[:sample_n].asnumpy()[..., mask])
-        # Note, for simulation we are implicitly assuming taking `sample_n` is random,
-        #   but this does not need to be the case.  We can add a `random_shuffle` param.
-        first_moment = 0.0
-        second_moment = 0.0
-        _denom = sample_n * np.sum(mask)
-        for i in trange(0, sample_n, batch_size):
-            # Gather this batch of images and mask off area outside support_radius
-            images_masked = self.clean_images[i : i + batch_size].asnumpy()[..., mask]
-            # Accumulate first and second moments
-            first_moment += np.sum(images_masked) / _denom
-            second_moment += np.sum(images_masked**2) / _denom
-
-        # E[X**2] - E[X]**2
-        estimated_var = second_moment - first_moment**2
-        logger.info(f"Simulation estimated signal var: {estimated_var}")
-
-        return estimated_var
-
-    def estimate_signal_power(
-        self,
-        sample_n=None,
-        support_radius=None,
-        batch_size=512,
-        signal_power_method="estimate_signal_mean",
-    ):
-        """
-        Estimate the signal energy of `sample_n` projections using prescribed method.
-
-        :param sample_n: Number of images used for estimate.
-            Defaults to all images in source.
-        :param support_radius: Pixel radius used for masking signal support.
-            Default of None will compute inscribed circle, `self.L // 2`.
-        :param batch_size: Images per batch, defaults 512.
-        :param signal_power_method: Method used for computing signal energy.
-           Defaults to mean via `estimate_signal_mean`.
-           Can use variance method via `estimate_signal_var`.
-
-        :returns: Estimated signal variance.
-        """
-
-        try:
-            signal_estimate_method = getattr(self, signal_power_method)
-        except AttributeError:
-            raise ValueError(
-                f"Cannot find signal_power_method={signal_power_method}."
-                "  Try the default 'estimate_signal_mean' or 'estimate_signal_var'"
-            )
-
-        signal_power = signal_estimate_method(
-            sample_n=sample_n, support_radius=support_radius, batch_size=batch_size
-        )
-        if signal_estimate_method == "estimate_signal_mean":
-            signal_power = signal_power**2  # mean**2
-
-        return signal_power
-
-    def estimate_snr(
-        self,
-        sample_n=None,
-        support_radius=None,
-        batch_size=512,
-        signal_power_method="estimate_signal_mean",
-        units=None,
-    ):
-        """
-        Estimate the SNR of the simulated data set using
-        estimated signal variance / noise variance.
-
-        :param sample_n: Number of images used for estimate.
-            Defaults to all images in source.
-        :param support_radius: Pixel radius used for masking signal support.
-            Default of None will compute inscribed circle, `self.L // 2`.
-        :param batch_size: Images per batch, defaults 512.
-        :param signal_power_method: Method used for computing signal energy.
-           Defaults to mean via `estimate_signal_mean`.
-           Can use variance method via `estimate_signal_var`.
         :param units: Optionally, convert from default ratio to log scale (`dB`).
-        :returns: Estimated signal to noise ratio.
+        :returns: Estimated peak signal to noise ratio.
         """
 
         if sample_n is None:
@@ -760,32 +572,33 @@ class Simulation(ImageSource):
 
         if sample_n > self.n:
             logger.warning(
-                f"`estimate_snr` sample_n > Simulation.n: {sample_n} > {self.n}."
+                f"`estimate_psnr` sample_n > Source.n: {sample_n} > {self.n}."
                 f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
             )
             sample_n = self.n
 
-        # For clean images return infinite SNR.
-        # Note, relationship with CTF and other sim corruptions still isn't clear to me...
-        if self.noise_adder is None:
-            return np.inf
+        peaksq = np.empty(sample_n, dtype=self.dtype)
+        mse = np.empty(sample_n, dtype=self.dtype)
+        for start in trange(0, sample_n, batch_size):
+            end = min(start + batch_size, sample_n)
 
-        noise_power = self.noise_adder.noise_var
-        signal_power = self.estimate_signal_power(
-            sample_n=sample_n,
-            support_radius=support_radius,
-            batch_size=batch_size,
-            signal_power_method=signal_power_method,
-        )
+            signal = self.projections[start:end].asnumpy()
+            images = self.images[start:end].asnumpy()
+            peaksq[start:end] = np.square(signal).max(axis=(-1, -2))  # max per image
 
-        # For `estimate_signal_mean` we yield: signal_mean**2  / noise_variance
-        #     `estimate_signal_var`   we yield: signal_variance / noise_variance
-        snr = signal_power / noise_power
+            # Reshape and Transpose for Scikit metrics,
+            # which expect a 2d (samples, outputs)
+            mse[start:end] = mean_squared_error(
+                signal.reshape(sample_n, -1).T,
+                images.reshape(sample_n, -1).T,
+                multioutput="raw_values",
+            )
 
-        # Perform any unit conversion
+        psnr = peaksq / mse
         if units == "dB":
-            snr = ratio_to_decibel(psnr)
+            psnr = ratio_to_decibel(psnr)
         elif units is not None:
             raise ValueError("Units should be `None` or `dB`.")
 
-        return snr
+        # Return the mean psnr of the stack.
+        return np.mean(psnr)

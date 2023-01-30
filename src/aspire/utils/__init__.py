@@ -27,6 +27,7 @@ from .misc import (  # isort:skip
     pairs_to_linear,
     powerset,
     sha256sum,
+    support_mask,
     fuzzy_mask,
 )
 
