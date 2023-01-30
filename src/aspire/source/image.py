@@ -829,7 +829,7 @@ class ImageSource(ABC):
             # Accumulate first and second moments
             first_moment += np.sum(images_masked) / _denom
 
-        logger.info(f"Source estimated signal mean: {first_moment}")
+        logger.debug(f"Source estimated signal mean: {first_moment}")
 
         return first_moment
 
@@ -873,7 +873,7 @@ class ImageSource(ABC):
 
         # E[X**2] - E[X]**2
         estimated_var = second_moment - first_moment**2
-        logger.info(f"Source estimated signal var: {estimated_var}")
+        logger.debug(f"Source estimated signal var: {estimated_var}")
 
         return estimated_var
 
