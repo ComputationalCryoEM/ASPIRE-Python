@@ -9,9 +9,9 @@ from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
+    fle_ell_sign,
     precomp_transform_complex_to_real,
     transform_complex_to_real,
-    fle_ell_sign,
 )
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
@@ -95,14 +95,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     def _get_fb_compat_indices(self):
         fle_params = []
         for idx, ell in enumerate(self.ells):
-            fle_params.append((abs(ell), self.ks[idx]-1, -fle_ell_sign(ell)))
+            fle_params.append((abs(ell), self.ks[idx] - 1, -fle_ell_sign(ell)))
 
         # order by ells first, then k, then sign                                                                                                          w
         reordered = sorted(fle_params, key=lambda x: (x[0], -x[2], x[1]))
 
         # get indices in FB order
         self.fb_compat_indices = np.array(
-            sorted(range(self.count), key=lambda k: fle_params[k])
+            sorted(range(self.count), key=lambda k: reordered[k])
         )
 
     def _precomp(self):
@@ -446,6 +446,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :return: An Image object containing the corresponding images.
         """
         import pdb
+
         pdb.set_trace()
         if self.match_fb:
             coeffs = coeffs[:, self.fb_compat_indices]
