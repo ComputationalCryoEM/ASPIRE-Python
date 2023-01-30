@@ -11,6 +11,7 @@ from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
     precomp_transform_complex_to_real,
     transform_complex_to_real,
+    fle_ell_sign,
 )
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
@@ -83,10 +84,26 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Steerable basis indices
         self._build_indices()
 
+        # FB compatability indices
+        self._get_fb_compat_indices()
+
     def _build_indices(self):
         self.angular_indices = None
         self.radial_indices = None
         self.signs_indices = None
+
+    def _get_fb_compat_indices(self):
+        fle_params = []
+        for idx, ell in enumerate(self.ells):
+            fle_params.append((abs(ell), self.ks[idx]-1, -fle_ell_sign(ell)))
+
+        # order by ells first, then k, then sign                                                                                                          w
+        reordered = sorted(fle_params, key=lambda x: (x[0], -x[2], x[1]))
+
+        # get indices in FB order
+        self.fb_compat_indices = np.array(
+            sorted(range(self.count), key=lambda k: fle_params[k])
+        )
 
     def _precomp(self):
 
@@ -428,6 +445,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             be evaluated. The last dimension must be equal to `self.count`
         :return: An Image object containing the corresponding images.
         """
+        import pdb
+        pdb.set_trace()
+        if self.match_fb:
+            coeffs = coeffs[:, self.fb_compat_indices]
+
         # See Remark 3.3 and Section 3.4
         betas = self._step3(coeffs)
         z = self._step2(betas)

@@ -198,3 +198,10 @@ def barycentric_interp_sparse(target_points, known_points, numsparse):
     A_T = sparse.csr_matrix((vals, (jdx, idx)), shape=(m, n), dtype=np.float64)
 
     return A, A_T
+
+
+def fle_ell_sign(ell):
+    if ell == 0:
+        return -1
+    else:
+        return np.sign(ell)
