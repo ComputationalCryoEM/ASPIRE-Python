@@ -104,7 +104,7 @@ n_imgs = 2500
 # SNR target for white gaussian noise
 # Note, the SNR value was chosen based on other parameters for this quick tutorial,
 # and can be changed to adjust the power of the noise.
-snr = 1.8
+snr = 1e-4
 
 # For this ``Simulation`` we set all 2D offset vectors to zero,
 # but by default offset vectors will be randomly distributed.
