@@ -445,12 +445,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             be evaluated. The last dimension must be equal to `self.count`
         :return: An Image object containing the corresponding images.
         """
-        import pdb
-
-        pdb.set_trace()
-        if self.match_fb:
-            coeffs = coeffs[:, self.fb_compat_indices]
-
         # See Remark 3.3 and Section 3.4
         betas = self._step3(coeffs)
         z = self._step2(betas)

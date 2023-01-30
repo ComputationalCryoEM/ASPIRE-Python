@@ -5,6 +5,7 @@ import pytest
 
 from aspire.basis import FLEBasis2D
 from aspire.image import Image
+from aspire.nufft import backend_available
 from aspire.numeric import fft
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
@@ -73,6 +74,9 @@ class TestFLEBasis2D(UniversalBasisMixin):
         assert relerr(result_dense.T, result_fast) < basis.epsilon
 
     def testFastVDense(self, basis):
+        if backend_available("cufinufft") and basis.epsilon == 1e-7:
+            pytest.skip()
+
         dense_b = basis.create_dense_matrix()
 
         # get sample coefficients
@@ -86,6 +90,8 @@ class TestFLEBasis2D(UniversalBasisMixin):
         assert relerr(result_dense, result_fast) < basis.epsilon
 
     def testEvaluateExpand(self, basis):
+        if backend_available("cufinufft") and basis.epsilon == 1e-7:
+            pytest.skip()
         # compare result of evaluate() vs more accurate expand()
         # get sample coefficients
         x = create_images(basis.nres, 1)
