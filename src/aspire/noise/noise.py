@@ -127,6 +127,8 @@ class NoiseEstimator:
 
         :param src: A Source object which can give us images on demand
         :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
+            Radius is relative proportion, where `1` represents
+            the radius of disc inscribing a `(src.L, src.L)` image.
         :param batchSize:  The size of the batches in which to compute the variance estimate
         """
 

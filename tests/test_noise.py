@@ -204,13 +204,14 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
         sample_n=sim_fixture.n - 1,
     )
 
-    # Check we're within 1% of explicit target
+    # Check we're within 2% of explicit target
+    # Note achieved 1% when using var power method.
     logger.info(
         "sim_from_snr.noise_adder.noise_var, target_noise_variance ="
         f" {sim_from_snr.noise_adder.noise_var}, {target_noise_variance}"
     )
     assert np.isclose(
-        sim_from_snr.noise_adder.noise_var, target_noise_variance, rtol=0.01
+        sim_from_snr.noise_adder.noise_var, target_noise_variance, rtol=0.02
     )
 
     # Compare with WhiteNoiseEstimator consuming sim_from_snr
@@ -221,8 +222,8 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
         f" {est_noise_variance}, {target_noise_variance}"
     )
 
-    # Check we're within 1%
-    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.01)
+    # Check we're within 2%
+    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.02)
 
 
 @pytest.mark.parametrize(

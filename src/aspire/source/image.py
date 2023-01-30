@@ -910,7 +910,7 @@ class ImageSource(ABC):
         signal_power = signal_estimate_method(
             sample_n=sample_n, support_radius=support_radius, batch_size=batch_size
         )
-        if signal_estimate_method == "estimate_signal_mean":
+        if signal_power_method == "estimate_signal_mean":
             signal_power = signal_power**2  # mean**2
 
         return signal_power
@@ -936,7 +936,15 @@ class ImageSource(ABC):
         :returns: Estimated noise energy (variance).
         """
 
-        est = noise_estimator(src=self, bgRadius=support_radius, batchSize=batch_size)
+        if support_radius is None:
+            support_radius_proportion = 1
+        else:
+            # Note, noise_estimator expects radius as proportion.
+            support_radius_proportion = support_radius / (self.L // 2)
+
+        est = noise_estimator(
+            src=self, bgRadius=support_radius_proportion, batchSize=batch_size
+        )
 
         return est.estimate()
 
