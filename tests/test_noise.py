@@ -171,7 +171,7 @@ def test_psnr(res, target_noise_variance, dtype):
         noise_adder=WhiteNoiseAdder(var=target_noise_variance),
     )
 
-    psnr = sim.estimate_psnr()
+    psnr = sim.estimate_psnr(units="dB")
     logger.debug(f"PSNR target={target_noise_variance} L={sim.L} {sim.dtype} {psnr}")
     assert np.isclose(psnr, -10 * np.log10(target_noise_variance), rtol=0.01)
 

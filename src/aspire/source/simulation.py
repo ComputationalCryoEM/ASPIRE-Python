@@ -15,6 +15,7 @@ from aspire.utils import (
     anorm,
     grid_2d,
     make_symmat,
+    ratio_to_decibel,
     trange,
     uniform_random_angles,
     vecmat_to_volmat,
@@ -474,18 +475,19 @@ class Simulation(ImageSource):
 
         return {"err": err, "rel_err": rel_err, "corr": corr}
 
-    def estimate_psnr(self, sample_n=None, batch_size=512):
+    def estimate_psnr(self, sample_n=None, batch_size=512, units=None):
         """
-        Estimate Peak SNR in decibels as 10*Log(max(signal)^2 / MSE),
+        Estimate Peak SNR as max(signal)^2 / MSE,
         where MSE is computed between `projections`
         and the resulting simulated `images`.
         PSNR is computed along the stack axis and an average
-        decibel value across the sample is returned.
+        value across the sample is returned.
         Note that PSNR is inherently a poor metric for identical images.
 
         :param sample_n: Number of images used for estimate.
             Defaults to all images in source.
-        :returns: Estimated peak signal to noise ratio in decibels.
+        :param units: Optionally, convert from default ratio to log scale (`dB`).
+        :returns: Estimated peak signal to noise ratio.
         """
 
         if sample_n is None:
@@ -515,7 +517,14 @@ class Simulation(ImageSource):
                 multioutput="raw_values",
             )
 
-        return np.mean(10 * np.log10(peaksq / mse))
+        psnr = peaksq / mse
+        if units == "dB":
+            psnr = ratio_to_decibel(psnr)
+        elif units is not None:
+            raise ValueError("Units should be `None` or `dB`.")
+
+        # Return the mean psnr of the stack.
+        return np.mean(psnr)
 
     @classmethod
     def from_snr(
@@ -728,6 +737,7 @@ class Simulation(ImageSource):
         support_radius=None,
         batch_size=512,
         signal_power_method="estimate_signal_mean",
+        units=None,
     ):
         """
         Estimate the SNR of the simulated data set using
@@ -741,6 +751,7 @@ class Simulation(ImageSource):
         :param signal_power_method: Method used for computing signal energy.
            Defaults to mean via `estimate_signal_mean`.
            Can use variance method via `estimate_signal_var`.
+        :param units: Optionally, convert from default ratio to log scale (`dB`).
         :returns: Estimated signal to noise ratio.
         """
 
@@ -769,4 +780,12 @@ class Simulation(ImageSource):
 
         # For `estimate_signal_mean` we yield: signal_mean**2  / noise_variance
         #     `estimate_signal_var`   we yield: signal_variance / noise_variance
-        return signal_power / noise_power
+        snr = signal_power / noise_power
+
+        # Perform any unit conversion
+        if units == "dB":
+            snr = ratio_to_decibel(psnr)
+        elif units is not None:
+            raise ValueError("Units should be `None` or `dB`.")
+
+        return snr
