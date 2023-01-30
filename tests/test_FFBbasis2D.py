@@ -1,9 +1,8 @@
 import logging
 import os.path
-from unittest import TestCase
 
 import numpy as np
-from parameterized import parameterized_class
+import pytest
 from scipy.special import jv
 
 from aspire.basis import FFBBasis2D
@@ -12,54 +11,43 @@ from aspire.source import Simulation
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
 
-from ._basis_util import Steerable2DMixin, UniversalBasisMixin
+from ._basis_util import Steerable2DMixin, UniversalBasisMixin, basis_params_2d
 
 logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
+# Create a test Basis object for each combination of parameters we want to test
+test_bases = [FFBBasis2D(L, dtype=dtype) for L, dtype in basis_params_2d]
 
-# NOTE: Default class values (ie. L=8, dtype=np.float32) are listed here and below to
-# to be picked up by TestCase. This means the default values are tested twice by the Mixins.
-@parameterized_class(
-    ("L", "dtype"),
-    [
-        (8, np.float32),
-        (8, np.float64),
-        (16, np.float32),
-        (16, np.float64),
-        (32, np.float32),
-        (32, np.float64),
-    ],
-)
-class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
-    L = 8
-    dtype = np.float32
 
-    def setUp(self):
-        self.basis = FFBBasis2D((self.L, self.L), dtype=self.dtype)
-        self.seed = 9161341
+def show_basis_params(basis):
+    # print descriptive test name for parametrized test
+    # run pytest with option -rA to see explicitly
+    return f"{basis.nres}-{basis.dtype}"
 
-    def tearDown(self):
-        pass
 
-    def _testElement(self, ell, k, sgn):
-        indices = self.basis.indices()
+@pytest.mark.parametrize("basis", test_bases, ids=show_basis_params)
+class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
+    seed = 9161341
+
+    def _testElement(self, basis, ell, k, sgn):
+        indices = basis.indices()
         ells = indices["ells"]
         sgns = indices["sgns"]
         ks = indices["ks"]
 
-        g2d = grid_2d(self.L, dtype=self.dtype)
+        g2d = grid_2d(basis.nres, dtype=basis.dtype)
         mask = g2d["r"] < 1
 
-        r0 = self.basis.r0[ell][k]
+        r0 = basis.r0[ell][k]
 
         # TODO: Figure out where these factors of 1 / 2 are coming from.
         # Intuitively, the grid should go from -L / 2 to L / 2, not -L / 2 to
         # L / 4. Furthermore, there's an extra factor of 1 / 2 in the
         # definition of `im` below that may be related.
-        r = g2d["r"] * self.L / 4
+        r = g2d["r"] * basis.nres / 4
 
-        im = np.zeros((self.L, self.L), dtype=self.dtype)
+        im = np.zeros((basis.nres, basis.nres), dtype=basis.dtype)
         im[mask] = (
             (-1) ** k
             * np.sqrt(np.pi)
@@ -73,29 +61,28 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         else:
             im *= np.sqrt(2) * np.sin(ell * g2d["phi"])
 
-        coef_ref = np.zeros(self.basis.count, dtype=self.dtype)
+        coef_ref = np.zeros(basis.count, dtype=basis.dtype)
         coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
-        im_ref = self.basis.evaluate(coef_ref).asnumpy()[0]
+        im_ref = basis.evaluate(coef_ref).asnumpy()[0]
 
-        coef = self.basis.expand(im)
+        coef = basis.expand(im)
 
         # NOTE: These tolerances are expected to be rather loose since the
         # above expression for `im` is derived from the analytical formulation
         # (eq. 6 in Zhao and Singer, 2013) and does not take into account
-        # discretization and other approximations.
-        self.assertTrue(np.allclose(im, im_ref, atol=1e-1))
-        self.assertTrue(np.allclose(coef, coef_ref, atol=1e-1))
+        assert np.allclose(im, im_ref, atol=1e-1)
+        assert np.allclose(coef, coef_ref, atol=1e-1)
 
-    def testElements(self):
+    def testElements(self, basis):
         ells = [1, 1, 1, 1]
         ks = [1, 2, 1, 2]
         sgns = [-1, -1, 1, 1]
 
         for ell, k, sgn in zip(ells, ks, sgns):
-            self._testElement(ell, k, sgn)
+            self._testElement(basis, ell, k, sgn)
 
-    def testRotate(self):
+    def testRotate(self, basis):
         # Now low res (8x8) had problems;
         #  better with odd (7x7), but still not good.
         # We'll use a higher res test image.
@@ -103,7 +90,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         # Use a real data volume to generate a clean test image.
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                self.dtype
+                basis.dtype
             )
         )
         src = Simulation(L=v.resolution, n=1, vols=v, dtype=v.dtype)
@@ -132,15 +119,15 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         y4 = basis.evaluate(v4)
 
         # Rotate 90
-        self.assertTrue(np.allclose(y1[0], y2[0], atol=1e-5))
+        assert np.allclose(y1[0], y2[0], atol=1e-5)
 
         # 2*pi Identity
-        self.assertTrue(np.allclose(x1[0], y3[0], atol=1e-5))
+        assert np.allclose(x1[0], y3[0], atol=1e-5)
 
         # Refl (flipped using flipud)
-        self.assertTrue(np.allclose(np.flipud(x1[0]), y4[0], atol=1e-5))
+        assert np.allclose(np.flipud(x1[0]), y4[0], atol=1e-5)
 
-    def testRotateComplex(self):
+    def testRotateComplex(self, basis):
         # Now low res (8x8) had problems;
         #  better with odd (7x7), but still not good.
         # We'll use a higher res test image.
@@ -148,7 +135,7 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         # Use a real data volume to generate a clean test image.
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                self.dtype
+                basis.dtype
             )
         )
         src = Simulation(L=v.resolution, n=1, vols=v, dtype=v.dtype)
@@ -177,15 +164,15 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         y4 = basis.evaluate(v4)
 
         # Rotate 90
-        self.assertTrue(np.allclose(y1[0], y2[0], atol=1e-5))
+        assert np.allclose(y1[0], y2[0], atol=1e-5)
 
         # 2*pi Identity
-        self.assertTrue(np.allclose(x1[0], y3[0], atol=1e-5))
+        assert np.allclose(x1[0], y3[0], atol=1e-5)
 
         # Refl (flipped using flipud)
-        self.assertTrue(np.allclose(np.flipud(x1[0]), y4[0], atol=1e-5))
+        assert np.allclose(np.flipud(x1[0]), y4[0], atol=1e-5)
 
-    def testShift(self):
+    def testShift(self, basis):
         """
         Compare shifting using Image with shifting provided by the Basis.
 
@@ -198,31 +185,31 @@ class FFBBasis2DTestCase(TestCase, Steerable2DMixin, UniversalBasisMixin):
         # Construct some synthetic data
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                self.dtype
+                basis.dtype
             )
-        ).downsample(self.L)
+        ).downsample(basis.nres)
 
-        src = Simulation(L=self.L, n=n_img, vols=v, dtype=self.dtype)
+        src = Simulation(L=basis.nres, n=n_img, vols=v, dtype=basis.dtype)
 
         # Shift images using the Image method directly
         shifted_imgs = src.images[:n_img].shift(test_shift)
 
         # Convert original images to basis coefficients
-        f_imgs = self.basis.evaluate_t(src.images[:n_img])
+        f_imgs = basis.evaluate_t(src.images[:n_img])
 
         # Use the basis shift method
-        f_shifted_imgs = self.basis.shift(f_imgs, test_shift)
+        f_shifted_imgs = basis.shift(f_imgs, test_shift)
 
         # Compute diff between the shifted image sets
-        diff = shifted_imgs.asnumpy() - self.basis.evaluate(f_shifted_imgs).asnumpy()
+        diff = shifted_imgs.asnumpy() - basis.evaluate(f_shifted_imgs).asnumpy()
 
         # Compute mask to compare only the core of the shifted images
-        g = grid_2d(self.L, indexing="yx", normalized=False)
-        mask = g["r"] > self.L / 2
+        g = grid_2d(basis.nres, indexing="yx", normalized=False)
+        mask = g["r"] > basis.nres / 2
         # Masking values outside radius to 0
         diff = np.where(mask, 0, diff)
 
         # Compute and check error
         rmse = np.sqrt(np.mean(np.square(diff), axis=(1, 2)))
         logger.info(f"RMSE shifted image diffs {rmse}")
-        self.assertTrue(np.allclose(rmse, 0, atol=1e-5))
+        assert np.allclose(rmse, 0, atol=1e-5)
