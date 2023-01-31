@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from aspire.basis import FLEBasis2D
+from aspire.basis import FBBasis2D, FLEBasis2D
 from aspire.image import Image
 from aspire.nufft import backend_available
 from aspire.numeric import fft
@@ -31,9 +31,13 @@ fle_params = [
     (33, 1e-14),
 ]
 
-
 test_bases = [
     FLEBasis2D(L, epsilon=epsilon, dtype=np.float64) for L, epsilon in fle_params
+]
+
+test_bases_match_fb = [
+    FLEBasis2D(L, epsilon=epsilon, dtype=np.float64, match_fb=True)
+    for L, epsilon in fle_params
 ]
 
 
@@ -100,6 +104,41 @@ class TestFLEBasis2D(UniversalBasisMixin):
         expand = basis.evaluate(basis.expand(evaluate_t))
 
         assert relerr(expand.asnumpy(), evaluate_t.asnumpy()) < basis.epsilon
+
+
+@pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
+def testMatchFBEvaluate(basis):
+
+    # see #738
+    if basis.nres % 2 == 1:
+        pytest.skip("FB matching for odd resolutions.")
+
+    # ensure that the basis functions are identical when in match_fb mode
+    fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
+
+    # in match_fb, count is the same for both bases
+    coeffs = np.eye(basis.count)
+
+    fb_images = fb_basis.evaluate(coeffs)
+    fle_images = basis.evaluate(coeffs)
+
+    assert np.allclose(fb_images._data, fle_images._data, atol=1e-4)
+
+
+@pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
+def testMatchFBDenseEvaluate(basis):
+    # ensure that images are the same when evaluating coefficients via slow
+    # matrix multiplication
+
+    fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
+
+    coeffs = np.eye(basis.count)
+
+    fb_images = fb_basis.evaluate(coeffs)
+    fle_out = basis.create_dense_matrix() @ coeffs.T
+    fle_images = Image(fle_out.T.reshape(-1, basis.nres, basis.nres))
+
+    assert np.allclose(fb_images.asnumpy(), fle_images.asnumpy(), atol=1e-1)
 
 
 def testLowPass():

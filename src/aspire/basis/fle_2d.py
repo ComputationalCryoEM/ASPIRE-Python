@@ -621,7 +621,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             B[:, :, i] = self.basis_functions[i](self.rs, ts) * self.h
         B = B.reshape(self.nres**2, self.count)
         B = transform_complex_to_real(np.conj(B), self.ells)
-        return B.reshape(self.nres**2, self.count)
+        B = B.reshape(self.nres**2, self.count)
+        if self.match_fb:
+            flip_signs_indices = np.where(self.indices()["sgns"] == 1)
+            B[:, flip_signs_indices] *= -1.0
+            B = B[:, self.fb_compat_indices]
+        return B
 
     def lowpass(self, coeffs, bandlimit):
         """
