@@ -447,7 +447,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :return: An Image object containing the corresponding images.
         """
         if self.match_fb:
+            # sign of basis functions with positive indices flipped relative to FB2d
+            flip_sign_indices = np.where(self.indices()["sgns"] == 1)
+            coeffs[flip_sign_indices] *= -1.0
+            # reorder coefficients by FB2d ordering
             coeffs = coeffs[self.fb_compat_indices]
+
         # See Remark 3.3 and Section 3.4
         betas = self._step3(coeffs)
         z = self._step2(betas)
