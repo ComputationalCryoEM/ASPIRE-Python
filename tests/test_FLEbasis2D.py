@@ -20,6 +20,14 @@ def show_fle_params(basis):
     return f"{basis.nres}-{basis.epsilon}"
 
 
+def gpu_ci_skip():
+    pytest.skip("1e-7 precision for FLEBasis2D.evaluate()")
+
+
+def odd_resolution_skip():
+    pytest.skip("FB matching for odd resolution.")
+
+
 fle_params = [
     (32, 1e-4),
     (32, 1e-7),
@@ -79,7 +87,7 @@ class TestFLEBasis2D(UniversalBasisMixin):
 
     def testFastVDense(self, basis):
         if backend_available("cufinufft") and basis.epsilon == 1e-7:
-            pytest.skip()
+            gpu_ci_skip()
 
         dense_b = basis.create_dense_matrix()
 
@@ -95,7 +103,8 @@ class TestFLEBasis2D(UniversalBasisMixin):
 
     def testEvaluateExpand(self, basis):
         if backend_available("cufinufft") and basis.epsilon == 1e-7:
-            pytest.skip()
+            gpu_ci_skip()
+
         # compare result of evaluate() vs more accurate expand()
         # get sample coefficients
         x = create_images(basis.nres, 1)
@@ -111,7 +120,10 @@ def testMatchFBEvaluate(basis):
 
     # see #738
     if basis.nres % 2 == 1:
-        pytest.skip("FB matching for odd resolutions.")
+        odd_resolution_skip()
+
+    if backend_available("cufinufft") and basis.epsilon == 1e-7:
+        gpu_ci_skip()
 
     # ensure that the basis functions are identical when in match_fb mode
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
@@ -148,7 +160,7 @@ def testMatchFBEvaluate_t(basis):
 
     # see #738
     if basis.nres % 2 == 1:
-        pytest.skip("FB matching for odd resolutions.")
+        odd_resolution_skip()
 
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
@@ -158,7 +170,7 @@ def testMatchFBEvaluate_t(basis):
     fb_coeffs = fb_basis.evaluate_t(images)
     fle_coeffs = basis.evaluate_t(images)
 
-    assert np.allclose(fb_coeffs, fle_coeffs, atol=1e-1)
+    assert np.allclose(fb_coeffs, fle_coeffs, atol=1e-4)
 
 
 def testLowPass():
