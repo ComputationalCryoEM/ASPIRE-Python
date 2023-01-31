@@ -105,6 +105,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     def _get_fb_compat_indices(self):
         ind = self.indices()
         self.fb_compat_indices = np.lexsort((ind["ks"], ind["sgns"], ind["ells"]))
+        self.fb_compat_indices_t = np.zeros(self.count, dtype=int)
 
     def _precomp(self):
 
@@ -473,7 +474,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         z = self._step1_t(imgs)
         b = self._step2_t(z)
         coeffs = self._step3_t(b)
-
+        if self.match_fb:
+            flip_signs_indices = np.where(self.indices()["sgns"] == 1)
+            coeffs[:, flip_signs_indices] *= -1.0
+            coeffs = coeffs[:, self.fb_compat_indices]
         return coeffs
 
     def _step1_t(self, im):

@@ -138,7 +138,27 @@ def testMatchFBDenseEvaluate(basis):
     fle_out = basis.create_dense_matrix() @ coeffs.T
     fle_images = Image(fle_out.T.reshape(-1, basis.nres, basis.nres))
 
+    # via matrix, matching is to a lower precision than FLE's evaluate
     assert np.allclose(fb_images.asnumpy(), fle_images.asnumpy(), atol=1e-1)
+
+
+@pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
+def testMatchFBEvaluate_t(basis):
+    # ensure that coefficients are the same when evaluating images
+
+    # see #738
+    if basis.nres % 2 == 1:
+        pytest.skip("FB matching for odd resolutions.")
+
+    fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
+
+    # test images to evaluate
+    images = fb_basis.evaluate(np.eye(basis.count))
+
+    fb_coeffs = fb_basis.evaluate_t(images)
+    fle_coeffs = basis.evaluate_t(images)
+
+    assert np.allclose(fb_coeffs, fle_coeffs, atol=1e-1)
 
 
 def testLowPass():
