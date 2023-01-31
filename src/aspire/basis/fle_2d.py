@@ -88,22 +88,23 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self._get_fb_compat_indices()
 
     def _build_indices(self):
-        self.angular_indices = None
-        self.radial_indices = None
-        self.signs_indices = None
+        self.angular_indices = np.abs(self.ells)
+        self.radial_indices = self.ks - 1
+        self.signs_indices = np.array(list(map(fle_ell_sign, self.ells)))
+
+    def indices(self):
+        """
+        Return the precomputed indices for each basis function.
+        """
+        return {
+            "ells": self.angular_indices,
+            "ks": self.radial_indices,
+            "sgns": self.signs_indices,
+        }
 
     def _get_fb_compat_indices(self):
-        fle_params = []
-        for idx, ell in enumerate(self.ells):
-            fle_params.append((abs(ell), self.ks[idx] - 1, -fle_ell_sign(ell)))
-
-        # order by ells first, then k, then sign                                                                                                          w
-        reordered = sorted(fle_params, key=lambda x: (x[0], -x[2], x[1]))
-
-        # get indices in FB order
-        self.fb_compat_indices = np.array(
-            sorted(range(self.count), key=lambda k: reordered[k])
-        )
+        ind = self.indices()
+        self.fb_compat_indices = np.lexsort((ind["ks"], ind["sgns"], ind["ells"]))
 
     def _precomp(self):
 
@@ -445,6 +446,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             be evaluated. The last dimension must be equal to `self.count`
         :return: An Image object containing the corresponding images.
         """
+        if self.match_fb:
+            coeffs = coeffs[self.fb_compat_indices]
         # See Remark 3.3 and Section 3.4
         betas = self._step3(coeffs)
         z = self._step2(betas)
