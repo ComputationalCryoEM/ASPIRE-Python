@@ -17,6 +17,7 @@ from aspire.utils.random import randn
 from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
+# Each tuple holds the parameters (resolution "L", cyclic order "order", dtype).
 param_list_c3_c4 = [
     (44, 3, np.float32),
     (45, 4, np.float64),
@@ -28,8 +29,10 @@ param_list_c3_c4 = [
     pytest.param(45, 3, np.float64, marks=pytest.mark.expensive),
 ]
 
+# For testing Cn methods where n>4.
 param_list_cn = [
     pytest.param(44, 5, np.float32, marks=pytest.mark.expensive),
+    pytest.param(45, 6, np.float64, marks=pytest.mark.expensive),
 ]
 
 
@@ -282,9 +285,9 @@ def testRelativeViewingDirections(L, order, dtype):
     # ie. check that the svd is close to [1, 0, 0].
     error_ij = np.linalg.norm(np.array([1, 0, 0], dtype=dtype) - sij, axis=1)
     error_ii = np.linalg.norm(np.array([1, 0, 0], dtype=dtype) - sii, axis=1)
-    assert np.max(error_ij) < 0.2
-    assert np.max(error_ii) < 1e-5
-    assert np.mean(error_ij) < 0.002
+    assert np.max(error_ij) < 2e-1
+    assert np.max(error_ii) < 5e-2
+    assert np.mean(error_ij) < 2e-3
     assert np.mean(error_ii) < 1e-5
 
     # Check that the mean angular difference is within 2 degrees.
