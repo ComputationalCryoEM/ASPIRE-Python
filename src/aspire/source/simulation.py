@@ -485,7 +485,8 @@ class Simulation(ImageSource):
         if self.noise_adder is None:
             return np.inf
 
-        # For SNR, Use the noise variance known from the noise_adder.
+        # For SNR of Simulations, use the theoretical noise variance
+        # known from the noise_adder instead of deriving from PSD.
         return super().estimate_snr(noise_power=self.noise_adder.noise_var)
 
     @classmethod
@@ -521,6 +522,7 @@ class Simulation(ImageSource):
 
         # When a user supplies angles and requests `sample_n` subset of images
         #   randomize the rotations for them to avoid as much bias as possible.
+        # The original rotations stored in `_rots` will be restored later.
         shuffle = (not sim._uniform_random_angles) and (sample_n is not None)
         if shuffle:
             # Store the original rotations.
@@ -558,7 +560,7 @@ class Simulation(ImageSource):
         where MSE is computed between `projections`
         and the resulting simulated `images`.
         PSNR is computed along the stack axis and an average
-        value across the sample is returned.
+        value across the stack sample is returned.
         Note that PSNR is inherently a poor metric for identical images.
 
         :param sample_n: Number of images used for estimate.

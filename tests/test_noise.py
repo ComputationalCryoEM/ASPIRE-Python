@@ -192,7 +192,7 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
 
     # Attempt to create a new simulation at this `target_snr`
     # For unit testing, we will use `sim_fixture`'s volume,
-    #   but the new Simulation instance should yield different projects.
+    #   but the new Simulation instance should yield different projections.
     sim_from_snr = Simulation.from_snr(
         target_snr,
         vols=sim_fixture.vols,  # Force the previously generated volume.
@@ -205,7 +205,6 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
     )
 
     # Check we're within 2% of explicit target
-    # Note achieved 1% when using var power method.
     logger.info(
         "sim_from_snr.noise_adder.noise_var, target_noise_variance ="
         f" {sim_from_snr.noise_adder.noise_var}, {target_noise_variance}"
@@ -309,7 +308,7 @@ def test_from_snr_aniso(sim_fixture, target_noise_variance):
 
     # Attempt to create a new simulation at this `target_snr`
     # For unit testing, we will use `sim_fixture`'s volume,
-    #   but the new Simulation instance should yield different projects.
+    #   but the new Simulation instance should yield different projections.
     sim_from_snr = Simulation.from_snr(
         target_snr,
         vols=sim_fixture.vols,  # Force the previously generated volume.

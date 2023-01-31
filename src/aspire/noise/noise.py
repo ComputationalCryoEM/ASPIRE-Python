@@ -61,8 +61,8 @@ class NoiseAdder(Xform):
         Concrete implementations are expected to provide a method that
         returns the noise variance for the NoiseAdder.
 
-        Authors of `NoiseAdder`s are encouraged to consider any theoretically
-        superior methods of calculating noise variance directly,
+        Authors of `NoiseAdder`s are encouraged to consider any relevant
+        methods of calculating noise variance from theory.
         """
 
 

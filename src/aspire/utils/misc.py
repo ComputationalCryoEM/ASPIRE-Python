@@ -367,11 +367,30 @@ def cyclic_rotations(order, dtype=np.float64):
 
 # Potentially cache this in the future.
 def support_mask(L, support_radius=None, dtype=np.float64):
+    """
+    Return a mask selecting values within `support_radius`.
+
+    This mask is hard cutoff, boolean type.
+    For a soft cutoff, see `fuzzy_mask`
+
+    Use for selecting signal.
+    Alternatively the mask inverse (~) can be used to select background.
+    Combinations can be used to create bands.
+
+    :param L: Resolution in pixels.
+    :param support_radius: Radius of mask in pixels.
+        Defaults to L // 2.
+    :param dtype: Dtype used for mask construction and comparison.
+    :return: Boolean mask as (L,L) array.
+    """
+
     if support_radius is None:
         support_radius = L // 2
+
     elif support_radius == -1:
         # Disables mask, here to reduce code duplication.
         return np.full((L, L), fill_value=True, dtype=bool)
+
     elif not 0 < support_radius <= L * np.sqrt(2):
         raise ValueError(
             "support_radius should be"

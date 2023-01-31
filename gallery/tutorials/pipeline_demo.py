@@ -95,6 +95,7 @@ ctf_filters = [
 #
 # Alternatively, users can bring their own images using an ``ArrayImageSource``,
 # or define their own custom noise functions via ``Simulation(..., noise_adder=CustomNoiseAdder(...))``.
+# Examples can be found in ``tutorials/class_averaging.py`` and ``experiments/simulated_abinitio_pipeline.py``.
 
 from aspire.source import Simulation
 
@@ -103,7 +104,7 @@ res = 41
 n_imgs = 2500
 # SNR target for white gaussian noise
 # Note, the SNR value was chosen based on other parameters for this quick tutorial,
-# and can be changed to adjust the power of the noise.
+# and can be changed to adjust the power of the additive noise.
 snr = 1e-4
 
 # For this ``Simulation`` we set all 2D offset vectors to zero,
@@ -196,10 +197,11 @@ src.images[0:10].show()
 src_snr = src.estimate_snr()
 avgs_snr = avgs.estimate_snr()
 logging.info(
-    f"Simulation SNR (includes additonal offsets, amplitude, and CTF corruptions): {src_snr}"
+    f"Simulation SNR (includes any additonal offset, amplitude, and CTF corruptions): {src_snr}"
 )
 logging.info(f"Class Averaged SNR: {avgs_snr}")
-# Alternatively, estimate power in the areas outside the signal support, which should be noise.
+# Alternatively, estimate power in the areas outside the signal support,
+# which should be predominantly noise.
 src_noise_power = src.estimate_noise_power()
 avgs_noise_power = avgs.estimate_noise_power()
 logging.info(f"Simulation noise power: {src_noise_power}")
