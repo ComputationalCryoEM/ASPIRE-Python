@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import norm
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.utils import Rotation, anorm, cyclic_rotations, tqdm, trange
+from aspire.utils import J_conjugate, Rotation, anorm, cyclic_rotations, tqdm, trange
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -70,15 +70,14 @@ class CLSymmetryCn(CLSymmetryC3C4):
         n_theta_ijs = len(R_theta_ijs)
 
         # Generate shift phases.
-        r_max = pf.shape[0]
+        r_max = pf.shape[-1]
         shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
             r_max, max_shift_1d, shift_step
         )
         n_shifts = len(shifts)
         all_shift_phases = shift_phases.T
 
-        # Transpose and reconstruct full polar Fourier for use in correlation.
-        pf = pf.T
+        # Reconstruct full polar Fourier for use in correlation.
         pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
@@ -125,11 +124,15 @@ class CLSymmetryCn(CLSymmetryC3C4):
         logger.info("Computing pairwise likelihood.")
         n_vijs = n_img * (n_img - 1) // 2
         vijs = np.zeros((n_vijs, 3, 3), dtype=self.dtype)
-        viis = np.zeros((n_img, 3, 3), dtype=self.dtype)
+        viis_sync = np.zeros((n_img, 3, 3), dtype=self.dtype)
         rots_symm = cyclic_rotations(self.order, self.dtype).matrices
         c = 0
-        e1 = [1, 0, 0]
-        min_ii_norm = float("inf") * np.ones(n_img)
+
+        # List of MeanOuterProductEstimator instances.
+        #
+        mean_est = []
+        for _ in range(n_img):
+            mean_est.append(MeanOuterProductEstimator())
 
         with tqdm(total=n_vijs) as pbar:
             for i in range(n_img):
@@ -200,19 +203,11 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
                     # Compute the estimate of vi*vi.T as given by j.
                     vii_j = np.mean(opt_Ri_tilde.T @ rots_symm @ opt_Ri_tilde, axis=0)
-
-                    svals = np.linalg.svd(vii_j, compute_uv=False)
-                    if np.linalg.norm(svals - e1, 2) < min_ii_norm[i]:
-                        viis[i] = vii_j
-                        min_ii_norm[i] = np.linalg.norm(svals - e1, 2)
+                    mean_est[i].push(vii_j)
 
                     # Compute the estimate of vj*vj.T as given by i.
                     vjj_i = np.mean(opt_Rj_tilde.T @ rots_symm @ opt_Rj_tilde, axis=0)
-
-                    svals = np.linalg.svd(vjj_i, compute_uv=False)
-                    if np.linalg.norm(svals - e1, 2) < min_ii_norm[j]:
-                        viis[j] = vjj_i
-                        min_ii_norm[j] = np.linalg.norm(svals - e1, 2)
+                    mean_est[j].push(vjj_i)
 
                     # Compute the estimate of vi*vj.T.
                     vijs[c] = np.mean(
@@ -223,7 +218,9 @@ class CLSymmetryCn(CLSymmetryC3C4):
                     c += 1
                     pbar.update()
 
-        return vijs, viis
+                viis_sync[i] = mean_est[i].synchronized_mean()
+
+        return vijs, viis_sync
 
     def compute_scls_inds(self, Ri_cands):
         """
@@ -334,7 +331,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         return third_rows
 
 
-class VeeOuterProductEstimator:
+class MeanOuterProductEstimator:
     """
     Incrementally accumulate outer product entries of unknown conjugation.
     """
@@ -343,48 +340,15 @@ class VeeOuterProductEstimator:
     # Then we can probably avoid numerical summing concerns without precomputing denom
     dtype = np.float64
 
-    # conjugation
-    J = np.array([[0, 0, -1], [0, 0, -1], [-1, -1, 0]], dtype=np.float64)
-
-    # Create a mask selecting elements unchanged by J
-    mask = J == 0
-    mask_inverse = ~mask
-
     def __init__(self):
-        # Create storage for non_negative (index 0) and negative_entries (index 1)
-        self.V_estimates = np.zeros((2, 3, 3), dtype=self.dtype)
-        self.counts = np.zeros((2, 3, 3), dtype=int)
-
         # Create storage for J-synchronized estimates.
-        self.V_estimates_sync = np.zeros((3,3), dtype=self.dtype)
+        self.V_estimates_sync = np.zeros((3, 3), dtype=self.dtype)
         self.count = 0
-        
-        # Might as well gather the second moment for var in case you need it later
-        self.V_estimates_moment2 = self.V_estimates.copy()
 
     def push(self, V):
         """
-        Given V, accumulate entries into two running averages.
+        Given V, accumulate entries into a running sum of J-synchronized entries.
         """
-
-        self.V_estimates[:, self.mask] += V[self.mask]
-
-        # Parens are important here
-        non_negative_entries = (V >= 0) & self.mask_inverse
-        negative_entries = (V < 0) & self.mask_inverse
-
-        self.V_estimates[0][non_negative_entries] += V[non_negative_entries]
-        self.V_estimates[1][negative_entries] += V[negative_entries]
-
-        self.counts[:, self.mask] += 1
-        self.counts[0][non_negative_entries] += 1
-        self.counts[1][negative_entries] += 1
-
-        self.V_estimates_moment2[..., self.mask] += V[self.mask] ** 2
-        self.V_estimates_moment2[0][non_negative_entries] += (
-            V[non_negative_entries] ** 2
-        )
-        self.V_estimates_moment2[1][negative_entries] += V[negative_entries] ** 2
 
         # Accumulate synchronized entries to compute synchronized mean.
         if self.count == 0:
@@ -396,57 +360,9 @@ class VeeOuterProductEstimator:
                 self.V_estimates_sync += J_conjugate(V)
 
         self.count += 1
-        
-    def mean(self):
-        """
-        Running mean.
-        """
-        # note double sum and double count for `mask` elements cancel out
-        return np.sum(self.V_estimates, axis=0) / np.sum(self.counts, axis=0)
 
     def synchronized_mean(self):
         """
         Calculate the mean of synchronized outer product estimates.
         """
-        return self.V_estimate_sync / self.count
-    
-    def second_moment(self):
-        """
-        Running second moment.
-        """
-        # note double sum and double count for `mask` elements cancel out
-        return np.sum(self.V_estimates_moment2, axis=0) / np.sum(self.counts, axis=0)
-
-    def variance(self):
-        """
-        Running variance.
-        """
-        return self.second_moment() - self.mean() ** 2
-
-    def median_sign_mean_estimate(self):
-        """
-        Return the mean for the group of entries in V containing
-        the median value.
-
-        Seperately computes running metrics (mean) for the group of
-        non_negative and negative entries.  Keeps seperate counts
-        so we can compute an effective median sign estimate.
-
-        """
-
-        # Find whether non negative or negative had the most entries
-        # This should effectively give the the group which has the same
-        #   sign as median.
-        # Note on tie this code will return non_negative.
-        # Technically the effective median would be mean(group_means) in that case,
-        #   but I don't think that logic is necessary yet. If needed we can add easily.
-        group_ind = np.argmax(self.counts, axis=0)
-        group_sum = np.take_along_axis(self.V_estimates, group_ind[np.newaxis], axis=0)
-        group_count = np.take_along_axis(self.counts, group_ind[np.newaxis], axis=0)
-        group_mean = group_sum / group_count
-        # group_moment2 = np.take_along_axis(
-        #     self.V_estimates_moment2, group_ind[np.newaxis], axis=0
-        # )
-        # group_var = group_moment2 / group_count - group_mean**2  # might be interesting...
-
-        return group_mean
+        return self.V_estimates_sync / self.count

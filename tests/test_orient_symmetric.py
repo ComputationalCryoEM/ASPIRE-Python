@@ -4,7 +4,7 @@ from numpy import pi, random
 from numpy.linalg import det, norm
 
 from aspire.abinitio import CLSymmetryC3C4, CLSymmetryCn
-from aspire.abinitio.commonline_cn import VeeOuterProductEstimator
+from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.utils.coor_trans import (
@@ -35,11 +35,12 @@ param_list_cn = [
 
 # Method to instantiate a Simulation source and orientation estimation object.
 def source_orientation_objs(L, n_img, order, dtype):
+    seed = 1
     vol = CnSymmetricVolume(
         L=L,
         C=1,
         order=order,
-        seed=0,
+        seed=seed,
         dtype=dtype,
     ).generate()
 
@@ -50,7 +51,7 @@ def source_orientation_objs(L, n_img, order, dtype):
         dtype=dtype,
         vols=vol,
         C=1,
-        seed=123,
+        seed=seed,
     )
 
     if order in [3, 4]:
@@ -62,7 +63,7 @@ def source_orientation_objs(L, n_img, order, dtype):
         symmetry=f"C{order}",
         n_theta=360,
         max_shift=1 / L,  # set to 1 pixel
-        seed=1,
+        seed=seed,
     )
     return src, orient_est
 
@@ -186,7 +187,7 @@ def testSelfRelativeRotations(L, order, dtype):
     assert mean_angular_distance < 5
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
+@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4 + param_list_cn)
 def testRelativeViewingDirections(L, order, dtype):
     # Simulation source and common lines Class corresponding to
     # volume with C3 or C4 symmetry.
@@ -290,6 +291,7 @@ def testRelativeViewingDirections(L, order, dtype):
     angle_tol = 2 * np.pi / 180
     if order > 4:
         angle_tol = 6 * np.pi / 180
+
     assert angular_dist_vijs < angle_tol
     assert angular_dist_viis < angle_tol
 
@@ -522,60 +524,23 @@ def buildOuterProducts(n_img, dtype):
     return vijs, viis, gt_vis
 
 
-def test_vee_estimator_simple():
+def test_mean_estimator_simple():
     """
-    Manully run VeeOuterProductEstimator for prebaked inputs.
+    Manully run MeanOuterProductEstimator for prebaked inputs.
     """
 
-    est = VeeOuterProductEstimator()
+    est = MeanOuterProductEstimator()
 
+    # Push two matrices with opposite signs.
     est.push(np.full((3, 3), -2, dtype=np.float64))
     est.push(np.full((3, 3), 2, dtype=np.float64))
 
-    assert np.allclose(est.mean(), np.full((3, 3), 0, dtype=np.float64))
-    assert np.allclose(est.variance(), np.full((3, 3), 4, dtype=np.float64))
+    # synchronized_mean will J-conjugate the second entry prior to averaging.
     assert np.allclose(
-        est.median_sign_mean_estimate(), np.array([[0, 0, 2], [0, 0, 2], [2, 2, 0]])
+        est.synchronized_mean(), np.array([[0, 0, -2], [0, 0, -2], [-2, -2, 0]])
     )
 
     est.push(np.full((3, 3), -2, dtype=np.float64))
     est.push(np.full((3, 3), -2, dtype=np.float64))
-    assert np.allclose(
-        est.median_sign_mean_estimate(),
-        np.array([[-1, -1, -2], [-1, -1, -2], [-2, -2, -1]]),
-    )
 
-
-def test_vee_estimator_stat():
-    """
-    Tests incremental VeeOuterProductEstimator using random data,
-    comparing to global numpy arithmetic.
-    """
-
-    est = VeeOuterProductEstimator()
-
-    n = 1000
-    # Mix of pos and negative centers
-    centers = np.array([(i % 2) * 2 - 1 for i in range(1, 10)])
-    V = np.array([np.random.normal(loc=c, scale=4, size=n) for c in centers])
-    V = V.reshape(3, 3, n)
-
-    for v in np.transpose(V, (2, 0, 1)):
-        est.push(v)
-
-    assert np.allclose(est.mean(), np.mean(V, axis=2))
-    assert np.allclose(est.variance(), np.var(V, axis=2))
-
-    res = np.empty((3, 3))
-    # Find the mean of the entries matching sign of median
-    for i, j in [(0, 2), (1, 2), (2, 0), (2, 1)]:
-        entries = V[i, j]
-        group_selection = np.sign(np.median(entries)) == np.sign(entries)
-        res[i, j] = np.mean(entries[group_selection])
-
-    # These entries should match a global mean (unaffected by J)
-    for i, j in [(0, 0), (0, 1), (1, 0), (1, 1), (2, 2)]:
-        entries = V[i, j]
-        res[i, j] = np.mean(entries)
-
-    assert np.allclose(est.median_sign_mean_estimate(), res)
+    assert np.allclose(est.synchronized_mean(), np.full((3, 3), -1, dtype=np.float64))
