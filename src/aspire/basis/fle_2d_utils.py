@@ -182,6 +182,7 @@ def barycentric_interp_sparse(target_points, known_points, numsparse):
         # see the denominator in Eq. 3.3 of Berrut and Trefethen
         xdiff = target_points - xss[:, j]
         temp = ws[:, j] / xdiff
+        # vals[:,j] = (1/const)*w_j/(x[i] - xs[j]), with the notation in Eq. 3.3
         vals[:, j] = vals[:, j] + temp
         denom = denom + temp
 
@@ -194,6 +195,7 @@ def barycentric_interp_sparse(target_points, known_points, numsparse):
     jdx = jdx.flatten()
     # A is the linear operator mapping the function values from the fixed source
     # points to the fixed target points.
+    # A(i,j) = \ell(x[i] ) w_j/(x[i] - xs[j]), with the notation in Eq. 3.3
     A = sparse.csr_matrix((vals, (idx, jdx)), shape=(n, m), dtype=np.float64)
     A_T = sparse.csr_matrix((vals, (jdx, idx)), shape=(m, n), dtype=np.float64)
 
