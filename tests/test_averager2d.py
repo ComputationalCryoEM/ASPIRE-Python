@@ -74,7 +74,6 @@ class Averager2DBase:
     averager = Averager2D
 
     def setUp(self):
-
         self.vols = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy"))
         ).downsample(64)
@@ -104,7 +103,6 @@ class Averager2DBase:
         return None
 
     def testTypeMismatch(self):
-
         # Work around ABC, which won't let us test the unimplemented base case.
         self.averager.__abstractmethods__ = set()
 
@@ -155,7 +153,6 @@ class AligningAverager2DBase(Averager2DBase):
     num_procs = 1 if xfail_ray_dev() else 2
 
     def setUp(self):
-
         super().setUp()
 
         # We'll construct our Rotations now
@@ -202,7 +199,6 @@ class AligningAverager2DBase(Averager2DBase):
 
 
 class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
-
     averager = BFRAverager2D
     n_search_angles = 360
 
@@ -244,7 +240,6 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
 
 
 class BFSRAverager2DTestCase(BFRAverager2DTestCase):
-
     averager = BFSRAverager2D
 
     def setUp(self):
@@ -295,7 +290,6 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 
 
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
-
     averager = ReddyChatterjiAverager2D
     num_procs = 1 if xfail_ray_dev() else 2
 
@@ -332,5 +326,4 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
 
 class BFSReddyChatterjiAverager2DTestCase(ReddyChatterjiAverager2DTestCase):
-
     averager = BFSReddyChatterjiAverager2D

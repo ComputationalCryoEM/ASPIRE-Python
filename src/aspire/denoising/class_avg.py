@@ -17,7 +17,6 @@ class ClassAvg(Denoiser):
         pass
 
     def class_averaging(self):
-
         pass
 
     def output_images(self):
