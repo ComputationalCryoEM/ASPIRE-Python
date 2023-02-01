@@ -2,7 +2,6 @@ import numpy as np
 
 
 class Numpy:
-
     asnumpy = staticmethod(lambda x: x)
 
     def __getattr__(self, item):

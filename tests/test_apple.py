@@ -491,7 +491,6 @@ class ApplePickerTestCase(TestCase):
 
         # Create a tmp dir for this test output
         with tempfile.TemporaryDirectory() as tmpdir_name:
-
             # Instantiate an Apple instance
             apple_picker = Apple(particle_size=42, output_dir=tmpdir_name)
 
