@@ -58,7 +58,6 @@ def df_to_relion_types(df):
 
 class Relion30StarFile(StarFile):
     def __init__(self, filepath):
-
         super().__init__(filepath, blocks=None)
 
         # first convert types where possible
