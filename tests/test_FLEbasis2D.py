@@ -173,6 +173,22 @@ def testMatchFBEvaluate_t(basis):
     assert np.allclose(fb_coeffs, fle_coeffs, atol=1e-4)
 
 
+@pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
+def testMatchFBDenseEvaluate_t(basis):
+    # ensure that coefficients are the same when evaluating images via slow
+    # matrix multiplication
+
+    fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
+
+    # test images to evaluate
+    images = fb_basis.evaluate(np.eye(basis.count))
+    # reshapes to a stack of basis.count vectors of length L**2
+    vec = images.asnumpy().T.reshape(basis.nres**2, -1)
+
+    # doesn't do anything for now
+    assert vec.shape == (basis.nres**2, basis.count)
+
+
 def testLowPass():
     # test that low passing removes more and more high frequency
     # elements as bandlimit decreases
