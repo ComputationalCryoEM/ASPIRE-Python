@@ -86,22 +86,22 @@ def vol_fixture(request, dtype_fixture):
 
 
 # SyntheticVolume tests:
-def testVolumeRepr(vol_fixture):
+def test_volume_repr(vol_fixture):
     """Test Synthetic Volume repr"""
     assert repr(vol_fixture).startswith(f"{vol_fixture.__class__.__name__}")
 
 
-def testVolumeGenerate(vol_fixture):
+def test_volume_generate(vol_fixture):
     """Test that a volume is generated"""
     _ = vol_fixture.generate()
 
 
-def testSimulationInit(vol_fixture):
+def test_simulation_init(vol_fixture):
     """Test that a Simulation initializes provided a synthetic Volume."""
     _ = Simulation(L=vol_fixture.L, vols=vol_fixture.generate())
 
 
-def testCompactSupport(vol_fixture):
+def test_compact_support(vol_fixture):
     """Test that volumes have compact support."""
     if not isinstance(vol_fixture, LegacyVolume):
         # Mask to check support
@@ -115,7 +115,7 @@ def testCompactSupport(vol_fixture):
         assert (vol[0][inside] > 0).all()
 
 
-def testVolumeSymmetry(vol_fixture):
+def test_volume_symmetry(vol_fixture):
     """Test that volumes have intended symmetry."""
     vol = vol_fixture.generate()
 
