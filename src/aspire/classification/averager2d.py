@@ -312,7 +312,6 @@ class BFRAverager2D(AligningAverager2D):
         correlations = np.empty(classes.shape, dtype=self.dtype)
 
         def _innerloop(k):
-
             _correlations = np.empty((n_nbor, self.n_angles))
             # Get the coefs for these neighbors
             if basis_coefficients is None:
@@ -629,7 +628,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
 
         def _innerloop(i):
-
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
                 # Retrieve relevant images directly from source.

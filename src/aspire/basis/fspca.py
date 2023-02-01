@@ -193,7 +193,6 @@ class FSPCABasis(SteerableBasis2D):
         eigval_index = 0
         basis_inds = []
         for angular_index, C_k in enumerate(self.covar_coef_est):
-
             # # Eigen/SVD, covariance block C_k should be symmetric.
             eigvals_k, eigvecs_k = np.linalg.eigh(C_k)
 
@@ -249,7 +248,6 @@ class FSPCABasis(SteerableBasis2D):
         # Apply Data matrix batchwise
         num_batches = (self.src.n + self.batch_size - 1) // self.batch_size
         for i in range(num_batches):
-
             # Compute the coefficients for this batch
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, self.src.n)
@@ -296,7 +294,6 @@ class FSPCABasis(SteerableBasis2D):
             #     on the correspong block.
             blk_spca_coef = np.empty_like(batch_coef)
             for angular_index, a_blk in enumerate(A):
-
                 # To compute new expansion coefficients using spca basis
                 #   we combine the basis coefs using the eigen decomposition.
                 # Note image stack slow moving axis, otherwise this is just a
@@ -392,7 +389,7 @@ class FSPCABasis(SteerableBasis2D):
         #    instead of the larger component.
         # Note, that we only use OrderedDict for its key's (ie as an OrderedSet)
         ordered_components = OrderedDict()
-        for (k, q) in unsigned_components:
+        for k, q in unsigned_components:
             ordered_components.setdefault((k, q))  # inserts when not exists yet
 
         # Select the top n (k,q) pairs
@@ -402,7 +399,7 @@ class FSPCABasis(SteerableBasis2D):
         pos_mask = self.basis._indices["sgns"] == 1
         neg_mask = self.basis._indices["sgns"] == -1
         compressed_indices = []
-        for (k, q) in top_components:
+        for k, q in top_components:
             # Compute the locations of coefs we're interested in.
             k_maps = self.angular_indices == k
             q_maps = self.radial_indices == q
