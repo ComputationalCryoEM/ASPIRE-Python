@@ -52,7 +52,6 @@ class Picker:
         response_thresh_norm_factor=20,
         conv_map_nthreads=4,
     ):
-
         self.particle_size = int(particle_size / 2)
         self.max_size = int(max_size / 2)
         self.min_size = int(min_size / 2)

@@ -5,6 +5,7 @@ from unittest import TestCase
 
 import numpy as np
 from click.testing import CliRunner
+from pytest import raises
 
 from aspire.abinitio import CLSyncVoting
 from aspire.commands.orient3d import orient3d
@@ -42,9 +43,11 @@ class OrientSyncTestCase(TestCase):
         )
         vols = vols.downsample(L)
 
-        sim = Simulation(L=L, n=n, vols=vols, unique_filters=filters, dtype=self.dtype)
+        self.sim = Simulation(
+            L=L, n=n, vols=vols, unique_filters=filters, dtype=self.dtype
+        )
 
-        self.orient_est = CLSyncVoting(sim, L // 2, 36)
+        self.orient_est = CLSyncVoting(self.sim, L // 2, 36)
 
     def tearDown(self):
         pass
@@ -88,6 +91,16 @@ class OrientSyncTestCase(TestCase):
         self.assertTrue(
             np.allclose(results, self.est_shifts, atol=utest_tolerance(self.dtype))
         )
+
+    def testThetaError(self):
+        """
+        Test that CLSyncVoting when instantiated with odd value for `n_theta`
+        gives appropriate error.
+        """
+
+        # Test we raise with expected error.
+        with raises(NotImplementedError, match=r"n_theta must be even*"):
+            _ = CLSyncVoting(self.sim, 16, 35)
 
     def testCommandLine(self):
         # Ensure that the command line tool works as expected

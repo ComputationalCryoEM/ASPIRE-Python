@@ -52,7 +52,7 @@ def wemd_embed(arr, wavelet="coif3", level=None):
     assert len(detail_coefs) == level
 
     weighted_coefs = []
-    for (j, details_level_j) in enumerate(detail_coefs):
+    for j, details_level_j in enumerate(detail_coefs):
         multiplier = 2 ** ((level - 1 - j) * (1 + (dimension / 2.0)))
         for coefs in details_level_j.values():
             weighted_coefs.append(multiplier * coefs.flatten())
