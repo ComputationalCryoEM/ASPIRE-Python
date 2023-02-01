@@ -69,7 +69,6 @@ def relerr(base, approx):
 
 @pytest.mark.parametrize("basis", test_bases, ids=show_fle_params)
 class TestFLEBasis2D(UniversalBasisMixin):
-
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):
         dense_b = basis.create_dense_matrix()
@@ -117,7 +116,6 @@ class TestFLEBasis2D(UniversalBasisMixin):
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
 def testMatchFBEvaluate(basis):
-
     # see #738
     if basis.nres % 2 == 1:
         odd_resolution_skip()
@@ -181,12 +179,17 @@ def testMatchFBDenseEvaluate_t(basis):
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
     # test images to evaluate
+    # gets a stack of shape (basis.count, L, L)
     images = fb_basis.evaluate(np.eye(basis.count))
     # reshapes to a stack of basis.count vectors of length L**2
-    vec = images.asnumpy().T.reshape(basis.nres**2, -1)
+    vec = np.array(
+        [images[i, :, :].reshape((basis.nres**2, -1)) for i in range(images.shape[0])]
+    )[:, :, 0]
 
-    # doesn't do anything for now
-    assert vec.shape == (basis.nres**2, basis.count)
+    fb_coeffs = fb_basis.evaluate_t(images)
+    fle_coeffs = basis.create_dense_matrix().T @ vec.T
+
+    assert np.allclose(fb_coeffs, fle_coeffs, atol=1e-1)
 
 
 def testLowPass():
