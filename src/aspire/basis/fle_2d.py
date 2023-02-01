@@ -59,15 +59,19 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         super().__init__(size, ell_max=None, dtype=self.dtype)
 
     def _build(self):
+        """
+        Build the internal data structure for the FLEBasis2D class.
+        """
 
         # bandlimit set to basis size by default
         if not self.bandlimit:
             self.bandlimit = self.nres
 
+        # compute number of k's for each ell
         self._calc_k_max()
 
         if self.match_fb:
-            # FB2D and FFB2D heuristic
+            # Use FB2D and FFB2D heuristic for computing max basis functions
             self.max_basis_functions = self.k_max[0] + sum(2 * self.k_max[1:])
         else:
             # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
@@ -108,6 +112,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.fb_compat_indices_t = np.zeros(self.count, dtype=int)
 
     def _precomp(self):
+        """
+        Precompute the basis functions and other objects used in the evaluation of
+            coefficients.
+        """
 
         # Find bessel functions zeros (the eigenvalues of the Laplacian on
         # the disk) and generate the FLE Basis functions
