@@ -7,8 +7,9 @@ This tutorial demonstrates the CTF and corresponds to
 lecture notes from MATH586.
 """
 
-import matplotlib.pyplot as plt
+# sphinx_gallery_thumbnail_path = '../../../gallery/tutorialsdata/ctffind4/diagnostic_output.png'
 
+import matplotlib.pyplot as plt
 plt.rcParams["image.cmap"] = "gray"
 import numpy as np
 from scipy.ndimage import gaussian_filter
@@ -297,12 +298,8 @@ plt.show()
 # with phase flipping the estimated CTF.
 
 estimated_flipped_fn = rctf_fn * np.sign(est_ctf_fn)
-fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True, sharey=True)
-fig.suptitle("Application of Phase Flipping")
-ax1.plot(idealized_flipped_fn[c, c:])
-ax1.set_title("Idealized")
-ax2.plot(estimated_flipped_fn[c, c:])
-ax2.set_title("Estimated")
+plt.title("Application of estimated CTF Phase Flipping")
+plt.plot(estimated_flipped_fn[c, c:])
 plt.show()
 
 # %%
@@ -353,8 +350,49 @@ src = RelionSource(
     max_rows=10000,
 )
 src.downsample(64)  # easier to visualize
-src.images[:5].show()
+src.images[:3].show()
 
 # Phase flip
 src.phase_flip()
-src.images[:5].show()
+src.images[:3].show()
+
+
+# %%
+# CTFFIND4: External Validation
+# -----------------------------
+# CTFFIND4 is often used by other CryoEM distributions,
+# and was used to confirm the forward CTF filter model of ASPIRE.
+# For transparency, an example run using the ``test_img.mrc``
+# generated earlier is documented.
+#
+# CTFFIND4 estimated 9982.5, within 0.2% of the modeled defocus=10000
+# for the radially symmetric case.
+#
+
+# %%
+# Interactive session
+#
+# .. literalinclude:: ../../../gallery/tutorials/data/ctffind4/input.txt
+#
+#
+
+# %%
+# Diagnostic Output Text
+#
+# .. literalinclude:: ../../../gallery/tutorials/data/ctffind4/diagnostic_output.txt
+#
+#
+
+# %%
+# CTFFIND4 Diagnostic Output PDF (rendering of diagnostic_output_avrot.pdf).
+#
+# .. image:: ../../../gallery/tutorials/data/ctffind4/diagnostic_output_avrot.png
+#     :alt: diagnostic_output_avrot.png
+#
+
+# %%
+# CTFFIND4 Diagnostic Output MRC (rendering of diagnostic_output.mrc).
+#
+# .. image:: ../../../gallery/tutorials/data/ctffind4/diagnostic_output.png
+#     :alt: diagnostic_output.png
+#

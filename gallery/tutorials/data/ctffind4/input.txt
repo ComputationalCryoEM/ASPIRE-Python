@@ -1,0 +1,68 @@
+(aspire_ctf_valid) ➜  bin ./ctffind                                             
+
+
+        **   Welcome to Ctffind   **
+
+            Version : 4.1.14
+           Compiled : Jan 31 2023
+               Mode : Interactive
+
+Input image file name [test_img.mrc]               : 
+Output diagnostic image file name
+[diagnostic_output.mrc]                            : 
+Pixel size [1]                                     : 
+Acceleration voltage [200]                         : 
+Spherical aberration [2.26]                        : 
+Amplitude contrast [0.07]                          : 
+Size of amplitude spectrum to compute [1024]       : 
+Minimum resolution [30.0]                          : 
+Maximum resolution [5.0]                           : 
+Minimum defocus [5000.0]                           : 
+Maximum defocus [50000.0]                          : 
+Defocus search step [100.0]                        : 
+Do you know what astigmatism is present? [yes]     : yes
+Slower, more exhaustive search? [no]               : yes
+Known astigmatism [0]                              : 0
+Known astigmatism angle [0]                        : 0
+Find additional phase shift? [no]                  : yes
+Minimum phase shift (rad) [0.0]                    : 
+Maximum phase shift (rad) [3.15]                   : 
+Phase shift search step [0.1]                      : 0.1
+Do you want to set expert options? [yes]           : yes
+Resample micrograph if pixel size too small? [no]  : yes
+Do you already know the defocus? [no]              : no
+Desired number of parallel threads [1]             : 
+File name: test_img.mrc
+File type: MRC
+Dimensions: X = 512 Y = 512 Z = 1
+Number of slices: 1
+Working on micrograph 1 of 1
+OpenMP is not available - will not use parallel threads.
+
+   100% [=================] done! (0h:00m45s)                    
+      DFMID1      DFMID2      ANGAST          CC
+    10000.00    10000.00        0.00     0.56503
+
+Timings
+ Initialization       : 00:00:00
+ Spectrum computation : 00:00:00
+ Parameter search     : 00:00:45
+ Diagnosis            : 00:00:03
+ Total                : 00:00:48
+
+
+Estimated defocus values        : 9982.50 , 9982.50 Angstroms
+Estimated azimuth of astigmatism: 0.00 degrees
+Additional phase shift          : 2.020 degrees (0.035 radians) (0.011 PIf)
+Score                           : 0.56568
+Pixel size for fitting          : 1.400 Angstroms
+Thon rings with good fit up to  : 2.0 Angstroms
+Did not detect CTF aliasing
+
+
+Summary of results                          : diagnostic_output.txt
+Diagnostic images                           : diagnostic_output.mrc
+Detailed results, including 1D fit profiles : diagnostic_output_avrot.txt
+Use this command to plot 1D fit profiles    : ctffind_plot_results.sh diagnostic_output_avrot.txt
+
+
