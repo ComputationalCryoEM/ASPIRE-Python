@@ -72,7 +72,7 @@ def source_orientation_objs(L, n_img, order, dtype):
 
 
 @pytest.mark.parametrize("L, order, dtype", param_list_c3_c4 + param_list_cn)
-def testEstimateRotations(L, order, dtype):
+def test_estimate_rotations(L, order, dtype):
     n_img = 24
     if order > 4:
         n_img = 32
@@ -116,7 +116,7 @@ def testEstimateRotations(L, order, dtype):
 
 
 @pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
-def testRelativeRotations(L, order, dtype):
+def test_relative_rotations(L, order, dtype):
     # Simulation source and common lines estimation instance
     # corresponding to volume with C3 or C4 symmetry.
     n_img = 24
@@ -156,7 +156,7 @@ def testRelativeRotations(L, order, dtype):
 
 
 @pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
-def testSelfRelativeRotations(L, order, dtype):
+def test_self_relative_rotations(L, order, dtype):
     # Simulation source and common lines Class corresponding to
     # volume with C3 or C4 symmetry.
     n_img = 24
@@ -191,7 +191,7 @@ def testSelfRelativeRotations(L, order, dtype):
 
 
 @pytest.mark.parametrize("L, order, dtype", param_list_c3_c4 + param_list_cn)
-def testRelativeViewingDirections(L, order, dtype):
+def test_relative_viewing_directions(L, order, dtype):
     # Simulation source and common lines Class corresponding to
     # volume with C3 or C4 symmetry.
     n_img = 24
@@ -300,7 +300,7 @@ def testRelativeViewingDirections(L, order, dtype):
 
 
 @pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
-def testSelfCommonLines(L, order, dtype):
+def test_self_commonlines(L, order, dtype):
     n_img = 24
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
     n_theta = cl_symm.n_theta
@@ -310,7 +310,7 @@ def testSelfCommonLines(L, order, dtype):
 
     # Compute ground truth self-common-lines matrix.
     rots = src.rotations
-    scl_gt = buildSelfCommonLinesMatrix(n_theta, rots, order)
+    scl_gt = build_self_commonlines_matrix(n_theta, rots, order)
 
     # Since we search for self common lines whose angle differences fall
     # outside of 180 degrees by a tolerance of 2 * (360 // L), we must exclude
@@ -343,7 +343,7 @@ def testSelfCommonLines(L, order, dtype):
 
 
 @pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
-def testCommonLines(L, order, dtype):
+def test_commonlines(L, order, dtype):
     n_img = 24
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
     n_theta = cl_symm.n_theta
@@ -399,14 +399,14 @@ def testCommonLines(L, order, dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def testGlobalJSync(dtype):
+def test_global_J_sync(dtype):
     L = 16
     n_img = 20
     order = 3  # test not dependent on order
     _, orient_est = source_orientation_objs(L, n_img, order, dtype)
 
     # Build a set of outer products of random third rows.
-    vijs, viis, _ = buildOuterProducts(n_img, dtype)
+    vijs, viis, _ = build_outer_products(n_img, dtype)
 
     # J-conjugate some of these outer products (every other element).
     vijs_conj, viis_conj = vijs.copy(), viis.copy()
@@ -429,14 +429,14 @@ def testGlobalJSync(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def testEstimateThirdRows(dtype):
+def test_estimate_third_rows(dtype):
     L = 16
     n_img = 20
     order = 3  # test not dependent on order
     _, orient_est = source_orientation_objs(L, n_img, order, dtype)
 
     # Build outer products vijs, viis, and get ground truth third rows.
-    vijs, viis, gt_vis = buildOuterProducts(n_img, dtype)
+    vijs, viis, gt_vis = build_outer_products(n_img, dtype)
 
     # Estimate third rows from outer products.
     # Due to factorization of V, these might be negated third rows.
@@ -449,7 +449,7 @@ def testEstimateThirdRows(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def testCompleteThirdRow(dtype):
+def test_complete_third_row(dtype):
     # Complete third row that coincides with z-axis
     z = np.array([0, 0, 1], dtype=dtype)
     Rz = CLSymmetryC3C4._complete_third_row_to_rot(z)
@@ -468,7 +468,7 @@ def testCompleteThirdRow(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def testDtypePassThrough(dtype):
+def test_dtype_pass_through(dtype):
     L = 16
     n_img = 20
     order = 3  # test does not depend on order
@@ -476,7 +476,7 @@ def testDtypePassThrough(dtype):
     assert src.dtype == cl_symm.dtype
 
 
-def buildSelfCommonLinesMatrix(n_theta, rots, order):
+def build_self_commonlines_matrix(n_theta, rots, order):
     # Construct rotatation matrices associated with cyclic order.
     rots_symm = cyclic_rotations(order, rots.dtype).matrices
 
@@ -502,7 +502,7 @@ def buildSelfCommonLinesMatrix(n_theta, rots, order):
     return scl_gt
 
 
-def buildOuterProducts(n_img, dtype):
+def build_outer_products(n_img, dtype):
     # Build random third rows, ground truth vis (unit vectors)
     gt_vis = np.zeros((n_img, 3), dtype=dtype)
     for i in range(n_img):
