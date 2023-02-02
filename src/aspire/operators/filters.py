@@ -320,7 +320,6 @@ class ArrayFilter(Filter):
         self.xfer_fn_array = xfer_fn_array
 
     def _evaluate(self, omega):
-
         _input_pts = tuple(np.linspace(1, x, x) for x in self.xfer_fn_array.shape)
 
         # TODO: This part could do with some documentation - not intuitive!
@@ -451,13 +450,19 @@ class CTFFilter(Filter):
         defocus = np.zeros_like(om_x)
         defocus[ind_nz] = self.defocus_mean + self.defocus_diff * np.cos(2 * angles_nz)
 
-        c2 = -np.pi * self.wavelength * defocus
-        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength**3
+        # f0 = 1 / (512 * self.pixel_size) ## XXX 512
+        c2 = -np.pi * self.wavelength * defocus  # * f0**2
+        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength**3  # *f0**4
 
         r2 = om_x**2 + om_y**2
         r4 = r2**2
         gamma = c2 * r2 + c4 * r4
         h = np.sqrt(1 - self.alpha**2) * np.sin(gamma) - self.alpha * np.cos(gamma)
+
+        # For historical reference, below is a translated forumla from the legacy MATLAB code.
+        # The two implementations seem to agree for odd images, but the original MATLAB code
+        # behaves differently for even image sizes.
+        # h = np.sin(c2*r2 + c4*r2*r2 - self.alpha)
 
         if self.B:
             h *= np.exp(-self.B * r2)
