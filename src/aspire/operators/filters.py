@@ -283,7 +283,6 @@ class ArrayFilter(Filter):
         self.xfer_fn_array = xfer_fn_array
 
     def _evaluate(self, omega):
-
         _input_pts = tuple(np.linspace(1, x, x) for x in self.xfer_fn_array.shape)
 
         # TODO: This part could do with some documentation - not intuitive!

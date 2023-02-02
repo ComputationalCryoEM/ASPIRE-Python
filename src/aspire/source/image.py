@@ -714,7 +714,6 @@ class ImageSource(ABC):
     def save_images(
         self, starfile_filepath, filename_indices=None, batch_size=512, overwrite=False
     ):
-
         """
         Save an ImageSource to MRCS files
 
@@ -754,7 +753,6 @@ class ImageSource(ABC):
                 mrc_mode=2,
                 overwrite=overwrite,
             ) as mrc:
-
                 stats = MrcStats()
                 # Loop over source setting data into mrc file
                 for i_start in np.arange(0, self.n, batch_size):
