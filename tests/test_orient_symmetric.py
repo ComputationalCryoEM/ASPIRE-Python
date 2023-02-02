@@ -358,7 +358,7 @@ def test_commonlines(L, order, dtype):
     pairs = all_pairs(n_img)
     within_1_degree = 0
     within_5_degrees = 0
-    for (i, j) in pairs:
+    for i, j in pairs:
         a_ij_s = np.zeros(order)
         a_ji_s = np.zeros(order)
         # Convert common-line indices to angles. Use angle of common line in [0, 180).
