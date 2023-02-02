@@ -32,7 +32,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     """
 
     def __init__(
-        self, size, bandlimit=None, epsilon=1e-10, match_fb=False, dtype=np.float32
+        self, size, bandlimit=None, epsilon=1e-10, dtype=np.float32, match_fb=True
     ):
         """
         :param size: The size of the vectors for which to define the FLE basis.
@@ -41,10 +41,19 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             `ell_max` of other Basis objects is computed *from* the bandlimit for the FLE basis.
              Defaults to the resolution of the basis.
         :param epsilon: Relative precision between FLE fast method and dense matrix multiplication.
-        :param match_fb: If this flag is set, the number of basis functions will be forced to match
-            `FBBasis2D` for the same resolution. In particular, the thresholding process will not
-            be performed, meaning `self.count` will be larger.
         :param dtype: Datatype of images and coefficients represented.
+        :param match_fb:
+              With this flag set the following will ensure that the basis functions are
+              identical to `FBBasis2D`:
+            - The initial heuristic for the number of basis functions, based on the resolution, will
+              be set to that of `FBBasis2D`, and the FLE frequency thresholding procedure to reduce the
+              number of functions will not be carried out. This means the number of basis functions for
+              a given image size will be identical across the two bases.
+            - The signs of basis functions and coefficients with `sgn == 1` will be flipped relative to
+              the original FLE implementation, to match FB.
+            - The basis functions returned will be reordered according to the FB ordering, that is, first
+              by `ell`s, then by `sgn`s, then by `k`s.
+
         """
         if isinstance(size, int):
             size = (size, size)
