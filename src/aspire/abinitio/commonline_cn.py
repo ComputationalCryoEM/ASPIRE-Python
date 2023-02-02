@@ -63,9 +63,9 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Generate candidate rotation matrices and the common-line and
         # self-common-line indices induced by those rotations.
-        Ris_tilde, R_theta_ijs = self.generate_cand_rots()
-        cijs_inds = self.compute_cls_inds(Ris_tilde, R_theta_ijs)
-        scls_inds = self.compute_scls_inds(Ris_tilde)
+        Ris_tilde, R_theta_ijs = self._generate_cand_rots()
+        cijs_inds = self._compute_cls_inds(Ris_tilde, R_theta_ijs)
+        scls_inds = self._compute_scls_inds(Ris_tilde)
         n_cands = len(Ris_tilde)
         n_theta_ijs = len(R_theta_ijs)
 
@@ -129,7 +129,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         c = 0
 
         # List of MeanOuterProductEstimator instances.
-        #
+        # Used to keep a running mean of J-synchronized estimates for vii.
         mean_est = []
         for _ in range(n_img):
             mean_est.append(MeanOuterProductEstimator())
@@ -222,7 +222,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         return vijs, viis_sync
 
-    def compute_scls_inds(self, Ri_cands):
+    def _compute_scls_inds(self, Ri_cands):
         """
         Compute self-common-lines indices induced by candidate rotations.
 
@@ -256,7 +256,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         return scls_inds
 
     # TODO: cache
-    def compute_cls_inds(self, Ris_tilde, R_theta_ijs):
+    def _compute_cls_inds(self, Ris_tilde, R_theta_ijs):
         """
         Compute the common-lines indices induced by the candidate rotations.
 
@@ -293,10 +293,10 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 pbar.update()
         return cij_inds
 
-    def generate_cand_rots(self):
+    def _generate_cand_rots(self):
         logger.info("Generating candidate rotations.")
         # Construct candidate rotations, Ris_tilde.
-        vis = self.generate_cand_rots_third_rows()
+        vis = self._generate_cand_rots_third_rows()
         Ris_tilde = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
 
         # Construct all in-plane rotations, R_theta_ijs
@@ -307,7 +307,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         return Ris_tilde, R_theta_ijs
 
-    def generate_cand_rots_third_rows(self, legacy=True):
+    def _generate_cand_rots_third_rows(self, legacy=True):
         n_points_sphere = self.n_points_sphere
         if legacy:
             # Genereate random points on the sphere
