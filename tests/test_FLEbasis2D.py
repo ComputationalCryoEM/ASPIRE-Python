@@ -40,12 +40,12 @@ fle_params = [
 ]
 
 test_bases = [
-    FLEBasis2D(L, epsilon=epsilon, dtype=np.float64) for L, epsilon in fle_params
+    FLEBasis2D(L, epsilon=epsilon, dtype=np.float64, match_fb=False)
+    for L, epsilon in fle_params
 ]
 
 test_bases_match_fb = [
-    FLEBasis2D(L, epsilon=epsilon, dtype=np.float64, match_fb=True)
-    for L, epsilon in fle_params
+    FLEBasis2D(L, epsilon=epsilon, dtype=np.float64) for L, epsilon in fle_params
 ]
 
 
@@ -93,7 +93,9 @@ class TestFLEBasis2D(UniversalBasisMixin):
         # get sample coefficients
         x = create_images(basis.nres, 1)
         # hold input test data constant (would depend on epsilon parameter)
-        coeffs = FLEBasis2D(basis.nres, epsilon=1e-4, dtype=np.float64).evaluate_t(x)
+        coeffs = FLEBasis2D(
+            basis.nres, epsilon=1e-4, dtype=np.float64, match_fb=False
+        ).evaluate_t(x)
 
         result_dense = dense_b @ coeffs.T
         result_fast = basis.evaluate(coeffs).asnumpy()
@@ -195,7 +197,7 @@ def testLowPass():
     # elements as bandlimit decreases
 
     L = 128
-    basis = FLEBasis2D(L)
+    basis = FLEBasis2D(L, match_fb=False)
 
     # sample coefficients
     ims = create_images(L, 1)
@@ -235,7 +237,7 @@ def testRotate():
     # FLE coefficients
 
     L = 128
-    basis = FLEBasis2D(L)
+    basis = FLEBasis2D(L, match_fb=False)
 
     # sample image
     ims = create_images(L, 1)
@@ -292,7 +294,7 @@ def testRadialConvolution():
     # (e.g. CTF) function via FLE coefficients
 
     L = 32
-    basis = FLEBasis2D(L)
+    basis = FLEBasis2D(L, match_fb=False)
     # load test CTF
     ctf = np.load(os.path.join(DATA_DIR, "ctf_32x32.npy")).reshape(1, 32, 32)
     ctf = ctf / np.max(np.abs(ctf.flatten()))
