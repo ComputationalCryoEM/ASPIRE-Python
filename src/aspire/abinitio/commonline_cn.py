@@ -25,7 +25,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
         n_points_sphere=500,
         seed=None,
     ):
-
         super().__init__(
             src,
             symmetry=symmetry,
