@@ -497,7 +497,7 @@ class Simulation(ImageSource):
         sample_n=None,
         support_radius=None,
         batch_size=512,
-        signal_power_method="estimate_signal_mean",
+        signal_power_method="estimate_signal_mean_energy",
         **kwargs,
     ):
         """
@@ -512,7 +512,7 @@ class Simulation(ImageSource):
             Default of None will compute inscribed circle, `self.L // 2`.
         :param batch_size: Images per batch, defaults 512.
         :param signal_power_method: Method used for computing signal energy.
-           Defaults to mean via `estimate_signal_mean`.
+           Defaults to mean via `estimate_signal_mean_energy`.
            Can use variance method via `estimate_signal_var`.
         :returns: Simulation source.
         """

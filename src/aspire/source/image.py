@@ -794,7 +794,9 @@ class ImageSource(ABC):
                 im = self.images[i_start:i_end]
                 im.save(mrcs_filepath, overwrite=overwrite)
 
-    def estimate_signal_mean(self, sample_n=None, support_radius=None, batch_size=512):
+    def estimate_signal_mean_energy(
+        self, sample_n=None, support_radius=None, batch_size=512
+    ):
         """
         Estimate the signal mean of `sample_n` projections.
 
@@ -811,7 +813,7 @@ class ImageSource(ABC):
 
         if sample_n > self.n:
             logger.warning(
-                f"`estimate_signal_mean` sample_n > Source.n: {sample_n} > {self.n}."
+                f"`estimate_signal_mean_energy` sample_n > Source.n: {sample_n} > {self.n}."
                 f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
             )
             sample_n = self.n
@@ -821,17 +823,17 @@ class ImageSource(ABC):
         # mean is estimated batch-wise, compare with numpy
         # Note, for simulation we are implicitly assuming taking `sample_n` is random,
         #   but this does not need to be the case.  We can add a `random_shuffle` param.
-        first_moment = 0.0
+        s = 0.0
         _denom = sample_n * np.sum(mask)
         for i in trange(0, sample_n, batch_size):
             # Gather this batch of images and mask off area outside support_radius
             images_masked = self._signal_images[i : i + batch_size].asnumpy()[..., mask]
             # Accumulate first and second moments
-            first_moment += np.sum(images_masked) / _denom
+            s += np.sum(images_masked**2) / _denom
 
-        logger.debug(f"Source estimated signal mean: {first_moment}")
+        logger.debug(f"Source estimated signal mean energy: {s}")
 
-        return first_moment
+        return s
 
     def estimate_signal_var(self, sample_n=None, support_radius=None, batch_size=512):
         """
@@ -882,7 +884,7 @@ class ImageSource(ABC):
         sample_n=None,
         support_radius=None,
         batch_size=512,
-        signal_power_method="estimate_signal_mean",
+        signal_power_method="estimate_signal_mean_energy",
     ):
         """
         Estimate the signal energy of `sample_n` projections using prescribed method.
@@ -893,7 +895,7 @@ class ImageSource(ABC):
             Default of None will compute inscribed circle, `self.L // 2`.
         :param batch_size: Images per batch, defaults 512.
         :param signal_power_method: Method used for computing signal energy.
-           Defaults to mean via `estimate_signal_mean`.
+           Defaults to mean via `estimate_signal_mean_energy`.
            Can use variance method via `estimate_signal_var`.
 
         :returns: Estimated signal variance.
@@ -904,14 +906,12 @@ class ImageSource(ABC):
         except AttributeError:
             raise ValueError(
                 f"Cannot find signal_power_method={signal_power_method}."
-                "  Try the default 'estimate_signal_mean' or 'estimate_signal_var'"
+                "  Try the default 'estimate_signal_mean_energy' or 'estimate_signal_var'"
             )
 
         signal_power = signal_estimate_method(
             sample_n=sample_n, support_radius=support_radius, batch_size=batch_size
         )
-        if signal_power_method == "estimate_signal_mean":
-            signal_power = signal_power**2  # mean**2
 
         return signal_power
 
@@ -954,7 +954,7 @@ class ImageSource(ABC):
         support_radius=None,
         batch_size=512,
         noise_power=None,
-        signal_power_method="estimate_signal_mean",
+        signal_power_method="estimate_signal_mean_energy",
         units=None,
     ):
         """
@@ -967,7 +967,7 @@ class ImageSource(ABC):
             Default of None will compute inscribed circle, `self.L // 2`.
         :param batch_size: Images per batch, defaults 512.
         :param signal_power_method: Method used for computing signal energy.
-           Defaults to mean via `estimate_signal_mean`.
+           Defaults to mean via `estimate_signal_mean_energy`.
            Can use variance method via `estimate_signal_var`.
         :param units: Optionally, convert from default ratio to log scale (`dB`).
         :returns: Estimated signal to noise ratio.
@@ -993,7 +993,7 @@ class ImageSource(ABC):
             signal_power_method=signal_power_method,
         )
 
-        # For `estimate_signal_mean` we yield: signal_mean**2  / noise_variance
+        # For `estimate_signal_mean_energy` we yield: mean(signal**2)  / noise_variance
         #     `estimate_signal_var`   we yield: signal_variance / noise_variance
         snr = signal_power / noise_power
 
