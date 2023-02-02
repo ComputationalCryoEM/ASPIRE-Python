@@ -10,6 +10,7 @@ lecture notes from MATH586.
 # sphinx_gallery_thumbnail_path = '../../../gallery/tutorialsdata/ctffind4/diagnostic_output.png'
 
 import matplotlib.pyplot as plt
+
 plt.rcParams["image.cmap"] = "gray"
 import numpy as np
 from scipy.ndimage import gaussian_filter
