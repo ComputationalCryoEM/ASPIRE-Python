@@ -181,10 +181,8 @@ def testMatchFBDenseEvaluate_t(basis):
     # test images to evaluate
     # gets a stack of shape (basis.count, L, L)
     images = fb_basis.evaluate(np.eye(basis.count))
-    # reshapes to a stack of basis.count vectors of length L**2
-    vec = np.array(
-        [images[i, :, :].reshape((basis.nres**2, -1)) for i in range(images.shape[0])]
-    )[:, :, 0]
+    # reshape to a stack of basis.count vectors of length L**2
+    vec = images.asnumpy().reshape((-1, basis.nres**2))
 
     fb_coeffs = fb_basis.evaluate_t(images)
     fle_coeffs = basis.create_dense_matrix().T @ vec.T
