@@ -7,7 +7,7 @@ This tutorial demonstrates the CTF and corresponds to
 lecture notes from MATH586.
 """
 
-# sphinx_gallery_thumbnail_path = '../../../gallery/tutorialsdata/ctffind4/diagnostic_output.png'
+# sphinx_gallery_thumbnail_path = '../../gallery/tutorials/data/ctffind4/diagnostic_output.png'
 
 import matplotlib.pyplot as plt
 
