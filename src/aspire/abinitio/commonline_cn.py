@@ -123,7 +123,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         logger.info("Computing pairwise likelihood.")
         n_vijs = n_img * (n_img - 1) // 2
         vijs = np.zeros((n_vijs, 3, 3), dtype=self.dtype)
-        viis_sync = np.zeros((n_img, 3, 3), dtype=self.dtype)
+        viis = np.zeros((n_img, 3, 3), dtype=self.dtype)
         rots_symm = cyclic_rotations(self.order, self.dtype).matrices
         c = 0
 
@@ -217,9 +217,9 @@ class CLSymmetryCn(CLSymmetryC3C4):
                     c += 1
                     pbar.update()
 
-                viis_sync[i] = mean_est[i].synchronized_mean()
+                viis[i] = mean_est[i].synchronized_mean()
 
-        return vijs, viis_sync
+        return vijs, viis
 
     def _compute_scls_inds(self, Ri_cands):
         """
