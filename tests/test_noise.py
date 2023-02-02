@@ -156,7 +156,6 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
 )
 @pytest.mark.parametrize("dtype", DTYPES, ids=lambda param: f"dtype={param}")
 def test_psnr(res, target_noise_variance, dtype):
-
     vol = np.ones((res,) * 3, dtype=dtype)
     g = grid_3d(res, normalized=False)
     mask = g["r"] > res // 2
