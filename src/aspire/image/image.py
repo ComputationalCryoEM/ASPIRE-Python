@@ -446,7 +446,6 @@ class Image:
 
         # Create a context manager for altering warnings
         with catch_warnings():
-
             # Filter off specific warning.
             # sphinx-gallery overrides to `agg` backend, but doesn't handle warning.
             filterwarnings(

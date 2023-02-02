@@ -750,7 +750,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
         v = vijs
         new_vec = np.zeros_like(vec)
-        for (i, j, k) in triplets:
+        for i, j, k in triplets:
             ij = pairs_to_linear(n_img, i, j)
             jk = pairs_to_linear(n_img, j, k)
             ik = pairs_to_linear(n_img, i, k)
@@ -846,7 +846,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         pairs = all_pairs(n_img)
 
-        for (i, j) in pairs:
+        for i, j in pairs:
             Ri = rots[i]
             Rj = rots[j]
             Rij = Ri.T @ Rj
