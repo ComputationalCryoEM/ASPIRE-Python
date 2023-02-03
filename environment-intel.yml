@@ -4,7 +4,6 @@ channels:
   - conda-forge
   - defaults
 
-
 dependencies:
   - fftw
   # There is a potential pyFFTW bug, pin to 0.12
@@ -19,6 +18,3 @@ dependencies:
   - scikit-image
   - mkl_fft
   - libblas=*=*mkl
-  - pip:
-    - .
-
