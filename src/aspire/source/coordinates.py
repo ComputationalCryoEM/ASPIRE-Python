@@ -399,11 +399,7 @@ class CoordinateSource(ImageSource, ABC):
 
         # set metadata
         for mrc_idx, filter_index in enumerate(indices):
-            particle_indices_this_mrc = [
-                idx
-                for idx, particle in enumerate(self.particles)
-                if particle[0] == mrc_idx
-            ]
+            particle_indices_this_mrc = self.mrc_index_to_particles[mrc_idx]
             num_particles_this_mrc = len(particle_indices_this_mrc)
             self.set_metadata(
                 CTF_params,
