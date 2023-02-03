@@ -216,6 +216,9 @@ def get_relion_starfile_version(filepath):
     :return: Either "3.0" or "3.1", or `None` if ASPIRE cannot interpret this file as a RELION
         STAR file.
     """
+
+    rln_data_block_names = ["particles", "micrographs", "movies"]
+
     star = StarFile(filepath)
     # 3.0 files have one block, >=3.1 files have two
     if len(star) == 1:
@@ -231,14 +234,23 @@ def get_relion_starfile_version(filepath):
 
     # 3.1
     if len(star) == 2:
-        # first block must be called "optics"
+        # must contain an optics group
         if "optics" not in star.blocks.keys():
             return None
+        # must contain a block named particles, micrographs, or movies
+        if not any(name in rln_data_block_names for name in star.blocks.keys()):
+            return None
+        # get name of data block
+        data_name = ""
+        for name in star.blocks.keys():
+            if name in rln_data_block_names:
+                data_name = name
+                break
         # optics block must contain group number
         if "_rlnOpticsGroup" not in star["optics"].columns.to_list():
             return None
         # lastly, the second  block must have a column determining the type of data
-        data_block_columns = star.get_block_by_index(1).columns.to_list()
+        data_block_columns = star[data_name].columns.to_list()
         if not any(
             column in data_block_columns
             for column in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
