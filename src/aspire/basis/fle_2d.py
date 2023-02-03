@@ -497,7 +497,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         b = self._step2_t(z)
         coeffs = self._step3_t(b)
         if self.match_fb:
-            coeffs[:, self.flip_signs_indices] *= -1.0
+            coeffs[:, self.flip_sign_indices] *= -1.0
             coeffs = coeffs[:, self.fb_compat_indices]
         return coeffs
 
@@ -648,7 +648,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         B = transform_complex_to_real(np.conj(B), self.ells)
         B = B.reshape(self.nres**2, self.count)
         if self.match_fb:
-            B[:, self.flip_signs_indices] *= -1.0
+            B[:, self.flip_sign_indices] *= -1.0
             B = B[:, self.fb_compat_indices]
         return B
 
