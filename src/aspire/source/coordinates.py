@@ -346,7 +346,7 @@ class CoordinateSource(ImageSource, ABC):
             # populate CTF parameters in main data block (from optics groups block)
             # specifically: voltage, Cs, amplitude_contrast, micrograph pixel size
             # this feature does not exist for 3.0 starfile
-            data_block = starfile.apply_optics_block()
+            data_block = starfile.merged_data_block()
 
         # data_block is a pandas Dataframe containing the micrographs
         if not len(data_block) == self.num_micrographs:

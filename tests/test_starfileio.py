@@ -192,7 +192,7 @@ class StarFileTestCase(TestCase):
         # in the current format, CTF parameters are stored in the optics group block
         # RelionDataStarFile provides a method to flatten all the data into one
         # table, representable as ASPIRE metadata
-        data_block = star_current.apply_optics_block()
+        data_block = star_current.merged_data_block()
 
         # make sure they were applied correctly
         ctf_params = [

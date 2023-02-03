@@ -73,7 +73,7 @@ class Relion31StarFile(Relion30StarFile):
         self.optics_block = self.get_block_by_index(0)
         self.data_block = self.get_block_by_index(1)
 
-    def apply_optics_block(self):
+    def merged_data_block(self):
         """
         Applies the parameters in the optics block as new columns in the data block,
             based on the corresponding optics group number. Returns a new DataFrame.

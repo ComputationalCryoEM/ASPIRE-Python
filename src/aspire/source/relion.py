@@ -175,7 +175,7 @@ class RelionSource(ImageSource):
         elif rln_starfile_version == "3.1":
             starfile = Relion31StarFile(self.filepath)
             # get flattened data from starfile
-            metadata = starfile.apply_optics_block()
+            metadata = starfile.merged_data_block()
 
         # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
         # in the _rlnImageName column. here, we're splitting this information
