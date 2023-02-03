@@ -116,9 +116,15 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         }
 
     def _get_fb_compat_indices(self):
+        """
+        Generate indices to shuffle basis function ordering and flip signs in order
+            to match `FBBasis2D`.
+        """
         ind = self.indices()
+        # basis function ordering
         self.fb_compat_indices = np.lexsort((ind["ks"], ind["sgns"], ind["ells"]))
-        self.fb_compat_indices_t = np.zeros(self.count, dtype=int)
+        # flip signs
+        self.flip_sign_indices = np.where(ind["sgns"] == 1)
 
     def _precomp(self):
         """
@@ -466,8 +472,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         if self.match_fb:
             # sign of basis functions with positive indices flipped relative to FB2d
-            flip_sign_indices = np.where(self.indices()["sgns"] == 1)
-            coeffs[flip_sign_indices] *= -1.0
+            coeffs[self.flip_sign_indices] *= -1.0
             # reorder coefficients by FB2d ordering
             coeffs = coeffs[self.fb_compat_indices]
 
@@ -492,8 +497,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         b = self._step2_t(z)
         coeffs = self._step3_t(b)
         if self.match_fb:
-            flip_signs_indices = np.where(self.indices()["sgns"] == 1)
-            coeffs[:, flip_signs_indices] *= -1.0
+            coeffs[:, self.flip_signs_indices] *= -1.0
             coeffs = coeffs[:, self.fb_compat_indices]
         return coeffs
 
@@ -644,8 +648,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         B = transform_complex_to_real(np.conj(B), self.ells)
         B = B.reshape(self.nres**2, self.count)
         if self.match_fb:
-            flip_signs_indices = np.where(self.indices()["sgns"] == 1)
-            B[:, flip_signs_indices] *= -1.0
+            B[:, self.flip_signs_indices] *= -1.0
             B = B[:, self.fb_compat_indices]
         return B
 
