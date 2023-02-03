@@ -28,7 +28,7 @@ def fft_object(which):
     elif which == "scipy":
         from .scipy_fft import ScipyFFT as FFTClass
     elif which == "mkl":
-        from .mkl_fft import MKL_FFT as FFTClass
+        from .mkl_fft import MKLFFT as FFTClass
     else:
         raise RuntimeError(f"Invalid selection for fft class: {which}")
     return FFTClass()

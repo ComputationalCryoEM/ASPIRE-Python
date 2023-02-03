@@ -4,7 +4,7 @@ import numpy as np
 from aspire.numeric.base_fft import FFT
 
 
-class MKL_FFT(FFT):
+class MKLFFT(FFT):
     """
     Define a unified wrapper class for MKL FFT functions
 
