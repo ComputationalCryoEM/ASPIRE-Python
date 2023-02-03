@@ -10,7 +10,7 @@ _rlnSphericalAberration #6
 _rlnAmplitudeContrast #7 
 _rlnImagePixelSize #8 
 opticsGroup1    1  mtf_k2_200kV.star    0.885000    300.000000  2.700000    0.100000    1.400000   
-opticsGroup2	2  mtf_k2_200kV.star	0.885000    300.000000  2.700000    0.100000    1.400000
+opticsGroup2	2  mtf_k2_200kV.star	0.885000    200.000000  2.700000    0.100000    1.400000
 
 data_particles
 
