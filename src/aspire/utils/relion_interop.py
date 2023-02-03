@@ -50,8 +50,8 @@ relion_metadata_fields = {
 
 
 def df_to_relion_types(df):
-    # convert STAR file strings to data type for each field
-    # columns without a specified data type are read as dtype=object
+    # Convert STAR file strings to data type for each field.
+    # Columns without a specified data type are read as dtype=object.
     column_types = {name: relion_metadata_fields.get(name, str) for name in df.columns}
     return df.astype(column_types)
 
@@ -77,6 +77,7 @@ class Relion31StarFile(Relion30StarFile):
         """
         Applies the parameters in the optics block as new columns in the data block,
             based on the corresponding optics group number. Returns a new DataFrame.
+
         :return: A new DataFrame with the optics parameters added as columns.
         """
         data_block = self.data_block.copy()

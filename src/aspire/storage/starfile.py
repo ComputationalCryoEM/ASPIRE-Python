@@ -211,6 +211,7 @@ def getRelionStarFileVersion(filepath):
     """
     Determines whether a supplied STAR file is of Relion 3.0 or 3.1 and on
         format.
+
     :param filepath: Path to a STAR file.
     :return: Either "3.0" or "3.1", or `None` if ASPIRE cannot interpret this file as a RELION
         STAR file.
