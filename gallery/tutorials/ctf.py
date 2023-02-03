@@ -9,6 +9,10 @@ lecture notes from MATH586.
 
 # sphinx_gallery_thumbnail_path = '../../gallery/tutorials/data/ctffind4/diagnostic_output.png'
 
+# Get some common imports out of the way.
+import os
+from tempfile import TemporaryDirectory
+
 import matplotlib.pyplot as plt
 
 plt.rcParams["image.cmap"] = "gray"
@@ -234,10 +238,12 @@ ax2.plot(incorrect_flipped_fn[c, c:])
 ax2.set_title("Incorrect")
 plt.show()
 
-
 # %%
 # ASPIRE CtfEstimator
 # ^^^^^^^^^^^^^^^^^^^
+# Here we will use ASPIRE's ``CtfEstimator`` on a CTF corrupted image
+# so we can compare with the modeled corruption parameters.
+
 from aspire.ctf import estimate_ctf
 
 # Using our radial_ctf_filter from earlier, corrupt an image.
@@ -245,19 +251,21 @@ test_img = Image(img).filter(radial_ctf_filter)
 plt.imshow(test_img.asnumpy()[0])
 plt.colorbar()
 plt.show()
-test_img.save("test_img.mrc", overwrite=True)
 
+# Create the image file in a tmp dir
+with TemporaryDirectory() as d:
+    test_img.save(os.path.join(d, "test_img.mrc"))
 
-radial_ctf_est = estimate_ctf(
-    data_folder=".",
-    pixel_size=radial_ctf_filter.pixel_size,
-    cs=radial_ctf_filter.Cs,
-    amplitude_contrast=radial_ctf_filter.alpha,
-    voltage=radial_ctf_filter.voltage,
-    psd_size=512,
-    num_tapers=2,
-    dtype=np.float64,
-)
+    radial_ctf_est = estimate_ctf(
+        data_folder=d,
+        pixel_size=radial_ctf_filter.pixel_size,
+        cs=radial_ctf_filter.Cs,
+        amplitude_contrast=radial_ctf_filter.alpha,
+        voltage=radial_ctf_filter.voltage,
+        psd_size=512,
+        num_tapers=2,
+        dtype=np.float64,
+    )
 
 # We'll use these estimates next.
 print(radial_ctf_est)
