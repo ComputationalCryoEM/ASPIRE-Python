@@ -10,7 +10,7 @@ import pandas as pd
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
-from aspire.storage import getRelionStarFileVersion
+from aspire.storage import get_relion_starfile_version
 from aspire.utils import Relion30StarFile, Relion31StarFile
 
 logger = logging.getLogger(__name__)
@@ -160,7 +160,7 @@ class RelionSource(ImageSource):
         else:
             self.data_folder = os.path.dirname(self.filepath)
 
-        rln_starfile_version = getRelionStarFileVersion(self.filepath)
+        rln_starfile_version = get_relion_starfile_version(self.filepath)
 
         if not rln_starfile_version:
             raise ValueError(

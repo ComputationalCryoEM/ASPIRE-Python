@@ -12,7 +12,7 @@ import pandas as pd
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
-from aspire.storage import StarFile, getRelionStarFileVersion
+from aspire.storage import StarFile, get_relion_starfile_version
 from aspire.utils import Relion30StarFile, Relion31StarFile
 
 logger = logging.getLogger(__name__)
@@ -334,7 +334,7 @@ class CoordinateSource(ImageSource, ABC):
             Note that number of files provided must match number of micrographs in this
             `CoordinateSource`.
         """
-        relion_version = getRelionStarFileVersion(ctf)
+        relion_version = get_relion_starfile_version(ctf)
         if not relion_version:
             raise ValueError(
                 f"Cannot recognize {ctf} as a valid Relion STAR file containing micrograph information."

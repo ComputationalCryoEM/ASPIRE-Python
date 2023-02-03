@@ -11,7 +11,7 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.storage import StarFile, StarFileError, getRelionStarFileVersion
+from aspire.storage import StarFile, StarFileError, get_relion_starfile_version
 from aspire.utils import Relion30StarFile, Relion31StarFile, importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -207,7 +207,7 @@ class StarFileTestCase(TestCase):
 
     def testRelionStarFileVersion(self):
         # This method should identify the version correctly
-        self.assertEqual(getRelionStarFileVersion(self.particles30), "3.0")
-        self.assertEqual(getRelionStarFileVersion(self.particles31), "3.1")
+        self.assertEqual(get_relion_starfile_version(self.particles30), "3.0")
+        self.assertEqual(get_relion_starfile_version(self.particles31), "3.1")
         # This STAR file is not a valid Relion particles star file
-        self.assertEqual(getRelionStarFileVersion(self.starfile.filepath), None)
+        self.assertEqual(get_relion_starfile_version(self.starfile.filepath), None)

@@ -207,7 +207,7 @@ class StarFile:
         return True
 
 
-def getRelionStarFileVersion(filepath):
+def get_relion_starfile_version(filepath):
     """
     Determines whether a supplied STAR file is of Relion 3.0 or 3.1 and on
         format.
