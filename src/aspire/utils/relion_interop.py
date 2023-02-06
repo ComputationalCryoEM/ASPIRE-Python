@@ -70,8 +70,16 @@ class Relion30StarFile(StarFile):
 class Relion31StarFile(Relion30StarFile):
     def __init__(self, filepath):
         super().__init__(filepath)
-        self.optics_block = self.get_block_by_index(0)
-        self.data_block = self.get_block_by_index(1)
+
+        rln_data_block_names = ["particles", "micrographs", "movies"]
+        # figure out whether particles, micrographs, or movies
+        data_block_name = ""
+        for name in star.blocks.keys():
+            if name in rln_data_block_names:
+                data_block_name = name
+                break
+        self.optics_block = self.blocks["optics"]
+        self.data_block = self.blocks[data_block_name]
 
     def merged_data_block(self):
         """
