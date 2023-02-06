@@ -16,7 +16,7 @@ from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
-from aspire.utils import Relion31StarFile, importlib_path
+from aspire.utils import RelionStarFile, importlib_path
 
 
 class CoordinateSourceTestCase(TestCase):
@@ -322,8 +322,8 @@ class CoordinateSourceTestCase(TestCase):
         # and applying the optics block CTF parameters to the data block,
         # creating a single df saved back to a new star file
         legacy_star_fp = os.path.join(self.data_folder, "micrographs_ctf_legacy.star")
-        star = Relion31StarFile(self.relion_ctf_file)
-        df = star.merged_data_block()
+        star = RelionStarFile(self.relion_ctf_file)
+        df = star.get_data_block()
         # save as a new star file containing identical information but in 3.0 format
         legacy_star = StarFile(blocks=OrderedDict({"": df}))
         legacy_star.write(legacy_star_fp)

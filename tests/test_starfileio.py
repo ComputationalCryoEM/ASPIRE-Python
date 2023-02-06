@@ -11,8 +11,8 @@ from scipy import misc
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
-from aspire.storage import StarFile, StarFileError, get_relion_starfile_version
-from aspire.utils import Relion30StarFile, Relion31StarFile, importlib_path
+from aspire.storage import StarFile, StarFileError
+from aspire.utils import RelionStarFile, importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -186,14 +186,14 @@ class StarFileTestCase(TestCase):
     def testRelionStarFile(self):
         # these starfiles represent Relion particles according to
         # the legacy 3.0 format and the current 3.1/4.0 format, respectively
-        star_legacy = Relion30StarFile(self.particles30)
-        star_current = Relion31StarFile(self.particles31)
+        star_legacy = RelionStarFile(self.particles30)
+        star_current = RelionStarFile(self.particles31)
+        data_block_legacy = star_legacy.get_data_block()
+        data_block_current = star_current.get_data_block()
 
         # in the current format, CTF parameters are stored in the optics group block
         # RelionDataStarFile provides a method to flatten all the data into one
         # table, representable as ASPIRE metadata
-        data_block = star_current.merged_data_block()
-
         # make sure they were applied correctly
         ctf_params = [
             "_rlnVoltage",
@@ -202,12 +202,4 @@ class StarFileTestCase(TestCase):
             "_rlnDefocusAngle",
             "_rlnSphericalAberration",
         ]
-        data_block_legacy = star_legacy.get_block_by_index(0)
-        self.assertTrue(data_block[ctf_params].equals(data_block_legacy[ctf_params]))
-
-    def testRelionStarFileVersion(self):
-        # This method should identify the version correctly
-        self.assertEqual(get_relion_starfile_version(self.particles30), "3.0")
-        self.assertEqual(get_relion_starfile_version(self.particles31), "3.1")
-        # This STAR file is not a valid Relion particles star file
-        self.assertEqual(get_relion_starfile_version(self.starfile.filepath), None)
+        self.assertTrue(data_block_current[ctf_params].equals(data_block_legacy[ctf_params]))

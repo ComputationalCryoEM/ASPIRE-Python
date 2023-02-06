@@ -12,8 +12,8 @@ import pandas as pd
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
-from aspire.storage import StarFile, get_relion_starfile_version
-from aspire.utils import Relion30StarFile, Relion31StarFile
+from aspire.storage import StarFile
+from aspire.utils import RelionStarFile
 
 logger = logging.getLogger(__name__)
 
@@ -319,8 +319,8 @@ class CoordinateSource(ImageSource, ABC):
         dfs = []
         for f in ctf:
             # ASPIRE's CTF Estimator produces legacy (=< 3.0) STAR files containing one row
-            star = Relion30StarFile(f)
-            dfs.append(star.get_block_by_index(0))
+            star = RelionStarFile(f)
+            dfs.append(star.data_block)
 
         df = pd.concat(dfs, ignore_index=True)
 
@@ -334,19 +334,7 @@ class CoordinateSource(ImageSource, ABC):
             Note that number of files provided must match number of micrographs in this
             `CoordinateSource`.
         """
-        relion_version = get_relion_starfile_version(ctf)
-        if not relion_version:
-            raise ValueError(
-                f"Cannot recognize {ctf} as a valid Relion STAR file containing micrograph information."
-            )
-        if relion_version == "3.0":
-            data_block = Relion30StarFile(ctf).get_block_by_index(0)
-        if relion_version == "3.1":
-            starfile = Relion31StarFile(ctf)
-            # populate CTF parameters in main data block (from optics groups block)
-            # specifically: voltage, Cs, amplitude_contrast, micrograph pixel size
-            # this feature does not exist for 3.0 starfile
-            data_block = starfile.merged_data_block()
+        data_block = RelionStarFile(ctf).get_data_block()
 
         # data_block is a pandas Dataframe containing the micrographs
         if not len(data_block) == self.num_micrographs:

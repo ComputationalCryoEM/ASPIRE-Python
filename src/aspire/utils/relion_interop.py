@@ -56,45 +56,89 @@ def df_to_relion_types(df):
     return df.astype(column_types)
 
 
-class Relion30StarFile(StarFile):
+class RelionStarFile(StarFile):
     def __init__(self, filepath):
         super().__init__(filepath, blocks=None)
 
-        # first convert types where possible
+        # validate Star file and get Relion version (3.0 or >=3.1)
+        self.validate_and_detect_version()
+
+        # convert dtypes in dataframes where possible
+        self.convert_dtypes()
+
+    def validate_and_detect_version(self):
+        self.data_block_name = ""
+        self.relion_version = ""
+
+        rln_data_block_names = ["particles", "micrographs", "movies"]
+
+        # validate 3.0 STAR file
+        if len(self.blocks) == 1:
+            data_block = self.get_block_by_index(0)
+            columns = data_block.columns.to_list()
+            if not any(
+                col in columns
+                for col in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
+            ):
+                raise ValueError(
+                    f"{self.filepath} does not contain Relion data columns."
+                )
+
+            self.relion_version = "3.0"
+            self.data_block = data_block
+
+        # validate 3.1 STAR file
+        if len(self.blocks) == 2:
+            # must have an optics block
+            if "optics" not in self.blocks.keys():
+                raise ValueError(f"{self.filepath} does not contain an optics block.")
+
+            # find type of data
+            for name in self.blocks.keys():
+                if name in ["particles", "micrographs", "movies"]:
+                    self.data_block_name = name
+                    break
+            if not self.data_block_name:
+                raise ValueError(
+                    f"{self.filepath} does not contain a block identifying particle, ",
+                    "micrograph, or movie data.",
+                )
+
+            data_block = self[self.data_block_name]
+            # lastly, data block must contain a column identifying the type of data as well
+            columns = data_block.columns.to_list()
+            if not any(
+                col in columns
+                for col in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
+            ):
+                raise ValueError(
+                    f"{self.filepath} data block does not contain Relion data columns."
+                )
+
+            self.relion_version = "3.1"
+            self.data_block = data_block
+            self.optics_block = self["optics"]
+
+    def convert_dtypes(self):
         _blocks = OrderedDict()
         for block_name, block in self.blocks.items():
             _blocks[block_name] = df_to_relion_types(block)
         self.blocks = _blocks
 
+    def get_data_block(self):
+        if self.relion_version == "3.0":
+            return self.data_block
 
-class Relion31StarFile(Relion30StarFile):
-    def __init__(self, filepath):
-        super().__init__(filepath)
-
-        rln_data_block_names = ["particles", "micrographs", "movies"]
-        # figure out whether particles, micrographs, or movies
-        data_block_name = ""
-        for name in star.blocks.keys():
-            if name in rln_data_block_names:
-                data_block_name = name
-                break
-        self.optics_block = self.blocks["optics"]
-        self.data_block = self.blocks[data_block_name]
-
-    def merged_data_block(self):
-        """
-        Applies the parameters in the optics block as new columns in the data block,
-            based on the corresponding optics group number. Returns a new DataFrame.
-
-        :return: A new DataFrame with the optics parameters added as columns.
-        """
-        data_block = self.data_block.copy()
-        # get a NumPy array of optics indices for each row of data
-        optics_indices = self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
-        for optics_index, row in self.optics_block.iterrows():
-            # find row indices with this optics index
-            # Note optics group number is 1-indexed in Relion
-            match = np.nonzero(optics_indices == optics_index + 1)[0]  # returns 1-tuple
-            for param in self.optics_block.columns:
-                data_block.loc[match, param] = getattr(row, param)
-        return data_block
+        if self.relion_version == "3.1":
+            data_block = self.data_block.copy()
+            # get a NumPy array of optics indices for each row of data
+            optics_indices = self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
+            for optics_index, row in self.optics_block.iterrows():
+                # find row indices with this optics index
+                # Note optics group number is 1-indexed in Relion
+                match = np.nonzero(optics_indices == optics_index + 1)[
+                    0
+                ]  # returns 1-tuple
+                for param in self.optics_block.columns:
+                    data_block.loc[match, param] = getattr(row, param)
+            return data_block

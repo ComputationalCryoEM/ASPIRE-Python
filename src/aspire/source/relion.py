@@ -10,8 +10,7 @@ import pandas as pd
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
-from aspire.storage import get_relion_starfile_version
-from aspire.utils import Relion30StarFile, Relion31StarFile
+from aspire.utils import RelionStarFile
 
 logger = logging.getLogger(__name__)
 
@@ -160,22 +159,7 @@ class RelionSource(ImageSource):
         else:
             self.data_folder = os.path.dirname(self.filepath)
 
-        rln_starfile_version = get_relion_starfile_version(self.filepath)
-
-        if not rln_starfile_version:
-            raise ValueError(
-                f"Cannot interpret {self.filepath} as a valid RELION STAR file representing particles."
-            )
-
-        # load the STAR file
-        if rln_starfile_version == "3.0":
-            starfile = Relion30StarFile(self.filepath)
-            metadata = starfile.get_block_by_index(0)
-
-        elif rln_starfile_version == "3.1":
-            starfile = Relion31StarFile(self.filepath)
-            # get flattened data from starfile
-            metadata = starfile.merged_data_block()
+        metadata = RelionStarFile(self.filepath).get_data_block()
 
         # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
         # in the _rlnImageName column. here, we're splitting this information
