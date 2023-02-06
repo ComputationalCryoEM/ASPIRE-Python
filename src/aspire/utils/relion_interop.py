@@ -130,7 +130,9 @@ class RelionStarFile(StarFile):
         """
         _blocks = OrderedDict()
         for block_name, block in self.blocks.items():
-            _blocks[block_name] = df_to_relion_types(block)
+            # generic StarFile blocks can be DataFrame or dict
+            if not isinstance(block, dict):
+                _blocks[block_name] = df_to_relion_types(block)
         self.blocks = _blocks
 
     def get_data_block(self):
