@@ -339,7 +339,7 @@ class CoordinateSource(ImageSource, ABC):
         # data_block is a pandas Dataframe containing the micrographs
         if not len(data_block) == self.num_micrographs:
             raise ValueError(
-                f"{starfile.filepath} has CTF information for {len(data_block)}",
+                f"{ctf} has CTF information for {len(data_block)}",
                 f" micrographs but this source has {self.num_micrographs} micrographs.",
             )
 

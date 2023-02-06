@@ -202,4 +202,6 @@ class StarFileTestCase(TestCase):
             "_rlnDefocusAngle",
             "_rlnSphericalAberration",
         ]
-        self.assertTrue(data_block_current[ctf_params].equals(data_block_legacy[ctf_params]))
+        self.assertTrue(
+            data_block_current[ctf_params].equals(data_block_legacy[ctf_params])
+        )

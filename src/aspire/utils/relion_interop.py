@@ -60,17 +60,16 @@ class RelionStarFile(StarFile):
     def __init__(self, filepath):
         super().__init__(filepath, blocks=None)
 
+        self.convert_dtypes()
         # validate Star file and get Relion version (3.0 or >=3.1)
         self.validate_and_detect_version()
 
         # convert dtypes in dataframes where possible
-        self.convert_dtypes()
+        # self.convert_dtypes()
 
     def validate_and_detect_version(self):
         self.data_block_name = ""
         self.relion_version = ""
-
-        rln_data_block_names = ["particles", "micrographs", "movies"]
 
         # validate 3.0 STAR file
         if len(self.blocks) == 1:
@@ -119,17 +118,32 @@ class RelionStarFile(StarFile):
             self.data_block = data_block
             self.optics_block = self["optics"]
 
+        if not self.relion_version:
+            raise ValueError(
+                f"Cannot interpret {self.filepath} as a valid RELION STAR file."
+            )
+
     def convert_dtypes(self):
+        """
+        For data blocks that are Pandas DataFrames, convert known Relion columns
+            to sensible types.
+        """
         _blocks = OrderedDict()
         for block_name, block in self.blocks.items():
             _blocks[block_name] = df_to_relion_types(block)
         self.blocks = _blocks
 
     def get_data_block(self):
+        """
+        Return the DataFrame containing particle/micrograph/movie information for this STAR file.
+        """
         if self.relion_version == "3.0":
+            # 3.0 star files have the data all in one block, which we return
             return self.data_block
 
         if self.relion_version == "3.1":
+            # merge the parameters in the optics block as new columns in the data block
+            # based on the corresponding optics group number (returns a new dataframe)
             data_block = self.data_block.copy()
             # get a NumPy array of optics indices for each row of data
             optics_indices = self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
@@ -141,4 +155,5 @@ class RelionStarFile(StarFile):
                 ]  # returns 1-tuple
                 for param in self.optics_block.columns:
                     data_block.loc[match, param] = getattr(row, param)
+
             return data_block
