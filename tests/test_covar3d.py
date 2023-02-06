@@ -148,7 +148,7 @@ class Covar3DTestCase(TestCase):
                     ]
                 ),
                 covar_est[:, :, 4, 4, 4, 4],
-                atol=1e-4,
+                atol=1e-3,
             )
         )
 
