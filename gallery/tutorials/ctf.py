@@ -81,7 +81,7 @@ plt.show()
 # %%
 # Phase Flipping
 # ^^^^^^^^^^^^^^
-# A common technique used with CTF corruped data is to apply a transformation
+# A common technique used with CTF corrupted data is to apply a transformation
 # based on the sign of the (estimated) CTF.
 # We can easily visuallize this in an idealized way by taking the sign of the
 # array returned by ASPIRE's ``CTFFilter.evaluate_grid``.
@@ -103,11 +103,12 @@ plt.show()
 # %%
 # Generate example image
 # ^^^^^^^^^^^^^^^^^^^^^^
-def genExImg(L):
+def genExImg(L, noise_variance=0.1):
     """
     Generates data similar to the MATH586 lecture notes.
 
-    :param L: Resolution in pixels
+    :param L: Resolution in pixels.
+    :param noise_variance: Variance passed to random normal noise generator.
     :return: Image as np array.
     """
     # Empty Array
@@ -128,11 +129,11 @@ def genExImg(L):
     disc = g2d["r"] < half_width // 4
     img[disc] = 0
 
-    # Smooth gaussian
+    # Smooth hard edges with some Gaussian blur
     img = gaussian_filter(img, sigma=7)
 
     # Add noise
-    img += np.random.normal(0, 0.1, size=(L, L))
+    img += np.random.normal(0, noise_variance, size=(L, L))
 
     return img
 
