@@ -190,7 +190,7 @@ phase_flipped_imgs = fft.centered_ifft2(phase_flipped_imgs_f).real
 Image(phase_flipped_imgs).show()
 
 # %%
-# .. note::
+# .. warning::
 #     Centering the signal FFT is critical when the CTF is centered in Fourier space.
 
 
