@@ -450,9 +450,8 @@ class CTFFilter(Filter):
         defocus = np.zeros_like(om_x)
         defocus[ind_nz] = self.defocus_mean + self.defocus_diff * np.cos(2 * angles_nz)
 
-        # f0 = 1 / (512 * self.pixel_size) ## XXX 512
-        c2 = -np.pi * self.wavelength * defocus  # * f0**2
-        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength**3  # *f0**4
+        c2 = -np.pi * self.wavelength * defocus
+        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength**3
 
         r2 = om_x**2 + om_y**2
         r4 = r2**2
