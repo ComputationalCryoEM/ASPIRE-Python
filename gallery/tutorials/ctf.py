@@ -157,7 +157,7 @@ from aspire.numeric import fft
 # Construct a range of CTF filters.
 defoci = [2500, 5000, 10000, 20000]
 ctf_filters = [
-    RadialCTFFilter(pixel_size=1/2, voltage=200, defocus=d, Cs=2.26, alpha=0.07, B=0)
+    RadialCTFFilter(pixel_size=1 / 2, voltage=200, defocus=d, Cs=2.26, alpha=0.07, B=0)
     for d in defoci
 ]
 
