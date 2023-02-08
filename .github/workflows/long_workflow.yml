@@ -1,0 +1,37 @@
+name: ASPIRE Python Long Running Test Suite
+
+on: push
+
+jobs:
+  expensive_tests:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: develop    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+    - name: Customize config
+      run: |
+        echo "Setup tmp dirs and chmod so others can cleanup."
+        CI_TMP_DIR=/var/ci/tmp
+        mkdir -p ${CI_TMP_DIR}
+        chmod g+rwx  ${CI_TMP_DIR}
+        echo "Create and assign a unique temp dir to hold our config."
+        WORK_DIR=$(mktemp -d -p "${CI_TMP_DIR}")
+        echo "WORK_DIR=${WORK_DIR}"
+        echo "Stash the WORK_DIR to GitHub env so we can clean it up later."
+        echo "WORK_DIR=${WORK_DIR}" >> $GITHUB_ENV
+        echo -e "ray:\n    temp_dir: ${WORK_DIR}\n" > ${WORK_DIR}/config.yaml
+        echo -e "nufft:\n    backends: [finufft, pynfft]\n" >> ${WORK_DIR}/config.yaml
+        echo "Log the config: ${WORK_DIR}/config.yaml"
+        cat ${WORK_DIR}/config.yaml
+    - name: Run
+      run: |
+        ASPIREDIR=${{ env.WORK_DIR }} python -c \
+        "import aspire; print(aspire.config['ray']['temp_dir'])"
+        ASPIREDIR=${{ env.WORK_DIR }} pytest -m "expensive" --durations=0
+    - name: Cleanup
+      run: rm -rf ${{ env.WORK_DIR }}
