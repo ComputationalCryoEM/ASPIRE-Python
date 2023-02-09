@@ -1,9 +1,10 @@
 name: ASPIRE Python Long Running Test Suite
 
 on:
-  pull_request_target:
-    types:
-      - ready_for_review
+  push:
+    branches:
+      - 'master'
+      - 'develop'
 
 jobs:
   expensive_tests:
