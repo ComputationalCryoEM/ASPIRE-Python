@@ -117,7 +117,7 @@ class LoadImagesTestCase(TestCase):
         from_mrc = self.getParticlesFromIndices(list(range(0, 100, 10)))
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
 
-    def testRelionStrideNegSlice(self):
+    def testRelionNegSlice(self):
         from_src = self.src.images[-100:]
         from_mrc = self.getParticlesFromIndices(list(range(900, 1000)))
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
