@@ -159,7 +159,7 @@ class RelionSource(ImageSource):
         else:
             self.data_folder = os.path.dirname(self.filepath)
 
-        metadata = RelionStarFile(self.filepath).get_data_block()
+        metadata = RelionStarFile(self.filepath).get_merged_data_block()
 
         # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
         # in the _rlnImageName column. here, we're splitting this information

@@ -334,7 +334,7 @@ class CoordinateSource(ImageSource, ABC):
             Note that number of files provided must match number of micrographs in this
             `CoordinateSource`.
         """
-        data_block = RelionStarFile(ctf).get_data_block()
+        data_block = RelionStarFile(ctf).get_merged_data_block()
 
         # data_block is a pandas Dataframe containing the micrographs
         if not len(data_block) == self.num_micrographs:

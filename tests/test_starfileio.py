@@ -188,8 +188,8 @@ class StarFileTestCase(TestCase):
         # the legacy 3.0 format and the current 3.1/4.0 format, respectively
         star_legacy = RelionStarFile(self.particles30)
         star_current = RelionStarFile(self.particles31)
-        data_block_legacy = star_legacy.get_data_block()
-        data_block_current = star_current.get_data_block()
+        data_block_legacy = star_legacy.get_merged_data_block()
+        data_block_current = star_current.get_merged_data_block()
 
         # in the current format, CTF parameters are stored in the optics group block
         # RelionDataStarFile provides a method to flatten all the data into one

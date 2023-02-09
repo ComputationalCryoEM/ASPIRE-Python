@@ -150,7 +150,7 @@ class RelionStarFile(StarFile):
                 _blocks[block_name] = df_to_relion_types(block)
         self.blocks = _blocks
 
-    def get_data_block(self):
+    def get_merged_data_block(self):
         """
         Return the DataFrame containing particle/micrograph/movie information for this STAR file.
 
