@@ -458,7 +458,7 @@ class CTFFilter(Filter):
         gamma = c2 * r2 + c4 * r4
         h = np.sqrt(1 - self.alpha**2) * np.sin(gamma) - self.alpha * np.cos(gamma)
 
-        # For historical reference, below is a translated forumla from the legacy MATLAB code.
+        # For historical reference, below is a translated formula from the legacy MATLAB code.
         # The two implementations seem to agree for odd images, but the original MATLAB code
         # behaves differently for even image sizes.
         # h = np.sin(c2*r2 + c4*r2*r2 - self.alpha)

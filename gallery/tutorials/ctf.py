@@ -22,12 +22,12 @@ from scipy.ndimage import gaussian_filter
 import aspire
 
 # Resolution to use throughout the demo.
-RESOLUTION = 512
+IMG_SIZE = 512
 
 # %%
 # Visualizing the CTF
 # -------------------
-# ASPIRE can be used create and visualize example CTFs.
+# ASPIRE can be used to create and visualize example CTFs.
 
 # %%
 # Radially Symmetric CTF
@@ -51,13 +51,13 @@ radial_ctf_filter = RadialCTFFilter(
 # The CTF filter can be visualized as an image once it is evaluated at a specific resolution.
 # More specifically the following code will return a transfer function as an array,
 # which is then plotted.
-rctf_fn = radial_ctf_filter.evaluate_grid(RESOLUTION)
+rctf_fn = radial_ctf_filter.evaluate_grid(IMG_SIZE)
 plt.imshow(rctf_fn)
 plt.colorbar()
 plt.show()
 
 # %%
-# Asymmetric CTF
+# Elliptical CTF
 # ^^^^^^^^^^^^^^
 # For the general ``CTFFilter``, we provide defocus u and v seperately,
 # along with a defocus angle.
@@ -74,7 +74,7 @@ ctf_filter = CTFFilter(
 )
 
 # Again, we plot it, and note the difference from the RadialCTFFilter.
-plt.imshow(ctf_filter.evaluate_grid(RESOLUTION))
+plt.imshow(ctf_filter.evaluate_grid(IMG_SIZE))
 plt.colorbar()
 plt.show()
 
@@ -83,11 +83,11 @@ plt.show()
 # ^^^^^^^^^^^^^^
 # A common technique used with CTF corrupted data is to apply a transformation
 # based on the sign of the (estimated) CTF.
-# We can easily visuallize this in an idealized way by taking the sign of the
+# We can easily visualize this in an idealized way by taking the sign of the
 # array returned by ASPIRE's ``CTFFilter.evaluate_grid``.
 
 
-ctf_sign = np.sign(radial_ctf_filter.evaluate_grid(RESOLUTION))
+ctf_sign = np.sign(radial_ctf_filter.evaluate_grid(IMG_SIZE))
 plt.imshow(ctf_sign)
 plt.colorbar()
 plt.show()
@@ -96,14 +96,14 @@ plt.show()
 # %%
 # Applying CTF Directly to Images
 # -------------------------------
-# Various defocus values and phase flippig correction will be
+# Various defocus values and phase flipping correction will be
 # applied directly to images using a mix of ASPIRE and Numpy.
 
 
 # %%
-# Generate example image
+# Generate Example Image
 # ^^^^^^^^^^^^^^^^^^^^^^
-def genExImg(L, noise_variance=0.1):
+def gen_ex_img(L, noise_variance=0.1):
     """
     Generates data similar to the MATH586 lecture notes.
 
@@ -138,7 +138,7 @@ def genExImg(L, noise_variance=0.1):
     return img
 
 
-img = genExImg(RESOLUTION)
+img = gen_ex_img(IMG_SIZE)
 plt.imshow(img)
 plt.colorbar()
 plt.show()
@@ -146,13 +146,11 @@ plt.show()
 # %%
 # Apply CTF and Phase Flipping
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# First CTF filters for a range of defocus values are created
+# First, CTF filters for a range of defocus values are created
 # and used to corrupt the example image.
 # Then phase flipping will use the actual CTF paramaters to attempt idealized corrections.
 # ASPIRE has built in tools for performing these tasks which are discussed towards the end,
 # but here the methods are demonstrated directly.
-
-from aspire.numeric import fft
 
 # Construct a range of CTF filters.
 defoci = [2500, 5000, 10000, 20000]
@@ -168,19 +166,22 @@ ctf_filters = [
 
 
 # %%
+# Generate CTF corrupted Images
+# """""""""""""""""""""""""""""
 # Generate images corrupted by progressively increasing defocus.
 
 # For each defocus, apply filter to the base image.
-imgs = np.empty((len(defoci), RESOLUTION, RESOLUTION))
+imgs = np.empty((len(defoci), IMG_SIZE, IMG_SIZE))
 for i, ctf in enumerate(ctf_filters):
     imgs[i] = Image(img).filter(ctf)[0]
 Image(imgs).show()
 
 # %%
-# Generate phase flipped images.
+# Generate Phase Flipped Images
+# """""""""""""""""""""""""""""
 
 # Construct the centered 2D FFT of the images.
-imgs_f = fft.centered_fft2(imgs)
+imgs_f = aspire.numeric.fft.centered_fft2(imgs)
 
 # Manually apply phase flipping transformation.
 phase_flipped_imgs_f = np.empty_like(imgs_f)
@@ -188,12 +189,12 @@ for i, ctf in enumerate(ctf_filters):
     # Compute the signs of this CTF
     # In practice, this would be an estimated CTF,
     # but in the demo we have the luxury of using the model CTF that was applied.
-    signs = np.sign(ctf.evaluate_grid(RESOLUTION))
+    signs = np.sign(ctf.evaluate_grid(IMG_SIZE))
     # Apply to the image in Fourier space.
     phase_flipped_imgs_f[i] = signs * imgs_f[i]
 
 # Construct the centered 2D FFT of the images.
-phase_flipped_imgs = fft.centered_ifft2(phase_flipped_imgs_f).real
+phase_flipped_imgs = aspire.numeric.fft.centered_ifft2(phase_flipped_imgs_f).real
 Image(phase_flipped_imgs).show()
 
 # %%
@@ -202,7 +203,7 @@ Image(phase_flipped_imgs).show()
 
 
 # %%
-# Validating CTFFilter
+# Validating ``CTFFilter``
 # --------------------
 # The forward modeling of CTF can be validated by passing a corrupted image
 # through CTF estimators and comparing the resulting defocus value(s).
@@ -223,9 +224,9 @@ bad_est_ctf_filter = RadialCTFFilter(
     B=0,
 )
 # Evaluate Filter, returning a numpy array.
-bad_ctf_fn = bad_est_ctf_filter.evaluate_grid(RESOLUTION)
+bad_ctf_fn = bad_est_ctf_filter.evaluate_grid(IMG_SIZE)
 
-c = RESOLUTION // 2 + 1
+c = IMG_SIZE // 2 + 1
 plt.plot(rctf_fn[c, c:], label="Model CTF")  # radial_ctf_filter
 plt.plot(bad_ctf_fn[c, c:], label="Incorrect CTF Estimate")
 plt.legend()
@@ -300,10 +301,10 @@ est_ctf = RadialCTFFilter(
     alpha=est["amplitude_contrast"],
     B=0,
 )
-est_ctf_fn = est_ctf.evaluate_grid(RESOLUTION)
+est_ctf_fn = est_ctf.evaluate_grid(IMG_SIZE)
 
 # Compare the model CTF with the estimated CTF.
-c = RESOLUTION // 2 + 1
+c = IMG_SIZE // 2 + 1
 plt.plot(rctf_fn[c, c:], label="Model CTF")
 plt.plot(est_ctf_fn[c, c:], label="Estimated CTF")
 plt.legend()
@@ -320,16 +321,16 @@ plt.show()
 
 # %%
 # .. note::
-#     At the time of writing, asymmetric CTF estimation is under going development and validation.
+#     At the time of writing, elliptical CTF estimation is under going development and validation.
 
 
 # %%
 # ASPIRE Sources: CTF and Phase Flipping
 # --------------------------------------
-# The most common uses of CTF simulation and corection are
+# The most common uses of CTF simulation and correction are
 # implemented behind the scenes in ASPIRE's Source classes.
 # For simulations, users are expected to provide their own
-# reasonable CTF parameters. When in doubt they should refer
+# reasonable CTF parameters. When in doubt they should refer to
 # EMDB or EMPIAR for related datasets that may have CTF estimates.
 # ASPIRE also commonly uses some reasonable values for the 10028 dataset
 # in examples.
@@ -339,17 +340,23 @@ plt.show()
 # ^^^^^^^^^^^^^^^^^
 # The following code demonstrates adding the previous list of
 # CTFs to a Simulation and performing phase flipping.
-# No calculations beyond defining the CTF parameters is required.
+# No calculations beyond defining the CTF parameters are required.
 
 from aspire.source import Simulation
 
-# Create the Source
-src = Simulation(L=64, n=5, unique_filters=ctf_filters)
-src.images[:5].show()
+# Create the Source.  ``ctf_filters`` are re-used from earlier section.
+src = Simulation(L=64, n=4, unique_filters=ctf_filters)
+src.images[:4].show()
 
-# Phase flip
+# %%
+# Phase flip the images.
 src.phase_flip()
-src.images[:5].show()
+src.images[:4].show()
+
+# %%
+# Compare corrupted and phase flipped images to those without corruption.
+src.projections[:4].show()
+
 
 # %%
 # Beyond Simulations: Experimental Data Sources
