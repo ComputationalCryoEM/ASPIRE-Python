@@ -71,12 +71,12 @@ class RelionStarFile(StarFile):
         super().__init__(filepath, blocks=None)
 
         # convert dtypes in star file blocks where possible
-        self.convert_dtypes()
+        self._convert_dtypes()
 
         # validate star file and detect Relion version (3.0 or >=3.1)
-        self.validate_and_detect_version()
+        self._validate_and_detect_version()
 
-    def validate_and_detect_version(self):
+    def _validate_and_detect_version(self):
         """
         Based on the number of StarFile blocks, block names, and column names,
         determine whether this star file can be interpreted as coming from RELION.
@@ -138,7 +138,7 @@ class RelionStarFile(StarFile):
                 f"Cannot interpret {self.filepath} as a valid RELION STAR file."
             )
 
-    def convert_dtypes(self):
+    def _convert_dtypes(self):
         """
         For data blocks that are Pandas DataFrames, convert known Relion columns
         to sensible types.
