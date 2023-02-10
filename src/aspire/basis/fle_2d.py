@@ -181,19 +181,23 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         # maxitr: maximum number of iterations for numerically solving linear
         # system in self.evaluate()
-        maxitr = 1 + int(3 * np.log2(self.nres))
         # numsparse: parameter used to create sparse Chebyshev interpolation matrix
         # see self._build_interpolation_matrix()
-        numsparse = 32
-        if self.epsilon >= 1e-10:
-            numsparse = 22
-            maxitr = 1 + int(2 * np.log2(self.nres))
-        if self.epsilon >= 1e-7:
-            numsparse = 16
-            maxitr = 1 + int(np.log2(self.nres))
+
         if self.epsilon >= 1e-4:
             numsparse = 8
             maxitr = 1 + int(np.log2(self.nres)) // 2
+        elif 1e-4 > self.epsilon >= 1e-7:
+            numsparse = 16
+            maxitr = 1 + int(np.log2(self.nres))
+        elif 1e-7 > self.epsilon >= 1e-10:
+            numsparse = 22
+            maxitr = 1 + int(2 * np.log2(self.nres))
+        else:
+            # epsilon < 1e-10
+            numsparse = 32
+            maxitr = 1 + int(3 * np.log2(self.nres))
+
         self.maxitr = maxitr
         self.numsparse = numsparse
 
