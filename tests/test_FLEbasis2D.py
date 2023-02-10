@@ -44,6 +44,9 @@ test_bases = [
     for L, epsilon in fle_params
 ]
 
+# add one case ensuring input/output dtypes for evaluate and evaluate_t
+test_bases.append(FLEBasis2D(8, epsilon=1e-4, dtype=np.float32, match_fb=False))
+
 test_bases_match_fb = [
     FLEBasis2D(L, epsilon=epsilon, dtype=np.float64) for L, epsilon in fle_params
 ]

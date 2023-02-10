@@ -480,7 +480,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         betas = self._step3(coeffs)
         z = self._step2(betas)
         im = self._step1(z)
-        return im
+        return im.astype(self.dtype)
 
     def _evaluate_t(self, imgs):
         """
@@ -499,7 +499,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         if self.match_fb:
             coeffs[:, self.flip_sign_indices] *= -1.0
             coeffs = coeffs[:, self.fb_compat_indices]
-        return coeffs
+        return coeffs.astype(self.coefficient_dtype)
 
     def _step1_t(self, im):
         """
