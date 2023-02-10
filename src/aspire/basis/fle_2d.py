@@ -37,9 +37,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         :param size: The size of the vectors for which to define the FLE basis.
             Currently only square images are supported.
-        :param bandlimit: Maximum frequency band for computing basis functions. Note that the
-            `ell_max` of other Basis objects is computed *from* the bandlimit for the FLE basis.
-             Defaults to the resolution of the basis.
+        :param bandlimit: Maximum frequency band for computing basis functions. Defaults to the 
+            resolution of the basis.
         :param epsilon: Relative precision between FLE fast method and dense matrix multiplication.
         :param dtype: Datatype of images and coefficients represented.
         :param match_fb:
