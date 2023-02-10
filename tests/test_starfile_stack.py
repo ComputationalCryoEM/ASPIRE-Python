@@ -21,7 +21,7 @@ class StarFileTestCase(TestCase):
 
     def setUp(self):
         # this method is used by StarFileMainCase but overridden by StarFileOneImage
-        self.setUpStarFile("sample_relion_data.star")
+        self.setUpStarFile("sample_particles_relion31.star")
 
     def tearDown(self):
         pass
@@ -59,6 +59,17 @@ class StarFileMainCase(StarFileTestCase):
         self.src.downsample(16)
         first_image = self.src.images[0][0]
         self.assertEqual(first_image.shape, (16, 16))
+
+    def testLegacyStarFile(self):
+        # test setting up a RelionSource from a 3.0 (Legacy) RELION star file
+        self.setUpStarFile("sample_particles_relion30.star")
+
+    def testInitWithBadStarFile(self):
+        # test setting up a RelionSource with a STAR file that cannot be interpreted
+        # as representing particles. in this case, a relion STAR file representing
+        # something else
+        with self.assertRaisesRegex(ValueError, "Cannot interpret"):
+            self.setUpStarFile("sample_data_model.star")
 
 
 class StarFileSingleImage(StarFileTestCase):
