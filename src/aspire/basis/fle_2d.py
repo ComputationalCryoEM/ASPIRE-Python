@@ -15,7 +15,7 @@ from aspire.basis.fle_2d_utils import (
 )
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
-from aspire.utils import grid_2d
+from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -510,11 +510,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         Step 1 of the adjoint transformation (images to coefficients).
         Calculates the NUFFT of the image on gridpoints `self.grid_x` and `self.grid_y`.
         """
-        im = im.reshape(-1, self.nres, self.nres).astype(np.complex128)
+        im = im.reshape(-1, self.nres, self.nres).astype(complex_type(self.dtype))
         num_img = im.shape[0]
         z = np.zeros(
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
-            dtype=np.complex128,
+            dtype=complex_type(self.dtype),
         )
         _z = (
             nufft(im, np.stack((self.grid_x, self.grid_y)), epsilon=self.epsilon)
@@ -623,7 +623,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_img = z.shape[0]
         z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
         im = anufft(
-            z,
+            z.astype(complex_type(self.dtype)),
             np.stack((self.grid_x, self.grid_y)),
             (self.nres, self.nres),
             epsilon=self.epsilon,
