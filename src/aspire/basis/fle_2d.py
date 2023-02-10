@@ -157,8 +157,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.c2r = precomp_transform_complex_to_real(self.ells)
         self.r2c = sparse.csr_matrix(self.c2r.transpose().conj())
 
-        # create self.nus to be able to access the physical value of ell,
-        # rather than the reindexed version
+        # create an ordered list of the original ell values
+        # used in step2 (in both directions)
         self.nus = np.zeros(1 + 2 * self.max_ell, dtype=int)
         self.nus[0] = 0
         for i in range(1, self.max_ell + 1):
