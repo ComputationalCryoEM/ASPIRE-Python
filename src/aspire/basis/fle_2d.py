@@ -98,7 +98,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self._build_indices()
 
         # FB compatability indices
-        self._get_fb_compat_indices()
+        self._generate_fb_compat_indices()
 
     def _build_indices(self):
         self.angular_indices = np.abs(self.ells)
@@ -115,7 +115,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             "sgns": self.signs_indices,
         }
 
-    def _get_fb_compat_indices(self):
+    def _generate_fb_compat_indices(self):
         """
         Generate indices to shuffle basis function ordering and flip signs in order
             to match `FBBasis2D`.
