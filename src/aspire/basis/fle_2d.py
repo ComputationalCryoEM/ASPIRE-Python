@@ -208,7 +208,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         if self.match_fb:
             # creates correct odd-resolution grid
             # matching other FB classes
-            grid = grid_2d(self.nres)
+            grid = grid_2d(self.nres, dtype=self.dtype)
             self.xs = grid["x"]
             self.ys = grid["y"]
             self.rs = grid["r"]
