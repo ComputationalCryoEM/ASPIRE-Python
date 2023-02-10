@@ -579,7 +579,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         out = np.zeros(
             (self.num_interp, 2 * self.max_ell + 1, num_img),
             dtype=np.float64,
-            order="F",
         )
         for i in range(self.ell_p_max + 1):
             out[:, i, :] = self.A3_T[i] @ coeffs[self.idx_list[i]]
@@ -645,7 +644,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # See Eqns. 3 and 4, Section 1.2
         ts = np.arctan2(self.ys, self.xs)
 
-        B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128, order="F")
+        B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128)
         for i in range(self.count):
             B[:, :, i] = self.basis_functions[i](self.rs, ts) * self.h
         B = B.reshape(self.nres**2, self.count)
@@ -734,7 +733,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         Helper function for step 3 of convolving with a radial function.
         """
         b = np.squeeze(b)
-        b = np.array(b, order="F")
+        b = np.array(b)
         if self.num_interp > self.num_radial_nodes:
             b = dct(b, axis=0, type=2) / (2 * self.num_radial_nodes)
             bz = np.zeros(b.shape)
