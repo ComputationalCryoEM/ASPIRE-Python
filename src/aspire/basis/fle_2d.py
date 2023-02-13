@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     """
-    Define a derived class for Fast Fourier Bessel 2D expansion using interpolation 
+    Define a derived class for Fast Fourier Bessel 2D expansion using interpolation
         from Chebyshev nodes.
     The algorithms used are described in the following publication:
     N. F. Marshall, O. Mickelin, A. Singer, Fast Expansion into Harmonics on the Disk:
@@ -37,7 +37,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         :param size: The size of the vectors for which to define the FLE basis.
             Currently only square images are supported.
-        :param bandlimit: Maximum frequency band for computing basis functions. Defaults to the 
+        :param bandlimit: Maximum frequency band for computing basis functions. Defaults to the
             resolution of the basis.
         :param epsilon: Relative precision between FLE fast method and dense matrix multiplication.
         :param dtype: Datatype of images and coefficients represented.
@@ -273,7 +273,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         h = 1 / radius
 
         phi = (
-            2 * np.pi * np.arange(self.num_angular_nodes // 2, dtype = self.dtype) / self.num_angular_nodes
+            2
+            * np.pi
+            * np.arange(self.num_angular_nodes // 2, dtype=self.dtype)
+            / self.num_angular_nodes
         )
         x = np.cos(phi).reshape(1, self.num_angular_nodes // 2)
         y = np.sin(phi).reshape(1, self.num_angular_nodes // 2)

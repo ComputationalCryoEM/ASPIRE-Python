@@ -203,7 +203,8 @@ def barycentric_interp_sparse(target_points, known_points, numsparse):
 
 
 def fle_ell_sign(ell):
-    if ell == 0:
-        return -1
-    else:
-        return np.sign(ell)
+    """
+    Used for matching original code sign convention with that of `FBBasis2D`.
+    """
+    # returns -1 if ell==0 and np.sign(ell) otherwise
+    return np.sign(2 * ell - 1)
