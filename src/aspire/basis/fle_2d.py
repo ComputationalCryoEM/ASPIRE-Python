@@ -102,7 +102,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     def _build_indices(self):
         self.angular_indices = np.abs(self.ells)
         self.radial_indices = self.ks - 1
-        self.signs_indices = np.array(list(map(fle_ell_sign, self.ells)))
+        self.signs_indices = np.sign(self.ells)
+        self.fle_signs_indices = np.array(list(map(fle_ell_sign, self.ells)))
 
     def indices(self):
         """
@@ -121,9 +122,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         ind = self.indices()
         # basis function ordering
-        self.fb_compat_indices = np.lexsort((ind["ks"], ind["sgns"], ind["ells"]))
+        self.fb_compat_indices = np.lexsort(
+            (ind["ks"], self.fle_signs_indices, ind["ells"])
+        )
         # flip signs
-        self.flip_sign_indices = np.where(ind["sgns"] == 1)
+        self.flip_sign_indices = np.where(self.fle_signs_indices == 1)
 
     def _precomp(self):
         """
@@ -681,7 +684,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return coeffs
 
-    def rotate(self, coeffs, theta):
+    def _rotate(self, coeffs, theta):
         """
         Compute FLE coefficients for rotating an image by an angle `theta`.
         :param coeffs: A NumPy array of FLE coefficients of shape (num_images, self.count)
