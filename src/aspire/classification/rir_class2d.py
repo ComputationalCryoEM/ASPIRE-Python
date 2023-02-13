@@ -5,12 +5,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 from aspire.basis import FSPCABasis
-from aspire.classification import (
-    BFSReddyChatterjiAverager2D,
-    Class2D,
-    ClassSelector,
-    RandomClassSelector,
-)
+from aspire.classification import Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
 from aspire.utils import trange
@@ -29,15 +24,11 @@ class RIRClass2D(Class2D):
         sample_n=4000,
         bispectrum_components=300,
         n_nbor=100,
-        n_classes=50,
         bispectrum_freq_cutoff=None,
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        selector=None,
-        num_procs=None,
         batch_size=512,
-        averager=None,
         dtype=None,
         seed=None,
     ):
@@ -54,8 +45,7 @@ class RIRClass2D(Class2D):
         Z. Zhao, Y. Shkolnisky, A. Singer, Rotationally Invariant Image Representation
         for Viewing Direction Classification in Cryo-EM. (2014)
 
-        :param src: Source instance.  Note it is possible to use one `source` for classification (ie CWF),
-            and a different `source` for stacking in the `averager`.
+        :param src: Source instance, for classification.
         :param pca_basis: Optional FSPCA Basis instance
         :param fspca_components: Optinally set number of components (top eigvals) to keep from full FSCPA.
             Default value of None will infer from `pca_basis` when provided, otherwise defaults to 400.
@@ -63,16 +53,11 @@ class RIRClass2D(Class2D):
         :param sample_n: Threshold for random sampling of bispectrum coefs. Default 4000,
             high values such as 50000 reduce random sampling.
         :param n_nbor: Number of nearest neighbors to compute.
-        :param n_classes: Number of class averages to return.
         :param bispectrum_freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
-        :param selector: A ClassSelector subclass. Defaults to RandomClassSelector.
-        :param num_procs: Number of processes to use.
-            `None` will attempt computing a suggestion based on machine resources.
         :param batch_size: Chunk size (typically number of images) for batched methods.
-        :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
@@ -81,11 +66,9 @@ class RIRClass2D(Class2D):
         super().__init__(
             src=src,
             n_nbor=n_nbor,
-            n_classes=n_classes,
             seed=seed,
             dtype=dtype,
         )
-        self.num_procs = num_procs
         self.batch_size = int(batch_size)
 
         # Implementation Checks
@@ -129,13 +112,6 @@ class RIRClass2D(Class2D):
             )
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
 
-        # Setup class selection
-        if selector is None:
-            selector = RandomClassSelector(seed=self.seed)
-        elif not isinstance(selector, ClassSelector):
-            raise RuntimeError("`selector` must be subclass of `ClassSelector`")
-        self.selector = selector
-
         # For now, only run with FSPCA basis
         if pca_basis and not isinstance(pca_basis, FSPCABasis):
             raise NotImplementedError(
@@ -175,7 +151,6 @@ class RIRClass2D(Class2D):
         self.sample_n = sample_n
         self.alpha = alpha
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
-        self.averager = averager
 
         if self.src.n < self.bispectrum_components:
             raise RuntimeError(
@@ -202,21 +177,6 @@ class RIRClass2D(Class2D):
         # For convenience, assign the fb_basis used in the pca_basis.
         self.fb_basis = self.pca_basis.basis
 
-        # When not provided by a user, the averager is instantiated after
-        #  we are certain our pca_basis has been constructed.
-        if self.averager is None:
-            self.averager = BFSReddyChatterjiAverager2D(
-                self.fb_basis, self.src, num_procs=self.num_procs, dtype=self.dtype
-            )
-        else:
-            # When user provides `averager` and `num_procs`
-            #   we should warn when `num_procs` mismatched.
-            if self.num_procs is not None and self.averager.num_procs != self.num_procs:
-                logger.warning(
-                    f"{self.__class__.__name__} intialized with num_procs={self.num_procs} does not"
-                    f" match provided {self.averager.__class__.__name__}.{self.averager.num_procs}"
-                )
-
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
 
@@ -240,22 +200,6 @@ class RIRClass2D(Class2D):
             )
 
         return classes, reflections, distances
-
-    def averages(self, classes, reflections, distances):
-        # # Stage 3: Class Selection
-        # This is an area open to active research.
-        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        self.selection = selection = self.selector.select(
-            self.n_classes, classes, reflections, distances
-        )
-        classes, reflections = classes[selection], reflections[selection]
-
-        # # Stage 4: Averager
-        logger.info(
-            f"Begin Averaging of {classes.shape[0]} Classes using {self.averager}."
-        )
-
-        return self.averager.average(classes, reflections)
 
     def pca(self, M):
         """
