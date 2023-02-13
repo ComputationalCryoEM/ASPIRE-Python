@@ -273,10 +273,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         h = 1 / radius
 
         phi = (
-            2 * np.pi * np.arange(self.num_angular_nodes // 2) / self.num_angular_nodes
+            2 * np.pi * np.arange(self.num_angular_nodes // 2, dtype = self.dtype) / self.num_angular_nodes
         )
-        x = np.cos(phi, dtype=self.dtype).reshape(1, self.num_angular_nodes // 2)
-        y = np.sin(phi, dtype=self.dtype).reshape(1, self.num_angular_nodes // 2)
+        x = np.cos(phi).reshape(1, self.num_angular_nodes // 2)
+        y = np.sin(phi).reshape(1, self.num_angular_nodes // 2)
         x = x * nodes * h
         y = y * nodes * h
         self.grid_x = x.flatten()
