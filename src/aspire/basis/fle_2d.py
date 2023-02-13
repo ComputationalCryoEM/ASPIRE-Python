@@ -189,10 +189,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         if self.epsilon >= 1e-4:
             numsparse = 8
             maxitr = 1 + int(np.log2(self.nres)) // 2
-        elif 1e-4 > self.epsilon >= 1e-7:
+        elif self.epsilon >= 1e-7:
             numsparse = 16
             maxitr = 1 + int(np.log2(self.nres))
-        elif 1e-7 > self.epsilon >= 1e-10:
+        elif self.epsilon >= 1e-10:
             numsparse = 22
             maxitr = 1 + int(2 * np.log2(self.nres))
         else:
