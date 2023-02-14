@@ -9,7 +9,6 @@ from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
-    fle_ell_sign,
     precomp_transform_complex_to_real,
     transform_complex_to_real,
 )
@@ -103,7 +102,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.angular_indices = np.abs(self.ells)
         self.radial_indices = self.ks - 1
         self.signs_indices = np.sign(self.ells)
-        self.fle_signs_indices = np.array(list(map(fle_ell_sign, self.ells)))
 
     def indices(self):
         """
@@ -122,11 +120,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         ind = self.indices()
         # basis function ordering
-        self.fb_compat_indices = np.lexsort(
-            (ind["ks"], self.fle_signs_indices, ind["ells"])
-        )
+        self.fb_compat_indices = np.lexsort((ind["ks"], ind["sgns"], ind["ells"]))
         # flip signs
-        self.flip_sign_indices = np.where(self.fle_signs_indices == 1)
+        self.flip_sign_indices = np.where(self.signs_indices == 1)
 
     def _precomp(self):
         """
