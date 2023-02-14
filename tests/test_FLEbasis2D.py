@@ -308,33 +308,33 @@ def testRadialConvolution():
 
     L = 32
     basis = FLEBasis2D(L, match_fb=False)
-    # load test CTF
-    ctf = np.load(os.path.join(DATA_DIR, "ctf_32x32.npy")).reshape(1, 32, 32)
-    ctf = ctf / np.max(np.abs(ctf.flatten()))
+    # load test radial function
+    x = np.load(os.path.join(DATA_DIR, "fle_radial_fn_32x32.npy")).reshape(1, 32, 32)
+    x = x / np.max(np.abs(x.flatten()))
 
     # get sample images
     ims = create_images(L, 10)
     # convolve using coefficients
     coeffs = basis.evaluate_t(ims)
-    coeffs_convolved = basis.radialconv(coeffs, ctf)
+    coeffs_convolved = basis.radialconv(coeffs, x)
     imgs_convolved_fle = basis.evaluate(coeffs_convolved).asnumpy()
 
     # convolve using FFT
-    ctf = basis.evaluate(basis.evaluate_t(ctf)).asnumpy()
+    x = basis.evaluate(basis.evaluate_t(x)).asnumpy()
     ims = basis.evaluate(coeffs).asnumpy()
 
     imgs_convolved_slow = np.zeros((10, L, L))
     for i in range(10):
-        ctf_pad = np.zeros((2 * L, 2 * L))
+        x_pad = np.zeros((2 * L, 2 * L))
         ims_pad = np.zeros((2 * L, 2 * L))
-        ctf_pad[L // 2 : L // 2 + L, L // 2 : L // 2 + L] = ctf[0, :, :]
+        x_pad[L // 2 : L // 2 + L, L // 2 : L // 2 + L] = x[0, :, :]
         ims_pad[L // 2 : L // 2 + L, L // 2 : L // 2 + L] = ims[i, :, :]
 
-        ctf_shift = fft.fftshift(ctf_pad.reshape(2 * L, 2 * L))
+        x_shift = fft.fftshift(x_pad.reshape(2 * L, 2 * L))
         ims_shift = fft.fftshift(ims_pad.reshape(2 * L, 2 * L))
 
         convolution_fft_pad = fft.fftshift(
-            fft.ifft2(np.fft.fft2(ctf_shift) * np.fft.fft2(ims_shift))
+            fft.ifft2(np.fft.fft2(x_shift) * np.fft.fft2(ims_shift))
         )
         imgs_convolved_slow[i, :, :] = np.real(
             convolution_fft_pad[L // 2 : L // 2 + L, L // 2 : L // 2 + L]
