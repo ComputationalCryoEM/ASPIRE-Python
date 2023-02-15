@@ -11,13 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as PILImage
 
-from aspire.basis import FFBBasis2D
-from aspire.classification import (
-    BFSReddyChatterjiAverager2D,
-    RIRClass2D,
-    TopClassSelector,
-)
-from aspire.denoising import ClassAvgSource
+from aspire.denoising import LegacyClassAvgSource
 from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
@@ -111,28 +105,10 @@ src.images[:10].show()
 # algorithm. We then yield class averages by performing ``classify``.
 n_classes = 10
 
-rir = RIRClass2D(
-    src,
-    fspca_components=400,
-    bispectrum_components=300,  # Compressed Features after last PCA stage.
-    n_nbor=10,
-    large_pca_implementation="legacy",
-    nn_implementation="legacy",
-    bispectrum_implementation="legacy",
-)
-
-averager = BFSReddyChatterjiAverager2D(
-    FFBBasis2D(src.L, dtype=src.dtype),
-    src,
-    num_procs=1,  # Change to "auto" if your machine has many processors
-    dtype=rir.dtype,
-)
-
-avgs = ClassAvgSource(
+avgs = LegacyClassAvgSource(
     classification_src=src,
-    classifier=rir,
-    class_selector=TopClassSelector(),
-    averager=averager,
+    n_nbor=10,
+    num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
 # %%
@@ -169,34 +145,14 @@ noisy_src.images[:10].show()
 # %%
 # RIR with Noise
 # ^^^^^^^^^^^^^^
-# This also demonstrates changing the Nearest Neighbor search to using
-# scikit-learn, and using ``TopClassSelector``.``TopClassSelector``
-# will deterministically select the first ``n_classes``.  This is useful
-# for development and debugging.  By default ``RIRClass2D`` uses a
-# ``RandomClassSelector``.
+# Internally this uses scikit-learn for NN and ``TopClassSelector``.
+# ``TopClassSelector`` will deterministically select the first ``n_classes``.
+# This is useful for development and debugging.
 
-noisy_rir = RIRClass2D(
-    noisy_src,
-    fspca_components=400,
-    bispectrum_components=300,
-    n_nbor=10,
-    large_pca_implementation="legacy",
-    nn_implementation="sklearn",
-    bispectrum_implementation="legacy",
-)
-
-noisy_averager = BFSReddyChatterjiAverager2D(
-    FFBBasis2D(src.L, dtype=src.dtype),
-    noisy_src,
-    num_procs=1,  # Change to "auto" if your machine has many processors
-    dtype=rir.dtype,
-)
-
-avgs = ClassAvgSource(
+avgs = LegacyClassAvgSource(
     classification_src=noisy_src,
-    classifier=noisy_rir,
-    class_selector=TopClassSelector(),
-    averager=noisy_averager,
+    n_nbor=10,
+    num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
 # %%
@@ -236,9 +192,9 @@ avgs.images[review_class].show()
 # In this case, we'll get the estimated alignments for the ``review_class``.
 
 
-est_rotations = noisy_averager.rotations
-est_shifts = noisy_averager.shifts
-est_correlations = noisy_averager.correlations
+est_rotations = avgs.averager.rotations
+est_shifts = avgs.averager.shifts
+est_correlations = avgs.averager.correlations
 
 logger.info(f"Estimated Rotations: {est_rotations}")
 logger.info(f"Estimated Shifts: {est_shifts}")

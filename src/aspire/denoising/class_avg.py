@@ -233,7 +233,7 @@ class LegacyClassAvgSource(ClassAvgSource):
                 bispectrum_components=300,  # Compressed Features after last PCA stage.
                 n_nbor=n_nbor,
                 large_pca_implementation="legacy",
-                nn_implementation="legacy",
+                nn_implementation="sklearn",  # Note this is different than debug
                 bispectrum_implementation="legacy",
             )
 
