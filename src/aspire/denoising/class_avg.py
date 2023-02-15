@@ -1,6 +1,15 @@
 import logging
 
-from aspire.classification import Averager2D, Class2D, ClassSelector
+from aspire.basis import FFBBasis2D
+from aspire.classification import (
+    Averager2D,
+    BFRAverager2D,
+    BFSReddyChatterjiAverager2D,
+    Class2D,
+    ClassSelector,
+    RIRClass2D,
+    TopClassSelector,
+)
 from aspire.image import Image
 from aspire.source import ImageSource
 
@@ -151,28 +160,96 @@ class ClassAvgSource(ImageSource):
         return self.generation_pipeline.forward(im, indices)
 
 
-# # Legacy
-# :param num_procs: Number of processes to use.
-#     `None` will attempt computing a suggestion based on machine resources.
-#         # Setup class selection
-#         if selector is None:
-#             selector = RandomClassSelector(seed=self.seed)
-#         elif not isinstance(selector, ClassSelector):
-#             raise RuntimeError("`selector` must be subclass of `ClassSelector`")
-#         self.selector = selector
+class DebugClassAvgSource(ClassAvgSource):
+    """
+    Source for denoised 2D images using class average methods.
 
-#         self.averager = averager
-#         # When not provided by a user, the averager is instantiated after
-#         #  we are certain our pca_basis has been constructed.
-#         if self.averager is None:
-#             self.averager = BFSReddyChatterjiAverager2D(
-#                 self.fb_basis, self.src, num_procs=self.num_procs, dtype=self.dtype
-#             )
-#         else:
-#             # When user provides `averager` and `num_procs`
-#             #   we should warn when `num_procs` mismatched.
-#             if self.num_procs is not None and self.averager.num_procs != self.num_procs:
-#                 logger.warning(
-#                     f"{self.__class__.__name__} intialized with num_procs={self.num_procs} does not"
-#                     f" match provided {self.averager.__class__.__name__}.{self.averager.num_procs}"
-#                 )
+    Packs base with common debug defaults.
+    """
+
+    def __init__(
+        self,
+        classification_src,
+        n_nbor=10,
+        num_procs=1,  # Change to "auto" if your machine has many processors
+        classifier=None,
+        class_selector=None,
+        averager=None,
+    ):
+        dtype = classification_src.dtype
+
+        if classifier is None:
+            classifier = RIRClass2D(
+                classification_src,
+                fspca_components=400,
+                bispectrum_components=300,  # Compressed Features after last PCA stage.
+                n_nbor=n_nbor,
+                large_pca_implementation="legacy",
+                nn_implementation="legacy",
+                bispectrum_implementation="legacy",
+            )
+
+        if averager is None:
+            averager = BFRAverager2D(
+                classification_src,
+                num_procs=num_procs,
+                dtype=dtype,
+            )
+
+        if class_selector is None:
+            class_selector = TopClassSelector()
+
+        super().__init__(
+            classification_src=classification_src,
+            classifier=classifier,
+            class_selector=class_selector,
+            averager=averager,
+            averager_src=classification_src,
+        )
+
+
+class LegacyClassAvgSource(ClassAvgSource):
+    """
+    Source for denoised 2D images using class average methods.
+
+    Packs base with common v9 and v10 defaults.
+    """
+
+    def __init__(
+        self,
+        classification_src,
+        n_nbor=10,
+        num_procs=1,  # Change to "auto" if your machine has many processors
+        classifier=None,
+        class_selector=None,
+        averager=None,
+    ):
+        dtype = classification_src.dtype
+
+        if classifier is None:
+            classifier = RIRClass2D(
+                classification_src,
+                fspca_components=400,
+                bispectrum_components=300,  # Compressed Features after last PCA stage.
+                n_nbor=n_nbor,
+                large_pca_implementation="legacy",
+                nn_implementation="legacy",
+                bispectrum_implementation="legacy",
+            )
+
+        if averager is None:
+            basis_2d = FFBBasis2D(classification_src.L, dtype=dtype)
+            averager = BFSReddyChatterjiAverager2D(
+                basis_2d, classification_src, num_procs=num_procs, dtype=dtype
+            )
+
+        if class_selector is None:
+            class_selector = TopClassSelector()
+
+        super().__init__(
+            classification_src=classification_src,
+            classifier=classifier,
+            class_selector=class_selector,
+            averager=averager,
+            averager_src=classification_src,
+        )
