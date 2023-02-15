@@ -1,4 +1,5 @@
 import itertools
+import logging
 
 import numpy as np
 import pytest
@@ -13,6 +14,8 @@ from aspire.volume import (
     OSymmetricVolume,
     TSymmetricVolume,
 )
+
+logger = logging.getLogger(__name__)
 
 # dtype fixture to pass into volume fixture.
 DTYPES = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
@@ -89,6 +92,7 @@ def vol_fixture(request, dtype_fixture):
 def test_volume_repr(vol_fixture):
     """Test Synthetic Volume repr"""
     assert repr(vol_fixture).startswith(f"{vol_fixture.__class__.__name__}")
+    logger.debug(f"Volume object: {repr(vol_fixture)}")
 
 
 def test_volume_generate(vol_fixture):
