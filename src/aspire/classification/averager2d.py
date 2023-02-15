@@ -8,7 +8,6 @@ from ray.util.multiprocessing import Pool
 from aspire import config
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image
-from aspire.source import ArrayImageSource
 from aspire.utils import trange
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.multiprocessing import num_procs_suggestion
@@ -232,7 +231,7 @@ class AligningAverager2D(Averager2D):
                 b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
-        return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
+        return self.composite_basis.evaluate(b_avgs)
 
     def _shift_search_grid(self, L, radius, roll_zero=False):
         """
@@ -673,7 +672,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
-        return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
+        return self.composite_basis.evaluate(b_avgs)
 
 
 class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):

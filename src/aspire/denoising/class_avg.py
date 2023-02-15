@@ -1,6 +1,7 @@
 import logging
 
-from aspire.classification import Class2D, ClassSelector
+from aspire.classification import Averager2D, Class2D, ClassSelector
+from aspire.image import Image
 from aspire.source import ImageSource
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class ClassAvgSource(ImageSource):
         classifier,
         class_selector,
         averager,
-        registration_src=None,
+        averager_src=None,
     ):
         """
         Constructor of an object for denoising 2D images using class averaging methods.
@@ -27,7 +28,7 @@ class ClassAvgSource(ImageSource):
             Example, RIRClass2D.
         :param class_selector: A ClassSelector subclass.
         :param averager: An Averager2D subclass.
-        :param registration_src: Optional, Source used for image registration and averaging.
+        :param averager_src: Optional, Source used for image registration and averaging.
             Defaults to `classification_src`.
         """
         self.classification_src = classification_src
@@ -48,12 +49,18 @@ class ClassAvgSource(ImageSource):
                 f"`class_selector` should be instance of `ClassSelector`, found {class_selector}."
             )
 
-        self.registration_src = registration_src
-        if self.registration_src is None:
-            self.registration_src = self.classification_src
-        if not isinstance(self.registration_src, ImageSource):
+        self.averager = averager
+        if not isinstance(self.averager, Averager2D):
             raise ValueError(
-                f"`registration_src` should be subclass of `ImageSource`, found {self.registration_src}."
+                f"`averager` should be instance of `Averger2D`, found {self.averager_src}."
+            )
+
+        self.averager_src = averager_src
+        if self.averager_src is None:
+            self.averager_src = self.classification_src
+        if not isinstance(self.averager_src, ImageSource):
+            raise ValueError(
+                f"`averager_src` should be subclass of `ImageSource`, found {self.averager_src}."
             )
 
         self._nn_classes = None
@@ -67,9 +74,9 @@ class ClassAvgSource(ImageSource):
 
         # Note n will potentially be updated after class selection.
         super().__init__(
-            L=self.registration_src.L,
-            n=self.registration_src.n,
-            dtype=self.registration_src.dtype,
+            L=self.averager_src.L,
+            n=self.averager_src.n,
+            dtype=self.averager_src.dtype,
         )
 
     def _classify(self):
@@ -92,7 +99,7 @@ class ClassAvgSource(ImageSource):
     def _class_select(self):
         """
         Uses the `class_selector` in conjunction with the classifier results
-        to select the classes (and order) used for image registration,
+        to select the classes (and order) used for image averager,
         if not already done.
         """
 
@@ -105,14 +112,18 @@ class ClassAvgSource(ImageSource):
 
         # Evaluate the classification network.
         if not self._classified:
-            self.classify()
+            self._classify()
 
         # Perform class selection
-        self.selection_indices = self.selector.select(
-            self._nn_classes, self._nn_reflections, self._nn_distances
+        self.selection_indices = self.class_selector.select(
+            self.classification_src.n,
+            self._nn_classes,
+            self._nn_reflections,
+            self._nn_distances,
         )
 
         # Override the initial self.n
+        logger.info(f"Selecting {len(self.selection_indices)} of {self.n} classes.")
         self.n = len(self.selection_indices)
 
         self._selected = True
@@ -131,8 +142,10 @@ class ClassAvgSource(ImageSource):
             logger.debug("Loading images from cache")
             im = Image(self._cached_im[indices, :, :])
         else:
-            # Perform image registration for the requested classes
-            im = self.registration(classes[indices], reflections[indices])
+            # Perform image averaging for the requested classes
+            im = self.averager.average(
+                self._nn_classes[indices], self._nn_reflections[indices]
+            )
 
         # Finally, apply transforms to resulting Image
         return self.generation_pipeline.forward(im, indices)

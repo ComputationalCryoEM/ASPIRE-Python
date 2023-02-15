@@ -11,7 +11,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as PILImage
 
-from aspire.classification import RIRClass2D, TopClassSelector
+from aspire.basis import FFBBasis2D
+from aspire.classification import (
+    BFSReddyChatterjiAverager2D,
+    RIRClass2D,
+    TopClassSelector,
+)
+from aspire.denoising import ClassAvgSource
 from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
@@ -103,21 +109,31 @@ src.images[:10].show()
 #
 # We use the ASPIRE ``RIRClass2D`` class to classify the images via the rotationally invariant representation (RIR)
 # algorithm. We then yield class averages by performing ``classify``.
+n_classes = 10
 
 rir = RIRClass2D(
     src,
     fspca_components=400,
     bispectrum_components=300,  # Compressed Features after last PCA stage.
     n_nbor=10,
-    n_classes=10,
     large_pca_implementation="legacy",
     nn_implementation="legacy",
     bispectrum_implementation="legacy",
-    num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
-classes, reflections, dists = rir.classify()
-avgs = rir.averages(classes, reflections, dists)
+averager = BFSReddyChatterjiAverager2D(
+    FFBBasis2D(src.L, dtype=src.dtype),
+    src,
+    num_procs=1,  # Change to "auto" if your machine has many processors
+    dtype=rir.dtype,
+)
+
+avgs = ClassAvgSource(
+    classification_src=src,
+    classifier=rir,
+    class_selector=TopClassSelector(),
+    averager=averager,
+)
 
 # %%
 # Display Classes
@@ -164,16 +180,24 @@ noisy_rir = RIRClass2D(
     fspca_components=400,
     bispectrum_components=300,
     n_nbor=10,
-    n_classes=10,
-    selector=TopClassSelector(),
     large_pca_implementation="legacy",
     nn_implementation="sklearn",
     bispectrum_implementation="legacy",
-    num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
-classes, reflections, dists = noisy_rir.classify()
-avgs = noisy_rir.averages(classes, reflections, dists)
+noisy_averager = BFSReddyChatterjiAverager2D(
+    FFBBasis2D(src.L, dtype=src.dtype),
+    noisy_src,
+    num_procs=1,  # Change to "auto" if your machine has many processors
+    dtype=rir.dtype,
+)
+
+avgs = ClassAvgSource(
+    classification_src=noisy_src,
+    classifier=noisy_rir,
+    class_selector=TopClassSelector(),
+    averager=noisy_averager,
+)
 
 # %%
 # Display Classes
@@ -194,6 +218,8 @@ review_class = 5
 noisy_src.images[review_class].show()
 
 # Report the identified neighbor indices
+classes = avgs._nn_classes
+reflections = avgs._nn_reflections
 logger.info(f"Class {review_class}'s neighors: {classes[review_class]}")
 
 # Report the identified neighbors
@@ -208,12 +234,11 @@ avgs.images[review_class].show()
 #
 # Alignment details are exposed when avaialable from an underlying ``averager``.
 # In this case, we'll get the estimated alignments for the ``review_class``.
-# These alignment arrays are indexed the same as ``classes``,
-# having shape (n_classes, n_nbor).
 
-est_rotations = noisy_rir.averager.rotations[review_class]
-est_shifts = noisy_rir.averager.shifts[review_class]
-est_correlations = noisy_rir.averager.correlations[review_class]
+
+est_rotations = noisy_averager.rotations
+est_shifts = noisy_averager.shifts
+est_correlations = noisy_averager.correlations
 
 logger.info(f"Estimated Rotations: {est_rotations}")
 logger.info(f"Estimated Shifts: {est_shifts}")
@@ -230,7 +255,7 @@ original_img_0 = noisy_src.images[original_img_0_idx].asnumpy()[0]
 original_img_nbr = noisy_src.images[original_img_nbr_idx].asnumpy()[0]
 
 # Rotate using estimated rotations.
-angle = est_rotations[nbr] * 180 / np.pi
+angle = est_rotations[0, nbr] * 180 / np.pi
 if reflections[review_class][nbr]:
     original_img_nbr = np.flipud(original_img_nbr)
 rotated_img_nbr = np.asarray(PILImage.fromarray(original_img_nbr).rotate(angle))

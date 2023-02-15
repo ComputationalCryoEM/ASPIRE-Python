@@ -7,19 +7,12 @@ import pytest
 from sklearn import datasets
 
 from aspire.basis import FFBBasis2D, FSPCABasis
-from aspire.classification import (
-    BFRAverager2D,
-    ClassSelector,
-    RIRClass2D,
-    TopClassSelector,
-)
+from aspire.classification import RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.volume import Volume
-
-from .test_averager2d import xfail_ray_dev
 
 logger = logging.getLogger(__name__)
 
