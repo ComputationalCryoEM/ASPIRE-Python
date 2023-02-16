@@ -74,7 +74,7 @@ def relerr(base, approx):
 class TestFLEBasis2D(UniversalBasisMixin):
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):
-        dense_b = basis.create_dense_matrix()
+        dense_b = basis._create_dense_matrix()
 
         # create sample particle
         x = create_images(basis.nres, 1).asnumpy()
@@ -91,7 +91,7 @@ class TestFLEBasis2D(UniversalBasisMixin):
         if backend_available("cufinufft") and basis.epsilon == 1e-7:
             gpu_ci_skip()
 
-        dense_b = basis.create_dense_matrix()
+        dense_b = basis._create_dense_matrix()
 
         # get sample coefficients
         x = create_images(basis.nres, 1)
@@ -149,12 +149,17 @@ def testMatchFBDenseEvaluate(basis):
 
     coeffs = np.eye(basis.count)
 
-    fb_images = fb_basis.evaluate(coeffs)
-    fle_out = basis.create_dense_matrix() @ coeffs.T
-    fle_images = Image(fle_out.T.reshape(-1, basis.nres, basis.nres))
+    fb_images = fb_basis.evaluate(coeffs).asnumpy()
+    fle_out = basis._create_dense_matrix() @ coeffs
+    fle_images = Image(fle_out.T.reshape(-1, basis.nres, basis.nres)).asnumpy()
 
-    # via matrix, matching is to a lower precision than FLE's evaluate
-    assert np.allclose(fb_images.asnumpy(), fle_images.asnumpy(), atol=1e-1)
+    # odd resolution has to be normalized
+    if basis.nres % 2 == 1:
+        fb_images = fb_images / np.max(np.abs(fb_images))
+        fle_images = fle_images / np.max(np.abs(fle_images))
+
+    # Matrix column reording in match_fb mode flips signs of some of the basis functions
+    assert np.allclose(np.abs(fb_images), np.abs(fle_images), atol=1e-3)
 
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
@@ -190,9 +195,15 @@ def testMatchFBDenseEvaluate_t(basis):
     vec = images.asnumpy().reshape((-1, basis.nres**2))
 
     fb_coeffs = fb_basis.evaluate_t(images)
-    fle_coeffs = basis.create_dense_matrix().T @ vec.T
+    fle_coeffs = basis._create_dense_matrix().T @ vec.T
 
-    assert np.allclose(fb_coeffs, fle_coeffs, atol=1e-1)
+    # odd resolution has to be normalized
+    if basis.nres % 2 == 1:
+        fb_coeffs = fb_coeffs / np.max(np.abs(fb_coeffs))
+        fle_coeffs = fle_coeffs / np.max(np.abs(fle_coeffs))
+
+    # Matrix column reording in match_fb mode flips signs of some of the basis coefficients
+    assert np.allclose(np.abs(fb_coeffs), np.abs(fle_coeffs), atol=1e-4)
 
 
 def testLowPass():

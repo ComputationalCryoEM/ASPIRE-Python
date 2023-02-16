@@ -635,7 +635,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return im
 
-    def create_dense_matrix(self):
+    def _create_dense_matrix(self):
         """
         Directly computes the transformation matrix from Cartesian coordinates to
         FLE coordinates without any shortcuts.
