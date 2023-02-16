@@ -104,24 +104,14 @@ v2 = v.downsample(img_size)
 L = v2.resolution
 
 # %%
-# Contour Plot of Data
-# --------------------
+# Plot Data
+# ---------
 
 # Alternatively, for quick sanity checking purposes we can view as a contour plot.
 #   We'll use three orthographic projections, one per axis.
 for axis in range(3):
-    plt.contourf(np.arange(L), np.arange(L), np.sum(v2[0], axis=axis), cmap="gray")
+    plt.imshow(np.sum(v2[0], axis=axis), cmap="gray")
     plt.show()
-
-# %%
-# Scatter Plot
-# ------------
-
-# We can attempt a 3d scatter plot, but the results aren't very good.
-x, y, z = np.meshgrid(np.arange(L), np.arange(L), np.arange(L))
-ax = plt.axes(projection="3d")
-ax.scatter3D(x, y, z, c=np.log10(v2.flatten()), cmap="Greys_r")
-plt.show()
 
 # %%
 # ``Rotation`` Class - Generating Random Rotations
