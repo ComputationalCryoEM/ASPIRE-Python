@@ -13,8 +13,8 @@ that corresponds to topics from MATH586.
 # the ASPIRE package that we will use throughout this tutorial.
 
 # %%
-# Homework Task 0
-# ^^^^^^^^^^^^^^^
+# Installation
+# ^^^^^^^^^^^^
 #
 # Attempt to install ASPIRE on your machine. ASPIRE can generally install on
 # Linux, Mac, and Windows
@@ -25,8 +25,9 @@ that corresponds to topics from MATH586.
 #
 # ASPIRE requires some resources to run, so if you wouldn't run typical data
 # science codes on your machine (maybe a netbook for example),
-# you may use TigerCPU. After logging into TigerCPU,
-# ``module load anaconda3/2020.7`` and follow the anaconda instructions for
+# you may use Tiger/Adroit/Della etc if you have access.
+# After logging into Tiger, ``module load anaconda3/2020.7``
+# and continue to follow the anaconda instructions for
 # developers in the link above.
 # Those instructions should create a working environment for tinkering with
 # ASPIRE code found in this notebook.
@@ -84,19 +85,6 @@ logger = logging.getLogger(__name__)
 # Unfortunately real data can be quite large so we do not ship it with the repo.
 
 # %%
-# Homework Task 1
-# ^^^^^^^^^^^^^^^
-#
-# - Starting from `EMPIAR <https://www.ebi.ac.uk/pdbe/emdb/empiar/>`_ find a molecule of interest and try to
-# find if it has a corresponding volume density map from `EMDB <https://www.ebi.ac.uk/pdbe/emdb>`_.
-#
-# - Download such a map and use it in the following experiments where I have used 2660.
-#
-# Helpful friendly hint:
-# `mrcfile` will typically open `.map` files provided by EMDB, corresponding to an EMPIAR entry.
-# This was not obvious to me, but you may `read more about the format here <https://www.emdataresource.org/mapformat.html>`_.
-
-# %%
 # Initialize Volume
 # -----------------
 
@@ -106,12 +94,12 @@ DATA_DIR = "data"
 v = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 
 # More interesting data requires downloading locally.
-# v = Volume.load("EMD-2660/map/emd_2660.map")
+# v = Volume.load("path/to/EMD-2660/map/emd_2660.map")
 
 # Downsample the volume to a desired resolution
 img_size = 64
-# Volume.downsample() Returns a new Volume instance.
-#   We will use this lower resolution volume later.
+# Volume.downsample() returns a new Volume instance.
+#   We will use this lower resolution volume later, calling it `v2`.
 v2 = v.downsample(img_size)
 L = v2.resolution
 
@@ -134,15 +122,6 @@ x, y, z = np.meshgrid(np.arange(L), np.arange(L), np.arange(L))
 ax = plt.axes(projection="3d")
 ax.scatter3D(x, y, z, c=np.log10(v2.flatten()), cmap="Greys_r")
 plt.show()
-
-# %%
-# Homework Task 2
-# ^^^^^^^^^^^^^^^
-#
-# Above I have used a simple log transform with a scatter plot to peek at the 3D data.
-# This was mainly just to make sure the data was in the neighborhood of what I was looking for.
-# More commonly we will want to construct an ``isosurface`` plot.
-# Try to create a better plot of the volume (this will probably require more advanced tools than matplotlib).
 
 # %%
 # ``Rotation`` Class - Generating Random Rotations
@@ -198,7 +177,7 @@ projections.show()
 # Using ``Simulation``, we can generate arbitrary numbers of projections for use in experiments.
 # Later we will demonstrate additional features which allow us to create more realistic data sources.
 
-num_imgs = 100  # How many images in our source.
+num_imgs = 100  # Total images in our source.
 # Generate a Simulation instance based on the original volume data.
 sim = Simulation(L=v.resolution, n=num_imgs, vols=v)
 # Display the first 10 images
@@ -291,12 +270,12 @@ for desc, _sim in [
     )
 
 # %%
-# Homework Task 3
-# ^^^^^^^^^^^^^^^
+# Experiment
+# ^^^^^^^^^^
 #
 # We confirmed a dramatic change in the eigenspacing when we add a lot of noise.
 # Compute the SNR in this case using the formula described from class.
-# Repeat the experiment with varying levels of SNR to find at what level the character of the eigenspacing changes.
+# Repeat the experiment with varying levels of noise to find at what level the character of the eigenspacing changes.
 # This will require changing the Simulation Source's noise_filter.
 # How does this compare with the levels discussed in lecture?
 
@@ -365,18 +344,10 @@ sim4.whiten(aiso_noise_estimator.filter)
 sim4.images[:10].show()
 
 # %%
-# Homework Task 4
-# ^^^^^^^^^^^^^^^
-#
-# Try some other image preprocessing methods exposed by the ``Simulation``/``ImageSource`` classes.
-#
-# Try some other custom function to add noise or other corruptions to the images.
-
-# %%
 # Real Experimental Data - ``RelionSource``
 # -----------------------------------------
 #
-# Now that we know our experiment code seems to run,
+# Now that we know have some basics,
 # we can try to replace the simulation with a real experimental data source.
 #
 # Lets attempt the same CL experiment, but with a ``RelionSource``.
@@ -388,17 +359,9 @@ src = RelionSource(
     max_rows=1024,
 )
 
-# Data resides on Tiger Cluster
-# Please make sure you are using a compute node once you've installed ASPIRE, not the head node...
-# src =  RelionSource(
-#    "/tigress/gbwright/data/cryo-em/CryoEMdata/empiar10028/shiny_2sets.star", data_folder="", pixel_size=5.0, max_rows=100
-# )
 src.downsample(img_size)
 
 src.images[:10].show()
-
-noise_estimator = WhiteNoiseEstimator(src)
-src.whiten(noise_estimator.filter)
 
 orient_est = CLSyncVoting(src, n_theta=36)
 orient_est.estimate_rotations()
@@ -406,7 +369,7 @@ rots_est = orient_est.rotations
 
 # %%
 # We can see that the code can easily run with experimental data by subsituting the ``Source`` class.
-# However, we have hit the practical limitation that requires class averaging of images....
+# However, we have hit the point where we need denoising algorithms to perform orientation estimation.
 
 # %%
 # CTF Filter
@@ -439,23 +402,16 @@ filters = [
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 
-sim5 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, unique_filters=filters)
-sim5.images[:10].show()
-
 
 # Here we will combine CTF and noise features to our projections.
-sim6 = Simulation(
+sim5 = Simulation(
     L=v2.resolution,
     n=num_imgs,
     vols=v2,
     unique_filters=filters,
     noise_adder=custom_noise,
 )
-sim6.images[:10].show()
-
-# Estimate noise.
-aiso_noise_estimator = AnisotropicNoiseEstimator(sim6)
-
-# Whiten based on the estimated noise
-sim6.whiten(aiso_noise_estimator.filter)
-sim6.images[:10].show()
+# Images with CTF, no noise applied
+sim5.clean_images[:10].show()
+# Images with both CTF and noise
+sim5.images[:10].show()
