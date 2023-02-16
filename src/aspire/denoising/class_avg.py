@@ -125,7 +125,6 @@ class ClassAvgSource(ImageSource):
 
         # Perform class selection
         self.selection_indices = self.class_selector.select(
-            self.classification_src.n,
             self._nn_classes,
             self._nn_reflections,
             self._nn_distances,
@@ -150,6 +149,9 @@ class ClassAvgSource(ImageSource):
         if self._cached_im is not None:
             logger.debug("Loading images from cache")
             im = Image(self._cached_im[indices, :, :])
+        # elif hasattr(self.class_selector, "heap") and :
+        #   # attempt to get set(indices).intesection(heap_ids) from heap
+        #   # then compute remaining batch self._images[leftover_inds]
         else:
             # Perform image averaging for the requested classes
             im = self.averager.average(
