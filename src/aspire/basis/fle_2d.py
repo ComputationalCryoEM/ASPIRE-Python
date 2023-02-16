@@ -452,21 +452,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.norm_constants = norm_constants
         self.basis_functions = basis_functions
 
-    def _expand(self, imgs):
-        """
-        Alternative to `Basis.expand()`, which computes a conjugate gradient solution using
-            `_evaluate` and `_evaluate_t`. Computes FLE coefficients from a stack of
-            images in Cartesian coordinates.
-        :param imgs: An Image object containing square images of size `self.nres`.
-        :return: A NumPy array of size `(num_images, self.count)` containing the FLE
-            coefficients.
-        """
-        coeffs = self.evaluate_t(imgs)
-        tmp = coeffs
-        for _ in range(self.maxitr):
-            tmp = tmp - self.evaluate_t(self.evaluate(tmp)) + coeffs
-        return tmp
-
     def _evaluate(self, coeffs):
         """
         Evaluates FLE coefficients and return in standard 2D Cartesian coordinates.
@@ -679,35 +664,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         coeffs[:, k + 1 :] = 0
 
         return coeffs
-
-    def _rotate(self, coeffs, theta):
-        """
-        Compute FLE coefficients for rotating an image by an angle `theta`.
-        :param coeffs: A NumPy array of FLE coefficients of shape (num_images, self.count)
-            to be rotated.
-        :param theta: An angle in radians.
-        :return: Rotated coefficient stack.
-        """
-        if len(coeffs.shape) == 1:
-            coeffs = coeffs.reshape((1, self.count))
-        assert (
-            len(coeffs.shape) == 2
-        ), "Input a stack of coefficients of dimension (num_images, self.count)."
-        assert (
-            coeffs.shape[1] == self.count
-        ), "Number of coefficients must match self.count."
-
-        coeffs_rot = np.zeros(coeffs.shape)
-        num_img = coeffs.shape[0]
-        for k in range(num_img):
-            _coeffs = coeffs[k, :]
-            b = np.zeros(self.count, dtype=np.complex128)
-            for i in range(self.count):
-                b[i] = np.exp(1j * theta * self.ells[i])
-            b = b.flatten()
-            coeffs_rot[k, :] = np.real(self.c2r @ (b * (self.r2c @ _coeffs).flatten()))
-
-        return coeffs_rot
 
     def radialconv(self, coeffs, radial_img):
         """

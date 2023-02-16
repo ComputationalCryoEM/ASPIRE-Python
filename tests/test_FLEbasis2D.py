@@ -264,37 +264,27 @@ def testRotate():
 
     # rotate original image in FLE space using Steerable rotate method
     coeffs_fle_rot = basis.rotate(coeffs, np.pi / 2)
-    # test original rotate implementation
-    coeffs_fle_rot_org = basis._rotate(coeffs, np.pi / 2)
 
     # back to cartesian
     ims_cart_rot = basis.evaluate(coeffs_cart_rot)
     ims_fle_rot = basis.evaluate(coeffs_fle_rot)
-    ims_fle_rot_org = basis.evaluate(coeffs_fle_rot_org)
 
     # test rot90 close
     assert np.allclose(ims_cart_rot[0], ims_fle_rot[0], atol=1e-4)
-    assert np.allclose(ims_cart_rot[0], ims_fle_rot_org[0], atol=1e-4)
 
     # 2Pi identity in FLE space (rotate by 2Pi)
     coeffs_fle_2pi = basis.rotate(coeffs, 2 * np.pi)
-    coeffs_fle_2pi_org = basis._rotate(coeffs, 2 * np.pi)
     ims_fle_2pi = basis.evaluate(coeffs_fle_2pi)
-    ims_fle_2pi_org = basis.evaluate(coeffs_fle_2pi_org)
 
     # test 2Pi identity
     assert np.allclose(ims[0], ims_fle_2pi[0], atol=utest_tolerance(basis.dtype))
-    assert np.allclose(ims[0], ims_fle_2pi_org[0], atol=utest_tolerance(basis.dtype))
 
     # Reflect in FLE space (rotate by Pi)
     coeffs_fle_pi = basis.rotate(coeffs, np.pi)
-    coeffs_fle_pi_org = basis._rotate(coeffs, np.pi)
     ims_fle_pi = basis.evaluate(coeffs_fle_pi)
-    ims_fle_pi_org = basis.evaluate(coeffs_fle_pi_org)
 
     # test reflection
     assert np.allclose(np.flipud(ims[0]), ims_fle_pi[0], atol=1e-4)
-    assert np.allclose(np.flipud(ims[0]), ims_fle_pi_org[0], atol=1e-4)
 
     # make sure you can pass in a 1-D array if you want
     _ = basis.lowpass(np.zeros((basis.count,)), np.pi)
