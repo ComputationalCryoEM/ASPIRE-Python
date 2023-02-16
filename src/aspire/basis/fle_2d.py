@@ -665,7 +665,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return coeffs
 
-    def radialconv(self, coeffs, radial_img):
+    def radial_convolve(self, coeffs, radial_img):
         """
         Convolve a stack of FLE coefficients with a 2D radial function.
         :param coeffs: A NumPy array of FLE coefficients of size (num_images, self.count).
@@ -678,14 +678,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             _coeffs = coeffs[k, :]
             z = self._step1_t(radial_img)
             b = self._step2_t(z)
-            weights = self._radialconv_weights(b)
+            weights = self._radial_convolve_weights(b)
             b = weights / (self.h**2)
             b = b.reshape(self.count)
             coeffs_conv[k, :] = np.real(self.c2r @ (b * (self.r2c @ _coeffs).flatten()))
 
         return coeffs_conv
 
-    def _radialconv_weights(self, b):
+    def _radial_convolve_weights(self, b):
         """
         Helper function for step 3 of convolving with a radial function.
         """

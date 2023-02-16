@@ -317,7 +317,7 @@ def testRadialConvolution():
     ims = create_images(L, 10)
     # convolve using coefficients
     coeffs = basis.evaluate_t(ims)
-    coeffs_convolved = basis.radialconv(coeffs, x)
+    coeffs_convolved = basis.radial_convolve(coeffs, x)
     imgs_convolved_fle = basis.evaluate(coeffs_convolved).asnumpy()
 
     # convolve using FFT
