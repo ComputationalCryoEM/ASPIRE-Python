@@ -1,5 +1,7 @@
 import logging
 
+import numpy as np
+
 from aspire.basis import FFBBasis2D
 from aspire.classification import (
     Averager2D,
@@ -145,11 +147,54 @@ class ClassAvgSource(ImageSource):
         if not self._selected:
             self._class_select()
 
-        # check for cached images first
+        # check for wholly cached image sets first
         if self._cached_im is not None:
             logger.debug("Loading images from cache")
             im = Image(self._cached_im[indices, :, :])
-        # elif hasattr(self.class_selector, "heap") and :
+
+        # check for cached image sets from class_selector
+        elif hasattr(self.class_selector, "heap") and (
+            heap_inds := set(indices).intesection(self.class_selector._heap_ids)
+        ):
+            # Images in heap_inds can be fetched from class_selector.
+            # For others, create an indexing map that preserves original order.
+            indices_to_compute = {
+                ind: i for i, ind in enumerate(indices) if i not in heap_inds
+            }
+            indices_from_heap = {
+                ind: i for i, ind in enumerate(indices) if i in heap_inds
+            }
+
+            # Recursion, heap_inds set should be empty in the recursive call.
+            computed_imgs = self._images(list(indices_to_compute.values()))
+            # Get the map once to avoid traversing heap in a loop
+            heapd = self._heap_id_dict
+
+            imgs = np.empty(
+                (len(indices), computed_imgs.resolution, computed_imgs.resolution),
+                dtype=computed_imgs.dtype,
+            )
+
+            _inds = list(indices_to_compute.values())
+            imgs[_inds] = computed_imgs
+            _inds = list(indices_from_heap.values())
+            imgs[_inds] = map(
+                lambda k: self.class_selector.heap[heapd[k]][2],
+                list(indices_from_heap.keys()),
+            )
+            # for (i,ind) in enumerate(indices):
+            #     # collect the images
+            #     if ind in heapd:
+            #         loc = heapd[ind]
+            #         assert self.class_selector.heap[loc][1] == ind
+            #         _img = self.class_selector.heap[loc][2]
+            #     else:
+            #         _img = computed_imgs[indices_to_compute[ind]]
+            #     # assign the image
+            #     imgs[i] = _img
+
+            return imgs
+
         #   # attempt to get set(indices).intesection(heap_ids) from heap
         #   # then compute remaining batch self._images[leftover_inds]
         else:

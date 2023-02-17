@@ -197,12 +197,29 @@ class GlobalClassSelector(ClassSelector):
         self._heap_limit_bytes = heap_size_limit_bytes
         self._heap_item_size = self.averager.src.L**2 + self.averager.dtype.itemsize
 
+    @property
     def _heap_size(self):
         n = len(self.heap)
         if n == 0:
             return 0
 
         return n * self._heap_item_size
+
+    @property
+    def _heap_ids(self):
+        """
+        Return the image ids currently in the heap.
+        """
+        return [item[1] for item in self.heap]  # heap item=(score, img_id, img)
+
+    @property
+    def _heap_id_dict(self):
+        """
+        Return map of image ids to heap position currently in the heap.
+        """
+        return {
+            item[1]: i for i, item in enumerate(self.heap)
+        }  # heap item=(score, img_id, img)
 
     def _select(self, classes, reflections, distances):
         for i in classes[:, 0]:
