@@ -269,52 +269,120 @@ class GlobalWithPriorClassSelector(PriorRejection, ClassSelector):
     """
 
 
-# Weight functions, todo, maybe make a class to hide the grid detail.
-def banded_snr(
-    img, grid=None, center_radius=0.5, outer_band_start=0.8, outer_band_end=1
-):
-    if isinstance(img, Image):
-        img = img.asnumpy()[0]
-
-    L = img.shape[-1]
-
-    if grid is None:
-        grid = grid_2d(L)
-
-    center_mask = grid["r"] < center_radius
-    outer_mask = (grid["r"] > outer_band_start) & (grid["r"] < outer_band_end)
-
-    return np.var(img[center_mask]) / np.var(img[outer_mask])
-
-
-def weighted_snr(img, grid=None, weight_function=None):
+class ImageQualityFunction(ABC):
     """
-    Take a 1d radial weight function.
-    The function is expected to be defined [0,sqrt(2)].
-    Function range is not limited, but should probably be [0,1].
+    A callable image quality scoring function.
     """
 
-    if isinstance(img, Image):
-        img = img.asnumpy()[0]
+    _grid_cache = {}
 
-    if weight_function is None:
+    @abstractmethod
+    def _function(self, img):
+        """
+        User defined 1d radial weight function.
+        The function is expected to be defined for [0,sqrt(2)].
+        Function range is not limited, but [0,1] is favorable.
 
-        def weight_function(r):
-            # linear ramp
-            return np.max(1 - r, 0)
+        Develops can use the self._grid_cache for access to
+        a grid_2d instance matching resolution of img.
 
-        # def weight_function(r):
-        #     # bump function (normalized to [0,1]
-        #     if r >= 1:
-        #         return 0
-        #     else:
-        #         return np.exp(-1/(1-r**2) + 1)
+        :param img: 2d numpy array
+        :returns: Image quality score
+        """
 
-    L = img.shape[-1]
+    def __call__(self, img):
+        """
+        Given an image instance or a 2D np array,
+        builds a grid once if needed then
+        calls the instance's weight function.
 
-    if grid is None:
-        grid = grid_2d(L)
+        :param img: `Image`, 2d numpy array,
+            or 3d array where slow axis is stack axis.
+            When called with an image stack>1, an array is returned.
+        :returns: Image quality score(s)
+        """
 
-    weights = np.frompyfunc(weight_function)(grid["r"])
+        if isinstance(img, Image):
+            img = img.asnumpy()
 
-    return img * weights
+        if img.ndim == 2:
+            img = img[np.newaxis, :, :]
+
+        stack_len = img.shape[0]
+        L = img.shape[-1]
+
+        # Generate grid on first call so user can expect it exists.
+        self._grid_cache.setdefault(L, grid_2d(L, dtype=img.dype))
+
+        # Call the function over img stack
+        res = np.fromiter(map(self.function, img), dtype=img.dtype)
+
+        if stack_len == 1:
+            res = res[0]
+
+        return res
+
+
+class BandedSNRImageQualityFunction(ImageQualityFunction):
+    def _function(self, img, center_radius=0.5, outer_band_start=0.8, outer_band_end=1):
+        # Look up the precached grid.
+        grid = self._grid_cache[img.shape[-1]]
+
+        center_mask = grid["r"] < center_radius
+        outer_mask = (grid["r"] > outer_band_start) & (grid["r"] < outer_band_end)
+
+        return np.var(img[center_mask]) / np.var(img[outer_mask])
+
+
+class WeightedImageQualityFunction(ImageQualityFunction):
+    """
+    A callable image quality scoring function using a radial grid weighted function.
+    """
+
+    def __init__(self):
+        # Each weight function will need a seperate cache,
+        # but the same function should be deterministic up to resolution.
+        self._weights_cache = {}
+
+    @abstractmethod
+    def _weight_function(self, r):
+        """
+        Take a 1d radial weight function.
+        The function is expected to be defined [0,sqrt(2)].
+        Function range is not limited, but should probably be [0,1].
+        """
+
+    def weights(self, L):
+        """
+        Lookup weights for a given resolution L,
+        computes and updates cache on first request.
+
+        :param L: resolution pixels
+        :returns: 2d weight array for LxL grid.
+        """
+        grid = self._grid_cache[L]
+        return self._weights_cache.setdefault(
+            L, np.frompyfunc(self.weight_function)(grid["r"])
+        )
+
+    def _function(self, img):
+        L = img.shape[-1]
+
+        # if we ignore the issue of dependence,
+        # we could also do sum(per_pixel_variance * weights)
+        return (img * img) * self.weights(L)
+
+
+class RampImageQualityFunction(WeightedImageQualityFunction):
+    def _weight_function(r):
+        # linear ramp
+        return np.max(1 - r, 0)
+
+
+class BumpImageQualityFunction(WeightedImageQualityFunction):
+    def _weight_function(r):
+        # bump function (normalized to [0,1]
+        if r >= 1:
+            return 0
+        else:
+            return np.exp(-1 / (1 - r**2) + 1)
