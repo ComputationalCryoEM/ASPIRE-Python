@@ -145,11 +145,6 @@ def testMatchFBDenseEvaluate(basis):
     fle_out = basis._create_dense_matrix() @ coeffs
     fle_images = Image(fle_out.T.reshape(-1, basis.nres, basis.nres)).asnumpy()
 
-    # odd resolution has to be normalized
-    if basis.nres % 2 == 1:
-        fb_images = fb_images / np.max(np.abs(fb_images))
-        fle_images = fle_images / np.max(np.abs(fle_images))
-
     # Matrix column reording in match_fb mode flips signs of some of the basis functions
     assert np.allclose(np.abs(fb_images), np.abs(fle_images), atol=1e-3)
 
@@ -183,11 +178,6 @@ def testMatchFBDenseEvaluate_t(basis):
 
     fb_coeffs = fb_basis.evaluate_t(images)
     fle_coeffs = basis._create_dense_matrix().T @ vec.T
-
-    # odd resolution has to be normalized
-    if basis.nres % 2 == 1:
-        fb_coeffs = fb_coeffs / np.max(np.abs(fb_coeffs))
-        fle_coeffs = fle_coeffs / np.max(np.abs(fle_coeffs))
 
     # Matrix column reording in match_fb mode flips signs of some of the basis coefficients
     assert np.allclose(np.abs(fb_coeffs), np.abs(fle_coeffs), atol=1e-4)
