@@ -24,10 +24,6 @@ def gpu_ci_skip():
     pytest.skip("1e-7 precision for FLEBasis2D.evaluate()")
 
 
-def odd_resolution_skip():
-    pytest.skip("FB matching for odd resolution.")
-
-
 fle_params = [
     (32, 1e-4),
     (32, 1e-7),
@@ -121,10 +117,6 @@ class TestFLEBasis2D(UniversalBasisMixin):
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
 def testMatchFBEvaluate(basis):
-    # see #738
-    if basis.nres % 2 == 1:
-        odd_resolution_skip()
-
     if backend_available("cufinufft") and basis.epsilon == 1e-7:
         gpu_ci_skip()
 
