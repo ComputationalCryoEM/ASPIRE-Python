@@ -214,9 +214,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             # original implementation
             R = self.nres // 2
             x = np.arange(-R, R + self.nres % 2)
-            y = np.arange(-R, R + self.nres % 2)
-            xs, ys = np.meshgrid(x, y)
-            self.xs, self.ys = xs / R, ys / R
+            xs, ys = np.meshgrid(x, x)
+            # Note, the original original grids were xs/R, R=nres//2.
+            self.xs, self.ys = xs / (self.nres / 2), ys / (self.nres / 2)
             self.rs = np.sqrt(self.xs**2 + self.ys**2)
         self.radial_mask = self.rs > 1 + 1e-13
 
