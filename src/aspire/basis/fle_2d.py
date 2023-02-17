@@ -138,7 +138,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.smallest_lambda = np.min(self.bessel_zeros)
         self.greatest_lambda = np.max(self.bessel_zeros)
         self.max_ell = np.max(np.abs(self.ells))
-        self.h = 1 / (self.nres // 2)
+        self.h = 1 / (self.nres / 2)
 
         # give each ell a positive index increasing first in |ell|
         # then in sign, e.g. 0->1, -1->2, 1->3, -2->4, 2->5, etc.
@@ -214,9 +214,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             # original implementation
             R = self.nres // 2
             x = np.arange(-R, R + self.nres % 2)
-            y = np.arange(-R, R + self.nres % 2)
-            xs, ys = np.meshgrid(x, y)
-            self.xs, self.ys = xs / R, ys / R
+            xs, ys = np.meshgrid(x, x)
+            # Note, the original original grids were xs/R, R=nres//2.
+            self.xs, self.ys = xs / (self.nres / 2), ys / (self.nres / 2)
             self.rs = np.sqrt(self.xs**2 + self.ys**2)
         self.radial_mask = self.rs > 1 + 1e-13
 
@@ -268,7 +268,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         ) * nodes + self.smallest_lambda
         nodes = nodes.reshape(self.num_radial_nodes, 1)
 
-        radius = self.nres // 2
+        radius = self.nres / 2
         h = 1 / radius
 
         phi = (

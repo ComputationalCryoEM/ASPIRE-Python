@@ -24,10 +24,6 @@ def gpu_ci_skip():
     pytest.skip("1e-7 precision for FLEBasis2D.evaluate()")
 
 
-def odd_resolution_skip():
-    pytest.skip("FB matching for odd resolution.")
-
-
 fle_params = [
     (32, 1e-4),
     (32, 1e-7),
@@ -121,10 +117,6 @@ class TestFLEBasis2D(UniversalBasisMixin):
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
 def testMatchFBEvaluate(basis):
-    # see #738
-    if basis.nres % 2 == 1:
-        odd_resolution_skip()
-
     if backend_available("cufinufft") and basis.epsilon == 1e-7:
         gpu_ci_skip()
 
@@ -153,11 +145,6 @@ def testMatchFBDenseEvaluate(basis):
     fle_out = basis._create_dense_matrix() @ coeffs
     fle_images = Image(fle_out.T.reshape(-1, basis.nres, basis.nres)).asnumpy()
 
-    # odd resolution has to be normalized
-    if basis.nres % 2 == 1:
-        fb_images = fb_images / np.max(np.abs(fb_images))
-        fle_images = fle_images / np.max(np.abs(fle_images))
-
     # Matrix column reording in match_fb mode flips signs of some of the basis functions
     assert np.allclose(np.abs(fb_images), np.abs(fle_images), atol=1e-3)
 
@@ -165,11 +152,6 @@ def testMatchFBDenseEvaluate(basis):
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
 def testMatchFBEvaluate_t(basis):
     # ensure that coefficients are the same when evaluating images
-
-    # see #738
-    if basis.nres % 2 == 1:
-        odd_resolution_skip()
-
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
     # test images to evaluate
@@ -196,11 +178,6 @@ def testMatchFBDenseEvaluate_t(basis):
 
     fb_coeffs = fb_basis.evaluate_t(images)
     fle_coeffs = basis._create_dense_matrix().T @ vec.T
-
-    # odd resolution has to be normalized
-    if basis.nres % 2 == 1:
-        fb_coeffs = fb_coeffs / np.max(np.abs(fb_coeffs))
-        fle_coeffs = fle_coeffs / np.max(np.abs(fle_coeffs))
 
     # Matrix column reording in match_fb mode flips signs of some of the basis coefficients
     assert np.allclose(np.abs(fb_coeffs), np.abs(fle_coeffs), atol=1e-4)
