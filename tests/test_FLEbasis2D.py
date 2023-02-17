@@ -157,11 +157,6 @@ def testMatchFBDenseEvaluate(basis):
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
 def testMatchFBEvaluate_t(basis):
     # ensure that coefficients are the same when evaluating images
-
-    # see #738
-    if basis.nres % 2 == 1:
-        odd_resolution_skip()
-
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
     # test images to evaluate
