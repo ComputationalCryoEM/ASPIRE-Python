@@ -77,7 +77,9 @@ class CustomNoiseAdder(NoiseAdder):
         Return noise variance.
 
         CustomNoiseAdder will estimate noise_var using the `noise_filter`.
+
         :param res: Resolution to use when evaluating noise filter, default 512.
+        :returns: Noise variance estimated at `res`.
         """
         # Take mean of user provided _noise_filter, before the PowerFilter is applied.
         return np.mean(self._noise_filter.evaluate_grid(res))

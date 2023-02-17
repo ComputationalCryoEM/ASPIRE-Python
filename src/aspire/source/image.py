@@ -812,7 +812,7 @@ class ImageSource(ABC):
         if sample_n > self.n:
             logger.warning(
                 f"`estimate_signal_mean_energy` sample_n > Source.n: {sample_n} > {self.n}."
-                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
+                f" Accuracy may be impaired, setting sample_n=self.n={self.n}"
             )
             sample_n = self.n
 
@@ -826,7 +826,7 @@ class ImageSource(ABC):
         for i in trange(0, sample_n, batch_size):
             # Gather this batch of images and mask off area outside support_radius
             images_masked = self._signal_images[i : i + batch_size].asnumpy()[..., mask]
-            # Accumulate first and second moments
+            # Accumulate second moments
             s += np.sum(images_masked**2) / _denom
 
         logger.debug(f"Source estimated signal mean energy: {s}")
@@ -851,7 +851,7 @@ class ImageSource(ABC):
         if sample_n > self.n:
             logger.warning(
                 f"`estimate_signal_var` sample_n > Source.n: {sample_n} > {self.n}."
-                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
+                f" Accuracy may be impaired, setting sample_n=self.n={self.n}"
             )
             sample_n = self.n
 
@@ -957,7 +957,11 @@ class ImageSource(ABC):
     ):
         """
         Estimate the SNR of the simulated data set using
-        estimated signal variance / noise variance.
+        estimated signal power / noise power.
+
+        Note signal power depends on choice of `signal_power_method`,
+        but differences should be small in practice when background
+        noise is zero centered.
 
         :param sample_n: Number of images used for estimate.
             Defaults to all images in source.
@@ -977,7 +981,7 @@ class ImageSource(ABC):
         if sample_n > self.n:
             logger.warning(
                 f"`estimate_snr` sample_n > Source.n: {sample_n} > {self.n}."
-                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
+                f" Accuracy may be impaired, setting sample_n=self.n={self.n}"
             )
             sample_n = self.n
 

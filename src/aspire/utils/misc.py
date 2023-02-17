@@ -391,7 +391,7 @@ def support_mask(L, support_radius=None, dtype=np.float64):
         # Disables mask, here to reduce code duplication.
         return np.full((L, L), fill_value=True, dtype=bool)
 
-    elif not 0 < support_radius <= L * np.sqrt(2):
+    elif not 0 < support_radius <= L // 2 * np.sqrt(2):
         raise ValueError(
             "support_radius should be"
             f" `(0, L*sqrt(2)={L*np.sqrt(2)}]` or -1 to disable."

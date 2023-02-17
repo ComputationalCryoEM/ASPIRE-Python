@@ -68,7 +68,7 @@ vol = original_vol.downsample(res)
 # %%
 # Noise and CTF Filters
 # ^^^^^^^^^^^^^^^^^^^^^
-# Let's start by CTF filters. The ``operators`` package contains a collection
+# Let's start by creating CTF filters. The ``operators`` package contains a collection
 # of filter classes that can be supplied to a ``Simulation``.
 # We use ``RadialCTFFilter`` to generate a set of CTF filters with various defocus values.
 
