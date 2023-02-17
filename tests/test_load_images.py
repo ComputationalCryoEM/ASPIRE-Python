@@ -100,11 +100,31 @@ class LoadImagesTestCase(TestCase):
         from_mrc = self.getParticlesFromIndices([self.n - 1])
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
 
-    def testRelionSourceNegSlice(self):
+    def testRelionSourceNegPosSlice(self):
         from_src = self.src.images[-100:100]
         from_mrc = self.getParticlesFromIndices(
             [i for i in range(900, 1000)] + [i for i in range(0, 100)]
         )
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionSourceNegNegSlice(self):
+        from_src = self.src.images[-200:-100]
+        from_mrc = self.getParticlesFromIndices([i for i in range(800, 900)])
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionStrideSlice(self):
+        from_src = self.src.images[0:100:10]
+        from_mrc = self.getParticlesFromIndices(list(range(0, 100, 10)))
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionNegSlice(self):
+        from_src = self.src.images[-100:]
+        from_mrc = self.getParticlesFromIndices(list(range(900, 1000)))
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionStrideNegNegSlice(self):
+        from_src = self.src.images[-200:-100:10]
+        from_mrc = self.getParticlesFromIndices(list(range(800, 900, 10)))
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
 
     def testRelionSourceMaxStop(self):

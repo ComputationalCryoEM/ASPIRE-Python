@@ -57,15 +57,28 @@ class _ImageAccessor:
             indices = np.array([indices])
         elif isinstance(indices, slice):
             start, stop, step = indices.start, indices.stop, indices.step
+
+            # X[:end], slice(None, e, None) -> slice(0, e, 1)
             if not start:
                 start = 0
-            if not stop or stop > self.num_imgs:
+
+            # Special case for X[-10:]
+            if start < 0 and stop is None:
+                # slice(-10, None, None) -> slice(-10, *0* ,1)
+                stop = 0
+            # All other cases, limit to num_imgs
+            #   slice(s, None, None) -> slice(s, num_imgs, 1)
+            #   slice(s, 10**10, None) -> slice(0, num_imgs, 1)
+            elif not stop or stop > self.num_imgs:
                 stop = self.num_imgs
+
             if not step:
                 step = 1
+
             if not all(isinstance(i, (int, np.integer)) for i in [start, stop, step]):
                 raise TypeError("Non-integer slice components.")
             indices = np.arange(start, stop, step)
+
         if not isinstance(indices, np.ndarray):
             raise KeyError(
                 "Key for .images must be a slice, 1-D NumPy array, or iterable yielding integers."

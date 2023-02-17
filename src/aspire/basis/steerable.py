@@ -164,7 +164,9 @@ class SteerableBasis2D(Basis):
                 )
         # else: radians can be a constant
 
-        assert self.count == coef.shape[-1]
+        assert (
+            self.count == coef.shape[-1]
+        ), "Number of coefficients must match self.count."
 
         # self.angular_indices are `ks`
         # For all coef in stack,
