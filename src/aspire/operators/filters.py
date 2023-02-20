@@ -440,7 +440,7 @@ class CTFFilter(Filter):
         self.defocus_diff = 0.5 * (self.defocus_u - self.defocus_v)
 
     def _evaluate(self, omega):
-        om_x, om_y = np.vsplit(omega / (2 * np.pi * self.pixel_size), 2)
+        om_y, om_x = np.vsplit(omega / (2 * np.pi * self.pixel_size), 2)
 
         eps = np.finfo(np.pi).eps
         ind_nz = (np.abs(om_x) > eps) | (np.abs(om_y) > eps)
