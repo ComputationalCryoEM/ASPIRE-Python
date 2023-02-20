@@ -83,10 +83,10 @@ class ClassSelector(ABC):
         :param selection: selection indices
         :param n_img: number of images available
         """
-        # Check length
-        if len(selection) != self._max_n:
+        # Check length, +1 for zero indexing
+        if len(selection) != self._max_n + 1:
             raise ValueError(
-                f"Class selection must be len {self._max_n}, got {len(selection)}"
+                f"Class selection must be len {self._max_n+1}, got {len(selection)}"
             )
 
         # Check indices [0, n_img)
@@ -104,7 +104,7 @@ class TopClassSelector(ClassSelector):
 
         Mainly useful for debugging.
         """
-        return np.arange(self._max_n)
+        return np.arange(self._max_n + 1)  # +1 for zero indexing
 
 
 class RandomClassSelector(ClassSelector):
@@ -121,7 +121,8 @@ class RandomClassSelector(ClassSelector):
         # Instantiate a random Generator
         rng = np.random.default_rng(self.seed)
         # Generate and return indices for random sample
-        return rng.choice(self._max_n, size=self._max_n, replace=False)
+        # +1 for zero indexing
+        return rng.choice(self._max_n + 1, size=self._max_n + 1, replace=False)
 
 
 class ContrastClassSelector(ClassSelector):
@@ -186,9 +187,9 @@ class GlobalClassSelector(ClassSelector):
             )
 
         self._quality_function = quality_function
-        self._max_n = self.averager.src.n
+        self._max_n = self.averager.src.n - 1
         # We should hit every entry, but along the way identify missing values as nan.
-        self.quality_scores = np.full(self._max_n, fill_value=float("nan"))
+        self.quality_scores = np.full(self._max_n + 1, fill_value=float("nan"))
 
         # To be used for heapq (score, img_id, avg_im)
         # Note the default implementation is min heap, so `pop` returns smallest value.

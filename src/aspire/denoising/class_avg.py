@@ -133,7 +133,11 @@ class ClassAvgSource(ImageSource):
         )
 
         # Override the initial self.n
-        logger.info(f"Selecting {len(self.selection_indices)} of {self.n} classes.")
+        # Some selectors will (dramitcally) reduce the space of classes.
+        if len(self.selection_indices) != self.n:
+            logger.info(
+                f"After selection process, updating maximum {len(self.selection_indices)} classes from {self.n}."
+            )
         self.n = len(self.selection_indices)
 
         self._selected = True
@@ -149,56 +153,57 @@ class ClassAvgSource(ImageSource):
 
         # check for wholly cached image sets first
         if self._cached_im is not None:
-            logger.debug("Loading images from cache")
+            logger.debug(f"Loading {len(indices)} images from cache")
             im = Image(self._cached_im[indices, :, :])
 
-        # check for cached image sets from class_selector
-        elif hasattr(self.class_selector, "heap") and (
-            heap_inds := set(indices).intesection(self.class_selector._heap_ids)
-        ):
-            # Images in heap_inds can be fetched from class_selector.
-            # For others, create an indexing map that preserves original order.
-            indices_to_compute = {
-                ind: i for i, ind in enumerate(indices) if i not in heap_inds
-            }
-            indices_from_heap = {
-                ind: i for i, ind in enumerate(indices) if i in heap_inds
-            }
+        # # check for cached image sets from class_selector
+        # elif hasattr(self.class_selector, "heap") and (
+        #     heap_inds := set(indices).intesection(self.class_selector._heap_ids)
+        # ):
+        #     # logger.debug(f"Mapping {len(heap_inds)} images from heap cache.")
 
-            # Recursion, heap_inds set should be empty in the recursive call.
-            computed_imgs = self._images(list(indices_to_compute.values()))
-            # Get the map once to avoid traversing heap in a loop
-            heapd = self._heap_id_dict
+        #     # Images in heap_inds can be fetched from class_selector.
+        #     # For others, create an indexing map that preserves original order.
+        #     indices_to_compute = {
+        #         ind: i for i, ind in enumerate(indices) if i not in heap_inds
+        #     }
+        #     indices_from_heap = {
+        #         ind: i for i, ind in enumerate(indices) if i in heap_inds
+        #     }
 
-            imgs = np.empty(
-                (len(indices), computed_imgs.resolution, computed_imgs.resolution),
-                dtype=computed_imgs.dtype,
-            )
+        #     # Recursion, heap_inds set should be empty in the recursive call.
+        #     computed_imgs = self._images(list(indices_to_compute.values()))
+        #     # Get the map once to avoid traversing heap in a loop
+        #     heapd = self._heap_id_dict
 
-            _inds = list(indices_to_compute.values())
-            imgs[_inds] = computed_imgs
-            _inds = list(indices_from_heap.values())
-            imgs[_inds] = map(
-                lambda k: self.class_selector.heap[heapd[k]][2],
-                list(indices_from_heap.keys()),
-            )
-            # for (i,ind) in enumerate(indices):
-            #     # collect the images
-            #     if ind in heapd:
-            #         loc = heapd[ind]
-            #         assert self.class_selector.heap[loc][1] == ind
-            #         _img = self.class_selector.heap[loc][2]
-            #     else:
-            #         _img = computed_imgs[indices_to_compute[ind]]
-            #     # assign the image
-            #     imgs[i] = _img
+        #     imgs = np.empty(
+        #         (len(indices), computed_imgs.resolution, computed_imgs.resolution),
+        #         dtype=computed_imgs.dtype,
+        #     )
 
-            return imgs
+        #     _inds = list(indices_to_compute.values())
+        #     imgs[_inds] = computed_imgs
+        #     _inds = list(indices_from_heap.values())
+        #     imgs[_inds] = map(
+        #         lambda k: self.class_selector.heap[heapd[k]][2],
+        #         list(indices_from_heap.keys()),
+        #     )
+        #     # for (i,ind) in enumerate(indices):
+        #     #     # collect the images
+        #     #     if ind in heapd:
+        #     #         loc = heapd[ind]
+        #     #         assert self.class_selector.heap[loc][1] == ind
+        #     #         _img = self.class_selector.heap[loc][2]
+        #     #     else:
+        #     #         _img = computed_imgs[indices_to_compute[ind]]
+        #     #     # assign the image
+        #     #     imgs[i] = _img
 
-        #   # attempt to get set(indices).intesection(heap_ids) from heap
-        #   # then compute remaining batch self._images[leftover_inds]
+        #     return imgs
+
         else:
             # Perform image averaging for the requested classes
+            logger.debug(f"Averaging {len(indices)} images from source")
             im = self.averager.average(
                 self._nn_classes[indices], self._nn_reflections[indices]
             )
@@ -238,6 +243,7 @@ class DebugClassAvgSource(ClassAvgSource):
 
         if averager is None:
             averager = BFRAverager2D(
+                FFBBasis2D(classification_src.L, dtype=classification_src.dtype),
                 classification_src,
                 num_procs=num_procs,
                 dtype=dtype,
