@@ -4,7 +4,7 @@ CTF: Contrast Transfer Function
 ================================
 
 This tutorial demonstrates the CTF and corresponds to
-lecture notes from MATH586.
+lecture notes from MATH586 at Princeton.
 """
 
 # sphinx_gallery_thumbnail_path = '../../gallery/tutorials/data/ctffind4/diagnostic_output.png'
@@ -21,7 +21,7 @@ from scipy.ndimage import gaussian_filter
 
 import aspire
 
-# Resolution to use throughout the demo.
+# Image size to use throughout the demo.
 IMG_SIZE = 512
 
 # %%
@@ -59,15 +59,16 @@ plt.show()
 # %%
 # Elliptical CTF
 # ^^^^^^^^^^^^^^
-# For the general ``CTFFilter``, we provide defocus u and v seperately,
-# along with a defocus angle.
+# For the general ``CTFFilter``,
+# we provide defocus along two perpendicular axes u and v separately,
+# along with the angle the u-axis makes with the horizontal axis.
 
 ctf_filter = CTFFilter(
     pixel_size=1,  # Angstrom
     voltage=200,  # kV
     defocus_u=15000,  # Angstrom, 10000A = 1um
     defocus_v=10000,
-    defocus_ang=np.pi / 4,  # Radians
+    defocus_ang=np.pi / 6,  # Radians
     Cs=2.26,  # Spherical aberration constant
     alpha=0.07,  # Amplitude contrast phase in radians
     B=0,  # Envelope decay in inverse square angstrom (default 0)
@@ -103,7 +104,7 @@ plt.show()
 # %%
 # Generate Example Image
 # ^^^^^^^^^^^^^^^^^^^^^^
-def gen_ex_img(L, noise_variance=0.1):
+def generate_example_image(L, noise_variance=0.1):
     """
     Generates data similar to the MATH586 lecture notes.
 
@@ -114,19 +115,19 @@ def gen_ex_img(L, noise_variance=0.1):
     # Empty Array
     img = np.zeros((L, L))
 
+    # Construct grid
+    g2d = aspire.utils.grid_2d(L, normalized=False)
+
     # Make central square
     center = L // 2
-    half_width = L // 6
-    lb, ub = center - half_width, center + half_width
-    img[lb:ub, lb:ub] = 1
+    img[(np.abs(g2d["x"]) < L // 6) & (np.abs(g2d["y"]) < L // 6)] = 1
 
     # Remove the outer corners
-    g2d = aspire.utils.grid_2d(L, normalized=False)
-    disc = g2d["r"] > (1.2 * half_width)
+    disc = g2d["r"] > (1.2 * L // 6)
     img[disc] = 0
 
     # Remove center circle
-    disc = g2d["r"] < half_width // 4
+    disc = g2d["r"] < L // 24
     img[disc] = 0
 
     # Smooth hard edges with some Gaussian blur
@@ -138,7 +139,7 @@ def gen_ex_img(L, noise_variance=0.1):
     return img
 
 
-img = gen_ex_img(IMG_SIZE)
+img = generate_example_image(IMG_SIZE)
 plt.imshow(img)
 plt.colorbar()
 plt.show()
@@ -223,7 +224,7 @@ bad_est_ctf_filter = RadialCTFFilter(
     alpha=0.07,
     B=0,
 )
-# Evaluate Filter, returning a numpy array.
+# Evaluate Filter, returning a Numpy array.
 bad_ctf_fn = bad_est_ctf_filter.evaluate_grid(IMG_SIZE)
 
 c = IMG_SIZE // 2 + 1
@@ -362,7 +363,7 @@ src.projections[:4].show()
 # Beyond Simulations: Experimental Data Sources
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # When loading experimental data,
-# CTF params in the starfile should be loaded automatically.
+# CTF parameters in the STAR file should be loaded automatically.
 
 from aspire.source import RelionSource
 
