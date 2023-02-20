@@ -119,7 +119,6 @@ def generate_example_image(L, noise_variance=0.1):
     g2d = aspire.utils.grid_2d(L, normalized=False)
 
     # Make central square
-    center = L // 2
     img[(np.abs(g2d["x"]) < L // 6) & (np.abs(g2d["y"]) < L // 6)] = 1
 
     # Remove the outer corners
