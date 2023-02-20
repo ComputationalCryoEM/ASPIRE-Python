@@ -108,10 +108,11 @@ L = v2.resolution
 # ---------
 
 # Alternatively, for quick sanity checking purposes we can view as a contour plot.
-#   We'll use three orthographic projections, one per axis.
-for axis in range(3):
-    plt.imshow(np.sum(v2[0], axis=axis), cmap="gray")
-    plt.show()
+#   We'll use three orthographic projections, one per axis
+fig, axs = plt.subplots(1, 3)
+for i in range(3):
+    axs[i].imshow(np.sum(v2[0], axis=i), cmap="gray")
+plt.show()
 
 # %%
 # ``Rotation`` Class - Generating Random Rotations
@@ -337,7 +338,7 @@ sim4.images[:10].show()
 # Real Experimental Data - ``RelionSource``
 # -----------------------------------------
 #
-# Now that we know have some basics,
+# Now that we have some basics,
 # we can try to replace the simulation with a real experimental data source.
 #
 # Lets attempt the same CL experiment, but with a ``RelionSource``.
