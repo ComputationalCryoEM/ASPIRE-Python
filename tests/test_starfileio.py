@@ -12,7 +12,7 @@ import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.storage import StarFile, StarFileError
-from aspire.utils import importlib_path
+from aspire.utils import RelionStarFile, importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -38,7 +38,14 @@ class StarFileTestCase(TestCase):
     def setUp(self):
         with importlib_path(tests.saved_test_data, "sample_data_model.star") as path:
             self.starfile = StarFile(path)
-
+        with importlib_path(
+            tests.saved_test_data, "sample_particles_relion30.star"
+        ) as path:
+            self.particles30 = path
+        with importlib_path(
+            tests.saved_test_data, "sample_particles_relion31.star"
+        ) as path:
+            self.particles31 = path
         # Independent Image object for testing Image source methods
         L = 768
         self.im = Image(misc.face(gray=True).astype("float64")[:L, :L])
@@ -175,3 +182,26 @@ class StarFileTestCase(TestCase):
         empty = StarFile()
         self.assertTrue(isinstance(empty.blocks, OrderedDict))
         self.assertEqual(len(empty.blocks), 0)
+
+    def testRelionStarFile(self):
+        # these starfiles represent Relion particles according to
+        # the legacy 3.0 format and the current 3.1/4.0 format, respectively
+        star_legacy = RelionStarFile(self.particles30)
+        star_current = RelionStarFile(self.particles31)
+        data_block_legacy = star_legacy.get_merged_data_block()
+        data_block_current = star_current.get_merged_data_block()
+
+        # in the current format, CTF parameters are stored in the optics group block
+        # RelionDataStarFile provides a method to flatten all the data into one
+        # table, representable as ASPIRE metadata
+        # make sure they were applied correctly
+        ctf_params = [
+            "_rlnVoltage",
+            "_rlnDefocusU",
+            "_rlnDefocusV",
+            "_rlnDefocusAngle",
+            "_rlnSphericalAberration",
+        ]
+        self.assertTrue(
+            data_block_current[ctf_params].equals(data_block_legacy[ctf_params])
+        )
