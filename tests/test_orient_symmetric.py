@@ -88,13 +88,7 @@ def test_estimate_rotations(L, order, dtype):
     # For order>4 we cannot expect estimates from equator images to be accurate.
     # So we exclude those from testing.
     if order > 4:
-        equator_inds = np.array(
-            [
-                ind
-                for (ind, rot_gt) in enumerate(rots_gt)
-                if abs(np.arccos(rot_gt[2, 2]) - np.pi / 2) < 10 * np.pi / 180
-            ]
-        )
+        equator_inds = np.argwhere(abs(np.arccos(rots_gt[:,2, 2]) - np.pi / 2) < 10 * np.pi / 180)
 
         # Exclude equator estimates and ground truths.
         rots_est = np.delete(rots_est, equator_inds, axis=0)
@@ -256,13 +250,7 @@ def test_relative_viewing_directions(L, order, dtype):
     # For order>4 we cannot expect estimates from equator images to be accurate.
     # So we exclude those from testing.
     if order > 4:
-        equator_inds = np.array(
-            [
-                ind
-                for (ind, rot_gt) in enumerate(rots_gt)
-                if abs(np.arccos(rot_gt[2, 2]) - np.pi / 2) < 10 * np.pi / 180
-            ]
-        )
+        equator_inds = np.argwhere(abs(np.arccos(rots_gt[:,2, 2]) - np.pi / 2) < 10 * np.pi / 180)
 
         # Exclude ii estimates and ground truths.
         min_theta_vii = np.delete(min_theta_vii, equator_inds, axis=0)
