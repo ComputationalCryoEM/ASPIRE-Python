@@ -10,7 +10,7 @@ import pandas as pd
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source import ImageSource
-from aspire.storage import StarFile
+from aspire.utils import RelionStarFile
 
 logger = logging.getLogger(__name__)
 
@@ -24,44 +24,6 @@ class RelionSource(ImageSource):
     its metadata. The metadata table may be augmented or modified via helper methods found in ImageSource. It may
     store, for example, Filter objects added during preprocessing.
     """
-
-    # The metadata_fields dictionary below specifies default data types
-    # of certain key fields used in the codebase,
-    # which are originally read from Relion STAR files.
-    relion_metadata_fields = {
-        "_rlnVoltage": float,
-        "_rlnDefocusU": float,
-        "_rlnDefocusV": float,
-        "_rlnDefocusAngle": float,
-        "_rlnSphericalAberration": float,
-        "_rlnDetectorPixelSize": float,
-        "_rlnCtfFigureOfMerit": float,
-        "_rlnMagnification": float,
-        "_rlnAmplitudeContrast": float,
-        "_rlnImageName": str,
-        "_rlnOriginalName": str,
-        "_rlnCtfImage": str,
-        "_rlnCoordinateX": float,
-        "_rlnCoordinateY": float,
-        "_rlnCoordinateZ": float,
-        "_rlnNormCorrection": float,
-        "_rlnMicrographName": str,
-        "_rlnGroupName": str,
-        "_rlnGroupNumber": str,
-        "_rlnOriginX": float,
-        "_rlnOriginY": float,
-        "_rlnAngleRot": float,
-        "_rlnAngleTilt": float,
-        "_rlnAnglePsi": float,
-        "_rlnClassNumber": int,
-        "_rlnLogLikeliContribution": float,
-        "_rlnRandomSubset": int,
-        "_rlnParticleName": str,
-        "_rlnOriginalParticleName": str,
-        "_rlnNrOfSignificantSamples": float,
-        "_rlnNrOfFrames": int,
-        "_rlnMaxValueProbDistribution": float,
-    }
 
     def __init__(
         self,
@@ -90,11 +52,14 @@ class RelionSource(ImageSource):
         """
         logger.info(f"Creating ImageSource from STAR file at path {filepath}")
 
+        self.filepath = filepath
+        self.data_folder = data_folder
         self.pixel_size = pixel_size
         self.B = B
         self.n_workers = n_workers
+        self.max_rows = max_rows
 
-        metadata = self.populate_metadata(filepath, data_folder, max_rows)
+        metadata = self.populate_metadata()
 
         n = len(metadata)
         if n == 0:
@@ -180,50 +145,44 @@ class RelionSource(ImageSource):
 
         logger.info(f"Populated {self.n_ctf_filters} CTFFilters from '{filepath}'")
 
-    def populate_metadata(self, filepath, data_folder=None, max_rows=None):
+    def populate_metadata(self):
         """
         Relion STAR files may contain a large number of metadata columns in addition
         to the locations of particles. We read this into a Pandas DataFrame and add some of
         our own columns for convenience.
         """
-        if data_folder is not None:
-            if not os.path.isabs(data_folder):
-                data_folder = os.path.join(os.path.dirname(filepath), data_folder)
+        if self.data_folder is not None:
+            if not os.path.isabs(self.data_folder):
+                self.data_folder = os.path.join(
+                    os.path.dirname(self.filepath), self.data_folder
+                )
         else:
-            data_folder = os.path.dirname(filepath)
+            self.data_folder = os.path.dirname(self.filepath)
 
-        # Valid Relion STAR files always have their data in the first loop of the first block.
-        # We are getting the first (and only) block in this StarFile object
-        df = StarFile(filepath).get_block_by_index(0)
-        # convert STAR file strings to data type for each field
-        # columns without a specified data type are read as dtype=object
-        column_types = {
-            name: RelionSource.relion_metadata_fields.get(name, str)
-            for name in df.columns
-        }
-        df = df.astype(column_types)
+        metadata = RelionStarFile(self.filepath).get_merged_data_block()
 
         # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
         # in the _rlnImageName column. here, we're splitting this information
         # so we can get the particle's index in the .mrcs stack as an int
-        df[["__mrc_index", "__mrc_filename"]] = df["_rlnImageName"].str.split(
-            "@", 1, expand=True
-        )
+        metadata[["__mrc_index", "__mrc_filename"]] = metadata[
+            "_rlnImageName"
+        ].str.split("@", 1, expand=True)
         # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
         # Note that this is 1-based indexing
-        df["__mrc_index"] = pd.to_numeric(df["__mrc_index"])
+        metadata["__mrc_index"] = pd.to_numeric(metadata["__mrc_index"])
 
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself
-        df["__mrc_filepath"] = df["__mrc_filename"].apply(
-            lambda filename: os.path.join(data_folder, filename)
+        metadata["__mrc_filepath"] = metadata["__mrc_filename"].apply(
+            lambda filename: os.path.join(self.data_folder, filename)
         )
 
-        if max_rows is None:
-            return df
+        # finally, chop off the metadata df at max_rows
+        if self.max_rows is None:
+            return metadata
         else:
-            max_rows = min(max_rows, len(df))
-            return df.iloc[:max_rows]
+            max_rows = min(self.max_rows, len(metadata))
+            return metadata.iloc[:max_rows]
 
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
