@@ -174,6 +174,9 @@ class AligningAverager2D(Averager2D):
         This subclass assumes we get alignment details from `align` method. Otherwise. see Averager2D.average
         """
 
+        classes = np.atleast_2d(classes)
+        reflections = np.atleast_2d(reflections)
+
         self.rotations, self.shifts, self.correlations = self.align(
             classes, reflections, coefs
         )

@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from heapq import heappush, heappushpop
+from operator import eq, le
 
 import numpy as np
 
@@ -48,6 +49,18 @@ class ClassSelector(ABC):
         :return: array of indices into `classes`
         """
 
+    @classmethod
+    @property
+    @abstractmethod
+    def quality_scores(cls):
+        """
+        All `ClassSelector` should assign a quality score
+        array the same length as the selection output.
+
+        For subclasses like TopClassSelector and RandomClassSelector
+        where no quality information is derived, this array should be zeros.
+        """
+
     def select(self, classes, reflections, distances):
         """
         Using the provided arguments, calls internal `_select`
@@ -76,7 +89,7 @@ class ClassSelector(ABC):
 
         return selection
 
-    def _check_selection(self, selection, n_img):
+    def _check_selection(self, selection, n_img, len_operator=eq):
         """
         Check that class `selection` is sane.
 
@@ -84,9 +97,9 @@ class ClassSelector(ABC):
         :param n_img: number of images available
         """
         # Check length, +1 for zero indexing
-        if len(selection) != self._max_n + 1:
+        if not len_operator(len(selection), self._max_n + 1):
             raise ValueError(
-                f"Class selection must be len {self._max_n+1}, got {len(selection)}"
+                f"Class selection must be {str(len_operator)} {self._max_n+1}, got {len(selection)}"
             )
 
         # Check indices [0, n_img)
@@ -97,7 +110,21 @@ class ClassSelector(ABC):
             )
 
 
-class TopClassSelector(ClassSelector):
+class ClassSelectorUnranked(ClassSelector):
+    @property
+    def quality_scores(self):
+        return np.zeros(self._max_n + 1)
+
+
+class ClassSelectorRanked(ClassSelector):
+    @property
+    def quality_scores(self):
+        if not hasattr(self, "_quality_scores"):
+            raise RuntimeError("Must run `.select(...)` to compute quality_scores")
+        return self._quality_scores
+
+
+class TopClassSelector(ClassSelectorUnranked):
     def _select(self, classes, reflections, distances):
         """
         Returns classes in `Source` order.
@@ -107,7 +134,7 @@ class TopClassSelector(ClassSelector):
         return np.arange(self._max_n + 1)  # +1 for zero indexing
 
 
-class RandomClassSelector(ClassSelector):
+class RandomClassSelector(ClassSelectorUnranked):
     def __init__(self, seed=None):
         """
         :param seed: RNG seed, de
@@ -125,7 +152,7 @@ class RandomClassSelector(ClassSelector):
         return rng.choice(self._max_n + 1, size=self._max_n + 1, replace=False)
 
 
-class ContrastClassSelector(ClassSelector):
+class ContrastClassSelector(ClassSelectorRanked):
     """
     Selects top classes based on highest contrast,
     as estimated by variances of `distances`.
@@ -141,12 +168,14 @@ class ContrastClassSelector(ClassSelector):
 
         # Compute the ordering, descending
         sorted_class_inds = np.argsort(dist_var)[::-1]
+        # Store the sorted quality scores (maps to selection output).
+        self._quality_scores = dist_var[sorted_class_inds]
 
         # Return indices
         return sorted_class_inds
 
 
-class DistanceClassSelector(ClassSelector):
+class DistanceClassSelector(ClassSelectorRanked):
     """
     Selects top classes based on lowest mean distance
     as estimated by `distances`.
@@ -158,16 +187,17 @@ class DistanceClassSelector(ClassSelector):
 
     def _select(self, classes, reflections, distances):
         # Compute per class variance
-        dist_var = np.var(distances[:, 1:], axis=1)
+        dist_mean = np.mean(distances[:, 1:], axis=1)
 
         # Compute the ordering, descending
-        sorted_class_inds = np.argsort(dist_var)[::-1]
+        sorted_class_inds = np.argsort(dist_mean)[::-1]
+        self._quality_scores = dist_mean[sorted_class_inds]
 
         # Return indices
         return sorted_class_inds
 
 
-class GlobalClassSelector(ClassSelector):
+class GlobalClassSelector(ClassSelectorRanked):
     """
     Extends ClassSelector for methods that require
     passing over all class average images.
@@ -189,7 +219,7 @@ class GlobalClassSelector(ClassSelector):
         self._quality_function = quality_function
         self._max_n = self.averager.src.n - 1
         # We should hit every entry, but along the way identify missing values as nan.
-        self.quality_scores = np.full(self._max_n + 1, fill_value=float("nan"))
+        self._quality_scores = np.full(self._max_n + 1, fill_value=float("nan"))
 
         # To be used for heapq (score, img_id, avg_im)
         # Note the default implementation is min heap, so `pop` returns smallest value.
@@ -224,12 +254,12 @@ class GlobalClassSelector(ClassSelector):
 
     def _select(self, classes, reflections, distances):
         for i in classes[:, 0]:
-            im = self.averager.average(classes[i], self.reflections[i])
+            im = self.averager.average(classes[i], reflections[i])
 
             quality_score = self._quality_function(im)
 
             # Assign in global quality score array
-            self.quality_scores[i] = quality_score
+            self._quality_scores[i] = quality_score
 
             # Create cachable payload item
             item = (quality_score, i, im)
@@ -242,11 +272,39 @@ class GlobalClassSelector(ClassSelector):
                 # after updating (pushing to) the heap.
                 _ = heappushpop(self.heap, item)
 
+        # Now that we have computed the global quality_scores,
+        # the selection ordering can be applied
+        sorted_class_inds = np.argsort(self._quality_scores)[::-1]
+        self._quality_scores = self._quality_scores[sorted_class_inds]
+        return sorted_class_inds
 
-class PriorRejection:
-    def __init__(self, aggresive=True):
+
+class ClassRepulsion:
+    """
+    Mixin to overload class selection based on excluding
+    classes we've alreay seen as neighbors of another class.
+
+    If the classes are well sorted (by some measure of quality),
+    we can assume the best representation is the first seen.
+
+    :param aggressive: Aggresive mode will additionally exclude
+        any new class containing a neighbor that has already
+        been incorporated. Defaults to True.
+
+    """
+
+    def __init__(self, *args, aggressive=True, **kwargs):
+        """
+        Instatiates and sets `aggresive`. All other args and **kwagrs are pass through to super().
+
+        :param aggressive: Aggresive mode will additionally exclude
+            any new class containing a neighbor that has already
+            been incorporated. Defaults to True.
+        """
+
         self.excluded = set()
-        self.aggresive = bool(aggresive)
+        self.aggressive = aggressive
+        super().__init__(*args, **kwargs)
 
     def _select(self, classes, reflections, distances):
         # Get the indices sorted by the next resolving `_select` method.
@@ -273,17 +331,28 @@ class PriorRejection:
 
         return np.array(results, dtype=int)
 
+    def _check_selection(self, selection, n_img):
+        """
+        Check that class `selection` is sane.
 
-class ContrastWithPriorClassSelector(PriorRejection, ContrastClassSelector):
+        Repulsion can reduce the number of classes (dramatically).
+
+        :param selection: selection indices
+        :param n_img: number of images available
+        """
+        return super()._check_selection(selection, n_img, len_operator=le)
+
+
+class ContrastWithRepulsionClassSelector(ClassRepulsion, ContrastClassSelector):
     """
     Selects top classes based on highest contrast with prior rejection.
     """
 
 
-class GlobalWithPriorClassSelector(PriorRejection, ClassSelector):
+class GlobalWithRepulsionClassSelector(ClassRepulsion, GlobalClassSelector):
     """
     Extends ClassSelector for methods that require
-    passing over all class average images and also PriorRejection.
+    passing over all class average images and also ClassRepulsion.
     """
 
 
@@ -330,10 +399,10 @@ class ImageQualityFunction(ABC):
         L = img.shape[-1]
 
         # Generate grid on first call so user can expect it exists.
-        self._grid_cache.setdefault(L, grid_2d(L, dtype=img.dype))
+        self._grid_cache.setdefault(L, grid_2d(L, dtype=img.dtype))
 
         # Call the function over img stack
-        res = np.fromiter(map(self.function, img), dtype=img.dtype)
+        res = np.fromiter(map(self._function, img), dtype=img.dtype)
 
         if stack_len == 1:
             res = res[0]
