@@ -380,7 +380,7 @@ class ImageSource(ABC):
         for i, filt in enumerate(filters):
             idx_k = np.where(indices == i)[0]
             if len(idx_k) > 0:
-                im[idx_k] = Image(im[idx_k]).filter(filt).asnumpy()
+                im[idx_k] = im[idx_k].filter(filt).asnumpy()
 
         return im
 
@@ -865,7 +865,7 @@ class ArrayImageSource(ImageSource):
         """
         # Load cached data and apply transforms
         return self.generation_pipeline.forward(
-            Image(self._cached_im[indices, :, :]), indices
+            self._cached_im[indices, :, :], indices
         )
 
     def _rots(self):
