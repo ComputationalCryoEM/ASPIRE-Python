@@ -64,6 +64,7 @@ if config["logging"]["log_exceptions"].get(int):
 
     sys.excepthook = handle_exception
 
+
 __all__ = []
 for _, modname, _ in pkgutil.iter_modules(aspire.__path__):
     __all__.append(modname)  # Add module to __all_
