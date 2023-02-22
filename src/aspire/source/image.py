@@ -864,9 +864,7 @@ class ArrayImageSource(ImageSource):
         :return: An `Image` object.
         """
         # Load cached data and apply transforms
-        return self.generation_pipeline.forward(
-            self._cached_im[indices, :, :], indices
-        )
+        return self.generation_pipeline.forward(self._cached_im[indices, :, :], indices)
 
     def _rots(self):
         """
