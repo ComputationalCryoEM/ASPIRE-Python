@@ -138,7 +138,7 @@ class ClassAvgSource(ImageSource):
             logger.info(
                 f"After selection process, updating maximum {len(self.selection_indices)} classes from {self.n}."
             )
-        self.n = len(self.selection_indices)
+        self._set_n(len(self.selection_indices))
 
         self._selected = True
 
@@ -150,6 +150,9 @@ class ClassAvgSource(ImageSource):
         # Lazy evaluate the class selection
         if not self._selected:
             self._class_select()
+
+        # Remap to the selected ordering
+        indices = self.selection_indices[indices]
 
         # Check is there is a cache available from class selection component
         # Note, we can use := for this in the branch directly, but requires Python>=3.8

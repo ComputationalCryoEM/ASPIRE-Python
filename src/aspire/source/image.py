@@ -162,6 +162,17 @@ class ImageSource(ABC):
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
+    def _set_n(self, n):
+        """
+        Sets max image index `n`.
+
+        Used in sources that potentially reduce the set of images.
+
+        :param n: Number of images.
+        """
+        self._img_accessor.num_imgs = n
+        self.n = n
+
     @property
     def n_ctf_filters(self):
         """
