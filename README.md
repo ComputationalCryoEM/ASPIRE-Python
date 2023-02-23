@@ -50,7 +50,7 @@ After cloning this repo, the simplest option is to use Anaconda 64-bit for your 
 cd /path/to/git/clone/folder
 
 # Creates the conda environment and installs base dependencies.
-conda env create -f environment.yml --name aspire_dev
+conda env create -f environment-default.yml --name aspire_dev
 
 # Enable the environment
 conda activate aspire_dev
