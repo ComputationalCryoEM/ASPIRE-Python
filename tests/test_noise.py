@@ -61,6 +61,17 @@ def adder(request):
     return request.param
 
 
+# Create the custom noise function and associated Filter
+def _pinkish_spectrum(x, y):
+    """
+    Util method for generating a pink like noise spectrum.
+    """
+    s = x[-1] - x[-2]
+    f = 2 * s / (np.hypot(x, y) + s)
+    m = np.mean(f)
+    return f / m
+
+
 def test_white_noise_estimator_clean_corners(sim_fixture):
     """
     Tests that a clean image yields a noise estimate that is virtually zero.
@@ -120,14 +131,9 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     by generating a sample of the noise.
     """
 
-    # Create the custom noise function and associated Filter
-    def pinkish_spectrum(x, y):
-        s = x[-1] - x[-2]
-        f = 2 * s / (np.hypot(x, y) + s)
-        m = np.mean(f)
-        return f * target_noise_variance / m
-
-    custom_filter = FunctionFilter(f=pinkish_spectrum)
+    custom_filter = FunctionFilter(f=_pinkish_spectrum) * ScalarFilter(
+        value=target_noise_variance
+    )
 
     # Create the CustomNoiseAdder
     sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
@@ -208,14 +214,9 @@ def test_from_snr_pink_iso(sim_fixture, target_noise_variance):
     are close for a variety of paramaters.
     """
 
-    # Create the custom noise function and associated Filter
-    def pinkish_spectrum(x, y):
-        s = x[-1] - x[-2]
-        f = 2 * s / (np.hypot(x, y) + s)
-        m = np.mean(f)
-        return f * target_noise_variance / m
-
-    custom_filter = FunctionFilter(f=pinkish_spectrum)
+    custom_filter = FunctionFilter(f=_pinkish_spectrum) * ScalarFilter(
+        value=target_noise_variance
+    )
 
     # Create the CustomNoiseAdder
     sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
