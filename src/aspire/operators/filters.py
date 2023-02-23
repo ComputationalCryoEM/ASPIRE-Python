@@ -440,7 +440,7 @@ class CTFFilter(Filter):
         self.defocus_diff = 0.5 * (self.defocus_u - self.defocus_v)
 
     def _evaluate(self, omega):
-        om_x, om_y = np.vsplit(omega / (2 * np.pi * self.pixel_size), 2)
+        om_y, om_x = np.vsplit(omega / (2 * np.pi * self.pixel_size), 2)
 
         eps = np.finfo(np.pi).eps
         ind_nz = (np.abs(om_x) > eps) | (np.abs(om_y) > eps)
@@ -457,6 +457,11 @@ class CTFFilter(Filter):
         r4 = r2**2
         gamma = c2 * r2 + c4 * r4
         h = np.sqrt(1 - self.alpha**2) * np.sin(gamma) - self.alpha * np.cos(gamma)
+
+        # For historical reference, below is a translated formula from the legacy MATLAB code.
+        # The two implementations seem to agree for odd images, but the original MATLAB code
+        # behaves differently for even image sizes.
+        # h = np.sin(c2*r2 + c4*r2*r2 - self.alpha)
 
         if self.B:
             h *= np.exp(-self.B * r2)
