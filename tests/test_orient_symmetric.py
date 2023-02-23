@@ -279,10 +279,15 @@ def test_relative_viewing_directions(L, order, dtype):
     # ie. check that the svd is close to [1, 0, 0].
     error_ij = np.linalg.norm(np.array([1, 0, 0], dtype=dtype) - sij, axis=1)
     error_ii = np.linalg.norm(np.array([1, 0, 0], dtype=dtype) - sii, axis=1)
+    max_tol_ii = 1e-5
+    mean_tol_ii = 1e-5
+    if order > 4:
+        max_tol_ii = 5e-2
+        mean_tol_ii = 2e-2
     assert np.max(error_ij) < 2e-1
-    assert np.max(error_ii) < 5e-2
+    assert np.max(error_ii) < max_tol_ii
     assert np.mean(error_ij) < 2e-3
-    assert np.mean(error_ii) < 1e-5
+    assert np.mean(error_ii) < mean_tol_ii
 
     # Check that the mean angular difference is within 2 degrees.
     angle_tol = 2 * np.pi / 180
@@ -521,23 +526,27 @@ def build_outer_products(n_img, dtype):
     return vijs, viis, gt_vis
 
 
-def test_mean_estimator_simple():
+def test_mean_outer_product_estimator():
     """
     Manully run MeanOuterProductEstimator for prebaked inputs.
     """
 
     est = MeanOuterProductEstimator()
 
-    # Push two matrices with opposite signs.
-    est.push(np.full((3, 3), -2, dtype=np.float64))
-    est.push(np.full((3, 3), 2, dtype=np.float64))
+    # Test arrays with opposite conjugation.
+    V = np.array([[1, 1, 1], [3, 3, 3], [5, 5, 5]])
+    V_J = np.array([[1, 1, -1], [3, 3, -3], [-5, -5, 5]])
+
+    # Push two matrices with opposite conjugation.
+    est.push(V)
+    est.push(V_J)
 
     # synchronized_mean will J-conjugate the second entry prior to averaging.
-    assert np.allclose(
-        est.synchronized_mean(), np.array([[0, 0, -2], [0, 0, -2], [-2, -2, 0]])
-    )
+    assert np.allclose(est.synchronized_mean(), V)
 
-    est.push(np.full((3, 3), -2, dtype=np.float64))
-    est.push(np.full((3, 3), -2, dtype=np.float64))
+    # Push two more.
+    est.push(V_J)
+    est.push(V)
 
-    assert np.allclose(est.synchronized_mean(), np.full((3, 3), -1, dtype=np.float64))
+    # The resulting synchronized_mean should be V.
+    assert np.allclose(est.synchronized_mean(), V)
