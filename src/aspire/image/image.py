@@ -122,6 +122,11 @@ class Image:
         self.n_images = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
+        # Numpy interop
+        # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
+        self.__array_interface__ = self._data.__array_interface__
+        self.__array__ = self._data
+
     @property
     def res(self):
         warn(
