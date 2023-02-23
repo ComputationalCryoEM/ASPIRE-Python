@@ -109,12 +109,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
         # Remove candidates that are equator images. Equator candidates induce collinear
         # self common-lines, which always have perfect correlation.
         # TODO: Should the threshold be parameter-dependent instead of set to 10 degrees?
-        cii_equators_inds = np.array(
-            [
-                ind
-                for (ind, Ri_tilde) in enumerate(Ris_tilde)
-                if abs(np.arccos(Ri_tilde[2, 2]) - np.pi / 2) < 10 * np.pi / 180
-            ]
+        cii_equators_inds = np.argwhere(
+            abs(np.arccos(Ris_tilde[:, 2, 2]) - np.pi / 2) < 10 * np.pi / 180
         )
         scores_self_corrs[:, cii_equators_inds] = 0
 
