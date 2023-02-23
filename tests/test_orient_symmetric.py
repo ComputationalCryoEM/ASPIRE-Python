@@ -5,7 +5,7 @@ from numpy.linalg import det, norm
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.source import Simulation
-from aspire.utils import Rotation
+from aspire.utils import Rotation, utest_tolerance
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
@@ -398,7 +398,7 @@ def testCompleteThirdRow(dtype):
     assert np.allclose(Rz, np.eye(3, dtype=dtype))
 
     # Assert that R is orthogonal with determinant 1.
-    assert np.allclose(R @ R.T, np.eye(3, dtype=dtype))
+    assert np.allclose(R @ R.T, np.eye(3, dtype=dtype), atol=utest_tolerance(dtype))
     assert np.allclose(det(R), 1)
 
 

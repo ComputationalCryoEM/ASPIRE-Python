@@ -144,8 +144,14 @@ class CtfEstimator:
         # verify block_size is even
         assert block_size % 2 == 0
 
-        size_x = micrograph.shape[1]
-        size_y = micrograph.shape[0]
+        if micrograph.ndim == 3:
+            assert (
+                micrograph.shape[0] == 1
+            ), f"micrograph should be 2D or stack of 1 2D image: {micrograph.shape}"
+            micrograph = micrograph[0]
+
+        size_x = micrograph.shape[-1]
+        size_y = micrograph.shape[-2]
 
         step_size = block_size // 2
         range_y = size_y // step_size - 1
