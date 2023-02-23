@@ -150,31 +150,6 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     assert np.isclose(sampled_noise_var, target_noise_variance, rtol=0.1)
 
 
-@pytest.mark.parametrize("res", RESOLUTIONS, ids=lambda param: f"res={param}")
-@pytest.mark.parametrize(
-    "target_noise_variance", VARS, ids=lambda param: f"var={param}"
-)
-@pytest.mark.parametrize("dtype", DTYPES, ids=lambda param: f"dtype={param}")
-def test_psnr(res, target_noise_variance, dtype):
-    vol = np.ones((res,) * 3, dtype=dtype)
-    g = grid_3d(res, normalized=False)
-    mask = g["r"] > res // 2
-    vol[mask] = 0
-
-    sim = Simulation(
-        vols=Volume(vol),
-        n=16,
-        amplitudes=1,
-        offsets=0,
-        dtype=dtype,
-        noise_adder=WhiteNoiseAdder(var=target_noise_variance),
-    )
-
-    psnr = sim.estimate_psnr(units="dB")
-    logger.debug(f"PSNR target={target_noise_variance} L={sim.L} {sim.dtype} {psnr}")
-    assert np.isclose(psnr, -10 * np.log10(target_noise_variance), rtol=0.01)
-
-
 @pytest.mark.parametrize(
     "target_noise_variance", VARS, ids=lambda param: f"var={param}"
 )

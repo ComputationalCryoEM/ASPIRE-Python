@@ -3,7 +3,6 @@ import logging
 
 import numpy as np
 from scipy.linalg import eigh, qr
-from sklearn.metrics import mean_squared_error
 
 from aspire.image import Image
 from aspire.noise import NoiseAdder, WhiteNoiseAdder
@@ -481,7 +480,7 @@ class Simulation(ImageSource):
         """
         # For clean images return infinite SNR.
         # Note, relationship with CTF and other sim corruptions still isn't clear to me...
-        if self.noise_adder is None:
+        if self.noise_adder or self.noise_adder.noise_var == 0:
             return np.inf
 
         # For SNR of Simulations, use the theoretical noise variance
@@ -552,54 +551,3 @@ class Simulation(ImageSource):
             sim.rotations = _rots
 
         return sim
-
-    def estimate_psnr(self, sample_n=None, batch_size=512, units=None):
-        """
-        Estimate Peak SNR as max(signal)^2 / MSE,
-        where MSE is computed between `projections`
-        and the resulting simulated `images`.
-        PSNR is computed along the stack axis and an average
-        value across the stack sample is returned.
-        Note that PSNR is inherently a poor metric for identical images.
-
-        :param sample_n: Number of images used for estimate.
-            Defaults to all images in source.
-        :param units: Optionally, convert from default ratio to log scale (`dB`).
-        :returns: Estimated peak signal to noise ratio.
-        """
-
-        if sample_n is None:
-            sample_n = self.n
-
-        if sample_n > self.n:
-            logger.warning(
-                f"`estimate_psnr` sample_n > Source.n: {sample_n} > {self.n}."
-                f" Accuracy may be impaired, settting sample_n=self.n={self.n}"
-            )
-            sample_n = self.n
-
-        peaksq = np.empty(sample_n, dtype=self.dtype)
-        mse = np.empty(sample_n, dtype=self.dtype)
-        for start in trange(0, sample_n, batch_size):
-            end = min(start + batch_size, sample_n)
-
-            signal = self.projections[start:end].asnumpy()
-            images = self.images[start:end].asnumpy()
-            peaksq[start:end] = np.square(signal).max(axis=(-1, -2))  # max per image
-
-            # Reshape and Transpose for Scikit metrics,
-            # which expect a 2d (samples, outputs)
-            mse[start:end] = mean_squared_error(
-                signal.reshape(sample_n, -1).T,
-                images.reshape(sample_n, -1).T,
-                multioutput="raw_values",
-            )
-
-        psnr = peaksq / mse
-        if units == "dB":
-            psnr = ratio_to_decibel(psnr)
-        elif units is not None:
-            raise ValueError("Units should be `None` or `dB`.")
-
-        # Return the mean psnr of the stack.
-        return np.mean(psnr)
