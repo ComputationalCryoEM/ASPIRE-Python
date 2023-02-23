@@ -354,6 +354,8 @@ src.downsample(img_size)
 
 src.images[:10].show()
 
+# %%
+
 orient_est = CLSyncVoting(src, n_theta=36)
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
