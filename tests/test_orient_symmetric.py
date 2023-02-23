@@ -89,7 +89,8 @@ def test_estimate_rotations(L, order, dtype):
     # So we exclude those from testing.
     if order > 4:
         equator_inds = np.argwhere(
-            abs(np.arccos(rots_gt[:, 2, 2]) - np.pi / 2) < 10 * np.pi / 180
+            abs(np.arccos(rots_gt[:, 2, 2]) - np.pi / 2)
+            < cl_symm.equator_threshold * np.pi / 180
         )
 
         # Exclude equator estimates and ground truths.
@@ -253,7 +254,8 @@ def test_relative_viewing_directions(L, order, dtype):
     # So we exclude those from testing.
     if order > 4:
         equator_inds = np.argwhere(
-            abs(np.arccos(rots_gt[:, 2, 2]) - np.pi / 2) < 10 * np.pi / 180
+            abs(np.arccos(rots_gt[:, 2, 2]) - np.pi / 2)
+            < cl_symm.equator_threshold * np.pi / 180
         )
 
         # Exclude ii estimates and ground truths.

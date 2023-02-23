@@ -11,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class CLSymmetryCn(CLSymmetryC3C4):
+    """
+    Define a class to estimate 3D orientations using common lines methods for molecules with
+    Cn cyclic symmetry, with n>4.
+    """
+
     def __init__(
         self,
         src,
@@ -23,8 +28,27 @@ class CLSymmetryCn(CLSymmetryC3C4):
         max_iters=1000,
         degree_res=1,
         n_points_sphere=500,
+        equator_threshold=10,
         seed=None,
     ):
+        """
+        Initialize object for estimating 3D orientations for molecules with Cn symmetry, n>4.
+
+        :param src: The source object of 2D denoised or class-averaged images with metadata
+        :param symmetry: A string, 'Cn', indicating the symmetry type.
+        :param n_rad: The number of points in the radial direction.
+        :param n_theta: The number of points in the theta direction.
+        :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
+        :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
+        :param epsilon: Tolerance for the power method.
+        :param max_iter: Maximum iterations for the power method.
+        :param degree_res: Degree resolution for estimating in-plane rotations.
+        :param n_points_sphere: The number of candidate rotations used to estimate viewing directions.
+        :param equator_threshold: Threshold for removing candidate rotations within `equator_threshold`
+            degrees of being an equator image. Default is 10 degrees.
+        :param seed: Optional seed for RNG.
+        """
+
         super().__init__(
             src,
             symmetry=symmetry,
@@ -39,6 +63,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         )
 
         self.n_points_sphere = n_points_sphere
+        self.equator_threshold = equator_threshold
 
     def _check_symmetry(self, symmetry):
         if symmetry is None:
@@ -110,7 +135,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
         # self common-lines, which always have perfect correlation.
         # TODO: Should the threshold be parameter-dependent instead of set to 10 degrees?
         cii_equators_inds = np.argwhere(
-            abs(np.arccos(Ris_tilde[:, 2, 2]) - np.pi / 2) < 10 * np.pi / 180
+            abs(np.arccos(Ris_tilde[:, 2, 2]) - np.pi / 2)
+            < self.equator_threshold * np.pi / 180
         )
         scores_self_corrs[:, cii_equators_inds] = 0
 
