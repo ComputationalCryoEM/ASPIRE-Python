@@ -6,7 +6,6 @@ import scipy.sparse.linalg
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
 
-from aspire.image import Image
 from aspire.nufft import anufft
 from aspire.numeric import fft
 from aspire.operators import evaluate_src_filters_on_grid
