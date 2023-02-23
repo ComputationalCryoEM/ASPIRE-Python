@@ -145,18 +145,23 @@ class UtilsTestCase(TestCase):
         n = 25
         pairs = all_pairs(n)
         nchoose2 = n * (n - 1) // 2
+        # Build all pairs using a loop to ensure numpy upper_triu() ordering matches.
+        pairs_from_loop = [[i, j] for i in range(n) for j in range(n) if i < j]
         self.assertTrue(len(pairs) == nchoose2)
         self.assertTrue(len(pairs[0]) == 2)
+        self.assertTrue((pairs == pairs_from_loop).all())
 
     def testPairsToLinear(self):
         n = 10
         pairs = all_pairs(n)
-        all_pairs_index = np.zeros(len(pairs))
-        pairs_to_linear_index = np.zeros(len(pairs))
-        for idx, (i, j) in enumerate(pairs):
-            all_pairs_index[idx] = pairs.index((i, j))
-            pairs_to_linear_index[idx] = pairs_to_linear(n, i, j)
-        self.assertTrue(np.allclose(all_pairs_index, pairs_to_linear_index))
+        linear_index = np.arange(len(pairs))
+
+        # Test single pair
+        self.assertTrue(pairs_to_linear(n, 0, 2) == 1)
+        # Test full set of pairs
+        self.assertTrue(
+            (pairs_to_linear(n, pairs[:, 0], pairs[:, 1]) == linear_index).all()
+        )
 
     def testAllTriplets(self):
         n = 25

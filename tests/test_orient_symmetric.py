@@ -12,7 +12,7 @@ from aspire.utils.coor_trans import (
     get_rots_mse,
     register_rotations,
 )
-from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations
+from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations, pairs_to_linear
 from aspire.utils.random import randn
 from aspire.volume import CnSymmetricVolume
 
@@ -88,7 +88,9 @@ def test_estimate_rotations(L, order, dtype):
     # For order>4 we cannot expect estimates from equator images to be accurate.
     # So we exclude those from testing.
     if order > 4:
-        equator_inds = np.argwhere(abs(np.arccos(rots_gt[:,2, 2]) - np.pi / 2) < 10 * np.pi / 180)
+        equator_inds = np.argwhere(
+            abs(np.arccos(rots_gt[:, 2, 2]) - np.pi / 2) < 10 * np.pi / 180
+        )
 
         # Exclude equator estimates and ground truths.
         rots_est = np.delete(rots_est, equator_inds, axis=0)
@@ -250,18 +252,22 @@ def test_relative_viewing_directions(L, order, dtype):
     # For order>4 we cannot expect estimates from equator images to be accurate.
     # So we exclude those from testing.
     if order > 4:
-        equator_inds = np.argwhere(abs(np.arccos(rots_gt[:,2, 2]) - np.pi / 2) < 10 * np.pi / 180)
+        equator_inds = np.argwhere(
+            abs(np.arccos(rots_gt[:, 2, 2]) - np.pi / 2) < 10 * np.pi / 180
+        )
 
         # Exclude ii estimates and ground truths.
         min_theta_vii = np.delete(min_theta_vii, equator_inds, axis=0)
         sii = np.delete(sii, equator_inds, axis=0)
 
         # Exclude ij estimates and ground truths.
-        pairwise_equator_inds = []
-        for pair in pairs:
-            for ind in equator_inds:
-                if ind in pair:
-                    pairwise_equator_inds.append(pairs.index(pair))
+        matches = np.equal(
+            equator_inds[:, None], pairs
+        )  # Find where equator_inds match pairs indices
+        bad_pairs = pairs[
+            np.sum(matches, axis=(0, 2)).astype(bool)
+        ]  # Take pairs where at least 1 index matches
+        pairwise_equator_inds = pairs_to_linear(n_img, bad_pairs[:, 0], bad_pairs[:, 1])
         min_theta_vij = np.delete(min_theta_vij, pairwise_equator_inds, axis=0)
         sij = np.delete(sij, pairwise_equator_inds, axis=0)
 

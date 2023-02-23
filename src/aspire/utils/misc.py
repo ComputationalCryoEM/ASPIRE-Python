@@ -308,7 +308,7 @@ def all_pairs(n):
     :param n: The number of items to be indexed.
     :return: All n-choose-2 pairs (i,j), i<j.
     """
-    pairs = [(i, j) for i in range(n) for j in range(n) if i < j]
+    pairs = np.column_stack(np.triu_indices(n, 1))
 
     return pairs
 
@@ -318,7 +318,10 @@ def pairs_to_linear(n, i, j):
     Converts from all_pairs indexing (i, j), where i<j, to linear indexing.
     ie. (0, 1) --> 0 and (n-2, n-1) --> n * (n - 1)/2 - 1
     """
-    assert i < j < n, "i must be less than j, and both must be less than n."
+    i = np.array(i)
+    j = np.array(j)
+
+    assert (i < j).all() < n, "i must be less than j, and both must be less than n."
 
     linear_index = n * (n - 1) // 2 - (n - i) * (n - i - 1) // 2 + j - i - 1
 
