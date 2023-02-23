@@ -348,9 +348,7 @@ class IndexedXform(Xform):
             # Apply the transformation to the selected indices in the Image object
             if len(im_data_indices) > 0:
                 fn_handle = getattr(xform, which)
-                im_data[im_data_indices] = fn_handle(
-                    Image(im[im_data_indices])
-                ).asnumpy()
+                im_data[im_data_indices] = fn_handle(im[im_data_indices]).asnumpy()
 
         return Image(im_data)
 

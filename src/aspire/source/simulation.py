@@ -252,9 +252,7 @@ class Simulation(ImageSource):
         # check for cached images first
         if self._cached_im is not None:
             logger.debug("Loading images from cache")
-            return self.generation_pipeline.forward(
-                Image(self._cached_im[indices, :, :]), indices
-            )
+            return self.generation_pipeline.forward(self._cached_im[indices], indices)
         im = self.projections[indices]
 
         # apply original CTF distortion to image

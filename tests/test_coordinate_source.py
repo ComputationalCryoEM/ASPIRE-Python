@@ -493,7 +493,7 @@ class CoordinateSourceTestCase(TestCase):
         saved_mrcs_stack = mrcfile.open(os.path.join(self.data_folder, mrcs_path)).data
         # assert that the particles saved are correct
         for i in range(10):
-            self.assertTrue(np.array_equal(imgs[i], saved_mrcs_stack[i]))
+            self.assertTrue(np.array_equal(imgs.asnumpy()[i], saved_mrcs_stack[i]))
         # assert that the star file has the correct metadata
         self.assertEqual(
             saved_star[""].columns.tolist(),

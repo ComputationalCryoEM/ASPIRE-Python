@@ -188,7 +188,7 @@ class VolumeTestCase(TestCase):
 
         for r in range(len(r_stack)):
             # Get result of test projection at center of Image.
-            prj_along_axis = img_stack[r][21, 21]
+            prj_along_axis = img_stack.asnumpy()[r][21, 21]
 
             # For Volume, take mean along the axis of rotation.
             vol_along_axis = np.mean(self.vols_1[vol_id], axis=r % 3)

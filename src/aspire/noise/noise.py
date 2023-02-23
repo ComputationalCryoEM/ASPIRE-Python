@@ -44,16 +44,17 @@ class NoiseAdder(Xform):
         return f"{self.__class__.__name__}"
 
     def _forward(self, im, indices):
-        im = im.copy()
+        _im = im.asnumpy().copy()
 
         for i, idx in enumerate(indices):
             # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
             random_seed = self.seed + 191 * (idx + 1)
             im_s = randn(2 * im.resolution, 2 * im.resolution, seed=random_seed)
-            im_s = Image(im_s).filter(self.noise_filter)[0]
-            im[i] += im_s[: im.resolution, : im.resolution]
+            # Use numpy because im_s and im are different image sizes
+            im_s = Image(im_s).filter(self.noise_filter).asnumpy()[0]
+            _im[i] += im_s[: im.resolution, : im.resolution]
 
-        return im
+        return Image(_im)
 
     @abc.abstractproperty
     def noise_var(self):
