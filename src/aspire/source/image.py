@@ -25,7 +25,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, grid_2d, ratio_to_decibel, support_mask, trange
+from aspire.utils import Rotation, grid_2d, support_mask, trange
 
 logger = logging.getLogger(__name__)
 
@@ -966,7 +966,6 @@ class ImageSource(ABC):
         batch_size=512,
         noise_power=None,
         signal_power_method="estimate_signal_mean_energy",
-        units=None,
     ):
         """
         Estimate the SNR of the simulated data set using
@@ -984,7 +983,6 @@ class ImageSource(ABC):
         :param signal_power_method: Method used for computing signal energy.
            Defaults to mean via `estimate_signal_mean_energy`.
            Can use variance method via `estimate_signal_var`.
-        :param units: Optionally, convert from default ratio to log scale (`dB`).
         :returns: Estimated signal to noise ratio.
         """
 
@@ -1011,12 +1009,6 @@ class ImageSource(ABC):
         # For `estimate_signal_mean_energy` we yield: mean(signal**2)  / noise_variance
         #     `estimate_signal_var`   we yield: signal_variance / noise_variance
         snr = signal_power / noise_power
-
-        # Perform any unit conversion
-        if units == "dB":
-            snr = ratio_to_decibel(snr)
-        elif units is not None:
-            raise ValueError("Units should be `None` or `dB`.")
 
         return snr
 

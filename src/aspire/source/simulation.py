@@ -14,7 +14,6 @@ from aspire.utils import (
     ainner,
     anorm,
     make_symmat,
-    ratio_to_decibel,
     trange,
     uniform_random_angles,
     vecmat_to_volmat,
