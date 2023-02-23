@@ -27,6 +27,7 @@ setup(
         "confuse>=2.0.0",
         "finufft",
         "gemmi>=0.4.8",
+        "grpcio<=1.48.2",
         "joblib",
         "matplotlib>=3.2.0",
         "mrcfile",
