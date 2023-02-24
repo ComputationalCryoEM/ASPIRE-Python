@@ -480,7 +480,7 @@ class Simulation(ImageSource):
         """
         # For clean images return infinite SNR.
         # Note, relationship with CTF and other sim corruptions still isn't clear to me...
-        if self.noise_adder or self.noise_adder.noise_var == 0:
+        if self.noise_adder is None or self.noise_adder.noise_var == 0:
             return np.inf
 
         # For SNR of Simulations, use the theoretical noise variance
