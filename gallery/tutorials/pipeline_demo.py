@@ -90,13 +90,14 @@ ctf_filters = [
 # Initialize Simulation Object
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # We feed our ``Volume`` and filters into ``Simulation`` to generate the dataset of images.
-# When controlled white Gaussian noise is desired, ``Simulation.from_snr()``
+# When controlled white Gaussian noise is desired, ``*NoiseAdder.from_snr()``
 # can be used to generate a simulation data set around a specific SNR.
 #
 # Alternatively, users can bring their own images using an ``ArrayImageSource``,
 # or define their own custom noise functions via ``Simulation(..., noise_adder=CustomNoiseAdder(...))``.
 # Examples can be found in ``tutorials/class_averaging.py`` and ``experiments/simulated_abinitio_pipeline.py``.
 
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 
 # set parameters
@@ -109,13 +110,13 @@ snr = 0.5
 
 # For this ``Simulation`` we set all 2D offset vectors to zero,
 # but by default offset vectors will be randomly distributed.
-src = Simulation.from_snr(
-    target_snr=snr,  # desired SNR
+src = Simulation(
     L=res,  # resolution
     n=n_imgs,  # number of projections
     vols=vol,  # volume source
     offsets=np.zeros((n_imgs, 2)),  # Default: images are randomly shifted
     unique_filters=ctf_filters,
+    noise_adder=WhiteNoiseAdder.from_snr(snr=snr),  # desired SNR
 )
 
 
