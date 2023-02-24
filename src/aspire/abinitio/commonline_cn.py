@@ -113,15 +113,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
         scores_self_corrs = np.zeros((n_img, n_cands), dtype=self.dtype)
         logger.info("Computing likelihood wrt self common-lines.")
         for i in trange(n_img):
-            pf_full_i = pf_full[i]
-            pf_i_shifted = pf_shifted[i]
-
-            # Ignore dc-component.
-            pf_full_i[:, 0] = 0
-            pf_i_shifted[:, 0] = 0
-
             # Compute correlation of pf[i] with itself over all shifts.
-            corrs = pf_i_shifted @ np.conj(pf_full_i).T
+            corrs = pf_shifted[i] @ np.conj(pf_full[i]).T
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
             corrs_cands = np.max(
                 np.real(corrs[:, scls_inds[:, :, 0], scls_inds[:, :, 1]]), axis=0
@@ -154,20 +147,9 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         with tqdm(total=n_vijs) as pbar:
             for i in range(n_img):
-                # Grab shifted image.
-                pf_i_shifted = pf_shifted[i]
-
-                # Ignore dc-component.
-                pf_i_shifted[:, 0] = 0
-
                 for j in range(i + 1, n_img):
-                    pf_full_j = pf_full[j]
-
-                    # Ignore dc-component.
-                    pf_full_j[:, 0] = 0
-
                     # Compute correlation.
-                    corrs_ij = pf_i_shifted @ np.conj(pf_full_j).T
+                    corrs_ij = pf_shifted[i] @ np.conj(pf_full[j]).T
 
                     # Max out over shifts.
                     corrs_ij = np.max(
