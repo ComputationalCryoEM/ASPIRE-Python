@@ -291,17 +291,18 @@ class ClassRepulsion:
 
     """
 
-    def __init__(self, *args, aggressive=True, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Instatiates and sets `aggresive`. All other args and **kwagrs are pass through to super().
 
         :param aggressive: Aggresive mode will additionally exclude
             any new class containing a neighbor that has already
-            been incorporated. Defaults to True.
+            been incorporated. Defaults to False.
+            Note this can dramatically reduce your class set.
         """
 
         self.excluded = set()
-        self.aggressive = aggressive
+        self.aggressive = kwargs.pop("aggressive", False)
         super().__init__(*args, **kwargs)
 
     def _select(self, classes, reflections, distances):
