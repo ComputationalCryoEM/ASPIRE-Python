@@ -159,7 +159,7 @@ class ClassAvgSource(ImageSource):
         heap_inds = None
         if hasattr(self.class_selector, "heap"):
             # Then check if heap holds anything in indices
-            heap_inds = set(indices).intesection(self.class_selector._heap_ids)
+            heap_inds = set(indices).intersection(self.class_selector._heap_ids)
 
         # check for wholly cached image sets first
         if self._cached_im is not None:

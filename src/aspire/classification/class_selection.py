@@ -253,9 +253,7 @@ class GlobalClassSelector(ClassSelectorRanked):
         }  # heap item=(score, img_id, img)
 
     def _select(self, classes, reflections, distances):
-        for i in classes[:, 0]:
-            im = self.averager.average(classes[i], reflections[i])
-
+        for i, im in enumerate(self.averager.average(classes, reflections)):
             quality_score = self._quality_function(im)
 
             # Assign in global quality score array
