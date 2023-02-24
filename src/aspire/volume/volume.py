@@ -270,8 +270,8 @@ class Volume:
         """Returns an N x resolution ** 3 array."""
         return self._data.reshape((self.n_vols, self.resolution**3))
 
-    @staticmethod
-    def from_vec(vec):
+    @classmethod
+    def from_vec(cls, vec):
         """
         Returns a Volume instance from a (N, resolution**3) array or
         (resolution**3) array.
@@ -289,7 +289,7 @@ class Volume:
 
         data = vec.reshape((n_vols, resolution, resolution, resolution))
 
-        return self.__class__(data)
+        return cls(data)
 
     def transpose(self):
         """
@@ -464,8 +464,8 @@ class Volume:
         if self.dtype != np.float32:
             logger.info(f"Volume with dtype {self.dtype} saved with dtype float32")
 
-    @staticmethod
-    def load(filename, permissive=True, dtype=np.float32):
+    @classmethod
+    def load(cls, filename, permissive=True, dtype=np.float32):
         """
         Load an mrc file as a Volume instance.
 
@@ -480,7 +480,7 @@ class Volume:
             loaded_data = mrc.data
         if loaded_data.dtype != dtype:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
-        return self.__class__(loaded_data.astype(dtype))
+        return cls(loaded_data.astype(dtype))
 
 
 class CartesianVolume(Volume):
