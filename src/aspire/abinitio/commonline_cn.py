@@ -105,17 +105,16 @@ class CLSymmetryCn(CLSymmetryC3C4):
         pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
+        # Pre-compute shifted pf's.
+        pf_shifted = (pf * all_shift_phases[:, None, None]).swapaxes(0, 1)
+        pf_shifted = pf_shifted.reshape((n_img, n_shifts * (n_theta // 2), r_max))
+
         # Step 1: pre-calculate the likelihood with respect to the self-common-lines.
         scores_self_corrs = np.zeros((n_img, n_cands), dtype=self.dtype)
         logger.info("Computing likelihood wrt self common-lines.")
         for i in trange(n_img):
             pf_full_i = pf_full[i]
-
-            # Generate shifted versions of image.
-            pf_i_shifted = np.array(
-                [pf[i] * shift_phase for shift_phase in all_shift_phases]
-            )
-            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
+            pf_i_shifted = pf_shifted[i]
 
             # Ignore dc-component.
             pf_full_i[:, 0] = 0
@@ -155,13 +154,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         with tqdm(total=n_vijs) as pbar:
             for i in range(n_img):
-                # Generate shifted versions of the images.
-                pf_i_shifted = np.array(
-                    [pf[i] * shift_phase for shift_phase in all_shift_phases]
-                )
-                pf_i_shifted = np.reshape(
-                    pf_i_shifted, (n_shifts * n_theta // 2, r_max)
-                )
+                # Grab shifted image.
+                pf_i_shifted = pf_shifted[i]
 
                 # Ignore dc-component.
                 pf_i_shifted[:, 0] = 0
@@ -272,7 +266,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
             scls_inds[i_cand, :, 1] = c2s_inds
         return scls_inds
 
-    # TODO: cache
     def _compute_cls_inds(self, Ris_tilde, R_theta_ijs):
         """
         Compute the common-lines indices induced by the candidate rotations.
