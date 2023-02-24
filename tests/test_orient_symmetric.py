@@ -31,8 +31,11 @@ param_list_c3_c4 = [
 
 # For testing Cn methods where n>4.
 param_list_cn = [
+    (44, 5, np.float32),
     pytest.param(44, 5, np.float32, marks=pytest.mark.expensive),
     pytest.param(45, 6, np.float64, marks=pytest.mark.expensive),
+    pytest.param(44, 8, np.float32, marks=pytest.mark.expensive),
+    pytest.param(45, 9, np.float64, marks=pytest.mark.expensive),
 ]
 
 
@@ -75,7 +78,7 @@ def source_orientation_objs(L, n_img, order, dtype):
 def test_estimate_rotations(L, order, dtype):
     n_img = 24
     if order > 4:
-        n_img = 32
+        n_img = 9
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
 
     # Estimate rotations.
@@ -193,7 +196,7 @@ def test_relative_viewing_directions(L, order, dtype):
     # volume with C3 or C4 symmetry.
     n_img = 24
     if order > 4:
-        n_img = 32
+        n_img = 9
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
 
     # Calculate ground truth relative viewing directions, viis and vijs.

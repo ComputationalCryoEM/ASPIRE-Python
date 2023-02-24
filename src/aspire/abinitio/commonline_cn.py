@@ -109,12 +109,11 @@ class CLSymmetryCn(CLSymmetryC3C4):
         scores_self_corrs = np.zeros((n_img, n_cands), dtype=self.dtype)
         logger.info("Computing likelihood wrt self common-lines.")
         for i in trange(n_img):
-            pf_i = pf[i]
             pf_full_i = pf_full[i]
 
             # Generate shifted versions of image.
             pf_i_shifted = np.array(
-                [pf_i * shift_phase for shift_phase in all_shift_phases]
+                [pf[i] * shift_phase for shift_phase in all_shift_phases]
             )
             pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
 
@@ -122,7 +121,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             pf_full_i[:, 0] = 0
             pf_i_shifted[:, 0] = 0
 
-            # Compute correlation of pf_i with itself over all shifts.
+            # Compute correlation of pf[i] with itself over all shifts.
             corrs = pf_i_shifted @ np.conj(pf_full_i).T
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
             corrs_cands = np.max(
@@ -133,7 +132,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Remove candidates that are equator images. Equator candidates induce collinear
         # self common-lines, which always have perfect correlation.
-        # TODO: Should the threshold be parameter-dependent instead of set to 10 degrees?
         cii_equators_inds = np.argwhere(
             abs(np.arccos(Ris_tilde[:, 2, 2]) - np.pi / 2)
             < self.equator_threshold * np.pi / 180
@@ -157,11 +155,9 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         with tqdm(total=n_vijs) as pbar:
             for i in range(n_img):
-                pf_i = pf[i]
-
                 # Generate shifted versions of the images.
                 pf_i_shifted = np.array(
-                    [pf_i * shift_phase for shift_phase in all_shift_phases]
+                    [pf[i] * shift_phase for shift_phase in all_shift_phases]
                 )
                 pf_i_shifted = np.reshape(
                     pf_i_shifted, (n_shifts * n_theta // 2, r_max)
@@ -372,6 +368,7 @@ class MeanOuterProductEstimator:
         """
 
         # Accumulate synchronized entries to compute synchronized mean.
+        # Method added Feb, 2023. (Josh Carmichael)
         if self.count == 0:
             self.V_estimates_sync += V
         else:
