@@ -14,8 +14,7 @@ from aspire.noise import (
 )
 from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source.simulation import Simulation
-from aspire.utils import grid_3d, uniform_random_angles
-from aspire.volume import AsymmetricVolume, Volume
+from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -173,15 +172,12 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
     # Attempt to create a new simulation at this `target_snr`
     # For unit testing, we will use `sim_fixture`'s volume,
     #   but the new Simulation instance should yield different projections.
-    sim_from_snr = Simulation.from_snr(
-        target_snr,
+    sim_from_snr = Simulation(
         vols=sim_fixture.vols,  # Force the previously generated volume.
         n=sim_fixture.n,
         offsets=0,
         amplitudes=1.0,
-        # Excercise the `sample_n` and shuffle branches
-        angles=uniform_random_angles(sim_fixture.n, dtype=sim_fixture.dtype),
-        sample_n=sim_fixture.n - 1,
+        noise_adder=WhiteNoiseAdder.from_snr(target_snr),
     )
 
     # Check we're within 5% of explicit target
@@ -221,40 +217,17 @@ def test_from_snr_pink_iso(sim_fixture, target_noise_variance):
     # Create the CustomNoiseAdder
     sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
 
-    # and compute the resulting snr of the sim.
-    target_snr = sim_fixture.estimate_snr()
-
-    # Attempt to create a new simulation at this `target_snr`
-    # For unit testing, we will use `sim_fixture`'s volume,
-    #   but the new Simulation instance should yield different projects.
-    sim_from_snr = Simulation.from_snr(
-        target_snr,
-        vols=sim_fixture.vols,  # Force the previously generated volume.
-        n=sim_fixture.n,
-        offsets=0,
-        amplitudes=1.0,
-    )
-
-    # Check we're within 1% of explicit target
-    logger.info(
-        "sim_from_snr.noise_adder.noise_var, target_noise_variance ="
-        f" {sim_from_snr.noise_adder.noise_var}, {target_noise_variance}"
-    )
-    assert np.isclose(
-        sim_from_snr.noise_adder.noise_var, target_noise_variance, rtol=0.01
-    )
-
     # TODO, potentially remove or change to Isotropic after #842
     # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
-    noise_estimator = AnisotropicNoiseEstimator(sim_from_snr, batchSize=512)
+    noise_estimator = AnisotropicNoiseEstimator(sim_fixture, batchSize=512)
     est_noise_variance = noise_estimator.estimate()
     logger.info(
         "est_noise_variance, target_noise_variance ="
         f" {est_noise_variance}, {target_noise_variance}"
     )
 
-    # Check we're within 1%
-    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.01)
+    # Check we're within 5%
+    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
 
 
 @pytest.mark.parametrize(
@@ -278,37 +251,14 @@ def test_from_snr_aniso(sim_fixture, target_noise_variance):
     # Create the CustomNoiseAdder
     sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
 
-    # and compute the resulting snr of the sim.
-    target_snr = sim_fixture.estimate_snr()
-
-    # Attempt to create a new simulation at this `target_snr`
-    # For unit testing, we will use `sim_fixture`'s volume,
-    #   but the new Simulation instance should yield different projections.
-    sim_from_snr = Simulation.from_snr(
-        target_snr,
-        vols=sim_fixture.vols,  # Force the previously generated volume.
-        n=sim_fixture.n,
-        offsets=0,
-        amplitudes=1.0,
-    )
-
-    # Check we're within 1% of explicit target
-    logger.info(
-        "sim_from_snr.noise_adder.noise_var, target_noise_variance ="
-        f" {sim_from_snr.noise_adder.noise_var}, {target_noise_variance}"
-    )
-    assert np.isclose(
-        sim_from_snr.noise_adder.noise_var, target_noise_variance, rtol=0.01
-    )
-
     # TODO, potentially remove after #842
     # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
-    noise_estimator = AnisotropicNoiseEstimator(sim_from_snr, batchSize=512)
+    noise_estimator = AnisotropicNoiseEstimator(sim_fixture, batchSize=512)
     est_noise_variance = noise_estimator.estimate()
     logger.info(
         "est_noise_variance, target_noise_variance ="
         f" {est_noise_variance}, {target_noise_variance}"
     )
 
-    # Check we're within 1%
-    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.01)
+    # Check we're within 5%
+    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)

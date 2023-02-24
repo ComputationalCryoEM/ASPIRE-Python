@@ -85,6 +85,17 @@ class CustomNoiseAdder(NoiseAdder):
         return np.mean(self._noise_filter.evaluate_grid(res))
 
 
+class DelayedWhiteNoiseAdder:
+    def __init__(self, snr, seed=0):
+        self.snr = snr
+        self.seed = seed
+
+    def __call__(self, signal_power):
+        return WhiteNoiseAdder.from_snr(
+            snr=self.snr, signal_power=signal_power, seed=self.seed
+        )
+
+
 class WhiteNoiseAdder(NoiseAdder):
     """
     A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
@@ -98,8 +109,28 @@ class WhiteNoiseAdder(NoiseAdder):
         :param var: Target noise variance.
         :param seed: Optinally provide a random seed used to generate white noise.
         """
+
         self._noise_var = var
         super().__init__(noise_filter=ScalarFilter(dim=2, value=var), seed=seed)
+
+    @staticmethod
+    def from_snr(snr, signal_power=None, seed=0):
+        """
+        Generates a WhiteNoiseAdder configured to produce a target signal to noise ratio.
+
+        If signal_power is not provided, it returns a callable that will generate
+        the appropriate WhiteNoiseAdder later when provided `signal_power`.
+
+        :param snr: Desired signal to noise ratio of
+            the returned source.
+        :param signal_variance: Optional, if the signal power is known.
+        :param seed: Optinally provide a random seed used to generate white noise.
+        """
+        if signal_power is None:
+            return DelayedWhiteNoiseAdder(snr=snr, seed=seed)
+        else:
+            noise_var = signal_power / snr
+            return WhiteNoiseAdder(var=noise_var, seed=seed)
 
     def __str__(self):
         return f"{self.__class__.__name__} with variance={self._noise_var}"
@@ -133,7 +164,6 @@ class NoiseEstimator:
             the radius of disc inscribing a `(src.L, src.L)` image.
         :param batchSize:  The size of the batches in which to compute the variance estimate
         """
-
         self.src = src
         self.dtype = self.src.dtype
         self.bgRadius = bgRadius

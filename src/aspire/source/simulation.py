@@ -5,7 +5,7 @@ import numpy as np
 from scipy.linalg import eigh, qr
 
 from aspire.image import Image
-from aspire.noise import NoiseAdder, WhiteNoiseAdder
+from aspire.noise import NoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
@@ -13,7 +13,6 @@ from aspire.utils import (
     ainner,
     anorm,
     make_symmat,
-    trange,
     uniform_random_angles,
     vecmat_to_volmat,
 )
@@ -134,10 +133,8 @@ class Simulation(ImageSource):
             states = randi(self.C, n, seed=seed)
         self.states = states
 
-        self._uniform_random_angles = False
         if angles is None:
             angles = uniform_random_angles(n, seed=seed, dtype=self.dtype)
-            self._uniform_random_angles = True
         self.angles = angles
 
         if unique_filters is None:
@@ -159,16 +156,24 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
 
-        if noise_adder is not None:
-            logger.info(f"Appending {noise_adder} to generation pipeline")
-            if not isinstance(noise_adder, NoiseAdder):
-                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
-        self.noise_adder = noise_adder
-
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
         # For Simulation, signal can be computed directly from clean_images.
         self._signal_images = self.clean_images
+
+        # Note the delayed eval may attempt to use self.*_accessors
+        if noise_adder is not None:
+            logger.info(f"Appending {noise_adder} to generation pipeline")
+            # If we need to calculate signal_power from Simulation,
+            # do so now, and closing the DelayedWhiteNoiseAdder.
+            if callable(noise_adder):
+                noise_adder = noise_adder(signal_power=self.estimate_signal_power())
+
+            # At this point we should have a fully baked NoiseAdder
+            if not isinstance(noise_adder, NoiseAdder):
+                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
+
+        self.noise_adder = noise_adder
 
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
@@ -486,68 +491,3 @@ class Simulation(ImageSource):
         # For SNR of Simulations, use the theoretical noise variance
         # known from the noise_adder instead of deriving from PSD.
         return super().estimate_snr(noise_power=self.noise_adder.noise_var)
-
-    @classmethod
-    def from_snr(
-        cls,
-        target_snr,
-        *args,
-        sample_n=None,
-        support_radius=None,
-        batch_size=512,
-        signal_power_method="estimate_signal_mean_energy",
-        **kwargs,
-    ):
-        """
-        Generates a Simulation source with a WhiteNoiseAdder
-        configured to produce a target signal to noise ratio.
-
-        :param target_snr: Desired signal to noise ratio of
-            the returned source.
-        :param sample_n: Number of images used for estimate.
-            Defaults to all images in source.
-        :param support_radius: Pixel radius used for masking signal support.
-            Default of None will compute inscribed circle, `self.L // 2`.
-        :param batch_size: Images per batch, defaults 512.
-        :param signal_power_method: Method used for computing signal energy.
-           Defaults to mean via `estimate_signal_mean_energy`.
-           Can use variance method via `estimate_signal_var`.
-        :returns: Simulation source.
-        """
-
-        # Create a Simulation
-        sim = cls(*args, **kwargs)
-
-        # When a user supplies angles and requests `sample_n` subset of images
-        #   randomize the rotations for them to avoid as much bias as possible.
-        # The original rotations stored in `_rots` will be restored later.
-        shuffle = (not sim._uniform_random_angles) and (sample_n is not None)
-        if shuffle:
-            # Store the original rotations.
-            _rots = sim.rotations.copy()
-            # Shuffle the Sim rotations
-            sim.rotations = sim.rotations[np.random.permutation(sim.n)]
-
-        # Assert NoiseAdder has not been provided
-        if "noise_adder" in kwargs or sim.noise_adder is not None:
-            raise RuntimeError(
-                "Cannot provide 'noise_adder' when using {cls.__name__}.from_snr."
-            )
-
-        # Estimate the required noise variance
-        signal_var = sim.estimate_signal_power(
-            sample_n=sample_n,
-            support_radius=support_radius,
-            signal_power_method=signal_power_method,
-        )
-        noise_var = signal_var / target_snr
-
-        # Assign the noise_adder
-        sim.noise_adder = WhiteNoiseAdder(var=noise_var)
-        logger.info(f"Appended {sim.noise_adder} to generation pipeline")
-
-        # Restore the original rotations when previously shuffled.
-        if shuffle:
-            sim.rotations = _rots
-
-        return sim
