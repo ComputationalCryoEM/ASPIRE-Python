@@ -120,7 +120,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 np.real(corrs[:, scls_inds[:, :, 0], scls_inds[:, :, 1]]), axis=0
             )
 
-            scores_self_corrs[i] = np.mean(np.real(corrs_cands), axis=1)
+            scores_self_corrs[i] = np.mean(corrs_cands, axis=1)
 
         # Remove candidates that are equator images. Equator candidates induce collinear
         # self common-lines, which always have perfect correlation.
