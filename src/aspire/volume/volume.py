@@ -27,7 +27,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     """
     ims = np.zeros((k, n, sim.L, sim.L), dtype=vols.dtype)
     for ell in range(k):
-        ims[ell] = sim.vol_forward(Volume(vols[ell]), s, n).asnumpy()
+        ims[ell] = sim.vol_forward(vols[ell], s, n).asnumpy()
 
     ims = np.swapaxes(ims, 1, 3)
     ims = np.swapaxes(ims, 0, 2)
@@ -96,6 +96,11 @@ class Volume:
         self.n_vols = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
+        # Numpy interop
+        # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
+        self.__array_interface__ = self._data.__array_interface__
+        self.__array__ = self._data
+
     def asnumpy(self):
         """
         Return volume as a (n_vols, resolution, resolution, resolution) array.
@@ -123,7 +128,7 @@ class Volume:
 
     def __getitem__(self, key):
         self._check_key_dims(key)
-        return self._data[key]
+        return Volume(self._data[key])
 
     def __setitem__(self, key, value):
         self._check_key_dims(key)
@@ -196,6 +201,23 @@ class Volume:
     def __rmul__(self, otherL):
         return self * otherL
 
+    def __truediv__(self, other):
+        """
+        Scalar division, follows numpy semantics.
+        """
+        if isinstance(other, Volume):
+            res = Volume(self._data / other.asnumpy())
+        else:
+            res = Volume(self._data / other)
+
+        return res
+
+    def __rtruedive__(self, otherL):
+        """
+        Right scalar division, follows numpy semantics.
+        """
+        return self / otherL
+
     def project(self, vol_idx, rot_matrices):
         """
         Using the stack of rot_matrices,
@@ -223,7 +245,7 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        data = self[vol_idx]
+        data = self[vol_idx].asnumpy()
 
         n = rot_matrices.shape[0]
 
@@ -403,7 +425,7 @@ class Volume:
             for i in range(K):
                 pts_rot[i] = rotated_grids_3d(self.resolution, rot_matrices[i])
 
-                vol_f[i] = nufft(self[i], pts_rot[i])
+                vol_f[i] = nufft(self[i].asnumpy(), pts_rot[i])
 
             vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 

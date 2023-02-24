@@ -197,7 +197,7 @@ class SimTestCase(TestCase):
         eigs_true, lambdas_true = self.sim.eigs()
         self.assertTrue(
             np.allclose(
-                eigs_true[0, :, :, 2],
+                eigs_true.asnumpy()[0, :, :, 2],
                 np.array(
                     [
                         [
@@ -371,7 +371,7 @@ class SimTestCase(TestCase):
                         0.01210055,
                     ],
                 ],
-                mean_vol[0, :, :, 4],
+                mean_vol.asnumpy()[0, :, :, 4],
             )
         )
 

@@ -191,7 +191,7 @@ class VolumeTestCase(TestCase):
             prj_along_axis = img_stack.asnumpy()[r][21, 21]
 
             # For Volume, take mean along the axis of rotation.
-            vol_along_axis = np.mean(self.vols_1[vol_id], axis=r % 3)
+            vol_along_axis = np.mean(self.vols_1.asnumpy()[vol_id], axis=r % 3)
             # Volume is uncentered, take the mean of a 2x2 window.
             vol_along_axis = np.mean(vol_along_axis[20:22, 20:22])
 
@@ -359,8 +359,8 @@ class VolumeTestCase(TestCase):
         # check gridpoints
         self.assertTrue(
             np.allclose(
-                vols[:, res // 2, res // 2, res // 2],
-                result[:, ds_res // 2, ds_res // 2, ds_res // 2],
+                vols.asnumpy()[:, res // 2, res // 2, res // 2],
+                result.asnumpy()[:, ds_res // 2, ds_res // 2, ds_res // 2],
                 atol=1e-4,
             )
         )

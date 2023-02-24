@@ -115,8 +115,8 @@ def test_compact_support(vol_fixture):
         vol = vol_fixture.generate()
 
         # Check that volume is zero outside of support and positive inside.
-        assert vol[0][outside].all() == 0
-        assert (vol[0][inside] > 0).all()
+        assert vol.asnumpy()[0][outside].all() == 0
+        assert (vol.asnumpy()[0][inside] > 0).all()
 
 
 def test_volume_symmetry(vol_fixture):
