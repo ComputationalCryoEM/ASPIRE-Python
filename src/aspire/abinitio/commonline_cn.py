@@ -5,7 +5,7 @@ from numpy.linalg import norm
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.utils import J_conjugate, Rotation, anorm, cyclic_rotations, tqdm, trange
-from aspire.utils.random import randn
+from aspire.utils.random import Random, randn
 
 logger = logging.getLogger(__name__)
 
@@ -121,14 +121,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
             )
 
             scores_self_corrs[i] = np.mean(corrs_cands, axis=1)
-
-        # Remove candidates that are equator images. Equator candidates induce collinear
-        # self common-lines, which always have perfect correlation.
-        cii_equators_inds = np.argwhere(
-            abs(np.arccos(Ris_tilde[:, 2, 2]) - np.pi / 2)
-            < self.equator_threshold * np.pi / 180
-        )
-        scores_self_corrs[:, cii_equators_inds] = 0
 
         # Step 2: Compute the likelihood for each pair of candidate matrices with respect
         # to the common-lines they induce.
@@ -288,8 +280,20 @@ class CLSymmetryCn(CLSymmetryC3C4):
     def _generate_cand_rots(self):
         logger.info("Generating candidate rotations.")
         # Construct candidate rotations, Ris_tilde.
-        vis = self._generate_cand_rots_third_rows()
-        Ris_tilde = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
+        Ris_tilde = np.zeros((self.n_points_sphere, 3, 3))
+        counter = 0
+        with Random(self.seed):
+            while counter < self.n_points_sphere:
+                third_row = randn(3)
+                third_row /= anorm(third_row, axes=(-1,))
+                Ri_tilde = self._complete_third_row_to_rot(third_row)
+
+                # Exclude candidates that represent equator images. Equator candidates
+                # induce collinear self-common-lines, which always have perfect correlation.
+                angle_from_equator = abs(np.arccos(Ri_tilde[2, 2]) - np.pi / 2)
+                if angle_from_equator >= self.equator_threshold * np.pi / 180:
+                    Ris_tilde[counter] = Ri_tilde
+                    counter += 1
 
         # Construct all in-plane rotations, R_theta_ijs
         # The number of R_theta_ijs must be divisible by the symmetric order.
@@ -298,29 +302,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
         R_theta_ijs = Rotation.about_axis("z", theta_ij).matrices
 
         return Ris_tilde, R_theta_ijs
-
-    def _generate_cand_rots_third_rows(self, legacy=True):
-        n_points_sphere = self.n_points_sphere
-        if legacy:
-            # Genereate random points on the sphere
-            third_rows = randn(n_points_sphere, 3, seed=self.seed)
-            third_rows /= anorm(third_rows, axes=(-1,))[:, np.newaxis]
-        else:
-            # Use Fibonocci sphere points
-            third_rows = np.zeros((n_points_sphere, 3))
-            phi = np.pi * (3.0 - np.sqrt(5.0))  # golden angle in radians
-
-            for i in range(n_points_sphere):
-                y = 1 - (i / float(n_points_sphere - 1)) * 2  # y goes from 1 to -1
-                radius = np.sqrt(1 - y * y)  # radius at y
-
-                theta = phi * i  # golden angle increment
-                x = np.cos(theta) * radius
-                z = np.sin(theta) * radius
-
-                third_rows[i] = x, y, z
-
-        return third_rows
 
 
 class MeanOuterProductEstimator:
