@@ -203,6 +203,12 @@ class CLSymmetryCn(CLSymmetryC3C4):
                     c += 1
                     pbar.update()
 
+                # There are conflicting methods betweeen the paper and the Matlab code for
+                # finding the optimal estimate. The paper suggests using SVD to find the
+                # estimate for vii which is closest to rank 1. The Matlab code takes the
+                # median over the stack of all estimates for vii. Here we have implemented
+                # a method which J-synchronizes the estimates prior to taking the mean.
+                # See issue #869 for more details.
                 viis[i] = mean_est[i].synchronized_mean()
 
         return vijs, viis
