@@ -7,7 +7,7 @@ from ray.util.multiprocessing import Pool
 
 from aspire import config
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
-from aspire.image import Image
+from aspire.image import Image, ImageStacker, MeanImageStacker
 from aspire.utils import trange
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.multiprocessing import num_procs_suggestion
@@ -107,12 +107,20 @@ class AligningAverager2D(Averager2D):
     """
 
     def __init__(
-        self, composite_basis, src, alignment_basis=None, num_procs=None, dtype=None
+        self,
+        composite_basis,
+        src,
+        alignment_basis=None,
+        image_stacker=None,
+        num_procs=None,
+        dtype=None,
     ):
         """
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D).
         :param src: Source of original images.
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
+        :param image_stacker: Optional, provide a user defined `ImageStacker` instance,
+            used during image stacking (averaging).  Defaults to MeanImageStacker.
         :param num_procs: Number of processes to use.
             `None` will attempt computing a suggestion based on machine resources.
             Note some underlying code may already use threading.
@@ -127,6 +135,11 @@ class AligningAverager2D(Averager2D):
         )
         # If alignment_basis is None, use composite_basis
         self.alignment_basis = alignment_basis or self.composite_basis
+
+        # If image_stacker is None, use mean
+        self.image_stacker = image_stacker or MeanImageStacker()
+        if not isinstance(self.image_stacker, ImageStacker):
+            raise ValueError(f"`image_stacker` should be subclass of ImageStacker.")
 
         if not hasattr(self.composite_basis, "rotate"):
             raise RuntimeError(
@@ -211,7 +224,7 @@ class AligningAverager2D(Averager2D):
             )
 
             # Averaging in composite_basis
-            return np.mean(neighbors_coefs, axis=0)
+            return self.image_stacker(neighbors_coefs)
 
         if self.num_procs <= 1:
             for i in trange(n_classes):
@@ -652,7 +665,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 )
 
             # Averaging in composite_basis
-            return np.mean(neighbors_coefs, axis=0)
+            return self.image_stacker(neighbors_coefs)
 
         if self.num_procs <= 1:
             for i in trange(n_classes):

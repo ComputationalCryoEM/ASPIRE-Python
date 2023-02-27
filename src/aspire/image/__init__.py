@@ -7,3 +7,9 @@ from .image import (
     PolarImage,
     normalize_bg,
 )
+from .image_stacker import (
+    ImageStacker,
+    MeanImageStacker,
+    MedianImageStacker,
+    SigmaRejectionImageStacker,
+)
