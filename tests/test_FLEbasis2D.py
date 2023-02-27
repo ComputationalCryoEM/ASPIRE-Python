@@ -1,4 +1,5 @@
 import os
+import sys
 
 import numpy as np
 import pytest
@@ -101,6 +102,11 @@ class TestFLEBasis2D(UniversalBasisMixin):
 
         assert relerr(result_dense, result_fast) < basis.epsilon
 
+    @pytest.mark.xfail(
+        sys.platform == "win32",
+        reason="Bug on windows with latest envs, #862",
+        raises=RuntimeError,
+    )
     def testEvaluateExpand(self, basis):
         if backend_available("cufinufft") and basis.epsilon == 1e-7:
             gpu_ci_skip()
