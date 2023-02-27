@@ -285,7 +285,7 @@ class CtfEstimator:
         return psd, noise
 
     def background_subtract_1d(
-        self, amplitude_spectrum, linprog_method="interior-point", n_low_freq_cutoffs=14
+        self, amplitude_spectrum, linprog_method="highs", n_low_freq_cutoffs=14
     ):
         """
         Estimate and subtract the background from the power spectrum
@@ -766,8 +766,10 @@ def estimate_ctf(
 
         # Optionally changing to: linprog_method='simplex',
         # will more deterministically repro results in exchange for speed.
+        # linprog_method was changed from 'interior-point' to 'highs' due to
+        # "interior-point' being deprecated.
         signal_1d, background_1d = ctf_object.background_subtract_1d(
-            amplitude_spectrum, linprog_method="interior-point"
+            amplitude_spectrum, linprog_method="highs"
         )
 
         avg_defocus, low_freq_skip = ctf_object.opt1d(
