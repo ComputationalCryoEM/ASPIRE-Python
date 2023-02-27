@@ -277,6 +277,8 @@ class GlobalClassSelector(ClassSelectorRanked):
         return sorted_class_inds
 
 
+# TODO: When a consistent measure of distance is implemented
+# by preceeding components we can implement exclusion based on neighbor distances.
 class ClassRepulsion:
     """
     Mixin to overload class selection based on excluding
@@ -289,20 +291,24 @@ class ClassRepulsion:
 
     def __init__(self, *args, **kwargs):
         """
-        Instatiates and sets `aggresive`. All other args and **kwagrs are pass through to super().
+        Sets optional `exclude_k`. All other args and **kwagrs are passed to super().
 
-        :param aggressive: Aggresive mode will additionally exclude
-            any new class containing a neighbor that has already
-            been incorporated. Defaults to False.
-            Note this can dramatically reduce your class set.
+        ClassRepulsion is similar to `cryo_select_subset` from MATLAB,
+        but MATLAB found `exclude_k` iteratively based on a desired result set size.
+
+        :param exclude_k: Number of neighbors from each class to exclude.
+            Defaults to
         """
-
+        self.exclude_k = kwargs.pop("exclude_k", None)
         self.excluded = set()
         super().__init__(*args, **kwargs)
 
     def _select(self, classes, reflections, distances):
         # Get the indices sorted by the next resolving `_select` method.
         sorted_inds = super()._select(classes, reflections, distances)
+
+        # If exclude_k is not provided, default to exluding all neighbors.
+        k = self.exclude_k or classes.shape[-1]
 
         results = []
         for i in sorted_inds:
@@ -314,7 +320,7 @@ class ClassRepulsion:
             cls = classes[i]
 
             # Add images from this class to the exclusion list
-            self.excluded.update(cls)
+            self.excluded.update(cls[:k])
 
             results.append(i)
 
