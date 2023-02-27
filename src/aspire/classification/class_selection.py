@@ -285,10 +285,6 @@ class ClassRepulsion:
     If the classes are well sorted (by some measure of quality),
     we can assume the best representation is the first seen.
 
-    :param aggressive: Aggresive mode will additionally exclude
-        any new class containing a neighbor that has already
-        been incorporated. Defaults to True.
-
     """
 
     def __init__(self, *args, **kwargs):
@@ -302,7 +298,6 @@ class ClassRepulsion:
         """
 
         self.excluded = set()
-        self.aggressive = kwargs.pop("aggressive", False)
         super().__init__(*args, **kwargs)
 
     def _select(self, classes, reflections, distances):
@@ -317,11 +312,6 @@ class ClassRepulsion:
 
             # Get the images in this class
             cls = classes[i]
-
-            # Aggresive mode skips any class containing neighbors
-            # we have have seen in prior class.
-            if self.aggressive and self.excluded.intersection(cls[1:]):
-                continue
 
             # Add images from this class to the exclusion list
             self.excluded.update(cls)
