@@ -25,7 +25,8 @@ class ImageStacker(abc.ABC):
         """
         Initialize ImageStacker instance.
         """
-        self._return_image = True
+
+        self._return_image_size = None
 
     @abc.abstractmethod
     def __call__(self, stack):
@@ -50,12 +51,14 @@ class ImageStacker(abc.ABC):
         Check stack and returns consistent 2D np.array.
         """
 
+        self._return_image_size = None
         # If we are an image, flatten image data.
         if isinstance(stack, Image):
-            self._return_image = True
+            # Store the image size for returning later
+            self._return_image_size = (1,) + stack.shape[1:]
 
             if stack.stack_ndim != 1:
-                return ValueError(
+                raise ValueError(
                     f"`stack` shape of Image should be 1D for ImageStacking not {stack.stack_shape}."
                     "  Try Image.stack_reshape if needed."
                 )
@@ -65,8 +68,8 @@ class ImageStacker(abc.ABC):
         if not isinstance(stack, np.ndarray):
             raise ValueError("`stack` should be `Image` instance or Numpy array.")
         elif stack.ndim != 2:
-            return ValueError(
-                f"`stack` numpy array shape should be 2D for ImageStacking not {stack.shape}."
+            raise ValueError(
+                f"`stack` numpy array shape should be 2D for ImageStacker not {stack.shape}."
                 "  Try Image.stack_reshape if needed."
             )
 
@@ -83,8 +86,8 @@ class ImageStacker(abc.ABC):
         :param result: Result data as Numpy Array.
         :return: Image(result) or Numpy array(result) based on initial call type.
         """
-        if self._return_image:
-            result = Image(result)
+        if self._return_image_size is not None:
+            result = Image(result.reshape(self._return_image_size))
         return result
 
 
@@ -96,7 +99,7 @@ class MeanImageStacker(ImageStacker):
     def __call__(self, stack):
         stack = self._check_and_convert(stack)
 
-        return stack.mean(axis=0)
+        return self._return(stack.mean(axis=0))
 
 
 class MedianImageStacker(ImageStacker):
@@ -107,7 +110,7 @@ class MedianImageStacker(ImageStacker):
     def __call__(self, stack):
         stack = self._check_and_convert(stack)
 
-        self._return(stack.median(axis=0))
+        return self._return(np.median(stack, axis=0))
 
 
 class SigmaRejectionImageStacker(ImageStacker):
@@ -136,13 +139,13 @@ class SigmaRejectionImageStacker(ImageStacker):
         std_deviations = stack.std(axis=0)
 
         # Compute values that lie outside sigma deviations
-        outliers = np.abs(stack - mean) > self.sigma * std_deviations
+        outliers = np.abs(stack - means) > self.sigma * std_deviations
 
         # Mask off the outliers
         masked_stack = ma.masked_array(stack, mask=outliers)
 
         # Return mean withou the outliers
-        self._return(masked_stack.mean(axis=0))
+        return self._return(masked_stack.mean(axis=0))
 
 
 class PoissonRejectionImageStacker(ImageStacker):
