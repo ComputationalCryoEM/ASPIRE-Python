@@ -335,9 +335,7 @@ def all_triplets(n):
     :param n: The number of items to be indexed.
     :returns: All 3-tuples (i,j,k), i<j<k.
     """
-    triplets = [
-        (i, j, k) for i in range(n) for j in range(n) for k in range(n) if i < j < k
-    ]
+    triplets = np.fromiter(combinations(range(n), 3), dtype="int,int,int")
 
     return triplets
 
