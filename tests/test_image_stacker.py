@@ -57,27 +57,7 @@ def test_mean_stacker(xx_fixture):
     assert np.allclose(stacked, ref_result.reshape(1, -1))
 
 
-def test_mean_stacker(xx_fixture):
-    img_np = xx_fixture.asnumpy()
-    ref_result = img_np.mean(axis=0)
-    n = img_np.shape[0]
-
-    stacker = MeanImageStacker()
-
-    # Check stacker(Image(...)) == numpy
-    stacked = stacker(xx_fixture)
-    assert isinstance(stacked, Image)
-    assert np.allclose(stacked.asnumpy(), ref_result)
-
-    # Check stacker(ndarray) == numpy
-    stacked = stacker(xx_fixture.asnumpy().reshape(n, -1))
-    assert isinstance(stacked, np.ndarray)
-    assert np.allclose(stacked, ref_result.reshape(1, -1))
-
-
 def test_median_stacker(xx_fixture):
-    img_np = xx_fixture.asnumpy()
-
     stacker = MedianImageStacker()
 
     stacked = stacker(xx_fixture)
@@ -87,8 +67,6 @@ def test_median_stacker(xx_fixture):
 
 
 def test_sigma_stacker(xx_fixture):
-    img_np = xx_fixture.asnumpy()
-
     stacker = SigmaRejectionImageStacker()
 
     stacked = stacker(xx_fixture)

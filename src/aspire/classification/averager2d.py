@@ -139,7 +139,7 @@ class AligningAverager2D(Averager2D):
         # If image_stacker is None, use mean
         self.image_stacker = image_stacker or MeanImageStacker()
         if not isinstance(self.image_stacker, ImageStacker):
-            raise ValueError(f"`image_stacker` should be subclass of ImageStacker.")
+            raise ValueError("`image_stacker` should be subclass of ImageStacker.")
 
         if not hasattr(self.composite_basis, "rotate"):
             raise RuntimeError(

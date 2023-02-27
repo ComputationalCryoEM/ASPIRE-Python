@@ -1,6 +1,5 @@
 import abc
 import logging
-from warnings import catch_warnings, filterwarnings, warn
 
 import numpy as np
 import numpy.ma as ma
