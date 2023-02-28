@@ -166,7 +166,7 @@ class RelionSource(ImageSource):
         # so we can get the particle's index in the .mrcs stack as an int
         metadata[["__mrc_index", "__mrc_filename"]] = metadata[
             "_rlnImageName"
-        ].str.split("@", 1, expand=True)
+        ].str.split("@", n=1, expand=True)
         # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
         # Note that this is 1-based indexing
         metadata["__mrc_index"] = pd.to_numeric(metadata["__mrc_index"])
