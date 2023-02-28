@@ -74,8 +74,8 @@ class CtfEstimatorTestCase(TestCase):
                     # defocusV
                     self.assertTrue(
                         np.allclose(
-                            result["defocus_u"],
-                            self.test_output["defocus_u"],
+                            result["defocus_v"],
+                            self.test_output["defocus_v"],
                             rtol=0.05,
                         )
                     )
