@@ -416,6 +416,17 @@ class BandedSNRImageQualityFunction(ImageQualityFunction):
         return np.var(img[center_mask]) / np.var(img[outer_mask])
 
 
+class BandpassImageQualityFunction(ImageQualityFunction):
+    """
+    Replicate behavior of MATLAB `cryo_sort_stack_bandpass` method.
+    """
+
+    # TODO, sort by polar Fourier bandpass of Image.
+    # Probably requires Polar2D to work with both even and odds..
+    # Note, we may derive a similar method for non global use using bispectrum
+    #   (if we do bookkeeping during compression).
+
+
 class WeightedImageQualityFunction(ImageQualityFunction):
     """
     A callable image quality scoring function using a radial grid weighted function.
