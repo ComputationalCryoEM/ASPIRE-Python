@@ -185,7 +185,9 @@ class RIRClass2D(Class2D):
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info(f"Calculate Nearest Neighbors using {self._nn_implementation}.")
-        self.classes, self.reflections, self.distances = self.nn_classification(coef_b, coef_b_r)
+        self.classes, self.reflections, self.distances = self.nn_classification(
+            coef_b, coef_b_r
+        )
 
         if diagnostics:
             # Lets peek at the distribution of distances
@@ -315,22 +317,28 @@ class RIRClass2D(Class2D):
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
         distances = np.zeros((n_im, n_nbor), dtype=self.dtype)
+        norm_concat_coeff = np.linalg.norm(concat_coeff)
         for i in trange(num_batches):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, n_im)
-            corr = np.real(
-                np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
-            )
+            batch = np.conjugate(coeff_b[:, start:finish])
+            corr = (np.real(np.dot(batch.T, concat_coeff))
+                    / (np.linalg.norm(batch) * norm_concat_coeff))
+            assert np.all(np.abs(corr)<=1), f"Corr out of [-1,1] bounds {np.min(corr)} {np.max(corr)}."
+
             # Note legacy did not include the original image?
             # classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
             # This now does include the original image
             # (Matches sklean implementation.)
-            # Check with Joakim about preference.
-            # I (GBW) think class[i] should have class[i][0] be the original image index.
-            classes[start:finish] = np.argsort(-corr, axis=1)[:, :n_nbor]
+            #
+            # Also we've converted from correlation to distance=1-correlation
+            # https://github.com/ComputationalCryoEM/ASPIRE-Python/discussions/867
+            dist = 1 - corr
+
+            classes[start:finish] = np.argsort(dist, axis=1)[:, :n_nbor]
             # Store the corr values for the n_nbors in this batch
             distances[start:finish] = np.take_along_axis(
-                corr, classes[start:finish], axis=1
+                dist, classes[start:finish], axis=1
             )
 
         # There were two sets of vectors each n_img long.
