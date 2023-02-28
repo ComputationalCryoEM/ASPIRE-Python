@@ -80,14 +80,14 @@ class ClassSelector(ABC):
             self._max_n = np.max(classes[:, 0])
 
         # Call the selection logic
-        selection = self._select(classes, reflections, distances)
+        self.selection = self._select(classes, reflections, distances)
 
         # n_img should not exceed the largest index in first column of `classes`
         n_img = np.max(classes[:, 0]) + 1
         # Check values in selection are in bounds.
-        self._check_selection(selection, n_img)
+        self._check_selection(self.selection, n_img)
 
-        return selection
+        return self.selection
 
     def _check_selection(self, selection, n_img, len_operator=eq):
         """
