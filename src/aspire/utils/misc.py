@@ -347,9 +347,9 @@ def J_conjugate(A):
     :param A: A 3x3 matrix.
     :return: J*A*J
     """
-    J = np.diag((-1, -1, 1))
+    J = np.array([[1, 1, -1], [1, 1, -1], [-1, -1, 1]], dtype=A.dtype)
 
-    return J @ A @ J
+    return A * J
 
 
 def cyclic_rotations(order, dtype=np.float64):
