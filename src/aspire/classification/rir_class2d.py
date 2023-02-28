@@ -185,7 +185,7 @@ class RIRClass2D(Class2D):
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info(f"Calculate Nearest Neighbors using {self._nn_implementation}.")
-        classes, reflections, distances = self.nn_classification(coef_b, coef_b_r)
+        self.classes, self.reflections, self.distances = self.nn_classification(coef_b, coef_b_r)
 
         if diagnostics:
             # Lets peek at the distribution of distances
@@ -199,7 +199,7 @@ class RIRClass2D(Class2D):
                 f" {100 * np.mean(reflections) } %"
             )
 
-        return classes, reflections, distances
+        return self.classes, self.reflections, self.distances
 
     def pca(self, M):
         """
