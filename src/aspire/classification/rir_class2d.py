@@ -192,13 +192,13 @@ class RIRClass2D(Class2D):
         if diagnostics:
             # Lets peek at the distribution of distances
             # zero index is self, distance 0, ignored
-            plt.hist(distances[:, 1:].flatten(), bins="auto")
+            plt.hist(self.distances[:, 1:].flatten(), bins="auto")
             plt.show()
 
             # Report some information about reflections
             logger.info(
-                f"Count reflected: {np.sum(reflections)}"
-                f" {100 * np.mean(reflections) } %"
+                f"Count reflected: {np.sum(self.reflections)}"
+                f" {100 * np.mean(self.reflections) } %"
             )
 
         return self.classes, self.reflections, self.distances
@@ -322,9 +322,12 @@ class RIRClass2D(Class2D):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, n_im)
             batch = np.conjugate(coeff_b[:, start:finish])
-            corr = (np.real(np.dot(batch.T, concat_coeff))
-                    / (np.linalg.norm(batch) * norm_concat_coeff))
-            assert np.all(np.abs(corr)<=1), f"Corr out of [-1,1] bounds {np.min(corr)} {np.max(corr)}."
+            corr = np.real(np.dot(batch.T, concat_coeff)) / (
+                np.linalg.norm(batch) * norm_concat_coeff
+            )
+            assert np.all(
+                np.abs(corr) <= 1
+            ), f"Corr out of [-1,1] bounds {np.min(corr)} {np.max(corr)}."
 
             # Note legacy did not include the original image?
             # classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]

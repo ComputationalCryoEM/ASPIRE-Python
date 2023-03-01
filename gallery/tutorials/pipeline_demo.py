@@ -149,18 +149,15 @@ src.images[0:10].show()
 # representation (RIR) algorithm. Class selection is customizable. The classification module
 # also includes a set of protocols for selecting a set of images to be used for classification.
 # Here we're using ``TopClassSelector``, which selects the first ``n_classes`` images from the source.
+# In practice, the selection is done by sorting based on some configurable notion of quality.
 
-from aspire.classification import (
-    BFSReddyChatterjiAverager2D,
-    RIRClass2D,
-    TopClassSelector,
-)
+from aspire.classification import RIRClass2D, TopClassSelector
 
 # set parameters
 n_classes = 200
 n_nbor = 6
 
-# Create a class averaging instance. Note that the ``fspca_components`` and
+# We will customize our class averaging source. Note that the ``fspca_components`` and
 # ``bispectrum_components`` were selected for this small tutorial.
 rir = RIRClass2D(
     src,
@@ -169,35 +166,18 @@ rir = RIRClass2D(
     n_nbor=n_nbor,
 )
 
-from aspire.basis import FFBBasis2D
-from aspire.classification import BFSReddyChatterjiAverager2D
+from aspire.denoising import DebugClassAvgSource
 
-averager = BFSReddyChatterjiAverager2D(
-    FFBBasis2D(src.L, dtype=src.dtype),
-    src,
-    num_procs=1,  # Change to "auto" if your machine has many processors
-    dtype=rir.dtype,
-)
-
-from aspire.denoising import ClassAvgSource
-
-avgs = ClassAvgSource(
+avgs = DebugClassAvgSource(
     classification_src=src,
     classifier=rir,
-    class_selector=TopClassSelector(),
-    averager=averager,
 )
 
-# For a small example, it is more effective to just cache these now.
-# avgs.cache()
+# For this small example, it is most effective to just cache these manually.
+
 from aspire.source import ArrayImageSource
 
 avgs = ArrayImageSource(avgs.images[:n_classes])
-
-# classify and average
-# classes, reflections, distances = rir.classify()
-# avgs = rir.averages(classes, reflections, distances)
-# avgs = cls_src.images[:n_classes]
 
 # %%
 # View the Class Averages

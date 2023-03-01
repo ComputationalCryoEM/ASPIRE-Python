@@ -6,9 +6,10 @@ from aspire.basis import FFBBasis2D
 from aspire.classification import (
     Averager2D,
     BFRAverager2D,
-    BFSReddyChatterjiAverager2D,
+    BFSRAverager2D,
     Class2D,
     ClassSelector,
+    ContrastWithRepulsionClassSelector,
     RIRClass2D,
     TopClassSelector,
 )
@@ -107,6 +108,11 @@ class ClassAvgSource(ImageSource):
         ) = self.classifier.classify()
         self._classified = True
 
+    @property
+    def selection_indices(self):
+        self._class_select()
+        return self._selection_indices
+
     def _class_select(self):
         """
         Uses the `class_selector` in conjunction with the classifier results
@@ -126,7 +132,7 @@ class ClassAvgSource(ImageSource):
             self._classify()
 
         # Perform class selection
-        self.selection_indices = self.class_selector.select(
+        self._selection_indices = self.class_selector.select(
             self._nn_classes,
             self._nn_reflections,
             self._nn_distances,
@@ -134,11 +140,11 @@ class ClassAvgSource(ImageSource):
 
         # Override the initial self.n
         # Some selectors will (dramitcally) reduce the space of classes.
-        if len(self.selection_indices) != self.n:
+        if len(self._selection_indices) != self.n:
             logger.info(
-                f"After selection process, updating maximum {len(self.selection_indices)} classes from {self.n}."
+                f"After selection process, updating maximum {len(self._selection_indices)} classes from {self.n}."
             )
-        self._set_n(len(self.selection_indices))
+        self._set_n(len(self._selection_indices))
 
         self._selected = True
 
@@ -220,6 +226,11 @@ class ClassAvgSource(ImageSource):
         return self.generation_pipeline.forward(im, indices)
 
 
+# The following sub classes attempt to pack sensible defaults
+#   into ClassAvgSource so that users don't need to
+#   instantiate every component.
+
+
 class DebugClassAvgSource(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
@@ -269,21 +280,26 @@ class DebugClassAvgSource(ClassAvgSource):
         )
 
 
-class LegacyClassAvgSource(ClassAvgSource):
+class ClassicClassAvgSource(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
 
-    Packs base with common v9 and v10 defaults.
+    Defaults to using Contrast based class selection (on the fly, compressed),
+    avoiding neighbors of previous classes,
+    and a brute force image alignment.
+
+    Currently this is the most reasonable default for experimental data.
     """
 
     def __init__(
         self,
         classification_src,
-        n_nbor=10,
-        num_procs=1,  # Change to "auto" if your machine has many processors
+        n_nbor=50,
+        num_procs=None,
         classifier=None,
         class_selector=None,
         averager=None,
+        averager_src=None,
     ):
         dtype = classification_src.dtype
 
@@ -299,13 +315,24 @@ class LegacyClassAvgSource(ClassAvgSource):
             )
 
         if averager is None:
-            basis_2d = FFBBasis2D(classification_src.L, dtype=dtype)
-            averager = BFSReddyChatterjiAverager2D(
-                basis_2d, classification_src, num_procs=num_procs, dtype=dtype
+            if averager_src is None:
+                averager_src = classification_src
+
+            basis_2d = FFBBasis2D(averager_src.L, dtype=dtype)
+
+            averager = BFSRAverager2D(
+                composite_basis=basis_2d,
+                src=averager_src,
+                num_procs=num_procs,
+                dtype=dtype,
+            )
+        elif averager_src is not None:
+            raise RuntimeError(
+                "When providing an instantiated `averager`, cannot assign `averager_src`."
             )
 
         if class_selector is None:
-            class_selector = TopClassSelector()
+            class_selector = ContrastWithRepulsionClassSelector()
 
         super().__init__(
             classification_src=classification_src,

@@ -22,12 +22,11 @@ import numpy as np
 
 from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis2D, FFBBasis3D
-from aspire.classification import BFSReddyChatterjiAverager2D, RIRClass2D
-from aspire.denoising import DenoiserCov2D
+from aspire.denoising import ClassicClassAvgSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source import Simulation
+from aspire.source import ArrayImageSource, Simulation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
@@ -157,35 +156,26 @@ if do_cov2d:
     if interactive:
         classification_src.images[:10].show()
 
-    # Use regular `src` for the alignment and composition (averaging).
-    composite_basis = FFBBasis2D((src.L,) * 2, dtype=src.dtype)
-    custom_averager = BFSReddyChatterjiAverager2D(composite_basis, src, dtype=src.dtype)
-
-
 # %%
 # Class Averaging
 # ----------------------
 #
 # Now perform classification and averaging for each class.
+# This also demonstrates the potential to use a different source for classification and averaging.
 
-logger.info("Begin Class Averaging")
-
-rir = RIRClass2D(
-    classification_src,  # Source used for classification
-    fspca_components=400,
-    bispectrum_components=300,  # Compressed Features after last PCA stage.
+avgs_src = ClassicClassAvgSource(
+    classification_src,
     n_nbor=n_nbor,
-    n_classes=n_classes,
-    large_pca_implementation="legacy",
-    nn_implementation="sklearn",
-    bispectrum_implementation="legacy",
-    averager=custom_averager,
+    averager_src=src,
+    num_procs=None,  # Automaticaly configure parallel processing
 )
 
-classes, reflections, distances = rir.classify()
-avgs = rir.averages(classes, reflections, distances)
+# We'll manually cache `n_classes` worth to speed things up.
+avgs = ArrayImageSource(avgs_src.images[:n_classes])
+
 if interactive:
     avgs.images[:10].show()
+
 
 # %%
 # Common Line Estimation
@@ -196,9 +186,10 @@ if interactive:
 
 logger.info("Begin Orientation Estimation")
 
-# Stash true rotations for later comparison,
-#   note this line only works with naive class selection...
-true_rotations = src.rotations[:n_classes]
+# Stash true rotations for later comparison.
+# Note class selection re-ordered our images, so we remap the indices back to the original source.
+indices = avgs_src.selection_indices
+true_rotations = src.rotations[indices[:n_classes]]
 
 orient_est = CLSyncVoting(avgs, n_theta=36)
 # Get the estimated rotations

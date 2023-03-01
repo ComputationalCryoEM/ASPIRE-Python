@@ -103,7 +103,7 @@ class ClassSelector(ABC):
             )
 
         # Check indices [0, n_img)
-        if np.max(selection) >= n_img or np.min(selection) < 0:
+        if (np.max(selection) >= n_img) or (np.min(selection) < 0):
             raise ValueError(
                 f"Class selection out of bounds [0, {n_img - 1}]"
                 f"with [{np.min(selection)}, {np.max(selection)}]"
