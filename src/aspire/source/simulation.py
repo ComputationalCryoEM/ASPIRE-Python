@@ -161,11 +161,13 @@ class Simulation(ImageSource):
         # For Simulation, signal can be computed directly from clean_images.
         self._signal_images = self.clean_images
 
-        # Note the delayed eval may attempt to use self.*_accessors
+        # If a user prescribed NoiseAdder.from_snr(...),
+        #   noise_adder will be a function returning a completed class.
+        # Note the delayed eval may attempt to use self.*_accessors above.
         if noise_adder is not None:
             logger.info(f"Appending {noise_adder} to generation pipeline")
             # If we need to calculate signal_power from Simulation,
-            # do so now, and closing the DelayedWhiteNoiseAdder.
+            # do so now (via _DelayedNoiseAdder).
             if callable(noise_adder):
                 noise_adder = noise_adder(signal_power=self.estimate_signal_power())
 

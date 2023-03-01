@@ -85,13 +85,38 @@ class CustomNoiseAdder(NoiseAdder):
         return np.mean(self._noise_filter.evaluate_grid(res))
 
 
-class DelayedWhiteNoiseAdder:
-    def __init__(self, snr, seed=0):
+class _DelayedNoiseAdder:
+    """
+    Helper class for delaying the calculation of noise variance.
+    """
+
+    def __init__(self, cls, snr, seed=0):
+        """
+        Inializes and returns a callable instance.
+
+        :param cls: Class to be constructed when called.
+        :param snr: Target signal to noise ratio.
+        :param seed: Optional RNG seed used by NoiseAdder.
+        """
+        self.cls = cls
         self.snr = snr
         self.seed = seed
 
+        if not issubclass(cls, NoiseAdder):
+            raise RuntimeError(
+                f"_DelayedNoiseAdder.cls must be a NoiseAdder, received {cls}"
+            )
+
     def __call__(self, signal_power):
-        return WhiteNoiseAdder.from_snr(
+        """
+        Callable returns a completed NoiseAdder.
+
+        :param signal_power: Estimated signal power.
+            Used to compute target noise.
+
+        :return: Instance of NoiseAdder.
+        """
+        return self.cls.from_snr(
             snr=self.snr, signal_power=signal_power, seed=self.seed
         )
 
@@ -123,11 +148,11 @@ class WhiteNoiseAdder(NoiseAdder):
 
         :param snr: Desired signal to noise ratio of
             the returned source.
-        :param signal_variance: Optional, if the signal power is known.
+        :param signal_power: Optional, if the signal power is known.
         :param seed: Optinally provide a random seed used to generate white noise.
         """
         if signal_power is None:
-            return DelayedWhiteNoiseAdder(snr=snr, seed=seed)
+            return _DelayedNoiseAdder(WhiteNoiseAdder, snr=snr, seed=seed)
         else:
             noise_var = signal_power / snr
             return WhiteNoiseAdder(var=noise_var, seed=seed)
@@ -162,7 +187,7 @@ class NoiseEstimator:
         :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
             Radius is relative proportion, where `1` represents
             the radius of disc inscribing a `(src.L, src.L)` image.
-        :param batchSize:  The size of the batches in which to compute the variance estimate
+        :param batchSize:  The size of the batches in which to compute the variance estimate.
         """
         self.src = src
         self.dtype = self.src.dtype

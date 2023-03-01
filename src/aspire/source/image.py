@@ -832,8 +832,6 @@ class ImageSource(ABC):
         mask = support_mask(self.L, support_radius, dtype=self.dtype)
 
         # mean is estimated batch-wise, compare with numpy
-        # Note, for simulation we are implicitly assuming taking `sample_n` is random,
-        #   but this does not need to be the case.  We can add a `random_shuffle` param.
         s = 0.0
         _denom = sample_n * np.sum(mask)
         for i in trange(0, sample_n, batch_size):
@@ -872,8 +870,6 @@ class ImageSource(ABC):
 
         # Var is estimated batch-wise, compare with numpy
         # np_estimated_var = np.var(self._signal_images[:sample_n].asnumpy()[..., mask])
-        # Note, for simulation we are implicitly assuming taking `sample_n` is random,
-        #   but this does not need to be the case.  We can add a `random_shuffle` param.
         first_moment = 0.0
         second_moment = 0.0
         _denom = sample_n * np.sum(mask)
