@@ -291,7 +291,7 @@ class CtfEstimator:
         Estimate and subtract the background from the power spectrum
 
         :param amplitude_spectrum: Estimated power spectrum
-        :param linprog_method: Method passed to linear progam solver (scipy.optimize.linprog).
+        :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
         :param n_low_freq_cutoffs: Low frequency cutoffs (loop iterations).
         :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
