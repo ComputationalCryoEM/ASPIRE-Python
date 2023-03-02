@@ -147,6 +147,7 @@ GLOBAL_SELECTORS = [
 @pytest.mark.parametrize(
     "selector", GLOBAL_SELECTORS, ids=lambda param: f"Selector={param}"
 )
+@pytest.mark.expensive
 def test_custom_global_selector(class_sim_fixture, cls_fixture, selector):
     basis = FFBBasis2D(class_sim_fixture.L, dtype=class_sim_fixture.dtype)
 
