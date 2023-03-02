@@ -22,7 +22,7 @@ import numpy as np
 
 from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis2D, FFBBasis3D
-from aspire.denoising import ClassicClassAvgSource, DenoiserCov2D
+from aspire.denoising import ClassAvgSourcev11, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
@@ -163,7 +163,7 @@ if do_cov2d:
 # Now perform classification and averaging for each class.
 # This also demonstrates the potential to use a different source for classification and averaging.
 
-avgs_src = ClassicClassAvgSource(
+avgs_src = ClassAvgSourcev11(
     classification_src,
     n_nbor=n_nbor,
     averager_src=src,

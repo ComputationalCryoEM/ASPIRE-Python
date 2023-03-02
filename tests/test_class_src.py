@@ -18,7 +18,7 @@ from aspire.classification import (
     RIRClass2D,
     TopClassSelector,
 )
-from aspire.denoising import ClassicClassAvgSource, DebugClassAvgSource
+from aspire.denoising import ClassAvgSourcev11, DebugClassAvgSource
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
@@ -31,7 +31,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 RESOLUTIONS = [32]
 DTYPES = [np.float64]
-CLS_SRCS = [DebugClassAvgSource, ClassicClassAvgSource]
+CLS_SRCS = [DebugClassAvgSource, ClassAvgSourcev11]
 
 
 def sim_fixture_id(params):

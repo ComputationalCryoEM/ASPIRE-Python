@@ -280,7 +280,7 @@ class DebugClassAvgSource(ClassAvgSource):
         )
 
 
-class ClassicClassAvgSource(ClassAvgSource):
+class ClassAvgSourcev11(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
 

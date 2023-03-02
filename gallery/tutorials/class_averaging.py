@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as PILImage
 
-from aspire.denoising import ClassicClassAvgSource, DebugClassAvgSource
+from aspire.denoising import ClassAvgSourcev11, DebugClassAvgSource
 from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
@@ -107,7 +107,7 @@ src.images[:10].show()
 # ``TopClassSelector`` deterministically selects the first ``n_classes``.
 # ``DebugClassAvgSource`` also uses brute force rotational alignment without shifts.
 # These simplifications are useful for development and debugging.
-# Later we will use the more general purpose ``ClassicClassAvgSource``,
+# Later we will use the more general purpose ``ClassAvgSourcev11``,
 # more suitable to simulations and experimental datasets.
 # Furthermore, total customization can be achieved by instantiating your own components,
 # and combining them using the generic ``ClassAvgSource``.
@@ -161,10 +161,10 @@ noisy_src.images[:10].show()
 # %%
 # RIR with Noise
 # ^^^^^^^^^^^^^^
-# Here we will use the more advanced ``ClassicClassAvgSource`` that might be used with
+# Here we will use the more advanced ``ClassAvgSourcev11`` that might be used with
 # complete ``Simulation``s or experimental data sources.
 
-avgs = ClassicClassAvgSource(
+avgs = ClassAvgSourcev11(
     classification_src=noisy_src,
     n_nbor=10,
     num_procs=1,  # Change to "auto" if your machine has many processors
@@ -173,7 +173,7 @@ avgs = ClassicClassAvgSource(
 # %%
 # Display Classes
 # ^^^^^^^^^^^^^^^
-# Here a little more work occurs, as the ``ClassicClassAvgSource`` will
+# Here a little more work occurs, as the ``ClassAvgSourcev11`` will
 # compute an internal measure quality (contrast),
 # and avoid images already included in higher ranking classes.
 # All this occurs inside the ``ClassAvgSource`` component.
