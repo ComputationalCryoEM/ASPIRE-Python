@@ -416,7 +416,7 @@ class BFSRAverager2D(BFRAverager2D):
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         :param radius: Brute force translation search radius.
-            Defaults to src.L//8.
+            Defaults to src.L//16.
         """
         super().__init__(
             composite_basis,
@@ -427,7 +427,7 @@ class BFSRAverager2D(BFRAverager2D):
             dtype=dtype,
         )
 
-        self.radius = radius if radius is not None else src.L // 8
+        self.radius = radius if radius is not None else src.L // 16
 
         # Each shift will require calling the parent BFRAverager2D.align
         self._bfr_align = super().align
