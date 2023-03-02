@@ -227,7 +227,7 @@ class RIRClass2D(Class2D):
         each having shape (n_img, features)
         where features = min(self.bispectrum_components, n_img).
 
-        Result is array (n_img, n_nbor) with entry `i` reprsenting
+        Result is array (n_img, n_nbor) with entry `i` representing
         index `i` into class input img array (src).
 
         To extend with an additonal Nearest Neighbor algo,
@@ -466,13 +466,16 @@ class RIRClass2D(Class2D):
 
         return coef_b, coef_b_r
 
-    def _legacy_bispectrum(self, coef):
+    def _legacy_bispectrum(self, coef, retry_attempts=3):
         """
         This code was ported to Python by an unkown author,
         and is the closest viable reference material.
 
-        It is copied here to compare while
-        fresh code is developed for this class.
+        :param coef: Real valued basis coefficients.
+        :param retry_attempts: Optional, max attempts to retry randomized
+            bispec_2drot_large.  Defaults to 3.
+
+        :return: Compressed feature and reflected feature vectors.
         """
 
         # The legacy code expects the complex representation
@@ -481,12 +484,29 @@ class RIRClass2D(Class2D):
             self.pca_basis.complex_count
         )  # flatten
 
-        coef_b, coef_b_r = bispec_2drot_large(
-            coeff=coef.T,  # Note F style tranpose here and in return
-            freqs=self.pca_basis.complex_angular_indices,
-            eigval=complex_eigvals,
-            alpha=self.alpha,
-            sample_n=self.sample_n,
-        )
+        # bispec_2drot_large has a random selection component.
+        # Sometimes this can fail to return a complete feature vector.
+        # In this case we can retry, but if not successful raise an error.
+        # This seems to occur more frequently at very low resolutions (<=32),
+        # and likely requires tuning other RIR parameters for small problems.
+        attempt = 0
+        while attempt < retry_attempts:
+            attempt += 1
+            coef_b, coef_b_r = bispec_2drot_large(
+                coeff=coef.T,  # Note F style transpose here and in return
+                freqs=self.pca_basis.complex_angular_indices,
+                eigval=complex_eigvals,
+                alpha=self.alpha,
+                sample_n=self.sample_n,
+            )
+            if coef_b.shape[0] == self.bispectrum_components:
+                break  # Return feature vector.
+
+        # while-else: we've exceeded retry attempts.
+        else:
+            raise RuntimeError(
+                "bispec_2drot_large failed to return valid feature vector"
+                f"{coef_b.shape} after {attempt} attempts."
+            )
 
         return coef_b.T, coef_b_r.T
