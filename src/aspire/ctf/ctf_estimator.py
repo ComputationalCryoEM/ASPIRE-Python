@@ -285,13 +285,13 @@ class CtfEstimator:
         return psd, noise
 
     def background_subtract_1d(
-        self, amplitude_spectrum, linprog_method="interior-point", n_low_freq_cutoffs=14
+        self, amplitude_spectrum, linprog_method="highs", n_low_freq_cutoffs=14
     ):
         """
         Estimate and subtract the background from the power spectrum
 
         :param amplitude_spectrum: Estimated power spectrum
-        :param linprog_method: Method passed to linear progam solver (scipy.optimize.linprog).  Defaults to 'interior-point'.
+        :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
         :param n_low_freq_cutoffs: Low frequency cutoffs (loop iterations).
         :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
@@ -358,20 +358,22 @@ class CtfEstimator:
                 axis=0,
             )
 
-            x_bound_lst = [
-                (signal[i], signal[i], -1 * np.inf, np.inf)
-                for i in range(signal.shape[0])
-            ]
-            x_bound = np.asarray(x_bound_lst, A.dtype)
-            x_bound = np.concatenate((x_bound[:, :2], x_bound[:, 2:]), axis=0)
+            # The original code used `bounds`,
+            #   but for many problems, linprog reports infeasable constraints.
+            # In practice for a micrograph from the paper, and our tutorial,
+            #   the code seems to work better without it...
+            # ASPIRE #417
 
             x = linprog(
                 f,
                 A_ub=A,
                 b_ub=np.zeros(A.shape[0]),
-                bounds=x_bound,
                 method=linprog_method,
             )
+
+            if not x.success:
+                raise RuntimeError("Linear program did not succeed. Halting")
+
             background = x.x[N:]
 
             bs_psd = signal - background
@@ -766,8 +768,10 @@ def estimate_ctf(
 
         # Optionally changing to: linprog_method='simplex',
         # will more deterministically repro results in exchange for speed.
+        # linprog_method was changed from 'interior-point' to 'highs' due to
+        # "interior-point' being deprecated.
         signal_1d, background_1d = ctf_object.background_subtract_1d(
-            amplitude_spectrum, linprog_method="interior-point"
+            amplitude_spectrum, linprog_method="highs"
         )
 
         avg_defocus, low_freq_skip = ctf_object.opt1d(
