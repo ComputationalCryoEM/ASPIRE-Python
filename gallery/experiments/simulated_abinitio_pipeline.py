@@ -146,7 +146,6 @@ src.cache()
 # you may remove this code block and associated variables.
 
 classification_src = src
-custom_averager = None
 if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
