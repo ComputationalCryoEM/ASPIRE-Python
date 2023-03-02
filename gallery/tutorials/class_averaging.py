@@ -12,7 +12,6 @@ import numpy as np
 from PIL import Image as PILImage
 
 from aspire.denoising import ClassAvgSourcev11, DebugClassAvgSource
-from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
 from aspire.utils import gaussian_2d

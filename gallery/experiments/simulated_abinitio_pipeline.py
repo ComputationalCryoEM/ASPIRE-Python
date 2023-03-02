@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
-from aspire.basis import FFBBasis2D, FFBBasis3D
+from aspire.basis import FFBBasis3D
 from aspire.denoising import ClassAvgSourcev11, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
