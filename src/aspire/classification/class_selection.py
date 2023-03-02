@@ -422,7 +422,7 @@ class BandpassImageQualityFunction(ImageQualityFunction):
     """
 
     # TODO, sort by polar Fourier bandpass of Image.
-    # Probably requires Polar2D to work with both even and odds..
+    # This was implemented in MATLAB, but appears unused.
     # Note, we may derive a similar method for non global use using bispectrum
     #   (if we do bookkeeping during compression).
 
