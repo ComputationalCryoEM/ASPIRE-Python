@@ -373,7 +373,7 @@ class ImageSource(ABC):
                 f"_apply_filters() passed {type(im_orig)} instead of Image instance"
             )
             # for now just convert it
-            im = Image(im_orig)
+            im_orig = Image(im_orig)
 
         im = im_orig.copy()
 
