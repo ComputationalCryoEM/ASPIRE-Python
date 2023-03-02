@@ -26,7 +26,8 @@ class VolumeTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.n = n = 3
-        self.data_1 = np.arange(n * self.res**3, dtype=self.dtype).reshape(
+        # Note, range shifted by one to avoid zero division errors.
+        self.data_1 = np.arange(1, 1 + n * self.res**3, dtype=self.dtype).reshape(
             n, self.res, self.res, self.res
         )
         self.data_2 = 123 * self.data_1.copy()
@@ -153,6 +154,22 @@ class VolumeTestCase(TestCase):
         result = 123 * self.vols_1
         self.assertTrue(np.all(result == self.data_2))
         self.assertTrue(isinstance(result, Volume))
+
+    def testScalarDiv(self):
+        result = self.vols_2 / 123
+        self.assertTrue(np.allclose(result, self.vols_1))
+
+    def testRightScalarDiv(self):
+        result = 123 / self.vols_2
+        self.assertTrue(np.allclose(result, 1 / self.data_1))
+
+    def testDiv(self):
+        result = self.vols_2 / self.vols_1
+        self.assertTrue(np.allclose(result, 123))
+
+    def testRightDiv(self):
+        result = self.data_2 / self.vols_1
+        self.assertTrue(np.allclose(result, 123))
 
     def testSaveLoad(self):
         # Create a tmpdir in a context. It will be cleaned up on exit.

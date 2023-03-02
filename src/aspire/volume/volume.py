@@ -212,11 +212,11 @@ class Volume:
 
         return res
 
-    def __rtruedive__(self, otherL):
+    def __rtruediv__(self, otherL):
         """
         Right scalar division, follows numpy semantics.
         """
-        return self / otherL
+        return otherL * Volume(1.0 / self._data)
 
     def project(self, vol_idx, rot_matrices):
         """
