@@ -345,6 +345,7 @@ class BFRAverager2D(AligningAverager2D):
             else:
                 nbr_coef = basis_coefficients[classes[k]]
 
+            norm_0 = np.linalg.norm(nbr_coef[0])
             for i, angle in enumerate(test_angles):
                 # Rotate the set of neighbors by angle,
                 rotated_nbrs = self.alignment_basis.rotate(
@@ -353,7 +354,10 @@ class BFRAverager2D(AligningAverager2D):
 
                 # then store dot between class base image (0) and each nbor
                 for j, nbor in enumerate(rotated_nbrs):
-                    _correlations[j, i] = np.dot(nbr_coef[0], nbor)
+                    norm_nbor = np.linalg.norm(nbor)
+                    _correlations[j, i] = np.dot(nbr_coef[0], nbor) / (
+                        norm_nbor * norm_0
+                    )
 
             # Now along each class, find the index of the angle reporting highest correlation
             angle_idx = np.argmax(_correlations, axis=1)

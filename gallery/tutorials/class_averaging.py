@@ -106,10 +106,8 @@ src.images[:10].show()
 # ``TopClassSelector`` deterministically selects the first ``n_classes``.
 # ``DebugClassAvgSource`` also uses brute force rotational alignment without shifts.
 # These simplifications are useful for development and debugging.
-# Later we will use the more general purpose ``ClassAvgSourcev11``,
+# Later we will discuss the more general ``ClassAvgSource``,
 # more suitable to simulations and experimental datasets.
-# Furthermore, total customization can be achieved by instantiating your own components,
-# and combining them using the generic ``ClassAvgSource``.
 
 n_classes = 10
 
@@ -160,10 +158,9 @@ noisy_src.images[:10].show()
 # %%
 # RIR with Noise
 # ^^^^^^^^^^^^^^
-# Here we will use the more advanced ``ClassAvgSourcev11`` that might be used with
-# complete ``Simulation``s or experimental data sources.
+# Here we will use the noise_src.
 
-avgs = ClassAvgSourcev11(
+avgs = DebugClassAvgSource(
     classification_src=noisy_src,
     n_nbor=10,
     num_procs=1,  # Change to "auto" if your machine has many processors
@@ -197,7 +194,8 @@ review_class = 5
 # Report the identified neighbor indices with respect to the input ``noise_src``.
 classes = avgs._nn_classes[review_class]
 reflections = avgs._nn_reflections[review_class]
-logger.info(f"Class {review_class}'s neighors: {classes[review_class]}")
+logger.info(f"Class {review_class}'s neighors: {classes}")
+logger.info(f"Class {review_class}'s reflections: {reflections}")
 
 # The original image is the initial image in the class array.
 original_image_idx = classes[0]
@@ -218,7 +216,7 @@ avgs.images[review_class].show()
 
 # %%
 # Alignment Details
-# -----------------
+# ^^^^^^^^^^^^^^^^^
 #
 # Alignment details are exposed when avaialable from an underlying ``averager``.
 # In this case, we'll get the estimated alignments for the ``review_class``.
