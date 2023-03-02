@@ -298,6 +298,20 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
     @staticmethod
     def generate_cand_rots(n, equator_threshold, order, degree_res, seed):
+        """
+        Generate random rotations that exclude rotations inducing equator images
+        for use as candidates in the CLSymmetryCn algorithm.
+
+        :param n: Number of rotations to generate.
+        :param equator_threshold: Angular distance from equator (in degrees).
+        :param order: Cyclic order of underlying molecule. Number of in-plane
+            rotations must be divisible by order.
+        :param degree_res: Degree resolution for in-plane rotations.
+        :param seed: Random seed.
+
+        :returns: Candidate rotations, In-plane rotations
+        """
+
         logger.info("Generating candidate rotations.")
         # Construct candidate rotations, Ris_tilde.
         Ris_tilde = np.zeros((n, 3, 3))
