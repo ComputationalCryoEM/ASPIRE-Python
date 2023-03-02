@@ -47,7 +47,7 @@ class DenoisedImageSource(ImageSource):
         end = indices.max()
 
         nimgs = len(indices)
-        im = np.empty((nimgs, self.L, self.L))
+        im = np.empty((nimgs, self.L, self.L), self.dtype)
 
         # If we request less than a whole batch, don't crash
         batch_size = min(nimgs, self.batch_size)

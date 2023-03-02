@@ -28,12 +28,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
-from aspire.basis import FFBBasis2D, FFBBasis3D
-from aspire.classification import BFSReddyChatterjiAverager2D, RIRClass2D
-from aspire.denoising import DenoiserCov2D
+from aspire.basis import FFBBasis3D
+from aspire.denoising import ClassAvgSourcev11, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
-from aspire.source import RelionSource
+from aspire.source import ArrayImageSource, RelionSource
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +44,15 @@ logger = logging.getLogger(__name__)
 
 interactive = False  # Draw blocking interactive plots?
 do_cov2d = True  # Use CWF coefficients
-n_imgs = 20000  # Set to None for all images in starfile, can set smaller for tests.
+n_imgs = None  # Set to None for all images in starfile, can set smaller for tests.
 img_size = 32  # Downsample the images/reconstruction to a desired resolution
-n_classes = 1000  # How many class averages to compute.
-n_nbor = 50  # How many neighbors to stack
-starfile_in = "10028/data/shiny_2sets.star"
+n_classes = 2000  # How many class averages to compute.
+n_nbor = 64  # How many neighbors to stack
+starfile_in = "10028/data/shiny_2sets_fixed9.star"
+data_folder = "."  # This depends on the specific starfile entries.
 volume_filename_prefix_out = f"10028_recon_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.34
+
 
 # %%
 # Source data and Preprocessing
@@ -62,7 +63,9 @@ pixel_size = 1.34
 # to correct for CTF and noise.
 
 # Create a source object for the experimental images
-src = RelionSource(starfile_in, pixel_size=pixel_size, max_rows=n_imgs)
+src = RelionSource(
+    starfile_in, pixel_size=pixel_size, max_rows=n_imgs, data_folder=data_folder
+)
 
 # Downsample the images
 logger.info(f"Set the resolution to {img_size} X {img_size}")
@@ -119,11 +122,6 @@ if do_cov2d:
     if interactive:
         classification_src.images[:10].show()
 
-    # Use regular `src` for the alignment and composition (averaging).
-    composite_basis = FFBBasis2D((src.L,) * 2, dtype=src.dtype)
-    custom_averager = BFSReddyChatterjiAverager2D(composite_basis, src, dtype=src.dtype)
-
-
 # %%
 # Class Averaging
 # ----------------------
@@ -132,22 +130,22 @@ if do_cov2d:
 
 logger.info("Begin Class Averaging")
 
-rir = RIRClass2D(
-    classification_src,  # Source used for classification
-    fspca_components=400,
-    bispectrum_components=300,  # Compressed Features after last PCA stage.
+# Now perform classification and averaging for each class.
+# This also demonstrates the potential to use a different source for classification and averaging.
+
+avgs_src = ClassAvgSourcev11(
+    classification_src,
     n_nbor=n_nbor,
-    n_classes=n_classes,
-    large_pca_implementation="legacy",
-    nn_implementation="sklearn",
-    bispectrum_implementation="legacy",
-    averager=custom_averager,
+    averager_src=src,
+    num_procs=None,  # Automaticaly configure parallel processing
 )
 
-classes, reflections, distances = rir.classify()
-avgs = rir.averages(classes, reflections, distances)
+# We'll manually cache `n_classes` worth to speed things up.
+avgs = ArrayImageSource(avgs_src.images[:n_classes])
+
 if interactive:
     avgs.images[:10].show()
+
 
 # %%
 # Common Line Estimation
