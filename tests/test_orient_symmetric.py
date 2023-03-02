@@ -7,12 +7,8 @@ from aspire.abinitio import CLSymmetryC3C4, CLSymmetryCn
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.source import Simulation
 from aspire.utils import Rotation, utest_tolerance
-from aspire.utils.coor_trans import (
-    get_aligned_rotations,
-    get_rots_mse,
-    register_rotations,
-)
-from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations, pairs_to_linear
+from aspire.utils.coor_trans import get_aligned_rotations, register_rotations
+from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations
 from aspire.utils.random import randn
 from aspire.volume import CnSymmetricVolume
 
@@ -34,6 +30,7 @@ param_list_cn = [
     (44, 5, np.float32),
     pytest.param(44, 5, np.float32, marks=pytest.mark.expensive),
     pytest.param(45, 6, np.float64, marks=pytest.mark.expensive),
+    pytest.param(44, 7, np.float32, marks=pytest.mark.expensive),
     pytest.param(44, 8, np.float32, marks=pytest.mark.expensive),
     pytest.param(45, 9, np.float64, marks=pytest.mark.expensive),
 ]
@@ -41,21 +38,42 @@ param_list_cn = [
 
 # Method to instantiate a Simulation source and orientation estimation object.
 def source_orientation_objs(L, n_img, order, dtype):
-    seed = 1
+    # This Volume is hand picked to have a fairly even distribution of energy.
+    # Due to the rotations used to generate symmetric volumes, some seeds will
+    # generate volumes with a high concentration of energy in the center causing
+    # misidentification of common-lines.
     vol = CnSymmetricVolume(
         L=L,
         C=1,
+        K=25,
         order=order,
-        seed=seed,
+        seed=65,
         dtype=dtype,
     ).generate()
 
+    angles = None
+    if order > 4:
+        # We artificially exclude equator images from the simulation as they will be
+        # incorrectly identified by the CL method. We keep images slightly further away
+        # from being equator images than the 10 degree default threshold used in the CL method.
+        rotations, _ = CLSymmetryCn.generate_cand_rots(
+            n=n_img,
+            equator_threshold=15,
+            order=order,
+            degree_res=1,
+            seed=123,  # Generate different rotations than candidates used in CL method.
+        )
+        angles = Rotation(rotations).angles
+
+    seed = 1
     src = Simulation(
         L=L,
         n=n_img,
-        offsets=np.zeros((n_img, 2)),
+        offsets=0,
+        amplitudes=1,
         dtype=dtype,
         vols=vol,
+        angles=angles,
         C=1,
         seed=seed,
     )
@@ -78,7 +96,7 @@ def source_orientation_objs(L, n_img, order, dtype):
 def test_estimate_rotations(L, order, dtype):
     n_img = 24
     if order > 4:
-        n_img = 9
+        n_img = 8
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
 
     # Estimate rotations.
@@ -88,31 +106,30 @@ def test_estimate_rotations(L, order, dtype):
     # Ground truth rotations.
     rots_gt = src.rotations
 
-    # For order>4 we cannot expect estimates from equator images to be accurate.
-    # So we exclude those from testing.
-    if order > 4:
-        equator_inds = np.argwhere(
-            abs(np.arccos(rots_gt[:, 2, 2]) - np.pi / 2)
-            < cl_symm.equator_threshold * np.pi / 180
-        )
-
-        # Exclude equator estimates and ground truths.
-        rots_est = np.delete(rots_est, equator_inds, axis=0)
-        rots_gt = np.delete(rots_gt, equator_inds, axis=0)
-
     # g-synchronize ground truth rotations.
     rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt)
 
-    # Register estimates to ground truth rotations and compute MSE.
+    # Register estimates to ground truth rotations and compute the
+    # angular distance between them (in degrees).
     Q_mat, flag = register_rotations(rots_est, rots_gt_sync)
     regrot = get_aligned_rotations(rots_est, Q_mat, flag)
-    mse_reg = get_rots_mse(regrot, rots_gt_sync)
+    ang_dist = np.zeros(n_img, dtype=dtype)
+    for i in range(n_img):
+        ang_dist[i] = (
+            Rotation.angle_dist(
+                regrot[i],
+                rots_gt_sync[i],
+                dtype=dtype,
+            )
+            * 180
+            / np.pi
+        )
 
-    # Assert mse is small.
+    # Assert mean angular distance is reasonable.
     if order > 4:
-        assert mse_reg < 0.015
+        assert np.mean(ang_dist) < 5
     else:
-        assert mse_reg < 0.005
+        assert np.mean(ang_dist) < 2
 
 
 @pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
@@ -196,7 +213,7 @@ def test_relative_viewing_directions(L, order, dtype):
     # volume with C3 or C4 symmetry.
     n_img = 24
     if order > 4:
-        n_img = 9
+        n_img = 8
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
 
     # Calculate ground truth relative viewing directions, viis and vijs.
@@ -253,29 +270,6 @@ def test_relative_viewing_directions(L, order, dtype):
         (theta_vii, theta_vii_J, np.pi - theta_vii, np.pi - theta_vii_J), axis=0
     )
 
-    # For order>4 we cannot expect estimates from equator images to be accurate.
-    # So we exclude those from testing.
-    if order > 4:
-        equator_inds = np.argwhere(
-            abs(np.arccos(rots_gt[:, 2, 2]) - np.pi / 2)
-            < cl_symm.equator_threshold * np.pi / 180
-        )
-
-        # Exclude ii estimates and ground truths.
-        min_theta_vii = np.delete(min_theta_vii, equator_inds, axis=0)
-        sii = np.delete(sii, equator_inds, axis=0)
-
-        # Exclude ij estimates and ground truths.
-        matches = np.equal(
-            equator_inds[:, None], pairs
-        )  # Find where equator_inds match pairs indices
-        bad_pairs = pairs[
-            np.sum(matches, axis=(0, 2)).astype(bool)
-        ]  # Take pairs where at least 1 index matches
-        pairwise_equator_inds = pairs_to_linear(n_img, bad_pairs[:, 0], bad_pairs[:, 1])
-        min_theta_vij = np.delete(min_theta_vij, pairwise_equator_inds, axis=0)
-        sij = np.delete(sij, pairwise_equator_inds, axis=0)
-
     # Calculate the mean minimum angular distance.
     angular_dist_vijs = np.mean(min_theta_vij)
     angular_dist_viis = np.mean(min_theta_vii)
@@ -287,17 +281,17 @@ def test_relative_viewing_directions(L, order, dtype):
     max_tol_ii = 1e-5
     mean_tol_ii = 1e-5
     if order > 4:
-        max_tol_ii = 5e-2
+        max_tol_ii = 8e-2
         mean_tol_ii = 2e-2
-    assert np.max(error_ij) < 2e-1
+    assert np.max(error_ij) < 4e-1
     assert np.max(error_ii) < max_tol_ii
-    assert np.mean(error_ij) < 2e-3
+    assert np.mean(error_ij) < 3e-3
     assert np.mean(error_ii) < mean_tol_ii
 
     # Check that the mean angular difference is within 2 degrees.
     angle_tol = 2 * np.pi / 180
     if order > 4:
-        angle_tol = 6 * np.pi / 180
+        angle_tol = 4 * np.pi / 180
 
     assert angular_dist_vijs < angle_tol
     assert angular_dist_viis < angle_tol

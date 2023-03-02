@@ -87,7 +87,13 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Generate candidate rotation matrices and the common-line and
         # self-common-line indices induced by those rotations.
-        Ris_tilde, R_theta_ijs = self._generate_cand_rots()
+        Ris_tilde, R_theta_ijs = self.generate_cand_rots(
+            self.n_points_sphere,
+            self.equator_threshold,
+            self.order,
+            self.degree_res,
+            self.seed,
+        )
         cijs_inds = self._compute_cls_inds(Ris_tilde, R_theta_ijs)
         scls_inds = self._compute_scls_inds(Ris_tilde)
         n_cands = len(Ris_tilde)
@@ -211,7 +217,14 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 # See issue #869 for more details.
                 viis[i] = mean_est[i].synchronized_mean()
 
-        return vijs, viis
+        # As we are using a mean to get the estimates, viis, the estimate will not be rank-1
+        # So we use SVD to find a close rank-1 approximation.
+        U, S, V = np.linalg.svd(viis)
+        S_rank1 = np.zeros((n_img, 3, 3), dtype=self.dtype)
+        S_rank1[:, 0, 0] = S[:, 0]
+        viis_rank1 = U @ S_rank1 @ V
+
+        return vijs, viis_rank1
 
     def _compute_scls_inds(self, Ri_cands):
         """
@@ -283,28 +296,29 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 pbar.update()
         return cij_inds
 
-    def _generate_cand_rots(self):
+    @staticmethod
+    def generate_cand_rots(n, equator_threshold, order, degree_res, seed):
         logger.info("Generating candidate rotations.")
         # Construct candidate rotations, Ris_tilde.
-        Ris_tilde = np.zeros((self.n_points_sphere, 3, 3))
+        Ris_tilde = np.zeros((n, 3, 3))
         counter = 0
-        with Random(self.seed):
-            while counter < self.n_points_sphere:
+        with Random(seed):
+            while counter < n:
                 third_row = randn(3)
                 third_row /= anorm(third_row, axes=(-1,))
-                Ri_tilde = self._complete_third_row_to_rot(third_row)
+                Ri_tilde = CLSymmetryC3C4._complete_third_row_to_rot(third_row)
 
                 # Exclude candidates that represent equator images. Equator candidates
                 # induce collinear self-common-lines, which always have perfect correlation.
                 angle_from_equator = abs(np.arccos(Ri_tilde[2, 2]) - np.pi / 2)
-                if angle_from_equator >= self.equator_threshold * np.pi / 180:
+                if angle_from_equator >= equator_threshold * np.pi / 180:
                     Ris_tilde[counter] = Ri_tilde
                     counter += 1
 
         # Construct all in-plane rotations, R_theta_ijs
         # The number of R_theta_ijs must be divisible by the symmetric order.
-        n_theta_ij = 360 - (360 % self.order)
-        theta_ij = np.arange(0, n_theta_ij, self.degree_res) * np.pi / 180
+        n_theta_ij = 360 - (360 % order)
+        theta_ij = np.arange(0, n_theta_ij, degree_res) * np.pi / 180
         R_theta_ijs = Rotation.about_axis("z", theta_ij).matrices
 
         return Ris_tilde, R_theta_ijs
