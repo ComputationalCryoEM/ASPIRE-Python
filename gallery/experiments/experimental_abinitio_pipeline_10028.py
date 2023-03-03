@@ -156,7 +156,7 @@ if interactive:
 
 logger.info("Begin Orientation Estimation")
 
-orient_est = CLSyncVoting(avgs, n_theta=36)
+orient_est = CLSyncVoting(avgs, n_theta=360)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations

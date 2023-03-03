@@ -1,18 +1,18 @@
 """
-Abinitio Pipeline - Experimental Data Empiar 10005
+Abinitio Pipeline - Experimental Data Empiar 10081
 ==================================================
 
 This notebook introduces a selection of
-components corresponding to loading real coordinate
-base particle Cryo-EM data and running key ASPIRE-Python
+components corresponding to loading real Relion picked
+particle Cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 
 Specifically this pipeline uses the
-EMPIAR 10005 picked particles data, available here:
+EMPIAR 10081 picked particles data, available here:
 
-https://www.ebi.ac.uk/empiar/EMPIAR-10005
+https://www.ebi.ac.uk/empiar/EMPIAR-10081
 
-https://www.ebi.ac.uk/emdb/EMD-5778
+https://www.ebi.ac.uk/emdb/EMD-8511
 """
 
 # %%
@@ -22,16 +22,17 @@ https://www.ebi.ac.uk/emdb/EMD-5778
 # In addition, import some classes from
 # the ASPIRE package that will be used throughout this experiment.
 
-import os
-import glob
 import logging
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis3D
 from aspire.denoising import ClassAvgSourcev11
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
-from aspire.source import ArrayImageSource, CentersCoordinateSource
+from aspire.source import ArrayImageSource, RelionSource
 
 logger = logging.getLogger(__name__)
 
@@ -41,31 +42,28 @@ logger = logging.getLogger(__name__)
 # ---------------
 # Example simulation configuration.
 
-working_dir = "/scratch/ExperimentalData/staging/10017/data"
 n_imgs = None  # Set to None for all images in starfile, can set smaller for tests.
 img_size = 32  # Downsample the images/reconstruction to a desired resolution
 n_classes = 2000  # How many class averages to compute.
 n_nbor = 100  # How many neighbors to stack
-volume_filename_prefix_out = f"10005_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
-particle_size = 300
+starfile_in = "/scratch/ExperimentalData/staging/10081/data/Particles/micrographs/data.star"
+data_folder = "."  # This depends on the specific starfile entries.
+volume_filename_prefix_out = f"10081_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
+pixel_size = 1.3
 
 
 # %%
 # Source data and Preprocessing
 # -----------------------------
 #
-# `CentersCoordinateSource` is used to access the experimental data from
-# mrcs using coordinate files.
-#
+# `RelionSource` is used to access the experimental data via a `starfile`.
 # Begin by downsampling to our chosen resolution, then preprocess
 # to correct for CTF and noise.
 
-mrcs = sorted(glob.glob(os.path.join(working_dir, "*.mrc")))
-coords = sorted(glob.glob(os.path.join(working_dir, "*.coord")))
-files = list(zip(mrcs, coords))
-
 # Create a source object for the experimental images
-src = CentersCoordinateSource(files, particle_size=particle_size, max_rows=n_imgs)
+src = RelionSource(
+    starfile_in, pixel_size=pixel_size, max_rows=n_imgs, data_folder=data_folder
+)
 
 # Downsample the images
 logger.info(f"Set the resolution to {img_size} X {img_size}")
@@ -77,7 +75,6 @@ src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src.normalize_background()
 src.whiten(aiso_noise_estimator.filter)
 
 # %%
@@ -89,7 +86,7 @@ src.whiten(aiso_noise_estimator.filter)
 logger.info("Begin Class Averaging")
 
 # Now perform classification and averaging for each class.
-# Automaticaly configure parallel processing
+ # Automaticaly configure parallel processing
 avgs = ClassAvgSourcev11(src, n_nbor=n_nbor, num_procs=None)
 
 # We'll manually cache `n_classes` worth to speed things up.
@@ -105,7 +102,7 @@ avgs = ArrayImageSource(avgs.images[:n_classes])
 
 logger.info("Begin Orientation Estimation")
 
-orient_est = CLSyncVoting(avgs, n_theta=36)
+orient_est = CLSyncVoting(avgs, n_theta=360)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
