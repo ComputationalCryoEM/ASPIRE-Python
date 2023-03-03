@@ -1,6 +1,6 @@
 """
-Abinitio Pipeline - Experimental Data
-=====================================
+Abinitio Pipeline - Experimental Data Empiar 10028
+==================================================
 
 This notebook introduces a selection of
 components corresponding to loading real Relion picked
@@ -12,7 +12,7 @@ EMPIAR 10028 picked particles data, available here:
 
 https://www.ebi.ac.uk/empiar/EMPIAR-10028
 
-https://www.ebi.ac.uk/emdb/EMD-10028
+https://www.ebi.ac.uk/emdb/EMD-2660
 """
 
 # %%
@@ -47,10 +47,10 @@ do_cov2d = True  # Use CWF coefficients
 n_imgs = None  # Set to None for all images in starfile, can set smaller for tests.
 img_size = 32  # Downsample the images/reconstruction to a desired resolution
 n_classes = 2000  # How many class averages to compute.
-n_nbor = 64  # How many neighbors to stack
+n_nbor = 100  # How many neighbors to stack
 starfile_in = "10028/data/shiny_2sets_fixed9.star"
 data_folder = "."  # This depends on the specific starfile entries.
-volume_filename_prefix_out = f"10028_recon_c{n_classes}_m{n_nbor}_{img_size}.mrc"
+volume_filename_prefix_out = f"10028_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.34
 
 
