@@ -30,7 +30,6 @@ class ClassAvgSource(ImageSource):
         classifier,
         class_selector,
         averager,
-        averager_src=None,
     ):
         """
         Constructor of an object for denoising 2D images using class averaging methods.
@@ -40,8 +39,6 @@ class ClassAvgSource(ImageSource):
             Example, RIRClass2D.
         :param class_selector: A ClassSelector subclass.
         :param averager: An Averager2D subclass.
-        :param averager_src: Optional, Source used for image registration and averaging.
-            Defaults to `classification_src`.
         """
         self.classification_src = classification_src
         if not isinstance(self.classification_src, ImageSource):
@@ -64,15 +61,7 @@ class ClassAvgSource(ImageSource):
         self.averager = averager
         if not isinstance(self.averager, Averager2D):
             raise ValueError(
-                f"`averager` should be instance of `Averger2D`, found {self.averager_src}."
-            )
-
-        self.averager_src = averager_src
-        if self.averager_src is None:
-            self.averager_src = self.classification_src
-        if not isinstance(self.averager_src, ImageSource):
-            raise ValueError(
-                f"`averager_src` should be subclass of `ImageSource`, found {self.averager_src}."
+                f"`averager` should be instance of `Averger2D`, found {self.averager}."
             )
 
         self._nn_classes = None
@@ -86,9 +75,9 @@ class ClassAvgSource(ImageSource):
 
         # Note n will potentially be updated after class selection.
         super().__init__(
-            L=self.averager_src.L,
-            n=self.averager_src.n,
-            dtype=self.averager_src.dtype,
+            L=self.averager.src.L,
+            n=self.averager.src.n,
+            dtype=self.averager.src.dtype,
         )
 
     def _classify(self):
@@ -228,7 +217,7 @@ class ClassAvgSource(ImageSource):
 
 # The following sub classes attempt to pack sensible defaults
 #   into ClassAvgSource so that users don't need to
-#   instantiate every component.
+#   instantiate every component to get started.
 
 
 class DebugClassAvgSource(ClassAvgSource):
@@ -236,6 +225,22 @@ class DebugClassAvgSource(ClassAvgSource):
     Source for denoised 2D images using class average methods.
 
     Packs base with common debug defaults.
+
+    :param n_nbor: Number of nearest neighbors. Default 10.
+    :param num_procs: Number of processors. Default of 1 runs serially.
+        `None` attempts to compute a reasonable value
+        based on available cores and memory.
+    :param classifier: `Class2D` classifier instance.
+        Default `None` creates `RIRClass2D`.
+        See code for parameter details.
+    :param class_selector: `ClassSelector` instance.
+        Default `None` creates `TopClassSelector`.
+    :param averager: `Averager2D` instance.
+        Default `None` ceates `BFRAverager2D` instance.
+        See code for parameter details.
+
+    :return: ClassAvgSource instance.
+
     """
 
     def __init__(
@@ -276,7 +281,6 @@ class DebugClassAvgSource(ClassAvgSource):
             classifier=classifier,
             class_selector=class_selector,
             averager=averager,
-            averager_src=classification_src,
         )
 
 
@@ -301,6 +305,28 @@ class ClassAvgSourcev11(ClassAvgSource):
         averager=None,
         averager_src=None,
     ):
+        """
+        Instantiates ClassAvgSourcev11 with the following parameters.
+
+        :param n_nbor: Number of nearest neighbors. Default 50.
+        :param num_procs: Number of processors. Use 1 to run serially.
+            Default `None` attempts to compute a reasonable value
+            based on available cores and memory.
+        :param classifier: `Class2D` classifier instance.
+            Default `None` creates `RIRClass2D`.
+            See code for parameter details.
+        :param class_selector: `ClassSelector` instance.
+            Default `None` creates `ContrastWithRepulsionClassSelector`.
+        :param averager: `Averager2D` instance.
+            Default `None` ceates `BFSRAverager2D` instance.
+            See code for parameter details.
+        :param averager_src: Optionally explicitly assign source
+            to BFSRAverager2D during initialization.
+            Raises error when combined with an explicit `averager`
+            argument.
+
+        :return: ClassAvgSource instance.
+        """
         dtype = classification_src.dtype
 
         if classifier is None:
@@ -339,5 +365,4 @@ class ClassAvgSourcev11(ClassAvgSource):
             classifier=classifier,
             class_selector=class_selector,
             averager=averager,
-            averager_src=classification_src,
         )
