@@ -97,17 +97,17 @@ src = ArrayImageSource(example_array)
 src.images[:10].show()
 
 # %%
-# Class Average
-# -------------
+# Basic Class Average
+# -------------------
 #
-# We use the ``DebugClassAvgSource`` to classify the images
+# This first example uses the ``DebugClassAvgSource`` to classify images
 # via the rotationally invariant representation (``RIRClass2D``) algorithm.
 # ``DebugClassAvgSource`` internally uses ``TopClassSelector`` by default.
 # ``TopClassSelector`` deterministically selects the first ``n_classes``.
 # ``DebugClassAvgSource`` also uses brute force rotational alignment without shifts.
 # These simplifications are useful for development and debugging.
-# Later we will discuss the more general ``ClassAvgSource``,
-# more suitable to simulations and experimental datasets.
+# Later we will discuss the more general ``ClassAvgSource`` and the modular
+# components that are more suitable to simulations and experimental datasets.
 
 n_classes = 10
 
@@ -264,3 +264,24 @@ plt.imshow(rotated_img_nbr)
 plt.xlabel(f"Img {nbr} rotated {angle:.4}*")
 plt.tight_layout()
 plt.show()
+
+
+# %%
+# ClassAvgSource Components
+# -------------------------
+# For more realistic simulations and experimental data,
+# ASPIRE provides a wholly customizable base ``ClassAvgSource``
+# class. This class expects a user to instantiate and provide
+# all components required for class averaging.
+#
+# To make things easier a practical starting point
+# ``ClassAvgSourcev11`` is provided which fills in reasonable
+# defaults based on what is available in the current ASPIRE-Python.
+# The defaults can be overridden simply by instantiating your own
+# instances of components and passing during initialization.
+
+# Using the defaults requires only passing a source.
+# After understanding the various components that can be
+# combined in a ``ClassAvgSource``, they can be customized
+# of easily extended.
+avg_src = ClassAvgSourcev11(noisy_src)
