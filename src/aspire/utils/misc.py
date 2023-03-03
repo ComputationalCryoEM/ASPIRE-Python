@@ -303,29 +303,19 @@ def fuzzy_mask(L, r0, risetime, origin=None):
 
 def all_pairs(n):
     """
-    All pairs indexing (i,j) for i<j.
+    All pairs indexing (i,j) for i<j and a pairs-to-linear index mapping.
 
     :param n: The number of items to be indexed.
-    :return: All n-choose-2 pairs (i,j), i<j.
+    :returns:
+        - n x 2 array of pairs (i, j), i<j.
+        - dictionary mapping pairs to linear indices.
     """
     pairs = np.column_stack(np.triu_indices(n, 1))
+    pairs_to_linear_map = np.empty((n, n), dtype=np.uint16)
+    for index, pair in enumerate(pairs):
+        pairs_to_linear_map[pair[0], pair[1]] = index
 
-    return pairs
-
-
-def pairs_to_linear(n, i, j):
-    """
-    Converts from all_pairs indexing (i, j), where i<j, to linear indexing.
-    ie. (0, 1) --> 0 and (n-2, n-1) --> n * (n - 1)/2 - 1
-    """
-    i = np.array(i)
-    j = np.array(j)
-
-    assert (i < j).all() < n, "i must be less than j, and both must be less than n."
-
-    linear_index = n * (n - 1) // 2 - (n - i) * (n - i - 1) // 2 + j - i - 1
-
-    return linear_index
+    return pairs, pairs_to_linear_map
 
 
 def all_triplets(n):

@@ -24,7 +24,6 @@ from .misc import (  # isort:skip
     importlib_path,
     inverse_r,
     J_conjugate,
-    pairs_to_linear,
     powerset,
     sha256sum,
     fuzzy_mask,
