@@ -204,10 +204,10 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
 @pytest.mark.parametrize(
     "target_noise_variance", VARS, ids=lambda param: f"var={param}"
 )
-def test_from_snr_pink_iso(sim_fixture, target_noise_variance):
+def test_pink_iso_noise_estimation(sim_fixture, target_noise_variance):
     """
-    Test that prescribing noise directly by var and  by `from_snr`,
-    are close for a variety of paramaters.
+    Test that prescribing isotropic pink-ish noise
+    is close to target for a variety of paramaters.
     """
 
     custom_filter = FunctionFilter(f=_pinkish_spectrum) * ScalarFilter(
@@ -233,10 +233,10 @@ def test_from_snr_pink_iso(sim_fixture, target_noise_variance):
 @pytest.mark.parametrize(
     "target_noise_variance", VARS, ids=lambda param: f"var={param}"
 )
-def test_from_snr_aniso(sim_fixture, target_noise_variance):
+def test_pink_aniso_noise_estimation(sim_fixture, target_noise_variance):
     """
-    Test that prescribing noise directly by var and  by `from_snr`,
-    are close for a variety of paramaters.
+    Test that prescribing anisotropic pink-ish noise
+    is close to target for a variety of paramaters.
     """
 
     # Create the custom noise function and associated Filter

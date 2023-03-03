@@ -66,7 +66,7 @@ vol = original_vol.downsample(res)
 
 
 # %%
-# Noise and CTF Filters
+# CTF Filters
 # ^^^^^^^^^^^^^^^^^^^^^
 # Let's start by creating CTF filters. The ``operators`` package contains a collection
 # of filter classes that can be supplied to a ``Simulation``.
@@ -90,7 +90,7 @@ ctf_filters = [
 # Initialize Simulation Object
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # We feed our ``Volume`` and filters into ``Simulation`` to generate the dataset of images.
-# When controlled white Gaussian noise is desired, ``*NoiseAdder.from_snr()``
+# When controlled white Gaussian noise is desired, ``WhiteNoiseAdder.from_snr()``
 # can be used to generate a simulation data set around a specific SNR.
 #
 # Alternatively, users can bring their own images using an ``ArrayImageSource``,
@@ -192,21 +192,6 @@ avgs.images[0:10].show()
 # work because we used ``TopClassSelector`` to classify our images.
 src.images[0:10].show()
 
-# %%
-
-# Compare the estimated SNR before and after Class Averaging.
-src_snr = src.estimate_snr()
-avgs_snr = avgs.estimate_snr()
-logging.info(
-    f"Simulation SNR (includes any additonal offset, amplitude, and CTF corruptions): {src_snr}"
-)
-logging.info(f"Class Averaged SNR: {avgs_snr}")
-# Alternatively, estimate power in the areas outside the signal support,
-# which should be predominantly noise.
-src_noise_power = src.estimate_noise_power()
-avgs_noise_power = avgs.estimate_noise_power()
-logging.info(f"Simulation noise power: {src_noise_power}")
-logging.info(f"Class Averaged noise power: {avgs_noise_power}")
 
 # %%
 # Orientation Estimation
