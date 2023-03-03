@@ -327,7 +327,8 @@ class BFRAverager2D(AligningAverager2D):
         correlations = np.empty(classes.shape, dtype=self.dtype)
 
         def _innerloop(k):
-            _correlations = np.empty((n_nbor, self.n_angles))
+            _correlations = np.full((n_nbor, self.n_angles), fill_value=-np.inf)
+            _correlations[0, 0] = 1  # Set this now so we can skip it in the loop.
             # Get the coefs for these neighbors
             if basis_coefficients is None:
                 # Retrieve relevant images
@@ -354,12 +355,15 @@ class BFRAverager2D(AligningAverager2D):
 
                 # then store dot between class base image (0) and each nbor
                 for j, nbor in enumerate(rotated_nbrs):
+                    # Skip the base image.
+                    if j == 0:
+                        continue
                     norm_nbor = np.linalg.norm(nbor)
                     _correlations[j, i] = np.dot(nbr_coef[0], nbor) / (
                         norm_nbor * norm_0
                     )
 
-            # Now along each class, find the index of the angle reporting highest correlation
+            # Now find the index of the angle reporting highest correlation
             angle_idx = np.argmax(_correlations, axis=1)
 
             # Take the correlation corresponding to angle_idx
