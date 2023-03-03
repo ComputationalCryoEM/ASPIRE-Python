@@ -308,7 +308,7 @@ def all_pairs(n):
     :param n: The number of items to be indexed.
     :returns:
         - n x 2 array of pairs (i, j), i<j.
-        - dictionary mapping pairs to linear indices.
+        - n x n array with pairs-to-linear index map.
     """
     pairs = np.column_stack(np.triu_indices(n, 1))
     pairs_to_linear_map = np.empty((n, n), dtype=np.uint16)

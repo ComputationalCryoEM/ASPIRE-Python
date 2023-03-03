@@ -145,7 +145,7 @@ class UtilsTestCase(TestCase):
         pairs, pairs_to_linear = all_pairs(n)
         nchoose2 = n * (n - 1) // 2
         # Build all pairs using a loop to ensure numpy upper_triu() ordering matches.
-        pairs_from_loop = [[i, j] for i in range(n) for j in range(n) if i < j]
+        pairs_from_loop = [[i, j] for i in range(n - 1) for j in range(i + 1, n)]
         self.assertTrue(len(pairs) == nchoose2)
         self.assertTrue(len(pairs[0]) == 2)
         self.assertTrue((pairs == pairs_from_loop).all())
