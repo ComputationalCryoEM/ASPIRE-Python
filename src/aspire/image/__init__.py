@@ -12,4 +12,5 @@ from .image_stacker import (
     MeanImageStacker,
     MedianImageStacker,
     SigmaRejectionImageStacker,
+    WinsorizedImageStacker,
 )
