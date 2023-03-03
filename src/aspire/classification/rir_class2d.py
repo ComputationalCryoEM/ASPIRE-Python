@@ -499,14 +499,15 @@ class RIRClass2D(Class2D):
                 alpha=self.alpha,
                 sample_n=self.sample_n,
             )
-            if coef_b.shape[0] == self.bispectrum_components:
+            # If we have produced a feature vector
+            if coef_b.size != 0:
                 break  # Return feature vector.
 
         # while-else: we've exceeded retry attempts.
         else:
             raise RuntimeError(
-                "bispec_2drot_large failed to return valid feature vector"
-                f"{coef_b.shape} after {attempt} attempts."
+                "bispec_2drot_large failed to return valid feature vector."
+                f" Returned {coef_b.shape} after {attempt} attempts."
             )
 
         return coef_b.T, coef_b_r.T
