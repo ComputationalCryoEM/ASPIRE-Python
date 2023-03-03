@@ -21,7 +21,7 @@ class RIRClass2D(Class2D):
         pca_basis=None,
         fspca_components=None,
         alpha=1 / 3,
-        sample_n=50000,  # Paper had 4000, but MATLAB code suggested 50000
+        sample_n=4000,  # Paper had 4000, but MATLAB code suggested 50000
         bispectrum_components=300,
         n_nbor=100,
         bispectrum_freq_cutoff=None,
