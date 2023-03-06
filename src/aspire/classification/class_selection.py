@@ -196,6 +196,37 @@ class DistanceClassSelector(ClassSelector):
         return sorted_class_inds
 
 
+class _HeapItem:
+    """
+    Organize our heap entries.
+    """
+
+    def __init__(self, value, index, image):
+        """
+        Initialize a heap item.
+
+        :param value: Float value used for heap ranking
+        :param index: Image index
+        :param image: Image object
+        """
+        self.value = float(value)
+        self.index = int(index)
+        self.image = image
+
+    @staticmethod
+    def nbytes(img_size, dtype):
+        """
+        Computes a rough size of _HeapItem based on assigned
+        attributes. Note doesn't include python object overhead.
+
+        :param img_size: Image size in pixels, (img_size, img_size).
+        :param dtype: Image datatype.
+
+        :return: Sum of attribute sizes.
+        """
+        return img_size**2 * dtype.itemsize + 16
+
+
 class GlobalClassSelector(ClassSelector):
     """
     Extends ClassSelector for methods that require
@@ -204,10 +235,22 @@ class GlobalClassSelector(ClassSelector):
 
     def __init__(self, averager, quality_function, heap_size_limit_bytes=2e9):
         """
+        Initializes a GlobalClassSelector.
+
+        Because GlobalClassSelectors must compute all class averages,
+        a heap is maintained cache the top class averages as scored by
+        `quality_function`.  If you have the memory, recommend setting
+        the cache to be > n_classes*img_size*img_size*img.dtype.
+
         :param averager: An Averager2D subclass.
-        :param quality_function: Function that takes an image and returns numeric quality score.
-            This score will be used to sort the classes.
-            For example, this module provides methods for Contrast and SNR.
+        :param quality_function: Function that takes an image and
+            returns numeric quality score.  This score will be used to
+            sort the classes.  User's may provide a callable function,
+            but extending `ImageQualityFunction` is recommended.  For
+            example, this module provides methods for Contrast and SNR
+            based quality.
+        :param heap_size_limit_bytes: Max heap size in Bytes.
+            Defaults 2GB, 0 will disable.
         """
         self.averager = averager
         if not isinstance(self.averager, Averager2D):
@@ -216,40 +259,50 @@ class GlobalClassSelector(ClassSelector):
             )
 
         self._quality_function = quality_function
+        if not callable(self._quality_function):
+            raise ValueError(
+                "`quality_function` must be a callable function.  See ImageQualityFunction."
+            )
+
         self.n = self.averager.src.n
-        # We should hit every entry, but along the way identify missing values as nan.
+        # We should eventually compute all `n` entries,
+        # but start with identifying missing values as nan.
         self._quality_scores = np.full(self.n, fill_value=float("nan"))
 
         # To be used for heapq (score, img_id, avg_im)
         # Note the default implementation is min heap, so `pop` returns smallest value.
         self.heap = []
 
-        self._heap_limit_bytes = heap_size_limit_bytes
-        self._heap_item_size = self.averager.src.L**2 + self.averager.dtype.itemsize
+        self._heap_limit_bytes = int(heap_size_limit_bytes)
+        self._heap_item_size = self.averager.src.L**2 * self.averager.dtype.itemsize
 
     @property
     def _heap_size(self):
+        """
+        Return estimate of heap_size.  Note this is not the exact
+        heap_size, as it doesn't include the overhead for python
+        objects.
+        """
         n = len(self.heap)
-        if n == 0:
-            return 0
+        item_size = _HeapItem.nbytes(
+            img_size=self.averager.composite_basis.nres, dtype=self.averager.dtype
+        )
 
-        return n * self._heap_item_size
+        return n * item_size
 
     @property
-    def _heap_ids(self):
+    def heap_ids(self):
         """
         Return the image ids currently in the heap.
         """
-        return [item[1] for item in self.heap]  # heap item=(score, img_id, img)
+        return [item.index for item in self.heap]
 
     @property
-    def _heap_id_dict(self):
+    def heap_id_dict(self):
         """
         Return map of image ids to heap position currently in the heap.
         """
-        return {
-            item[1]: i for i, item in enumerate(self.heap)
-        }  # heap item=(score, img_id, img)
+        return {item.index: i for i, item in enumerate(self.heap)}
 
     def _select(self, classes, reflections, distances):
         for i, im in enumerate(self.averager.average(classes, reflections)):
@@ -258,16 +311,23 @@ class GlobalClassSelector(ClassSelector):
             # Assign in global quality score array
             self._quality_scores[i] = quality_score
 
+            # Skip heap if single item is larger than heap limit.
+            # Implies `self._heap_limit_bytes = 0` disables heap.
+            if self._heap_item_size > self._heap_limit_bytes:
+                continue
+
             # Create cachable payload item
-            item = (quality_score, i, im)
+            item = _HeapItem(quality_score, i, im)
 
             if self._heap_item_size + self._heap_size < self._heap_limit_bytes:
+                # There is space to push another entry onto heap
                 heappush(self.heap, item)
-            else:
-                # We're out of space,
+            elif self._heap_size < self._heap_limit_bytes:
+                # Heap is currently out of space,
                 # pop and throw away the worst entry
                 # after updating (pushing to) the heap.
                 _ = heappushpop(self.heap, item)
+            # else:
 
         # Now that we have computed the global quality_scores,
         # the selection ordering can be applied

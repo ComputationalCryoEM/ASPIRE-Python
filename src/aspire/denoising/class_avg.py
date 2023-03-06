@@ -154,7 +154,7 @@ class ClassAvgSource(ImageSource):
         heap_inds = None
         if hasattr(self.class_selector, "heap"):
             # Then check if heap holds anything in indices
-            heap_inds = set(indices).intersection(self.class_selector._heap_ids)
+            heap_inds = set(indices).intersection(self.class_selector.heap_ids)
 
         # check for wholly cached image sets first
         if self._cached_im is not None:
@@ -177,7 +177,7 @@ class ClassAvgSource(ImageSource):
             # Recursion, heap_inds set should be empty in the recursive call.
             computed_imgs = self._images(list(indices_to_compute.values()))
             # Get the map once to avoid traversing heap in a loop
-            heapd = self._heap_id_dict
+            heapd = self.self.class_selector.heap_id_dict
 
             imgs = np.empty(
                 (len(indices), computed_imgs.resolution, computed_imgs.resolution),
@@ -191,16 +191,6 @@ class ClassAvgSource(ImageSource):
                 lambda k: self.class_selector.heap[heapd[k]][2],
                 list(indices_from_heap.keys()),
             )
-            # for (i,ind) in enumerate(indices):
-            #     # collect the images
-            #     if ind in heapd:
-            #         loc = heapd[ind]
-            #         assert self.class_selector.heap[loc][1] == ind
-            #         _img = self.class_selector.heap[loc][2]
-            #     else:
-            #         _img = computed_imgs[indices_to_compute[ind]]
-            #     # assign the image
-            #     imgs[i] = _img
 
             return imgs
 
