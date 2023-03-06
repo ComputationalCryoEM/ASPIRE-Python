@@ -23,6 +23,7 @@ https://www.ebi.ac.uk/emdb/EMD-8511
 # the ASPIRE package that will be used throughout this experiment.
 
 import logging
+from pathlib import Path
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.basis import FFBBasis3D
@@ -47,7 +48,7 @@ starfile_in = (
     "/scratch/ExperimentalData/staging/10081/data/Particles/micrographs/data.star"
 )
 data_folder = "../.."  # This depends on the specific starfile entries.
-volume_filename_prefix_out = f"10081_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
+volume_output_filename = f"10081_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.3
 
 
@@ -101,7 +102,7 @@ avgs = ArrayImageSource(avgs.images[:n_classes])
 
 logger.info("Begin Orientation Estimation")
 
-orient_est = CLSymmetryC3C4(avgs, symmetry=f"C4", n_theta=360, max_shift=1)
+orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=360, max_shift=1)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
@@ -125,4 +126,5 @@ estimator = MeanEstimator(avgs, basis)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
-estimated_volume.save(volume_filename_prefix_out, overwrite=True)
+estimated_volume.save(volume_output_filename, overwrite=True)
+logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")

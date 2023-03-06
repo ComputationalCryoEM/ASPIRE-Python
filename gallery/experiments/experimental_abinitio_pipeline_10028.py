@@ -23,6 +23,7 @@ https://www.ebi.ac.uk/emdb/EMD-2660
 # the ASPIRE package that will be used throughout this experiment.
 
 import logging
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -50,7 +51,7 @@ n_classes = 2000  # How many class averages to compute.
 n_nbor = 100  # How many neighbors to stack
 starfile_in = "10028/data/shiny_2sets_fixed9.star"
 data_folder = "."  # This depends on the specific starfile entries.
-volume_filename_prefix_out = f"10028_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
+volume_output_filename = f"10028_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.34
 
 
@@ -180,7 +181,8 @@ estimator = MeanEstimator(avgs, basis)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
-estimated_volume.save(volume_filename_prefix_out, overwrite=True)
+estimated_volume.save(volume_output_filename, overwrite=True)
+logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
 
 # Peek at result
 if interactive:
