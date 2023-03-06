@@ -336,50 +336,61 @@ class GlobalClassSelector(ClassSelector):
         return sorted_class_inds
 
 
-# TODO: When a consistent measure of distance is implemented
-# by preceeding components we can implement exclusion based on neighbor distances.
-class ClassRepulsion:
+# TODO: When a consistent measure of distance is implemented by
+# preceeding components we can implement exclusion based on neighbor
+# distances or other ideas (VDM?) as different ClassRepulsion like
+# classes.
+class GreedyClassRepulsion:
     """
     Mixin to overload class selection based on excluding
     classes we've alreay seen as neighbors of another class.
 
     If the classes are well sorted (by some measure of quality),
-    we can assume the best representation is the first seen.
-
+    we assume the best representation is the first seen.
     """
 
     def __init__(self, *args, **kwargs):
         """
-        Sets optional `exclude_k`. All other args and **kwagrs are passed to super().
+        Sets optional `exclude_k`. All other args and **kwargs are
+        passed to super().
 
-        ClassRepulsion is similar to `cryo_select_subset` from MATLAB,
-        but MATLAB found `exclude_k` iteratively based on a desired result set size.
+        GreedyClassRepulsion is similar to `cryo_select_subset` from
+        MATLAB, but MATLAB found `exclude_k` iteratively based on a
+        desired result set size.
 
-        :param exclude_k: Number of neighbors from each class to exclude.
-            Defaults to
+        :param exclude_k: Number of neighbors from each class to
+            exclude.  Defaults to
         """
+        # Pop of the parameter unique to GreedyClassRepulsion.
         self.exclude_k = kwargs.pop("exclude_k", None)
+
+        # Instantiate an empty set to hold our excluded indices.
         self.excluded = set()
+
+        # Pass everything else through to the super __init__.
         super().__init__(*args, **kwargs)
 
     def _select(self, classes, reflections, distances):
-        # Get the indices sorted by the next resolving `_select` method.
+        """
+        Overload the ClassSelector._select
+        """
+        # Get the indices sorted by the super's `_select` method.
         sorted_inds = super()._select(classes, reflections, distances)
 
-        # If exclude_k is not provided, default to exluding all neighbors.
+        # If exclude_k is not provided, default to exluding all
+        # neighbors seen.
         k = self.exclude_k or classes.shape[-1]
 
         results = []
         for i in sorted_inds:
-            # Skip when this class's base image has been seen in a prior class.
+            # Skip when this class's base image has been seen in a
+            # prior class.
             if i in self.excluded:
                 continue
 
-            # Get the images in this class
-            cls = classes[i]
-
-            # Add images from this class to the exclusion list
-            self.excluded.update(cls[:k])
+            # Get the images in this class `i`, and add class images
+            # up to `k` the exclusion list.
+            self.excluded.update(classes[i, :k])
 
             results.append(i)
 
@@ -389,7 +400,8 @@ class ClassRepulsion:
         """
         Check that class `selection` is sane.
 
-        Repulsion can reduce the number of classes (dramatically).
+        Repulsion can reduce the number of classes (dramatically),
+        so we need to adjust the checking operation.
 
         :param selection: selection indices
         :param n_img: number of images available
@@ -397,22 +409,25 @@ class ClassRepulsion:
         return super()._check_selection(selection, n_img, len_operator=le)
 
 
-class ContrastWithRepulsionClassSelector(ClassRepulsion, ContrastClassSelector):
+class ContrastWithRepulsionClassSelector(GreedyClassRepulsion, ContrastClassSelector):
     """
     Selects top classes based on highest contrast with prior rejection.
     """
 
 
-class GlobalWithRepulsionClassSelector(ClassRepulsion, GlobalClassSelector):
+class GlobalWithRepulsionClassSelector(GreedyClassRepulsion, GlobalClassSelector):
     """
     Extends ClassSelector for methods that require
-    passing over all class average images and also ClassRepulsion.
+    passing over all class average images and also GreedyClassRepulsion.
     """
 
 
 class ImageQualityFunction(ABC):
     """
     A callable image quality scoring function.
+
+    The main advantage to using this class is to gain access to a grid
+    caching and Image/Numpy conversion.
     """
 
     _grid_cache = {}
@@ -420,24 +435,23 @@ class ImageQualityFunction(ABC):
     @abstractmethod
     def _function(self, img):
         """
-        User defined 1d radial weight function.
-        The function is expected to be defined for [0,sqrt(2)].
-        Function range is not limited, but [0,1] is favorable.
+        User defined 1d radial weight function.  The function is
+        expected to be defined on [0,sqrt(2)].  Function range is
+        currently not limited, but [0,1] is favorable.
 
-        Develops can use the self._grid_cache for access to
-        a grid_2d instance matching resolution of img.
+        Developers can use the self._grid_cache for access to a
+        grid_2d instance matching resolution of img.
 
-        :param img: 2d numpy array
+        :param img: 2d Numpy array
         :returns: Image quality score
         """
 
     def __call__(self, img):
         """
         Given an image instance or a 2D np array,
-        builds a grid once if needed then
         calls the instance's weight function.
 
-        :param img: `Image`, 2d numpy array,
+        :param img: `Image`, 2d Numpy array,
             or 3d array where slow axis is stack axis.
             When called with an image stack>1, an array is returned.
         :returns: Image quality score(s)
@@ -446,31 +460,61 @@ class ImageQualityFunction(ABC):
         if isinstance(img, Image):
             img = img.asnumpy()
 
+        # Allow the function to be used on a single image presented as
+        # a 2d Numpy array, as well as a stack.
         if img.ndim == 2:
+            stack_len = 0  # singleton
             img = img[np.newaxis, :, :]
+        else:
+            stack_len = img.shape[0]
 
-        stack_len = img.shape[0]
+        # Image size.
         L = img.shape[-1]
 
-        # Generate grid on first call so user can expect it exists.
+        # Generate grid on first call as needed.
         self._grid_cache.setdefault(L, grid_2d(L, dtype=img.dtype))
 
-        # Call the function over img stack
+        # Call the function over img stack.
         res = np.fromiter(map(self._function, img), dtype=img.dtype)
 
-        if stack_len == 1:
+        # Return singleton when given a singleton (2d array).
+        if stack_len == 0:
             res = res[0]
 
         return res
 
 
 class BandedSNRImageQualityFunction(ImageQualityFunction):
+    """
+    Computes the ratio of variance of central pixels of image to
+    pixels in a configurable outer band.
+    """
+
     def _function(self, img, center_radius=0.5, outer_band_start=0.8, outer_band_end=1):
-        # Look up the precached grid.
-        grid = self._grid_cache[img.shape[-1]]
+        """Configurable scoring function.
+
+        :param img: Input image as 2d Numpy array.
+        :param center_radius: Proportion of image radius defining the center.
+        :param outer_band_start: Proportion of image radius defining
+            the inner boundary of band.
+        :param outer_band_end: Proportion of image radius defining the
+            outer boundary of band.  Must be larger than outer_band_start.
+
+        :return: Ratio central variance to outer band variance.
+        """
+        # Image Size
+        L = img.shape[-1]
+
+        # Look up the grid.
+        grid = self._grid_cache[L]
 
         center_mask = grid["r"] < center_radius
         outer_mask = (grid["r"] > outer_band_start) & (grid["r"] < outer_band_end)
+        if not np.any(outer_mask):
+            # outer_mask is empty, need to correct outer_band_{start,end}
+            raise RuntimeError(
+                f"Band of ({outer_band_start}, {outer_band_end}) empty for image size {L}, adjust band boundaries."
+            )
 
         return np.var(img[center_mask]) / np.var(img[outer_mask])
 
@@ -488,12 +532,12 @@ class BandpassImageQualityFunction(ImageQualityFunction):
 
 class WeightedImageQualityFunction(ImageQualityFunction):
     """
-    A callable image quality scoring function using a radial grid weighted function.
+    Extends ImageQualityFunction with a radial grid weighted function
+    for use in user defined `_function` calls.
     """
 
     def __init__(self):
-        # Each weight function will need a seperate cache,
-        # but the same function should be deterministic up to resolution.
+        # Each weight function will need a seperate cache.
         self._weights_cache = {}
 
     @abstractmethod
@@ -502,36 +546,44 @@ class WeightedImageQualityFunction(ImageQualityFunction):
         Take a 1d radial weight function.
         The function is expected to be defined [0,sqrt(2)].
         Function range is not limited, but should probably be [0,1].
+
+        :param r: Radius (grid).
+        :return: 2D grid of weights
         """
 
     def weights(self, L):
         """
-        Lookup weights for a given resolution L,
-        computes and updates cache on first request.
+        Returns  2D array of weights for a given resolution L.
+        Computes and caches on first request.
 
         :param L: resolution pixels
-        :returns: 2d weight array for LxL grid.
+
+        :return: 2d weight array for LxL grid.
         """
         grid = self._grid_cache[L]
         return self._weights_cache.setdefault(
             L, np.frompyfunc(self.weight_function)(grid["r"])
         )
 
-    def _function(self, img):
-        L = img.shape[-1]
 
-        # if we ignore the issue of dependence,
-        # we could also do sum(per_pixel_variance * weights)
-        return (img * img) * self.weights(L)
-
-
+# These classes are provided as helpers/examples.
 class RampImageQualityFunction(WeightedImageQualityFunction):
+    """
+    Users can extend this class when they would like to apply a linear
+    ramp.
+    """
+
     def _weight_function(r):
         # linear ramp
         return np.max(1 - r, 0)
 
 
 class BumpImageQualityFunction(WeightedImageQualityFunction):
+    """
+    Users can extend this class when they would like to apply a [0,1]
+    bump function.
+    """
+
     def _weight_function(r):
         # bump function (normalized to [0,1]
         if r >= 1:
