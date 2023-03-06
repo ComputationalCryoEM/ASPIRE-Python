@@ -24,7 +24,7 @@ https://www.ebi.ac.uk/emdb/EMD-8511
 
 import logging
 
-from aspire.abinitio import CLSyncVoting
+from aspire.abinitio import CLSymmetryC3C4
 from aspire.basis import FFBBasis3D
 from aspire.denoising import ClassAvgSourcev11
 from aspire.noise import AnisotropicNoiseEstimator
@@ -101,7 +101,7 @@ avgs = ArrayImageSource(avgs.images[:n_classes])
 
 logger.info("Begin Orientation Estimation")
 
-orient_est = CLSyncVoting(avgs, n_theta=360)
+orient_est = CLSymmetryC3C4(avgs, symmetry=f"C4", n_theta=360, max_shift=1)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
