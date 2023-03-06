@@ -49,17 +49,22 @@ class ClassSelector(ABC):
         :return: array of indices into `classes`
         """
 
-    @classmethod
     @property
-    @abstractmethod
-    def quality_scores(cls):
+    def quality_scores(self):
         """
-        All `ClassSelector` should assign a quality score
-        array the same length as the selection output.
+        All `ClassSelector` should assign a quality score array the
+        same length as the selection output.
 
         For subclasses like TopClassSelector and RandomClassSelector
-        where no quality information is derived, this array should be zeros.
+        where no quality information is derived, the associated
+        `_quality_scores` should be set to zeros by `_select`.
         """
+        # Remind the user to run selection first.  We could run it
+        # automatically, but some of the class selectors may take a
+        # long time.
+        if not hasattr(self, "_quality_scores"):
+            raise RuntimeError("Must run `.select(...)` to compute quality_scores")
+        return self._quality_scores
 
     def select(self, classes, reflections, distances):
         """
@@ -110,31 +115,20 @@ class ClassSelector(ABC):
             )
 
 
-class ClassSelectorUnranked(ClassSelector):
-    @property
-    def quality_scores(self):
-        return np.zeros(self._max_n + 1)
-
-
-class ClassSelectorRanked(ClassSelector):
-    @property
-    def quality_scores(self):
-        if not hasattr(self, "_quality_scores"):
-            raise RuntimeError("Must run `.select(...)` to compute quality_scores")
-        return self._quality_scores
-
-
-class TopClassSelector(ClassSelectorUnranked):
+class TopClassSelector(ClassSelector):
     def _select(self, classes, reflections, distances):
         """
         Returns classes in `Source` order.
 
         Mainly useful for debugging.
         """
+        # Assign uniform quality.
+        self._quality_scores = np.zeros(self._max_n + 1)
+        # Return same indices as initial source.
         return np.arange(self._max_n + 1)  # +1 for zero indexing
 
 
-class RandomClassSelector(ClassSelectorUnranked):
+class RandomClassSelector(ClassSelector):
     def __init__(self, seed=None):
         """
         :param seed: RNG seed, de
@@ -145,6 +139,9 @@ class RandomClassSelector(ClassSelectorUnranked):
         """
         Select random `n` classes from the population.
         """
+        # Assign uniform quality.
+        self._quality_scores = np.zeros(self._max_n + 1)
+
         # Instantiate a random Generator
         rng = np.random.default_rng(self.seed)
         # Generate and return indices for random sample
@@ -152,7 +149,7 @@ class RandomClassSelector(ClassSelectorUnranked):
         return rng.choice(self._max_n + 1, size=self._max_n + 1, replace=False)
 
 
-class ContrastClassSelector(ClassSelectorRanked):
+class ContrastClassSelector(ClassSelector):
     """
     Selects top classes based on highest contrast,
     as estimated by variances of `distances`.
@@ -175,7 +172,7 @@ class ContrastClassSelector(ClassSelectorRanked):
         return sorted_class_inds
 
 
-class DistanceClassSelector(ClassSelectorRanked):
+class DistanceClassSelector(ClassSelector):
     """
     Selects top classes based on lowest mean distance
     as estimated by `distances`.
@@ -197,7 +194,7 @@ class DistanceClassSelector(ClassSelectorRanked):
         return sorted_class_inds
 
 
-class GlobalClassSelector(ClassSelectorRanked):
+class GlobalClassSelector(ClassSelector):
     """
     Extends ClassSelector for methods that require
     passing over all class average images.
