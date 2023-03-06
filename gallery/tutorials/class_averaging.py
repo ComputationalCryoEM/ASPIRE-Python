@@ -2,7 +2,8 @@
 Class Averaging
 ===============
 
-We demonstrate class averaging using the rotationally invariant representation algorithm.
+We demonstrate class averaging using the rotationally invariant
+representation algorithm.
 """
 
 import logging
@@ -68,7 +69,8 @@ plt.show()
 # Example Data Set Source
 # ^^^^^^^^^^^^^^^^^^^^^^^
 #
-# We concatenate and shuffle 512 rotations of the Gaussian images above to create our data set.
+# We concatenate and shuffle 512 rotations of the Gaussian images
+# above to create our data set.
 
 # How many entries (angles) in our stack
 N = 512
@@ -85,12 +87,14 @@ for i, theta in enumerate(thetas):
     classYOvalL[i] = np.asarray(PILImage.fromarray(yoval_discL).rotate(theta))
     classYOvalR[i] = np.asarray(PILImage.fromarray(yoval_discR).rotate(theta))
 
-# We'll make an example data set by concatentating then shuffling these.
+# We'll make an example data set by concatentating then shuffling
+# these.
 example_array = np.concatenate((classRound, classOval, classYOvalL, classYOvalR))
 np.random.seed(1234567)
 np.random.shuffle(example_array)
 
-# So now that we have cooked up an example dataset, lets create an ASPIRE source
+# So now that we have cooked up an example dataset, lets create an
+# ASPIRE source
 src = ArrayImageSource(example_array)
 
 # Let's peek at the images to make sure they're shuffled up nicely
@@ -100,14 +104,16 @@ src.images[:10].show()
 # Basic Class Average
 # -------------------
 #
-# This first example uses the ``DebugClassAvgSource`` to classify images
-# via the rotationally invariant representation (``RIRClass2D``) algorithm.
-# ``DebugClassAvgSource`` internally uses ``TopClassSelector`` by default.
-# ``TopClassSelector`` deterministically selects the first ``n_classes``.
-# ``DebugClassAvgSource`` also uses brute force rotational alignment without shifts.
-# These simplifications are useful for development and debugging.
-# Later we will discuss the more general ``ClassAvgSource`` and the modular
-# components that are more suitable to simulations and experimental datasets.
+# This first example uses the ``DebugClassAvgSource`` to classify
+# images via the rotationally invariant representation
+# (``RIRClass2D``) algorithm.  ``DebugClassAvgSource`` internally uses
+# ``TopClassSelector`` by default.  ``TopClassSelector``
+# deterministically selects the first ``n_classes``.
+# ``DebugClassAvgSource`` also uses brute force rotational alignment
+# without shifts.  These simplifications are useful for development
+# and debugging.  Later we will discuss the more general
+# ``ClassAvgSource`` and the modular components that are more suitable
+# to simulations and experimental datasets.
 
 n_classes = 10
 
@@ -169,14 +175,12 @@ avgs = DebugClassAvgSource(
 # %%
 # Display Classes
 # ^^^^^^^^^^^^^^^
-# Here a little more work occurs, as the ``ClassAvgSourcev11`` will
-# compute an internal measure quality (contrast),
-# and avoid images already included in higher ranking classes.
-# All this occurs inside the ``ClassAvgSource`` component.
-# When using more advanced class average sources,
-# the images are remapped by the `selector`.
-# So in this case, the first 10 images will be those with the highest contrast,
-# that we have not already seen.
+# Here, on request for images, the class average source will classify,
+# select, and average images.  All this occurs inside the
+# ``ClassAvgSource`` components.  When using more advanced class
+# average sources, the images are remapped by the `selector`.  In this
+# case, using ``DebugClassAvgSource`` the first 10 images will simply
+# correspond to the first ten from ``noise_src``.
 
 avgs.images[:10].show()
 
@@ -189,9 +193,11 @@ avgs.images[:10].show()
 
 review_class = 5
 
-# Map this image from the sorted selection back to the input ``noisy_src``.
+# Map this image from the sorted selection back to the input
+# ``noisy_src``.
 
-# Report the identified neighbor indices with respect to the input ``noise_src``.
+# Report the identified neighbor indices with respect to the input
+# ``noise_src``.
 classes = avgs._nn_classes[review_class]
 reflections = avgs._nn_reflections[review_class]
 logger.info(f"Class {review_class}'s neighors: {classes}")
@@ -218,8 +224,9 @@ avgs.images[review_class].show()
 # Alignment Details
 # ^^^^^^^^^^^^^^^^^
 #
-# Alignment details are exposed when avaialable from an underlying ``averager``.
-# In this case, we'll get the estimated alignments for the ``review_class``.
+# Alignment details are exposed when avaialable from an underlying
+# ``averager``.  In this case, we'll get the estimated alignments for
+# the ``review_class``.
 
 
 est_rotations = avgs.averager.rotations
