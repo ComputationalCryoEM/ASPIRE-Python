@@ -79,17 +79,19 @@ class ClassSelector(ABC):
         :return: array of indices into `classes`
         """
 
-        # Compute max class id found in the network for sanity checking. when unknown.
-        # Some subclasses may have a more explicit `_max_n` from an initializing `Source`.
-        if not hasattr(self, "_max_n"):
-            self._max_n = np.max(classes[:, 0])
+        # Compute max class id found in the network for sanity
+        # checking. Base class defaults to the `n` known from the
+        # initializing `Source`.  This `n` may be reduced through
+        # class selection.
+        if not hasattr(self, "n"):
+            self.n = np.max(classes[:, 0]) + 1  # +1 for zero indexing
 
         # Call the selection logic
         self.selection = self._select(classes, reflections, distances)
 
-        # n_img should not exceed the largest index in first column of `classes`
-        n_img = np.max(classes[:, 0]) + 1
-        # Check values in selection are in bounds.
+        # n_img should not exceed the largest index in first column of `classes`.
+        n_img = np.max(classes[:, 0]) + 1  # +1 for zero indexing
+        # Check values in selection are in the bounds.
         self._check_selection(self.selection, n_img)
 
         return self.selection
@@ -102,9 +104,9 @@ class ClassSelector(ABC):
         :param n_img: number of images available
         """
         # Check length, +1 for zero indexing
-        if not len_operator(len(selection), self._max_n + 1):
+        if not len_operator(len(selection), self.n):
             raise ValueError(
-                f"Class selection must be {str(len_operator)} {self._max_n+1}, got {len(selection)}"
+                f"Class selection must be {str(len_operator)} {self.n}, got {len(selection)}"
             )
 
         # Check indices [0, n_img)
@@ -123,9 +125,9 @@ class TopClassSelector(ClassSelector):
         Mainly useful for debugging.
         """
         # Assign uniform quality.
-        self._quality_scores = np.zeros(self._max_n + 1)
+        self._quality_scores = np.zeros(self.n)
         # Return same indices as initial source.
-        return np.arange(self._max_n + 1)  # +1 for zero indexing
+        return np.arange(self.n)
 
 
 class RandomClassSelector(ClassSelector):
@@ -140,13 +142,13 @@ class RandomClassSelector(ClassSelector):
         Select random `n` classes from the population.
         """
         # Assign uniform quality.
-        self._quality_scores = np.zeros(self._max_n + 1)
+        self._quality_scores = np.zeros(self.n)
 
         # Instantiate a random Generator
         rng = np.random.default_rng(self.seed)
         # Generate and return indices for random sample
         # +1 for zero indexing
-        return rng.choice(self._max_n + 1, size=self._max_n + 1, replace=False)
+        return rng.choice(self.n, size=self.n, replace=False)
 
 
 class ContrastClassSelector(ClassSelector):
@@ -214,9 +216,9 @@ class GlobalClassSelector(ClassSelector):
             )
 
         self._quality_function = quality_function
-        self._max_n = self.averager.src.n - 1
+        self.n = self.averager.src.n
         # We should hit every entry, but along the way identify missing values as nan.
-        self._quality_scores = np.full(self._max_n + 1, fill_value=float("nan"))
+        self._quality_scores = np.full(self.n, fill_value=float("nan"))
 
         # To be used for heapq (score, img_id, avg_im)
         # Note the default implementation is min heap, so `pop` returns smallest value.
