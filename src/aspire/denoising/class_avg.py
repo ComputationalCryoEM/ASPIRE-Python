@@ -149,24 +149,26 @@ class ClassAvgSource(ImageSource):
         # Remap to the selected ordering
         indices = self.selection_indices[indices]
 
-        # Check is there is a cache available from class selection component
-        # Note, we can use := for this in the branch directly, but requires Python>=3.8
+        # Check if there is a cache available from class selection component.
+        # Note, we can use := for this in the branch directly, when Python>=3.8
         heap_inds = None
         if hasattr(self.class_selector, "heap"):
-            # Then check if heap holds anything in indices
+            # Then check if request matches anything in the heap.
             heap_inds = set(indices).intersection(self.class_selector.heap_ids)
 
-        # check for wholly cached image sets first
+        # Check if this src cached images.
         if self._cached_im is not None:
-            logger.debug(f"Loading {len(indices)} images from cache")
+            logger.debug(f"Loading {len(indices)} images from image cache")
             im = Image(self._cached_im[indices, :, :])
 
-        # check for cached image sets from class_selector
+        # Check for heap cached image sets from class_selector.
         elif heap_inds:
             logger.debug(f"Mapping {len(heap_inds)} images from heap cache.")
 
             # Images in heap_inds can be fetched from class_selector.
-            # For others, create an indexing map that preserves original order.
+            # For others, create an indexing map that preserves
+            # original order.  Both of these dicts map requested image
+            # id to location in the return array `im`.
             indices_to_compute = {
                 ind: i for i, ind in enumerate(indices) if i not in heap_inds
             }
@@ -174,34 +176,38 @@ class ClassAvgSource(ImageSource):
                 ind: i for i, ind in enumerate(indices) if i in heap_inds
             }
 
-            # Recursion, heap_inds set should be empty in the recursive call.
-            computed_imgs = self._images(list(indices_to_compute.values()))
-            # Get the map once to avoid traversing heap in a loop
+            # Get heap dict once to avoid traversing heap in a loop.
             heapd = self.self.class_selector.heap_id_dict
 
-            imgs = np.empty(
-                (len(indices), computed_imgs.resolution, computed_imgs.resolution),
+            # Create an empty array to pack results.
+            im = np.empty(
+                (len(indices), _imgs.resolution, _imgs.resolution),
                 dtype=computed_imgs.dtype,
             )
 
-            _inds = list(indices_to_compute.values())
-            imgs[_inds] = computed_imgs
-            _inds = list(indices_from_heap.values())
-            imgs[_inds] = map(
-                lambda k: self.class_selector.heap[heapd[k]][2],
-                list(indices_from_heap.keys()),
-            )
+            # Recursively call `_images`.
+            # `heap_inds` set should be empty in the recursive call,
+            # and compute only remaining images (those not in heap).
+            _imgs = self._images(list(indices_to_compute.keys()))
 
-            return imgs
+            # Pack images computed from `_images` recursive call.
+            _inds = list(indices_to_compute.values())
+            im[_inds] = _imgs
+
+            # Pack images from heap.
+            for k, i in indices_from_heap.items():
+                # map the image index to heap item location
+                heap_loc = heapd[k]
+                im[i] = self.class_selector.heap[heap_loc].image
 
         else:
-            # Perform image averaging for the requested classes
+            # Perform image averaging for the requested images (classes)
             logger.debug(f"Averaging {len(indices)} images from source")
             im = self.averager.average(
                 self._nn_classes[indices], self._nn_reflections[indices]
             )
 
-        # Finally, apply transforms to resulting Image
+        # Finally, apply transforms to resulting Images
         return self.generation_pipeline.forward(im, indices)
 
 
@@ -214,23 +220,8 @@ class DebugClassAvgSource(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
 
-    Packs base with common debug defaults.
-
-    :param n_nbor: Number of nearest neighbors. Default 10.
-    :param num_procs: Number of processors. Default of 1 runs serially.
-        `None` attempts to compute a reasonable value
-        based on available cores and memory.
-    :param classifier: `Class2D` classifier instance.
-        Default `None` creates `RIRClass2D`.
-        See code for parameter details.
-    :param class_selector: `ClassSelector` instance.
-        Default `None` creates `TopClassSelector`.
-    :param averager: `Averager2D` instance.
-        Default `None` ceates `BFRAverager2D` instance.
-        See code for parameter details.
-
-    :return: ClassAvgSource instance.
-
+    Defaults to `RIRClass2D`, `TopClassSelector`, `BFRAverager2D`
+    using a single processor.
     """
 
     def __init__(
@@ -242,6 +233,25 @@ class DebugClassAvgSource(ClassAvgSource):
         class_selector=None,
         averager=None,
     ):
+        """
+        Instantiates with default debug paramaters.
+
+        :param src: Source used for image classification.
+        :param n_nbor: Number of nearest neighbors. Default 10.
+        :param num_procs: Number of processors. Default of 1 runs serially.
+            `None` attempts to compute a reasonable value
+            based on available cores and memory.
+        :param classifier: `Class2D` classifier instance.
+            Default `None` creates `RIRClass2D`.
+            See code for parameter details.
+        :param class_selector: `ClassSelector` instance.
+            Default `None` creates `TopClassSelector`.
+        :param averager: `Averager2D` instance.
+            Default `None` ceates `BFRAverager2D` instance.
+            See code for parameter details.
+
+        :return: ClassAvgSource instance.
+        """
         dtype = src.dtype
 
         if classifier is None:
@@ -298,6 +308,7 @@ class ClassAvgSourcev11(ClassAvgSource):
         """
         Instantiates ClassAvgSourcev11 with the following parameters.
 
+        :param src: Source used for image classification.
         :param n_nbor: Number of nearest neighbors. Default 50.
         :param num_procs: Number of processors. Use 1 to run serially.
             Default `None` attempts to compute a reasonable value
