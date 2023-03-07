@@ -179,16 +179,16 @@ class ClassAvgSource(ImageSource):
             # Get heap dict once to avoid traversing heap in a loop.
             heapd = self.self.class_selector.heap_id_dict
 
-            # Create an empty array to pack results.
-            im = np.empty(
-                (len(indices), _imgs.resolution, _imgs.resolution),
-                dtype=computed_imgs.dtype,
-            )
-
             # Recursively call `_images`.
             # `heap_inds` set should be empty in the recursive call,
             # and compute only remaining images (those not in heap).
             _imgs = self._images(list(indices_to_compute.keys()))
+
+            # Create an empty array to pack results.
+            im = np.empty(
+                (len(indices), _imgs.resolution, _imgs.resolution),
+                dtype=_imgs.dtype,
+            )
 
             # Pack images computed from `_images` recursive call.
             _inds = list(indices_to_compute.values())
