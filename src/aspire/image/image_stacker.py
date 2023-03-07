@@ -26,7 +26,7 @@ class ImageStacker(abc.ABC):
         Initialize ImageStacker instance.
         """
 
-        # When provided an image, keep track of shape.
+        # This variable will be used to keep track of shape.
         self._return_image_size = None
 
     @abc.abstractmethod
@@ -40,12 +40,18 @@ class ImageStacker(abc.ABC):
         where the first (slow) dimension is stack axis,
         and signal data is flattened to the last (fastest) axis.
         In this case an Numpy array is returned.
+        This allows performing stacking arithmetic in an arbitrary
+        basis.
 
         When passing `Image`, the stack_shape must be 1D.
         In this case an `Image` is returned.
         Users with multidimensional `Image` data
         may use `Image.stack_reshape` or stack slicing
-        before/after stacking.
+        before/after stacking to ensure the correct
+        aggregation is occurring.
+
+        If multidimensional stacking would be useful,
+        submit a feature request.
 
         :param stack: Image instance (or Numpy array).
 
@@ -61,15 +67,16 @@ class ImageStacker(abc.ABC):
         :return: 2D Numpy array.
         """
 
-        # Careful, we need to reset this in case this stack is different from last.
+        # Careful, we need to reset this in case this stack is
+        # different from last call.
         self._return_image_size = None
 
         # Flatten image data.
         if isinstance(stack, Image):
-            # Store the image size for returning later
+            # Store the image size for returning later.
             self._return_image_size = (1,) + stack.shape[1:]
 
-            # Sanity check dimensions
+            # Sanity check dimensions.
             if stack.stack_ndim != 1:
                 raise ValueError(
                     f"`stack` shape of Image should be 1D for ImageStacking not {stack.stack_shape}."
@@ -77,7 +84,8 @@ class ImageStacker(abc.ABC):
                 )
             stack = stack.asnumpy().reshape(stack.n_images, -1)
 
-        # By this point we should alway be an array with signal data in the last axis.
+        # By this point we should always be an array with signal data
+        # in the last axis.
         if not isinstance(stack, np.ndarray):
             raise ValueError("`stack` should be `Image` instance or Numpy array.")
         elif stack.ndim != 2:
@@ -93,7 +101,8 @@ class ImageStacker(abc.ABC):
         When ImageStacker has been passed an `Image`,
         this method creates an `Image` instance to be returned.
 
-        Stacking Numpy array will pass through.
+        In the case we started with a Numpy array this should pass
+        through.
 
         :param result: Result data as Numpy Array.
 
@@ -127,28 +136,33 @@ class MedianImageStacker(ImageStacker):
 
 
 class SigmaRejectionImageStacker(ImageStacker):
-    """Stack using Sigma Rejection.
+    """
+    Stack using Sigma Rejection.
 
-     When no outliers exist, sigma rejection should return equivalent
-    of `mean`.  In the presence of outliers, pixels outside of
-    `rejection_sigma` from the per-pixel-mean are discarded.
+    When no outliers exist, sigma rejection is equivalent to `mean`.
+    In the presence of outliers, pixels outside of `rejection_sigma`
+    from the per-pixel-mean are discarded before the mean is
+    performed.
 
-     For potentially less Gaussian distributions, 'FWHM' and 'FWTM'
-     methods are provided.  These will take the mean of values lieing
-     in the FWHM and FWTM. Essentially this is the same wing clipping
-     procedure.
+    For potentially less Gaussian distributions, 'FWHM' and 'FWTM'
+    methods are also provided.  These will take the mean of all values
+    laying above half the maximum and tenth maximum
+    respectively. Essentially this is the same wing clipping
+    procedure, but the location of the clip is determined by the peak
+    intensity instead of standard deviation.
 
-     Note, in both cases, user's are responsible for ensuring metohds
-     are called on reasonable data (in FW* cases we should be talking
-     intesnities). No corrections or pedestals are incorporated at this
-     time."""
+    Note, in both cases, user's are responsible for ensuring methods
+    are called on reasonable data (in FW* cases we should be probably
+    be using intensities). No corrections or pedestals are
+    incorporated at this time, but could easily be added in the
+    future.
+    """
 
     _width_methods = {"FWHM": 0.5, "FWTM": 0.1}
 
     def __init__(self, rejection_sigma=3):
         """
-        Instantiates SigmaRejectionImageStacker instance with
-        presribed `rejection_sigma`.
+        Instantiates with presribed `rejection_sigma`.
 
         :param rejection_sigma: Values falling outside
             `rejection_sigma` standard deviations are
@@ -158,10 +172,10 @@ class SigmaRejectionImageStacker(ImageStacker):
 
         """
         # Handle string `rejection_sigma`
-        self._method = self._gaussian
+        self._method = self._gaussian_method
         if isinstance(rejection_sigma, str):
             self.rejection_sigma = rejection_sigma.upper()
-            self._method = self._width
+            self._method = self._width_method
             if self.rejection_sigma not in self._width_methods:
                 raise ValueError(
                     f"`rejection_sigma` must be numeric or {self._width_methods.keys()}."
@@ -176,38 +190,39 @@ class SigmaRejectionImageStacker(ImageStacker):
         stack = self._check_and_convert(stack)
         return self._return(self._method(stack))
 
-    def _gaussian(self, stack):
+    def _gaussian_method(self, stack):
         """
         Gaussian rejection.
         """
 
-        # Compute the mean and standard deviations, pixelwise
+        # Compute the mean and standard deviations, pixel-wise.
         means = stack.mean(axis=0)
         std_devs = stack.std(axis=0)
 
-        # Compute values that lie outside sigma deviations
+        # Find values that lie outside per-pixel sigma deviations.
         outliers = np.abs(stack - means) > self.sigma * std_devs
 
-        # Mask off the outliers
+        # Mask off the outliers.
         masked_stack = ma.masked_array(stack, mask=outliers)
 
         # Return mean without the outliers
         return masked_stack.mean(axis=0)
 
-    def _width(self, stack):
+    def _width_method(self, stack):
         """
         Width rejection.
         """
-        # Compute per-pixel max
+
+        # Compute per-pixel max.
         maxima = stack.max(axis=0)
 
         # Find the per-pixel value for clipping
         y = maxima * self._width_methods[self.rejection_sigma]
 
-        # Compute outliers, values below clipping value.
+        # Compute outliers; values below clipping value.
         outliers = stack < y
 
-        # Mask off the outliers
+        # Mask off the outliers.
         masked_stack = ma.masked_array(stack, mask=outliers)
 
         # Return mean withou the outliers
@@ -218,14 +233,15 @@ class WinsorizedImageStacker(ImageStacker):
     """
     Stack using Winsorization.
 
-    Winsorizing is similar to SigmaRejectionImageStacker,
-    excect it admits a `percentile` and replaces rejected
-    values with values at +/- `percentile`.
+    Winsorizing is similar to SigmaRejectionImageStacker, except it
+    admits a `percentile` and replaces rejected values with values at
+    +/- `percentile`.
     """
 
     def __init__(self, percentile=0.1):
-        """Instantiates WinsorizedImageStacker instance with
-        presribed `percentile`.
+        """
+        Instantiates WinsorizedImageStacker instance with prescribed
+        `percentile`.
 
         See scipy docs for more details:
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.winsorize.html
@@ -235,8 +251,8 @@ class WinsorizedImageStacker(ImageStacker):
             tuple allows different lower and upper percentiles
             respectively. Example (0.1, 0.2) would Winsorize the lower
             10% and upper 20% of values.  In the case of a single
-            value, that value will be used for both upper and lower
-            percentiles.
+            value, the same value will be used for both upper and
+            lower percentiles.
         """
         # Convert scalars to tuples.
         if not isinstance(percentile, tuple):
@@ -247,16 +263,22 @@ class WinsorizedImageStacker(ImageStacker):
 
     def __call__(self, stack):
         """
-        Winsorizing
+        Apply Winsorizing process the return the stack mean.
         """
+
         stack = self._check_and_convert(stack)
 
+        # Note, we intentionally disable `inplace` to avoid mutating
+        # stack, just-in-case.
         stack = winsorize(stack, limits=self.percentile, inplace=False)
 
         # Return mean of Winsorized data.
         return self._return(stack.mean(axis=0))
 
 
+# The following will be blocked by ABC because they are not
+# implemented yet, and are open to discussion/removal/implementation
+# pending time.
 class PoissonRejectionImageStacker(ImageStacker):
     """
     Stack using Poisson Rejection.
