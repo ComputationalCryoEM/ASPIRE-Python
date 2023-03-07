@@ -213,6 +213,12 @@ class _HeapItem:
         self.index = int(index)
         self.image = image
 
+    def __lt__(self, other):
+        """
+        This comparator is used by `heapq` to order and maintain the heap.
+        """
+        return self.value < other.value
+
     @staticmethod
     def nbytes(img_size, dtype):
         """
@@ -224,6 +230,8 @@ class _HeapItem:
 
         :return: Sum of attribute sizes.
         """
+        # Allow passing dtype directly, or instance of dtype.
+        dtype = np.dtype(dtype)
         return img_size**2 * dtype.itemsize + 16
 
 

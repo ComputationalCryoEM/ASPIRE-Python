@@ -35,7 +35,7 @@ def simple_data_fixture(request):
     # Generate test data.
     A = np.ones((SAMPLE_N, img_size, img_size), dtype=dtype)
 
-    # Force outliers
+    # Force outliers, single outlier per pixel across stack.
     for i in range(2, 7):
         A[0, i - 1] = i
 

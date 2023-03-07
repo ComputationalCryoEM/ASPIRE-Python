@@ -1,5 +1,6 @@
 import logging
 import os
+from heapq import heappush, heappushpop
 from itertools import product, repeat
 
 import numpy as np
@@ -18,7 +19,9 @@ from aspire.classification import (
     RIRClass2D,
     TopClassSelector,
 )
+from aspire.classification.class_selection import _HeapItem
 from aspire.denoising import ClassAvgSourcev11, DebugClassAvgSource
+from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
@@ -32,6 +35,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 RESOLUTIONS = [32]
 DTYPES = [np.float64]
 CLS_SRCS = [DebugClassAvgSource, ClassAvgSourcev11]
+# For very small problems, it usually isn't worth running in parallel.
+NUM_PROCS = 1
 
 
 def sim_fixture_id(params):
@@ -59,29 +64,31 @@ def class_sim_fixture(request):
     # We want the first rotation to have angle 2pi instead of 0,
     # so the norm isn't degenerate (0) later.
     inplane_rots[0] = 2 * np.pi
-    logger.info(f"inplane_rots: {inplane_rots}")
+    logger.debug(f"inplane_rots: {inplane_rots}")
 
     # Total rotations will be number of axis  * number of angles
     # ie. vertices * n_inplane_rots
     n = len(cube_vertices) * n_inplane_rots
-    logger.info(f"Constructing {n} rotations.")
+    logger.debug(f"Constructing {n} rotations.")
 
     # Generate Rotations
     # Normalize the rotation axes to 1
     rotvecs = cube_vertices / np.linalg.norm(cube_vertices, axis=0)
-    logger.info(f"rotvecs: {rotvecs}")
+    logger.debug(f"rotvecs: {rotvecs}")
     # renormalize by broadcasting with angle amounts in inplane_rots
     rotvecs = (rotvecs[np.newaxis].T * inplane_rots).T.reshape(n, 3)
     # Construct rotation object
     true_rots = Rotation.from_rotvec(rotvecs, dtype=dtype)
 
     # Load sample molecule volume
-    # TODO, probably our default volume should work for this stuff... tighter var?
+    # TODO, probably our default volume should "just work" for this stuff... tighter var?
     v = Volume(
         np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")), dtype=dtype
     ).downsample(res)
 
-    # Contruct the Simulation source
+    # Contruct the Simulation source.
+    # Note using a single volume via C=1 is critical to matching
+    # alignment without the complexity of remapping via states etc.
     src = Simulation(
         L=res, n=n, vols=v, offsets=0, amplitudes=1, C=1, angles=true_rots.angles
     )
@@ -94,18 +101,51 @@ def class_sim_fixture(request):
 @pytest.mark.parametrize(
     "test_src_cls", CLS_SRCS, ids=lambda param: f"ClassSource={param}"
 )
-def test_run(class_sim_fixture, test_src_cls):
-    # Images from the original Source
-    orig_imgs = class_sim_fixture.images[:5]
+def test_basic_averaging(class_sim_fixture, test_src_cls):
+    """
+    Test that the default `ClassAvgSource` implementations return
+    class averages.
+    """
 
-    # Classify, Select, and average images using test_src_cls
-    test_src = test_src_cls(src=class_sim_fixture)
-    test_imgs = test_src.images[:5]
+    cmp_n = 5
+
+    # Classify, Select, and compute averaged images.
+    test_src = test_src_cls(src=class_sim_fixture, num_procs=NUM_PROCS)
+    test_imgs = test_src.images[:cmp_n]
+
+    # Fetch reference images from the original source.
+    # We need remap the indices back to the original ids because
+    # selectors will potentially reorder the classes.
+    remapped_indices = test_src.selection_indices[list(range(cmp_n))]
+    orig_imgs = class_sim_fixture.images[remapped_indices]
 
     # Sanity check
     assert np.allclose(
         np.linalg.norm((orig_imgs - test_imgs).asnumpy(), axis=(1, 2)), 0, atol=0.001
     )
+
+
+# Test the _HeapItem helper class
+def test_heap_helper():
+    dtype = np.dtype(np.float64)
+
+    # Test the static method
+    assert _HeapItem.nbytes(img_size=2, dtype=dtype) == 4 * dtype.itemsize + 16
+
+    # Create an empty heap
+    test_heap = []
+
+    _img = Image(np.empty((2, 2), dtype=dtype))
+
+    # Push item onto the heap
+    a = _HeapItem(123, 0, _img)
+    heappush(test_heap, a)
+
+    # Push a better item onto heap, pop off the worst item.
+    b = _HeapItem(456, 1, _img)
+    popped = heappushpop(test_heap, b)
+
+    assert popped == a, "Failed to pop min item"
 
 
 @pytest.fixture()
@@ -120,7 +160,9 @@ def cls_fixture(class_sim_fixture):
     return c2d.classify()
 
 
-LOCAL_SELECTORS = [
+# These are selectors that do not need to pass over all the global set
+# of aligned and stacked class averages.
+ONLINE_SELECTORS = [
     ContrastClassSelector,
     ContrastWithRepulsionClassSelector,
     DistanceClassSelector,
@@ -130,14 +172,19 @@ LOCAL_SELECTORS = [
 
 
 @pytest.mark.parametrize(
-    "selector", LOCAL_SELECTORS, ids=lambda param: f"Selector={param}"
+    "selector", ONLINE_SELECTORS, ids=lambda param: f"Selector={param}"
 )
-def test_custom_local_selector(cls_fixture, selector):
+def test_online_selector(cls_fixture, selector):
     # classes, reflections, distances = cls_fixture
     selection = selector().select(*cls_fixture)
+    # Smoke test.
     logger.info(f"{selector}: {selection}")
 
 
+# These are selectors which compute the entire global set of class
+# averages before applying some criterion to select the "best"
+# classes.  These are closer to the methods used historically in
+# MATLAB experiments, sometimes called "out-of-core" in legacy code.
 GLOBAL_SELECTORS = [
     GlobalClassSelector,
     GlobalWithRepulsionClassSelector,
@@ -148,13 +195,14 @@ GLOBAL_SELECTORS = [
     "selector", GLOBAL_SELECTORS, ids=lambda param: f"Selector={param}"
 )
 @pytest.mark.expensive
-def test_custom_global_selector(class_sim_fixture, cls_fixture, selector):
+def test_global_selector(class_sim_fixture, cls_fixture, selector):
     basis = FFBBasis2D(class_sim_fixture.L, dtype=class_sim_fixture.dtype)
 
-    averager = BFRAverager2D(basis, class_sim_fixture, num_procs=1)
+    averager = BFRAverager2D(basis, class_sim_fixture, num_procs=NUM_PROCS)
 
     fun = BandedSNRImageQualityFunction()
 
     # classes, reflections, distances = cls_fixture
     selection = selector(averager, fun).select(*cls_fixture)
+    # smoke test
     logger.info(f"{selector}: {selection}")
