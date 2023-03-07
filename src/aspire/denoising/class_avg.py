@@ -133,7 +133,8 @@ class ClassAvgSource(ImageSource):
             logger.info(
                 f"After selection process, updating maximum {len(self._selection_indices)} classes from {self.n}."
             )
-        self._set_n(len(self._selection_indices))
+        # Note, setter should be inherited from base ImageSource.
+        self.n = len(self._selection_indices)
 
         self._selected = True
 
