@@ -112,16 +112,16 @@ if interactive:
 # If you will not be using cov2d,
 # you may remove this code block and associated variables.
 
-classification_src = src
+src = src
 custom_averager = None
 if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
     # Use denoised src for classification
-    classification_src = cwf_denoiser.denoise()
+    src = cwf_denoiser.denoise()
     # Peek, what do the denoised images look like...
     if interactive:
-        classification_src.images[:10].show()
+        src.images[:10].show()
 
 # %%
 # Class Averaging
@@ -135,7 +135,7 @@ logger.info("Begin Class Averaging")
 # This also demonstrates the potential to use a different source for classification and averaging.
 
 avgs_src = ClassAvgSourcev11(
-    classification_src,
+    src,
     n_nbor=n_nbor,
     averager_src=src,
     num_procs=None,  # Automaticaly configure parallel processing

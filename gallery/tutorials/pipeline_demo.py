@@ -179,7 +179,7 @@ rir = RIRClass2D(
 from aspire.denoising import DebugClassAvgSource
 
 avgs = DebugClassAvgSource(
-    classification_src=src,
+    src=src,
     classifier=rir,
 )
 

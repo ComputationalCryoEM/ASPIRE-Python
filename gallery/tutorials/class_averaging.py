@@ -118,7 +118,7 @@ src.images[:10].show()
 n_classes = 10
 
 avgs = DebugClassAvgSource(
-    classification_src=src,
+    src=src,
     n_nbor=10,
     num_procs=1,  # Change to "auto" if your machine has many processors
 )
@@ -167,7 +167,7 @@ noisy_src.images[:10].show()
 # Here we will use the noise_src.
 
 avgs = DebugClassAvgSource(
-    classification_src=noisy_src,
+    src=noisy_src,
     n_nbor=10,
     num_procs=1,  # Change to "auto" if your machine has many processors
 )

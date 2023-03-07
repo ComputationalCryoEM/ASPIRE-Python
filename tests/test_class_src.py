@@ -99,7 +99,7 @@ def test_run(class_sim_fixture, test_src_cls):
     orig_imgs = class_sim_fixture.images[:5]
 
     # Classify, Select, and average images using test_src_cls
-    test_src = test_src_cls(classification_src=class_sim_fixture)
+    test_src = test_src_cls(src=class_sim_fixture)
     test_imgs = test_src.images[:5]
 
     # Sanity check

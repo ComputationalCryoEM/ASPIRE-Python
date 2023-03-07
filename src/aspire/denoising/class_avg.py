@@ -26,7 +26,7 @@ class ClassAvgSource(ImageSource):
 
     def __init__(
         self,
-        classification_src,
+        src,
         classifier,
         class_selector,
         averager,
@@ -34,16 +34,16 @@ class ClassAvgSource(ImageSource):
         """
         Constructor of an object for denoising 2D images using class averaging methods.
 
-        :param classification_src: Source used for image classification.
+        :param src: Source used for image classification.
         :param classifier: Class2D subclass used for image classification.
             Example, RIRClass2D.
         :param class_selector: A ClassSelector subclass.
         :param averager: An Averager2D subclass.
         """
-        self.classification_src = classification_src
-        if not isinstance(self.classification_src, ImageSource):
+        self.src = src
+        if not isinstance(self.src, ImageSource):
             raise ValueError(
-                f"`classification_src` should be subclass of `ImageSource`, found {self.classification_src}."
+                f"`src` should be subclass of `ImageSource`, found {self.src}."
             )
 
         self.classifier = classifier
@@ -235,18 +235,18 @@ class DebugClassAvgSource(ClassAvgSource):
 
     def __init__(
         self,
-        classification_src,
+        src,
         n_nbor=10,
         num_procs=1,  # Change to "auto" if your machine has many processors
         classifier=None,
         class_selector=None,
         averager=None,
     ):
-        dtype = classification_src.dtype
+        dtype = src.dtype
 
         if classifier is None:
             classifier = RIRClass2D(
-                classification_src,
+                src,
                 fspca_components=400,
                 bispectrum_components=300,  # Compressed Features after last PCA stage.
                 n_nbor=n_nbor,
@@ -257,8 +257,8 @@ class DebugClassAvgSource(ClassAvgSource):
 
         if averager is None:
             averager = BFRAverager2D(
-                FFBBasis2D(classification_src.L, dtype=classification_src.dtype),
-                classification_src,
+                FFBBasis2D(src.L, dtype=src.dtype),
+                src,
                 num_procs=num_procs,
                 dtype=dtype,
             )
@@ -267,7 +267,7 @@ class DebugClassAvgSource(ClassAvgSource):
             class_selector = TopClassSelector()
 
         super().__init__(
-            classification_src=classification_src,
+            src=src,
             classifier=classifier,
             class_selector=class_selector,
             averager=averager,
@@ -287,7 +287,7 @@ class ClassAvgSourcev11(ClassAvgSource):
 
     def __init__(
         self,
-        classification_src,
+        src,
         n_nbor=50,
         num_procs=None,
         classifier=None,
@@ -317,11 +317,11 @@ class ClassAvgSourcev11(ClassAvgSource):
 
         :return: ClassAvgSource instance.
         """
-        dtype = classification_src.dtype
+        dtype = src.dtype
 
         if classifier is None:
             classifier = RIRClass2D(
-                classification_src,
+                src,
                 fspca_components=400,
                 bispectrum_components=300,  # Compressed Features after last PCA stage.
                 n_nbor=n_nbor,
@@ -332,7 +332,7 @@ class ClassAvgSourcev11(ClassAvgSource):
 
         if averager is None:
             if averager_src is None:
-                averager_src = classification_src
+                averager_src = src
 
             basis_2d = FFBBasis2D(averager_src.L, dtype=dtype)
 
@@ -351,7 +351,7 @@ class ClassAvgSourcev11(ClassAvgSource):
             class_selector = ContrastWithRepulsionClassSelector()
 
         super().__init__(
-            classification_src=classification_src,
+            src=src,
             classifier=classifier,
             class_selector=class_selector,
             averager=averager,
