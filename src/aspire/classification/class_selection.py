@@ -1,3 +1,20 @@
+"""
+Selecting the "best" classes is an area of active research.
+
+Here we provide an abstract base class with two naive approaches as
+concrete implementations.
+
+`RandomClassSelector` will select random indices from across the
+entire dataset, with RNG controlled by `seed`.
+
+`TopClassSelector' will select the first `n_classes` in order.  This
+may be useful for debugging and development.
+
+Additionally we provide a few methods that have been used
+historically, along with a few classes which should aid in
+constructing new methods.
+"""
+
 import logging
 from abc import ABC, abstractmethod
 from heapq import heappush, heappushpop
@@ -10,22 +27,6 @@ from aspire.image import Image
 from aspire.utils import grid_2d
 
 logger = logging.getLogger(__name__)
-
-"""
-Selecting the "best" classes is an area of active research.
-
-Here we provide an abstract base class with two naive approaches as concrete implementations.
-
-`RandomClassSelector` will select random indices from across the entire dataset,
-with RNG controlled by `seed`.
-
-`TopClassSelector' will select the first `n_classes` in order.
-This may be useful for debugging and development.
-
-Interested researchers are encouraged to implement their own selector
-which will be evaluated at runtime immediately before `averages`
-are computed by RIRClass2D.
-"""
 
 
 class ClassSelector(ABC):
@@ -538,7 +539,7 @@ class BandpassImageQualityFunction(ImageQualityFunction):
     #   (if we do bookkeeping during compression).
 
 
-class WeightedImageQualityFunction(ImageQualityFunction):
+class WeightedImageQualityMixin(ABC):
     """
     Extends ImageQualityFunction with a radial grid weighted function
     for use in user defined `_function` calls.
@@ -547,6 +548,7 @@ class WeightedImageQualityFunction(ImageQualityFunction):
     def __init__(self):
         # Each weight function will need a seperate cache.
         self._weights_cache = {}
+        super().__init__()
 
     @abstractmethod
     def _weight_function(self, r):
@@ -575,10 +577,9 @@ class WeightedImageQualityFunction(ImageQualityFunction):
 
 
 # These classes are provided as helpers/examples.
-class RampImageQualityFunction(WeightedImageQualityFunction):
+class RampWeightedImageQualityMixin(WeightedImageQualityMixin):
     """
-    Users can extend this class when they would like to apply a linear
-    ramp.
+    ImageQualityMixin to apply a linear ramp.
     """
 
     def _weight_function(r):
@@ -586,10 +587,9 @@ class RampImageQualityFunction(WeightedImageQualityFunction):
         return np.max(1 - r, 0)
 
 
-class BumpImageQualityFunction(WeightedImageQualityFunction):
+class BumpWeightedImageQualityFunction(WeightedImageQualityMixin):
     """
-    Users can extend this class when they would like to apply a [0,1]
-    bump function.
+    ImageQualityMixin to apply a linear ramp to apply a [0,1] bump function.
     """
 
     def _weight_function(r):
