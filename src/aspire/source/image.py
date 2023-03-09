@@ -17,7 +17,7 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.noise import AnisotropicNoiseEstimator
+from aspire.noise import WhiteNoiseEstimator
 from aspire.operators import (
     CTFFilter,
     IdentityFilter,
@@ -927,7 +927,7 @@ class ImageSource(ABC):
         sample_n=None,
         support_radius=None,
         batch_size=512,
-        noise_estimator=AnisotropicNoiseEstimator,
+        noise_estimator=WhiteNoiseEstimator,
     ):
         """
         Estimate the noise energy of `sample_n` images using prescribed estimator.
@@ -938,7 +938,7 @@ class ImageSource(ABC):
             Default of None will compute inscribed circle, `self.L // 2`.
         :param batch_size: Images per batch, defaults 512.
         :param noise_estimator: Method used for estimating noise.
-           Defaults to AnisotropicNoiseEstimator.
+           Defaults to WhiteNoiseEstimator.
 
         :returns: Estimated noise energy (variance).
         """
