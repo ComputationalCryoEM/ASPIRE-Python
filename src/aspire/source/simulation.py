@@ -167,9 +167,9 @@ class Simulation(ImageSource):
         if noise_adder is not None:
             logger.info(f"Appending {noise_adder} to generation pipeline")
             # If we need to calculate signal_power from Simulation,
-            # do so now (via _DelayedNoiseAdder).
-            if callable(noise_adder):
-                noise_adder = noise_adder(signal_power=self.estimate_signal_power())
+            # do so now and assign it to complete the Filter.
+            if getattr(noise_adder, "requires_signal_power", False):
+                noise_adder.signal_power = self.estimate_signal_power()
 
             # At this point we should have a fully baked NoiseAdder
             if not isinstance(noise_adder, NoiseAdder):

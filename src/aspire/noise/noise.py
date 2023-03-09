@@ -85,45 +85,10 @@ class CustomNoiseAdder(NoiseAdder):
         return np.mean(self._noise_filter.evaluate_grid(res))
 
 
-class _DelayedNoiseAdder:
-    """
-    Helper class for delaying the calculation of noise variance.
-    """
-
-    def __init__(self, cls, snr, seed=0):
-        """
-        Inializes and returns a callable instance.
-
-        :param cls: Class to be constructed when called.
-        :param snr: Target signal to noise ratio.
-        :param seed: Optional RNG seed used by NoiseAdder.
-        """
-        self.cls = cls
-        self.snr = snr
-        self.seed = seed
-
-        if not issubclass(cls, NoiseAdder):
-            raise RuntimeError(
-                f"_DelayedNoiseAdder.cls must be a NoiseAdder, received {cls}"
-            )
-
-    def __call__(self, signal_power):
-        """
-        Callable returns a completed NoiseAdder.
-
-        :param signal_power: Estimated signal power.
-            Used to compute target noise.
-
-        :return: Instance of NoiseAdder.
-        """
-        return self.cls.from_snr(
-            snr=self.snr, signal_power=signal_power, seed=self.seed
-        )
-
-
 class WhiteNoiseAdder(NoiseAdder):
     """
-    A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
+    A Xform that adds white noise, optionally passed through a Filter
+    object, to all incoming images.
     """
 
     # TODO, check if we can change seed and/or why not.
@@ -135,27 +100,54 @@ class WhiteNoiseAdder(NoiseAdder):
         :param seed: Optinally provide a random seed used to generate white noise.
         """
 
-        self._noise_var = var
-        super().__init__(noise_filter=ScalarFilter(dim=2, value=var), seed=seed)
+        self.signal_power = None  # Used with `from_snr`
+        self.requires_signal_power = False  # Used with `from_snr`
+        self.noise_var = var
+        self.seed = seed
+        # When we know the var, complete building the filter.
+        if var is not None:
+            self._build()
+        else:
+            # Otherwise, we will flag that we require signal power.
+            # Assigning `signal_power` later will complete builing
+            # filter.
+            self.requires_signal_power = True
 
-    @staticmethod
-    def from_snr(snr, signal_power=None, seed=0):
+    def _build(self):
         """
-        Generates a WhiteNoiseAdder configured to produce a target signal to noise ratio.
+        Builds underlying Filter for this NoiseAdder.
+        """
+        super().__init__(
+            noise_filter=ScalarFilter(dim=2, value=self.noise_var), seed=self.seed
+        )
 
-        If signal_power is not provided, it returns a callable that will generate
-        the appropriate WhiteNoiseAdder later when provided `signal_power`.
+    @classmethod
+    def from_snr(cls, snr, signal_power=None, seed=0):
+        """
+        Generates a WhiteNoiseAdder configured to produce a target
+        signal to noise ratio.
+
+        When `signal_power` is not provided, `requires_signal_power`
+        attribute will be set.  Consumers can check this attribute and
+        set `signal_power` as required. Setting `signal_power` should
+        then complete building the filter.
 
         :param snr: Desired signal to noise ratio of
             the returned source.
         :param signal_power: Optional, if the signal power is known.
-        :param seed: Optinally provide a random seed used to generate white noise.
+        :param seed: Optionally provide a random seed used to generate white noise.
         """
-        if signal_power is None:
-            return _DelayedNoiseAdder(WhiteNoiseAdder, snr=snr, seed=seed)
-        else:
-            noise_var = signal_power / snr
-            return WhiteNoiseAdder(var=noise_var, seed=seed)
+
+        noise_adder = cls(var=None, seed=seed)
+        # signal_power.setter will use `_snr` to compute the noise
+        # variance.
+        noise_adder._snr = snr
+
+        # `signal_power.setter` should complete _build when provided
+        # `signal_power` is not None
+        noise_adder.signal_power = signal_power
+
+        return noise_adder
 
     def __str__(self):
         return f"{self.__class__.__name__} with variance={self._noise_var}"
@@ -168,10 +160,26 @@ class WhiteNoiseAdder(NoiseAdder):
         """
         Returns noise variance.
 
-        Note in this white noise case noise variance is known,
+        Note in this white noise case, noise variance is known,
         because the `WhiteNoiseAdder` was instantied with an explicit variance.
         """
         return self._noise_var
+
+    @noise_var.setter
+    def noise_var(self, v):
+        self._noise_var = v
+
+    @property
+    def signal_power(self):
+        return self._signal_power
+
+    @signal_power.setter
+    def signal_power(self, p):
+        self._signal_power = p
+        if p is not None:
+            self.requires_signal_power = False
+            self.noise_var = p / self._snr
+            self._build()
 
 
 class NoiseEstimator:
