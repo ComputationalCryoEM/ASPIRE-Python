@@ -158,8 +158,6 @@ class Simulation(ImageSource):
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
-        # For Simulation, signal can be computed directly from clean_images.
-        self._signal_images = self.clean_images
 
         # If a user prescribed NoiseAdder.from_snr(...),
         #   noise_adder will be a function returning a completed class.
@@ -169,7 +167,7 @@ class Simulation(ImageSource):
             # If we need to calculate signal_power from Simulation,
             # do so now and assign it to complete the Filter.
             if getattr(noise_adder, "requires_signal_power", False):
-                noise_adder.signal_power = self.estimate_signal_power()
+                noise_adder.signal_power = self.true_signal_power()
 
             # At this point we should have a fully baked NoiseAdder
             if not isinstance(noise_adder, NoiseAdder):
@@ -317,6 +315,18 @@ class Simulation(ImageSource):
         res_inners = mean_vol.to_vec() @ res.to_vec().T
 
         return coords.squeeze(), res_norms, res_inners
+
+    def true_signal_power(self, *args, **kwargs):
+        """
+        Estimate the signal power of `clean_images`.
+
+        For usage, see `ImageSource.estimate_signal_power`.
+
+        :returns: Estimated signal power of `clean_images`
+        """
+
+        kwargs["image_accessor"] = self.clean_images
+        return self.estimate_signal_power(*args, **kwargs)
 
     def mean_true(self):
         return Volume(np.mean(self.vols, 0))

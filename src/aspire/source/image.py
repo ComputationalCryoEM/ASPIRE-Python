@@ -160,8 +160,6 @@ class ImageSource(ABC):
 
         # Instantiate the accessor for the `images` property
         self._img_accessor = _ImageAccessor(self._images, self.n)
-        # For base ImageSource, signal is estimated from `images`
-        self._signal_images = self.images
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
@@ -806,7 +804,11 @@ class ImageSource(ABC):
                 im.save(mrcs_filepath, overwrite=overwrite)
 
     def estimate_signal_mean_energy(
-        self, sample_n=None, support_radius=None, batch_size=512
+        self,
+        sample_n=None,
+        support_radius=None,
+        batch_size=512,
+        image_accessor=None,
     ):
         """
         Estimate the signal mean of `sample_n` projections.
@@ -816,6 +818,7 @@ class ImageSource(ABC):
         :param support_radius: Pixel radius used for masking signal support.
             Default of None will compute inscribed circle, `self.L // 2`.
         :param batch_size: Images per batch, defaults 512.
+        :param image_accessor: Optionally override images. Defaults `self.images`.
         :returns: Estimated signal mean
         """
 
@@ -829,6 +832,8 @@ class ImageSource(ABC):
             )
             sample_n = self.n
 
+        images = image_accessor or self.images
+
         mask = support_mask(self.L, support_radius, dtype=self.dtype)
 
         # mean is estimated batch-wise, compare with numpy
@@ -836,7 +841,7 @@ class ImageSource(ABC):
         _denom = sample_n * np.sum(mask)
         for i in trange(0, sample_n, batch_size):
             # Gather this batch of images and mask off area outside support_radius
-            images_masked = self._signal_images[i : i + batch_size].asnumpy()[..., mask]
+            images_masked = images[i : i + batch_size].asnumpy()[..., mask]
             # Accumulate second moments
             s += np.sum(images_masked**2) / _denom
 
@@ -844,7 +849,9 @@ class ImageSource(ABC):
 
         return s
 
-    def estimate_signal_var(self, sample_n=None, support_radius=None, batch_size=512):
+    def estimate_signal_var(
+        self, sample_n=None, support_radius=None, batch_size=512, image_accessor=None
+    ):
         """
         Estimate the signal variance of `sample_n` projections.
 
@@ -853,6 +860,7 @@ class ImageSource(ABC):
         :param support_radius: Pixel radius used for masking signal support.
             Default of None will compute inscribed circle, `self.L // 2`.
         :param batch_size: Images per batch, defaults 512.
+        :param image_accessor: Optionally override images. Defaults `self.images`.
         :returns: Estimated signal variance.
         """
 
@@ -866,16 +874,18 @@ class ImageSource(ABC):
             )
             sample_n = self.n
 
+        images = image_accessor or self.images
+
         mask = support_mask(self.L, support_radius, dtype=self.dtype)
 
         # Var is estimated batch-wise, compare with numpy
-        # np_estimated_var = np.var(self._signal_images[:sample_n].asnumpy()[..., mask])
+        # np_estimated_var = np.var(images[:sample_n].asnumpy()[..., mask])
         first_moment = 0.0
         second_moment = 0.0
         _denom = sample_n * np.sum(mask)
         for i in trange(0, sample_n, batch_size):
             # Gather this batch of images and mask off area outside support_radius
-            images_masked = self._signal_images[i : i + batch_size].asnumpy()[..., mask]
+            images_masked = images[i : i + batch_size].asnumpy()[..., mask]
             # Accumulate first and second moments
             first_moment += np.sum(images_masked) / _denom
             second_moment += np.sum(images_masked**2) / _denom
@@ -892,6 +902,7 @@ class ImageSource(ABC):
         support_radius=None,
         batch_size=512,
         signal_power_method="estimate_signal_mean_energy",
+        image_accessor=None,
     ):
         """
         Estimate the signal energy of `sample_n` projections using prescribed method.
@@ -904,7 +915,7 @@ class ImageSource(ABC):
         :param signal_power_method: Method used for computing signal energy.
            Defaults to mean via `estimate_signal_mean_energy`.
            Can use variance method via `estimate_signal_var`.
-
+        :param image_accessor: Optionally override images. Defaults `self.images`.
         :returns: Estimated signal variance.
         """
 
@@ -917,7 +928,10 @@ class ImageSource(ABC):
             )
 
         signal_power = signal_estimate_method(
-            sample_n=sample_n, support_radius=support_radius, batch_size=batch_size
+            sample_n=sample_n,
+            support_radius=support_radius,
+            batch_size=batch_size,
+            image_accessor=image_accessor,
         )
 
         return signal_power
@@ -1002,9 +1016,9 @@ class ImageSource(ABC):
             signal_power_method=signal_power_method,
         )
 
-        # For `estimate_signal_mean_energy` we yield: mean(signal**2)  / noise_variance
-        #     `estimate_signal_var`   we yield: signal_variance / noise_variance
-        snr = signal_power / noise_power
+        # For `estimate_signal_mean_energy` we yield: mean(signal**2)
+        #     `estimate_signal_var`   we yield: signal_variance
+        snr = (signal_power - noise_power) / noise_power
 
         return snr
 
