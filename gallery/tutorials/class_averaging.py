@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as PILImage
 
-from aspire.denoising import ClassAvgSourcev11, DebugClassAvgSource
+from aspire.denoising import DebugClassAvgSource, DefaultClassAvgSource
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
 from aspire.utils import gaussian_2d
@@ -282,7 +282,7 @@ plt.show()
 # all components required for class averaging.
 #
 # To make things easier a practical starting point
-# ``ClassAvgSourcev11`` is provided which fills in reasonable
+# ``DefaultClassAvgSource`` is provided which fills in reasonable
 # defaults based on what is available in the current ASPIRE-Python.
 # The defaults can be overridden simply by instantiating your own
 # instances of components and passing during initialization.
@@ -291,4 +291,4 @@ plt.show()
 # After understanding the various components that can be
 # combined in a ``ClassAvgSource``, they can be customized
 # of easily extended.
-avg_src = ClassAvgSourcev11(noisy_src)
+avg_src = DefaultClassAvgSource(noisy_src)

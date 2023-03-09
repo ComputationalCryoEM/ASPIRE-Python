@@ -20,7 +20,7 @@ from aspire.classification import (
     TopClassSelector,
 )
 from aspire.classification.class_selection import _HeapItem
-from aspire.denoising import ClassAvgSourcev11, DebugClassAvgSource
+from aspire.denoising import DebugClassAvgSource, DefaultClassAvgSource
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import Rotation
@@ -34,7 +34,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 RESOLUTIONS = [32]
 DTYPES = [np.float64]
-CLS_SRCS = [DebugClassAvgSource, ClassAvgSourcev11]
+CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource]
 # For very small problems, it usually isn't worth running in parallel.
 NUM_PROCS = 1
 

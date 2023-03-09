@@ -285,7 +285,66 @@ class DebugClassAvgSource(ClassAvgSource):
         )
 
 
-class ClassAvgSourcev11(ClassAvgSource):
+def DefaultClassAvgSource(
+    src,
+    n_nbor=50,
+    num_procs=None,
+    classifier=None,
+    class_selector=None,
+    averager=None,
+    averager_src=None,
+    version=None,
+):
+    """
+    Source for denoised 2D images using class average methods.
+
+    Accepts `version`, to dispatch ClassAvgSource with parameters
+    below.  Default `version` is latest available.
+
+    :param src: Source used for image classification.
+    :param n_nbor: Number of nearest neighbors. Default 50.
+    :param num_procs: Number of processors. Use 1 to run serially.
+        Default `None` attempts to compute a reasonable value
+        based on available cores and memory.
+    :param classifier: `Class2D` classifier instance.
+        Default `None` creates `RIRClass2D`.
+        See code for parameter details.
+    :param class_selector: `ClassSelector` instance.
+        Default `None` creates `ContrastWithRepulsionClassSelector`.
+    :param averager: `Averager2D` instance.
+        Default `None` ceates `BFSRAverager2D` instance.
+        See code for parameter details.
+    :param averager_src: Optionally explicitly assign source
+        to BFSRAverager2D during initialization.
+        Raises error when combined with an explicit `averager`
+        argument.
+    :param version: Optionally selects a versioned DefaultClassAvgSource.
+        Defaults to latest available.
+    :return: ClassAvgSource instance.
+    """
+
+    _versions = {
+        None: ClassAvgSourcev110,
+        "latest": ClassAvgSourcev110,
+        "11.0": ClassAvgSourcev110,
+    }
+
+    if version not in _versions:
+        raise RuntimeError(f"DefaultClassAvgSource version {version} not found.")
+    cls = _versions[version]
+
+    return cls(
+        src,
+        n_nbor=n_nbor,
+        num_procs=num_procs,
+        classifier=classifier,
+        class_selector=class_selector,
+        averager=averager,
+        averager_src=averager_src,
+    )
+
+
+class ClassAvgSourcev110(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
 

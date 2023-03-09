@@ -27,7 +27,7 @@ from pathlib import Path
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.basis import FFBBasis3D
-from aspire.denoising import ClassAvgSourcev11
+from aspire.denoising import DefaultClassAvgSource
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, RelionSource
@@ -87,7 +87,7 @@ logger.info("Begin Class Averaging")
 
 # Now perform classification and averaging for each class.
 # Automaticaly configure parallel processing
-avgs = ClassAvgSourcev11(src, n_nbor=n_nbor, num_procs=None)
+avgs = DefaultClassAvgSource(src, n_nbor=n_nbor, num_procs=None)
 
 # We'll manually cache `n_classes` worth to speed things up.
 avgs = ArrayImageSource(avgs.images[:n_classes])
