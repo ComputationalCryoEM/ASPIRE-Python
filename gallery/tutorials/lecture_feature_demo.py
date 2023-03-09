@@ -38,24 +38,16 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire.abinitio import CLSyncVoting
 from aspire.noise import (
     AnisotropicNoiseEstimator,
     CustomNoiseAdder,
     WhiteNoiseAdder,
     WhiteNoiseEstimator,
 )
-from aspire.operators import FunctionFilter, RadialCTFFilter
+from aspire.operators import FunctionFilter
 from aspire.source import RelionSource, Simulation
-from aspire.utils import (
-    Rotation,
-    get_aligned_rotations,
-    get_rots_mse,
-    register_rotations,
-)
+from aspire.utils import Rotation
 from aspire.volume import Volume
-
-logger = logging.getLogger(__name__)
 
 # %%
 # ``Image`` Class
@@ -130,15 +122,18 @@ plt.show()
 num_rotations = 2
 rots = Rotation.generate_random_rotations(n=num_rotations, seed=12345)
 
+# %%
 # We can access the numpy array holding the actual stack of 3x3 matrices:
-logger.info(rots)
-logger.info(rots.matrices)
+logging.info(rots)
+logging.info(rots.matrices)
 
 # Using the first (and in this case, only) volume, compute projections using the stack of rotations:
 projections = v.project(0, rots)
+logging.info(projections)
 
-# project() returns an Image instance.
-logger.info(projections)
+# %%
+# ``project()`` returns an Image instance, so we can call ``show``.
+
 projections.show()
 # Neat, we've generated random projections of some real data.
 
@@ -185,11 +180,11 @@ sim_seed = Simulation(L=v.resolution, n=num_imgs, vols=v, seed=42)
 sim_seed.images[:10].show()
 
 # We can also view the rotations used to create these projections
-# logger.info(sim2.rotations)  # Commented due to long output
+# logging.info(sim2.rotations)  # Commented due to long output
 
 # %%
-# Simulation with Noise - Filters
-# -------------------------------
+# Simulation with Filters and Noise
+# ---------------------------------
 #
 # Filters
 # ^^^^^^^
@@ -197,6 +192,7 @@ sim_seed.images[:10].show()
 # `Filters <https://computationalcryoem.github.io/ASPIRE-Python/aspire.operators.html#module-aspire.operators.filters>`_
 # are a collection of classes which once configured can be applied to ``Source`` pipelines.
 # Common filters we might use are ``ScalarFilter``, ``PowerFilter``, ``FunctionFilter``, and ``CTFFilter``.
+# ``CTFFilter`` is detailed in the ``ctf.py`` demo.
 #
 # Adding to Simulation
 # ^^^^^^^^^^^^^^^^^^^^
@@ -208,67 +204,18 @@ sim_seed.images[:10].show()
 # Then when used in the ``noise_filter``, this scalar will be multiplied by a random sample.
 # Similar to before, if you require a different sample, this would be controlled via a ``seed``.
 
-# Using the sample variance, we'll compute a target noise variance
+# Get the sample variance
 var = np.var(sim2.images[:].asnumpy())
-logger.info(f"sim2 clean sample var {var}")
-noise_variance = 100.0 * var
-logger.info(f"noise var {noise_variance}")
+logging.info(f"Sample Variance: {var}")
+target_noise_variance = 100.0 * var
+logging.info(f"Target Noise Variance: {target_noise_variance}")
+# Then create a NoiseAdder based on that variance.
+white_noise_adder = WhiteNoiseAdder(target_noise_variance)
 
-# Then create a CustomNoiseAdder based on that variance.
-white_noise_adder = WhiteNoiseAdder(var=noise_variance)
 # We can create a similar simulation with this additional noise_filter argument:
 sim3 = Simulation(L=v2.resolution, n=num_imgs, vols=v2, noise_adder=white_noise_adder)
 sim3.images[:10].show()
 # These should be rather noisy now ...
-
-# %%
-# Common Line Estimation
-# ----------------------
-#
-# Now we can create a CL instance for estimating orientation of projections using the Common Line with synchronization method.
-#
-# We will import `CLSyncVoting <(https://computationalcryoem.github.io/ASPIRE-Python/aspire.abinitio.html?highlight=clsyncvoting#aspire.abinitio.commonline_sync.CLSyncVoting>`_,
-# then several helper utilities fron the ``coor_trans`` package to help verify our estimates.
-#
-# For each iteration in the loop:
-# - Save the true rotations
-# - Compute orientation estimate using CLSyncVoting method
-# - Compare the estimated vs true rotations
-#
-# Each iteration will logger.info some diagnostic information that contains the top eigenvalues found.
-# From class we learned that a healthy eigendistribution should have a significant gap after the third eigenvalue.
-# It is clear we have such eigenspacing for the clean images, but not for the noisy images.
-
-for desc, _sim in [
-    ("High Res", sim),
-    ("Downsampled", sim2),
-    ("Downsampled with Noise", sim3),
-]:
-    logger.info(desc)
-    true_rotations = _sim.rotations  # for later comparison
-
-    orient_est = CLSyncVoting(_sim, n_theta=36)
-    # Get the estimated rotations
-    orient_est.estimate_rotations()
-    rots_est = orient_est.rotations
-
-    # Compare with known true rotations
-    Q_mat, flag = register_rotations(rots_est, true_rotations)
-    regrot = get_aligned_rotations(rots_est, Q_mat, flag)
-    mse_reg = get_rots_mse(regrot, true_rotations)
-    logger.info(
-        f"MSE deviation of the estimated rotations using register_rotations : {mse_reg}\n"
-    )
-
-# %%
-# Experiment
-# ^^^^^^^^^^
-#
-# We confirmed a dramatic change in the eigenspacing when we add a lot of noise.
-# Compute the SNR in this case using the formula described from class.
-# Repeat the experiment with varying levels of noise to find at what level the character of the eigenspacing changes.
-# This will require changing the Simulation Source's noise_filter.
-# How does this compare with the levels discussed in lecture?
 
 # %%
 # More Advanced Noise - Whitening
@@ -287,6 +234,8 @@ for desc, _sim in [
 #
 # The white noise estimator should log a diagnostic variance value. How does this compare with the known noise variance above?
 
+# %%
+
 # Create another Simulation source to tinker with.
 sim_wht = Simulation(
     L=v2.resolution, n=num_imgs, vols=v2, noise_adder=white_noise_adder
@@ -294,6 +243,7 @@ sim_wht = Simulation(
 
 # Estimate the white noise.
 noise_estimator = WhiteNoiseEstimator(sim_wht)
+logging.info(noise_estimator.estimate())
 
 # %%
 # A Custom ``FunctionFilter``
@@ -355,56 +305,4 @@ src.downsample(img_size)
 src.images[:10].show()
 
 # %%
-
-orient_est = CLSyncVoting(src, n_theta=36)
-orient_est.estimate_rotations()
-rots_est = orient_est.rotations
-
-# %%
-# We can see that the code can easily run with experimental data by subsituting the ``Source`` class.
-# However, we have hit the point where we need denoising algorithms to perform orientation estimation.
-
-# %%
-# CTF Filter
-# ----------
-#
-# Here we can use the ``RadialCTFFilter`` subclass of
-# `CTFFilter <https://computationalcryoem.github.io/ASPIRE-Python/aspire.operators.html?highlight=ctffilter#aspire.operators.filters.CTFFilter>`_
-# to generate some simulated images with CTF effects.
-#
-# We use the ``unique_filter`` argument of the ``Simulation`` class to apply a collection of several CTFs with different defocus.
-# The defocus values are generated from the ``np.linspace`` method. We end up with a list of filters.
-#
-# By combining CTFFilters, noise, and other filters ASPIRE can generate repeatable rich data sets with controlled parameters.
-# The ``Simulation`` class will attempt to apply transforms ``on the fly`` to batches of our images, allowing us to generate arbitrarily long stacks of data.
-
-# Specify the CTF parameters not used for this example
-# but necessary for initializing the simulation object
-pixel_size = 5  # Pixel size of the images (in angstroms)
-voltage = 200  # Voltage (in KV)
-defocus_min = 1.5e4  # Minimum defocus value (in angstroms)
-defocus_max = 2.5e4  # Maximum defocus value (in angstroms)
-defocus_ct = 7  # Number of defocus groups.
-Cs = 2.0  # Spherical aberration
-alpha = 0.1  # Amplitude contrast
-
-# Initialize simulation object with CTF filters.
-# Create CTF filters
-filters = [
-    RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
-    for d in np.linspace(defocus_min, defocus_max, defocus_ct)
-]
-
-
-# Here we will combine CTF and noise features to our projections.
-sim5 = Simulation(
-    L=v2.resolution,
-    n=num_imgs,
-    vols=v2,
-    unique_filters=filters,
-    noise_adder=custom_noise,
-)
-# Images with CTF, no noise applied
-sim5.clean_images[:10].show()
-# Images with both CTF and noise
-sim5.images[:10].show()
+# We have hit the point where we need denoising algorithms to perform orientation estimation as demonstrated in our ``pipeline_demo.py``.
