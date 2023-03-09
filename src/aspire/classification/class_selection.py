@@ -420,7 +420,7 @@ class GreedyClassRepulsion:
 
 class ContrastWithRepulsionClassSelector(GreedyClassRepulsion, ContrastClassSelector):
     """
-    Selects top classes based on highest contrast with prior rejection.
+    Selects top classes based on highest contrast with GreedyClassRepulsion.
     """
 
 
@@ -491,6 +491,22 @@ class ImageQualityFunction(ABC):
             res = res[0]
 
         return res
+
+
+class ContrastImageQualityFunction(ImageQualityFunction):
+    """
+    Computes the ratio of variance of pixels.
+    """
+
+    def _function(self, img):
+        """
+        Scoring function based on variance.
+
+        :param img: Input image as 2d Numpy array.
+
+        :return: Pixel variance.
+        """
+        return np.var(img)
 
 
 class BandedSNRImageQualityFunction(ImageQualityFunction):
