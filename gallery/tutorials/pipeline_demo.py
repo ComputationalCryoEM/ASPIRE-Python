@@ -111,10 +111,9 @@ snr = 0.5
 # For this ``Simulation`` we set all 2D offset vectors to zero,
 # but by default offset vectors will be randomly distributed.
 src = Simulation(
-    L=res,  # resolution
     n=n_imgs,  # number of projections
     vols=vol,  # volume source
-    offsets=np.zeros((n_imgs, 2)),  # Default: images are randomly shifted
+    offsets=0,  # Default: images are randomly shifted
     unique_filters=ctf_filters,
     noise_adder=WhiteNoiseAdder.from_snr(snr=snr),  # desired SNR
 )

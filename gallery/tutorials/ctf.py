@@ -62,6 +62,8 @@ plt.show()
 # For the general ``CTFFilter``,
 # we provide defocus along two perpendicular axes u and v separately,
 # along with the angle the u-axis makes with the horizontal (x) axis.
+# Note that we chose an extreme astigmatism for demonstration,
+# and the values more typically differ by a few percent.
 
 ctf_filter = CTFFilter(
     pixel_size=1,  # Angstrom

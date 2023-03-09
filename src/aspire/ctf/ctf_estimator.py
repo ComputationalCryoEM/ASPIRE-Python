@@ -290,7 +290,7 @@ class CtfEstimator:
         Estimate and subtract the background from the power spectrum
 
         :param amplitude_spectrum: Estimated power spectrum
-        :param linprog_method: Method passed to linear progam solver (scipy.optimize.linprog).  Defaults to 'interior-point'.
+        :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
         :param n_low_freq_cutoffs: Low frequency cutoffs (loop iterations).
         :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
@@ -357,20 +357,22 @@ class CtfEstimator:
                 axis=0,
             )
 
-            x_bound_lst = [
-                (signal[i], signal[i], -1 * np.inf, np.inf)
-                for i in range(signal.shape[0])
-            ]
-            x_bound = np.asarray(x_bound_lst, A.dtype)
-            x_bound = np.concatenate((x_bound[:, :2], x_bound[:, 2:]), axis=0)
+            # The original code used `bounds`,
+            #   but for many problems, linprog reports infeasable constraints.
+            # In practice for a micrograph from the paper, and our tutorial,
+            #   the code seems to work better without it...
+            # ASPIRE #417
 
             x = linprog(
                 f,
                 A_ub=A,
                 b_ub=np.zeros(A.shape[0]),
-                bounds=x_bound,
                 method=linprog_method,
             )
+
+            if not x.success:
+                raise RuntimeError("Linear program did not succeed. Halting")
+
             background = x.x[N:]
 
             bs_psd = signal - background
