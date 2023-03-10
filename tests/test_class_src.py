@@ -10,11 +10,14 @@ from aspire.basis import FFBBasis2D
 from aspire.classification import (
     BandedSNRImageQualityFunction,
     BFRAverager2D,
+    BumpWeightedContrastImageQualityFunction,
     ContrastClassSelector,
+    ContrastImageQualityFunction,
     ContrastWithRepulsionClassSelector,
     DistanceClassSelector,
     GlobalClassSelector,
     GlobalWithRepulsionClassSelector,
+    RampWeightedContrastImageQualityFunction,
     RandomClassSelector,
     RIRClass2D,
     TopClassSelector,
@@ -32,8 +35,14 @@ logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-RESOLUTIONS = [32]
-DTYPES = [np.float64]
+IMG_SIZES = [
+    32,
+    pytest.param(31, marks=pytest.mark.expensive),
+]
+DTYPES = [
+    np.float64,
+    pytest.param(np.float32, marks=pytest.mark.expensive),
+]
 CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource]
 # For very small problems, it usually isn't worth running in parallel.
 NUM_PROCS = 1
@@ -42,18 +51,27 @@ NUM_PROCS = 1
 def sim_fixture_id(params):
     res = params[0]
     dtype = params[1]
-    return f"res={res}, dtype={dtype.__name__}"
+    return f"res={res}, dtype={dtype}"
 
 
-@pytest.fixture(params=product(RESOLUTIONS, DTYPES), ids=sim_fixture_id)
-def class_sim_fixture(request):
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=IMG_SIZES, ids=lambda x: f"img_size={x}")
+def img_size(request):
+    return request.param
+
+
+@pytest.fixture
+def class_sim_fixture(dtype, img_size):
     """
     Construct a Simulation with explicit viewing angles forming
     synthetic classes.
     """
 
     # Configuration
-    res, dtype = request.param
     n_inplane_rots = 40
 
     # Platonic solids can generate our views.
@@ -84,13 +102,13 @@ def class_sim_fixture(request):
     # TODO, probably our default volume should "just work" for this stuff... tighter var?
     v = Volume(
         np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")), dtype=dtype
-    ).downsample(res)
+    ).downsample(img_size)
 
     # Contruct the Simulation source.
     # Note using a single volume via C=1 is critical to matching
     # alignment without the complexity of remapping via states etc.
     src = Simulation(
-        L=res, n=n, vols=v, offsets=0, amplitudes=1, C=1, angles=true_rots.angles
+        L=img_size, n=n, vols=v, offsets=0, amplitudes=1, C=1, angles=true_rots.angles
     )
     # Prefetch all the images
     src.cache()
@@ -190,19 +208,59 @@ GLOBAL_SELECTORS = [
     GlobalWithRepulsionClassSelector,
 ]
 
+QUALITY_FUNCTIONS = [
+    BandedSNRImageQualityFunction,
+    ContrastImageQualityFunction,
+    BumpWeightedContrastImageQualityFunction,
+    RampWeightedContrastImageQualityFunction,
+]
+
 
 @pytest.mark.parametrize(
     "selector", GLOBAL_SELECTORS, ids=lambda param: f"Selector={param}"
 )
+@pytest.mark.parametrize(
+    "quality_function", QUALITY_FUNCTIONS, ids=lambda param: f"Quality Function={param}"
+)
 @pytest.mark.expensive
-def test_global_selector(class_sim_fixture, cls_fixture, selector):
+def test_global_selector(class_sim_fixture, cls_fixture, selector, quality_function):
     basis = FFBBasis2D(class_sim_fixture.L, dtype=class_sim_fixture.dtype)
 
     averager = BFRAverager2D(basis, class_sim_fixture, num_procs=NUM_PROCS)
 
-    fun = BandedSNRImageQualityFunction()
+    fun = quality_function()
 
-    # classes, reflections, distances = cls_fixture
+    # Note: classes, reflections, distances = cls_fixture
     selection = selector(averager, fun).select(*cls_fixture)
     # smoke test
     logger.info(f"{selector}: {selection}")
+
+
+# Try to put methods in the `DefaultClassAvgSource`s under continual
+# test.  RIRClass2D, BFRAverager2D, and stacking are covered
+# elsewhere, so that leaves manually testing contrast selection,
+def test_contrast_selector(dtype):
+    """
+    Test selector is actually ranking by contrast.
+    """
+
+    n_classes = 5
+    n_nbor = 32
+
+    # Generate test data
+    classes = np.arange(n_nbor * n_classes, dtype=int).reshape(n_nbor, n_classes).T
+    reflections = np.random.rand(n_classes, n_nbor) > 0.5  # Random bool
+    distances = np.random.rand(n_classes, n_nbor).astype(dtype)  # [0,1)
+
+    # Compute reference manually.
+    V = distances.var(axis=1)
+    ref_class_ids = np.argsort(V)[::-1]
+    ref_scores = V[ref_class_ids]
+
+    # Compute using class under test.
+    selector = ContrastClassSelector()
+    selection = selector.select(classes, reflections, distances)
+
+    # Compare indices and scores.
+    assert np.all(selection == ref_class_ids)
+    assert np.allclose(selector._quality_scores, ref_scores)
