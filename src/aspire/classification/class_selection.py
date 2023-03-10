@@ -164,7 +164,7 @@ class ContrastClassSelector(ClassSelector):
 
     def _select(self, classes, reflections, distances):
         # Compute per class variance
-        dist_var = np.var(distances[:, 1:], axis=1)
+        dist_var = np.var(distances, axis=1)
 
         # Compute the ordering, descending
         sorted_class_inds = np.argsort(dist_var)[::-1]
@@ -186,7 +186,8 @@ class DistanceClassSelector(ClassSelector):
     """
 
     def _select(self, classes, reflections, distances):
-        # Compute per class variance
+        # Compute per class variance.
+        # Skips self distance (0).
         dist_mean = np.mean(distances[:, 1:], axis=1)
 
         # Compute the ordering, descending
@@ -495,7 +496,7 @@ class ImageQualityFunction(ABC):
 
 class ContrastImageQualityFunction(ImageQualityFunction):
     """
-    Computes the ratio of variance of pixels.
+    Computes the variance of pixels.
     """
 
     def _function(self, img):
@@ -587,9 +588,20 @@ class WeightedImageQualityMixin(ABC):
         :return: 2d weight array for LxL grid.
         """
         grid = self._grid_cache[L]
+        # frompyfunc performs the broadcast.
         return self._weights_cache.setdefault(
-            L, np.frompyfunc(self.weight_function)(grid["r"])
+            L, np.frompyfunc(self._weight_function, 1, 1)(grid["r"])
         )
+
+    def _function(self, img):
+        """
+        Apply weights to `img` before calling underlying `_function`.
+
+        Users may override this to use weights in more sophisticated
+        manner.
+        """
+        img = img * self.weights(img.shape[-1])
+        return super()._function(img)
 
 
 # These classes are provided as helpers/examples.
@@ -598,19 +610,35 @@ class RampWeightedImageQualityMixin(WeightedImageQualityMixin):
     ImageQualityMixin to apply a linear ramp.
     """
 
-    def _weight_function(r):
+    def _weight_function(self, r):
         # linear ramp
         return np.max(1 - r, 0)
 
 
-class BumpWeightedImageQualityFunction(WeightedImageQualityMixin):
+class BumpWeightedImageQualityMixin(WeightedImageQualityMixin):
     """
     ImageQualityMixin to apply a linear ramp to apply a [0,1] bump function.
     """
 
-    def _weight_function(r):
+    def _weight_function(self, r):
         # bump function (normalized to [0,1]
         if r >= 1:
             return 0
         else:
             return np.exp(-1 / (1 - r**2) + 1)
+
+
+class BumpWeightedContrastImageQualityFunction(
+    BumpWeightedImageQualityMixin, ContrastImageQualityFunction
+):
+    """
+    Computes the variance of pixels after weighting with Bump function.
+    """
+
+
+class RampWeightedContrastImageQualityFunction(
+    RampWeightedImageQualityMixin, ContrastImageQualityFunction
+):
+    """
+    Computes the variance of pixels after weighting with Ramp function.
+    """
