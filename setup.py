@@ -69,6 +69,7 @@ setup(
             "pytest-xdist",
             "requests",
             "sphinxcontrib-bibtex",
+            "sphinxcontrib-mermaid",            
             "sphinx-gallery",
             "sphinx-rtd-theme>=0.4.2",
             "snakeviz",

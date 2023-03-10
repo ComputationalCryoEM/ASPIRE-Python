@@ -39,6 +39,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.mathjax",
     "sphinxcontrib.bibtex",
+    "sphinxcontrib.mermaid",    
     "sphinx.ext.napoleon",
     "sphinx_gallery.gen_gallery",
 ]
