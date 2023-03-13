@@ -162,6 +162,22 @@ class ImageSource(ABC):
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
+    def __getitem__(self, indices):
+        """
+        Check `indices` and return slice of current Source as a new
+        Source.
+
+        Internally uses `RemappedSource`.
+
+        :param indices: Requested indices as a Python slice object,
+            1-D NumPy array, list, or a single integer. Slices default
+            to a start of 0, an end of self.num_imgs, and a step of 1.
+            See _ImageAccessor.
+        :return: Source composed of the images and metadata at `indices`.
+        """
+
+        return RemappedSource(self, indices)
+
     @property
     def n_ctf_filters(self):
         """
@@ -311,17 +327,29 @@ class ImageSource(ABC):
             metadata_fields = [metadata_fields]
         return all(f in self._metadata.columns for f in metadata_fields)
 
-    def get_metadata(self, metadata_fields, indices=None, default_value=None):
+    def get_metadata(self, metadata_fields=None, indices=None, default_value=None):
         """
-        Get metadata field information of this ImageSource for selected indices
+        Get metadata field information of this ImageSource for a
+        selection of fields of indices.  The default should return the
+        entire metadata table.
 
-        :param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
-        :param indices: A list of 0-based indices indicating the indices for which to get metadata.
-            If indices is None, then values corresponding to all indices in this Source object are returned.
-        :param default_value: Default scalar value to use for any fields not found in the metadata. If None,
-            no default value is used, and missing field(s) cause a RuntimeError.
-        :return: An ndarray of values (any valid np types) representing metadata info.
+        :param metadata_fields: A string, or list of strings,
+            representing the metadata field(s) to be queried.
+            Defaults to None, which yields all populated columns.
+        :param indices: A list of 0-based indices indicating the
+            indices for which to get metadata.  If indices is None,
+            then values corresponding to all indices in this Source
+            object are returned.
+        :param default_value: Default scalar value to use for any
+            fields not found in the metadata. If None, no default
+            value is used, and missing field(s) cause a RuntimeError.
+        :return: An ndarray of values (any valid np types)
+            representing metadata info.
         """
+        # When metadata_fields=None, default to returning all.
+        if metadata_fields is None:
+            metadata_fields = self._metadata.columns
+
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
         if indices is None:
@@ -801,6 +829,63 @@ class ImageSource(ABC):
                 )
                 im = self.images[i_start:i_end]
                 im.save(mrcs_filepath, overwrite=overwrite)
+
+
+class RemappedSource(ImageSource):
+    """
+    Map into another into ImageSource.
+    """
+
+    def __init__(self, src, indices, memory=None):
+        """
+        Instantiates a new source along given `indices`.
+
+        :param src: ImageSource to be used as the source.
+        :param index_map: index_map
+        :param memory: str or None
+            The path of the base directory to use as a data store or
+            None. If None is given, no caching is performed.
+        """
+
+        self.src = src
+        if not isinstance(src, ImageSource):
+            raise TypeError(f"Input src {src} must be an ImageSource.")
+
+        # `_ImageAccessor` performs checking and slicing logic.
+        # `index_map` sequence forms a natural map from the "new" source -> "self".
+        # Example, if request=slice(500,1000),
+        #   then new_src[0] ~> old_src[500]; index_map[0] = 500.
+        self.index_map = _ImageAccessor(lambda x: x, src.n)[indices]
+
+        # Get all the metadata associated with these indices.
+        # Note, I would have prefered to use our API (get_metadata)
+        # here, but it returns a Numpy array, which would need to be
+        # converted back into Pandas for use below. So here we'll just
+        # use `loc` to return a dataframe.
+        metadata = self.src._metadata.loc[self.index_map]
+
+        # Construct a fully formed ImageSource with this metadata
+        super().__init__(
+            L=src.L,
+            n=len(self.index_map),
+            dtype=src.dtype,
+            metadata=metadata,
+            memory=memory,
+        )
+
+    def _images(self, indices):
+        """
+        Returns images from `self.src` corresponding to `indices`
+        remapped by `self.index_map`.
+
+        :param indices: A 1-D NumPy array of indices.
+        :return: An `Image` object.
+        """
+        mapped_indices = self.index_map[indices]
+        return self.src.images[mapped_indices]
+
+    def __repr__(self):
+        return f"{self.__class__.__name__} mapping {self.n} of {self.src.n} indices from {self.src.__class__.__name__}."
 
 
 class ArrayImageSource(ImageSource):
