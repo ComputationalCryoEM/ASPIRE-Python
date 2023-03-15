@@ -12,11 +12,11 @@ from aspire.classification import (
     BFRAverager2D,
     BumpWeightedContrastImageQualityFunction,
     ContrastImageQualityFunction,
-    ContrastWithRepulsionClassSelector,
     DistanceClassSelector,
     GlobalClassSelector,
     GlobalWithRepulsionClassSelector,
     NeighborVarianceClassSelector,
+    NeighborVarianceWithRepulsionClassSelector,
     RampWeightedContrastImageQualityFunction,
     RandomClassSelector,
     RIRClass2D,
@@ -182,7 +182,7 @@ def cls_fixture(class_sim_fixture):
 # of aligned and stacked class averages.
 ONLINE_SELECTORS = [
     NeighborVarianceClassSelector,
-    ContrastWithRepulsionClassSelector,
+    NeighborVarianceWithRepulsionClassSelector,
     DistanceClassSelector,
     RandomClassSelector,
     TopClassSelector,

@@ -72,7 +72,7 @@ components they wish to configure.
 	 version="11.0"
 	 src: ImageSource
 	 classifier: RIRClass2D
-	 class_selector: ContrastWithRepulsionClassSelector
+	 class_selector: NeighborVarianceWithRepulsionClassSelector
 	 averager: BFSRAverager2D
 	 +images()
       }

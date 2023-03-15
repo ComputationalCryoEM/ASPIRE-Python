@@ -425,7 +425,7 @@ class GreedyClassRepulsion:
         return super()._check_selection(selection, n_img, len_operator=le)
 
 
-class ContrastWithRepulsionClassSelector(
+class NeighborVarianceWithRepulsionClassSelector(
     GreedyClassRepulsion, NeighborVarianceClassSelector
 ):
     """

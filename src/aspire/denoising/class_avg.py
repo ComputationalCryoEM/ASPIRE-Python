@@ -9,7 +9,7 @@ from aspire.classification import (
     BFSRAverager2D,
     Class2D,
     ClassSelector,
-    ContrastWithRepulsionClassSelector,
+    NeighborVarianceWithRepulsionClassSelector,
     RIRClass2D,
     TopClassSelector,
 )
@@ -310,7 +310,7 @@ def DefaultClassAvgSource(
         Default `None` creates `RIRClass2D`.
         See code for parameter details.
     :param class_selector: `ClassSelector` instance.
-        Default `None` creates `ContrastWithRepulsionClassSelector`.
+        Default `None` creates `NeighborVarianceWithRepulsionClassSelector`.
     :param averager: `Averager2D` instance.
         Default `None` ceates `BFSRAverager2D` instance.
         See code for parameter details.
@@ -377,7 +377,7 @@ class ClassAvgSourcev110(ClassAvgSource):
             Default `None` creates `RIRClass2D`.
             See code for parameter details.
         :param class_selector: `ClassSelector` instance.
-            Default `None` creates `ContrastWithRepulsionClassSelector`.
+            Default `None` creates `NeighborVarianceWithRepulsionClassSelector`.
         :param averager: `Averager2D` instance.
             Default `None` ceates `BFSRAverager2D` instance.
             See code for parameter details.
@@ -419,7 +419,7 @@ class ClassAvgSourcev110(ClassAvgSource):
             )
 
         if class_selector is None:
-            class_selector = ContrastWithRepulsionClassSelector()
+            class_selector = NeighborVarianceWithRepulsionClassSelector()
 
         super().__init__(
             src=src,
