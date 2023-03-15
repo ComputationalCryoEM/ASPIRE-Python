@@ -160,10 +160,9 @@ class RandomClassSelector(ClassSelector):
         return rng.choice(self.n, size=self.n, replace=False)
 
 
-class ContrastClassSelector(ClassSelector):
+class NeighborVarianceClassSelector(ClassSelector):
     """
-    Selects top classes based on highest contrast,
-    as estimated by variances of `distances`.
+    Selects classes based on variances of `distances`.
 
     Note that `distances` is the Nearest Neighbors distances,
     and in the case of RIR this is a small rotationally invariant feature
@@ -426,7 +425,9 @@ class GreedyClassRepulsion:
         return super()._check_selection(selection, n_img, len_operator=le)
 
 
-class ContrastWithRepulsionClassSelector(GreedyClassRepulsion, ContrastClassSelector):
+class ContrastWithRepulsionClassSelector(
+    GreedyClassRepulsion, NeighborVarianceClassSelector
+):
     """
     Selects top classes based on highest contrast with GreedyClassRepulsion.
     """

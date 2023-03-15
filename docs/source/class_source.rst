@@ -156,7 +156,7 @@ can reduce pipeline run times by an order of magnitude.
 	 }
        ClassSelector <|-- TopClassSelector
        ClassSelector <|-- RandomClassSelector
-       ClassSelector <|-- ContrastClassSelector
+       ClassSelector <|-- NeighborVarianceClassSelector
        ClassSelector <|-- DistanceClassSelector
        ClassSelector o-- GreedyClassRepulsion
 

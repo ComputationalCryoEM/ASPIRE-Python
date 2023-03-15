@@ -11,12 +11,12 @@ from aspire.classification import (
     BandedSNRImageQualityFunction,
     BFRAverager2D,
     BumpWeightedContrastImageQualityFunction,
-    ContrastClassSelector,
     ContrastImageQualityFunction,
     ContrastWithRepulsionClassSelector,
     DistanceClassSelector,
     GlobalClassSelector,
     GlobalWithRepulsionClassSelector,
+    NeighborVarianceClassSelector,
     RampWeightedContrastImageQualityFunction,
     RandomClassSelector,
     RIRClass2D,
@@ -181,7 +181,7 @@ def cls_fixture(class_sim_fixture):
 # These are selectors that do not need to pass over all the global set
 # of aligned and stacked class averages.
 ONLINE_SELECTORS = [
-    ContrastClassSelector,
+    NeighborVarianceClassSelector,
     ContrastWithRepulsionClassSelector,
     DistanceClassSelector,
     RandomClassSelector,
@@ -258,7 +258,7 @@ def test_contrast_selector(dtype):
     ref_scores = V[ref_class_ids]
 
     # Compute using class under test.
-    selector = ContrastClassSelector()
+    selector = NeighborVarianceClassSelector()
     selection = selector.select(classes, reflections, distances)
 
     # Compare indices and scores.
