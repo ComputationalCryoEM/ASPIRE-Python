@@ -115,14 +115,13 @@ src.images[:10].show()
 # ``ClassAvgSource`` and the modular components that are more suitable
 # to simulations and experimental datasets.
 
-n_classes = 10
-
 avgs = DebugClassAvgSource(
     src=src,
     n_nbor=10,
     num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
+# %%
 # .. note:
 #     ``ClassAvgSource``s are lazily evaluated.
 #     They will generally compute the classifications, selections,
@@ -224,7 +223,7 @@ avgs.images[review_class].show()
 # Alignment Details
 # ^^^^^^^^^^^^^^^^^
 #
-# Alignment details are exposed when avaialable from an underlying
+# Alignment details are exposed when available from an underlying
 # ``averager``.  In this case, we'll get the estimated alignments for
 # the ``review_class``.
 
@@ -290,5 +289,5 @@ plt.show()
 # Using the defaults requires only passing a source.
 # After understanding the various components that can be
 # combined in a ``ClassAvgSource``, they can be customized
-# of easily extended.
+# or easily extended.
 avg_src = DefaultClassAvgSource(noisy_src)

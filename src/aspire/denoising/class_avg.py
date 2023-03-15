@@ -128,7 +128,7 @@ class ClassAvgSource(ImageSource):
         )
 
         # Override the initial self.n
-        # Some selectors will (dramitcally) reduce the space of classes.
+        # Some selectors will (dramatically) reduce the space of classes.
         if len(self._selection_indices) != self.n:
             logger.info(
                 f"After selection process, updating maximum {len(self._selection_indices)} classes from {self.n}."
@@ -178,7 +178,7 @@ class ClassAvgSource(ImageSource):
             }
 
             # Get heap dict once to avoid traversing heap in a loop.
-            heapd = self.self.class_selector.heap_id_dict
+            heap_dict = self.self.class_selector.heap_id_dict
 
             # Recursively call `_images`.
             # `heap_inds` set should be empty in the recursive call,
@@ -198,7 +198,7 @@ class ClassAvgSource(ImageSource):
             # Pack images from heap.
             for k, i in indices_from_heap.items():
                 # map the image index to heap item location
-                heap_loc = heapd[k]
+                heap_loc = heap_dict[k]
                 im[i] = self.class_selector.heap[heap_loc].image
 
         else:

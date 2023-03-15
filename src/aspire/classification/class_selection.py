@@ -56,6 +56,12 @@ class ClassSelector(ABC):
         All `ClassSelector` should assign a quality score array the
         same length as the selection output.
 
+        Function range is currently not limited, but [0,1] is
+        favorable.  Currently there is not an expectation that one
+        quality scoring system relates to another, or that the score
+        is a proper metric. Quality scores are only required to be a
+        self consistent ordering.
+
         For subclasses like TopClassSelector and RandomClassSelector
         where no quality information is derived, the associated
         `_quality_scores` should be set to zeros by `_select`.
@@ -103,6 +109,8 @@ class ClassSelector(ABC):
 
         :param selection: selection indices
         :param n_img: number of images available
+        :param len_operator: Operation used for comparison.
+            Defaults to equality (`eq`).
         """
         # Check length, +1 for zero indexing
         if not len_operator(len(selection), self.n):
@@ -186,7 +194,7 @@ class DistanceClassSelector(ClassSelector):
     """
 
     def _select(self, classes, reflections, distances):
-        # Compute per class variance.
+        # Compute per class distance.
         # Skips self distance (0).
         dist_mean = np.mean(distances[:, 1:], axis=1)
 
@@ -337,7 +345,6 @@ class GlobalClassSelector(ClassSelector):
                 # pop and throw away the worst entry
                 # after updating (pushing to) the heap.
                 _ = heappushpop(self.heap, item)
-            # else:
 
         # Now that we have computed the global quality_scores,
         # the selection ordering can be applied
@@ -353,7 +360,7 @@ class GlobalClassSelector(ClassSelector):
 class GreedyClassRepulsion:
     """
     Mixin to overload class selection based on excluding
-    classes we've alreay seen as neighbors of another class.
+    classes we've already seen as neighbors of another class.
 
     If the classes are well sorted (by some measure of quality),
     we assume the best representation is the first seen.
@@ -369,7 +376,7 @@ class GreedyClassRepulsion:
         desired result set size.
 
         :param exclude_k: Number of neighbors from each class to
-            exclude.  Defaults to
+            exclude.  Defaults to all neighbors.
         """
         # Pop of the parameter unique to GreedyClassRepulsion.
         self.exclude_k = kwargs.pop("exclude_k", None)
@@ -617,11 +624,11 @@ class RampWeightedImageQualityMixin(WeightedImageQualityMixin):
 
 class BumpWeightedImageQualityMixin(WeightedImageQualityMixin):
     """
-    ImageQualityMixin to apply a linear ramp to apply a [0,1] bump function.
+    ImageQualityMixin to apply a [0,1] bump function.
     """
 
     def _weight_function(self, r):
-        # bump function (normalized to [0,1]
+        # bump function (normalized to [0,1]).
         if r >= 1:
             return 0
         else:

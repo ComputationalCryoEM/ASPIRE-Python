@@ -3,9 +3,9 @@ Class Averaging Architecture
 
 ASPIRE now contains a broad collection of configurable and extensible
 components which can be combined to create class averaging solutions
-tailored to different datasets.  The architecture was designed to be
-both modular and encourage experimentation.  Lower level components
-are aggregated into a high level interface by ``ClassAvgSource``
+tailored to different datasets.  The architecture was designed to both
+be modular and encourage experimentation.  Lower level components are
+aggregated into a high level interface by ``ClassAvgSource``
 instances.  Starting there this document will descend into each
 contributing component.
 
@@ -50,7 +50,7 @@ required component and assign them here for complete control.
 """"""""""
 
 While that allows for full customization, two helper classes are
-provided that provide defaults as a jumping off point.  Both of these
+provided that supply defaults as a jumping off point.  Both of these
 helper sources only require an input ``Source`` to be instantiated.
 They can still be fully customized, but they are intended to start
 with sensible defaults, so users only need to instantiate the specific
@@ -88,22 +88,22 @@ mappings etc.
 in the current ASPIRE release.  ``DefaultClassAvgSource`` takes a
 version string, such as ``11.0`` which will return a specific
 configuration.  This version should allow users to perform a similar
-experiment across release as ASPIRE implements improved method.  When
-a version is not provided, ``DefaultClassAvgSource`` defaults to the
-latest version available.
+experiment across releases as ASPIRE implements improved methods.
+When a version is not provided, ``DefaultClassAvgSource`` defaults to
+the latest version available.
 
 
 Classifiers
 ***********
 
 Classifiers take an image ``Source`` and attempts to classify into
-``classes`` that identify images have similar viewing angles up to
+``classes`` that identify images with similar viewing angles up to
 reflection.  All ``Class2D`` instances are expected to implement a
 ``classify`` method which returns ``(classes, reflections,
 distances)``.  The three returned variables are expected to be 2D
 Numpy arrays in a neighbor network format having shape ``(n_classes,
 n_nbors)``.  So to retrieve the input source indices for the first
-classes' neighbors, we would want ``classes[0,:]``.  The first class
+class's neighbors, we would want ``classes[0,:]``.  The first class
 index should be the base image used for classification.  So we would
 expect ``classes[0,0]`` to be ``input_src.images[0]``.
 
@@ -127,7 +127,7 @@ Class Selectors
 ***************
 
 Class Selectors consume the output of ``Class2D`` and attempt to order
-and/or filter classes down to a selection.  Selection the "best"
+and/or filter classes down to a selection.  Selecting the "best"
 classes in CryoEM problems is still an area of active research.  Some
 common methods are provided, along with an extensible base interface.
 
@@ -139,7 +139,7 @@ Local Class Selectors
 
 For "Local" class selection, we will attempt to use only the
 information returned from ``Class2D``.  In the case of ``RIRClass2D``
-this would primarily be network of ``distances`` as measured in the
+this would primarily be a network of ``distances`` as measured in the
 compressed feature space.
 
 This approach has two main advantages.  First, we already have this
@@ -273,7 +273,7 @@ this time for grid weights.
 Averagers
 *********
 
-Averagers consume from a ``Source`` and returning averaged images
+Averagers consume from a ``Source`` and return averaged images
 defined by class network arguments ``classes`` and ``reflections``.
 You may find the terms averaging and stacking used interchangeably in
 this context, so know that averaging does not always imply *arithmetic

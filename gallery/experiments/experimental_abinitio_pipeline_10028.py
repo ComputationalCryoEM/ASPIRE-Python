@@ -121,7 +121,7 @@ if do_cov2d:
     classification_src = cwf_denoiser.denoise()
     # Peek, what do the denoised images look like...
     if interactive:
-        src.images[:10].show()
+        classification_src.images[:10].show()
 
 # %%
 # Class Averaging
@@ -138,7 +138,7 @@ avgs_src = DefaultClassAvgSource(
     classification_src,
     n_nbor=n_nbor,
     averager_src=src,
-    num_procs=None,  # Automaticaly configure parallel processing
+    num_procs=None,  # Automatically configure parallel processing
 )
 
 # We'll manually cache `n_classes` worth to speed things up.

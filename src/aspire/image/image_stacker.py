@@ -151,7 +151,7 @@ class SigmaRejectionImageStacker(ImageStacker):
     procedure, but the location of the clip is determined by the peak
     intensity instead of standard deviation.
 
-    Note, in both cases, user's are responsible for ensuring methods
+    Note, in both cases, users are responsible for ensuring methods
     are called on reasonable data (in FW* cases we should be probably
     be using intensities). No corrections or pedestals are
     incorporated at this time, but could easily be added in the

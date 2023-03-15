@@ -226,7 +226,7 @@ rots_est = orient_est.rotations
 # %%
 # Mean Squared Error
 # ------------------
-# ASIPRE has some built-in utility functions for globally aligning the
+# ASPIRE has some built-in utility functions for globally aligning the
 # estimated rotations to the true rotations and computing the mean
 # squared error.
 

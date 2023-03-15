@@ -150,10 +150,10 @@ if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
     # Use denoised src for classification
-    classificiation_src = cwf_denoiser.denoise()
+    classification_src = cwf_denoiser.denoise()
     # Peek, what do the denoised images look like...
     if interactive:
-        src.images[:10].show()
+        classification_src.images[:10].show()
 
 # %%
 # Class Averaging
@@ -166,7 +166,7 @@ avgs_src = DefaultClassAvgSource(
     classificiation_src,
     n_nbor=n_nbor,
     averager_src=src,
-    num_procs=None,  # Automaticaly configure parallel processing
+    num_procs=None,  # Automatically configure parallel processing
 )
 
 # We'll manually cache `n_classes` worth to speed things up.
@@ -190,7 +190,7 @@ logger.info("Begin Orientation Estimation")
 indices = avgs_src.selection_indices
 true_rotations = src.rotations[indices[:n_classes]]
 
-orient_est = CLSyncVoting(avgs, n_theta=36)
+orient_est = CLSyncVoting(avgs, n_theta=180)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations

@@ -86,7 +86,7 @@ src.whiten(aiso_noise_estimator.filter)
 logger.info("Begin Class Averaging")
 
 # Now perform classification and averaging for each class.
-# Automaticaly configure parallel processing
+# Automatically configure parallel processing
 avgs = DefaultClassAvgSource(src, n_nbor=n_nbor, num_procs=None)
 
 # We'll manually cache `n_classes` worth to speed things up.
@@ -102,7 +102,7 @@ avgs = ArrayImageSource(avgs.images[:n_classes])
 
 logger.info("Begin Orientation Estimation")
 
-orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=360, max_shift=1)
+orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=360, max_shift=0)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
