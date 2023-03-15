@@ -169,6 +169,11 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
     # and compute the resulting snr of the sim.
     target_snr = sim_fixture.estimate_snr()
 
+    # Compute the `true_snr` of the sim.
+    computed_true_snr = sim_fixture.true_snr()
+    # Compare the `estimate_snr()` with `true_snr()`
+    assert np.isclose(target_snr, computed_true_snr, rtol=0.05)
+
     # Attempt to create a new simulation at this `target_snr`
     # For unit testing, we will use `sim_fixture`'s volume,
     #   but the new Simulation instance should yield different projections.

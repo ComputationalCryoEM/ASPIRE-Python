@@ -325,6 +325,12 @@ class Simulation(ImageSource):
         :returns: Estimated signal power of `clean_images`
         """
 
+        # Note, in the future we can do something more clever here,
+        # perhaps starting with the simulation Volume.  For now we
+        # share code with ImageSource, so the method is at least
+        # identical, up to using `clean_images`.  The method is also
+        # the same as NoiseEstimator, up to ignoring the first moment
+        # and a few optional parameters.
         kwargs["image_accessor"] = self.clean_images
         return self.estimate_signal_power(*args, **kwargs)
 
@@ -491,9 +497,11 @@ class Simulation(ImageSource):
 
         return {"err": err, "rel_err": rel_err, "corr": corr}
 
-    def estimate_snr(self, *args, **kwargs):
+    def true_snr(self, *args, **kwargs):
         """
-        See ImageSource.estimate_snr() for documentation.
+        Compute SNR using `true_signal_power` and the noise power known to simulation.
+
+        See Simulation.true_signal_power() for parameters.
         """
         # For clean images return infinite SNR.
         # Note, relationship with CTF and other sim corruptions still isn't clear to me...
@@ -502,4 +510,6 @@ class Simulation(ImageSource):
 
         # For SNR of Simulations, use the theoretical noise variance
         # known from the noise_adder instead of deriving from PSD.
-        return super().estimate_snr(noise_power=self.noise_adder.noise_var)
+        noise_power = self.noise_adder.noise_var
+        signal_power = self.true_signal_power(*args, **kwargs)
+        return signal_power / noise_power
