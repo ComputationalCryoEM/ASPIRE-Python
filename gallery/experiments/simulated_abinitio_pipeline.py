@@ -163,7 +163,7 @@ if do_cov2d:
 # This also demonstrates the potential to use a different source for classification and averaging.
 
 avgs_src = DefaultClassAvgSource(
-    classificiation_src,
+    classification_src,
     n_nbor=n_nbor,
     averager_src=src,
     num_procs=None,  # Automatically configure parallel processing
