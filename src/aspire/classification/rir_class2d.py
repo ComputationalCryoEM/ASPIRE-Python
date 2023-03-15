@@ -317,17 +317,19 @@ class RIRClass2D(Class2D):
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
         distances = np.zeros((n_im, n_nbor), dtype=self.dtype)
-        norm_concat_coeff = np.linalg.norm(concat_coeff)
+
         for i in trange(num_batches):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, n_im)
             batch = np.conjugate(coeff_b[:, start:finish])
-            corr = np.real(np.dot(batch.T, concat_coeff)) / (
-                np.linalg.norm(batch) * norm_concat_coeff
-            )
+            corr = np.real(np.dot(batch.T, concat_coeff))
+
             assert np.all(
-                np.abs(corr) <= 1
+                np.abs(corr) <= 1.01  # Allow some numerical wiggle
             ), f"Corr out of [-1,1] bounds {np.min(corr)} {np.max(corr)}."
+            # Clamp
+            corr = np.maximum(corr, -1)
+            corr = np.minimum(corr, 1)
 
             # Note legacy did not include the original image?
             # classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
