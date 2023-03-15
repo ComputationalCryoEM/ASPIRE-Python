@@ -941,18 +941,16 @@ class ImageSource(ABC):
         sample_n=None,
         support_radius=None,
         batch_size=512,
-        noise_estimator=WhiteNoiseEstimator,
     ):
         """
-        Estimate the noise energy of `sample_n` images using prescribed estimator.
+        Estimate the noise energy of `sample_n` images using
+        `WhiteNoiseEstimator`.
 
         :param sample_n: Number of images used for estimate.
             Defaults to all images in source.
         :param support_radius: Pixel radius used for masking signal support.
             Default of None will compute inscribed circle, `self.L // 2`.
         :param batch_size: Images per batch, defaults 512.
-        :param noise_estimator: Method used for estimating noise.
-           Defaults to WhiteNoiseEstimator.
 
         :returns: Estimated noise energy (variance).
         """
@@ -963,7 +961,7 @@ class ImageSource(ABC):
             # Note, noise_estimator expects radius as proportion.
             support_radius_proportion = support_radius / (self.L // 2)
 
-        est = noise_estimator(
+        est = WhiteNoiseEstimator(
             src=self, bgRadius=support_radius_proportion, batchSize=batch_size
         )
 
