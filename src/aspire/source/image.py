@@ -17,6 +17,7 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
+from aspire.noise import WhiteNoiseEstimator
 from aspire.operators import (
     CTFFilter,
     IdentityFilter,
@@ -24,7 +25,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, grid_2d, trange
+from aspire.utils import Rotation, grid_2d, support_mask, trange
 
 logger = logging.getLogger(__name__)
 
@@ -801,6 +802,223 @@ class ImageSource(ABC):
                 )
                 im = self.images[i_start:i_end]
                 im.save(mrcs_filepath, overwrite=overwrite)
+
+    def estimate_signal_mean_energy(
+        self,
+        sample_n=None,
+        support_radius=None,
+        batch_size=512,
+        image_accessor=None,
+    ):
+        """
+        Estimate the signal mean of `sample_n` projections.
+
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :param support_radius: Pixel radius used for masking signal support.
+            Default of None will compute inscribed circle, `self.L // 2`.
+        :param batch_size: Images per batch, defaults 512.
+        :param image_accessor: Optionally override images. Defaults `self.images`.
+        :returns: Estimated signal mean
+        """
+
+        if sample_n is None:
+            sample_n = self.n
+
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_signal_mean_energy` sample_n > Source.n: {sample_n} > {self.n}."
+                f" Accuracy may be impaired, setting sample_n=self.n={self.n}"
+            )
+            sample_n = self.n
+
+        images = image_accessor or self.images
+
+        mask = support_mask(self.L, support_radius, dtype=self.dtype)
+
+        # mean is estimated batch-wise, compare with numpy
+        s = 0.0
+        _denom = sample_n * np.sum(mask)
+        for i in trange(0, sample_n, batch_size):
+            # Gather this batch of images and mask off area outside support_radius
+            images_masked = images[i : i + batch_size].asnumpy()[..., mask]
+            # Accumulate second moments
+            s += np.sum(images_masked**2) / _denom
+
+        logger.debug(f"Source estimated signal mean energy: {s}")
+
+        return s
+
+    def estimate_signal_var(
+        self, sample_n=None, support_radius=None, batch_size=512, image_accessor=None
+    ):
+        """
+        Estimate the signal variance of `sample_n` projections.
+
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :param support_radius: Pixel radius used for masking signal support.
+            Default of None will compute inscribed circle, `self.L // 2`.
+        :param batch_size: Images per batch, defaults 512.
+        :param image_accessor: Optionally override images. Defaults `self.images`.
+        :returns: Estimated signal variance.
+        """
+
+        if sample_n is None:
+            sample_n = self.n
+
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_signal_var` sample_n > Source.n: {sample_n} > {self.n}."
+                f" Accuracy may be impaired, setting sample_n=self.n={self.n}"
+            )
+            sample_n = self.n
+
+        images = image_accessor or self.images
+
+        mask = support_mask(self.L, support_radius, dtype=self.dtype)
+
+        # Var is estimated batch-wise, compare with numpy
+        # np_estimated_var = np.var(images[:sample_n].asnumpy()[..., mask])
+        first_moment = 0.0
+        second_moment = 0.0
+        _denom = sample_n * np.sum(mask)
+        for i in trange(0, sample_n, batch_size):
+            # Gather this batch of images and mask off area outside support_radius
+            images_masked = images[i : i + batch_size].asnumpy()[..., mask]
+            # Accumulate first and second moments
+            first_moment += np.sum(images_masked) / _denom
+            second_moment += np.sum(images_masked**2) / _denom
+
+        # E[X**2] - E[X]**2
+        estimated_var = second_moment - first_moment**2
+        logger.debug(f"Source estimated signal var: {estimated_var}")
+
+        return estimated_var
+
+    def estimate_signal_power(
+        self,
+        sample_n=None,
+        support_radius=None,
+        batch_size=512,
+        signal_power_method="estimate_signal_mean_energy",
+        image_accessor=None,
+    ):
+        """
+        Estimate the signal energy of `sample_n` projections using prescribed method.
+
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :param support_radius: Pixel radius used for masking signal support.
+            Default of None will compute inscribed circle, `self.L // 2`.
+        :param batch_size: Images per batch, defaults 512.
+        :param signal_power_method: Method used for computing signal energy.
+           Defaults to mean via `estimate_signal_mean_energy`.
+           Can use variance method via `estimate_signal_var`.
+        :param image_accessor: Optionally override images. Defaults `self.images`.
+        :returns: Estimated signal variance.
+        """
+
+        try:
+            signal_estimate_method = getattr(self, signal_power_method)
+        except AttributeError:
+            raise ValueError(
+                f"Cannot find signal_power_method={signal_power_method}."
+                "  Try the default 'estimate_signal_mean_energy' or 'estimate_signal_var'"
+            )
+
+        signal_power = signal_estimate_method(
+            sample_n=sample_n,
+            support_radius=support_radius,
+            batch_size=batch_size,
+            image_accessor=image_accessor,
+        )
+
+        return signal_power
+
+    def estimate_noise_power(
+        self,
+        sample_n=None,
+        support_radius=None,
+        batch_size=512,
+    ):
+        """
+        Estimate the noise energy of `sample_n` images using
+        `WhiteNoiseEstimator`.
+
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :param support_radius: Pixel radius used for masking signal support.
+            Default of None will compute inscribed circle, `self.L // 2`.
+        :param batch_size: Images per batch, defaults 512.
+
+        :returns: Estimated noise energy (variance).
+        """
+
+        if support_radius is None:
+            support_radius_proportion = 1
+        else:
+            # Note, noise_estimator expects radius as proportion.
+            support_radius_proportion = support_radius / (self.L // 2)
+
+        est = WhiteNoiseEstimator(
+            src=self, bgRadius=support_radius_proportion, batchSize=batch_size
+        )
+
+        return est.estimate()
+
+    def estimate_snr(
+        self,
+        sample_n=None,
+        support_radius=None,
+        batch_size=512,
+        noise_power=None,
+        signal_power_method="estimate_signal_mean_energy",
+    ):
+        """
+        Estimate the SNR of the simulated data set using
+        estimated signal power / noise power.
+
+        Note signal power depends on choice of `signal_power_method`,
+        but differences should be small in practice when background
+        noise is zero centered.
+
+        :param sample_n: Number of images used for estimate.
+            Defaults to all images in source.
+        :param support_radius: Pixel radius used for masking signal support.
+            Default of None will compute inscribed circle, `self.L // 2`.
+        :param batch_size: Images per batch, defaults 512.
+        :param signal_power_method: Method used for computing signal energy.
+           Defaults to mean via `estimate_signal_mean_energy`.
+           Can use variance method via `estimate_signal_var`.
+        :returns: Estimated signal to noise ratio.
+        """
+
+        if sample_n is None:
+            sample_n = self.n
+
+        if sample_n > self.n:
+            logger.warning(
+                f"`estimate_snr` sample_n > Source.n: {sample_n} > {self.n}."
+                f" Accuracy may be impaired, setting sample_n=self.n={self.n}"
+            )
+            sample_n = self.n
+
+        if noise_power is None:
+            noise_power = self.estimate_noise_power()
+
+        signal_power = self.estimate_signal_power(
+            sample_n=sample_n,
+            support_radius=support_radius,
+            batch_size=batch_size,
+            signal_power_method=signal_power_method,
+        )
+
+        # For `estimate_signal_mean_energy` we yield: mean(signal**2)
+        #     `estimate_signal_var`   we yield: signal_variance
+        snr = (signal_power - noise_power) / noise_power
+
+        return snr
 
 
 class ArrayImageSource(ImageSource):

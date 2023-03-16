@@ -157,14 +157,24 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
 
-        if noise_adder is not None:
-            logger.info(f"Appending {noise_adder} to generation pipeline")
-            if not isinstance(noise_adder, NoiseAdder):
-                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
-        self.noise_adder = noise_adder
-
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
+
+        # If a user prescribed NoiseAdder.from_snr(...),
+        #   noise_adder will be a function returning a completed class.
+        # Note the delayed eval may attempt to use self.*_accessors above.
+        if noise_adder is not None:
+            logger.info(f"Appending {noise_adder} to generation pipeline")
+            # If we need to calculate signal_power from Simulation,
+            # do so now and assign it to complete the Filter.
+            if getattr(noise_adder, "requires_signal_power", False):
+                noise_adder.signal_power = self.true_signal_power()
+
+            # At this point we should have a fully baked NoiseAdder
+            if not isinstance(noise_adder, NoiseAdder):
+                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
+
+        self.noise_adder = noise_adder
 
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
@@ -306,6 +316,24 @@ class Simulation(ImageSource):
         res_inners = mean_vol.to_vec() @ res.to_vec().T
 
         return coords.squeeze(), res_norms, res_inners
+
+    def true_signal_power(self, *args, **kwargs):
+        """
+        Estimate the signal power of `clean_images`.
+
+        For usage, see `ImageSource.estimate_signal_power`.
+
+        :returns: Estimated signal power of `clean_images`
+        """
+
+        # Note, in the future we can do something more clever here,
+        # perhaps starting with the simulation Volume.  For now we
+        # share code with ImageSource, so the method is at least
+        # identical, up to using `clean_images`.  The method is also
+        # the same as NoiseEstimator, up to ignoring the first moment
+        # and a few optional parameters.
+        kwargs["image_accessor"] = self.clean_images
+        return self.estimate_signal_power(*args, **kwargs)
 
     def mean_true(self):
         return Volume(np.mean(self.vols, 0))
@@ -469,3 +497,20 @@ class Simulation(ImageSource):
         corr = inner / (norm_true * norm_est)
 
         return {"err": err, "rel_err": rel_err, "corr": corr}
+
+    def true_snr(self, *args, **kwargs):
+        """
+        Compute SNR using `true_signal_power` and the noise power known to simulation.
+
+        See Simulation.true_signal_power() for parameters.
+        """
+        # For clean images return infinite SNR.
+        # Note, relationship with CTF and other sim corruptions still isn't clear to me...
+        if self.noise_adder is None or self.noise_adder.noise_var == 0:
+            return np.inf
+
+        # For SNR of Simulations, use the theoretical noise variance
+        # known from the noise_adder instead of deriving from PSD.
+        noise_power = self.noise_adder.noise_var
+        signal_power = self.true_signal_power(*args, **kwargs)
+        return signal_power / noise_power

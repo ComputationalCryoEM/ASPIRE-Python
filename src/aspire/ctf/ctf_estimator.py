@@ -19,9 +19,8 @@ from scipy.signal.windows import dpss
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.image import Image
 from aspire.numeric import fft
-from aspire.operators import voltage_to_wavelength
 from aspire.storage import StarFile
-from aspire.utils import abs2, complex_type, grid_1d, grid_2d
+from aspire.utils import abs2, complex_type, grid_1d, grid_2d, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
 
