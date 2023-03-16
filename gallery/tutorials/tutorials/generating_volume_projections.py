@@ -29,7 +29,7 @@ n_img = 10
 # --------------------
 # This example starts with an mrc, which can be loaded as an ASPIRE Volume.
 
-DATA_DIR = "data"  # Tutorial example data folder
+DATA_DIR = "../data"  # Tutorial example data folder
 v = Volume.load(
     os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"), dtype=np.float64
 )

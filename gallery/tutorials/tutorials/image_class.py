@@ -12,7 +12,7 @@ import numpy as np
 from aspire.image import Image
 from aspire.operators import CTFFilter
 
-DATA_DIR = "data"
+DATA_DIR = "../data"
 img_data = np.load(os.path.join(DATA_DIR, "monuments.npy"))
 img_data.shape, img_data.dtype
 

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 #
 # Here we demonstrate reading in and plotting a raw micrograph.
 
-filename = "data/falcon_2012_06_12-14_33_35_0.mrc"
+filename = "../data/falcon_2012_06_12-14_33_35_0.mrc"
 
 with mrcfile.open(filename, mode="r") as mrc:
     micro_img = mrc.data
