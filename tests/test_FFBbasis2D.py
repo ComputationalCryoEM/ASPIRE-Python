@@ -122,7 +122,7 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         assert np.allclose(y1[0], y2[0], atol=1e-5)
 
         # 2*pi Identity
-        assert np.allclose(x1.asnumpy()[0], y3[0], atol=1e-5)
+        assert np.allclose(x1[0], y3[0], atol=1e-5)
 
         # Refl (flipped using flipud)
         assert np.allclose(np.flipud(x1.asnumpy()[0]), y4[0], atol=1e-5)
