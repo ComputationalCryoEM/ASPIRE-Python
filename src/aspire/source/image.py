@@ -167,7 +167,7 @@ class ImageSource(ABC):
         Check `indices` and return slice of current Source as a new
         Source.
 
-        Internally uses `RemappedSource`.
+        Internally uses `IndexedSource`.
 
         :param indices: Requested indices as a Python slice object,
             1-D NumPy array, list, or a single integer. Slices default
@@ -176,7 +176,7 @@ class ImageSource(ABC):
         :return: Source composed of the images and metadata at `indices`.
         """
 
-        return RemappedSource(self, indices)
+        return IndexedSource(self, indices)
 
     @property
     def n_ctf_filters(self):
@@ -831,7 +831,7 @@ class ImageSource(ABC):
                 im.save(mrcs_filepath, overwrite=overwrite)
 
 
-class RemappedSource(ImageSource):
+class IndexedSource(ImageSource):
     """
     Map into another into ImageSource.
     """

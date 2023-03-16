@@ -31,7 +31,7 @@ def test_remapping(sim_fixture):
 def test_repr(sim_fixture):
     sim, sim2 = sim_fixture
 
-    logger.debug(f"repr(RemappedSource): {repr(sim2)}")
+    logger.debug(f"repr(IndexedSource): {repr(sim2)}")
 
     # Check `sim` is mentioned in the repr
     assert type(sim).__name__ in repr(sim2)
