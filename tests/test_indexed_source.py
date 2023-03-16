@@ -21,8 +21,12 @@ def sim_fixture():
 def test_remapping(sim_fixture):
     sim, sim2 = sim_fixture
 
-    # Check images are served correctly.
+    # Check images are served correctly, using internal index.
     assert np.allclose(sim.images[sim2.index_map].asnumpy(), sim2.images[:].asnumpy())
+
+    # Check images are served correctly, using known index (evens).
+    index = list(range(0, sim.n, 2))
+    assert np.allclose(sim.images[index].asnumpy(), sim2.images[:].asnumpy())
 
     # Check meta is served correctly.
     assert np.all(sim.get_metadata(indices=sim2.index_map) == sim2.get_metadata())
