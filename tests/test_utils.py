@@ -142,7 +142,7 @@ class UtilsTestCase(TestCase):
 
     def testAllPairs(self):
         n = 25
-        pairs, pairs_to_linear = all_pairs(n)
+        pairs, pairs_to_linear = all_pairs(n, return_map=True)
         nchoose2 = n * (n - 1) // 2
         # Build all pairs using a loop to ensure numpy upper_triu() ordering matches.
         pairs_from_loop = [[i, j] for i in range(n - 1) for j in range(i + 1, n)]

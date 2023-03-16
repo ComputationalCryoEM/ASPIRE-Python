@@ -171,7 +171,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
         # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
-        _, pairs_to_linear = all_pairs(n_img)
+        _, pairs_to_linear = all_pairs(n_img, return_map=True)
         for i in range(n_img):
             vii = viis[i]
             vii_J = J_conjugate(vii)
@@ -226,7 +226,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         V = np.zeros((n_img, n_img, 3, 3), dtype=vijs.dtype)
 
         # All pairs (i,j) where i<j
-        pairs, _ = all_pairs(n_img)
+        pairs = all_pairs(n_img)
 
         # Populate upper triangle of V with vijs and lower triangle with vjis, where vji = vij^T.
         for idx, (i, j) in enumerate(pairs):
@@ -534,7 +534,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         """
         n_img = self.n_img
         n_theta = self.n_theta
-        pairs, _ = all_pairs(n_img)
+        pairs = all_pairs(n_img)
         Rijs = np.zeros((len(pairs), 3, 3))
         for idx, (i, j) in enumerate(pairs):
             Rijs[idx] = self._syncmatrix_ij_vote_3n(
@@ -585,7 +585,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         """
         order = self.order
         n_img = self.n_img
-        pairs, _ = all_pairs(n_img)
+        pairs = all_pairs(n_img)
 
         # Estimate viis from Riis. vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
         viis = np.zeros((n_img, 3, 3))
@@ -727,7 +727,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
         triplets = all_triplets(n_img)
-        pairs, pairs_to_linear = all_pairs(n_img)
+        pairs, pairs_to_linear = all_pairs(n_img, return_map=True)
 
         # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
         # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
@@ -848,7 +848,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         A_g = np.zeros((n_img, n_img), dtype=complex)
 
-        pairs, _ = all_pairs(n_img)
+        pairs = all_pairs(n_img)
 
         for i, j in pairs:
             Ri = rots[i]

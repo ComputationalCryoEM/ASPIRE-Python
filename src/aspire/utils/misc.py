@@ -301,21 +301,26 @@ def fuzzy_mask(L, r0, risetime, origin=None):
     return m
 
 
-def all_pairs(n):
+def all_pairs(n, return_map=False):
     """
     All pairs indexing (i,j) for i<j and a pairs-to-linear index mapping.
 
     :param n: The number of items to be indexed.
+    :param return_map: Option to return pairs-to-linear index map.
+        Default is False.
     :returns:
         - n x 2 array of pairs (i, j), i<j.
         - n x n array with pairs-to-linear index map.
     """
     pairs = np.column_stack(np.triu_indices(n, 1))
-    pairs_to_linear_map = np.empty((n, n), dtype=np.uint16)
-    for index, pair in enumerate(pairs):
-        pairs_to_linear_map[pair[0], pair[1]] = index
 
-    return pairs, pairs_to_linear_map
+    if return_map:
+        pairs_to_linear_map = np.empty((n, n), dtype=np.uint16)
+        for index, pair in enumerate(pairs):
+            pairs_to_linear_map[pair[0], pair[1]] = index
+        return pairs, pairs_to_linear_map
+
+    return pairs
 
 
 def all_triplets(n):

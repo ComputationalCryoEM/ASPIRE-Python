@@ -151,7 +151,7 @@ def test_relative_rotations(L, order, dtype):
     rots_gt = src.rotations
 
     # Find the angular distance between each Rij and the ground truth.
-    pairs, _ = all_pairs(n_img)
+    pairs = all_pairs(n_img)
     angular_distance = np.zeros(len(pairs))
     for idx, (i, j) in enumerate(pairs):
         Rij = Rijs[idx]
@@ -224,7 +224,7 @@ def test_relative_viewing_directions(L, order, dtype):
         vi = rots_gt[i, 2]
         viis_gt[i] = np.outer(vi, vi)
 
-    pairs, _ = all_pairs(n_img)
+    pairs = all_pairs(n_img)
     n_pairs = len(pairs)
     vijs_gt = np.zeros((n_pairs, 3, 3))
     for idx, (i, j) in enumerate(pairs):
@@ -353,7 +353,7 @@ def test_commonlines(L, order, dtype):
     # Compare common-line indices with ground truth angles.
     rots = src.rotations  # ground truth rotations
     rots_symm = cyclic_rotations(order, dtype).matrices
-    pairs, _ = all_pairs(n_img)
+    pairs = all_pairs(n_img)
     within_1_degree = 0
     within_5_degrees = 0
     for i, j in pairs:
@@ -514,7 +514,7 @@ def build_outer_products(n_img, dtype):
     viis = np.zeros((n_img, 3, 3), dtype=dtype)
 
     # All pairs (i,j) where i<j
-    pairs, _ = all_pairs(n_img)
+    pairs = all_pairs(n_img)
 
     for k, (i, j) in enumerate(pairs):
         vijs[k] = np.outer(gt_vis[i], gt_vis[j])
