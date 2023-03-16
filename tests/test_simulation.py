@@ -1,7 +1,9 @@
 import os.path
 import tempfile
+import warnings
 from unittest import TestCase
 
+import matplotlib
 import numpy as np
 from pytest import raises
 
@@ -27,6 +29,24 @@ class SingleSimTestCase(TestCase):
     def testImage(self):
         """Test we can get an Image from a length 1 Sim."""
         _ = self.sim.images[0]
+
+    def testImageShow(self):
+        # Use non GUI backend.
+        matplotlib.use("Agg")
+        warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
+        self.sim.images[:].show()
+
+    def testCleanImagesShow(self):
+        # Use non GUI backend.
+        matplotlib.use("Agg")
+        warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
+        self.sim.clean_images[:].show()
+
+    def testProjectionsShow(self):
+        # Use non GUI backend.
+        matplotlib.use("Agg")
+        warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
+        self.sim.projections[:].show()
 
 
 class SimVolTestCase(TestCase):

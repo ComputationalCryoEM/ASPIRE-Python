@@ -1,6 +1,8 @@
 import logging
 import os.path
+import warnings
 
+import matplotlib
 import numpy as np
 import pytest
 from pytest import raises
@@ -281,3 +283,14 @@ def testMultiDimBroadcast():
     mdim_ims_np, mdim_ims = get_mdim_images()
     X = mdim_ims + ims
     assert np.allclose(X[0], 2 * ims.asnumpy())
+
+
+def testShow():
+    """
+    Test show doesn't crash.
+    """
+    # Use non GUI backend.
+    matplotlib.use("Agg")
+    warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
+    im = Image(np.random.random((3, 8, 8)))
+    im.show()
