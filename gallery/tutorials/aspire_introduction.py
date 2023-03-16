@@ -47,12 +47,14 @@ import aspire
 
 
 # %%
-# Primitive API Components
-# ------------------------
-# The ASPIRE framework is a collection of modules containing interoperable extensible components.
-# Underlying the more sophisticated components and algorithms are some core data structures.
-# Sophisticated components are designed to interoperate by exchanging, consuming, or producing these basic structures.
-# The most common structures encountered when starting out are:
+# API Primitives
+# --------------
+# The ASPIRE framework is a collection of modules containing
+# interoperable extensible components.  Underlying the more
+# sophisticated components and algorithms are some core data
+# structures.  Sophisticated components are designed to interoperate
+# by exchanging, consuming, or producing these basic structures.  The
+# most common structures encountered when starting out are:
 
 # %%
 # .. list-table:: Core API Components
@@ -78,10 +80,13 @@ import aspire
 # ``Image`` Class
 # ---------------
 #
-# The `Image <https://computationalcryoem.github.io/ASPIRE-Python/aspire.image.html#aspire.image.image.Image>`_ class
-# is a thin wrapper over Numpy arrays for a stack containing 1 or more images (2D data).
-# In this notebook we won't be working directly with the ``Image`` class a lot, but it will be one of the fundemental structures behind the scenes.
-# A lot of ASPIRE code passes around ``Image`` and ``Volume`` instances.
+# The `Image
+# <https://computationalcryoem.github.io/ASPIRE-Python/aspire.image.html#aspire.image.image.Image>`_
+# class is a thin wrapper over Numpy arrays for a stack containing 1
+# or more images (2D data).  In this notebook we won't be working
+# directly with the ``Image`` class a lot, but it will be one of the
+# fundemental structures behind the scenes.  A lot of ASPIRE code
+# passes around ``Image`` and ``Volume`` instances.
 
 from aspire.image import Image
 
@@ -95,10 +100,12 @@ logging.info(f"str(img): {img}")  # Note this produces a stack of 1.
 img_data = np.random.random((3,100,100))
 img = Image(img_data)
 
-# Most often, ``Image``s will behave like Numpy arrays, but you explicitly access the underlying Numpy array via ``asnumpy()``.
+# Most often, ``Image``s will behave like Numpy arrays, but you
+# explicitly access the underlying Numpy array via ``asnumpy()``.
 img.asnumpy()
 
-# Image have a built in ``show()`` method, which works well for peeking at data.
+# Image have a built in ``show()`` method, which works well for
+# peeking at data.
 img.show()
 
 # %%
@@ -118,8 +125,10 @@ img.show()
 # ``Volume`` Class
 # ----------------
 #
-# Like ``Image``, the `Volume <https://computationalcryoem.github.io/ASPIRE-Python/aspire.volume.html#aspire.volume.Volume>`_ class
-# is a thin wrapper over Numpy arrays that provides specialized methods for a stack containing 1 or more volumes (3D data).
+# Like ``Image``, the `Volume
+# <https://computationalcryoem.github.io/ASPIRE-Python/aspire.volume.html#aspire.volume.Volume>`_
+# class is a thin wrapper over Numpy arrays that provides specialized
+# methods for a stack containing 1 or more volumes (3D data).
 
 from aspire.volume import Volume
 
@@ -144,10 +153,14 @@ v = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
 # %%
 # Downsample Volume
 # ^^^^^^^^^^^^^^^^^
-# Here we downsample the above volume to a desired resolution (32 should be good).
-# For the data source I chose to download a real volume density map from `EMDB <https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.
-# The download was uncompressed in my local directory.  The notebook defaults to a small low resolution sample file you may use to sanity check.
-# Unfortunately real data can be quite large so we do not ship it with the repo.
+# Here we downsample the above volume to a desired resolution (32
+# should be good).  For the data source I chose to download a real
+# volume density map from `EMDB
+# <https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.  The download
+# was uncompressed in my local directory.  The notebook defaults to a
+# small low resolution sample file you may use to sanity check.
+# Unfortunately real data can be quite large so we do not ship it with
+# the repo.
 
 # Downsample the volume to a desired resolution
 img_size = 32
@@ -195,7 +208,8 @@ rots = Rotation.generate_random_rotations(n=num_rotations, seed=12345)
 logging.info(rots)
 logging.info(rots.matrices)
 
-# Using the zero-th (and in this case, only) volume, compute projections using the stack of rotations:
+# Using the zero-th (and in this case, only) volume, compute
+# projections using the stack of rotations:
 projections = v.project(0, rots)
 logging.info(projections)
 
@@ -274,10 +288,19 @@ projections.show()
 # `rotations`, `dtype`, and supporting pipelining certain
 # transformations.
 #
-# The second reason is so  we can design an experiment using a synthetic ``Simulation`` source or our own provided Numpy arrays via ``ArrayImageSource`` and then later swap out the source for a large experimental data set using something like ``RelionSource``.  Experimental datasets can be too large to practically fit or process entirely in memory, and force the use of iteratively-batched approaches.
+# The second reason is so we can design an experiment using a
+# synthetic ``Simulation`` source or our own provided Numpy arrays via
+# ``ArrayImageSource`` and then later swap out the source for a large
+# experimental data set using something like ``RelionSource``.
+# Experimental datasets can be too large to practically fit or process
+# entirely in memory, and force the use of iteratively-batched
+# approaches.
 #
-# Generally, the ``source`` package attempts to make most of this opaque to an end user.  Ideally we can simply swap one source for another.
-# For now we will build up to the creation and application of synthetic data set based on the various manual interactions above.
+# Generally, the ``source`` package attempts to make most of this
+# opaque to an end user.  Ideally we can simply swap one source for
+# another.  For now we will build up to the creation and application
+# of synthetic data set based on the various manual interactions
+# above.
 
 # %%
 #
@@ -311,11 +334,13 @@ projections.show()
 # %%
 # ``Simulation`` Class
 # ^^^^^^^^^^^^^^^^^^^^
-# Generating realistic synthetic data sources is a common task.
-# The process of generating then projecting random rotations is integrated into the
-# `Simulation <https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation>`_ class.
-# Using ``Simulation``, we can generate arbitrary numbers of projections for use in experiments.
-# Then additional features are introduced which allow us to create more realistic data sources.
+# Generating realistic synthetic data sources is a common task.  The
+# process of generating then projecting random rotations is integrated
+# into the `Simulation
+# <https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation>`_
+# class.  Using ``Simulation``, we can generate arbitrary numbers of
+# projections for use in experiments.  Then additional features are
+# introduced which allow us to create more realistic data sources.
 
 from aspire.source import Simulation
 
@@ -331,9 +356,9 @@ sim.images[:10].show()  # Hi Res
 sim = Simulation(n=num_imgs, vols=v2)
 sim.images[:10].show()  # Lo Res
 
-# Note both of those simulations have the same rotations
-#   because they had the same seed by default,
-# We recreate ``sim`` with a distinct seed to get different random samples (of rotations).
+# Note both of those simulations have the same rotations because they
+#   had the same seed by default, We recreate ``sim`` with a distinct
+#   seed to get different random samples (of rotations).
 sim = Simulation(n=num_imgs, vols=v2, seed=42)
 sim.images[:10].show()
 
@@ -370,12 +395,13 @@ logging.info(f"Target Noise Variance: {target_noise_variance}")
 # Then create a NoiseAdder based on that variance.
 white_noise_adder = WhiteNoiseAdder(target_noise_variance)
 
-# %%
-# We can customize Sources by adding stages to their generation pipeline.
-# In this case of a Simulation source, we want to corrupt the projection images with noise.
-#
-# Internally the ``WhiteNoiseAdder`` creates a ``ScalarFilter`` which is multiplied (convolution) by a Gaussian random sample.
-# Similar to before, if you require a different sample, this can be controlled via a ``seed``.
+# %% We can customize Sources by adding stages to their generation
+# pipeline.  In this case of a Simulation source, we want to corrupt
+# the projection images with noise.  Internally the
+# ``WhiteNoiseAdder`` creates a ``ScalarFilter`` which is multiplied
+# (convolution) by a Gaussian random sample.  Similar to before, if
+# you require a different sample, this can be controlled via a
+# ``seed``.
 
 # Creating the new simulation with this additional noise is easy:
 sim = Simulation(n=num_imgs, vols=v2, noise_adder=white_noise_adder)
@@ -406,10 +432,12 @@ noise_estimator.estimate()
 # A Custom ``FunctionFilter``
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# We will now apply some more interesting noise, using a custom function, and then apply a ``whitening`` process to our data.
+# We will now apply some more interesting noise, using a custom
+# function, and then apply a ``whitening`` process to our data.
 #
-# Using ``FunctionFilter`` we can create our own custom functions to apply in a pipeline.
-# Here we want to apply a custom noise function.  We will use a function of two variables for this example.
+# Using ``FunctionFilter`` we can create our own custom functions to
+# apply in a pipeline.  Here we want to apply a custom noise function.
+# We will use a function of two variables for this example.
 
 from aspire.operators import FunctionFilter
 from aspire.noise import CustomNoiseAdder
@@ -418,7 +446,8 @@ def noise_function(x, y):
     return 1e-7 * np.exp(-(x * x + y * y) / (2 * 0.3**2))
 
 # In python, functions are first class objects.  We take advantage of
-# that to pass this function around as a variable.  The function is evaluated later, internally, during pipeline execution.
+# that to pass this function around as a variable.  The function is
+# evaluated later, internally, during pipeline execution.
 custom_noise = CustomNoiseAdder(noise_filter=FunctionFilter(noise_function))
 
 # Create yet another Simulation source to tinker with.
@@ -429,9 +458,11 @@ sim.images[:10].show()
 # %%
 # Noise Whitening
 # ^^^^^^^^^^^^^^^
-# We will now combine a more advanced noise estimation technique with an ``ImageSource`` preprocessing method ``whiten``.
+# We will now combine a more advanced noise estimation technique with
+# an ``ImageSource`` preprocessing method ``whiten``.
 #
-# First an anisotropic noise estimate is performed.  We will use the resulting ``Filter``.
+# First an anisotropic noise estimate is performed.  We will use the
+# resulting ``Filter``.
 
 from aspire.noise import AnisotropicNoiseEstimator
 
@@ -439,8 +470,10 @@ from aspire.noise import AnisotropicNoiseEstimator
 aiso_noise_estimator = AnisotropicNoiseEstimator(sim)
 
 #%%
-# Applying the ``Simulation.whiten()`` method requires passing the filter corresponding to the estimated noise instance.
-# Then we can inspect some of the whitened images.  While noise is still present, we can see a dramatic change.
+# Applying the ``Simulation.whiten()`` method requires passing the
+# filter corresponding to the estimated noise instance.  Then we can
+# inspect some of the whitened images.  While noise is still present,
+# we can see a dramatic change.
 
 # Whiten based on the estimated noise
 sim.whiten(aiso_noise_estimator.filter)
@@ -451,7 +484,9 @@ sim.images[:10].show()
 # %%
 # Common Image Corruptions
 # ---------------------------
-# ``Simulation`` provides several configurable types of common CryoEM image corruptions.  Users should be aware that Amplitude and Offset corruption is enabled by default.
+# ``Simulation`` provides several configurable types of common CryoEM
+# image corruptions.  Users should be aware that Amplitude and Offset
+# corruption is enabled by default.
 
 # %%
 # Amplitudes
@@ -505,7 +540,10 @@ sim = Simulation(n=num_imgs,
                  unique_filters=ctf_filters,
                  seed=42)
 
-# Simulation has two unique accessors ``clean_images`` which disables noise, and ``projections`` which are clean uncorrupted projections.  Both act like calls to `image` and return show=able ``Image`` instances.
+# Simulation has two unique accessors ``clean_images`` which disables
+# noise, and ``projections`` which are clean uncorrupted projections.
+# Both act like calls to `image` and return show=able ``Image``
+# instances.
 
 # %%
 # Clean projections.
@@ -525,8 +563,8 @@ sim.images[:5].show()
 # Real Experimental Data - ``RelionSource``
 # -----------------------------------------
 #
-# Now that we have some basics,
-# we can try to replace the simulation with a real experimental data source.
+# Now that we have some basics, we can try to replace the simulation
+# with a real experimental data source.
 
 from aspire.source import RelionSource
 
@@ -540,7 +578,9 @@ src = RelionSource(
 # Downsample
 src.downsample(img_size)
 
-# Relionsource will auto populate ``CTFFilter`` instances from the STAR file metadata when available. Having these filters allows us to perform a phase flipping correction.
+# Relionsource will auto populate ``CTFFilter`` instances from the
+# STAR file metadata when available. Having these filters allows us to
+# perform a phase flipping correction.
 src.phase_flip()
 
 # Display the experimental data images.
