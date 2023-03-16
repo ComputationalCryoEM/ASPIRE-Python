@@ -199,7 +199,7 @@ class RelionSource(ImageSource):
         if self._cached_im is not None:
             logger.debug("Loading images from cache")
             return self.generation_pipeline.forward(
-                Image(self._cached_im[indices, :, :]), indices
+                self._cached_im[indices, :, :], indices
             )
 
         logger.debug(f"Loading {len(indices)} images from STAR file")

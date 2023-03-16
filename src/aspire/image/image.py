@@ -122,6 +122,11 @@ class Image:
         self.n_images = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
+        # Numpy interop
+        # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
+        self.__array_interface__ = self._data.__array_interface__
+        self.__array__ = self._data
+
     @property
     def res(self):
         warn(
@@ -138,7 +143,7 @@ class Image:
 
     def __getitem__(self, key):
         self._check_key_dims(key)
-        return self._data[key]
+        return self.__class__(self._data[key])
 
     def __setitem__(self, key, value):
         self._check_key_dims(key)
@@ -166,31 +171,31 @@ class Image:
                 f"Number of images {self.n_images} cannot be reshaped to {shape}."
             )
 
-        return Image(self._data.reshape(*shape, *self._data.shape[-2:]))
+        return self.__class__(self._data.reshape(*shape, *self._data.shape[-2:]))
 
     def __add__(self, other):
         if isinstance(other, Image):
             other = other._data
 
-        return Image(self._data + other)
+        return self.__class__(self._data + other)
 
     def __sub__(self, other):
         if isinstance(other, Image):
             other = other._data
 
-        return Image(self._data - other)
+        return self.__class__(self._data - other)
 
     def __mul__(self, other):
         if isinstance(other, Image):
             other = other._data
 
-        return Image(self._data * other)
+        return self.__class__(self._data * other)
 
     def __neg__(self):
-        return Image(-self._data)
+        return self.__class__(-self._data)
 
     def sqrt(self):
-        return Image(np.sqrt(self._data))
+        return self.__class__(np.sqrt(self._data))
 
     @property
     def T(self):
@@ -212,7 +217,7 @@ class Image:
         im = self.stack_reshape(-1)
         imt = np.transpose(im._data, (0, -1, -2))
 
-        return Image(imt).stack_reshape(original_stack_shape)
+        return self.__class__(imt).stack_reshape(original_stack_shape)
 
     def flip(self, axis=-2):
         """
@@ -235,7 +240,7 @@ class Image:
                     f"Cannot flip axis {ax}: stack axis. Did you mean {ax-3}?"
                 )
 
-        return Image(np.flip(self._data, axis))
+        return self.__class__(np.flip(self._data, axis))
 
     def __repr__(self):
         msg = f"{self.n_images} {self.dtype} images arranged as a {self.stack_shape} stack"
@@ -246,7 +251,7 @@ class Image:
         return self._data
 
     def copy(self):
-        return Image(self._data.copy())
+        return self.__class__(self._data.copy())
 
     def shift(self, shifts):
         """
@@ -292,7 +297,7 @@ class Image:
             ds_res**2 / self.resolution**2
         )
 
-        return Image(out).stack_reshape(original_stack_shape)
+        return self.__class__(out).stack_reshape(original_stack_shape)
 
     def filter(self, filter):
         """
@@ -317,7 +322,7 @@ class Image:
         im = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
         im = np.real(im)
 
-        return Image(im).stack_reshape(original_stack_shape)
+        return self.__class__(im).stack_reshape(original_stack_shape)
 
     def rotate(self):
         raise NotImplementedError
@@ -376,7 +381,7 @@ class Image:
         im_translated = np.real(im_translated)
 
         # Reshape to stack shape
-        return Image(im_translated).stack_reshape(stack_shape)
+        return self.__class__(im_translated).stack_reshape(stack_shape)
 
     def norm(self):
         return anorm(self._data)

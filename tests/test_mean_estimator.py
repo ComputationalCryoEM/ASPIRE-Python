@@ -52,7 +52,7 @@ class MeanEstimatorTestCase(TestCase):
         estimate = self.estimator.estimate()
         self.assertTrue(
             np.allclose(
-                estimate[0][:, :, 4],
+                estimate.asnumpy()[0][:, :, 4],
                 [
                     [
                         +0.00000000,

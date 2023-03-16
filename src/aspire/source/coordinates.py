@@ -427,7 +427,7 @@ class CoordinateSource(ImageSource, ABC):
         if self._cached_im is not None:
             logger.info("Loading images from cache")
             return self.generation_pipeline.forward(
-                Image(self._cached_im[indices, :, :]), indices
+                self._cached_im[indices, :, :], indices
             )
 
         logger.info(f"Loading {len(indices)} images from micrographs")

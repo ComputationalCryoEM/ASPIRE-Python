@@ -113,10 +113,10 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         v1 = basis.rotate(v1, np.pi / 2)
 
         # Evaluate back into cartesian
-        y1 = basis.evaluate(v1)
-        y2 = basis.evaluate(v2)
-        y3 = basis.evaluate(v3)
-        y4 = basis.evaluate(v4)
+        y1 = basis.evaluate(v1).asnumpy()
+        y2 = basis.evaluate(v2).asnumpy()
+        y3 = basis.evaluate(v3).asnumpy()
+        y4 = basis.evaluate(v4).asnumpy()
 
         # Rotate 90
         assert np.allclose(y1[0], y2[0], atol=1e-5)
@@ -125,7 +125,7 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         assert np.allclose(x1[0], y3[0], atol=1e-5)
 
         # Refl (flipped using flipud)
-        assert np.allclose(np.flipud(x1[0]), y4[0], atol=1e-5)
+        assert np.allclose(np.flipud(x1.asnumpy()[0]), y4[0], atol=1e-5)
 
     def testRotateComplex(self, basis):
         # Now low res (8x8) had problems;
@@ -158,19 +158,19 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         v1 = basis.to_real(basis.complex_rotate(basis.to_complex(v1), np.pi / 2))
 
         # Evaluate back into cartesian
-        y1 = basis.evaluate(v1)
-        y2 = basis.evaluate(v2)
-        y3 = basis.evaluate(v3)
-        y4 = basis.evaluate(v4)
+        y1 = basis.evaluate(v1).asnumpy()
+        y2 = basis.evaluate(v2).asnumpy()
+        y3 = basis.evaluate(v3).asnumpy()
+        y4 = basis.evaluate(v4).asnumpy()
 
         # Rotate 90
         assert np.allclose(y1[0], y2[0], atol=1e-5)
 
         # 2*pi Identity
-        assert np.allclose(x1[0], y3[0], atol=1e-5)
+        assert np.allclose(x1[0].asnumpy(), y3[0], atol=1e-5)
 
         # Refl (flipped using flipud)
-        assert np.allclose(np.flipud(x1[0]), y4[0], atol=1e-5)
+        assert np.allclose(np.flipud(x1.asnumpy()[0]), y4[0], atol=1e-5)
 
     def testShift(self, basis):
         """

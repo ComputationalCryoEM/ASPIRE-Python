@@ -263,9 +263,7 @@ class Simulation(ImageSource):
         # check for cached images first
         if self._cached_im is not None:
             logger.debug("Loading images from cache")
-            return self.generation_pipeline.forward(
-                Image(self._cached_im[indices, :, :]), indices
-            )
+            return self.generation_pipeline.forward(self._cached_im[indices], indices)
         im = self.projections[indices]
 
         # apply original CTF distortion to image
@@ -370,7 +368,7 @@ class Simulation(ImageSource):
 
         # Arrange in descending order (flip column order in eigenvector matrix)
         w = w[::-1]
-        eigs_true = Volume(eigs_true[::-1])
+        eigs_true = Volume(eigs_true.asnumpy()[::-1])
 
         return eigs_true, np.diag(w)
 

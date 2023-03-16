@@ -374,14 +374,14 @@ class ImageSource(ABC):
                 f"_apply_filters() passed {type(im_orig)} instead of Image instance"
             )
             # for now just convert it
-            im = Image(im_orig)
+            im_orig = Image(im_orig)
 
         im = im_orig.copy()
 
         for i, filt in enumerate(filters):
             idx_k = np.where(indices == i)[0]
             if len(idx_k) > 0:
-                im[idx_k] = Image(im[idx_k]).filter(filt).asnumpy()
+                im[idx_k] = im[idx_k].filter(filt).asnumpy()
 
         return im
 
@@ -1082,9 +1082,7 @@ class ArrayImageSource(ImageSource):
         :return: An `Image` object.
         """
         # Load cached data and apply transforms
-        return self.generation_pipeline.forward(
-            Image(self._cached_im[indices, :, :]), indices
-        )
+        return self.generation_pipeline.forward(self._cached_im[indices, :, :], indices)
 
     def _rots(self):
         """

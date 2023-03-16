@@ -294,7 +294,6 @@ class CtfEstimator:
         :param n_low_freq_cutoffs: Low frequency cutoffs (loop iterations).
         :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
-
         # compute radial average
         center = amplitude_spectrum.shape[-1] // 2
 
@@ -309,7 +308,7 @@ class CtfEstimator:
                 f"Invalid ndimension for amplitude_spectrum {amplitude_spectrum.shape}"
             )
 
-        amplitude_spectrum = amplitude_spectrum[center, center:]
+        amplitude_spectrum = amplitude_spectrum.asnumpy()[0, center, center:]
         amplitude_spectrum = amplitude_spectrum[
             0 : 3 * amplitude_spectrum.shape[-1] // 4
         ]
@@ -848,7 +847,7 @@ def estimate_ctf(
                 os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
                 overwrite=True,
             ) as mrc:
-                mrc.set_data(background_2d[0].astype(np.float32))
+                mrc.set_data(background_2d.asnumpy()[0].astype(np.float32))
                 mrc.voxel_size = pixel_size
 
         if save_ctf_images:
@@ -867,7 +866,7 @@ def estimate_ctf(
             )
             ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
             ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
-            ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal[
+            ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal.asnumpy()[
                 :, :, ctf_im.shape[0] // 2 + 1
             ]
 
