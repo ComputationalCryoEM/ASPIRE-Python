@@ -44,22 +44,26 @@ class NoiseAdder(Xform):
         return f"{self.__class__.__name__}"
 
     def _forward(self, im, indices):
-        im = im.copy()
+        _im = im.asnumpy().copy()
 
         for i, idx in enumerate(indices):
             # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
             random_seed = self.seed + 191 * (idx + 1)
             im_s = randn(2 * im.resolution, 2 * im.resolution, seed=random_seed)
-            im_s = Image(im_s).filter(self.noise_filter)[0]
-            im[i] += im_s[: im.resolution, : im.resolution]
+            # Use numpy because im_s and im are different image sizes
+            im_s = Image(im_s).filter(self.noise_filter).asnumpy()[0]
+            _im[i] += im_s[: im.resolution, : im.resolution]
 
-        return im
+        return Image(_im)
 
     @abc.abstractproperty
     def noise_var(self):
         """
         Concrete implementations are expected to provide a method that
         returns the noise variance for the NoiseAdder.
+
+        Authors of `NoiseAdder`s are encouraged to consider any relevant
+        methods of calculating noise variance from theory.
         """
 
 
@@ -69,39 +73,23 @@ class CustomNoiseAdder(NoiseAdder):
     """
 
     @property
-    def noise_var(self):
+    def noise_var(self, res=512):
         """
         Return noise variance.
 
-        CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
+        CustomNoiseAdder will estimate noise_var using the `noise_filter`.
 
-        If you require tuning the noise_var sampling, see `get_noise_var`.
+        :param res: Resolution to use when evaluating noise filter, default 512.
+        :returns: Noise variance estimated at `res`.
         """
-        return self.get_noise_var()
-
-    def get_noise_var(self, sample_n=100, sample_res=128):
-        """
-        Return noise variance.
-
-        CustomNoiseAdder will estimate noise_var by taking a sample of the noise.
-
-        It is highly encouraged that authors of `CustomNoiseAdder`s consider
-        any theoretically superior methods of calculating noise variance,
-        or test that this method's default values are satisfactory for their
-        implementation.
-
-        :sample_n: Number of images to sample.
-        :sample_res: Resolution of sample (noise) images.
-        :returns: Noise Variance.
-        """
-        im_zeros = Image(np.zeros((sample_n, sample_res, sample_res)))
-        im_noise_sample = self._forward(im_zeros, range(sample_n))
-        return np.var(im_noise_sample.asnumpy())
+        # Take mean of user provided _noise_filter, before the PowerFilter is applied.
+        return np.mean(self._noise_filter.evaluate_grid(res))
 
 
 class WhiteNoiseAdder(NoiseAdder):
     """
-    A Xform that adds white noise, optionally passed through a Filter object, to all incoming images.
+    A Xform that adds white noise, optionally passed through a Filter
+    object, to all incoming images.
     """
 
     # TODO, check if we can change seed and/or why not.
@@ -112,8 +100,55 @@ class WhiteNoiseAdder(NoiseAdder):
         :param var: Target noise variance.
         :param seed: Optinally provide a random seed used to generate white noise.
         """
-        self._noise_var = var
-        super().__init__(noise_filter=ScalarFilter(dim=2, value=var), seed=seed)
+
+        self.signal_power = None  # Used with `from_snr`
+        self.requires_signal_power = False  # Used with `from_snr`
+        self.noise_var = var
+        self.seed = seed
+        # When we know the var, complete building the filter.
+        if var is not None:
+            self._build()
+        else:
+            # Otherwise, we will flag that we require signal power.
+            # Assigning `signal_power` later will complete builing
+            # filter.
+            self.requires_signal_power = True
+
+    def _build(self):
+        """
+        Builds underlying Filter for this NoiseAdder.
+        """
+        super().__init__(
+            noise_filter=ScalarFilter(dim=2, value=self.noise_var), seed=self.seed
+        )
+
+    @classmethod
+    def from_snr(cls, snr, signal_power=None, seed=0):
+        """
+        Generates a WhiteNoiseAdder configured to produce a target
+        signal to noise ratio.
+
+        When `signal_power` is not provided, `requires_signal_power`
+        attribute will be set.  Consumers can check this attribute and
+        set `signal_power` as required. Setting `signal_power` should
+        then complete building the filter.
+
+        :param snr: Desired signal to noise ratio of
+            the returned source.
+        :param signal_power: Optional, if the signal power is known.
+        :param seed: Optionally provide a random seed used to generate white noise.
+        """
+
+        noise_adder = cls(var=None, seed=seed)
+        # signal_power.setter will use `_snr` to compute the noise
+        # variance.
+        noise_adder._snr = snr
+
+        # `signal_power.setter` should complete _build when provided
+        # `signal_power` is not None
+        noise_adder.signal_power = signal_power
+
+        return noise_adder
 
     def __str__(self):
         return f"{self.__class__.__name__} with variance={self._noise_var}"
@@ -126,10 +161,26 @@ class WhiteNoiseAdder(NoiseAdder):
         """
         Returns noise variance.
 
-        Note in this white noise case noise variance is known,
+        Note in this white noise case, noise variance is known,
         because the `WhiteNoiseAdder` was instantied with an explicit variance.
         """
         return self._noise_var
+
+    @noise_var.setter
+    def noise_var(self, v):
+        self._noise_var = v
+
+    @property
+    def signal_power(self):
+        return self._signal_power
+
+    @signal_power.setter
+    def signal_power(self, p):
+        self._signal_power = p
+        if p is not None:
+            self.requires_signal_power = False
+            self.noise_var = p / self._snr
+            self._build()
 
 
 class NoiseEstimator:
@@ -143,9 +194,10 @@ class NoiseEstimator:
 
         :param src: A Source object which can give us images on demand
         :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
-        :param batchSize:  The size of the batches in which to compute the variance estimate
+            Radius is relative proportion, where `1` represents
+            the radius of disc inscribing a `(src.L, src.L)` image.
+        :param batchSize:  The size of the batches in which to compute the variance estimate.
         """
-
         self.src = src
         self.dtype = self.src.dtype
         self.bgRadius = bgRadius

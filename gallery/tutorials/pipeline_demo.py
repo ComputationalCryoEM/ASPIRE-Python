@@ -14,6 +14,7 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 # We begin by downloading a high resolution volume map of the 80S
 # Ribosome, sourced from EMDB: https://www.ebi.ac.uk/emdb/EMD-2660.
 
+import logging
 import os
 
 import numpy as np
@@ -68,22 +69,15 @@ vol = original_vol.downsample(res)
 
 
 # %%
-# Noise and CTF Filters
+# CTF Filters
 # ^^^^^^^^^^^^^^^^^^^^^
-# Let's start by creating noise and CTF filters. The ``operators``
-# package contains a collection of filter classes that can be supplied
-# to a ``Simulation``. We use ``ScalarFilter`` to create Gaussian
-# white noise and ``RadialCTFFilter`` to generate a set of CTF filters
-# with various defocus values.
+# Let's start by creating CTF filters. The ``operators`` package
+# contains a collection of filter classes that can be supplied to a
+# ``Simulation``.  We use ``RadialCTFFilter`` to generate a set of CTF
+# filters with various defocus values.
 
-# Create noise and CTF filters
-from aspire.noise import WhiteNoiseAdder
+# Create CTF filters
 from aspire.operators import RadialCTFFilter
-
-# Gaussian noise filter.  Note, the value supplied to the
-# ``WhiteNoiseAdder``, chosen based on other parameters for this quick
-# tutorial, can be changed to adjust the power of the noise.
-noise_adder = WhiteNoiseAdder(var=1e-5)
 
 # Radial CTF Filter
 defocus_min = 15000  # unit is angstroms
@@ -95,18 +89,35 @@ ctf_filters = [
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 
-
 # %%
 # Initialize Simulation Object
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # We feed our ``Volume`` and filters into ``Simulation`` to generate
-# the dataset of images.
+# the dataset of images.  When controlled white Gaussian noise is
+# desired, ``WhiteNoiseAdder.from_snr()`` can be used to generate a
+# simulation data set around a specific SNR.
+#
+# Alternatively, users can bring their own images using an
+# ``ArrayImageSource``, or define their own custom noise functions via
+# ``Simulation(..., noise_adder=CustomNoiseAdder(...))``.  Examples
+# can be found in ``tutorials/class_averaging.py`` and
+# ``experiments/simulated_abinitio_pipeline.py``.
 
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 
 # set parameters
 res = 41
 n_imgs = 2500
+
+# SNR target for white gaussian noise.
+snr = 0.5
+
+# %%
+# .. note::
+#   Note, the SNR value was chosen based on other parameters for this
+#   quick tutorial, and can be changed to adjust the power of the
+#   additive noise.
 
 # For this ``Simulation`` we set all 2D offset vectors to zero,
 # but by default offset vectors will be randomly distributed.
@@ -114,8 +125,8 @@ src = Simulation(
     n=n_imgs,  # number of projections
     vols=vol,  # volume source
     offsets=0,  # Default: images are randomly shifted
-    noise_adder=noise_adder,
     unique_filters=ctf_filters,
+    noise_adder=WhiteNoiseAdder.from_snr(snr=snr),  # desired SNR
 )
 
 

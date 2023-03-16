@@ -190,14 +190,14 @@ class SimTestCase(TestCase):
 
     def testSimulationImagesDownsampleShape(self):
         self.sim.downsample(6)
-        first_image = self.sim.images[0][0]
+        first_image = self.sim.images[0].asnumpy()[0]
         self.assertEqual(first_image.shape, (6, 6))
 
     def testSimulationEigen(self):
         eigs_true, lambdas_true = self.sim.eigs()
         self.assertTrue(
             np.allclose(
-                eigs_true[0, :, :, 2],
+                eigs_true.asnumpy()[0, :, :, 2],
                 np.array(
                     [
                         [
@@ -371,7 +371,7 @@ class SimTestCase(TestCase):
                         0.01210055,
                     ],
                 ],
-                mean_vol[0, :, :, 4],
+                mean_vol.asnumpy()[0, :, :, 4],
             )
         )
 

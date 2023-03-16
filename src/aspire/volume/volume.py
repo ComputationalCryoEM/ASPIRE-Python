@@ -27,7 +27,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     """
     ims = np.zeros((k, n, sim.L, sim.L), dtype=vols.dtype)
     for ell in range(k):
-        ims[ell] = sim.vol_forward(Volume(vols[ell]), s, n).asnumpy()
+        ims[ell] = sim.vol_forward(vols[ell], s, n).asnumpy()
 
     ims = np.swapaxes(ims, 1, 3)
     ims = np.swapaxes(ims, 0, 2)
@@ -96,6 +96,11 @@ class Volume:
         self.n_vols = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
 
+        # Numpy interop
+        # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
+        self.__array_interface__ = self._data.__array_interface__
+        self.__array__ = self._data
+
     def asnumpy(self):
         """
         Return volume as a (n_vols, resolution, resolution, resolution) array.
@@ -113,7 +118,7 @@ class Volume:
             Defaults to True.
         :return: Volume instance
         """
-        return Volume(self.asnumpy().astype(dtype, copy=copy))
+        return self.__class__(self.asnumpy().astype(dtype, copy=copy))
 
     def _check_key_dims(self, key):
         if isinstance(key, tuple) and (len(key) > self._data.ndim):
@@ -123,7 +128,7 @@ class Volume:
 
     def __getitem__(self, key):
         self._check_key_dims(key)
-        return self._data[key]
+        return self.__class__(self._data[key])
 
     def __setitem__(self, key, value):
         self._check_key_dims(key)
@@ -151,7 +156,7 @@ class Volume:
                 f"Number of volumes {self.n_vols} cannot be reshaped to {shape}."
             )
 
-        return Volume(self._data.reshape(*shape, *self._data.shape[-3:]))
+        return self.__class__(self._data.reshape(*shape, *self._data.shape[-3:]))
 
     def __repr__(self):
         msg = (
@@ -165,9 +170,9 @@ class Volume:
 
     def __add__(self, other):
         if isinstance(other, Volume):
-            res = Volume(self._data + other.asnumpy())
+            res = self.__class__(self._data + other.asnumpy())
         else:
-            res = Volume(self._data + other)
+            res = self.__class__(self._data + other)
 
         return res
 
@@ -176,25 +181,42 @@ class Volume:
 
     def __sub__(self, other):
         if isinstance(other, Volume):
-            res = Volume(self._data - other.asnumpy())
+            res = self.__class__(self._data - other.asnumpy())
         else:
-            res = Volume(self._data - other)
+            res = self.__class__(self._data - other)
 
         return res
 
     def __rsub__(self, otherL):
-        return Volume(otherL - self._data)
+        return self.__class__(otherL - self._data)
 
     def __mul__(self, other):
         if isinstance(other, Volume):
-            res = Volume(self._data * other.asnumpy())
+            res = self.__class__(self._data * other.asnumpy())
         else:
-            res = Volume(self._data * other)
+            res = self.__class__(self._data * other)
 
         return res
 
     def __rmul__(self, otherL):
         return self * otherL
+
+    def __truediv__(self, other):
+        """
+        Scalar division, follows numpy semantics.
+        """
+        if isinstance(other, Volume):
+            res = self.__class__(self._data / other.asnumpy())
+        else:
+            res = self.__class__(self._data / other)
+
+        return res
+
+    def __rtruediv__(self, otherL):
+        """
+        Right scalar division, follows numpy semantics.
+        """
+        return otherL * Volume(1.0 / self._data)
 
     def project(self, vol_idx, rot_matrices):
         """
@@ -223,7 +245,7 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        data = self[vol_idx]
+        data = self[vol_idx].asnumpy()
 
         n = rot_matrices.shape[0]
 
@@ -248,8 +270,8 @@ class Volume:
         """Returns an N x resolution ** 3 array."""
         return self._data.reshape((self.n_vols, self.resolution**3))
 
-    @staticmethod
-    def from_vec(vec):
+    @classmethod
+    def from_vec(cls, vec):
         """
         Returns a Volume instance from a (N, resolution**3) array or
         (resolution**3) array.
@@ -267,7 +289,7 @@ class Volume:
 
         data = vec.reshape((n_vols, resolution, resolution, resolution))
 
-        return Volume(data)
+        return cls(data)
 
     def transpose(self):
         """
@@ -278,7 +300,7 @@ class Volume:
         original_stack_shape = self.stack_shape
         v = self.stack_reshape(-1)
         vt = np.transpose(v._data, (0, -1, -2, -3))
-        return Volume(vt).stack_reshape(original_stack_shape)
+        return self.__class__(vt).stack_reshape(original_stack_shape)
 
     @property
     def T(self):
@@ -319,7 +341,7 @@ class Volume:
                     f"Cannot flip axis {ax}: stack axis. Did you mean {ax-4}?"
                 )
 
-        return Volume(np.flip(self._data, axis))
+        return self.__class__(np.flip(self._data, axis))
 
     def downsample(self, ds_res, mask=None):
         """
@@ -346,7 +368,7 @@ class Volume:
             ds_res**3 / self.resolution**3
         )
         # returns a new Volume object
-        return Volume(np.real(out)).stack_reshape(original_stack_shape)
+        return self.__class__(np.real(out)).stack_reshape(original_stack_shape)
 
     def shift(self):
         raise NotImplementedError
@@ -403,7 +425,7 @@ class Volume:
             for i in range(K):
                 pts_rot[i] = rotated_grids_3d(self.resolution, rot_matrices[i])
 
-                vol_f[i] = nufft(self[i], pts_rot[i])
+                vol_f[i] = nufft(self[i].asnumpy(), pts_rot[i])
 
             vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
@@ -417,7 +439,7 @@ class Volume:
             np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
         )
 
-        return Volume(vol)
+        return self.__class__(vol)
 
     def denoise(self):
         raise NotImplementedError
@@ -442,8 +464,8 @@ class Volume:
         if self.dtype != np.float32:
             logger.info(f"Volume with dtype {self.dtype} saved with dtype float32")
 
-    @staticmethod
-    def load(filename, permissive=True, dtype=np.float32):
+    @classmethod
+    def load(cls, filename, permissive=True, dtype=np.float32):
         """
         Load an mrc file as a Volume instance.
 
@@ -458,7 +480,7 @@ class Volume:
             loaded_data = mrc.data
         if loaded_data.dtype != dtype:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
-        return Volume(loaded_data.astype(dtype))
+        return cls(loaded_data.astype(dtype))
 
 
 class CartesianVolume(Volume):

@@ -57,7 +57,7 @@ class StarFileMainCase(StarFileTestCase):
 
     def testImageDownsample(self):
         self.src.downsample(16)
-        first_image = self.src.images[0][0]
+        first_image = self.src.images[0].asnumpy()[0]
         self.assertEqual(first_image.shape, (16, 16))
 
     def testLegacyStarFile(self):
@@ -92,5 +92,5 @@ class StarFileSingleImage(StarFileTestCase):
     def testMRCSWithOneParticle(self):
         # tests conversion of 2D numpy arrays into 3D stacks in the case
         # where there is only one image in the mrcs
-        single_image = self.src.images[0][0]
+        single_image = self.src.images[0].asnumpy()[0]
         self.assertEqual(single_image.shape, (200, 200))

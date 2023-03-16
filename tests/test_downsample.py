@@ -56,8 +56,8 @@ class DownsampleTestCase(TestCase):
             # indeterminacy for 3D
             tolerance = 5e-2
         return np.allclose(
-            data_org[(..., *center_org)],
-            data_ds[(..., *center_ds)],
+            data_org.asnumpy()[(..., *center_org)],
+            data_ds.asnumpy()[(..., *center_ds)],
             atol=tolerance,
         )
 

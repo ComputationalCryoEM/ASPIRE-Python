@@ -5,6 +5,7 @@ import numpy as np
 from aspire.numeric import fft
 from aspire.utils import roll_dim, unroll_dim, vec_to_vol, vecmat_to_volmat, vol_to_vec
 from aspire.utils.matlab_compat import m_reshape
+from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,10 @@ class FourierKernel(Kernel):
         :param x: An N-by-N-by-N-by-... array of volumes to be convolved.
         :return: The original volumes convolved by the kernel with the same dimensions as before.
         """
+        # Note, we can do better here, but some changes in `wts` already...
+        if isinstance(x, Volume):
+            x = x.asnumpy()[0]
+
         N = x.shape[0]
         kernel_f = self.kernel[..., np.newaxis]
         N_ker = kernel_f.shape[0]

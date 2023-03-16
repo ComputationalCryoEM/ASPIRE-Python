@@ -3,6 +3,7 @@ import logging
 
 import numpy as np
 from scipy.linalg import eigh, qr
+from sklearn.metrics import adjusted_rand_score
 
 from aspire.image import Image
 from aspire.noise import NoiseAdder
@@ -156,14 +157,24 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
 
-        if noise_adder is not None:
-            logger.info(f"Appending {noise_adder} to generation pipeline")
-            if not isinstance(noise_adder, NoiseAdder):
-                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
-        self.noise_adder = noise_adder
-
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
+
+        # If a user prescribed NoiseAdder.from_snr(...),
+        #   noise_adder will be a function returning a completed class.
+        # Note the delayed eval may attempt to use self.*_accessors above.
+        if noise_adder is not None:
+            logger.info(f"Appending {noise_adder} to generation pipeline")
+            # If we need to calculate signal_power from Simulation,
+            # do so now and assign it to complete the Filter.
+            if getattr(noise_adder, "requires_signal_power", False):
+                noise_adder.signal_power = self.true_signal_power()
+
+            # At this point we should have a fully baked NoiseAdder
+            if not isinstance(noise_adder, NoiseAdder):
+                raise RuntimeError("`noise_adder` should be subclass of NoiseAdder")
+
+        self.noise_adder = noise_adder
 
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
@@ -252,9 +263,7 @@ class Simulation(ImageSource):
         # check for cached images first
         if self._cached_im is not None:
             logger.debug("Loading images from cache")
-            return self.generation_pipeline.forward(
-                Image(self._cached_im[indices, :, :]), indices
-            )
+            return self.generation_pipeline.forward(self._cached_im[indices], indices)
         im = self.projections[indices]
 
         # apply original CTF distortion to image
@@ -306,6 +315,24 @@ class Simulation(ImageSource):
 
         return coords.squeeze(), res_norms, res_inners
 
+    def true_signal_power(self, *args, **kwargs):
+        """
+        Estimate the signal power of `clean_images`.
+
+        For usage, see `ImageSource.estimate_signal_power`.
+
+        :returns: Estimated signal power of `clean_images`
+        """
+
+        # Note, in the future we can do something more clever here,
+        # perhaps starting with the simulation Volume.  For now we
+        # share code with ImageSource, so the method is at least
+        # identical, up to using `clean_images`.  The method is also
+        # the same as NoiseEstimator, up to ignoring the first moment
+        # and a few optional parameters.
+        kwargs["image_accessor"] = self.clean_images
+        return self.estimate_signal_power(*args, **kwargs)
+
     def mean_true(self):
         return Volume(np.mean(self.vols, 0))
 
@@ -341,7 +368,7 @@ class Simulation(ImageSource):
 
         # Arrange in descending order (flip column order in eigenvector matrix)
         w = w[::-1]
-        eigs_true = Volume(eigs_true[::-1])
+        eigs_true = Volume(eigs_true.asnumpy()[::-1])
 
         return eigs_true, np.diag(w)
 
@@ -406,18 +433,19 @@ class Simulation(ImageSource):
 
     def eval_clustering(self, vol_idx):
         """
-        Evaluate clustering estimation
+        Evaluate clustering estimation using an adjusted Rand score.
 
         :param vol_idx: Indexes of the volumes determined (0-indexed)
-        :return: Accuracy [0-1] in terms of proportion of correctly assigned labels
+        :return: Accuracy [-0.5, 1] in terms of proportion of correctly assigned labels.
+            Identical clusters (up to a permutation) have a score of 1, random labeling
+            will be close to 0, and discordant clusterings will be negative.
         """
         assert (
             len(vol_idx) == self.n
         ), f"Need {self.n} vol indexes to evaluate clustering"
-        # Remember that `states` is 1-indexed while vol_idx is 0-indexed
-        correctly_classified = np.sum(self.states - 1 == vol_idx)
+        # Remember that `states` is 1-indexed while vol_idx is 0-indexed.
 
-        return correctly_classified / self.n
+        return adjusted_rand_score(self.states - 1, vol_idx)
 
     def eval_coords(self, mean_vol, eig_vols, coords_est):
         """
@@ -435,7 +463,6 @@ class Simulation(ImageSource):
 
         # 0-indexed states vector
         states = self.states - 1
-
         coords_true = coords_true[states]
         res_norms = res_norms[states]
         res_inners = res_inners[:, states]
@@ -468,3 +495,20 @@ class Simulation(ImageSource):
         corr = inner / (norm_true * norm_est)
 
         return {"err": err, "rel_err": rel_err, "corr": corr}
+
+    def true_snr(self, *args, **kwargs):
+        """
+        Compute SNR using `true_signal_power` and the noise power known to simulation.
+
+        See Simulation.true_signal_power() for parameters.
+        """
+        # For clean images return infinite SNR.
+        # Note, relationship with CTF and other sim corruptions still isn't clear to me...
+        if self.noise_adder is None or self.noise_adder.noise_var == 0:
+            return np.inf
+
+        # For SNR of Simulations, use the theoretical noise variance
+        # known from the noise_adder instead of deriving from PSD.
+        noise_power = self.noise_adder.noise_var
+        signal_power = self.true_signal_power(*args, **kwargs)
+        return signal_power / noise_power

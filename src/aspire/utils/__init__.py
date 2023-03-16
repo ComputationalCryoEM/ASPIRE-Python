@@ -27,6 +27,7 @@ from .misc import (  # isort:skip
     pairs_to_linear,
     powerset,
     sha256sum,
+    support_mask,
     fuzzy_mask,
 )
 
@@ -65,3 +66,4 @@ from .random import Random, choice, rand, randi, randn, random
 from .relion_interop import RelionStarFile, relion_metadata_fields
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance
+from .units import ratio_to_decibel, voltage_to_wavelength, wavelength_to_voltage
