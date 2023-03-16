@@ -173,8 +173,8 @@ class NeighborVarianceClassSelector(ClassSelector):
         # Compute per class variance
         dist_var = np.var(distances, axis=1)
 
-        # Compute the ordering, descending
-        sorted_class_inds = np.argsort(dist_var)[::-1]
+        # Compute the ordering, ascending
+        sorted_class_inds = np.argsort(dist_var)
         # Store the sorted quality scores (maps to selection output).
         self._quality_scores = dist_var[sorted_class_inds]
 
@@ -197,8 +197,8 @@ class DistanceClassSelector(ClassSelector):
         # Skips self distance (0).
         dist_mean = np.mean(distances[:, 1:], axis=1)
 
-        # Compute the ordering, descending
-        sorted_class_inds = np.argsort(dist_mean)[::-1]
+        # Compute the ordering, ascending
+        sorted_class_inds = np.argsort(dist_mean)
         self._quality_scores = dist_mean[sorted_class_inds]
 
         # Return indices
@@ -346,7 +346,7 @@ class GlobalClassSelector(ClassSelector):
                 _ = heappushpop(self.heap, item)
 
         # Now that we have computed the global quality_scores,
-        # the selection ordering can be applied
+        # the selection ordering can be applied, descending
         sorted_class_inds = np.argsort(self._quality_scores)[::-1]
         self._quality_scores = self._quality_scores[sorted_class_inds]
         return sorted_class_inds

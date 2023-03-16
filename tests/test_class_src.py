@@ -254,7 +254,7 @@ def test_contrast_selector(dtype):
 
     # Compute reference manually.
     V = distances.var(axis=1)
-    ref_class_ids = np.argsort(V)[::-1]
+    ref_class_ids = np.argsort(V)
     ref_scores = V[ref_class_ids]
 
     # Compute using class under test.
