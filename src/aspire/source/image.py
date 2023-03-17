@@ -1022,7 +1022,7 @@ class ImageSource(ABC):
         if snr < 0:
             logger.warning(
                 "For extremely low SNR, estimation accuracy may be impaired."
-                f"  Clamping estimated snr {snr} to 0."
+                f"  Clamping estimated SNR {snr} to 0."
             )
             snr = 0
 
